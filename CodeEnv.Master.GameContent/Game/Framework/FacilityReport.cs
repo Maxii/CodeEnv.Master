@@ -44,6 +44,9 @@ namespace CodeEnv.Master.GameContent {
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Health)) {
                 Health = fData.Health;  // Element Health only matters on Element displays
             }
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.AlertStatus)) {
+                AlertStatus = fData.AlertStatus;
+            }
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.CurrentHitPoints)) {
                 CurrentHitPoints = fData.CurrentHitPoints;
             }

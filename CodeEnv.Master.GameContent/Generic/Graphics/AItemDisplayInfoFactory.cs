@@ -40,6 +40,7 @@ namespace CodeEnv.Master.GameContent {
                 {ItemInfoID.Category, "Category: {0}"},
                 {ItemInfoID.SectorID, "Sector: {0}"},
                 {ItemInfoID.Position, "Position: {0}"},
+                {ItemInfoID.AlertStatus, "AlertStatus: {0}"},
 
                 {ItemInfoID.Composition, CommonTerms.Composition + ": {0}"},
                 {ItemInfoID.Formation, "Formation: {0}"},

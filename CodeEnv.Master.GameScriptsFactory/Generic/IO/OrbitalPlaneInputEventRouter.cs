@@ -89,7 +89,7 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
     }
 
     private void MouseMoveWhileOnHoverCheckingForOccludedObjectsEventHandler(Vector2 moveDelta) {
-        D.Assert(_inputMgr.InputMode == GameInputMode.Normal);
+        D.AssertEqual(GameInputMode.Normal, _inputMgr.InputMode);
         CheckForOccludedObjectAndProcessOnHoverNotifications();
     }
 
@@ -126,8 +126,10 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
 
     private void DoubleClickEventHandler() {
         //D.Log("{0}.OnDoubleClick() received.", Name);
-        D.Warn(_inputMgr.InputMode == GameInputMode.PartialPopup, "{0}.OnDoubleClick() received while in {1}.{2}.",
-            Name, typeof(GameInputMode).Name, _inputMgr.InputMode.GetValueName());   // OPTIMIZE I haven't seen this occur so far
+        if (_inputMgr.InputMode == GameInputMode.PartialPopup) {
+            D.Warn("{0}.OnDoubleClick() received while in {1}.{2}.",
+                Name, typeof(GameInputMode).Name, _inputMgr.InputMode.GetValueName());   // OPTIMIZE I haven't seen this occur so far
+        }
         GameObject occludedObject;
         if (TryCheckForOccludedObject(out occludedObject)) {
             _inputHelper.Notify(occludedObject, "OnDoubleClick");
@@ -202,7 +204,7 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
     /// <returns><c>true</c> if an occluded object was found, else <c>false</c>.</returns>
     private bool TryCheckForOccludedObject(out GameObject occludedObject) {
         Layers orbitalPlaneLayer = (Layers)gameObject.layer;
-        D.Assert(orbitalPlaneLayer == Layers.SystemOrbitalPlane, "{0} Layer {1} should be {2}.".Inject(GetType().Name, orbitalPlaneLayer.GetValueName(), Layers.SystemOrbitalPlane.GetValueName()));
+        D.AssertEqual(Layers.SystemOrbitalPlane, orbitalPlaneLayer, orbitalPlaneLayer.GetValueName());
 
         // UNCLEAR: For some unknown reason, using UICamera.Raycast() here can find the orbitalPlaneMesh (on the orbitalPlaneLayer) itself as
         // the occludedObject, even though the mask says it shouldn't be able too. That is, UICamera.hoveredObject returns the orbitalPlaneMesh.
@@ -219,8 +221,7 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
         //}
         //eventDispatcher.eventReceiverMask = savedMask;
 
-        D.Assert(_inputMgr.InputMode == GameInputMode.Normal, "{0}: {1} = {2}.",
-            Name, typeof(GameInputMode).Name, _inputMgr.InputMode.GetValueName());  // Occlusion check should only occur during Normal InputMode
+        D.AssertEqual(GameInputMode.Normal, _inputMgr.InputMode, _inputMgr.InputMode.GetValueName());  // Occlusion check should only occur during Normal InputMode
 
         var maskWithoutOrbitalPlaneLayer = InputManager.WorldEventDispatcherMask_NormalInput.RemoveFromMask(orbitalPlaneLayer);
         bool isObjectOccluded = false;
@@ -266,8 +267,9 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
         _isAlreadyHovering = isOver;
 
         if (isOver) {
-            D.Assert(_inputMgr.InputMode == GameInputMode.Normal, "{0} received OnHover(true) during {1}.{2}.",
-                Name, typeof(GameInputMode).Name, _inputMgr.InputMode.GetValueName());
+            if (_inputMgr.InputMode != GameInputMode.Normal) {
+                D.Error("{0} received OnHover(true) during {1}.{2}.", Name, typeof(GameInputMode).Name, _inputMgr.InputMode.GetValueName());
+            }
         }
 
         EnableOnHoverCheckingForOccludedObjects(isOver);
@@ -338,7 +340,7 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
     private void CheckForOccludedObjectAndProcessOnHoverNotifications() {
         GameObject newOccludedObject;
         if (TryCheckForOccludedObject(out newOccludedObject)) {
-            D.Assert(newOccludedObject != null);
+            D.AssertNotNull(newOccludedObject);
 
             // new state is occluded
             if (_currentOccludedObject != null) {

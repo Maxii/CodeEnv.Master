@@ -40,7 +40,7 @@ public class WidgetTrackableLocation : AMonoBase, IWidgetTrackable {
 
     public Vector3 GetOffset(WidgetPlacement placement) {
         // 5.4.16 Currently only used as an IWidgetTrackable for invisible CameraLosChangedListeners
-        D.Assert(placement == WidgetPlacement.Over);
+        D.AssertEqual(WidgetPlacement.Over, placement);
         return Vector3.zero;
     }
 

@@ -60,11 +60,11 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="target">The target of this order. No need for FormationStation. Default is null.</param>
         public ShipOrder(ShipDirective directive, OrderSource source, bool toNotifyCmd = false, IShipNavigable target = null) {
             if (directive == ShipDirective.Move) {
-                D.Assert(GetType() == typeof(ShipMoveOrder));
+                D.AssertEqual(typeof(ShipMoveOrder), GetType());
                 D.Assert(!toNotifyCmd);
             }
             if (directive.EqualsAnyOf(DirectivesWithNullTarget)) {
-                D.Assert(target == null, "{0} target should be null.", this);
+                D.AssertNull(target, ToString());
             }
             Directive = directive;
             Source = source;

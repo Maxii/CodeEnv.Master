@@ -46,6 +46,16 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
+        /// Gets the component of Type T that is a sibling of this Transform. Logs a warning if the component cannot be found.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="transform">The Transform ostensibly having the Component as a sibling.</param>
+        /// <returns>The component of type T or null if not found.</returns>
+        public static T GetSafeComponent<T>(this Transform transform) where T : Component {
+            return GetSafeComponent<T>(transform.gameObject);
+        }
+
+        /// <summary>
         /// Returns all Components of Type T in the GameObject or any of its children.
         /// Logs a warning if a component cannot be found.
         /// </summary>
@@ -267,10 +277,17 @@ namespace CodeEnv.Master.Common {
 
         #region DistanceToCamera Extensions
 
+        /// <summary>
+        /// Gets the distance from <c>point</c> to the camera.
+        /// <remarks>Avoids creating a new camera 'Plane' object, but no allocation change as local variables are placed on the stack.
+        /// See https://forum.unity3d.com/threads/camera-to-object-distance.32643/ </remarks>
+        /// </summary>
+        /// <param name="point">The point.</param>
+        /// <returns></returns>
         public static float DistanceToCamera(this Vector3 point) {
             Transform cameraTransform = Camera.main.transform;
-            Plane cameraPlane = new Plane(cameraTransform.forward, cameraTransform.position);
-            float distanceToCamera = cameraPlane.GetDistanceToPoint(point);
+            Vector3 cameraToPointVector = point - cameraTransform.position;
+            float distanceToCamera = Vector3.Dot(cameraToPointVector, cameraTransform.forward);
             return distanceToCamera;
         }
 
@@ -281,6 +298,18 @@ namespace CodeEnv.Master.Common {
         public static float DistanceToCamera(this Transform t) {
             return t.position.DistanceToCamera();
         }
+
+        #region Archive 
+
+        // Alternative approach that works but less efficient due to plane creation
+        //public static float DistanceToCamera(this Vector3 point) {
+        //    Transform cameraTransform = Camera.main.transform;
+        //    Plane cameraPlane = new Plane(cameraTransform.forward, cameraTransform.position);
+        //    float distanceToCamera = cameraPlane.GetDistanceToPoint(point);
+        //    return distanceToCamera;
+        //}
+
+        #endregion
 
         #endregion
 
@@ -381,6 +410,7 @@ namespace CodeEnv.Master.Common {
 
         /// <summary>
         /// Finds the maximum distance between fromLocation and all toLocations.
+        /// <remarks>OPTIMIZE use of Mathf.Max(params) creates allocations.</remarks>
         /// </summary>
         /// <param name="fromLocation">Source location.</param>
         /// <param name="toLocations">The other locations.</param>
@@ -549,7 +579,9 @@ namespace CodeEnv.Master.Common {
         /// <returns></returns>
         public static bool IsSame(this Quaternion sourceRotation, Quaternion otherRotation, float allowedDeviation = UnityConstants.AngleEqualityPrecision) {
             //var actualDeviation = Quaternion.Angle(__FixQuaternion(sourceRotation), __FixQuaternion(otherRotation));
-            D.Warn(allowedDeviation < UnityConstants.AngleEqualityPrecision, "Angle Deviation precision {0} cannot be < {1}.", allowedDeviation, UnityConstants.AngleEqualityPrecision);
+            if (allowedDeviation < UnityConstants.AngleEqualityPrecision) {
+                D.Warn("Angle Deviation precision {0} cannot be < {1}.", allowedDeviation, UnityConstants.AngleEqualityPrecision);
+            }
             allowedDeviation = Mathf.Clamp(allowedDeviation, UnityConstants.AngleEqualityPrecision, 180F);
             var actualDeviation = Quaternion.Angle(sourceRotation, otherRotation);
             var isSame = actualDeviation <= allowedDeviation;

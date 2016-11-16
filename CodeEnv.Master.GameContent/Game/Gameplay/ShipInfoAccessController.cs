@@ -56,11 +56,12 @@ namespace CodeEnv.Master.GameContent {
             switch (infoID) {
                 case ItemInfoID.Category:
                 case ItemInfoID.Owner:
-                case ItemInfoID.CurrentSpeedSetting:                //case ItemInfoID.ActualSpeed:
+                case ItemInfoID.CurrentSpeedSetting:
                 case ItemInfoID.WeaponsRange:
                 case ItemInfoID.MaxHitPoints:
                 case ItemInfoID.SensorRange:
                 case ItemInfoID.Mass:
+                case ItemInfoID.AlertStatus:
                     return true;
                 default:
                     return false;

@@ -201,7 +201,7 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
 
     protected override void Validate() {
         base.Validate();
-        D.Assert(_resourceCategory != ResourceCategory.None, "{0}.{1} has not been set.".Inject(GetType().Name, typeof(ResourceCategory).Name));
+        D.AssertNotDefault((int)_resourceCategory);
     }
 
     protected override void Cleanup() {

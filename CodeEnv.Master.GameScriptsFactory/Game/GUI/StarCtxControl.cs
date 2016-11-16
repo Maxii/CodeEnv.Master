@@ -54,7 +54,7 @@ public class StarCtxControl : ACtxControl {
 
     protected override bool IsSelectedItemMenuOperator(ISelectable selected) {
         if (_starMenuOperator.IsSelected) {
-            D.Assert(_starMenuOperator == selected as StarItem);
+            D.AssertEqual(_starMenuOperator, selected as StarItem);
             return true;
         }
         return false;

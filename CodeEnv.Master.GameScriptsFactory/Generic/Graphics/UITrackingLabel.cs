@@ -19,10 +19,11 @@
 using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
+using UnityEngine;
 
 /// <summary>
 /// Label on the UI layer that tracks world objects.  The user perceives the label as maintaining a constant size on the screen
-/// independant of the distance from the tracked world object to the main camera.
+/// independent of the distance from the tracked world object to the main camera.
 /// </summary>
 public class UITrackingLabel : AUITrackingWidget {
 
@@ -43,6 +44,23 @@ public class UITrackingLabel : AUITrackingWidget {
         if (Widget.text == text) { return; }
         Widget.text = text;
         Widget.MakePixelPerfect();
+    }
+
+    /// <summary>
+    /// Assesses whether to show or hide the widget based on
+    /// the widget's distance to the camera. Expensive.
+    /// <remarks>11.13.16 Currently, only UITrackingLabels use min/max show distances.</remarks>
+    /// </summary>
+    protected override void AssessShowDistance() {
+        base.AssessShowDistance();
+        if (_toCheckShowDistance) {
+            if (IsWithinShowDistance) {
+                Show();
+            }
+            else {
+                Hide();
+            }
+        }
     }
 
     protected override void AlignWidgetOtherTo(WidgetPlacement placement) {

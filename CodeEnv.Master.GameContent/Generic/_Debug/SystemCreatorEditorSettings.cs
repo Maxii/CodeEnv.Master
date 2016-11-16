@@ -56,7 +56,9 @@ namespace CodeEnv.Master.GameContent {
             IList<PlanetoidCategory[]> presetMoonCats, SystemDesirability desirability) {
             PresetStarCategory = presetStarCat;
             IsCompositionPreset = true;
-            D.Assert(presetPlanetCats.Count <= TempGameValues.TotalOrbitSlotsPerSystem - 1, "{0} > {1}.", presetPlanetCats.Count, TempGameValues.TotalOrbitSlotsPerSystem - 1);
+            if (presetPlanetCats.Count > TempGameValues.TotalOrbitSlotsPerSystem - 1) {
+                D.Error("{0} should be <= {1}.", presetPlanetCats.Count, TempGameValues.TotalOrbitSlotsPerSystem - 1);
+            }
             PresetPlanetCategories = presetPlanetCats;
             PresetMoonCategories = presetMoonCats;
             Desirability = desirability;

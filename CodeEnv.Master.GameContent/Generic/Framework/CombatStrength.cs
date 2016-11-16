@@ -184,9 +184,9 @@ namespace CodeEnv.Master.GameContent {
         private CombatStrength(WDVStrength beamDeliveryStrength, WDVStrength projDeliveryStrength, WDVStrength missileDeliveryStrength,
             DamageStrength beamDamagePotential, DamageStrength projDamagePotential, DamageStrength missileDamagePotential)
             : this() {
-            D.Assert(beamDeliveryStrength.Category == WDVCategory.Beam);
-            D.Assert(projDeliveryStrength.Category == WDVCategory.Projectile);
-            D.Assert(missileDeliveryStrength.Category == WDVCategory.Missile);
+            D.AssertEqual(WDVCategory.Beam, beamDeliveryStrength.Category);
+            D.AssertEqual(WDVCategory.Projectile, projDeliveryStrength.Category);
+            D.AssertEqual(WDVCategory.Missile, missileDeliveryStrength.Category);
 
             Mode = CombatMode.Offensive;
             BeamDeliveryStrength = beamDeliveryStrength;
@@ -207,9 +207,9 @@ namespace CodeEnv.Master.GameContent {
         private CombatStrength(WDVStrength beamInterceptStrength, WDVStrength projInterceptStrength, WDVStrength missileInterceptStrength,
             DamageStrength totalDamageMitigation)
             : this() {
-            D.Assert(beamInterceptStrength.Category == WDVCategory.Beam);
-            D.Assert(projInterceptStrength.Category == WDVCategory.Projectile);
-            D.Assert(missileInterceptStrength.Category == WDVCategory.Missile);
+            D.AssertEqual(WDVCategory.Beam, beamInterceptStrength.Category);
+            D.AssertEqual(WDVCategory.Projectile, projInterceptStrength.Category);
+            D.AssertEqual(WDVCategory.Missile, missileInterceptStrength.Category);
 
             Mode = CombatMode.Defensive;
             BeamDeliveryStrength = beamInterceptStrength;
@@ -303,7 +303,8 @@ namespace CodeEnv.Master.GameContent {
         #region IComparable<CombatStrength> Members
 
         public int CompareTo(CombatStrength other) {
-            D.Assert(Mode != default(CombatMode) && Mode == other.Mode);
+            D.AssertNotDefault((int)Mode);
+            D.AssertEqual(Mode, other.Mode);
             if (Mode == CombatMode.Offensive) {
                 return (TotalDamagePotential.Total + TotalDeliveryStrength).CompareTo(other.TotalDamagePotential.Total + other.TotalDeliveryStrength);
             }

@@ -63,7 +63,8 @@ public class FormationGenerator : AGenericSingleton<FormationGenerator>, IFormat
     /// <param name="formationRadius">The resulting unit formation radius.</param>
     /// <returns></returns>
     public IList<FormationStationSlotInfo> GenerateBaseFormation(Formation formation, Transform cmdTransform, out float formationRadius) {
-        D.Assert(formation != Formation.None && formation != Formation.Wedge);
+        D.AssertNotDefault((int)formation);
+        D.AssertNotEqual(Formation.Wedge, formation);
         return GenerateFormation(formation, cmdTransform, out formationRadius);
     }
 
@@ -77,7 +78,7 @@ public class FormationGenerator : AGenericSingleton<FormationGenerator>, IFormat
     /// <param name="formationRadius">The resulting unit formation radius.</param>
     /// <returns></returns>
     public IList<FormationStationSlotInfo> GenerateFleetFormation(Formation formation, Transform cmdTransform, out float formationRadius) {
-        D.Assert(formation != Formation.None);
+        D.AssertNotDefault((int)formation);
         return GenerateFormation(formation, cmdTransform, out formationRadius);
     }
 
@@ -147,7 +148,7 @@ public class FormationGenerator : AGenericSingleton<FormationGenerator>, IFormat
 
     private void ValidateSlotIDs(IList<FormationStationSlotInfo> slotInfos) {
         FormationStationSlotID duplicate;
-        D.Assert(!slotInfos.Select(si => si.SlotID).ContainsDuplicates(out duplicate), "{0} found duplicate {1}: {2}.", Name, typeof(FormationStationSlotID).Name, duplicate.GetValueName());
+        D.Assert(!slotInfos.Select(si => si.SlotID).ContainsDuplicates(out duplicate), duplicate.GetValueName());
     }
 
     private void Cleanup() { }

@@ -60,15 +60,21 @@ namespace CodeEnv.Master.GameContent {
             else {
                 ReturnAllOccupiedStationSlotsToAvailable();
             }
+
+            int hqCount = Constants.Zero;
             allElements.ForAll(e => {
+                if (e.IsHQ) {
+                    hqCount++;
+                }
                 AddAndPositionElement(e);
             });
+            D.AssertEqual(Constants.One, hqCount);
         }
 
         private void ReturnAllOccupiedStationSlotsToAvailable() {
-            var occupiedSlotInfos = _occupiedStationSlotLookup.Values;
+            var occupiedStationSlots = _occupiedStationSlotLookup.Values;
             _occupiedStationSlotLookup.Clear();
-            (_availableStationSlots as List<FormationStationSlotInfo>).AddRange(occupiedSlotInfos);
+            (_availableStationSlots as List<FormationStationSlotInfo>).AddRange(occupiedStationSlots);
         }
 
         protected abstract IList<FormationStationSlotInfo> GenerateFormationSlotInfo(Formation formation, Transform cmdTransform, out float formationRadius);
@@ -89,7 +95,6 @@ namespace CodeEnv.Master.GameContent {
         /// and then calls Command.PositionElementInFormation() using the slot selected.
         /// </summary>
         /// <param name="element">The element.</param>
-        /// <param name="selectionConstraint">The selection constraint.</param>
         public void AddAndPositionNonHQElement(IUnitElement element) {
             D.Assert(!element.IsHQ);
             AddAndPositionElement(element);
@@ -107,15 +112,17 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private FormationStationSlotInfo SelectAndRecordSlotAsOccupied(IUnitElement element, FormationStationSelectionCriteria selectionConstraints) {
+            bool isRemoved;
             FormationStationSlotInfo slotInfo;
             if (_occupiedStationSlotLookup.TryGetValue(element, out slotInfo)) {
                 // return element's existing slotInfo BEFORE selecting another
-                _occupiedStationSlotLookup.Remove(element);
+                isRemoved = _occupiedStationSlotLookup.Remove(element);
+                D.Assert(isRemoved, element.FullName);
                 _availableStationSlots.Add(slotInfo);
             }
             slotInfo = SelectSlotInfoFor(element, selectionConstraints);
-            bool isRemoved = _availableStationSlots.Remove(slotInfo);
-            D.Assert(isRemoved);
+            isRemoved = _availableStationSlots.Remove(slotInfo);
+            D.Assert(isRemoved, slotInfo.ToString());
             _occupiedStationSlotLookup.Add(element, slotInfo);
             return slotInfo;
         }
@@ -129,32 +136,37 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         private FormationStationSlotInfo SelectSlotInfoFor(IUnitElement element, FormationStationSelectionCriteria selectionConstraints) {
             if (element.IsHQ) {
+                //D.Log(ShowDebugLog, "{0} is about to validate {1} is only HQ.", Name, element.FullName);
                 __ValidateSingleHqSlotAvailable();
                 return _availableStationSlots.Single(sInfo => sInfo.IsHQSlot);  // 7.15.16 Single violation recorded
             }
 
-            FormationStationSlotInfo result = _availableStationSlots.Where(sInfo => !sInfo.IsHQSlot && sInfo.IsReserve == selectionConstraints.isReserveReqd).FirstOrDefault();
+            FormationStationSlotInfo result = _availableStationSlots.Where(sInfo => !sInfo.IsHQSlot && sInfo.IsReserve == selectionConstraints.IsReserveReqd).FirstOrDefault();
             if (result == default(FormationStationSlotInfo)) {
-                result = _availableStationSlots.FirstOrDefault();
+                result = _availableStationSlots.Where(sInfo => !sInfo.IsHQSlot).FirstOrDefault();
             }
-            D.Assert(result != default(FormationStationSlotInfo), "{0}: No {1} fits constraint criteria {2}.", Name, typeof(FormationStationSlotInfo).Name, selectionConstraints);
+            if (result == default(FormationStationSlotInfo)) {
+                D.Error("{0}: Cannot find {1} meeting Constraint {2} for {3}.", Name, typeof(FormationStationSlotInfo).Name, selectionConstraints, element.FullName);
+            }
             return result;
         }
 
         private void __ValidateSingleHqSlotAvailable() {
             int count = _availableStationSlots.Where(sInfo => sInfo.IsHQSlot).Count();
-            D.Assert(count == 1, "{0}: Expecting 1 HQ formation slot but found {1}. Formation = {2}, AvailableSlots = {3}, OccupiedSlots = {4}.",
-                Name, count, _currentFormation.GetValueName(), _availableStationSlots.Concatenate(), _occupiedStationSlotLookup.Values.Concatenate());
+            if (count != Constants.One) {
+                D.Error("{0}: Expecting 1 HQ formation slot but found {1}. Formation = {2}, AvailableSlots = {3}, OccupiedSlots = {4}.",
+                    Name, count, _currentFormation.GetValueName(), _availableStationSlots.Concatenate(), _occupiedStationSlotLookup.Values.Concatenate());
+            }
         }
 
         /// <summary>
-        /// Returns <c>true</c> if a FormationStation (slot) that matches the <c>selectionCriteria</c> is available for assignment.
+        /// Returns <c>true</c> if a FormationStation (slot) that matches the <c>selectionConstraint</c> is available for assignment.
         /// </summary>
-        /// <param name="selectionCriteria">The selection criteria.</param>
+        /// <param name="selectionConstraint">The selection constraint.</param>
         /// <returns></returns>
-        public bool IsSlotAvailable(FormationStationSelectionCriteria selectionCriteria) {
+        public bool IsSlotAvailable(FormationStationSelectionCriteria selectionConstraint) {
             D.Assert(_availableStationSlots.Where(sInfo => sInfo.IsHQSlot).IsNullOrEmpty());    // HQ slot should never be available here
-            return _availableStationSlots.Where(sInfo => sInfo.IsReserve == selectionCriteria.isReserveReqd).Any();
+            return _availableStationSlots.Where(sInfo => sInfo.IsReserve == selectionConstraint.IsReserveReqd).Any();
         }
 
         /// <summary>
@@ -165,7 +177,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="element">The element.</param>
         public void HandleElementRemoval(IUnitElement element) {
             FormationStationSlotInfo elementStationInfo;
-            D.Assert(_occupiedStationSlotLookup.TryGetValue(element, out elementStationInfo), "{0} has no recorded {1}.", element.FullName, typeof(FormationStationSlotInfo).Name);
+            bool isStationSlotFound = _occupiedStationSlotLookup.TryGetValue(element, out elementStationInfo);
+            D.Assert(isStationSlotFound, element.FullName);
             _occupiedStationSlotLookup.Remove(element);
             _availableStationSlots.Add(elementStationInfo);
         }
@@ -180,10 +193,10 @@ namespace CodeEnv.Master.GameContent {
 
             private const string ToStringFormat = "{0}: isReserveReqd = {1}";
 
-            public bool isReserveReqd;
+            public bool IsReserveReqd { get; set; }
 
             public override string ToString() {
-                return ToStringFormat.Inject(typeof(FormationStationSelectionCriteria).Name, isReserveReqd);
+                return ToStringFormat.Inject(typeof(FormationStationSelectionCriteria).Name, IsReserveReqd);
             }
         }
 

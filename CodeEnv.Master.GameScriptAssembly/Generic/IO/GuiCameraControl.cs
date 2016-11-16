@@ -41,7 +41,7 @@ public class GuiCameraControl : AMonoSingleton<GuiCameraControl>, IGuiCameraCont
     }
 
     private Camera InitializeGuiCamera() {
-        D.Assert((Layers)gameObject.layer == Layers.UI);
+        D.AssertEqual(Layers.UI, (Layers)gameObject.layer);
         var guiCamera = gameObject.GetComponent<Camera>();
         guiCamera.cullingMask = _guiCameraCullingMask;
         // camera.clearFlags = CameraClearFlags.Depth; //TODO will need to vary by deployment

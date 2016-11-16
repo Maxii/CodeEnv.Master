@@ -51,8 +51,9 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Returns the maximum positive distance or zero if none.
+        /// <remarks>Mathf.Max(a, b, c) creates allocations as it uses params.</remarks>
         /// </summary>
-        public float Max { get { return Mathf.Max(Short, Medium, Long); } }
+        public float Max { get { return Mathf.Max(Mathf.Max(Short, Medium), Long); } }
 
         public float Short { get; private set; }
 

@@ -41,7 +41,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="source">The source of this order.</param>
         /// <param name="target">The target of this order. Default is null.</param>
         public BaseOrder(BaseDirective directive, OrderSource source, IUnitAttackable target = null) {
-            D.Assert(source != OrderSource.Captain);
+            D.AssertNotEqual(OrderSource.Captain, source);
             Directive = directive;
             Source = source;
             Target = target;

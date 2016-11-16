@@ -111,14 +111,14 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         IDisposable d;
         if (toSubscribe) {
             d = MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, IntVector3>(cc => cc.SectorID, CameraSectorIdPropChangedHandler);
-            D.Assert(!_subscriptions.Contains(d), "{0} found duplicate subscription.", DisplayName);
+            D.Assert(!_subscriptions.Contains(d), DisplayName);
             _subscriptions.Add(d);
             UICamera.onMouseMove += MouseMovedEventHandler;
         }
         else {
             d = _subscriptions.Single(s => s as DisposePropertyChangedSubscription<MainCameraControl> != null);
             bool isRemoved = _subscriptions.Remove(d);
-            D.Assert(isRemoved, "{0} didn't find subscription to remove.", DisplayName);
+            D.Assert(isRemoved, DisplayName);
             d.Dispose();
             UICamera.onMouseMove -= MouseMovedEventHandler;
         }

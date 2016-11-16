@@ -88,8 +88,7 @@ public class Revolver : AMonoBase, IRevolver {
 
     // Note: Revolvers no longer control their own enabled state based on visibility as DisplayManagers also need to control it based on IntelCoverage
 
-    protected override void Update() {
-        base.Update();
+    void Update() {
         if (_updateRotationCounter >= UpdateRotationCounterThreshold) {
             float deltaTimeSinceLastUpdate = _gameTime.DeltaTime * _updateRotationCounter;
             UpdateRotation(deltaTimeSinceLastUpdate);

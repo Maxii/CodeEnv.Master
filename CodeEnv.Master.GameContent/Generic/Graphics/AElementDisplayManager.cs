@@ -47,7 +47,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override MeshRenderer InitializePrimaryMesh(GameObject elementItemGo) {
-            D.Log("{0}.InitializePrimaryMesh({1}) called.", Name, elementItemGo.name);
+            //D.Log("{0}.InitializePrimaryMesh({1}) called.", Name, elementItemGo.name);
             IHull hull = elementItemGo.GetSingleInterfaceInChildren<IHull>();
             var primaryMeshRenderer = hull.HullMesh.GetComponent<MeshRenderer>();
             primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;

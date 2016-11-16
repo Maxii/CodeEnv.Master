@@ -51,7 +51,7 @@ public class PlanetoidCtxControl : ACtxControl {
 
     protected sealed override bool IsSelectedItemMenuOperator(ISelectable selected) {
         if (_planetoidMenuOperator.IsSelected) {
-            D.Assert(_planetoidMenuOperator == selected as APlanetoidItem);
+            D.AssertEqual(_planetoidMenuOperator, selected as APlanetoidItem);
             return true;
         }
         return false;
@@ -77,7 +77,7 @@ public class PlanetoidCtxControl : ACtxControl {
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Attack:
-                return !(_planetoidMenuOperator as IUnitAttackable).IsAttackingAllowedBy(_user)
+                return !(_planetoidMenuOperator as IUnitAttackable).IsAttackByAllowed(_user)
                     || !(_remoteUserOwnedSelectedItem as AUnitCmdItem).IsAttackCapable;
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:

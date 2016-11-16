@@ -42,7 +42,9 @@ public abstract class AGuiElement : ATextTooltip {
 
     protected virtual void Validate() {
         UnityUtility.ValidateComponentPresence<UIWidget>(gameObject);
-        D.WarnContext(ElementID == default(GuiElementID), this, "{0}.{1} not set.", gameObject.name, typeof(GuiElementID).Name);
+        if (ElementID == default(GuiElementID)) {
+            D.WarnContext(this, "{0}.{1} not set.", gameObject.name, typeof(GuiElementID).Name);
+        }
     }
 
 }

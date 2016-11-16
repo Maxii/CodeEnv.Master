@@ -233,7 +233,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
                 UnsubscribeToViewModeKeyEvents();
                 break;
             case GameInputMode.PartialPopup:
-                D.Assert(_gameMgr.CurrentSceneID == GameManager.SceneID.GameScene);
+                D.AssertEqual(GameManager.SceneID.GameScene, _gameMgr.CurrentSceneID);
                 UIEventDispatcher.eventReceiverMask = UIEventDispatcherMask_NormalInput;
                 _enableArrowKeys = true;
                 _enableScreenEdge = true;
@@ -242,7 +242,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
                 UnsubscribeToWorldMouseEvents();
                 break;
             case GameInputMode.FullPopup:
-                D.Assert(_gameMgr.CurrentSceneID == GameManager.SceneID.GameScene);
+                D.AssertEqual(GameManager.SceneID.GameScene, _gameMgr.CurrentSceneID);
                 UIEventDispatcher.eventReceiverMask = UIEventDispatcherMask_NormalInput;
                 _enableArrowKeys = false;
                 _enableScreenEdge = false;
@@ -251,7 +251,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
                 UnsubscribeToWorldMouseEvents();
                 break;
             case GameInputMode.Normal:
-                D.Assert(_gameMgr.CurrentSceneID == GameManager.SceneID.GameScene);
+                D.AssertEqual(GameManager.SceneID.GameScene, _gameMgr.CurrentSceneID);
                 UIEventDispatcher.eventReceiverMask = UIEventDispatcherMask_NormalInput;
                 _enableArrowKeys = true;
                 _enableScreenEdge = true;
@@ -265,8 +265,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
         }
     }
 
-    protected override void Update() {
-        base.Update();
+    void Update() {
         CheckForArrowKeyActivity();
         CheckForScreenEdgeActivity();
     }
@@ -425,16 +424,9 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     /// <summary>
     /// Called when a mouse button press event occurs but no collider consumes it.
     /// </summary>
-    //private void OnUnconsumedPress(bool isDown) {
-    //    if (isDown) {
-    //        if (onUnconsumedPressDown != null) {
-    //            onUnconsumedPressDown(_inputHelper.CurrentMouseButton);
-    //        }
-    //    }
-    //}
     private void OnUnconsumedPress() {
         if (unconsumedPress != null) {
-            unconsumedPress(this, new EventArgs());
+            unconsumedPress(this, EventArgs.Empty);
         }
     }
 

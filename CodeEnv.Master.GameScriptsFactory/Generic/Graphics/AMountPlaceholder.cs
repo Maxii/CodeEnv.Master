@@ -34,7 +34,7 @@ public abstract class AMountPlaceholder : AMount {
 
     protected override void Validate() {
         base.Validate();
-        D.Assert(_slotID != MountSlotID.None);
+        D.AssertNotDefault((int)_slotID);
     }
 
 }

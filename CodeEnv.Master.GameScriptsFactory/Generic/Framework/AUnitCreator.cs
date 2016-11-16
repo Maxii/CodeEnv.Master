@@ -44,7 +44,7 @@ public abstract class AUnitCreator : AMonoBase {
     public UnitCreatorConfiguration Configuration {
         get { return _configuration; }
         set {
-            D.Assert(_configuration == null);   // currently one time only
+            D.AssertNull(_configuration);   // currently one time only
             SetProperty<UnitCreatorConfiguration>(ref _configuration, value, "Configuration", ConfigurationSetHandler);
         }
     }
@@ -93,10 +93,10 @@ public abstract class AUnitCreator : AMonoBase {
     /// and call AuthorizeDeployment() itself.</remarks>
     /// </summary>
     public void AuthorizeDeployment() {
+        D.AssertNotNull(Configuration);    // would only be called with a Configuration
         D.Log("{0} is authorizing deployment of {1}. Targeted DeployDate = {2}.", Name, Configuration.UnitName, Configuration.DeployDate);
-        D.Assert(Configuration != null);    // would only be called with a Configuration
         var currentDate = GameTime.Instance.CurrentDate;
-        D.Assert(currentDate >= GameTime.GameStartDate, "{0}: Illegal Current Date {1}.", Name, currentDate);
+        D.Assert(currentDate >= GameTime.GameStartDate, currentDate.ToString());
         if (currentDate >= Configuration.DeployDate) {
             HandleDeployDateReached();
         }
@@ -117,7 +117,9 @@ public abstract class AUnitCreator : AMonoBase {
     protected void HandleDeployDateReached() { // 3.25.16 wait approach changed from dateChanged event handler to WaitForDate utility method
         GameDate currentDate = GameTime.Instance.CurrentDate;
         GameDate dateToDeploy = Configuration.DeployDate;
-        D.Assert(currentDate >= dateToDeploy, "{0}: {1} should not be < {2}.", Name, currentDate, dateToDeploy);
+        if (currentDate < dateToDeploy) {
+            D.Error("{0}: {1} should not be < {2}.", Name, currentDate, dateToDeploy);
+        }
         D.Log(currentDate > dateToDeploy, "{0} exceeded DeployDate {1}. Current date = {2}.", Name, dateToDeploy, currentDate);
         //D.Log("{0} is about to build, deploy and begin ops of {1}'s {2} on {3}.", Name, Owner, Configuration.UnitName, currentDate);
 

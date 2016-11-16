@@ -73,7 +73,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
 
     protected override bool IsSelectedItemMenuOperator(ISelectable selected) {
         if (_fleetMenuOperator.IsSelected) {
-            D.Assert(_fleetMenuOperator == selected as FleetCmdItem);
+            D.AssertEqual(_fleetMenuOperator, selected as FleetCmdItem);
             return true;
         }
         return false;
@@ -140,8 +140,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
                 targets = systemsNeedingExploration;
                 return true;
             case FleetDirective.Attack:
-                // TODO: More selective of fleets and bases of war opponents. Other attack targets should be explicitly chosen by user
-                targets = _userKnowledge.Commands.Cast<IUnitAttackable>().Where(cmd => cmd.IsAttackingAllowedBy(_user)).Cast<INavigable>();
+                targets = _userKnowledge.Commands.Cast<IUnitAttackable>().Where(cmd => cmd.IsWarAttackByAllowed(_user)).Cast<INavigable>();
                 return true;
             case FleetDirective.Repair:
             case FleetDirective.Refit:
@@ -217,7 +216,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
 
     private void IssueRemoteUserShipOrder(int itemID) {
         var directive = (ShipDirective)_directiveLookup[itemID];
-        D.Assert(directive == ShipDirective.Join);  // HACK
+        D.AssertEqual(ShipDirective.Join, directive);  // HACK
         IShipNavigable target = _fleetMenuOperator;
         var remoteShip = _remoteUserOwnedSelectedItem as ShipItem;
         bool toNotifyCmd = false;

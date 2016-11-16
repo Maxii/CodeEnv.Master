@@ -42,6 +42,20 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
     private Species[] _aiPlayersSpecies;
     private SpeciesGuiSelection _userPlayerSpeciesSelection;
     private SpeciesGuiSelection[] _aiPlayersSpeciesSelections;
+
+    private EmpireStartLevel _userPlayerStartLevel;
+    private EmpireStartLevel[] _aiPlayersStartLevels;
+    private EmpireStartLevelGuiSelection _userPlayerStartLevelSelection;
+    private EmpireStartLevelGuiSelection[] _aiPlayersStartLevelSelections;
+
+    private SystemDesirability _userPlayerHomeSystemDesirability;
+    private SystemDesirability[] _aiPlayersHomeSystemDesirability;
+    private SystemDesirabilityGuiSelection _userPlayerHomeSystemDesirabilitySelection;
+    private SystemDesirabilityGuiSelection[] _aiPlayersHomeSystemDesirabilitySelections;
+
+    private PlayerSeparation[] _aiPlayersUserSeparations;
+    private PlayerSeparationGuiSelection[] _aiPlayersUserSeparationSelections;
+
     private GameColor _userPlayerColor;
     private GameColor[] _aiPlayersColors;
     private IQ[] _aiPlayersIQs;
@@ -56,11 +70,18 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
         base.InitializeValuesAndReferences();
         _speciesFactory = SpeciesFactory.Instance;
         _leaderFactory = LeaderFactory.Instance;
-        _aiPlayersSpecies = new Species[TempGameValues.MaxAIPlayers];
-        _aiPlayersSpeciesSelections = new SpeciesGuiSelection[TempGameValues.MaxAIPlayers];
-        _aiPlayersColors = new GameColor[TempGameValues.MaxAIPlayers];
-        _aiPlayersIQs = new IQ[TempGameValues.MaxAIPlayers];
-        _aiPlayersTeams = new TeamID[TempGameValues.MaxAIPlayers];
+        int maxAiPlayerQty = TempGameValues.MaxAIPlayers;
+        _aiPlayersSpecies = new Species[maxAiPlayerQty];
+        _aiPlayersSpeciesSelections = new SpeciesGuiSelection[maxAiPlayerQty];
+        _aiPlayersColors = new GameColor[maxAiPlayerQty];
+        _aiPlayersIQs = new IQ[maxAiPlayerQty];
+        _aiPlayersTeams = new TeamID[maxAiPlayerQty];
+        _aiPlayersStartLevels = new EmpireStartLevel[maxAiPlayerQty];
+        _aiPlayersStartLevelSelections = new EmpireStartLevelGuiSelection[maxAiPlayerQty];
+        _aiPlayersHomeSystemDesirability = new SystemDesirability[maxAiPlayerQty];
+        _aiPlayersHomeSystemDesirabilitySelections = new SystemDesirabilityGuiSelection[maxAiPlayerQty];
+        _aiPlayersUserSeparations = new PlayerSeparation[maxAiPlayerQty];
+        _aiPlayersUserSeparationSelections = new PlayerSeparationGuiSelection[maxAiPlayerQty];
     }
 
     protected override void RecordPopupListState(GuiElementID popupListID, string selection, string convertedSelection) {
@@ -184,6 +205,101 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
                 _aiPlayersTeams[6] = Enums<TeamID>.Parse(selection);
                 break;
 
+            case GuiElementID.UserPlayerStartLevelPopupList:
+                _userPlayerStartLevelSelection = Enums<EmpireStartLevelGuiSelection>.Parse(selection);
+                _userPlayerStartLevel = Enums<EmpireStartLevel>.Parse(convertedSelection);
+                break;
+            case GuiElementID.AIPlayer1StartLevelPopupList:
+                _aiPlayersStartLevelSelections[0] = Enums<EmpireStartLevelGuiSelection>.Parse(selection);
+                _aiPlayersStartLevels[0] = Enums<EmpireStartLevel>.Parse(convertedSelection);
+                break;
+            case GuiElementID.AIPlayer2StartLevelPopupList:
+                _aiPlayersStartLevelSelections[1] = Enums<EmpireStartLevelGuiSelection>.Parse(selection);
+                _aiPlayersStartLevels[1] = Enums<EmpireStartLevel>.Parse(convertedSelection);
+                break;
+            case GuiElementID.AIPlayer3StartLevelPopupList:
+                _aiPlayersStartLevelSelections[2] = Enums<EmpireStartLevelGuiSelection>.Parse(selection);
+                _aiPlayersStartLevels[2] = Enums<EmpireStartLevel>.Parse(convertedSelection);
+                break;
+            case GuiElementID.AIPlayer4StartLevelPopupList:
+                _aiPlayersStartLevelSelections[3] = Enums<EmpireStartLevelGuiSelection>.Parse(selection);
+                _aiPlayersStartLevels[3] = Enums<EmpireStartLevel>.Parse(convertedSelection);
+                break;
+            case GuiElementID.AIPlayer5StartLevelPopupList:
+                _aiPlayersStartLevelSelections[4] = Enums<EmpireStartLevelGuiSelection>.Parse(selection);
+                _aiPlayersStartLevels[4] = Enums<EmpireStartLevel>.Parse(convertedSelection);
+                break;
+            case GuiElementID.AIPlayer6StartLevelPopupList:
+                _aiPlayersStartLevelSelections[5] = Enums<EmpireStartLevelGuiSelection>.Parse(selection);
+                _aiPlayersStartLevels[5] = Enums<EmpireStartLevel>.Parse(convertedSelection);
+                break;
+            case GuiElementID.AIPlayer7StartLevelPopupList:
+                _aiPlayersStartLevelSelections[6] = Enums<EmpireStartLevelGuiSelection>.Parse(selection);
+                _aiPlayersStartLevels[6] = Enums<EmpireStartLevel>.Parse(convertedSelection);
+                break;
+
+            case GuiElementID.UserPlayerHomeDesirabilityPopupList:
+                _userPlayerHomeSystemDesirabilitySelection = Enums<SystemDesirabilityGuiSelection>.Parse(selection);
+                _userPlayerHomeSystemDesirability = Enums<SystemDesirability>.Parse(convertedSelection);
+                break;
+            case GuiElementID.AIPlayer1HomeDesirabilityPopupList:
+                _aiPlayersHomeSystemDesirabilitySelections[0] = Enums<SystemDesirabilityGuiSelection>.Parse(selection);
+                _aiPlayersHomeSystemDesirability[0] = Enums<SystemDesirability>.Parse(convertedSelection);
+                break;
+            case GuiElementID.AIPlayer2HomeDesirabilityPopupList:
+                _aiPlayersHomeSystemDesirabilitySelections[1] = Enums<SystemDesirabilityGuiSelection>.Parse(selection);
+                _aiPlayersHomeSystemDesirability[1] = Enums<SystemDesirability>.Parse(convertedSelection);
+                break;
+            case GuiElementID.AIPlayer3HomeDesirabilityPopupList:
+                _aiPlayersHomeSystemDesirabilitySelections[2] = Enums<SystemDesirabilityGuiSelection>.Parse(selection);
+                _aiPlayersHomeSystemDesirability[2] = Enums<SystemDesirability>.Parse(convertedSelection);
+                break;
+            case GuiElementID.AIPlayer4HomeDesirabilityPopupList:
+                _aiPlayersHomeSystemDesirabilitySelections[3] = Enums<SystemDesirabilityGuiSelection>.Parse(selection);
+                _aiPlayersHomeSystemDesirability[3] = Enums<SystemDesirability>.Parse(convertedSelection);
+                break;
+            case GuiElementID.AIPlayer5HomeDesirabilityPopupList:
+                _aiPlayersHomeSystemDesirabilitySelections[4] = Enums<SystemDesirabilityGuiSelection>.Parse(selection);
+                _aiPlayersHomeSystemDesirability[4] = Enums<SystemDesirability>.Parse(convertedSelection);
+                break;
+            case GuiElementID.AIPlayer6HomeDesirabilityPopupList:
+                _aiPlayersHomeSystemDesirabilitySelections[5] = Enums<SystemDesirabilityGuiSelection>.Parse(selection);
+                _aiPlayersHomeSystemDesirability[5] = Enums<SystemDesirability>.Parse(convertedSelection);
+                break;
+            case GuiElementID.AIPlayer7HomeDesirabilityPopupList:
+                _aiPlayersHomeSystemDesirabilitySelections[6] = Enums<SystemDesirabilityGuiSelection>.Parse(selection);
+                _aiPlayersHomeSystemDesirability[6] = Enums<SystemDesirability>.Parse(convertedSelection);
+                break;
+
+            case GuiElementID.AIPlayer1UserSeparationPopupList:
+                _aiPlayersUserSeparationSelections[0] = Enums<PlayerSeparationGuiSelection>.Parse(selection);
+                _aiPlayersUserSeparations[0] = Enums<PlayerSeparation>.Parse(convertedSelection);
+                break;
+            case GuiElementID.AIPlayer2UserSeparationPopupList:
+                _aiPlayersUserSeparationSelections[1] = Enums<PlayerSeparationGuiSelection>.Parse(selection);
+                _aiPlayersUserSeparations[1] = Enums<PlayerSeparation>.Parse(convertedSelection);
+                break;
+            case GuiElementID.AIPlayer3UserSeparationPopupList:
+                _aiPlayersUserSeparationSelections[2] = Enums<PlayerSeparationGuiSelection>.Parse(selection);
+                _aiPlayersUserSeparations[2] = Enums<PlayerSeparation>.Parse(convertedSelection);
+                break;
+            case GuiElementID.AIPlayer4UserSeparationPopupList:
+                _aiPlayersUserSeparationSelections[3] = Enums<PlayerSeparationGuiSelection>.Parse(selection);
+                _aiPlayersUserSeparations[3] = Enums<PlayerSeparation>.Parse(convertedSelection);
+                break;
+            case GuiElementID.AIPlayer5UserSeparationPopupList:
+                _aiPlayersUserSeparationSelections[4] = Enums<PlayerSeparationGuiSelection>.Parse(selection);
+                _aiPlayersUserSeparations[4] = Enums<PlayerSeparation>.Parse(convertedSelection);
+                break;
+            case GuiElementID.AIPlayer6UserSeparationPopupList:
+                _aiPlayersUserSeparationSelections[5] = Enums<PlayerSeparationGuiSelection>.Parse(selection);
+                _aiPlayersUserSeparations[5] = Enums<PlayerSeparation>.Parse(convertedSelection);
+                break;
+            case GuiElementID.AIPlayer7UserSeparationPopupList:
+                _aiPlayersUserSeparationSelections[6] = Enums<PlayerSeparationGuiSelection>.Parse(selection);
+                _aiPlayersUserSeparations[6] = Enums<PlayerSeparation>.Parse(convertedSelection);
+                break;
+
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(popupListID));
         }
@@ -201,7 +317,7 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
 
     private void RecordPreferences() {
         var settings = new NewGamePreferenceSettings() {
-            UniverseSizeGuiSelection = _universeSizeSelection,
+            UniverseSizeSelection = _universeSizeSelection,
 
             UniverseSize = _universeSize,   // 10.4.16 needed to know which pref property gets assigned PlayerCount
             PlayerCount = _playerCount,
@@ -213,7 +329,14 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
             AIPlayerColors = _aiPlayersColors,
             AIPlayerIQs = _aiPlayersIQs,
             UserPlayerTeam = _userPlayerTeam,
-            AIPlayersTeams = _aiPlayersTeams
+            AIPlayersTeams = _aiPlayersTeams,
+
+            UserPlayerStartLevelSelection = _userPlayerStartLevelSelection,
+            AIPlayersStartLevelSelections = _aiPlayersStartLevelSelections,
+            UserPlayerHomeDesirabilitySelection = _userPlayerHomeSystemDesirabilitySelection,
+            AIPlayersHomeDesirabilitySelections = _aiPlayersHomeSystemDesirabilitySelections,
+
+            AIPlayersUserSeparationSelections = _aiPlayersUserSeparationSelections
         };
         _playerPrefsMgr.RecordNewGameSettings(settings);
     }
@@ -221,51 +344,46 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
     private void InitiateNewGame() {
         int aiPlayerCount = _playerCount - Constants.One;
         var aiPlayers = new Player[aiPlayerCount];
-        var aiPlayersStartLevel = new EmpireStartLevel[aiPlayerCount];
-        var aiPlayersHomeSystemDesirability = new SystemDesirability[aiPlayerCount];
-        var aiPlayersSeparationFromUser = new PlayerSeparation[aiPlayerCount];
 
         for (int i = 0; i < aiPlayerCount; i++) {
             Species aiSpecies = _aiPlayersSpecies[i];
             SpeciesStat aiSpeciesStat = _speciesFactory.MakeInstance(aiSpecies);
             LeaderStat aiLeaderStat = _leaderFactory.MakeInstance(aiSpecies);
             aiPlayers[i] = new Player(aiSpeciesStat, aiLeaderStat, _aiPlayersIQs[i], _aiPlayersTeams[i], _aiPlayersColors[i]);
-            aiPlayersStartLevel[i] = EmpireStartLevel.Normal;
-            aiPlayersHomeSystemDesirability[i] = SystemDesirability.Normal;
-            aiPlayersSeparationFromUser[i] = PlayerSeparation.Normal;
         }
 
         SpeciesStat userSpeciesStat = _speciesFactory.MakeInstance(_userPlayerSpecies);
         LeaderStat userLeaderStat = _leaderFactory.MakeInstance(_userPlayerSpecies);
         Player userPlayer = new Player(userSpeciesStat, userLeaderStat, IQ.None, _userPlayerTeam, _userPlayerColor, isUser: true);
-        EmpireStartLevel userPlayerStartLevel = EmpireStartLevel.Normal;
-        SystemDesirability userPlayerHomeSystemDesirability = SystemDesirability.Normal;
 
         GameSettings settings = new GameSettings() {
             __IsStartup = false,
             __UseDebugCreatorsOnly = false,
             __DeployAdditionalAICreators = false,
+            __AdditionalFleetCreatorQty = 0,
+            __AdditionalStarbaseCreatorQty = 0,
+            __AdditionalSettlementCreatorQty = 0,
             __ZoomOnUser = true,
             UniverseSize = _universeSize,
             SystemDensity = _systemDensity,
             PlayerCount = _playerCount,
             UserPlayer = userPlayer,
             AIPlayers = aiPlayers,
-            UserStartLevel = userPlayerStartLevel,
-            AIPlayersStartLevel = aiPlayersStartLevel,
-            UserHomeSystemDesirability = userPlayerHomeSystemDesirability,
-            AIPlayersHomeSystemDesirability = aiPlayersHomeSystemDesirability,
-            AIPlayersSeparationFromUser = aiPlayersSeparationFromUser
+            UserStartLevel = _userPlayerStartLevel,
+            AIPlayersStartLevels = _aiPlayersStartLevels,
+            UserHomeSystemDesirability = _userPlayerHomeSystemDesirability,
+            AIPlayersHomeSystemDesirability = _aiPlayersHomeSystemDesirability,
+            AIPlayersUserSeparations = _aiPlayersUserSeparations
         };
         _gameMgr.InitiateNewGame(settings);
     }
 
     protected override void ValidateStateOnCapture() {
         base.ValidateStateOnCapture();
-        D.Assert(_universeSize != UniverseSize.None, "UniverseSize has not been set!");
-        D.Assert(_systemDensity != SystemDensity.None, "SystemDensity has not been set!");
-        D.Assert(_playerCount > Constants.One, "Player count {0} is illegal!".Inject(_playerCount));
-        D.Assert(_userPlayerSpecies != Species.None, "User Player Species has not been set!");
+        D.AssertNotDefault((int)_universeSize, "UniverseSize has not been set!");
+        D.AssertNotDefault((int)_systemDensity, "SystemDensity has not been set!");
+        D.Assert(_playerCount > Constants.One, _playerCount.ToString());
+        D.AssertNotDefault((int)_userPlayerSpecies, "User Player Species has not been set!");
         //TODO
     }
 

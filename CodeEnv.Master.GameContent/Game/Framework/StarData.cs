@@ -39,10 +39,7 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<string>(ref _parentName, value, "ParentName"); }
         }
 
-        public override string FullName {
-            get { return Name; }    // OPTIMIZE Star Name already includes its System's name
-            //get { return ParentName.IsNullOrEmpty() ? Name : ParentName + Constants.Underscore + Name; }
-        }
+        // Star FullName already includes its System's name
 
         private int _capacity;
         public int Capacity {

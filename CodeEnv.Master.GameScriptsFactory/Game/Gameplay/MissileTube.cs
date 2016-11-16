@@ -39,7 +39,7 @@ public class MissileTube : AWeaponMount {
 
     protected override void Validate() {
         base.Validate();
-        D.Assert(_tubeMouth != null);
+        D.AssertNotNull(_tubeMouth);
     }
 
     /// <summary>
@@ -51,7 +51,7 @@ public class MissileTube : AWeaponMount {
     /// <returns></returns>
     public override bool TryGetFiringSolution(IElementAttackable enemyTarget, out WeaponFiringSolution firingSolution) {
         D.Assert(enemyTarget.IsOperational);
-        D.Assert(enemyTarget.IsAttackingAllowedBy(Weapon.Owner));
+        D.Assert(enemyTarget.IsAttackByAllowed(Weapon.Owner));
 
         if (!ConfirmInRangeForLaunch(enemyTarget)) {
             //D.Log("{0}.CheckFiringSolution({1}) has determined target is out of range.", Name, enemyTarget.FullName);

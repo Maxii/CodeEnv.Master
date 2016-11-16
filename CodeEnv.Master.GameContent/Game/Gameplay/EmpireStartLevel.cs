@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: EmpireStartLevel.cs
-// The advancement level of the empire when the game is started.
+// The advancement level of a player's empire when the game is started.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,7 +17,7 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// The advancement level of the empire when the game is started.
+    /// The advancement level of a player's empire when the game is started.
     /// </summary>
     public enum EmpireStartLevel {
 

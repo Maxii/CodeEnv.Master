@@ -32,21 +32,22 @@ namespace CodeEnv.Master.GameContent {
             ItemInfoID.Owner,
             ItemInfoID.Category,
             ItemInfoID.Health,
-            ItemInfoID.Defense,
-            ItemInfoID.Offense,
-            ItemInfoID.WeaponsRange,
-            //ItemInfoID.SensorRange,  // makes no sense
-            ItemInfoID.Science,
-            ItemInfoID.Culture,
-            ItemInfoID.NetIncome,
-            ItemInfoID.Mass,
+            //ItemInfoID.Defense,
+            //ItemInfoID.Offense,
+            //ItemInfoID.WeaponsRange,
+            ItemInfoID.AlertStatus,
+            ////ItemInfoID.SensorRange,  // makes no sense
+            //ItemInfoID.Science,
+            //ItemInfoID.Culture,
+            //ItemInfoID.NetIncome,
+            //ItemInfoID.Mass,
 
             ItemInfoID.Target,
             ItemInfoID.TargetDistance,
             ItemInfoID.CombatStance,
             ItemInfoID.CurrentSpeedSetting,
             ItemInfoID.FullSpeed,
-            ItemInfoID.MaxTurnRate,
+            //ItemInfoID.MaxTurnRate,
 
             ItemInfoID.Separator,
 

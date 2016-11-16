@@ -56,7 +56,7 @@ public class Shield : AEquipmentMonitor<ShieldGenerator>, IShield {
     /// </summary>
     /// <param name="deliveryVehicleStrength">The strength of the delivery vehicle impacting this shield.</param>
     public void AbsorbImpact(WDVStrength deliveryVehicleStrength) {
-        D.Assert(deliveryVehicleStrength.Category == WDVCategory.Beam);    // for now limiting to only defending against beams
+        D.AssertEqual(WDVCategory.Beam, deliveryVehicleStrength.Category);    // for now limiting to only defending against beams
         var operationalGeneratorsWithCharge = _equipmentList.Where(gen => gen.IsOperational && gen.HasCharge);
         DistributeShieldImpactTo(operationalGeneratorsWithCharge, deliveryVehicleStrength.Value);
         // if all the generators go down, the shield will go down allowing the beam to potentially find the parent element during its next raycast

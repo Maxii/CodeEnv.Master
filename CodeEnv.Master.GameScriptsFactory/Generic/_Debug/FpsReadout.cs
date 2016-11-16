@@ -60,8 +60,7 @@ public class FpsReadout : AGuiLabelReadout {
         GameManager.Instance.isReadyForPlayOneShot += IsReadyForPlayEventHandler;
     }
 
-    protected override void Update() {
-        base.Update();
+    void Update() {
         // this is a tool, so simply use Unity's time
         float timeSinceLastUpdate = Time.deltaTime;
         _timeRemainingInInterval -= timeSinceLastUpdate;

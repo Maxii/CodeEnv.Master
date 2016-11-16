@@ -127,14 +127,14 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public void Initialize(IUniverseCenter uCenter) {
-            D.Assert(_items.Count == Constants.Zero);
+            D.AssertEqual(Constants.Zero, _items.Count);
             __InitializeValidateKnowledge();
 
             AddUniverseCenter(uCenter);
         }
 
         private void AddUniverseCenter(IUniverseCenter universeCenter) {
-            D.Assert(UniverseCenter == null);
+            D.AssertNull(UniverseCenter);
             if (universeCenter != null) {
                 _items.Add(universeCenter);
                 UniverseCenter = universeCenter;
@@ -188,7 +188,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public bool TryGetSystem(IntVector3 sectorID, out ISystem system) {
-            D.Assert(sectorID != default(IntVector3), "{0}: SectorID of {1} is illegal.", Name, sectorID);
+            D.AssertNotDefault(sectorID);
             return _systemLookupBySectorID.TryGetValue(sectorID, out system);
         }
 
@@ -199,7 +199,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="starbasesInSector">The resulting starbases in sector.</param>
         /// <returns></returns>
         public bool TryGetStarbases(IntVector3 sectorID, out IEnumerable<IStarbaseCmd> starbasesInSector) {
-            D.Assert(sectorID != default(IntVector3), "{0}: SectorID of {1} is illegal.", Name, sectorID);
+            D.AssertNotDefault(sectorID);
             IList<IStarbaseCmd> sBases;
             if (_starbasesLookupBySectorID.TryGetValue(sectorID, out sBases)) {
                 starbasesInSector = sBases;
@@ -216,7 +216,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="fleetsInSector">The resulting fleets present in the sector.</param>
         /// <returns></returns>
         public bool TryGetFleets(IntVector3 sectorID, out IEnumerable<IFleetCmd> fleetsInSector) {
-            D.Assert(sectorID != default(IntVector3), "{0}: SectorID of {1} is illegal.", Name, sectorID);
+            D.AssertNotDefault(sectorID);
             fleetsInSector = Fleets.Where(fleet => fleet.SectorID == sectorID);
             if (fleetsInSector.Any()) {
                 return true;
@@ -246,21 +246,21 @@ namespace CodeEnv.Master.GameContent {
             // A Star should only be added once when all players get Basic IntelCoverage of all stars
             bool isAdded = _stars.Add(star);
             isAdded = isAdded & _items.Add(star);
-            D.Assert(isAdded, "{0} tried to add Star {1} it already has.", Name, star.FullName);
+            D.Assert(isAdded, star.FullName);
             AddSystem(star.ParentSystem);
         }
 
         private void AddPlanetoid(IPlanetoid planetoid) {
             bool isAdded = _planetoids.Add(planetoid);
             isAdded = isAdded & _items.Add(planetoid);
-            D.Assert(isAdded, "{0} tried to add Planetoid {1} it already has.", Name, planetoid.FullName);
+            D.Assert(isAdded, planetoid.FullName);
             planetoid.deathOneShot += ItemDeathEventHandler;
         }
 
         private void AddElement(IUnitElement element) {
             var isAdded = _elements.Add(element);
             isAdded = isAdded & _items.Add(element);
-            D.Assert(isAdded, "{0} tried to add Element {1} it already has.", Name, element.FullName);
+            D.Assert(isAdded, element.FullName);
             element.deathOneShot += ItemDeathEventHandler;
         }
 
@@ -279,7 +279,7 @@ namespace CodeEnv.Master.GameContent {
                 }
                 else {
                     IPlanetoid deadPlanetoid = deadItem as IPlanetoid;
-                    D.Assert(deadPlanetoid != null);
+                    D.AssertNotNull(deadPlanetoid); // UNCLEAR could this interface indicate null for dead(destroyed) Planetoid?
                     RemoveDeadPlanetoid(deadPlanetoid);
                 }
             }
@@ -332,7 +332,7 @@ namespace CodeEnv.Master.GameContent {
         private void AddSystem(ISystem system) {
             _systemLookupBySectorID.Add(system.SectorID, system);
             bool isAdded = _items.Add(system);
-            D.Assert(isAdded, "{0} tried to add System {1} it already has.", Name, system.FullName);
+            D.Assert(isAdded, system.FullName);
         }
 
         /// <summary>
@@ -344,7 +344,7 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(!deadElement.IsOperational);
             var isRemoved = _elements.Remove(deadElement);
             isRemoved = isRemoved & _items.Remove(deadElement);
-            D.Assert(isRemoved, "{0} could not remove Element {1}.", Name, deadElement.FullName);
+            D.Assert(isRemoved, deadElement.FullName);
             deadElement.deathOneShot -= ItemDeathEventHandler;  // OPTIMIZE not really necessary as only way element is removed is via death
         }
 
@@ -359,7 +359,7 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(!deadPlanetoid.IsOperational);
             var isRemoved = _planetoids.Remove(deadPlanetoid);
             isRemoved = isRemoved & _items.Remove(deadPlanetoid);
-            D.Assert(isRemoved, "{0} could not remove Planetoid {1}.", Name, deadPlanetoid.FullName);
+            D.Assert(isRemoved, deadPlanetoid.FullName);
             deadPlanetoid.deathOneShot -= ItemDeathEventHandler;  // OPTIMIZE not really necessary as only way planetoid is removed is via death
         }
 
@@ -410,7 +410,9 @@ namespace CodeEnv.Master.GameContent {
         private void __ValidateKnowledgeNow() {
             D.Log("{0} is validating all Knowledge.", Name);
             foreach (var item in _items) {
-                D.Assert(item.IsOperational, "{0} has retained knowledge of dead {1}.", Name, item.FullName);
+                if (!item.IsOperational) {
+                    D.Error("{0} has retained knowledge of dead {1}.", Name, item.FullName);
+                }
             }
         }
 

@@ -47,7 +47,7 @@ public class GuiShowModeControlButton : AGuiButton {
 
     protected override void Awake() {
         base.Awake();
-        D.Assert(_showModeOnClick != ShowMode.None, gameObject, "{0} has illegal {1} setting.", GetType().Name, typeof(ShowMode).Name);
+        D.Assert(_showModeOnClick != ShowMode.None, gameObject, "Illegal ShowMode setting.");
     }
 
     #region Event and Property Change Handlers

@@ -36,7 +36,7 @@ public class DebugControlsEditor : Editor {
         {
             GUILayout.Space(10F);
 
-            if (NGUIEditorTools.DrawHeader("Item Debug Settings")) {
+            if (NGUIEditorTools.DrawHeader("Item DebugLog Settings")) {
                 NGUIEditorTools.BeginContents();
                 {
                     NGUIEditorTools.SetLabelWidth(180F);
@@ -56,6 +56,17 @@ public class DebugControlsEditor : Editor {
                 {
                     NGUIEditorTools.SetLabelWidth(100F);
                     NGUIEditorTools.DrawProperty("AutoExplore", serializedObject, "_fleetsAutoExplore");
+                    NGUIEditorTools.SetLabelWidth(200F);
+                    NGUIEditorTools.DrawProperty("Full Intel of Detected Items", serializedObject, "_allIntelCoverageIsComprehensive");
+                }
+                NGUIEditorTools.EndContents();
+            }
+
+            if (NGUIEditorTools.DrawHeader("SFX Settings")) {
+                NGUIEditorTools.BeginContents();
+                {
+                    NGUIEditorTools.SetLabelWidth(200F);
+                    NGUIEditorTools.DrawProperty("Always Hear Weapon Impacts", serializedObject, "_alwaysHearWeaponImpacts");
                 }
                 NGUIEditorTools.EndContents();
             }

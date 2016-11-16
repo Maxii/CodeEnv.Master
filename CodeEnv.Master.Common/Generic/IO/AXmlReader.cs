@@ -56,7 +56,9 @@ namespace CodeEnv.Master.Common {
             string xmlFilePath = XmlFilepathFormat.Inject(UnityConstants.DataLibraryDir, XmlFilename);  //string xmlFilePath = UnityConstants.DataLibraryDir + XmlFilename + ".xml";
             D.Log("The path to the Xml file is {0}.", xmlFilePath);
             XElement xElement = XElement.Load(xmlFilePath);
-            D.Assert(ValidateElement(xElement), "Invalid XDocument found at {0}.", xmlFilePath);
+            if (!ValidateElement(xElement)) {
+                D.Error("Invalid XDocument found at {0}.", xmlFilePath);
+            }
             return xElement;
         }
 

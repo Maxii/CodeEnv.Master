@@ -135,16 +135,16 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     }
 
     protected override void ValidateEffects() {
-        D.Assert(_muzzleEffect != null, "{0} has no muzzle effect.".Inject(Name));
-        D.Assert(!_muzzleEffect.activeSelf, "{0}.{1} should not start active.", GetType().Name, _muzzleEffect.name);
+        D.AssertNotNull(_muzzleEffect);
+        D.Assert(!_muzzleEffect.activeSelf, _muzzleEffect.name);
         if (_operatingEffect != null) {
             // ParticleSystem Operating Effect can be null. If so, it will be replaced by an Icon
             D.Assert(!_operatingEffect.playOnAwake);
             D.Assert(_operatingEffect.loop);
         }
-        D.Assert(_impactEffect != null, "{0} has no impact effect.", Name);
+        D.AssertNotNull(_impactEffect);
         D.Assert(!_impactEffect.playOnAwake);   // Awake only called once during GameObject life -> can't use with pooling
-        D.Assert(_impactEffect.gameObject.activeSelf, "{0}.{1} should start active.", GetType().Name, _impactEffect.name);
+        D.Assert(_impactEffect.gameObject.activeSelf, _impactEffect.name);
     }
 
     protected override void ShowMuzzleEffect() {
@@ -180,9 +180,6 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
                 TerminateNow();
             }
         });
-
-        GameObject impactSFXGo = GeneralFactory.Instance.MakeAutoDestruct3DAudioSFXInstance("ImpactSFX", position);
-        SFXManager.Instance.PlaySFX(impactSFXGo, SfxGroupID.ProjectileImpacts);  // auto destroyed on completion    // FIXME ??
     }
 
     protected override void HandleImpactEffectsBegun() {
@@ -193,6 +190,11 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         if (IsCourseUpdateJobRunning) {
             _courseUpdateJob.Kill();    // shutdown course correction checks
         }
+    }
+
+    protected override void HearImpactEffect(Vector3 position) {
+        GameObject impactSFXGo = GeneralFactory.Instance.MakeAutoDestruct3DAudioSFXInstance("ImpactSFX", position);
+        SFXManager.Instance.PlaySFX(impactSFXGo, SfxGroupID.ProjectileImpacts);  // auto destroyed on completion    // FIXME ??
     }
 
     protected override float CheckProgress() {
@@ -217,19 +219,18 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
 
     protected override void OnSpawned() {
         base.OnSpawned();
-        D.Assert(_cumDistanceTraveled == Constants.ZeroF);
-        D.Assert(_positionLastRangeCheck == Vector3.zero);
-        D.Assert(_courseUpdateJob == null);
-        D.Assert(_changeHeadingJob == null);
-        D.Assert(_waitForImpactEffectCompletionJob == null);
-        D.Assert(_waitForMuzzleEffectCompletionJob == null);
-        D.Assert(_courseUpdatePeriod == default(GameTimeDuration));
+        D.AssertDefault(_cumDistanceTraveled);
+        D.Assert(_positionLastRangeCheck == default(Vector3));  //D.AssertDefault(_positionLastRangeCheck);
+        D.AssertNull(_courseUpdateJob);
+        D.AssertNull(_changeHeadingJob);
+        D.AssertNull(_waitForImpactEffectCompletionJob);
+        D.AssertNull(_waitForMuzzleEffectCompletionJob);
+        D.AssertDefault(_courseUpdatePeriod);
         D.Assert(!_hasPushedOver);
         D.Assert(!enabled);
     }
 
-    protected override void FixedUpdate() {
-        base.FixedUpdate();
+    void FixedUpdate() {
         ApplyThrust();
     }
 
@@ -242,7 +243,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
     private void TargetDeathEventHandler(object sender, EventArgs e) {
         IElementAttackable deadTarget = sender as IElementAttackable;
-        D.Assert(deadTarget == Target);
+        D.AssertEqual(Target, deadTarget);
         if (IsOperational) {
             //D.Log("{0} is self terminating as its Target {1} is dead.", Name, Target.FullName);
             TerminateNow();
@@ -323,7 +324,9 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
             transform.rotation = Quaternion.LookRotation(newHeading); // UNCLEAR turn kinematic on and off while rotating?
             //D.Log("{0} actual heading after turn step: {1}.", Name, Heading);
             GameDate currentDate;
-            D.Warn((currentDate = _gameTime.CurrentDate) > errorDate, "{0}: CurrentDate {1} > ErrorDate {2} while changing heading.", Name, currentDate, errorDate);
+            if ((currentDate = _gameTime.CurrentDate) > errorDate) {
+                D.Warn("{0}: CurrentDate {1} > ErrorDate {2} while changing heading.", Name, currentDate, errorDate);
+            }
             yield return null;
         }
         //D.Log("{0} has completed heading change of {1:0.#} degrees.", Name, Vector3.Angle(startingHeading, CurrentHeading));

@@ -30,6 +30,13 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public bool __DeployAdditionalAICreators { get; set; }
 
+        public int __AdditionalFleetCreatorQty { get; set; }
+
+        public int __AdditionalStarbaseCreatorQty { get; set; }
+
+        public int __AdditionalSettlementCreatorQty { get; set; }
+
+
         /// <summary>
         /// Indicates whether the camera should zoom on a UserUnit
         /// when starting a game.
@@ -49,12 +56,12 @@ namespace CodeEnv.Master.GameContent {
         public Player[] AIPlayers { get; set; }
 
         public EmpireStartLevel UserStartLevel { get; set; }
-        public EmpireStartLevel[] AIPlayersStartLevel { get; set; }
+        public EmpireStartLevel[] AIPlayersStartLevels { get; set; }
 
         public SystemDesirability UserHomeSystemDesirability { get; set; }
         public SystemDesirability[] AIPlayersHomeSystemDesirability { get; set; }
 
-        public PlayerSeparation[] AIPlayersSeparationFromUser { get; set; }
+        public PlayerSeparation[] AIPlayersUserSeparations { get; set; }
 
         public GameSettings() { }
 

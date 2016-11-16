@@ -83,7 +83,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         base.InitializeOnData();
         InitializePrimaryCollider();
         InitializeObstacleZone();
-        D.Assert(category == Data.Category);
+        D.AssertEqual(category, Data.Category);
         ParentSystem = gameObject.GetSingleComponentInParents<SystemItem>();
 
         _detectionHandler = new DetectionHandler(this);
@@ -101,8 +101,15 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         ObstacleZoneCollider = gameObject.GetComponentsInImmediateChildren<SphereCollider>().Where(c => c.gameObject.layer == (int)Layers.AvoidableObstacleZone).Single();
         ObstacleZoneCollider.enabled = false;
         ObstacleZoneCollider.isTrigger = true;
+
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+        var rigidbody = ObstacleZoneCollider.gameObject.GetComponent<Rigidbody>();
+        Profiler.EndSample();
+
         // Static trigger collider (no rigidbody) is OK as the ship's CollisionDetectionZone Collider has a kinematic rigidbody
-        D.Warn(ObstacleZoneCollider.gameObject.GetComponent<Rigidbody>() != null, "{0}.ObstacleZone has a Rigidbody it doesn't need.", FullName);
+        if (rigidbody != null) {
+            D.Warn("{0}.ObstacleZone has a Rigidbody it doesn't need.", FullName);
+        }
         InitializeDebugShowObstacleZone();
     }
 
@@ -137,7 +144,6 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         base.CommenceOperations();
         _primaryCollider.enabled = true;
         ObstacleZoneCollider.enabled = true;
-        ActivateParentOrbitSimulator(true);
     }
 
     public PlanetoidReport GetReport(Player player) { return Publisher.GetReport(player); }
@@ -163,16 +169,12 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         // Note: Keep the primaryCollider enabled until destroyed or returned to the pool as this allows 
         // in-route ordnance to show its impact effect while the item is showing its death.
         // Also keep the ObstacleZoneCollider enabled to keep ships from flying through the exploding planetoid.
-        ActivateParentOrbitSimulator(false);
+        CelestialOrbitSimulator.IsActivated = false;
         ParentSystem.RemovePlanetoid(this);
     }
 
     protected virtual void ConnectHighOrbitRigidbodyToShipOrbitJoint(FixedJoint shipOrbitJoint) {
         shipOrbitJoint.connectedBody = CelestialOrbitSimulator.OrbitRigidbody;
-    }
-
-    private void ActivateParentOrbitSimulator(bool toActivate) {
-        CelestialOrbitSimulator.IsActivated = toActivate;
     }
 
     protected sealed override void HandleAIMgrLosingOwnership() {
@@ -267,7 +269,11 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
             debugValues.showObstacleZones -= ShowDebugObstacleZonesChangedEventHandler;
         }
         if (ObstacleZoneCollider != null) {
+
+            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
             DrawColliderGizmo drawCntl = ObstacleZoneCollider.gameObject.GetComponent<DrawColliderGizmo>();
+            Profiler.EndSample();
+
             if (drawCntl != null) {
                 Destroy(drawCntl);
             }

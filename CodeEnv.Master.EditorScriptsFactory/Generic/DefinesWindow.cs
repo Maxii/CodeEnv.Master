@@ -22,17 +22,18 @@ using CodeEnv.Master.Common;
 
 /// <summary>
 /// Editor window that holds the Conditional Compilation DEFINE Symbols I wish to include in this UnityProject.
+/// <remarks>11.16.16 Currently no way to remove a #define symbol that Unity builds into the editor, aka ENABLE_PROFILER</remarks>
 /// </summary>
 public class DefinesWindow : EditorWindow {
 
-    private static string Define_DebugLog = "DEBUG_LOG";
-    private static string Define_DebugWarn = "DEBUG_WARN";
-    private static string Define_DebugError = "DEBUG_ERROR";
+    private const string Define_DebugLog = "DEBUG_LOG";
+    private const string Define_DebugWarn = "DEBUG_WARN";
+    private const string Define_DebugError = "DEBUG_ERROR";
 
     /// <summary>
     /// The DEFINE that enables Vectrosity functionality in GridFramework.
     /// </summary>
-    private static string Define_GridFramework = "GRID_FRAMEWORK_VECTROSITY";
+    private const string Define_GridFramework = "GRID_FRAMEWORK_VECTROSITY";
 
     [MenuItem("My Tools/DEFINEs to Include")]
     public static void ShowDefinesWindow() {
@@ -42,7 +43,7 @@ public class DefinesWindow : EditorWindow {
 
     public bool _isDebugLogEnabled;
 
-    [SerializeField]
+    [SerializeField]    // UNCLEAR why?
     private bool _previousDebugLogEnabledValue = true;  // most of the time I have it enabled
     private bool _isGuiEnabled = true;
 
@@ -116,9 +117,11 @@ public class DefinesWindow : EditorWindow {
     private class DefineStringComparer : IComparer<string> {
 
         private readonly IComparer<string> _baseComparer;
+
         public DefineStringComparer(IComparer<string> baseComparer) {
             _baseComparer = baseComparer;
         }
+
         public int Compare(string x, string y) {
             if (_baseComparer.Compare(x, y) == 0) {
                 return 0;

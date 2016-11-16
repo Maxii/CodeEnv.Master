@@ -52,8 +52,7 @@ public class ScaleRelativeToCamera : AMonoBase {
         }
     }
 
-    protected override void Update() {
-        base.Update();
+    void Update() {
         RefreshScale();
     }
 

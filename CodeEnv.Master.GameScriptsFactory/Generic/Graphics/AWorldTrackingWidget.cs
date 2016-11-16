@@ -55,10 +55,9 @@ public abstract class AWorldTrackingWidget : ATrackingWidget {
     }
 
     protected override void SetPosition() {
-        //D.Log("Aligning position with target {0}. Offset is {1}.", Target.Transform.name, _offset);
+        //D.Log("{0} aligning position with target {1}. Offset is {2}.", Name, Target.Transform.name, _offset);
         transform.localPosition = _offset;
     }
 
-    // No need to implement RefreshPositionOnUpdate() as this object is parented to a World gameObject that it automatically tracks
 }
 

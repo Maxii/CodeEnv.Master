@@ -87,7 +87,7 @@ public class GamePlayOptionMenuAcceptButton : AGuiMenuAcceptButton {
 
     protected override void ValidateStateOnCapture() {
         base.ValidateStateOnCapture();
-        D.Assert(_gameSpeedOnLoad != GameSpeed.None);
+        D.AssertNotDefault((int)_gameSpeedOnLoad);
     }
 
     protected override void Cleanup() { }

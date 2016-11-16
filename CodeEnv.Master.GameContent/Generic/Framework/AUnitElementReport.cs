@@ -30,7 +30,9 @@ namespace CodeEnv.Master.GameContent {
 
         public RangeDistance? WeaponsRange { get; protected set; }
 
-        //public RangeDistance? SensorRange { get; protected set; } // makes no sense
+        public AlertStatus AlertStatus { get; protected set; }
+
+        ////public RangeDistance? SensorRange { get; protected set; } // makes no sense
 
         public float? Mass { get; protected set; }
 

@@ -129,8 +129,7 @@ public class StrengthGuiElement : AGuiElement, IComparable<StrengthGuiElement> {
 
     protected override void Validate() {
         base.Validate();
-        D.Assert(ElementID == GuiElementID.OffensiveStrength || ElementID == GuiElementID.DefensiveStrength,
-            "{0} has illegal ElementID: {1}.", GetType().Name, ElementID.GetValueName());
+        D.Assert(ElementID == GuiElementID.OffensiveStrength || ElementID == GuiElementID.DefensiveStrength, ElementID.GetValueName());
     }
 
     protected override void Cleanup() { }
@@ -142,7 +141,7 @@ public class StrengthGuiElement : AGuiElement, IComparable<StrengthGuiElement> {
     #region IComparable<StrengthGuiElement> Members
 
     public int CompareTo(StrengthGuiElement other) {
-        D.Assert(_elementID == other._elementID);
+        D.AssertEqual(_elementID, other._elementID);
 
         int result;
         if (!Strength.HasValue) {

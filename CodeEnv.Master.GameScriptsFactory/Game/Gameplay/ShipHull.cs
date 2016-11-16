@@ -42,7 +42,7 @@ public class ShipHull : AHull, IShipHull {
     protected override void Validate() {
         base.Validate();
         //D.Assert(!_engineNozzles.IsNullOrEmpty());
-        D.Assert(_hullCategory != ShipHullCategory.None);
+        D.AssertNotDefault((int)_hullCategory);
     }
 
     protected override void Cleanup() { }

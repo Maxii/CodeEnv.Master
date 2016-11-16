@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AGuiLabelReadout.cs
-// Abstract base class for Gui Labels used as readouts. Supports Tooltips.
+// Abstract base class for Gui Labels used as readouts. Supports Tooltip.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,7 +20,7 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Abstract base class for Gui Labels used as readouts. Supports Tooltips.
+/// Abstract base class for Gui Labels used as readouts. Supports Tooltip.
 /// </summary>
 public abstract class AGuiLabelReadout : ATextTooltip {
 

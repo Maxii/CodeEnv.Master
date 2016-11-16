@@ -51,15 +51,15 @@ namespace CodeEnv.Master.GameContent {
         // Copy Constructor makes no sense when a RangeMonitor must be attached
 
         /***************************************************************************************************************************************
-                    * ParentDeath Note: No need to track it as the parent element will turn off the operational state of all equipment when it initiates dying.
-                    ***************************************************************************************************************************************/
+        * ParentDeath Note: No need to track it as the parent element will turn off the operational state of all equipment when it initiates dying.
+        ***************************************************************************************************************************************/
         /*****************************************************************************************************************************
-                  * This sensor does not need to track Owner changes. When the owner of the item with this sensor changes, the sensor's 
-                  * RangeMonitor drops and then reacquires all detectedItems, notifying them as it does so. As a result, all reacquired items
-                  * are categorized correctly. When the owner of an item detected by this sensor changes, the Monitor simply recategorizes 
-                  * the detectedItem into the right list - enemy or non-enemy. The detectedItem itself is responsible for making any internal 
-                  * changes as a result of its ownership change.
-                  * *****************************************************************************************************************************/
+        * This sensor does not need to track Owner changes. When the owner of the item with this sensor changes, the sensor's 
+        * RangeMonitor drops and then reacquires all detectedItems, notifying them as it does so. As a result, all reacquired items
+        * are categorized correctly. When the owner of an item detected by this sensor changes, the Monitor simply re-categorizes 
+        * the detectedItem into the right list - enemy or non-enemy. The detectedItem itself is responsible for making any internal 
+        * changes as a result of its ownership change.
+        * *****************************************************************************************************************************/
 
         public override string ToString() { return Stat.ToString(); }
 

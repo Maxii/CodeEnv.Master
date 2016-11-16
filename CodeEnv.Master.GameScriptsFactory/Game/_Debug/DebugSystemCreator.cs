@@ -82,17 +82,16 @@ public class DebugSystemCreator : SystemCreator {
         base.Awake();
     }
 
-    protected override void Update() {
+    void Update() {
         if (Application.isPlaying) {
             enabled = false;    // Uses ExecuteInEditMode
         }
-        base.Update();
 
-        int activePlanetCount = GetComponentsInChildren<PlanetItem>().Count();
-        bool hasActivePlanets = activePlanetCount > Constants.Zero;
-        D.Assert(hasActivePlanets == (transform.childCount > Constants.Zero), "{0} planets not properly configured.", Name);
-        if (hasActivePlanets) {
+        bool systemHasStar = GetComponentInChildren<StarItem>() != null;
+        D.AssertEqual(transform.childCount > Constants.Zero, systemHasStar, Name);
+        if (systemHasStar) {
             _isCompositionPreset = true;
+            int activePlanetCount = GetComponentsInChildren<PlanetItem>().Count();
             __AdjustPlanetQtyFieldTo(activePlanetCount);
         }
     }
@@ -118,7 +117,9 @@ public class DebugSystemCreator : SystemCreator {
             FocusableItemCameraStat cameraStat = MakeSystemCameraStat();
 
             _systemFactory.PopulateSystemInstance(SystemName, cameraStat, ref _system);
-            D.Assert(_system.gameObject.isStatic, "{0} should be static after being positioned.", _system.FullName);
+            if (!_system.gameObject.isStatic) {
+                D.Error("{0} should be static after being positioned.", _system.FullName);
+            }
 
             _system.SettlementOrbitData = InitializeSettlementOrbitSlot();
             SectorGrid.Instance.GetSector(_system.SectorID).System = _system;
@@ -157,8 +158,10 @@ public class DebugSystemCreator : SystemCreator {
                 _systemFactory.PopulateInstance(planetDesign, cameraStat, planetOrbitSlot, ref planet);
                 populatedPlanets.Add(planet);
                 float sysOrbitSlotDepth;
-                D.Warn(planet.Data.CloseOrbitOuterRadius > (sysOrbitSlotDepth = __CalcSystemOrbitSlotDepth(_star)), "{0}: {1} reqd orbit slot depth of {2:0.#} > SystemOrbitSlotDepth of {3:0.#}.",
-                    Name, planet.FullName, planet.Data.CloseOrbitOuterRadius, sysOrbitSlotDepth);
+                if (planet.Data.CloseOrbitOuterRadius > (sysOrbitSlotDepth = __CalcSystemOrbitSlotDepth(_star))) {
+                    D.Warn("{0}: {1} reqd orbit slot depth of {2:0.#} > SystemOrbitSlotDepth of {3:0.#}.",
+                        Name, planet.FullName, planet.Data.CloseOrbitOuterRadius, sysOrbitSlotDepth);
+                }
                 //D.Log("{0} has assumed orbit slot {1} in System {2}.", planet.FullName, planetOrbitSlot.SlotIndex, SystemName);
             }
 

@@ -31,7 +31,6 @@ namespace CodeEnv.Master.GameContent {
             if (!text.IsNullOrEmpty()) {
                 Append(text, color);
             }
-            //_sb = !text.IsNullOrEmpty() ? new StringBuilder(text) : new StringBuilder();
         }
 
         public void Append(string text, GameColor color = GameColor.White) {
@@ -40,7 +39,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public void AppendLine(string text = null) {
-            if (text.IsNullOrEmpty()) {
+            if (!text.IsNullOrEmpty()) {
                 _sb.Append(text);
             }
             _sb.AppendLine();

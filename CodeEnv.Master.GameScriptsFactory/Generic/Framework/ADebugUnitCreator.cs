@@ -72,7 +72,7 @@ public abstract class ADebugUnitCreator : AUnitCreator {
     [SerializeField]
     protected int _passiveCMsPerElement = 2;
 
-    [Range(0, 5)]
+    [Range(1, 5)]
     [SerializeField]
     protected int _sensorsPerElement = 2;
 
@@ -118,15 +118,16 @@ public abstract class ADebugUnitCreator : AUnitCreator {
         base.Start();
     }
 
-    protected sealed override void Update() {
+    void Update() {
         if (Application.isPlaying) {
             enabled = false;    // Uses ExecuteInEditMode
         }
-        base.Update();
 
         int activeElementCount = GetComponentsInChildren<AUnitElementItem>().Count();
         bool hasActiveElements = activeElementCount > Constants.Zero;
-        D.Assert(hasActiveElements == (transform.childCount > Constants.Zero), "{0} elements not properly configured.", Name);
+        if (hasActiveElements != (transform.childCount > Constants.Zero)) {
+            D.Error("{0} elements not properly configured.", Name);
+        }
         if (hasActiveElements) {
             _isCompositionPreset = true;
             __AdjustElementQtyFieldTo(activeElementCount);

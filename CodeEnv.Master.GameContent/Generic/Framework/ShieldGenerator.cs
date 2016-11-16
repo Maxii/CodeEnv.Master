@@ -173,7 +173,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void OnHasChargeChanged() {
             if (hasChargeChanged != null) {
-                hasChargeChanged(this, new EventArgs());
+                hasChargeChanged(this, EventArgs.Empty);
             }
         }
 

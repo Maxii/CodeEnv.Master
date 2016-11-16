@@ -45,9 +45,10 @@ public class TopographyMonitor : AColliderMonitor {
 
     #region Event and Property Change Handlers
 
-    protected override void OnTriggerEnter(Collider other) {
-        base.OnTriggerEnter(other);
-        D.Warn(_gameMgr.IsPaused, "{0}.OnTriggerEnter() tripped by {1} while paused.", FullName, other.name);
+    void OnTriggerEnter(Collider other) {
+        if (_gameMgr.IsPaused) {
+            D.Warn("{0}.OnTriggerEnter() tripped by {1} while paused.", FullName, other.name);
+        }
         if (other.isTrigger) {
             return;
         }
@@ -61,9 +62,10 @@ public class TopographyMonitor : AColliderMonitor {
         }
     }
 
-    protected override void OnTriggerExit(Collider other) {
-        base.OnTriggerExit(other);
-        D.Warn(_gameMgr.IsPaused, "{0}.OnTriggerExit() tripped by {1} while paused.", FullName, other.name);
+    void OnTriggerExit(Collider other) {
+        if (_gameMgr.IsPaused) {
+            D.Warn("{0}.OnTriggerExit() tripped by {1} while paused.", FullName, other.name);
+        }
         if (other.isTrigger) {
             return;
         }

@@ -51,7 +51,7 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
     public AItemData Data {
         get { return _data; }
         set {
-            D.Assert(_data == null, "{0}.{1}.Data can only be set once.".Inject(FullName, GetType().Name));
+            D.AssertNull(_data, "Data can only be set once.");
             SetProperty<AItemData>(ref _data, value, "Data", DataPropSetHandler);
         }
     }
@@ -98,7 +98,7 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
     private string _name;
     public string Name {
         get {
-            D.Assert(_name != null);
+            D.AssertNotNull(_name);
             return _name;
         }
         set { SetProperty<string>(ref _name, value, "Name", NamePropChangedHandler); }
@@ -180,7 +180,7 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
     ///  Subscribes to changes to values contained in Data. Called when Data is set.
     /// </summary>
     protected virtual void SubscribeToDataValueChanges() {
-        D.Assert(_subscriptions != null);
+        D.AssertNotNull(_subscriptions);
         _subscriptions.Add(Data.SubscribeToPropertyChanging<AItemData, Player>(d => d.Owner, OwnerPropChangingHandler));
         _subscriptions.Add(Data.SubscribeToPropertyChanged<AItemData, Player>(d => d.Owner, OwnerPropChangedHandler));
         _subscriptions.Add(Data.SubscribeToPropertyChanged<AItemData, bool>(d => d.IsOperational, IsOperationalPropChangedHandler));
@@ -293,7 +293,7 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
 
     private void OnOwnerChanged() {
         if (ownerChanged != null) {
-            ownerChanged(this, new EventArgs());
+            ownerChanged(this, EventArgs.Empty);
         }
     }
 
@@ -319,7 +319,7 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
     /// would be eliminated.</remarks>
     /// </summary>
     protected virtual void HandleAIMgrGainedOwnership() {
-        D.Assert(OwnerAIMgr.Owner == Owner);
+        D.AssertEqual(OwnerAIMgr.Owner, Owner);
         OwnerAIMgr.HandleGainedItemOwnership(this);
 
         IEnumerable<Player> allies;
@@ -335,13 +335,13 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
     /// Handles the condition where the current Owner of this item is about to be replaced by another owner.
     /// </summary>
     protected virtual void HandleAIMgrLosingOwnership() {
-        D.Assert(OwnerAIMgr.Owner == Owner);
-        D.Assert(Owner != TempGameValues.NoPlayer);
+        D.AssertEqual(OwnerAIMgr.Owner, Owner);
+        D.AssertNotEqual(TempGameValues.NoPlayer, Owner);
         OwnerAIMgr.HandleLosingItemOwnership(this);
     }
 
     private bool TryGetAllies(out IEnumerable<Player> alliedPlayers) {
-        D.Assert(Owner != TempGameValues.NoPlayer);
+        D.AssertNotEqual(TempGameValues.NoPlayer, Owner);
         alliedPlayers = Owner.GetOtherPlayersWithRelationship(DiplomaticRelationship.Alliance);
         return alliedPlayers.Any();
     }

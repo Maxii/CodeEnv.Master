@@ -75,7 +75,7 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd,
 
     protected override void HandleDeathBeforeBeginningDeathEffect() {
         base.HandleDeathBeforeBeginningDeathEffect();
-        PathfindingManager.Instance.Graph.RemoveFromGraph(this);        //PathfindingManager.Instance.Graph.UpdateGraph(this);
+        PathfindingManager.Instance.Graph.RemoveFromGraph(this);
         // unlike SettlementCmdItem, no parent orbiter object to disable or destroy
     }
 
@@ -89,7 +89,6 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd,
     }
 
     #region Event and Property Change Handlers
-
 
     #endregion
 

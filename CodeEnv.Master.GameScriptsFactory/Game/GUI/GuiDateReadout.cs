@@ -14,12 +14,15 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
+#define ENABLE_PROFILER
+
 // default namespace
 
 using System;
 using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
 /// Date readout class for the Gui, based on Ngui UILabel.
@@ -45,7 +48,7 @@ public class GuiDateReadout : AGuiLabelReadout {
     #region Event and Property Change Handlers
 
     private void CalenderDateChangedEventHandler(object sender, EventArgs e) {
-        string formattedCalenderDateText = _gameTime.CurrentDate.CalenderFormattedDate;
+        string formattedCalenderDateText = _gameTime.CurrentDate.CalenderFormattedDate; // 11.15.16 no extra allocation
         RefreshReadout(formattedCalenderDateText);
     }
 

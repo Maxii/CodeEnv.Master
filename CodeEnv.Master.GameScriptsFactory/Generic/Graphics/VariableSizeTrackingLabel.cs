@@ -30,7 +30,6 @@ public class VariableSizeTrackingLabel : AWorldTrackingWidget_VariableSize {
     /// </summary>
     public int desiredFontSize = 6;    //TODO: User properly sized font
 
-
     protected new UILabel Widget { get { return base.Widget as UILabel; } }
 
     protected override void Awake() {

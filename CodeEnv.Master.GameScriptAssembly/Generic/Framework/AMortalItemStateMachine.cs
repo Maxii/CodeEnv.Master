@@ -53,7 +53,9 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     protected bool RelayToCurrentState(params object[] param) {
         if (CurrentState == null) { return false; }
         string callingMethodName = new System.Diagnostics.StackFrame(1).GetMethod().Name;
-        D.Warn(!callingMethodName.StartsWith("Upon"), "Calling method name: {0) should start with 'Upon'.", callingMethodName);
+        if (!callingMethodName.StartsWith("Upon")) {
+            D.Warn("Calling method name: {0) should start with 'Upon'.", callingMethodName);
+        }
         var message = CurrentState.ToString() + Constants.Underscore + callingMethodName;
         D.Log(ShowDebugLog, "{0} looking for method signature {1}.", Name, message);
         return SendMessageEx(message, param);
@@ -200,6 +202,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     private class State {
 
         public Action DoUpdate = DoNothing;
+        [Obsolete]
         public Action DoOccasionalUpdate = DoNothing;
         public Action DoLateUpdate = DoNothing;
         public Action DoFixedUpdate = DoNothing;
@@ -297,7 +300,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     /// <param name='stateToActivate'> State to activate. </param>
     protected void Call(object stateToActivate) {
         var callerEnterState = state.enterState;
-        D.Assert(callerEnterState.Method.ReturnType == typeof(IEnumerator));
+        D.AssertEqual(typeof(IEnumerator), callerEnterState.Method.ReturnType);
         D.Log(ShowDebugLog, "{0}.Call({1}) called.", FullName, stateToActivate.ToString());
         state.time = timeInCurrentState;
         state.enterStack = enterStateCoroutine.CreateStack();
@@ -430,7 +433,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
         //D.Log(ShowDebugLog, "{0}.GetStateMethods() called.", FullName);
         //Now we need to configure all of the methods
         state.DoUpdate = ConfigureDelegate<Action>("Update", DoNothing);
-        state.DoOccasionalUpdate = ConfigureDelegate<Action>("OccasionalUpdate", DoNothing);
+        ////state.DoOccasionalUpdate = ConfigureDelegate<Action>("OccasionalUpdate", DoNothing);
         state.DoLateUpdate = ConfigureDelegate<Action>("LateUpdate", DoNothing);
         state.DoFixedUpdate = ConfigureDelegate<Action>("FixedUpdate", DoNothing);
         state.DoOnTriggerEnter = ConfigureDelegate<Action<Collider>>("OnTriggerEnter", DoNothingCollider);
@@ -534,10 +537,9 @@ public abstract class AMortalItemStateMachine : AMortalItem {
 
     #region Pass On Methods
 
-    protected override void Update() {
-        base.Update();
-        state.DoUpdate();
-    }
+    //void Update() {
+    //    state.DoUpdate();
+    //}
 
     [Obsolete]
     protected override void OccasionalUpdate() {
@@ -545,43 +547,37 @@ public abstract class AMortalItemStateMachine : AMortalItem {
         state.DoOccasionalUpdate();
     }
 
-    protected override void LateUpdate() {
-        base.LateUpdate();
-        state.DoLateUpdate();
-    }
+    //void LateUpdate() {
+    //    state.DoLateUpdate();
+    //}
 
-    protected override void FixedUpdate() {
-        base.FixedUpdate();
-        state.DoFixedUpdate();
-    }
+    //void FixedUpdate() {
+    //    state.DoFixedUpdate();
+    //}
 
-    protected override void OnTriggerEnter(Collider other) {
-        base.OnTriggerEnter(other);
-        state.DoOnTriggerEnter(other);
-    }
+    //void OnTriggerEnter(Collider other) {
+    //    state.DoOnTriggerEnter(other);
+    //}
 
-    void OnTriggerStay(Collider other) {
-        state.DoOnTriggerStay(other);
-    }
+    //void OnTriggerStay(Collider other) {
+    //    state.DoOnTriggerStay(other);
+    //}
 
-    protected override void OnTriggerExit(Collider other) {
-        base.OnTriggerExit(other);
-        state.DoOnTriggerExit(other);
-    }
+    //void OnTriggerExit(Collider other) {
+    //    state.DoOnTriggerExit(other);
+    //}
 
-    protected override void OnCollisionEnter(Collision collision) {
-        base.OnCollisionEnter(collision);
+    void OnCollisionEnter(Collision collision) {
         state.DoOnCollisionEnter(collision);
     }
 
-    void OnCollisionStay(Collision collision) {
-        state.DoOnCollisionStay(collision);
-    }
+    //void OnCollisionStay(Collision col) {
+    //    state.DoOnCollisionStay(col);
+    //}
 
-    protected override void OnCollisionExit(Collision collision) {
-        base.OnCollisionExit(collision);
-        state.DoOnCollisionExit(collision);
-    }
+    //void OnCollisionExit(Collision col) {
+    //    state.DoOnCollisionExit(col);
+    //}
 
     ////protected override void OnHover(bool isOver) {
     ////    base.OnHover(isOver);

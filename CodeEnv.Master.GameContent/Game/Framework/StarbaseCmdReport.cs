@@ -55,6 +55,10 @@ namespace CodeEnv.Master.GameContent {
             var sbData = data as StarbaseCmdData;
             var accessCntlr = sbData.InfoAccessCntlr;
 
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.AlertStatus)) {
+                AlertStatus = sbData.AlertStatus;
+            }
+
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitDefense)) {
                 UnitDefensiveStrength = sbData.UnitDefensiveStrength;
             }

@@ -63,7 +63,7 @@ public class PathfindingManager : AMonoSingleton<PathfindingManager> {
         LogEvent();
         _astarPath = AstarPath.active;
         // As we can't reliably know which Awake() will be called first, scanOnStartup must be set to false in inspector to avoid initial scan
-        D.Assert(_astarPath.scanOnStartup == false);
+        D.Assert(!_astarPath.scanOnStartup);
         __ValidateTagNames();
         Subscribe();
     }
@@ -74,10 +74,10 @@ public class PathfindingManager : AMonoSingleton<PathfindingManager> {
     /// </summary>
     private void __ValidateTagNames() {
         string[] tagNames = _astarPath.GetTagNames();
-        D.Assert(tagNames[(int)Topography.OpenSpace.AStarTagValue()] == Topography.OpenSpace.GetValueName());
-        D.Assert(tagNames[(int)Topography.Nebula.AStarTagValue()] == Topography.Nebula.GetValueName());
-        D.Assert(tagNames[(int)Topography.DeepNebula.AStarTagValue()] == Topography.DeepNebula.GetValueName());
-        D.Assert(tagNames[(int)Topography.System.AStarTagValue()] == Topography.System.GetValueName());
+        D.AssertEqual(Topography.OpenSpace.GetValueName(), tagNames[(int)Topography.OpenSpace.AStarTagValue()]);
+        D.AssertEqual(Topography.Nebula.GetValueName(), tagNames[(int)Topography.Nebula.AStarTagValue()]);
+        D.AssertEqual(Topography.DeepNebula.GetValueName(), tagNames[(int)Topography.DeepNebula.AStarTagValue()]);
+        D.AssertEqual(Topography.System.GetValueName(), tagNames[(int)Topography.System.AStarTagValue()]);
     }
 
     private void Subscribe() {
@@ -114,7 +114,7 @@ public class PathfindingManager : AMonoSingleton<PathfindingManager> {
     /// </summary>
     /// <param name="astarPath">The AStar path.</param>
     private void GraphUpdateCompletedEventHandler(AstarPath astarPath) {
-        D.Assert(astarPath.graphs[0] == Graph);
+        D.AssertEqual(Graph, astarPath.graphs[0]);
         OnGraphUpdateCompleted();
         //__ReportUpdateDuration();
         //__ReportNodeCountAndDuration();
@@ -123,7 +123,7 @@ public class PathfindingManager : AMonoSingleton<PathfindingManager> {
 
     private void OnGraphUpdateCompleted() {
         if (graphUpdateCompleted != null) {
-            graphUpdateCompleted(this, new EventArgs());
+            graphUpdateCompleted(this, EventArgs.Empty);
         }
     }
 

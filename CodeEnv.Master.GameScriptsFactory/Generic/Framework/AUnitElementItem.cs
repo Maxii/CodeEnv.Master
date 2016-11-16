@@ -91,6 +91,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     protected IList<IActiveCountermeasureRangeMonitor> CountermeasureRangeMonitors { get; private set; }
     protected IList<IShield> Shields { get; private set; }
     protected Rigidbody Rigidbody { get; private set; }
+
     protected Job _repairJob;
 
     private DetectionHandler _detectionHandler;
@@ -121,7 +122,9 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     private void InitializePrimaryCollider() {
         _primaryCollider = UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
         // Early detection of colliders that start out enabled can occur when data is added during runtime
-        D.Warn(_primaryCollider.enabled, "{0}'s primary collider should start disabled to avoid early detection by monitors.", FullName);
+        if (_primaryCollider.enabled) {
+            D.Warn("{0}'s primary collider should start disabled to avoid early detection by monitors.", FullName);
+        }
         _primaryCollider.isTrigger = false;
         _primaryCollider.enabled = false;
         _primaryCollider.size = Data.HullDimensions;
@@ -176,7 +179,14 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     public override void FinalInitialize() {
         base.FinalInitialize();
+        InitializeMonitorRanges();
         Rigidbody.isKinematic = false;
+    }
+
+    private void InitializeMonitorRanges() {
+        CountermeasureRangeMonitors.ForAll(crm => crm.InitializeRangeDistance());
+        WeaponRangeMonitors.ForAll(wrm => wrm.InitializeRangeDistance());
+        Shields.ForAll(srm => srm.InitializeRangeDistance());
     }
 
     #endregion
@@ -245,7 +255,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// </summary>
     /// <param name="weapon">The weapon.</param>
     private void Attach(AWeapon weapon) {
-        D.Assert(weapon.RangeMonitor != null);
+        D.AssertNotNull(weapon.RangeMonitor);
         var monitor = weapon.RangeMonitor;
         if (!WeaponRangeMonitors.Contains(monitor)) {
             // only need to record and setup range monitors once. The same monitor can have more than 1 weapon
@@ -303,21 +313,21 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         if (category == WDVCategory.Beam) {
             ordnanceTransform = MyPoolManager.Instance.Spawn(category, launchLoc, launchRotation, weapon.WeaponMount.Muzzle);
             ordnanceTransform.gameObject.layer = (int)Layers.TransparentFX; // UNCLEAR necessary, aka does Spawn with parent change layer?
-            Beam beam = ordnanceTransform.GetComponent<Beam>();
+            Beam beam = ordnanceTransform.GetSafeComponent<Beam>();
             beam.Launch(target, weapon);
         }
         else if (category == WDVCategory.Missile) {
             ordnanceTransform = MyPoolManager.Instance.Spawn(category, launchLoc, launchRotation);
             //Physics.IgnoreCollision(ordnanceTransform.GetComponent<Collider>(), _primaryCollider);    // 7.20.16
-            Missile missile = ordnanceTransform.GetComponent<Missile>();
+            Missile missile = ordnanceTransform.GetSafeComponent<Missile>();
             missile.ElementVelocityAtLaunch = Rigidbody.velocity;
             missile.Launch(target, weapon, Topography);
         }
         else {
-            D.Assert(category == WDVCategory.Projectile);
+            D.AssertEqual(WDVCategory.Projectile, category);
             ordnanceTransform = MyPoolManager.Instance.Spawn(category, launchLoc, launchRotation);
             //Physics.IgnoreCollision(ordnanceTransform.GetComponent<Collider>(), _primaryCollider);    // 7.20.16
-            Projectile projectile = ordnanceTransform.GetComponent<Projectile>();
+            Projectile projectile = ordnanceTransform.GetSafeComponent<Projectile>();
             projectile.Launch(target, weapon, Topography);
         }
         //D.Log(ShowDebugLog, "{0} has fired {1} against {2} on {3}.", FullName, ordnance.Name, target.FullName, GameTime.Instance.CurrentDate);
@@ -343,7 +353,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         var target = firingSolution.EnemyTarget;
         var losWeapon = firingSolution.Weapon;
         D.Assert(losWeapon.IsOperational);  // weapon should not have completed aiming if it lost operation
-        if (target.IsOperational && target.IsAttackingAllowedBy(Owner) && losWeapon.ConfirmInRangeForLaunch(target)) {
+        if (target.IsOperational && target.IsAttackByAllowed(Owner) && losWeapon.ConfirmInRangeForLaunch(target)) {
             LaunchOrdnance(losWeapon, target);
         }
         else {
@@ -461,7 +471,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// </summary>
     /// <param name="activeCM">The cm.</param>
     private void Attach(ActiveCountermeasure activeCM) {
-        D.Assert(activeCM.RangeMonitor != null);
+        D.AssertNotNull(activeCM.RangeMonitor);
         var monitor = activeCM.RangeMonitor;
         if (!CountermeasureRangeMonitors.Contains(monitor)) {
             // only need to record and setup range monitors once. The same monitor can have more than 1 weapon
@@ -478,7 +488,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// </summary>
     /// <param name="generator">The shield generator.</param>
     private void Attach(ShieldGenerator generator) {
-        D.Assert(generator.Shield != null);
+        D.AssertNotNull(generator.Shield);
         var shield = generator.Shield;
         if (!Shields.Contains(shield)) {
             // only need to record and setup range monitors once. The same monitor can have more than 1 weapon
@@ -491,7 +501,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     #region Sensors
 
     private void Attach(Sensor sensor) {
-        D.Assert(Command == null);  // OPTIMIZE Sensors are only attached to elements when an element is being created so there is no Command yet
+        D.AssertNull(Command);  // OPTIMIZE Sensors are only attached to elements when an element is being created so there is no Command yet
     }
 
     #endregion
@@ -499,7 +509,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     #region Icon and Highlighting
 
     private void AssessIcon() {
-        D.Assert(DisplayMgr != null);
+        D.AssertNotNull(DisplayMgr);
 
         if (PlayerPrefsManager.Instance.IsElementIconsEnabled) {
             var iconInfo = RefreshIconInfo();
@@ -578,7 +588,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     private void OnIsAvailable() {
         if (isAvailableChanged != null) {
-            isAvailableChanged(this, new EventArgs());
+            isAvailableChanged(this, EventArgs.Empty);
         }
     }
 
@@ -593,7 +603,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     private void OnIsHQChanged() {
         if (isHQChanged != null) {
-            isHQChanged(this, new EventArgs());
+            isHQChanged(this, EventArgs.Empty);
         }
     }
 
@@ -869,8 +879,9 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(subscriptionMode));
         }
-        D.Warn(isDuplicateSubscriptionAttempted, "{0}: Attempting to subscribe to {1}'s {2} when already subscribed.",
-            FullName, fsmTgt.FullName, subscriptionMode.GetValueName());
+        if (isDuplicateSubscriptionAttempted) {
+            D.Warn("{0}: Attempting to subscribe to {1}'s {2} when already subscribed.", FullName, fsmTgt.FullName, subscriptionMode.GetValueName());
+        }
         if (isSubscribeActionTaken) {
             __subscriptionStatusLookup[subscriptionMode] = toSubscribe;
         }

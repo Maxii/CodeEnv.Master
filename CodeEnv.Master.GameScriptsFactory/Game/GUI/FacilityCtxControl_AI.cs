@@ -38,7 +38,7 @@ public class FacilityCtxControl_AI : ACtxControl {
 
     protected override bool IsSelectedItemMenuOperator(ISelectable selected) {
         if (_facilityMenuOperator.IsSelected) {
-            D.Assert(_facilityMenuOperator == selected as FacilityItem);
+            D.AssertEqual(_facilityMenuOperator, selected as FacilityItem);
             return true;
         }
         return false;

@@ -28,7 +28,7 @@ public class TextForm : AForm {
     public string Text {
         get { return _text; }
         set {
-            D.Assert(_text == null);    // occurs only once between Resets
+            D.AssertNull(_text);    // occurs only once between Resets
             SetProperty<string>(ref _text, value, "Text", TextPropSetHandler);
         }
     }

@@ -22,6 +22,7 @@ namespace CodeEnv.Master.GameContent {
     public enum MountSlotID {
 
         None,
+
         Slot_1,
         Slot_2,
         Slot_3,

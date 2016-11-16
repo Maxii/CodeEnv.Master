@@ -56,6 +56,10 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem, IIntelItem_Ltd 
     }
 
     protected override void AssessIsDiscernibleToUser() {
+        // 11.13.16 isInMainCameraLOS must start true to initialize DisplayMgr when UserIntelCoverage > None
+        // as this assessment is only called from DisplayMgr or when UserIntelCoverage changes. Without starting
+        // true, if UserIntelCoverage starts > None (DebugControls.FullCoverage or User-owned item), 
+        // the assessment wouldn't be done again until coverage changed again, if ever.
         var isInMainCameraLOS = DisplayMgr != null ? DisplayMgr.IsInMainCameraLOS : true;
         IsDiscernibleToUser = isInMainCameraLOS && UserIntelCoverage > IntelCoverage.None;
     }

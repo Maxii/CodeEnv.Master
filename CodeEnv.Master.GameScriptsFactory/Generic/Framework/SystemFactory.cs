@@ -34,7 +34,8 @@ using UnityEngine;
 public class SystemFactory : AGenericSingleton<SystemFactory> {
     // Note: no reason to dispose of _instance during scene transition as all its references persist across scenes
 
-    private const string PlanetNameFormat = "{0} {1}";
+    private const string StarNameFormat = "{0} {1}";
+    private const string PlanetNameFormat = "{0}{1}";
     private const string MoonNameFormat = "{0}{1}";
 
     private static int[] PlanetNumbers = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
@@ -129,7 +130,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// <param name="systemName">Name of the system.</param>
     /// <returns></returns>
     public StarItem MakeInstance(StarStat starStat, FocusableItemCameraStat cameraStat, GameObject systemParent, string systemName) {
-        D.Assert(systemParent != null);
+        D.AssertNotNull(systemParent);
         StarItem starPrefab = _starPrefabs.Single(star => star.category == starStat.Category);
         GameObject starGo = UnityUtility.AddChild(systemParent, starPrefab.gameObject);
         starGo.layer = (int)Layers.Default;
@@ -170,11 +171,15 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// <param name="systemName">Name of the system.</param>
     /// <param name="star">The star item.</param>
     public void PopulateInstance(StarStat starStat, FocusableItemCameraStat cameraStat, string systemName, ref StarItem star) {
-        D.Assert(!star.IsOperational, "{0}: {1} should not be operational.", Name, star.FullName);
-        D.Assert(star.GetComponentInParent<SystemItem>() != null, "{0}: {1} must have a system parent before data assigned.", Name, star.FullName);
-        D.Assert(starStat.Category == star.category, "{0}: {1} {2} should = {3}.", Name, typeof(StarCategory).Name, starStat.Category.GetValueName(), star.category.GetValueName());
+        D.Assert(!star.IsOperational, star.FullName);
+        if (star.GetComponentInParent<SystemItem>() == null) {
+            D.Error("{0}: {1} must have a system parent before data assigned.", Name, star.FullName);
+        }
+        if (starStat.Category != star.category) {
+            D.Error("{0}: {1} should = {2}.", Name, starStat.Category.GetValueName(), star.category.GetValueName());
+        }
 
-        star.Name = systemName + Constants.Space + CommonTerms.Star;
+        star.Name = StarNameFormat.Inject(systemName, CommonTerms.Star);
         StarData starData = new StarData(star, starStat) {
             ParentName = systemName
             // Owners are all initialized to TempGameValues.NoPlayer by AItemData
@@ -223,7 +228,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// <returns></returns>
     public PlanetItem MakeInstance(PlanetStat planetStat, FollowableItemCameraStat cameraStat, OrbitData orbitSlot,
         IEnumerable<PassiveCountermeasureStat> cmStats) {
-        D.Assert(orbitSlot.OrbitedItem != null, "{0}: {1}.OrbitedItem should not be null.", Name, typeof(OrbitData).Name);
+        D.AssertNotNull(orbitSlot.OrbitedItem, orbitSlot.ToString());
         GameObject planetPrefab = _planetPrefabs.Single(p => p.category == planetStat.Category).gameObject;
         GameObject planetGo = UnityUtility.AddChild(orbitSlot.OrbitedItem, planetPrefab);
 
@@ -268,11 +273,14 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// <param name="planet">The planet item.</param>
     public void PopulateInstance(PlanetStat planetStat, FollowableItemCameraStat cameraStat, OrbitData orbitSlot, IEnumerable<PassiveCountermeasureStat> cmStats,
         ref PlanetItem planet) {
-        D.Assert(!planet.IsOperational, "{0}: {1} should not be operational.", Name, planet.FullName);
-        D.Assert(planet.GetComponentInParent<SystemItem>() != null, "{0}: {1} must have a system parent before data assigned.", Name, planet.FullName);
-        D.Assert(planetStat.Category == planet.category,
-            "{0}: {1} {2} should = {3}.", Name, typeof(PlanetoidCategory).Name, planetStat.Category.GetValueName(), planet.category.GetValueName());
-        D.Assert(orbitSlot.OrbitedItem != null, "{0}: {1}.OrbitedItem should not be null.", Name, typeof(OrbitData).Name);
+        D.Assert(!planet.IsOperational, planet.FullName);
+        if (planet.GetComponentInParent<SystemItem>() == null) {
+            D.Error("{0}: {1} must have a system parent before data assigned.", Name, planet.FullName);
+        }
+        if (planetStat.Category != planet.category) {
+            D.Error("{0}: {1} {2} should = {3}.", Name, typeof(PlanetoidCategory).Name, planetStat.Category.GetValueName(), planet.category.GetValueName());
+        }
+        D.AssertNotNull(orbitSlot.OrbitedItem, orbitSlot.ToString());
 
         string systemName = orbitSlot.OrbitedItem.name;
         planet.Name = PlanetNameFormat.Inject(systemName, PlanetNumbers[orbitSlot.SlotIndex]);
@@ -328,7 +336,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// <returns></returns>
     public MoonItem MakeInstance(PlanetoidStat moonStat, FollowableItemCameraStat cameraStat, OrbitData orbitSlot,
         IEnumerable<PassiveCountermeasureStat> cmStats) {
-        D.Assert(orbitSlot.OrbitedItem != null, "{0}: {1}.OrbitedItem should not be null.", Name, typeof(OrbitData).Name);
+        D.AssertNotNull(orbitSlot.OrbitedItem, orbitSlot.ToString());
         GameObject moonPrefab = _moonPrefabs.Single(m => m.category == moonStat.Category).gameObject;
         GameObject moonGo = UnityUtility.AddChild(orbitSlot.OrbitedItem, moonPrefab);
 
@@ -373,11 +381,14 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// <param name="moon">The item.</param>
     public void PopulateInstance(PlanetoidStat moonStat, FollowableItemCameraStat cameraStat, OrbitData orbitSlot,
         IEnumerable<PassiveCountermeasureStat> cmStats, ref MoonItem moon) {
-        D.Assert(!moon.IsOperational, "{0}: {1} should not be operational.", Name, moon.FullName);
-        D.Assert(moon.GetComponentInParent<SystemItem>() != null, "{0}: {1} must have a system parent before data assigned.", Name, moon.FullName);
-        D.Assert(moonStat.Category == moon.category,
-            "{0}: {1} {2} should = {3}.", Name, typeof(PlanetoidCategory).Name, moonStat.Category.GetValueName(), moon.category.GetValueName());
-        D.Assert(orbitSlot.OrbitedItem != null, "{0}: {1}.OrbitedItem should not be null.", Name, typeof(OrbitData).Name);
+        D.Assert(!moon.IsOperational, moon.FullName);
+        if (moon.GetComponentInParent<SystemItem>() == null) {
+            D.Error("{0}: {1} must have a system parent before data assigned.", Name, moon.FullName);
+        }
+        if (moonStat.Category != moon.category) {
+            D.Error("{0}: {1} {2} should = {3}.", Name, typeof(PlanetoidCategory).Name, moonStat.Category.GetValueName(), moon.category.GetValueName());
+        }
+        D.AssertNotNull(orbitSlot.OrbitedItem, orbitSlot.ToString());
 
         string parentPlanetName = orbitSlot.OrbitedItem.name;
         moon.Name = MoonNameFormat.Inject(parentPlanetName, MoonLetters[orbitSlot.SlotIndex]);
@@ -422,8 +433,8 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// <param name="systemName">Name of the system.</param>
     /// <param name="system">The system item.</param>
     public void PopulateSystemInstance(string systemName, FocusableItemCameraStat cameraStat, ref SystemItem system) {
-        D.Assert(!system.IsOperational, "{0}: {1} should not be operational.", Name, system.FullName);
-        D.Assert(system.transform.parent != null, "{0}: {1} should already have a parent.", Name, system.FullName);
+        D.Assert(!system.IsOperational, system.FullName);
+        D.AssertNotNull(system.transform.parent, system.FullName);
 
         system.Name = systemName;
         SystemData data = new SystemData(system) {
@@ -441,10 +452,12 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     public SystemCreator MakeCreatorInstance(Vector3 location) {
         GameObject creatorPrefabGo = _systemCreatorPrefab.gameObject;
         GameObject creatorGo = UnityUtility.AddChild(SystemsFolder.Instance.gameObject, creatorPrefabGo);
-        D.Assert(!creatorGo.isStatic, "{0}: {1} should not start static as it has yet to be positioned.", Name, typeof(SystemCreator).Name);
+        if (creatorGo.isStatic) {
+            D.Error("{0}: {1} should not start static as it has yet to be positioned.", Name, typeof(SystemCreator).Name);
+        }
         creatorGo.transform.position = location;
         creatorGo.isStatic = true;
-        return creatorGo.GetComponent<SystemCreator>();
+        return creatorGo.GetSafeComponent<SystemCreator>();
     }
 
     #endregion

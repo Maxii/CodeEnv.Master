@@ -30,7 +30,8 @@ public abstract class AColliderMonitor : AMonoBase {
 
     /// <summary>
     /// Control for enabling/disabling the monitor's collider.
-    /// Warning: When collider becomes disabled, OnTriggerExit is NOT called for items inside trigger.
+    /// <remarks>Property not subscribable.</remarks>
+    /// <remarks> Warning: When collider becomes disabled, OnTriggerExit is NOT called for items inside trigger.</remarks>
     /// </summary>
     public bool IsOperational {
         get { return _collider.enabled; }
@@ -57,7 +58,7 @@ public abstract class AColliderMonitor : AMonoBase {
     public IItem ParentItem {
         get { return _parentItem; }
         set {
-            D.Assert(_parentItem == null);   // should only happen once
+            D.AssertNull(_parentItem);   // should only happen once
             SetProperty<IItem>(ref _parentItem, value, "ParentItem", ParentItemPropSetHandler);
         }
     }
@@ -103,7 +104,9 @@ public abstract class AColliderMonitor : AMonoBase {
         }
         else {
             var rigidbody = gameObject.GetComponent<Rigidbody>();
-            D.Warn(rigidbody != null, "{0} has a rigidbody it doesn't need.", FullName);
+            if (rigidbody != null) {
+                D.Warn("{0} has a rigidbody it doesn't need.", FullName);
+            }
         }
         _collider = UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);
         _collider.isTrigger = IsTriggerCollider;
@@ -135,7 +138,7 @@ public abstract class AColliderMonitor : AMonoBase {
     }
 
     protected virtual void HandleRangeDistanceChanged() {
-        D.Log(ShowDebugLog, "{0} had its RangeDistance changed to {1:0.}.", FullName, RangeDistance);
+        D.Log(ShowDebugLog, "{0} had its RangeDistance changed from {1:0.#} to {2:0.#}.", FullName, _collider.radius, RangeDistance);
         _collider.radius = RangeDistance;
     }
 
@@ -170,7 +173,7 @@ public abstract class AColliderMonitor : AMonoBase {
         D.Log(ShowDebugLog, "{0} is being reset for future reuse.", FullName);
         IsOperational = false;
         RangeDistance = Constants.ZeroF;
-        D.Assert(ParentItem != null);
+        D.AssertNotNull(ParentItem);
         CompleteResetForReuse();
         _isResetting = false;
     }

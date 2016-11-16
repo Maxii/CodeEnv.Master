@@ -333,13 +333,13 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
 
     protected void OnShowBegun() {
         if (showBegun != null) {
-            showBegun(this, new EventArgs());
+            showBegun(this, EventArgs.Empty);
         }
     }
 
     protected void OnHideComplete() {
         if (hideComplete != null) {
-            hideComplete(this, new EventArgs());
+            hideComplete(this, EventArgs.Empty);
         }
     }
 

@@ -27,7 +27,7 @@ using UnityEngine;
 public class VariableSizeTrackingSprite : AWorldTrackingWidget_VariableSize {
 
     /// <summary>
-    /// Temporary. The desired dimensions in pixels of this sprite. 
+    /// TEMP. The desired dimensions in pixels of this sprite. 
     /// </summary>
     public Vector2 desiredSpriteDimensions = new Vector2(16, 16);    //TODO: Use properly sized sprite
 

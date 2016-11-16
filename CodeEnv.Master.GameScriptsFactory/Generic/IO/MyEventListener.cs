@@ -35,8 +35,14 @@ public class MyEventListener : AMonoBase, IMyEventListener {
     /// Get or add an event listener to the specified game object.
     /// </summary>
     public static MyEventListener Get(GameObject go) {
+
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
         MyEventListener listener = go.GetComponent<MyEventListener>();
-        if (listener == null) listener = go.AddComponent<MyEventListener>();
+        Profiler.EndSample();
+
+        if (listener == null) {
+            listener = go.AddComponent<MyEventListener>();
+        }
         return listener;
     }
 
@@ -77,10 +83,10 @@ public class MyEventListener : AMonoBase, IMyEventListener {
     void OnKey(KeyCode key) { if (onKey != null) { onKey(gameObject, key); } }
     void OnTooltip(bool show) { if (onTooltip != null) { onTooltip(gameObject, show); } }
 
-    protected override void OnTriggerEnter(Collider other) { if (onTriggerEnter != null) { onTriggerEnter(gameObject, other); } }
-    protected override void OnTriggerExit(Collider other) { if (onTriggerExit != null) { onTriggerExit(gameObject, other); } }
-    protected override void OnCollisionEnter(Collision collision) { if (onCollisionEnter != null) { onCollisionEnter(gameObject, collision); } }
-    protected override void OnCollisionExit(Collision collision) { if (onCollisionExit != null) { onCollisionExit(gameObject, collision); } }
+    void OnTriggerEnter(Collider other) { if (onTriggerEnter != null) { onTriggerEnter(gameObject, other); } }
+    void OnTriggerExit(Collider other) { if (onTriggerExit != null) { onTriggerExit(gameObject, other); } }
+    void OnCollisionEnter(Collision collision) { if (onCollisionEnter != null) { onCollisionEnter(gameObject, collision); } }
+    void OnCollisionExit(Collision collision) { if (onCollisionExit != null) { onCollisionExit(gameObject, collision); } }
 
     protected override void Cleanup() { }
 

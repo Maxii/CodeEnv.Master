@@ -32,7 +32,6 @@ namespace CodeEnv.Master.GameContent {
 
         BeamOperations
 
-
     }
 }
 

@@ -73,7 +73,9 @@ public class GraphicsOptionMenuAcceptButton : AGuiMenuAcceptButton {
 
     protected override void ValidateStateOnCapture() {
         base.ValidateStateOnCapture();
-        D.Assert(QualitySettings.names.ToList().Contains(_qualitySetting), "QualitySetting {0} not present among {1}.".Inject(_qualitySetting, QualitySettings.names.Concatenate()));
+        if (!QualitySettings.names.ToList().Contains(_qualitySetting)) {
+            D.Error("QualitySetting {0} not present among {1}.", _qualitySetting, QualitySettings.names.Concatenate());
+        }
     }
 
     protected override void Cleanup() { }

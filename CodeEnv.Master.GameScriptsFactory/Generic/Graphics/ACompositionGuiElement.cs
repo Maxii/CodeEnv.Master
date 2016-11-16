@@ -31,7 +31,7 @@ public abstract class ACompositionGuiElement : AGuiElement, IComparable<AComposi
     public IconInfo IconInfo {
         get { return _iconInfo; }
         set {
-            D.Assert(_iconInfo == default(IconInfo));   // only occurs once between Resets
+            D.AssertDefault(_iconInfo);   // only occurs once between Resets
             SetProperty<IconInfo>(ref _iconInfo, value, "IconInfo", IconInfoPropSetHandler);
         }
     }

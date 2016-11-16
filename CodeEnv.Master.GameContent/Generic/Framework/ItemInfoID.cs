@@ -45,6 +45,7 @@ namespace CodeEnv.Master.GameContent {
         Offense,
         Defense,
         CombatStance,
+        AlertStatus,
 
         Science,
         Culture,

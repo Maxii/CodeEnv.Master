@@ -33,6 +33,8 @@ public class GuiPlayerIQPopupList : AGuiMenuPopupList<IQ> {
 
     public override GuiElementID ElementID { get { return _elementID; } }
 
+    protected override string TooltipContent { get { return "Select the IQ of this player"; } }
+
     protected override string[] Choices { get { return Enums<IQ>.GetNames(excludeDefault: true); } }
 
     // no need for taking an action OnPopupListSelectionChanged as changes aren't recorded 

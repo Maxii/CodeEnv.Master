@@ -15,8 +15,9 @@
 #define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
-
+    using System;
     using CodeEnv.Master.Common;
+    using Common.LocalResources;
 
     /// <summary>
     /// Abstract generic base factory that makes instances of text containing info about ElementItems.
@@ -41,6 +42,10 @@ namespace CodeEnv.Master.GameContent {
                         isSuccess = true;
                         colorizedText = _lineTemplate.Inject(report.WeaponsRange.HasValue ? report.WeaponsRange.Value.ToString() : Unknown);
                         break;
+                    case ItemInfoID.AlertStatus:
+                        isSuccess = true;
+                        colorizedText = GetColorizedAlertStatusText(report.AlertStatus);
+                        break;
                     case ItemInfoID.Science:
                         isSuccess = true;
                         colorizedText = _lineTemplate.Inject(report.Science.HasValue ? GetFormat(infoID).Inject(report.Science.Value) : Unknown);
@@ -60,6 +65,30 @@ namespace CodeEnv.Master.GameContent {
                 }
             }
             return isSuccess;
+        }
+
+        private string GetColorizedAlertStatusText(AlertStatus alertStatus) {
+            GameColor color = GameColor.White;
+            string colorizedText = Constants.QuestionMark;
+            if (alertStatus != AlertStatus.None) {
+                switch (alertStatus) {
+                    case AlertStatus.Normal:
+                        color = GameColor.Green;
+                        break;
+                    case AlertStatus.Yellow:
+                        color = GameColor.Yellow;
+                        break;
+                    case AlertStatus.Red:
+                        color = GameColor.Red;
+                        break;
+                    case AlertStatus.None:
+                    default:
+                        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(alertStatus));
+                }
+                colorizedText = alertStatus.GetValueName();
+            }
+            colorizedText = colorizedText.SurroundWith(color);
+            return _lineTemplate.Inject(colorizedText);
         }
 
     }

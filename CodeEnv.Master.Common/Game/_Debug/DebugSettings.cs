@@ -14,7 +14,10 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
+
 namespace CodeEnv.Master.Common {
+
+    using System;
 
     /// <summary>
     /// Parses DebugSettings.xml used to provide externalized values to DebugSettings.cs Properties.
@@ -147,6 +150,7 @@ namespace CodeEnv.Master.Common {
         /// Debug readouts (console, etc.) will be comprehensive
         /// in their display of data. e.g. ObjectAnalyzer.ToString().
         /// </summary>
+        [System.Obsolete]
         public bool EnableVerboseDebugLog {
             get {
                 CheckValuesInitialized();
@@ -165,6 +169,7 @@ namespace CodeEnv.Master.Common {
         /// It DOES NOT MEAN that they have detected everything or that players have met yet.
         /// Players meet when they first detect a HQ Element owned by another player.</remarks>
         /// </summary>
+        [Obsolete]
         public bool AllIntelCoverageComprehensive {
             get {
                 CheckValuesInitialized();

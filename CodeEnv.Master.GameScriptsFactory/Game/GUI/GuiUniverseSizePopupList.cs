@@ -55,7 +55,7 @@ public class GuiUniverseSizePopupList : AGuiMenuPopupList<UniverseSizeGuiSelecti
 
     private void OnUniverseSizeChanged() {
         if (universeSizeChanged != null) {
-            universeSizeChanged(this, new EventArgs());
+            universeSizeChanged(this, EventArgs.Empty);
         }
     }
 

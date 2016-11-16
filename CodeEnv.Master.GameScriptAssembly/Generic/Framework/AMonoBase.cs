@@ -65,7 +65,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
         //D.Log("{0} now disabled.", GetType().Name);
     }
 
-    #region Updating
+    #region OccasionalUpdate Archive
 
     /// <value>
     ///  The rate at which ToUpdate() returns true, calling OccasionalUpdate(). Default is Never.
@@ -105,13 +105,6 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
         return false;
     }
 
-    protected virtual void Update() {
-        //LogEvent();
-        //if (ToUpdate()) {
-        //    OccasionalUpdate();
-        //}
-    }
-
     /// <summary>
     /// Called at a frequency determined by the setting of UpdateRate.
     /// </summary>
@@ -120,31 +113,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
         //LogEvent();
     }
 
-    protected virtual void LateUpdate() {
-        //LogEvent();
-    }
-
-    protected virtual void FixedUpdate() {
-        //LogEvent();
-    }
-
     #endregion
-
-    protected virtual void OnCollisionEnter(Collision collision) {
-        //LogEvent();
-    }
-
-    protected virtual void OnCollisionExit(Collision collision) {
-        //LogEvent();
-    }
-
-    protected virtual void OnTriggerEnter(Collider other) {
-        // LogEvent();
-    }
-
-    protected virtual void OnTriggerExit(Collider other) {
-        //LogEvent();
-    }
 
     /// <summary>
     /// Called when the Application is quiting, followed by OnDisable() and then OnDestroy().
@@ -350,7 +319,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     /// <param name="onChanged">Optional local method to call when the property is changed.</param>
     /// <param name="onChanging">Optional local method to call before the property is changed. The proposed new value is provided as the parameter.</param>
     protected void SetProperty<T>(ref T backingStore, T value, string propertyName, Action onChanged = null, Action<T> onChanging = null) {
-        VerifyCallerIsProperty(propertyName);
+        __VerifyCallerIsProperty(propertyName);
         if (EqualityComparer<T>.Default.Equals(backingStore, value)) {
             if (!CheckForDestroyedMonobehaviourInterface(backingStore)) {
                 __TryWarn<T>(backingStore, value, propertyName);
@@ -398,16 +367,25 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
         return false;
     }
 
+    /// <summary>
+    /// Warns of equality if T is a Reference type that is not a string.
+    /// <remarks>11.9.16 Discontinued use of DebugSettings.EnableVerboseDebugLog 
+    /// as ToString's ObjectAnalyzer isn't really useful.</remarks>
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="backingStore">The backing store.</param>
+    /// <param name="value">The value.</param>
+    /// <param name="propertyName">Name of the property.</param>
     [System.Diagnostics.Conditional("UNITY_EDITOR")]
     private static void __TryWarn<T>(T backingStore, T value, string propertyName) {
         Type tType = typeof(T);
         if (!tType.IsValueType) {
             if (value != null) {
-                if (DebugSettings.Instance.EnableVerboseDebugLog || tType == typeof(string)) {
+                if (tType == typeof(string)) {
                     D.Warn("{0} BackingStore {1} and value {2} are equal. Property not changed.", propertyName, backingStore, value);
                 }
                 else {
-                    D.Warn("{0} BackingStore and value of Type {1} are equal. Property not changed.", propertyName, typeof(T).Name);
+                    D.Warn("{0} BackingStore and value of Type {1} are equal. Property not changed.", propertyName, tType.Name);
                 }
             }
         }
@@ -427,14 +405,20 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
         }
     }
 
+    /// <summary>
+    /// Verifies the caller is a property.
+    /// <remarks>Expensive both in time and allocations.
+    /// 11.9.16 Reduced allocation from 800 to 100 bytes per use by having only one local ReferenceType variable and not using Inject().
+    /// </summary>
+    /// <param name="propertyName">Name of the property.</param>
+    /// <exception cref="System.InvalidOperationException">Called SetProperty {0} from {1}. Check spelling of Property.".Inject(propertyName, caller.Name)</exception>
     [System.Diagnostics.Conditional("UNITY_EDITOR")]
-    private void VerifyCallerIsProperty(string propertyName) {
-        var stackTrace = new System.Diagnostics.StackTrace();
-        var frame = stackTrace.GetFrames()[2];
-        var caller = frame.GetMethod();
-        if (!caller.Name.Equals("set_{0}".Inject(propertyName), StringComparison.InvariantCulture)) {
-            throw new InvalidOperationException("Called SetProperty {0} from {1}. Check spelling of Property.".Inject(propertyName, caller.Name));
+    private void __VerifyCallerIsProperty(string propertyName) {
+        string callerName = new System.Diagnostics.StackFrame(2).GetMethod().Name;
+        if (callerName.Equals("set_" + propertyName, StringComparison.InvariantCulture)) {
+            return;
         }
+        throw new InvalidOperationException("Called SetProperty {0} from {1}. Check spelling of Property.".Inject(propertyName, callerName));
     }
 
     /// <summary>
@@ -516,7 +500,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     /// <param name="introText">The intro text.</param>
     protected void __LogDuration(string introText = null) {
         if (_debugSettings.EnableDurationLogging) {
-            string text = introText != null ? introText : __DurationLogIntroText;
+            string text = !introText.IsNullOrEmpty() ? introText : __DurationLogIntroText;
             D.Log("{0} took {1:0.##} seconds to execute.", text, (Utility.SystemTime - __durationStartTime).TotalSeconds);
         }
     }

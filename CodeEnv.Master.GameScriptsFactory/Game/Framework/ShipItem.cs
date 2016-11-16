@@ -141,7 +141,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     protected override void InitializeOnData() {
         base.InitializeOnData();
         _helm = new ShipHelm(this, Rigidbody);
-        CurrentState = ShipState.None;
         InitializeCollisionDetectionZone();
     }
 
@@ -160,7 +159,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     }
 
     protected override ICtxControl InitializeContextMenu(Player owner) {
-        D.Assert(owner != TempGameValues.NoPlayer);
+        D.AssertNotEqual(TempGameValues.NoPlayer, owner);
         return owner.IsUser ? new ShipCtxControl_User(this) as ICtxControl : new ShipCtxControl_AI(this);
     }
 
@@ -171,9 +170,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     public override void FinalInitialize() {
         base.FinalInitialize();
-        // 7.11.16 Moved from CommenceOperations to be consistent with Cmds. Cmds need to be Idling to receive initial 
-        // events once sensors are operational. Events include initial discovery of players which result in Relationship changes
-        CurrentState = ShipState.Idling;
+        CurrentState = ShipState.FinalInitialize;   //= ShipState.Idling;
     }
 
     #endregion
@@ -181,6 +178,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     public override void CommenceOperations() {
         base.CommenceOperations();
         _collisionDetectionMonitor.IsOperational = true;
+        CurrentState = ShipState.Idling;
     }
 
     public ShipReport GetReport(Player player) { return Publisher.GetReport(player); }
@@ -213,7 +211,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     private void OnApTgtReached() {
         if (apTgtReached != null) {
-            apTgtReached(this, new EventArgs());
+            apTgtReached(this, EventArgs.Empty);
         }
     }
 
@@ -282,14 +280,14 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     /// <param name="captainsOverrideOrder">The captains override order.</param>
     /// <param name="retainSuperiorsOrder">if set to <c>true</c> [retain superiors order].</param>
     private void OverrideCurrentOrder(ShipOrder captainsOverrideOrder, bool retainSuperiorsOrder) {
-        D.Assert(captainsOverrideOrder.Source == OrderSource.Captain, "{0}'s override order {1} came from {2}.", FullName, captainsOverrideOrder, captainsOverrideOrder.Source.GetValueName());
-        D.Assert(captainsOverrideOrder.StandingOrder == null, "{0} attempting to override current order {1} with order {2} containing an embedded standing order.", FullName, CurrentOrder, captainsOverrideOrder);
-        D.Assert(!captainsOverrideOrder.ToNotifyCmd, "{0}'s override order {1} should not contain instructions to notify Cmd.", FullName, captainsOverrideOrder);
+        D.AssertEqual(OrderSource.Captain, captainsOverrideOrder.Source, captainsOverrideOrder.ToString());
+        D.AssertNull(captainsOverrideOrder.StandingOrder, captainsOverrideOrder.ToString());
+        D.Assert(!captainsOverrideOrder.ToNotifyCmd, captainsOverrideOrder.ToString());
 
         ShipOrder standingOrder = null;
         if (retainSuperiorsOrder && CurrentOrder != null) {
             if (CurrentOrder.Source != OrderSource.Captain) {
-                D.Assert(CurrentOrder.FollowonOrder == null, "Only orders from {0}'s Captain have a FollowonOrder.", FullName);
+                D.AssertNull(CurrentOrder.FollowonOrder, CurrentOrder.ToString());
                 // the current order is from the Captain's superior so retain it
                 standingOrder = CurrentOrder;
             }
@@ -314,8 +312,10 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             || CurrentState == ShipState.Attacking) {
             UponNewOrderReceived();
         }
-        D.Assert(CurrentState != ShipState.Moving && CurrentState != ShipState.Repairing && CurrentState != ShipState.AssumingCloseOrbit
-            && CurrentState != ShipState.Attacking);
+        D.AssertNotEqual(ShipState.Moving, CurrentState);
+        D.AssertNotEqual(ShipState.Repairing, CurrentState);
+        D.AssertNotEqual(ShipState.AssumingCloseOrbit, CurrentState);
+        D.AssertNotEqual(ShipState.Attacking, CurrentState);
 
         if (CurrentOrder != null) {
             D.Log(ShowDebugLog, "{0} received new order {1}. CurrentState {2}.", FullName, CurrentOrder, CurrentState.GetValueName());
@@ -386,7 +386,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
         if (directive == ShipDirective.AssumeStation || directive == ShipDirective.Scuttle
             || directive == ShipDirective.Repair || directive == ShipDirective.Entrench || directive == ShipDirective.Disengage) {
-            D.Assert(target == null);
+            D.AssertNull(target);
             return;
         }
         if (directive == ShipDirective.Move) {
@@ -397,8 +397,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 return; // IMPROVE currently PlayerKnowledge does not keep track of Sectors
             }
         }
-        D.Assert(OwnerAIMgr.HasKnowledgeOf(target as IItem_Ltd), "{0} received {1} order with Target {2} that {3} has no knowledge of.",
-        FullName, directive.GetValueName(), target.FullName, Owner.LeaderName);
+        if (!OwnerAIMgr.HasKnowledgeOf(target as IItem_Ltd)) {
+            D.Error("{0} received {1} order with Target {2} that {3} has no knowledge of.", FullName, directive.GetValueName(), target.FullName, Owner.LeaderName);
+        }
     }
 
     #endregion
@@ -429,17 +430,22 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     /// </summary>
     private IShipNavigable _fsmTgt;
 
-    #region None
+    #region FinalInitialize
 
-    void None_UponPreconfigureState() {
+    void FinalInitialize_UponPreconfigureState() {
         LogEvent();
     }
 
-    void None_EnterState() {
+    void FinalInitialize_EnterState() {
         LogEvent();
     }
 
-    void None_ExitState() {
+    void FinalInitialize_UponRelationsChanged(Player chgdRelationsPlayer) {
+        LogEvent();
+        // can be received when activation of sensors immediately finds another player
+    }
+
+    void FinalInitialize_ExitState() {
         LogEvent();
     }
 
@@ -455,7 +461,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         if (_fsmTgt != null) {
             D.Error("{0} _fsmTgt {1} should not already be assigned.", FullName, _fsmTgt.FullName);
         }
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
+        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
 
         Data.Target = null; // temp to remove target from data after order has been completed or failed
     }
@@ -469,8 +475,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 D.Log(ShowDebugLog, "{0} is executing follow-on order {1}.", FullName, CurrentOrder.FollowonOrder);
 
                 OrderSource followonOrderSource = CurrentOrder.FollowonOrder.Source;
-                D.Assert(followonOrderSource == OrderSource.Captain, "{0} FollowonOrder {1} source can't be {2}.",
-                    FullName, CurrentOrder.FollowonOrder, followonOrderSource.GetValueName());
+                D.AssertEqual(OrderSource.Captain, followonOrderSource, CurrentOrder.ToString());
 
                 CurrentOrder = CurrentOrder.FollowonOrder;
                 yield return null;
@@ -481,8 +486,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 D.LogBold(ShowDebugLog, "{0} returning to execution of standing order {1}.", FullName, CurrentOrder.StandingOrder);
 
                 OrderSource standingOrderSource = CurrentOrder.StandingOrder.Source;
-                D.Assert(standingOrderSource == OrderSource.CmdStaff || standingOrderSource == OrderSource.User, "{0} StandingOrder {1} source can't be {2}.",
-                    FullName, CurrentOrder.StandingOrder, standingOrderSource.GetValueName());
+                if (standingOrderSource != OrderSource.CmdStaff && standingOrderSource != OrderSource.User) {
+                    D.Error("{0} StandingOrder {1} source can't be {2}.", FullName, CurrentOrder.StandingOrder, standingOrderSource.GetValueName());
+                }
 
                 CurrentOrder = CurrentOrder.StandingOrder;
                 yield return null;
@@ -599,9 +605,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     void Moving_UponPreconfigureState() {
         LogEvent();
 
-        D.Assert(_fsmTgt != null);
-        D.Assert(_apMoveSpeed != default(Speed));
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
+        D.AssertNotNull(_fsmTgt);
+        D.AssertNotDefault((int)_apMoveSpeed);
+        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
         D.Assert(!(_fsmTgt is IShipCloseOrbitSimulator));
     }
 
@@ -667,7 +673,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void Moving_UponFsmTgtInfoAccessChgd(IItem_Ltd fsmTgt) {
         LogEvent();
-        D.Assert(_fsmTgt == fsmTgt);
+        D.AssertEqual(_fsmTgt, fsmTgt as IShipNavigable);
         if (LastState == ShipState.ExecuteExploreOrder) {
             // Note: FleetCmd handles not being allowed to explore
             var exploreTgt = _fsmTgt as IShipExplorable;
@@ -680,7 +686,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void Moving_UponFsmTgtOwnerChgd(IItem_Ltd fsmTgt) {
         LogEvent();
-        D.Assert(_fsmTgt == fsmTgt);
+        D.AssertEqual(_fsmTgt, fsmTgt as IShipNavigable);
         if (LastState == ShipState.ExecuteExploreOrder) {
             // Note: FleetCmd handles not being allowed to explore
             var exploreTgt = _fsmTgt as IShipExplorable;
@@ -693,7 +699,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void Moving_UponFsmTgtDeath(IMortalItem_Ltd deadFsmTgt) {
         LogEvent();
-        D.Assert(_fsmTgt == deadFsmTgt, "{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadFsmTgt.FullName);
+        if (_fsmTgt != deadFsmTgt) {
+            D.Error("{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadFsmTgt.FullName);
+        }
         _orderFailureCause = UnitItemOrderFailureCause.TgtDeath;
         Return();
     }
@@ -732,7 +740,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         if (_fsmTgt != null) {
             D.Error("{0} _fsmTgt {1} should not already be assigned.", FullName, _fsmTgt.FullName);
         }
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
+        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
         D.Assert(!CurrentOrder.ToNotifyCmd);
 
         var currentShipMoveOrder = CurrentOrder as ShipMoveOrder;
@@ -780,7 +788,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
 
         // If there was a failure generated by Moving, resulting new Orders or Dead state should keep this point from being reached
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0}: {1} failure should not get here.", FullName, _orderFailureCause.GetValueName());
+        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
 
         IShipOrbitable highOrbitTgt;
         if (__TryValidateRightToAssumeHighOrbit(_fsmTgt, out highOrbitTgt)) {
@@ -788,8 +796,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             GameDate currentDate;
             while (!AttemptHighOrbitAround(highOrbitTgt)) {
                 // wait here until high orbit is assumed
-                D.Warn((currentDate = _gameTime.CurrentDate) > errorDate, "{0}: CurrentDate {1} > ErrorDate {2} while assuming high orbit.",
-                    Name, currentDate, errorDate);
+                if ((currentDate = _gameTime.CurrentDate) > errorDate) {
+                    D.Warn("{0}: CurrentDate {1} > ErrorDate {2} while assuming high orbit.", Name, currentDate, errorDate);
+                }
                 yield return null;
             }
         }
@@ -828,7 +837,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void ExecuteMoveOrder_UponFsmTgtDeath(IMortalItem_Ltd deadFsmTgt) {
         LogEvent();
-        D.Assert(_fsmTgt == deadFsmTgt, "{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadFsmTgt.FullName);
+        if (_fsmTgt != deadFsmTgt) {
+            D.Error("{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadFsmTgt.FullName);
+        }
         IssueAssumeStationOrderFromCaptain();
     }
 
@@ -859,7 +870,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         if (_fsmTgt != null) {
             D.Error("{0} _fsmTgt {1} should not already be assigned.", FullName, _fsmTgt.FullName);
         }
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
+        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
 
         _fsmTgt = FormationStation;
     }
@@ -888,8 +899,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         Call(ShipState.Moving);
         yield return null;  // required so Return()s here
 
-        D.Warn(!FormationStation.IsOnStation, "{0} has exited 'Moving' to station without being on station.", FullName);
-
         if (_orderFailureCause != UnitItemOrderFailureCause.None) {
             if (CurrentOrder.ToNotifyCmd) {
                 Command.HandleOrderOutcome(CurrentOrder.Directive, this, isSuccess: false, failCause: _orderFailureCause);
@@ -910,10 +919,15 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             }
             yield return null;
         }
-        D.Log(ShowDebugLog, "{0} has reached its formation station.", FullName);
+        if (FormationStation.IsOnStation) {
+            D.Log(ShowDebugLog, "{0} has reached its formation station.", FullName);
+        }
+        else {
+            D.Warn("{0} has exited 'Moving' to its formation station without being on station.", FullName);
+        }
 
         // If there was a failure generated by Moving, resulting new Orders or Dead state should keep this point from being reached
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0}: {1} failure should not get here.", FullName, _orderFailureCause.GetValueName());
+        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
 
         // No need to wait for HQ to stop turning as we are aligning with its intended facing
         Vector3 hqIntendedHeading = Command.HQElement.Data.IntendedHeading;
@@ -985,7 +999,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         if (_fsmTgt != null) {
             D.Error("{0} _fsmTgt {1} should not already be assigned.", FullName, _fsmTgt.FullName);
         }
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
+        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
         D.Assert(CurrentOrder.ToNotifyCmd);
 
         var exploreTgt = CurrentOrder.Target as IShipExplorable;
@@ -1037,7 +1051,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
 
         // If there was a failure generated by Moving, resulting new Orders or Dead state should keep this point from being reached
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0}: {1} failure should not get here.", FullName, _orderFailureCause.GetValueName());
+        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
 
         if (exploreTgt.IsFullyExploredBy(Owner)) {
             // Moving Return()ed because the target has been fully explored by another one of our ships in a different fleet
@@ -1076,7 +1090,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
 
         // If there was a failure generated by AssumingCloseOrbit, resulting new Orders or Dead state should keep this point from being reached
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0}: {1} failure should not get here.", FullName, _orderFailureCause.GetValueName());
+        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
 
         // AssumingCloseOrbit Return()ed because 1) close orbit was attained fully exploring the target, OR
         // 2) the target has been fully explored by another one of our ships in a different fleet
@@ -1124,7 +1138,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void ExecuteExploreOrder_UponFsmTgtDeath(IMortalItem_Ltd deadFsmTgt) {
         LogEvent();
-        D.Assert(_fsmTgt == deadFsmTgt, "{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadFsmTgt.FullName);
+        if (_fsmTgt != deadFsmTgt) {
+            D.Error("{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadFsmTgt.FullName);
+        }
         Command.HandleOrderOutcome(CurrentOrder.Directive, this, isSuccess: false, target: _fsmTgt, failCause: UnitItemOrderFailureCause.TgtDeath);
     }
 
@@ -1159,7 +1175,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         if (_fsmTgt != null) {
             D.Error("{0} _fsmTgt {1} should not already be assigned.", FullName, _fsmTgt.FullName);
         }
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
+        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
         D.Assert(!CurrentOrder.ToNotifyCmd);
 
         var orbitTgt = CurrentOrder.Target as IShipCloseOrbitable;
@@ -1204,7 +1220,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
 
         // If there was a failure generated by Moving, resulting new Orders or Dead state should keep this point from being reached
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0}: {1} failure should not get here.", FullName, _orderFailureCause.GetValueName());
+        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
 
         //D.Log(ShowDebugLog, "{0} is now Call()ing ShipState.AssumingCloseOrbit in ExecuteAssumeCloseOrbitOrder_EnterState.", FullName);
         Call(ShipState.AssumingCloseOrbit);
@@ -1270,7 +1286,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void ExecuteAssumeCloseOrbitOrder_UponFsmTgtDeath(IMortalItem_Ltd deadFsmTgt) {
         LogEvent();
-        D.Assert(_fsmTgt == deadFsmTgt, "{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadFsmTgt.FullName);
+        if (_fsmTgt != deadFsmTgt) {
+            D.Error("{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadFsmTgt.FullName);
+        }
         IssueAssumeStationOrderFromCaptain();
     }
 
@@ -1303,7 +1321,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     void AssumingCloseOrbit_UponPreconfigureState() {
         LogEvent();
 
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
+        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
         D.Assert(_orbitingJoint == null);
         D.Assert(!IsInOrbit);
 
@@ -1335,8 +1353,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         GameDate currentDate;
         while (!AttemptCloseOrbitAround(closeOrbitTgt)) {
             // wait here until close orbit is assumed
-            D.Warn((currentDate = _gameTime.CurrentDate) > errorDate, "{0}: CurrentDate {1} > ErrorDate {2} while assuming close orbit.",
-                Name, currentDate, errorDate);
+            if ((currentDate = _gameTime.CurrentDate) > errorDate) {
+                D.Warn("{0}: CurrentDate {1} > ErrorDate {2} while assuming close orbit.", Name, currentDate, errorDate);
+            }
             yield return null;
         }
         Return();
@@ -1388,7 +1407,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void AssumingCloseOrbit_UponFsmTgtInfoAccessChgd(IItem_Ltd fsmTgt) {
         LogEvent();
-        D.Assert(_fsmTgt == fsmTgt);
+        D.AssertEqual(_fsmTgt, fsmTgt as IShipNavigable);
         if (LastState == ShipState.ExecuteExploreOrder) {
             // Note: FleetCmd handles not being allowed to explore
             var exploreTgt = _fsmTgt as IShipExplorable;
@@ -1400,7 +1419,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void AssumingCloseOrbit_UponFsmTgtOwnerChgd(IItem_Ltd fsmTgt) {
         LogEvent();
-        D.Assert(_fsmTgt == fsmTgt);
+        D.AssertEqual(_fsmTgt, fsmTgt as IShipNavigable);
         if (LastState == ShipState.ExecuteExploreOrder) {
             // Note: FleetCmd handles not being allowed to explore
             var exploreTgt = _fsmTgt as IShipExplorable;
@@ -1412,7 +1431,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void AssumingCloseOrbit_UponFsmTgtDeath(IMortalItem_Ltd deadFsmTgt) {
         LogEvent();
-        D.Assert(_fsmTgt == deadFsmTgt, "{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadFsmTgt.FullName);
+        if (_fsmTgt != deadFsmTgt) {
+            D.Error("{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadFsmTgt.FullName);
+        }
         _orderFailureCause = UnitItemOrderFailureCause.TgtDeath;
         Return();
     }
@@ -1449,8 +1470,12 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     /// <param name="shipPrimaryAttackTgt">The ship's primary attack target. Will be null when returning false.</param>
     /// <returns></returns>
     private bool TryPickPrimaryAttackTgt(IUnitAttackable unitAttackTgt, bool allowLogging, out IShipAttackable shipPrimaryAttackTgt) {
-        D.Assert(unitAttackTgt != null && unitAttackTgt.IsOperational, "{0}'s unit attack target is null or dead.", FullName);
-        D.Assert(Data.CombatStance != ShipCombatStance.Defensive && Data.CombatStance != ShipCombatStance.Disengage);
+        D.AssertNotNull(unitAttackTgt);
+        if (!unitAttackTgt.IsOperational) {
+            D.Error("{0}'s unit attack target {1} is dead.", FullName, unitAttackTgt.FullName);
+        }
+        D.AssertNotEqual(ShipCombatStance.Defensive, Data.CombatStance);
+        D.AssertNotEqual(ShipCombatStance.Disengage, Data.CombatStance);
 
         if (Data.WeaponsRange.Max == Constants.ZeroF) {
             D.Log(ShowDebugLog && allowLogging, "{0} is declining to engage with target {1} as it has no operational weapons.", FullName, unitAttackTgt.FullName);
@@ -1460,7 +1485,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
         var uniqueEnemyTargetsInSensorRange = Enumerable.Empty<IShipAttackable>();
         Command.SensorRangeMonitors.ForAll(srm => {
-            var attackableEnemyTgtsDetected = srm.AttackableEnemyTargetsDetected.Cast<IShipAttackable>();
+            var attackableEnemyTgtsDetected = srm.EnemyTargetsDetected.Cast<IShipAttackable>();
             uniqueEnemyTargetsInSensorRange = uniqueEnemyTargetsInSensorRange.Union(attackableEnemyTgtsDetected);
         });
 
@@ -1476,14 +1501,16 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         else {
             // Planetoid
             var planetoidTarget = unitAttackTgt as APlanetoidItem;
-            D.Assert(planetoidTarget != null);
+            D.AssertNotNull(planetoidTarget);
 
             if (uniqueEnemyTargetsInSensorRange.Contains(planetoidTarget)) {
                 primaryTgt = planetoidTarget;
             }
         }
         if (primaryTgt == null) {
-            D.Warn(allowLogging, "{0} found no target within sensor range to attack!", FullName); // UNCLEAR how this could happen. Sensors damaged?
+            if (allowLogging) {
+                D.Warn("{0} found no target within sensor range to attack!", FullName); // UNCLEAR how this could happen. Sensors damaged?
+            }
             shipPrimaryAttackTgt = null;
             return false;
         }
@@ -1504,8 +1531,13 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         if (_fsmTgt != null) {
             D.Error("{0} _fsmTgt {1} should not already be assigned.", FullName, _fsmTgt.FullName);
         }
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
+        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
         D.Assert(CurrentOrder.ToNotifyCmd);
+
+        // The attack target acquired from the order. Can be a Command or a Planetoid
+        IUnitAttackable unitAttackTgt = CurrentOrder.Target as IUnitAttackable;
+        D.Assert(unitAttackTgt.IsOperational);
+        D.Assert(unitAttackTgt.IsAttackByAllowed(Owner));
     }
 
     IEnumerator ExecuteAttackOrder_EnterState() {
@@ -1513,7 +1545,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
         TryBreakOrbit();
 
-        // The attack target acquired from the order. Can be a Command or a Planetoid
         IUnitAttackable unitAttackTgt = CurrentOrder.Target as IUnitAttackable;
         string unitAttackTgtName = unitAttackTgt.FullName;
         if (!unitAttackTgt.IsOperational) {
@@ -1522,6 +1553,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             CurrentState = ShipState.Idling;
             yield return null;
         }
+        // Other unitAttackTgt condition changes (owner, relationship, infoAccess) handled by FleetCmd
 
         ShipCombatStance stance = Data.CombatStance;
         if (stance == ShipCombatStance.Disengage) {
@@ -1532,7 +1564,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             }
             else {
                 if (IsThereNeedForAFormationStationChangeTo(WithdrawPurpose.Disengage)) {
-                    D.Assert(_fsmDisengagePurpose == WithdrawPurpose.None);
+                    D.AssertDefault((int)_fsmDisengagePurpose);
                     _fsmDisengagePurpose = WithdrawPurpose.Disengage;
                     ShipOrder disengageOrder = new ShipOrder(ShipDirective.Disengage, OrderSource.Captain);
                     OverrideCurrentOrder(disengageOrder, retainSuperiorsOrder: false);
@@ -1554,6 +1586,12 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             };
             OverrideCurrentOrder(assumeStationAndEntrenchOrder, retainSuperiorsOrder: false);
             yield return null;
+        }
+
+        if (unitAttackTgt.IsColdWarAttackByAllowed(Owner)) {
+            // we are not at war with the owner of this Unit as Owner must be accessible
+            WeaponRangeMonitors.ForAll(wrm => wrm.ToEngageColdWarEnemies = true);
+            // IMPROVE weapons will shoot at ANY ColdWar or War enemy in range, even innocent ColdWar bystanders
         }
 
         bool allowLogging = true;
@@ -1615,8 +1653,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         LogEvent();
         // if this is called from this state, the ship has either 1) declined to pick a first or subsequent primary target in which
         // case _fsmTgt will be null, or 2) _fsmTgt has been destroyed but has not yet had time to be nulled upon Return()ing from Attacking
-        if (_fsmTgt != null) {
-            D.Assert(!(_fsmTgt as IShipAttackable).IsOperational);
+        if (_fsmTgt != null && (_fsmTgt as IShipAttackable).IsOperational) {
+            D.Error("{0} attack target {1} should be dead.", FullName, _fsmTgt.FullName);
         }
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
         InitiateFiringSequence(selectedFiringSolution);
@@ -1651,6 +1689,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void ExecuteAttackOrder_ExitState() {
         LogEvent();
+        WeaponRangeMonitors.ForAll(wrm => wrm.ToEngageColdWarEnemies = false);
         _fsmTgt = null;
         _orderFailureCause = UnitItemOrderFailureCause.None;
     }
@@ -1667,7 +1706,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         RangeDistance weapRange = Data.WeaponsRange;
         D.Assert(weapRange.Max > Constants.ZeroF);
         ShipCombatStance combatStance = Data.CombatStance;
-        D.Assert(combatStance != ShipCombatStance.Disengage && combatStance != ShipCombatStance.Defensive);
+        D.AssertNotEqual(ShipCombatStance.Disengage, combatStance);
+        D.AssertNotEqual(ShipCombatStance.Defensive, combatStance);
 
         float maxRangeToTgtSurface = Constants.ZeroF;
         float minRangeToTgtSurface = Constants.ZeroF;
@@ -1738,8 +1778,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     void Attacking_UponPreconfigureState() {
         LogEvent();
 
-        D.Assert(_fsmTgt != null);
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
+        D.AssertNotNull(_fsmTgt);
+        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
 
         bool isSubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.TargetDeath, _fsmTgt, toSubscribe: true);
         D.Assert(isSubscribed); // _fsmTgt as attack target is by definition mortal 
@@ -1749,7 +1789,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         D.Assert(isSubscribed);
 
         IShipAttackable primaryAttackTgt = _fsmTgt as IShipAttackable;
-        D.Assert(primaryAttackTgt != null);
+        D.AssertNotNull(primaryAttackTgt);
     }
 
     void Attacking_EnterState() {
@@ -1809,7 +1849,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void Attacking_UponFsmTgtDeath(IMortalItem_Ltd deadFsmTgt) {
         LogEvent();
-        D.Assert(_fsmTgt == deadFsmTgt);
+        D.AssertEqual(_fsmTgt, deadFsmTgt as IShipNavigable);
         // never set _orderFailureCause = TgtDeath as it is not an error when attacking
         Return();
     }
@@ -1840,7 +1880,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     void ExecuteJoinFleetOrder_UponPreconfigureState() {
         LogEvent();
 
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
+        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
         D.Assert(!CurrentOrder.ToNotifyCmd);
     }
 
@@ -1891,7 +1931,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     void ExecuteEntrenchOrder_UponPreconfigureState() {
         LogEvent();
 
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
+        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
         D.Assert(!CurrentOrder.ToNotifyCmd);
     }
 
@@ -1948,7 +1988,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         if (_fsmTgt != null) {
             D.Error("{0} _fsmTgt {1} should not already be assigned.", FullName, _fsmTgt.FullName);
         }
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
+        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
         D.Assert(!_debugSettings.DisableRepair);
         D.Assert(!CurrentOrder.ToNotifyCmd);
     }
@@ -1979,7 +2019,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
 
         // If there was a failure generated by Repairing, resulting new Orders or Dead state should keep this point from being reached
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0}: {1} failure should not get here.", FullName, _orderFailureCause.GetValueName());
+        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
 
         IssueAssumeStationOrderFromCaptain();
     }
@@ -2025,7 +2065,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     void Repairing_UponPreconfigureState() {
         LogEvent();
 
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
+        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
         D.Assert(!_debugSettings.DisableRepair);
     }
 
@@ -2125,10 +2165,14 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         if (_fsmTgt != null) {
             D.Error("{0} _fsmTgt {1} should not already be assigned.", FullName, _fsmTgt.FullName);
         }
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
-        D.Assert(_fsmDisengagePurpose != WithdrawPurpose.None, "{0}: _fsmDisengagePurpose cannot be {1}.", FullName, _fsmDisengagePurpose.GetValueName());
-        D.Assert(!IsHQ, "{0} as HQ cannot initiate {1}.{2}.", FullName, typeof(ShipState).Name, ShipState.ExecuteDisengageOrder.GetValueName());
-        D.Assert(CurrentOrder.Source == OrderSource.Captain, "Only {0} Captain can order {1} (to a more protected FormationStation).", FullName, ShipDirective.Disengage.GetValueName());
+        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
+        D.AssertNotDefault((int)_fsmDisengagePurpose, _fsmDisengagePurpose.GetValueName());
+        if (IsHQ) {
+            D.Error("{0} as HQ cannot initiate {1}.{2}.", FullName, typeof(ShipState).Name, ShipState.ExecuteDisengageOrder.GetValueName());
+        }
+        if (CurrentOrder.Source != OrderSource.Captain) {
+            D.Error("Only {0} Captain can order {1} (to a more protected FormationStation).", FullName, ShipDirective.Disengage.GetValueName());
+        }
         D.Assert(!CurrentOrder.ToNotifyCmd);
     }
 
@@ -2137,7 +2181,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
         AFormationManager.FormationStationSelectionCriteria stationSelectionCriteria;
         bool isStationChangeNeeded = TryDetermineNeedForFormationStationChange(_fsmDisengagePurpose, out stationSelectionCriteria);
-        D.Assert(isStationChangeNeeded, "{0} should already have confirmed need for a station change.", FullName);
+
+        D.Assert(isStationChangeNeeded, "Need for a formation station change should already be confirmed.");
 
         string msg;
         if (Command.RequestFormationStationChange(this, stationSelectionCriteria)) {
@@ -2149,36 +2194,36 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         D.Log(ShowDebugLog, "{0} {1} {2} to {3}.", FullName, msg, typeof(FleetFormationStation).Name, ShipDirective.Disengage.GetValueName());
 
         IssueAssumeStationOrderFromCaptain();
-        yield return null;  // avoids void EnterState state change problem
+        yield return null;  // IEnumerable to avoid void EnterState state change problem
     }
 
     void ExecuteDisengageOrder_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
-        LogEventWarning();
+        LogEvent();
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
         InitiateFiringSequence(selectedFiringSolution);
     }
 
     void ExecuteDisengageOrder_OnCollisionEnter(Collision collision) {
-        LogEventWarning();
+        LogEvent();
         __ReportCollision(collision);
     }
 
     void ExecuteDisengageOrder_UponDamageIncurred() {
-        LogEventWarning();
+        LogEvent();
         if (AssessNeedForRepair(healthThreshold: Constants.OneHundredPercent)) {
             InitiateRepair(retainSuperiorsOrderOnRepairCompletion: true);
         }
     }
 
     void ExecuteDisengageOrder_UponRelationsChanged(Player chgdRelationsPlayer) {
-        LogEventWarning();
+        LogEvent();
         // TODO
     }
 
     // No need for _fsmTgt-related event handlers as there is no _fsmTgt
 
     void ExecuteDisengageOrder_UponDeath() {
-        LogEventWarning();
+        LogEvent();
     }
 
     void ExecuteDisengageOrder_ExitState() {
@@ -2243,7 +2288,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void Dead_UponPreconfigureState() {
         LogEvent();
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
+        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
     }
 
     void Dead_EnterState() {
@@ -2275,7 +2320,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     private bool AssessWhetherToAssumeCloseOrbitAround(IShipNavigable target) {
         Utility.ValidateNotNull(target);
         D.Assert(!IsInCloseOrbit);
-        D.Assert(!_helm.IsPilotEngaged, "{0}'s autopilot is still engaged.", FullName);
+        D.Assert(!_helm.IsPilotEngaged);
         var closeOrbitableTarget = target as IShipCloseOrbitable;
         if (closeOrbitableTarget != null) {
             if (!(closeOrbitableTarget is StarItem) && !(closeOrbitableTarget is SystemItem) && !(closeOrbitableTarget is UniverseCenterItem)) {
@@ -2300,7 +2345,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     /// <returns></returns>
     private bool AttemptCloseOrbitAround(IShipCloseOrbitable closeOrbitTgt) {
         D.Assert(!IsInOrbit);
-        D.Assert(_orbitingJoint == null);
+        D.AssertNull(_orbitingJoint);
         if (!_helm.IsActivelyUnderway) {
             _orbitingJoint = gameObject.AddComponent<FixedJoint>();
             closeOrbitTgt.AssumeCloseOrbit(this, _orbitingJoint);
@@ -2324,7 +2369,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     /// <returns></returns>
     private bool AttemptHighOrbitAround(IShipOrbitable highOrbitTgt) {
         D.Assert(!IsInOrbit);
-        D.Assert(_orbitingJoint == null);
+        D.AssertNull(_orbitingJoint);
         if (!_helm.IsActivelyUnderway) {
             _orbitingJoint = gameObject.AddComponent<FixedJoint>();
             highOrbitTgt.AssumeHighOrbit(this, _orbitingJoint);
@@ -2359,7 +2404,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     /// </summary>
     private void BreakOrbit() {
         D.Assert(IsInOrbit);
-        D.Assert(_orbitingJoint != null);
+        D.AssertNotNull(_orbitingJoint);
         string orbitMsg = "high";
         if (IsInCloseOrbit) {
             orbitMsg = "close";
@@ -2385,7 +2430,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     /// <param name="healthThreshold">The health threshold.</param>
     /// <returns></returns>
     private bool AssessNeedForRepair(float healthThreshold) {
-        D.Assert(CurrentState != ShipState.Repairing);
+        D.AssertNotEqual(ShipState.Repairing, CurrentState);
         if (_debugSettings.DisableRepair) {
             return false;
         }
@@ -2408,7 +2453,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     }
 
     private void InitiateRepair(bool retainSuperiorsOrderOnRepairCompletion) {
-        D.Assert(CurrentState != ShipState.Repairing);
+        D.AssertNotEqual(ShipState.Repairing, CurrentState);
         D.Assert(!_debugSettings.DisableRepair);
         D.Assert(Data.Health < Constants.OneHundredPercent);
 
@@ -2416,7 +2461,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         ShipOrder goToStationAndRepairOrder;
         if (IsThereNeedForAFormationStationChangeTo(WithdrawPurpose.Repair)) {
             // there is a need for a station change to repair
-            D.Assert(_fsmDisengagePurpose == WithdrawPurpose.None);
+            D.AssertDefault((int)_fsmDisengagePurpose);
             _fsmDisengagePurpose = WithdrawPurpose.Repair;
             goToStationAndRepairOrder = new ShipOrder(ShipDirective.Disengage, OrderSource.Captain) {
                 FollowonOrder = new ShipOrder(ShipDirective.Repair, OrderSource.Captain)
@@ -2523,7 +2568,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     /// <returns></returns>
     private bool TryDetermineNeedForFormationStationChange(WithdrawPurpose purpose, out AFormationManager.FormationStationSelectionCriteria stationSelectionCriteria) {
         if (IsThereNeedForAFormationStationChangeTo(purpose)) {
-            stationSelectionCriteria = new AFormationManager.FormationStationSelectionCriteria() { isReserveReqd = true };
+            stationSelectionCriteria = new AFormationManager.FormationStationSelectionCriteria() { IsReserveReqd = true };
             return true;
         }
         stationSelectionCriteria = default(AFormationManager.FormationStationSelectionCriteria);
@@ -2541,7 +2586,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         var currentStationInfo = FormationStation.StationInfo;
         switch (purpose) {
             case WithdrawPurpose.Disengage:
-                D.Assert(!IsHQ, "{0} as HQ is not allowed to {1}.", FullName, purpose.GetValueName());
+                D.Assert(!IsHQ, purpose.GetValueName());
                 if (currentStationInfo.IsReserve) {
                     // current station already meets desired needs
                     return false;
@@ -2849,7 +2894,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             AssessDebugShowCoursePlot();
         }
         else {
-            D.Assert(__coursePlot != null);
+            D.AssertNotNull(__coursePlot);
             __coursePlot.Dispose();
             __coursePlot = null;
         }
@@ -2902,14 +2947,14 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     private void EnableDebugShowVelocityRay(bool toEnable) {
         if (toEnable) {
-            D.Assert(__velocityRay == null);
+            D.AssertNull(__velocityRay);
             Reference<float> shipSpeed = new Reference<float>(() => ActualSpeedValue);
             string name = __velocityRayNameFormat.Inject(FullName);
             __velocityRay = new VelocityRay(name, transform, shipSpeed);
             AssessDebugShowVelocityRay();
         }
         else {
-            D.Assert(__velocityRay != null);
+            D.AssertNotNull(__velocityRay);
             __velocityRay.Dispose();
             __velocityRay = null;
         }
@@ -2974,6 +3019,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     #region Debug Orbit Collision Detection Reporting
 
     private void __WarnIfOrbitalEncounter(IObstacle obstacle) {
+        if (CurrentState != ShipState.AssumingCloseOrbit && !IsInOrbit) {
+            return;
+        }
         string orbitStateMsg = null;
         if (CurrentState == ShipState.AssumingCloseOrbit) {
             orbitStateMsg = "assuming close";
@@ -2984,14 +3032,17 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         else if (IsInHighOrbit) {
             orbitStateMsg = "in high";
         }
-        D.Warn(orbitStateMsg != null, "{0} has recorded a pending collision with {1} while {2} orbit.",
-            FullName, obstacle.FullName, orbitStateMsg);
+        if (orbitStateMsg != null) {
+            D.Warn("{0} has recorded a pending collision with {1} while {2} orbit.", FullName, obstacle.FullName, orbitStateMsg);
+        }
     }
 
     #endregion
 
     protected override void __ValidateRadius(float radius) {
-        D.Assert(radius <= TempGameValues.ShipMaxRadius, "{0} Radius {1:0.00} > Max {2:0.00}.", FullName, radius, TempGameValues.ShipMaxRadius);
+        if (radius > TempGameValues.ShipMaxRadius) {
+            D.Error("{0} Radius {1:0.00} > Max {2:0.00}.", FullName, radius, TempGameValues.ShipMaxRadius);
+        }
     }
 
     private Layers __DetermineMeshCullingLayer() {
@@ -3063,6 +3114,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         None,
 
         // Not Call()able
+
+        FinalInitialize,
 
         Idling,
         ExecuteMoveOrder,
@@ -3219,7 +3272,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
         private bool IsApNavJobRunning { get { return _apNavJob != null && _apNavJob.IsRunning; } }
 
-        private bool IsApMaintainPursuitJobRunning { get { return _apMaintainPursuitJob != null && _apMaintainPursuitJob.IsRunning; } }
+        private bool IsApMaintainPositionWhilePursuingJobRunning { get { return _apMaintainPositionWhilePursuingJob != null && _apMaintainPositionWhilePursuingJob.IsRunning; } }
 
         /// <summary>
         /// The initial speed the autopilot should travel at. 
@@ -3258,7 +3311,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         private bool _doesApObstacleCheckPeriodNeedRefresh;
         private GameTimeDuration _apObstacleCheckPeriod;
 
-        private Job _apMaintainPursuitJob;
+        private Job _apMaintainPositionWhilePursuingJob;
         private Job _apObstacleCheckJob;
         private Job _apNavJob;
         private Job _headingJob;
@@ -3302,7 +3355,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         /// <param name="isFleetwideMove">if set to <c>true</c> [is fleetwide move].</param>
         internal void EngagePilotToMoveTo(AutoPilotDestinationProxy apTgtProxy, Speed speed, bool isFleetwideMove) {
             Utility.ValidateNotNull(apTgtProxy);
-            D.Assert(!_inValidApSpeeds.Contains(speed), "{0} speed of {1} is invalid.".Inject(Name, speed.GetValueName()));
+            D.Assert(!_inValidApSpeeds.Contains(speed), speed.GetValueName());
             ApTargetProxy = apTgtProxy;
             ApSpeed = speed;
             _isApFleetwideMove = isFleetwideMove;
@@ -3336,7 +3389,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         /// </summary>
         private void EngagePilot() {
             D.Assert(!IsPilotEngaged);
-            D.Assert(ApCourse.Count != Constants.Zero, "{0} has no course plotted.", Name);
+            D.Assert(ApCourse.Count != Constants.Zero, Name);
             // Note: A heading job launched by the captain should be overridden when the pilot becomes engaged
             CleanupAnyRemainingJobs();
             //D.Log(ShowDebugLog, "{0} Pilot engaging.", Name);
@@ -3372,13 +3425,14 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         private void InitiateDirectCourseToTarget() {
             D.Assert(!IsApNavJobRunning);
             D.Assert(!IsApObstacleCheckJobRunning);
-            D.Assert(_apActionToExecuteWhenFleetIsAligned == null);
+            D.AssertNull(_apActionToExecuteWhenFleetIsAligned);
             //D.Log(ShowDebugLog, "{0} beginning prep to initiate direct course to {1} at {2}. \nDistance to target = {3:0.0}.",
             //Name, TargetFullName, ApTargetProxy.Position, ApTargetDistance);
 
             Vector3 targetBearing = (ApTargetProxy.Position - Position).normalized;
-            D.Assert(!targetBearing.IsSameAs(Vector3.zero), @"{0} ordered to _move to target {1} at same location. 
-                This should be filtered out by EngagePilot().", Name, ApTargetFullName);
+            if (targetBearing.IsSameAs(Vector3.zero)) {
+                D.Error("{0} ordered to _move to target {1} at same location. This should be filtered out by EngagePilot().", Name, ApTargetFullName);
+            }
             if (_isApFleetwideMove) {
                 ChangeHeading_Internal(targetBearing);
 
@@ -3414,12 +3468,14 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         private void InitiateCourseToTargetVia(AutoPilotDestinationProxy obstacleDetour) {
             D.Assert(!IsApNavJobRunning);
             D.Assert(!IsApObstacleCheckJobRunning);
-            D.Assert(_apActionToExecuteWhenFleetIsAligned == null);
+            D.AssertNull(_apActionToExecuteWhenFleetIsAligned);
             //D.Log(ShowDebugLog, "{0} initiating course to target {1} at {2} via obstacle detour {3}. Distance to detour = {4:0.0}.",
             //Name, TargetFullName, ApTargetProxy.Position, obstacleDetour.FullName, Vector3.Distance(Position, obstacleDetour.Position));
 
             Vector3 newHeading = (obstacleDetour.Position - Position).normalized;
-            D.Assert(!newHeading.IsSameAs(Vector3.zero), "{0}: ObstacleDetour and current location shouldn't be able to be the same.", Name);
+            if (newHeading.IsSameAs(Vector3.zero)) {
+                D.Error("{0}: ObstacleDetour and current location shouldn't be able to be the same.", Name);
+            }
             if (_isApFleetwideMove) {
                 ChangeHeading_Internal(newHeading);
 
@@ -3464,7 +3520,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             ResumeApSpeed();    // CurrentSpeed can be slow coming out of a detour, also uses ShipSpeed to catchup
             Vector3 targetBearing = (ApTargetProxy.Position - Position).normalized;
             ChangeHeading_Internal(targetBearing, headingConfirmed: () => {
-                //D.Log(ShowDebugLog, "{0} is now on heading to reach {1}.", Name, TargetFullName);
+                //D.Log(ShowDebugLog, "{0} is now on heading toward {1}.", Name, TargetFullName);
                 InitiateNavigationTo(ApTargetProxy, hasArrived: () => {
                     HandleTargetReached();
                 });
@@ -3495,9 +3551,10 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
 
         private void InitiateNavigationTo(AutoPilotDestinationProxy destination, Action hasArrived = null) {
-            D.Assert(_engineRoom.IsPropulsionEngaged, "{0}.InitiateNavigationTo({1}) called without propulsion engaged. AutoPilotSpeed: {2}",
-                Name, destination.FullName, ApSpeed.GetValueName());
-            D.Assert(!IsApNavJobRunning, "{0} already has an AutoPilotNavJob running!", Name);
+            if (!_engineRoom.IsPropulsionEngaged) {
+                D.Error("{0}.InitiateNavigationTo({1}) called without propulsion engaged. AutoPilotSpeed: {2}", Name, destination.FullName, ApSpeed.GetValueName());
+            }
+            D.Assert(!IsApNavJobRunning, Name);
 
             bool isDestinationADetour = destination != ApTargetProxy;
             bool isDestFastMover = destination.IsFastMover;
@@ -3508,13 +3565,14 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             float distanceToArrival;
             Vector3 directionToArrival;
 #pragma warning disable 0219
-            bool arrived = false;
+            bool isArrived = false;
 #pragma warning restore 0219
-            if (arrived = !destination.TryGetArrivalDistanceAndDirection(Position, out directionToArrival, out distanceToArrival)) {
+            if (isArrived = !destination.TryGetArrivalDistanceAndDirection(Position, out directionToArrival, out distanceToArrival)) {
                 // arrived
                 if (hasArrived != null) {
                     hasArrived();
                 }
+                return;
             }
             else {
                 //D.Log(ShowDebugLog, "{0} powering up. Distance to arrival at {1} = {2:0.0}.", Name, destination.FullName, distanceToArrival);
@@ -3530,7 +3588,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
             string jobName = "{0}.ApNavJob".Inject(Name);
             _apNavJob = _jobMgr.RecurringWaitForHours(new Reference<GameTimeDuration>(() => progressCheckPeriod), jobName, waitMilestone: () => {
-                if (arrived = !destination.TryGetArrivalDistanceAndDirection(Position, out directionToArrival, out distanceToArrival)) {
+                if (isArrived = !destination.TryGetArrivalDistanceAndDirection(Position, out directionToArrival, out distanceToArrival)) {
                     _apNavJob.Kill();
                     if (hasArrived != null) {
                         hasArrived();
@@ -3548,13 +3606,13 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 GameTimeDuration correctedPeriod;
                 if (TryCheckForPeriodOrSpeedCorrection(distanceToArrival, isIncreaseAboveApSpeedAllowed, halfArrivalWindowDepth, progressCheckPeriod, out correctedPeriod, out correctedSpeed)) {
                     if (correctedPeriod != default(GameTimeDuration)) {
-                        D.Assert(correctedSpeed == default(Speed));
+                        D.AssertDefault((int)correctedSpeed);
                         //D.Log(ShowDebugLog, "{0} is correcting progress check period from {1} to {2} en-route to {3}, Distance to arrival = {4:0.0}.",
                         //Name, progressCheckPeriod, correctedPeriod, destination.FullName, distanceToArrival);
                         progressCheckPeriod = correctedPeriod;
                     }
                     else {
-                        D.Assert(correctedSpeed != default(Speed));
+                        D.AssertNotDefault((int)correctedSpeed);
                         //D.Log(ShowDebugLog, "{0} is correcting speed from {1} to {2} en-route to {3}, Distance to arrival = {4:0.0}.",
                         //Name, CurrentSpeed.GetValueName(), correctedSpeed.GetValueName(), destination.FullName, distanceToArrival);
                         ChangeSpeed_Internal(correctedSpeed, _isApCurrentSpeedFleetwide);
@@ -3599,7 +3657,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                         continue;
                     }
                     // can't slow any further
-                    D.Assert(speed == Speed.ThrustersOnly);  // slowest
+                    D.AssertEqual(Speed.ThrustersOnly, speed);  // slowest
                     hoursPerCheckPeriod = MinHoursPerProgressCheckPeriodAllowed;
                     D.LogBold(ShowDebugLog, "{0} is too close at {1:0.00} to generate a progress check period that meets the min number of checks {2:0.#}. Check Qty: {3:0.0}.",
                         Name, distanceToArrival, MinNumberOfProgressChecksToBeginNavigation, minHoursToArrival / MinHoursPerProgressCheckPeriodAllowed);
@@ -3685,8 +3743,10 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                     correctedPeriod = new GameTimeDuration(MinHoursPerProgressCheckPeriodAllowed);
                     maxDistanceCoveredDuringNextProgressCheck = correctedPeriod.TotalInHours * _engineRoom.IntendedCurrentSpeedValue;
                     isDistanceCoveredPerCheckTooHigh = maxDistanceCoveredDuringNextProgressCheck > halfArrivalCaptureDepth;
-                    D.Warn(isDistanceCoveredPerCheckTooHigh, "{0} cannot cover less distance per check so could miss arrival window. DistanceCoveredBetweenChecks {1:0.00} > HalfArrivalCaptureDepth {2:0.00}.",
-                        Name, maxDistanceCoveredDuringNextProgressCheck, halfArrivalCaptureDepth);
+                    if (isDistanceCoveredPerCheckTooHigh) {
+                        D.Warn("{0} cannot cover less distance per check so could miss arrival window. DistanceCoveredBetweenChecks {1:0.00} > HalfArrivalCaptureDepth {2:0.00}.",
+                            Name, maxDistanceCoveredDuringNextProgressCheck, halfArrivalCaptureDepth);
+                    }
                     return true;
                 }
             }
@@ -3757,7 +3817,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         /// <param name="headingConfirmed">Delegate that fires when the ship gets to the new heading.</param>
         internal void ChangeHeading(Vector3 newHeading, Action headingConfirmed = null) {
             DisengagePilot(); // kills ChangeHeading job if pilot running
-            D.Warn(IsHeadingJobRunning, "{0} received sequential ChangeHeading calls from Captain.", Name);
+            if (IsHeadingJobRunning) {
+                D.Warn("{0} received sequential ChangeHeading calls from Captain.", Name);
+            }
             ChangeHeading_Internal(newHeading, headingConfirmed);
         }
 
@@ -3883,7 +3945,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         /// </summary>
         /// <param name="newSpeed">The new speed.</param>
         internal void ChangeSpeed(Speed newSpeed) {
-            D.Assert(__validExternalChangeSpeeds.Contains(newSpeed), "{0}: Invalid Speed {1}.", Name, newSpeed.GetValueName());
+            D.Assert(__validExternalChangeSpeeds.Contains(newSpeed), newSpeed.GetValueName());
             D.Log(ShowDebugLog, "{0} is about to disengage pilot and change speed to {1}.", Name, newSpeed.GetValueName());
             DisengagePilot();
             ChangeSpeed_Internal(newSpeed, isFleetSpeed: false);
@@ -3918,7 +3980,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         #region Obstacle Checking
 
         private void InitiateObstacleCheckingEnrouteTo(AutoPilotDestinationProxy destination, CourseRefreshMode courseRefreshMode) {
-            D.Assert(!IsApObstacleCheckJobRunning, "{0} already has a ObstacleCheckJob running!", Name);
+            D.Assert(!IsApObstacleCheckJobRunning, Name);
             _apObstacleCheckPeriod = __GenerateObstacleCheckPeriod();
             AutoPilotDestinationProxy detour;
             string jobName = "{0}.ApObstacleCheckJob".Inject(Name);
@@ -4029,7 +4091,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
 
         private bool TryCheckForObstacleEnrouteTo(AutoPilotDestinationProxy destination, out AutoPilotDestinationProxy detour, ref int iterationCount) {
-            D.AssertException(iterationCount++ < 10, "IterationCount {0} >= 10.", iterationCount);
+            D.AssertException(iterationCount++ < 10);
             detour = null;
             Vector3 destBearing = (destination.Position - Position).normalized;
             float rayLength = destination.GetObstacleCheckRayLength(Position);
@@ -4074,17 +4136,20 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         /// <summary>
         /// Launches a Job to monitor whether the ship needs to move to stay with the target.
         /// </summary>
-        private void MaintainPursuit() {
-            D.Assert(!IsApMaintainPursuitJobRunning);
-
+        private void MaintainPositionWhilePursuing() {
             ChangeSpeed_Internal(Speed.Stop, isFleetSpeed: false);
-            string jobName = "ShipApMaintainPursuitJob";
-            _apMaintainPursuitJob = _jobMgr.StartGameplayJob(WaitWhileArrived(), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
+            //D.Log(ShowDebugLog, "{0} is launching ApMaintainPositionWhilePursuingJob of {1}.", Name, ApTargetFullName);
+
+            string jobName = "ShipApMaintainPositionWhilePursuingJob";
+            D.Assert(!IsApMaintainPositionWhilePursuingJobRunning, Name);
+            _apMaintainPositionWhilePursuingJob = _jobMgr.StartGameplayJob(WaitWhileArrived(), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
                 if (!jobWasKilled) {    // killed only by CleanupAnyRemainingAutoPilotJobs
-                                        // lost pursuit position
-                    D.Log(ShowDebugLog, "{0} is resuming pursuit of {1}.", Name, ApTargetFullName);
+                    D.Log(ShowDebugLog, "{0} has naturally finished ApMaintainPositionWhilePursuingJob and is resuming pursuit of {1}.", Name, ApTargetFullName);     // pursued enemy moved out of my pursuit window
                     RefreshCourse(CourseRefreshMode.NewCourse);
                     ResumeDirectCourseToTarget();
+                }
+                else {
+                    D.Log(ShowDebugLog, "{0} ApMaintainPositionWhilePursuingJob pursuing {1} was killed.", Name, ApTargetFullName);
                 }
             });
         }
@@ -4153,11 +4218,11 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         /// Called when the ship 'arrives' at the Target.
         /// </summary>
         private void HandleTargetReached() {
-            D.Log(ShowDebugLog, "{0} at {1} reached {2} \nat {3}. Actual proximity: {4:0.0000} units.", Name, Position, ApTargetFullName, ApTargetProxy.Position, ApTargetDistance);
+            D.Log(ShowDebugLog, "{0} at {1} has reached {2} \nat {3}. Actual proximity: {4:0.0000} units.", Name, Position, ApTargetFullName, ApTargetProxy.Position, ApTargetDistance);
             RefreshCourse(CourseRefreshMode.ClearCourse);
 
             if (_isApInPursuit) {
-                MaintainPursuit();
+                MaintainPositionWhilePursuing();
             }
             else {
                 _ship.HandleApTargetReached();
@@ -4237,7 +4302,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             //D.Log(ShowDebugLog, "{0}.RefreshCourse() called. Mode = {1}. CourseCountBefore = {2}.", Name, mode.GetValueName(), AutoPilotCourse.Count);
             switch (mode) {
                 case CourseRefreshMode.NewCourse:
-                    D.Assert(waypoint == null);
+                    D.AssertNull(waypoint);
                     ApCourse.Clear();
                     ApCourse.Add(_ship);
                     IShipNavigable courseTgt;
@@ -4253,17 +4318,17 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                     ApCourse.Insert(ApCourse.Count - 1, new StationaryLocation(waypoint.Position));    // changes Course.Count
                     break;
                 case CourseRefreshMode.ReplaceObstacleDetour:
-                    D.Assert(ApCourse.Count == 3);
+                    D.AssertEqual(3, ApCourse.Count);
                     ApCourse.RemoveAt(ApCourse.Count - 2);          // changes Course.Count
                     ApCourse.Insert(ApCourse.Count - 1, new StationaryLocation(waypoint.Position));    // changes Course.Count
                     break;
                 case CourseRefreshMode.RemoveWaypoint:
-                    D.Assert(ApCourse.Count == 3);
+                    D.AssertEqual(3, ApCourse.Count);
                     bool isRemoved = ApCourse.Remove(new StationaryLocation(waypoint.Position));     // Course.RemoveAt(Course.Count - 2);  // changes Course.Count
                     D.Assert(isRemoved);
                     break;
                 case CourseRefreshMode.ClearCourse:
-                    D.Assert(waypoint == null);
+                    D.AssertNull(waypoint);
                     ApCourse.Clear();
                     break;
                 default:
@@ -4289,9 +4354,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 _ship.Command.RemoveFleetIsAlignedCallback(_apActionToExecuteWhenFleetIsAligned, _ship);
                 _apActionToExecuteWhenFleetIsAligned = null;
             }
-            if (IsApMaintainPursuitJobRunning) {
-                D.Log(ShowDebugLog, "{0} is going to kill running MaintainPursuitJob pursuing {1}.", Name, ApTargetFullName);
-                _apMaintainPursuitJob.Kill();
+            if (IsApMaintainPositionWhilePursuingJobRunning) {
+                D.Log(ShowDebugLog, "{0} is killing MaintainPositionWhilePursuingJob pursuing {1}.", Name, ApTargetFullName);
+                _apMaintainPositionWhilePursuingJob.Kill();
             }
         }
 
@@ -4306,8 +4371,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             if (_apObstacleCheckJob != null) {
                 _apObstacleCheckJob.Dispose();
             }
-            if (_apMaintainPursuitJob != null) {
-                _apMaintainPursuitJob.Dispose();
+            if (_apMaintainPositionWhilePursuingJob != null) {
+                _apMaintainPositionWhilePursuingJob.Dispose();
             }
             _engineRoom.Dispose();
         }
@@ -4549,10 +4614,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             /// </summary>
             private float ActualForwardSpeedValue {
                 get {
-                    Vector3 velocityPerSec = _shipRigidbody.velocity;
-                    if (_gameMgr.IsPaused) {
-                        velocityPerSec = _velocityToRestoreAfterPause;
-                    }
+                    Vector3 velocityPerSec = _gameMgr.IsPaused ? _velocityToRestoreAfterPause : _shipRigidbody.velocity;
                     float value = _shipTransform.InverseTransformDirection(velocityPerSec).z / _gameTime.GameSpeedAdjustedHoursPerSecond;
                     //D.Log(ShowDebugLog, "{0}.ActualForwardSpeedValue = {1:0.00}.", Name, value);
                     return value;
@@ -4643,7 +4705,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
                 if (Mathfx.Approx(intendedNewSpeedValue, __PreviousIntendedCurrentSpeedValue, .01F)) {
                     if (newSpeed != Speed.Stop) {    // can't be HardStop
-                        D.Assert(IsPropulsionEngaged, "{0} received ChangeSpeed({1}, {2:0.00}) without propulsion engaged to execute it.", Name, newSpeed.GetValueName(), intendedNewSpeedValue);
+                        if (!IsPropulsionEngaged) {
+                            D.Error("{0} received ChangeSpeed({1}, {2:0.00}) without propulsion engaged to execute it.", Name, newSpeed.GetValueName(), intendedNewSpeedValue);
+                        }
                     }
                     //D.Log(ShowDebugLog, "{0} is ignoring speed request of {1}({2:0.##}) as it is a duplicate.", Name, newSpeed.GetValueName(), intendedNewSpeedValue);
                     return;
@@ -4666,7 +4730,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             }
 
             internal void HandleTurnCompleted() {
-                D.Assert(!_gameMgr.IsPaused, "{0} reported completion of turn while paused.", _ship.FullName); // turn job should be paused
+                D.Assert(!_gameMgr.IsPaused, Name); // turn job should be paused if game is paused
                 if (IsCollisionAvoidanceEngaged || ActualSpeedValue == Constants.Zero) {
                     // Ignore if currently avoiding collision. After CA completes, any drift will be corrected
                     // Ignore if no speed => no drift to correct
@@ -4720,7 +4784,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 if (!IsForwardPropulsionEngaged) {
                     //D.Log(ShowDebugLog, "{0} is engaging forward propulsion at Speed {1}.", Name, CurrentSpeed.GetValueName());
 
-                    D.Assert(ActualForwardSpeedValue.IsLessThanOrEqualTo(IntendedCurrentSpeedValue, .01F), "{0}: ActualForwardSpeed {1:0.##} > IntendedSpeedValue {2:0.##}.", Name, ActualForwardSpeedValue, IntendedCurrentSpeedValue);
+                    if (!ActualForwardSpeedValue.IsLessThanOrEqualTo(IntendedCurrentSpeedValue, .01F)) {
+                        D.Error("{0}: ActualForwardSpeed {1:0.##} > IntendedSpeedValue {2:0.##}.", Name, ActualForwardSpeedValue, IntendedCurrentSpeedValue);
+                    }
                     string jobName = "{0}.FwdPropulsionJob".Inject(Name);
                     _forwardPropulsionJob = _jobMgr.StartGameplayJob(OperateForwardPropulsion(), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
                         //D.Log(ShowDebugLog, "{0} forward propulsion has ended.", Name);
@@ -4743,7 +4809,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                     ApplyForwardThrust(propulsionPower);
                     if (isFullPropulsionPowerNeeded && ActualForwardSpeedValue >= intendedSpeedValue) {
                         propulsionPower = GameUtility.CalculateReqdPropulsionPower(intendedSpeedValue, _shipData.Mass, _shipData.CurrentDrag);
-                        D.Assert(propulsionPower > Constants.ZeroF, "{0} forward propulsion power set to zero.", Name);
+                        D.Assert(propulsionPower > Constants.ZeroF, Name);
                         isFullPropulsionPowerNeeded = false;
                     }
                     yield return Yielders.WaitForFixedUpdate;
@@ -4781,8 +4847,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
                 if (!IsReversePropulsionEngaged) {
                     //D.Log(ShowDebugLog, "{0} is engaging reverse propulsion.", Name);
-
-                    D.Assert(ActualForwardSpeedValue > IntendedCurrentSpeedValue, "{0}: ActualForwardSpeed {1.0.##} <= IntendedSpeedValue {2:0.##}.", Name, ActualForwardSpeedValue, IntendedCurrentSpeedValue);
+                    if (ActualForwardSpeedValue <= IntendedCurrentSpeedValue) {
+                        D.Error("{0}: ActualForwardSpeed {1.0.##} <= IntendedSpeedValue {2:0.##}.", Name, ActualForwardSpeedValue, IntendedCurrentSpeedValue);
+                    }
                     string jobName = "{0}.RevPropulsionJob".Inject(Name);
                     _reversePropulsionJob = _jobMgr.StartGameplayJob(OperateReversePropulsion(), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
                         if (!jobWasKilled) {
@@ -4860,23 +4927,37 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             }
 
             internal void HandlePendingCollisionAverted(IObstacle obstacle) {
-                D.Assert(_caPropulsionJobs != null);
+                D.AssertNotNull(_caPropulsionJobs);
 
+                Profiler.BeginSample("Local Reference variable creation");
                 var mortalObstacle = obstacle as AMortalItem;
+                Profiler.EndSample();
                 if (mortalObstacle != null) {
+                    Profiler.BeginSample("Unsubscribing to event");
                     mortalObstacle.deathOneShot -= CollidingObstacleDeathEventHandler;
+                    Profiler.EndSample();
                 }
 
+                Profiler.BeginSample("D.Log string allocation");
                 D.Log(ShowDebugLog, "{0} dis-engaging Collision Avoidance for {1} as collision has been averted.", Name, obstacle.FullName);
+                Profiler.EndSample();
+
+                Profiler.BeginSample("DisengageCA");
                 DisengageCollisionAvoidancePropulsionFor(obstacle);
+                Profiler.EndSample();
+
                 if (!IsCollisionAvoidanceEngaged) {
                     // last CA Propulsion Job has completed
+                    Profiler.BeginSample("Resume Propulsion");
                     ResumePropulsionAtIntendedSpeed(); // UNCLEAR resume propulsion while turning?
+                    Profiler.EndSample();
                     if (_ship.IsTurning) {
                         // Turning so defer drift correction. Will engage when turn complete
                         return;
                     }
+                    Profiler.BeginSample("Engage Drift Correction");
                     EngageDriftCorrection();
+                    Profiler.EndSample();
                 }
                 else {
                     string caObstacles = _caPropulsionJobs.Keys.Select(obs => obs.FullName).Concatenate();
@@ -4923,7 +5004,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             }
 
             private void DisengageCollisionAvoidancePropulsionFor(IObstacle obstacle) {
-                D.Assert(_caPropulsionJobs.ContainsKey(obstacle), "{0}: Obstacle {1} not present.", Name, obstacle.FullName);
+                D.Assert(_caPropulsionJobs.ContainsKey(obstacle), obstacle.FullName);
 
                 _caPropulsionJobs[obstacle].Kill();
                 _caPropulsionJobs.Remove(obstacle);
@@ -5009,7 +5090,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 // must immediately adjust velocity when game speed changes as just adjusting thrust takes
                 // a long time to get to increased/decreased velocity
                 if (_gameMgr.IsPaused) {
-                    D.Assert(_isVelocityToRestoreAfterPauseRecorded, "{0} has not yet recorded VelocityToRestoreAfterPause.".Inject(Name));
+                    D.Assert(_isVelocityToRestoreAfterPauseRecorded, Name);
                     _velocityToRestoreAfterPause *= gameSpeedChangeRatio;
                 }
                 else {

@@ -108,7 +108,11 @@ public class CtxPickHandler : AMonoBase {
     #endregion
 
     private CtxObject Pick(Vector3 mousePos) {
+
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
         Camera cam = GetComponent<Camera>();
+        Profiler.EndSample();
+
         if (cam == null) {
             cam = Camera.main;
         }

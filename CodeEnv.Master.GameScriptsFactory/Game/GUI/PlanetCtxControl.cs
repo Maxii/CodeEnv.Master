@@ -40,7 +40,7 @@ public class PlanetCtxControl : PlanetoidCtxControl {
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Attack:
-                return !(_planetoidMenuOperator as IUnitAttackable).IsAttackingAllowedBy(_user)
+                return !(_planetoidMenuOperator as IUnitAttackable).IsAttackByAllowed(_user)
                     || !(_remoteUserOwnedSelectedItem as AUnitCmdItem).IsAttackCapable;
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:

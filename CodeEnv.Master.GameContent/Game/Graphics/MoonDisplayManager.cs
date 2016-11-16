@@ -26,6 +26,7 @@ namespace CodeEnv.Master.GameContent {
     public class MoonDisplayManager : ADisplayManager, IMortalDisplayManager {
 
         private IRevolver _revolver;
+        private IOrbitSimulator _orbitSimulator;
 
         public MoonDisplayManager(GameObject trackedItemGo, Layers meshLayer) : base(trackedItemGo, meshLayer) { }
 
@@ -50,13 +51,15 @@ namespace CodeEnv.Master.GameContent {
         protected override void InitializeOther(GameObject trackedItemGo) {
             base.InitializeOther(trackedItemGo);
             _revolver = trackedItemGo.GetSingleInterfaceInChildren<IRevolver>();
-            //_revolver.IsActivated = false;    // enabled = false in Awake
             //TODO Revolver settings
+            _orbitSimulator = trackedItemGo.GetComponent<IMoon>().CelestialOrbitSimulator;
         }
 
         protected override void AssessComponentsToShowOrOperate() {
             base.AssessComponentsToShowOrOperate();
             _revolver.IsActivated = IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS;
+            _orbitSimulator.IsActivated = IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS;
+            //D.Log("{0}: Revolver and OrbitSimulator IsActivated = {1}.", Name, IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS);
         }
 
         // Once showing (aka DisplayMgr instance created when first discerned) a Planet/Moon never has to 

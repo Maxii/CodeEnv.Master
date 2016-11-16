@@ -52,7 +52,7 @@ public class SystemCtxControl : ACtxControl {
 
     protected override bool IsSelectedItemMenuOperator(ISelectable selected) {
         if (_systemMenuOperator.IsSelected) {
-            D.Assert(_systemMenuOperator == selected as SystemItem);
+            D.AssertEqual(_systemMenuOperator, selected as SystemItem);
             return true;
         }
         return false;

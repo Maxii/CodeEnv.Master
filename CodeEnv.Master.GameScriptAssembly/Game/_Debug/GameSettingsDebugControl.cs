@@ -73,6 +73,21 @@ public class GameSettingsDebugControl : AMonoSingleton<GameSettingsDebugControl>
     [SerializeField]
     private bool _deployAdditionalAiCreators = false;
 
+    [Tooltip("The number of additional fleet creators per player")]
+    [Range(0, 9)]
+    [SerializeField]
+    private int _additionalFleetCreatorQty = 3;
+
+    [Tooltip("The number of additional starbase creators per player")]
+    [Range(0, 9)]
+    [SerializeField]
+    private int _additionalStarbaseCreatorQty = 3;
+
+    [Tooltip("The number of additional settlement creators per player")]
+    [Range(0, 9)]
+    [SerializeField]
+    private int _additionalSettlementCreatorQty = 3;
+
     [Tooltip("Check to zoom on a user unit when starting a new game. Not valid when _useDebugCreatorsOnly is checked")]
     [SerializeField]
     private bool _zoomOnUser = false;
@@ -223,11 +238,15 @@ public class GameSettingsDebugControl : AMonoSingleton<GameSettingsDebugControl>
         var userPlayerLeaderStat = LeaderFactory.Instance.MakeInstance(userPlayerSpecies);
         var userPlayerColor = _playerPrefsMgr.UserPlayerColor;
         var userPlayerTeamID = _playerPrefsMgr.UserPlayerTeam;
+        bool toDeployAdditionalAiCreators = !_useDebugCreatorsOnly && _deployAdditionalAiCreators;
         Player userPlayer = new Player(userPlayerSpeciesStat, userPlayerLeaderStat, IQ.None, userPlayerTeamID, userPlayerColor, isUser: true);
         var gameSettings = new GameSettings {
             __IsStartup = isStartup,
             __UseDebugCreatorsOnly = _useDebugCreatorsOnly,
-            __DeployAdditionalAICreators = !_useDebugCreatorsOnly && _deployAdditionalAiCreators,
+            __DeployAdditionalAICreators = toDeployAdditionalAiCreators,
+            __AdditionalFleetCreatorQty = toDeployAdditionalAiCreators ? _additionalFleetCreatorQty : Constants.Zero,
+            __AdditionalStarbaseCreatorQty = toDeployAdditionalAiCreators ? _additionalStarbaseCreatorQty : Constants.Zero,
+            __AdditionalSettlementCreatorQty = toDeployAdditionalAiCreators ? _additionalSettlementCreatorQty : Constants.Zero,
             __ZoomOnUser = !_useDebugCreatorsOnly && _zoomOnUser,
             UniverseSize = _universeSize.Convert(),
             SystemDensity = _systemDensity.Convert(),
@@ -235,10 +254,10 @@ public class GameSettingsDebugControl : AMonoSingleton<GameSettingsDebugControl>
             UserPlayer = userPlayer,
             AIPlayers = aiPlayers,
             UserStartLevel = _startLevel.Convert(),
-            AIPlayersStartLevel = aiPlayerStartLevels,
+            AIPlayersStartLevels = aiPlayerStartLevels,
             UserHomeSystemDesirability = _homeSystemDesirability.Convert(),
             AIPlayersHomeSystemDesirability = aiPlayerHomeSystemDesirabilties,
-            AIPlayersSeparationFromUser = aiPlayerSeparationFromUser
+            AIPlayersUserSeparations = aiPlayerSeparationFromUser
         };
         return gameSettings;
     }

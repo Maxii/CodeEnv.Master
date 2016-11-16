@@ -211,7 +211,9 @@ namespace CodeEnv.Master.Common {
         public static bool AreDirectionsWithinTolerance(Vector3 dirA, Vector3 dirB, float allowedDeviation = UnityConstants.AngleEqualityPrecision) {
             dirA.ValidateNormalized();
             dirB.ValidateNormalized();
-            D.Warn(allowedDeviation < UnityConstants.AngleEqualityPrecision, "Angle Deviation precision {0} cannot be < {1}.", allowedDeviation, UnityConstants.AngleEqualityPrecision);
+            if (allowedDeviation < UnityConstants.AngleEqualityPrecision) {
+                D.Warn("Angle Deviation precision {0} cannot be < {1}.", allowedDeviation, UnityConstants.AngleEqualityPrecision);
+            }
             allowedDeviation = Mathf.Clamp(allowedDeviation, UnityConstants.AngleEqualityPrecision, 180F);
             float actualDeviation = Vector3.Angle(dirA, dirB);
             D.Log("Deviation between directions {0} and {1} is {2} degrees.", dirA, dirB, actualDeviation);

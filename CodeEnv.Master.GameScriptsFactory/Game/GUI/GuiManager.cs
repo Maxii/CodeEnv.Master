@@ -57,7 +57,11 @@ public class GuiManager : AMonoSingleton<GuiManager> {
     private void InitializeButtonClickSystem() {
         _buttonLookup = new Dictionary<GuiElementID, GameObject>();
         var allButtons = gameObject.GetSafeComponentsInChildren<UIButton>(includeInactive: true);
-        var buttonGuiElements = allButtons.Select(b => b.gameObject.GetComponent<AGuiElement>()).Where(ge => ge != null);
+
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+        var buttonGuiElements = allButtons.Select(b => b.GetComponent<AGuiElement>()).Where(ge => ge != null);
+        Profiler.EndSample();
+
         buttonGuiElements.ForAll(bge => {
             _buttonLookup.Add(bge.ElementID, bge.gameObject);
             D.Log("{0} added {1} to ButtonLookup.", GetType().Name, bge.ElementID.GetValueName());
@@ -79,7 +83,7 @@ public class GuiManager : AMonoSingleton<GuiManager> {
     }
 
     public void HideFixedPanels(IList<UIPanel> exceptions) {
-        D.Assert(!_hiddenPanels.Any(), "{0} attempting to hide panels that are already hidden.".Inject(GetType().Name));
+        D.Assert(!_hiddenPanels.Any());
         WarnIfExceptionNotNeeded(exceptions);
         _hiddenPanels.AddRange(_fixedGuiPanels.Except(exceptions));
         _hiddenPanels.ForAll(p => p.alpha = Constants.ZeroF);

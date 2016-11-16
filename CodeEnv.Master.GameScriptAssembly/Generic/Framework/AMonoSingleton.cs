@@ -144,10 +144,10 @@ public abstract class AMonoSingleton<T> : AMonoBaseSingleton, IInstanceCount whe
 
     private void ValidateRootGameObjectState() {
         if (IsRootGameObject) {
-            D.Assert(transform.parent == null, "{0}.{1}: IsRootGameObject = true but has parent.", GetType().Name, transform.name);
+            D.AssertNull(transform.parent, transform.name);
         }
         else {
-            D.Assert(transform.parent != null, "{0}.{1}: IsRootGameObject = false but no parent.", GetType().Name, transform.name);
+            D.AssertNotNull(transform.parent, transform.name);
         }
     }
 

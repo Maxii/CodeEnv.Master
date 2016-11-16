@@ -58,6 +58,10 @@ namespace CodeEnv.Master.GameContent {
             var sData = data as SettlementCmdData;
             var accessCntlr = sData.InfoAccessCntlr;
 
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.AlertStatus)) {
+                AlertStatus = sData.AlertStatus;
+            }
+
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitDefense)) {
                 UnitDefensiveStrength = sData.UnitDefensiveStrength;
             }

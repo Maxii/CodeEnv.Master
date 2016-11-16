@@ -52,7 +52,7 @@ public class BaseCtxControl_AI : ACtxControl {
 
     protected override bool IsSelectedItemMenuOperator(ISelectable selected) {
         if (_baseMenuOperator.IsSelected) {
-            D.Assert(_baseMenuOperator == selected as AUnitBaseCmdItem);
+            D.AssertEqual(_baseMenuOperator, selected as AUnitBaseCmdItem);
             return true;
         }
         return false;
@@ -66,7 +66,7 @@ public class BaseCtxControl_AI : ACtxControl {
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Attack:
-                return !(_baseMenuOperator as IUnitAttackable).IsAttackingAllowedBy(_user)
+                return !(_baseMenuOperator as IUnitAttackable).IsAttackByAllowed(_user)
                     || !(_remoteUserOwnedSelectedItem as AUnitCmdItem).IsAttackCapable;
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:

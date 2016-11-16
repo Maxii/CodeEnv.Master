@@ -29,6 +29,9 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         Player Owner { get; }
 
+        void InitializeRangeDistance();
+
+
     }
 }
 

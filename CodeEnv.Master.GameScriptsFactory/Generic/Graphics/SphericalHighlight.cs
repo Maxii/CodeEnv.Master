@@ -141,8 +141,7 @@ public class SphericalHighlight : AMonoBase, ISphericalHighlight {
         }
     }
 
-    protected sealed override void Update() {
-        base.Update();
+    void Update() {
         UpdatePosition();
     }
 
@@ -165,10 +164,10 @@ public class SphericalHighlight : AMonoBase, ISphericalHighlight {
     #endregion
 
     protected void ValidateReuseable() {
-        D.Assert(_target == null);
-        D.Assert(Color == GameColor.None);
-        D.Assert(!_enableEditorAlphaControl, "{0} spawned with EditorAlphaControl enabled.", gameObject.name);
-        D.Assert(Alpha == Constants.ZeroF, "{0}.Alpha {1} should be Zero.", GetType().Name, Alpha);
+        D.AssertNull(_target, gameObject.name);
+        D.AssertDefault((int)Color, gameObject.name);
+        D.Assert(!_enableEditorAlphaControl, gameObject.name);
+        D.AssertEqual(Constants.ZeroF, Alpha, Alpha.ToString());
         //D.Log("{0}.ValidateReuseable() called.", GetType().Name);
     }
 

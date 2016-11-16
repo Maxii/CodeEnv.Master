@@ -56,11 +56,11 @@ namespace CodeEnv.Master.Common {
         /// A <see cref="System.String" /> that represents this instance.
         /// </returns>
         public string ToString(object objectToConvert) {
-#if DEBUG
-            if (_debugSettings.EnableVerboseDebugLog) {
-                _showPrivate = true;
-            }
-#endif
+            //#if DEBUG
+            //            if (_debugSettings.EnableVerboseDebugLog) {   // 11.12.16 Obsoleted EnableVerboseDebugLog
+            //                _showPrivate = true;
+            //            }
+            //#endif
             return ConvertToString(objectToConvert);
         }
 

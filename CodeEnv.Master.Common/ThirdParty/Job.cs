@@ -28,6 +28,22 @@ namespace CodeEnv.Master.Common {
     /// </summary>
     public class Job : IDisposable {
 
+        /**************************************************************************************************************
+         * Note 1: jobCompleted delegate execution delay
+         * The delegate jobCompleted will be executed during the Coroutine execution phase that follows the execution 
+         * of the final line of code in this job. Thus there is a time gap between Job completion and the execution of 
+         * jobCompleted. For many uses, this doesn't much matter, but for time-critical uses where asynchronous events
+         * can find this crack, it does. For instance, if you want to only be subscribed to an event while a Job is
+         * underway, using jobCompleted to unsubscribe creates a time window where the job is no longer underway, but 
+         * the event is still subscribed.
+         * 
+         * I've developed a pattern to get around this problem as I've found no way to build it into Job due to the lack
+         * of IEnumerator.HasNext or .Peek() functionality. The pattern for the above example: 1) unsubscribe from the event
+         * on the last line of the body of the IEnumerator coroutine. This handles the scenario where the job naturally
+         * completes. 2) add a KillXXXJob() method that both kills the job and immediately unsubscribes from the event. 
+         * This handles the scenario where the job is killed before it naturally completes.
+         **************************************************************************************************************/
+
         private const string DefaultJobName = "UnnamedJob";
 
         public static IJobRunner JobRunner { private get; set; }
@@ -35,6 +51,7 @@ namespace CodeEnv.Master.Common {
         /// <summary>
         /// Action delegate executed when the job is completed. Contains a
         /// boolean indicating whether the job was killed or completed normally.
+        /// <remarks>Warning: See Note 1 above on the time delay that comes from using the optional delegate jobCompleted.</remarks>
         /// </summary>
         public event Action<bool> jobCompleted;    // using EventHandler<JobArgs> just complicates usage of the class
 
@@ -44,7 +61,7 @@ namespace CodeEnv.Master.Common {
         public bool IsPaused {
             get { return _isPaused; }
             set {
-                D.Assert(_isPaused != value, "{0} is trying to set IsPaused to value {1} it already has.", JobName, value);
+                D.AssertNotEqual(value, _isPaused, JobName);
                 _isPaused = value;
                 IsPausedPropChangedHandler();
             }
@@ -67,7 +84,18 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         private bool _hasBeenPreviouslyRun;
 
-        public Job(IEnumerator coroutine, string jobName = DefaultJobName, APausableKillableYieldInstruction customYI = null, bool toStart = false, Action<bool> jobCompleted = null) {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Job"/> class.
+        /// <remarks>Warning: See Note 1 above on the time delay that comes from using the optional delegate jobCompleted.</remarks>
+        /// </summary>
+        /// <param name="coroutine">The coroutine to execute.</param>
+        /// <param name="jobName">Name of the job.</param>
+        /// <param name="customYI">Optional custom YieldInstruction.</param>
+        /// <param name="toStart">if set to <c>true</c> [to start].</param>
+        /// <param name="jobCompleted">Action delegate executed when the job is completed. Contains a
+        /// boolean indicating whether the job was killed or completed normally.</param>
+        public Job(IEnumerator coroutine, string jobName = DefaultJobName, APausableKillableYieldInstruction customYI = null,
+            bool toStart = false, Action<bool> jobCompleted = null) {
             _coroutine = coroutine;
             JobName = jobName;      // My 4.26.16 addition
             _customYI = customYI;   // My 8.12.16 addition
@@ -177,9 +205,7 @@ namespace CodeEnv.Master.Common {
 
         public void Start() {
             D.Log(JobName != DefaultJobName, "{0}.Start called.", JobName);
-            D.Assert(!_hasBeenPreviouslyRun, @"Attempting to reuse {0} which has already run to completion. 
-                {1}Either create a new Job for each use or use while(true) and manually kill it.",
-                JobName, Constants.NewLine);
+            D.Assert(!_hasBeenPreviouslyRun, JobName);
             IsRunning = true;
             JobRunner.StartCoroutine(Run());
             _hasBeenPreviouslyRun = true;
@@ -283,7 +309,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="isExplicitlyDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
         protected virtual void Dispose(bool isExplicitlyDisposing) {
             if (_alreadyDisposed) { // Allows Dispose(isExplicitlyDisposing) to mistakenly be called more than once
-                D.Warn("{0} has already been disposed.", GetType().Name);
+                D.Warn("{0} has already been disposed.", JobName);
                 return; //throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
             }
 

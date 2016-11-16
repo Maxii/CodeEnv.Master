@@ -54,7 +54,7 @@ namespace CodeEnv.Master.GameContent {
         public IWeaponMount WeaponMount {
             get { return _weaponMount; }
             set {
-                D.Assert(_weaponMount == null); // should only happen once
+                D.AssertNull(_weaponMount); // should only happen once
                 _weaponMount = value;
                 WeaponMountPropSetHandler();
             }
@@ -176,10 +176,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="enemyTarget">The enemy target.</param>
         /// <param name="isInRange">if set to <c>true</c> [is in range].</param>
         public void HandleEnemyTargetInRangeChanged(IElementAttackable enemyTarget, bool isInRange) {
-            D.Log("{0} received HandleEnemyTargetInRangeChanged. EnemyTarget: {1}, InRange: {2}.", Name, enemyTarget.FullName, isInRange);
+            //D.Log("{0} received HandleEnemyTargetInRangeChanged. EnemyTarget: {1}, InRange: {2}.", Name, enemyTarget.FullName, isInRange);
             if (isInRange) {
                 if (IsQualifiedEnemyTarget(enemyTarget)) {
-                    D.Assert(!_qualifiedEnemyTargets.Contains(enemyTarget), "{0} found {1} already being tracked as enemy.", FullName, enemyTarget.FullName);
+                    if (_qualifiedEnemyTargets.Contains(enemyTarget)) {
+                        D.Error("{0} found {1} already being tracked as enemy.", FullName, enemyTarget.FullName);
+                    }
                     _qualifiedEnemyTargets.Add(enemyTarget);
                 }
             }
@@ -229,8 +231,13 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="targetFiredOn">The target fired on.</param>
         /// <param name="ordnanceFired">The ordnance fired.</param>
         public virtual void HandleFiringInitiated(IElementAttackable targetFiredOn, IOrdnance ordnanceFired) {
-            D.Assert(IsOperational, "{0} fired at {1} while not operational.", Name, targetFiredOn.FullName);
-            D.Assert(_qualifiedEnemyTargets.Contains(targetFiredOn), "{0} fired at {1} but not in list of targets.", Name, targetFiredOn.FullName);
+            if (!IsOperational) {
+                D.Error("{0} fired at {1} while not operational.", Name, targetFiredOn.FullName);
+            }
+
+            if (!_qualifiedEnemyTargets.Contains(targetFiredOn)) {
+                D.Error("{0} fired at {1} but not in list of targets.", Name, targetFiredOn.FullName);
+            }
 
             //D.Log("{0}.HandleFiringInitiated(Target: {1}, Ordnance: {2}) called.", Name, targetFiredOn.FullName, ordnanceFired.Name);
             RecordFiredOrdnance(ordnanceFired);
@@ -337,8 +344,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void InitiateReloadCycle() {
-            //D.Log("{0} is initiating its reload cycle. Duration: {1:0.##} hours.", Name, ReloadPeriod);
-            D.Assert(!IsReloadJobRunning, "{0}.InitiateReloadCycle() called while already Running.", Name);
+            //D.Log("{0} is initiating its reload cycle. Duration: {1:0.#} hours.", Name, ReloadPeriod);
+            D.Assert(!IsReloadJobRunning, Name);
             string jobName = "{0}.ReloadJob".Inject(FullName);
             _reloadJob = _jobMgr.WaitForHours(ReloadPeriod, jobName, waitFinished: (jobWasKilled) => {
                 if (!jobWasKilled) {
@@ -464,7 +471,7 @@ namespace CodeEnv.Master.GameContent {
             if (DebugSettings.Instance.EnableCombatResultLogging) {
                 CombatResult combatResult;
                 if (_combatResults.TryGetValue(target, out combatResult)) {    // if the weapon never fired, there won't be a combat result
-                    D.Log(combatResult);
+                    D.Log(combatResult.ToString());
                     //_combatResults.Remove(target);    // for now let these accumulate so logging of hits and misses after the target
                 }                                       // is out of the monitor's range doesn't encounter a Dictionary key not found error
             }

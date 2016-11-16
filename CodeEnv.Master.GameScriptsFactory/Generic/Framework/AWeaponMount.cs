@@ -37,7 +37,7 @@ public abstract class AWeaponMount : AMount, IWeaponMount {
     public AWeapon Weapon {
         get { return _weapon; }
         set {
-            D.Assert(_weapon == null);  // only happens once
+            D.AssertNull(_weapon);  // only happens once
             SetProperty<AWeapon>(ref _weapon, value, "Weapon", WeaponPropSetHandler);
         }
     }
@@ -61,7 +61,7 @@ public abstract class AWeaponMount : AMount, IWeaponMount {
 
     protected override void Validate() {
         base.Validate();
-        D.Assert(_muzzle != null);
+        D.AssertNotNull(_muzzle);
     }
 
     /// <summary>

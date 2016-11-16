@@ -41,8 +41,8 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     /// </summary>
     /// <param name="trackedTgt">The target.</param>
     /// <param name="placement">The placement.</param>
-    /// <param name="min">The minimum show distance.</param>
-    /// <param name="max">The maximum show distance.</param>
+    /// <param name="min">The minimum show distance from the camera.</param>
+    /// <param name="max">The maximum show distance from the camera.</param>
     /// <returns></returns>
     public ITrackingWidget MakeUITrackingLabel(IWidgetTrackable trackedTgt, WidgetPlacement placement = WidgetPlacement.Over, float min = Constants.ZeroF, float max = Mathf.Infinity) {
         GameObject trackingPrefabGo = RequiredPrefabs.Instance.uiTrackingLabel.gameObject;
@@ -67,10 +67,8 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     /// <param name="trackedTgt">The target.</param>
     /// <param name="atlasID">The atlas identifier.</param>
     /// <param name="placement">The placement.</param>
-    /// <param name="min">The minimum show distance.</param>
-    /// <param name="max">The maximum show distance.</param>
     /// <returns></returns>
-    public ITrackingWidget MakeUITrackingSprite(IWidgetTrackable trackedTgt, AtlasID atlasID, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF, float max = Mathf.Infinity) {
+    public ITrackingWidget MakeUITrackingSprite(IWidgetTrackable trackedTgt, AtlasID atlasID, WidgetPlacement placement = WidgetPlacement.Above) {
         GameObject trackingPrefabGo = RequiredPrefabs.Instance.uiTrackingSprite.gameObject;
         GameObject trackingWidgetGo = NGUITools.AddChild(DynamicWidgetsFolder.Instance.Folder.gameObject, trackingPrefabGo);
 
@@ -82,7 +80,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         trackingWidget.AtlasID = atlasID;
         trackingWidget.Target = trackedTgt;
         trackingWidget.Placement = placement;
-        trackingWidget.SetShowDistance(min, max);
+        ////trackingSprite.SetShowDistance(min, max);
         //D.Log("{0} made a {1} for {2}.", Name, typeof(UITrackingSprite).Name, target.DisplayName);
         return trackingWidget;
     }
@@ -96,14 +94,14 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     /// <param name="min">The minimum show distance.</param>
     /// <param name="max">The maximum show distance.</param>
     /// <returns></returns>
-    public IResponsiveTrackingSprite MakeResponsiveTrackingSprite(IWidgetTrackable trackedTgt, IconInfo iconInfo, float min = Constants.ZeroF, float max = Mathf.Infinity) {
+    public IResponsiveTrackingSprite MakeResponsiveTrackingSprite(IWidgetTrackable trackedTgt, IconInfo iconInfo) {
         GameObject trackingPrefabGo = RequiredPrefabs.Instance.worldTrackingSprite;
         GameObject trackingWidgetGo = NGUITools.AddChild(trackedTgt.transform.gameObject, trackingPrefabGo);
 
         var trackingSprite = trackingWidgetGo.AddComponent<ResponsiveTrackingSprite>();   // AddComponent() runs Awake before returning
         trackingSprite.Target = trackedTgt;
         trackingSprite.IconInfo = iconInfo;
-        trackingSprite.SetShowDistance(min, max);
+        ////trackingSprite.SetShowDistance(min, max);
         //D.Log("{0} made a {1} for {2}.", Name, typeof(ResponsiveTrackingSprite).Name, target.DisplayName);
         return trackingSprite;
     }
@@ -113,9 +111,8 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     /// </summary>
     /// <param name="trackedTgt">The target.</param>
     /// <param name="placement">The placement.</param>
-    /// <param name="min">The minimum show distance.</param>
     /// <returns></returns>
-    public ITrackingWidget MakeVariableSizeTrackingLabel(IWidgetTrackable trackedTgt, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF) {
+    public ITrackingWidget MakeVariableSizeTrackingLabel(IWidgetTrackable trackedTgt, WidgetPlacement placement = WidgetPlacement.Above) {
         GameObject trackingPrefabGo = RequiredPrefabs.Instance.worldTrackingLabel;
         GameObject trackingWidgetGo = NGUITools.AddChild(trackedTgt.transform.gameObject, trackingPrefabGo);
 
@@ -126,7 +123,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         var trackingWidget = trackingWidgetGo.AddComponent<VariableSizeTrackingLabel>();   // AddComponent() runs Awake before returning
         trackingWidget.Target = trackedTgt;
         trackingWidget.Placement = placement;
-        trackingWidget.SetShowDistance(min);
+        ////trackingSprite.SetShowDistance(min);
         //D.Log("{0} made a {1} for {2}.", Name, typeof(VariableSizeTrackingSprite).Name, target.DisplayName);
         return trackingWidget;
     }
@@ -138,9 +135,8 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     /// <param name="trackedTgt">The target.</param>
     /// <param name="atlasID">The atlas identifier.</param>
     /// <param name="placement">The placement.</param>
-    /// <param name="min">The minimum show distance.</param>
     /// <returns></returns>
-    public ITrackingWidget MakeVariableSizeTrackingSprite(IWidgetTrackable trackedTgt, AtlasID atlasID, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF) {
+    public ITrackingWidget MakeVariableSizeTrackingSprite(IWidgetTrackable trackedTgt, AtlasID atlasID, WidgetPlacement placement = WidgetPlacement.Above) {
         GameObject trackingPrefabGo = RequiredPrefabs.Instance.worldTrackingSprite;
         GameObject trackingWidgetGo = NGUITools.AddChild(trackedTgt.transform.gameObject, trackingPrefabGo);
 
@@ -152,7 +148,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         trackingWidget.AtlasID = atlasID;
         trackingWidget.Target = trackedTgt;
         trackingWidget.Placement = placement;
-        trackingWidget.SetShowDistance(min);
+        ////trackingSprite.SetShowDistance(min);
         //D.Log("{0} made a {1} for {2}.", Name, typeof(VariableSizeTrackingSprite).Name, target.DisplayName);
         return trackingWidget;
     }
@@ -162,30 +158,26 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     /// </summary>
     /// <param name="trackedTgt">The target.</param>
     /// <param name="iconInfo">The icon information.</param>
-    /// <param name="min">The minimum show distance.</param>
-    /// <param name="max">The maximum show distance.</param>
     /// <returns></returns>
-    public ITrackingSprite MakeConstantSizeTrackingSprite(IWidgetTrackable trackedTgt, IconInfo iconInfo, float min = Constants.ZeroF, float max = Mathf.Infinity) {
+    public ITrackingSprite MakeConstantSizeTrackingSprite(IWidgetTrackable trackedTgt, IconInfo iconInfo) {
         GameObject trackingPrefabGo = RequiredPrefabs.Instance.worldTrackingSprite;
         GameObject trackingWidgetGo = NGUITools.AddChild(trackedTgt.transform.gameObject, trackingPrefabGo);
 
         var trackingSprite = trackingWidgetGo.AddComponent<ConstantSizeTrackingSprite>();  // AddComponent() runs Awake before returning
         trackingSprite.Target = trackedTgt;
         trackingSprite.IconInfo = iconInfo;
-        trackingSprite.SetShowDistance(min, max);
+        ////trackingSprite.SetShowDistance(min, max);
         //D.Log("{0} made a {1} for {2}.", Name, typeof(ConstantSizeTrackingSprite).Name, target.DisplayName);
         return trackingSprite;
     }
 
     /// <summary>
-    ///  Creates a label whose size stays constant, independent of the size of the target, parented to and tracking the <c>target</c>.
+    /// Creates a label whose size stays constant, independent of the size of the target, parented to and tracking the <c>target</c>.
     /// </summary>
     /// <param name="trackedTgt">The target.</param>
     /// <param name="placement">The placement.</param>
-    /// <param name="min">The minimum show distance.</param>
-    /// <param name="max">The maximum show distance.</param>
     /// <returns></returns>
-    public ITrackingWidget MakeConstantSizeTrackingLabel(IWidgetTrackable trackedTgt, WidgetPlacement placement = WidgetPlacement.Above, float min = Constants.ZeroF, float max = Mathf.Infinity) {
+    public ITrackingWidget MakeConstantSizeTrackingLabel(IWidgetTrackable trackedTgt, WidgetPlacement placement = WidgetPlacement.Above) {
         GameObject trackingPrefabGo = RequiredPrefabs.Instance.worldTrackingLabel;
         GameObject trackingWidgetGo = NGUITools.AddChild(trackedTgt.transform.gameObject, trackingPrefabGo);
 
@@ -196,7 +188,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         var trackingWidget = trackingWidgetGo.AddComponent<ConstantSizeTrackingLabel>();   // AddComponent() runs Awake before returning
         trackingWidget.Target = trackedTgt;
         trackingWidget.Placement = placement;
-        trackingWidget.SetShowDistance(min, max);
+        ////trackingWidget.SetShowDistance(min, max);
         //D.Log("{0} made a {1} for {2}.", Name, typeof(ConstantSizeTrackingSprite).Name, target.DisplayName);
         return trackingWidget;
     }

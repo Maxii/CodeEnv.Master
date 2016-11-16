@@ -55,10 +55,11 @@ public class FormationGridOrganizer : AMonoBase {
     }
 
     private void ValidateValueSettings() {
-        D.Assert(cellSize != Vector3.zero);
-        D.Assert(cellSize.x.ApproxEquals(cellSize.y) && cellSize.y.ApproxEquals(cellSize.z));
-        D.Assert(gridDimensions != Vector3.zero);
-        D.Assert(gridDimensions.x > 0F && gridDimensions.y > 0F && gridDimensions.z > 0F);
+        D.Assert(cellSize != default(Vector3));  //D.AssertNotDefault(cellSize);
+        D.AssertApproxEqual(cellSize.x, cellSize.y);
+        D.AssertApproxEqual(cellSize.y, cellSize.z);
+        D.Assert(gridDimensions != default(Vector3));   //D.AssertNotDefault(gridDimensions);
+        D.Assert(gridDimensions.x > Constants.ZeroF && gridDimensions.y > Constants.ZeroF && gridDimensions.z > Constants.ZeroF);
         ValidateAsInteger(gridDimensions.x);
         ValidateAsInteger(gridDimensions.y);
         ValidateAsInteger(gridDimensions.z);
@@ -121,14 +122,16 @@ public class FormationGridOrganizer : AMonoBase {
         var indexesFound = new List<int>(rowElements.Length);
         rowElements.ForAll(e => {
             int index = e.index;
-            D.Assert(index != Constants.MinusOne, "{0}.{1} not set.".Inject(e.gameObject.name, typeof(ElementIndexer).Name));
-            D.Warn(indexesFound.Contains(index), "Duplicate {0} index {1} found. Order will not be deterministic.", typeof(ElementIndexer).Name, index);
+            D.AssertNotEqual(Constants.MinusOne, index, "{0}.{1} not set.".Inject(e.gameObject.name, typeof(ElementIndexer).Name));
+            if (indexesFound.Contains(index)) {
+                D.Warn("Duplicate {0} index {1} found. Order will not be deterministic.", typeof(ElementIndexer).Name, index);
+            }
             indexesFound.Add(index);
         });
     }
 
     private void ValidateAsInteger(float value) {
-        D.Assert(Mathfx.Approx((value * 10F) % 10F, 0F, 0.01F));
+        D.Assert(Mathfx.Approx((value * 10F) % 10F, Constants.ZeroF, 0.01F));
     }
 
     protected override void Cleanup() { }

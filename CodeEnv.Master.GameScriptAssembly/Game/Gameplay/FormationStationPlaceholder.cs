@@ -45,8 +45,8 @@ public class FormationStationPlaceholder : AFormationStation {
 
     protected override void Validate() {
         base.Validate();
-        D.Assert(SlotID != FormationStationSlotID.None);
-        D.Assert(gameObject.GetSingleComponentInChildren<MeshRenderer>() != null);
+        D.AssertNotDefault((int)SlotID);
+        D.AssertNotNull(gameObject.GetSingleComponentInChildren<MeshRenderer>());
     }
 
     protected override void Cleanup() { }

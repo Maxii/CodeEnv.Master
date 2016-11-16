@@ -104,13 +104,13 @@ namespace CodeEnv.Master.GameContent {
 
         protected void OnIsOperationalChanged() {
             if (isOperationalChanged != null) {
-                isOperationalChanged(this, new EventArgs());
+                isOperationalChanged(this, EventArgs.Empty);
             }
         }
 
         private void OnIsDamagedChanged() {
             if (isDamagedChanged != null) {
-                isDamagedChanged(this, new EventArgs());
+                isDamagedChanged(this, EventArgs.Empty);
             }
         }
 

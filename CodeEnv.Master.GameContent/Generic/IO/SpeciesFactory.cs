@@ -38,7 +38,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public SpeciesStat MakeInstance(Species species) {
-            D.Assert(species != Species.None);
+            D.AssertNotDefault((int)species);
             SpeciesStat stat;
             if (!_statCache.TryGetValue(species, out stat)) {
                 stat = _xmlReader.CreateStat(species);
@@ -95,7 +95,9 @@ namespace CodeEnv.Master.GameContent {
                         break;
                     }
                 }
-                D.Assert(stat != default(SpeciesStat), "{0} could not find Xml Node for Species {1}.", Name, species.GetValueName());
+                if (stat == default(SpeciesStat)) {
+                    D.Error("{0} could not find Xml Node for Species {1}.", Name, species.GetValueName());
+                }
                 return stat;
             }
 

@@ -27,6 +27,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class PlanetoidData : AMortalItemData {
 
+        private const string FullNameFormat = "{0}_{1}";
+
         public PlanetoidCategory Category { get; private set; }
 
         public float Radius { get; private set; }
@@ -37,9 +39,7 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<string>(ref _parentName, value, "ParentName"); }
         }
 
-        public override string FullName {
-            get { return ParentName.IsNullOrEmpty() ? Name : ParentName + Constants.Underscore + Name; }
-        }
+        // Planetoid FullNames already include their System's name (Regulas6, Regulas6a)
 
         /// <summary>
         /// The speed at which this planetoid is orbiting in Units/Hr.
@@ -110,7 +110,7 @@ namespace CodeEnv.Master.GameContent {
 
         private IntVector3 InitializeSectorID() {
             IntVector3 sectorID = References.SectorGrid.GetSectorIdThatContains(Position);
-            D.Assert(sectorID != default(IntVector3));
+            D.AssertNotDefault(sectorID);
             MarkAsChanged();
             return sectorID;
         }

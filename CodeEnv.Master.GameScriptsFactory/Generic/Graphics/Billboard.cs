@@ -74,8 +74,7 @@ public class Billboard : AMonoBase, IBillboard {
         }
     }
 
-    protected override void Update() {
-        base.Update();
+    void Update() {
         if (__checkFacingCounter >= CheckFacingCounterThreshold) {
             UpdateFacing();
             __checkFacingCounter = Constants.Zero;

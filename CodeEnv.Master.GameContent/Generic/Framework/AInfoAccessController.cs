@@ -21,6 +21,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AInfoAccessController {
 
+        protected bool ShowDebugLog { get { return _data.ShowDebugLog; } }
+
         protected AItemData _data;
 
         public AInfoAccessController(AItemData data) {

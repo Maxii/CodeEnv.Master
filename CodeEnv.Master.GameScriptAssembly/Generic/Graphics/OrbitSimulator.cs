@@ -67,7 +67,7 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
     public OrbitData OrbitData {
         get { return _orbitData; }
         set {
-            D.Assert(_orbitData == null);   // one time only
+            D.AssertNull(_orbitData);   // one time only
             _orbitData = value;
             OrbitDataPropSetHandler();
         }
@@ -114,14 +114,14 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
     private float InitializeOrbitSpeed() {
         float orbitSpeedInUnitsPerHour = (2F * Mathf.PI * OrbitData.MeanRadius) / (OrbitData.OrbitPeriod.TotalInHours / _relativeOrbitRate);
         if (!(this is ShipCloseOrbitSimulator)) {
-            D.Warn(orbitSpeedInUnitsPerHour > TempGameValues.__MaxPlanetoidOrbitSpeed, "{0} orbitSpeed {1:0.0000} > max {2:0.0000}.",
-                Name, orbitSpeedInUnitsPerHour, TempGameValues.__MaxPlanetoidOrbitSpeed);
+            if (orbitSpeedInUnitsPerHour > TempGameValues.__MaxPlanetoidOrbitSpeed) {
+                D.Warn("{0} orbitSpeed {1:0.0000} > max {2:0.0000}.", Name, orbitSpeedInUnitsPerHour, TempGameValues.__MaxPlanetoidOrbitSpeed);
+            }
         }
         return orbitSpeedInUnitsPerHour;
     }
 
-    protected override void Update() {
-        base.Update();
+    void Update() {
         if (_updateOrbitCounter >= UpdateOrbitCounterThreshold) {
             float deltaTimeSinceLastUpdate = _gameTime.DeltaTime * _updateOrbitCounter;
             UpdateOrbit(deltaTimeSinceLastUpdate);

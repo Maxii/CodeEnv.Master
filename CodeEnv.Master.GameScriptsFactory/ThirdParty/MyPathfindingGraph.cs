@@ -459,7 +459,6 @@ namespace Pathfinding {
 
         private float _nodeSeparationDistance;
 
-
         public override void ScanInternal(OnScanStatus statusCallback) {
             var walkableOpenSpaceWaypoints = GenerateWalkableOpenSpaceWaypoints();
             var walkableSystemWaypoints = GenerateWalkableInteriorSystemWaypoints();
@@ -472,7 +471,7 @@ namespace Pathfinding {
         }
 
         private IList<Vector3> GenerateWalkableInteriorSystemWaypoints() {
-            D.Assert(_nodeSeparationDistance != Constants.ZeroF);   // method should follow GenerateWalkableOpenSpaceWaypoints
+            D.AssertNotDefault(_nodeSeparationDistance);   // method should follow GenerateWalkableOpenSpaceWaypoints
             List<Vector3> allSystemInteriorWaypoints = new List<Vector3>();
             var systems = GameManager.Instance.GameKnowledge.Systems;
             if (systems.Any()) {
@@ -504,8 +503,12 @@ namespace Pathfinding {
                     var aSystemApproachWaypoints = MyMath.CalcVerticesOfIcosahedronSurroundingInscribedSphere(system.Position,
                         systemApproachWaypointsInscribedSphereRadius, out distanceBetweenSystemApproachWaypoints, out maxNodeDistance);
                     if (previousMaxNodeDistance > Constants.ZeroF) {
-                        D.Assert(Mathfx.Approx(previousDistanceBetweenWaypoints, distanceBetweenSystemApproachWaypoints, .1F), "{0} != {1}.", previousDistanceBetweenWaypoints, distanceBetweenSystemApproachWaypoints);
-                        D.Assert(Mathfx.Approx(previousMaxNodeDistance, maxNodeDistance, .1F), "{0} != {1}.", previousMaxNodeDistance, maxNodeDistance);
+                        if (!Mathfx.Approx(previousDistanceBetweenWaypoints, distanceBetweenSystemApproachWaypoints, .1F)) {
+                            D.Error("{0} != {1}.", previousDistanceBetweenWaypoints, distanceBetweenSystemApproachWaypoints);
+                        }
+                        if (!Mathfx.Approx(previousMaxNodeDistance, maxNodeDistance, .1F)) {
+                            D.Error("{0} != {1}.", previousMaxNodeDistance, maxNodeDistance);
+                        }
                     }
                     systemApproachWaypoints.AddRange(aSystemApproachWaypoints);
                 }
@@ -586,7 +589,9 @@ namespace Pathfinding {
                 float distanceBetweenUCenterWaypoints;
                 uCenterWaypointsInscribedSphereRadius = universeCenter.Data.CloseOrbitOuterRadius * UniverseCenterItem.RadiusMultiplierForWaypointInscribedSphere;
                 universeCenterWaypoints = MyMath.CalcVerticesOfIcosahedronSurroundingInscribedSphere(universeCenter.Position, uCenterWaypointsInscribedSphereRadius, out distanceBetweenUCenterWaypoints);
-                D.Assert(distanceBetweenUCenterWaypoints <= _nodeSeparationDistance, "{0} > {1}.", distanceBetweenUCenterWaypoints, _nodeSeparationDistance);
+                if (distanceBetweenUCenterWaypoints > _nodeSeparationDistance) {
+                    D.Error("{0} should be <= {1}.", distanceBetweenUCenterWaypoints, _nodeSeparationDistance);
+                }
                 //D.Log("{0}: Distance between UCenterWaypoints = {1:0.#}.", GetType().Name, distanceBetweenUCenterWaypoints);
 
                 // remove SectorNavigationWaypoints present inside sphere containing UniverseCenterWaypoints
@@ -630,7 +635,7 @@ namespace Pathfinding {
                 nodeCount++;
                 AddToLookup(node);
             }
-            D.Assert(nodeCount == nodes.Length, "{0}: {1} != {2}.", GetType().Name, nodeCount, nodes.Length);
+            D.AssertEqual(nodes.Length, nodeCount);
             nextNodeIndex = indexAfterLastNode;
         }
 

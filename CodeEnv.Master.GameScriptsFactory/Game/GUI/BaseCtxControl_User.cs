@@ -71,7 +71,7 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
 
     protected override bool IsSelectedItemMenuOperator(ISelectable selected) {
         if (_baseMenuOperator.IsSelected) {
-            D.Assert(_baseMenuOperator == selected as AUnitBaseCmdItem);
+            D.AssertEqual(_baseMenuOperator, selected as AUnitBaseCmdItem);
             return true;
         }
         return false;
@@ -114,7 +114,7 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
     protected override bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(BaseDirective directive, out IEnumerable<INavigable> targets) {
         switch (directive) {
             case BaseDirective.Attack:
-                targets = _userKnowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsAttackingAllowedBy(_user)).Cast<INavigable>();
+                targets = _userKnowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsWarAttackByAllowed(_user)).Cast<INavigable>();
                 // TODO InRange?
                 return true;
             case BaseDirective.Repair:
@@ -193,7 +193,7 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
 
     private void IssueRemoteUserShipOrder(int itemID) {
         var directive = (ShipDirective)_directiveLookup[itemID];
-        D.Assert(directive == ShipDirective.Disband);   // HACK
+        D.AssertEqual(ShipDirective.Disband, directive);   // HACK
         IShipNavigable target = _baseMenuOperator;
         var remoteShip = _remoteUserOwnedSelectedItem as ShipItem;
         bool toNotifyCmd = false;

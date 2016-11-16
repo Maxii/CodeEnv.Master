@@ -100,7 +100,7 @@ public class GuiPlayerCountPopupList : AGuiMenuPopupList<int> {
         var newGameMenuWindow = gameObject.GetSingleComponentInParents<AGuiWindow>();
         var aiIQPopups = newGameMenuWindow.gameObject.GetSafeComponentsInChildren<GuiPlayerIQPopupList>(includeInactive: true);
         aiIQPopups.ForAll(aiIQPopup => {
-            var aiPlayerContainer = aiIQPopup.transform.parent.parent.gameObject.GetSafeComponent<UIWidget>();  // HACK
+            var aiPlayerContainer = aiIQPopup.transform.parent.parent.GetSafeComponent<UIWidget>();  // HACK
             _aiPlayerContainerLookup.Add(aiIQPopup.ElementID, aiPlayerContainer);
         });
     }

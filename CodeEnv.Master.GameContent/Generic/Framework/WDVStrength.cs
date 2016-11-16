@@ -66,7 +66,8 @@ namespace CodeEnv.Master.GameContent {
         /// The remaining WDVStrength (if any).
         /// </returns>
         public static WDVStrength operator -(WDVStrength interdictedStrength, WDVStrength interdictingStrength) {
-            D.Assert(interdictingStrength.Category != WDVCategory.None && interdictedStrength.Category != WDVCategory.None);
+            D.AssertNotDefault((int)interdictingStrength.Category);
+            D.AssertNotDefault((int)interdictedStrength.Category);
             if (interdictedStrength.Category != interdictingStrength.Category) {
                 // intercepting countermeasure vehicle is not the right tech reqd to intercept this ordnance delivery vehicle so it has no effect
                 return interdictedStrength;
@@ -130,7 +131,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="value">The value.</param>
         public WDVStrength(WDVCategory category, float value)
             : this() {
-            D.Assert(category != WDVCategory.None);
+            D.AssertNotDefault((int)category);
             Utility.ValidateNotNegative(value);
             Category = category;
             Value = value <= MaxValue ? value : MaxValue;

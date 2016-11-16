@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class NewGamePreferenceSettings {
 
-        public UniverseSizeGuiSelection UniverseSizeGuiSelection { get; set; }
+        public UniverseSizeGuiSelection UniverseSizeSelection { get; set; }
 
         public UniverseSize UniverseSize { get; set; }  // 10.4.16 Reqd to know which Pref Property gets PlayerCount
         public int PlayerCount { get; set; }
@@ -40,6 +40,14 @@ namespace CodeEnv.Master.GameContent {
 
         public TeamID UserPlayerTeam { get; set; }
         public TeamID[] AIPlayersTeams { get; set; }
+
+        public EmpireStartLevelGuiSelection UserPlayerStartLevelSelection { get; set; }
+        public EmpireStartLevelGuiSelection[] AIPlayersStartLevelSelections { get; set; }
+
+        public SystemDesirabilityGuiSelection UserPlayerHomeDesirabilitySelection { get; set; }
+        public SystemDesirabilityGuiSelection[] AIPlayersHomeDesirabilitySelections { get; set; }
+
+        public PlayerSeparationGuiSelection[] AIPlayersUserSeparationSelections { get; set; }
 
         public NewGamePreferenceSettings() { }
 

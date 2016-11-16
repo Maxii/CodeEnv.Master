@@ -72,7 +72,7 @@ namespace CodeEnv.Master.GameContent {
 
         private IntVector3 InitializeSectorID() {
             IntVector3 sectorID = References.SectorGrid.GetSectorIdThatContains(Position);
-            D.Assert(sectorID != default(IntVector3));
+            D.AssertNotDefault(sectorID);
             MarkAsChanged();
             return sectorID;
         }

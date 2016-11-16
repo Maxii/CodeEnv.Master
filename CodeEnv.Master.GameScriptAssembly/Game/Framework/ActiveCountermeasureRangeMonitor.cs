@@ -41,35 +41,29 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
         activeCM.RangeMonitor = this;
     }
 
-    protected override void HandleDetectedObjectAdded(IInterceptableOrdnance newlyDetectedOrdnance) {
-        var distanceFromMonitor = Vector3.Distance(newlyDetectedOrdnance.Position, transform.position);
-        D.Log(ShowDebugLog, "{0} added {1}. Distance from Monitor = {2:0.#}, Monitor Range = {3:0.#}.", FullName, newlyDetectedOrdnance.FullName, distanceFromMonitor, RangeDistance);
-        if (newlyDetectedOrdnance.Owner == Owner) {
-            // its one of ours
-            if (ConfirmNotIncoming(newlyDetectedOrdnance)) {
-                // ... and its not a danger so ignore it
-                RemoveDetectedObject(newlyDetectedOrdnance);
-                D.Log(ShowDebugLog, "{0} removed detected item {1} owned by us moving away.", FullName, newlyDetectedOrdnance.FullName);
-                return;
-            }
+    protected override void HandleDetectedObjectAdded(IInterceptableOrdnance newlyDetectedThreat) {
+        if (CanThreatBeIgnored(newlyDetectedThreat)) {
+            D.Log(ShowDebugLog, "{0} is ignoring friendly detected threat {1} moving away.", FullName, newlyDetectedThreat.FullName);
+            return;
         }
-        IInterceptableOrdnance threat = newlyDetectedOrdnance;
-        threat.deathOneShot += ThreatDeathEventHandler;
-        HandleThreatInRange(threat);
+        if (ShowDebugLog) {
+            var distanceFromMonitor = Vector3.Distance(newlyDetectedThreat.Position, transform.position);
+            D.Log("{0} added {1}. Distance from Monitor = {2:0.#}, Monitor Range = {3:0.#}.", FullName, newlyDetectedThreat.FullName, distanceFromMonitor, RangeDistance);
+        }
+        AddThreat(newlyDetectedThreat);
     }
 
-    protected override void HandleDetectedObjectRemoved(IInterceptableOrdnance lostDetectionItem) {
-        IInterceptableOrdnance previousThreat = lostDetectionItem;
-        previousThreat.deathOneShot -= ThreatDeathEventHandler;
-        HandleThreatOutOfRange(previousThreat);
+    protected override void HandleDetectedObjectRemoved(IInterceptableOrdnance previousThreat) {
+        RemoveThreat(previousThreat);
     }
 
     /// <summary>
-    /// Called when an IInterceptableOrdnance threat comes into range. This can include ordnance owned by 
-    /// the owner of this monitor as ordnance doesn't care who owns it.
+    /// Called when an IInterceptableOrdnance threat should be tracked, typically when it comes into range. 
+    /// This can include ordnance owned by the owner of this monitor as ordnance doesn't care who owns it.
     /// </summary>
     /// <param name="newThreat">The IInterceptableOrdnance threat.</param>
-    private void HandleThreatInRange(IInterceptableOrdnance newThreat) {
+    private void AddThreat(IInterceptableOrdnance newThreat) {
+        newThreat.deathOneShot += ThreatDeathEventHandler;
         _equipmentList.ForAll(cm => {
             // GOTCHA!! As each CM receives this inRange notice, it can attack and destroy the threat
             // before the next ThreatInRange notice is sent to the next CM. As a result, IsOperational must
@@ -81,11 +75,12 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
     }
 
     /// <summary>
-    /// Called when an IInterceptableOrdnance threat goes out of range. This can include ordnance owned by
-    /// the owner of this monitor as ordnance doesn't care who owns it.
+    /// Called when an IInterceptableOrdnance threat should be removed from tracking, typically when it goes out of range. 
+    /// This can include ordnance owned by the owner of this monitor as ordnance doesn't care who owns it.
     /// </summary>
     /// <param name="previousThreat">The previous threat.</param>
-    private void HandleThreatOutOfRange(IInterceptableOrdnance previousThreat) {
+    private void RemoveThreat(IInterceptableOrdnance previousThreat) {
+        previousThreat.deathOneShot -= ThreatDeathEventHandler;
         _equipmentList.ForAll(cm => cm.HandleThreatInRangeChanged(previousThreat, isInRange: false));
     }
 
@@ -107,13 +102,43 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
         RemoveDetectedObject(deadThreat as IInterceptableOrdnance);
     }
 
+    /// <summary>
+    /// Called when [parent owner changed].
+    /// <remarks>No reason to re-acquire detected objects as those items previously detected won't
+    /// be any different under the new owner vs the old. The only exception to this is
+    /// if the new owner's ability changes the detection range. As ADetectableRangeMonitor has 
+    /// already refreshed that detection range, if it did change, detected objects will have 
+    /// already been refreshed before this override takes its unique actions.
+    /// </remarks>
+    /// </summary>
+    protected override void HandleParentItemOwnerChanged() {
+        base.HandleParentItemOwnerChanged();
+        ReviewKnowledgeOfAllDetectedObjects();
+    }
+
     #endregion
 
-    protected override void ReviewRelationsWithAllDetectedObjects() {
-        // 7.14.16 Ordnance Owner's DiploRelations with the owner of this Monitor is not a factor when determining what threat to intercept.
-        // IMPROVE not entirely true as ordnance owned by our Owner is allowed to continue if not a threat to 
-        // the parent of this monitor. Improving on this is optional and probably not worth the effort to 
-        // track all ordnance as the only time this will matter is when an element's owner is changed.
+    protected override void ReviewKnowledgeOfAllDetectedObjects() {
+        _objectsDetected.ForAll(threat => {
+            // First, remove each threat's death subscription along with all ActiveCM knowledge of the threat.
+            // If the threat was initially ignored, HandleThreatOutOfRange will do nothing
+            RemoveThreat(threat);
+            // Now, if the threat can't be ignored, add back each threat's death subscription and ActiveCM knowledge of the threat.
+            if (!CanThreatBeIgnored(threat)) {  // a parentItemOwner or player relationship change can affect whether to ignore the threat
+                AddThreat(threat);
+            }
+        });
+    }
+
+    private bool CanThreatBeIgnored(IInterceptableOrdnance threat) {
+        if (threat.Owner.IsFriendlyWith(Owner)) {
+            // its one of ours, our friends or allies...
+            if (ConfirmNotIncoming(threat)) {
+                // ...and its not a danger so ignore it
+                return true;
+            }
+        }
+        return false;
     }
 
     private bool ConfirmNotIncoming(IInterceptableOrdnance detectedOrdnance) {

@@ -412,6 +412,7 @@ namespace CodeEnv.Master.GameContent {
                     return SystemDesirability.Normal;
                 case SystemDesirabilityGuiSelection.Challenged:
                     return SystemDesirability.Challenged;
+                case SystemDesirabilityGuiSelection.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(desirabilitySelection));
             }
@@ -427,8 +428,25 @@ namespace CodeEnv.Master.GameContent {
                     return PlayerSeparation.Normal;
                 case PlayerSeparationGuiSelection.Distant:
                     return PlayerSeparation.Distant;
+                case PlayerSeparationGuiSelection.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(separationSelection));
+            }
+        }
+
+        public static EmpireStartLevel Convert(this EmpireStartLevelGuiSelection startLevelSelection) {
+            switch (startLevelSelection) {
+                case EmpireStartLevelGuiSelection.Random:
+                    return RandomExtended.Choice(Enums<EmpireStartLevel>.GetValues(excludeDefault: true));
+                case EmpireStartLevelGuiSelection.Early:
+                    return EmpireStartLevel.Early;
+                case EmpireStartLevelGuiSelection.Normal:
+                    return EmpireStartLevel.Normal;
+                case EmpireStartLevelGuiSelection.Advanced:
+                    return EmpireStartLevel.Advanced;
+                case EmpireStartLevelGuiSelection.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(startLevelSelection));
             }
         }
 
@@ -797,7 +815,9 @@ namespace CodeEnv.Master.GameContent {
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
             }
             float radius = dimensions.magnitude / 2F;
-            D.Warn(radius > TempGameValues.ShipMaxRadius, "Ship {0}.Radius {1:0.####} > MaxRadius {2:0.##}.", hullCat.GetValueName(), radius, TempGameValues.ShipMaxRadius);
+            if (radius > TempGameValues.ShipMaxRadius) {
+                D.Warn("Ship {0}.Radius {1:0.####} > MaxRadius {2:0.##}.", hullCat.GetValueName(), radius, TempGameValues.ShipMaxRadius);
+            }
             return dimensions;
         }
 
@@ -826,7 +846,9 @@ namespace CodeEnv.Master.GameContent {
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
             }
             float radius = dimensions.magnitude / 2F;
-            D.Warn(radius > TempGameValues.FacilityMaxRadius, "Facility {0}.Radius {1:0.####} > MaxRadius {2:0.##}.", hullCat.GetValueName(), radius, TempGameValues.FacilityMaxRadius);
+            if (radius > TempGameValues.FacilityMaxRadius) {
+                D.Warn("Facility {0}.Radius {1:0.####} > MaxRadius {2:0.##}.", hullCat.GetValueName(), radius, TempGameValues.FacilityMaxRadius);
+            }
             return dimensions;
         }
 
@@ -1263,6 +1285,55 @@ namespace CodeEnv.Master.GameContent {
                     return "AIPlayer6Team";
                 case GuiElementID.AIPlayer7TeamPopupList:
                     return "AIPlayer7Team";
+
+                case GuiElementID.UserPlayerHomeDesirabilityPopupList:
+                    return "UserPlayerHomeDesirabilitySelection";
+                case GuiElementID.AIPlayer1HomeDesirabilityPopupList:
+                    return "AIPlayer1HomeDesirabilitySelection";
+                case GuiElementID.AIPlayer2HomeDesirabilityPopupList:
+                    return "AIPlayer2HomeDesirabilitySelection";
+                case GuiElementID.AIPlayer3HomeDesirabilityPopupList:
+                    return "AIPlayer3HomeDesirabilitySelection";
+                case GuiElementID.AIPlayer4HomeDesirabilityPopupList:
+                    return "AIPlayer4HomeDesirabilitySelection";
+                case GuiElementID.AIPlayer5HomeDesirabilityPopupList:
+                    return "AIPlayer5HomeDesirabilitySelection";
+                case GuiElementID.AIPlayer6HomeDesirabilityPopupList:
+                    return "AIPlayer6HomeDesirabilitySelection";
+                case GuiElementID.AIPlayer7HomeDesirabilityPopupList:
+                    return "AIPlayer7HomeDesirabilitySelection";
+
+                case GuiElementID.UserPlayerStartLevelPopupList:
+                    return "UserPlayerStartLevelSelection";
+                case GuiElementID.AIPlayer1StartLevelPopupList:
+                    return "AIPlayer1StartLevelSelection";
+                case GuiElementID.AIPlayer2StartLevelPopupList:
+                    return "AIPlayer2StartLevelSelection";
+                case GuiElementID.AIPlayer3StartLevelPopupList:
+                    return "AIPlayer3StartLevelSelection";
+                case GuiElementID.AIPlayer4StartLevelPopupList:
+                    return "AIPlayer4StartLevelSelection";
+                case GuiElementID.AIPlayer5StartLevelPopupList:
+                    return "AIPlayer5StartLevelSelection";
+                case GuiElementID.AIPlayer6StartLevelPopupList:
+                    return "AIPlayer6StartLevelSelection";
+                case GuiElementID.AIPlayer7StartLevelPopupList:
+                    return "AIPlayer7StartLevelSelection";
+
+                case GuiElementID.AIPlayer1UserSeparationPopupList:
+                    return "AIPlayer1UserSeparationSelection";
+                case GuiElementID.AIPlayer2UserSeparationPopupList:
+                    return "AIPlayer2UserSeparationSelection";
+                case GuiElementID.AIPlayer3UserSeparationPopupList:
+                    return "AIPlayer3UserSeparationSelection";
+                case GuiElementID.AIPlayer4UserSeparationPopupList:
+                    return "AIPlayer4UserSeparationSelection";
+                case GuiElementID.AIPlayer5UserSeparationPopupList:
+                    return "AIPlayer5UserSeparationSelection";
+                case GuiElementID.AIPlayer6UserSeparationPopupList:
+                    return "AIPlayer6UserSeparationSelection";
+                case GuiElementID.AIPlayer7UserSeparationPopupList:
+                    return "AIPlayer7UserSeparationSelection";
 
                 case GuiElementID.PlayerCountPopupList:
                 default:

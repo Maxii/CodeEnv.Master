@@ -62,7 +62,7 @@ namespace CodeEnv.Master.GameContent {
                 _icon.Show(true);
             }
             else {
-                D.Assert(_operatingEffect != null);
+                D.AssertNotNull(_operatingEffect);
                 _operatingEffect.Play();
             }
         }
@@ -73,7 +73,7 @@ namespace CodeEnv.Master.GameContent {
                 _icon.Show(false);
             }
             else {
-                D.Assert(_operatingEffect != null);
+                D.AssertNotNull(_operatingEffect);
                 _operatingEffect.Stop();
             }
         }

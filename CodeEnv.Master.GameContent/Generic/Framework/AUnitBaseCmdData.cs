@@ -42,7 +42,7 @@ namespace CodeEnv.Master.GameContent {
 
         public override IntVector3 SectorID {
             get {
-                D.Assert(_sectorID != default(IntVector3), "{0}.SectorID has not been set.", FullName);
+                D.AssertNotDefault(_sectorID, "SectorID has not been set.");
                 return _sectorID;
             }
         }
@@ -63,7 +63,7 @@ namespace CodeEnv.Master.GameContent {
 
         private IntVector3 InitializeSectorID() {
             IntVector3 sectorID = References.SectorGrid.GetSectorIdThatContains(Position);
-            D.Assert(sectorID != default(IntVector3));
+            D.AssertNotDefault(sectorID);
             MarkAsChanged();
             return sectorID;
         }
@@ -73,8 +73,9 @@ namespace CodeEnv.Master.GameContent {
         #region Event and Property Change Handlers
 
         protected override void HandleUnitWeaponsRangeChanged() {
-            D.Warn(UnitWeaponsRange.Max > TempGameValues.__MaxBaseWeaponsRangeDistance, "{0} max UnitWeaponsRange {1:0.#} > {2:0.#}.",
-                FullName, UnitWeaponsRange.Max, TempGameValues.__MaxBaseWeaponsRangeDistance);
+            if (UnitWeaponsRange.Max > TempGameValues.__MaxBaseWeaponsRangeDistance) {
+                D.Warn("{0} max UnitWeaponsRange {1:0.#} > {2:0.#}.", FullName, UnitWeaponsRange.Max, TempGameValues.__MaxBaseWeaponsRangeDistance);
+            }
         }
 
         #endregion

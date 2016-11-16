@@ -45,7 +45,7 @@ public class RowOrganizer : AMonoBase {
     }
 
     private void InitializeLocalReferences() {
-        D.Assert(separatorPrefab != null, gameObject, "{0}.{1} separatorPrefab not set.", gameObject.name, GetType().Name);
+        D.Assert(separatorPrefab != null, gameObject, "SeparatorPrefab not set.");
         _separatorWidth = separatorPrefab.width;
         _rowWidget = gameObject.GetSafeComponent<UIWidget>();
         _rowMemberLocalPositionY = -_rowWidget.height / 2;
@@ -79,15 +79,17 @@ public class RowOrganizer : AMonoBase {
         rowElements.ForAll(e => {
 
             int index = e.index;
-            D.Assert(index != Constants.MinusOne, "{0}.{1} not set.".Inject(e.gameObject.name, typeof(ElementIndexer).Name));
-            D.Warn(indexesFound.Contains(index), "Duplicate {0} index {1} found. Order will not be deterministic.", typeof(ElementIndexer).Name, index);
+            D.AssertNotEqual(Constants.MinusOne, index, e.gameObject.name);
+            if (indexesFound.Contains(index)) {
+                D.Warn("Duplicate {0} index {1} found. Order will not be deterministic.", typeof(ElementIndexer).Name, index);
+            }
             indexesFound.Add(index);
 
             if (height == Constants.Zero) {
                 height = e.gameObject.GetSafeComponent<UIWidget>().height;
             }
             else {
-                D.Assert(e.gameObject.GetSafeComponent<UIWidget>().height == height);
+                D.AssertEqual(height, e.gameObject.GetSafeComponent<UIWidget>().height);
             }
         });
         return height;
@@ -125,7 +127,11 @@ public class RowOrganizer : AMonoBase {
 
     private void DestroyExistingSeparators() {
         var rowWidgets = gameObject.GetSafeComponentsInImmediateChildren<UIWidget>();
-        var separatorWidgets = rowWidgets.Where(w => w.gameObject.GetComponent<ElementIndexer>() == null);
+
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+        var separatorWidgets = rowWidgets.Where(w => w.GetComponent<ElementIndexer>() == null);
+        Profiler.EndSample();
+
         if (separatorWidgets.Any()) {
             separatorWidgets.ForAll(sep => DestroyImmediate(sep.gameObject));
         }

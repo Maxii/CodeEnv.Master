@@ -56,6 +56,9 @@ namespace CodeEnv.Master.GameContent {
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Health)) {
                 Health = sData.Health;
             }
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.AlertStatus)) {
+                AlertStatus = sData.AlertStatus;
+            }
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.CurrentHitPoints)) {
                 CurrentHitPoints = sData.CurrentHitPoints;
             }
@@ -88,9 +91,9 @@ namespace CodeEnv.Master.GameContent {
                 Mass = sData.Mass;
             }
             // SensorRange on an element makes little sense
-            //if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.SensorRange)) {
-            //    SensorRange = sData.SensorRange;
-            //}
+            ////if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.SensorRange)) {
+            ////    SensorRange = sData.SensorRange;
+            ////}
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.WeaponsRange)) {
                 WeaponsRange = sData.WeaponsRange;
             }

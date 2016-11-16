@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using System.Collections.Generic;
 
     /// <summary>
@@ -23,9 +24,22 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface ISensorRangeMonitor : IRangedEquipmentMonitor {
 
+        event EventHandler enemyTargetsInRange;
+
+        /// <summary>
+        /// Indicates whether there are any enemy targets in range.
+        /// </summary>
+        bool AreEnemyTargetsInRange { get; }
+
+        /// <summary>
+        /// Indicates whether there are any enemy targets in range where DiplomaticRelationship.War exists.
+        /// <remarks>Not subscribable as AreEnemyTargetsInRange could be incorrect when it fires.</remarks>
+        /// </summary>
+        bool AreEnemyWarTargetsInRange { get; }
+
         IUnitCmd ParentItem { get; set; }
 
-        IList<IElementAttackable> AttackableEnemyTargetsDetected { get; }
+        IList<IElementAttackable> EnemyTargetsDetected { get; }
 
         void Add(Sensor sensor);
 

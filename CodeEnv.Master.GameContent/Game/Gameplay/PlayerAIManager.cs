@@ -43,7 +43,7 @@ namespace CodeEnv.Master.GameContent {
         private IList<IUnitCmd> _unavailableCmds;
 
         private IGameManager _gameMgr;
-        private DebugSettings _debugSettings;
+        private IDebugControls _debugControls;
 
         public PlayerAIManager(Player owner, PlayerKnowledge knowledge) {
             Owner = owner;
@@ -53,7 +53,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void InitializeValuesAndReferences() {
-            _debugSettings = DebugSettings.Instance;
+            _debugControls = References.DebugControls;
             _gameMgr = References.GameManager;
             _availableCmds = new List<IUnitCmd>();
             _unavailableCmds = new List<IUnitCmd>();
@@ -197,7 +197,7 @@ namespace CodeEnv.Master.GameContent {
             if (detectedItem is IStar_Ltd || detectedItem is IUniverseCenter_Ltd) {
                 return; // these are added at startup and never removed so no need to add again
             }
-            D.Assert(detectedItem.IsOperational, "{0}: NonOperational Item {1} erroneously detected.", Name, detectedItem.FullName);
+            D.Assert(detectedItem.IsOperational, detectedItem.FullName);
 
             var element = detectedItem as IUnitElement_Ltd;
             if (element != null) {
@@ -209,10 +209,14 @@ namespace CodeEnv.Master.GameContent {
             }
             else {
                 var planetoid = detectedItem as IPlanetoid_Ltd;
-                D.Assert(planetoid != null, "{0}: Unanticipated Type {1} attempting to add {2}.", Name, detectedItem.GetType().Name, detectedItem.FullName);
-                if (_debugSettings.AllIntelCoverageComprehensive) {
+                if (planetoid == null) {
+                    D.Error("{0}: Unanticipated Type {1} attempting to add {2}.", Name, detectedItem.GetType().Name, detectedItem.FullName);
+                }
+                if (_debugControls.IsAllIntelCoverageComprehensive) {
                     // all planetoids are already known as each Knowledge was fully populated with them before game start
-                    D.Assert(Knowledge.HasKnowledgeOf(planetoid));
+                    if (!Knowledge.HasKnowledgeOf(planetoid)) {
+                        D.Error("{0} has no knowledge of {1}.", Name, planetoid.FullName);
+                    }
                     return;
                 }
                 Knowledge.AddPlanetoid(planetoid);
@@ -237,7 +241,9 @@ namespace CodeEnv.Master.GameContent {
             }
             else {
                 var planetoid = detectedItem as IPlanetoid_Ltd;
-                D.Assert(planetoid != null, "{0}: Unanticipated Type {1} attempting to remove {2}.", Name, detectedItem.GetType().Name, detectedItem.FullName);
+                if (planetoid == null) {
+                    D.Error("{0}: Unanticipated Type {1} attempting to remove {2}.", Name, detectedItem.GetType().Name, detectedItem.FullName);
+                }
                 // planetoids are not removed when they lose detection as they can't regress IntelCoverage
                 D.Assert(planetoid.IsOperational);
             }
@@ -283,7 +289,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="myOwnedItem">My owned item.</param>
         public void HandleGainedItemOwnership(IItem myOwnedItem) {
             //D.Log("{0}.HandleGainedItemOwnership({1}) called.", Name, myOwnedItem.FullName);
-            D.Assert(Owner == myOwnedItem.Owner);
+            D.AssertEqual(Owner, myOwnedItem.Owner);
             D.Assert(!(myOwnedItem is IUniverseCenter));
 
             ChangeIntelCoverageToComprehensiveAndPopulateKnowledge(myOwnedItem);
@@ -296,7 +302,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="losingOwnedItem">The losing owned item.</param>
         public void HandleLosingItemOwnership(IItem losingOwnedItem) {
-            D.Assert(Owner == losingOwnedItem.Owner);
+            D.AssertEqual(Owner, losingOwnedItem.Owner);
             D.Assert(!(losingOwnedItem is IUniverseCenter));
 
             // Items that are losing their owner call Item.DetectionMgr.Reset() to re-determine the
@@ -327,7 +333,7 @@ namespace CodeEnv.Master.GameContent {
                 }
                 else {
                     var star = item as IStar;
-                    D.Assert(star != null);
+                    D.AssertNotNull(star);
                     star.SetIntelCoverage(Owner, IntelCoverage.Comprehensive);
                     // don't need to add to knowledge as all stars are already known
                 }
@@ -342,7 +348,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="myUnitCmd">My unit command.</param>
         public void RegisterForOrders(IUnitCmd myUnitCmd) {
-            D.Assert(Owner == myUnitCmd.Owner);
+            D.AssertEqual(Owner, myUnitCmd.Owner);
             //D.Log("{0} is registering {1} in prep for being issued orders. IsAvailable = {2}.", Name, myUnitCmd.FullName, myUnitCmd.IsAvailable);
             if (myUnitCmd.IsAvailable) {
                 D.Assert(!_availableCmds.Contains(myUnitCmd));
@@ -361,7 +367,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="myUnitCmd">My unit command.</param>
         public void UnregisterForOrders(IUnitCmd myUnitCmd) {
-            D.Assert(Owner == myUnitCmd.Owner);
+            D.AssertEqual(Owner, myUnitCmd.Owner);
             myUnitCmd.isAvailableChanged -= MyCmdIsAvailableChgdEventHandler;
             if (_availableCmds.Contains(myUnitCmd)) {
                 _availableCmds.Remove(myUnitCmd);
@@ -420,10 +426,10 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void HandleOwnerRelationsChanged(Player chgdRelationsPlayer) {
-            D.Assert(chgdRelationsPlayer != Owner);
+            D.AssertNotEqual(Owner, chgdRelationsPlayer);
             var priorRelationship = Owner.GetPriorRelations(chgdRelationsPlayer);
             var newRelationship = Owner.GetCurrentRelations(chgdRelationsPlayer);
-            D.Assert(priorRelationship != newRelationship);
+            D.AssertNotEqual(priorRelationship, newRelationship);
             //D.Log("Relations have changed from {0} to {1} between {2} and {3}.", priorRelationship.GetValueName(), newRelationship.GetValueName(), Owner.LeaderName, chgdRelationsPlayer.LeaderName);
             if (priorRelationship == DiplomaticRelationship.Alliance) {
                 HandleLostAllianceWith(chgdRelationsPlayer);
@@ -530,12 +536,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="findFarthestTgt">if set to <c>true</c> [find farthest target].</param>
         /// <returns></returns>
         private bool __IssueFleetAttackOrder(IFleetCmd fleetCmd, bool findFarthestTgt) {
-            List<IUnitAttackable> attackTgts = Knowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsAttackingAllowedBy(Owner)).ToList();
-            attackTgts.AddRange(Knowledge.Starbases.Cast<IUnitAttackable>().Where(sb => sb.IsAttackingAllowedBy(Owner)));
-            attackTgts.AddRange(Knowledge.Settlements.Cast<IUnitAttackable>().Where(s => s.IsAttackingAllowedBy(Owner)));
-            attackTgts.AddRange(Knowledge.Planets.Cast<IUnitAttackable>().Where(p => p.IsAttackingAllowedBy(Owner)));
+            List<IUnitAttackable> attackTgts = Knowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsWarAttackByAllowed(Owner)).ToList();
+            attackTgts.AddRange(Knowledge.Starbases.Cast<IUnitAttackable>().Where(sb => sb.IsWarAttackByAllowed(Owner)));
+            attackTgts.AddRange(Knowledge.Settlements.Cast<IUnitAttackable>().Where(s => s.IsWarAttackByAllowed(Owner)));
+            attackTgts.AddRange(Knowledge.Planets.Cast<IUnitAttackable>().Where(p => p.IsWarAttackByAllowed(Owner)));
             if (!attackTgts.Any()) {
-                D.LogBold("{0}: {1} can find no AttackTargets of any sort.", Name, fleetCmd.FullName);
+                D.LogBold("{0}: {1} can find no WarAttackTargets of any sort.", Name, fleetCmd.FullName);
                 return false;
             }
             IUnitAttackable attackTgt;

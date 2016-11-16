@@ -72,16 +72,16 @@ public class Projectile : AProjectileOrdnance {
     }
 
     protected override void ValidateEffects() {
-        D.Assert(_muzzleEffect != null, "{0} has no muzzle effect.".Inject(Name));
-        D.Assert(!_muzzleEffect.activeSelf, "{0}.{1} should not start active.", GetType().Name, _muzzleEffect.name);
+        D.AssertNotNull(_muzzleEffect);
+        D.Assert(!_muzzleEffect.activeSelf, _muzzleEffect.name);
         if (_operatingEffect != null) {
             // ParticleSystem Operating Effect can be null. If so, it will be replaced by an Icon
             D.Assert(!_operatingEffect.playOnAwake);
             D.Assert(_operatingEffect.loop);
         }
-        D.Assert(_impactEffect != null, "{0} has no impact effect.", Name);
+        D.AssertNotNull(_impactEffect);
         D.Assert(!_impactEffect.playOnAwake);   // Awake only called once during GameObject life -> can't use with pooling
-        D.Assert(_impactEffect.gameObject.activeSelf, "{0}.{1} should start active.", GetType().Name, _impactEffect.name);
+        D.Assert(_impactEffect.gameObject.activeSelf, _impactEffect.name);
     }
 
     protected override AProjectileDisplayManager MakeDisplayMgr() {
@@ -139,9 +139,6 @@ public class Projectile : AProjectileOrdnance {
                 TerminateNow();
             }
         });
-
-        GameObject impactSFXGo = GeneralFactory.Instance.MakeAutoDestruct3DAudioSFXInstance("ImpactSFX", position);
-        SFXManager.Instance.PlaySFX(impactSFXGo, SfxGroupID.ProjectileImpacts);  // auto destroyed on completion    // FIXME ??
     }
 
     protected override void HandleImpactEffectsBegun() {
@@ -149,14 +146,19 @@ public class Projectile : AProjectileOrdnance {
         // nothing unique to shutdown 
     }
 
+    protected override void HearImpactEffect(Vector3 position) {
+        GameObject impactSFXGo = GeneralFactory.Instance.MakeAutoDestruct3DAudioSFXInstance("ImpactSFX", position);
+        SFXManager.Instance.PlaySFX(impactSFXGo, SfxGroupID.ProjectileImpacts);  // auto destroyed on completion    // FIXME ??
+    }
+
     #region Event and Property Change Handlers
 
     protected override void OnSpawned() {
         base.OnSpawned();
-        D.Assert(_rigidbody.velocity == Vector3.zero);
+        D.Assert(_rigidbody.velocity == default(Vector3));  //D.AssertDefault(_rigidbody.velocity);
         D.Assert(!enabled);
-        D.Assert(_waitForImpactEffectCompletionJob == null);
-        D.Assert(_waitForMuzzleEffectCompletionJob == null);
+        D.AssertNull(_waitForImpactEffectCompletionJob);
+        D.AssertNull(_waitForMuzzleEffectCompletionJob);
     }
 
     protected override void OnDespawned() {

@@ -38,14 +38,18 @@ public class AnimateOnHover : AMonoBase {
 
     protected override void Awake() {
         base.Awake();
-        D.WarnContext(targetSprite == null, gameObject, "{0}.{1} has no target sprite selected.", gameObject.name, GetType().Name);
+        if (targetSprite == null) {
+            D.WarnContext(gameObject, "{0}.{1} has no target sprite selected.", gameObject.name, GetType().Name);
+        }
         UnityUtility.ValidateComponentPresence<Collider>(gameObject);
     }
 
     protected override void Start() {
         base.Start();
         if (targetSprite != null) {
-            D.WarnContext(targetSprite.spriteName.IsNullOrEmpty(), this, "{0}.{1}.targetSprite has no sprite name.", gameObject.name, GetType().Name);
+            if (targetSprite.spriteName.IsNullOrEmpty()) {
+                D.WarnContext(this, "{0}.{1}.targetSprite has no sprite name.", gameObject.name, GetType().Name);
+            }
             _normalSpriteName = targetSprite.spriteName;
         }
     }

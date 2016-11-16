@@ -57,20 +57,23 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public StarDesign GetStarDesign(string designName) {
-            D.Assert(_starDesignsLookup.ContainsKey(designName), "{0}: {1} {2} not present. DesignNames: {3}.",
-                GetType().Name, typeof(StarDesign).Name, designName, _starDesignsLookup.Keys.Concatenate());
+            if (!_starDesignsLookup.ContainsKey(designName)) {
+                D.Error("{0}: {1} {2} not present. DesignNames: {3}.", GetType().Name, typeof(StarDesign).Name, designName, _starDesignsLookup.Keys.Concatenate());
+            }
             return _starDesignsLookup[designName];
         }
 
         public PlanetDesign GetPlanetDesign(string designName) {
-            D.Assert(_planetDesignsLookup.ContainsKey(designName), "{0}: {1} {2} not present. DesignNames: {3}.",
-                GetType().Name, typeof(PlanetDesign).Name, designName, _planetDesignsLookup.Keys.Concatenate());
+            if (!_planetDesignsLookup.ContainsKey(designName)) {
+                D.Error("{0}: {1} {2} not present. DesignNames: {3}.", GetType().Name, typeof(PlanetDesign).Name, designName, _planetDesignsLookup.Keys.Concatenate());
+            }
             return _planetDesignsLookup[designName];
         }
 
         public MoonDesign GetMoonDesign(string designName) {
-            D.Assert(_moonDesignsLookup.ContainsKey(designName), "{0}: {1} {2} not present. DesignNames: {3}.",
-                GetType().Name, typeof(MoonDesign).Name, designName, _moonDesignsLookup.Keys.Concatenate());
+            if (!_moonDesignsLookup.ContainsKey(designName)) {
+                D.Error("{0}: {1} {2} not present. DesignNames: {3}.", GetType().Name, typeof(MoonDesign).Name, designName, _moonDesignsLookup.Keys.Concatenate());
+            }
             return _moonDesignsLookup[designName];
         }
 

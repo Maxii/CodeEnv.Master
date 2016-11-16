@@ -49,7 +49,9 @@ namespace CodeEnv.Master.GameContent {
                     _hoverHighlight.Show(true);
                 }
                 else {
-                    D.Warn(!IsHighlightShowing, "{0} should be showing over {1}.", Name, _hoverHighlight.TargetName);
+                    if (!IsHighlightShowing) {
+                        D.Warn("{0} should be showing over {1}.", Name, _hoverHighlight.TargetName);
+                    }
                     _hoverHighlight.Show(false);
                     _hoverHighlight = null;
                 }

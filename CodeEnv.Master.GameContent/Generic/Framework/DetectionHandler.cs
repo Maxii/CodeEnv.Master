@@ -30,6 +30,8 @@ namespace CodeEnv.Master.GameContent {
 
         public string FullName { get { return FullNameFormat.Inject(_item.FullName, typeof(DetectionHandler).Name); } }
 
+        private bool ShowDebugLog { get { return _item.ShowDebugLog; } }
+
         /// <summary>
         /// Lookup that holds a list of the Cmds that have detected this Item, organized by the range
         /// of the sensor used and the owner of the Cmd.
@@ -37,16 +39,20 @@ namespace CodeEnv.Master.GameContent {
         private IDictionary<Player, IDictionary<RangeCategory, IList<IUnitCmd_Ltd>>> _detectionLookup;
         private IIntelItem _item;
         private IGameManager _gameMgr;
+        private IDebugControls _debugControls;
 
         public DetectionHandler(IIntelItem item) {
             _item = item;
             _gameMgr = References.GameManager;
+            _debugControls = References.DebugControls;
             _detectionLookup = new Dictionary<Player, IDictionary<RangeCategory, IList<IUnitCmd_Ltd>>>(_gameMgr.AllPlayers.Count);
         }
 
         public void HandleDetectionBy(Player detectingPlayer, IUnitCmd_Ltd cmdItem, RangeCategory sensorRange) {
-            D.Assert(_item.IsOperational, "{0} should not be detected by {1} when dead!", _item.FullName, cmdItem.FullName);
-            //D.Log("{0}.HandleDetectionBy called. Detecting Cmd: {1}, SensorRange: {2}.", FullName, cmdItem.FullName, sensorRange.GetValueName());
+            if (!_item.IsOperational) {
+                D.Error("{0} should not be detected by {1} when dead!", _item.FullName, cmdItem.FullName);
+            }
+            //D.Log(ShowDebugLog, "{0}.HandleDetectionBy called. Detecting Cmd: {1}, SensorRange: {2}.", FullName, cmdItem.FullName, sensorRange.GetValueName());
 
             IDictionary<RangeCategory, IList<IUnitCmd_Ltd>> rangeLookup;
             if (!_detectionLookup.TryGetValue(detectingPlayer, out rangeLookup)) {
@@ -59,11 +65,11 @@ namespace CodeEnv.Master.GameContent {
                 cmds = new List<IUnitCmd_Ltd>();
                 rangeLookup.Add(sensorRange, cmds);
             }
-            D.Assert(!cmds.Contains(cmdItem), "{0} attempted to add duplicate {1}.", FullName, cmdItem.FullName);
+            D.Assert(!cmds.Contains(cmdItem), cmdItem.FullName);
             cmds.Add(cmdItem);
 
             // The following returns can not move earlier in method as detection state must be kept current to support Reset
-            if (DebugSettings.Instance.AllIntelCoverageComprehensive) {
+            if (_debugControls.IsAllIntelCoverageComprehensive) {
                 // Should already be set to comprehensive during game startup
                 __ValidatePlayerIntelCoverageOfItemIsComprehensive(detectingPlayer);
                 // Note: this debug setting DOES NOT pre-populate all player's knowledge
@@ -89,9 +95,11 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public void HandleDetectionLostBy(Player detectingPlayer, IUnitCmd_Ltd cmdItem, RangeCategory sensorRange) {
-            D.Assert(sensorRange != RangeCategory.None);    // 7.20.16 detected items no longer notified of lost detection when they die
-            D.Assert(_item.IsOperational, "{0} should not be notified by {1} of detection lost when dead!", FullName, cmdItem.FullName);
-            //D.Log("{0}.HandleDetectionLostBy called. Detecting Cmd: {1}, SensorRange: {2}.", FullName, cmdItem.FullName, sensorRange.GetValueName());
+            D.AssertNotDefault((int)sensorRange);
+            if (!_item.IsOperational) {    // 7.20.16 detected items no longer notified of lost detection when they die
+                D.Error("{0} should not be notified by {1} of detection lost when dead!", FullName, cmdItem.FullName);
+            }
+            //D.Log(ShowDebugLog, "{0}.HandleDetectionLostBy called. Detecting Cmd: {1}, SensorRange: {2}.", FullName, cmdItem.FullName, sensorRange.GetValueName());
 
             IDictionary<RangeCategory, IList<IUnitCmd_Ltd>> rangeLookup;
             if (!_detectionLookup.TryGetValue(detectingPlayer, out rangeLookup)) {
@@ -106,7 +114,7 @@ namespace CodeEnv.Master.GameContent {
             }
 
             bool isRemoved = cmds.Remove(cmdItem);
-            D.Assert(isRemoved, "{0} could not find {1} to remove.", FullName, cmdItem.FullName);
+            D.Assert(isRemoved, cmdItem.FullName);
             if (cmds.Count == Constants.Zero) {
                 rangeLookup.Remove(sensorRange);
                 if (rangeLookup.Count == Constants.Zero) {
@@ -115,7 +123,7 @@ namespace CodeEnv.Master.GameContent {
             }
 
             // The following returns can not move earlier in method as detection state must be kept current to support Reset
-            if (DebugSettings.Instance.AllIntelCoverageComprehensive) {
+            if (_debugControls.IsAllIntelCoverageComprehensive) {
                 // Should already be set to comprehensive during game startup
                 __ValidatePlayerIntelCoverageOfItemIsComprehensive(detectingPlayer);
                 __ValidatePlayerKnowledgeOfItem(detectingPlayer);   // must have already detected item to have lost it
@@ -138,7 +146,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="detectingPlayer">The detecting player.</param>
         private void AssignDetectingPlayerIntelCoverage(Player detectingPlayer) {
-            D.Assert(detectingPlayer != _item.Owner);
+            D.AssertNotEqual(_item.Owner, detectingPlayer);
             AssignIntelCoverage(detectingPlayer);
         }
 
@@ -148,8 +156,9 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="player">The player.</param>
         private void AssignIntelCoverage(Player player) {
-            D.Assert(player != null && player != TempGameValues.NoPlayer);
-            D.Assert(!DebugSettings.Instance.AllIntelCoverageComprehensive);
+            D.AssertNotNull(player);
+            D.AssertNotEqual(TempGameValues.NoPlayer, player);
+            D.Assert(!_debugControls.IsAllIntelCoverageComprehensive);
             D.Assert(!_item.Owner.IsRelationshipWith(player, DiplomaticRelationship.Alliance));
 
             // Note: Player can be self when the current owner is losing ownership and needs to reassess their coverage
@@ -174,7 +183,7 @@ namespace CodeEnv.Master.GameContent {
             }
 
             if (_item.SetIntelCoverage(player, newCoverage)) {
-                //D.Log("{0} successfully set {1}'s IntelCoverage to {2}.", FullName, player.LeaderName, newCoverage.GetValueName());
+                D.Log(ShowDebugLog, "{0} successfully set {1}'s IntelCoverage to {2}.", FullName, player, newCoverage.GetValueName());
             }
         }
 
@@ -212,7 +221,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="player">The player.</param>
         public void ResetBasedOnCurrentDetection(Player player) {
-            if (DebugSettings.Instance.AllIntelCoverageComprehensive) {
+            if (_debugControls.IsAllIntelCoverageComprehensive) {
                 // player must already know about this item to call this so can't lose knowledge once Comprehensive and aware of it
                 return;
             }
@@ -233,8 +242,9 @@ namespace CodeEnv.Master.GameContent {
         #region Debug
 
         private void __ValidatePlayerIntelCoverageOfItemIsComprehensive(Player player) {
-            D.Assert(_item.GetIntelCoverage(player) == IntelCoverage.Comprehensive, "{0}: {1}'s IntelCoverage of {2} should be Comprehensive rather than {3}.",
-                FullName, player, _item.FullName, _item.GetIntelCoverage(player));
+            if (_item.GetIntelCoverage(player) != IntelCoverage.Comprehensive) {
+                D.Error("{0}: {1}'s IntelCoverage of {2} should be Comprehensive rather than {3}.", FullName, player, _item.FullName, _item.GetIntelCoverage(player));
+            }
         }
 
         private void __ValidatePlayerKnowledgeOfItem(Player player) {
@@ -252,6 +262,7 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         // OPTIMIZE IDisposable not really needed when no longer subscribing to owner change events
+
         #region IDisposable 
 
         private bool _alreadyDisposed = false;

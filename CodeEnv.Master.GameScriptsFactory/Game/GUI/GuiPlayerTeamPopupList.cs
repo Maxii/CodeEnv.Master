@@ -31,6 +31,8 @@ public class GuiPlayerTeamPopupList : AGuiMenuPopupList<TeamID> {
 
     public override GuiElementID ElementID { get { return _elementID; } }
 
+    protected override string TooltipContent { get { return "Select the team this player belongs too"; } }
+
     protected override string[] Choices { get { return Enums<TeamID>.GetNames(excludeDefault: true); } }
 
     // no need for taking an action OnPopupListSelectionChanged as changes aren't recorded 

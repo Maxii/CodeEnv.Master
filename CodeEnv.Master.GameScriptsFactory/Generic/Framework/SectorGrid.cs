@@ -189,10 +189,13 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
 
     private void InitializeGridSize() {
         int cellCountInsideUniverseAlongAGridAxis = CalcCellCountInsideUniverseAlongAGridAxis();
-        D.Assert(cellCountInsideUniverseAlongAGridAxis % 2 == Constants.Zero, "{0}: CellCount {1} can't be odd.", Name, cellCountInsideUniverseAlongAGridAxis);
+        D.Assert(cellCountInsideUniverseAlongAGridAxis % 2 == Constants.Zero, "CellCount can't be odd.");
         _gridSize = Vector3.one * cellCountInsideUniverseAlongAGridAxis;
-        D.Assert(_gridSize.x.ApproxEquals(_gridSize.y) && _gridSize.y.ApproxEquals(_gridSize.z), "{0}: {1} must be cube.", Name, _gridSize);
-        D.Assert((_gridSize.x % 2F).ApproxEquals(Constants.ZeroF), "{0}: {1} must use even values.", Name, _gridSize);
+
+        // grid must be a cube of even value
+        D.AssertApproxEqual(_gridSize.x, _gridSize.y, _gridSize.ToString());
+        D.AssertApproxEqual(_gridSize.y, _gridSize.z, _gridSize.ToString());
+        D.AssertApproxEqual(Constants.ZeroF, _gridSize.x % 2F, _gridSize.ToString());
 
         _outermostCellVertexGridCoordinates = _gridSize / 2F;
         D.Log("{0}: Universe Grid Size = {1}.", Name, _gridSize);
@@ -224,7 +227,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     }
 
     private void CameraSectorIdPropChangedHandler() {
-        D.Assert(PlayerViews.Instance.ViewMode == PlayerViewMode.SectorView);   // not subscribed unless in SectorViewMode
+        D.AssertEqual(PlayerViewMode.SectorView, PlayerViews.Instance.ViewMode);   // not subscribed unless in SectorViewMode
         D.Assert(IsGridWireframeShowing);
         //D.Log("{0}: CameraSectorID has changed. Generating new grid points.", Name);
         _gridWireframe.Points = GenerateWireframeGridPoints(MainCameraControl.Instance.SectorID);
@@ -234,7 +237,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
 
     private List<Vector3> GenerateWireframeGridPoints(IntVector3 cameraSectorID) {
         // per GridFramework: grid needs to be at origin for rendering to align properly with the grid ANY TIME vectrosity points are generated
-        D.Assert(Mathfx.Approx(transform.position, Vector3.zero, .01F), "{0} must be located at origin.", Name);
+        D.Assert(Mathfx.Approx(transform.position, Vector3.zero, .01F), transform.position.ToString());
         Vector3 cameraCellVertexGridCoordinates = GetCellVertexGridCoordinatesFrom(cameraSectorID);
 
         float cameraCellVertexGridCoordinate_X = cameraCellVertexGridCoordinates.x;
@@ -264,7 +267,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         _gridRenderer.To = renderTo;
         List<Vector3> gridPoints = _gridRenderer.GetVectrosityPoints();
 
-        D.Assert(gridPoints.Any(), "{0}: No grid points to render.", Name);
+        D.Assert(gridPoints.Any(), "No grid points to render.");
         return gridPoints;
     }
 
@@ -343,7 +346,9 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         }
 
         int gridCellQty = Mathf.RoundToInt(_gridSize.x * _gridSize.y * _gridSize.z);
-        D.Assert(inspectedCellCount == gridCellQty, "{0}: inspected cell count {1} should equal {2} cells in grid.", Name, inspectedCellCount, gridCellQty);
+        if (inspectedCellCount != gridCellQty) {
+            D.Error("{0}: inspected cell count {1} should equal {2} cells in grid.", Name, inspectedCellCount, gridCellQty);
+        }
         D.Log("{0} inspected {1} grid cells, creating {2} sectors of which {3} are non-periphery.",
         Name, inspectedCellCount, _sectorIdToSectorLookup.Keys.Count, _sectorIdToSectorLookup.Keys.Count - peripheryCellCount);
         __LogDuration("{0}.ConstructSectors()".Inject(Name));
@@ -456,7 +461,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
 
     private Vector3 CalculateCellGridCoordinatesFrom(IntVector3 sectorID) {
         int xID = sectorID.x, yID = sectorID.y, zID = sectorID.z;
-        D.Assert(xID != 0 && yID != 0 && zID != 0, "Illegal SectorID {0}.", sectorID);
+        D.AssertNotDefault(sectorID);
         float x = xID > Constants.Zero ? xID - 1F : xID;
         float y = yID > Constants.Zero ? yID - 1F : yID;
         float z = zID > Constants.Zero ? zID - 1F : zID;
@@ -470,7 +475,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     /// <param name="sectorID">The sectorID.</param>
     /// <returns></returns>
     private Vector3 GetCellVertexGridCoordinatesFrom(IntVector3 sectorID) {
-        D.Assert(sectorID != default(IntVector3), "{0}: SectorID of {1} is illegal.", Name, sectorID);
+        D.AssertNotDefault(sectorID);
         return GetCellGridCoordinatesFor(sectorID) - _cellVertexGridCoordinatesToCellGridCoordinatesOffset;
     }
 
@@ -505,9 +510,11 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     /// <param name="worldPosition">The world position of the sector's center.</param>
     /// <returns></returns>
     public bool __TryGetSectorPosition(IntVector3 sectorID, out Vector3 worldPosition) {
-        D.Assert(sectorID != default(IntVector3), "{0}: SectorID of {1} is illegal.", Name, sectorID);
+        D.AssertNotDefault(sectorID);
         bool isSectorFound = _sectorIdToCellWorldLocationLookup.TryGetValue(sectorID, out worldPosition);
-        D.Warn(!isSectorFound, "{0} could not find a sector at sectorID {1}.", Name, sectorID);
+        if (!isSectorFound) {
+            D.Warn("{0} could not find a sector at sectorID {1}.", Name, sectorID);
+        }
         return isSectorFound;
     }
 
@@ -518,10 +525,10 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     /// <param name="sectorID">ID of the sector.</param>
     /// <returns></returns>
     public Vector3 GetSectorPosition(IntVector3 sectorID) {
-        D.Assert(sectorID != default(IntVector3), "{0}: SectorID of {1} is illegal.", Name, sectorID);
+        D.AssertNotDefault(sectorID);
         Vector3 worldPosition;
         bool isSectorFound = _sectorIdToCellWorldLocationLookup.TryGetValue(sectorID, out worldPosition);
-        D.Assert(isSectorFound, "{0} could not find a sector at sectorID {1}.", Name, sectorID);
+        D.Assert(isSectorFound, sectorID.ToString());
         return worldPosition;
     }
 
@@ -534,7 +541,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     /// <param name="sector">The sector.</param>
     /// <returns></returns>
     public bool __TryGetSector(IntVector3 sectorID, out Sector sector) {
-        D.Assert(sectorID != default(IntVector3), "{0}: SectorID of {1} is illegal.", Name, sectorID);
+        D.AssertNotDefault(sectorID);
         return _sectorIdToSectorLookup.TryGetValue(sectorID, out sector);
     }
 
@@ -559,7 +566,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     /// <param name="sectorID">The sectorID.</param>
     /// <returns></returns>
     public Sector GetSector(IntVector3 sectorID) {
-        D.Assert(sectorID != default(IntVector3), "{0}: SectorID of {1} is illegal.", Name, sectorID);
+        D.AssertNotDefault(sectorID);
         Sector sector;
         if (!_sectorIdToSectorLookup.TryGetValue(sectorID, out sector)) {
             D.Warn("{0}: No Sector at {1}, returning null.", Name, sectorID);
@@ -623,7 +630,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     /// <param name="maxDistance">The maximum distance in sectors.</param>
     /// <returns></returns>
     public IList<IntVector3> GetSurroundingSectorIdsBetween(IntVector3 centerID, int minDistance, int maxDistance) {
-        D.Assert(centerID != default(IntVector3), "{0}: SectorID of {1} is illegal.", Name, centerID);
+        D.AssertNotDefault(centerID);
         D.Assert(__IsSectorPresentAt(centerID));
         Utility.ValidateForRange(minDistance, 0, maxDistance - 1);
         Utility.ValidateForRange(maxDistance, minDistance + 1, _gameMgr.GameSettings.UniverseSize.RadiusInSectors() * 2);
@@ -712,8 +719,8 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     /// <param name="secondSectorID">The second.</param>
     /// <returns></returns>
     public float GetDistanceInSectors(IntVector3 firstSectorID, IntVector3 secondSectorID) {
-        D.Assert(firstSectorID != default(IntVector3), "{0}: SectorID of {1} is illegal.", Name, firstSectorID);
-        D.Assert(secondSectorID != default(IntVector3), "{0}: SectorID of {1} is illegal.", Name, secondSectorID);
+        D.AssertNotDefault(firstSectorID);
+        D.AssertNotDefault(secondSectorID);
         Vector3 firstCellGridCoordinates = GetCellGridCoordinatesFor(firstSectorID);
         Vector3 secondCellGridCoordindates = GetCellGridCoordinatesFor(secondSectorID);
         return Vector3.Distance(firstCellGridCoordinates, secondCellGridCoordindates);
@@ -778,7 +785,9 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
             for (int j = i; j < cornerCount; j++) {
                 if (i == j) { continue; }
                 jCorner = worldCorners[j];
-                D.Assert(!Mathfx.Approx(iCorner, jCorner, 10F), "{0} == {1}.", iCorner.ToPreciseString(), jCorner.ToPreciseString());
+                if (Mathfx.Approx(iCorner, jCorner, 10F)) {
+                    D.Error("Duplicate Corners: {0} & {1}.", iCorner.ToPreciseString(), jCorner.ToPreciseString());
+                }
             }
         }
         D.Log("{0} validated {1} sector corners.", Name, SectorCorners.Count);

@@ -40,15 +40,12 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<IntelCoverage>(ref _datedCoverage, value, "DatedCoverage", null, DatedCoveragePropChangingHandler); }
         }
 
-        private GameDate _dateStamp;
         /// <summary>
         /// The "time stamp" associated with the DatedCoverage, aka when DatedCoverage was last updated.
         /// Used to calculate the age of the dated coverage level of intel.
+        /// <remarks>Not subscribable.</remarks>
         /// </summary>
-        public GameDate DateStamp {
-            get { return _dateStamp; }
-            set { SetProperty<GameDate>(ref _dateStamp, value, "DateStamp"); }
-        }
+        public GameDate DateStamp { get; set; }
 
         public Intel() : base() { }
 
@@ -76,9 +73,7 @@ namespace CodeEnv.Master.GameContent {
             if (newCoverage < CurrentCoverage) {
                 // we have less data than before so record the level we had and stamp the date
                 DatedCoverage = CurrentCoverage;
-                if (DateStamp != GameTime.Instance.CurrentDate) {    // HACK avoids PropertyChangeTracking equals warning
-                    DateStamp = GameTime.Instance.CurrentDate;
-                }
+                DateStamp = GameTime.Instance.CurrentDate;
             }
             if (newCoverage > CurrentCoverage && newCoverage >= DatedCoverage) {
                 // we have more data than before and it is the same or more than our previous record, so erase the previous record

@@ -55,7 +55,7 @@ public class FleetCtxControl_AI : ACtxControl {
 
     protected override bool IsSelectedItemMenuOperator(ISelectable selected) {
         if (_fleetMenuOperator.IsSelected) {
-            D.Assert(_fleetMenuOperator == selected as FleetCmdItem);
+            D.AssertEqual(_fleetMenuOperator, selected as FleetCmdItem);
             return true;
         }
         return false;
@@ -78,7 +78,7 @@ public class FleetCtxControl_AI : ACtxControl {
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Attack:
-                return !(_fleetMenuOperator as IUnitAttackable).IsAttackingAllowedBy(_user)
+                return !(_fleetMenuOperator as IUnitAttackable).IsAttackByAllowed(_user)
                     || !(_remoteUserOwnedSelectedItem as AUnitCmdItem).IsAttackCapable;
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
@@ -91,7 +91,7 @@ public class FleetCtxControl_AI : ACtxControl {
     protected override bool IsUserRemoteBaseMenuItemDisabledFor(BaseDirective directive) {
         switch (directive) {
             case BaseDirective.Attack:
-                return !(_fleetMenuOperator as IUnitAttackable).IsAttackingAllowedBy(_user);
+                return !(_fleetMenuOperator as IUnitAttackable).IsAttackByAllowed(_user);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }

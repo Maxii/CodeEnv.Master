@@ -47,7 +47,7 @@ namespace CodeEnv.Master.GameContent {
             }
 
             if (userRqstdCmdReport.Category == FleetCategory.None) {
-                D.Assert(userRqstdCmdReport.UnitComposition == null); // UnitComposition should not be known if Category isn't known
+                D.AssertNull(userRqstdCmdReport.UnitComposition); // UnitComposition should not be known if Category isn't known
                 // User has no permission to know category so return unknown icon criteria
                 return new IconSelectionCriteria[] { IconSelectionCriteria.Unknown };
             }

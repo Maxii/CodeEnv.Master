@@ -49,6 +49,8 @@ public class GuiPlayerColorPopupList : AGuiMenuPopupList<GameColor> {
     /// </summary>
     public GameColor SelectedColor { get { return Enums<GameColor>.Parse(SelectedValue); } }
 
+    protected override string TooltipContent { get { return "Select the color of this player"; } }
+
     private string[] _choices;
     protected override string[] Choices { get { return _choices; } }
 
@@ -93,7 +95,7 @@ public class GuiPlayerColorPopupList : AGuiMenuPopupList<GameColor> {
     private void OnUserSelectedColor() {
         D.Assert(_isSelectionEventsEnabled);
         if (userSelectedColor != null) {
-            userSelectedColor(this, new EventArgs());
+            userSelectedColor(this, EventArgs.Empty);
         }
     }
 

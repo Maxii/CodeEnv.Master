@@ -56,15 +56,33 @@ public abstract class AEquipmentMonitor<EquipmentType> : AColliderMonitor where 
         _equipmentList = new List<EquipmentType>();
     }
 
+    /// <summary>
+    /// Initializes all range distance values for this monitor and its equipment.
+    /// <remarks>Equipment simply tracks the range distance value of the monitor.</remarks>
+    /// </summary>
+    public void InitializeRangeDistance() {
+        RangeDistance = RefreshRangeDistance();
+    }
+
     #region Event and Property Change Handlers
 
+    // protected to allow SensorRangeMonitor to support Remove(sensor) 
     protected void EquipmentIsOperationalChangedEventHandler(object sender, EventArgs e) {
         HandleEquipmentIsOperationalChanged();
     }
 
-    protected virtual void HandleEquipmentIsOperationalChanged() {
-        RangeDistance = RefreshRangeDistance();
+    private void HandleEquipmentIsOperationalChanged() {
+        // 11.5.16 RefreshRangeDistance moved to HandleEquipmentIsDamagedChanged
         AssessIsOperational();
+    }
+
+    // protected to allow SensorRangeMonitor to support Remove(sensor) 
+    protected void EquipmentIsDamagedChangedEventHandler(object sender, EventArgs e) {
+        HandleEquipmentIsDamagedChanged();
+    }
+
+    private void HandleEquipmentIsDamagedChanged() {
+        RangeDistance = RefreshRangeDistance();
     }
 
     protected override void HandleRangeDistanceChanged() {
@@ -80,11 +98,11 @@ public abstract class AEquipmentMonitor<EquipmentType> : AColliderMonitor where 
         if (RangeCategory == RangeCategory.None) {
             RangeCategory = pieceOfEquipment.RangeCategory;
         }
-        D.Assert(RangeCategory == pieceOfEquipment.RangeCategory);
+        D.AssertEqual(RangeCategory, pieceOfEquipment.RangeCategory);
         AssignMonitorTo(pieceOfEquipment);
         _equipmentList.Add(pieceOfEquipment);
         pieceOfEquipment.isOperationalChanged += EquipmentIsOperationalChangedEventHandler;
-        // RangeDistance is set when when a piece of equipment first becomes operational
+        pieceOfEquipment.isDamagedChanged += EquipmentIsDamagedChangedEventHandler;
     }
 
     protected abstract void AssignMonitorTo(EquipmentType pieceOfEquipment);
@@ -105,7 +123,9 @@ public abstract class AEquipmentMonitor<EquipmentType> : AColliderMonitor where 
 
     /// <summary>
     /// Refreshes the range distance of this monitor. The range of a monitor can be affected by a number of factors 
-    /// including an owner change and the quantity of equipment that is currently operational.
+    /// including an owner change and the quantity of equipment that is currently operational. When a monitor's
+    /// range distance is refreshed, the resulting change, if any, also sets the RangeDistance value of each piece of
+    /// equipment to the same value. RangeDistance is never set to 0.
     /// </summary>
     /// <returns></returns>
     protected abstract float RefreshRangeDistance();
@@ -117,7 +137,7 @@ public abstract class AEquipmentMonitor<EquipmentType> : AColliderMonitor where 
     protected override void CompleteResetForReuse() {
         base.CompleteResetForReuse();
         RangeCategory = RangeCategory.None;
-        D.Assert(_equipmentList.Count == Constants.Zero);
+        D.AssertEqual(Constants.Zero, _equipmentList.Count);
     }
 
     protected override void Cleanup() {
@@ -131,7 +151,10 @@ public abstract class AEquipmentMonitor<EquipmentType> : AColliderMonitor where 
 
     protected override void Unsubscribe() {
         base.Unsubscribe();
-        _equipmentList.ForAll(e => e.isOperationalChanged -= EquipmentIsOperationalChangedEventHandler);
+        _equipmentList.ForAll(e => {
+            e.isOperationalChanged -= EquipmentIsOperationalChangedEventHandler;
+            e.isDamagedChanged -= EquipmentIsDamagedChangedEventHandler;
+        });
     }
 
 }

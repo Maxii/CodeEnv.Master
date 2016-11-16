@@ -485,7 +485,7 @@ public class CtxMenu : AMonoBase {
     }
 
     /// <summary>
-    /// Special case version of Show() designed for menu bars. This not only ondoes
+    /// Special case version of Show() designed for menu bars. This not only undoes
     /// HideMenuBar(), it also will, if necessary, build the entire menu hierarchy,
     /// though it will avoid doing so if it can. For non-menu bar menus this is
     /// a no-op. Normally you would not need to call this unless you have hidden
@@ -721,15 +721,30 @@ public class CtxMenu : AMonoBase {
                     if (style == Style.Pie) {
                         if (_itemData[i].background != null) {
                             _itemData[i].background.color = backgroundColorDisabled;
-                            if (_itemData[i].background.GetComponent<Collider>() != null) {
-                                _itemData[i].background.GetComponent<Collider>().enabled = false;
+
+                            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+                            var collider = _itemData[i].background.GetComponent<Collider>();
+                            Profiler.EndSample();
+
+                            if (collider != null) {
+                                collider.enabled = false;
                             }
                         }
                     }
                     else {
-                        if (_itemData[i].highlight != null && _itemData[i].highlight.GetComponent<Collider>() != null) {
-                            _itemData[i].highlight.GetComponent<Collider>().enabled = false;
+                        if (_itemData[i].highlight != null) {
+
+                            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+                            var collider = _itemData[i].highlight.GetComponent<Collider>();
+                            Profiler.EndSample();
+
+                            if (collider != null) {
+                                collider.enabled = false;
+                            }
                         }
+                        //if (_itemData[i].highlight != null && _itemData[i].highlight.GetComponent<Collider>() != null) {
+                        //    _itemData[i].highlight.GetComponent<Collider>().enabled = false;
+                        //}
                     }
 
                     if (_itemData[i].icon != null) {
@@ -744,9 +759,18 @@ public class CtxMenu : AMonoBase {
                     if (style == Style.Pie) {
                         if (_itemData[i].background != null) {
                             _itemData[i].background.color = backgroundColor;
-                            if (_itemData[i].background.GetComponent<Collider>() != null) {
-                                _itemData[i].background.GetComponent<Collider>().enabled = true;
+
+                            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+                            var collider = _itemData[i].background.GetComponent<Collider>();
+                            Profiler.EndSample();
+
+                            if (collider != null) {
+                                collider.enabled = true;
                             }
+
+                            //if (_itemData[i].background.GetComponent<Collider>() != null) {
+                            //    _itemData[i].background.GetComponent<Collider>().enabled = true;
+                            //}
                             else {
                                 NGUITools.AddWidgetCollider(_itemData[i].background.gameObject);
                             }
@@ -754,9 +778,18 @@ public class CtxMenu : AMonoBase {
                     }
                     else {
                         if (_itemData[i].highlight != null) {
-                            if (_itemData[i].highlight.GetComponent<Collider>() != null) {
-                                _itemData[i].highlight.GetComponent<Collider>().enabled = true;
+
+                            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+                            var collider = _itemData[i].highlight.GetComponent<Collider>();
+                            Profiler.EndSample();
+
+                            if (collider != null) {
+                                collider.enabled = true;
                             }
+
+                            //if (_itemData[i].highlight.GetComponent<Collider>() != null) {
+                            //    _itemData[i].highlight.GetComponent<Collider>().enabled = true;
+                            //}
                             else {
                                 NGUITools.AddWidgetCollider(_itemData[i].highlight.gameObject);
                             }
@@ -782,11 +815,9 @@ public class CtxMenu : AMonoBase {
 
     #endregion
 
-    protected override void LateUpdate() {
-        base.LateUpdate();
+    void LateUpdate() {
         // Special case game controller input for pie menus: we use the joystick
         // direction to determine the current item selection state.
-
         if (style == Style.Pie && _menuRoot != null) {
             UICamera cam = UICamera;
             if (cam != null && cam.useController) {
@@ -1261,7 +1292,7 @@ public class CtxMenu : AMonoBase {
                     dy = _currentSubmenu.padding.y;
                 }
 
-                // Account for backgound padding, plus one pixel extra.
+                // Account for background padding, plus one pixel extra.
                 highlightScreenRect = CtxHelper.InsetRect(highlightScreenRect, -_backgroundPadding.x - 1f, -_backgroundPadding.y - 1f);
             }
 
@@ -1338,7 +1369,10 @@ public class CtxMenu : AMonoBase {
             return false;
         }
 
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
         CtxMenu menu = go.GetComponent<CtxMenu>();
+        Profiler.EndSample();
+
         if (menu != null) {
             if (menu == _currentSubmenu) {
                 return true;
@@ -1428,7 +1462,7 @@ public class CtxMenu : AMonoBase {
         // creates all of the widgets, sets up their appearance parameters and gathers
         // size metrics. The widgets can't be placed in their final positions because
         // we don't yet know how big they need to be and won't until after they are
-        // created and we can get thier metrics from the NGUI APIs.
+        // created and we can get their metrics from the NGUI APIs.
 
         float itemHeight = ((font != null) ? font.defaultSize : 15f) * labelScale + padding.y;
         float itemWidth = 0f;
@@ -2199,9 +2233,9 @@ public class CtxMenu : AMonoBase {
 
         /* Seems this is no longer needed in NGUI 3.0...
          *
-        UIAtlas.Sprite sp = sprite.GetAtlasSprite();
-        float spX = sp.inner.xMin - sp.outer.xMin + sp.paddingLeft * scaleX;
-        float spY = sp.inner.yMin - sp.outer.yMin + sp.paddingTop * scaleY;
+        UIAtlas.Sprite sprite = sprite.GetAtlasSprite();
+        float spX = sprite.inner.xMin - sprite.outer.xMin + sprite.paddingLeft * scaleX;
+        float spY = sprite.inner.yMin - sprite.outer.yMin + sprite.paddingTop * scaleY;
         
         pos.x -= spX;
         pos.y += spY;
@@ -2543,12 +2577,24 @@ public class CtxMenu : AMonoBase {
     }
 
     private void ValidateFields() {
-        D.WarnContext(string.IsNullOrEmpty(backgroundSprite), gameObject, "{0}.{1}.BackgroundSprite not chosen.", name, GetType().Name);
-        D.WarnContext(string.IsNullOrEmpty(highlightSprite), gameObject, "{0}.{1}.HighlightSprite not chosen.", name, GetType().Name);
-        D.WarnContext(font == null, gameObject, "{0}.{1}.Font not chosen.", name, GetType().Name);
-        D.WarnContext(string.IsNullOrEmpty(checkmarkSprite), gameObject, "{0}.{1}.CheckmarkSprite not chosen.", name, GetType().Name);
-        D.WarnContext(string.IsNullOrEmpty(submenuIndicatorSprite), gameObject, "{0}.{1}.SubmenuIndicatorSprite not chosen.", name, GetType().Name);
-        D.WarnContext(string.IsNullOrEmpty(separatorSprite), gameObject, "{0}.{1}.SeparatorSprite not chosen.", name, GetType().Name);
+        if (backgroundSprite.IsNullOrEmpty()) {
+            D.WarnContext(gameObject, "{0}.{1}.BackgroundSprite not chosen.", name, GetType().Name);
+        }
+        if (highlightSprite.IsNullOrEmpty()) {
+            D.WarnContext(gameObject, "{0}.{1}.HighlightSprite not chosen.", name, GetType().Name);
+        }
+        if (font == null) {
+            D.WarnContext(gameObject, "{0}.{1}.Font not chosen.", name, GetType().Name);
+        }
+        if (checkmarkSprite.IsNullOrEmpty()) {
+            D.WarnContext(gameObject, "{0}.{1}.CheckmarkSprite not chosen.", name, GetType().Name);
+        }
+        if (submenuIndicatorSprite.IsNullOrEmpty()) {
+            D.WarnContext(gameObject, "{0}.{1}.SubmenuIndicatorSprite not chosen.", name, GetType().Name);
+        }
+        if (separatorSprite.IsNullOrEmpty()) {
+            D.WarnContext(gameObject, "{0}.{1}.SeparatorSprite not chosen.", name, GetType().Name);
+        }
     }
 
     protected override void Cleanup() { }

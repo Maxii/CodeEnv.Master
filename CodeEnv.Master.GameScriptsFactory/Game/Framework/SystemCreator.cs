@@ -46,7 +46,7 @@ public class SystemCreator : AMonoBase {
     public SystemCreatorConfiguration Configuration {
         get { return _configuration; }
         set {
-            D.Assert(_configuration == null); // should only occur one time
+            D.AssertNull(_configuration); // should only occur one time
             SetProperty<SystemCreatorConfiguration>(ref _configuration, value, "Configuration", ConfigurationSetHandler);
         }
     }
@@ -73,7 +73,9 @@ public class SystemCreator : AMonoBase {
 
     protected override void Start() {
         base.Start();
-        D.Assert(gameObject.isStatic, "{0} should be static after being positioned.", GetType().Name);
+        if (!gameObject.isStatic) {
+            D.Error("{0} should be static after being positioned.", Name);
+        }
     }
 
     private void ConfigurationSetHandler() {
@@ -101,7 +103,9 @@ public class SystemCreator : AMonoBase {
         LogEvent();
         FocusableItemCameraStat cameraStat = MakeSystemCameraStat();
         _system = _systemFactory.MakeSystemInstance(SystemName, gameObject, cameraStat);
-        D.Assert(_system.gameObject.isStatic, "{0} should be static after being positioned.", _system.FullName);
+        if (!_system.gameObject.isStatic) {
+            D.Error("{0} should be static after being positioned.", _system.FullName);
+        }
 
         _system.SettlementOrbitData = InitializeSettlementOrbitSlot();
         SectorGrid.Instance.GetSector(_system.SectorID).System = _system;
@@ -134,8 +138,10 @@ public class SystemCreator : AMonoBase {
             planetOrbitSlot.ToOrbit = true;
             var planet = _systemFactory.MakeInstance(design, cameraStat, planetOrbitSlot);
             float sysOrbitSlotDepth;
-            D.Warn(planet.Data.CloseOrbitOuterRadius > (sysOrbitSlotDepth = __CalcSystemOrbitSlotDepth(_star)), "{0}: {1} reqd orbit slot depth of {2:0.#} > SystemOrbitSlotDepth of {3:0.#}.",
-                Name, planet.FullName, planet.Data.CloseOrbitOuterRadius, sysOrbitSlotDepth);
+            if (planet.Data.CloseOrbitOuterRadius > (sysOrbitSlotDepth = __CalcSystemOrbitSlotDepth(_star))) {
+                D.Warn("{0}: {1} reqd orbit slot depth of {2:0.#} > SystemOrbitSlotDepth of {3:0.#}.",
+                    Name, planet.FullName, planet.Data.CloseOrbitOuterRadius, sysOrbitSlotDepth);
+            }
             //D.Log("{0} has assumed orbit slot {1} in System {2}.", planet.FullName, planetOrbitSlot.SlotIndex, SystemName);
             _planets.Add(planet);
         }
@@ -204,7 +210,7 @@ public class SystemCreator : AMonoBase {
     }
 
     private void RemoveCreationObject() {
-        D.Assert(transform.childCount == 1);
+        D.AssertEqual(Constants.One, transform.childCount);
         foreach (Transform child in transform) {
             child.parent = SystemsFolder.Instance.Folder;
         }

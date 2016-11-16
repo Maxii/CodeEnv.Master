@@ -28,8 +28,7 @@ public class EditModeController : AMonoBase {
 
     public bool enableRenderers = false;
 
-    protected override void Update() {
-        base.Update();
+    void Update() {
         UpdateRenderers();
     }
 

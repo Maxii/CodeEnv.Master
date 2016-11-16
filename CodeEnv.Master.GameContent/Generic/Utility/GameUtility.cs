@@ -40,7 +40,9 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="drag">The drag.</param>
         /// <returns></returns>
         public static float CalculateMaxAttainableSpeed(float maxPropulsionPower, float mass, float drag) {
-            D.Warn(drag * Time.fixedDeltaTime > 0.1F, "Values getting very high!");
+            if (drag * Time.fixedDeltaTime > 0.1F) {
+                D.Warn("Values getting very high!");
+            }
             return (maxPropulsionPower * ((1F / drag) - Time.fixedDeltaTime)) / mass;
         }
 
@@ -53,7 +55,9 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="drag">The drag.</param>
         /// <returns></returns>
         public static float CalculateReqdPropulsionPower(float desiredSpeed, float mass, float drag) {
-            D.Warn(drag * Time.fixedDeltaTime > 0.1F, "Values getting very high!");
+            if (drag * Time.fixedDeltaTime > 0.1F) {
+                D.Warn("Values getting very high!");
+            }
             return (desiredSpeed * mass * drag) / (1F - (drag * Time.fixedDeltaTime));
         }
 
@@ -64,7 +68,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="name">The name.</param>
         /// <returns></returns>
         public static E DeriveEnumFromName<E>(string name) where E : struct {
-            D.Assert(typeof(E).IsEnum, "{0} must be an enumerated type.".Inject(typeof(E).Name));
+            D.Assert(typeof(E).IsEnum, typeof(E).Name);
             Utility.ValidateForContent(name);
             return Enums<E>.GetValues().Single(e => name.Trim().ToLower().Contains(e.ToString().ToLower()));
         }

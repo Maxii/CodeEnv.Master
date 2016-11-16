@@ -82,7 +82,14 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Returns a string formatted for use by the calender.
         /// </summary>
-        public string CalenderFormattedDate { get { return CalenderDateFormat.Inject(Year, DayOfYear, Mathf.Floor(HourOfDay)); } }
+        public string CalenderFormattedDate {
+            get {
+                Profiler.BeginSample("Proper string allocation");
+                string result = CalenderDateFormat.Inject(Year, DayOfYear, Mathf.Floor(HourOfDay));
+                Profiler.EndSample();
+                return result;
+            }
+        }
 
         /// <summary>
         /// The total number of hours this GameDate represents since the game was started.
@@ -158,8 +165,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Returns <c>true</c> if this GameDate is equal to other GameDate for use
-        /// by the Calender.
+        /// Returns <c>true</c> if this GameDate is equal to other GameDate for use by the Calender.
+        /// <remarks>No allocations.</remarks>
         /// </summary>
         /// <param name="other">The other GameDate.</param>
         /// <returns></returns>

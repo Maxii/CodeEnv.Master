@@ -58,7 +58,7 @@ namespace CodeEnv.Master.GameContent {
         private static IGameManager _gameManager;
         public static IGameManager GameManager {
             get {
-                D.Assert(_gameManager != null);
+                D.AssertNotNull(_gameManager);
                 return _gameManager;
             }
             set { _gameManager = value; }
@@ -67,7 +67,7 @@ namespace CodeEnv.Master.GameContent {
         private static IInputManager _inputManager;
         public static IInputManager InputManager {
             get {
-                D.Assert(_inputManager != null);
+                D.AssertNotNull(_inputManager);
                 return _inputManager;
             }
             set { _inputManager = value; }
@@ -76,7 +76,7 @@ namespace CodeEnv.Master.GameContent {
         private static ISFXManager _sfxManager;
         public static ISFXManager SFXManager {
             get {
-                D.Assert(_sfxManager != null);
+                D.AssertNotNull(_sfxManager);
                 return _sfxManager;
             }
             set { _sfxManager = value; }
@@ -85,7 +85,7 @@ namespace CodeEnv.Master.GameContent {
         private static IJobManager _jobManager;
         public static IJobManager JobManager {
             get {
-                D.Assert(_jobManager != null);
+                D.AssertNotNull(_jobManager);
                 return _jobManager;
             }
             set { _jobManager = value; }
@@ -94,7 +94,7 @@ namespace CodeEnv.Master.GameContent {
         private static IGameSettingsDebugControl _gameSettingsDebugControl;
         public static IGameSettingsDebugControl GameSettingsDebugControl {
             get {
-                D.Assert(_gameSettingsDebugControl != null);
+                D.AssertNotNull(_gameSettingsDebugControl);
                 return _gameSettingsDebugControl;
             }
             set { _gameSettingsDebugControl = value; }
@@ -107,7 +107,7 @@ namespace CodeEnv.Master.GameContent {
         private static ICameraControl _mainCameraControl;
         public static ICameraControl MainCameraControl {
             get {
-                D.Assert(_mainCameraControl != null);
+                D.AssertNotNull(_mainCameraControl);
                 return _mainCameraControl;
             }
             set { _mainCameraControl = value; }
@@ -116,7 +116,7 @@ namespace CodeEnv.Master.GameContent {
         private static IGuiCameraControl _guiCameraControl;
         public static IGuiCameraControl GuiCameraControl {
             get {
-                D.Assert(_guiCameraControl != null);
+                D.AssertNotNull(_guiCameraControl);
                 return _guiCameraControl;
             }
             set { _guiCameraControl = value; }
@@ -125,7 +125,7 @@ namespace CodeEnv.Master.GameContent {
         private static ISectorGrid _sectorGrid;
         public static ISectorGrid SectorGrid {
             get {
-                D.Assert(_sectorGrid != null);
+                D.AssertNotNull(_sectorGrid);
                 return _sectorGrid;
             }
             set { _sectorGrid = value; }
@@ -134,7 +134,7 @@ namespace CodeEnv.Master.GameContent {
         private static ISphericalHighlight _hoverHighlight;
         public static ISphericalHighlight HoverHighlight {
             get {
-                D.Assert(_hoverHighlight != null);
+                D.AssertNotNull(_hoverHighlight);
                 return _hoverHighlight;
             }
             set { _hoverHighlight = value; }
@@ -143,7 +143,7 @@ namespace CodeEnv.Master.GameContent {
         private static IDynamicObjectsFolder _dynamicObjectsFolder;
         public static IDynamicObjectsFolder DynamicObjectsFolder {
             get {
-                D.Assert(_dynamicObjectsFolder != null);
+                D.AssertNotNull(_dynamicObjectsFolder);
                 return _dynamicObjectsFolder;
             }
             set { _dynamicObjectsFolder = value; }
@@ -152,7 +152,7 @@ namespace CodeEnv.Master.GameContent {
         private static ITooltipHudWindow _tooltipHudWindow;
         public static ITooltipHudWindow TooltipHudWindow {
             get {
-                D.Assert(_tooltipHudWindow != null);
+                D.AssertNotNull(_tooltipHudWindow);
                 return _tooltipHudWindow;
             }
             set { _tooltipHudWindow = value; }
@@ -161,7 +161,7 @@ namespace CodeEnv.Master.GameContent {
         private static ISelectedItemHudWindow _selectedItemHudWindow;
         public static ISelectedItemHudWindow SelectedItemHudWindow {
             get {
-                D.Assert(_selectedItemHudWindow != null);
+                D.AssertNotNull(_selectedItemHudWindow);
                 return _selectedItemHudWindow;
             }
             set { _selectedItemHudWindow = value; }
@@ -170,7 +170,7 @@ namespace CodeEnv.Master.GameContent {
         private static IHoveredHudWindow _hoveredItemHudWindow;
         public static IHoveredHudWindow HoveredItemHudWindow {
             get {
-                D.Assert(_hoveredItemHudWindow != null);
+                D.AssertNotNull(_hoveredItemHudWindow);
                 return _hoveredItemHudWindow;
             }
             set { _hoveredItemHudWindow = value; }
@@ -179,7 +179,7 @@ namespace CodeEnv.Master.GameContent {
         private static IMyPoolManager _myPoolManager;
         public static IMyPoolManager MyPoolManager {
             get {
-                D.Assert(_myPoolManager != null);
+                D.AssertNotNull(_myPoolManager);
                 return _myPoolManager;
             }
             set { _myPoolManager = value; }
@@ -188,7 +188,7 @@ namespace CodeEnv.Master.GameContent {
         private static IDebugControls _debugControls;
         public static IDebugControls DebugControls {
             get {
-                D.Assert(_debugControls != null);
+                D.AssertNotNull(_debugControls);
                 return _debugControls;
             }
             set { _debugControls = value; }
@@ -201,7 +201,7 @@ namespace CodeEnv.Master.GameContent {
         private static IGeneralFactory _generalFactory;
         public static IGeneralFactory GeneralFactory {
             get {
-                D.Assert(_generalFactory != null);
+                D.AssertNotNull(_generalFactory);
                 return _generalFactory;
             }
             set { _generalFactory = value; }
@@ -210,7 +210,7 @@ namespace CodeEnv.Master.GameContent {
         private static ITrackingWidgetFactory _trackingWidgetFactory;
         public static ITrackingWidgetFactory TrackingWidgetFactory {
             get {
-                D.Assert(_trackingWidgetFactory != null);
+                D.AssertNotNull(_trackingWidgetFactory);
                 return _trackingWidgetFactory;
             }
             set { _trackingWidgetFactory = value; }
@@ -219,7 +219,7 @@ namespace CodeEnv.Master.GameContent {
         private static IGameInputHelper _inputHelper;
         public static IGameInputHelper InputHelper {
             get {
-                D.Assert(_inputHelper != null);
+                D.AssertNotNull(_inputHelper);
                 return _inputHelper;
             }
             set { _inputHelper = value; }
@@ -228,7 +228,7 @@ namespace CodeEnv.Master.GameContent {
         private static IFormationGenerator _formationGenerator;
         public static IFormationGenerator FormationGenerator {
             get {
-                D.Assert(_formationGenerator != null);
+                D.AssertNotNull(_formationGenerator);
                 return _formationGenerator;
             }
             set { _formationGenerator = value; }

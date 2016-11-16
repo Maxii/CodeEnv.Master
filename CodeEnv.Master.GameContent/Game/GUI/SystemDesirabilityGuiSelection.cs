@@ -21,6 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public enum SystemDesirabilityGuiSelection {
 
+        None,
         Random,
         Desirable,
         Normal,

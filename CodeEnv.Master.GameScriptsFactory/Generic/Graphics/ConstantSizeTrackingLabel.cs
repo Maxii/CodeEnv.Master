@@ -32,7 +32,6 @@ public class ConstantSizeTrackingLabel : AWorldTrackingWidget_ConstantSize {
     /// </summary>
     public int desiredFontSize = 6;    //TODO: As I have only a couple of font sizes available now, this setting will change the size 
 
-
     protected new UILabel Widget { get { return base.Widget as UILabel; } }
 
     protected override void Awake() {

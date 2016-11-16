@@ -65,6 +65,10 @@ namespace CodeEnv.Master.GameContent {
             var fData = data as FleetCmdData;
             var accessCntlr = fData.InfoAccessCntlr;
 
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.AlertStatus)) {
+                AlertStatus = fData.AlertStatus;
+            }
+
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitDefense)) {
                 UnitDefensiveStrength = fData.UnitDefensiveStrength;
             }

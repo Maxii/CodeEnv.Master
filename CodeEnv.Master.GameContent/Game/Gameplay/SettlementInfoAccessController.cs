@@ -62,6 +62,7 @@ namespace CodeEnv.Master.GameContent {
             switch (infoID) {
                 case ItemInfoID.Owner:
                 case ItemInfoID.Category:
+                case ItemInfoID.AlertStatus:
                     return true;
                 default:
                     return false;

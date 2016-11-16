@@ -23,6 +23,11 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IWeaponRangeMonitor : IRangedEquipmentMonitor {
 
+        /// <summary>
+        /// Controls whether WeaponRangeMonitors will track and present ColdWar enemies to weapons as acceptable targets.
+        /// </summary>
+        bool ToEngageColdWarEnemies { get; set; }
+
         IUnitElement ParentItem { set; get; }
 
     }

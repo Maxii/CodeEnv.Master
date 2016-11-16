@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -114,7 +114,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float CurrentDrag {
             get {
-                D.Assert(_currentDrag != Constants.ZeroF);
+                D.AssertNotDefault(_currentDrag);
                 return _currentDrag;
             }
             private set { SetProperty<float>(ref _currentDrag, value, "CurrentDrag", CurrentDragPropChangedHandler); }
@@ -295,6 +295,11 @@ namespace CodeEnv.Master.GameContent {
         protected override void HandleTopographyChanged() {
             base.HandleTopographyChanged();
             CurrentDrag = OpenSpaceDrag * Topography.GetRelativeDensity();
+        }
+
+        protected override void HandleIntelCoverageChangedFor(Player player) {
+            base.HandleIntelCoverageChangedFor(player);
+            D.Log(ShowDebugLog, "{0}.IntelCoverage changed for {1} to {2}.", FullName, player, GetIntelCoverage(player).GetValueName());
         }
 
         #endregion

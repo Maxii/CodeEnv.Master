@@ -99,16 +99,18 @@ namespace CodeEnv.Master.Common {
         /// <summary>
         /// Inserts the ToString() version of the arguments provided into the calling string using string.Format().
         /// Usage syntax: "The {0} jumped over the {1}.".Inject("Cat", "Moon");
+        /// <remarks>string.Format uses StringBuilder internally so is slower and allocates more memory.
+        /// Best use is where format actually contains formatting, otherwise concatenate.</remarks>
         /// </summary>
-        /// <param name="sourceText">The calling string.</param>
+        /// <param name="format">The calling formatted string.</param>
         /// <param name="itemsToInject">The items to inject into the calling string. If the item is null, it is replaced by string.Empty</param>
         /// <returns></returns>
         /// <exception cref="System.FormatException"></exception>
-        public static string Inject(this string sourceText, params object[] itemsToInject) {
-            //  'this' sourceText can never be null without the CLR throwing a Null reference exception
-            Utility.ValidateForContent(sourceText);
+        public static string Inject(this string format, params object[] itemsToInject) {
+            //  'this' format can never be null without the CLR throwing a Null reference exception
+            Utility.ValidateForContent(format);
             // IMPROVE see Effective C#, Item 45 Minimize Boxing and Unboxing
-            return string.Format(CultureInfo.CurrentCulture, sourceText, itemsToInject);
+            return string.Format(CultureInfo.CurrentCulture, format, itemsToInject);
         }
 
         /// <summary>
@@ -357,7 +359,7 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Randomly picks an arg from itemsToPickFrom. Used from an instance of Random.
+        /// Randomly picks an argument from itemsToPickFrom. Used from an instance of Random.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="sourceRNG">The Random Number Generator instance.</param>

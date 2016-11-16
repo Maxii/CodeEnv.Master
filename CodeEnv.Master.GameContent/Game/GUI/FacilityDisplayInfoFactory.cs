@@ -31,14 +31,15 @@ namespace CodeEnv.Master.GameContent {
             ItemInfoID.Owner,
             ItemInfoID.Category,
             ItemInfoID.Health,
-            ItemInfoID.Defense,
-            ItemInfoID.Offense,
-            ItemInfoID.WeaponsRange,
-            //ItemInfoID.SensorRange,  // makes no sense
-            ItemInfoID.Science,
-            ItemInfoID.Culture,
-            ItemInfoID.NetIncome,
-            ItemInfoID.Mass,
+            //ItemInfoID.Defense,
+            //ItemInfoID.Offense,
+            //ItemInfoID.WeaponsRange,
+            ItemInfoID.AlertStatus,
+            ////ItemInfoID.SensorRange,  // makes no sense
+            //ItemInfoID.Science,
+            //ItemInfoID.Culture,
+            //ItemInfoID.NetIncome,
+            //ItemInfoID.Mass,
 
             ItemInfoID.Separator,
 

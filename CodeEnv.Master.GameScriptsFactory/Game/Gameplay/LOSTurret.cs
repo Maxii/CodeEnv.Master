@@ -130,8 +130,8 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
 
     protected override void Validate() {
         base.Validate();
-        D.Assert(_hub != null);
-        D.Assert(_barrel != null);
+        D.AssertNotNull(_hub);
+        D.AssertNotNull(_barrel);
     }
 
     /// <summary>
@@ -151,7 +151,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// <returns></returns>
     public override bool TryGetFiringSolution(IElementAttackable enemyTarget, out WeaponFiringSolution firingSolution) {
         D.Assert(enemyTarget.IsOperational);
-        D.Assert(enemyTarget.IsAttackingAllowedBy(Weapon.Owner));
+        D.Assert(enemyTarget.IsAttackByAllowed(Weapon.Owner));
 
         firingSolution = null;
         if (!ConfirmInRangeForLaunch(enemyTarget)) {
@@ -204,7 +204,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
                     //D.Log("{0}: CheckLineOfSight({1}) found its target.", Name, enemyTarget.FullName);
                     return true;
                 }
-                if (attackableTgtEncountered.IsAttackingAllowedBy(Weapon.Owner)) {
+                if (attackableTgtEncountered.IsAttackByAllowed(Weapon.Owner)) {
                     D.Log("{0}: CheckLineOfSight({1}) found interfering attackable target {2} on {3}.", Name, enemyTarget.FullName, attackableTgtEncountered.FullName, _gameTime.CurrentDate);
                     return false;
                 }
@@ -223,9 +223,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// </summary>
     /// <param name="firingSolution">The firing solution.</param>
     public void TraverseTo(LosWeaponFiringSolution firingSolution) {
-        //IElementAttackable target = firingSolution.EnemyTarget;
-        //string targetName = target.FullName;
-        //D.Log("{0} received Traverse to aim at {1}.", Name, targetName);
+        //D.Log("{0} received Traverse to aim at {1}.", Name, firingSolution.EnemyTarget.FullName);
         D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
 
         D.Assert(Weapon.IsOperational);
@@ -234,12 +232,19 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         Quaternion reqdHubRotation = firingSolution.TurretRotation;
         Quaternion reqdBarrelElevation = firingSolution.TurretElevation;
 
-        D.Assert(!IsTraverseJobRunning, "{0} received TraverseTo while traversing to {1}.", Name, __lastFiringSolution);
+        if (IsTraverseJobRunning) {
+            D.Error("{0} received TraverseTo while traversing to {1}.", Name, __lastFiringSolution);
+        }
         var errorDate = CalcLatestDateToCompleteTraverse();
         //D.Log("{0}: time allowed to Traverse = {1}.", Name, errorDate - _gameTime.CurrentDate);
         string jobName = "{0}.TraverseJob".Inject(Name);
         _traverseJob = _jobMgr.StartGameplayJob(ExecuteTraverse(reqdHubRotation, reqdBarrelElevation, errorDate), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
-            Weapon.isOperationalChanged -= WeaponIsOperationalChangedEventHandler;
+            // 11.4.16 Moved unsubscribing from Weapon.isOperationalChanged to last line of ExecuteTraverse() to handle normal Job completion,
+            // and to KillTraverseJob() when the job needs to be killed. This eliminates the one frame delay that comes with using the 
+            // jobCompleted delegate which caused problems when a weapon was activated immediately after being deactivated. The immediate 
+            // activation after deactivation occurred before jobCompleted could unsubscribe, causing the Assert in 
+            // WeaponIsOperationalChangedEventHandler() to fail. I eliminated the deactivation/activation sequence (caused by back to back 
+            // AlertStatus changes) but concluded adopting the above pattern was good practice. See Note 1 in Job class.
             if (!jobWasKilled) {
                 HandleTraverseCompleted(firingSolution);
             }
@@ -304,6 +309,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
             }
             yield return null; // Note: see Navigator.ExecuteHeadingChange() if wish to use WaitForSeconds() or WaitForFixedUpdate()
         }
+        Weapon.isOperationalChanged -= WeaponIsOperationalChangedEventHandler;
         //D.Log("{0} completed Traverse Job on {1}. Hub rotated {2:0.#} degrees, Barrel elevated {3:0.#} degrees.", Name, currentDate, reqdHubRotationInDegrees, reqdBarrelElevationInDegrees);
         //D.Warn(actualHubRotationInDegrees < Constants.ZeroF || actualHubRotationInDegrees > HubMaxRotationTraversal, "{0} completed Traverse Job with unexpected Hub Rotation change of {1:0.#} degrees.", Name, actualHubRotationInDegrees);
         //D.Warn(actualBarrelElevationInDegrees < Constants.ZeroF || actualBarrelElevationInDegrees > BarrelMaxElevationTraversal, "{0} completed Traverse Job with unexpected Barrel Elevation change of {1:0.#} degrees.", Name, actualBarrelElevationInDegrees);
@@ -374,14 +380,27 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     #region Event and Property Change Handlers
 
     private void WeaponIsOperationalChangedEventHandler(object sender, EventArgs e) {
-        D.Assert(!Weapon.IsOperational);  // only subscribed when we are traversing and weapon is operational
-        if (IsTraverseJobRunning) {
-            _traverseJob.Kill();
-            D.Log("Weapon {0} no longer operational while traversing, probably due to damage.", Weapon.FullName);
+        if (!IsTraverseJobRunning) {
+            D.Error("{0} received WeaponIsOperational change without traverse underway.", Name);
         }
+        if (Weapon.IsOperational) {
+            D.Error("{0} should not become operational while traversing.", Weapon.FullName);
+        }
+        // Neither Assert should fail as only subscribed to weapon.IsOperationalChanged event when we are traversing and weapon 
+        // is already operational. 11.4.16 I saw this fail when AlertStatus changed from Red to Yellow and immediately back to Red 
+        // which turned weapons off and immediately back on. As unsubscribing from the event was occurring on the job's jobCompleted
+        // delegate, the time delay before executing jobCompleted created the window for this Assert to fail.
+        //D.Log("{0}.IsOperational changed to {1} while traversing, killing TraverseJob. Weapon.IsDamaged = {2}.", Weapon.FullName, Weapon.IsOperational, Weapon.IsDamaged);
+        KillTraverseJob();
     }
 
     #endregion
+
+    private void KillTraverseJob() {
+        D.Assert(IsTraverseJobRunning);
+        _traverseJob.Kill();
+        Weapon.isOperationalChanged -= WeaponIsOperationalChangedEventHandler;
+    }
 
     // 8.12.16 Job pausing moved to JobManager to consolidate handling
 
@@ -395,6 +414,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         if (_traverseJob != null) {
             _traverseJob.Dispose();
         }
+        Weapon.isOperationalChanged -= WeaponIsOperationalChangedEventHandler;
     }
 
     public override string ToString() {

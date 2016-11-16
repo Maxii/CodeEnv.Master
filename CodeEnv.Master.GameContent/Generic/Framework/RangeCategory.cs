@@ -24,13 +24,13 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Distance of zero.
         /// </summary>
-        None,
+        None = 0,
 
-        Short,
+        Short = 1,
 
-        Medium,
+        Medium = 2,
 
-        Long
+        Long = 3
 
     }
 }

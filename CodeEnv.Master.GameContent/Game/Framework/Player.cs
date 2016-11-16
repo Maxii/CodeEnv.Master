@@ -150,9 +150,15 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="unmetPlayer">The unmet player.</param>
         /// <param name="initialRelationship">The initial relationship.</param>
         public virtual void SetInitialRelationship(Player unmetPlayer, DiplomaticRelationship initialRelationship = DiplomaticRelationship.Neutral) {
-            D.Assert(!_initialRelationship.ContainsKey(unmetPlayer), "{0} already has initial relationship with {1}.", Name, unmetPlayer);
-            D.Assert(!_priorRelationship.ContainsKey(unmetPlayer), "{0} already has prior relationship with {1}.", Name, unmetPlayer);
-            D.Assert(!_currentRelationship.ContainsKey(unmetPlayer), "{0} already has current relationship with {1}.", Name, unmetPlayer);
+            if (_initialRelationship.ContainsKey(unmetPlayer)) {
+                D.Error("{0} already has initial relationship {1} with {2}.", Name, _initialRelationship[unmetPlayer].GetValueName(), unmetPlayer);
+            }
+            if (_priorRelationship.ContainsKey(unmetPlayer)) {
+                D.Error("{0} already has prior relationship {1} with {2}.", Name, _priorRelationship[unmetPlayer].GetValueName(), unmetPlayer);
+            }
+            if (_currentRelationship.ContainsKey(unmetPlayer)) {
+                D.Error("{0} already has current relationship {1} with {2}.", Name, _currentRelationship[unmetPlayer].GetValueName(), unmetPlayer);
+            }
             _initialRelationship.Add(unmetPlayer, initialRelationship);
             _priorRelationship.Add(unmetPlayer, DiplomaticRelationship.None);
             _currentRelationship.Add(unmetPlayer, DiplomaticRelationship.None);
@@ -160,9 +166,15 @@ namespace CodeEnv.Master.GameContent {
         }
 
         internal virtual void SetInitialRelationship_Internal(Player unmetPlayer, DiplomaticRelationship initialRelationship) {
-            D.Assert(!_initialRelationship.ContainsKey(unmetPlayer), "{0} already has initial relationship with {1}.", Name, unmetPlayer);
-            D.Assert(!_priorRelationship.ContainsKey(unmetPlayer), "{0} already has prior relationship with {1}.", Name, unmetPlayer);
-            D.Assert(!_currentRelationship.ContainsKey(unmetPlayer), "{0} already has current relationship with {1}.", Name, unmetPlayer);
+            if (_initialRelationship.ContainsKey(unmetPlayer)) {
+                D.Error("{0} already has initial relationship {1} with {2}.", Name, _initialRelationship[unmetPlayer].GetValueName(), unmetPlayer);
+            }
+            if (_priorRelationship.ContainsKey(unmetPlayer)) {
+                D.Error("{0} already has prior relationship {1} with {2}.", Name, _priorRelationship[unmetPlayer].GetValueName(), unmetPlayer);
+            }
+            if (_currentRelationship.ContainsKey(unmetPlayer)) {
+                D.Error("{0} already has current relationship {1} with {2}.", Name, _currentRelationship[unmetPlayer].GetValueName(), unmetPlayer);
+            }
             _initialRelationship.Add(unmetPlayer, initialRelationship);
             _priorRelationship.Add(unmetPlayer, DiplomaticRelationship.None);
             _currentRelationship.Add(unmetPlayer, DiplomaticRelationship.None);
@@ -178,7 +190,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="newlyMetPlayer">The newly met player.</param>
         public virtual void HandleMetNewPlayer(Player newlyMetPlayer) {
-            D.Assert(newlyMetPlayer != this, "Newly Met Player not allowed to be self.");
+            D.AssertNotEqual(newlyMetPlayer, this, "Newly Met Player not allowed to be self.");
             D.Assert(!IsKnown(newlyMetPlayer));
             _currentRelationship[newlyMetPlayer] = _initialRelationship[newlyMetPlayer];
             newlyMetPlayer.HandleMetNewPlayer_Internal(this);
@@ -194,7 +206,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="newlyMetPlayer">The newly met player.</param>
         internal virtual void HandleMetNewPlayer_Internal(Player newlyMetPlayer) {
-            D.Assert(newlyMetPlayer != this, "Newly Met Player not allowed to be self.");
+            D.AssertNotEqual(newlyMetPlayer, this, "Newly Met Player not allowed to be self.");
             D.Assert(!IsKnown(newlyMetPlayer));
             _currentRelationship[newlyMetPlayer] = _initialRelationship[newlyMetPlayer];
             OnRelationsChanged(newlyMetPlayer);
@@ -229,12 +241,16 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="otherPlayer">The otherPlayer.</param>
         /// <param name="newRelationship">The relationship.</param>
         public virtual void SetRelationsWith(Player otherPlayer, DiplomaticRelationship newRelationship) {
-            D.Assert(otherPlayer != TempGameValues.NoPlayer);
-            D.Assert(otherPlayer != this, "OtherPlayer not allowed to be self.");
-            D.Assert(newRelationship != DiplomaticRelationship.None && newRelationship != DiplomaticRelationship.Self);
-            D.Assert(IsKnown(otherPlayer), "{0}: {1} not yet met.", Name, otherPlayer.Name);
+            D.AssertNotEqual(otherPlayer, TempGameValues.NoPlayer);
+            D.AssertNotEqual(otherPlayer, this, "OtherPlayer not allowed to be self.");
+            D.AssertNotEqual(newRelationship, DiplomaticRelationship.None);
+            D.AssertNotEqual(newRelationship, DiplomaticRelationship.Self);
+            if (!IsKnown(otherPlayer)) {
+                D.Error("{0}: {1} not yet met.", Name, otherPlayer);
+            }
             DiplomaticRelationship existingRelationship = _currentRelationship[otherPlayer];
-            D.Assert(existingRelationship != DiplomaticRelationship.None && newRelationship != DiplomaticRelationship.Self);
+            D.AssertNotDefault((int)existingRelationship);
+            D.AssertNotEqual(DiplomaticRelationship.Self, newRelationship);
             if (existingRelationship == newRelationship) {
                 D.Warn("{0} is attempting to set Relations to {1}, a value it already has.", Name, newRelationship.GetValueName());
                 return;
@@ -256,10 +272,13 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="otherPlayer">The otherPlayer.</param>
         /// <param name="newRelationship">The relationship.</param>
         internal virtual void SetRelationsWith_Internal(Player otherPlayer, DiplomaticRelationship newRelationship) {
-            D.Assert(otherPlayer != TempGameValues.NoPlayer);
-            D.Assert(otherPlayer != this, "OtherPlayer not allowed to be self.");
-            D.Assert(newRelationship != DiplomaticRelationship.None && newRelationship != DiplomaticRelationship.Self);
-            D.Assert(IsKnown(otherPlayer), "{0}: {1} not yet met.", Name, otherPlayer.Name);
+            D.AssertNotEqual(otherPlayer, TempGameValues.NoPlayer);
+            D.AssertNotEqual(otherPlayer, this, "OtherPlayer not allowed to be self.");
+            D.AssertNotEqual(newRelationship, DiplomaticRelationship.None);
+            D.AssertNotEqual(newRelationship, DiplomaticRelationship.Self);
+            if (!IsKnown(otherPlayer)) {
+                D.Error("{0}: {1} not yet met.", Name, otherPlayer);
+            }
             DiplomaticRelationship existingRelationship = _currentRelationship[otherPlayer];
             D.Assert(existingRelationship != DiplomaticRelationship.None && newRelationship != DiplomaticRelationship.Self);
             if (existingRelationship == newRelationship) {
@@ -329,9 +348,10 @@ namespace CodeEnv.Master.GameContent {
         #region Event and Property Change Handlers
 
         private void OnRelationsChanged(Player otherPlayer) {
-            D.Assert(GetCurrentRelations(otherPlayer) == otherPlayer.GetCurrentRelations(this), "{0} must be synchronized with {1} before RelationsChanged event fires.",
-                GetCurrentRelations(otherPlayer).GetValueName(), otherPlayer.GetCurrentRelations(this).GetValueName());
-
+            if (GetCurrentRelations(otherPlayer) != otherPlayer.GetCurrentRelations(this)) {
+                D.Error("{0} must be synchronized with {1} before RelationsChanged event fires.",
+                    GetCurrentRelations(otherPlayer).GetValueName(), otherPlayer.GetCurrentRelations(this).GetValueName());
+            }
             if (relationsChanged != null) {
                 relationsChanged(this, new RelationsChangedEventArgs(otherPlayer));
             }

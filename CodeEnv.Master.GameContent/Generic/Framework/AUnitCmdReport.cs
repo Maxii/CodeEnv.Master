@@ -33,6 +33,8 @@ namespace CodeEnv.Master.GameContent {
 
         public Formation UnitFormation { get; protected set; }
 
+        public AlertStatus AlertStatus { get; protected set; }
+
         public RangeDistance? UnitWeaponsRange { get; protected set; }
 
         public RangeDistance? UnitSensorRange { get; protected set; }
@@ -128,7 +130,9 @@ namespace CodeEnv.Master.GameContent {
             if (!unitMaxHitPts.HasValue || !unitCurrentHitPts.HasValue) {
                 return null;
             }
-            D.Warn(unitCurrentHitPts > unitMaxHitPts, "{0}.CurrentHitPts {1} > MaxHitPts {2}.", ParentName, unitCurrentHitPts, unitMaxHitPts);
+            if (unitCurrentHitPts > unitMaxHitPts) {
+                D.Warn("{0}.CurrentHitPts {1} > MaxHitPts {2}.", ParentName, unitCurrentHitPts, unitMaxHitPts);
+            }
             // The above warning can occur if Element CurrentHitPts is made available at a more restricted IntelCoverage than MaxHitPts
             if (unitMaxHitPts.Value > Constants.ZeroF) {
                 return unitCurrentHitPts.Value / unitMaxHitPts.Value;

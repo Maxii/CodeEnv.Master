@@ -56,7 +56,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="target">The target of this order. Default is null.</param>
         public FacilityOrder(FacilityDirective directive, OrderSource source, bool toNotifyCmd = false, IUnitAttackable target = null) {
             if (directive.EqualsAnyOf(DirectivesWithNullTarget)) {
-                D.Assert(target == null, "{0} target should be null.", this);
+                D.AssertNull(target, ToString());
             }
             Directive = directive;
             Source = source;

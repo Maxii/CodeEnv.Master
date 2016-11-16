@@ -69,7 +69,7 @@ namespace CodeEnv.Master.Common {
 
         #endregion
 
-        private static string _toStringFormat = "({0},{1},{2})";
+        private const string ToStringFormat = "({0},{1},{2})";
 
         public float SqrMagnitude { get { return Vector3.Dot((Vector3)this, (Vector3)this); } }
 
@@ -110,7 +110,7 @@ namespace CodeEnv.Master.Common {
         #endregion
 
         public override string ToString() {
-            return _toStringFormat.Inject(x, y, z);
+            return ToStringFormat.Inject(x, y, z);
         }
 
         #region IEquatable<Index3D> Members

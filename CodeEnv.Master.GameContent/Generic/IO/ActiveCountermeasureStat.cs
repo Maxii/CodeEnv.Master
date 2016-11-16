@@ -55,7 +55,7 @@ namespace CodeEnv.Master.GameContent {
             DamageStrength damageMitigation)
             : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat) {
             // confirm if more than one interceptStrength, that they each contain a unique WDVCategory
-            D.Assert(interceptStrengths.Length == interceptStrengths.Select(intS => intS.Category).Distinct().Count(), "Duplicate Categories found.");
+            D.AssertEqual(interceptStrengths.Length, interceptStrengths.Select(intS => intS.Category).Distinct().Count(), "Duplicate Categories found.");
             InterceptStrengths = interceptStrengths;
             InterceptAccuracy = interceptAccuracy;
             ReloadPeriod = reloadPeriod;

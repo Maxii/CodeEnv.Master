@@ -77,7 +77,11 @@ public class TooltipHudWindow : AHudWindow<TooltipHudWindow>, ITooltipHudWindow 
     protected override void PositionWindow() {
         var hoveredObject = UICamera.hoveredObject;
         if (hoveredObject != null) {
+
+            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
             var hoveredWidget = hoveredObject.GetComponent<UIWidget>();
+            Profiler.EndSample();
+
             if (hoveredWidget != null) {
                 var hoveredWidgetViewportPosition = _uiCamera.WorldToViewportPoint(hoveredWidget.worldCenter);
                 //D.Log("{0}: Viewport position of Hovered Widget = {1}.", GetType().Name, hoveredWidgetViewportPosition);

@@ -97,10 +97,12 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     public FleetCreator MakeFleetCreatorInstance(Vector3 location, UnitCreatorConfiguration config) {
         GameObject creatorPrefabGo = _fleetCreatorPrefab.gameObject;
         GameObject creatorGo = UnityUtility.AddChild(FleetsFolder.Instance.gameObject, creatorPrefabGo);
-        D.Assert(!creatorGo.isStatic, "{0}: {1} should not start static as it has yet to be positioned.", GetType().Name, typeof(FleetCreator).Name);
+        if (creatorGo.isStatic) {
+            D.Error("{0}: {1} should not start static as it has yet to be positioned.", Name, typeof(FleetCreator).Name);
+        }
         creatorGo.transform.position = location;
         creatorGo.isStatic = true;
-        var creator = creatorGo.GetComponent<FleetCreator>();
+        var creator = creatorGo.GetSafeComponent<FleetCreator>();
         creator.Configuration = config;
         return creator;
     }
@@ -153,8 +155,10 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="design">The design.</param>
     /// <param name="cmd">The item.</param>
     public void PopulateInstance(Player owner, FleetCmdCameraStat cameraStat, FleetCmdDesign design, ref FleetCmdItem cmd) {
-        D.Assert(!cmd.IsOperational, "{0} should not be operational.", cmd.FullName);
-        D.Assert(cmd.transform.parent != null, "{0} should already have a parent.", cmd.FullName);
+        D.Assert(!cmd.IsOperational, cmd.FullName);
+        if (cmd.transform.parent == null) {
+            D.Error("{0} should already have a parent.", cmd.FullName);
+        }
         var passiveCMs = MakeCountermeasures(design.PassiveCmStats);
         cmd.Name = CommonTerms.Command;
         FleetCmdData data = new FleetCmdData(cmd, owner, passiveCMs, design.CmdStat);
@@ -230,12 +234,14 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     public void PopulateInstance(Player owner, FollowableItemCameraStat cameraStat, ShipDesign design, ref ShipItem element) {
-        D.Assert(element.transform.parent != null, "{0}: {1} should already have a parent.", Name, element.FullName);
-        D.Assert(!element.IsOperational, "{0} should not be operational.", element.FullName);
+        D.AssertNotNull(element.transform.parent, element.FullName);
+        D.Assert(!element.IsOperational, element.FullName);
         // Find Hull child of Item and attach it to newly made HullEquipment made from HullStat
         ShipHull hull = element.gameObject.GetSingleComponentInChildren<ShipHull>();
         var hullCategory = design.HullCategory;
-        D.Assert(hullCategory == hull.HullCategory, "{0} should be same as {1}.".Inject(hullCategory.GetValueName(), hull.HullCategory.GetValueName()));
+        if (hullCategory != hull.HullCategory) {
+            D.Error("{0} should be same as {1}.", hullCategory.GetValueName(), hull.HullCategory.GetValueName());
+        }
         ShipHullEquipment hullEquipment = new ShipHullEquipment(design.HullStat);
         hullEquipment.Hull = hull;
 
@@ -251,7 +257,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var shieldGenerators = MakeShieldGenerators(design.ShieldGeneratorStats, element);
         Priority hqPriority = design.HQPriority;
 
-        element.Name = hullCategory.GetValueName();
+        element.Name = GetUniqueElementName(hullCategory);
         ShipData data = new ShipData(element, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, hqPriority, design.EnginesStat, design.CombatStance);
         element.GetComponent<Rigidbody>().mass = data.Mass; // 7.26.16 Set externally to keep the Rigidbody out of Data
         element.CameraStat = cameraStat;
@@ -271,10 +277,12 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     public StarbaseCreator MakeStarbaseCreatorInstance(Vector3 location, UnitCreatorConfiguration config) {
         GameObject creatorPrefabGo = _starbaseCreatorPrefab.gameObject;
         GameObject creatorGo = UnityUtility.AddChild(StarbasesFolder.Instance.gameObject, creatorPrefabGo);
-        D.Assert(!creatorGo.isStatic, "{0}: {1} should not start static as it has yet to be positioned.", Name, typeof(StarbaseCreator).Name);
+        if (creatorGo.isStatic) {
+            D.Error("{0}: {1} should not start static as it has yet to be positioned.", Name, typeof(StarbaseCreator).Name);
+        }
         creatorGo.transform.position = location;
         creatorGo.isStatic = true;
-        var creator = creatorGo.GetComponent<StarbaseCreator>();
+        var creator = creatorGo.GetSafeComponent<StarbaseCreator>();
         creator.Configuration = config;
         return creator;
     }
@@ -327,8 +335,10 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="design">The design.</param>
     /// <param name="cmd">The item.</param>
     public void PopulateInstance(Player owner, CmdCameraStat cameraStat, StarbaseCmdDesign design, ref StarbaseCmdItem cmd) {
-        D.Assert(!cmd.IsOperational, "{0}: {1} should not be operational.", Name, cmd.FullName);
-        D.Assert(cmd.transform.parent != null, "{0}: {1} should already have a parent.", Name, cmd.FullName);
+        D.Assert(!cmd.IsOperational, cmd.FullName);
+        if (cmd.transform.parent == null) {
+            D.Error("{0} should already have a parent.", cmd.FullName);
+        }
         var passiveCMs = MakeCountermeasures(design.PassiveCmStats);
         cmd.Name = CommonTerms.Command;
         StarbaseCmdData data = new StarbaseCmdData(cmd, owner, passiveCMs, design.CmdStat);
@@ -349,9 +359,11 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     public SettlementCreator MakeSettlementCreatorInstance(UnitCreatorConfiguration config, SystemItem system) {
         GameObject creatorPrefabGo = _settlementCreatorPrefab.gameObject;
         GameObject creatorGo = GameObject.Instantiate(creatorPrefabGo);
-        D.Assert(!creatorGo.isStatic, "{0}: {1} should not start static as it has yet to be positioned.", Name, typeof(SettlementCreator).Name);
+        if (creatorGo.isStatic) {
+            D.Error("{0}: {1} should not start static as it has yet to be positioned.", Name, typeof(SettlementCreator).Name);
+        }
         SystemFactory.Instance.InstallCelestialItemInOrbit(creatorGo, system.SettlementOrbitData);
-        var creator = creatorGo.GetComponent<SettlementCreator>();
+        var creator = creatorGo.GetSafeComponent<SettlementCreator>();
         creator.Configuration = config;
         return creator;
     }
@@ -405,8 +417,10 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="design">The design.</param>
     /// <param name="cmd">The item.</param>
     public void PopulateInstance(Player owner, CmdCameraStat cameraStat, SettlementCmdDesign design, ref SettlementCmdItem cmd) {
-        D.Assert(!cmd.IsOperational, "{0}: {1} should not be operational.", Name, cmd.FullName);
-        D.Assert(cmd.transform.parent != null, "{0}: {1} should already have a parent.", Name, cmd.FullName);
+        D.Assert(!cmd.IsOperational, cmd.FullName);
+        if (cmd.transform.parent == null) {
+            D.Error("{0} should already have a parent.", cmd.FullName);
+        }
         var passiveCMs = MakeCountermeasures(design.PassiveCmStats);
         cmd.Name = CommonTerms.Command;
         SettlementCmdData data = new SettlementCmdData(cmd, owner, passiveCMs, design.CmdStat);
@@ -460,12 +474,17 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     public void PopulateInstance(Player owner, Topography topography, FollowableItemCameraStat cameraStat, FacilityDesign design, ref FacilityItem element) {
-        D.Assert(element.transform.parent != null, "{0}: {1} should already have a parent.", Name, element.FullName);
-        D.Assert(!element.IsOperational, "{0}: {1} should not be operational.", Name, element.FullName);
+        D.Assert(!element.IsOperational, element.FullName);
+        if (element.transform.parent == null) {
+            D.Error("{0} should already have a parent.", element.FullName);
+        }
         // Find Hull child of Item and attach it to newly made HullEquipment made from HullStat
         FacilityHull hull = element.gameObject.GetSingleComponentInChildren<FacilityHull>();
         var hullCategory = design.HullCategory;
-        D.Assert(hullCategory == hull.HullCategory, "{0}: {1} should be same as {2}.", Name, hullCategory.GetValueName(), hull.HullCategory.GetValueName());
+
+        if (hullCategory != hull.HullCategory) {
+            D.Error("{0} should be same as {1}.", hullCategory.GetValueName(), hull.HullCategory.GetValueName());
+        }
         FacilityHullEquipment hullEquipment = new FacilityHullEquipment(design.HullStat);
         hullEquipment.Hull = hull;
 
@@ -481,7 +500,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var shieldGenerators = MakeShieldGenerators(design.ShieldGeneratorStats, element);
         Priority hqPriority = design.HQPriority;
 
-        element.Name = hullCategory.GetValueName();
+        element.Name = GetUniqueElementName(hullCategory);
         FacilityData data = new FacilityData(element, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, hqPriority, topography);
         element.GetComponent<Rigidbody>().mass = data.Mass; // 7.26.16 Set externally to keep the Rigidbody out of Data
         element.CameraStat = cameraStat;
@@ -696,7 +715,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="weapon">The weapon.</param>
     /// <param name="element">The element.</param>
     private void AttachMonitor(AWeapon weapon, AUnitElementItem element) {
-        D.Assert(weapon.RangeMonitor == null);
+        D.AssertNull(weapon.RangeMonitor);
         var allMonitors = element.gameObject.GetComponentsInChildren<WeaponRangeMonitor>();
         var monitorsInUse = allMonitors.Where(m => m.RangeCategory != RangeCategory.None);
 
@@ -708,7 +727,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
                 monitor = unusedMonitors.First();
             }
             else {
-                D.Assert(_weaponRangeMonitorPrefab.layer == (int)Layers.Collide_DefaultOnly);
+                D.AssertEqual(Layers.Collide_DefaultOnly, (Layers)_weaponRangeMonitorPrefab.layer);
                 GameObject monitorGo = UnityUtility.AddChild(element.gameObject, _weaponRangeMonitorPrefab);
                 monitorGo.layer = (int)Layers.Collide_DefaultOnly;  // AddChild resets prefab layer to elementGo's layer
                 monitor = monitorGo.GetSafeComponent<WeaponRangeMonitor>();
@@ -738,7 +757,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             mountPlaceholder = hull.gameObject.GetSafeComponentsInChildren<MissileMountPlaceholder>().Single(placeholder => placeholder.SlotID == mountSlotID);
             weaponMountPrefab = _missileTubePrefab;
         }
-        D.Assert(weaponMountPrefab.SlotID == MountSlotID.None); // mount prefabs won't yet have a slotID
+        D.AssertDefault((int)weaponMountPrefab.SlotID); // mount prefabs won't yet have a slotID
 
         // align the new mount's position and rotation with that of the placeholder it is replacing
         GameObject mountGo = UnityUtility.AddChild(hull.gameObject, weaponMountPrefab.gameObject);
@@ -770,7 +789,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="countermeasure">The countermeasure.</param>
     /// <param name="element">The element.</param>
     private void AttachMonitor(ActiveCountermeasure countermeasure, AUnitElementItem element) {
-        D.Assert(countermeasure.RangeMonitor == null);
+        D.AssertNull(countermeasure.RangeMonitor);
         var allMonitors = element.gameObject.GetComponentsInChildren<ActiveCountermeasureRangeMonitor>();
         var monitorsInUse = allMonitors.Where(m => m.RangeCategory != RangeCategory.None);
 
@@ -782,7 +801,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
                 monitor = unusedMonitors.First();
             }
             else {
-                D.Assert(_countermeasureRangeMonitorPrefab.layer == (int)Layers.Collide_ProjectileOnly);
+                D.AssertEqual(Layers.Collide_ProjectileOnly, (Layers)_countermeasureRangeMonitorPrefab.layer);
                 GameObject monitorGo = UnityUtility.AddChild(element.gameObject, _countermeasureRangeMonitorPrefab);
                 monitorGo.layer = (int)Layers.Collide_ProjectileOnly;   // AddChild resets prefab layer to elementGo's layer
                 monitor = monitorGo.GetSafeComponent<ActiveCountermeasureRangeMonitor>();
@@ -812,7 +831,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
                 monitor = unusedSensorMonitors.First();
             }
             else {
-                D.Assert(_sensorRangeMonitorPrefab.layer == (int)Layers.Collide_DefaultOnly);
+                D.AssertEqual(Layers.Collide_DefaultOnly, (Layers)_sensorRangeMonitorPrefab.layer);
                 GameObject monitorGo = UnityUtility.AddChild(command.gameObject, _sensorRangeMonitorPrefab);
                 monitorGo.layer = (int)Layers.Collide_DefaultOnly;  // AddChild resets prefab layer to elementGo's layer
                 monitor = monitorGo.GetSafeComponent<SensorRangeMonitor>();
@@ -829,6 +848,36 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region Debug
+
+    private const string ElementNameFormat = "{0}{1}";
+
+    private IDictionary<FacilityHullCategory, int> _facilityNameCountLookup = new Dictionary<FacilityHullCategory, int>();
+
+    private IDictionary<ShipHullCategory, int> _shipNameCountLookup = new Dictionary<ShipHullCategory, int>();
+
+    private string GetUniqueElementName(FacilityHullCategory cat) {
+        if (!_facilityNameCountLookup.ContainsKey(cat)) {
+            _facilityNameCountLookup.Add(cat, 1);
+        }
+        int nameCount = _facilityNameCountLookup[cat];
+        string name = ElementNameFormat.Inject(cat.GetValueName(), nameCount);
+        _facilityNameCountLookup[cat] = ++nameCount;
+        return name;
+    }
+
+    private string GetUniqueElementName(ShipHullCategory cat) {
+        if (!_shipNameCountLookup.ContainsKey(cat)) {
+            _shipNameCountLookup.Add(cat, 1);
+        }
+        int nameCount = _shipNameCountLookup[cat];
+        string name = ElementNameFormat.Inject(cat.GetValueName(), nameCount);
+        _shipNameCountLookup[cat] = ++nameCount;
+        return name;
+    }
+
+    #endregion
 
 }
 

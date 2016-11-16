@@ -77,8 +77,7 @@ public class VisualEffectScale : AMonoBase {
         //D.Log("{0} previousScale on Start: {1}.", transform.name, _prevScale);
     }
 
-    protected override void Update() {
-        base.Update();
+    void Update() {
 #if UNITY_EDITOR
         var currentScale = editorScale * ItemRadius * _radiusToScaleNormalizeFactor;
         //D.Log("{0} currentScale on Update: {1}.", transform.name, currentScale);

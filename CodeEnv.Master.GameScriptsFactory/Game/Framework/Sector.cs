@@ -72,7 +72,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     public SectorData Data {
         get { return _data; }
         set {
-            D.Assert(_data == null, "{0}.Data can only be set once.", GetType().Name);
+            D.AssertNull(_data, Name);
             SetProperty<SectorData>(ref _data, value, "Data", DataPropSetHandler);
         }
     }
@@ -139,7 +139,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     public SystemItem System {
         private get { return _system; }
         set {
-            D.Assert(_system == null);    // one time only, if at all 
+            D.AssertNull(_system);    // one time only, if at all 
             SetProperty<SystemItem>(ref _system, value, "System", SystemPropSetHandler);
         }
     }
@@ -203,7 +203,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     ///  Subscribes to changes to values contained in Data. Called when Data is set.
     /// </summary>
     private void SubscribeToDataValueChanges() {
-        D.Assert(_subscriptions != null);
+        D.AssertNotNull(_subscriptions);
         _subscriptions.Add(Data.SubscribeToPropertyChanging<AItemData, Player>(d => d.Owner, OwnerPropChangingHandler));
         _subscriptions.Add(Data.SubscribeToPropertyChanged<AItemData, Player>(d => d.Owner, OwnerPropChangedHandler));
         Data.intelCoverageChanged += IntelCoverageChangedEventHandler;
@@ -300,7 +300,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
             return pointCandidate;
         }
 
-        D.Assert(iterateCount < 100, "{0} could not find a clear random point inside.", Name);
+        D.AssertException(iterateCount < 100, Name);
         iterateCount++;
         return GetClearRandomPointInsideSector(iterateCount);
     }
@@ -449,7 +449,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
 
     private void OnOwnerChanged() {
         if (ownerChanged != null) {
-            ownerChanged(this, new EventArgs());
+            ownerChanged(this, EventArgs.Empty);
         }
     }
 

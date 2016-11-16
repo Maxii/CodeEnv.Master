@@ -27,14 +27,13 @@ using UnityEngine;
 /// </summary>
 public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
 
-    private bool _isShowing;
+    public string Name { get { return transform.name; } }
+
     /// <summary>
     /// Indicates whether this <see cref="ATrackingWidget" /> is currently showing. 
+    /// <remarks>Not subscribable.</remarks>
     /// </summary>
-    public bool IsShowing {
-        get { return _isShowing; }
-        private set { SetProperty<bool>(ref _isShowing, value, "IsShowing"); }
-    }
+    public bool IsShowing { get; private set; }
 
     private string _optionalRootName;
     /// <summary>
@@ -91,7 +90,7 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
 
     public Transform WidgetTransform {
         get {
-            D.Assert(Widget.transform != null, "{0}.WidgetTransform is null.".Inject(OptionalRootName));
+            D.AssertNotNull(Widget.transform, OptionalRootName);
             return Widget.transform;
         }
     }
@@ -107,15 +106,24 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     /// <summary>
     /// Indicates if the camera is within acceptable range of the target to show the widget.
     /// </summary>
-    private bool IsWithinShowDistance {
+    protected bool IsWithinShowDistance {
         get { return Utility.IsInRange(Target.Position.DistanceToCamera(), _minShowDistance, _maxShowDistance); }
     }
 
     protected Vector3 _offset;
 
+    /**************************************************************************************************************
+     * 11.13.16 For now, I've left the min/max show distance infrastructure in place here for all TrackingWidgets.
+     * Currently, it is only utilized by UITrackingLabels which want the label to disappear when the camera gets
+     * very close. ConstantSizeTrackingSprites currently use layers to stop rendering at a max distance. 
+     * AWorldTrackingWidgetVariableSize widgets aren't used at all.
+     * OPTIMIZE When I get close to release, I'll know whether any other tracking widgets want to make
+     * use of this expensive feature. The TrackingWidgetFactory methods have been changed to reflect this change.
+     **************************************************************************************************************/
+    protected bool _toCheckShowDistance = false;
     private float _minShowDistance = Constants.ZeroF;
     private float _maxShowDistance = Mathf.Infinity;
-    private bool _toCheckShowDistance = false;
+
     private UIPanel _panel;
 
     protected override void Awake() {
@@ -150,7 +158,7 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     }
 
     /// <summary>
-    /// Sets the specified string arg.
+    /// Sets the specified string argument.
     /// </summary>
     /// <param name="arg">The string arg.</param>
     public abstract void Set(string arg);
@@ -160,28 +168,24 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     /// </summary>
     /// <param name="toShow">if set to <c>true</c> [to show].</param>
     public void Show(bool toShow) {
-        //D.Log("{0}.Show({1}) called. _toCheckShowDistance = {2}, IsWithinShowDistance = {3}.", transform.name, toShow, _toCheckShowDistance, IsWithinShowDistance);
+        //D.Log("{0}.Show({1}) called. _toCheckShowDistance = {2}, IsWithinShowDistance = {3}.", Name, toShow, _toCheckShowDistance, IsWithinShowDistance);
         if (!toShow || (_toCheckShowDistance && !IsWithinShowDistance)) {
             Hide();
         }
         else {
             Show();
         }
-        // Note: If there is a CameraLosChangedListener installed, position updates must continue even when offscreen so that OnBecameVisible
-        // will be received. Only really matters for UITrackableWidgets as they are the only version that needs to update position
-        enabled = Widget.gameObject.GetComponent<CameraLosChangedListener>() != null ? true : toShow;
-        //D.Log("{0}.Show({1}) called. Widget alpha is now {2}.", transform.name, toShow, Widget.alpha);
+        // 11.13.16 Removed enabled = Widget.gameObject.GetComponent<CameraLosChangedListener>() != null ? true : toShow;
+        // Was here to make sure the listener tracked its target so OnBecameVisible would be triggered at the right time
     }
 
     protected virtual void Show() {
-        //D.Log("{0}.Show() called.", transform.name);
         Widget.alpha = Constants.OneF;
         Widget.enabled = true;
         IsShowing = true;
     }
 
     protected virtual void Hide() {
-        //D.Log("{0}.Hide() called.", transform.name);
         Widget.alpha = Constants.ZeroF;
         Widget.enabled = false;
         IsShowing = false;
@@ -195,7 +199,7 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     }
 
     private void PlacementPropChangedHandler() {
-        //D.Log("Placement changed to {0}.", Placement.GetValueName());
+        //D.Log("{0} Placement changed to {1}.", Name, Placement.GetValueName());
         RefreshWidgetValues();
     }
 
@@ -217,7 +221,7 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
 
     private void IsHighlightedPropChangedHandler() {
         Widget.color = IsHighlighted && IsShowing ? HighlightColor.ToUnityColor() : Color.ToUnityColor();
-        //D.Log("{0} Highlighting changed to {1}.".Inject(gameObject.name, toHighlight));
+        //D.Log("{0} Highlighting changed to {1}.", Name, toHighlight);
     }
 
     private void OptionalRootNamePropChangedHandler() {
@@ -225,6 +229,10 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     }
 
     #endregion
+
+    // 11.13.16 Update() moved to AUITrackingWidget as UI layer widgets are the only widgets that aren't
+    // children of their trackedTarget and therefore need to RefreshPosition every update. No other tracking
+    // widget currently needs Update(). Took this action as profiling showed an Update() call from every widget.
 
     /// <summary>
     /// Clears the <see cref="ATrackingWidget"/> back to its base state:
@@ -245,19 +253,6 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     public void RefreshWidgetValues() {
         _offset = Target.GetOffset(Placement);
         AlignWidget();
-    }
-
-    protected override void Update() {  // OPTIMIZE Could be done ~ 4 times less frequently, change when improve TrackingWidget
-        base.Update();
-        RefreshPosition();
-        if (_toCheckShowDistance) {
-            if (IsWithinShowDistance) {
-                Show();
-            }
-            else {
-                Hide();
-            }
-        }
     }
 
     private void AlignWidget() {
@@ -320,14 +315,6 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     /// is derived from the target's position and offset (obtained from IWidgetTrackable.GetOffset(placement).
     /// </summary>
     protected abstract void SetPosition();
-
-    /// <summary>
-    /// Refreshes this <see cref="ATrackingWidget"/>'s position, called from Update(). 
-    /// This base class version does nothing. AWorldTrackingWidgets do not need to constantly update 
-    /// their position as they are parented to gameObjects in world space. 
-    /// AUITrackingWidgets do need to constantly reposition to track their target as they reside under UIRoot. 
-    /// </summary>
-    protected virtual void RefreshPosition() { }
 
     private void RenameGameObjects() {
         if (Target != null) {   // Target can be null if OptionalRootName is set before Target

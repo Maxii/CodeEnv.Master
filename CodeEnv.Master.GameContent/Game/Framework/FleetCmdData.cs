@@ -203,8 +203,9 @@ namespace CodeEnv.Master.GameContent {
         #region Event and Property Change Handlers
 
         protected override void HandleUnitWeaponsRangeChanged() {
-            D.Warn(UnitWeaponsRange.Max > TempGameValues.__MaxFleetWeaponsRangeDistance, "{0} max UnitWeaponsRange {1:0.#} > {2:0.#}.",
-                FullName, UnitWeaponsRange.Max, TempGameValues.__MaxFleetWeaponsRangeDistance);
+            if (UnitWeaponsRange.Max > TempGameValues.__MaxFleetWeaponsRangeDistance) {
+                D.Warn("{0} max UnitWeaponsRange {1:0.#} > {2:0.#}.", FullName, UnitWeaponsRange.Max, TempGameValues.__MaxFleetWeaponsRangeDistance);
+            }
         }
 
         private void ShipFullSpeedPropChangedHandler() {
@@ -218,8 +219,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void HandleHQElementDataChanged() {
             base.HandleHQElementDataChanged();
-            D.Assert(HQElementData.CombatStance == ShipCombatStance.Defensive, "{0} as HQ must be {1}.{2}.",
-                HQElementData.FullName, typeof(ShipCombatStance).Name, ShipCombatStance.Defensive.GetValueName());
+            D.Assert(HQElementData.CombatStance == ShipCombatStance.Defensive, HQElementData.CombatStance.GetValueName());
         }
 
         #endregion

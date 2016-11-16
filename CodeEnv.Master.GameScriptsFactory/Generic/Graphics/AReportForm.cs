@@ -34,7 +34,7 @@ public abstract class AReportForm : AForm {
     public AItemReport Report {
         get { return _report; }
         set {
-            D.Assert(_report == null);  // occurs only once between Resets
+            D.AssertNull(_report);  // occurs only once between Resets
             SetProperty<AItemReport>(ref _report, value, "Report", ReportPropSetHandler);
         }
     }

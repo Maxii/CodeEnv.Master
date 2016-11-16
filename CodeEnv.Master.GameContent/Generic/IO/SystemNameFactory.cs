@@ -88,7 +88,9 @@ namespace CodeEnv.Master.GameContent {
             unusedHomeSystemNames = unusedHomeSystemNames.Intersect(_unusedProperNames);
             string homeSystemName = unusedHomeSystemNames.First();
             bool isRemoved = _unusedProperNames.Remove(homeSystemName);
-            D.Assert(isRemoved, "{0} could not validate {1}'s HomeSystemName {2}.", Name, player.Species.GetValueName(), homeSystemName);
+            if (!isRemoved) {
+                D.Error("{0} could not validate {1}'s HomeSystemName {2}.", Name, player.Species.GetValueName(), homeSystemName);
+            }
             return homeSystemName;
         }
 
@@ -239,7 +241,7 @@ namespace CodeEnv.Master.GameContent {
                         break;
                     }
                 }
-                D.Assert(homeSystemNames != null);
+                D.AssertNotNull(homeSystemNames);
                 return homeSystemNames;
             }
 

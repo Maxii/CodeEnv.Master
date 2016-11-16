@@ -232,7 +232,9 @@ namespace CodeEnv.Master.GameContent {
         private static Color32 CreateColor(string htmlColorString) {
             Color color;
             bool isCreated = ColorUtility.TryParseHtmlString(htmlColorString, out color);
-            D.Assert(isCreated, "Color conversion of hex {0} failed.", htmlColorString);
+            if (!isCreated) {
+                D.Error("Color conversion of hex {0} failed.", htmlColorString);
+            }
             return color;
         }
 

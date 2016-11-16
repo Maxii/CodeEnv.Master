@@ -99,8 +99,9 @@ namespace CodeEnv.Master.GameContent {
 
         public ShipDesign GetShipDesign(Player player, string designName) {
             var designsByName = _shipDesignsLookup[player];
-            D.Assert(designsByName.ContainsKey(designName), "{0}: {1} {2} not present for {3}. DesignNames: {4}.",
-                GetType().Name, typeof(ShipDesign).Name, designName, player, designsByName.Keys.Concatenate());
+            if (!designsByName.ContainsKey(designName)) {
+                D.Error("{0}: {1} {2} not present for {3}. DesignNames: {4}.", GetType().Name, typeof(ShipDesign).Name, designName, player, designsByName.Keys.Concatenate());
+            }
             return designsByName[designName];
         }
 
@@ -110,8 +111,9 @@ namespace CodeEnv.Master.GameContent {
 
         public FacilityDesign GetFacilityDesign(Player player, string designName) {
             var designsByName = _facilityDesignsLookup[player];
-            D.Assert(designsByName.ContainsKey(designName), "{0}: {1} {2} not present for {3}. DesignNames: {4}.",
-                GetType().Name, typeof(FacilityDesign).Name, designName, player, designsByName.Keys.Concatenate());
+            if (!designsByName.ContainsKey(designName)) {
+                D.Error("{0}: {1} {2} not present for {3}. DesignNames: {4}.", GetType().Name, typeof(FacilityDesign).Name, designName, player, designsByName.Keys.Concatenate());
+            }
             return designsByName[designName];
         }
 
@@ -121,8 +123,9 @@ namespace CodeEnv.Master.GameContent {
 
         public StarbaseCmdDesign GetStarbaseCmdDesign(Player player, string designName) {
             var designsByName = _starbaseCmdDesignsLookup[player];
-            D.Assert(designsByName.ContainsKey(designName), "{0}: {1} {2} not present for {3}. DesignNames: {4}.",
-                GetType().Name, typeof(StarbaseCmdDesign).Name, designName, player, designsByName.Keys.Concatenate());
+            if (!designsByName.ContainsKey(designName)) {
+                D.Error("{0}: {1} {2} not present for {3}. DesignNames: {4}.", GetType().Name, typeof(StarbaseCmdDesign).Name, designName, player, designsByName.Keys.Concatenate());
+            }
             return designsByName[designName];
         }
 
@@ -132,8 +135,9 @@ namespace CodeEnv.Master.GameContent {
 
         public FleetCmdDesign GetFleetCmdDesign(Player player, string designName) {
             var designsByName = _fleetCmdDesignsLookup[player];
-            D.Assert(designsByName.ContainsKey(designName), "{0}: {1} {2} not present for {3}. DesignNames: {4}.",
-                GetType().Name, typeof(FleetCmdDesign).Name, designName, player, designsByName.Keys.Concatenate());
+            if (!designsByName.ContainsKey(designName)) {
+                D.Error("{0}: {1} {2} not present for {3}. DesignNames: {4}.", GetType().Name, typeof(FleetCmdDesign).Name, designName, player, designsByName.Keys.Concatenate());
+            }
             return designsByName[designName];
         }
 
@@ -143,8 +147,9 @@ namespace CodeEnv.Master.GameContent {
 
         public SettlementCmdDesign GetSettlementCmdDesign(Player player, string designName) {
             var designsByName = _settlementCmdDesignsLookup[player];
-            D.Assert(designsByName.ContainsKey(designName), "{0}: {1} {2} not present for {3}. DesignNames: {4}.",
-                GetType().Name, typeof(SettlementCmdDesign).Name, designName, player, designsByName.Keys.Concatenate());
+            if (!designsByName.ContainsKey(designName)) {
+                D.Error("{0}: {1} {2} not present for {3}. DesignNames: {4}.", GetType().Name, typeof(SettlementCmdDesign).Name, designName, player, designsByName.Keys.Concatenate());
+            }
             return designsByName[designName];
         }
 

@@ -42,13 +42,13 @@ namespace CodeEnv.Master.GameContent {
 
         protected override IconSelectionCriteria[] GetSelectionCriteria(SettlementCmdReport userRqstdCmdReport) {
             if (userRqstdCmdReport.IntelCoverage == IntelCoverage.None) {
-                // Reports are rqstd when an element/cmd loses all IntelCoverage and the Cmd re-evaluates its icon
+                // Reports are requested when an element/cmd loses all IntelCoverage and the Cmd re-evaluates its icon
                 return new IconSelectionCriteria[] { IconSelectionCriteria.None };
             }
 
             if (userRqstdCmdReport.Category == SettlementCategory.None) {
-                D.Assert(userRqstdCmdReport.UnitComposition == null); // UnitComposition should not be known if Category isn't known
-                                                                      // User has no permission to know category so return unknown
+                D.AssertNull(userRqstdCmdReport.UnitComposition); // UnitComposition should not be known if Category isn't known
+                                                                  // User has no permission to know category so return unknown
                 return new IconSelectionCriteria[] { IconSelectionCriteria.Unknown };
             }
 

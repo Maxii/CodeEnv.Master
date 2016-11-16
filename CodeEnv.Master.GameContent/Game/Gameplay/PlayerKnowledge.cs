@@ -325,7 +325,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="uCenter">The UniverseCenter.</param>
         /// <param name="allStars">All stars.</param>
         public PlayerKnowledge(Player player, IUniverseCenter_Ltd uCenter, IEnumerable<IStar_Ltd> allStars) {
-            D.Assert(player != null && player != TempGameValues.NoPlayer);
+            D.AssertNotNull(player);
+            D.AssertNotEqual(TempGameValues.NoPlayer, player);
             Owner = player;
             InitializeValuesAndReferences();
             AddUniverseCenter(uCenter);
@@ -359,7 +360,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="starbasesInSector">The resulting settlement in the sector.</param>
         /// <returns></returns>
         public bool TryGetSettlement(IntVector3 sectorID, out ISettlementCmd_Ltd settlementInSector) {
-            D.Assert(sectorID != default(IntVector3), "{0}: SectorID of {1} is illegal.", GetType().Name, sectorID);
+            D.AssertNotDefault(sectorID);
             ISettlementCmd_Ltd settlements;
             if (_settlementLookupBySectorID.TryGetValue(sectorID, out settlements)) {
                 settlementInSector = settlements;
@@ -376,7 +377,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="starbasesInSector">The resulting starbases in sector.</param>
         /// <returns></returns>
         public bool TryGetStarbases(IntVector3 sectorID, out IEnumerable<IStarbaseCmd_Ltd> starbasesInSector) {
-            D.Assert(sectorID != default(IntVector3), "{0}: SectorID of {1} is illegal.", GetType().Name, sectorID);
+            D.AssertNotDefault(sectorID);
             IList<IStarbaseCmd_Ltd> sBases;
             if (_starbasesLookupBySectorID.TryGetValue(sectorID, out sBases)) {
                 starbasesInSector = sBases;
@@ -393,7 +394,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="fleetsInSector">The resulting fleets present in the sector.</param>
         /// <returns></returns>
         public bool TryGetFleets(IntVector3 sectorID, out IEnumerable<IFleetCmd_Ltd> fleetsInSector) {
-            D.Assert(sectorID != default(IntVector3), "{0}: SectorID of {1} is illegal.", GetType().Name, sectorID);
+            D.AssertNotDefault(sectorID);
             fleetsInSector = Fleets.Where(fleet => fleet.SectorID == sectorID);
             if (fleetsInSector.Any()) {
                 return true;
@@ -418,7 +419,7 @@ namespace CodeEnv.Master.GameContent {
                 return _commands.Contains(item as IUnitCmd_Ltd);
             }
             if (item is IUniverseCenter_Ltd) {
-                D.Assert(UniverseCenter == item);
+                D.AssertEqual(UniverseCenter, item);
                 D.Warn("{0}: unnecessary check for knowledge of {1}.", Name, item.FullName);
                 return true;
             }
@@ -453,7 +454,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void AddUniverseCenter(IUniverseCenter_Ltd universeCenter) {
-            D.Assert(UniverseCenter == null);   // should only be added once when all players get Basic IntelCoverage of UCenter
+            D.AssertNull(UniverseCenter);   // should only be added once when all players get Basic IntelCoverage of UCenter
             _items.Add(universeCenter);
             UniverseCenter = universeCenter;
         }
@@ -462,7 +463,7 @@ namespace CodeEnv.Master.GameContent {
             // A Star should only be added once when all players get Basic IntelCoverage of all stars
             bool isAdded = _stars.Add(star);
             isAdded = isAdded & _items.Add(star);
-            D.Assert(isAdded, "{0} tried to add Star {1} it already has.", Name, star.FullName);
+            D.Assert(isAdded, star.FullName);
         }
 
         private void AddAllSystems(IEnumerable<IStar_Ltd> allStars) {   // properly sizes the dictionary
@@ -519,7 +520,7 @@ namespace CodeEnv.Master.GameContent {
             }
             else {
                 IPlanetoid_Ltd deadPlanetoid = deadItem as IPlanetoid_Ltd;
-                D.Assert(deadPlanetoid != null);
+                D.AssertNotNull(deadPlanetoid); // UNCLEAR could this interface indicate null for dead(destroyed) Planetoid?
                 RemoveDeadPlanetoid(deadPlanetoid);
             }
         }
@@ -593,7 +594,7 @@ namespace CodeEnv.Master.GameContent {
         internal void RemoveElement(IUnitElement_Ltd element) {
             var isRemoved = _elements.Remove(element);
             isRemoved = isRemoved & _items.Remove(element);
-            D.Assert(isRemoved, "{0} could not remove Element {1}.", Name, element.FullName);
+            D.Assert(isRemoved, element.FullName);
 
             if (element.IsOperational && (element as IUnitElement).Owner.IsRelationshipWith(Owner, DiplomaticRelationship.Alliance)) {
                 D.Error("{0}: {1} is alive and being removed while in Alliance!", Name, element.FullName);
@@ -617,7 +618,7 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(!deadPlanetoid.IsOperational);
             var isRemoved = _planetoids.Remove(deadPlanetoid);
             isRemoved = isRemoved & _items.Remove(deadPlanetoid);
-            D.Assert(isRemoved, "{0} could not remove Planetoid {1}.", Name, deadPlanetoid.FullName);
+            D.Assert(isRemoved, deadPlanetoid.FullName);
         }
 
         private void Cleanup() {
@@ -667,14 +668,14 @@ namespace CodeEnv.Master.GameContent {
             D.Log("{0} is validating all Player Knowledge.", Name);
             IList<IItem> myItems = OwnerItems.ToList();
             foreach (var item in _items) {
-                D.Assert(item.IsOperational, "{0} has retained knowledge of dead {1}.", Name, item.FullName);
+                D.Assert(item.IsOperational, item.FullName);
                 IntelCoverage coverage = (item as IIntelItem).GetIntelCoverage(Owner);
                 if (myItems.Contains(item as IItem)) {
                     // item is mine so should be comprehensive
-                    D.Assert(coverage == IntelCoverage.Comprehensive, "{0}: {1}.IntelCoverage {2} should be Comprehensive.", Name, item.FullName, coverage.GetValueName());
+                    D.AssertEqual(IntelCoverage.Comprehensive, coverage, coverage.GetValueName());
                     continue;
                 }
-                D.Assert(coverage != IntelCoverage.None, "{0}: {1}.IntelCoverage {2} should not be None.", Name, item.FullName, coverage.GetValueName());
+                D.AssertNotDefault((int)coverage, item.FullName);
             }
         }
 

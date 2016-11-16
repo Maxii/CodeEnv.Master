@@ -31,7 +31,7 @@ namespace CodeEnv.Master.GameContent {
         public IHull Hull {
             get { return _hull; }
             set {
-                D.Assert(_hull == null);    // happens only once
+                D.AssertNull(_hull);    // happens only once
                 _hull = value;
                 HullPropSetHandler();
             }
@@ -58,8 +58,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public void AddWeapon(AWeapon weapon) {
-            D.Assert(weapon.RangeMonitor != null);
-            D.Assert(weapon.WeaponMount != null);   // will already have Mount if adding in design screen using drag and drop
+            D.AssertNotNull(weapon.RangeMonitor);
+            D.AssertNotNull(weapon.WeaponMount);   // will already have Mount if adding in design screen using drag and drop
             D.Assert(!weapon.IsActivated);    // items activate equipment when the item commences operation
             Weapons.Add(weapon);
         }

@@ -77,12 +77,12 @@ public class DestroyEffectOnCompletion : AMonoBase {
     }
 
     private void Initialize() {
-        D.Assert(_effectType != EffectType.None);
+        D.AssertNotDefault((int)_effectType);
         if (_effectType == EffectType.Particle) {
             _particleEffect = gameObject.GetComponentInChildren<ParticleSystem>();
         }
         if (_effectType == EffectType.Mesh) {
-            D.Assert(_meshEffectDuration > Constants.ZeroF, "{0}'s {1}.{2} duration not set.", gameObject.name, typeof(EffectType).Name, _effectType.GetValueName());
+            D.Assert(_meshEffectDuration > Constants.ZeroF, gameObject.name);
         }
         if (_effectType == EffectType.AudioSFX) {
             _audioSource = UnityUtility.ValidateComponentPresence<AudioSource>(gameObject);
@@ -98,8 +98,7 @@ public class DestroyEffectOnCompletion : AMonoBase {
         _isInitialized = true;
     }
 
-    protected override void Update() {
-        base.Update();
+    void Update() {
         bool toDestroy = false;
 
         switch (_effectType) {

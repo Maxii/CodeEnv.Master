@@ -37,7 +37,7 @@ namespace CodeEnv.Master.GameContent {
         private Topography _topography;
         public Topography Topography {
             get {
-                D.Assert(_topography != Topography.None, "{0}.{1} not yet set.", FullName, typeof(Topography).Name);
+                D.AssertNotDefault((int)_topography, FullName);
                 return _topography;
             }
             set { SetProperty<Topography>(ref _topography, value, "Topography", TopographyPropChangedHandler); }

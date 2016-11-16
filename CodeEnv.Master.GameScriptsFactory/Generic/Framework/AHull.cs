@@ -43,7 +43,7 @@ public abstract class AHull : AMonoBase, IHull {
     }
 
     protected virtual void Validate() {
-        D.Assert(_hullMesh != null);
+        D.AssertNotNull(_hullMesh);
         /*****************************************************************************************************************************
                     * TODO Can't do this test now as multiple HullCategories use the same hull mesh. To avoid excess work positioning
                     * mount placeholders on hull meshes, I've only made one version of each hull with prepositioned mount placeholders.

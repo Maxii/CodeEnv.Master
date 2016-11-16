@@ -56,6 +56,7 @@ namespace CodeEnv.Master.GameContent {
                 case ItemInfoID.WeaponsRange:
                 case ItemInfoID.SensorRange:
                 case ItemInfoID.Owner:
+                case ItemInfoID.AlertStatus:
                     return true;
                 default:
                     return false;

@@ -20,7 +20,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;UNITY_EDITOR</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
@@ -32,6 +32,16 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug with Profiler|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;UNITY_EDITOR; ENABLE_PROFILER</DefineConstants>
+    <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
+    <DebugType>full</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="MoreLinq, Version=1.4.18916.0, Culture=neutral, PublicKeyToken=384d532d7e88985d, processorArchitecture=MSIL">
@@ -239,6 +249,9 @@
     <Compile Include="Game\GUI\GuiSystemDensityPopupList.cs" />
     <Compile Include="Game\GUI\GuiPlayerTeamPopupList.cs" />
     <Compile Include="Generic\Framework\NewGameUnitConfigurator.cs" />
+    <Compile Include="Game\GUI\GuiAiPlayerUserSeparationPopupList.cs" />
+    <Compile Include="Game\GUI\GuiPlayerHomeDesirabilityPopupList.cs" />
+    <Compile Include="Game\GUI\GuiPlayerStartLevelPopupList.cs" />
     <Compile Include="ThirdParty\MyPathfindingGraph.cs" />
     <Compile Include="ThirdParty\MyPoolManager.cs" />
     <Compile Include="ThirdParty\ContextMenu\CtxHelper.cs" />

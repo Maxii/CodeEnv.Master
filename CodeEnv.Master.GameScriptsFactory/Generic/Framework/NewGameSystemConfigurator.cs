@@ -149,7 +149,7 @@ public class NewGameSystemConfigurator {
             homeStarCat = Enums<StarCategory>.GetRandom(excludeDefault: true); // IMPROVE vary by SystemDesirability
             homePlanetCatsByPlanetIndex = GetPlanetCategories(homeSystemDesirability, isHomeSystem: true);
 
-            aiPlayerSeparationFromUser = gameSettings.AIPlayersSeparationFromUser[i];
+            aiPlayerSeparationFromUser = gameSettings.AIPlayersUserSeparations[i];
             homeSectorID = CalcAiPlayerHomeSectorID(userHomeSystemSectorID, sectorIDsToAvoid_Internal, universeRadiusInSectors, aiPlayerSeparationFromUser);
             sectorIDsToAvoid_Internal.Add(homeSectorID);
 
@@ -189,17 +189,20 @@ public class NewGameSystemConfigurator {
             maxSectorDistanceFromUserHome = closestAllowedSectorDistanceToUserHome + Mathf.CeilToInt(maxClosestAdder * Constants.TwoThirds);
         }
         else {
-            D.Assert(separationFromUser == PlayerSeparation.Distant);
+            D.AssertEqual(PlayerSeparation.Distant, separationFromUser);
             minSectorDistanceFromUserHome = closestAllowedSectorDistanceToUserHome + Mathf.FloorToInt(maxClosestAdder * Constants.TwoThirds);
             maxSectorDistanceFromUserHome = closestAllowedSectorDistanceToUserHome + maxClosestAdder;
         }
 
         IEnumerable<IntVector3> candidateSectorIDs = sectorGrid.GetSurroundingSectorIdsBetween(userHomeSectorID, minSectorDistanceFromUserHome, maxSectorDistanceFromUserHome);
-        D.Assert(candidateSectorIDs.Any(), "{0} could get no surrounding sectors around {1} between distances {2} and {3}.", Name, userHomeSectorID, minSectorDistanceFromUserHome, maxSectorDistanceFromUserHome);
+        if (!candidateSectorIDs.Any()) {
+            D.Error("{0} could get no surrounding sectors around {1} between distances {2} and {3}.", Name, userHomeSectorID, minSectorDistanceFromUserHome, maxSectorDistanceFromUserHome);
+        }
         var tempCandidateSectorIDs = candidateSectorIDs;
         candidateSectorIDs = candidateSectorIDs.Except(sectorIDsToAvoid);
-        D.Assert(candidateSectorIDs.Any(), "{0} found no sectors to place AIPlayer's home sector. Candidates = {1}, ToAvoid = {2}.",
-            Name, tempCandidateSectorIDs.Concatenate(), sectorIDsToAvoid.Concatenate());
+        if (!candidateSectorIDs.Any()) {
+            D.Error("{0} found no sectors to place AIPlayer's home sector. Candidates = {1}, ToAvoid = {2}.", Name, tempCandidateSectorIDs.Concatenate(), sectorIDsToAvoid.Concatenate());
+        }
         var homeSectorID = RandomExtended.Choice(candidateSectorIDs);
         return homeSectorID;
     }
@@ -221,7 +224,7 @@ public class NewGameSystemConfigurator {
         SectorGrid sectorGrid = SectorGrid.Instance;
         var homeNeighboringSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID);
         var sectorIDsToDeployTo = homeNeighboringSectorIDs.Shuffle().Take(additionalCreatorQtyToDeploy);
-        D.Assert(additionalCreatorQtyToDeploy == sectorIDsToDeployTo.Count());  // was there a shortage of sectorIndicesSurroundingHome?
+        D.AssertEqual(sectorIDsToDeployTo.Count(), additionalCreatorQtyToDeploy);  // was there a shortage of sectorIndicesSurroundingHome?
 
         int[] systemDesirabilityWeighting = new int[] { 1, 3, 1 };
         SystemDesirability[] systemDesirabilityChoices = Enums<SystemDesirability>.GetValues(excludeDefault: true).ToArray();
@@ -320,7 +323,7 @@ public class NewGameSystemConfigurator {
         Stack<OrbitData> outerOrbitSlots;
         GenerateSystemOrbitSlots(systemOrbitSlotsStartRadius, out innerOrbitSlots, out goldilocksOrbitSlots, out outerOrbitSlots);
         OrbitData settlementOrbitSlot = goldilocksOrbitSlots.Pop();
-        D.Assert(settlementOrbitSlot != null);
+        D.AssertNotNull(settlementOrbitSlot);
 
         IList<int> unassignedPlanetIndices;
         IList<OrbitData> planetOrbitSlots;
@@ -404,7 +407,7 @@ public class NewGameSystemConfigurator {
 
         GenerateSystemOrbitSlots(systemOrbitSlotsStartRadius, out innerOrbitSlots, out goldilocksOrbitSlots, out outerOrbitSlots);
         OrbitData settlementOrbitSlot = goldilocksOrbitSlots.Pop();
-        D.Assert(settlementOrbitSlot != null);
+        D.AssertNotNull(settlementOrbitSlot);
 
         IList<int> unassignedPlanetIndices;
         IList<OrbitData> planetOrbitSlots;
@@ -511,7 +514,7 @@ public class NewGameSystemConfigurator {
             if (moonCats.Any()) {
 
                 PlanetoidCategory pCat = pCatsByPlanetIndex[pIndex];
-                D.Assert(pCat != default(PlanetoidCategory));   // there are moons so this shouldn't be None
+                D.AssertNotDefault((int)pCat);   // there are moons so this shouldn't be None
                 float planetCloseOrbitInnerRadius = pCat.Radius() + TempGameValues.PlanetCloseOrbitInnerRadiusAdder;
                 float moonOrbitSlotStartDepth = planetCloseOrbitInnerRadius;
 

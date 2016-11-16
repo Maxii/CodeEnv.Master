@@ -62,7 +62,7 @@ namespace CodeEnv.Master.GameContent {
         public override void Show(bool toShow) {
             IEnumerable<CircleHighlightID> circlesToHide;
             if (toShow) {
-                D.Assert(_circleHighlightsToShow != null);   // won't catch most but will catch when don't set circles following Show(false)
+                D.AssertNotNull(_circleHighlightsToShow);   // won't catch most but will catch when don't set circles following Show(false)
                 _circleHighlightsToShow.ForAll(circleID => ShowCircle(circleID));
                 circlesToHide = Enums<CircleHighlightID>.GetValues(excludeDefault: true).Except(_circleHighlightsToShow);
             }
@@ -75,7 +75,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void ShowCircle(CircleHighlightID id) {
             if (_circles == null) {
-                D.Assert(_trackedClientTransform != null, "{0} _trackedTransform is null.", Name);
+                D.AssertNotNull(_trackedClientTransform, Name);
                 _circles = new HighlightCircle(CircleTitle, _trackedClientTransform, _circleRadius, _isCircleSizeDynamic, maxCircles: 3);
                 _circles.Colors = new List<GameColor>() { TempGameValues.FocusedColor, TempGameValues.SelectedColor, TempGameValues.GeneralHighlightColor };
                 _circles.Widths = new List<float>() { 2F, 2F, 1F };

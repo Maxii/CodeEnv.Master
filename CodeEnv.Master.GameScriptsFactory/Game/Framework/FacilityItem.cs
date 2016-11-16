@@ -83,7 +83,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     protected override void InitializeOnData() {
         base.InitializeOnData();
         InitializeObstacleZone();
-        CurrentState = FacilityState.None;
     }
 
     protected override ItemHudManager InitializeHudManager() {
@@ -95,7 +94,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     }
 
     protected override ICtxControl InitializeContextMenu(Player owner) {
-        D.Assert(owner != TempGameValues.NoPlayer);
+        D.AssertNotEqual(TempGameValues.NoPlayer, owner);
         return owner.IsUser ? new FacilityCtxControl_User(this) as ICtxControl : new FacilityCtxControl_AI(this);
     }
 
@@ -105,10 +104,18 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         _obstacleZoneCollider.isTrigger = true;
         _obstacleZoneCollider.radius = Radius * 2F;
         //D.Log(ShowDebugLog, "{0} ObstacleZoneRadius = {1:0.##}.", FullName, _obstacleZoneCollider.radius);
-        D.Warn(_obstacleZoneCollider.radius > TempGameValues.LargestFacilityObstacleZoneRadius, "{0}: ObstacleZoneRadius {1:0.##} > {2:0.##}.",
-            FullName, _obstacleZoneCollider.radius, TempGameValues.LargestFacilityObstacleZoneRadius);
+        if (_obstacleZoneCollider.radius > TempGameValues.LargestFacilityObstacleZoneRadius) {
+            D.Warn("{0}: ObstacleZoneRadius {1:0.##} > {2:0.##}.", FullName, _obstacleZoneCollider.radius, TempGameValues.LargestFacilityObstacleZoneRadius);
+        }
         // Static trigger collider (no rigidbody) is OK as a ship's CollisionDetectionCollider has a kinematic rigidbody
-        D.Warn(_obstacleZoneCollider.gameObject.GetComponent<Rigidbody>() != null, "{0}.ObstacleZone has a Rigidbody it doesn't need.", FullName);
+
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+        var rigidbody = _obstacleZoneCollider.gameObject.GetComponent<Rigidbody>();
+        Profiler.EndSample();
+
+        if (rigidbody != null) {
+            D.Warn("{0}.ObstacleZone has a Rigidbody it doesn't need.", FullName);
+        }
         InitializeObstacleDetourGenerator();
         InitializeDebugShowObstacleZone();
     }
@@ -126,9 +133,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     public override void FinalInitialize() {
         base.FinalInitialize();
-        // 7.11.16 Moved from CommenceOperations to be consistent with Cmds. Cmds need to be Idling to receive initial 
-        // events once sensors are operational. Events include initial discovery of players which result in Relationship changes
-        CurrentState = FacilityState.Idling;
+        CurrentState = FacilityState.FinalInitialize;   //= FacilityState.Idling;
     }
 
     #endregion
@@ -136,6 +141,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     public override void CommenceOperations() {
         base.CommenceOperations();
         _obstacleZoneCollider.enabled = true;
+        CurrentState = FacilityState.Idling;
     }
 
     public FacilityReport GetReport(Player player) { return Publisher.GetReport(player); }
@@ -169,7 +175,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     }
 
     protected override void __ValidateRadius(float radius) {
-        D.Assert(radius <= TempGameValues.FacilityMaxRadius, "{0} Radius {1:0.00} > Max {2:0.00}.", FullName, radius, TempGameValues.FacilityMaxRadius);
+        if (radius > TempGameValues.FacilityMaxRadius) {
+            D.Error("{0} Radius {1:0.00} must be <= Max {2:0.00}.", FullName, radius, TempGameValues.FacilityMaxRadius);
+        }
     }
 
     private Layers __DetermineMeshCullingLayer() {
@@ -201,9 +209,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     /// <param name="captainsOverrideOrder">The captains override order.</param>
     /// <param name="retainSuperiorsOrder">if set to <c>true</c> [retain superiors order].</param>
     private void OverrideCurrentOrder(FacilityOrder captainsOverrideOrder, bool retainSuperiorsOrder) {
-        D.Assert(captainsOverrideOrder.Source == OrderSource.Captain, "{0}'s override order {1} came from {2}.", FullName, captainsOverrideOrder, captainsOverrideOrder.Source.GetValueName());
-        D.Assert(captainsOverrideOrder.StandingOrder == null, "{0} attempting to override current order {1} with order {2} containing an embedded standing order.", FullName, CurrentOrder, captainsOverrideOrder);
-        D.Assert(!captainsOverrideOrder.ToNotifyCmd, "{0}'s override order {1} should not contain instructions to notify Cmd.", FullName, captainsOverrideOrder);
+        D.AssertEqual(OrderSource.Captain, captainsOverrideOrder.Source, captainsOverrideOrder.ToString());
+        D.AssertNull(captainsOverrideOrder.StandingOrder, captainsOverrideOrder.ToString());
+        D.Assert(!captainsOverrideOrder.ToNotifyCmd, captainsOverrideOrder.ToString());
         // if the captain says to, and the current existing order is from his superior, then record it as a standing order
         FacilityOrder standingOrder = null;
         if (retainSuperiorsOrder && CurrentOrder != null) {
@@ -225,7 +233,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         while (CurrentState == FacilityState.Repairing) {
             UponNewOrderReceived();
         }
-        D.Assert(CurrentState != FacilityState.Repairing);
+        D.AssertNotEqual(FacilityState.Repairing, CurrentState);
 
         if (CurrentOrder != null) {
             D.Log(ShowDebugLog, "{0} received new order {1}.", FullName, CurrentOrder.Directive.GetValueName());
@@ -265,13 +273,12 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             return;
         }
         if (directive == FacilityDirective.Scuttle || directive == FacilityDirective.Repair) {
-            D.Assert(target == null);
+            D.AssertNull(target);
             return;
         }
-        //D.Assert(OwnerKnowledge.HasKnowledgeOf(target as IItem_Ltd), "{0} received {1} order with Target {2} that {3} has no knowledge of.",
-        //    FullName, directive.GetValueName(), target.FullName, Owner.LeaderName);
-        D.Assert(OwnerAIMgr.HasKnowledgeOf(target as IItem_Ltd), "{0} received {1} order with Target {2} that {3} has no knowledge of.",
-        FullName, directive.GetValueName(), target.FullName, Owner.LeaderName);
+        if (!OwnerAIMgr.HasKnowledgeOf(target as IItem_Ltd)) {
+            D.Error("{0} received {1} order with Target {2} that {3} has no knowledge of.", FullName, directive.GetValueName(), target.FullName, Owner.LeaderName);
+        }
     }
 
     #endregion
@@ -300,17 +307,22 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         get { return base.LastState != null ? (FacilityState)base.LastState : default(FacilityState); }
     }
 
-    #region None
+    #region FinalInitialize
 
-    void None_UponPreconfigureState() {
+    void FinalInitialize_UponPreconfigureState() {
         LogEvent();
     }
 
-    void None_EnterState() {
+    void FinalInitialize_EnterState() {
         LogEvent();
     }
 
-    void None_ExitState() {
+    void FinalInitialize_UponRelationsChanged(Player chgdRelationsPlayer) {
+        LogEvent();
+        // can be received when activation of sensors immediately finds another player
+    }
+
+    void FinalInitialize_ExitState() {
         LogEvent();
     }
 
@@ -322,7 +334,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void Idling_UponPreconfigureState() {
         LogEvent();
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
+        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
     }
 
     IEnumerator Idling_EnterState() {
@@ -334,8 +346,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
                 D.LogBold(ShowDebugLog, "{0} returning to execution of standing order {1}.", FullName, CurrentOrder.StandingOrder);
 
                 OrderSource standingOrderSource = CurrentOrder.StandingOrder.Source;
-                D.Assert(standingOrderSource == OrderSource.CmdStaff || standingOrderSource == OrderSource.User, "{0} StandingOrder {1} source can't be {2}.",
-                    FullName, CurrentOrder.StandingOrder, standingOrderSource.GetValueName());
+                if (standingOrderSource != OrderSource.CmdStaff && standingOrderSource != OrderSource.User) {
+                    D.Error("{0} StandingOrder {1} source can't be {2}.", FullName, CurrentOrder.StandingOrder, standingOrderSource.GetValueName());
+                }
 
                 CurrentOrder = CurrentOrder.StandingOrder;
                 yield return null;
@@ -369,7 +382,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         LogEvent();
     }
 
-    // No need for FsmTgt-related event handlers as there is no _fsmTgt
+    // No need for _fsmTgt-related event handlers as there is no _fsmTgt
 
     void Idling_UponDeath() {
         LogEvent();
@@ -388,8 +401,12 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void ExecuteAttackOrder_UponPreconfigureState() {
         LogEvent();
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
+        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
         D.Assert(CurrentOrder.ToNotifyCmd);
+        // The attack target acquired from the order. Should always be a Fleet
+        IUnitAttackable unitAttackTgt = CurrentOrder.Target as IUnitAttackable;
+        D.Assert(unitAttackTgt.IsOperational);
+        D.Assert(unitAttackTgt.IsAttackByAllowed(Owner));
     }
 
     IEnumerator ExecuteAttackOrder_EnterState() {
@@ -472,7 +489,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     void ExecuteRepairOrder_UponPreconfigureState() {
         LogEvent();
         D.Assert(!_debugSettings.DisableRepair);
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
+        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
     }
 
     IEnumerator ExecuteRepairOrder_EnterState() {
@@ -499,7 +516,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         }
 
         // If there was a failure generated by Repairing, resulting new Orders or Dead state should keep this point from being reached
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0}: {1} failure should not get here.", FullName, _orderFailureCause.GetValueName());
+        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
 
         CurrentState = FacilityState.Idling;
     }
@@ -543,7 +560,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     IEnumerator Repairing_EnterState() {
         LogEvent();
         D.Assert(!_debugSettings.DisableRepair);
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
+        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
 
         StartEffectSequence(EffectSequenceID.Repairing);
 
@@ -664,7 +681,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void Dead_UponPreconfigureState() {
         LogEvent();
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None);
+        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
     }
 
     void Dead_EnterState() {
@@ -704,7 +721,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     /// <param name="healthThreshold">The health threshold.</param>
     /// <returns></returns>
     private bool AssessNeedForRepair(float healthThreshold) {
-        D.Assert(CurrentState != FacilityState.Repairing);
+        D.AssertNotEqual(FacilityState.Repairing, CurrentState);
         if (_debugSettings.DisableRepair) {
             return false;
         }
@@ -719,7 +736,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     }
 
     private void InitiateRepair(bool retainSuperiorsOrderOnRepairCompletion) {
-        D.Assert(CurrentState != FacilityState.Repairing);
+        D.AssertNotEqual(FacilityState.Repairing, CurrentState);
         D.Assert(!_debugSettings.DisableRepair);
         D.Assert(Data.Health < Constants.OneHundredPercent);
 
@@ -785,7 +802,11 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             debugValues.showObstacleZones -= ShowDebugObstacleZonesChangedEventHandler;
         }
         if (_obstacleZoneCollider != null) { // can be null if creator destroys facility 
+
+            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
             DrawColliderGizmo drawCntl = _obstacleZoneCollider.gameObject.GetComponent<DrawColliderGizmo>();
+            Profiler.EndSample();
+
             if (drawCntl != null) {
                 Destroy(drawCntl);
             }
@@ -872,6 +893,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     public enum FacilityState {
 
         None,
+
+        FinalInitialize,
 
         Idling,
 

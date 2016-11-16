@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -27,6 +27,8 @@ namespace CodeEnv.Master.GameContent {
     /// Abstract class for Data associated with an AUnitElementItem.
     /// </summary>
     public abstract class AUnitElementData : AMortalItemData {
+
+        private const string FullNameFormat = "{0}_{1}";
 
         public event EventHandler topographyChanged;
 
@@ -45,8 +47,23 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<string>(ref _parentName, value, "ParentName"); }
         }
 
+        private string _fullName;
         public override string FullName {
-            get { return ParentName.IsNullOrEmpty() ? Name : ParentName + Constants.Underscore + Name; }
+            get {
+                if (ParentName.IsNullOrEmpty()) {
+                    return Name;
+                }
+                if (_fullName.IsNullOrEmpty()) {
+                    _fullName = FullNameFormat.Inject(ParentName, Name);
+                }
+                return _fullName;
+            }
+        }
+
+        private AlertStatus _alertStatus;
+        public AlertStatus AlertStatus {
+            get { return _alertStatus; }
+            set { SetProperty<AlertStatus>(ref _alertStatus, value, "AlertStatus", AlertStatusPropChangedHandler); }
         }
 
         private CombatStrength _offensiveStrength;
@@ -143,10 +160,11 @@ namespace CodeEnv.Master.GameContent {
 
         private void InitializeWeapons() {
             // weapons are already present in hullEquipment
+            //D.Log(ShowDebugLog, "{0} is about to initialize {1} Weapons.", FullName, Weapons.Count);
             Weapons.ForAll(weap => {
-                D.Assert(weap.RangeMonitor != null);
-                D.Assert(weap.WeaponMount != null);
-                D.Assert(!weap.IsActivated); // items activate equipment when the item commences operation
+                D.AssertNotNull(weap.RangeMonitor);
+                D.AssertNotNull(weap.WeaponMount);
+                D.Assert(!weap.IsActivated);    // items control weapon activation during operations
                 weap.isDamagedChanged += WeaponIsDamagedChangedEventHandler;
             });
         }
@@ -154,8 +172,8 @@ namespace CodeEnv.Master.GameContent {
         private void Initialize(IEnumerable<ActiveCountermeasure> activeCMs) {
             ActiveCountermeasures = activeCMs.ToList();
             ActiveCountermeasures.ForAll(cm => {
-                D.Assert(cm.RangeMonitor != null);
-                D.Assert(!cm.IsActivated);    // items activate equipment when the item commences operation
+                D.AssertNotNull(cm.RangeMonitor);
+                D.Assert(!cm.IsActivated);    // items control countermeasures activation during operations
                 cm.isDamagedChanged += CountermeasureIsDamagedChangedEventHandler;
             });
         }
@@ -163,10 +181,10 @@ namespace CodeEnv.Master.GameContent {
         private void Initialize(IEnumerable<Sensor> sensors) {
             Sensors = sensors.ToList();
             Sensors.ForAll(s => {
-                D.Assert(s.RangeMonitor == null);  // Note: Unlike Weapons and ActiveCountermeasures, Sensors are added to elements 
+                D.AssertNull(s.RangeMonitor);  // Note: Unlike Weapons and ActiveCountermeasures, Sensors are added to elements 
                 // without a RangeMonitor attached. This is because the element adding the sensor does not yet have a Command attached 
                 // and SensorRangeMonitors get attached to Cmds, not elements.
-                D.Assert(!s.IsActivated);    // items activate equipment when the item commences operation
+                D.Assert(!s.IsActivated);    // items control sensor activation when commencing operations
                 s.isDamagedChanged += SensorIsDamagedChangedEventHandler;
             });
         }
@@ -174,8 +192,8 @@ namespace CodeEnv.Master.GameContent {
         private void Initialize(IEnumerable<ShieldGenerator> generators) {
             ShieldGenerators = generators.ToList();
             ShieldGenerators.ForAll(gen => {
-                D.Assert(gen.Shield != null);
-                D.Assert(!gen.IsActivated);    // items activate equipment when the item commences operation
+                D.AssertNotNull(gen.Shield);
+                D.Assert(!gen.IsActivated);    // items control shield generator activation during operations
                 gen.isDamagedChanged += ShieldGeneratorIsDamagedChangedEventHandler;
             });
         }
@@ -184,18 +202,45 @@ namespace CodeEnv.Master.GameContent {
 
         public override void CommenceOperations() {
             base.CommenceOperations();
-            Weapons.ForAll(w => w.IsActivated = true);
-            ActiveCountermeasures.ForAll(cm => cm.IsActivated = true);
-            Sensors.ForAll(s => s.IsActivated = true);
-            ShieldGenerators.ForAll(gen => gen.IsActivated = true);
+            Sensors.OrderBy(s => s.RangeCategory).ForAll(s => s.IsActivated = true);    // short, medium, long order
+            // 11.3.16 Activation of ActiveCMs, ShieldGens and Weapons handled by HandleAlertStatusChanged
+
+            RecalcSensorRange();
             RecalcDefensiveValues();
             RecalcOffensiveStrength();
-            RecalcSensorRange();
             RecalcShieldRange();
             RecalcWeaponsRange();
         }
 
         #region Event and Property Change Handlers
+
+        private void AlertStatusPropChangedHandler() {
+            HandleAlertStatusChanged();
+        }
+
+        private void HandleAlertStatusChanged() {
+            switch (AlertStatus) {
+                case AlertStatus.Normal:
+                    Weapons.ForAll(w => w.IsActivated = false);
+                    ActiveCountermeasures.ForAll(acm => acm.IsActivated = false);
+                    ShieldGenerators.ForAll(gen => gen.IsActivated = false);
+                    break;
+                case AlertStatus.Yellow:
+                    Weapons.ForAll(w => w.IsActivated = false);
+                    ActiveCountermeasures.ForAll(acm => acm.IsActivated = true);
+                    ShieldGenerators.ForAll(gen => gen.IsActivated = true);
+                    break;
+                case AlertStatus.Red:
+                    Weapons.ForAll(w => w.IsActivated = true);
+                    ActiveCountermeasures.ForAll(acm => acm.IsActivated = true);
+                    ShieldGenerators.ForAll(gen => gen.IsActivated = true);
+                    break;
+                case AlertStatus.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(AlertStatus));
+            }
+            // sensors stay activated to allow detection of enemy proximity by Cmd which determines AlertStatus
+        }
 
         private void SensorIsDamagedChangedEventHandler(object sender, EventArgs e) {
             RecalcSensorRange();
@@ -218,7 +263,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void OnTopographyChanged() {
             if (topographyChanged != null) {
-                topographyChanged(this, new EventArgs());
+                topographyChanged(this, EventArgs.Empty);
             }
         }
 
@@ -229,10 +274,11 @@ namespace CodeEnv.Master.GameContent {
             var shortRangeSensors = undamagedSensors.Where(s => s.RangeCategory == RangeCategory.Short);
             var mediumRangeSensors = undamagedSensors.Where(s => s.RangeCategory == RangeCategory.Medium);
             var longRangeSensors = undamagedSensors.Where(s => s.RangeCategory == RangeCategory.Long);
-            float shortRangeDistance = shortRangeSensors.Any() ? shortRangeSensors.First().RangeDistance : Constants.ZeroF; //shortRangeSensors.CalcSensorRangeDistance();
-            float mediumRangeDistance = mediumRangeSensors.Any() ? mediumRangeSensors.First().RangeDistance : Constants.ZeroF;  //mediumRangeSensors.CalcSensorRangeDistance();
-            float longRangeDistance = longRangeSensors.Any() ? longRangeSensors.First().RangeDistance : Constants.ZeroF;    //longRangeSensors.CalcSensorRangeDistance();
+            float shortRangeDistance = shortRangeSensors.Any() ? shortRangeSensors.First().RangeDistance : Constants.ZeroF;
+            float mediumRangeDistance = mediumRangeSensors.Any() ? mediumRangeSensors.First().RangeDistance : Constants.ZeroF;
+            float longRangeDistance = longRangeSensors.Any() ? longRangeSensors.First().RangeDistance : Constants.ZeroF;
             SensorRange = new RangeDistance(shortRangeDistance, mediumRangeDistance, longRangeDistance);
+            //D.Log(ShowDebugLog, "{0} recalculated SensorRange: {1}.", FullName, SensorRange);
         }
 
         private void RecalcWeaponsRange() {
@@ -240,10 +286,13 @@ namespace CodeEnv.Master.GameContent {
             var shortRangeWeapons = undamagedWeapons.Where(w => w.RangeCategory == RangeCategory.Short);
             var mediumRangeWeapons = undamagedWeapons.Where(w => w.RangeCategory == RangeCategory.Medium);
             var longRangeWeapons = undamagedWeapons.Where(w => w.RangeCategory == RangeCategory.Long);
+            //D.Log(ShowDebugLog, "{0} found {1} short, {2} medium and {3} long range undamaged weapons when recalculating WeaponsRange.", 
+            //FullName, shortRangeWeapons.Count(), mediumRangeWeapons.Count(), longRangeWeapons.Count());
             float shortRangeDistance = shortRangeWeapons.Any() ? shortRangeWeapons.First().RangeDistance : Constants.ZeroF;
             float mediumRangeDistance = mediumRangeWeapons.Any() ? mediumRangeWeapons.First().RangeDistance : Constants.ZeroF;
             float longRangeDistance = longRangeWeapons.Any() ? longRangeWeapons.First().RangeDistance : Constants.ZeroF;
             WeaponsRange = new RangeDistance(shortRangeDistance, mediumRangeDistance, longRangeDistance);
+            //D.Log(ShowDebugLog, "{0} recalculated WeaponsRange: {1}.", FullName, WeaponsRange);
         }
 
         private void RecalcShieldRange() {
@@ -255,6 +304,7 @@ namespace CodeEnv.Master.GameContent {
             float mediumRangeDistance = mediumRangeGenerators.Any() ? mediumRangeGenerators.First().RangeDistance : Constants.ZeroF;
             float longRangeDistance = longRangeGenerators.Any() ? longRangeGenerators.First().RangeDistance : Constants.ZeroF;
             ShieldRange = new RangeDistance(shortRangeDistance, mediumRangeDistance, longRangeDistance);
+            //D.Log(ShowDebugLog, "{0} recalculated ShieldRange: {1}.", FullName, ShieldRange);
         }
 
         protected override void RecalcDefensiveValues() {

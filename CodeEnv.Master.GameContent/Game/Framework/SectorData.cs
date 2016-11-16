@@ -45,7 +45,7 @@ namespace CodeEnv.Master.GameContent {
         public SystemData SystemData {
             get { return _systemData; }
             set {
-                D.Assert(_systemData == null);  // one time only if at all
+                D.AssertNull(_systemData);  // one time only if at all
                 SetProperty<SystemData>(ref _systemData, value, "SystemData", SystemDataPropSetHandler);
             }
         }
@@ -106,7 +106,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void AssessIntelCoverage() {
-            if (DebugSettings.Instance.AllIntelCoverageComprehensive) {
+            if (References.DebugControls.IsAllIntelCoverageComprehensive) {
                 return;
             }
             foreach (Player player in _gameMgr.AllPlayers) {
@@ -223,7 +223,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void UnsubscribeFromSystemDataValueChanges() {
             if (SystemData != null) {
-                D.Assert(_systemDataSubscribers != null);
+                D.AssertNotNull(_systemDataSubscribers);
                 _systemDataSubscribers.ForAll(sds => sds.Dispose());
                 _systemDataSubscribers.Clear();
                 SystemData.intelCoverageChanged -= SystemIntelCoverageChangedEventHandler;

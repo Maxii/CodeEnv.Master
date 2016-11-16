@@ -91,7 +91,7 @@ public class UnitDebugControl : AMonoBase {
     }
 
     private void UnitOwnerRelationsChangedEventHandler(object sender, RelationsChangedEventArgs e) {
-        D.Assert(_unitCmd.Owner == sender as Player);
+        D.AssertEqual(_unitCmd.Owner, sender as Player);
         Player playerWhoseRelationsWithUnitCmdOwnerChgd = e.ChgdRelationsPlayer;
         if (playerWhoseRelationsWithUnitCmdOwnerChgd.IsUser) {
             SyncUserRelationsFieldsTo(_unitCmd.Owner.UserRelations);

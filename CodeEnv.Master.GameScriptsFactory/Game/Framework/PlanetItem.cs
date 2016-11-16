@@ -40,8 +40,8 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
     public override float ClearanceRadius {
         get {
             float baseClearance = Data.CloseOrbitOuterRadius;
-            if (_childMoons.Any()) {
-                MoonItem outerMoon = _childMoons.MaxBy(moon => Vector3.SqrMagnitude(moon.Position - Position));
+            if (ChildMoons.Any()) {
+                MoonItem outerMoon = ChildMoons.MaxBy(moon => Vector3.SqrMagnitude(moon.Position - Position));
                 float distanceToOuterMoon = Vector3.Distance(outerMoon.Position, Position);
                 baseClearance = distanceToOuterMoon + outerMoon.ObstacleZoneRadius;
             }
@@ -49,12 +49,19 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
         }
     }
 
+    private IList<MoonItem> _childMoons;
+    /// <summary>
+    /// The moons that orbit this planet, if any.
+    /// </summary>
+    public IList<MoonItem> ChildMoons {
+        get {
+            _childMoons = _childMoons ?? GetComponentsInChildren<MoonItem>();
+            return _childMoons;
+        }
+    }
+
     protected new PlanetDisplayManager DisplayMgr { get { return base.DisplayMgr as PlanetDisplayManager; } }
 
-    /// <summary>
-    /// The moons that orbit this planet. Can be empty but never null.
-    /// </summary>
-    private MoonItem[] _childMoons;
     private DetourGenerator _detourGenerator;
     private IList<IShip_Ltd> _shipsInCloseOrbit;
 
@@ -95,22 +102,17 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
         return new HoverHighlightManager(this, highlightRadius);
     }
 
-    public override void FinalInitialize() {
-        base.FinalInitialize();
-        RecordAnyChildMoons();
-    }
-
-    private void RecordAnyChildMoons() {
-        _childMoons = gameObject.GetComponentsInChildren<MoonItem>();
-        //D.Log(ShowDebugLog && _childMoons.Any(), "{0} recorded {1} child moons.", FullName, _childMoons.Count());
-    }
-
     #endregion
+
+    public override void CommenceOperations() {
+        base.CommenceOperations();
+        CelestialOrbitSimulator.IsActivated = true; // planet orbit in system always activated as not just eye candy
+    }
 
     internal void RemoveMoon(MoonItem moon) {
         D.Assert(!moon.IsOperational);
-        D.Assert(_childMoons.Contains(moon));
-        _childMoons = _childMoons.Except(moon).ToArray();
+        bool isRemoved = ChildMoons.Remove(moon);
+        D.Assert(isRemoved);
     }
 
     private void AssessIcon() {
@@ -138,9 +140,9 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
         //D.Log(ShowDebugLog, "{0}.HandleEffectFinished({1}) called.", FullName, effectID.GetValueName());
         switch (effectID) {
             case EffectSequenceID.Dying:
-                if (_childMoons.Any()) {
+                if (ChildMoons.Any()) {
                     // planet has completed showing its death so moons need to show theirs too
-                    _childMoons.ForAll(moon => {
+                    ChildMoons.ForAll(moon => {
                         moon.effectSeqFinished += MoonDeathEffectFinishedEventHandler; // no unsubscribing needed as all are destroyed
                         moon.HandlePlanetDying();
                     });
@@ -165,13 +167,13 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
     }
 
     private void MoonDeathEffectFinishedEventHandler(object sender, EffectSeqEventArgs e) {
-        D.Assert(e.EffectSeqID == EffectSequenceID.Dying);
+        D.AssertEqual(EffectSequenceID.Dying, e.EffectSeqID);
         HandleMoonDeathEffectFinished();
     }
 
     private void HandleMoonDeathEffectFinished() {
-        //D.Log(ShowDebugLog, "{0}.HandleMoonDeathEffectFinished() called. Remaining Moons: {1}", FullName, _childMoons.Count());
-        if (_childMoons.Count() == Constants.Zero) {
+        //D.Log(ShowDebugLog, "{0}.HandleMoonDeathEffectFinished() called. Remaining Moons: {1}", FullName, ChildMoons.Count);
+        if (ChildMoons.Count() == Constants.Zero) {
             // The last moon has shown its death effect as a result of the planet's death
             DestroyMe();
         }
@@ -180,8 +182,8 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
     #endregion
 
     protected override void ConnectHighOrbitRigidbodyToShipOrbitJoint(FixedJoint shipOrbitJoint) {
-        if (_childMoons.Any()) {
-            IMoon outermostMoon = _childMoons.MaxBy(m => Vector3.SqrMagnitude(m.Position - Position));
+        if (ChildMoons.Any()) {
+            IMoon outermostMoon = ChildMoons.MaxBy(m => Vector3.SqrMagnitude(m.Position - Position));
             Rigidbody highOrbitRigidbody = outermostMoon.CelestialOrbitSimulator.OrbitRigidbody;
             shipOrbitJoint.connectedBody = highOrbitRigidbody;
         }
@@ -273,14 +275,16 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
 
     public override void HandleBrokeOrbit(IShip_Ltd ship) {
         if (IsInCloseOrbit(ship)) {
-            D.Assert(_closeOrbitSimulator != null);
+            D.AssertNotNull(_closeOrbitSimulator);
             var isRemoved = _shipsInCloseOrbit.Remove(ship);
             D.Assert(isRemoved);
             D.Log("{0} has left close orbit around {1}.", ship.FullName, FullName);
             float shipDistance = Vector3.Distance(ship.Position, Position);
             float minOutsideOfOrbitCaptureRadius = Data.CloseOrbitOuterRadius - ship.CollisionDetectionZoneRadius_Debug;
-            D.Warn(shipDistance > minOutsideOfOrbitCaptureRadius, "{0} is leaving orbit of {1} but is not within {2:0.0000}. Ship's current orbit distance is {3:0.0000}.",
-                ship.FullName, FullName, minOutsideOfOrbitCaptureRadius, shipDistance);
+            if (shipDistance > minOutsideOfOrbitCaptureRadius) {
+                D.Warn("{0} is leaving orbit of {1} but is not within {2:0.0000}. Ship's current orbit distance is {3:0.0000}.",
+                    ship.FullName, FullName, minOutsideOfOrbitCaptureRadius, shipDistance);
+            }
             if (_shipsInCloseOrbit.Count == Constants.Zero) {
                 // Choose either to deactivate the OrbitSimulator or destroy it, but not both
                 CloseOrbitSimulator.IsActivated = false;
@@ -298,8 +302,8 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
 
     public override float GetObstacleCheckRayLength(Vector3 fleetPosition) {
         float radiusContainingKnownObstacles = ObstacleZoneRadius;
-        if (_childMoons.Any()) {
-            MoonItem outerMoon = _childMoons.MaxBy(moon => Vector3.SqrMagnitude(moon.Position - Position));
+        if (ChildMoons.Any()) {
+            MoonItem outerMoon = ChildMoons.MaxBy(moon => Vector3.SqrMagnitude(moon.Position - Position));
             float distanceToOuterMoon = Vector3.Distance(outerMoon.Position, Position);
             radiusContainingKnownObstacles = distanceToOuterMoon + outerMoon.ObstacleZoneRadius;
         }
@@ -313,8 +317,8 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
     public override AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition) {
         float innerShellRadius;
         float outerShellRadius;
-        if (_childMoons.Any()) {
-            MoonItem outerMoon = _childMoons.MaxBy(moon => Vector3.SqrMagnitude(moon.Position - Position));
+        if (ChildMoons.Any()) {
+            MoonItem outerMoon = ChildMoons.MaxBy(moon => Vector3.SqrMagnitude(moon.Position - Position));
             float distanceToOuterMoon = Vector3.Distance(outerMoon.Position, Position);
             innerShellRadius = distanceToOuterMoon + outerMoon.GetApMoveTgtProxy(tgtOffset, tgtStandoffDistance, shipPosition).InnerRadius;
             outerShellRadius = innerShellRadius + 1F;   // HACK depth of arrival shell is 1
@@ -351,7 +355,7 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
 
     public void RecordExplorationCompletedBy(Player player) {
         SetIntelCoverage(player, IntelCoverage.Comprehensive);
-        _childMoons.ForAll(moon => moon.SetIntelCoverage(player, IntelCoverage.Comprehensive));
+        ChildMoons.ForAll(moon => moon.SetIntelCoverage(player, IntelCoverage.Comprehensive));
     }
 
     #endregion

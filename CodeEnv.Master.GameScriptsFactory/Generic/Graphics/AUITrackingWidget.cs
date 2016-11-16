@@ -29,9 +29,33 @@ public abstract class AUITrackingWidget : ATrackingWidget {
 
     protected override void Awake() {
         base.Awake();
-        D.Assert((Layers)gameObject.layer == Layers.UI);
+        D.AssertEqual(Layers.UI, (Layers)gameObject.layer);
         _uiCamera = NGUITools.FindCameraForLayer((int)Layers.UI);
     }
+
+    void Update() {  // OPTIMIZE Could be done ~ 4 times less frequently, change when improve TrackingWidget
+        RefreshPosition();  // 
+        AssessShowDistance();
+    }
+
+    /// <summary>
+    /// Assesses whether to show or hide the widget based on
+    /// the widget's distance to the camera. If implemented, this is expensive.
+    /// Default does nothing.
+    /// <remarks>11.13.16 Currently, only UITrackingLabels use min/max show distances.</remarks>
+    /// </summary>
+    protected virtual void AssessShowDistance() { }
+
+    protected override void Show() {
+        base.Show();
+        enabled = true;
+    }
+
+    protected override void Hide() {
+        base.Hide();
+        enabled = false;
+    }
+
 
     protected override float CalcMaxShowDistance(float max) {
         // widgets are constant size in UI Layer so always legible no matter what max is used
@@ -40,11 +64,15 @@ public abstract class AUITrackingWidget : ATrackingWidget {
 
     protected override void SetPosition() {
         transform.OverlayPosition(Target.Position + _offset, Camera.main, _uiCamera);
-        //D.Log("Resulting position of UI element = {0}.", transform.position);
+        //D.Log("{0} resulting position of UI element = {1}.", Name, transform.position);
         transform.SetWorldPositionZ(Constants.ZeroF);
     }
 
-    protected override void RefreshPosition() {
+    /// <summary>
+    /// Refreshes the position of this widget.
+    /// <remarks>Only needed by UITrackingWidgets as all others are children of their tracked target.</remarks>
+    /// </summary>
+    private void RefreshPosition() {
         SetPosition();
     }
 

@@ -52,7 +52,9 @@ namespace CodeEnv.Master.GameContent {
             else {
                 earliestDate = GameTime.Instance.CurrentDate;
             }
-            D.Assert(DeployDate >= earliestDate, "{0}.DeployDate {1} < {2}!", CmdDesignName, DeployDate, earliestDate);
+            if (DeployDate < earliestDate) {
+                D.Error("{0}.DeployDate {1} < {2}!", CmdDesignName, DeployDate, earliestDate);
+            }
         }
 
         public override string ToString() {

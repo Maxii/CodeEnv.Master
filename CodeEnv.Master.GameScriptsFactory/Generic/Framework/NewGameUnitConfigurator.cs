@@ -227,7 +227,7 @@ public class NewGameUnitConfigurator {
             D.Assert(editorSettings.IsOwnerUser);
         }
         else {
-            D.Assert(owner.__InitialUserRelationship == editorSettings.DesiredRelationshipWithUser.Convert());
+            D.AssertEqual(owner.__InitialUserRelationship, editorSettings.DesiredRelationshipWithUser.Convert());
         }
     }
 
@@ -533,6 +533,11 @@ public class NewGameUnitConfigurator {
         return statsList;
     }
 
+    private SensorStat CreateShortRangeSensorStat() {
+        string name = "ProximityDetector";
+        return new SensorStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F, RangeCategory.Short);
+    }
+
     private IList<SensorStat> __CreateAvailableSensorStats(int quantity) {
         IList<SensorStat> statsList = new List<SensorStat>(quantity);
         for (int i = 0; i < quantity; i++) {
@@ -678,6 +683,8 @@ public class NewGameUnitConfigurator {
     private IList<string> MakeAndRecordFacilityDesigns(Player owner, IEnumerable<FacilityHullStat> hullStats, DebugWeaponLoadout turretLoadout,
         DebugWeaponLoadout missileLoadout, int passiveCMsPerElement, int activeCMsPerElement, int sensorsPerElement, int shieldGensPerElement) {
 
+        D.Assert(sensorsPerElement >= Constants.One, "A minimum of 1 sensor is reqd per element.");
+
         IList<string> designNames = new List<string>();
         foreach (var hullStat in hullStats) {
             FacilityHullCategory hullCategory = hullStat.HullCategory;
@@ -688,7 +695,13 @@ public class NewGameUnitConfigurator {
 
             var passiveCmStats = _availablePassiveCountermeasureStats.Shuffle().Take(passiveCMsPerElement);
             var activeCmStats = _availableActiveCountermeasureStats.Shuffle().Take(activeCMsPerElement);
-            var sensorStats = _availableSensorStats.Shuffle().Take(sensorsPerElement);
+
+            List<SensorStat> sensorStats = new List<SensorStat>();
+            sensorStats.Add(CreateShortRangeSensorStat());
+            if (sensorsPerElement > 1) {
+                sensorStats.AddRange(_availableSensorStats.Shuffle().Take(sensorsPerElement - 1));
+            }
+
             var shieldGenStats = _availableShieldGeneratorStats.Shuffle().Take(shieldGensPerElement);
             Priority hqPriority = hullCategory.__HQPriority();    // TEMP, IMPROVE
 
@@ -702,6 +715,8 @@ public class NewGameUnitConfigurator {
     private IList<string> MakeAndRecordShipDesigns(Player owner, IEnumerable<ShipHullStat> hullStats, DebugWeaponLoadout turretLoadout, DebugWeaponLoadout missileLoadout,
         int passiveCMsPerElement, int activeCMsPerElement, int sensorsPerElement, int shieldGensPerElement, ShipCombatStance stance) {
 
+        D.Assert(sensorsPerElement >= Constants.One, "A minimum of 1 sensor is reqd per element.");
+
         IList<string> designNames = new List<string>();
         foreach (var hullStat in hullStats) {
             ShipHullCategory hullCategory = hullStat.HullCategory;
@@ -712,7 +727,13 @@ public class NewGameUnitConfigurator {
 
             var passiveCmStats = _availablePassiveCountermeasureStats.Shuffle().Take(passiveCMsPerElement);
             var activeCmStats = _availableActiveCountermeasureStats.Shuffle().Take(activeCMsPerElement);
-            var sensorStats = _availableSensorStats.Shuffle().Take(sensorsPerElement);
+
+            List<SensorStat> sensorStats = new List<SensorStat>();
+            sensorStats.Add(CreateShortRangeSensorStat());
+            if (sensorsPerElement > 1) {
+                sensorStats.AddRange(_availableSensorStats.Shuffle().Take(sensorsPerElement - 1));
+            }
+
             var shieldGenStats = _availableShieldGeneratorStats.Shuffle().Take(shieldGensPerElement);
             Priority hqPriority = hullCategory.__HQPriority();    // TEMP, IMPROVE
 

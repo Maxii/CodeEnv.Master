@@ -35,7 +35,7 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
     public IntVector3 SectorID {
         get { return _sectorID; }
         set {
-            D.Assert(_sectorID == default(IntVector3)); // only occurs once between Resets
+            D.AssertDefault(_sectorID); // only occurs once between Resets
             SetProperty<IntVector3>(ref _sectorID, value, "SectorID", SectorIdPropSetHandler);
         }
     }

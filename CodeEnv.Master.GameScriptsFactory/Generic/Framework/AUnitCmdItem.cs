@@ -122,7 +122,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     protected override void InitializeOnData() {
         base.InitializeOnData();
-        D.Assert(transform.parent != null);
+        D.AssertNotNull(transform.parent);
         UnitContainer = transform.parent;
         // the only collider is for player interaction with the item's CmdIcon
     }
@@ -185,19 +185,34 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     public override void FinalInitialize() {
         base.FinalInitialize();
+        InitializeMonitorRanges();
         AssessIcon();
     }
 
-    #endregion
+    private void InitializeMonitorRanges() {
+        SensorRangeMonitors.ForAll(srm => srm.InitializeRangeDistance());
+    }
+
+    #endregion  
+
+    public override void CommenceOperations() {
+        base.CommenceOperations();
+    }
 
     /// <summary>
     /// Adds the Element to this Command including parenting if needed.
     /// </summary>
     /// <param name="element">The Element to add.</param>
     public virtual void AddElement(AUnitElementItem element) {
-        D.Assert(!Elements.Contains(element), "{0} attempting to add {1} that is already present.".Inject(FullName, element.FullName));
-        D.Assert(!element.IsHQ, "{0} adding element {1} already designated as the HQ Element.".Inject(FullName, element.FullName));
-        D.Assert(element.IsOperational == IsOperational, "{0}: Adding element {1} with incorrect IsOperational state.", FullName, element.FullName);
+        if (Elements.Contains(element)) {
+            D.Error("{0} attempting to add {1} that is already present.", FullName, element.FullName);
+        }
+        if (element.IsHQ) {
+            D.Error("{0} adding element {1} already designated as the HQ Element.", FullName, element.FullName);
+        }
+        if (element.IsOperational != IsOperational) {
+            D.Error("{0}: Adding element {1} with incorrect IsOperational state.", FullName, element.FullName);
+        }
         Elements.Add(element);
         Data.AddElement(element.Data);
         element.Command = this;
@@ -217,7 +232,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         }
         if (!IsOperational) {
             // avoid the following extra work if adding during Cmd construction
-            D.Assert(HQElement == null);    // During Cmd construction, HQElement will be designated AFTER all Elements are
+            D.AssertNull(HQElement);    // During Cmd construction, HQElement will be designated AFTER all Elements are
             return;                         // added resulting in _formationMgr adding all elements into the formation at once
         }
         AssessIcon();
@@ -237,6 +252,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
             if (!SensorRangeMonitors.Contains(monitor)) {
                 // only need to record and setup range monitors once. The same monitor can have more than 1 sensor
                 SensorRangeMonitors.Add(monitor);
+                monitor.enemyTargetsInRange += EnemyTargetsInSensorRangeChangedEventHandler;
             }
         });
     }
@@ -254,7 +270,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
             bool isRangeMonitorStillInUse = monitor.Remove(sensor);
 
             if (!isRangeMonitorStillInUse) {
-                monitor.Reset();
+                monitor.enemyTargetsInRange -= EnemyTargetsInSensorRangeChangedEventHandler;
+                monitor.Reset();    // OPTIMIZE either reset or destroy, not both
                 SensorRangeMonitors.Remove(monitor);
                 //D.Log(ShowDebugLog, "{0} is destroying unused {1} as a result of removing {2}.", FullName, typeof(SensorRangeMonitor).Name, sensor.Name);
                 GameUtility.DestroyIfNotNullOrAlreadyDestroyed(monitor);
@@ -264,7 +281,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     public virtual void RemoveElement(AUnitElementItem element) {
         bool isRemoved = Elements.Remove(element);
-        D.Assert(isRemoved, "{0} not found.".Inject(element.FullName));
+        D.Assert(isRemoved, element.FullName);
         Data.RemoveElement(element.Data);
 
         DetachSensorsFromMonitors(element.Data.Sensors);
@@ -272,7 +289,9 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
             return; // avoid the following work if removing during startup
         }
         if (Elements.Count == Constants.Zero) {
-            D.Assert(Data.UnitHealth <= Constants.ZeroF, "{0} UnitHealth error.".Inject(FullName));
+            if (Data.UnitHealth > Constants.ZeroF) {
+                D.Error("{0} has UnitHealth of {1:0.0000} remaining.", FullName, Data.UnitHealth);
+            }
             IsOperational = false;  // tell Cmd its dead
             return;
         }
@@ -287,7 +306,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     /// <param name="takeoverStrength">The takeover strength. A value between 0 and 1.0.</param>
     /// <returns></returns>
     public bool __AttemptTakeover(Player player, float takeoverStrength) {
-        D.Assert(player != Owner);
+        D.AssertNotEqual(Owner, player);
         Utility.ValidateForRange(takeoverStrength, Constants.ZeroPercent, Constants.OneHundredPercent);
         if (takeoverStrength > Data.CurrentCmdEffectiveness) {   // TEMP takeoverStrength vs loyalty?
             Data.Owner = player;
@@ -317,6 +336,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         //D.Log(ShowDebugLog, "{0} after attached by FixedJoint, rotation = {1}, {2}.rotation = {3}.", HQElement.FullName, HQElement.transform.rotation, FullName, transform.rotation);
     }
 
+    #region Command Icon Management
+
     public void AssessIcon() {
         if (DisplayMgr == null) { return; }
 
@@ -335,8 +356,28 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     protected abstract IconInfo MakeIconInfo();
 
+    #endregion
+
+    /// <summary>
+    /// Assesses the alert status based on the proximity of enemy elements detected by sensors.
+    /// </summary>
+    protected void AssessAlertStatus() {
+        var sensorRangeCatsDetectingEnemy = SensorRangeMonitors.Where(srm => srm.AreEnemyTargetsInRange).Select(srm => srm.RangeCategory);
+        var sensorRangeCatsDetectingWarEnemy = SensorRangeMonitors.Where(srm => srm.AreEnemyWarTargetsInRange).Select(srm => srm.RangeCategory);
+
+        if (sensorRangeCatsDetectingWarEnemy.Contains(RangeCategory.Short)) {
+            Data.AlertStatus = AlertStatus.Red;
+        }
+        else if (sensorRangeCatsDetectingWarEnemy.Contains(RangeCategory.Medium) || sensorRangeCatsDetectingEnemy.Contains(RangeCategory.Short)) {
+            Data.AlertStatus = AlertStatus.Yellow;
+        }
+        else {
+            Data.AlertStatus = AlertStatus.Normal;
+        }
+    }
+
     protected bool TryGetHQCandidatesOf(Priority priority, out IEnumerable<AUnitElementItem> hqCandidates) {
-        D.Assert(priority != default(Priority));
+        D.AssertNotDefault((int)priority);
         hqCandidates = Elements.Where(e => e.Data.HQPriority == priority);
         return hqCandidates.Any();
     }
@@ -349,6 +390,12 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     //// }
 
     #region Event and Property Change Handlers
+
+    private void EnemyTargetsInSensorRangeChangedEventHandler(object sender, EventArgs e) {
+        HandleEnemyTargetsInSensorRangeChanged();
+    }
+
+    protected abstract void HandleEnemyTargetsInSensorRangeChanged();
 
     /// <summary>
     /// Handles a change in relations between players.
@@ -374,7 +421,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     private void OnIsAvailable() {
         if (isAvailableChanged != null) {
-            isAvailableChanged(this, new EventArgs());
+            isAvailableChanged(this, EventArgs.Empty);
         }
     }
 
@@ -393,7 +440,9 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
             // first assignment of HQ
             D.Assert(!IsOperational);
             // OPTIMIZE Just a FYI warning as formations currently assume this
-            D.Warn(newHQElement.transform.rotation != Quaternion.identity, "{0} first HQ Element rotation = {1}.", FullName, newHQElement.transform.rotation);
+            if (newHQElement.transform.rotation != Quaternion.identity) {
+                D.Warn("{0} first HQ Element rotation = {1}.", FullName, newHQElement.transform.rotation);
+            }
         }
         if (!Elements.Contains(newHQElement)) {
             // the player will typically select/change the HQ element of a Unit from the elements already present in the unit
@@ -515,6 +564,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     private void UponSubordinateElementDeath(AUnitElementItem deadSubordinateElement) { RelayToCurrentState(deadSubordinateElement); }
 
+    private void UponEnemyDetected() { RelayToCurrentState(); }
+
     /// <summary>
     /// Called from the StateMachine just after a state
     /// change and just before state_EnterState() is called. When EnterState
@@ -567,7 +618,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         DamageStrength damageToCmd = elementDamageSustained - Data.DamageMitigation;
         float unusedDamageSeverity;
         bool isCmdAlive = ApplyDamage(damageToCmd, out unusedDamageSeverity);
-        D.Assert(isCmdAlive, "{0} should never die as a result of being hit.".Inject(Data.Name));
+        D.Assert(isCmdAlive, Data.FullName);
     }
 
     /// <summary>
@@ -588,13 +639,11 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         else {
             Data.CurrentHitPoints -= __combinedDmgToCmd;
         }
+        D.Assert(Data.Health > Constants.ZeroPercent, "Should never fail as Commands can't die directly from a hit on the command");
+
         damageSeverity = Mathf.Clamp01(__combinedDmgToCmd / Data.CurrentHitPoints);
-        if (Data.Health > Constants.ZeroPercent) {
-            AssessCripplingDamageToEquipment(damageSeverity);
-            return true;
-        }
-        D.Assert(false);    // should never happen as Commands can't die directly from a hit on the command
-        return false;
+        AssessCripplingDamageToEquipment(damageSeverity);
+        return true;
     }
 
     /// <summary>
@@ -632,7 +681,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
             AssessShowTrackingLabel();
         }
         else {
-            D.Assert(_trackingLabel != null);
+            D.AssertNotNull(_trackingLabel);
             GameUtility.DestroyIfNotNullOrAlreadyDestroyed(_trackingLabel);
             _trackingLabel = null;
         }
@@ -766,8 +815,9 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(subscriptionMode));
         }
-        D.Warn(isDuplicateSubscriptionAttempted, "{0}: Attempting to subscribe to {1}'s {2} when already subscribed.",
-            FullName, fsmTgt.FullName, subscriptionMode.GetValueName());
+        if (isDuplicateSubscriptionAttempted) {
+            D.Warn("{0}: Attempting to subscribe to {1}'s {2} when already subscribed.", FullName, fsmTgt.FullName, subscriptionMode.GetValueName());
+        }
         if (isSubscribeActionTaken) {
             __subscriptionStatusLookup[subscriptionMode] = toSubscribe;
         }

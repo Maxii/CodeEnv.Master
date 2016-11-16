@@ -37,7 +37,7 @@ public class FacilityHull : AHull, IFacilityHull {
 
     protected override void Validate() {
         base.Validate();
-        D.Assert(_hullCategory != FacilityHullCategory.None);
+        D.AssertNotDefault((int)_hullCategory);
     }
 
     protected override void Cleanup() { }

@@ -101,7 +101,7 @@ public class DebugStarbaseCreator : ADebugUnitCreator {
                 element.transform.position = transform.position;
                 _elements.Add(element);
             }
-            D.Assert(designs.Count == 0);
+            D.AssertEqual(Constants.Zero, designs.Count);
         }
         else {
             foreach (var designName in Configuration.ElementDesignNames) {

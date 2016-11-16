@@ -24,6 +24,10 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Immutable data container holding the yield values associated with Resources.
+    /// <remarks>11.8.16 I've considered changing to a class, but I really want to 
+    /// use value semantics here. See Marc Gravell's comments at 
+    /// http://stackoverflow.com/questions/10415157/when-would-a-value-type-contain-a-reference-type 
+    /// </remarks>
     /// </summary>
     public struct ResourceYield : IEquatable<ResourceYield> {
 
@@ -57,8 +61,11 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        private static string _firstResourceToStringFormat = "{0}({1:0.#})"; // use of [ ] causes Ngui label problems
-        private static string _continuingToStringFormat = ", {0}({1:0.#})";
+        private const string DefaultToStringFormat = "{0}.{1}";
+        private const string FirstResourceToStringFormat = "{0}({1:0.#})"; // use of [ ] causes Ngui label problems
+        private const string ContinuingToStringFormat = ", {0}({1:0.#})";
+
+        private static StringBuilder _stringBuilder = new StringBuilder();
 
         private IDictionary<ResourceID, float> _resourceValueLookup;
         private IDictionary<ResourceID, float> ResourceValueLookup {
@@ -66,11 +73,11 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Gets all the Resources present in this ResourceYield. Can be empty. 
-        /// To get the yield of each resource using GetYield(ResourceID).
+        /// Gets a copy of all the Resources present in this ResourceYield. Can be empty. 
+        /// To get the yield of each resource use GetYield(ResourceID).
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<ResourceID> ResourcesPresent { get { return ResourceValueLookup.Keys; } }
+        public IEnumerable<ResourceID> ResourcesPresent { get { return ResourceValueLookup.Keys.ToArray(); } }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ResourceYield"/> struct. 
@@ -99,16 +106,14 @@ namespace CodeEnv.Master.GameContent {
             }
 
             // as a struct field, _toString must be assigned in the Constructor
-            var sb = new StringBuilder();
+            string format;
+            _stringBuilder.Clear();
             for (int i = 0; i < resourceValuePairs.Count(); i++) {
                 var valuePair = resourceValuePairs[i];
-                string format = _continuingToStringFormat;
-                if (i == Constants.Zero) {
-                    format = _firstResourceToStringFormat;
-                }
-                sb.AppendFormat(format, valuePair.ResourceID.GetEnumAttributeText(), valuePair.Value);
+                format = (i == Constants.Zero) ? FirstResourceToStringFormat : ContinuingToStringFormat;
+                _stringBuilder.AppendFormat(format, valuePair.ResourceID.GetEnumAttributeText(), valuePair.Value);
             }
-            _toString = sb.ToString();
+            _toString = _stringBuilder.ToString();
         }
 
         public bool TryGetYield(ResourceID resourceID, out float yield) {
@@ -138,7 +143,6 @@ namespace CodeEnv.Master.GameContent {
             return Equals((ResourceYield)obj);
         }
 
-
         /// <summary>
         /// Returns a hash code for this instance.
         /// See Page 254, C# 4.0 in a Nutshell.
@@ -162,7 +166,7 @@ namespace CodeEnv.Master.GameContent {
         private string _toString;
         public override string ToString() {
             if (_toString.IsNullOrEmpty()) {
-                _toString = "{0}.{1}".Inject(GetType().Name, ResourceID.None.GetValueName());
+                _toString = DefaultToStringFormat.Inject(GetType().Name, ResourceID.None.GetValueName());
             }
             return _toString;
         }
@@ -188,6 +192,8 @@ namespace CodeEnv.Master.GameContent {
 
         public struct ResourceValuePair : IEquatable<ResourceValuePair> {
 
+            private const string ToStringFormat = "{0}[{1:0.#}]";
+
             #region Operators Override
 
             // see C# 4.0 In a Nutshell, page 254
@@ -201,7 +207,7 @@ namespace CodeEnv.Master.GameContent {
             }
 
             public static ResourceValuePair operator +(ResourceValuePair left, ResourceValuePair right) {
-                D.Assert(left.ResourceID == right.ResourceID);
+                D.AssertEqual(left.ResourceID, right.ResourceID);
                 var newValue = left.Value + right.Value;
                 return new ResourceValuePair(left.ResourceID, newValue);
             }
@@ -241,7 +247,7 @@ namespace CodeEnv.Master.GameContent {
             #endregion
 
             public override string ToString() {
-                return "{0}[{1:0.#}]".Inject(ResourceID.GetValueName(), Value);
+                return ToStringFormat.Inject(ResourceID.GetValueName(), Value);
             }
 
             #region IEquatable<ResourceValuePair> Members

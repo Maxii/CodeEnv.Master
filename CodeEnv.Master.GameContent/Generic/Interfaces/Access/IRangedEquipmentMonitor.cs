@@ -39,6 +39,11 @@ namespace CodeEnv.Master.GameContent {
         bool IsOperational { get; }
 
         /// <summary>
+        /// Initializes the range distance value in this monitor and all its equipment.
+        /// </summary>
+        void InitializeRangeDistance();
+
+        /// <summary>
         /// Handles a change in relations between players. Called by the monitor's ParentItem when the
         /// DiplomaticRelationship between ParentItem.Owner and <c>otherPlayer</c> changes.
         /// </summary>

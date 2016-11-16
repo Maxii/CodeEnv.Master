@@ -33,6 +33,12 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         bool FleetsAutoExploreAsDefault { get; }
 
+        /// <summary>
+        /// If <c>true</c> every player knows everything about every item they detect. 
+        /// It DOES NOT MEAN that they have detected everything or that players have met yet.
+        /// Players meet when they first detect a HQ Element owned by another player.
+        /// </summary>
+        bool IsAllIntelCoverageComprehensive { get; }
 
     }
 }

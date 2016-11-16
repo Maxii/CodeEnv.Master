@@ -14,6 +14,8 @@
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
+#define ENABLE_PROFILER
+
 // default namespace
 
 using System;
@@ -231,6 +233,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     private Transform _dummyTarget;
     private SphereCollider _universeEdgeCollider;
     private float _universeRadius;
+    private float _universeDiameter;
 
     private Vector3 _screenCenter = new Vector3(Screen.width / 2, Screen.height / 2, 0F);
 
@@ -345,7 +348,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         // MainCamera_Far must be set manually during development. Set it to Depth also if SpaceUnity sky box is active, otherwise Sky box or SolidColor if not
 
         // IMPORTANT Max far to near clip plane ratio <= 10,000
-        MainCamera_Far.farClipPlane = _universeRadius * 2F;
+        MainCamera_Far.farClipPlane = _universeDiameter;
         MainCamera_Far.nearClipPlane = (MainCamera_Far.farClipPlane / CameraMaxClippingPlaneRatio);
         MainCamera_Near.farClipPlane = MainCamera_Far.nearClipPlane + 1F;   // HACK 1F is overlap
         MainCamera_Near.nearClipPlane = 0.01F;
@@ -431,7 +434,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         universeEdge.isStatic = true;
         SphereCollider universeEdgeCollider = universeEdge.AddComponent<SphereCollider>();
         UnityUtility.AttachChildToParent(universeEdge, UniverseFolder.Instance.Folder.gameObject);
-        D.Assert(universeEdge.layer == (int)Layers.Default);
+        D.AssertEqual(Layers.Default, (Layers)universeEdge.layer);
         universeEdgeCollider.isTrigger = true;
         universeEdgeCollider.radius = _universeRadius;
         return universeEdgeCollider;
@@ -444,7 +447,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         dummyTgtCollider.radius = DummyTargetColliderRadius;
         dummyTgt.AddComponent<DummyTargetManager>();
         UnityUtility.AttachChildToParent(dummyTgt, DynamicObjectsFolder.Instance.gameObject);
-        D.Assert(dummyTgt.layer == (int)Layers.Default);
+        D.AssertEqual(Layers.Default, (Layers)dummyTgt.layer);
         return dummyTgt.transform;
     }
 
@@ -454,7 +457,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// DummyTarget positioned directly ahead. 
     /// </summary>
     private void ResetAtCurrentLocation() {
-        SphereCollider dummyTargetCollider = _dummyTarget.GetComponent<SphereCollider>();
+        SphereCollider dummyTargetCollider = _dummyTarget.GetSafeComponent<SphereCollider>();
         dummyTargetCollider.enabled = false;
         // the collider is disabled so the placement algorithm doesn't accidentally find it already in front of the camera
         PlaceDummyTargetAtUniverseEdgeInDirection(transform.forward);
@@ -609,6 +612,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// <param name="gameSettings">The game settings.</param>
     public void PrepareForActivation(GameSettings gameSettings) {
         _universeRadius = gameSettings.UniverseSize.Radius();
+        _universeDiameter = _universeRadius * 2F;
         SetCameraSettings();
         InitializeCameraLight();
         InitializeCameraPreferences();
@@ -1128,7 +1132,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         LogEvent();
         // some values are continuously recalculated in update as the target moves so they don't need to be here too
 
-        D.Log("Follow Target is now {0}.", _target.gameObject.GetSafeComponent<ADiscernibleItem>().FullName);
+        D.Log("Follow Target is now {0}.", _target.GetSafeComponent<ADiscernibleItem>().FullName);
         ICameraFollowable icfTarget = _target.gameObject.GetSafeInterface<ICameraFollowable>();
         _cameraRotationDampener = icfTarget.FollowRotationDampener;
         _cameraDistanceDampener = icfTarget.FollowDistanceDampener;
@@ -1388,13 +1392,16 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             ResetToWorldspace();
         }
 
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
         ICameraFocusable qualifiedCameraFocusTarget = focus.GetComponent<ICameraFollowable>();
+        Profiler.EndSample();
+
         if (qualifiedCameraFocusTarget != null) {
             CurrentState = CameraState.Follow;
         }
         else {
             qualifiedCameraFocusTarget = focus.GetComponent<ICameraFocusable>();
-            D.Assert(qualifiedCameraFocusTarget != null, "Attempting to SetFocus on object that does not implement either ICameraFollowable or ICameraFocusable.");
+            D.AssertNotNull(qualifiedCameraFocusTarget, "Attempting to SetFocus on object that does not implement either ICameraFollowable or ICameraFocusable.");
 
             // if not resetting world coordinates on focus, the camera just turns to look at the focus
             CurrentState = _isResetOnFocusEnabled ? CameraState.Focused : CameraState.Focusing;
@@ -1431,7 +1438,10 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         // NOTE: As Rigidbodies consume child collider events, a hit on a child collider when there is a rigidbody parent 
         // involved, will return the transform of the parent, not the child. By not including inspection of the children for this interface,
         // I am requiring that the interface be present with the Rigidbody.
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
         ICameraTargetable qualifiedCameraTarget = newTarget.GetComponent<ICameraTargetable>();
+        Profiler.EndSample();
+
         if (qualifiedCameraTarget != null) {
             if (!qualifiedCameraTarget.IsCameraTargetEligible) {
                 return;
@@ -1439,7 +1449,10 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             _minimumDistanceFromTarget = qualifiedCameraTarget.MinimumCameraViewingDistance;
             //D.Log("Target {0} _minimumDistanceFromTarget set to {1:0.#}.".Inject(newTarget.name, _minimumDistanceFromTarget));
 
+            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
             ICameraFocusable qualifiedCameraFocusTarget = newTarget.GetComponent<ICameraFocusable>();
+            Profiler.EndSample();
+
             if (qualifiedCameraFocusTarget != null) {
                 _optimalDistanceFromTarget = qualifiedCameraFocusTarget.OptimalCameraViewingDistance;
                 //D.Log("Target {0} _optimalDistanceFromTarget set to {1:0.#}.".Inject(newTarget.name, _optimalDistanceFromTarget));
@@ -1579,7 +1592,6 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         return PlaceDummyTargetAtUniverseEdgeInDirection(MainCamera_Near.ScreenPointToRay(screenPoint).direction);
     }
 
-
     /// <summary>
     /// Attempts to assign an eligible object implementing ICameraTargetable, found under the provided screenPoint as the new camera target. 
     /// If more than one object is found, then the closest object that doesn't implement IZoomFurthest becomes the Target. If all objects
@@ -1592,7 +1604,8 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// </returns>
     private bool TrySetZoomTargetAt(Vector3 screenPoint) {
         Ray ray = MainCamera_Near.ScreenPointToRay(screenPoint);   // Use _mainCamera_Near as ray is cast starting at camera's nearClipPlane
-        RaycastHit[] hits = Physics.RaycastAll(ray, Mathf.Infinity, InputManager.WorldEventDispatcherMask_NormalInput);
+        // OPTIMIZE 11.15.16 Consider using Physics.RaycastNonAlloc(). Biggest issue is knowing the reqd size of the hits buffer
+        RaycastHit[] hits = Physics.RaycastAll(ray, _universeDiameter, InputManager.WorldEventDispatcherMask_NormalInput);
 
         var eligibleIctHits = ConvertToEligibleICameraTargetableHits(hits);
 
@@ -1611,7 +1624,11 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
                 }
 
                 // there is only one hit so determine the proposedZoomPoint and done
-                if (proposedZoomTarget.GetComponent<IZoomToFurthest>() == null) {
+                Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+                var ztf = proposedZoomTarget.GetComponent<IZoomToFurthest>();
+                Profiler.EndSample();
+
+                if (ztf == null) {
                     proposedZoomPoint = proposedZoomTarget.position;
                 }
                 else {
@@ -1625,7 +1642,17 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
             // there are multiple eligibleIctHits
             //var zoomToFurthestHits = from h in eligibleIctHits where h.transform.GetInterface<IZoomToFurthest>() != null select h;
-            var zoomToFurthestHits = eligibleIctHits.Where(ictHit => ictHit.transform.GetComponent<IZoomToFurthest>() != null);
+            var zoomToFurthestHits = eligibleIctHits.Where(ictHit => {
+
+                Profiler.BeginSample("Editor-only GC allocation (GetComponent return null)");
+                var ztf = ictHit.transform.GetComponent<IZoomToFurthest>();
+                Profiler.EndSample();
+
+                if (ztf != null) {
+                    return true;
+                }
+                return false;
+            });
             var remainingHits = eligibleIctHits.Except(zoomToFurthestHits);
             if (remainingHits.Any()) {
                 // there is a hit that isn't a IZoomToFurthest, so pick the closest and done
@@ -1660,7 +1687,11 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         var eligibleIctHits = new List<SimpleRaycastHit>();
         foreach (var hit in hits) {
             SimpleRaycastHit eligibleIctHit = default(SimpleRaycastHit);
+
+            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
             ICameraTargetable ict = hit.transform.GetComponent<ICameraTargetable>();
+            Profiler.EndSample();
+
             if (ict != null) {
                 if (ict.IsCameraTargetEligible) {
                     eligibleIctHit = new SimpleRaycastHit(hit.transform, hit.point);
@@ -1692,7 +1723,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// true if the Target itself is changed, otherwise false.
     /// </returns>
     private bool TryChangeZoomTarget(Transform proposedZoomTarget, Vector3 proposedZoomPoint) {
-        D.Assert(proposedZoomTarget != _dummyTarget, "TryChangeZoomTarget must not be used to change to the DummyTarget.");
+        D.AssertNotEqual(_dummyTarget, proposedZoomTarget, "TryChangeZoomTarget must not be used to change to the DummyTarget.");
 
         if (proposedZoomTarget == _target) {
             //D.Log("Proposed Target {0} is already the existing Target.".Inject(proposedZoomTarget.name));
@@ -1721,7 +1752,9 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             // DummyTarget is already there
             float dummyTgtDistanceToOrigin = Vector3.Distance(_dummyTarget.position, GameConstants.UniverseOrigin); // OPTIMIZE values too big to use SqrMagnitude
             float expectedDummyTgtDistanceToOrigin = _universeRadius - DummyTargetOffsetInsideUniverseEdge;
-            D.Assert(Mathfx.Approx(dummyTgtDistanceToOrigin, expectedDummyTgtDistanceToOrigin, 0.5F), "{0} != {1}.", dummyTgtDistanceToOrigin, expectedDummyTgtDistanceToOrigin);
+            if (!Mathfx.Approx(dummyTgtDistanceToOrigin, expectedDummyTgtDistanceToOrigin, 0.5F)) {
+                D.Error("{0} != {1}.", dummyTgtDistanceToOrigin, expectedDummyTgtDistanceToOrigin);
+            }
             return false;   // Note 4.29.16: Using large 0.5F tolerance as saw 49999.65 vs expected 49999.4 when trucking on Gigantic
         }
 
@@ -1838,11 +1871,12 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     /// <summary>
     /// Substitute for Unity's RaycastHit whose constructors are not accessible to me.
-    /// Note: Changed from a struct as per Jon Skeet: mutable references in a immutable struct are sneakily evil, aka Transform
+    /// <remarks>Changed from a struct as per Jon Skeet: mutable references in a immutable struct are sneakily evil, aka Transform.</remarks>
+    /// <remarks>OPTIMIZE worthwhile noting that Unity's RaycastHit is a mutable structure.</remarks>
     /// </summary>
     private class SimpleRaycastHit {
 
-        private static string _toStringFormat = "Transform hit: {0}, HitPoint: {1}";
+        private static string _toStringFormat = "{0}[Transform: {1}, HitPoint: {2}]";
 
         public readonly Transform transform;
         public readonly Vector3 point;
@@ -1853,7 +1887,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         }
 
         public override string ToString() {
-            return _toStringFormat.Inject(transform.name, point);
+            return _toStringFormat.Inject(typeof(SimpleRaycastHit).Name, transform.name, point);
         }
 
     }

@@ -24,6 +24,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class OrbitData {
 
+        public string Name { get { return GetType().Name; } }
+
         private GameObject _orbitedItem;
         /// <summary>
         /// The item being orbited. 
@@ -32,7 +34,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public GameObject OrbitedItem {
             get {
-                D.Assert(_orbitedItem != null, "{0}.OrbitedItem has not been assigned!", GetType().Name);
+                D.AssertNotNull(_orbitedItem, Name);
                 return _orbitedItem;
             }
             private set { _orbitedItem = value; }
@@ -178,7 +180,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return Name;
         }
 
     }

@@ -196,7 +196,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="sphereRadius">The sphere radius.</param>
         /// <returns></returns>
         public static Vector3 FindClosestPointOnSphereTo(Vector3 point, Vector3 sphereCenter, float sphereRadius) {
-            D.Assert(point != sphereCenter);
+            D.AssertNotEqual(point, sphereCenter);
             return sphereCenter + ((point - sphereCenter).normalized * sphereRadius);
         }
 
@@ -210,9 +210,8 @@ namespace CodeEnv.Master.Common {
         /// <param name="sphereRadius">The sphere radius.</param>
         /// <returns></returns>
         public static Vector3 FindClosestPointOnSphereOrthogonalToIntersectingLine(Vector3 startLinePt, Vector3 endLinePtOnSphere, Vector3 sphereCenter, float sphereRadius) {
-            var linePtOnSphereToCenterSqrd = Vector3.SqrMagnitude(endLinePtOnSphere - sphereCenter);
-            D.Assert(Mathfx.Approx(linePtOnSphereToCenterSqrd, Mathf.Pow(sphereRadius, 2F), .01F), "{0} should equal {1}.".Inject(Mathf.Sqrt(linePtOnSphereToCenterSqrd), sphereRadius));
-
+            var linePtOnSphereToCenterDistance = Vector3.Distance(endLinePtOnSphere, sphereCenter);
+            D.AssertApproxEqual(sphereRadius, linePtOnSphereToCenterDistance);  // 11.10.16 tolerance .01F -> .0001F
             Vector3 midPtOfLineInsideSphere = Mathfx.NearestPoint(startLinePt, endLinePtOnSphere, sphereCenter);
             if (midPtOfLineInsideSphere != sphereCenter) {
                 return FindClosestPointOnSphereTo(midPtOfLineInsideSphere, sphereCenter, sphereRadius);
@@ -222,7 +221,7 @@ namespace CodeEnv.Master.Common {
             Vector3 thirdPtDefiningPlane = sphereCenter + UnityEngine.Random.onUnitSphere;
             int count = 0;
             while (IsPointOnLine(startLinePt, endLinePtOnSphere, thirdPtDefiningPlane)) {
-                D.Assert(count++ < 100);
+                D.Assert(count++ < 100, "Too many iterations");
                 thirdPtDefiningPlane = sphereCenter + UnityEngine.Random.onUnitSphere;
             }
             Plane aPlaneContainingLine = new Plane(startLinePt, endLinePtOnSphere, thirdPtDefiningPlane);
@@ -374,7 +373,9 @@ namespace CodeEnv.Master.Common {
             };
             aEdges.ForAll<Vector3>(edge => {
                 bool isEqual = Mathfx.Approx(Vector3.SqrMagnitude(edge), sqrdEdgeLength, 1F);
-                D.Assert(isEqual, "{0} != {1}.", Vector3.SqrMagnitude(edge), sqrdEdgeLength);
+                if (!isEqual) {
+                    D.Error("{0} should equal {1}.", Vector3.SqrMagnitude(edge), sqrdEdgeLength);
+                }
             });
         }
 

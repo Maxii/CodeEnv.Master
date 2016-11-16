@@ -175,7 +175,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
 
     private void OnDeath() {
         if (deathOneShot != null) {
-            deathOneShot(this, new EventArgs());
+            deathOneShot(this, EventArgs.Empty);
             deathOneShot = null;
         }
     }
@@ -274,11 +274,25 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
 
     #region IAttackable Members
 
-    public bool IsAttackingAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
+    public bool IsAttackByAllowed(Player attackingPlayer) {
+        if (!InfoAccessCntlr.HasAccessToInfo(attackingPlayer, ItemInfoID.Owner)) {
             return false;
         }
-        return Owner.IsEnemyOf(player);
+        return IsWarAttackByAllowed(attackingPlayer) || IsColdWarAttackByAllowed(attackingPlayer);
+    }
+
+    public bool IsColdWarAttackByAllowed(Player attackingPlayer) {
+        if (!InfoAccessCntlr.HasAccessToInfo(attackingPlayer, ItemInfoID.Owner)) {
+            return false;
+        }
+        return Owner.IsRelationshipWith(attackingPlayer, DiplomaticRelationship.ColdWar);   // TODO add test for owner's territory
+    }
+
+    public bool IsWarAttackByAllowed(Player attackingPlayer) {
+        if (!InfoAccessCntlr.HasAccessToInfo(attackingPlayer, ItemInfoID.Owner)) {
+            return false;
+        }
+        return Owner.IsAtWarWith(attackingPlayer);
     }
 
     #endregion

@@ -139,10 +139,10 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         if (!_isNameInitialized) {
             InitializeName();
         }
-        D.Assert(Target == null);
-        D.Assert(Weapon == null);
-        D.Assert(__instanceID == Constants.Zero);
-        D.Assert(_range == Constants.ZeroF);
+        D.AssertNull(Target);
+        D.AssertNull(Weapon);
+        D.AssertDefault(__instanceID);
+        D.AssertDefault(_range);
         D.Assert(!IsOperational);
         __instanceID = __InstanceCount;
         __InstanceCount++;
@@ -158,7 +158,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
 
     private void OnDeath() {
         if (deathOneShot != null) {
-            deathOneShot(this, new EventArgs());
+            deathOneShot(this, EventArgs.Empty);
             deathOneShot = null;
         }
     }

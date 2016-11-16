@@ -44,7 +44,8 @@ public class ExampleEditor : Editor {
     //        {
     //            NGUIEditorTools.DrawProperty("Delay Build", serializedObject, "_toDelayBuild", GUILayout.Width(100F));
     //            NGUIEditorTools.SetLabelWidth(40F);
-    //            NGUIEditorTools.DrawProperty("Hours", serializedObject, "_hourDelay", GUILayout.MinWidth(40F));
+    //            NGUIEditorTools.DrawProperty("Hours", serializedObject, "_hourDelay", GUILayout.MaxWidth(40F));
+    // Hours property will be 80 pixels in width - 40 for label, and 40 for input field
     //        }
     //        GUILayout.EndHorizontal();
 

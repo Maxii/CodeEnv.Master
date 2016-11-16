@@ -46,7 +46,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
         get {
             bool result = false;
             if (IsDiscernibleToUser) {  // effectively IsDiscernibleToUser && IsPrimaryMeshInMainCameraLOS
-                D.Assert(DisplayMgr != null);
+                D.AssertNotNull(DisplayMgr);
                 result = DisplayMgr.IsPrimaryMeshInMainCameraLOS;
             }
             //D.Log(ShowDebugLog, "{0}.IsVisualDetailDiscernibleToUser = {1}. IsDiscernible = {2}.", FullName, result, IsDiscernibleToUser);
@@ -89,7 +89,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     /// </summary>
     protected virtual void InitializeOnFirstDiscernibleToUser() {
         D.Assert(!_hasInitOnFirstDiscernibleToUserRun);
-        D.Assert(IsOperational, "{0}.InitializeOnFirstDiscernibleToUser() called when not operational.", FullName);
+        D.Assert(IsOperational);
         _hudManager = InitializeHudManager();
 
         DisplayMgr = MakeDisplayManagerInstance();
@@ -232,10 +232,10 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
 
     protected void StartEffectSequence(EffectSequenceID effectSeqID) {
         OnEffectSeqStarting(effectSeqID);
-        D.Log(ShowDebugLog, "{0} attempting to start {1} effect.", FullName, effectSeqID.GetValueName());
+        //D.Log(ShowDebugLog, "{0} attempting to start {1} effect.", FullName, effectSeqID.GetValueName());
         if (IsVisualDetailDiscernibleToUser) {
             D.Log(ShowDebugLog, "{0} visual detail is discernible so starting {1} effect.", FullName, effectSeqID.GetValueName());
-            D.Assert(EffectsMgr != null);   // if DisplayMgr is initialized, so is EffectsMgr
+            D.AssertNotNull(EffectsMgr);   // if DisplayMgr is initialized, so is EffectsMgr
             EffectsMgr.StartEffect(effectSeqID);
         }
         else {

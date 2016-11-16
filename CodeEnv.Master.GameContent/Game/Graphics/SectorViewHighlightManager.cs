@@ -37,7 +37,7 @@ namespace CodeEnv.Master.GameContent {
         public override void Show(bool toShow) {
             //D.Log("{0}.Show({1}) called.", Name, toShow);
             if (toShow) {
-                D.Assert(!IsHighlightShowing, "{0} highlight should not be showing.", Name);
+                D.Assert(!IsHighlightShowing, Name);
                 _sectorViewHighlight = References.MyPoolManager.SpawnHighlight(_trackedClientTransform.position);
                 _sectorViewHighlight.SetTarget(_trackedClientItem);
                 _sectorViewHighlight.Color = TempGameValues.SectorHighlightColor;
@@ -46,7 +46,7 @@ namespace CodeEnv.Master.GameContent {
                 _sectorViewHighlight.Show(true);
             }
             else {
-                D.Assert(IsHighlightShowing, "{0} highlight should be showing.", Name);
+                D.Assert(IsHighlightShowing, Name);
                 _sectorViewHighlight.Show(false);
                 References.MyPoolManager.DespawnHighlight(_sectorViewHighlight.transform);
                 _sectorViewHighlight = null;

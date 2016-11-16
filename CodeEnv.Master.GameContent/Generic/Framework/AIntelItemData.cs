@@ -63,7 +63,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private AIntel InitializeIntelState(Player player) {
-            bool isCoverageComprehensive = DebugSettings.Instance.AllIntelCoverageComprehensive || Owner == player;
+            bool isCoverageComprehensive = References.DebugControls.IsAllIntelCoverageComprehensive || Owner == player;
             // 8.1.16 OPTIMIZE alliance test may not be needed. Currently, new items created in runtime test for this in their creators
             isCoverageComprehensive = isCoverageComprehensive || Owner.IsRelationshipWith(player, DiplomaticRelationship.Alliance);
             var coverage = isCoverageComprehensive ? IntelCoverage.Comprehensive : DefaultStartingIntelCoverage;
@@ -95,12 +95,12 @@ namespace CodeEnv.Master.GameContent {
             var playerIntel = GetIntel(player);
             if (playerIntel.IsCoverageChangeAllowed(newCoverage)) {
                 playerIntel.CurrentCoverage = newCoverage;
-                HandleIntelCoverageChanged();
+                HandleIntelCoverageChangedFor(player);
                 OnIntelCoverageChanged(player);
                 return true;
             }
             //D.Log(ShowDebugLog, "{0} properly ignored changing {1}'s IntelCoverage from {2} to {3}.",
-            //    FullName, player.LeaderName, playerIntel.CurrentCoverage.GetValueName(), newCoverage.GetValueName());
+            //    FullName, player, playerIntel.CurrentCoverage.GetValueName(), newCoverage.GetValueName());
             return false;
         }
 
@@ -132,12 +132,13 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Hook for derived Data classes that allows them to handle a change in this item's intel coverage.
-        /// <remarks>Typically this item's data would not have anything to do when the item's IntelCoverage 
-        /// changes since data, by definition, is where full knowledge about the item is kept, independent 
-        /// of info access restrictions. Reports and interfaces play the role of 'filtering' a player's 
+        /// <remarks>Typically this item's data would not have anything to do when the item's IntelCoverage
+        /// changes since data, by definition, is where full knowledge about the item is kept, independent
+        /// of info access restrictions. Reports and interfaces play the role of 'filtering' a player's
         /// access to this knowledge stored in data by using the item's InfoAccessController.</remarks>
         /// </summary>
-        protected virtual void HandleIntelCoverageChanged() { }
+        /// <param name="player">The player.</param>
+        protected virtual void HandleIntelCoverageChangedFor(Player player) { }
 
         private void OnIntelCoverageChanged(Player player) {
             if (intelCoverageChanged != null) {

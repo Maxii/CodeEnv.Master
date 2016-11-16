@@ -45,8 +45,14 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
     /// Get or add an event listener to the specified game object.
     /// </summary>
     public static CameraLosChangedListener Get(GameObject go) {
+
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
         CameraLosChangedListener listener = go.GetComponent<CameraLosChangedListener>();
-        if (listener == null) listener = go.AddComponent<CameraLosChangedListener>();
+        Profiler.EndSample();
+
+        if (listener == null) {
+            listener = go.AddComponent<CameraLosChangedListener>();
+        }
         return listener;
     }
 
@@ -129,7 +135,7 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
 
     private void OnInCameraLosChanged() {
         if (inCameraLosChanged != null) {
-            inCameraLosChanged(this, new EventArgs());
+            inCameraLosChanged(this, EventArgs.Empty);
         }
         else {
             D.WarnContext(this, "{0} has no subscriber. InCameraLOS = {1}.", Name, InCameraLOS);
@@ -162,7 +168,10 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
         _renderer.receiveShadows = false;
         D.Assert(_renderer.enabled);    // renderers do not deliver OnBecameVisible() events if not enabled
 
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
         _widget = gameObject.GetComponent<UIWidget>();
+        Profiler.EndSample();
+
         if (_widget != null) {
             _widget.onChange += CheckInvisibleMeshSize;
         }

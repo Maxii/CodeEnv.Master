@@ -97,7 +97,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
             _displayMgr = InitializeDisplayMgr();
         }
         PrepareForLaunch(target, weapon);
-        D.Assert((Layers)gameObject.layer == Layers.Projectiles, "{0} is not on Layer {1}.".Inject(Name, Layers.Projectiles.GetValueName()));
+        D.AssertEqual(Layers.Projectiles, (Layers)gameObject.layer, ((Layers)gameObject.layer).GetValueName());
         _launchPosition = transform.position;
 
         _rigidbody.drag = OpenSpaceDrag * topography.GetRelativeDensity();
@@ -116,8 +116,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
 
     protected abstract AProjectileDisplayManager MakeDisplayMgr();
 
-    protected sealed override void Update() {   // OPTIMIZE a call to all projectiles to check progress could be done centrally
-        base.Update();
+    void Update() {   // OPTIMIZE a call to all projectiles to check progress could be done centrally
         if (_checkProgressCounter >= CheckProgressCounterThreshold) {
             CheckProgress();
             _checkProgressCounter = Constants.Zero;
@@ -155,7 +154,11 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         //D.Log("{0} distance to intended target on collision: {1}.", Name, Vector3.Distance(transform.position, Target.Position));
         bool isImpactEffectRunning = false;
         var impactedGo = collision.collider.gameObject;
+
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
         var impactedTarget = impactedGo.GetComponent<IElementAttackable>();
+        Profiler.EndSample();
+
         if (impactedTarget != null) {
             // hit an attackableTarget
             //D.Log("{0} collided with {1}.", Name, impactedTarget.FullName);
@@ -182,12 +185,15 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
                     ShowImpactEffects(impactEffectLocation);
                     isImpactEffectRunning = true;
                 }
+                if (impactedTarget.IsVisualDetailDiscernibleToUser || DebugControls.Instance.AlwaysHearWeaponImpacts) {
+                    HearImpactEffect(contactPoint.point);
+                }
             }
         }
         else {
             // if not an attackableTarget, then??   IMPROVE
             var otherOrdnance = impactedGo.GetComponent<AOrdnance>();
-            D.Assert(otherOrdnance == null);  // should not be able to impact another piece of ordnance as both are on Ordnance layer
+            D.AssertNull(otherOrdnance);  // should not be able to impact another piece of ordnance as both are on Ordnance layer
         }
 
         if (IsOperational && !isImpactEffectRunning) {
@@ -207,7 +213,11 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     /// <param name="contactPoint">The contact point.</param>
     /// <returns></returns>
     private bool TryApplyImpactForce(GameObject impactedGo, ContactPoint contactPoint) {
+
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
         var impactedTargetRigidbody = impactedGo.GetComponent<Rigidbody>();
+        Profiler.EndSample();
+
         if (impactedTargetRigidbody != null && !impactedTargetRigidbody.isKinematic) {
             // target has a rigidbody so apply impact force
             var force = GetForceOfImpact();
@@ -241,6 +251,8 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         _rigidbody.velocity = Vector3.zero;     // freeze movement including any bounce or deflection as a result of the collision
     }
 
+    protected abstract void HearImpactEffect(Vector3 position);
+
     /// <summary>
     /// Returns the force of impact on collision.
     /// Virtual to allow override if I come up with a better equation.
@@ -257,18 +269,18 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
 
     protected override void OnSpawned() {
         base.OnSpawned();
-        D.Assert(_displayMgr != null);
-        D.Assert(_rigidbody != null);
-        D.Assert(_collider != null);
-        D.Assert(!_collider.enabled, "{0} collider should be disabled when despawned.", FullName);
-        D.Assert(_launchPosition == Vector3.zero);
+        // 11.3.16 First Spawn occurs before first Launch is called
+        ////D.Assert(_displayMgr != null);    
+        D.AssertNotNull(_rigidbody);
+        D.AssertNotNull(_collider);
+        D.Assert(!_collider.enabled, FullName);
+        D.Assert(_launchPosition == default(Vector3));  //D.AssertDefault(_launchPosition);
         D.Assert(!_hasWeaponFired);
-        D.Assert(_checkProgressCounter == Constants.Zero);
+        D.AssertDefault(_checkProgressCounter);
         _collider.enabled = true;
     }
 
-    protected sealed override void OnCollisionEnter(Collision collision) {
-        base.OnCollisionEnter(collision);
+    void OnCollisionEnter(Collision collision) {
         HandleCollision(collision);
     }
 
@@ -313,7 +325,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
 
     private void AdjustForGameSpeed(float gameSpeedChangeRatio) {
         if (_gameMgr.IsPaused) {
-            D.Assert(_isVelocityToRestoreAfterPauseRecorded, "{0} has not yet recorded VelocityToRestoreAfterPause.", Name);
+            D.Assert(_isVelocityToRestoreAfterPauseRecorded, Name);
             _velocityToRestoreAfterPause *= gameSpeedChangeRatio;
         }
         else {

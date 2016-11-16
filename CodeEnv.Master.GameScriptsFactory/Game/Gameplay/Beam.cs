@@ -57,6 +57,12 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
 
     private bool ToShowImpactEffects { get { return IsBeamEndLocationInCameraLos && _isCurrentImpact; } }
 
+    private bool ToHearImpactEffect {
+        get {
+            return _isCurrentImpact && (IsBeamEndLocationInCameraLos || DebugControls.Instance.AlwaysHearWeaponImpacts);
+        }
+    }
+
     protected new BeamProjector Weapon { get { return base.Weapon as BeamProjector; } }
 
     private bool IsBeamEndLocationInCameraLos { get { return _beamEndListener != null && _beamEndListener.InCameraLOS; } }
@@ -128,17 +134,17 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     }
 
     private void ValidateEffects() {
-        D.Assert(_muzzleEffect != null, "{0} has no muzzle effect.".Inject(Name));
+        D.AssertNotNull(_muzzleEffect, Name);
         D.Assert(!_muzzleEffect.playOnAwake);
         D.Assert(_muzzleEffect.loop);
-        D.Assert(_impactEffect != null, "{0} has no impact effect.".Inject(Name));
+        D.AssertNotNull(_impactEffect, Name);
         D.Assert(!_impactEffect.playOnAwake);
         D.Assert(_impactEffect.loop);
     }
 
     public void Launch(IElementAttackable target, AWeapon weapon) {
         PrepareForLaunch(target, weapon);
-        D.Assert((Layers)gameObject.layer == Layers.TransparentFX, "{0} is not on Layer {1}.", Name, Layers.TransparentFX.GetValueName());
+        D.AssertEqual(Layers.TransparentFX, (Layers)gameObject.layer, ((Layers)gameObject.layer).GetValueName());
 
         _operatingEffectRenderer.SetPosition(index: 0, position: Vector3.zero);
         AdjustHeadingForInaccuracy();
@@ -165,8 +171,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         //D.Log("{0} has incorporated {1:0.0} degrees of inaccuracy into its trajectory.", Name, Quaternion.Angle(initialRotation, transform.rotation));
     }
 
-    protected override void Update() {
-        base.Update();
+    void Update() {
         var deltaTimeInHours = _gameTime.DeltaTime * _gameTime.GameSpeedAdjustedHoursPerSecond;
         OperateBeam(deltaTimeInHours);
         _cumHoursOperating += deltaTimeInHours;
@@ -195,7 +200,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         if (ToShowOperatingEffects) {
             PrepareBeamForShowing(impactInfo);
         }
-        AssessShowImpactEffects();
+        AssessImpactEffects();
     }
 
     private void PrepareBeamForShowing(RaycastHit impactInfo) {
@@ -219,14 +224,17 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         var impactedGo = impactInfo.collider.gameObject;
         if (impactedGo.layer == (int)Layers.Shields) {
             var shield = impactedGo.GetComponent<Shield>();
-            D.Assert(shield != null);
+            D.AssertNotNull(shield);
             AssessApplyDamage();    // hit a shield so apply cumDamage to previous valid target, if any
             HandleShieldImpact(shield, deltaTimeInHours);
             // for now, no impact force will be applied to the shield's parentElement
             return;
         }
 
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
         var impactedTarget = impactedGo.GetComponent<IElementAttackable>();
+        Profiler.EndSample();
+
         if (impactedTarget != null) {
             // hit an attackableTarget
             //D.Log("{0} has hit {1} {2}.", Name, typeof(IElementAttackable).Name, impactedTarget.DisplayName);
@@ -237,7 +245,11 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
             _impactedTarget = impactedTarget;
 
             float percentOfBeamDuration = deltaTimeInHours / Weapon.Duration;    // the percentage of the beam's duration that deltaTime represents
+
+            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
             var impactedTargetRigidbody = impactedGo.GetComponent<Rigidbody>();
+            Profiler.EndSample();
+
             if (impactedTargetRigidbody != null && !impactedTargetRigidbody.isKinematic) {
                 // target has a normal rigidbody so apply impact force
                 float forceMagnitude = DamagePotential.Total * percentOfBeamDuration;
@@ -264,19 +276,19 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
 
     protected override void OnSpawned() {
         base.OnSpawned();
-        D.Assert(_beamEnd != null);
-        D.Assert(_beamEndListener != null);
-        D.Assert(_operatingEffectRenderer != null);
-        D.Assert(_operatingEffectRenderer.enabled == false);
-        D.Assert(_cumHoursOperating == Constants.ZeroF);
-        D.Assert(_cumHoursOfImpactOnImpactedTarget == Constants.ZeroF);
-        D.Assert(_impactedTarget == null);
-        D.Assert(_isCurrentImpact == false);
-        D.Assert(_isIntendedTargetHit == false);
-        D.Assert(_isInterdicted == false);
-        D.Assert(_animateOperatingEffectJob == null);
-        D.Assert(_impactLocation == Vector3.zero);
-        D.Assert(enabled == false);
+        D.AssertNotNull(_beamEnd);
+        D.AssertNotNull(_beamEndListener);
+        D.AssertNotNull(_operatingEffectRenderer);
+        D.Assert(!_operatingEffectRenderer.enabled);
+        D.AssertDefault(_cumHoursOperating);
+        D.AssertDefault(_cumHoursOfImpactOnImpactedTarget);
+        D.AssertNull(_impactedTarget);
+        D.Assert(!_isCurrentImpact);
+        D.Assert(!_isIntendedTargetHit);
+        D.Assert(!_isInterdicted);
+        D.AssertNull(_animateOperatingEffectJob);
+        D.Assert(_impactLocation == default(Vector3));    //D.AssertDefault(_impactLocation);
+        D.Assert(!enabled);
     }
 
     private void WeaponIsOperationalChangedEventHandler(object sender, EventArgs e) {
@@ -290,13 +302,13 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
 
     private void BeamEndInCameraLosChangedEventHandler(object sender, EventArgs e) {
         AssessShowOperatingEffects();
-        AssessShowImpactEffects();
+        AssessImpactEffects();
     }
 
     protected override void IsWeaponDiscernibleToUserPropChangedHandler() {
         base.IsWeaponDiscernibleToUserPropChangedHandler();
         AssessShowOperatingEffects();
-        AssessShowImpactEffects();
+        AssessImpactEffects();
     }
 
     protected override void IsPausedPropChangedHandler() {
@@ -331,7 +343,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         //D.Log("{0}.AssessApplyDamage() called.", Name);
         if (_impactedTarget == null) {
             // no target that can take damage has been hit, so _cumImpactTime should be zero
-            D.Assert(_cumHoursOfImpactOnImpactedTarget == Constants.ZeroF);
+            D.AssertEqual(Constants.ZeroF, _cumHoursOfImpactOnImpactedTarget);
             return;
         }
         if (!_impactedTarget.IsOperational) {
@@ -410,17 +422,20 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         }
     }
 
-    private void AssessShowImpactEffects() {
-        //D.Log("{0}.AssessShowImpactEffects() called. ToShowEffects: {1}, IsImpact: {2}.", Name, ToShowEffects, _isImpact);
+    private void AssessImpactEffects() {
+        //D.Log("{0}.AssessImpactEffects() called. ToShowEffects: {1}, IsImpact: {2}.", Name, ToShowEffects, _isImpact);
         // beam impactEffects are not destroyed when used
-        var toShow = ToShowImpactEffects;
-        if (toShow) {
+        if (ToShowImpactEffects) {
             ShowImpactEffects(_impactLocation);
         }
         else {
             if (_impactEffect.isPlaying) {
                 _impactEffect.Stop();
             }
+        }
+
+        if (ToHearImpactEffect) {
+            HearImpactEffect(_impactLocation);
         }
     }
 
@@ -434,8 +449,10 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         _impactEffect.transform.position = position;
         _impactEffect.transform.rotation = rotation;
         _impactEffect.Play();
+    }
 
-        //TODO add ImpactAudioEffect
+    private void HearImpactEffect(Vector3 position) {
+        //TODO add ImpactAudioEffect?
     }
 
     /// <summary>

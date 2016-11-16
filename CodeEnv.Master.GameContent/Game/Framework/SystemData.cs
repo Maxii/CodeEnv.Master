@@ -51,7 +51,7 @@ namespace CodeEnv.Master.GameContent {
         public StarData StarData {
             get { return _starData; }
             set {
-                D.Assert(_starData == null, "{0}'s StarData can only be set once.", FullName);
+                D.AssertNull(_starData);
                 SetProperty<StarData>(ref _starData, value, "StarData", StarDataPropSetHandler);
             }
         }
@@ -144,7 +144,7 @@ namespace CodeEnv.Master.GameContent {
         public void RemovePlanetoidData(PlanetoidData data) {
             D.Assert(IsOperational);
             bool isRemoved = _allPlanetoidData.Remove(data);
-            D.Assert(isRemoved, "Attempted to remove {0}.{1} that is not present.", data.FullName, typeof(PlanetoidData));
+            D.Assert(isRemoved, data.FullName);
 
             UnsubscribeToPlanetoidDataValueChanges(data);
             RecalcAllProperties();
@@ -324,7 +324,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void UnsubscribeToSettlementDataValueChanges() {
             if (SettlementData != null) {
-                D.Assert(_settlementSubscriptions != null);
+                D.AssertNotNull(_settlementSubscriptions);
                 _settlementSubscriptions.ForAll(d => d.Dispose());
                 _settlementSubscriptions.Clear();
                 SettlementData.intelCoverageChanged -= SettlementIntelCoverageChangedEventHandler;

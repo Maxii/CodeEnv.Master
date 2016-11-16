@@ -47,6 +47,8 @@ public class GuiPlayerSpeciesPopupList : AGuiMenuPopupList<SpeciesGuiSelection> 
     /// </summary>
     public SpeciesGuiSelection SelectedSpecies { get { return Enums<SpeciesGuiSelection>.Parse(SelectedValue); } }
 
+    protected override string TooltipContent { get { return "Select the species of this player"; } }
+
     protected override bool IncludesRandom { get { return true; } }
 
     protected override string[] Choices { get { return Enums<SpeciesGuiSelection>.GetNames(excludeDefault: true); } }

@@ -58,7 +58,7 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
     public ACtxControl_User(GameObject ctxObjectGO, int uniqueSubmenusReqd, MenuPositionMode menuPosition)
         : base(ctxObjectGO, uniqueSubmenusReqd, menuPosition) {
         _userKnowledge = GameManager.Instance.UserAIManager.Knowledge;
-        D.Assert(_userKnowledge != null);
+        D.AssertNotNull(_userKnowledge);
     }
 
     protected override void PopulateMenu_UserMenuOperatorIsSelected() {
@@ -78,7 +78,7 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
             }
             //D.Log("{0}.{1} disabled state is {2}.", GetType().Name, topLevelItem.text, topLevelItem.isDisabled);
             if (!topLevelItem.isSubmenu) {
-                D.Assert(topLevelItem.id != -1);
+                D.AssertNotEqual(Constants.MinusOne, topLevelItem.id);
                 topLevelItem.id = _nextAvailableItemId;
                 _directiveLookup.Add(topLevelItem.id, directive);
                 _nextAvailableItemId++;

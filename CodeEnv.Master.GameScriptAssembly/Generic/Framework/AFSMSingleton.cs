@@ -58,7 +58,9 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
             return;
         }
         string callingMethodName = new System.Diagnostics.StackFrame(1).GetMethod().Name;
-        D.Warn(!callingMethodName.StartsWith("Upon"), "Calling method name: {0) should start with 'Upon'.", callingMethodName);
+        if (!callingMethodName.StartsWith("Upon")) {
+            D.Warn("Calling method name: {0) should start with 'Upon'.", callingMethodName);
+        }
         var message = CurrentState.ToString() + Constants.Underscore + callingMethodName;
         D.Log("{0}.RelayToCurrentState content: {1}.", GetType().Name, message);
         SendMessageEx(message, param);
@@ -270,6 +272,7 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
     public class State {
 
         public Action DoUpdate = DoNothing;
+        [Obsolete]
         public Action DoOccasionalUpdate = DoNothing;
         public Action DoLateUpdate = DoNothing;
         public Action DoFixedUpdate = DoNothing;
@@ -475,7 +478,7 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
     private void GetStateMethods() {
         //Now we need to configure all of the methods
         state.DoUpdate = ConfigureDelegate<Action>("Update", DoNothing);
-        state.DoOccasionalUpdate = ConfigureDelegate<Action>("OccasionalUpdate", DoNothing);
+        ////state.DoOccasionalUpdate = ConfigureDelegate<Action>("OccasionalUpdate", DoNothing);
         state.DoLateUpdate = ConfigureDelegate<Action>("LateUpdate", DoNothing);
         state.DoFixedUpdate = ConfigureDelegate<Action>("FixedUpdate", DoNothing);
         state.DoOnTriggerEnter = ConfigureDelegate<Action<Collider>>("OnTriggerEnter", DoNothingCollider);
@@ -573,9 +576,8 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
 
     #region Pass On Methods
 
-    protected override void Update() {
-        base.Update();
-        state.DoUpdate();
+    protected virtual void Update() {   // GameMgr uses Update to keep GameTime current
+        state.DoUpdate();               // MainCameraControl does not. It uses DoUpdate, DoLateUpdate and DoFixedUpdate
     }
 
     [Obsolete]
@@ -584,43 +586,37 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
         state.DoOccasionalUpdate();
     }
 
-    protected override void LateUpdate() {
-        base.LateUpdate();
+    void LateUpdate() {
         state.DoLateUpdate();
     }
 
-    protected override void FixedUpdate() {
-        base.FixedUpdate();
+    void FixedUpdate() {
         state.DoFixedUpdate();
     }
 
-    protected override void OnTriggerEnter(Collider other) {
-        base.OnTriggerEnter(other);
-        state.DoOnTriggerEnter(other);
-    }
+    //void OnTriggerEnter(Collider other) {
+    //    state.DoOnTriggerEnter(other);
+    //}
 
-    protected override void OnTriggerExit(Collider other) {
-        base.OnTriggerExit(other);
-        state.DoOnTriggerExit(other);
-    }
+    //void OnTriggerExit(Collider other) {
+    //    state.DoOnTriggerExit(other);
+    //}
 
-    void OnTriggerStay(Collider other) {
-        state.DoOnTriggerStay(other);
-    }
+    //void OnTriggerStay(Collider other) {
+    //    state.DoOnTriggerStay(other);
+    //}
 
-    protected override void OnCollisionEnter(Collision collision) {
-        base.OnCollisionEnter(collision);
-        state.DoOnCollisionEnter(collision);
-    }
+    //void OnCollisionEnter(Collision col) {
+    //    state.DoOnCollisionEnter(col);
+    //}
 
-    protected override void OnCollisionExit(Collision collision) {
-        base.OnCollisionExit(collision);
-        state.DoOnCollisionExit(collision);
-    }
+    //void OnCollisionExit(Collision col) {
+    //    state.DoOnCollisionExit(col);
+    //}
 
-    void OnCollisionStay(Collision collision) {
-        state.DoOnCollisionStay(collision);
-    }
+    //void OnCollisionStay(Collision col) {
+    //    state.DoOnCollisionStay(col);
+    //}
 
     ////void OnHover(bool isOver) {
     ////    state.DoOnHover(isOver);

@@ -84,7 +84,7 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
     private void OnDespawned() {
         //D.Log("{0}.OnDespawned() called.", FullName);
         StationInfo = default(FormationStationSlotInfo);
-        D.Assert(AssignedShip == null);
+        D.AssertNull(AssignedShip);
         CleanupDebugShowFleetFormationStation();
     }
 

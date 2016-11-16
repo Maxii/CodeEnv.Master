@@ -49,7 +49,7 @@ namespace CodeEnv.Master.GameContent {
         public ShipHullEquipment(ShipHullStat stat, string name = null) : base(stat, name) { }
 
         protected override void HullPropSetHandler() {
-            D.Assert(Hull.HullCategory == HullCategory);
+            D.AssertEqual(Hull.HullCategory, HullCategory);
         }
 
         public override string ToString() {

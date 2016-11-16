@@ -28,6 +28,8 @@ namespace CodeEnv.Master.GameContent {
     /// <typeparam name="ElementHullCategoryType">The type of ElementCategory the Unit is composed of.</typeparam>
     public abstract class AUnitComposition<ElementHullCategoryType> where ElementHullCategoryType : struct {
 
+        private static StringBuilder _stringBuilder = new StringBuilder();
+
         private IDictionary<ElementHullCategoryType, int> _categoryCountLookup;
 
         /// <summary>
@@ -71,19 +73,19 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private string ConstructStringRepresentation() {
-            var sb = new StringBuilder();
+            _stringBuilder.Clear();
             var uniqueCategories = _categoryCountLookup.Keys.ToList();
             foreach (var cat in uniqueCategories) {
                 int count = _categoryCountLookup[cat];
-                sb.AppendFormat("{0}(", GetCategoryDescription(cat));
-                sb.AppendFormat(Constants.FormatInt_1DMin, count);
+                _stringBuilder.AppendFormat("{0}(", GetCategoryDescription(cat));
+                _stringBuilder.AppendFormat(Constants.FormatInt_1DMin, count);
                 if (!cat.Equals(uniqueCategories.First()) && !cat.Equals(uniqueCategories.Last())) {
-                    sb.AppendFormat("), ");
+                    _stringBuilder.AppendFormat("), ");
                     continue;
                 }
-                sb.Append(")");
+                _stringBuilder.Append(")");
             }
-            return sb.ToString();
+            return _stringBuilder.ToString();
         }
 
         protected abstract string GetCategoryDescription(ElementHullCategoryType category);

@@ -69,13 +69,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         return DebugControls.Instance.ShowBaseCmdDebugLogs;
     }
 
-    protected override void InitializeOnData() {
-        base.InitializeOnData();
-        CurrentState = BaseState.None;
-    }
-
     protected override ICtxControl InitializeContextMenu(Player owner) {
-        D.Assert(owner != TempGameValues.NoPlayer);
+        D.AssertNotEqual(TempGameValues.NoPlayer, owner);
         return owner.IsUser ? new BaseCtxControl_User(this) as ICtxControl : new BaseCtxControl_AI(this);
     }
 
@@ -101,15 +96,15 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     public override void FinalInitialize() {
         base.FinalInitialize();
-        // 7.11.16 Moved from CommenceOperations as need to be Idling to receive initial events once sensors
-        // are operational. Events include initial discovery of players which result in Relationship changes
-        CurrentState = BaseState.Idling;
+        CurrentState = BaseState.FinalInitialize;   //= BaseState.Idling;
     }
 
     #endregion
 
     public override void CommenceOperations() {
         base.CommenceOperations();
+        CurrentState = BaseState.Idling;
+        AssessAlertStatus();
     }
 
     /// <summary>
@@ -171,7 +166,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
                 }
             }
         }
-        D.Assert(bestElement != null);
+        D.AssertNotNull(bestElement);
         // IMPROVE bestScore algorithm. Include large defense and small offense criteria as will be located in HQ formation slot (usually in center)
         // Set CombatStance to Defensive? - will entrench rather than pursue targets
         return bestElement as FacilityItem;
@@ -198,6 +193,13 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected abstract void ConnectHighOrbitRigidbodyToShipOrbitJoint(FixedJoint shipOrbitJoint);
 
     #region Event and Property Change Handlers
+
+    protected sealed override void HandleEnemyTargetsInSensorRangeChanged() {
+        if (CurrentState == BaseState.FinalInitialize) {
+            return;
+        }
+        AssessAlertStatus();
+    }
 
     protected void CurrentOrderPropChangedHandler() {
         HandleNewOrder();
@@ -260,17 +262,22 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         get { return base.LastState != null ? (BaseState)base.LastState : default(BaseState); }
     }
 
-    #region None
+    #region FinalInitialize
 
-    protected void None_UponPreconfigureState() {
+    protected void FinalInitialize_UponPreconfigureState() {
         LogEvent();
     }
 
-    protected void None_EnterState() {
+    protected void FinalInitialize_EnterState() {
         LogEvent();
     }
 
-    protected void None_ExitState() {
+    protected void FinalInitialize_UponRelationsChanged(Player chgdRelationsPlayer) {
+        LogEvent();
+        // can be received when activation of sensors immediately finds another player
+    }
+
+    protected void FinalInitialize_ExitState() {
         LogEvent();
     }
 
@@ -280,13 +287,13 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void Idling_UponPreconfigureState() {
         LogEvent();
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
+        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
     }
 
     protected IEnumerator Idling_EnterState() {
         LogEvent();
 
-        IsAvailable = true; // 10.3.16 this can instantly generate a new Order (and thus a state change). Accordingly,  this EnterState
+        IsAvailable = true; // 10.3.16 this can instantly generate a new Order (and thus a state change). Accordingly, this EnterState
                             // cannot return void as that causes the FSM to fail its 'no state change from void EnterState' test.
         yield return null;
     }
@@ -301,7 +308,12 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         // TODO
     }
 
-    // No need for FsmTgt-related event handlers as there is no _fsmTgt
+    // No need for _fsmTgt-related event handlers as there is no _fsmTgt
+
+    protected void Idling_UponEnemyDetected() {
+        LogEvent();
+        // TODO
+    }
 
     protected void Idling_UponSubordinateElementDeath(AUnitElementItem deadSubordinateElement) {
         LogEvent();
@@ -327,7 +339,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         if (_fsmTgt != null) {
             D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", FullName, _fsmTgt.FullName);
         }
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
+        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
 
         IUnitAttackable attackTgt = CurrentOrder.Target;
         _fsmTgt = attackTgt;
@@ -378,8 +390,15 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void ExecuteAttackOrder_UponFsmTgtDeath(IMortalItem_Ltd deadFsmTgt) {
         LogEvent();
-        D.Assert(_fsmTgt == deadFsmTgt, "{0}.target {1} is not dead target {2}.".Inject(FullName, _fsmTgt.FullName, deadFsmTgt.FullName));
+        if (_fsmTgt != deadFsmTgt) {
+            D.Error("{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadFsmTgt.FullName);
+        }
         // TODO Notify Superiors of success - unit target death
+    }
+
+    protected void ExecuteAttackOrder_UponEnemyDetected() {
+        LogEvent();
+        // TODO
     }
 
     protected void ExecuteAttackOrder_UponDeath() {
@@ -454,7 +473,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void Dead_UponPreconfigureState() {
         LogEvent();
-        D.Assert(_orderFailureCause == UnitItemOrderFailureCause.None, "{0} _orderFailureCause {1} should not be assigned.", FullName, _orderFailureCause.GetValueName());
+        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
     }
 
     protected void Dead_EnterState() {
@@ -468,7 +487,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void Dead_UponEffectSequenceFinished(EffectSequenceID effectSeqID) {
         LogEvent();
-        D.Assert(effectSeqID == EffectSequenceID.Dying);
+        D.AssertEqual(EffectSequenceID.Dying, effectSeqID);
         DestroyMe(onCompletion: () => DestroyApplicableParents(5F));  // HACK long wait so last element can play death effect
     }
 
@@ -535,6 +554,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     public enum BaseState {
 
         None,
+
+        FinalInitialize,
+
         Idling,
         ExecuteAttackOrder,
         //Attacking,
@@ -595,14 +617,16 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
             return;
         }
         if (IsInCloseOrbit(ship)) {
-            D.Assert(_closeOrbitSimulator != null);
+            D.AssertNotNull(_closeOrbitSimulator);
             var isRemoved = _shipsInCloseOrbit.Remove(ship);
             D.Assert(isRemoved);
             D.Log("{0} has left close orbit around {1}.", ship.FullName, FullName);
             float shipDistance = Vector3.Distance(ship.Position, Position);
             float minOutsideOfOrbitCaptureRadius = CloseOrbitOuterRadius - ship.CollisionDetectionZoneRadius_Debug;
-            D.Warn(shipDistance > minOutsideOfOrbitCaptureRadius, "{0} is leaving orbit of {1} but is not within {2:0.0000}. Ship's current orbit distance is {3:0.0000}.",
-                ship.FullName, FullName, minOutsideOfOrbitCaptureRadius, shipDistance);
+            if (shipDistance > minOutsideOfOrbitCaptureRadius) {
+                D.Warn("{0} is leaving orbit of {1} but is not within {2:0.0000}. Ship's current orbit distance is {3:0.0000}.",
+                    ship.FullName, FullName, minOutsideOfOrbitCaptureRadius, shipDistance);
+            }
             if (_shipsInCloseOrbit.Count == Constants.Zero) {
                 // Choose either to deactivate the OrbitSimulator or destroy it, but not both
                 CloseOrbitSimulator.IsActivated = false;

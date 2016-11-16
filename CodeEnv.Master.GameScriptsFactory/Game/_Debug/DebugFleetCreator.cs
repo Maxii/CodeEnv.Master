@@ -133,7 +133,7 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
                 element.transform.position = transform.position;
                 _elements.Add(element);
             }
-            D.Assert(designs.Count == 0);
+            D.AssertEqual(Constants.Zero, designs.Count);
         }
         else {
             foreach (var designName in Configuration.ElementDesignNames) {
@@ -279,10 +279,10 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
         LogEvent();
         Player fleetOwner = Owner;
         var fleetOwnerKnowledge = _gameMgr.GetAIManagerFor(fleetOwner).Knowledge;
-        List<IUnitAttackable> attackTgts = fleetOwnerKnowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsAttackingAllowedBy(fleetOwner)).ToList();
-        attackTgts.AddRange(fleetOwnerKnowledge.Starbases.Cast<IUnitAttackable>().Where(sb => sb.IsAttackingAllowedBy(fleetOwner)));
-        attackTgts.AddRange(fleetOwnerKnowledge.Settlements.Cast<IUnitAttackable>().Where(s => s.IsAttackingAllowedBy(fleetOwner)));
-        attackTgts.AddRange(fleetOwnerKnowledge.Planets.Cast<IUnitAttackable>().Where(p => p.IsAttackingAllowedBy(fleetOwner)));
+        List<IUnitAttackable> attackTgts = fleetOwnerKnowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsAttackByAllowed(fleetOwner)).ToList();
+        attackTgts.AddRange(fleetOwnerKnowledge.Starbases.Cast<IUnitAttackable>().Where(sb => sb.IsAttackByAllowed(fleetOwner)));
+        attackTgts.AddRange(fleetOwnerKnowledge.Settlements.Cast<IUnitAttackable>().Where(s => s.IsAttackByAllowed(fleetOwner)));
+        attackTgts.AddRange(fleetOwnerKnowledge.Planets.Cast<IUnitAttackable>().Where(p => p.IsAttackByAllowed(fleetOwner)));
         if (attackTgts.IsNullOrEmpty()) {
             D.Log("{0} can find no AttackTargets of any sort. Defaulting to __GetFleetUnderway().", Name);
             __GetFleetUnderway();

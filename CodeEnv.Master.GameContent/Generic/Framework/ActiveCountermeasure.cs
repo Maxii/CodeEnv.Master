@@ -148,7 +148,7 @@ namespace CodeEnv.Master.GameContent {
                 }
             }
             else {
-                // Note: Some threats going out of range may not have been qualified as targets for this CM
+                // Note: Some threats going out of range may not have been qualified as targets for this CM.
                 // Also, a qualified threat can be destroyed (goes out of range) by other CMs before it is ever added
                 // to this one, so if it is not present, it was never added to this CM because it was immediately destroyed
                 // by other CMs as it was being added to them.
@@ -173,7 +173,7 @@ namespace CodeEnv.Master.GameContent {
         /// this was a public method called by the fired ordnance.</remarks>
         /// <param name="threatFiredOn">The target fired on.</param>
         private void HandleFiringInitiated(IInterceptableOrdnance threatFiredOn) {
-            D.Assert(IsOperational, "{0} fired at {1} while not operational.".Inject(Name, threatFiredOn.FullName));
+            D.Assert(IsOperational, Name);
             D.Assert(_qualifiedThreats.Contains(threatFiredOn));
 
             _isLoaded = false;
@@ -236,7 +236,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void InitiateReloadCycle() {
             //D.Log("{0} is initiating its reload cycle. Duration: {1} hours.", Name, ReloadPeriod);
-            D.Assert(!IsReloadJobRunning, "{0}.InitiateReloadCycle() called while already Running.", Name);
+            D.Assert(!IsReloadJobRunning, Name);
             string jobName = "{0}.ReloadJob".Inject(Name);
             _reloadJob = _jobMgr.WaitForHours(ReloadPeriod, jobName, waitFinished: (jobWasKilled) => {
                 if (!jobWasKilled) {

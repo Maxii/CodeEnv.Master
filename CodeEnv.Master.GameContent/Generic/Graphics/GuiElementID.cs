@@ -81,8 +81,33 @@ namespace CodeEnv.Master.GameContent {
         AIPlayer4TeamPopupList = 59,
         AIPlayer5TeamPopupList = 60,
         AIPlayer6TeamPopupList = 61,
-        AIPlayer7TeamPopupList = 62,     // last
+        AIPlayer7TeamPopupList = 62,
 
+        UserPlayerStartLevelPopupList = 63,
+        AIPlayer1StartLevelPopupList = 64,
+        AIPlayer2StartLevelPopupList = 65,
+        AIPlayer3StartLevelPopupList = 66,
+        AIPlayer4StartLevelPopupList = 67,
+        AIPlayer5StartLevelPopupList = 68,
+        AIPlayer6StartLevelPopupList = 69,
+        AIPlayer7StartLevelPopupList = 70,
+
+        UserPlayerHomeDesirabilityPopupList = 71,
+        AIPlayer1HomeDesirabilityPopupList = 72,
+        AIPlayer2HomeDesirabilityPopupList = 73,
+        AIPlayer3HomeDesirabilityPopupList = 74,
+        AIPlayer4HomeDesirabilityPopupList = 75,
+        AIPlayer5HomeDesirabilityPopupList = 76,
+        AIPlayer6HomeDesirabilityPopupList = 77,
+        AIPlayer7HomeDesirabilityPopupList = 78,
+
+        AIPlayer1UserSeparationPopupList = 79,
+        AIPlayer2UserSeparationPopupList = 80,
+        AIPlayer3UserSeparationPopupList = 81,
+        AIPlayer4UserSeparationPopupList = 82,
+        AIPlayer5UserSeparationPopupList = 83,
+        AIPlayer6UserSeparationPopupList = 84,
+        AIPlayer7UserSeparationPopupList = 85,     // last
 
         PlayerCountPopupList = 53,
 

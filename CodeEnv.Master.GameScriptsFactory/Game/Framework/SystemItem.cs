@@ -82,7 +82,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
     public StarItem Star {
         get { return _star; }
         set {
-            D.Assert(_star == null, "{0}'s Star can only be set once.", FullName);
+            D.AssertNull(_star, FullName);
             SetProperty<StarItem>(ref _star, value, "Star", StarPropSetHandler);
         }
     }
@@ -330,7 +330,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
             AssessShowTrackingLabel();
         }
         else {
-            D.Assert(_trackingLabel != null);
+            D.AssertNotNull(_trackingLabel);
             GameUtility.DestroyIfNotNullOrAlreadyDestroyed(_trackingLabel);
             _trackingLabel = null;
         }

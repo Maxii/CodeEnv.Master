@@ -63,8 +63,7 @@ public class CollisionDetectionMonitor : AColliderMonitor {
     /// </summary>
     /// <param name="obstacleZoneCollider">The obstacle zone collider that we have encountered. 
     /// Can also be another ship's collision detection collider.</param>
-    protected override void OnTriggerEnter(Collider obstacleZoneCollider) {
-        base.OnTriggerEnter(obstacleZoneCollider);
+    void OnTriggerEnter(Collider obstacleZoneCollider) {
         if (obstacleZoneCollider == _collider) {
             D.Warn("{0} entering its own CollisionDetectionCollider?!", FullName);
             return;
@@ -83,8 +82,7 @@ public class CollisionDetectionMonitor : AColliderMonitor {
     /// </summary>
     /// <param name="obstacleZoneCollider">The obstacle zone collider that we have encountered. 
     /// Can also be another ship's collision detection collider.</param>
-    protected override void OnTriggerExit(Collider obstacleZoneCollider) {
-        base.OnTriggerExit(obstacleZoneCollider);
+    void OnTriggerExit(Collider obstacleZoneCollider) {
         if (obstacleZoneCollider == _collider) {
             D.Warn("{0} exiting its own CollisionDetectionCollider?!", FullName);
             return;
@@ -103,8 +101,9 @@ public class CollisionDetectionMonitor : AColliderMonitor {
     protected override void HandleParentItemSet() {
         base.HandleParentItemSet();
         RangeDistance = ParentItem.Radius * 2F;
-        D.Warn(RangeDistance > TempGameValues.LargestShipCollisionDetectionZoneRadius, "{0}: CollisionDetectionZoneRadius {1:0.##} > {2:0.##}.",
-            FullName, RangeDistance, TempGameValues.LargestShipCollisionDetectionZoneRadius);
+        if (RangeDistance > TempGameValues.LargestShipCollisionDetectionZoneRadius) {
+            D.Warn("{0}: CollisionDetectionZoneRadius {1:0.##} > {2:0.##}.", FullName, RangeDistance, TempGameValues.LargestShipCollisionDetectionZoneRadius);
+        }
     }
 
     protected override void HandleIsPausedChanged() {

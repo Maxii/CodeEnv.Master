@@ -38,7 +38,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="allStars">All stars.</param>
         /// <param name="allPlanetoids">All planetoids.</param>
         public UserPlayerKnowledge(IUniverseCenter_Ltd uCenter, IEnumerable<IStar_Ltd> allStars, IEnumerable<IPlanetoid_Ltd> allPlanetoids)
-            : base(References.GameManager.UserPlayer, uCenter, allStars) {
+            : base(References.GameManager.UserPlayer, uCenter, allStars, allPlanetoids) {
         }
 
         /// <summary>
@@ -57,12 +57,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="highlightablesInSector">The highlightables in sector.</param>
         /// <returns></returns>
         public bool TryGetSectorViewHighlightables(IntVector3 sectorID, out IEnumerable<ISectorViewHighlightable> highlightablesInSector) {
-            D.Assert(sectorID != default(IntVector3), "{0}: SectorID of {1} is illegal.", GetType().Name, sectorID);
+            D.AssertNotDefault(sectorID);
             List<ISectorViewHighlightable> sectorHighlightables = new List<ISectorViewHighlightable>();
             ISystem_Ltd system;
             if (TryGetSystem(sectorID, out system)) {
                 ISectorViewHighlightable sys = system as ISectorViewHighlightable;
-                D.Assert(sys != null);
+                D.AssertNotNull(sys);
                 sectorHighlightables.Add(sys);
             }
             IEnumerable<IStarbaseCmd_Ltd> starbases;

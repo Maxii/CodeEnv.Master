@@ -28,6 +28,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AUnitCmdData : AMortalItemData {
 
+        private const string FullNameFormat = "{0}_{1}";
+
         private float _unitMaxFormationRadius;
         /// <summary>
         /// The maximum radius of this Unit's current formation, independent of the number of elements currently assigned a
@@ -54,14 +56,29 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<string>(ref _parentName, value, "ParentName", ParentNamePropChangedHandler); }
         }
 
+        private string _fullName;
         public override string FullName {
-            get { return ParentName.IsNullOrEmpty() ? Name : ParentName + Constants.Underscore + Name; }
+            get {
+                if (ParentName.IsNullOrEmpty()) {
+                    return Name;
+                }
+                if (_fullName.IsNullOrEmpty()) {
+                    _fullName = FullNameFormat.Inject(ParentName, Name);
+                }
+                return _fullName;
+            }
+        }
+
+        private AlertStatus _alertStatus;
+        public AlertStatus AlertStatus {
+            get { return _alertStatus; }
+            set { SetProperty<AlertStatus>(ref _alertStatus, value, "AlertStatus", AlertStatusPropChangedHandler); }
         }
 
         private Formation _unitFormation;
         public Formation UnitFormation {
             get {
-                D.Assert(_unitFormation != Formation.None, "{0}.{1} not yet set.", FullName, typeof(Formation).Name);
+                D.AssertNotDefault((int)_unitFormation, FullName);
                 return _unitFormation;
             }
             set { SetProperty<Formation>(ref _unitFormation, value, "UnitFormation"); }
@@ -232,6 +249,15 @@ namespace CodeEnv.Master.GameContent {
 
         #region Event and Property Change Handlers
 
+        private void AlertStatusPropChangedHandler() {
+            HandleAlertStatusChanged();
+        }
+
+        private void HandleAlertStatusChanged() {
+            D.LogBold(ShowDebugLog, "{0} AlertStatus changed to {1}. Notifying Elements.", FullName, AlertStatus.GetValueName());
+            ElementsData.ForAll(eData => eData.AlertStatus = AlertStatus);
+        }
+
         protected override void HandleOwnerChanged() {
             base.HandleOwnerChanged();
             // Only Cmds can be 'taken over'
@@ -256,7 +282,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected virtual void HandleHQElementDataChanged() {
-            D.Assert(_elementsData.Contains(HQElementData), "HQ Element {0} assigned not present in {1}.".Inject(_hqElementData.FullName, FullName));
+            D.Assert(_elementsData.Contains(HQElementData), HQElementData.FullName);
             HQElementData.intelCoverageChanged += HQElementIntelCoverageChangedEventHandler;
             Topography = GetTopography();
             HQElementData.topographyChanged += HQElementTopographyChangedEventHandler;
@@ -380,6 +406,7 @@ namespace CodeEnv.Master.GameContent {
         private void ElementExpensePropChangedHandler() {
             RecalcUnitExpense();
         }
+
         #endregion
 
         private void PropagateOwnerChanged() {
@@ -393,7 +420,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public virtual void AddElement(AUnitElementData elementData) {
-            D.Assert(!_elementsData.Contains(elementData), "Attempted to add {0} {1} that is already present.".Inject(typeof(AUnitElementData).Name, elementData.ParentName));
+            D.Assert(!_elementsData.Contains(elementData), elementData.FullName);
             __ValidateOwner(elementData);
             UpdateElementParentName(elementData);
             _elementsData.Add(elementData);
@@ -404,7 +431,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void __ValidateOwner(AUnitElementData elementData) {
-            D.Assert(Owner != TempGameValues.NoPlayer, "{0} owner should be set before adding elements.".Inject(Name));
+            D.AssertNotEqual(Owner, TempGameValues.NoPlayer, "Owner should be set before adding elements.");
             if (elementData.Owner == TempGameValues.NoPlayer) {
                 D.Warn("{0} owner should be set before adding element to {1}.", elementData.Name, Name);
                 elementData.Owner = Owner;
@@ -423,7 +450,7 @@ namespace CodeEnv.Master.GameContent {
 
         public virtual void RemoveElement(AUnitElementData elementData) {
             bool isRemoved = _elementsData.Remove(elementData);
-            D.Assert(isRemoved, "Attempted to remove {0} {1} that is not present.".Inject(typeof(AUnitElementData).Name, elementData.ParentName));
+            D.Assert(isRemoved, elementData.FullName);
 
             RefreshComposition();
             Unsubscribe(elementData);
@@ -520,7 +547,7 @@ namespace CodeEnv.Master.GameContent {
             _subscriptions[elementData].ForAll(d => d.Dispose());
             _subscriptions.Remove(elementData);
 
-            D.Assert(HQElementData != null);    // UNCLEAR when HQElementData gets nulled when elementData == HQElementData
+            D.AssertNotNull(HQElementData);    // UNCLEAR when HQElementData gets nulled when elementData == HQElementData
             if (elementData == HQElementData) {
                 HQElementData.intelCoverageChanged -= HQElementIntelCoverageChangedEventHandler;
             }

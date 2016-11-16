@@ -37,7 +37,15 @@ namespace CodeEnv.Master.GameContent {
 
         protected override MeshRenderer InitializePrimaryMesh(GameObject itemGo) {
             var meshRenderers = itemGo.GetComponentsInImmediateChildren<MeshRenderer>();
-            var primaryMeshRenderer = meshRenderers.Single(mr => mr.GetComponent<IRevolver>() != null);
+            var primaryMeshRenderer = meshRenderers.Single(mr => {
+                Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+                var ir = mr.GetComponent<IRevolver>();
+                Profiler.EndSample();
+                if (ir != null) {
+                    return true;
+                }
+                return false;
+            });
             primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
             primaryMeshRenderer.receiveShadows = true;
             __ValidateAndCorrectMeshLayer(primaryMeshRenderer.gameObject);

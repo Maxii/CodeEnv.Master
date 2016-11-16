@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
+#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
 
@@ -21,6 +21,7 @@ namespace CodeEnv.Master.GameContent {
     using System.Collections.Generic;
     using CodeEnv.Master.Common;
     using UnityEngine;
+    using UnityEngine.Assertions;
 
     /// <summary>
     /// The primary class that keeps track of time during a GameInstance and/or UnitySession.
@@ -79,7 +80,9 @@ namespace CodeEnv.Master.GameContent {
         public static void ValidateHoursValue(float hours) {
             float convertedHours = ConvertHoursValue(hours);
             //D.Log("{0:0.000} validating against {1:0.000}.", hours, convertedHours);
-            D.Assert(Mathfx.Approx(convertedHours, hours, UnityConstants.FloatEqualityPrecision), "Hours: {0:0.000000} != ConvertedHours: {1:0.000000}.", hours, convertedHours);
+            if (!Mathfx.Approx(convertedHours, hours, UnityConstants.FloatEqualityPrecision)) {
+                D.Error("Hours: {0:0.000000} != ConvertedHours: {1:0.000000}.", hours, convertedHours);
+            }
         }
 
         /// <summary>
@@ -97,7 +100,8 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Occurs when the date changes that a calender display would care about.
-        /// 3.25.16 Fires when the hour digit changes.
+        /// <remarks>3.25.16 Fires when the hour digit changes.</remarks>
+        /// <remarks>11.15.16 Memory allocation (~1K) from string and Inject() occurs when this fires.</remarks>
         /// </summary>
         public event EventHandler calenderDateChanged;
 
@@ -118,7 +122,7 @@ namespace CodeEnv.Master.GameContent {
         private GameSpeed _gameSpeed;
         public GameSpeed GameSpeed {
             get {
-                D.Assert(_gameSpeed != GameSpeed.None);
+                D.AssertNotDefault((int)_gameSpeed);
                 return _gameSpeed;
             }
             set { SetProperty<GameSpeed>(ref _gameSpeed, value, "GameSpeed", GameSpeedPropChangedHandler, GameSpeedPropChangingHandler); }
@@ -224,13 +228,14 @@ namespace CodeEnv.Master.GameContent {
         private GameDate _currentDate;
         /// <summary>
         /// The current GameDate in this game instance. Takes into account both game speed changes and pauses.
+        /// <remarks>Not subscribable.</remarks>
         /// </summary>
         public GameDate CurrentDate {
             get {
                 __WarnIfGameNotRunning();
                 return _currentDate;
             }
-            private set { SetProperty<GameDate>(ref _currentDate, value, "CurrentDate"); }
+            private set { _currentDate = value; }
         }
 
         /// <summary>
@@ -280,7 +285,9 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         protected sealed override void Initialize() {
             UnityEngine.Time.timeScale = Constants.OneF;
-            D.Warn(HoursPerSecond * 1F / TempGameValues.MinimumFramerate > HoursPrecision, "See {0}.HoursPrecision notes above.", Name);
+            if (HoursPerSecond * 1F / TempGameValues.MinimumFramerate > HoursPrecision) {
+                D.Warn("See {0}.HoursPrecision notes above.", Name);
+            }
             _gameMgr = References.GameManager;
             _playerPrefsMgr = PlayerPrefsManager.Instance;
             Subscribe();
@@ -345,7 +352,6 @@ namespace CodeEnv.Master.GameContent {
         /// method to keep the date accurate. Does nothing if the game is paused.
         /// </summary>
         public void CheckForDateChange() {
-            D.Assert(_gameMgr.IsRunning, "{0}: Game should be running.", Name);
             if (_gameMgr.IsPaused) {
                 return;
             }
@@ -354,6 +360,7 @@ namespace CodeEnv.Master.GameContent {
 
             bool toFireCalenderDateChangedEvent = false;
             bool toUpdateCurrentDate = false;
+
             var updatedDate = new GameDate(_currentDateTime);
             if (updatedDate > _currentDate) {
                 // they are not within equivalence tolerance so update
@@ -374,7 +381,7 @@ namespace CodeEnv.Master.GameContent {
                 CurrentDate = updatedDate;  // must be done before event fired
             }
             if (toFireCalenderDateChangedEvent) {
-                OnCalenderDateChanged();
+                OnCalenderDateChanged();    // 11.15.16 Appropriately causes 1K memory allocation
             }
         }
 
@@ -420,7 +427,7 @@ namespace CodeEnv.Master.GameContent {
             if (calenderDateChanged != null) {
                 //string subscribers = calenderDateChanged.GetInvocationList().Select(d => d.Target.GetType().Name).Concatenate();
                 //D.Log("{0}.calenderDateChanged. CalenderDate: {1}, Subscribers: {2}.", Name, _currentDate.CalenderFormattedDate, subscribers);
-                calenderDateChanged(this, new EventArgs());
+                calenderDateChanged(this, EventArgs.Empty);
             }
         }
 
@@ -449,11 +456,12 @@ namespace CodeEnv.Master.GameContent {
         private void RefreshCurrentDateTime() {
             D.Assert(_gameMgr.IsRunning);
             D.Assert(!_gameMgr.IsPaused);   // it keeps adding to currentDateTime
-            float deltaGameInstancePlayTime = GameInstancePlayTime - _gameInstancePlayTimeAtLastCurrentDateTimeRefresh;
+            float playTime = GameInstancePlayTime;
+            float deltaGameInstancePlayTime = playTime - _gameInstancePlayTimeAtLastCurrentDateTimeRefresh;
             // 10.16.16 significant deltaTimes > 0.1 secs still occurring after the game time clock starts
             //D.Warn(deltaGameInstancePlayTime > HoursPrecision, "{0}.deltaGameInstancePlayTime increased by {1}.", Name, deltaGameInstancePlayTime);
             _currentDateTime += GameSpeedMultiplier * deltaGameInstancePlayTime;
-            _gameInstancePlayTimeAtLastCurrentDateTimeRefresh = GameInstancePlayTime;
+            _gameInstancePlayTimeAtLastCurrentDateTimeRefresh = playTime;
             //D.Log("{0}.CurrentDateTime refreshed to {1:0.00}.", Name, _currentDateTime);
         }
 
@@ -473,7 +481,9 @@ namespace CodeEnv.Master.GameContent {
         #region Debug
 
         private void __WarnIfGameNotRunning() {
-            D.Warn(!_gameMgr.IsRunning, "{0}: {1} should be running. Frame = {2}.", GetType().Name, typeof(IGameManager).Name, Time.frameCount);
+            if (!_gameMgr.IsRunning) {
+                D.Warn("{0}: {1} should be running. Frame = {2}.", GetType().Name, typeof(IGameManager).Name, Time.frameCount);
+            }
         }
 
         #endregion

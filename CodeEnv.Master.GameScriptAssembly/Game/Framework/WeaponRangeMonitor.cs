@@ -32,6 +32,15 @@ using UnityEngine;
 /// </summary>
 public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackable, AWeapon>, IWeaponRangeMonitor {
 
+    private bool _toEngageColdWarEnemies = false;
+    /// <summary>
+    /// Controls whether WeaponRangeMonitors will track and present ColdWar enemies to weapons as acceptable targets.
+    /// </summary>
+    public bool ToEngageColdWarEnemies {
+        get { return _toEngageColdWarEnemies; }
+        set { SetProperty<bool>(ref _toEngageColdWarEnemies, value, "ToEngageColdWarEnemies", ToEngageColdWarEnemiesPropChangedHandler); }
+    }
+
     public new IUnitElement ParentItem {
         get { return base.ParentItem as IUnitElement; }
         set { base.ParentItem = value as IUnitElement; }
@@ -40,19 +49,19 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackable, AW
     protected override bool IsKinematicRigidbodyReqd { get { return false; } }  // targets (elements and planetoids) have rigidbodies
 
     /// <summary>
-    /// All the detected, attackable enemy targets that are in range of the weapons of this monitor.
+    /// All the detected enemy targets that are in range that this monitor's weapons are authorized to attack. 
     /// </summary>
     private IList<IElementAttackable> _attackableEnemyTargetsDetected;
 
     /// <summary>
-    /// All the detected, attackable but unknown relationship targets that are in range of the weapons of this monitor.
+    /// All the detected targets that are in range with unknown owners. 
     /// </summary>
-    private IList<IElementAttackable> _attackableUnknownTargetsDetected;
+    private IList<IElementAttackable> _unknownTargetsDetected;
 
     protected override void InitializeValuesAndReferences() {
         base.InitializeValuesAndReferences();
         _attackableEnemyTargetsDetected = new List<IElementAttackable>();
-        //_attackableUnknownTargetsDetected is lazy instantiated as shouldn't be any unless no short or medium sensors
+        //_unknownTargetsDetected is lazy instantiated as shouldn't be any unless no short or medium sensors
     }
 
     protected override void AssignMonitorTo(AWeapon weapon) {
@@ -65,7 +74,7 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackable, AW
         newlyDetectedItem.deathOneShot += DetectedItemDeathEventHandler;
         newlyDetectedItem.infoAccessChgd += DetectedItemInfoAccessChangedEventHandler;
 
-        AssessRelationsAndAdjustRecord(newlyDetectedItem);
+        AssessKnowledgeOfItemAndAdjustRecord(newlyDetectedItem);
         HandleWeaponsNotification(newlyDetectedItem, wasItemPreviouslyCategorizedAsEnemy: false);
     }
 
@@ -73,7 +82,7 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackable, AW
         //D.Log(ShowDebugLog, "{0} lost detection and removed {1}.", FullName, lostDetectionItem.FullName);
         lostDetectionItem.ownerChanged -= DetectedItemOwnerChangedEventHandler;
         lostDetectionItem.deathOneShot -= DetectedItemDeathEventHandler;
-        lostDetectionItem.infoAccessChgd += DetectedItemInfoAccessChangedEventHandler;
+        lostDetectionItem.infoAccessChgd -= DetectedItemInfoAccessChangedEventHandler;
 
         bool wasItemPreviouslyCategorizedAsEnemy = _attackableEnemyTargetsDetected.Contains(lostDetectionItem);
         RemoveRecord(lostDetectionItem);
@@ -81,18 +90,27 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackable, AW
         HandleWeaponsNotification(lostDetectionItem, wasItemPreviouslyCategorizedAsEnemy);
     }
 
+    /// <summary>
+    /// If needed, notifies all weapons of any change in the 'in range' status of the detectedItem.
+    /// </summary>
+    /// <param name="detectedItem">The detected item.</param>
+    /// <param name="wasItemPreviouslyCategorizedAsEnemy">if set to <c>true</c> [was item previously categorized as enemy].</param>
     private void HandleWeaponsNotification(IElementAttackable detectedItem, bool wasItemPreviouslyCategorizedAsEnemy) {
         if (wasItemPreviouslyCategorizedAsEnemy && !_attackableEnemyTargetsDetected.Contains(detectedItem)) {
             // categorization changed from enemy to non-enemy (unknown or not enemy)
-            HandleEnemyTargetNotInRange(detectedItem);
+            NotifyWeaponsOfEnemyTargetNotInRange(detectedItem);
         }
         else if (!wasItemPreviouslyCategorizedAsEnemy && _attackableEnemyTargetsDetected.Contains(detectedItem)) {
             // categorization changed from non-enemy (or no categorization) to enemy
-            HandleEnemyTargetInRange(detectedItem);
+            NotifyWeaponsOfEnemyTargetInRange(detectedItem);
         }
     }
 
     #region Event and Property Change Handlers
+
+    private void ToEngageColdWarEnemiesPropChangedHandler() {
+        ReviewKnowledgeOfAllDetectedObjects();
+    }
 
     private void DetectedItemInfoAccessChangedEventHandler(object sender, InfoAccessChangedEventArgs e) {
         Player playerWhosInfoAccessToItemChgd = e.Player;
@@ -106,7 +124,7 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackable, AW
             D.Log(ShowDebugLog, "{0} received a InfoAccess changed event from {1}.", FullName, attackableDetectedItem.FullName);
 
             bool wasItemPreviouslyCategorizedAsEnemy = _attackableEnemyTargetsDetected.Contains(attackableDetectedItem);
-            AssessRelationsAndAdjustRecord(attackableDetectedItem);
+            AssessKnowledgeOfItemAndAdjustRecord(attackableDetectedItem);
             HandleWeaponsNotification(attackableDetectedItem, wasItemPreviouslyCategorizedAsEnemy);
         }
     }
@@ -142,19 +160,29 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackable, AW
 
     private void HandleDetectedItemOwnerChanged(IElementAttackable ownerChgdItem) {
         bool wasItemPreviouslyCategorizedAsEnemy = _attackableEnemyTargetsDetected.Contains(ownerChgdItem);
-        AssessRelationsAndAdjustRecord(ownerChgdItem);
+        AssessKnowledgeOfItemAndAdjustRecord(ownerChgdItem);
         HandleWeaponsNotification(ownerChgdItem, wasItemPreviouslyCategorizedAsEnemy);
     }
 
+    /// <summary>
+    /// Called when [parent owner changed].
+    /// <remarks>No reason to re-acquire detected objects as those items previously detected won't
+    /// be any different under the new owner vs the old. The only exception to this is
+    /// if the new owner's ability changes the detection range. As ADetectableRangeMonitor has 
+    /// already refreshed that detection range, if it did change, detected objects will have 
+    /// already been refreshed before this override takes its unique actions.
+    /// </remarks>
+    /// </summary>
     protected override void HandleParentItemOwnerChanged() {
         base.HandleParentItemOwnerChanged();
         _equipmentList.ForAll(weap => weap.CheckActiveOrdnanceTargeting());
+        ReviewKnowledgeOfAllDetectedObjects();
     }
 
     #endregion
 
     /// <summary>
-    /// Handles the enemy target now in range.
+    /// Notifies all weapons of an enemy target now in range.
     /// <remarks>Enemies become in range under 3 circumstances. 1) by movement of either the enemy or
     /// this item, 2) if the enemy is first created within range, and 3) when a non-enemy becomes the enemy. 
     /// Changing from being a non-enemy to being the enemy can happen a number of ways including 
@@ -163,7 +191,7 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackable, AW
     /// accessible thus potentially turning it into an enemy target.</remarks>
     /// </summary>
     /// <param name="enemyTgt">The enemy target that is now in range.</param>
-    private void HandleEnemyTargetInRange(IElementAttackable enemyTgt) {
+    private void NotifyWeaponsOfEnemyTargetInRange(IElementAttackable enemyTgt) {
         _equipmentList.ForAll(weap => {
             // GOTCHA!! As each Weapon receives this inRange notice, it can attack and destroy the target
             // before the next EnemyTargetInRange notice is sent to the next Weapon. 
@@ -175,7 +203,7 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackable, AW
     }
 
     /// <summary>
-    /// Handles the enemy target no longer in range.
+    /// Notifies all weapons of an enemy target no longer in range.
     /// <remarks>Enemies become not in range under 3 circumstances. 1) by movement of either the enemy or
     /// this item, 2) when the enemy dies (onDeath, not when destroyed), and 3) when the
     /// enemy is no longer the enemy. Changing from being the enemy to not being the enemy can happen
@@ -184,17 +212,15 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackable, AW
     /// inaccessible thus turning it into an unknown target.</remarks>
     /// </summary>
     /// <param name="enemyTgt">The previous enemy target that was in range.</param>
-    private void HandleEnemyTargetNotInRange(IElementAttackable enemyTgt) {
+    private void NotifyWeaponsOfEnemyTargetNotInRange(IElementAttackable enemyTgt) {
         _equipmentList.ForAll(weap => weap.HandleEnemyTargetInRangeChanged(enemyTgt, isInRange: false));
     }
 
     /// <summary>
-    /// Reviews the DiplomaticRelationship of all detected objects (via attempting to access their owner) with the objective of
-    /// making sure each object is in the right relationship container, if any.
-    /// <remarks>OPTIMIZE The implementation of this method can be made more efficient using info from the RelationsChanged event.
-    /// Deferred for now until it is clear what info will be provided in the end.</remarks>
+    /// Reviews the knowledge we have of each detected object (via attempting to access their owner) with the objective of
+    /// making sure each object is in the right container, if any.
     /// </summary>
-    protected override void ReviewRelationsWithAllDetectedObjects() {
+    protected override void ReviewKnowledgeOfAllDetectedObjects() {
         // record previous categorization state before clearing and re-categorizing
         IDictionary<IElementAttackable, bool> wasItemPreviouslyCategorizedAsEnemyLookup = new Dictionary<IElementAttackable, bool>(_objectsDetected.Count);
         foreach (var objectDetected in _objectsDetected) {
@@ -206,14 +232,14 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackable, AW
         }
 
         _attackableEnemyTargetsDetected.Clear();
-        if (_attackableUnknownTargetsDetected != null) {
-            _attackableUnknownTargetsDetected.Clear();
+        if (_unknownTargetsDetected != null) {
+            _unknownTargetsDetected.Clear();
         }
 
         foreach (var objectDetected in _objectsDetected) {
             IElementAttackable detectedItem = objectDetected as IElementAttackable;
             if (detectedItem != null) {
-                AssessRelationsAndAdjustRecord(detectedItem);
+                AssessKnowledgeOfItemAndAdjustRecord(detectedItem);
                 bool wasItemPreviouslyCategorizedAsEnemy = wasItemPreviouslyCategorizedAsEnemyLookup[detectedItem];
                 HandleWeaponsNotification(detectedItem, wasItemPreviouslyCategorizedAsEnemy);
             }
@@ -221,18 +247,19 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackable, AW
     }
 
     /// <summary>
-    /// Assesses the DiplomaticRelationship with <c>detectedItem</c> and records it in the proper container 
-    /// reflecting that relationship, removing it from any containers that may have previously held it.
+    /// Assesses the knowledge we have (owner known, relationship) of <c>detectedItem</c> and records it in the proper container 
+    /// reflecting that knowledge, removing it from any containers that may have previously held it.
     /// <remarks>No need to break/reattach subscriptions when DetectedItem Owner or IntelCoverage events are handled
-    /// as adjusting where an item is recorded(which container) does not break the subscription.</remarks>
+    /// as adjusting where an item is recorded (which container) does not break the subscription.</remarks>
     /// </summary>
     /// <param name="detectedItem">The detected item.</param>
-    private void AssessRelationsAndAdjustRecord(IElementAttackable detectedItem) {
-        //D.Log(ShowDebugLog, "{0} is assessing relations with {1}. Attempting to adjust record.", FullName, detectedItem.FullName);
+    private void AssessKnowledgeOfItemAndAdjustRecord(IElementAttackable detectedItem) {
+        //D.Log(ShowDebugLog, "{0} is assessing our knowledge of {1}. Attempting to adjust record.", FullName, detectedItem.FullName);
         Player detectedItemOwner;
         if (detectedItem.TryGetOwner(Owner, out detectedItemOwner)) {
             // Item owner known
-            if (Owner.IsEnemyOf(detectedItemOwner)) {
+            bool isAttackableEnemy = ToEngageColdWarEnemies ? Owner.IsEnemyOf(detectedItemOwner) : Owner.IsAtWarWith(detectedItemOwner);
+            if (isAttackableEnemy) {
                 // belongs in Enemy bucket
                 if (!_attackableEnemyTargetsDetected.Contains(detectedItem)) {
                     AddEnemyTarget(detectedItem);
@@ -258,7 +285,8 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackable, AW
         Player LostDetectionItemOwner;
         if (lostDetectionItem.TryGetOwner(Owner, out LostDetectionItemOwner)) {
             // Item owner known
-            if (Owner.IsEnemyOf(LostDetectionItemOwner)) {
+            bool isAttackableEnemy = ToEngageColdWarEnemies ? Owner.IsEnemyOf(LostDetectionItemOwner) : Owner.IsAtWarWith(LostDetectionItemOwner);
+            if (isAttackableEnemy) {
                 // should find it in Enemy bucket as this is only called when item is dead or leaving monitor range
                 RemoveEnemyTarget(lostDetectionItem);
             }
@@ -282,18 +310,14 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackable, AW
     /// </summary>
     /// <param name="unknownTgt">The unknown TGT.</param>
     private void AddUnknownTarget(IElementAttackable unknownTgt) {
-        if (_attackableUnknownTargetsDetected == null) {
-            _attackableUnknownTargetsDetected = new List<IElementAttackable>();
+        if (_unknownTargetsDetected == null) {
+            _unknownTargetsDetected = new List<IElementAttackable>();
         }
 
-        D.Assert(!_attackableUnknownTargetsDetected.Contains(unknownTgt));
-        _attackableUnknownTargetsDetected.Add(unknownTgt);
+        D.Assert(!_unknownTargetsDetected.Contains(unknownTgt));
+        _unknownTargetsDetected.Add(unknownTgt);
 
-        var shortAndMediumRangeCmdSensorMonitors = ParentItem.Command.SensorRangeMonitors.Where(srm => srm.RangeCategory == RangeCategory.Short || srm.RangeCategory == RangeCategory.Medium);
-        if (shortAndMediumRangeCmdSensorMonitors.Any(srm => srm.IsOperational)) {
-            D.Warn("{0} should not categorize {1} as unknownTarget with short and/or medium range sensors on-line!", FullName, unknownTgt.FullName);
-            // 7.20.16 currently operating LR sensors would not provide access to unknownTgt.Owner, but short/medium would
-        }
+        __WarnIfShouldntBeUnknown(unknownTgt);
     }
 
     /// <summary>
@@ -301,14 +325,18 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackable, AW
     /// </summary>
     /// <param name="unknownTgt">The unknown TGT.</param>
     private void RemoveUnknownTarget(IElementAttackable unknownTgt) {
-        var isRemoved = _attackableUnknownTargetsDetected.Remove(unknownTgt);
-        D.Assert(isRemoved, "{0} attempted to remove missing {1} from Unknown list.", FullName, unknownTgt.FullName);
+        var isRemoved = _unknownTargetsDetected.Remove(unknownTgt);
+        if (!isRemoved) {
+            D.Error("{0} attempted to remove missing {1} from Unknown list.", FullName, unknownTgt.FullName);
+        }
         //D.Log(ShowDebugLog, "{0} removed {1} from UnknownTarget tracking.", FullName, unknownTgt.FullName);
     }
 
     private void RemoveEnemyTarget(IElementAttackable enemyTgt) {
         var isRemoved = _attackableEnemyTargetsDetected.Remove(enemyTgt);
-        D.Assert(isRemoved, "{0} attempted to remove missing {1} from Enemy list.", FullName, enemyTgt.FullName);
+        if (!isRemoved) {
+            D.Error("{0} attempted to remove missing {1} from Enemy list.", FullName, enemyTgt.FullName);
+        }
         //D.Log(ShowDebugLog, "{0} removed {1} from EnemyTarget tracking.", FullName, enemyTgt.FullName);
     }
 
@@ -321,7 +349,7 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackable, AW
     ///   <c>true</c> if [is recorded as unknown] [the specified target]; otherwise, <c>false</c>.
     /// </returns>
     private bool IsRecordedAsUnknown(IElementAttackable target) {
-        return _attackableUnknownTargetsDetected != null && _attackableUnknownTargetsDetected.Contains(target);
+        return _unknownTargetsDetected != null && _unknownTargetsDetected.Contains(target);
     }
 
     protected override float RefreshRangeDistance() {
@@ -333,13 +361,16 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackable, AW
     protected override void __ValidateRangeDistance() {
         base.__ValidateRangeDistance();
         float maxAllowedWeaponRange = ParentItem is IUnitBaseCmd ? TempGameValues.__MaxBaseWeaponsRangeDistance : TempGameValues.__MaxFleetWeaponsRangeDistance;
-        D.Assert(RangeDistance <= maxAllowedWeaponRange, "{0}: RangeDistance {1} must be <= max {2}.", FullName, RangeDistance, maxAllowedWeaponRange);
+
+        if (RangeDistance > maxAllowedWeaponRange) {
+            D.Error("{0}: RangeDistance {1} must be <= max {2}.", FullName, RangeDistance, maxAllowedWeaponRange);
+        }
     }
 
     protected override void CompleteResetForReuse() {
         base.CompleteResetForReuse();
-        D.Assert(_attackableEnemyTargetsDetected.Count == Constants.Zero);
-        D.Assert(_attackableUnknownTargetsDetected == null || _attackableUnknownTargetsDetected.Count == Constants.Zero);
+        D.AssertEqual(Constants.Zero, _attackableEnemyTargetsDetected.Count);
+        D.Assert(_unknownTargetsDetected == null || _unknownTargetsDetected.Count == Constants.Zero);
     }
 
     protected override void Cleanup() {
@@ -351,6 +382,34 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackable, AW
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region Debug
+
+    private void __WarnIfShouldntBeUnknown(IElementAttackable unknownTgt) {
+        var operatingShortRangeCmdSensorMonitors = ParentItem.Command.SensorRangeMonitors.Where(srm => srm.RangeCategory == RangeCategory.Short && srm.IsOperational);
+        if (operatingShortRangeCmdSensorMonitors.Any()) {
+            D.Warn("{0} should not categorize {1} as unknownTarget with short range sensors on-line!", FullName, unknownTgt.FullName);
+            float rangeToUnknownTgt = Vector3.Distance(ParentItem.Position, unknownTgt.Position);
+            float rangeToSensorRangeMonitors = Vector3.Distance(ParentItem.Position, ParentItem.Command.Position);
+            float sensorRange = operatingShortRangeCmdSensorMonitors.First().RangeDistance;
+            D.Warn("{0} range to {1} = {2:0.#}, range to Cmd's SensorRangeMonitors = {3:0.#}, SensorRange = {4:0.#}.", FullName, unknownTgt.FullName, rangeToUnknownTgt, rangeToSensorRangeMonitors, sensorRange);
+            D.Warn("{0}: {1}.isOwnerAccessible = {2}.", FullName, unknownTgt.FullName, unknownTgt.IsOwnerAccessibleTo(Owner));
+        }
+        else {
+            var operatingMediumRangeCmdSensorMonitors = ParentItem.Command.SensorRangeMonitors.Where(srm => srm.RangeCategory == RangeCategory.Medium && srm.IsOperational);
+            if (operatingMediumRangeCmdSensorMonitors.Any()) {
+                D.Warn("{0} should not categorize {1} as unknownTarget with medium range sensors on-line!", FullName, unknownTgt.FullName);
+                float rangeToUnknownTgt = Vector3.Distance(ParentItem.Position, unknownTgt.Position);
+                float rangeToSensorRangeMonitors = Vector3.Distance(ParentItem.Position, ParentItem.Command.Position);
+                float sensorRange = operatingMediumRangeCmdSensorMonitors.First().RangeDistance;
+                D.Warn("{0} range to {1} = {2:0.#}, range to Cmd's SensorRangeMonitors = {3:0.#}, SensorRange = {4:0.#}.", FullName, unknownTgt.FullName, rangeToUnknownTgt, rangeToSensorRangeMonitors, sensorRange);
+                D.Warn("{0}: {1}.isOwnerAccessible = {2}.", FullName, unknownTgt.FullName, unknownTgt.IsOwnerAccessibleTo(Owner));
+            }
+        }
+        // 7.20.16 currently operating LR sensors would not provide access to unknownTgt.Owner, but short/medium would
+    }
+
+    #endregion
 
 }
 

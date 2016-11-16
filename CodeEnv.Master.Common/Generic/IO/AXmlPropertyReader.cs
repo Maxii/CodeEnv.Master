@@ -70,7 +70,7 @@ namespace CodeEnv.Master.Common {
         }
 
         private void InitializeBooleanPropertyValuesFor(XElement topNode) {
-            D.Assert(topNode != null);
+            D.AssertNotNull(topNode);
             var settingNodes = topNode.Elements(_settingTagName);
             foreach (var settingNode in settingNodes) {
                 XElement propertyNameNode = settingNode.Element(_propertyNameTagName);
@@ -91,7 +91,7 @@ namespace CodeEnv.Master.Common {
         }
 
         private void InitializeIntegerPropertyValuesFor(XElement topNode) {
-            D.Assert(topNode != null);
+            D.AssertNotNull(topNode);
             var settingNodes = topNode.Elements(_settingTagName);
             foreach (var settingNode in settingNodes) {
                 XElement propertyNameNode = settingNode.Element(_propertyNameTagName);
@@ -112,7 +112,7 @@ namespace CodeEnv.Master.Common {
         }
 
         private void InitializeFloatPropertyValuesFor(XElement topNode) {
-            D.Assert(topNode != null);
+            D.AssertNotNull(topNode);
             var settingNodes = topNode.Elements(_settingTagName);
             foreach (var settingNode in settingNodes) {
                 XElement propertyNameNode = settingNode.Element(_propertyNameTagName);
@@ -133,7 +133,7 @@ namespace CodeEnv.Master.Common {
         }
 
         private void InitializeTextPropertyValuesFor(XElement topNode) {
-            D.Assert(topNode != null);
+            D.AssertNotNull(topNode);
             var settingNodes = topNode.Elements(_settingTagName);
             foreach (var settingNode in settingNodes) {
                 XElement propertyNameNode = settingNode.Element(_propertyNameTagName);

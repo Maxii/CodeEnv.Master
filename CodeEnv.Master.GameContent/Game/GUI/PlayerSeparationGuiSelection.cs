@@ -21,6 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public enum PlayerSeparationGuiSelection {
 
+        None,
         Random,
         Close,
         Normal,

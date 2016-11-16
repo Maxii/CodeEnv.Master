@@ -73,7 +73,7 @@ public class Loader : AMonoSingleton<Loader> {
             _gameMgr.LaunchInLobby();
         }
         else {
-            D.Assert(_gameMgr.CurrentSceneID == GameManager.SceneID.GameScene);
+            D.AssertEqual(GameManager.SceneID.GameScene, _gameMgr.CurrentSceneID);
             var startupGameSettings = GameSettingsDebugControl.Instance.CreateNewGameSettings(isStartup: true);
             _gameMgr.InitiateNewGame(startupGameSettings);
         }
@@ -89,7 +89,7 @@ public class Loader : AMonoSingleton<Loader> {
 
     private void SceneLoadedEventHandler(object sender, EventArgs e) {
         //D.Log("{0}.SceneLoadedEventHandler() called.", GetType().Name);
-        D.Assert(_gameMgr.CurrentSceneID == GameManager.SceneID.GameScene);
+        D.AssertEqual(GameManager.SceneID.GameScene, _gameMgr.CurrentSceneID);
         AssignAudioListener();
     }
 
@@ -112,14 +112,21 @@ public class Loader : AMonoSingleton<Loader> {
         if (_gameMgr.CurrentSceneID == GameManager.SceneID.GameScene) {
             var cameraAL = MainCameraControl.Instance.gameObject.AddComponent<AudioListener>();
             cameraAL.gameObject.SetActive(true);
+
+            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
             var loaderAL = gameObject.GetComponent<AudioListener>();
+            Profiler.EndSample();
+
             if (loaderAL != null) { // will be null if going from GameScene to GameScene as it has already been destroyed
                 Destroy(loaderAL);  // destroy AFTER cameraAL installed and activated
             }
 
             // Ngui installs an AudioSource next to the AudioListener when it tries to play a sound so remove it if it is there
             // Another will be added to the new AudioListener gameObject if needed
+            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
             var loaderAS = gameObject.GetComponent<AudioSource>();
+            Profiler.EndSample();
+
             if (loaderAS != null) {
                 Destroy(loaderAS);
             }

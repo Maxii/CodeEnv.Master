@@ -49,7 +49,7 @@ namespace CodeEnv.Master.GameContent {
 
         public override void CheckActiveOrdnanceTargeting() {
             if (_activeOrdnance != null) {
-                if (!_activeOrdnance.Target.IsAttackingAllowedBy(Owner)) {
+                if (!_activeOrdnance.Target.IsAttackByAllowed(Owner)) {
                     _activeOrdnance.Terminate();
                 }
             }
@@ -61,7 +61,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override void RecordFiredOrdnance(IOrdnance ordnanceFired) {
-            D.Assert(_activeOrdnance == null);
+            D.AssertNull(_activeOrdnance);
             _activeOrdnance = ordnanceFired as ITerminatableOrdnance;
         }
 
@@ -71,7 +71,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override void RemoveFiredOrdnanceFromRecord(IOrdnance terminatedOrdnance) {
-            D.Assert(_activeOrdnance == terminatedOrdnance);
+            D.AssertEqual(_activeOrdnance, terminatedOrdnance);
             _activeOrdnance = null;
         }
 

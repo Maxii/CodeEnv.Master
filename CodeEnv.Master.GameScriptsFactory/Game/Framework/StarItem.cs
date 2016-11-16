@@ -72,7 +72,7 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
         base.InitializeOnData();
         InitializePrimaryCollider();
         InitializeObstacleZone();
-        D.Assert(category == Data.Category);
+        D.AssertEqual(Data.Category, category);
         ParentSystem = gameObject.GetSingleComponentInParents<SystemItem>();
         _detectionHandler = new DetectionHandler(this);
     }
@@ -86,12 +86,19 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
 
     private void InitializeObstacleZone() {
         _obstacleZoneCollider = gameObject.GetSingleComponentInChildren<SphereCollider>(excludeSelf: true);
-        D.Assert(_obstacleZoneCollider.gameObject.layer == (int)Layers.AvoidableObstacleZone);
+        D.AssertEqual(Layers.AvoidableObstacleZone, (Layers)_obstacleZoneCollider.gameObject.layer);
         _obstacleZoneCollider.enabled = false;
         _obstacleZoneCollider.isTrigger = true;
         _obstacleZoneCollider.radius = Data.CloseOrbitInnerRadius;
+
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+        var rigidbody = _obstacleZoneCollider.gameObject.GetComponent<Rigidbody>();
+        Profiler.EndSample();
+
         // Static trigger collider (no rigidbody) is OK as the ship's CollisionDetectionZone Collider has a kinematic rigidbody
-        D.Warn(_obstacleZoneCollider.gameObject.GetComponent<Rigidbody>() != null, "{0}.ObstacleZone has a Rigidbody it doesn't need.", FullName);
+        if (rigidbody != null) {
+            D.Warn("{0}.ObstacleZone has a Rigidbody it doesn't need.", FullName);
+        }
         InitializeObstacleDetourGenerator();
         InitializeDebugShowObstacleZone();
     }
@@ -264,7 +271,11 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
             debugCntls.showObstacleZones -= ShowDebugObstacleZonesChangedEventHandler;
         }
         if (_obstacleZoneCollider != null) {
+
+            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
             DrawColliderGizmo drawCntl = _obstacleZoneCollider.gameObject.GetComponent<DrawColliderGizmo>();
+            Profiler.EndSample();
+
             if (drawCntl != null) {
                 Destroy(drawCntl);
             }
@@ -361,14 +372,16 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
             return;
         }
         if (IsInCloseOrbit(ship)) {
-            D.Assert(_closeOrbitSimulator != null);
+            D.AssertNotNull(_closeOrbitSimulator);
             var isRemoved = _shipsInCloseOrbit.Remove(ship);
             D.Assert(isRemoved);
             D.Log("{0} has left close orbit around {1}.", ship.FullName, FullName);
             float shipDistance = Vector3.Distance(ship.Position, Position);
             float minOutsideOfOrbitCaptureRadius = Data.CloseOrbitOuterRadius - ship.CollisionDetectionZoneRadius_Debug;
-            D.Warn(shipDistance > minOutsideOfOrbitCaptureRadius, "{0} is leaving orbit of {1} but is not within {2:0.0000}. Ship's current orbit distance is {3:0.0000}.",
+            if (shipDistance > minOutsideOfOrbitCaptureRadius) {
+                D.Warn("{0} is leaving orbit of {1} but is not within {2:0.0000}. Ship's current orbit distance is {3:0.0000}.",
                 ship.FullName, FullName, minOutsideOfOrbitCaptureRadius, shipDistance);
+            }
             if (_shipsInCloseOrbit.Count == Constants.Zero) {
                 // Choose either to deactivate the OrbitSimulator or destroy it, but not both
                 CloseOrbitSimulator.IsActivated = false;

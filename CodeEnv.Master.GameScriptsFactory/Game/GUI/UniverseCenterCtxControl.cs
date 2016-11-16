@@ -51,7 +51,7 @@ public class UniverseCenterCtxControl : ACtxControl {
 
     protected override bool IsSelectedItemMenuOperator(ISelectable selected) {
         if (_universeCenterMenuOperator.IsSelected) {
-            D.Assert(_universeCenterMenuOperator == selected as UniverseCenterItem);
+            D.AssertEqual(_universeCenterMenuOperator, selected as UniverseCenterItem);
             return true;
         }
         return false;

@@ -59,6 +59,11 @@ public class MoonItem : APlanetoidItem, IMoon, IMoon_Ltd {
 
     #endregion
 
+    public override void CommenceOperations() {
+        base.CommenceOperations();
+        // 11.13.16 MoonDisplayManager handles orbit around planet activation as orbiting is only eye candy
+    }
+
     protected override void AssignAlternativeFocusOnDeath() {
         base.AssignAlternativeFocusOnDeath();
         if (!_isParentPlanetDying) {

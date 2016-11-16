@@ -51,12 +51,12 @@ public class SystemCtxControl_AI : ACtxControl {
         : base(system.gameObject, uniqueSubmenusReqd: Constants.Zero, menuPosition: MenuPositionMode.AtCursor) {
         _systemMenuOperator = system;
         _settlement = system.Settlement;
-        D.Assert(_settlement != null);
+        D.AssertNotNull(_settlement);
     }
 
     protected override bool IsSelectedItemMenuOperator(ISelectable selected) {
         if (_systemMenuOperator.IsSelected) {
-            D.Assert(_systemMenuOperator == selected as SystemItem);
+            D.AssertEqual(_systemMenuOperator, selected as SystemItem);
             return true;
         }
         return false;
@@ -70,7 +70,7 @@ public class SystemCtxControl_AI : ACtxControl {
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Attack:
-                return !(_settlement as IUnitAttackable).IsAttackingAllowedBy(_user)
+                return !(_settlement as IUnitAttackable).IsAttackByAllowed(_user)
                     || !(_remoteUserOwnedSelectedItem as AUnitCmdItem).IsAttackCapable;
             case FleetDirective.Explore:
                 var explorableSystem = _systemMenuOperator as IFleetExplorable;

@@ -70,12 +70,12 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
         : base(system.gameObject, uniqueSubmenusReqd: 1, menuPosition: MenuPositionMode.AtCursor) {
         _systemMenuOperator = system;
         _settlement = system.Settlement;
-        D.Assert(_settlement != null);
+        D.AssertNotNull(_settlement);
     }
 
     protected override bool IsSelectedItemMenuOperator(ISelectable selected) {
         if (_systemMenuOperator.IsSelected) {
-            D.Assert(_systemMenuOperator == selected as SystemItem);
+            D.AssertEqual(_systemMenuOperator, selected as SystemItem);
             return true;
         }
         return false;
@@ -119,9 +119,8 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
     protected override bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(BaseDirective directive, out IEnumerable<INavigable> targets) {
         switch (directive) {
             case BaseDirective.Attack:
-                // TODO: More selective picking fleets of war opponents. Other attack targets should be explicitly chosen by user
                 // TODO: incorporate distance from settlement
-                targets = _userKnowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsAttackingAllowedBy(_user)).Cast<INavigable>();
+                targets = _userKnowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsWarAttackByAllowed(_user)).Cast<INavigable>();
                 return true;
             case BaseDirective.Repair:
             case BaseDirective.Refit:
@@ -199,7 +198,7 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
 
     private void IssueRemoteUserShipOrder(int itemID) {
         var directive = (ShipDirective)_directiveLookup[itemID];
-        D.Assert(directive == ShipDirective.Disband);   // HACK
+        D.AssertEqual(ShipDirective.Disband, directive);   // HACK
         IShipNavigable target = _settlement;
         var remoteShip = _remoteUserOwnedSelectedItem as ShipItem;
         bool toNotifyCmd = false;

@@ -625,8 +625,7 @@ public abstract class AMonoStateMachine<E> : AMonoBase where E : struct {
 
     #region Pass On Methods
 
-    protected override void Update() {
-        base.Update();
+    void Update() {
         state.DoUpdate();
     }
 
@@ -636,23 +635,21 @@ public abstract class AMonoStateMachine<E> : AMonoBase where E : struct {
         state.DoOccasionalUpdate();
     }
 
-    protected override void LateUpdate() {
-        base.LateUpdate();
+
+
+    void LateUpdate() {
         state.DoLateUpdate();
     }
 
-    protected override void FixedUpdate() {
-        base.FixedUpdate();
+    void FixedUpdate() {
         state.DoFixedUpdate();
     }
 
-    protected override void OnTriggerEnter(Collider other) {
-        base.OnTriggerEnter(other);
+    void OnTriggerEnter(Collider other) {
         state.DoOnTriggerEnter(other);
     }
 
-    protected override void OnTriggerExit(Collider other) {
-        base.OnTriggerExit(other);
+    void OnTriggerExit(Collider other) {
         state.DoOnTriggerExit(other);
     }
 
@@ -660,19 +657,61 @@ public abstract class AMonoStateMachine<E> : AMonoBase where E : struct {
         state.DoOnTriggerStay(other);
     }
 
-    protected override void OnCollisionEnter(Collision collision) {
-        base.OnCollisionEnter(collision);
+    void OnCollisionEnter(Collision collision) {
         state.DoOnCollisionEnter(collision);
     }
 
-    protected override void OnCollisionExit(Collision collision) {
-        base.OnCollisionExit(collision);
+    void OnCollisionExit(Collision collision) {
         state.DoOnCollisionExit(collision);
     }
 
     void OnCollisionStay(Collision collision) {
         state.DoOnCollisionStay(collision);
     }
+
+
+    //protected override void Update() {
+    //    base.Update();
+    //    state.DoUpdate();
+    //}
+
+    //protected override void LateUpdate() {
+    //    base.LateUpdate();
+    //    state.DoLateUpdate();
+    //}
+
+    //protected override void FixedUpdate() {
+    //    base.FixedUpdate();
+    //    state.DoFixedUpdate();
+    //}
+
+    //protected override void OnTriggerEnter(Collider other) {
+    //    base.OnTriggerEnter(other);
+    //    state.DoOnTriggerEnter(other);
+    //}
+
+    //protected override void OnTriggerExit(Collider other) {
+    //    base.OnTriggerExit(other);
+    //    state.DoOnTriggerExit(other);
+    //}
+
+    //void OnTriggerStay(Collider other) {
+    //    state.DoOnTriggerStay(other);
+    //}
+
+    //protected override void OnCollisionEnter(Collision collision) {
+    //    base.OnCollisionEnter(collision);
+    //    state.DoOnCollisionEnter(collision);
+    //}
+
+    //protected override void OnCollisionExit(Collision collision) {
+    //    base.OnCollisionExit(collision);
+    //    state.DoOnCollisionExit(collision);
+    //}
+
+    //void OnCollisionStay(Collision collision) {
+    //    state.DoOnCollisionStay(collision);
+    //}
 
     ////void OnHover(bool isOver) {
     ////    state.DoOnHover(isOver);

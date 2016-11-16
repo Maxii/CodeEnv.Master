@@ -138,8 +138,9 @@ namespace CodeEnv.Master.Common {
         /// <summary>
         ///  Tests if <c>value</c> is within <c>acceptableRange</c> of the <c>targetValue</c>. 
         ///  Useful in dealing with floating point imprecision.
-        ///  <remarks>Works to within float precision which is 7-8 significant digits. Can start warning 
-        ///  when value &gt; 5000 and acceptableRange &lt; 0.001. WILL warn with greater separation.</remarks>
+        ///  <remarks>Works to within float precision which is 7-8 significant digits. If the separation between
+        ///  value and acceptableRange is > 7-8 significant digits, acceptableRange will be automatically increased
+        ///  to stay within the limits of float precision.</remarks>
         /// </summary>
         /// <param name="value">The value to test.</param>
         /// <param name="targetValue">The targetValue.</param>
@@ -149,15 +150,18 @@ namespace CodeEnv.Master.Common {
             float acceptRange = acceptableRange;
             float minAcceptRange = targetValue / 5000000F; // 6-7 significant digits
             if (acceptRange < minAcceptRange) {
-                //D.Warn("{0}.Approx(): {1:0.##} vs {2:0.######} separation exceeds float precision. Adjusting acceptRange.", typeof(Mathfx).Name, targetValue, acceptableRange);
+                // D.Warn("{0}.Approx(): {1:0.##} vs {2:0.######} separation exceeds float precision. Adjusting acceptRange.", typeof(Mathfx).Name, targetValue, acceptableRange);
+                // Can start warning when value &gt; 5000 and acceptableRange &lt; 0.001. WILL warn with greater separation.
                 acceptRange = minAcceptRange;
             }
             float delta = Mathf.Abs(value - targetValue);
             bool isEqual = delta <= acceptRange;
             if (!isEqual) {
                 isEqual = Mathf.Approximately(value, targetValue);  // IMPROVE Should really be an error
-                D.Warn(isEqual, @"{0}: Inconsistent ApproxEquals comparison result between {1:0.000000} and {2:0.000000}. 
-                    Delta = {3:0.000000}, AcceptRange = {4:0.000000}.", typeof(Mathfx).Name, value, targetValue, delta, acceptRange);
+                if (isEqual) {
+                    D.Warn(@"{0}: Inconsistent ApproxEquals comparison result between {1:0.000000} and {2:0.000000}. 
+                        Delta = {3:0.000000}, AcceptRange = {4:0.000000}.", typeof(Mathfx).Name, value, targetValue, delta, acceptRange);
+                }
             }
             return isEqual;
         }

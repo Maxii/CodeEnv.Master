@@ -73,8 +73,7 @@ public class StarFlare : AMonoBase {
         _originalIntensity = _flareLight.intensity;
     }
 
-    protected override void Update() {
-        base.Update();
+    void Update() {
         if (_flareLight != null) {
             VaryFlareIntensityByCameraDistance();
         }

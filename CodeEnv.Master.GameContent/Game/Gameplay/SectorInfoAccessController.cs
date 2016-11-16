@@ -75,22 +75,6 @@ namespace CodeEnv.Master.GameContent {
             return new ObjectAnalyzer().ToString(this);
         }
 
-        #region Archive
-
-        //public override bool HasAccessToInfo(Player player, ItemInfoID infoID) {
-        //    switch (infoID) {
-        //        case ItemInfoID.Name:
-        //        case ItemInfoID.Position:
-        //        case ItemInfoID.SectorID:
-        //        case ItemInfoID.Owner:
-        //            return true;
-        //        default:
-        //            return false;
-        //    }
-        //}
-
-        #endregion
-
     }
 }
 

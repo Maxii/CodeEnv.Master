@@ -107,6 +107,16 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     /// </summary>
     public bool FleetsAutoExploreAsDefault { get { return _fleetsAutoExplore; } }
 
+    [Tooltip("Check if all players know everything about the objects they detect")]
+    [SerializeField]
+    private bool _allIntelCoverageIsComprehensive = false;
+    /// <summary>
+    /// If <c>true</c> every player knows everything about every item they detect. 
+    /// It DOES NOT MEAN that they have detected everything or that players have met yet.
+    /// Players meet when they first detect a HQ Element owned by another player.
+    /// </summary>
+    public bool IsAllIntelCoverageComprehensive { get { return _allIntelCoverageIsComprehensive; } }
+
     #endregion
 
     #region InGame Display Editor Fields
@@ -167,6 +177,20 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     public bool ShowSystemTrackingLabels { get { return _showSystemTrackingLabels; } }
 
     #endregion
+
+    #region Audio Editor Fields
+
+    [Tooltip("Check if Weapon Impact SFX should always be heard, even when the visual effect may not show")]
+    [SerializeField]
+    private bool _alwaysHearWeaponImpacts = false;
+    /// <summary>
+    /// Indicates whether weapon impact SFX should always be heard, even when the 
+    /// visual effect is not showing.
+    /// </summary>
+    public bool AlwaysHearWeaponImpacts { get { return _alwaysHearWeaponImpacts; } }
+
+    #endregion
+
 
     public override bool IsPersistentAcrossScenes { get { return true; } }  // GameScene -> GameScene retains values
 
@@ -323,73 +347,73 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
 
     private void OnShowFleetCoursePlotsChanged() {
         if (showFleetCoursePlots != null) {
-            showFleetCoursePlots(Instance, new EventArgs());
+            showFleetCoursePlots(Instance, EventArgs.Empty);
         }
     }
 
     private void OnShowShipCoursePlotsChanged() {
         if (showShipCoursePlots != null) {
-            showShipCoursePlots(Instance, new EventArgs());
+            showShipCoursePlots(Instance, EventArgs.Empty);
         }
     }
 
     private void OnShowFleetVelocityRaysChanged() {
         if (showFleetVelocityRays != null) {
-            showFleetVelocityRays(Instance, new EventArgs());
+            showFleetVelocityRays(Instance, EventArgs.Empty);
         }
     }
 
     private void OnShowShipVelocityRaysChanged() {
         if (showShipVelocityRays != null) {
-            showShipVelocityRays(Instance, new EventArgs());
+            showShipVelocityRays(Instance, EventArgs.Empty);
         }
     }
 
     private void OnShowFormationStationsChanged() {
         if (showFleetFormationStations != null) {
-            showFleetFormationStations(Instance, new EventArgs());
+            showFleetFormationStations(Instance, EventArgs.Empty);
         }
     }
 
     private void OnShowShipCollisionDetectionZonesChanged() {
         if (showShipCollisionDetectionZones != null) {
-            showShipCollisionDetectionZones(Instance, new EventArgs());
+            showShipCollisionDetectionZones(Instance, EventArgs.Empty);
         }
     }
 
     private void OnShowShieldsChanged() {
         if (showShields != null) {
-            showShields(Instance, new EventArgs());
+            showShields(Instance, EventArgs.Empty);
         }
     }
 
     private void OnShowSensorsChanged() {
         if (showSensors != null) {
-            showSensors(Instance, new EventArgs());
+            showSensors(Instance, EventArgs.Empty);
         }
     }
 
     private void OnShowObstacleZonesChanged() {
         if (showObstacleZones != null) {
-            showObstacleZones(Instance, new EventArgs());
+            showObstacleZones(Instance, EventArgs.Empty);
         }
     }
 
     public void OnValidatePlayerKnowledgeNow() {
         if (validatePlayerKnowledgeNow != null) {
-            validatePlayerKnowledgeNow(Instance, new EventArgs());
+            validatePlayerKnowledgeNow(Instance, EventArgs.Empty);
         }
     }
 
     private void OnShowSystemTrackingLabels() {
         if (showSystemTrackingLabels != null) {
-            showSystemTrackingLabels(Instance, new EventArgs());
+            showSystemTrackingLabels(Instance, EventArgs.Empty);
         }
     }
 
     private void OnShowUnitTrackingLabels() {
         if (showUnitTrackingLabels != null) {
-            showUnitTrackingLabels(Instance, new EventArgs());
+            showUnitTrackingLabels(Instance, EventArgs.Empty);
         }
     }
 

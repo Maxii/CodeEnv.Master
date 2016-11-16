@@ -100,7 +100,7 @@ public class Explosion : AMonoBase, IEffect {
 
     private void OnExplosionFinished() {
         if (effectFinishedOneShot != null) {
-            effectFinishedOneShot(this, new EventArgs());
+            effectFinishedOneShot(this, EventArgs.Empty);
             effectFinishedOneShot = null;
         }
     }

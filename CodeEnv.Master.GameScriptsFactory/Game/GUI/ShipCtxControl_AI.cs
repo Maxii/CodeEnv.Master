@@ -38,7 +38,7 @@ public class ShipCtxControl_AI : ACtxControl {
 
     protected override bool IsSelectedItemMenuOperator(ISelectable selected) {
         if (_shipMenuOperator.IsSelected) {
-            D.Assert(_shipMenuOperator == selected as ShipItem);
+            D.AssertEqual(_shipMenuOperator, selected as ShipItem);
             return true;
         }
         return false;

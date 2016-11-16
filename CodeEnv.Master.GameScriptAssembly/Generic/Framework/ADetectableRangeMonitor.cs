@@ -10,11 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
+//#define DEBUG_LOG
 #define DEBUG_WARN
 #define DEBUG_ERROR
-
-#define ENABLE_PROFILER
 
 // default namespace
 
@@ -44,18 +42,14 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     /// </summary>
     protected IList<IDetectableType> _objectsDetected;
 
-    private IList<IDetectableType> __objectsDetectedViaWorkaround;
-
     protected override void InitializeValuesAndReferences() {
         base.InitializeValuesAndReferences();
         _objectsDetected = new List<IDetectableType>();
-        __objectsDetectedViaWorkaround = new List<IDetectableType>();
     }
 
     #region Event and Property Change Handlers
 
-    protected sealed override void OnTriggerEnter(Collider other) {
-        base.OnTriggerEnter(other);
+    void OnTriggerEnter(Collider other) {
         //D.Log(ShowDebugLog, "{0}.OnTriggerEnter() tripped by {1}.", Name, other.name);
         if (other.isTrigger) {
             //D.Log(ShowDebugLog, "{0}.OnTriggerEnter() ignored TriggerCollider {1}.", FullName, other.name);
@@ -66,7 +60,7 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
         if (detectedObject != null) {
             //D.Log(ShowDebugLog, "{0} detected {1} at {2:0.} units.", FullName, detectedObject.FullName, Vector3.Distance(transform.position, detectedObject.Position));
             if (!detectedObject.IsOperational) {
-                D.Warn(ShowDebugLog, "{0} avoided adding {1} {2} that is not operational.", FullName, typeof(IDetectableType).Name, detectedObject.FullName);
+                D.Log(ShowDebugLog, "{0} avoided adding {1} {2} that is not operational.", FullName, typeof(IDetectableType).Name, detectedObject.FullName);
                 return;
             }
             if (_gameMgr.IsPaused) {
@@ -78,8 +72,7 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
         }
     }
 
-    protected sealed override void OnTriggerExit(Collider other) {
-        base.OnTriggerExit(other);
+    void OnTriggerExit(Collider other) {
         //D.Log(ShowDebugLog, "{0}.OnTriggerExit() tripped by {1}.", Name, other.name);
         if (other.isTrigger) {
             //D.Log(ShowDebugLog, "{0}.OnTriggerExit() ignored TriggerCollider {1}.", FullName, other.name);
@@ -106,6 +99,9 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
             AcquireAllDetectableObjectsInRange();
         }
         else {
+            if (_equipmentList.All(e => e.IsDamaged)) {
+                D.LogBold("{0}'s equipment is all damaged making it no longer operational.", FullName);
+            }
             RemoveAllDetectedObjects();
         }
     }
@@ -120,28 +116,9 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
         }
     }
 
-    /// <summary>
-    /// Called when [parent owner changing].
-    /// <remarks>Sets IsOperational to false. If not already false, this change removes all tracked detectable items
-    /// while the parentItem still has the old owner. In the case of Sensors, using the parentItem with the old owner
-    /// is important when notifying the detectedItems of their loss of detection.</remarks>
-    /// </summary>
-    /// <param name="incomingOwner">The incoming owner.</param>
-    protected sealed override void HandleParentItemOwnerChanging(Player incomingOwner) {
-        base.HandleParentItemOwnerChanging(incomingOwner);
-        IsOperational = false;
-    }
-
-    /// <summary>
-    /// Called when [parent owner changed].
-    /// <remarks>Combined with HandleParentItemOwnerChanging(), this IsOperational change results in reacquisition of detectable items
-    /// using the new owner if any equipment is operational. If no equipment is operational,then the reacquisition will be deferred
-    /// until a pieceOfEquipment becomes operational again.</remarks>
-    /// </summary>
     protected override void HandleParentItemOwnerChanged() {
         base.HandleParentItemOwnerChanged();
         RangeDistance = RefreshRangeDistance();
-        AssessIsOperational();
     }
 
     protected override void HandleIsPausedChanged() {
@@ -164,9 +141,6 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
             //D.Log(ShowDebugLog, "{0} now tracking {1} {2}.", FullName, typeof(IDetectableType).Name, detectedObject.FullName);
             HandleDetectedObjectAdded(detectedObject);
         }
-        else {
-            __ValidateObjectWasBulkDetected(detectedObject);
-        }
     }
 
     /// <summary>
@@ -183,12 +157,6 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
             else {
                 D.Log(ShowDebugLog, "{0} no longer tracking dead {1}.", FullName, previouslyDetectedObject.FullName);
             }
-
-            // Works in conjunction with __ValidateObjectWasBulkDetected(IDetectableType detectedObject)
-            if (__objectsDetectedViaWorkaround.Contains(previouslyDetectedObject)) {
-                __objectsDetectedViaWorkaround.Remove(previouslyDetectedObject);
-            }
-
             HandleDetectedObjectRemoved(previouslyDetectedObject);
         }
         else {
@@ -224,16 +192,16 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     public void HandleRelationsChanged(Player otherPlayer) {
         //D.Log(ShowDebugLog, @"{0} received a relationship change event. Initiating review of relationship with all detected objects. 
         //{1} & {2}'s NewRelationship = {3}.", FullName, Owner.Name, otherPlayer.Name, Owner.GetCurrentRelations(otherPlayer).GetValueName());
-        ReviewRelationsWithAllDetectedObjects();
+        ReviewKnowledgeOfAllDetectedObjects();
     }
 
     /// <summary>
-    /// Reviews the DiplomaticRelationship of all detected objects (via attempting to access their owner) with the objective of
-    /// making sure each object is in the right relationship container, if any.
+    /// Reviews the knowledge we have of each detected object (via attempting to access their owner) with the objective of
+    /// making sure each object is in the right container, if any.
     /// <remarks>OPTIMIZE The implementation of this method can be made more efficient using info from the RelationsChanged event.
     /// Deferred for now until it is clear what info will be provided in the end.</remarks>
     /// </summary>
-    protected abstract void ReviewRelationsWithAllDetectedObjects();
+    protected abstract void ReviewKnowledgeOfAllDetectedObjects();
 
     /// <summary>
     /// All items currently detected are removed.
@@ -246,19 +214,27 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     }
 
     /// <summary>
-    /// Acquires all detectable objects in range after first removing all objects already detected.
+    /// Re-acquires all detectable objects in range, removing those previously detected that were not
+    /// re-acquired, and adding those re-acquired that were not previously detected. This approach
+    /// avoids the previous brute force approach removing all and then re-acquiring all which created 
+    /// unnecessary churn in derived classes which typically categorize objects added or removed.
     /// </summary>
-    private void ReacquireAllDetectableObjectsInRange() {
-        RemoveAllDetectedObjects();
-        AcquireAllDetectableObjectsInRange();
+    protected virtual void ReacquireAllDetectableObjectsInRange() {
+        var allDetectableObjectsInRange = BulkDetectAllDetectableTypesInRange();
+        var objectsToRemove = _objectsDetected.Except(allDetectableObjectsInRange);
+        var objectsToAdd = allDetectableObjectsInRange.Except(_objectsDetected);
+        objectsToRemove.ForAll(obj => RemoveDetectedObject(obj));
+        objectsToAdd.ForAll(obj => AddDetectedObject(obj));
     }
 
     /// <summary>
     /// All detectable items in range are added to this Monitor.
-    /// Throws an exception if any items are already present in the ItemsDetected list.
     /// </summary>
     private void AcquireAllDetectableObjectsInRange() {
-        BulkDetectAllCollidersInRange();
+        var allDetectableObjectsInRange = BulkDetectAllDetectableTypesInRange();
+        allDetectableObjectsInRange.ForAll(dObject => {
+            AddDetectedObject(dObject);
+        });
     }
 
     /// <summary>
@@ -268,27 +244,20 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     /// not detect but I haven't been able to prove that, especially within one frame. 
     /// This technique finds all colliders in range, then finds those IDetectableTypes among them and adds them. 
     /// This method is used when the monitor first starts up, and when something changes in the monitor
-    /// (like its range) requiring a clear and re-acquire. OnTriggerEnter() will be relied on to add individual 
+    /// (like its range) requiring a re-acquire. OnTriggerEnter() will be relied on to add individual 
     /// colliders as they come into range.
     /// </summary>
-    private void BulkDetectAllCollidersInRange() {
-        D.Assert(_objectsDetected.Count == Constants.Zero);
-        __objectsDetectedViaWorkaround.Clear();
-
-        //D.Log(ShowDebugLog, "{0}.BulkDetectAllCollidersInRange() called.", FullName);
+    private IEnumerable<IDetectableType> BulkDetectAllDetectableTypesInRange() {
+        //D.Log(ShowDebugLog, "{0}.BulkDetectAllDetectableTypesInRange() called.", FullName);
         // 8.3.16 added layer mask and Trigger.Ignore
         var allCollidersInRange = Physics.OverlapSphere(transform.position, RangeDistance, DefaultLayerMask, QueryTriggerInteraction.Ignore);
 
-        var allDetectableObjectsInRange = allCollidersInRange.Where(c => c.GetComponent<IDetectableType>() != null).Select(c => c.GetComponent<IDetectableType>());
-        foreach (var detectableObject in allDetectableObjectsInRange) {
-            if (!detectableObject.IsOperational) {
-                D.Warn(ShowDebugLog, "{0} BulkDetect avoided adding {1} {2} that is not operational.", FullName, typeof(IDetectableType).Name, detectableObject.FullName);
-                continue;
-            }
-            //D.Log(ShowDebugLog, "{0}'s bulk detection method is adding {1}.", FullName, detectableObject.FullName);
-            AddDetectedObject(detectableObject);    // must precede next line as __ValidateObjectWasBulkDetected() depends on it
-            __objectsDetectedViaWorkaround.Add(detectableObject);
-        }
+        var allDetectableObjectsInRange = from c in allCollidersInRange
+                                          let detectableObject = c.GetComponent<IDetectableType>()
+                                          where detectableObject != null && detectableObject.IsOperational
+                                          select detectableObject;
+
+        return allDetectableObjectsInRange;
     }
 
     #region Objects Detected While Paused Handling System
@@ -372,79 +341,8 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
 
     protected override void CompleteResetForReuse() {
         base.CompleteResetForReuse();
-        D.Assert(_objectsDetected.Count == Constants.Zero);
-        __objectsDetectedViaWorkaround.Clear();
+        D.AssertEqual(Constants.Zero, _objectsDetected.Count);
     }
-
-    #region Acquire Colliders Workaround Archive
-
-    /// <summary>
-    /// Detects all colliders in range, including those that would otherwise not generate
-    /// an OnTriggerEnter() event. The later includes static colliders and any 
-    /// rigidbody colliders that are currently asleep (unmoving). This is necessary as some
-    /// instances of this monitor don't move (e.g. SensorRangeMonitor on StarbaseCmd), keeping its rigidbody perpetually asleep. When
-    /// the monitor's rigidbody is asleep, it will only detect other rigidbody colliders that are
-    /// currently awake (moving). This technique finds all colliders in range, then finds those
-    /// IDetectable items among them that haven't been added and adds them. The 1 frame
-    /// delay used allows the monitor to find those it can on its own. I then filter those out
-    /// and add only those that aren't already present, avoiding duplication warnings.
-    /// 
-    /// <remarks>Using WakeUp() doesn't work on kinematic rigidbodies. This makes 
-    /// sense as they are always sleeping, being that they don't interact with the physics system.
-    /// </remarks>
-    /// </summary>
-    //private void __WorkaroundToDetectAllCollidersInRange() {
-    //    D.Assert(_objectsDetected.Count == Constants.Zero);
-    //    __objectsDetectedViaWorkaround.Clear();
-
-    //    //D.Log("{0}.__WorkaroundToDetectAllCollidersInRange() called.", Name);
-    //    UnityUtility.WaitOneFixedUpdateToExecute(() => {
-    //        // delay to allow monitor 1 fixed update to record items that it detects. In my observation, it takes more than one frame
-    //        // for OnTriggerEnter() to reacquire colliders in range and it doesn't necessarily get them all. In addition, some of them are
-    //        // reacquired more than once. As a result, I'm going to rely on a new version of this method to bulk acquire colliders without delay 
-    //        // when the monitor starts up and when something changes in the monitor requiring a clear and re-acquire. OnTriggerEnter() will 
-    //        // be relied on to add individual colliders as they come into range.
-    //        if (transform == null) { return; } // client (and thus monitor) can be destroyed during this 1 frame delay
-    //        var allCollidersInRange = Physics.OverlapSphere(transform.position, RangeDistance);
-    //        var allDetectableObjectsInRange = allCollidersInRange.Where(c => c.GetComponent<IDetectableType>() != null).Select(c => c.GetComponent<IDetectableType>());
-    //        D.Warn("{0} has detected the following items prior to attempting workaround: {1}.", Name, _objectsDetected.Select(i => i.FullName).Concatenate());
-    //        var undetectedDetectableItems = allDetectableObjectsInRange.Except(_objectsDetected);
-    //        if (undetectedDetectableItems.Any()) {
-    //            foreach (var undetectedItem in undetectedDetectableItems) {
-    //                if (!undetectedItem.IsOperational) {
-    //                    D.Log("{0} avoided adding {1} {2} that is not operational.", Name, typeof(IDetectableType).Name, undetectedItem.FullName);
-    //                    continue;
-    //                }
-    //                D.Warn("{0}'s detection workaround is adding {1}.", Name, undetectedItem.FullName);
-    //                __objectsDetectedViaWorkaround.Add(undetectedItem);
-    //                AddDetectedObject(undetectedItem);
-    //            }
-    //        }
-    //    });
-    //}
-
-    /// <summary>
-    /// Adds the indicated item to the list of ItemsDetected.
-    /// </summary>
-    /// <param name="detectedItem">The detected item.</param>
-    //protected void AddDetectedObject(IDetectableType detectedObject) {
-    //    D.Assert(detectedObject.IsOperational);
-    //    if (!_objectsDetected.Contains(detectedObject)) {
-    //        _objectsDetected.Add(detectedObject);
-    //        D.Log("{0} now tracking {1} {2}.", Name, typeof(IDetectableType).Name, detectedObject.FullName);
-    //        HandleDetectedObjectAdded(detectedObject);
-    //    }
-    //    else {
-    //        if (__objectsDetectedViaWorkaround.Contains(detectedObject)) {
-    //            D.Warn("{0} attempted to add duplicate {1} {2} from workaround.", Name, typeof(IDetectableType).Name, detectedObject.FullName);
-    //        }
-    //        else {
-    //            D.Warn("{0} attempted to add duplicate {1} {2}, but not from workaround.", Name, typeof(IDetectableType).Name, detectedObject.FullName);
-    //        }
-    //    }
-    //}
-
-    #endregion
 
     #region Debug
 
@@ -453,17 +351,6 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     /// Default does nothing.
     /// </summary>
     protected virtual void __ValidateRangeDistance() { }
-
-    private void __ValidateObjectWasBulkDetected(IDetectableType detectedObject) {
-        if (__objectsDetectedViaWorkaround.Contains(detectedObject)) {
-            //D.Log(ShowDebugLog, "{0} is ignoring detection of {1} that was previously bulk detected.", FullName, detectedObject.FullName);
-            __objectsDetectedViaWorkaround.Remove(detectedObject);
-        }
-        else {
-            // newly re-detected object that wasn't initially detected by BulkDetect
-            D.Error("{0} has re-detected {1} that is already detected.", FullName, detectedObject.FullName);
-        }
-    }
 
     private void __WarnOnErroneousTriggerExit(IDetectableType lostDetectionObject) {
         float lostDetectionObjectDistance;
@@ -474,6 +361,69 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
                 FullName, lostDetectionObject.FullName, lostDetectionObjectDistance, rangeDistanceThreshold);
         }
     }
+
+    #endregion
+
+    #region ValidateObjectWasBulkDetected Archive
+
+    //private IList<IDetectableType> __objectsDetectedViaWorkaround;
+
+    //protected void AddDetectedObject(IDetectableType detectedObject) {
+    //    D.Assert(detectedObject.IsOperational);
+    //    if (!_objectsDetected.Contains(detectedObject)) {
+    //        _objectsDetected.Add(detectedObject);
+    //        //D.Log(ShowDebugLog, "{0} now tracking {1} {2}.", FullName, typeof(IDetectableType).Name, detectedObject.FullName);
+    //        HandleDetectedObjectAdded(detectedObject);
+    //    }
+    //    else {
+    //        __ValidateObjectWasBulkDetected(detectedObject);
+    //    }
+    //}
+
+    //protected void AcquireAllDetectableObjectsInRange() {
+    //    BulkDetectAllCollidersInRange();
+    //}
+
+    //private void __ValidateObjectWasBulkDetected(IDetectableType detectedObject) {
+    //    if (__objectsDetectedViaWorkaround.Contains(detectedObject)) {
+    //        //D.Log(ShowDebugLog, "{0} is ignoring detection of {1} that was previously bulk detected.", FullName, detectedObject.FullName);
+    //        __objectsDetectedViaWorkaround.Remove(detectedObject);
+    //    }
+    //    else {
+    //        // newly re-detected object that wasn't initially detected by BulkDetect
+    //        D.Error("{0} has re-detected {1} that is already detected.", FullName, detectedObject.FullName);
+    //    }
+    //}
+
+    /// <summary>
+    /// Detects all colliders in range in one step, including those that might not otherwise generate
+    /// an OnTriggerEnter() event. The docs http://docs.unity3d.com/410/Documentation/Manual/Physics.html
+    /// say there are no colliders that a Kinematic Rigidbody Trigger Collider (like these monitors) will 
+    /// not detect but I haven't been able to prove that, especially within one frame. 
+    /// This technique finds all colliders in range, then finds those IDetectableTypes among them and adds them. 
+    /// This method is used when the monitor first starts up, and when something changes in the monitor
+    /// (like its range) requiring a clear and re-acquire. OnTriggerEnter() will be relied on to add individual 
+    /// colliders as they come into range.
+    /// </summary>
+    //private void BulkDetectAllCollidersInRange() {
+    //    D.Assert(_objectsDetected.Count == Constants.Zero);
+    //    __objectsDetectedViaWorkaround.Clear();
+
+    //    //D.Log(ShowDebugLog, "{0}.BulkDetectAllCollidersInRange() called.", FullName);
+    //    // 8.3.16 added layer mask and Trigger.Ignore
+    //    var allCollidersInRange = Physics.OverlapSphere(transform.position, RangeDistance, DefaultLayerMask, QueryTriggerInteraction.Ignore);
+
+    //    var allDetectableObjectsInRange = allCollidersInRange.Where(c => c.GetComponent<IDetectableType>() != null).Select(c => c.GetComponent<IDetectableType>());
+    //    foreach (var detectableObject in allDetectableObjectsInRange) {
+    //        if (!detectableObject.IsOperational) {
+    //            D.Warn(ShowDebugLog, "{0} BulkDetect avoided adding {1} {2} that is not operational.", FullName, typeof(IDetectableType).Name, detectableObject.FullName);
+    //            continue;
+    //        }
+    //        //D.Log(ShowDebugLog, "{0}'s bulk detection method is adding {1}.", FullName, detectableObject.FullName);
+    //        AddDetectedObject(detectableObject);    // must precede next line as __ValidateObjectWasBulkDetected() depends on it
+    //        __objectsDetectedViaWorkaround.Add(detectableObject);
+    //    }
+    //}
 
     #endregion
 

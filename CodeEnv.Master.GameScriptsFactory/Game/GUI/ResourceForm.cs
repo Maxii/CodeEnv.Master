@@ -29,8 +29,9 @@ public class ResourceForm : AForm {
     public ResourceID ResourceID {
         get { return _resourceID; }
         set {
-            D.Assert(_resourceID == default(ResourceID));   // occurs only once between Resets
-            SetProperty<ResourceID>(ref _resourceID, value, "ResourceID", ResourceIDPropSetHandler); }
+            D.AssertDefault((int)_resourceID);   // occurs only once between Resets
+            SetProperty<ResourceID>(ref _resourceID, value, "ResourceID", ResourceIDPropSetHandler);
+        }
     }
 
     public override FormID FormID { get { return FormID.ResourceHud; } }
