@@ -11,9 +11,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -28,7 +28,7 @@ using UnityEngine;
 /// or on a background thread. The general idea is for simple tasks you can use the built in ActionTask which will tick any 
 /// Func (function that returns a boolean) you pass in each frame until you return false indicating the task is complete. 
 /// For more complex tasks you can subclass AbstractTask for main thread tasks and AbstractBackgroundTask for background tasks. 
-/// All non-background tasks can be paused, unpaused or cancelled (background tasks cannot be paused).
+/// All non-background tasks can be paused, unpaused or canceled (background tasks cannot be paused).
 ///
 ///A task is defined as anything that requires work. It could be as simple as a method that needs to be called each frame (similar to Update
 ///but with the ability to pause/unpause/cancel) or as complex as something that needs to run on a background thread.
@@ -103,7 +103,7 @@ public class TaskManager : MonoBehaviour, ITaskManager {
         foreach (var t in otherTasks)
             _taskList.Add(t);
 
-        // if our update loop isnt running start it up
+        // if our update loop isn't running start it up
         if (!_isRunningTasks)
             StartCoroutine(ProcessTasks());
     }
@@ -114,7 +114,7 @@ public class TaskManager : MonoBehaviour, ITaskManager {
     public void AddBackgroundTask(ABackgroundTask task) {
         _backgroundTaskList.Add(task);
 
-        // if our update loop isnt running start it up
+        // if our update loop isn't running start it up
         if (!_isRunningBackgroundTasks)
             StartCoroutine(ProcessBackgroundTasks());
     }
@@ -137,7 +137,7 @@ public class TaskManager : MonoBehaviour, ITaskManager {
                 if (task.state == TaskState.Running)
                     task.Tick();
 
-                // prepare to clear out any tasks that are completed or cancelled
+                // prepare to clear out any tasks that are completed or canceled
                 if (task.state == TaskState.Complete || task.state == TaskState.Canceled)
                     _completedTaskQueue.Enqueue(task);
             }

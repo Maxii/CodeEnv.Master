@@ -11,9 +11,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -30,6 +30,8 @@ using UnityEngine;
 /// Derived from P31 Job Manager.
 /// </summary>
 public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
+
+    private const string JobCreationProfilerTextFormat = "{0} Creation";
 
     public override bool IsPersistentAcrossScenes { get { return true; } }
 
@@ -91,7 +93,7 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
     private void HandleIsRunningChanged() {
         //D.Log("{0} received IsRunning = {1} event.", GetType().Name, IsGameRunning);
         if (IsGameRunning) {
-            D.Log("{0}: {1} Jobs running when IsRunning -> true. Jobs: {2}.", GetType().Name, _allRunningJobs.Count, _allRunningJobs.Select(job => job.JobName).Concatenate());
+            //D.Log("{0}: {1} Jobs running when IsRunning -> true. Jobs: {2}.", GetType().Name, _allRunningJobs.Count, _allRunningJobs.Select(job => job.JobName).Concatenate());
         }
         else {
             KillAllKillableJobs();
@@ -101,8 +103,8 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
     private void IsPausedPropChangedHandler() {
         _isGamePaused = _gameMgr.IsPaused;
         ChangePauseStateOfJobs(_isGamePaused);
-        string pauseStateMsg = _isGamePaused ? "paused" : "unpaused";
-        D.Log("{0} {1} {2} Jobs. Frame: {3}, Jobs: {4}.", GetType().Name, pauseStateMsg, _pausableJobs.Count, Time.frameCount, _pausableJobs.Select(job => job.JobName).Concatenate());
+        //string pauseStateMsg = _isGamePaused ? "paused" : "unpaused";
+        //D.Log("{0} {1} {2} Jobs. Frame: {3}, Jobs: {4}.", GetType().Name, pauseStateMsg, _pausableJobs.Count, Time.frameCount, _pausableJobs.Select(job => job.JobName).Concatenate());
     }
 
     #endregion
@@ -187,7 +189,7 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
     /// A reference to the Job so it can be killed before it finishes, if needed.
     /// </returns>
     public Job StartNonGameplayJob(IEnumerator coroutine, string jobName, Action<bool> jobCompleted = null) {
-        Profiler.BeginSample("Job creation allocation");
+        Profiler.BeginSample(JobCreationProfilerTextFormat.Inject(jobName));
         var job = new Job(coroutine, jobName, toStart: true, jobCompleted: (jobWasKilled) => {
             if (jobCompleted != null) {
                 jobCompleted(jobWasKilled);
@@ -225,7 +227,7 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
     /// </returns>
     public Job StartGameplayJob(IEnumerator coroutine, string jobName, bool isPausable, Action<bool> jobCompleted = null) {
         ValidateGameIsRunning(jobName);
-        Profiler.BeginSample("Job creation allocation");
+        Profiler.BeginSample(JobCreationProfilerTextFormat.Inject(jobName));
         var job = new Job(coroutine, jobName, toStart: true, jobCompleted: (jobWasKilled) => {
             if (jobCompleted != null) {
                 jobCompleted(jobWasKilled);
@@ -261,7 +263,7 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
     /// </returns>
     public Job WaitForGameplaySeconds(float seconds, string jobName, Action<bool> waitFinished) {
         ValidateGameIsRunning(jobName);
-        Profiler.BeginSample("Job creation allocation");
+        Profiler.BeginSample(JobCreationProfilerTextFormat.Inject(jobName));
         var job = new Job(WaitForSeconds(seconds), jobName, toStart: true, jobCompleted: (jobWasKilled) => {
             waitFinished(jobWasKilled);
             RemoveCompletedJobs();
@@ -293,7 +295,7 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
     /// </returns>
     public Job RecurringWaitForGameplaySeconds(float initialWait, float recurringWait, string jobName, Action waitMilestone) {
         ValidateGameIsRunning(jobName);
-        Profiler.BeginSample("Job creation allocation");
+        Profiler.BeginSample(JobCreationProfilerTextFormat.Inject(jobName));
         var job = new Job(RepeatingWaitForSeconds(initialWait, recurringWait, waitMilestone), jobName, toStart: true, jobCompleted: (jobWasKilled) => {
             D.Assert(jobWasKilled);
             RemoveCompletedJobs();
@@ -323,7 +325,7 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
     /// </returns>
     public Job WaitForHours(float hours, string jobName, Action<bool> waitFinished) {
         ValidateGameIsRunning(jobName);
-        Profiler.BeginSample("Job creation allocation");
+        Profiler.BeginSample(JobCreationProfilerTextFormat.Inject(jobName));
         WaitForHours waitYieldInstruction = new WaitForHours(hours);
         var job = new Job(WaitForHours(waitYieldInstruction), jobName, waitYieldInstruction, toStart: true, jobCompleted: (jobWasKilled) => {
             waitFinished(jobWasKilled);
@@ -359,8 +361,9 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
     /// </returns>
     public Job RecurringWaitForHours(Reference<GameTimeDuration> durationReference, string jobName, Action waitMilestone) {
         ValidateGameIsRunning(jobName);
-        Profiler.BeginSample("Job creation allocation");
-        WaitForHours waitYieldInstruction = new WaitForHours(durationReference);
+        //D.Log("Launching new RecurringWaitForHours(Ref) Job named {0}. Hours = {1}.", jobName, durationReference.Value.TotalInHours);
+        Profiler.BeginSample(JobCreationProfilerTextFormat.Inject(jobName));
+        RecurringWaitForHours waitYieldInstruction = new RecurringWaitForHours(durationReference);
         var job = new Job(RepeatingWaitForHours(waitYieldInstruction, waitMilestone), jobName, waitYieldInstruction, toStart: true, jobCompleted: (jobWasKilled) => {
             D.Assert(jobWasKilled);
             RemoveCompletedJobs();
@@ -394,8 +397,9 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
     /// </returns>
     public Job RecurringWaitForHours(GameTimeDuration duration, string jobName, Action waitMilestone) {
         ValidateGameIsRunning(jobName);
-        Profiler.BeginSample("Job creation allocation");
-        WaitForHours waitYieldInstruction = new WaitForHours(duration);
+        //D.Log("Launching new RecurringWaitForHours Job named {0} Hours = {1}.", jobName, duration.TotalInHours);
+        Profiler.BeginSample(JobCreationProfilerTextFormat.Inject(jobName));
+        RecurringWaitForHours waitYieldInstruction = new RecurringWaitForHours(duration);
         var job = new Job(RepeatingWaitForHours(waitYieldInstruction, waitMilestone), jobName, waitYieldInstruction, toStart: true, jobCompleted: (jobWasKilled) => {
             D.Assert(jobWasKilled);
             RemoveCompletedJobs();
@@ -454,7 +458,7 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
         if (futureDate < _gameTime.CurrentDate) {
             D.Warn("Future date {0} < Current date {1}.", futureDate, _gameTime.CurrentDate);
         }
-        Profiler.BeginSample("Job creation allocation");
+        Profiler.BeginSample(JobCreationProfilerTextFormat.Inject(jobName));
         WaitForDate waitYieldInstruction = new WaitForDate(futureDate);
         var job = new Job(WaitForDate(waitYieldInstruction), jobName, waitYieldInstruction, toStart: true, jobCompleted: (jobWasKilled) => {
             waitFinished(jobWasKilled);
@@ -480,7 +484,7 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
     /// <returns>A reference to the Job so it can be killed before it finishes, if needed.</returns>
     public Job WaitWhile(Func<bool> waitWhileCondition, string jobName, bool isPausable, Action<bool> waitFinished) {
         ValidateGameIsRunning(jobName);
-        Profiler.BeginSample("Job creation allocation");
+        Profiler.BeginSample(JobCreationProfilerTextFormat.Inject(jobName));
         MyWaitWhile waitWhileYI = new MyWaitWhile(waitWhileCondition);
         var job = new Job(WaitWhileCondition(waitWhileYI), jobName, waitWhileYI, toStart: true, jobCompleted: (jobWasKilled) => {
             waitFinished(jobWasKilled);
@@ -513,7 +517,7 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
             var childParticleSystems = particleSystem.gameObject.GetComponentsInChildren<ParticleSystem>().Except(particleSystem);
             childParticleSystems.ForAll(cps => D.Assert(!cps.loop));
         }
-        Profiler.BeginSample("Job creation allocation");
+        Profiler.BeginSample(JobCreationProfilerTextFormat.Inject(jobName));
         var job = new Job(WaitForParticleSystemCompletion(particleSystem, includeChildren), jobName, toStart: true, jobCompleted: (jobWasKilled) => {
             waitFinished(jobWasKilled);
             RemoveCompletedJobs();
@@ -545,9 +549,11 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
 
     private IEnumerator RepeatingWaitForSeconds(float initialWait, float recurringWait, Action waitMilestone) {
         yield return Yielders.GetWaitForSeconds(initialWait);
+        //D.Log("RepeatingWaitForSeconds Initial Milestone with Wait = {0:0.##} is firing on frame {1}.", initialWait, Time.frameCount);
         waitMilestone();
         while (true) {
             yield return Yielders.GetWaitForSeconds(recurringWait);
+            //D.Log("RepeatingWaitForSeconds Milestone with Wait = {0:0.##} is firing on frame {1}.", recurringWait, Time.frameCount);
             waitMilestone();
         }
     }
@@ -559,6 +565,7 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
     private IEnumerator RepeatingWaitForHours(WaitForHours waitYI, Action waitMilestone) {
         while (true) {
             yield return waitYI;
+            //D.Log("RepeatingWaitForHours Milestone with Wait = {0:0.#} fired on frame {1}.", waitYI.DurationInHours, Time.frameCount);
             waitMilestone();
         }
     }

@@ -6,13 +6,13 @@
 // </copyright> 
 // <summary> 
 // File: StarbaseTableRowForm.cs
-//  Form that displays info about a starbase in a table row.
+// Form that displays info about a starbase in a table row.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 

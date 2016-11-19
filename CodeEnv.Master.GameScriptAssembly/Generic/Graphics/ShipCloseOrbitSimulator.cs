@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -31,7 +31,7 @@ public class ShipCloseOrbitSimulator : OrbitSimulator, IShipCloseOrbitSimulator,
     /// <summary>
     /// Checks the ship's position to see whether the ship should simply be manually placed in close orbit.
     /// Returns <c>true</c> if the ship
-    /// if located inside the orbitslot capture window, <c>false</c> otherwise.
+    /// if located inside the orbit slot capture window, <c>false</c> otherwise.
     /// <remarks>If the ship is already properly positioned within the orbit slot capture window or it is inside
     /// the capture window(probably encountering an IObstacle zone except around bases), the AutoPilot cannot be used.
     /// In this case it is best to simply place the ship where it belongs as this should not happen often.</remarks>

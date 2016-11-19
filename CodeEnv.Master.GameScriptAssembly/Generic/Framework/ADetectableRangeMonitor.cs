@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -33,7 +33,10 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     where IDetectableType : class, IDetectable
     where EquipmentType : ARangedEquipment {
 
-    private static LayerMask DefaultLayerMask = LayerMaskUtility.CreateInclusiveMask(Layers.Default);
+    /// <summary>
+    /// The LayerMask to use when bulk detecting colliders trying to find objects of IDetectableType.
+    /// </summary>
+    protected abstract LayerMask BulkDetectionLayerMask { get; }
 
     protected override bool IsTriggerCollider { get { return true; } }
 
@@ -56,15 +59,22 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
             return;
         }
 
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
         var detectedObject = other.GetComponent<IDetectableType>();
+        Profiler.EndSample();
+
         if (detectedObject != null) {
             //D.Log(ShowDebugLog, "{0} detected {1} at {2:0.} units.", FullName, detectedObject.FullName, Vector3.Distance(transform.position, detectedObject.Position));
             if (!detectedObject.IsOperational) {
-                D.Log(ShowDebugLog, "{0} avoided adding {1} {2} that is not operational.", FullName, typeof(IDetectableType).Name, detectedObject.FullName);
+                if (ShowDebugLog) {
+                D.Log("{0} avoided adding {1} {2} that is not operational.", FullName, typeof(IDetectableType).Name, detectedObject.FullName);
+                }
                 return;
             }
             if (_gameMgr.IsPaused) {
-                D.Log(ShowDebugLog, "{0}.OnTriggerEnter() tripped by {1} while paused.", FullName, detectedObject.FullName);
+                if (ShowDebugLog) {
+                D.Log("{0}.OnTriggerEnter() tripped by {1} while paused.", FullName, detectedObject.FullName);
+                }
                 RecordObjectEnteringWhilePaused(detectedObject);
                 return;
             }
@@ -79,11 +89,16 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
             return;
         }
 
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
         var lostDetectionObject = other.GetComponent<IDetectableType>();
+        Profiler.EndSample();
+
         if (lostDetectionObject != null) {
             //D.Log(ShowDebugLog, "{0} lost detection of {1} at {2:0.} units.", FullName, lostDetectionObject.FullName, Vector3.Distance(transform.position, lostDetectionObject.Position));
             if (_gameMgr.IsPaused) {
-                D.Log(ShowDebugLog, "{0}.OnTriggerExit() tripped by {1} while paused.", FullName, lostDetectionObject.FullName);
+                if (ShowDebugLog) {
+                D.Log("{0}.OnTriggerExit() tripped by {1} while paused.", FullName, lostDetectionObject.FullName);
+                }
                 RecordObjectExitingWhilePaused(lostDetectionObject);
                 return;
             }
@@ -155,7 +170,9 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
                 //D.Log(ShowDebugLog, "{0} no longer tracking {1} at distance = {2:0.#}.", FullName, previouslyDetectedObject.FullName, Vector3.Distance(previouslyDetectedObject.Position, transform.position));
             }
             else {
-                D.Log(ShowDebugLog, "{0} no longer tracking dead {1}.", FullName, previouslyDetectedObject.FullName);
+                if (ShowDebugLog) {
+                D.Log("{0} no longer tracking dead {1}.", FullName, previouslyDetectedObject.FullName);
+                }
             }
             HandleDetectedObjectRemoved(previouslyDetectedObject);
         }
@@ -164,7 +181,9 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
                 // Note: Sometimes OnTriggerExit fires when an object is destroyed within the collider's radius. However, it is not reliable
                 // so I remove it manually when I detect the object's death (prior to its destruction). 
                 // When this happens, the object will no longer be present to be removed.
-                D.Log(ShowDebugLog, "{0} attempted to remove dead {1} {2} which was previously removed.", FullName, typeof(IDetectableType).Name, previouslyDetectedObject.FullName);
+                if (ShowDebugLog) {
+                D.Log("{0} attempted to remove dead {1} {2} which was previously removed.", FullName, typeof(IDetectableType).Name, previouslyDetectedObject.FullName);
+                }
             }
             else {
                 D.Error("{0} reports {1} {2} not present to be removed.", FullName, typeof(IDetectableType).Name, previouslyDetectedObject.FullName);
@@ -250,13 +269,19 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     private IEnumerable<IDetectableType> BulkDetectAllDetectableTypesInRange() {
         //D.Log(ShowDebugLog, "{0}.BulkDetectAllDetectableTypesInRange() called.", FullName);
         // 8.3.16 added layer mask and Trigger.Ignore
-        var allCollidersInRange = Physics.OverlapSphere(transform.position, RangeDistance, DefaultLayerMask, QueryTriggerInteraction.Ignore);
+        Collider[] allCollidersInRange = Physics.OverlapSphere(transform.position, RangeDistance, BulkDetectionLayerMask, QueryTriggerInteraction.Ignore);
 
-        var allDetectableObjectsInRange = from c in allCollidersInRange
-                                          let detectableObject = c.GetComponent<IDetectableType>()
-                                          where detectableObject != null && detectableObject.IsOperational
-                                          select detectableObject;
+        IList<IDetectableType> allDetectableObjectsInRange = new List<IDetectableType>(allCollidersInRange.Length);
+        foreach (var c in allCollidersInRange) {
 
+            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+            var detectableObject = c.GetComponent<IDetectableType>();
+            Profiler.EndSample();
+
+            if (detectableObject != null && detectableObject.IsOperational) {
+                allDetectableObjectsInRange.Add(detectableObject);
+            }
+        }
         return allDetectableObjectsInRange;
     }
 

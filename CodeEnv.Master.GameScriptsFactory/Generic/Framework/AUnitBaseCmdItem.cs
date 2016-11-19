@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -222,7 +222,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         //D.Assert(CurrentState != BaseState.Attacking);
 
         if (CurrentOrder != null) {
-            D.Log(ShowDebugLog, "{0} received new {1}.", FullName, CurrentOrder);
+            if (ShowDebugLog) {
+                D.Log("{0} received new {1}.", FullName, CurrentOrder);
+            }
             BaseDirective directive = CurrentOrder.Directive;
             switch (directive) {
                 case BaseDirective.Attack:

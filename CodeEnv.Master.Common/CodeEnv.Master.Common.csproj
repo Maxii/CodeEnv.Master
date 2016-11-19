@@ -18,7 +18,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;UNITY_EDITOR</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;UNITY_EDITOR; DEBUG_ERROR; DEBUG_WARN; DEBUG_LOG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
@@ -31,10 +31,10 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug with Profiler|AnyCPU'">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'ProfilerDebug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;UNITY_EDITOR; ENABLE_PROFILER</DefineConstants>
+    <OutputPath>bin\ProfilerDebug\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;UNITY_EDITOR; ENABLE_PROFILER; DEBUG_ERROR; DEBUG_WARN</DefineConstants>
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
     <DebugType>full</DebugType>
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -59,10 +59,8 @@
     <Compile Include="Generic\Utility\UnityUtility.cs" />
     <Compile Include="Generic\Math\FloatEqualityComparer.cs" />
     <Compile Include="Generic\IO\AXmlReader.cs" />
-    <Compile Include="Game\Gameplay\IntelCoverage.cs" />
     <Compile Include="Generic\Interfaces\IGameInputHelper.cs" />
     <Compile Include="Generic\Math\ResponseCurve.cs" />
-    <Compile Include="Game\Framework\Topography.cs" />
     <Compile Include="Generic\Graphics\WidgetPlacement.cs" />
     <Compile Include="Generic\Math\Math3D.cs" />
     <Compile Include="GlobalSuppressions.cs" />
@@ -90,7 +88,6 @@
     <Compile Include="Generic\Utility\UnityExtensions.cs" />
     <Compile Include="Generic\Framework\AGenericSingleton.cs" />
     <Compile Include="Generic\IO\AXmlPropertyReader.cs" />
-    <Compile Include="Game\Gameplay\DiplomaticRelationship.cs" />
     <Compile Include="Generic\Framework\DisposePropertyChangingSubscription.cs" />
     <Compile Include="Generic\IO\UnityMouseButton.cs" />
     <Compile Include="Generic\IO\NguiMouseButton.cs" />
@@ -102,12 +99,9 @@
     <Compile Include="Generic\Math\Mathfx.cs" />
     <Compile Include="Generic\Math\RandomExtended.cs" />
     <Compile Include="Generic\_Debug\AInstanceCount.cs" />
-    <Compile Include="Game\Framework\GameState.cs" />
     <Compile Include="Game\_Debug\DebugSettings.cs" />
-    <Compile Include="Game\Framework\GameSpeed.cs" />
     <Compile Include="Game\Framework\Layers.cs" />
     <Compile Include="Game\Framework\Tags.cs" />
-    <Compile Include="Game\Framework\GamePlayOptionSettings.cs" />
     <Compile Include="Generic\_Debug\D.cs" />
     <Compile Include="Generic\_Debug\IInstanceCount.cs" />
     <Compile Include="Generic\Graphics\AStringBuilderTextEvent.cs" />
@@ -117,8 +111,6 @@
     <Compile Include="Generic\Framework\PropertyChangingValueEventArgs.cs" />
     <Compile Include="Generic\IO\GraphicsOptionSettings.cs" />
     <Compile Include="Generic\_Debug\UnityDebugConstants.cs" />
-    <Compile Include="Generic\Graphics\IconSection.cs" />
-    <Compile Include="Generic\Graphics\IconSelectionCriteria.cs" />
     <Compile Include="ThirdParty\PropertyHelper.cs" />
     <Compile Include="ThirdParty\TextScanner.cs" />
     <Compile Include="ThirdParty\FlagsHelper.cs" />

@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -35,7 +35,7 @@ public class GuiUsernameInput : ATextTooltip {
     }
 
     private void InitializeValuesAndReferences() {
-        _inputField = gameObject.GetSafeComponent<UIInput>();
+        _inputField = gameObject.GetComponent<UIInput>();
         _inputField.value = PlayerPrefsManager.Instance.Username;
     }
 

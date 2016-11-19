@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -96,7 +96,7 @@ public class GuiPlayerCountPopupList : AGuiMenuPopupList<int> {
     #region Dynamic AI Player Show/Hide System
 
     private void PopulateAIPlayerContainerLookup() {
-        _aiPlayerContainerLookup = new Dictionary<GuiElementID, UIWidget>(TempGameValues.MaxAIPlayers);
+        _aiPlayerContainerLookup = new Dictionary<GuiElementID, UIWidget>(TempGameValues.MaxAIPlayers, GuiElementIDEqualityComparer.Default);
         var newGameMenuWindow = gameObject.GetSingleComponentInParents<AGuiWindow>();
         var aiIQPopups = newGameMenuWindow.gameObject.GetSafeComponentsInChildren<GuiPlayerIQPopupList>(includeInactive: true);
         aiIQPopups.ForAll(aiIQPopup => {

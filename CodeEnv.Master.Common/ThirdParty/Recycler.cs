@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.Common {
 
@@ -38,7 +38,7 @@ namespace CodeEnv.Master.Common {
     ///                }
     ///        
     ///        ShootBullet Coroutine:
-    ///                // Activate the bullet gameobject and prepare to apply forces
+    ///                // Activate the bullet GameObject and prepare to apply forces
     ///                bullet.SetActive(true);
     ///                
     ///                // Wait for 3 seconds

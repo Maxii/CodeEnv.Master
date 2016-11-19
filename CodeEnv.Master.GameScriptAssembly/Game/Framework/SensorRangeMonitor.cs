@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -29,6 +29,8 @@ using UnityEngine;
 /// <remarks><see cref="http://forum.unity3d.com/threads/physics-ignorecollision-that-does-not-reset-trigger-state.340836/"/></remarks>
 /// </summary>
 public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sensor>, ISensorRangeMonitor {
+
+    private static LayerMask DetectableObjectLayerMask = LayerMaskUtility.CreateInclusiveMask(Layers.Default);
 
     /************************************************************************************************************************
      * Note: PlayerKnowledge is updated by the detectedItem's DetectionHandlers as only they know when they are no longer detected
@@ -70,6 +72,8 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
     /// All the detected but unknown relationship targets that are in range of the sensors of this monitor.
     /// </summary>
     public IList<IElementAttackable> UnknownTargetsDetected { get; private set; }
+
+    protected override LayerMask BulkDetectionLayerMask { get { return DetectableObjectLayerMask; } }
 
     protected override bool IsKinematicRigidbodyReqd { get { return true; } }   // Stars and UCenter don't have rigidbodies
 
@@ -155,7 +159,9 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
     private void HandleDetectedItemInfoAccessChanged(IElementAttackable attackableDetectedItem, Player playerWhosInfoAccessToItemChgd) {
         if (playerWhosInfoAccessToItemChgd == Owner) {
             // the owner of this monitor had its Info access to attackableDetectedItem changed
-            D.Log(ShowDebugLog, "{0} received a InfoAccess changed event from {1}.", FullName, attackableDetectedItem.FullName);
+            if (ShowDebugLog) {
+                D.Log("{0} received a InfoAccess changed event from {1}.", FullName, attackableDetectedItem.FullName);
+            }
             AssessKnowledgeOfItemAndAdjustRecord(attackableDetectedItem);
         }
     }
@@ -294,7 +300,9 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
     private void AddEnemyTarget(IElementAttackable enemyTgt) {
         D.Assert(!EnemyTargetsDetected.Contains(enemyTgt));
         EnemyTargetsDetected.Add(enemyTgt);
-        D.Log(ShowDebugLog, "{0} added {1} to EnemyTarget tracking.", FullName, enemyTgt.FullName);
+        if (ShowDebugLog) {
+            D.Log("{0} added {1} to EnemyTarget tracking.", FullName, enemyTgt.FullName);
+        }
         AssessAreEnemyTargetsInRange();
     }
 
@@ -344,7 +352,9 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
         }
         D.Assert(!UnknownTargetsDetected.Contains(unknownTgt));
         UnknownTargetsDetected.Add(unknownTgt);
-        D.Log(ShowDebugLog, "{0} added {1} to UnknownTarget tracking.", FullName, unknownTgt.FullName);
+        if (ShowDebugLog) {
+            D.Log("{0} added {1} to UnknownTarget tracking.", FullName, unknownTgt.FullName);
+        }
     }
 
     /// <summary>
@@ -488,7 +498,10 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
         if (debugValues != null) {
             debugValues.showSensors -= ShowDebugSensorsChangedEventHandler;
         }
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
         DrawColliderGizmo drawCntl = gameObject.GetComponent<DrawColliderGizmo>();
+        Profiler.EndSample();
+
         if (drawCntl != null) {
             Destroy(drawCntl);
         }

@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
@@ -52,7 +52,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void InitializeValuesAndReferences() {
             _xmlReader = SystemNameXmlReader.Instance;
-            _speciesHomeSystemNamesLookup = new Dictionary<Species, Stack<string>>();
+            _speciesHomeSystemNamesLookup = new Dictionary<Species, Stack<string>>(SpeciesEqualityComparer.Default);
         }
 
         private void Subscribe() {

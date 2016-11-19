@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
@@ -83,12 +83,12 @@ namespace CodeEnv.Master.GameContent {
         #region Event and Property Change Handlers
 
         private void IsActivatedPropChangedHandler() {
-            D.Log("{0}.IsActivated changed to {1}.", Name, IsActivated);
+            //D.Log("{0}.IsActivated changed to {1}.", Name, IsActivated);
             AssessIsOperational();
         }
 
         private void IsDamagedPropChangedHandler() {
-            D.Log("{0}.IsDamaged changed to {1}.", Name, IsDamaged);
+            //D.Log("{0}.IsDamaged changed to {1}.", Name, IsDamaged);
             OnIsDamagedChanged();
             AssessIsOperational();
         }
@@ -98,7 +98,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected virtual void IsOperationalPropChangedHandler() {
-            D.Log("{0}.IsOperational changed to {1}.", Name, IsOperational);
+            //D.Log("{0}.IsOperational changed to {1}.", Name, IsOperational);
             OnIsOperationalChanged();
         }
 

@@ -11,9 +11,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -52,7 +52,7 @@ public class CtxMenuButton : AMonoBase {
 
     /// <summary>
     /// The context menu that will be displayed when this button is pressed. The menu
-    /// will be placed adjacent to the button and that placement will be deterimined
+    /// will be placed adjacent to the button and that placement will be determined
     /// by the menu pivot. For example, if the pivot is 'Left' the menu will appear to
     /// the right of the button; if 'Top' the menu will appear below the button.
     /// </summary>

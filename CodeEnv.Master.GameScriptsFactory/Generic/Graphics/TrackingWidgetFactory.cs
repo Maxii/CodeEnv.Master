@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -52,7 +52,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         Layers trackingPrefabLayer = (Layers)trackingPrefabGo.layer;
         NGUITools.SetLayer(trackingWidgetGo, (int)trackingPrefabLayer);
 
-        var trackingWidget = trackingWidgetGo.GetSafeComponent<UITrackingLabel>();
+        var trackingWidget = trackingWidgetGo.GetComponent<UITrackingLabel>();
         trackingWidget.Target = trackedTgt;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min, max);
@@ -76,7 +76,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         Layers trackingPrefabLayer = (Layers)trackingPrefabGo.layer;
         NGUITools.SetLayer(trackingWidgetGo, (int)trackingPrefabLayer);
 
-        var trackingWidget = trackingWidgetGo.GetSafeComponent<UITrackingSprite>();
+        var trackingWidget = trackingWidgetGo.GetComponent<UITrackingSprite>();
         trackingWidget.AtlasID = atlasID;
         trackingWidget.Target = trackedTgt;
         trackingWidget.Placement = placement;

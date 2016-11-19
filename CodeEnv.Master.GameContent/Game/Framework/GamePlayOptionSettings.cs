@@ -10,7 +10,10 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-namespace CodeEnv.Master.Common {
+
+namespace CodeEnv.Master.GameContent {
+
+    using CodeEnv.Master.Common;
 
     /// <summary>
     /// Data wrapper class carrying all the settings available from the GamePlayOptionsMenu.

@@ -11,9 +11,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -37,6 +37,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     [Tooltip("Controls showing the debug log for SectorExaminer and the highlighted sector.")]
     [SerializeField]
     private bool _showDebugLog = false;
+    private bool ShowDebugLog { get { return _showDebugLog; } }
 
     /// <summary>
     /// The distance from the front of the camera (in sectors) this examiner uses to determine which sector to highlight.
@@ -206,7 +207,9 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
 
     private void HandleHoveredChanged(bool isOver) {
         if (_viewMode == PlayerViewMode.SectorView) {
-            D.Log(_showDebugLog, "SectorExaminer calling Sector {0}.ShowHud({1}).", CurrentSectorID, isOver);
+            if (ShowDebugLog) {
+                D.Log("SectorExaminer calling Sector {0}.ShowHud({1}).", CurrentSectorID, isOver);
+            }
             Sector sector;
             if (_sectorGrid.__TryGetSector(CurrentSectorID, out sector)) {
                 sector.ShowHud(isOver);
@@ -276,7 +279,9 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         if (toShow == IsSectorWireframeShowing) {
             return;
         }
-        D.Log(_showDebugLog, "{0}.ShowSectorWireframe({1})", GetType().Name, toShow);
+        if (ShowDebugLog) {
+            D.Log("{0}.ShowSectorWireframe({1})", GetType().Name, toShow);
+        }
 
         if (toShow) {
             if (_wireframe == null) {
@@ -291,7 +296,9 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     private void HighlightSectorContents(bool toShow) {
         IEnumerable<ISectorViewHighlightable> highlightablesInSector;
         if (GameManager.Instance.UserAIManager.Knowledge.TryGetSectorViewHighlightables(CurrentSectorID, out highlightablesInSector)) {
-            D.Log(_showDebugLog, "{0} found {1} to highlight in Sector {2}.", GetType().Name, highlightablesInSector.Select(h => h.DisplayName).Concatenate(), CurrentSectorID);
+            if (ShowDebugLog) {
+                D.Log("{0} found {1} to highlight in Sector {2}.", GetType().Name, highlightablesInSector.Select(h => h.DisplayName).Concatenate(), CurrentSectorID);
+            }
             highlightablesInSector.ForAll(highlightable => {
                 if (highlightable.IsSectorViewHighlightShowing != toShow) {
                     highlightable.ShowSectorViewHighlight(toShow);

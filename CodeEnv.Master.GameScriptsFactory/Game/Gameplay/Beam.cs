@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -28,6 +28,8 @@ using UnityEngine;
 public class Beam : AOrdnance, ITerminatableOrdnance {
 
     private static LayerMask _beamImpactLayerMask = LayerMaskUtility.CreateInclusiveMask(Layers.Default, Layers.Shields);
+
+    #region Editor Fields
 
     [SerializeField]
     private ParticleSystem _muzzleEffect = null;
@@ -53,6 +55,12 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     [SerializeField]
     private float _beamAnimationSpeed = -1F;
 
+    #endregion
+
+    protected override Layers Layer { get { return Layers.TransparentFX; } }
+
+    protected new BeamProjector Weapon { get { return base.Weapon as BeamProjector; } }
+
     private bool ToShowOperatingEffects { get { return IsWeaponDiscernibleToUser || IsBeamEndLocationInCameraLos; } }
 
     private bool ToShowImpactEffects { get { return IsBeamEndLocationInCameraLos && _isCurrentImpact; } }
@@ -62,8 +70,6 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
             return _isCurrentImpact && (IsBeamEndLocationInCameraLos || DebugControls.Instance.AlwaysHearWeaponImpacts);
         }
     }
-
-    protected new BeamProjector Weapon { get { return base.Weapon as BeamProjector; } }
 
     private bool IsBeamEndLocationInCameraLos { get { return _beamEndListener != null && _beamEndListener.InCameraLOS; } }
 

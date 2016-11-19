@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -51,7 +51,7 @@ public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory
     public IShipCloseOrbitSimulator MakeShipCloseOrbitSimulatorInstance(OrbitData closeOrbitData) {
         GameObject orbitSimPrefab = closeOrbitData.IsOrbitedItemMobile ? _mobileShipOrbitSimPrefab.gameObject : _immobileShipOrbitSimPrefab.gameObject;
         GameObject orbitSimGo = UnityUtility.AddChild(closeOrbitData.OrbitedItem, orbitSimPrefab);
-        var orbitSim = orbitSimGo.GetSafeComponent<ShipCloseOrbitSimulator>();
+        var orbitSim = orbitSimGo.GetComponent<ShipCloseOrbitSimulator>();
         orbitSim.OrbitData = closeOrbitData;
         IShipCloseOrbitable closeOrbitableItem = closeOrbitData.OrbitedItem.GetComponent<IShipCloseOrbitable>();
         orbitSimGo.name = closeOrbitableItem.FullName + Constants.Space + typeof(ShipCloseOrbitSimulator).Name;  // OPTIMIZE

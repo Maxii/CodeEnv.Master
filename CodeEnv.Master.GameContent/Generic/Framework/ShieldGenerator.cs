@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
@@ -138,7 +138,9 @@ namespace CodeEnv.Master.GameContent {
                 CurrentCharge -= deliveryVehicleImpactValue;
                 AssessRechargeState();
             }
-            D.Log(!HasCharge, "{0}.{1} has failed.", Shield.FullName, Name);
+            if (!HasCharge) {
+            D.Log("{0}.{1} has failed.", Shield.FullName, Name);
+            }
             return isHitCompletelyAbsorbed;
         }
 

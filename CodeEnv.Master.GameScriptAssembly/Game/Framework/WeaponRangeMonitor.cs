@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -32,6 +32,8 @@ using UnityEngine;
 /// </summary>
 public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackable, AWeapon>, IWeaponRangeMonitor {
 
+    private static LayerMask DetectableObjectLayerMask = LayerMaskUtility.CreateInclusiveMask(Layers.Default);
+
     private bool _toEngageColdWarEnemies = false;
     /// <summary>
     /// Controls whether WeaponRangeMonitors will track and present ColdWar enemies to weapons as acceptable targets.
@@ -45,6 +47,8 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackable, AW
         get { return base.ParentItem as IUnitElement; }
         set { base.ParentItem = value as IUnitElement; }
     }
+
+    protected override LayerMask BulkDetectionLayerMask { get { return DetectableObjectLayerMask; } }
 
     protected override bool IsKinematicRigidbodyReqd { get { return false; } }  // targets (elements and planetoids) have rigidbodies
 
@@ -121,7 +125,9 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackable, AW
     private void HandleDetectedItemInfoAccessChanged(IElementAttackable attackableDetectedItem, Player playerWhosInfoAccessToItemChgd) {
         if (playerWhosInfoAccessToItemChgd == Owner) {
             // the owner of this monitor had its InfoAccess rights to attackableDetectedItem changed
-            D.Log(ShowDebugLog, "{0} received a InfoAccess changed event from {1}.", FullName, attackableDetectedItem.FullName);
+            if (ShowDebugLog) {
+                D.Log("{0} received a InfoAccess changed event from {1}.", FullName, attackableDetectedItem.FullName);
+            }
 
             bool wasItemPreviouslyCategorizedAsEnemy = _attackableEnemyTargetsDetected.Contains(attackableDetectedItem);
             AssessKnowledgeOfItemAndAdjustRecord(attackableDetectedItem);
@@ -302,7 +308,9 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackable, AW
     private void AddEnemyTarget(IElementAttackable enemyTgt) {
         D.Assert(!_attackableEnemyTargetsDetected.Contains(enemyTgt));
         _attackableEnemyTargetsDetected.Add(enemyTgt);
-        D.Log(ShowDebugLog, "{0} added {1} to EnemyTarget tracking.", FullName, enemyTgt.FullName);
+        if (ShowDebugLog) {
+            D.Log("{0} added {1} to EnemyTarget tracking.", FullName, enemyTgt.FullName);
+        }
     }
 
     /// <summary>

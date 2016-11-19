@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.Common {
 
@@ -27,10 +27,6 @@ namespace CodeEnv.Master.Common {
     /// Static class of utility methods that are specific to Unity and/or Ngui.
     /// </summary>
     public static class UnityUtility {
-
-        public static readonly IEqualityComparer<float> FloatEqualityComparer = new FloatEqualityComparer();
-
-        public static readonly IEqualityComparer<Vector3> Vector3EqualityComparer = new Vector3EqualityComparer();
 
         /// <summary>
         /// Determines whether the world point provided is currently within the view port of the main camera.
@@ -87,7 +83,10 @@ namespace CodeEnv.Master.Common {
             var didOne = false;
 
             // get 'this' bound
+            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
             var renderer = t.GetComponent<Renderer>();
+            Profiler.EndSample();
+
             if (renderer != null) {                     //if (t.gameObject.renderer != null) {
                 bound = renderer.bounds;                // bound = t.gameObject.renderer.bounds;
                 if (toEncapsulate) {
@@ -216,7 +215,7 @@ namespace CodeEnv.Master.Common {
             }
             allowedDeviation = Mathf.Clamp(allowedDeviation, UnityConstants.AngleEqualityPrecision, 180F);
             float actualDeviation = Vector3.Angle(dirA, dirB);
-            D.Log("Deviation between directions {0} and {1} is {2} degrees.", dirA, dirB, actualDeviation);
+            //D.Log("Deviation between directions {0} and {1} is {2} degrees.", dirA, dirB, actualDeviation);
             return actualDeviation <= allowedDeviation;
         }
 

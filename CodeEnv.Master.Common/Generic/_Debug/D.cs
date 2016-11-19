@@ -10,9 +10,11 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_WARN    // Show Warnings, Errors and Asserts only
-#define DEBUG_ERROR   // Show Errors and Asserts only
-#define DEBUG_LOG
+// 11.19.16 Defining these in this file does not control compilation. The key to compilation
+// is whether these are defined from the perspective of the calling file (either in the file or in the project build config)
+////#define DEBUG_WARN    // Show Warnings, Errors and Asserts only
+////#define DEBUG_ERROR   // Show Errors and Asserts only
+////#define DEBUG_LOG
 
 #define UNITY_ASSERTIONS
 
@@ -76,7 +78,7 @@ namespace CodeEnv.Master.Common {
             Debug.LogFormat(context, BoldFormat.Inject(formattedMsg), paramList);
         }
 
-        #region Conditional Logging
+        #region Obsolete
 
         /// <summary>
         /// If <c>condition</c> is <c>true</c>, sends the composite message format string to the Unity.Debug log.
@@ -88,6 +90,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="formattedMsg">The formatted text message.</param>
         /// <param name="paramList">The parameters to insert into the composite message string.</param>
         [System.Diagnostics.Conditional("DEBUG_LOG")]
+        [System.Obsolete("Use external condition check then Log() instead.")]
         public static void Log(bool condition, string formattedMsg, params object[] paramList) {
             if (condition) {
                 Debug.LogFormat(formattedMsg, paramList);
@@ -104,6 +107,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="formattedMsg">The formatted text message.</param>
         /// <param name="paramList">The parameters to insert into the composite message string.</param>
         [System.Diagnostics.Conditional("DEBUG_LOG")]
+        [System.Obsolete("Use external condition check then LogBold() instead.")]
         public static void LogBold(bool condition, string formattedMsg, params object[] paramList) {
             if (condition) {
                 Debug.LogFormat(BoldFormat.Inject(formattedMsg), paramList);
@@ -121,6 +125,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="formattedMsg">The formatted text message.</param>
         /// <param name="paramList">The parameter list.</param>
         [System.Diagnostics.Conditional("DEBUG_LOG")]
+        [System.Obsolete("Use external condition check then LogContext() instead.")]
         public static void LogContext(bool condition, Object context, string formattedMsg, params object[] paramList) {
             if (condition) {
                 Debug.LogFormat(context, formattedMsg, paramList);
@@ -138,15 +143,12 @@ namespace CodeEnv.Master.Common {
         /// <param name="formattedMsg">The formatted text message.</param>
         /// <param name="paramList">The parameter list.</param>
         [System.Diagnostics.Conditional("DEBUG_LOG")]
+        [System.Obsolete("Use external condition check then LogContextBold() instead.")]
         public static void LogContextBold(bool condition, Object context, string formattedMsg, params object[] paramList) {
             if (condition) {
                 Debug.LogFormat(context, BoldFormat.Inject(formattedMsg), paramList);
             }
         }
-
-        #endregion
-
-        #region Obsolete
 
         /// <summary>
         /// Sends the specified message object (typically a composite message string) to the Unity.Debug log.
@@ -369,22 +371,26 @@ namespace CodeEnv.Master.Common {
 
         [System.Diagnostics.Conditional("DEBUG_ERROR"), System.Diagnostics.Conditional("DEBUG_WARN"), System.Diagnostics.Conditional("DEBUG_LOG")]
         public static void AssertApproxEqual(float expected, float actual) {
-            UnityEngine.Assertions.Assert.AreEqual(expected, actual, string.Empty, UnityUtility.FloatEqualityComparer);
+            //UnityEngine.Assertions.Assert.AreApproximatelyEqual(expected, actual);  // 11.19.16 Too precise at 0.00001F tolerance
+            UnityEngine.Assertions.Assert.AreEqual(expected, actual, string.Empty, FloatEqualityComparer.Default);
         }
 
         [System.Diagnostics.Conditional("DEBUG_ERROR"), System.Diagnostics.Conditional("DEBUG_WARN"), System.Diagnostics.Conditional("DEBUG_LOG")]
         public static void AssertApproxEqual(float expected, float actual, string msg) {
-            UnityEngine.Assertions.Assert.AreEqual(expected, actual, msg, UnityUtility.FloatEqualityComparer);
+            //UnityEngine.Assertions.Assert.AreApproximatelyEqual(expected, actual, msg);  // 11.19.16 Too precise at 0.00001F tolerance
+            UnityEngine.Assertions.Assert.AreEqual(expected, actual, msg, FloatEqualityComparer.Default);
         }
 
         [System.Diagnostics.Conditional("DEBUG_ERROR"), System.Diagnostics.Conditional("DEBUG_WARN"), System.Diagnostics.Conditional("DEBUG_LOG")]
         public static void AssertNotApproxEqual(float expected, float actual) {
-            UnityEngine.Assertions.Assert.AreNotEqual(expected, actual, string.Empty, UnityUtility.FloatEqualityComparer);
+            //UnityEngine.Assertions.Assert.AreNotApproximatelyEqual(expected, actual);  // 11.19.16 Too precise at 0.00001F tolerance
+            UnityEngine.Assertions.Assert.AreNotEqual(expected, actual, string.Empty, FloatEqualityComparer.Default);
         }
 
         [System.Diagnostics.Conditional("DEBUG_ERROR"), System.Diagnostics.Conditional("DEBUG_WARN"), System.Diagnostics.Conditional("DEBUG_LOG")]
         public static void AssertNotApproxEqual(float expected, float actual, string msg) {
-            UnityEngine.Assertions.Assert.AreNotEqual(expected, actual, msg, UnityUtility.FloatEqualityComparer);
+            //UnityEngine.Assertions.Assert.AreNotApproximatelyEqual(expected, actual, msg);  // 11.19.16 Too precise at 0.00001F tolerance
+            UnityEngine.Assertions.Assert.AreNotEqual(expected, actual, msg, FloatEqualityComparer.Default);
         }
 
         [System.Diagnostics.Conditional("DEBUG_ERROR"), System.Diagnostics.Conditional("DEBUG_WARN"), System.Diagnostics.Conditional("DEBUG_LOG")]

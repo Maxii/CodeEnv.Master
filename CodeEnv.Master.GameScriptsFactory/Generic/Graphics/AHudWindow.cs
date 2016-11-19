@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -106,7 +106,7 @@ public abstract class AHudWindow<T> : AGuiWindow where T : AHudWindow<T> {
 
     private void InitializeFormLookup() {
         var hudForms = gameObject.GetSafeComponentsInChildren<AForm>();
-        _formLookup = hudForms.ToDictionary(form => form.FormID);
+        _formLookup = hudForms.ToDictionary(form => form.FormID, FormIDEqualityComparer.Default);
     }
 
     private void InitializeContentHolder() {

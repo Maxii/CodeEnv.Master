@@ -6,13 +6,13 @@
 // </copyright> 
 // <summary> 
 // File: ResponseCurve.cs
-//  Simple linear interpolationresponse system that generates an output from an input along a predefined curve.
+//  Simple linear interpolation response system that generates an output from an input along a predefined curve.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.Common {
 
@@ -20,7 +20,7 @@ namespace CodeEnv.Master.Common {
     using UnityEngine;
 
     /// <summary>
-    /// Simple linear interpolationresponse system that generates an output from an input along a predefined curve.
+    /// Simple linear interpolation response system that generates an output from an input along a predefined curve.
     /// </summary>
     public class ResponseCurve {
 

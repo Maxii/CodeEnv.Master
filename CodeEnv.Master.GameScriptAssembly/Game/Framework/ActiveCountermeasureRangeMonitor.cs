@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -30,10 +30,14 @@ using UnityEngine;
 /// </summary>
 public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterceptableOrdnance, ActiveCountermeasure>, IActiveCountermeasureRangeMonitor {
 
+    private static LayerMask DetectableObjectLayerMask = LayerMaskUtility.CreateInclusiveMask(Layers.Projectiles);
+
     public new IUnitElement ParentItem {
         get { return base.ParentItem as IUnitElement; }
         set { base.ParentItem = value as IUnitElement; }
     }
+
+    protected override LayerMask BulkDetectionLayerMask { get { return DetectableObjectLayerMask; } }
 
     protected override bool IsKinematicRigidbodyReqd { get { return false; } }  // projectileOrdnance have rigidbodies
 
@@ -43,7 +47,9 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
 
     protected override void HandleDetectedObjectAdded(IInterceptableOrdnance newlyDetectedThreat) {
         if (CanThreatBeIgnored(newlyDetectedThreat)) {
-            D.Log(ShowDebugLog, "{0} is ignoring friendly detected threat {1} moving away.", FullName, newlyDetectedThreat.FullName);
+            if (ShowDebugLog) {
+            D.Log("{0} is ignoring friendly detected threat {1} moving away.", FullName, newlyDetectedThreat.FullName);
+            }
             return;
         }
         if (ShowDebugLog) {

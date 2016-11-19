@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -102,7 +102,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         }
         creatorGo.transform.position = location;
         creatorGo.isStatic = true;
-        var creator = creatorGo.GetSafeComponent<FleetCreator>();
+        var creator = creatorGo.GetComponent<FleetCreator>();
         creator.Configuration = config;
         return creator;
     }
@@ -282,7 +282,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         }
         creatorGo.transform.position = location;
         creatorGo.isStatic = true;
-        var creator = creatorGo.GetSafeComponent<StarbaseCreator>();
+        var creator = creatorGo.GetComponent<StarbaseCreator>();
         creator.Configuration = config;
         return creator;
     }
@@ -363,7 +363,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             D.Error("{0}: {1} should not start static as it has yet to be positioned.", Name, typeof(SettlementCreator).Name);
         }
         SystemFactory.Instance.InstallCelestialItemInOrbit(creatorGo, system.SettlementOrbitData);
-        var creator = creatorGo.GetSafeComponent<SettlementCreator>();
+        var creator = creatorGo.GetComponent<SettlementCreator>();
         creator.Configuration = config;
         return creator;
     }
@@ -700,7 +700,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             else {
                 GameObject shieldGo = UnityUtility.AddChild(element.gameObject, _shieldPrefab);
                 shieldGo.layer = (int)Layers.Shields;  // AddChild resets prefab layer to elementGo's layer
-                shield = shieldGo.GetSafeComponent<Shield>();
+                shield = shieldGo.GetComponent<Shield>();
             }
             shield.ParentItem = element;
             //D.Log("{0}: {1} has had a {2} chosen for {3}.", Name, element.FullName, typeof(Shield).Name, generator.Name);
@@ -730,7 +730,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
                 D.AssertEqual(Layers.Collide_DefaultOnly, (Layers)_weaponRangeMonitorPrefab.layer);
                 GameObject monitorGo = UnityUtility.AddChild(element.gameObject, _weaponRangeMonitorPrefab);
                 monitorGo.layer = (int)Layers.Collide_DefaultOnly;  // AddChild resets prefab layer to elementGo's layer
-                monitor = monitorGo.GetSafeComponent<WeaponRangeMonitor>();
+                monitor = monitorGo.GetComponent<WeaponRangeMonitor>();
             }
             monitor.ParentItem = element;
             //D.Log("{0}: {1} has had a {2} chosen for {3}.", Name, element.FullName, typeof(WeaponRangeMonitor).Name, weapon.Name);
@@ -769,7 +769,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         Layers hullMeshLayer = (Layers)hull.HullMesh.gameObject.layer;
         UnityUtility.SetLayerRecursively(mountTransform, hullMeshLayer);
 
-        AWeaponMount weaponMount = mountGo.GetSafeComponent<AWeaponMount>();
+        AWeaponMount weaponMount = mountGo.GetComponent<AWeaponMount>();
         weaponMount.SlotID = mountSlotID;
         if (losWeapon != null) {
             // LOS weapon
@@ -804,7 +804,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
                 D.AssertEqual(Layers.Collide_ProjectileOnly, (Layers)_countermeasureRangeMonitorPrefab.layer);
                 GameObject monitorGo = UnityUtility.AddChild(element.gameObject, _countermeasureRangeMonitorPrefab);
                 monitorGo.layer = (int)Layers.Collide_ProjectileOnly;   // AddChild resets prefab layer to elementGo's layer
-                monitor = monitorGo.GetSafeComponent<ActiveCountermeasureRangeMonitor>();
+                monitor = monitorGo.GetComponent<ActiveCountermeasureRangeMonitor>();
             }
             monitor.ParentItem = element;
             //D.Log("{0}: {1} has had a {2} chosen for {3}.", Name, element.FullName, typeof(ActiveCountermeasureRangeMonitor).Name, countermeasure.Name);
@@ -834,7 +834,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
                 D.AssertEqual(Layers.Collide_DefaultOnly, (Layers)_sensorRangeMonitorPrefab.layer);
                 GameObject monitorGo = UnityUtility.AddChild(command.gameObject, _sensorRangeMonitorPrefab);
                 monitorGo.layer = (int)Layers.Collide_DefaultOnly;  // AddChild resets prefab layer to elementGo's layer
-                monitor = monitorGo.GetSafeComponent<SensorRangeMonitor>();
+                monitor = monitorGo.GetComponent<SensorRangeMonitor>();
             }
             monitor.ParentItem = command;
             //D.Log("{0}: {1} has had a {2} chosen for {3}.", Name, command.FullName, typeof(SensorRangeMonitor).Name, sensor.Name);
@@ -853,9 +853,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
     private const string ElementNameFormat = "{0}{1}";
 
-    private IDictionary<FacilityHullCategory, int> _facilityNameCountLookup = new Dictionary<FacilityHullCategory, int>();
+    private IDictionary<FacilityHullCategory, int> _facilityNameCountLookup = new Dictionary<FacilityHullCategory, int>(FacilityHullCategoryEqualityComparer.Default);
 
-    private IDictionary<ShipHullCategory, int> _shipNameCountLookup = new Dictionary<ShipHullCategory, int>();
+    private IDictionary<ShipHullCategory, int> _shipNameCountLookup = new Dictionary<ShipHullCategory, int>(ShipHullCategoryEqualityComparer.Default);
 
     private string GetUniqueElementName(FacilityHullCategory cat) {
         if (!_facilityNameCountLookup.ContainsKey(cat)) {

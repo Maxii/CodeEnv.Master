@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -62,7 +62,7 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
     /// <summary>
     /// Lookup for Resource containers, keyed by the container's slot in the Element.
     /// </summary>
-    private IDictionary<Slot, UIWidget> _resourceContainerLookup = new Dictionary<Slot, UIWidget>(_maxResourcesAllowed);
+    private IDictionary<Slot, UIWidget> _resourceContainerLookup = new Dictionary<Slot, UIWidget>(_maxResourcesAllowed, SlotEqualityComparer.Default);
 
     /// <summary>
     /// Lookup for ResourceIDs, keyed by the Resource container's gameObject. 
@@ -233,6 +233,32 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
         TopRight = 3,
         CenterRight = 4,
         BottomRight = 5
+    }
+
+    /// <summary>
+    /// IEqualityComparer for Slot. 
+    /// <remarks>For use when Slot is used as a Dictionary key as it avoids boxing from use of object.Equals.</remarks>
+    /// </summary>
+    private class SlotEqualityComparer : IEqualityComparer<Slot> {
+
+        public static readonly SlotEqualityComparer Default = new SlotEqualityComparer();
+
+        public override string ToString() {
+            return new ObjectAnalyzer().ToString(this);
+        }
+
+        #region IEqualityComparer<Slot> Members
+
+        public bool Equals(Slot value1, Slot value2) {
+            return value1 == value2;
+        }
+
+        public int GetHashCode(Slot value) {
+            return value.GetHashCode();
+        }
+
+        #endregion
+
     }
 
     #endregion

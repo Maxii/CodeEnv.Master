@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -148,7 +148,7 @@ public class FormationGenerator : AGenericSingleton<FormationGenerator>, IFormat
 
     private void ValidateSlotIDs(IList<FormationStationSlotInfo> slotInfos) {
         FormationStationSlotID duplicate;
-        D.Assert(!slotInfos.Select(si => si.SlotID).ContainsDuplicates(out duplicate), duplicate.GetValueName());
+        D.Assert(!slotInfos.Select(si => si.SlotID).ContainsDuplicates(out duplicate, FormationStationSlotIDEqualityComparer.Default), duplicate.GetValueName());
     }
 
     private void Cleanup() { }

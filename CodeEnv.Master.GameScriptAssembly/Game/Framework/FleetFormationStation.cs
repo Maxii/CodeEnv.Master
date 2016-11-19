@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -124,7 +124,10 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
         if (debugValues != null) {
             debugValues.showFleetFormationStations -= ShowDebugFleetFormationStationsChangedEventHandler;
         }
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
         DrawSphereGizmo drawCntl = gameObject.GetComponent<DrawSphereGizmo>();
+        Profiler.EndSample();
+
         if (drawCntl != null) {
             Destroy(drawCntl);
         }

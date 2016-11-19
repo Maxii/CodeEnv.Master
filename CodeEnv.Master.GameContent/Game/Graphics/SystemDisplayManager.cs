@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
@@ -31,7 +31,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override MeshRenderer InitializePrimaryMesh(GameObject trackedItemGo) {
             var orbitalPlaneMeshCollider = trackedItemGo.GetComponentInChildren<MeshCollider>();   // IMPROVE don't use MeshCollider
-            var primaryMeshRenderer = orbitalPlaneMeshCollider.gameObject.GetComponent<MeshRenderer>();
+            var primaryMeshRenderer = orbitalPlaneMeshCollider.GetComponent<MeshRenderer>();
             primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             primaryMeshRenderer.receiveShadows = false;
             __ValidateAndCorrectMeshLayer(primaryMeshRenderer.gameObject);

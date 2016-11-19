@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
@@ -44,7 +44,7 @@ namespace CodeEnv.Master.GameContent {
         private IDictionary<IconSection, IDictionary<GameColor, IDictionary<IEnumerable<IconSelectionCriteria>, IconInfo>>> _infoCache;
 
         protected override void Initialize() {
-            _infoCache = new Dictionary<IconSection, IDictionary<GameColor, IDictionary<IEnumerable<IconSelectionCriteria>, IconInfo>>>();
+            _infoCache = new Dictionary<IconSection, IDictionary<GameColor, IDictionary<IEnumerable<IconSelectionCriteria>, IconInfo>>>(IconSectionEqualityComparer.Default);
             // WARNING: Do not use Instance or _instance in here as this is still part of Constructor
         }
 
@@ -96,16 +96,10 @@ namespace CodeEnv.Master.GameContent {
             if (_infoCache.TryGetValue(section, out colorCache)) {
                 IDictionary<IEnumerable<IconSelectionCriteria>, IconInfo> criteriaCache;
                 if (colorCache.TryGetValue(color, out criteriaCache)) {
-                    IList<IEnumerable<IconSelectionCriteria>> cacheCritieraList = criteriaCache.Keys.ToList();
-                    foreach (var criteriaSequenceInCache in cacheCritieraList) {
-                        // Note: cannot use SequenceEquals as enums don't implement IComparable<T>, just IComparable
-                        bool criteriaIsEqual = criteriaSequenceInCache.OrderBy(c => c).SequenceEqual(criteria.OrderBy(c => c));
-                        if (criteriaIsEqual) {
-                            IEnumerable<IconSelectionCriteria> criteriaKey = criteriaSequenceInCache;
-                            info = criteriaCache[criteriaKey];
-                            D.Log("{0}: {1} has been reused from cache.", Name, info);
-                            return true;
-                        }
+                    if (criteriaCache.TryGetValue(criteria, out info)) {
+                        //D.LogBold("{0}: {1} has been reused from cache. SectionKey: {2}, ColorKey: {3}, CriteriaSequenceKey {4}.",
+                        //    Name, info, section.GetValueName(), color.GetValueName(), criteria.Select(c => c.GetValueName()).Concatenate());
+                        return true;
                     }
                 }
             }
@@ -113,50 +107,118 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
+        #region TryCheckCache Archive
+
+        //private bool TryCheckCache(IconSection section, GameColor color, out IconInfo info, params IconSelectionCriteria[] criteria) {
+        //    IDictionary<GameColor, IDictionary<IEnumerable<IconSelectionCriteria>, IconInfo>> colorCache;
+        //    if (_infoCache.TryGetValue(section, out colorCache)) {
+        //        IDictionary<IEnumerable<IconSelectionCriteria>, IconInfo> criteriaCache;
+        //        if (colorCache.TryGetValue(color, out criteriaCache)) {
+        //            IList<IEnumerable<IconSelectionCriteria>> cacheCritieraList = criteriaCache.Keys.ToList();
+        //            foreach (var criteriaSequenceInCache in cacheCritieraList) {
+        //                // Note: cannot use SequenceEquals as enums don't implement IComparable<T>, just IComparable
+        //                bool criteriaIsEqual = criteriaSequenceInCache.OrderBy(c => c).SequenceEqual(criteria.OrderBy(c => c));
+        //                if (criteriaIsEqual) {
+        //                    IEnumerable<IconSelectionCriteria> criteriaKey = criteriaSequenceInCache;
+        //                    info = criteriaCache[criteriaKey];
+        //                    D.LogBold("{0}: {1} has been reused from cache. SectionKey: {2}, ColorKey: {3}, CriteriaSequenceKey {4}.",
+        //                        Name, info, section.GetValueName(), color.GetValueName(), criteria.Select(c => c.GetValueName()).Concatenate());
+        //                    return true;
+        //                }
+        //            }
+        //        }
+        //    }
+        //    info = default(IconInfo);
+        //    return false;
+        //}
+
+        #endregion
+
         private void RecordToCache(IconInfo info, IconSection section, GameColor color, params IconSelectionCriteria[] criteria) {
             if (!_infoCache.ContainsKey(section)) {
-                _infoCache.Add(section, new Dictionary<GameColor, IDictionary<IEnumerable<IconSelectionCriteria>, IconInfo>>());
+                _infoCache.Add(section, new Dictionary<GameColor, IDictionary<IEnumerable<IconSelectionCriteria>, IconInfo>>(GameColorEqualityComparer.Default));
             }
 
             var colorCache = _infoCache[section];
             if (!colorCache.ContainsKey(color)) {
-                colorCache.Add(color, new Dictionary<IEnumerable<IconSelectionCriteria>, IconInfo>());
+                colorCache.Add(color, new Dictionary<IEnumerable<IconSelectionCriteria>, IconInfo>(IconSelectionCriteriaSequenceEqualityComparer.Default));
             }
 
             var criteriaCache = colorCache[color];
             if (!criteriaCache.ContainsKey(criteria)) {
                 criteriaCache.Add(criteria, info);
-                D.Log("{0}: {1} has been added to cache.", Name, info);
+                //D.Log("{0}: {1} has been added to cache. SectionKey: {2}, ColorKey: {3}, CriteriaSequenceKey: {4}.",
+                //    Name, info, section.GetValueName(), color.GetValueName(), criteria.Select(c => c.GetValueName()).Concatenate());
             }
         }
 
-    }
+        #region Nested Classes
 
-    #region Nested Classes
+        /// <summary>
+        /// EqualityComparer for IconSelectionCriteria sequences.
+        /// <remarks>The key to making this work is GetHashCode(). If it doesn't comply with the rule
+        /// below, Equals is never even called.</remarks>
+        /// </summary>
+        /// <see cref="http://stackoverflow.com/questions/14675720/iequalitycomparer-for-sequenceequal" />
+        private class IconSelectionCriteriaSequenceEqualityComparer : IEqualityComparer<IEnumerable<IconSelectionCriteria>> {
 
-    public abstract class ACmdIconInfoXmlReader<ReaderType> : AXmlReader<ReaderType>
-        where ReaderType : ACmdIconInfoXmlReader<ReaderType> {
+            public static readonly IconSelectionCriteriaSequenceEqualityComparer Default = new IconSelectionCriteriaSequenceEqualityComparer();
 
-        private string _sectionTagName = "Section";
-        private string _sectionAttributeTagName = "SectionName";
-        private string _selectionTagName = "Selection";
-        private string _criteriaTagName = "Criteria";
-        private string _iconFilenameTagName = "Filename";
-
-        protected sealed override string RootTagName { get { return "Icon"; } }
-
-        public string AcquireFilename(IconSection section, IconSelectionCriteria[] criteria) {
-            XElement sectionNode = _xElement.Elements(_sectionTagName).Where(e => e.Attribute(_sectionAttributeTagName).Value.Equals(section.GetValueName())).Single();
-            var selectionNodes = sectionNode.Elements(_selectionTagName);
-            foreach (var selectionNode in selectionNodes) {
-                var criteriaValues = selectionNode.Elements(_criteriaTagName).Select(node => node.Value);
-                if (criteriaValues.OrderBy(v => v).SequenceEqual(criteria.Select(c => c.GetValueName()).OrderBy(n => n))) {
-                    // found the criteria values we were looking for in this node
-                    return selectionNode.Element(_iconFilenameTagName).Value;
-                }
+            public override string ToString() {
+                return new ObjectAnalyzer().ToString(this);
             }
-            D.Error("No filename for {0} using Section {1} and Criteria {2} found.", GetType().Name, section.GetValueName(), criteria.Concatenate());
-            return string.Empty;
+
+            #region IEqualityComparer<IEnumerable<IconSelectionCriteria>> Members
+
+            public bool Equals(IEnumerable<IconSelectionCriteria> sequence1, IEnumerable<IconSelectionCriteria> sequence2) {
+                var orderedSequence1 = sequence1.OrderBy(c => c);
+                var orderedSequence2 = sequence2.OrderBy(c => c);
+                bool result = orderedSequence1.SequenceEqual(orderedSequence2, IconSelectionCriteriaEqualityComparer.Default);
+                //D.Log("CriteriaSequence.Equals result = {0}, Sequence1: {1}, Sequence2: {2}.", result, orderedSequence1.Select(s => s.GetValueName()).Concatenate(), orderedSequence2.Select(s => s.GetValueName()).Concatenate());
+                return result;
+            }
+
+            public int GetHashCode(IEnumerable<IconSelectionCriteria> sequence) {
+                // Rule: If two things are equal then they MUST return the same value for GetHashCode()
+                // http://stackoverflow.com/questions/371328/why-is-it-important-to-override-gethashcode-when-equals-method-is-overridden
+                if (sequence == null) {
+                    return Constants.Zero;
+                }
+                unchecked {
+                    return sequence.Select(c => c.GetHashCode()).Aggregate(17, (a, b) => 31 * a + b);
+                }
+                //// return sequence.GetHashCode();
+            }
+
+            #endregion
+
+        }
+
+        public abstract class ACmdIconInfoXmlReader<ReaderType> : AXmlReader<ReaderType>
+            where ReaderType : ACmdIconInfoXmlReader<ReaderType> {
+
+            private string _sectionTagName = "Section";
+            private string _sectionAttributeTagName = "SectionName";
+            private string _selectionTagName = "Selection";
+            private string _criteriaTagName = "Criteria";
+            private string _iconFilenameTagName = "Filename";
+
+            protected sealed override string RootTagName { get { return "Icon"; } }
+
+            public string AcquireFilename(IconSection section, IconSelectionCriteria[] criteria) {
+                XElement sectionNode = _xElement.Elements(_sectionTagName).Where(e => e.Attribute(_sectionAttributeTagName).Value.Equals(section.GetValueName())).Single();
+                var selectionNodes = sectionNode.Elements(_selectionTagName);
+                foreach (var selectionNode in selectionNodes) {
+                    var criteriaValues = selectionNode.Elements(_criteriaTagName).Select(node => node.Value);
+                    if (criteriaValues.OrderBy(v => v).SequenceEqual(criteria.Select(c => c.GetValueName()).OrderBy(n => n))) {
+                        // found the criteria values we were looking for in this node
+                        return selectionNode.Element(_iconFilenameTagName).Value;
+                    }
+                }
+                D.Error("No filename for {0} using Section {1} and Criteria {2} found.", GetType().Name, section.GetValueName(), criteria.Concatenate());
+                return string.Empty;
+            }
+
         }
 
     }

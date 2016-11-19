@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.Common {
 
@@ -80,7 +80,7 @@ namespace CodeEnv.Master.Common {
         }
 
 
-        //caclulate the rotational difference from A to B
+        //calculate the rotational difference from A to B
         public static Quaternion SubtractRotation(Quaternion B, Quaternion A) {
 
             Quaternion C = Quaternion.Inverse(A) * B;
@@ -405,7 +405,7 @@ namespace CodeEnv.Master.Common {
             float dot;
             float angle;
 
-            //calculate the the dot product between the two input vectors. This gives the cosine between the two vectors
+            //calculate the dot product between the two input vectors. This gives the cosine between the two vectors
             dot = Vector3.Dot(vector, normal);
 
             //this is in radians
@@ -914,20 +914,20 @@ namespace CodeEnv.Master.Common {
         //If more samples are used, the output is more smooth but has a higher latency.
         //Note: the result is only accurate if the rotational difference between two samples is less than 180 degrees.
         //Note: a suitable way to visualize the result is:
-        Vector3 dir;
+        Vector3 direction;
         float scale = 2f;	
-        dir = new Vector3(vector.x, 0, 0);
-        dir = Math3d.SetVectorLength(dir, dir.magnitude * scale);
-        dir = gameObject.transform.TransformDirection(dir);
-        Debug.DrawRay(gameObject.transform.position, dir, Color.red);	
-        dir = new Vector3(0, vector.y, 0);
-        dir = Math3d.SetVectorLength(dir, dir.magnitude * scale);
-        dir = gameObject.transform.TransformDirection(dir);
-        Debug.DrawRay(gameObject.transform.position, dir, Color.green);	
-        dir = new Vector3(0, 0, vector.z);
-        dir = Math3d.SetVectorLength(dir, dir.magnitude * scale);
-        dir = gameObject.transform.TransformDirection(dir);
-        Debug.DrawRay(gameObject.transform.position, dir, Color.blue);	*/
+        direction = new Vector3(vector.x, 0, 0);
+        direction = Math3d.SetVectorLength(direction, direction.magnitude * scale);
+        direction = gameObject.transform.TransformDirection(direction);
+        Debug.DrawRay(gameObject.transform.position, direction, Color.red);	
+        direction = new Vector3(0, vector.y, 0);
+        direction = Math3d.SetVectorLength(direction, direction.magnitude * scale);
+        direction = gameObject.transform.TransformDirection(direction);
+        Debug.DrawRay(gameObject.transform.position, direction, Color.green);	
+        direction = new Vector3(0, 0, vector.z);
+        direction = Math3d.SetVectorLength(direction, direction.magnitude * scale);
+        direction = gameObject.transform.TransformDirection(direction);
+        Debug.DrawRay(gameObject.transform.position, direction, Color.blue);	*/
         public static bool AngularAcceleration(out Vector3 vector, Quaternion rotation, int samples) {
 
             Vector3 averageSpeedChange = Vector3.zero;

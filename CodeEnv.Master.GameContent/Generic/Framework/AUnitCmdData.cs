@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
@@ -254,7 +254,9 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void HandleAlertStatusChanged() {
-            D.LogBold(ShowDebugLog, "{0} AlertStatus changed to {1}. Notifying Elements.", FullName, AlertStatus.GetValueName());
+            if (ShowDebugLog) {
+                D.LogBold("{0} AlertStatus changed to {1}. Notifying Elements.", FullName, AlertStatus.GetValueName());
+            }
             ElementsData.ForAll(eData => eData.AlertStatus = AlertStatus);
         }
 

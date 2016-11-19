@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
@@ -117,7 +117,9 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void HandleCountermeasureIsDamagedChanged(AEquipment countermeasure) {
-            D.Log(ShowDebugLog, "{0}'s {1}.IsDamaged is now {2}.", FullName, countermeasure.Name, countermeasure.IsDamaged);
+            if (ShowDebugLog) {
+                D.Log("{0}'s {1}.IsDamaged is now {2}.", FullName, countermeasure.Name, countermeasure.IsDamaged);
+            }
             RecalcDefensiveValues();
         }
 
@@ -147,7 +149,9 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected virtual void HandleHealthChanged() {
-            D.Log(ShowDebugLog, "{0}: Health {1}, CurrentHitPoints {2}, MaxHitPoints {3}.", FullName, _health, CurrentHitPoints, MaxHitPoints);
+            if (ShowDebugLog) {
+                D.Log("{0}: Health {1}, CurrentHitPoints {2}, MaxHitPoints {3}.", FullName, _health, CurrentHitPoints, MaxHitPoints);
+            }
         }
 
         protected sealed override void HandleIsOperationalChanged() {

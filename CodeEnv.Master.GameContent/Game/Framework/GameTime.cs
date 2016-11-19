@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
@@ -314,7 +314,7 @@ namespace CodeEnv.Master.GameContent {
             //// no need to assign a new CurrentDate as the change to _currentDateTime results in a new, synced CurrentDate instance once Date is requested
             //// onDateChanged = null;   // new subscribers tend to subscribe on Awake, but nulling the list here clears it. All previous subscribers need to unsubscribe!
             _currentDate = GameStartDate;   // 8.13.16 added as otherwise at the mercy of GameMgr calling CheckForDateChange() once IsRunning
-            D.Log("{0}.PrepareToBeginNewGame() finished. Frame {1}, UnityTime {2:0.0}, SystemTimeStamp {3}.", Name, Time.frameCount, Time.time, Utility.TimeStamp);
+            //D.Log("{0}.PrepareToBeginNewGame() finished. Frame {1}, UnityTime {2:0.0}, SystemTimeStamp {3}.", Name, Time.frameCount, Time.time, Utility.TimeStamp);
         }
 
         public void PrepareToSaveGame() {
@@ -323,15 +323,15 @@ namespace CodeEnv.Master.GameContent {
             // _gameInstanceTimeCurrentPauseBegan will be set to a new value the next time a pause begins
             // _gameInstancePlayTimeAtLastCurrentDateTimeRefresh is not important to save as it is constantly kept current
             // currentDateTime is key! It should be accurate as it gets constantly refreshed       
-            D.Log("{0}.currentDateTime value being saved is {1:0.00}.", Name, _currentDateTime);
+            //D.Log("{0}.currentDateTime value being saved is {1:0.00}.", Name, _currentDateTime);
             __savedCurrentDateTime = _currentDateTime; // FIXME bug? currentDateTime does not get properly restored
             _cumGameInstanceTimeInPriorUnitySessions = GameInstanceTime; // _cumGameInstanceTimeInPriorUnitySessions must be updated (last so it doesn't affect other values here) so it is current when saved
-            D.Log("{0}.PrepareToSaveGame called. CumGameInstanceTimeInPriorUnitySessions set to {1:0.##}.", Name, _cumGameInstanceTimeInPriorUnitySessions);
+            //D.Log("{0}.PrepareToSaveGame called. CumGameInstanceTimeInPriorUnitySessions set to {1:0.##}.", Name, _cumGameInstanceTimeInPriorUnitySessions);
         }
 
         public void PrepareToResumeSavedGame() {
             // _cumGameInstanceTimeInPriorUnitySessions was updated before saving, so it should be restored to the right value
-            D.Log("{0}.PrepareToResumeSavedGame() called. CumGameInstanceTimeInPriorUnitySessions restored to {1:0.0)}.", Name, _cumGameInstanceTimeInPriorUnitySessions);
+            //D.Log("{0}.PrepareToResumeSavedGame() called. CumGameInstanceTimeInPriorUnitySessions restored to {1:0.0)}.", Name, _cumGameInstanceTimeInPriorUnitySessions);
             // _currentUnitySessionTimeWhenGameInstanceBegan that was saved is irrelevant. It will be updated when the resumed GameInstance begins running
             // _cumGameInstanceTimePaused was updated before saving, so it should be restored to the right value
             // _gameInstanceTimeCurrentPauseBegan will be set to a new value on the next pause
@@ -339,7 +339,7 @@ namespace CodeEnv.Master.GameContent {
 
             // currentDateTime is key! It value when restored should be accurate as it is kept current up to the point it is saved
             _currentDateTime = __savedCurrentDateTime; // FIXME bug? currentDateTime does not get properly restored
-            D.Log("{0} CurrentDateTime restored to {1:0.00}.", Name, _currentDateTime);
+            //D.Log("{0} CurrentDateTime restored to {1:0.00}.", Name, _currentDateTime);
             // don't wait for the Gui to set GameSpeed. Use the backing field as the Property calls GameSpeedPropChangedHandler()
             _gameSpeed = _playerPrefsMgr.GameSpeedOnLoad; // the GameSpeed when saved is not relevant to the resumed GameInstance
             GameSpeedMultiplier = _gameSpeed.SpeedMultiplier();

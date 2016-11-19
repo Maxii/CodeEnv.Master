@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
@@ -165,7 +165,7 @@ namespace CodeEnv.Master.GameContent {
             }
 
             D.Assert(sensors.Select(s => s.RangeCategory).Distinct().Count() <= Constants.One); // validate all the same RangeCategory
-            D.Assert(sensors.Select(s => s.RangeDistance).Distinct(UnityUtility.FloatEqualityComparer).Count() <= Constants.One); // validate all the same RangeDistance -> no mixing of tech
+            D.Assert(sensors.Select(s => s.RangeDistance).Distinct(FloatEqualityComparer.Default).Count() <= Constants.One); // validate all the same RangeDistance -> no mixing of tech
             //D.Log(sensors.Select(s => s.RangeDistance).Concatenate());
             var undamagedSensors = sensors.Where(s => !s.IsDamaged);
             if (!undamagedSensors.Any()) {

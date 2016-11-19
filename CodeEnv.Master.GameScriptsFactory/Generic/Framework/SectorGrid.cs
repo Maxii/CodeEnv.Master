@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -294,7 +294,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
 
         int cellQty = Mathf.RoundToInt(_gridSize.magnitude); // OPTIMIZE cell qty >> sector qty
         _cellVertexWorldLocations = new List<Vector3>(cellQty);
-        _cellGridCoordinatesToSectorIdLookup = new Dictionary<Vector3, IntVector3>(cellQty);
+        _cellGridCoordinatesToSectorIdLookup = new Dictionary<Vector3, IntVector3>(cellQty, Vector3EqualityComparer.Default);
         _sectorIdToCellGridCoordinatesLookup = new Dictionary<IntVector3, Vector3>(cellQty);
         _sectorIdToCellWorldLocationLookup = new Dictionary<IntVector3, Vector3>(cellQty);
         _sectorIdToSectorLookup = new Dictionary<IntVector3, Sector>(cellQty);

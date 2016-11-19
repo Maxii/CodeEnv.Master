@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
@@ -135,12 +135,16 @@ namespace CodeEnv.Master.GameContent {
             IntelCoverage lowestCommonCoverage = GetLowestCommonCoverage(allMemberCoverages);
             var isCoverageSet = SetIntelCoverage(player, lowestCommonCoverage);
             if (isCoverageSet) {
-                D.Log(ShowDebugLog, "{0} has assessed its IntelCoverage for {1} and changed it from {2} to the lowest common member value {3}.",
-                    FullName, player.Name, currentCoverage.GetValueName(), lowestCommonCoverage.GetValueName());
+                if (ShowDebugLog) {
+                    D.Log("{0} has assessed its IntelCoverage for {1} and changed it from {2} to the lowest common member value {3}.",
+                        FullName, player.Name, currentCoverage.GetValueName(), lowestCommonCoverage.GetValueName());
+                }
             }
             else {
-                D.Log(ShowDebugLog, "{0} has assessed its IntelCoverage for {1} and declined to change it from {2} to the lowest common member value {3}.",
-                    FullName, player.Name, currentCoverage.GetValueName(), lowestCommonCoverage.GetValueName());
+                if (ShowDebugLog) {
+                    D.Log("{0} has assessed its IntelCoverage for {1} and declined to change it from {2} to the lowest common member value {3}.",
+                        FullName, player.Name, currentCoverage.GetValueName(), lowestCommonCoverage.GetValueName());
+                }
             }
         }
 

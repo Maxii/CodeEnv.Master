@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
@@ -39,7 +39,7 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        private const string ToStringFormat = "{0}.Filename: {1}, AtlasID: {2}, Color: {3}, Placement: {4}, Size: {5}, Layer: {6}";
+        private const string ToStringFormat = "{0}[Filename: {1}, AtlasID: {2}, Color: {3}, Placement: {4}, Size: {5}, Layer: {6}]";
 
         public string Filename { get; private set; }
 

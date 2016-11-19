@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -73,8 +73,8 @@ public abstract class AMonoSingleton<T> : AMonoBaseSingleton, IInstanceCount whe
         // If no other MonoBehaviour has requested Instance in an Awake() call executing
         // before this one, then we are it. There is no reason to search for an object
         if (_instance == null) {
-            var tempInstanceCount = _instanceCounter + 1;  // HACK as InitializeOnInstance doesn't get called for extra copies so can't increment there
-            D.Log("{0}_{1} is initializing Instance from Awake().", GetType().Name, tempInstanceCount);
+            //var tempInstanceCount = _instanceCounter + 1;  // HACK as InitializeOnInstance doesn't get called for extra copies so can't increment there
+            //D.Log("{0}_{1} is initializing Instance from Awake().", GetType().Name, tempInstanceCount);
             _instance = this as T;
             InitializeOnInstance();
         }
@@ -136,9 +136,9 @@ public abstract class AMonoSingleton<T> : AMonoBaseSingleton, IInstanceCount whe
 
     private void DestroyExtraCopy() {
         D.Assert(IsExtraCopy);
-        D.Log("{0}_{1} is extra. Initiating destruction sequence.".Inject(gameObject.name, InstanceCount));
+        //D.Log("{0}_{1} is extra. Initiating destruction sequence.".Inject(gameObject.name, InstanceCount));
         ExecutePriorToDestroy();
-        D.Log("Destroying {0}_{1}.", gameObject.name, InstanceCount);
+        //D.Log("Destroying {0}_{1}.", gameObject.name, InstanceCount);
         Destroy(gameObject);
     }
 

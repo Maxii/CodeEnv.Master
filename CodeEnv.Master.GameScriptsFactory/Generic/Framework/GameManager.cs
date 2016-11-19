@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -320,7 +320,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     private Job _progressCheckJob;
 
     private void InitializeGameStateProgressionReadinessSystem() {
-        _gameStateProgressionReadinessLookup = new Dictionary<GameState, IList<MonoBehaviour>>();
+        _gameStateProgressionReadinessLookup = new Dictionary<GameState, IList<MonoBehaviour>>(GameStateEqualityComparer.Default);
         _gameStateProgressionReadinessLookup.Add(GameState.Loading, new List<MonoBehaviour>());
         _gameStateProgressionReadinessLookup.Add(GameState.Building, new List<MonoBehaviour>());
         _gameStateProgressionReadinessLookup.Add(GameState.Restoring, new List<MonoBehaviour>());
@@ -484,6 +484,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         RefreshCurrentSceneID();
         RefreshStaticReferences();
         UponSceneLoaded(scene);
+        RunGarbageCollector();
     }
 
     // void OnLevelWasLoaded(level) deprecated by Unity 5.4.1. Replaced it with SceneLoadedEventHandler()
@@ -1049,8 +1050,6 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         D.Assert(CurrentState == GameState.Lobby || CurrentState == GameState.Loading);
         EnableGameTimeClock(false);
         IsRunning = false;
-
-        RunGarbageCollector();
     }
 
     #endregion

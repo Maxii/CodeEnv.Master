@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -120,7 +120,9 @@ public abstract class AUnitCreator : AMonoBase {
         if (currentDate < dateToDeploy) {
             D.Error("{0}: {1} should not be < {2}.", Name, currentDate, dateToDeploy);
         }
-        D.Log(currentDate > dateToDeploy, "{0} exceeded DeployDate {1}. Current date = {2}.", Name, dateToDeploy, currentDate);
+        if (currentDate > dateToDeploy) {
+            D.Log("{0} exceeded DeployDate {1}. Current date = {2}.", Name, dateToDeploy, currentDate);
+        }
         //D.Log("{0} is about to build, deploy and begin ops of {1}'s {2} on {3}.", Name, Owner, Configuration.UnitName, currentDate);
 
         MakeUnitAndPrepareForDeployment();

@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
@@ -54,9 +54,9 @@ namespace CodeEnv.Master.GameContent {
 
         private void ShowIcon(bool toShow) {
             if (Icon != null) {
-                D.Log("{0}.ShowIcon({1}) called.", Name, toShow);
+                //D.Log("{0}.ShowIcon({1}) called.", Name, toShow);
                 if (Icon.IsShowing == toShow) {
-                    D.Log("{0} recording duplicate call to ShowIcon({1}).", Name, toShow);
+                    //D.Warn("{0} recording duplicate call to ShowIcon({1}).", Name, toShow);
                     return;
                 }
                 Icon.Show(toShow);
@@ -110,7 +110,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void AssessInMainCameraLOS() {
             IsInMainCameraLOS = Icon == null ? IsPrimaryMeshInMainCameraLOS : IsPrimaryMeshInMainCameraLOS || _isIconInMainCameraLOS;
-            D.Log("{0}.AssessInMainCameraLOS() called. IsInMainCameraLOS = {1}.", Name, IsInMainCameraLOS);
+            //D.Log("{0}.AssessInMainCameraLOS() called. IsInMainCameraLOS = {1}.", Name, IsInMainCameraLOS);
         }
 
         protected override void AssessComponentsToShowOrOperate() {
@@ -128,7 +128,7 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         protected virtual bool ShouldIconShow() {
             bool result = IsDisplayEnabled && Icon != null && _isIconInMainCameraLOS && !IsPrimaryMeshInMainCameraLOS;
-            D.Log("{0}.ShouldIconShow() result = {1}, IsDisplayEnabled = {2}, _isIconInMainCameraLOS = {3}, IsPrimaryMeshInMainCameraLOS = {4}.", Name, result, IsDisplayEnabled, _isIconInMainCameraLOS, IsPrimaryMeshInMainCameraLOS);
+            //D.Log("{0}.ShouldIconShow() result = {1}, IsDisplayEnabled = {2}, _isIconInMainCameraLOS = {3}, IsPrimaryMeshInMainCameraLOS = {4}.", Name, result, IsDisplayEnabled, _isIconInMainCameraLOS, IsPrimaryMeshInMainCameraLOS);
             return result;
         }
 
@@ -138,7 +138,7 @@ namespace CodeEnv.Master.GameContent {
         /// e.g. CmdIcon transforms are used by the Highlighter to position highlights.
         /// </summary>
         protected virtual void DestroyIcon() {
-            D.Log("{0}.Icon about to be destroyed.", Name);
+            //D.Log("{0}.Icon about to be destroyed.", Name);
             D.AssertNotNull(Icon);
             ShowIcon(false); // accessing destroy gameObject error if we are showing it while destroying it
             var iconCameraLosChgdListener = Icon.CameraLosChangedListener;

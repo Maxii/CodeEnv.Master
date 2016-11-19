@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -55,7 +55,7 @@ public class GuiManager : AMonoSingleton<GuiManager> {
     }
 
     private void InitializeButtonClickSystem() {
-        _buttonLookup = new Dictionary<GuiElementID, GameObject>();
+        _buttonLookup = new Dictionary<GuiElementID, GameObject>(GuiElementIDEqualityComparer.Default);
         var allButtons = gameObject.GetSafeComponentsInChildren<UIButton>(includeInactive: true);
 
         Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");

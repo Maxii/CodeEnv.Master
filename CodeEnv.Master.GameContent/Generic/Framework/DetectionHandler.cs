@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
@@ -56,7 +56,7 @@ namespace CodeEnv.Master.GameContent {
 
             IDictionary<RangeCategory, IList<IUnitCmd_Ltd>> rangeLookup;
             if (!_detectionLookup.TryGetValue(detectingPlayer, out rangeLookup)) {
-                rangeLookup = new Dictionary<RangeCategory, IList<IUnitCmd_Ltd>>();
+                rangeLookup = new Dictionary<RangeCategory, IList<IUnitCmd_Ltd>>(RangeCategoryEqualityComparer.Default);
                 _detectionLookup.Add(detectingPlayer, rangeLookup);
             }
 
@@ -183,7 +183,9 @@ namespace CodeEnv.Master.GameContent {
             }
 
             if (_item.SetIntelCoverage(player, newCoverage)) {
-                D.Log(ShowDebugLog, "{0} successfully set {1}'s IntelCoverage to {2}.", FullName, player, newCoverage.GetValueName());
+                if (ShowDebugLog) {
+                D.Log("{0} successfully set {1}'s IntelCoverage to {2}.", FullName, player, newCoverage.GetValueName());
+                }
             }
         }
 

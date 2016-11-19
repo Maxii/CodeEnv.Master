@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -55,6 +55,8 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     /// The mass of this projectile.
     /// </summary>
     public abstract float Mass { get; }
+
+    protected sealed override Layers Layer { get { return Layers.Projectiles; } }
 
     protected override bool ToShowMuzzleEffects { get { return base.ToShowMuzzleEffects && !_hasWeaponFired; } }
 

@@ -10,11 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
-
-#define ENABLE_PROFILER
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -457,7 +455,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// DummyTarget positioned directly ahead. 
     /// </summary>
     private void ResetAtCurrentLocation() {
-        SphereCollider dummyTargetCollider = _dummyTarget.GetSafeComponent<SphereCollider>();
+        SphereCollider dummyTargetCollider = _dummyTarget.GetComponent<SphereCollider>();
         dummyTargetCollider.enabled = false;
         // the collider is disabled so the placement algorithm doesn't accidentally find it already in front of the camera
         PlaceDummyTargetAtUniverseEdgeInDirection(transform.forward);
@@ -1132,8 +1130,8 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         LogEvent();
         // some values are continuously recalculated in update as the target moves so they don't need to be here too
 
-        D.Log("Follow Target is now {0}.", _target.GetSafeComponent<ADiscernibleItem>().FullName);
-        ICameraFollowable icfTarget = _target.gameObject.GetSafeInterface<ICameraFollowable>();
+        ICameraFollowable icfTarget = _target.GetComponent<ICameraFollowable>();
+        D.Log("Follow Target is now {0}.", icfTarget.FullName);
         _cameraRotationDampener = icfTarget.FollowRotationDampener;
         _cameraDistanceDampener = icfTarget.FollowDistanceDampener;
 
@@ -1833,7 +1831,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 #endif
 
 #if UNITY_EDITOR
-            D.Log("UNITY_EDITOR, ");
+        D.Log("UNITY_EDITOR, ");
 #endif
 
 #if DEBUG_WARN

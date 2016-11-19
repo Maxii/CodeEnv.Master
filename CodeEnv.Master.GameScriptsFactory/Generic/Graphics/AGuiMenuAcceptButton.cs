@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -57,7 +57,7 @@ public abstract class AGuiMenuAcceptButton : AGuiButton {
     /// </summary>
     private void CaptureState() {
         foreach (UIToggle checkbox in _checkboxes) {
-            var checkboxID = checkbox.gameObject.GetSafeComponent<AGuiMenuElement>().ElementID;
+            var checkboxID = checkbox.GetComponent<AGuiMenuElement>().ElementID;
             bool checkedState = checkbox.value;
             RecordCheckboxState(checkboxID, checkedState);
         }
@@ -69,7 +69,7 @@ public abstract class AGuiMenuAcceptButton : AGuiButton {
             RecordPopupListState(popupListID, selection, convertedSelection);
         }
         foreach (UISlider slider in _sliders) {
-            var sliderID = slider.gameObject.GetSafeComponent<AGuiMenuElement>().ElementID;
+            var sliderID = slider.GetComponent<AGuiMenuElement>().ElementID;
             float sliderValue = slider.value;
             RecordSliderState(sliderID, sliderValue);
         }

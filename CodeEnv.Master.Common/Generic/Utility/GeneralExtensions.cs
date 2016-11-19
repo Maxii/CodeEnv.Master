@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.Common {
 
@@ -314,8 +314,8 @@ namespace CodeEnv.Master.Common {
         /// <param name="sequence">The sequence.</param>
         /// <param name="duplicate">The first duplicate found, if any.</param>
         /// <returns></returns>
-        public static bool ContainsDuplicates<T>(this IEnumerable<T> sequence, out T duplicate) {
-            var set = new HashSet<T>();
+        public static bool ContainsDuplicates<T>(this IEnumerable<T> sequence, out T duplicate, IEqualityComparer<T> equalityComparer = null) {
+            var set = equalityComparer != null ? new HashSet<T>(equalityComparer) : new HashSet<T>();
             foreach (var t in sequence) {
                 if (!set.Add(t)) {
                     duplicate = t;

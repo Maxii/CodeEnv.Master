@@ -10,18 +10,18 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
-namespace CodeEnv.Master.Common {
+namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Enum identifying the kinds of topography present in the universe. Used to determine maximum
     /// safe travel speeds as well as penalty values associated with the pathfinding nodes present
     /// in a region. Pathfinding nodes use a bitmask tag derived from the enum value. Generate a bit mask to isolate a tag like this: 
-    /// <c>deepNebulaTagOnlyBitMask = 1 << Topography.DeepNebula.AStarTagValue();</c>
-    /// Previously: <c>deepNebulaTagOnlyBitMask = 1 << (int)Topography.DeepNebula;</c>
+    /// <c>deepNebulaTagOnlyBitMask = 1 &lt;&lt; Topography.DeepNebula.AStarTagValue();</c>
+    /// Previously: <c>deepNebulaTagOnlyBitMask = 1 &lt;&lt; (int)Topography.DeepNebula;</c>
     /// </summary>
     public enum Topography {
 

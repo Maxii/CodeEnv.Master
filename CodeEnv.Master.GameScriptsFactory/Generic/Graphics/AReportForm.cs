@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -62,7 +62,7 @@ public abstract class AReportForm : AForm {
 
     protected sealed override void InitializeValuesAndReferences() {
         var guiElementsPresent = gameObject.GetSafeComponentsInChildren<AGuiElement>();
-        _guiElementsPresent = guiElementsPresent.ToDictionary<AGuiElement, GuiElementID>(e => e.ElementID);
+        _guiElementsPresent = guiElementsPresent.ToDictionary<AGuiElement, GuiElementID>(e => e.ElementID, GuiElementIDEqualityComparer.Default);
         _guiElementsPresent.Values.ForAll(e => InitializeGuiElement(e));
         InitializeNonGuiElementMembers();
     }

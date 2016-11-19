@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
@@ -89,7 +89,7 @@ namespace CodeEnv.Master.GameContent {
         #region Event and Property Change Handlers
 
         private void DatedCoveragePropChangingHandler(IntelCoverage newDatedCoverage) {
-            D.Log("Intel.DatedCoverage changing from {0} to {1}.", DatedCoverage, newDatedCoverage);
+            //D.Log("Intel.DatedCoverage changing from {0} to {1}.", DatedCoverage, newDatedCoverage);
         }
 
         #endregion

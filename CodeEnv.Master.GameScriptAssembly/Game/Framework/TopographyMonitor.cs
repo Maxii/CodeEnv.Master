@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -54,7 +54,9 @@ public class TopographyMonitor : AColliderMonitor {
         }
         //D.Log(ShowDebugLog, "{0}.{1}.OnTriggerEnter() tripped by Collider {2}. Distance from Monitor = {3:0.##}, RangeDistance = {4:0.##}.",
         //ParentItem.FullName, GetType().Name, other.name, Vector3.Distance(other.transform.position, transform.position), RangeDistance);
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
         var listener = other.GetComponent<ITopographyChangeListener>();
+        Profiler.EndSample();
         if (listener != null) {
             if (__ValidateTopographyChange(listener)) {
                 listener.ChangeTopographyTo(ParentItem.Topography);
@@ -71,7 +73,10 @@ public class TopographyMonitor : AColliderMonitor {
         }
         //D.Log(ShowDebugLog, "{0}.{1}.OnTriggerExit() tripped by Collider {2}. Distance from Monitor = {3:0.##}, RangeDistance = {4:0.##}.",
         //  ParentItem.FullName, GetType().Name, other.name, Vector3.Distance(other.transform.position, transform.position), RangeDistance);
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
         var listener = other.GetComponent<ITopographyChangeListener>();
+        Profiler.EndSample();
+
         if (listener != null) {
             if (__ValidateTopographyChange(listener)) {
                 listener.ChangeTopographyTo(SurroundingTopography);

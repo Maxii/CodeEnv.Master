@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -289,11 +289,13 @@ public class UniverseCreator {
         var aiOwnedDebugUnitCreators = existingDebugUnitCreators.Where(uc => !uc.EditorSettings.IsOwnerUser);
         var desiredAiUserRelationships = aiOwnedDebugUnitCreators.Select(uc => uc.EditorSettings.DesiredRelationshipWithUser.Convert());
 
-        HashSet<DiplomaticRelationship> uniqueDesiredAiUserRelationships = new HashSet<DiplomaticRelationship>(desiredAiUserRelationships);
+        HashSet<DiplomaticRelationship> uniqueDesiredAiUserRelationships =
+            new HashSet<DiplomaticRelationship>(desiredAiUserRelationships, DiplomaticRelationshipEqualityComparer.Default);
         //D.Log("{0}: Unique desired AI/User Relationships = {1}.", Name, uniqueDesiredAiUserRelationships.Select(r => r.GetValueName()).Concatenate());
 
         // Setup initial AIPlayer <-> User relationships derived from editorCreators..
-        Dictionary<DiplomaticRelationship, IList<Player>> aiPlayerInitialUserRelationsLookup = new Dictionary<DiplomaticRelationship, IList<Player>>(aiPlayerQty);
+        Dictionary<DiplomaticRelationship, IList<Player>> aiPlayerInitialUserRelationsLookup =
+            new Dictionary<DiplomaticRelationship, IList<Player>>(aiPlayerQty, DiplomaticRelationshipEqualityComparer.Default);
         Stack<Player> unassignedAIPlayers = new Stack<Player>(aiPlayers);
         uniqueDesiredAiUserRelationships.ForAll(aiUserRelationship => {
             if (unassignedAIPlayers.Count > Constants.Zero) {

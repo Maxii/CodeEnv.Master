@@ -10,11 +10,11 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
-namespace CodeEnv.Master.Common {
+namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Enum defining the scope of knowledge a player currently has about an item in the game.
@@ -22,14 +22,14 @@ namespace CodeEnv.Master.Common {
     public enum IntelCoverage {
 
         /// <summary>
-        /// There is zero knowledge of an item, not even its existance.
+        /// There is zero knowledge of an item, not even its existence.
         /// </summary>
         None = 0,
 
         /// <summary>
-        /// The  player is aware of the existance of an item and knows a couple of basic facts but that is all.
+        /// The  player is aware of the existence of an item and knows a couple of basic facts but that is all.
         /// Typically the location is 1) within range of long range sensors, and/or 2) can be observed empirically
-        /// by all and/or 3) our info is based off of rumor and inuendo.
+        /// by all and/or 3) our info is based off of rumor and innuendo.
         /// </summary>
         Basic = 1,
 
@@ -52,7 +52,7 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         Comprehensive = 4
 
-        // Aware, Primative, Nominal, Minimal, Minimum, Fundamental, Elementary, Essential, Basic
+        // Aware, Primitive, Nominal, Minimal, Minimum, Fundamental, Elementary, Essential, Basic
         // Nominal, Fundamental, Essential
         // Moderate, Intermediate, Medium, Broad, Extensive
         // Comprehensive, Complete, Sweeping, Exhaustive, Full

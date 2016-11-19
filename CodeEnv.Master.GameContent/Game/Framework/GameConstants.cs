@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
         #region UILabel Icon Markers
 
         /*********************************************************************************
-                    *   Markers used within UILabel to indicate the sprite to inline within the label's text.
+                    *   Markers used within UILabel to indicate the sprite to in line within the label's text.
                     *   Note: The UILabel's bbcode checkbox must be checked for the marker to be recognized.
                     *********************************************************************************/
 

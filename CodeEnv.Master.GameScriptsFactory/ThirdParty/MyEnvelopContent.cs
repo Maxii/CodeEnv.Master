@@ -7,13 +7,13 @@
 // <summary> 
 // File: MyEnvelopContent.cs
 // Resizes the widget it's attached to in order to envelop not just one widget, but all the widgets
-// within the chosen heirarchy
+// within the chosen hierarchy
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -24,14 +24,14 @@ using UnityEngine.Serialization;
 
 /// <summary>
 /// Resizes the widget it's attached to in order to envelop not just one widget, but all the widgets
-/// within the chosen heirarchy - targetRoot. Most common use - resizing a background to envelop
+/// within the chosen hierarchy - targetRoot. Most common use - resizing a background to envelop
 /// multiple widgets such as in a custom tooltip containing multiple elements. 
 /// Derived from Ngui/Examples/Other/EnvelopContent.
 /// </summary>
 [RequireComponent(typeof(UIWidget))]
 public class MyEnvelopContent : AMonoBase {
 
-    [Tooltip("The root object of the heirarchy of widgets you wish to envelop")]
+    [Tooltip("The root object of the hierarchy of widgets you wish to envelop")]
     public Transform targetRoot;
 
     //[FormerlySerializedAs("padLeft")]

@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.Common {
 
@@ -222,6 +222,17 @@ namespace CodeEnv.Master.Common {
                 D.WarnContext(go, ErrorMessages.ComponentNotFound, typeof(I).Name, go.name);
             }
             return i;
+        }
+
+        /// <summary>
+        /// Gets the interface of type I found among the transform's siblings.
+        /// Logs a warning if the interface cannot be found.
+        /// </summary>
+        /// <typeparam name="I"></typeparam>
+        /// <param name="transform">The transform.</param>
+        /// <returns></returns>
+        public static I GetSafeInterface<I>(this Transform transform) where I : class {
+            return transform.gameObject.GetSafeInterface<I>();
         }
 
         /// <summary>
@@ -562,7 +573,9 @@ namespace CodeEnv.Master.Common {
         /// <param name="go">The go.</param>
         /// <returns></returns>
         public static C AddMissingComponent<C>(this GameObject go) where C : Component {
+            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
             var c = go.GetComponent<C>();
+            Profiler.EndSample();
             if (c == null) {
                 c = go.AddComponent<C>();
             }

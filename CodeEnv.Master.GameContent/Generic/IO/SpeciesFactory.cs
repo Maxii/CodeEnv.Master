@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected sealed override void Initialize() {
             _xmlReader = SpeciesStatXmlReader.Instance;
-            _statCache = new Dictionary<Species, SpeciesStat>();
+            _statCache = new Dictionary<Species, SpeciesStat>(SpeciesEqualityComparer.Default);
             // WARNING: Do not use Instance or _instance in here as this is still part of Constructor
         }
 

@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
@@ -69,7 +69,7 @@ namespace CodeEnv.Master.GameContent {
 
         private IDictionary<ResourceID, float> _resourceValueLookup;
         private IDictionary<ResourceID, float> ResourceValueLookup {
-            get { return _resourceValueLookup = _resourceValueLookup ?? new Dictionary<ResourceID, float>(); }
+            get { return _resourceValueLookup = _resourceValueLookup ?? new Dictionary<ResourceID, float>(ResourceIDEqualityComparer.Default); }
         }
 
         /// <summary>
@@ -123,7 +123,7 @@ namespace CodeEnv.Master.GameContent {
         public float GetYield(ResourceID resourceID) {
             float result = Constants.ZeroF;
             if (!TryGetYield(resourceID, out result)) {
-                D.Warn("{0} {1} is not present in {2}.", typeof(ResourceID).Name, resourceID.GetValueName(), GetType().Name);
+                D.Warn("{0} {1} is not present in {2}. Empty System?", typeof(ResourceID).Name, resourceID.GetValueName(), GetType().Name);
             }
             return result;
         }

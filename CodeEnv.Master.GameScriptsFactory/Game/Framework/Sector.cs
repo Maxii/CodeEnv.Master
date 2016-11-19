@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -378,7 +378,9 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
             // can be called before CommenceOperations if DebugSettings.AllIntelCoverageComprehensive = true
             return;
         }
-        D.Log(ShowDebugLog, "{0}.IntelCoverageChangedHandler() called. {1}'s new IntelCoverage = {2}.", FullName, playerWhosCoverageChgd.Name, GetIntelCoverage(playerWhosCoverageChgd));
+        if (ShowDebugLog) {
+            D.Log("{0}.IntelCoverageChangedHandler() called. {1}'s new IntelCoverage = {2}.", FullName, playerWhosCoverageChgd.Name, GetIntelCoverage(playerWhosCoverageChgd));
+        }
         if (playerWhosCoverageChgd == _gameMgr.UserPlayer) {
             HandleUserIntelCoverageChanged();
         }
@@ -428,7 +430,9 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
                 case GameInputMode.NoInput:
                 case GameInputMode.PartialPopup:
                 case GameInputMode.FullPopup:
-                    D.Log(ShowDebugLog, "{0}: InputMode changed to {1}. No longer showing HUD.", FullName, inputMode.GetValueName());
+                    if (ShowDebugLog) {
+                        D.Log("{0}: InputMode changed to {1}. No longer showing HUD.", FullName, inputMode.GetValueName());
+                    }
                     ShowHud(false);
                     break;
                 case GameInputMode.Normal:

@@ -11,9 +11,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
@@ -48,7 +48,7 @@ namespace CodeEnv.Master.GameContent {
                 // particle operating effect will be used so make a CameraLosChangedListener to tell it when to show
                 listener = References.TrackingWidgetFactory.MakeInvisibleCameraLosChangedListener(_trackedProjectile, _meshLayer);
             }
-            var primaryMeshRenderer = listener.transform.gameObject.GetComponent<MeshRenderer>();
+            var primaryMeshRenderer = listener.transform.GetComponent<MeshRenderer>();
 
             primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             primaryMeshRenderer.receiveShadows = false;

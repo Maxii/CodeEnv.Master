@@ -11,9 +11,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -62,7 +62,7 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
             D.Warn("Calling method name: {0) should start with 'Upon'.", callingMethodName);
         }
         var message = CurrentState.ToString() + Constants.Underscore + callingMethodName;
-        D.Log("{0}.RelayToCurrentState content: {1}.", GetType().Name, message);
+        //D.Log("{0}.RelayToCurrentState content: {1}.", GetType().Name, message);
         SendMessageEx(message, param);
     }
 
@@ -276,12 +276,12 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
         public Action DoOccasionalUpdate = DoNothing;
         public Action DoLateUpdate = DoNothing;
         public Action DoFixedUpdate = DoNothing;
-        public Action<Collider> DoOnTriggerEnter = DoNothingCollider;
-        public Action<Collider> DoOnTriggerStay = DoNothingCollider;
-        public Action<Collider> DoOnTriggerExit = DoNothingCollider;
-        public Action<Collision> DoOnCollisionEnter = DoNothingCollision;
-        public Action<Collision> DoOnCollisionStay = DoNothingCollision;
-        public Action<Collision> DoOnCollisionExit = DoNothingCollision;
+        //public Action<Collider> DoOnTriggerEnter = DoNothingCollider;
+        //public Action<Collider> DoOnTriggerStay = DoNothingCollider;
+        //public Action<Collider> DoOnTriggerExit = DoNothingCollider;
+        //public Action<Collision> DoOnCollisionEnter = DoNothingCollision;
+        //public Action<Collision> DoOnCollisionStay = DoNothingCollision;
+        //public Action<Collision> DoOnCollisionExit = DoNothingCollision;
 
         public Func<IEnumerator> enterState = DoNothingCoroutine;
         public Func<IEnumerator> exitState = DoNothingCoroutine;
@@ -481,12 +481,12 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
         ////state.DoOccasionalUpdate = ConfigureDelegate<Action>("OccasionalUpdate", DoNothing);
         state.DoLateUpdate = ConfigureDelegate<Action>("LateUpdate", DoNothing);
         state.DoFixedUpdate = ConfigureDelegate<Action>("FixedUpdate", DoNothing);
-        state.DoOnTriggerEnter = ConfigureDelegate<Action<Collider>>("OnTriggerEnter", DoNothingCollider);
-        state.DoOnTriggerExit = ConfigureDelegate<Action<Collider>>("OnTriggerExit", DoNothingCollider);
-        state.DoOnTriggerStay = ConfigureDelegate<Action<Collider>>("OnTriggerStay", DoNothingCollider);
-        state.DoOnCollisionEnter = ConfigureDelegate<Action<Collision>>("OnCollisionEnter", DoNothingCollision);
-        state.DoOnCollisionExit = ConfigureDelegate<Action<Collision>>("OnCollisionExit", DoNothingCollision);
-        state.DoOnCollisionStay = ConfigureDelegate<Action<Collision>>("OnCollisionStay", DoNothingCollision);
+        //state.DoOnTriggerEnter = ConfigureDelegate<Action<Collider>>("OnTriggerEnter", DoNothingCollider);
+        //state.DoOnTriggerExit = ConfigureDelegate<Action<Collider>>("OnTriggerExit", DoNothingCollider);
+        //state.DoOnTriggerStay = ConfigureDelegate<Action<Collider>>("OnTriggerStay", DoNothingCollider);
+        //state.DoOnCollisionEnter = ConfigureDelegate<Action<Collision>>("OnCollisionEnter", DoNothingCollision);
+        //state.DoOnCollisionExit = ConfigureDelegate<Action<Collision>>("OnCollisionExit", DoNothingCollision);
+        //state.DoOnCollisionStay = ConfigureDelegate<Action<Collision>>("OnCollisionStay", DoNothingCollision);
 
         ////state.DoOnHover = ConfigureDelegate<Action<bool>>("OnHover", DoNothingBoolean);
         ////state.DoOnPress = ConfigureDelegate<Action<bool>>("OnPress", DoNothingBoolean);
@@ -558,7 +558,7 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
                     D.Warn("{0} did not find method {1}_{2}. Is it a private method in a base class?", transform.name, state.currentState.ToString(), methodRoot);
                 }
                 else {
-                    D.Log("{0} did not find method {1}_{2}. Is it a private method in a base class?", transform.name, state.currentState.ToString(), methodRoot);
+                    //D.Log("{0} did not find method {1}_{2}. Is it a private method in a base class?", transform.name, state.currentState.ToString(), methodRoot);
                 }
             }
             lookup[methodRoot] = returnValue;

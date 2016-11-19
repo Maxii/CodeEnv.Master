@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -38,6 +38,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     public string Name { get { return transform.name; } }
 
     public string FullName { get { return Weapon != null ? NameFormat.Inject(Weapon.RangeMonitor.ParentItem.FullName, Name) : Name; } }
+
 
     private IElementAttackable _target;
     public IElementAttackable Target {
@@ -69,6 +70,8 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
 
     protected bool IsWeaponDiscernibleToUser { get { return Weapon.IsWeaponDiscernibleToUser; } }
 
+    protected abstract Layers Layer { get; }
+
     private AWeapon _weapon;
     protected AWeapon Weapon {
         get { return _weapon; }
@@ -91,7 +94,12 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         _gameTime = GameTime.Instance;
         _jobMgr = JobManager.Instance;
         _subscriptions = new List<IDisposable>();
+        ValidateLayer();
         enabled = false;
+    }
+
+    private void ValidateLayer() {
+        D.AssertEqual(Layer, (Layers)gameObject.layer, Name);
     }
 
     private void InitializeName() {

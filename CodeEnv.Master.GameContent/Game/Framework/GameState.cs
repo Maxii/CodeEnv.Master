@@ -10,7 +10,7 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-namespace CodeEnv.Master.Common {
+namespace CodeEnv.Master.GameContent {
 
 
     /// <summary>

@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
@@ -24,6 +24,8 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Immutable abstract class holding the<c>ElementHullCategoryType</c> composition of a Unit.
+    /// <remarks>OPTIMIZE Use of ElementHullCategoryType and .ToDictionary doesn't allow use of a
+    /// ElementHullCategoryType EqualityComparer when constructing a Dictionary that doesn't produce allocations.</remarks>
     /// </summary>
     /// <typeparam name="ElementHullCategoryType">The type of ElementCategory the Unit is composed of.</typeparam>
     public abstract class AUnitComposition<ElementHullCategoryType> where ElementHullCategoryType : struct {

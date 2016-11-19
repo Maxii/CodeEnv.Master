@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -316,7 +316,9 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     public void HandleSubordinateElementDeath(IUnitElement deadSubordinateElement) {
-        D.Log(ShowDebugLog, "{0} acknowledging {1} has been lost.", FullName, deadSubordinateElement.FullName);
+        if (ShowDebugLog) {
+            D.Log("{0} acknowledging {1} has been lost.", FullName, deadSubordinateElement.FullName);
+        }
         RemoveElement(deadSubordinateElement as AUnitElementItem);
         // state machine notification is after removal so attempts to acquire a replacement don't come up with same element
         if (IsOperational) {    // no point in notifying Cmd's Dead state of the subordinate element's death that killed it
@@ -740,7 +742,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     #region Debug
 
-    private IDictionary<FsmTgtEventSubscriptionMode, bool> __subscriptionStatusLookup = new Dictionary<FsmTgtEventSubscriptionMode, bool>() {
+    private IDictionary<FsmTgtEventSubscriptionMode, bool> __subscriptionStatusLookup =
+        new Dictionary<FsmTgtEventSubscriptionMode, bool>(FsmTgtEventSubscriptionModeEqualityComparer.Default) {
         {FsmTgtEventSubscriptionMode.TargetDeath, false },
         {FsmTgtEventSubscriptionMode.InfoAccessChg, false },
         {FsmTgtEventSubscriptionMode.OwnerChg, false }

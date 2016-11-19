@@ -10,13 +10,14 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
@@ -155,7 +156,9 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
     protected sealed override void HandleIsOperationalChanged() {
         base.HandleIsOperationalChanged();
         if (!IsOperational) {
-            D.Log(ShowDebugLog, "{0} is initiating death sequence.", FullName);
+            if (ShowDebugLog) {
+                D.Log("{0} is initiating death sequence.", FullName);
+            }
             InitiateDeadState();
             // HandleDeath gets called after this, from Dead_EnterState
             //PrepareForDeathNotification();
@@ -253,11 +256,37 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
 
     #region Nested Classes
 
-    public enum FsmTgtEventSubscriptionMode {
+    protected enum FsmTgtEventSubscriptionMode {
         None,
         TargetDeath,
         InfoAccessChg,
         OwnerChg
+    }
+
+    /// <summary>
+    /// IEqualityComparer for FsmTgtEventSubscriptionMode. 
+    /// <remarks>For use when FsmTgtEventSubscriptionMode is used as a Dictionary key as it avoids boxing from use of object.Equals.</remarks>
+    /// </summary>
+    protected class FsmTgtEventSubscriptionModeEqualityComparer : IEqualityComparer<FsmTgtEventSubscriptionMode> {
+
+        public static readonly FsmTgtEventSubscriptionModeEqualityComparer Default = new FsmTgtEventSubscriptionModeEqualityComparer();
+
+        public override string ToString() {
+            return new ObjectAnalyzer().ToString(this);
+        }
+
+        #region IEqualityComparer<FsmTgtEventSubscriptionMode> Members
+
+        public bool Equals(FsmTgtEventSubscriptionMode value1, FsmTgtEventSubscriptionMode value2) {
+            return value1 == value2;
+        }
+
+        public int GetHashCode(FsmTgtEventSubscriptionMode value) {
+            return value.GetHashCode();
+        }
+
+        #endregion
+
     }
 
     #endregion
@@ -265,7 +294,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
     #region Debug
 
     public virtual void __SimulateAttacked() {
-        D.LogBold(ShowDebugLog, "{0} is having an attack simulated on itself.", FullName);
+        D.LogBold("{0} is having an attack simulated on itself.", FullName);
         float damageValue = UnityEngine.Random.Range(Constants.ZeroF, Data.MaxHitPoints / 2F);
         TakeHit(new DamageStrength(damageValue, damageValue, damageValue));
     }

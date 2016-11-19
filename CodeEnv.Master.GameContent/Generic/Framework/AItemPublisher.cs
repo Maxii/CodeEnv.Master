@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
@@ -44,11 +44,15 @@ namespace CodeEnv.Master.GameContent {
             if (!IsCachedReportCurrent(player, out cachedReport)) {
                 cachedReport = MakeReportInstance(player);
                 CacheReport(player, cachedReport);
-                D.Log(ShowDebugLog, "{0} generated and cached a new {1} for {2}.", GetType().Name, typeof(ReportType).Name, player.LeaderName);
-                _data.AcceptChanges();
+                if (ShowDebugLog) {
+                    D.Log("{0} generated and cached a new {1} for {2}.", GetType().Name, typeof(ReportType).Name, player.LeaderName);
+                    _data.AcceptChanges();
+                }
             }
             else {
-                D.Log(ShowDebugLog, "{0} reusing cached {1} for {2}.", GetType().Name, typeof(ReportType).Name, player.LeaderName);
+                if (ShowDebugLog) {
+                    D.Log("{0} reusing cached {1} for {2}.", GetType().Name, typeof(ReportType).Name, player.LeaderName);
+                }
             }
             return cachedReport;
         }

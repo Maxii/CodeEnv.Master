@@ -11,9 +11,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.Common {
 
@@ -113,7 +113,7 @@ namespace CodeEnv.Master.Common {
                     yield return null;
                 }
                 else {
-                    D.Log(JobName != DefaultJobName, "{0}.MoveNext being called.", JobName);
+                    //D.Log(JobName != DefaultJobName, "{0}.MoveNext being called.", JobName);
                     // run the next iteration and stop if we are done
                     if (_coroutine.MoveNext()) {
                         yield return _coroutine.Current;
@@ -204,7 +204,7 @@ namespace CodeEnv.Master.Common {
         }
 
         public void Start() {
-            D.Log(JobName != DefaultJobName, "{0}.Start called.", JobName);
+            //D.Log(JobName != DefaultJobName, "{0}.Start called.", JobName);
             D.Assert(!_hasBeenPreviouslyRun, JobName);
             IsRunning = true;
             JobRunner.StartCoroutine(Run());
@@ -221,7 +221,7 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         public void Kill() {
             if (IsRunning) {
-                D.Log(JobName != DefaultJobName, "{0} was killed while running.", JobName);
+                //D.Log(JobName != DefaultJobName, "{0} was killed while running.", JobName);
                 _jobWasKilled = true;
                 IsRunning = false;
                 KillYieldInstruction();

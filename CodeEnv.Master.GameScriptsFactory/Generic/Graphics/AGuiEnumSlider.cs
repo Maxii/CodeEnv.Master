@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -40,7 +40,7 @@ public abstract class AGuiEnumSlider<E> : ATextTooltip where E : struct {
     }
 
     private void InitializeSlider() {
-        _slider = gameObject.GetSafeComponent<UISlider>();
+        _slider = gameObject.GetComponent<UISlider>();
         var enumValues = Enums<E>.GetValues().Except(default(E)).ToArray();
         int numberOfSliderSteps = enumValues.Length;
         _slider.numberOfSteps = numberOfSliderSteps;

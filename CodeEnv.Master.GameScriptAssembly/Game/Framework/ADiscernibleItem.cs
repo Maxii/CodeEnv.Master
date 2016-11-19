@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -150,7 +150,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
 
     protected AHighlightManager GetHighlightMgr(HighlightMgrID mgrID) {
         if (_highlightMgrLookup == null) {
-            _highlightMgrLookup = new Dictionary<HighlightMgrID, AHighlightManager>(3);
+            _highlightMgrLookup = new Dictionary<HighlightMgrID, AHighlightManager>(3, HighlightMgrIDEqualityComparer.Default);
         }
         AHighlightManager highlightMgr;
         if (!_highlightMgrLookup.TryGetValue(mgrID, out highlightMgr)) {
@@ -234,7 +234,9 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
         OnEffectSeqStarting(effectSeqID);
         //D.Log(ShowDebugLog, "{0} attempting to start {1} effect.", FullName, effectSeqID.GetValueName());
         if (IsVisualDetailDiscernibleToUser) {
-            D.Log(ShowDebugLog, "{0} visual detail is discernible so starting {1} effect.", FullName, effectSeqID.GetValueName());
+            if (ShowDebugLog) {
+            D.Log("{0} visual detail is discernible so starting {1} effect.", FullName, effectSeqID.GetValueName());
+            }
             D.AssertNotNull(EffectsMgr);   // if DisplayMgr is initialized, so is EffectsMgr
             EffectsMgr.StartEffect(effectSeqID);
         }
@@ -519,12 +521,38 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
         }
     }
 
-    public enum HighlightMgrID {
+    protected enum HighlightMgrID {
         None,
         Circles,
         Hover,
         SectorView
     }
+
+    /// <summary>
+    /// IEqualityComparer for HighlightMgrID. 
+    /// <remarks>For use when HighlightMgrID is used as a Dictionary key as it avoids boxing from use of object.Equals.</remarks>
+    /// </summary>
+    private class HighlightMgrIDEqualityComparer : IEqualityComparer<HighlightMgrID> {
+
+        public static readonly HighlightMgrIDEqualityComparer Default = new HighlightMgrIDEqualityComparer();
+
+        public override string ToString() {
+            return new ObjectAnalyzer().ToString(this);
+        }
+
+        #region IEqualityComparer<HighlightMgrID> Members
+
+        public bool Equals(HighlightMgrID value1, HighlightMgrID value2) {
+            return value1 == value2;
+        }
+
+        public int GetHashCode(HighlightMgrID value) {
+            return value.GetHashCode();
+        }
+
+    }
+
+    #endregion
 
     #endregion
 

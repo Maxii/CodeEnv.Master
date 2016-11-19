@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -279,7 +279,9 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
             if (IsOperational) { // don't activate until operational, otherwise Assert(IsRunning) will fail in OrbitData
                 Settlement.CelestialOrbitSimulator.IsActivated = true;
             }
-            D.Log(ShowDebugLog, "{0} has been deployed to {1}.", Settlement.DisplayName, FullName);
+            if (ShowDebugLog) {
+                D.Log("{0} has been deployed to {1}.", Settlement.DisplayName, FullName);
+            }
         }
         else {
             // The existing Settlement has died, so cleanup the orbit slot in prep for a future Settlement
@@ -389,7 +391,9 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         var sectorViewHighlightMgr = GetHighlightMgr(HighlightMgrID.SectorView) as SectorViewHighlightManager;
         if (!IsDiscernibleToUser) {
             if (sectorViewHighlightMgr.IsHighlightShowing) {
-                D.Log(ShowDebugLog, "{0} received ShowSectorViewHighlight({1}) when not discernible but showing. Sending Show(false) to sync HighlightMgr.", FullName, toShow);
+                if (ShowDebugLog) {
+                    D.Log("{0} received ShowSectorViewHighlight({1}) when not discernible but showing. Sending Show(false) to sync HighlightMgr.", FullName, toShow);
+                }
                 sectorViewHighlightMgr.Show(false);
             }
             return;

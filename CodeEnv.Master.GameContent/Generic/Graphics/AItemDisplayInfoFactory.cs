@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
@@ -30,7 +30,8 @@ namespace CodeEnv.Master.GameContent {
 
         protected const string Unknown = Constants.QuestionMark;
 
-        private static IDictionary<ItemInfoID, string> _defaultLineTemplateLookup = new Dictionary<ItemInfoID, string>() {
+        private static IDictionary<ItemInfoID, string> _defaultLineTemplateLookup =
+            new Dictionary<ItemInfoID, string>(ItemInfoIDEqualityComparer.Default) {
 
                 {ItemInfoID.Separator, "--------------------"},
 
@@ -91,7 +92,8 @@ namespace CodeEnv.Master.GameContent {
                 {ItemInfoID.CameraDistance, "CameraDistance: {0}"}
         };
 
-        private static IDictionary<ItemInfoID, string> _defaultNumberFormatLookup = new Dictionary<ItemInfoID, string>() {
+        private static IDictionary<ItemInfoID, string> _defaultNumberFormatLookup =
+            new Dictionary<ItemInfoID, string>(ItemInfoIDEqualityComparer.Default) {
 
                 {ItemInfoID.CurrentCmdEffectiveness, Constants.FormatFloat_2Dp},
                 {ItemInfoID.UnitCurrentHitPts, Constants.FormatFloat_0Dp},

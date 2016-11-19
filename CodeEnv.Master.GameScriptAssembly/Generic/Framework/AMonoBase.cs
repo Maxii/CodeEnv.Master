@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -501,7 +501,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     protected void __LogDuration(string introText = null) {
         if (_debugSettings.EnableDurationLogging) {
             string text = !introText.IsNullOrEmpty() ? introText : __DurationLogIntroText;
-            D.Log("{0} took {1:0.##} seconds to execute.", text, (Utility.SystemTime - __durationStartTime).TotalSeconds);
+            Debug.Log("{0} took {1:0.##} seconds to execute.".Inject(text, (Utility.SystemTime - __durationStartTime).TotalSeconds));
         }
     }
 

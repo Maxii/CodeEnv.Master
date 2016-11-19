@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
@@ -128,7 +128,7 @@ namespace CodeEnv.Master.GameContent {
              * materialCopy.SetColor(UnityConstants.StdShader_Property_AlbedoColor, _primaryMeshColor);
              * Note: no need for _primaryMeshRenderer.material = materialCopy as this happens automatically when the copy is made
              ************************************************************************************************************************/
-            D.Log("{0}.ShowPrimaryMesh() called.", Name);
+            //D.Log("{0}.ShowPrimaryMesh() called.", Name);
             //_primaryMeshRenderer.GetPropertyBlock(_primaryMeshMPB);
             //_primaryMeshMPB.Clear();
             _primaryMeshMPB.SetColor(UnityConstants.StdShader_Property_AlbedoColor, MeshColor.ToUnityColor());
@@ -139,7 +139,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void HidePrimaryMesh() {
             base.HidePrimaryMesh();
-            D.Log("{0}.HidePrimaryMesh() called.", Name);
+            //D.Log("{0}.HidePrimaryMesh() called.", Name);
             //_primaryMeshRenderer.GetPropertyBlock(_primaryMeshMPB);
             //_primaryMeshMPB.Clear();
             _primaryMeshMPB.SetColor(UnityConstants.StdShader_Property_AlbedoColor, HiddenMeshColor);

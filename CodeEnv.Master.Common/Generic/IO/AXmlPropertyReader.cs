@@ -11,9 +11,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.Common {
 
@@ -75,7 +75,7 @@ namespace CodeEnv.Master.Common {
             foreach (var settingNode in settingNodes) {
                 XElement propertyNameNode = settingNode.Element(_propertyNameTagName);
                 if (!propertyNameNode.IsEmpty && !propertyNameNode.Value.Equals(string.Empty)) {    // Elements.isEmpty is true only if they are in the format <ElementName/> 
-                    D.Log("Boolean PropertyName = {0}.", propertyNameNode.Value);
+                    //D.Log("Boolean PropertyName = {0}.", propertyNameNode.Value);
                     XElement propertyValueNode = settingNode.Element(_propertyValueTagName);
                     string propertyValue = "false";
                     if (propertyValueNode.IsEmpty || propertyValueNode.Value.Equals(string.Empty)) {
@@ -83,7 +83,7 @@ namespace CodeEnv.Master.Common {
                     }
                     else {
                         propertyValue = propertyValueNode.Value;
-                        D.Log("Boolean PropertyValue = {0}.", propertyValue);
+                        //D.Log("Boolean PropertyValue = {0}.", propertyValue);
                     }
                     AssignValueToProperty(propertyNameNode.Value, bool.Parse(propertyValue));
                 }
@@ -96,7 +96,7 @@ namespace CodeEnv.Master.Common {
             foreach (var settingNode in settingNodes) {
                 XElement propertyNameNode = settingNode.Element(_propertyNameTagName);
                 if (!propertyNameNode.IsEmpty && !propertyNameNode.Value.Equals(string.Empty)) {    // Elements.isEmpty is true only if they are in the format <ElementName/> 
-                    D.Log("Integer PropertyName = {0}.", propertyNameNode.Value);
+                    //D.Log("Integer PropertyName = {0}.", propertyNameNode.Value);
                     XElement propertyValueNode = settingNode.Element(_propertyValueTagName);
                     string propertyValue = "0";
                     if (propertyValueNode.IsEmpty || propertyValueNode.Value.Equals(string.Empty)) {
@@ -104,7 +104,7 @@ namespace CodeEnv.Master.Common {
                     }
                     else {
                         propertyValue = propertyValueNode.Value;
-                        D.Log("Integer PropertyValue = {0}.", propertyValue);
+                        //D.Log("Integer PropertyValue = {0}.", propertyValue);
                     }
                     AssignValueToProperty(propertyNameNode.Value, int.Parse(propertyValue));
                 }
@@ -117,7 +117,7 @@ namespace CodeEnv.Master.Common {
             foreach (var settingNode in settingNodes) {
                 XElement propertyNameNode = settingNode.Element(_propertyNameTagName);
                 if (!propertyNameNode.IsEmpty && !propertyNameNode.Value.Equals(string.Empty)) {    // Elements.isEmpty is true only if they are in the format <ElementName/> 
-                    D.Log("Float PropertyName = {0}.", propertyNameNode.Value);
+                    //D.Log("Float PropertyName = {0}.", propertyNameNode.Value);
                     XElement propertyValueNode = settingNode.Element(_propertyValueTagName);
                     string propertyValue = "0.0";
                     if (propertyValueNode.IsEmpty || propertyValueNode.Value.Equals(string.Empty)) {
@@ -125,7 +125,7 @@ namespace CodeEnv.Master.Common {
                     }
                     else {
                         propertyValue = propertyValueNode.Value;
-                        D.Log("Float PropertyValue = {0}.", propertyValue);
+                        //D.Log("Float PropertyValue = {0}.", propertyValue);
                     }
                     AssignValueToProperty(propertyNameNode.Value, float.Parse(propertyValue));
                 }
@@ -138,7 +138,7 @@ namespace CodeEnv.Master.Common {
             foreach (var settingNode in settingNodes) {
                 XElement propertyNameNode = settingNode.Element(_propertyNameTagName);
                 if (!propertyNameNode.IsEmpty && !propertyNameNode.Value.Equals(string.Empty)) { // Elements.isEmpty is true only if they are in the format <ElementName/> 
-                    D.Log("Text PropertyName = {0}.", propertyNameNode.Value);
+                    //D.Log("Text PropertyName = {0}.", propertyNameNode.Value);
                     XElement propertyValueNode = settingNode.Element(_propertyValueTagName);
                     string propertyValue = string.Empty;
                     if (propertyValueNode.IsEmpty || propertyValueNode.Value.Equals(string.Empty)) {
@@ -146,7 +146,7 @@ namespace CodeEnv.Master.Common {
                     }
                     else {
                         propertyValue = propertyValueNode.Value;
-                        D.Log("Text PropertyValue = {0}.", propertyValue);
+                        //D.Log("Text PropertyValue = {0}.", propertyValue);
                     }
                     AssignValueToProperty(propertyNameNode.Value, propertyValue);
                 }

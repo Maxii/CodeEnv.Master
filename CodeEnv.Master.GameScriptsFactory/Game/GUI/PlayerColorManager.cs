@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -44,9 +44,9 @@ public class PlayerColorManager : AMonoBase {
     }
 
     private void InitializeValuesAndReferences() {
-        _aiPlayerColorsInUse = new HashSet<GameColor>();
+        _aiPlayerColorsInUse = new HashSet<GameColor>(GameColorEqualityComparer.Default);
         _aiPlayerColorSelectedLookup = new Dictionary<GuiPlayerColorPopupList, GameColor>(TempGameValues.MaxAIPlayers);
-        _aiPlayerPopupLookupByColor = new Dictionary<GameColor, GuiPlayerColorPopupList>(TempGameValues.MaxAIPlayers);
+        _aiPlayerPopupLookupByColor = new Dictionary<GameColor, GuiPlayerColorPopupList>(TempGameValues.MaxAIPlayers, GameColorEqualityComparer.Default);
 
         _aiPlayerColorPopupLists = new List<GuiPlayerColorPopupList>(TempGameValues.MaxAIPlayers);
         var colorPopupLists = gameObject.GetSafeComponentsInChildren<GuiPlayerColorPopupList>(includeInactive: true);

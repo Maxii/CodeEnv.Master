@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
@@ -272,7 +272,9 @@ namespace CodeEnv.Master.GameContent {
 
         private void HandleIsFtlOperationalChanged() {
             string msg = IsFtlOperational ? "now" : "no longer";
-            D.Log(ShowDebugLog, "{0} FTL is {1} operational.", FullName, msg);
+            if (ShowDebugLog) {
+                D.Log("{0} FTL is {1} operational.", FullName, msg);
+            }
             RefreshFullSpeedValue();
         }
 
@@ -299,7 +301,9 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void HandleIntelCoverageChangedFor(Player player) {
             base.HandleIntelCoverageChangedFor(player);
-            D.Log(ShowDebugLog, "{0}.IntelCoverage changed for {1} to {2}.", FullName, player, GetIntelCoverage(player).GetValueName());
+            if (ShowDebugLog) {
+                D.Log("{0}.IntelCoverage changed for {1} to {2}.", FullName, player, GetIntelCoverage(player).GetValueName());
+            }
         }
 
         #endregion

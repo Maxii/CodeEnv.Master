@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
@@ -127,7 +127,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Fleets can be scuttled anywhere. No resources are retained by the owner. Scuttle orders are only 
-        /// issueable by the User???
+        /// issuable by the User???
         /// </summary>
         Scuttle
 

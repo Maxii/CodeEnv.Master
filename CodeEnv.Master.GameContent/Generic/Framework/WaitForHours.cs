@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
@@ -22,19 +22,23 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// CustomYieldInstruction that waits a specific number of hours. 
     /// Accommodates changes in GameSpeed during use.
-    /// <remarks>Use WaitJobUtility.WaitForHours() instead of making a new instance
-    /// as WaitJobUtility handles IsRunning and IsPaused changes.</remarks>
+    /// <remarks>Use JobManager.WaitForHours() instead of making a new instance
+    /// as JobManager handles IsRunning and IsPaused changes.</remarks>
     /// </summary>
     public class WaitForHours : APausableKillableYieldInstruction {
 
-        private const string ToStringFormat = "{0} TargetDate: {1}";
+        private const string NameFormat = "{0} TargetDate: {1}";
+
+        public string Name { get { return NameFormat.Inject(GetType().Name, _targetDate); } }
+
+        public float DurationInHours { get { return _duration.TotalInHours; } }
+
+        protected GameDate _startDate;
+        protected GameDate _targetDate;
+        protected GameTime _gameTime;
+        protected GameTimeDuration _duration;
 
         private Reference<GameTimeDuration> _durationRef;
-        private GameDate _startDate;
-
-        private GameDate _targetDate;
-        private GameTime _gameTime;
-        private GameTimeDuration _duration;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="WaitForHours"/> class.
@@ -81,13 +85,14 @@ namespace CodeEnv.Master.GameContent {
             }
             if (_durationRef.Value != _duration) {
                 // duration has changed
+                //D.Log("{0}.ReferenceValue is changing from {1} to {2}.", Name, _duration, _durationRef.Value);
                 _duration = _durationRef.Value;
                 _targetDate = new GameDate(_startDate, _duration);
             }
         }
 
-        public override string ToString() {
-            return ToStringFormat.Inject(typeof(WaitForHours), _targetDate);
+        public sealed override string ToString() {
+            return Name;
         }
 
         #region Debug
@@ -95,8 +100,10 @@ namespace CodeEnv.Master.GameContent {
         private bool __LogKeepWaiting() {
             var currentDate = _gameTime.CurrentDate;
             bool continueWaiting = currentDate < _targetDate;
-            D.Log(continueWaiting, "WaitForHours.keepWaiting called. CurrentDate {0} < TargetDate {1}, Frame {2}, Hours {3:0.00}.",
-                currentDate, _targetDate, Time.frameCount, _duration.TotalInHours);
+            if (continueWaiting) {
+            D.Log("{0}.keepWaiting called. CurrentDate {1} < TargetDate {2}, Frame {3}, Hours {4:0.00}.",
+                Name, currentDate, _targetDate, Time.frameCount, DurationInHours);
+            }
             return continueWaiting;
         }
 

@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
@@ -181,7 +181,9 @@ namespace CodeEnv.Master.GameContent {
 
         public FleetCategory GenerateCmdCategory(FleetComposition unitComposition) {
             int elementCount = unitComposition.GetTotalElementsCount();
-            D.Log(ShowDebugLog, "{0}'s known elements count = {1}.", FullName, elementCount);
+            if (ShowDebugLog) {
+                D.Log("{0}'s known elements count = {1}.", FullName, elementCount);
+            }
             if (elementCount >= 22) {
                 return FleetCategory.Armada;
             }

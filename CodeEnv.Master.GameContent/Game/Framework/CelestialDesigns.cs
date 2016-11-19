@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
@@ -39,21 +39,21 @@ namespace CodeEnv.Master.GameContent {
             string designName = design.DesignName;
             D.Assert(!_starDesignsLookup.ContainsKey(designName));
             _starDesignsLookup.Add(designName, design);
-            D.Log("{0} added {1} {2}.", GetType().Name, design.GetType().Name, designName);
+            //D.Log("{0} added {1} {2}.", GetType().Name, design.GetType().Name, designName);
         }
 
         public void Add(PlanetDesign design) {
             string designName = design.DesignName;
             D.Assert(!_planetDesignsLookup.ContainsKey(designName));
             _planetDesignsLookup.Add(designName, design);
-            D.Log("{0} added {1} {2}.", GetType().Name, design.GetType().Name, designName);
+            //D.Log("{0} added {1} {2}.", GetType().Name, design.GetType().Name, designName);
         }
 
         public void Add(MoonDesign design) {
             string designName = design.DesignName;
             D.Assert(!_moonDesignsLookup.ContainsKey(designName));
             _moonDesignsLookup.Add(designName, design);
-            D.Log("{0} added {1} {2}.", GetType().Name, design.GetType().Name, designName);
+            //D.Log("{0} added {1} {2}.", GetType().Name, design.GetType().Name, designName);
         }
 
         public StarDesign GetStarDesign(string designName) {

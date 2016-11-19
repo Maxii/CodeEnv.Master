@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.Common {
 
@@ -54,7 +54,7 @@ namespace CodeEnv.Master.Common {
 
         private XElement LoadAndValidateXElement() {
             string xmlFilePath = XmlFilepathFormat.Inject(UnityConstants.DataLibraryDir, XmlFilename);  //string xmlFilePath = UnityConstants.DataLibraryDir + XmlFilename + ".xml";
-            D.Log("The path to the Xml file is {0}.", xmlFilePath);
+            //D.Log("The path to the Xml file is {0}.", xmlFilePath);
             XElement xElement = XElement.Load(xmlFilePath);
             if (!ValidateElement(xElement)) {
                 D.Error("Invalid XDocument found at {0}.", xmlFilePath);

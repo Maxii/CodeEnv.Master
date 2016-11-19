@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
@@ -82,7 +82,7 @@ namespace CodeEnv.Master.GameContent {
             _primaryMeshRenderer = InitializePrimaryMesh(_trackedItemGo);
             _primaryMeshRenderer.enabled = true;
 
-            var primaryMeshCameraLosChgdListener = _primaryMeshRenderer.gameObject.GetSafeInterface<ICameraLosChangedListener>();
+            var primaryMeshCameraLosChgdListener = _primaryMeshRenderer.GetComponent<ICameraLosChangedListener>();
             primaryMeshCameraLosChgdListener.inCameraLosChanged += PrimaryMeshInCameraLosChangedEventHandler;
             primaryMeshCameraLosChgdListener.enabled = true;
 
@@ -104,7 +104,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void IsDisplayEnabledPropChangedHandler() {
-            D.Log("{0}.IsDisplayEnabled changed to {1}.", Name, IsDisplayEnabled);
+            //D.Log("{0}.IsDisplayEnabled changed to {1}.", Name, IsDisplayEnabled);
             AssessComponentsToShowOrOperate();
         }
 

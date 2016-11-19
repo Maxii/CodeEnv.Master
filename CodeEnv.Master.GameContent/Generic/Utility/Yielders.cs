@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public static class Yielders {
 
-        private static IDictionary<float, WaitForSeconds> _waitForSecsLookup = new Dictionary<float, WaitForSeconds>(UnityUtility.FloatEqualityComparer);
+        private static IDictionary<float, WaitForSeconds> _waitForSecsLookup = new Dictionary<float, WaitForSeconds>(FloatEqualityComparer.Default);
 
         private static WaitForEndOfFrame _waitForEndOfFrame = new WaitForEndOfFrame();
         public static WaitForEndOfFrame WaitForEndOfFrame {
@@ -42,6 +42,10 @@ namespace CodeEnv.Master.GameContent {
             WaitForSeconds wfs;
             if (!_waitForSecsLookup.TryGetValue(seconds, out wfs)) {
                 _waitForSecsLookup.Add(seconds, wfs = new WaitForSeconds(seconds));
+                //D.Log("{0} added {1} seconds to WaitForSecondsLookup.", typeof(Yielders).Name, seconds);
+            }
+            else {
+                //D.Log("{0} found {1} seconds in WaitForSecondsLookup.", typeof(Yielders).Name, seconds);
             }
             return wfs;
         }

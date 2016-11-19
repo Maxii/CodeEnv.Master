@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -312,14 +312,13 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         Transform ordnanceTransform;
         if (category == WDVCategory.Beam) {
             ordnanceTransform = MyPoolManager.Instance.Spawn(category, launchLoc, launchRotation, weapon.WeaponMount.Muzzle);
-            ordnanceTransform.gameObject.layer = (int)Layers.TransparentFX; // UNCLEAR necessary, aka does Spawn with parent change layer?
-            Beam beam = ordnanceTransform.GetSafeComponent<Beam>();
+            Beam beam = ordnanceTransform.GetComponent<Beam>();
             beam.Launch(target, weapon);
         }
         else if (category == WDVCategory.Missile) {
             ordnanceTransform = MyPoolManager.Instance.Spawn(category, launchLoc, launchRotation);
             //Physics.IgnoreCollision(ordnanceTransform.GetComponent<Collider>(), _primaryCollider);    // 7.20.16
-            Missile missile = ordnanceTransform.GetSafeComponent<Missile>();
+            Missile missile = ordnanceTransform.GetComponent<Missile>();
             missile.ElementVelocityAtLaunch = Rigidbody.velocity;
             missile.Launch(target, weapon, Topography);
         }
@@ -327,7 +326,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
             D.AssertEqual(WDVCategory.Projectile, category);
             ordnanceTransform = MyPoolManager.Instance.Spawn(category, launchLoc, launchRotation);
             //Physics.IgnoreCollision(ordnanceTransform.GetComponent<Collider>(), _primaryCollider);    // 7.20.16
-            Projectile projectile = ordnanceTransform.GetSafeComponent<Projectile>();
+            Projectile projectile = ordnanceTransform.GetComponent<Projectile>();
             projectile.Launch(target, weapon, Topography);
         }
         //D.Log(ShowDebugLog, "{0} has fired {1} against {2} on {3}.", FullName, ordnance.Name, target.FullName, GameTime.Instance.CurrentDate);
@@ -804,7 +803,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     protected abstract void __ValidateRadius(float radius);
 
-    private IDictionary<FsmTgtEventSubscriptionMode, bool> __subscriptionStatusLookup = new Dictionary<FsmTgtEventSubscriptionMode, bool>() {
+    private IDictionary<FsmTgtEventSubscriptionMode, bool> __subscriptionStatusLookup =
+        new Dictionary<FsmTgtEventSubscriptionMode, bool>(FsmTgtEventSubscriptionModeEqualityComparer.Default) {
         {FsmTgtEventSubscriptionMode.TargetDeath, false },
         {FsmTgtEventSubscriptionMode.InfoAccessChg, false },
         {FsmTgtEventSubscriptionMode.OwnerChg, false }
@@ -892,10 +892,12 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         SphereCollider sphereCollider = collision.collider as SphereCollider;
         BoxCollider boxCollider = collision.collider as BoxCollider;
         string colliderSizeMsg = (sphereCollider != null) ? "radius = " + sphereCollider.radius : ((boxCollider != null) ? "size = " + boxCollider.size.ToPreciseString() : "size unknown");
-        D.Log(ShowDebugLog, "While {0}, {1} collided with {2} whose {3}. Velocity after impact = {4}.",
-            CurrentState.ToString(), FullName, collision.collider.name, colliderSizeMsg, Rigidbody.velocity.ToPreciseString());
-        //D.Log(ShowDebugLog, "{0}: Detail on collision - Distance between collider centers = {1:0.##}", FullName, Vector3.Distance(Position, collision.collider.transform.position));
-        // AngularVelocity no longer reported as element's rigidbody.freezeRotation = true
+        if (ShowDebugLog) {
+            D.Log("While {0}, {1} collided with {2} whose {3}. Velocity after impact = {4}.",
+                CurrentState.ToString(), FullName, collision.collider.name, colliderSizeMsg, Rigidbody.velocity.ToPreciseString());
+            //D.Log("{0}: Detail on collision - Distance between collider centers = {1:0.##}", FullName, Vector3.Distance(Position, collision.collider.transform.position));
+            // AngularVelocity no longer reported as element's rigidbody.freezeRotation = true
+        }
     }
 
     #endregion
@@ -913,7 +915,9 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
             //D.Log("{0} has been hit but incurred no damage.", FullName);
             return;
         }
-        D.Log(ShowDebugLog, "{0} has been hit. Taking {1:0.#} damage.", FullName, damage.Total);
+        if (ShowDebugLog) {
+            D.Log("{0} has been hit. Taking {1:0.#} damage.", FullName, damage.Total);
+        }
 
         bool isCmdHit = false;
         float damageSeverity;

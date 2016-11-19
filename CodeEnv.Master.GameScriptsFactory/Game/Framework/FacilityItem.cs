@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -236,7 +236,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         D.AssertNotEqual(FacilityState.Repairing, CurrentState);
 
         if (CurrentOrder != null) {
-            D.Log(ShowDebugLog, "{0} received new order {1}.", FullName, CurrentOrder.Directive.GetValueName());
+            if (ShowDebugLog) {
+                D.Log("{0} received new order {1}.", FullName, CurrentOrder.Directive.GetValueName());
+            }
             FacilityDirective directive = CurrentOrder.Directive;
             __ValidateKnowledgeOfOrderTarget(CurrentOrder.Target, directive);
 
@@ -343,7 +345,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         if (CurrentOrder != null) {
             // check for a standing order to execute
             if (CurrentOrder.StandingOrder != null) {
-                D.LogBold(ShowDebugLog, "{0} returning to execution of standing order {1}.", FullName, CurrentOrder.StandingOrder);
+                if (ShowDebugLog) {
+                    D.LogBold("{0} returning to execution of standing order {1}.", FullName, CurrentOrder.StandingOrder);
+                }
 
                 OrderSource standingOrderSource = CurrentOrder.StandingOrder.Source;
                 if (standingOrderSource != OrderSource.CmdStaff && standingOrderSource != OrderSource.User) {
@@ -354,7 +358,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
                 yield return null;
                 D.Error("{0} should never get here as CurrentOrder was changed to {1}.", FullName, CurrentOrder);
             }
-            D.Log(ShowDebugLog, "{0} has completed {1} with no standing order queued.", FullName, CurrentOrder);
+            if (ShowDebugLog) {
+                D.Log("{0} has completed {1} with no standing order queued.", FullName, CurrentOrder);
+            }
             CurrentOrder = null;
         }
         IsAvailable = true; // 10.3.16 this can instantly generate a new Order (and thus a state change). Accordingly,  this EnterState
@@ -587,7 +593,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         if (IsHQ) {
             Command.Data.CurrentHitPoints = Command.Data.MaxHitPoints;  // HACK
         }
-        D.Log(ShowDebugLog, "{0}'s repair is complete. Health = {1:P01}.", FullName, Data.Health);
+        if (ShowDebugLog) {
+            D.Log("{0}'s repair is complete. Health = {1:P01}.", FullName, Data.Health);
+        }
 
         StopEffectSequence(EffectSequenceID.Repairing);
         Return();
@@ -729,7 +737,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             healthThreshold = Constants.OneHundredPercent;
         }
         if (Data.Health < healthThreshold) {
-            D.Log(ShowDebugLog, "{0} has determined it needs Repair.", FullName);
+            if (ShowDebugLog) {
+                D.Log("{0} has determined it needs Repair.", FullName);
+            }
             return true;
         }
         return false;

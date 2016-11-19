@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -39,7 +39,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
     public IOrbitSimulator CelestialOrbitSimulator {
         get {
             if (_celestialOrbitSimulator == null) { // moons have 2 IOrbitSims in parents so can't use GetSafeInterfaceInParents
-                _celestialOrbitSimulator = transform.parent.gameObject.GetSafeInterface<IOrbitSimulator>();
+                _celestialOrbitSimulator = transform.parent.GetSafeInterface<IOrbitSimulator>();
             }
             return _celestialOrbitSimulator;
         }
@@ -160,7 +160,9 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
     }
 
     protected sealed override void InitiateDeadState() {
-        D.Log(ShowDebugLog, "{0} is setting Dead state.", FullName);
+        if (ShowDebugLog) {
+            D.Log("{0} is setting Dead state.", FullName);
+        }
         CurrentState = PlanetoidState.Dead;
     }
 
@@ -222,8 +224,10 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
     /// <param name="delayInHours"></param>
     /// <param name="onCompletion">Optional delegate that fires onCompletion.</param>
     protected override void DestroyMe(float delayInHours = Constants.ZeroF, Action onCompletion = null) {
-        D.Log(ShowDebugLog, "{0}.DestroyMe called.", FullName);
-        IOrbitSimulator parentOrbitSimulator = transform.parent.gameObject.GetSafeInterface<IOrbitSimulator>();
+        if (ShowDebugLog) {
+            D.Log("{0}.DestroyMe called.", FullName);
+        }
+        IOrbitSimulator parentOrbitSimulator = transform.parent.GetSafeInterface<IOrbitSimulator>();
         GameUtility.DestroyIfNotNullOrAlreadyDestroyed<IOrbitSimulator>(parentOrbitSimulator, delayInHours, onCompletion);
     }
 
@@ -305,7 +309,9 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         if (IsInHighOrbit(ship)) {
             var isRemoved = _shipsInHighOrbit.Remove(ship);
             D.Assert(isRemoved);
-            D.Log(ShowDebugLog, "{0} has left high orbit around {1}.", ship.FullName, FullName);
+            if (ShowDebugLog) {
+                D.Log("{0} has left high orbit around {1}.", ship.FullName, FullName);
+            }
             return;
         }
         D.Error("{0}.HandleBrokeOrbit() called, but {1} not in orbit.", FullName, ship.FullName);
@@ -323,10 +329,14 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         LogEvent();
         DamageStrength damage = damagePotential - Data.DamageMitigation;
         if (damage.Total == Constants.ZeroF) {
-            D.Log(ShowDebugLog, "{0} has been hit but incurred no damage.", FullName);
+            if (ShowDebugLog) {
+                D.Log("{0} has been hit but incurred no damage.", FullName);
+            }
             return;
         }
-        D.Log(ShowDebugLog, "{0} has been hit. Taking {1:0.#} damage.", FullName, damage.Total);
+        if (ShowDebugLog) {
+            D.Log("{0} has been hit. Taking {1:0.#} damage.", FullName, damage.Total);
+        }
 
         float unusedDamageSeverity;
         bool isAlive = ApplyDamage(damage, out unusedDamageSeverity);

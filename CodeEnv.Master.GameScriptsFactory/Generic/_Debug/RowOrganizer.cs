@@ -11,9 +11,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -86,10 +86,10 @@ public class RowOrganizer : AMonoBase {
             indexesFound.Add(index);
 
             if (height == Constants.Zero) {
-                height = e.gameObject.GetSafeComponent<UIWidget>().height;
+                height = e.GetComponent<UIWidget>().height;
             }
             else {
-                D.AssertEqual(height, e.gameObject.GetSafeComponent<UIWidget>().height);
+                D.AssertEqual(height, e.gameObject.GetComponent<UIWidget>().height);
             }
         });
         return height;
@@ -108,7 +108,7 @@ public class RowOrganizer : AMonoBase {
         //D.Log("{0} setting {1} to localPosition.x = {2}.", GetType().Name, element.GetType().Name, localPositionX);
         element.transform.localPosition = new Vector3(localPositionX, _rowMemberLocalPositionY);
         element.transform.SetSiblingIndex(element.index);
-        var elementWidth = element.gameObject.GetSafeComponent<UIWidget>().width;
+        var elementWidth = element.GetComponent<UIWidget>().width;
         var nextLocalPositionX = localPositionX + elementWidth;
         if (addSeparator) {
             MakeAndPositionSeparator(nextLocalPositionX);

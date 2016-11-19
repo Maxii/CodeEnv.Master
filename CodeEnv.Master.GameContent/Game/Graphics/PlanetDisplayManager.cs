@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
 
@@ -38,9 +38,11 @@ namespace CodeEnv.Master.GameContent {
         protected override MeshRenderer InitializePrimaryMesh(GameObject itemGo) {
             var meshRenderers = itemGo.GetComponentsInImmediateChildren<MeshRenderer>();
             var primaryMeshRenderer = meshRenderers.Single(mr => {
+
                 Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
                 var ir = mr.GetComponent<IRevolver>();
                 Profiler.EndSample();
+
                 if (ir != null) {
                     return true;
                 }

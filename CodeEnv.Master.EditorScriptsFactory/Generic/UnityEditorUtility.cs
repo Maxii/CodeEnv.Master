@@ -11,8 +11,8 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 

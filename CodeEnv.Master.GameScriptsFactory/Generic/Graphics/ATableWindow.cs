@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -126,7 +126,7 @@ public abstract class ATableWindow : AGuiWindow {
 
     private void ClearTable() {
         var existingRows = _table.GetChildList();
-        // Note: DestroyImmediate() because Destroy() doesn't always get rid of the existing rows before Resposition occurs on LateUpdate
+        // Note: DestroyImmediate() because Destroy() doesn't always get rid of the existing rows before Reposition occurs on LateUpdate
         // This results in an extra 'empty' row that stays until another Reposition() call, usually from sorting something
         existingRows.ForAll(r => DestroyImmediate(r.gameObject));
     }

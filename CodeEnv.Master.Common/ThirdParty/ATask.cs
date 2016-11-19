@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.Common {
 
@@ -87,7 +87,7 @@ namespace CodeEnv.Master.Common {
             if (onCompletion != null)
                 onCompletion(this);
 
-            // if we have a next task to run and we were not cancelled, start it
+            // if we have a next task to run and we were not canceled, start it
             if (nextTask != null && state != TaskState.Canceled)
                 TaskMgr.AddTask(nextTask);
         }
@@ -100,7 +100,7 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// cancelling a task stops it immediately and causes its nextTask to not be executed
+        /// Canceling a task stops it immediately and causes its nextTask to not be executed
         /// </summary>
         public void Cancel() {
             state = TaskState.Canceled;

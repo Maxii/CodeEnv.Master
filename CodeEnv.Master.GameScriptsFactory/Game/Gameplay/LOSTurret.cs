@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -198,7 +198,11 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         float targetDistance = vectorToTarget.magnitude;
         RaycastHit raycastHitInfo;
         if (Physics.Raycast(turretPosition, targetDirection, out raycastHitInfo, targetDistance, _defaultOnlyLayerMask)) {
-            var attackableTgtEncountered = raycastHitInfo.transform.gameObject.GetSafeInterface<IElementAttackable>();
+
+            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+            var attackableTgtEncountered = raycastHitInfo.transform.GetComponent<IElementAttackable>();
+            Profiler.EndSample();
+
             if (attackableTgtEncountered != null) {
                 if (attackableTgtEncountered == enemyTarget) {
                     //D.Log("{0}: CheckLineOfSight({1}) found its target.", Name, enemyTarget.FullName);

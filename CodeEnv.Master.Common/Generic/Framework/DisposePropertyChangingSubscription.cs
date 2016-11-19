@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.Common {
 
@@ -37,7 +37,7 @@ namespace CodeEnv.Master.Common {
         private void UnsubscribeHandler() {
             if (Source != null) {
                 Source.PropertyChanging -= _handlerToUnsubscribe;
-                D.Log("PropertyChanging handler unsubscribing from an instance of {0}.", typeof(TSource));
+                //D.Log("PropertyChanging handler unsubscribing from an instance of {0}.", typeof(TSource));
             }
         }
 

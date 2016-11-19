@@ -10,9 +10,9 @@
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
-//#define DEBUG_LOG
-#define DEBUG_WARN
-#define DEBUG_ERROR
+////#define DEBUG_LOG
+////#define DEBUG_WARN
+////#define DEBUG_ERROR
 
 // default namespace
 
@@ -103,7 +103,11 @@ public abstract class AColliderMonitor : AMonoBase {
             rigidbody.isKinematic = true;
         }
         else {
+
+            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
             var rigidbody = gameObject.GetComponent<Rigidbody>();
+            Profiler.EndSample();
+
             if (rigidbody != null) {
                 D.Warn("{0} has a rigidbody it doesn't need.", FullName);
             }
@@ -138,7 +142,9 @@ public abstract class AColliderMonitor : AMonoBase {
     }
 
     protected virtual void HandleRangeDistanceChanged() {
-        D.Log(ShowDebugLog, "{0} had its RangeDistance changed from {1:0.#} to {2:0.#}.", FullName, _collider.radius, RangeDistance);
+        if (ShowDebugLog) {
+            D.Log("{0} had its RangeDistance changed from {1:0.#} to {2:0.#}.", FullName, _collider.radius, RangeDistance);
+        }
         _collider.radius = RangeDistance;
     }
 
@@ -170,7 +176,9 @@ public abstract class AColliderMonitor : AMonoBase {
     /// </summary>
     protected void ResetForReuse() {
         _isResetting = true;
-        D.Log(ShowDebugLog, "{0} is being reset for future reuse.", FullName);
+        if (ShowDebugLog) {
+            D.Log("{0} is being reset for future reuse.", FullName);
+        }
         IsOperational = false;
         RangeDistance = Constants.ZeroF;
         D.AssertNotNull(ParentItem);
