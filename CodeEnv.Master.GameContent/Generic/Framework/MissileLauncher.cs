@@ -42,7 +42,6 @@ namespace CodeEnv.Master.GameContent {
         public float MaxSpeed { get { return Stat.MaxSpeed; } }
 
         public float OrdnanceMass { get { return Stat.OrdnanceMass; } }
-
         /// <summary>
         /// The drag of this launcher's missile in Topography.OpenSpace.
         /// </summary>
@@ -55,7 +54,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected new MissileWeaponStat Stat { get { return base.Stat as MissileWeaponStat; } }
 
-        private IList<ITerminatableOrdnance> _activeFiredOrdnance;
+        private HashSet<ITerminatableOrdnance> _activeFiredOrdnance;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MissileLauncher"/> class.
@@ -64,7 +63,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="name">The optional unique name for this equipment. If not provided, the name embedded in the stat will be used.</param>
         public MissileLauncher(MissileWeaponStat stat, string name = null)
             : base(stat, name) {
-            _activeFiredOrdnance = new List<ITerminatableOrdnance>();
+            _activeFiredOrdnance = new HashSet<ITerminatableOrdnance>();
         }
 
         /// <summary>

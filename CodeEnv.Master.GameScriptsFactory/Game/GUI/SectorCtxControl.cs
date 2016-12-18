@@ -42,7 +42,7 @@ public class SectorCtxControl : ACtxControl {
 
     protected override Vector3 PositionForDistanceMeasurements { get { return _sector.Position; } }
 
-    protected override string OperatorName { get { return _sector.FullName; } }
+    protected override string OperatorName { get { return _sector.DebugName; } }
 
     private SectorExaminer _sectorExaminerMenuOperator;
     private Sector _sector;

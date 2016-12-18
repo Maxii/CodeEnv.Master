@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Profiling;
 using Vectrosity;
 
 /// <summary>
@@ -69,11 +70,11 @@ public class Loader : AMonoSingleton<Loader> {
     }
 
     private void LaunchGameManagerStartupScene() {
-        if (_gameMgr.CurrentSceneID == GameManager.SceneID.LobbyScene) {
+        if (_gameMgr.CurrentSceneID == SceneID.LobbyScene) {
             _gameMgr.LaunchInLobby();
         }
         else {
-            D.AssertEqual(GameManager.SceneID.GameScene, _gameMgr.CurrentSceneID);
+            D.AssertEqual(SceneID.GameScene, _gameMgr.CurrentSceneID);
             var startupGameSettings = GameSettingsDebugControl.Instance.CreateNewGameSettings(isStartup: true);
             _gameMgr.InitiateNewGame(startupGameSettings);
         }
@@ -89,7 +90,7 @@ public class Loader : AMonoSingleton<Loader> {
 
     private void SceneLoadedEventHandler(object sender, EventArgs e) {
         //D.Log("{0}.SceneLoadedEventHandler() called.", GetType().Name);
-        D.AssertEqual(GameManager.SceneID.GameScene, _gameMgr.CurrentSceneID);
+        D.AssertEqual(SceneID.GameScene, _gameMgr.CurrentSceneID);
         AssignAudioListener();
     }
 
@@ -109,11 +110,15 @@ public class Loader : AMonoSingleton<Loader> {
     #endregion
 
     private void AssignAudioListener() {
-        if (_gameMgr.CurrentSceneID == GameManager.SceneID.GameScene) {
-            var cameraAL = MainCameraControl.Instance.gameObject.AddComponent<AudioListener>();
+        if (_gameMgr.CurrentSceneID == SceneID.GameScene) {
+
+            Profiler.BeginSample("Proper AddComponent allocation", gameObject);
+            var cameraAL = MainCameraControl.Instance.gameObject.AddComponent<AudioListener>(); // OPTIMIZE
+            Profiler.EndSample();
+
             cameraAL.gameObject.SetActive(true);
 
-            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
             var loaderAL = gameObject.GetComponent<AudioListener>();
             Profiler.EndSample();
 
@@ -123,7 +128,7 @@ public class Loader : AMonoSingleton<Loader> {
 
             // Ngui installs an AudioSource next to the AudioListener when it tries to play a sound so remove it if it is there
             // Another will be added to the new AudioListener gameObject if needed
-            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
             var loaderAS = gameObject.GetComponent<AudioSource>();
             Profiler.EndSample();
 

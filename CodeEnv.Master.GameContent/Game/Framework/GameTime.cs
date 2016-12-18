@@ -51,16 +51,22 @@ namespace CodeEnv.Master.GameContent {
         public const float HoursPrecision = 0.1F;
 
         /// <summary>
+        /// The fixed time step setting of the game in seconds per fixed update.
+        /// <remarks>Equivalent to 50 Physics calculation periods per second.</remarks>
+        /// </summary>
+        public const float FixedTimestep = 0.02F;
+
+        /// <summary>
         /// The multiplier and divider used to convert hours as a float to GameTime Hours 
         /// with the proper precision. The inverse of HoursPrecision.
         /// </summary>
         public const float HoursConversionFactor = 1F / HoursPrecision;
 
-
         public static readonly int HoursPerDay = GeneralSettings.Instance.HoursPerDay;
         public static readonly int DaysPerYear = GeneralSettings.Instance.DaysPerYear;
         /// <summary>
         /// The number of GameHours in a Second at a GameSpeedMultiplier of 1 (aka GameSpeed.Normal).
+        /// <remarks>12.12.16 ~ 2 hours per second.</remarks>
         /// </summary>
         public static readonly float HoursPerSecond = GeneralSettings.Instance.HoursPerSecond;
         public static readonly int GameStartYear = GeneralSettings.Instance.GameStartYear;
@@ -286,7 +292,10 @@ namespace CodeEnv.Master.GameContent {
         protected sealed override void Initialize() {
             UnityEngine.Time.timeScale = Constants.OneF;
             if (HoursPerSecond * 1F / TempGameValues.MinimumFramerate > HoursPrecision) {
-                D.Warn("See {0}.HoursPrecision notes above.", Name);
+                D.Warn("See {0}.HoursPrecision notes above.", DebugName);
+            }
+            if (!FixedTimestep.ApproxEquals(Time.fixedDeltaTime)) {
+                D.Warn("{0}: Time.fixedDeltaTime of {1} unexpected.", typeof(GameTime).Name, Time.fixedDeltaTime);
             }
             _gameMgr = References.GameManager;
             _playerPrefsMgr = PlayerPrefsManager.Instance;
@@ -314,7 +323,7 @@ namespace CodeEnv.Master.GameContent {
             //// no need to assign a new CurrentDate as the change to _currentDateTime results in a new, synced CurrentDate instance once Date is requested
             //// onDateChanged = null;   // new subscribers tend to subscribe on Awake, but nulling the list here clears it. All previous subscribers need to unsubscribe!
             _currentDate = GameStartDate;   // 8.13.16 added as otherwise at the mercy of GameMgr calling CheckForDateChange() once IsRunning
-            //D.Log("{0}.PrepareToBeginNewGame() finished. Frame {1}, UnityTime {2:0.0}, SystemTimeStamp {3}.", Name, Time.frameCount, Time.time, Utility.TimeStamp);
+            //D.Log("{0}.PrepareToBeginNewGame() finished. Frame {1}, UnityTime {2:0.0}, SystemTimeStamp {3}.", DebugName, Time.frameCount, Time.time, Utility.TimeStamp);
         }
 
         public void PrepareToSaveGame() {
@@ -323,15 +332,15 @@ namespace CodeEnv.Master.GameContent {
             // _gameInstanceTimeCurrentPauseBegan will be set to a new value the next time a pause begins
             // _gameInstancePlayTimeAtLastCurrentDateTimeRefresh is not important to save as it is constantly kept current
             // currentDateTime is key! It should be accurate as it gets constantly refreshed       
-            //D.Log("{0}.currentDateTime value being saved is {1:0.00}.", Name, _currentDateTime);
+            //D.Log("{0}.currentDateTime value being saved is {1:0.00}.", DebugName, _currentDateTime);
             __savedCurrentDateTime = _currentDateTime; // FIXME bug? currentDateTime does not get properly restored
             _cumGameInstanceTimeInPriorUnitySessions = GameInstanceTime; // _cumGameInstanceTimeInPriorUnitySessions must be updated (last so it doesn't affect other values here) so it is current when saved
-            //D.Log("{0}.PrepareToSaveGame called. CumGameInstanceTimeInPriorUnitySessions set to {1:0.##}.", Name, _cumGameInstanceTimeInPriorUnitySessions);
+            //D.Log("{0}.PrepareToSaveGame called. CumGameInstanceTimeInPriorUnitySessions set to {1:0.##}.", DebugName, _cumGameInstanceTimeInPriorUnitySessions);
         }
 
         public void PrepareToResumeSavedGame() {
             // _cumGameInstanceTimeInPriorUnitySessions was updated before saving, so it should be restored to the right value
-            //D.Log("{0}.PrepareToResumeSavedGame() called. CumGameInstanceTimeInPriorUnitySessions restored to {1:0.0)}.", Name, _cumGameInstanceTimeInPriorUnitySessions);
+            //D.Log("{0}.PrepareToResumeSavedGame() called. CumGameInstanceTimeInPriorUnitySessions restored to {1:0.0)}.", DebugName, _cumGameInstanceTimeInPriorUnitySessions);
             // _currentUnitySessionTimeWhenGameInstanceBegan that was saved is irrelevant. It will be updated when the resumed GameInstance begins running
             // _cumGameInstanceTimePaused was updated before saving, so it should be restored to the right value
             // _gameInstanceTimeCurrentPauseBegan will be set to a new value on the next pause
@@ -339,7 +348,7 @@ namespace CodeEnv.Master.GameContent {
 
             // currentDateTime is key! It value when restored should be accurate as it is kept current up to the point it is saved
             _currentDateTime = __savedCurrentDateTime; // FIXME bug? currentDateTime does not get properly restored
-            //D.Log("{0} CurrentDateTime restored to {1:0.00}.", Name, _currentDateTime);
+            //D.Log("{0} CurrentDateTime restored to {1:0.00}.", DebugName, _currentDateTime);
             // don't wait for the Gui to set GameSpeed. Use the backing field as the Property calls GameSpeedPropChangedHandler()
             _gameSpeed = _playerPrefsMgr.GameSpeedOnLoad; // the GameSpeed when saved is not relevant to the resumed GameInstance
             GameSpeedMultiplier = _gameSpeed.SpeedMultiplier();
@@ -377,7 +386,7 @@ namespace CodeEnv.Master.GameContent {
                 toUpdateCurrentDate = true;
             }
             if (toUpdateCurrentDate) {
-                //D.Log("{0}: Changing CurrentDate to {1}.", Name, updatedDate);
+                //D.Log("{0}: Changing CurrentDate to {1}.", DebugName, updatedDate);
                 CurrentDate = updatedDate;  // must be done before event fired
             }
             if (toFireCalenderDateChangedEvent) {
@@ -406,8 +415,8 @@ namespace CodeEnv.Master.GameContent {
                     // we are about to resume play
                     float gameInstanceTimeInCurrentPause = GameInstanceTime - _gameInstanceTimeCurrentPauseBegan;
                     _cumGameInstanceTimePaused += gameInstanceTimeInCurrentPause;
-                    //D.Log("{0} CurrentUnitySessionTimeGameInstanceBegan = {1:0.00}, GameInstanceTimeCurrentPauseBegan = {2:0.00}", Name, _currentUnitySessionTimeWhenGameInstanceBegan, _gameInstanceTimeCurrentPauseBegan);
-                    //D.Log("{0} GameInstanceTimeInCurrentPause = {1:0.00}, GameInstanceTime = {2:0.00}.", Name, gameInstanceTimeInCurrentPause, GameInstanceTime);
+                    //D.Log("{0} CurrentUnitySessionTimeGameInstanceBegan = {1:0.00}, GameInstanceTimeCurrentPauseBegan = {2:0.00}", DebugName, _currentUnitySessionTimeWhenGameInstanceBegan, _gameInstanceTimeCurrentPauseBegan);
+                    //D.Log("{0} GameInstanceTimeInCurrentPause = {1:0.00}, GameInstanceTime = {2:0.00}.", DebugName, gameInstanceTimeInCurrentPause, GameInstanceTime);
                     _gameInstanceTimeCurrentPauseBegan = Constants.ZeroF;
                 }
             }
@@ -426,7 +435,7 @@ namespace CodeEnv.Master.GameContent {
         private void OnCalenderDateChanged() {
             if (calenderDateChanged != null) {
                 //string subscribers = calenderDateChanged.GetInvocationList().Select(d => d.Target.GetType().Name).Concatenate();
-                //D.Log("{0}.calenderDateChanged. CalenderDate: {1}, Subscribers: {2}.", Name, _currentDate.CalenderFormattedDate, subscribers);
+                //D.Log("{0}.calenderDateChanged. CalenderDate: {1}, Subscribers: {2}.", DebugName, _currentDate.CalenderFormattedDate, subscribers);
                 calenderDateChanged(this, EventArgs.Empty);
             }
         }
@@ -459,10 +468,10 @@ namespace CodeEnv.Master.GameContent {
             float playTime = GameInstancePlayTime;
             float deltaGameInstancePlayTime = playTime - _gameInstancePlayTimeAtLastCurrentDateTimeRefresh;
             // 10.16.16 significant deltaTimes > 0.1 secs still occurring after the game time clock starts
-            //D.Warn(deltaGameInstancePlayTime > HoursPrecision, "{0}.deltaGameInstancePlayTime increased by {1}.", Name, deltaGameInstancePlayTime);
+            //D.Warn(deltaGameInstancePlayTime > HoursPrecision, "{0}.deltaGameInstancePlayTime increased by {1}.", DebugName, deltaGameInstancePlayTime);
             _currentDateTime += GameSpeedMultiplier * deltaGameInstancePlayTime;
             _gameInstancePlayTimeAtLastCurrentDateTimeRefresh = playTime;
-            //D.Log("{0}.CurrentDateTime refreshed to {1:0.00}.", Name, _currentDateTime);
+            //D.Log("{0}.CurrentDateTime refreshed to {1:0.00}.", DebugName, _currentDateTime);
         }
 
         private void Cleanup() {

@@ -41,7 +41,9 @@ namespace CodeEnv.Master.GameContent {
         float Radius { get; }
         Vector3 Position { get; }
 
-        string DisplayName { get; }
+        /// <summary>
+        /// The display name of this item.
+        /// </summary>
         string Name { get; }
 
         Topography Topography { get; }

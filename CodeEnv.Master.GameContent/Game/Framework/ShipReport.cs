@@ -123,51 +123,6 @@ namespace CodeEnv.Master.GameContent {
             return new ObjectAnalyzer().ToString(this);
         }
 
-        #region Archive
-
-        //protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {
-        //    base.AssignIncrementalValues_IntelCoverageComprehensive(data);
-        //    var sData = data as ShipData;
-        //    CombatStance = sData.CombatStance;
-        //    Target = sData.Target;
-        //    Culture = sData.Culture;
-        //}
-
-        //protected override void AssignIncrementalValues_IntelCoverageBroad(AItemData data) {
-        //    base.AssignIncrementalValues_IntelCoverageBroad(data);
-        //    var sData = data as ShipData;
-        //    DefensiveStrength = sData.DefensiveStrength;
-        //    OffensiveStrength = sData.OffensiveStrength;
-        //    Health = sData.Health;  // Element Health only matters on Element displays. UnitHealth calculated using Element HitPts
-        //    CurrentHitPoints = sData.CurrentHitPoints;
-        //    Science = sData.Science;
-        //    Income = sData.Income;
-        //}
-
-        //protected override void AssignIncrementalValues_IntelCoverageEssential(AItemData data) {
-        //    base.AssignIncrementalValues_IntelCoverageEssential(data);
-        //    var sData = data as ShipData;
-        //    ParentName = sData.ParentName;
-        //    Position = sData.Position;
-        //    Owner = sData.Owner;
-        //    Category = sData.HullCategory;
-        //    WeaponsRange = sData.WeaponsRange;
-        //    SensorRange = sData.SensorRange;
-        //    MaxHitPoints = sData.MaxHitPoints; // should always be with or before CurrentHitPts as both are needed to calculate CmdReport's UnitHealth
-        //    Mass = sData.Mass;
-        //    MaxTurnRate = sData.MaxTurnRate;
-        //    FullSpeed = sData.FullSpeedValue;
-        //    Expense = sData.Expense;
-        //}
-
-        //protected override void AssignIncrementalValues_IntelCoverageBasic(AItemData data) {
-        //    base.AssignIncrementalValues_IntelCoverageBasic(data);
-        //    var sData = data as ShipData;
-        //    Name = sData.Name;
-        //    CurrentSpeed = sData.ActualSpeedValue;
-        //}
-
-        #endregion
 
     }
 }

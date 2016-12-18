@@ -66,7 +66,7 @@ public class GuiPlayerCountPopupList : AGuiMenuPopupList<int> {
     }
 
     private void RefreshCountChoices() {
-        //D.Log("{0}.RefreshCountChoices() called.", Name);
+        //D.Log("{0}.RefreshCountChoices() called.", DebugName);
         UniverseSize currentUniverseSizeSelection = Enums<UniverseSize>.Parse(_universeSizePopupList.ConvertedSelectedValue);
         int maxAiPlayers = currentUniverseSizeSelection.MaxPlayerCount() - Constants.One;
         _countChoices = Enumerable.Range(start: 2, count: maxAiPlayers).Select(value => value.ToString()).ToArray();

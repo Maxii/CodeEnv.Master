@@ -73,7 +73,7 @@ public class GuiFocusedReadout : AGuiLabelReadout {
     private void TryRetainingFocus(ICameraFocusable focus) {
         if (focus != null && focus.IsRetainedFocusEligible) {
             _retainedFocus = focus;
-            RefreshReadout(focus.DisplayName);
+            RefreshReadout(focus.DebugName);
         }
     }
 

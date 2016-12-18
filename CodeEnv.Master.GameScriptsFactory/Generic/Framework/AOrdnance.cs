@@ -30,15 +30,23 @@ using UnityEngine;
 /// </summary>
 public abstract class AOrdnance : AMonoBase, IOrdnance {
 
-    private const string NameFormat = "{0}_{1}";
+    private const string DebugNameFormat = "{0}_{1}";
+    private const string NameSubstringToRemove = "(Clone)";
     private static int __InstanceCount = 1;
 
     public event EventHandler deathOneShot;
 
-    public string Name { get { return transform.name; } }
+    public string Name { get; private set; }    // 12.10.16 return transform.name generated 'transform destroyed' error on editor exit
 
-    public string FullName { get { return Weapon != null ? NameFormat.Inject(Weapon.RangeMonitor.ParentItem.FullName, Name) : Name; } }
-
+    public string DebugName {
+        get {
+            if (Weapon == null) {
+                return Name;
+            }
+            // 12.10.16 Can't cache as name changes with reuse
+            return DebugNameFormat.Inject(Weapon.RangeMonitor.ParentItem.DebugName, Name);
+        }
+    }
 
     private IElementAttackable _target;
     public IElementAttackable Target {
@@ -65,6 +73,8 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     }
 
     public DamageStrength DamagePotential { get { return Weapon.DamagePotential; } }
+
+    protected bool ShowDebugLog { get { return DebugControls.Instance.ShowOrdnanceDebugLogs; } }
 
     protected virtual bool ToShowMuzzleEffects { get { return IsWeaponDiscernibleToUser; } }
 
@@ -93,29 +103,29 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         _gameMgr = GameManager.Instance;
         _gameTime = GameTime.Instance;
         _jobMgr = JobManager.Instance;
-        _subscriptions = new List<IDisposable>();
+        _subscriptions = new List<IDisposable>(3);
         ValidateLayer();
         enabled = false;
     }
 
     private void ValidateLayer() {
-        D.AssertEqual(Layer, (Layers)gameObject.layer, Name);
+        D.AssertEqual(Layer, (Layers)gameObject.layer, DebugName);
     }
 
     private void InitializeName() {
-        //D.Log("InitializeName before renaming. Name = {0}.", Name);
-        string pooledPrefabName = Name;
-        string subStringToRemove = "(Clone)";
-        int index = pooledPrefabName.IndexOf(subStringToRemove);
-        string prefabNameSansClone = index < 0 ? pooledPrefabName : pooledPrefabName.Remove(index, subStringToRemove.Length);
-        transform.name = prefabNameSansClone;
+        // 12.10.16 Do not access DebugName yet
+        string pooledPrefabName = transform.name;
+        int index = pooledPrefabName.IndexOf(NameSubstringToRemove);
+        string prefabNameSansClone = index < 0 ? pooledPrefabName : pooledPrefabName.Remove(index, NameSubstringToRemove.Length);
         _rootName = prefabNameSansClone;
-        //D.Log("InitializeName after renaming. Name = {0}.", Name);
+        transform.name = _rootName;
+        Name = _rootName;
+        //D.Log(ShowDebugLog, "InitializeName after renaming. Name = {0}.", DebugName);
         _isNameInitialized = true;
     }
 
     protected void PrepareForLaunch(IElementAttackable target, AWeapon weapon) {
-        //D.Log("{0} is assigning target {1}.", Name, target.FullName);
+        //D.Log(ShowDebugLog, "{0} is assigning target {1}.", DebugName, target.DebugName);
         Target = target;
         Weapon = weapon;
         Subscribe();
@@ -130,7 +140,8 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     }
 
     protected virtual void Subscribe() {
-        D.Assert(_subscriptions.IsNullOrEmpty());
+        D.AssertNotNull(_subscriptions);
+        D.Assert(_subscriptions.Count == Constants.Zero);
         _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsPaused, IsPausedPropChangedHandler));
         _subscriptions.Add(Weapon.SubscribeToPropertyChanged<AWeapon, bool>(weap => weap.IsWeaponDiscernibleToUser, IsWeaponDiscernibleToUserPropChangedHandler));
     }
@@ -172,7 +183,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     }
 
     protected virtual void OnDespawned() {
-        //D.Log("{0}.OnDespawned called.", Name);
+        //D.Log(ShowDebugLog, "{0}.OnDespawned called.", DebugName);
         Unsubscribe();
         Target = null;
         Weapon = null;
@@ -184,12 +195,12 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     #endregion
 
     protected void ReportTargetHit() {
-        //D.Log("{0}.ReportTargetHit called.", Name);
+        //D.Log(ShowDebugLog, "{0}.ReportTargetHit called.", DebugName);
         Weapon.HandleTargetHit(Target);
     }
 
     protected void ReportTargetMissed() {
-        //D.Log("{0}.ReportTargetMissed called.", Name);
+        //D.Log(ShowDebugLog, "{0}.ReportTargetMissed called.", DebugName);
         Weapon.HandleTargetMissed(Target);
     }
 
@@ -199,7 +210,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     /// object that was not its target.
     /// </summary>
     protected void ReportInterdiction() {
-        //D.Log("{0}.ReportInterdiction called.", Name);
+        //D.Log(ShowDebugLog, "{0}.ReportInterdiction called.", DebugName);
         Weapon.HandleOrdnanceInterdicted(Target);
     }
 
@@ -207,21 +218,23 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     /// Adds __instanceID to the root name.
     /// </summary>
     private void AssignName() {
-        transform.name = NameFormat.Inject(_rootName, __instanceID);
+        transform.name = DebugNameFormat.Inject(_rootName, __instanceID);
+        Name = transform.name;
     }
 
     private void RestoreRootName() {
         transform.name = _rootName;
+        Name = _rootName;
     }
 
     protected void TerminateNow() {
         if (!IsOperational) {
-            D.Warn("{0}.TerminateNow called when already terminating.", Name);
+            D.Warn("{0}.TerminateNow called when already terminating.", DebugName);
             return;
         }
-        //D.Log("{0} is terminating.", Name); 
-        enabled = false;
+        //D.Log(ShowDebugLog, "{0} is terminating.", DebugName); 
         IsOperational = false;
+        enabled = false;
 
         PrepareForTermination();
         ResetEffectsForReuse();
@@ -231,13 +244,17 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     }
 
     protected virtual void Despawn() {
-        //D.Log("{0} is about to despawn.", Name);
+        //D.Log(ShowDebugLog, "{0} is about to despawn.", DebugName);
         MyPoolManager.Instance.DespawnOrdnance(transform);
     }
 
     /// <summary>
     /// Called while terminating, this is a derived class'
     /// opportunity to do any cleanup (stop audio, etc.) prior to the gameObject being despawned.
+    /// <remarks>Being 'despawned' by the PoolManager initiates the following sequence:
+    /// 1. a potential change in parent,
+    /// 2. broadcasting a OnDespawned message via SendMessage, and
+    /// 3. deactivation of the gameObject.</remarks>
     /// </summary>
     protected virtual void PrepareForTermination() { }
 

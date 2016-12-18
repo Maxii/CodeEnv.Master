@@ -39,7 +39,7 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
 
     protected override Vector3 PositionForDistanceMeasurements { get { return _shipMenuOperator.Position; } }
 
-    protected override string OperatorName { get { return _shipMenuOperator.FullName; } }
+    protected override string OperatorName { get { return _shipMenuOperator.DebugName; } }
 
     private bool IsShipDisengageOrderDisabled {
         get {
@@ -119,8 +119,8 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
             || directive == ShipDirective.Scuttle); // HACK
         INavigable target;
         bool isTarget = _unitTargetLookup.TryGetValue(itemID, out target);
-        string msg = isTarget ? target.FullName : "[none]";
-        D.Log("{0} selected directive {1} and target {2} from context menu.", _shipMenuOperator.FullName, directive.GetValueName(), msg);
+        string msg = isTarget ? target.DebugName : "[none]";
+        D.Log("{0} selected directive {1} and target {2} from context menu.", _shipMenuOperator.DebugName, directive.GetValueName(), msg);
         bool toNotifyCmd = false;
         _shipMenuOperator.CurrentOrder = new ShipOrder(directive, OrderSource.User, toNotifyCmd, target as IShipNavigable);
     }

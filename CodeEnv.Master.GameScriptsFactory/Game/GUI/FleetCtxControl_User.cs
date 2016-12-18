@@ -62,7 +62,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
 
     protected override Vector3 PositionForDistanceMeasurements { get { return _fleetMenuOperator.Position; } }
 
-    protected override string OperatorName { get { return _fleetMenuOperator.FullName; } }
+    protected override string OperatorName { get { return _fleetMenuOperator.DebugName; } }
 
     private FleetCmdItem _fleetMenuOperator;
 
@@ -202,8 +202,8 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
         INavigable target;
         bool isTarget = _unitTargetLookup.TryGetValue(itemID, out target);
-        string msg = isTarget ? target.FullName : "[none]";
-        D.Log("{0} selected directive {1} and target {2} from context menu.", _fleetMenuOperator.FullName, directive.GetValueName(), msg);
+        string msg = isTarget ? target.DebugName : "[none]";
+        D.Log("{0} selected directive {1} and target {2} from context menu.", _fleetMenuOperator.DebugName, directive.GetValueName(), msg);
         _fleetMenuOperator.CurrentOrder = new FleetOrder(directive, OrderSource.User, target as IFleetNavigable);
     }
 

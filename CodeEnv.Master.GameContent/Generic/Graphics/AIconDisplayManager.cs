@@ -31,7 +31,15 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<IconInfo>(ref _iconInfo, value, "IconInfo", IconInfoPropChangedHandler); }
         }
 
-        protected override string Name { get { return NameFormat.Inject(_trackedItem.DisplayName, GetType().Name); } }
+        private string _debugName;
+        protected override string DebugName {
+            get {
+                if (_debugName == null) {
+                    _debugName = DebugNameFormat.Inject(_trackedItem.DebugName, GetType().Name);
+                }
+                return _debugName;
+            }
+        }
 
         private ITrackingSprite _icon;
         protected ITrackingSprite Icon {
@@ -54,15 +62,15 @@ namespace CodeEnv.Master.GameContent {
 
         private void ShowIcon(bool toShow) {
             if (Icon != null) {
-                //D.Log("{0}.ShowIcon({1}) called.", Name, toShow);
+                //D.Log("{0}.ShowIcon({1}) called.", DebugName, toShow);
                 if (Icon.IsShowing == toShow) {
-                    //D.Warn("{0} recording duplicate call to ShowIcon({1}).", Name, toShow);
+                    //D.Warn("{0} recording duplicate call to ShowIcon({1}).", DebugName, toShow);
                     return;
                 }
                 Icon.Show(toShow);
             }
             else {
-                D.Assert(!toShow, Name);
+                D.Assert(!toShow, DebugName);
             }
         }
 
@@ -110,7 +118,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void AssessInMainCameraLOS() {
             IsInMainCameraLOS = Icon == null ? IsPrimaryMeshInMainCameraLOS : IsPrimaryMeshInMainCameraLOS || _isIconInMainCameraLOS;
-            //D.Log("{0}.AssessInMainCameraLOS() called. IsInMainCameraLOS = {1}.", Name, IsInMainCameraLOS);
+            //D.Log("{0}.AssessInMainCameraLOS() called. IsInMainCameraLOS = {1}.", DebugName, IsInMainCameraLOS);
         }
 
         protected override void AssessComponentsToShowOrOperate() {
@@ -128,7 +136,8 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         protected virtual bool ShouldIconShow() {
             bool result = IsDisplayEnabled && Icon != null && _isIconInMainCameraLOS && !IsPrimaryMeshInMainCameraLOS;
-            //D.Log("{0}.ShouldIconShow() result = {1}, IsDisplayEnabled = {2}, _isIconInMainCameraLOS = {3}, IsPrimaryMeshInMainCameraLOS = {4}.", Name, result, IsDisplayEnabled, _isIconInMainCameraLOS, IsPrimaryMeshInMainCameraLOS);
+            //D.Log("{0}.ShouldIconShow() result = {1}, IsDisplayEnabled = {2}, _isIconInMainCameraLOS = {3}, IsPrimaryMeshInMainCameraLOS = {4}.", 
+            //DebugName, result, IsDisplayEnabled, _isIconInMainCameraLOS, IsPrimaryMeshInMainCameraLOS);
             return result;
         }
 
@@ -138,7 +147,7 @@ namespace CodeEnv.Master.GameContent {
         /// e.g. CmdIcon transforms are used by the Highlighter to position highlights.
         /// </summary>
         protected virtual void DestroyIcon() {
-            //D.Log("{0}.Icon about to be destroyed.", Name);
+            //D.Log("{0}.Icon about to be destroyed.", DebugName);
             D.AssertNotNull(Icon);
             ShowIcon(false); // accessing destroy gameObject error if we are showing it while destroying it
             var iconCameraLosChgdListener = Icon.CameraLosChangedListener;

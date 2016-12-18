@@ -156,9 +156,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
     protected sealed override void HandleIsOperationalChanged() {
         base.HandleIsOperationalChanged();
         if (!IsOperational) {
-            if (ShowDebugLog) {
-                D.Log("{0} is initiating death sequence.", FullName);
-            }
+            //D.Log(ShowDebugLog, "{0} is initiating death sequence.", DebugName);
             InitiateDeadState();
             // HandleDeath gets called after this, from Dead_EnterState
             //PrepareForDeathNotification();
@@ -170,7 +168,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
     protected override void HandleAltLeftClick() {
         base.HandleAltLeftClick();
         if (!IsSelected) {
-            D.Warn("{0} needs to be selected to Simulate Attack on itself.", FullName);
+            D.Warn("{0} needs to be selected to Simulate Attack on itself.", DebugName);
             return;
         }
         __SimulateAttacked();
@@ -294,7 +292,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
     #region Debug
 
     public virtual void __SimulateAttacked() {
-        D.LogBold("{0} is having an attack simulated on itself.", FullName);
+        D.LogBold("{0} is having an attack simulated on itself.", DebugName);
         float damageValue = UnityEngine.Random.Range(Constants.ZeroF, Data.MaxHitPoints / 2F);
         TakeHit(new DamageStrength(damageValue, damageValue, damageValue));
     }

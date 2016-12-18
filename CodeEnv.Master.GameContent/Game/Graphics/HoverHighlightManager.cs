@@ -39,7 +39,7 @@ namespace CodeEnv.Master.GameContent {
                 _hoverHighlight = References.HoverHighlight;
                 if (toShow) {
                     if (IsHighlightShowing) {
-                        D.Warn("{0} shouldn't still be showing over {1}. Fixing.", Name, _hoverHighlight.TargetName);
+                        D.Warn("{0} shouldn't still be showing over {1}. Fixing.", DebugName, _hoverHighlight.TargetName);
                         _hoverHighlight.Show(false);
                     }
                     _hoverHighlight.SetTarget(_trackedClientItem);
@@ -50,7 +50,7 @@ namespace CodeEnv.Master.GameContent {
                 }
                 else {
                     if (!IsHighlightShowing) {
-                        D.Warn("{0} should be showing over {1}.", Name, _hoverHighlight.TargetName);
+                        D.Warn("{0} should be showing over {1}.", DebugName, _hoverHighlight.TargetName);
                     }
                     _hoverHighlight.Show(false);
                     _hoverHighlight = null;

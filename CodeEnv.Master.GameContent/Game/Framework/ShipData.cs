@@ -232,7 +232,7 @@ namespace CodeEnv.Master.GameContent {
 
         public override void CommenceOperations() {
             base.CommenceOperations();
-            //D.Log(ShowDebugLog, "{0}.CommenceOperations() setting Topography to {1}.", FullName, Topography.GetValueName());
+            //D.Log(ShowDebugLog, "{0}.CommenceOperations() setting Topography to {1}.", DebugName, Topography.GetValueName());
             IsFtlActivated = true;  // will trigger Data.AssessIsFtlOperational()
         }
 
@@ -271,10 +271,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void HandleIsFtlOperationalChanged() {
-            string msg = IsFtlOperational ? "now" : "no longer";
-            if (ShowDebugLog) {
-                D.Log("{0} FTL is {1} operational.", FullName, msg);
-            }
+            //D.Log(ShowDebugLog, "{0} FTL is {1} operational.", DebugName, IsFtlOperational ? "now" : "no longer");
             RefreshFullSpeedValue();
         }
 
@@ -301,9 +298,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void HandleIntelCoverageChangedFor(Player player) {
             base.HandleIntelCoverageChangedFor(player);
-            if (ShowDebugLog) {
-                D.Log("{0}.IntelCoverage changed for {1} to {2}.", FullName, player, GetIntelCoverage(player).GetValueName());
-            }
+            //D.Log(ShowDebugLog, "{0}.IntelCoverage changed for {1} to {2}.", DebugName, player, GetIntelCoverage(player).GetValueName());
         }
 
         #endregion

@@ -39,7 +39,7 @@ public class GuiWindow : AGuiWindow {
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        D.Assert(contentHolder != null, gameObject, "ContentHolder not set.");
+        D.Assert(contentHolder != null, gameObject, DebugName);
     }
 
     public void Show() { ShowWindow(); }

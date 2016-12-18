@@ -27,7 +27,7 @@ using UnityEngine;
 /// </summary>
 public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
 
-    public string Name { get { return transform.name; } }
+    public string DebugName { get { return transform.name; } }
 
     /// <summary>
     /// Indicates whether this <see cref="ATrackingWidget" /> is currently showing. 
@@ -168,7 +168,7 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     /// </summary>
     /// <param name="toShow">if set to <c>true</c> [to show].</param>
     public void Show(bool toShow) {
-        //D.Log("{0}.Show({1}) called. _toCheckShowDistance = {2}, IsWithinShowDistance = {3}.", Name, toShow, _toCheckShowDistance, IsWithinShowDistance);
+        //D.Log("{0}.Show({1}) called. _toCheckShowDistance = {2}, IsWithinShowDistance = {3}.", DebugName, toShow, _toCheckShowDistance, IsWithinShowDistance);
         if (!toShow || (_toCheckShowDistance && !IsWithinShowDistance)) {
             Hide();
         }
@@ -199,7 +199,7 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     }
 
     private void PlacementPropChangedHandler() {
-        //D.Log("{0} Placement changed to {1}.", Name, Placement.GetValueName());
+        //D.Log("{0} Placement changed to {1}.", DebugName, Placement.GetValueName());
         RefreshWidgetValues();
     }
 
@@ -221,7 +221,7 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
 
     private void IsHighlightedPropChangedHandler() {
         Widget.color = IsHighlighted && IsShowing ? HighlightColor.ToUnityColor() : Color.ToUnityColor();
-        //D.Log("{0} Highlighting changed to {1}.", Name, toHighlight);
+        //D.Log("{0} Highlighting changed to {1}.", DebugName, toHighlight);
     }
 
     private void OptionalRootNamePropChangedHandler() {
@@ -247,7 +247,7 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     /// <summary>
     /// Refreshes the widget's values derived from the target. Clients should use this
     /// when the offset value they make available associated with their selected placement changes.
-    /// eg. SphericalHighlight creates a label with itself as the target, but then regularly changes its
+    /// Eg. SphericalHighlight creates a label with itself as the target, but then regularly changes its
     /// radius as its own target changes.
     /// </summary>
     public void RefreshWidgetValues() {
@@ -318,7 +318,7 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
 
     private void RenameGameObjects() {
         if (Target != null) {   // Target can be null if OptionalRootName is set before Target
-            var rootName = OptionalRootName.IsNullOrEmpty() ? Target.DisplayName : OptionalRootName;
+            var rootName = OptionalRootName.IsNullOrEmpty() ? Target.DebugName : OptionalRootName;
             transform.name = rootName + Constants.Space + GetType().Name;
             WidgetTransform.name = rootName + Constants.Space + Widget.GetType().Name;
         }

@@ -39,6 +39,7 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
     /// </summary>
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
+        //D.Log("{0}.InitializeOnInstance", GetType().Name);
     }
 
     /// <summary>
@@ -47,9 +48,18 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
     /// </summary>
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
+        //D.Log("{0}.InitializeOnAwake", GetType().Name);
         InitializeValuesAndReferences();
+        // 12.12.16 Moved to Start as Awake suddenly started being called earlier than before. This caused subscription to 
+        // InputMode change before BuildContent is ready -> ConstructCameraSectorText() calls SectorGrid before it runs Awake().
+        ////Subscribe();
+    }
+
+    protected override void Start() {
+        base.Start();
         Subscribe();
     }
+
     #endregion
 
     private void InitializeValuesAndReferences() {
@@ -60,7 +70,7 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
         _subscriptions = new List<IDisposable>();
         _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, PauseState>(gm => gm.PauseState, PauseStatePropChangedHandler));
         _subscriptions.Add(PlayerPrefsManager.Instance.SubscribeToPropertyChanged<PlayerPrefsManager, string>(ppm => ppm.QualitySetting, QualitySettingPropChangedHandler));
-        if (_gameMgr.CurrentSceneID == GameManager.SceneID.GameScene) {
+        if (_gameMgr.CurrentSceneID == SceneID.GameScene) {
             _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, MainCameraControl.CameraState>(cc => cc.CurrentState, CameraStatePropChangedHandler));
             _subscriptions.Add(PlayerViews.Instance.SubscribeToPropertyChanged<PlayerViews, PlayerViewMode>(pv => pv.ViewMode, PlayerViewModePropChangedHandler));
             _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, IntVector3>(cc => cc.SectorID, CameraSectorIdPropChangedHandler));
@@ -73,7 +83,7 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
         _debugInfoContent.Clear();
         _debugInfoContent.AppendLine("PauseState: {0}".Inject(_gameMgr.PauseState.GetValueName()));
         _debugInfoContent.AppendLine(ConstructQualityText());
-        if (_gameMgr.CurrentSceneID == GameManager.SceneID.GameScene) {
+        if (_gameMgr.CurrentSceneID == SceneID.GameScene) {
             _debugInfoContent.AppendLine("CameraState: {0}".Inject(MainCameraControl.Instance.CurrentState.GetValueName()));
             _debugInfoContent.AppendLine("ViewMode: {0}".Inject(PlayerViews.Instance.ViewMode.GetValueName()));
             _debugInfoContent.AppendLine(ConstructCameraSectorText());

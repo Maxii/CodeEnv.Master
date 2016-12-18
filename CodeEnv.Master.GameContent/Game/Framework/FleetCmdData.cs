@@ -161,7 +161,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void RefreshFullSpeed() {
             if (_elementsData.Any()) {
-                //D.Log(ShowDebugLog, "{0}.{1}.RefreshFullSpeed() called.", FullName, GetType().Name);
+                //D.Log(ShowDebugLog, "{0}.{1}.RefreshFullSpeed() called.", DebugName, GetType().Name);
                 UnitFullSpeedValue = _elementsData.Min(eData => (eData as ShipData).FullSpeedValue);
             }
         }
@@ -181,9 +181,7 @@ namespace CodeEnv.Master.GameContent {
 
         public FleetCategory GenerateCmdCategory(FleetComposition unitComposition) {
             int elementCount = unitComposition.GetTotalElementsCount();
-            if (ShowDebugLog) {
-                D.Log("{0}'s known elements count = {1}.", FullName, elementCount);
-            }
+            //D.Log(ShowDebugLog, "{0}'s known elements count = {1}.", DebugName, elementCount);
             if (elementCount >= 22) {
                 return FleetCategory.Armada;
             }
@@ -206,7 +204,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void HandleUnitWeaponsRangeChanged() {
             if (UnitWeaponsRange.Max > TempGameValues.__MaxFleetWeaponsRangeDistance) {
-                D.Warn("{0} max UnitWeaponsRange {1:0.#} > {2:0.#}.", FullName, UnitWeaponsRange.Max, TempGameValues.__MaxFleetWeaponsRangeDistance);
+                D.Warn("{0} max UnitWeaponsRange {1:0.#} > {2:0.#}.", DebugName, UnitWeaponsRange.Max, TempGameValues.__MaxFleetWeaponsRangeDistance);
             }
         }
 
@@ -216,6 +214,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void HandleHQElementDataChanging(AUnitElementData newHQElementData) {
             base.HandleHQElementDataChanging(newHQElementData);
+            D.Log(ShowDebugLog, "{0}: new HQ {1} is being assigned a CombatStance of {2}.", DebugName, newHQElementData.Name, ShipCombatStance.Defensive.GetValueName());
             (newHQElementData as ShipData).CombatStance = ShipCombatStance.Defensive;
         }
 

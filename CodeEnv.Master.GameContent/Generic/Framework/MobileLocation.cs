@@ -32,14 +32,22 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public override string ToString() {
-            return FullName;
+            return DebugName;
         }
 
         #region INavigable Members
 
-        public string DisplayName { get { return FullName; } }
+        public string Name { get { return DebugName; } }
 
-        public string FullName { get { return string.Format("{0}[{1}]", GetType().Name, Position); } }
+        private string _debugName;
+        public string DebugName {
+            get {
+                if (_debugName == null) {
+                    _debugName = "{0}[{1}]".Inject(GetType().Name, Position);
+                }
+                return _debugName;
+            }
+        }
 
         public Vector3 Position { get { return _movingPosition.Value; } }
 

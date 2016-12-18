@@ -31,9 +31,17 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public event EventHandler<RelationsChangedEventArgs> relationsChanged;
 
-        private const string NameFormat = "{0}[{1}]";
+        private const string DebugNameFormat = "{0}[{1}]";
 
-        public string Name { get { return NameFormat.Inject(GetType().Name, LeaderName); } }
+        private string _debugName;
+        public string DebugName {
+            get {
+                if (_debugName == null) {
+                    _debugName = DebugNameFormat.Inject(GetType().Name, LeaderName);
+                }
+                return _debugName;
+            }
+        }
 
         private bool _isActive = true;
         public bool IsActive {  // accommodates an AIPlayer being eliminated in the game
@@ -151,13 +159,13 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="initialRelationship">The initial relationship.</param>
         public virtual void SetInitialRelationship(Player unmetPlayer, DiplomaticRelationship initialRelationship = DiplomaticRelationship.Neutral) {
             if (_initialRelationship.ContainsKey(unmetPlayer)) {
-                D.Error("{0} already has initial relationship {1} with {2}.", Name, _initialRelationship[unmetPlayer].GetValueName(), unmetPlayer);
+                D.Error("{0} already has initial relationship {1} with {2}.", DebugName, _initialRelationship[unmetPlayer].GetValueName(), unmetPlayer);
             }
             if (_priorRelationship.ContainsKey(unmetPlayer)) {
-                D.Error("{0} already has prior relationship {1} with {2}.", Name, _priorRelationship[unmetPlayer].GetValueName(), unmetPlayer);
+                D.Error("{0} already has prior relationship {1} with {2}.", DebugName, _priorRelationship[unmetPlayer].GetValueName(), unmetPlayer);
             }
             if (_currentRelationship.ContainsKey(unmetPlayer)) {
-                D.Error("{0} already has current relationship {1} with {2}.", Name, _currentRelationship[unmetPlayer].GetValueName(), unmetPlayer);
+                D.Error("{0} already has current relationship {1} with {2}.", DebugName, _currentRelationship[unmetPlayer].GetValueName(), unmetPlayer);
             }
             _initialRelationship.Add(unmetPlayer, initialRelationship);
             _priorRelationship.Add(unmetPlayer, DiplomaticRelationship.None);
@@ -167,13 +175,13 @@ namespace CodeEnv.Master.GameContent {
 
         internal virtual void SetInitialRelationship_Internal(Player unmetPlayer, DiplomaticRelationship initialRelationship) {
             if (_initialRelationship.ContainsKey(unmetPlayer)) {
-                D.Error("{0} already has initial relationship {1} with {2}.", Name, _initialRelationship[unmetPlayer].GetValueName(), unmetPlayer);
+                D.Error("{0} already has initial relationship {1} with {2}.", DebugName, _initialRelationship[unmetPlayer].GetValueName(), unmetPlayer);
             }
             if (_priorRelationship.ContainsKey(unmetPlayer)) {
-                D.Error("{0} already has prior relationship {1} with {2}.", Name, _priorRelationship[unmetPlayer].GetValueName(), unmetPlayer);
+                D.Error("{0} already has prior relationship {1} with {2}.", DebugName, _priorRelationship[unmetPlayer].GetValueName(), unmetPlayer);
             }
             if (_currentRelationship.ContainsKey(unmetPlayer)) {
-                D.Error("{0} already has current relationship {1} with {2}.", Name, _currentRelationship[unmetPlayer].GetValueName(), unmetPlayer);
+                D.Error("{0} already has current relationship {1} with {2}.", DebugName, _currentRelationship[unmetPlayer].GetValueName(), unmetPlayer);
             }
             _initialRelationship.Add(unmetPlayer, initialRelationship);
             _priorRelationship.Add(unmetPlayer, DiplomaticRelationship.None);
@@ -220,7 +228,7 @@ namespace CodeEnv.Master.GameContent {
             if (player == TempGameValues.NoPlayer) {
                 return DiplomaticRelationship.None;
             }
-            //D.Log("{0}.GetCurrentRelations({1}) called. Keys = {2}.", Name, player, _currentRelationship.Keys.Concatenate());
+            //D.Log("{0}.GetCurrentRelations({1}) called. Keys = {2}.", DebugName, player, _currentRelationship.Keys.Concatenate());
             return _currentRelationship[player];
         }
 
@@ -246,13 +254,13 @@ namespace CodeEnv.Master.GameContent {
             D.AssertNotEqual(newRelationship, DiplomaticRelationship.None);
             D.AssertNotEqual(newRelationship, DiplomaticRelationship.Self);
             if (!IsKnown(otherPlayer)) {
-                D.Error("{0}: {1} not yet met.", Name, otherPlayer);
+                D.Error("{0}: {1} not yet met.", DebugName, otherPlayer);
             }
             DiplomaticRelationship existingRelationship = _currentRelationship[otherPlayer];
             D.AssertNotDefault((int)existingRelationship);
             D.AssertNotEqual(DiplomaticRelationship.Self, newRelationship);
             if (existingRelationship == newRelationship) {
-                D.Warn("{0} is attempting to set Relations to {1}, a value it already has.", Name, newRelationship.GetValueName());
+                D.Warn("{0} is attempting to set Relations to {1}, a value it already has.", DebugName, newRelationship.GetValueName());
                 return;
             }
 
@@ -277,12 +285,12 @@ namespace CodeEnv.Master.GameContent {
             D.AssertNotEqual(newRelationship, DiplomaticRelationship.None);
             D.AssertNotEqual(newRelationship, DiplomaticRelationship.Self);
             if (!IsKnown(otherPlayer)) {
-                D.Error("{0}: {1} not yet met.", Name, otherPlayer);
+                D.Error("{0}: {1} not yet met.", DebugName, otherPlayer);
             }
             DiplomaticRelationship existingRelationship = _currentRelationship[otherPlayer];
             D.Assert(existingRelationship != DiplomaticRelationship.None && newRelationship != DiplomaticRelationship.Self);
             if (existingRelationship == newRelationship) {
-                D.Warn("{0} is attempting to set Relations to {1}, a value it already has.", Name, newRelationship.GetValueName());
+                D.Warn("{0} is attempting to set Relations to {1}, a value it already has.", DebugName, newRelationship.GetValueName());
                 return;
             }
 
@@ -291,25 +299,51 @@ namespace CodeEnv.Master.GameContent {
             OnRelationsChanged(otherPlayer);
         }
 
-        public virtual IEnumerable<Player> GetOtherPlayersWithRelationship(params DiplomaticRelationship[] relations) {
-            Utility.ValidateNotNullOrEmpty(relations);
-            D.Assert(!relations.Contains(DiplomaticRelationship.Self));
+        public virtual IEnumerable<Player> GetOtherPlayersWithRelationship(DiplomaticRelationship relationship) {
+            D.AssertNotEqual(DiplomaticRelationship.Self, relationship);
             IList<Player> playersWithRelations = new List<Player>();
             foreach (Player knownPlayer in OtherKnownPlayers) {
-                if (IsRelationshipWith(knownPlayer, relations)) {
+                if (IsRelationshipWith(knownPlayer, relationship)) {
                     playersWithRelations.Add(knownPlayer);
                 }
             }
             return playersWithRelations;
         }
 
-        public bool IsRelationshipWith(Player player, params DiplomaticRelationship[] relations) {
-            return GetCurrentRelations(player).EqualsAnyOf(relations);
+        #region IsRelationshipWith
+
+        // 12.6.16 Removed params to avoid heap memory allocations
+
+        public bool IsRelationshipWith(Player player, DiplomaticRelationship relationship) {
+            return GetCurrentRelations(player) == relationship;
         }
 
-        public bool IsPriorRelationshipWith(Player player, params DiplomaticRelationship[] relations) {
-            return GetPriorRelations(player).EqualsAnyOf(relations);
+        public bool IsRelationshipWith(Player player, DiplomaticRelationship relationship1, DiplomaticRelationship relationship2) {
+            var currentRelations = GetCurrentRelations(player);
+            return currentRelations == relationship1 || currentRelations == relationship2;
         }
+
+        public bool IsRelationshipWith(Player player, DiplomaticRelationship relationship1, DiplomaticRelationship relationship2, DiplomaticRelationship relationship3) {
+            var currentRelations = GetCurrentRelations(player);
+            return currentRelations == relationship1 || currentRelations == relationship2 || currentRelations == relationship3;
+        }
+
+
+        public bool IsPriorRelationshipWith(Player player, DiplomaticRelationship relationship) {
+            return GetPriorRelations(player) == relationship;
+        }
+
+        public bool IsPriorRelationshipWith(Player player, DiplomaticRelationship relationship1, DiplomaticRelationship relationship2) {
+            var priorRelations = GetPriorRelations(player);
+            return priorRelations == relationship1 || priorRelations == relationship2;
+        }
+
+        public bool IsPriorRelationshipWith(Player player, DiplomaticRelationship relationship1, DiplomaticRelationship relationship2, DiplomaticRelationship relationship3) {
+            var priorRelations = GetPriorRelations(player);
+            return priorRelations == relationship1 || priorRelations == relationship2 || priorRelations == relationship3;
+        }
+
+        #endregion
 
         public bool IsEnemyOf(Player player) {
             D.Assert(DiplomaticRelationship.War.IsEnemy());
@@ -360,7 +394,7 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         public override string ToString() {
-            return Name;
+            return DebugName;
         }
 
         #region Debug
@@ -369,6 +403,31 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        #region Archive
+
+        // Use of params creates heap allocations
+
+        //public bool IsRelationshipWith(Player player, params DiplomaticRelationship[] relations) {
+        //    return GetCurrentRelations(player).EqualsAnyOf(relations);
+        //}
+
+        //public bool IsPriorRelationshipWith(Player player, params DiplomaticRelationship[] relations) {
+        //    return GetPriorRelations(player).EqualsAnyOf(relations);
+        //}
+
+        //public virtual IEnumerable<Player> GetOtherPlayersWithRelationship(params DiplomaticRelationship[] relations) {
+        //    Utility.ValidateNotNullOrEmpty(relations);
+        //    D.Assert(!relations.Contains(DiplomaticRelationship.Self));
+        //    IList<Player> playersWithRelations = new List<Player>();
+        //    foreach (Player knownPlayer in OtherKnownPlayers) {
+        //        if (IsRelationshipWith(knownPlayer, relations)) {
+        //            playersWithRelations.Add(knownPlayer);
+        //        }
+        //    }
+        //    return playersWithRelations;
+        //}
+
+        #endregion
     }
 }
 

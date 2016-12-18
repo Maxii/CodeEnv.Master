@@ -42,7 +42,7 @@ public class SystemCtxControl_AI : ACtxControl {
 
     protected override Vector3 PositionForDistanceMeasurements { get { return _settlement.Position; } }
 
-    protected override string OperatorName { get { return _systemMenuOperator.FullName; } }
+    protected override string OperatorName { get { return _systemMenuOperator.DebugName; } }
 
     private SystemItem _systemMenuOperator;
     private SettlementCmdItem _settlement;

@@ -48,7 +48,7 @@ public abstract class AGuiMenuPopupList<T> : AGuiMenuPopupListBase {
     protected string DefaultSelection {
         private get {
             if (_defaultSelection == null) {
-                //D.Log("{0} default selection is null. Selecting Item 0: {1}.", Name, _popupList.items[0]);
+                //D.Log("{0} default selection is null. Selecting Item 0: {1}.", DebugName, _popupList.items[0]);
                 return _popupList.items[0];
             }
             return _defaultSelection;
@@ -107,7 +107,7 @@ public abstract class AGuiMenuPopupList<T> : AGuiMenuPopupListBase {
     protected void AssignSelectionChoices() {
         _popupList.Clear();
         Choices.ForAll(choiceName => {
-            //D.Log("{0} adding choice name {1}.", Name, choiceName);
+            //D.Log("{0} adding choice name {1}.", DebugName, choiceName);
             _popupList.AddItem(choiceName);
 
         });
@@ -133,13 +133,12 @@ public abstract class AGuiMenuPopupList<T> : AGuiMenuPopupListBase {
                 D.ErrorContext(this, "No {0} property named {1} found!", typeof(PlayerPrefsManager).Name, prefsPropertyName);
                 isPrefSelected = false;
             }
-            //D.Log("{0} type is {1}.", name, typeof(T).Name);
             Func<T> propertyGet = (Func<T>)Delegate.CreateDelegate(typeof(Func<T>), PlayerPrefsManager.Instance, propertyInfo.GetGetMethod());
             valueName = propertyGet().ToString();    // gets the value of the PlayerPrefsManager Property named prefsPropertyName
-            //D.Log("{0} is using preference value {1} as its selection.", Name, valueName);
+            //D.Log("{0} is using preference value {1} as its selection.", DebugName, valueName);
             if (!_popupList.items.Contains(valueName)) {
                 // the prefs value is not one of the available choices
-                D.LogContext(this, "{0} Prefs value {1} is not among choices available to select. Using default {2}.", Name, valueName, DefaultSelection);
+                D.LogContext(this, "{0} Prefs value {1} is not among choices available to select. Using default {2}.", DebugName, valueName, DefaultSelection);
                 valueName = DefaultSelection;
                 isPrefSelected = false;
             }
@@ -150,7 +149,7 @@ public abstract class AGuiMenuPopupList<T> : AGuiMenuPopupListBase {
             isPrefSelected = false;
         }
 
-        //D.Log("{0} is about to assign popupList selection value as string {1}.", Name, valueName);
+        //D.Log("{0} is about to assign popupList selection value as string {1}.", DebugName, valueName);
         _popupList.value = valueName;
         return isPrefSelected;
     }

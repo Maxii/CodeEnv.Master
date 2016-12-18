@@ -65,7 +65,7 @@ public class DebugStarbaseCreator : ADebugUnitCreator {
 
     protected override void ValidateStaticSetting() {
         if (!gameObject.isStatic) {
-            D.Warn("{0} should start as static. Correcting.", Name);
+            D.Warn("{0} should start as static. Correcting.", DebugName);
             gameObject.isStatic = true;
         }
     }
@@ -149,13 +149,13 @@ public class DebugStarbaseCreator : ADebugUnitCreator {
 
     protected override void AddUnitToGameKnowledge() {
         LogEvent();
-        //D.Log("{0} is adding Unit {1} to GameKnowledge.", Name, UnitName);
+        //D.Log(ShowDebugLog, "{0} is adding Unit {1} to GameKnowledge.", DebugName, UnitName);
         _gameMgr.GameKnowledge.AddUnit(_command, _elements.Cast<IUnitElement>());
     }
 
     protected override void AddUnitToOwnerAndAllysKnowledge() {
         LogEvent();
-        //D.Log("{0} is adding Unit {1} to {2}'s Knowledge.", Name, UnitName, Owner);
+        //D.Log(ShowDebugLog, "{0} is adding Unit {1} to {2}'s Knowledge.", DebugName, UnitName, Owner);
         var ownerAIMgr = _gameMgr.GetAIManagerFor(Owner);
         _elements.ForAll(e => ownerAIMgr.HandleGainedItemOwnership(e));
         ownerAIMgr.HandleGainedItemOwnership(_command);    // OPTIMIZE not really needed as this happens automatically when elements handled
@@ -163,7 +163,7 @@ public class DebugStarbaseCreator : ADebugUnitCreator {
         var alliedPlayers = Owner.GetOtherPlayersWithRelationship(DiplomaticRelationship.Alliance);
         if (alliedPlayers.Any()) {
             alliedPlayers.ForAll(ally => {
-                //D.Log("{0} is adding Unit {1} to {2}'s Knowledge as Ally.", Name, UnitName, ally);
+                //D.Log(ShowDebugLog, "{0} is adding Unit {1} to {2}'s Knowledge as Ally.", DebugName, UnitName, ally);
                 var allyAIMgr = _gameMgr.GetAIManagerFor(ally);
                 _elements.ForAll(e => allyAIMgr.HandleChgdItemOwnerIsAlly(e));
                 allyAIMgr.HandleChgdItemOwnerIsAlly(_command);  // OPTIMIZE not really needed as this happens automatically when elements handled
@@ -218,7 +218,7 @@ public class DebugStarbaseCreator : ADebugUnitCreator {
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
         }
         float radius = hullStat.HullDimensions.magnitude / 2F;
-        //D.Log("Radius of {0} is {1:0.##}.", hullCat.GetValueName(), radius);
+        //D.Log(ShowDebugLog, "Radius of {0} is {1:0.##}.", hullCat.GetValueName(), radius);
         float minViewDistance = radius * 2F;
         float optViewDistance = radius * 3F;
         return new FollowableItemCameraStat(minViewDistance, optViewDistance, fov);

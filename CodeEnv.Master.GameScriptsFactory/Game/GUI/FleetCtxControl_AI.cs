@@ -44,7 +44,7 @@ public class FleetCtxControl_AI : ACtxControl {
 
     protected override Vector3 PositionForDistanceMeasurements { get { return _fleetMenuOperator.Position; } }
 
-    protected override string OperatorName { get { return _fleetMenuOperator.FullName; } }
+    protected override string OperatorName { get { return _fleetMenuOperator.DebugName; } }
 
     private FleetCmdItem _fleetMenuOperator;
 

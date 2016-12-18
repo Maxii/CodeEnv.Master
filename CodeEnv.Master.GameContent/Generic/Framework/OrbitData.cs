@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class OrbitData {
 
-        public string Name { get { return GetType().Name; } }
+        public string DebugName { get { return GetType().Name; } }
 
         private GameObject _orbitedItem;
         /// <summary>
@@ -34,7 +34,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public GameObject OrbitedItem {
             get {
-                D.AssertNotNull(_orbitedItem, Name);
+                D.AssertNotNull(_orbitedItem, DebugName);
                 return _orbitedItem;
             }
             private set { _orbitedItem = value; }
@@ -180,7 +180,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public override string ToString() {
-            return Name;
+            return DebugName;
         }
 
     }

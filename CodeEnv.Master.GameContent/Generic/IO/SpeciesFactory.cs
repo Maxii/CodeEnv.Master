@@ -96,7 +96,7 @@ namespace CodeEnv.Master.GameContent {
                     }
                 }
                 if (stat == default(SpeciesStat)) {
-                    D.Error("{0} could not find Xml Node for Species {1}.", Name, species.GetValueName());
+                    D.Error("{0} could not find Xml Node for Species {1}.", DebugName, species.GetValueName());
                 }
                 return stat;
             }

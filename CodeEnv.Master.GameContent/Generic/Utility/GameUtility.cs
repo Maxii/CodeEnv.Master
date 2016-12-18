@@ -120,22 +120,7 @@ namespace CodeEnv.Master.GameContent {
             return new Color32(r, g, b, 255);
         }
 
-        /// <summary>
-        /// Calculates and returns the latest GameDate by which this rotation should complete. Includes a small buffer.
-        /// <remarks>Typically used to calculate how long to allow a rotation coroutine to run before throwing a warning or error.
-        /// Use of a date in this manner handles GameSpeed changes and Pauses during the rotation.
-        /// </remarks>
-        /// </summary>
-        /// <param name="rotationRateInDegreesPerHour">The rotation rate in degrees per hour.</param>
-        /// <param name="maxRotationReqdInDegrees">The maximum rotation reqd in degrees.</param>
-        /// <returns></returns>
-        public static GameDate CalcWarningDateForRotation(float rotationRateInDegreesPerHour, float maxRotationReqdInDegrees = 180F) {
-            float maxHoursReqdToCompleteRotation = maxRotationReqdInDegrees / rotationRateInDegreesPerHour;
-            float bufferedMaxHours = maxHoursReqdToCompleteRotation * TempGameValues.__AllowedTurnTimeBufferFactor;
-            bufferedMaxHours = Mathf.Clamp(bufferedMaxHours, Constants.OneF, GameTimeDuration.OneDay.TotalInHours); // HACK
-            var maxDurationFromCurrentDate = new GameTimeDuration(bufferedMaxHours);
-            return new GameDate(maxDurationFromCurrentDate);
-        }
+        // 12.16.16 CalcWarningDateForRotation() moved to DebugUtility.
 
         public static StationaryLocation GetClosest(Vector3 myPosition, IList<StationaryLocation> locations) {
             return locations.MinBy(loc => Vector3.SqrMagnitude(loc.Position - myPosition));

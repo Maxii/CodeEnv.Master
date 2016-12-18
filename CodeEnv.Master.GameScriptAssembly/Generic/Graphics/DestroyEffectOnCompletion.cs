@@ -93,7 +93,7 @@ public class DestroyEffectOnCompletion : AMonoBase {
             PauseEffects(true);
         }
         else {
-            D.Log("{0} Effect: {1} begun.", _effectType.GetValueName(), gameObject.name);
+            //D.Log("{0} Effect: {1} begun.", _effectType.GetValueName(), gameObject.name);
         }
         _isInitialized = true;
     }
@@ -118,7 +118,7 @@ public class DestroyEffectOnCompletion : AMonoBase {
         }
 
         if (toDestroy) {
-            D.Log("{0} Effect: {1} being destroyed.", _effectType.GetValueName(), gameObject.name);
+            //D.Log("{0} Effect: {1} being destroyed.", _effectType.GetValueName(), gameObject.name);
             Destroy(gameObject);
         }
     }

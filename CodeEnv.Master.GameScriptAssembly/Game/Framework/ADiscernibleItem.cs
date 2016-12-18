@@ -49,7 +49,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
                 D.AssertNotNull(DisplayMgr);
                 result = DisplayMgr.IsPrimaryMeshInMainCameraLOS;
             }
-            //D.Log(ShowDebugLog, "{0}.IsVisualDetailDiscernibleToUser = {1}. IsDiscernible = {2}.", FullName, result, IsDiscernibleToUser);
+            //D.Log(ShowDebugLog, "{0}.IsVisualDetailDiscernibleToUser = {1}. IsDiscernible = {2}.", DebugName, result, IsDiscernibleToUser);
             return result;
         }
     }
@@ -232,11 +232,9 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
 
     protected void StartEffectSequence(EffectSequenceID effectSeqID) {
         OnEffectSeqStarting(effectSeqID);
-        //D.Log(ShowDebugLog, "{0} attempting to start {1} effect.", FullName, effectSeqID.GetValueName());
+        //D.Log(ShowDebugLog, "{0} attempting to start {1} effect.", DebugName, effectSeqID.GetValueName());
         if (IsVisualDetailDiscernibleToUser) {
-            if (ShowDebugLog) {
-            D.Log("{0} visual detail is discernible so starting {1} effect.", FullName, effectSeqID.GetValueName());
-            }
+            //D.Log(ShowDebugLog, "{0} visual detail is discernible so starting {1} effect.", DebugName, effectSeqID.GetValueName());
             D.AssertNotNull(EffectsMgr);   // if DisplayMgr is initialized, so is EffectsMgr
             EffectsMgr.StartEffect(effectSeqID);
         }
@@ -313,7 +311,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
             InitializeOnFirstDiscernibleToUser();
         }
         AssessCircleHighlighting();
-        //D.Log(ShowDebugLog, "{0}.IsDiscernibleToUser changed to {1}.", FullName, IsDiscernibleToUser);
+        //D.Log(ShowDebugLog, "{0}.IsDiscernibleToUser changed to {1}.", DebugName, IsDiscernibleToUser);
     }
     // IMPROVE deal with losing IsDiscernible while hovered or pressed
 
@@ -324,12 +322,12 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     protected virtual void HandleIsVisualDetailDiscernibleToUserChanged() { }
 
     void OnHover(bool isOver) {
-        //D.Log(ShowDebugLog, "{0}.OnHover({1}) called at {2}.", FullName, isOver, Utility.TimeStamp);
+        //D.Log(ShowDebugLog, "{0}.OnHover({1}) called at {2}.", DebugName, isOver, Utility.TimeStamp);
         HoverEventHandler(gameObject, isOver);
     }
 
     protected void HoverEventHandler(GameObject go, bool isOver) {
-        //D.Log(ShowDebugLog, "{0} is handling an OnHover event. IsOver = {1}.", FullName, isOver);
+        //D.Log(ShowDebugLog, "{0} is handling an OnHover event. IsOver = {1}.", DebugName, isOver);
         if (IsOperational && IsDiscernibleToUser) {
             HandleHoveredChanged(isOver);
         }
@@ -349,7 +347,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     }
 
     private void HandleClick() {
-        //D.Log(ShowDebugLog, "{0} is handling an OnClick event.", FullName);
+        //D.Log(ShowDebugLog, "{0} is handling an OnClick event.", DebugName);
         if (IsDiscernibleToUser) {
             if (_inputHelper.IsLeftMouseButton) {
                 KeyCode notUsed;
@@ -393,7 +391,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     }
 
     private void HandlePressedChanged(bool isPressed) {
-        //D.Log(ShowDebugLog, "{0} is handling an OnPress event. IsDown = {1}.", FullName, isPressed);
+        //D.Log(ShowDebugLog, "{0} is handling an OnPress event. IsDown = {1}.", DebugName, isPressed);
         if (IsDiscernibleToUser) {
             if (_inputHelper.IsLeftMouseButton) {
                 if (isPressed) {
@@ -450,7 +448,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     }
 
     private void HandleDoubleClick() {
-        //D.Log(ShowDebugLog, "{0} is handling an OnDoubleClick event.", FullName);
+        //D.Log(ShowDebugLog, "{0} is handling an OnDoubleClick event.", DebugName);
         if (IsDiscernibleToUser) {
             if (_inputHelper.IsLeftMouseButton) {
                 HandleLeftDoubleClick();

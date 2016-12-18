@@ -44,7 +44,6 @@ public abstract class ATableWindow : AGuiWindow {
     private GuiElementID _lastSortTopic;
     private SortDirection _lastSortDirection;
     private IList<ATableRowForm> _rowForms;
-    protected GameManager _gameMgr;
 
     protected override void Awake() {
         base.Awake();
@@ -63,7 +62,6 @@ public abstract class ATableWindow : AGuiWindow {
         _table = gameObject.GetSingleComponentInChildren<UITable>();
         _table.sorting = UITable.Sorting.Custom;
         _rowForms = new List<ATableRowForm>();
-        _gameMgr = GameManager.Instance;
     }
 
     private void InitializeContentHolder() {
@@ -111,7 +109,7 @@ public abstract class ATableWindow : AGuiWindow {
     /// Build a new table sorted by Name.
     /// </summary>
     private void BuildTable() {
-        //D.Log("{0}.BuildTable() called.", GetType().Name);
+        //D.Log("{0}.BuildTable() called.", DebugName);
         ClearTable();   // OPTIMIZE Reqd to destroy the row already present. Can be removed once optimization to reuse rows is implemented
         AddTableRows();
         _table.onCustomSort = CompareName;
@@ -133,11 +131,11 @@ public abstract class ATableWindow : AGuiWindow {
 
     private void AddTableRows() {
         IEnumerable<AItem> items = GetItemsUserIsAwareOf();
-        items.ForAll(item => {
-            ATableRowForm rowForm = BuildRow(item.DisplayName);
+        items.ForAll((Action<AItem>)(item => {
+            ATableRowForm rowForm = BuildRow((string)item.DebugName);
             ConfigureRow(rowForm, item);
             _rowForms.Add(rowForm);
-        });
+        }));
     }
 
     /// <summary>
@@ -348,7 +346,7 @@ public abstract class ATableWindow : AGuiWindow {
             sortDirection = ToggleSortDirection();
         }
         _lastSortDirection = sortDirection;
-        //D.Log("{0}.AssessSortDirection(Topic: {1}): Direction: {2}, Value: {3}.", GetType().Name, sortTopic.GetValueName(), sortDirection.GetValueName(), (int)sortDirection);
+        //D.Log("{0}.AssessSortDirection(Topic: {1}): Direction: {2}, Value: {3}.", DebugName, sortTopic.GetValueName(), sortDirection.GetValueName(), (int)sortDirection);
         return sortDirection;
     }
 

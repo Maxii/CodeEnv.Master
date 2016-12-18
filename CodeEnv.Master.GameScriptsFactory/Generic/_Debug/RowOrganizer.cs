@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
 /// Debug class for use in edit mode (via ContextMenu.Execute) that automates the positioning of elements 
@@ -128,7 +129,7 @@ public class RowOrganizer : AMonoBase {
     private void DestroyExistingSeparators() {
         var rowWidgets = gameObject.GetSafeComponentsInImmediateChildren<UIWidget>();
 
-        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
         var separatorWidgets = rowWidgets.Where(w => w.GetComponent<ElementIndexer>() == null);
         Profiler.EndSample();
 

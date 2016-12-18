@@ -67,7 +67,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public void Reset() {
-            //D.Log("{0}.Reset() called.", Name);
+            //D.Log("{0}.Reset() called.", DebugName);
             _leaderStatsInUse.Clear();
         }
 

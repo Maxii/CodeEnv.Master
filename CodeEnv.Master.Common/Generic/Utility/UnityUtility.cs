@@ -22,6 +22,7 @@ namespace CodeEnv.Master.Common {
     using CodeEnv.Master.Common.LocalResources;
     using UnityEngine;
     using System.Collections;
+    using UnityEngine.Profiling;
 
     /// <summary>
     /// Static class of utility methods that are specific to Unity and/or Ngui.
@@ -204,17 +205,18 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         /// <param name="dirA">The first direction.</param>
         /// <param name="dirB">The second direction.</param>
-        /// <param name="allowedDeviation">The allowed deviation in degrees. Cannot be more precise
+        /// <param name="actualDeviation">The resulting actual deviation.</param>
+        /// <param name="allowedDeviation">The allowed deviation in degrees. Cannot be smaller
         /// than UnityConstants.AngleEqualityPrecision due to Unity floating point precision.</param>
         /// <returns></returns>
-        public static bool AreDirectionsWithinTolerance(Vector3 dirA, Vector3 dirB, float allowedDeviation = UnityConstants.AngleEqualityPrecision) {
+        public static bool AreDirectionsWithinTolerance(Vector3 dirA, Vector3 dirB, out float actualDeviation, float allowedDeviation = UnityConstants.AngleEqualityPrecision) {
             dirA.ValidateNormalized();
             dirB.ValidateNormalized();
-            if (allowedDeviation < UnityConstants.AngleEqualityPrecision) {
-                D.Warn("Angle Deviation precision {0} cannot be < {1}.", allowedDeviation, UnityConstants.AngleEqualityPrecision);
+            if (allowedDeviation < UnityConstants.AngleEqualityPrecision || allowedDeviation > 180F) {
+                D.Warn("Allowed Deviation {0:0.000} must be between {1:0.00} and 180 degrees.", allowedDeviation, UnityConstants.AngleEqualityPrecision);
+                allowedDeviation = Mathf.Clamp(allowedDeviation, UnityConstants.AngleEqualityPrecision, 180F);
             }
-            allowedDeviation = Mathf.Clamp(allowedDeviation, UnityConstants.AngleEqualityPrecision, 180F);
-            float actualDeviation = Vector3.Angle(dirA, dirB);
+            actualDeviation = Vector3.Angle(dirA, dirB);
             //D.Log("Deviation between directions {0} and {1} is {2} degrees.", dirA, dirB, actualDeviation);
             return actualDeviation <= allowedDeviation;
         }
@@ -368,7 +370,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="onWaitFinished">The delegate to execute once the wait is finished.</param>
         [Obsolete]
         public static void WaitForSecondsToExecute(float delayInSeconds, Action onWaitFinished) {
-            new Job(WaitForSeconds(delayInSeconds), toStart: true, jobCompleted: (wasKilled) => onWaitFinished());
+            new Job(WaitForSeconds(delayInSeconds), "", jobCompleted: (wasKilled) => onWaitFinished());
         }
 
         [Obsolete]
@@ -390,7 +392,7 @@ namespace CodeEnv.Master.Common {
         /// <returns></returns>
         [Obsolete]
         public static void WaitOneFixedUpdateToExecute(Action onWaitFinished) {
-            new Job(WaitOneFixedUpdate(), toStart: true, jobCompleted: delegate {
+            new Job(WaitOneFixedUpdate(), "", jobCompleted: delegate {
                 onWaitFinished();
             });
         }
@@ -437,7 +439,7 @@ namespace CodeEnv.Master.Common {
         [Obsolete]
         public static Job WaitForFrames(int framesToWait, Action<bool> onWaitFinished) {
             Utility.ValidateNotNegative(framesToWait);
-            return new Job(WaitForFrames(framesToWait), toStart: true, jobCompleted: (wasKilled) => {
+            return new Job(WaitForFrames(framesToWait), "", jobCompleted: (wasKilled) => {
                 onWaitFinished(wasKilled);
             });
         }
@@ -480,7 +482,7 @@ namespace CodeEnv.Master.Common {
         /// </returns>
         [Obsolete]
         public static Job WaitForFrames(int initialFramesToWait, int repeatingFramesToWait, Action methodToExecute) {
-            return new Job(RepeatingWaitForFrames(initialFramesToWait, repeatingFramesToWait, methodToExecute), toStart: true, jobCompleted: null);
+            return new Job(RepeatingWaitForFrames(initialFramesToWait, repeatingFramesToWait, methodToExecute), "", jobCompleted: null);
         }
 
         /// <summary>

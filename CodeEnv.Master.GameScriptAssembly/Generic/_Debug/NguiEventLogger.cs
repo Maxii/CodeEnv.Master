@@ -24,7 +24,7 @@ using UnityEngine;
 /// </summary>
 public class NguiEventLogger : AMonoBase {
 
-    private const string NameFormat = "{0}(from transform)";
+    private const string DebugNameFormat = "{0}(from transform)";
 
     void OnClick() {
         LogNguiEvent();
@@ -56,7 +56,7 @@ public class NguiEventLogger : AMonoBase {
     /// <param name="parameter">The parameter.</param>
     public void LogNguiEvent(object parameter = null) {
         var stackFrame = new System.Diagnostics.StackFrame(1);
-        string name = NameFormat.Inject(transform.name);
+        string name = DebugNameFormat.Inject(transform.name);
         string paramName = parameter != null ? parameter.ToString() : string.Empty;
         Debug.Log("{0}.{1}({2}) called.".Inject(name, stackFrame.GetMethod().Name, paramName));
     }

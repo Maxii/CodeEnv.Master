@@ -51,7 +51,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
                                                                     new Vector3(0.5F, 0.5F, 0.5F),
                                                                 };
 
-    private string Name { get { return GetType().Name; } }
+    private string DebugName { get { return GetType().Name; } }
 
     [Tooltip("Controls how many layers of sectors are visible when in SectorViewMode")]
     [Range(2F, 5F)]
@@ -198,7 +198,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         D.AssertApproxEqual(Constants.ZeroF, _gridSize.x % 2F, _gridSize.ToString());
 
         _outermostCellVertexGridCoordinates = _gridSize / 2F;
-        D.Log("{0}: Universe Grid Size = {1}.", Name, _gridSize);
+        D.Log("{0}: Universe Grid Size = {1}.", DebugName, _gridSize);
     }
 
     private int CalcCellCountInsideUniverseAlongAGridAxis() {
@@ -229,7 +229,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     private void CameraSectorIdPropChangedHandler() {
         D.AssertEqual(PlayerViewMode.SectorView, PlayerViews.Instance.ViewMode);   // not subscribed unless in SectorViewMode
         D.Assert(IsGridWireframeShowing);
-        //D.Log("{0}: CameraSectorID has changed. Generating new grid points.", Name);
+        //D.Log("{0}: CameraSectorID has changed. Generating new grid points.", DebugName);
         _gridWireframe.Points = GenerateWireframeGridPoints(MainCameraControl.Instance.SectorID);
     }
 
@@ -260,7 +260,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
 
         Vector3 renderFrom = new Vector3(xRenderFrom, yRenderFrom, zRenderFrom);
         Vector3 renderTo = new Vector3(xRenderTo, yRenderTo, zRenderTo);
-        //D.Log("{0} after depth adjust: CameraCellVertexGridCoordinates {1}, RenderFrom {2}, RenderTo {3}.", Name, cameraCellVertexGridCoordinates, renderFrom, renderTo);
+        //D.Log("{0} after depth adjust: CameraCellVertexGridCoordinates {1}, RenderFrom {2}, RenderTo {3}.", DebugName, cameraCellVertexGridCoordinates, renderFrom, renderTo);
 
         // reqd as Version 2 GetVectrosityPoints() directly derives from Renderer's From and To
         _gridRenderer.From = renderFrom;
@@ -347,11 +347,11 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
 
         int gridCellQty = Mathf.RoundToInt(_gridSize.x * _gridSize.y * _gridSize.z);
         if (inspectedCellCount != gridCellQty) {
-            D.Error("{0}: inspected cell count {1} should equal {2} cells in grid.", Name, inspectedCellCount, gridCellQty);
+            D.Error("{0}: inspected cell count {1} should equal {2} cells in grid.", DebugName, inspectedCellCount, gridCellQty);
         }
         D.Log("{0} inspected {1} grid cells, creating {2} sectors of which {3} are non-periphery.",
-        Name, inspectedCellCount, _sectorIdToSectorLookup.Keys.Count, _sectorIdToSectorLookup.Keys.Count - peripheryCellCount);
-        __LogDuration("{0}.ConstructSectors()".Inject(Name));
+        DebugName, inspectedCellCount, _sectorIdToSectorLookup.Keys.Count, _sectorIdToSectorLookup.Keys.Count - peripheryCellCount);
+        __LogDuration("{0}.ConstructSectors()".Inject(DebugName));
     }
 
     /// <summary>
@@ -432,7 +432,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         int yID = y.ApproxEquals(Constants.ZeroF) ? 1 : (y > Constants.ZeroF ? Mathf.CeilToInt(y) : Mathf.FloorToInt(y));
         int zID = z.ApproxEquals(Constants.ZeroF) ? 1 : (z > Constants.ZeroF ? Mathf.CeilToInt(z) : Mathf.FloorToInt(z));
         var sectorID = new IntVector3(xID, yID, zID);
-        //D.Log("{0}: CellGridCoordinates = {1}, resulting SectorID = {2}.", Name, cellGridCoordinates, sectorID);
+        //D.Log("{0}: CellGridCoordinates = {1}, resulting SectorID = {2}.", DebugName, cellGridCoordinates, sectorID);
         return sectorID;
     }
 
@@ -493,7 +493,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
             ////D.Warn(!_enableGridSizeLimit, "No Index stored at CellGridCoordinates {0}. Adding.", nearestCellGridCoordinates);
             Vector3 peripheralCellGridCoordinates = _outermostCellVertexGridCoordinates + _cellVertexGridCoordinatesToCellGridCoordinatesOffset;
             D.Warn("{0}: No SectorID stored at CellGridCoordinates {1}. Adding. Peripheral CellGridCoordinates = {2}",
-                Name, nearestCellGridCoordinates, peripheralCellGridCoordinates);
+                DebugName, nearestCellGridCoordinates, peripheralCellGridCoordinates);
             sectorID = Instance.CalculateSectorIDFromCellGridCoordindates(nearestCellGridCoordinates);
             _cellGridCoordinatesToSectorIdLookup.Add(nearestCellGridCoordinates, sectorID);
             _sectorIdToCellGridCoordinatesLookup.Add(sectorID, nearestCellGridCoordinates);
@@ -513,7 +513,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         D.AssertNotDefault(sectorID);
         bool isSectorFound = _sectorIdToCellWorldLocationLookup.TryGetValue(sectorID, out worldPosition);
         if (!isSectorFound) {
-            D.Warn("{0} could not find a sector at sectorID {1}.", Name, sectorID);
+            D.Warn("{0} could not find a sector at sectorID {1}.", DebugName, sectorID);
         }
         return isSectorFound;
     }
@@ -569,7 +569,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         D.AssertNotDefault(sectorID);
         Sector sector;
         if (!_sectorIdToSectorLookup.TryGetValue(sectorID, out sector)) {
-            D.Warn("{0}: No Sector at {1}, returning null.", Name, sectorID);
+            D.Warn("{0}: No Sector at {1}, returning null.", DebugName, sectorID);
         }
         return sector;
     }
@@ -657,7 +657,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         }
 
         if ((Utility.SystemTime - __durationStartTime).TotalSeconds > 0.1F) {
-            __LogDuration("{0}.GetSurroundingSectorIdsBetween()".Inject(Name));
+            __LogDuration("{0}.GetSurroundingSectorIdsBetween()".Inject(DebugName));
         }
         return resultingSectorIDs;
     }
@@ -753,7 +753,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
             _gridWireframe = null;
         }
         //string msg = toShow ? "making new GridWireframe" : "destroying existing GridWireframe";
-        //D.Log("{0} is {1}.", Name, msg);
+        //D.Log("{0} is {1}.", DebugName, msg);
     }
 
     /// <summary>
@@ -790,8 +790,8 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
                 }
             }
         }
-        D.Log("{0} validated {1} sector corners.", Name, SectorCorners.Count);
-        __LogDuration("{0}.__ValidateWorldSectorCorners()".Inject(Name));
+        D.Log("{0} validated {1} sector corners.", DebugName, SectorCorners.Count);
+        __LogDuration("{0}.__ValidateWorldSectorCorners()".Inject(DebugName));
     }
 
     private Sector MakeSectorInstance(IntVector3 sectorID, Vector3 worldLocation, bool isOnPeriphery) {

@@ -34,7 +34,7 @@ public class WidgetTrackableLocation : AMonoBase, IWidgetTrackable {
 
     #region IWidgetTrackable Members
 
-    public string DisplayName { get { return typeof(WidgetTrackableLocation).Name; } }
+    public string DebugName { get { return typeof(WidgetTrackableLocation).Name; } }
 
     public Vector3 Position { get { return transform.position; } }
 

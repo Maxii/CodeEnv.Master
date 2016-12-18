@@ -39,7 +39,7 @@ namespace CodeEnv.Master.GameContent {
 
         IUnitCmd ParentItem { get; set; }
 
-        IList<IElementAttackable> EnemyTargetsDetected { get; }
+        HashSet<IElementAttackable> EnemyTargetsDetected { get; }
 
         void Add(Sensor sensor);
 

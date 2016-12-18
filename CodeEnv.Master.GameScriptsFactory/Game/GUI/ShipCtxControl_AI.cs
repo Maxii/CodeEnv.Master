@@ -27,7 +27,7 @@ public class ShipCtxControl_AI : ACtxControl {
 
     protected override Vector3 PositionForDistanceMeasurements { get { return _shipMenuOperator.Position; } }
 
-    protected override string OperatorName { get { return _shipMenuOperator.FullName; } }
+    protected override string OperatorName { get { return _shipMenuOperator.DebugName; } }
 
     private ShipItem _shipMenuOperator;
 

@@ -49,10 +49,6 @@ namespace CodeEnv.Master.GameContent {
             : this("BasicPassiveCM", AtlasID.MyGui, TempGameValues.AnImageFilename, "BasicDescription..", 0F, 0F, 0F, 0F, new DamageStrength(1F, 1F, 1F)) {
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
     }
 }
 

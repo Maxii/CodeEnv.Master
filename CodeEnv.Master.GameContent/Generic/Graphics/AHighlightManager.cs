@@ -25,9 +25,17 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AHighlightManager : IDisposable {
 
-        private const string NameFormat = "{0}.{1}";
+        private const string DebugNameFormat = "{0}.{1}";
 
-        public string Name { get { return NameFormat.Inject(_trackedClientTransform.name, GetType().Name); } }
+        private string _debugName;
+        public string DebugName {
+            get {
+                if (_debugName == null) {
+                    _debugName = DebugNameFormat.Inject(_trackedClientTransform.name, GetType().Name);
+                }
+                return _debugName;
+            }
+        }
 
         public abstract bool IsHighlightShowing { get; }
 

@@ -42,7 +42,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     /// </summary>
     private const float GuardStationDistanceMultiplier = 0.2F;
 
-    private const string ToStringFormat = "{0}{1}";
+    private const string NameFormat = "{0}{1}";
 
     /// <summary>
     /// Occurs when the owner of this <c>AItem</c> is about to change.
@@ -72,7 +72,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     public SectorData Data {
         get { return _data; }
         set {
-            D.AssertNull(_data, Name);
+            D.AssertNull(_data);
             SetProperty<SectorData>(ref _data, value, "Data", DataPropSetHandler);
         }
     }
@@ -101,19 +101,15 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
         get { return Data != null ? Data.IsOperational : false; }
     }
 
-    /// <summary>
-    /// The name to use for display in the UI.
-    /// </summary>
-    public string DisplayName { get { return Name; } }
-
-    public string FullName { get { return Data.FullName; } }
+    public string DebugName { get { return Data.DebugName; } }
 
     private string _name;
+    /// <summary>
+    /// The display name of this Sector.
+    /// </summary>
     public string Name {
         get {
-            if (_name == null) {
-                _name = ToString();
-            }
+            D.AssertNotNull(_name);
             return _name;
         }
         set { SetProperty<string>(ref _name, value, "Name"); }
@@ -300,7 +296,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
             return pointCandidate;
         }
 
-        D.AssertException(iterateCount < 100, Name);
+        D.AssertException(iterateCount < 100, DebugName);
         iterateCount++;
         return GetClearRandomPointInsideSector(iterateCount);
     }
@@ -378,9 +374,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
             // can be called before CommenceOperations if DebugSettings.AllIntelCoverageComprehensive = true
             return;
         }
-        if (ShowDebugLog) {
-            D.Log("{0}.IntelCoverageChangedHandler() called. {1}'s new IntelCoverage = {2}.", FullName, playerWhosCoverageChgd.Name, GetIntelCoverage(playerWhosCoverageChgd));
-        }
+        //D.Log(ShowDebugLog, "{0}.IntelCoverageChangedHandler() called. {1}'s new IntelCoverage = {2}.", DebugName, playerWhosCoverageChgd.Name, GetIntelCoverage(playerWhosCoverageChgd));
         if (playerWhosCoverageChgd == _gameMgr.UserPlayer) {
             HandleUserIntelCoverageChanged();
         }
@@ -430,9 +424,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
                 case GameInputMode.NoInput:
                 case GameInputMode.PartialPopup:
                 case GameInputMode.FullPopup:
-                    if (ShowDebugLog) {
-                        D.Log("{0}: InputMode changed to {1}. No longer showing HUD.", FullName, inputMode.GetValueName());
-                    }
+                    //D.Log(ShowDebugLog, "{0}: InputMode changed to {1}. No longer showing HUD.", DebugName, inputMode.GetValueName());
                     ShowHud(false);
                     break;
                 case GameInputMode.Normal:
@@ -488,7 +480,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     #endregion
 
     public override string ToString() {
-        return ToStringFormat.Inject(GetType().Name, SectorID);
+        return DebugName;
     }
 
     #region IDisposable
@@ -544,7 +536,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     private void LogEvent() {
         if ((_debugSettings.EnableEventLogging && ShowDebugLog)) {
             string methodName = GetMethodName();
-            string fullMethodName = AItemDebugLogEventMethodNameFormat.Inject(FullName, methodName);
+            string fullMethodName = AItemDebugLogEventMethodNameFormat.Inject(DebugName, methodName);
             Debug.Log("{0} beginning execution.".Inject(fullMethodName));
         }
     }

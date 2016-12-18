@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The full name of the object for debugging use on the editor console.
         /// </summary>
-        string FullName { get; }
+        string DebugName { get; }
 
 
     }

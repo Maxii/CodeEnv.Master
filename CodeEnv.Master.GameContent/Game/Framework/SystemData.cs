@@ -144,7 +144,7 @@ namespace CodeEnv.Master.GameContent {
         public void RemovePlanetoidData(PlanetoidData data) {
             D.Assert(IsOperational);
             bool isRemoved = _allPlanetoidData.Remove(data);
-            D.Assert(isRemoved, data.FullName);
+            D.Assert(isRemoved, data.DebugName);
 
             UnsubscribeToPlanetoidDataValueChanges(data);
             RecalcAllProperties();
@@ -157,6 +157,16 @@ namespace CodeEnv.Master.GameContent {
             return intel;
         }
 
+        #region Assess System IntelCoverage
+
+        /// <summary>
+        /// Static list used to collect all planetoid, star and settlement IntelCoverage values when
+        /// re-assessing the IntelCoverage value for the system. Avoids creating a temporary
+        /// list for every system and every player every time a re-assessment is done, significantly 
+        /// reducing heap memory allocations.
+        /// </summary>
+        private static IList<IntelCoverage> _allMemberIntelCoverages = new List<IntelCoverage>();
+
         private void AssessIntelCoverage() {
             foreach (Player player in _gameMgr.AllPlayers) {
                 AssessIntelCoverageFor(player);
@@ -164,32 +174,33 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void AssessIntelCoverageFor(Player player) {
-            var starCoverage = StarData.GetIntelCoverage(player);
-            var planetoidCoverages = _allPlanetoidData.Select(pd => pd.GetIntelCoverage(player));
-            List<IntelCoverage> allMemberCoverages = new List<IntelCoverage>();
-            allMemberCoverages.Add(starCoverage);
-            allMemberCoverages.AddRange(planetoidCoverages);
+            _allMemberIntelCoverages.Clear();
+            foreach (var pData in _allPlanetoidData) {
+                IntelCoverage pCoverage = pData.GetIntelCoverage(player);
+                _allMemberIntelCoverages.Add(pCoverage);
+            }
+
+            IntelCoverage starCoverage = StarData.GetIntelCoverage(player);
+            _allMemberIntelCoverages.Add(starCoverage);
 
             if (SettlementData != null) {
                 IntelCoverage settlementCoverage = SettlementData.GetIntelCoverage(player);
-                allMemberCoverages.Add(settlementCoverage);
+                _allMemberIntelCoverages.Add(settlementCoverage);
             }
 
-            IntelCoverage currentCoverage = GetIntelCoverage(player);
-
-            IntelCoverage lowestCommonCoverage = GetLowestCommonCoverage(allMemberCoverages);
+            IntelCoverage lowestCommonCoverage = GetLowestCommonCoverage(_allMemberIntelCoverages);
             var isCoverageSet = SetIntelCoverage(player, lowestCommonCoverage);
             if (isCoverageSet) {
                 //D.Log(ShowDebugLog, "{0} has assessed its IntelCoverage for {1} and changed it from {2} to the lowest common member value {3}.",
-                //    FullName, player.Name, currentCoverage.GetValueName(), lowestCommonCoverage.GetValueName());
+                //    DebugName, player.Name, GetIntelCoverage(player).GetValueName(), lowestCommonCoverage.GetValueName());
             }
             else {
                 //D.Log(ShowDebugLog, "{0} has assessed its IntelCoverage for {1} and declined to change it from {2} to the lowest common member value {3}.",
-                //    FullName, player.Name, currentCoverage.GetValueName(), lowestCommonCoverage.GetValueName());
+                //    DebugName, player.Name, GetIntelCoverage(player).GetValueName(), lowestCommonCoverage.GetValueName());
             }
         }
 
-        private IntelCoverage GetLowestCommonCoverage(IEnumerable<IntelCoverage> intelCoverages) {
+        private IntelCoverage GetLowestCommonCoverage(IList<IntelCoverage> intelCoverages) {
             IntelCoverage lowestCommonCoverage = IntelCoverage.Comprehensive;
             foreach (var coverage in intelCoverages) {
                 if (coverage < lowestCommonCoverage) {
@@ -198,6 +209,8 @@ namespace CodeEnv.Master.GameContent {
             }
             return lowestCommonCoverage;
         }
+
+        #endregion
 
         #region Event and Property Change Handlers
 
@@ -214,7 +227,7 @@ namespace CodeEnv.Master.GameContent {
             // Existing settlements will always be destroyed (data = null) before changing to a new settlement
             if (SettlementData != null) {
                 SubscribeToSettlementDataValueChanges();
-                //D.Log("{0} is about to have its owner changed to {1}'s Owner {2}.", FullName, SettlementData.FullName, SettlementData.Owner);
+                //D.Log("{0} is about to have its owner changed to {1}'s Owner {2}.", DebugName, SettlementData.DebugName, SettlementData.Owner);
                 Owner = SettlementData.Owner;
             }
             else {

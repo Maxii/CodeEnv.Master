@@ -23,6 +23,7 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
 /// Abstract class for AMortalItems that are Planetoid (Planet and Moon) Items.
@@ -102,13 +103,13 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         ObstacleZoneCollider.enabled = false;
         ObstacleZoneCollider.isTrigger = true;
 
-        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
         var rigidbody = ObstacleZoneCollider.gameObject.GetComponent<Rigidbody>();
         Profiler.EndSample();
 
         // Static trigger collider (no rigidbody) is OK as the ship's CollisionDetectionZone Collider has a kinematic rigidbody
         if (rigidbody != null) {
-            D.Warn("{0}.ObstacleZone has a Rigidbody it doesn't need.", FullName);
+            D.Warn("{0}.ObstacleZone has a Rigidbody it doesn't need.", DebugName);
         }
         InitializeDebugShowObstacleZone();
     }
@@ -160,9 +161,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
     }
 
     protected sealed override void InitiateDeadState() {
-        if (ShowDebugLog) {
-            D.Log("{0} is setting Dead state.", FullName);
-        }
+        D.Log(ShowDebugLog, "{0} is setting Dead state.", DebugName);
         CurrentState = PlanetoidState.Dead;
     }
 
@@ -175,6 +174,16 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         ParentSystem.RemovePlanetoid(this);
     }
 
+    /// <summary>
+    /// Connects the high orbit rigidbody to the provided ship orbit joint,
+    /// thereby placing the ship in high orbit around this planetoid.
+    /// <remarks>If this planetoid is a moon, the ship(s) go into high orbit around
+    /// the moon which itself orbits its parent planet. This means the ship(s) are in motion
+    /// tracking the moon around the planet. UNCLEAR whether this motion around the planet 
+    /// could cause the ship(s) to encounter other ships in high orbit around other planets
+    /// and/or other moons.</remarks>
+    /// </summary>
+    /// <param name="shipOrbitJoint">The ship orbit joint.</param>
     protected virtual void ConnectHighOrbitRigidbodyToShipOrbitJoint(FixedJoint shipOrbitJoint) {
         shipOrbitJoint.connectedBody = CelestialOrbitSimulator.OrbitRigidbody;
     }
@@ -224,9 +233,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
     /// <param name="delayInHours"></param>
     /// <param name="onCompletion">Optional delegate that fires onCompletion.</param>
     protected override void DestroyMe(float delayInHours = Constants.ZeroF, Action onCompletion = null) {
-        if (ShowDebugLog) {
-            D.Log("{0}.DestroyMe called.", FullName);
-        }
+        D.Log(ShowDebugLog, "{0}.DestroyMe called.", DebugName);
         IOrbitSimulator parentOrbitSimulator = transform.parent.GetSafeInterface<IOrbitSimulator>();
         GameUtility.DestroyIfNotNullOrAlreadyDestroyed<IOrbitSimulator>(parentOrbitSimulator, delayInHours, onCompletion);
     }
@@ -258,7 +265,11 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
     }
 
     private void EnableDebugShowObstacleZone(bool toEnable) {
+
+        Profiler.BeginSample("Proper AddComponent allocation", gameObject);
         DrawColliderGizmo drawCntl = ObstacleZoneCollider.gameObject.AddMissingComponent<DrawColliderGizmo>();
+        Profiler.EndSample();
+
         drawCntl.Color = Color.red;
         drawCntl.enabled = toEnable;
     }
@@ -274,7 +285,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         }
         if (ObstacleZoneCollider != null) {
 
-            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
             DrawColliderGizmo drawCntl = ObstacleZoneCollider.gameObject.GetComponent<DrawColliderGizmo>();
             Profiler.EndSample();
 
@@ -309,12 +320,10 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         if (IsInHighOrbit(ship)) {
             var isRemoved = _shipsInHighOrbit.Remove(ship);
             D.Assert(isRemoved);
-            if (ShowDebugLog) {
-                D.Log("{0} has left high orbit around {1}.", ship.FullName, FullName);
-            }
+            D.Log(ShowDebugLog, "{0} has left high orbit around {1}.", ship.DebugName, DebugName);
             return;
         }
-        D.Error("{0}.HandleBrokeOrbit() called, but {1} not in orbit.", FullName, ship.FullName);
+        D.Error("{0}.HandleBrokeOrbit() called, but {1} not in orbit.", DebugName, ship.DebugName);
     }
 
     #endregion
@@ -329,14 +338,10 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         LogEvent();
         DamageStrength damage = damagePotential - Data.DamageMitigation;
         if (damage.Total == Constants.ZeroF) {
-            if (ShowDebugLog) {
-                D.Log("{0} has been hit but incurred no damage.", FullName);
-            }
+            D.Log(ShowDebugLog, "{0} has been hit but incurred no damage.", DebugName);
             return;
         }
-        if (ShowDebugLog) {
-            D.Log("{0} has been hit. Taking {1:0.#} damage.", FullName, damage.Total);
-        }
+        D.Log(ShowDebugLog, "{0} has been hit. Taking {1:0.#} damage.", DebugName, damage.Total);
 
         float unusedDamageSeverity;
         bool isAlive = ApplyDamage(damage, out unusedDamageSeverity);

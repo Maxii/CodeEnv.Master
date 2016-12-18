@@ -32,7 +32,7 @@ namespace CodeEnv.Master.GameContent {
             : base(effectsClient) { }
 
         public override void StartEffect(EffectSequenceID effectSeqID) {
-            //D.Log("{0}.{1}.StartEffect({2}) called.", _effectsClient.FullName, typeof(MortalEffectsManager).Name, effectSeqID.GetValueName());
+            //D.Log("{0}.{1}.StartEffect({2}) called.", _effectsClient.DebugName, typeof(MortalEffectsManager).Name, effectSeqID.GetValueName());
             if (effectSeqID == EffectSequenceID.Dying) {
                 // separate explosionSFXGo from ItemGo so destruction of ItemGo does not destroy explosionSFX before it is completed
                 GameObject explosionSFXGo = _generalFactory.MakeAutoDestruct3DAudioSFXInstance("ExplosionSFX", _effectsClient.Position);

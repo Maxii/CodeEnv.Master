@@ -49,7 +49,7 @@ public class FpsReadout : AGuiLabelReadout {
 
     protected override void Start() {   // using Start to take out extra frame delay before Update starts running
         base.Start();
-        if (GameManager.Instance.CurrentSceneID == GameManager.SceneID.GameScene) {
+        if (GameManager.Instance.CurrentSceneID == SceneID.GameScene) {
             enabled = false;
             Subscribe();
         }

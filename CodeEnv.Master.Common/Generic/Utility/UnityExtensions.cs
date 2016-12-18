@@ -23,6 +23,7 @@ namespace CodeEnv.Master.Common {
     using System.Linq;
     using CodeEnv.Master.Common.LocalResources;
     using UnityEngine;
+    using UnityEngine.Profiling;
 
     /// <summary>
     /// Unity GameObject, Transform, Component and Collider extensions
@@ -349,9 +350,25 @@ namespace CodeEnv.Master.Common {
         /// than UnityConstants.AngleEqualityPrecision due to Unity floating point precision.</param>
         /// <returns></returns>
         public static bool IsSameDirection(this Vector3 sourceDir, Vector3 dir, float allowedDeviation = UnityConstants.AngleEqualityPrecision) {
+            float unusedActualDeviation;
+            return IsSameDirection(sourceDir.normalized, dir.normalized, out unusedActualDeviation, allowedDeviation);
+        }
+
+        /// <summary>
+        /// Compares the direction of 2 vectors for equality, ignoring their magnitude.
+        /// </summary>
+        /// <param name="sourceDir">The source direction.</param>
+        /// <param name="dir">The direction to compare the source to.</param>
+        /// <param name="actualDeviation">The resulting actual deviation.</param>
+        /// <param name="allowedDeviation">The allowed deviation in degrees. Cannot be smaller
+        /// than UnityConstants.AngleEqualityPrecision due to Unity floating point precision.</param>
+        /// <returns>
+        ///   <c>true</c> if [is same direction] as [the specified direction]; otherwise, <c>false</c>.
+        /// </returns>
+        public static bool IsSameDirection(this Vector3 sourceDir, Vector3 dir, out float actualDeviation, float allowedDeviation = UnityConstants.AngleEqualityPrecision) {
             D.Assert(!sourceDir.IsSameAs(Vector3.zero));
             D.Assert(!dir.IsSameAs(Vector3.zero));
-            return UnityUtility.AreDirectionsWithinTolerance(sourceDir.normalized, dir.normalized, allowedDeviation);
+            return UnityUtility.AreDirectionsWithinTolerance(sourceDir.normalized, dir.normalized, out actualDeviation, allowedDeviation);
         }
 
         /// <summary>
@@ -573,11 +590,15 @@ namespace CodeEnv.Master.Common {
         /// <param name="go">The go.</param>
         /// <returns></returns>
         public static C AddMissingComponent<C>(this GameObject go) where C : Component {
-            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", go);
             var c = go.GetComponent<C>();
             Profiler.EndSample();
             if (c == null) {
+
+                Profiler.BeginSample("Proper AddComponent allocation", go);
                 c = go.AddComponent<C>();
+                Profiler.EndSample();
+
             }
             return c;
         }

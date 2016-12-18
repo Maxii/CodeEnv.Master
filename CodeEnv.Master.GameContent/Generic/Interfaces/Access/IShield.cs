@@ -19,7 +19,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for access to a Shield[Monitor].
     /// </summary>
-    public interface IShield : IDebugable {
+    public interface IShield : IColliderMonitor, IDebugable {
 
         /// <summary>
         /// The owner of this Shield.

@@ -27,9 +27,17 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class WaitForHours : APausableKillableYieldInstruction {
 
-        private const string NameFormat = "{0} TargetDate: {1}";
+        private const string DebugNameFormat = "{0} TargetDate: {1}";
 
-        public string Name { get { return NameFormat.Inject(GetType().Name, _targetDate); } }
+        private string _debugName;
+        public string DebugName {
+            get {
+                if (_debugName == null) {
+                    _debugName = DebugNameFormat.Inject(GetType().Name, _targetDate);
+                }
+                return _debugName;
+            }
+        }
 
         public float DurationInHours { get { return _duration.TotalInHours; } }
 
@@ -85,14 +93,14 @@ namespace CodeEnv.Master.GameContent {
             }
             if (_durationRef.Value != _duration) {
                 // duration has changed
-                //D.Log("{0}.ReferenceValue is changing from {1} to {2}.", Name, _duration, _durationRef.Value);
+                //D.Log("{0}.ReferenceValue is changing from {1} to {2}.", DebugName, _duration, _durationRef.Value);
                 _duration = _durationRef.Value;
                 _targetDate = new GameDate(_startDate, _duration);
             }
         }
 
         public sealed override string ToString() {
-            return Name;
+            return DebugName;
         }
 
         #region Debug
@@ -101,8 +109,8 @@ namespace CodeEnv.Master.GameContent {
             var currentDate = _gameTime.CurrentDate;
             bool continueWaiting = currentDate < _targetDate;
             if (continueWaiting) {
-            D.Log("{0}.keepWaiting called. CurrentDate {1} < TargetDate {2}, Frame {3}, Hours {4:0.00}.",
-                Name, currentDate, _targetDate, Time.frameCount, DurationInHours);
+                D.Log("{0}.keepWaiting called. CurrentDate {1} < TargetDate {2}, Frame {3}, Hours {4:0.00}.",
+                    DebugName, currentDate, _targetDate, Time.frameCount, DurationInHours);
             }
             return continueWaiting;
         }

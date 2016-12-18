@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IWeaponMount {
 
-        string Name { get; }
+        string DebugName { get; }
 
         /// <summary>
         /// The location of the mounted weapon's muzzle in world space coordinates.

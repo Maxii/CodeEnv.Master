@@ -98,7 +98,7 @@ namespace CodeEnv.Master.GameContent {
                 if (colorCache.TryGetValue(color, out criteriaCache)) {
                     if (criteriaCache.TryGetValue(criteria, out info)) {
                         //D.LogBold("{0}: {1} has been reused from cache. SectionKey: {2}, ColorKey: {3}, CriteriaSequenceKey {4}.",
-                        //    Name, info, section.GetValueName(), color.GetValueName(), criteria.Select(c => c.GetValueName()).Concatenate());
+                        //    DebugName, info, section.GetValueName(), color.GetValueName(), criteria.Select(c => c.GetValueName()).Concatenate());
                         return true;
                     }
                 }
@@ -122,7 +122,7 @@ namespace CodeEnv.Master.GameContent {
         //                    IEnumerable<IconSelectionCriteria> criteriaKey = criteriaSequenceInCache;
         //                    info = criteriaCache[criteriaKey];
         //                    D.LogBold("{0}: {1} has been reused from cache. SectionKey: {2}, ColorKey: {3}, CriteriaSequenceKey {4}.",
-        //                        Name, info, section.GetValueName(), color.GetValueName(), criteria.Select(c => c.GetValueName()).Concatenate());
+        //                        DebugName, info, section.GetValueName(), color.GetValueName(), criteria.Select(c => c.GetValueName()).Concatenate());
         //                    return true;
         //                }
         //            }
@@ -148,7 +148,7 @@ namespace CodeEnv.Master.GameContent {
             if (!criteriaCache.ContainsKey(criteria)) {
                 criteriaCache.Add(criteria, info);
                 //D.Log("{0}: {1} has been added to cache. SectionKey: {2}, ColorKey: {3}, CriteriaSequenceKey: {4}.",
-                //    Name, info, section.GetValueName(), color.GetValueName(), criteria.Select(c => c.GetValueName()).Concatenate());
+                //    DebugName, info, section.GetValueName(), color.GetValueName(), criteria.Select(c => c.GetValueName()).Concatenate());
             }
         }
 

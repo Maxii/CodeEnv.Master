@@ -23,6 +23,7 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using MoreLinq;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
 /// AIntelItems that are Stars.
@@ -91,13 +92,13 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
         _obstacleZoneCollider.isTrigger = true;
         _obstacleZoneCollider.radius = Data.CloseOrbitInnerRadius;
 
-        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
         var rigidbody = _obstacleZoneCollider.gameObject.GetComponent<Rigidbody>();
         Profiler.EndSample();
 
         // Static trigger collider (no rigidbody) is OK as the ship's CollisionDetectionZone Collider has a kinematic rigidbody
         if (rigidbody != null) {
-            D.Warn("{0}.ObstacleZone has a Rigidbody it doesn't need.", FullName);
+            D.Warn("{0}.ObstacleZone has a Rigidbody it doesn't need.", DebugName);
         }
         InitializeObstacleDetourGenerator();
         InitializeDebugShowObstacleZone();
@@ -166,9 +167,7 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
         var iconInfo = RefreshIconInfo();
         if (DisplayMgr.IconInfo != iconInfo) {    // avoid property not changed warning
             UnsubscribeToIconEvents(DisplayMgr.Icon);
-            if (ShowDebugLog) {
-                D.Log("{0} changing IconInfo from {1} to {2}.", FullName, DisplayMgr.IconInfo, iconInfo);
-            }
+            D.Log(ShowDebugLog, "{0} changing IconInfo from {1} to {2}.", DebugName, DisplayMgr.IconInfo, iconInfo);
             DisplayMgr.IconInfo = iconInfo;
             SubscribeToIconEvents(DisplayMgr.Icon);
         }
@@ -258,7 +257,11 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
     }
 
     private void EnableDebugShowObstacleZone(bool toEnable) {
+
+        Profiler.BeginSample("Proper AddComponent allocation", gameObject);
         DrawColliderGizmo drawCntl = _obstacleZoneCollider.gameObject.AddMissingComponent<DrawColliderGizmo>();
+        Profiler.EndSample();
+
         drawCntl.Color = Color.red;
         drawCntl.enabled = toEnable;
     }
@@ -274,7 +277,7 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
         }
         if (_obstacleZoneCollider != null) {
 
-            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
             DrawColliderGizmo drawCntl = _obstacleZoneCollider.gameObject.GetComponent<DrawColliderGizmo>();
             Profiler.EndSample();
 
@@ -329,7 +332,10 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
 
     #region IShipOrbitable Members
 
-    private Rigidbody _highOrbitRigidbody;
+    /// <summary>
+    /// The high orbit rigidbody of an empty system. Can be null.
+    /// </summary>
+    private Rigidbody _emptySystemHighOrbitRigidbody;
 
     public void AssumeHighOrbit(IShip_Ltd ship, FixedJoint shipOrbitJoint) {
         if (_shipsInHighOrbit == null) {
@@ -338,20 +344,22 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
         _shipsInHighOrbit.Add(ship);
 
         Rigidbody highOrbitRigidbody;
-        if (_highOrbitRigidbody != null) {
+        if (_emptySystemHighOrbitRigidbody != null) {
             D.Assert(!ParentSystem.Planets.Any());
-            highOrbitRigidbody = _highOrbitRigidbody;
+            if (!_emptySystemHighOrbitRigidbody.gameObject.activeSelf) {
+                _emptySystemHighOrbitRigidbody.gameObject.SetActive(true);
+            }
+            highOrbitRigidbody = _emptySystemHighOrbitRigidbody;
         }
         else {
             if (ParentSystem.Planets.Any()) {
+                // Use the existing rigidbody used by the inner planet's celestial orbit simulator
                 PlanetItem innermostPlanet = ParentSystem.Planets.MinBy(p => Vector3.SqrMagnitude(p.Position - Position)) as PlanetItem;
                 highOrbitRigidbody = innermostPlanet.CelestialOrbitSimulator.OrbitRigidbody;
             }
             else {
-                highOrbitRigidbody = gameObject.AddMissingComponent<Rigidbody>();
-                highOrbitRigidbody.useGravity = false;
-                highOrbitRigidbody.isKinematic = true;
-                _highOrbitRigidbody = highOrbitRigidbody;
+                highOrbitRigidbody = GeneralFactory.Instance.MakeShipHighOrbitAttachPoint(gameObject);
+                _emptySystemHighOrbitRigidbody = highOrbitRigidbody;
             }
         }
         shipOrbitJoint.connectedBody = highOrbitRigidbody;
@@ -370,19 +378,24 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
         if (IsInHighOrbit(ship)) {
             var isRemoved = _shipsInHighOrbit.Remove(ship);
             D.Assert(isRemoved);
-            D.Log("{0} has left high orbit around {1}.", ship.FullName, FullName);
+            D.Log(ShowDebugLog, "{0} has left high orbit around {1}.", ship.DebugName, DebugName);
+            if (_emptySystemHighOrbitRigidbody != null) {
+                if (_shipsInHighOrbit.Count == Constants.Zero) {
+                    _emptySystemHighOrbitRigidbody.gameObject.SetActive(false);
+                }
+            }
             return;
         }
         if (IsInCloseOrbit(ship)) {
             D.AssertNotNull(_closeOrbitSimulator);
             var isRemoved = _shipsInCloseOrbit.Remove(ship);
             D.Assert(isRemoved);
-            D.Log("{0} has left close orbit around {1}.", ship.FullName, FullName);
+            D.Log(ShowDebugLog, "{0} has left close orbit around {1}.", ship.DebugName, DebugName);
             float shipDistance = Vector3.Distance(ship.Position, Position);
             float minOutsideOfOrbitCaptureRadius = Data.CloseOrbitOuterRadius - ship.CollisionDetectionZoneRadius_Debug;
             if (shipDistance > minOutsideOfOrbitCaptureRadius) {
                 D.Warn("{0} is leaving orbit of {1} but is not within {2:0.0000}. Ship's current orbit distance is {3:0.0000}.",
-                ship.FullName, FullName, minOutsideOfOrbitCaptureRadius, shipDistance);
+                ship.DebugName, DebugName, minOutsideOfOrbitCaptureRadius, shipDistance);
             }
             if (_shipsInCloseOrbit.Count == Constants.Zero) {
                 // Choose either to deactivate the OrbitSimulator or destroy it, but not both
@@ -391,7 +404,7 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
             }
             return;
         }
-        D.Error("{0}.HandleBrokeOrbit() called, but {1} not in orbit.", FullName, ship.FullName);
+        D.Error("{0}.HandleBrokeOrbit() called, but {1} not in orbit.", DebugName, ship.DebugName);
     }
 
     #endregion

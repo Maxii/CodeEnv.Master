@@ -178,10 +178,10 @@ namespace CodeEnv.Master.GameContent {
                     }
                 }
                 else {
-                    D.Warn("{0} reports missing {1}: {2}.", Name, typeof(ItemInfoID).Name, infoID.GetValueName());
+                    D.Warn("{0} reports missing {1}: {2}.", DebugName, typeof(ItemInfoID).Name, infoID.GetValueName());
                 }
             }
-            //D.Log("{0}.MakeInstance() returning {1}.", Name, csb.ToString());
+            //D.Log("{0}.MakeInstance() returning {1}.", DebugName, csb.ToString());
             return csb;
         }
 

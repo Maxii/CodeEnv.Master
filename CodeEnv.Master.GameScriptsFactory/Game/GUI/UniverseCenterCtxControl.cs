@@ -40,7 +40,7 @@ public class UniverseCenterCtxControl : ACtxControl {
 
     protected override Vector3 PositionForDistanceMeasurements { get { return _universeCenterMenuOperator.Position; } }
 
-    protected override string OperatorName { get { return _universeCenterMenuOperator.FullName; } }
+    protected override string OperatorName { get { return _universeCenterMenuOperator.DebugName; } }
 
     private UniverseCenterItem _universeCenterMenuOperator;
 

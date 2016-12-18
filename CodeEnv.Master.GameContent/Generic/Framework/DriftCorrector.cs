@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
 
         private const float CorrectionFactor = 50F;
 
-        private const string NameFormat = "{0}.{1}";
+        private const string DebugNameFormat = "{0}.{1}";
 
         /// <summary>
         /// The value that DriftVelocityPerSec.sqrMagnitude must 
@@ -44,11 +44,19 @@ namespace CodeEnv.Master.GameContent {
 
         private static GameTime _gameTime = GameTime.Instance;
 
+        public bool IsCorrectionUnderway { get { return _driftCorrectionJob != null; } }
+
         public string ClientName { private get; set; }
 
-        private bool IsDriftCorrectionEngaged { get { return _driftCorrectionJob != null && _driftCorrectionJob.IsRunning; } }
-
-        private string Name { get { return NameFormat.Inject(ClientName, typeof(DriftCorrector).Name); } }
+        private string _debugName;
+        private string DebugName {
+            get {
+                if (_debugName == null) {
+                    _debugName = DebugNameFormat.Inject(ClientName, typeof(DriftCorrector).Name);
+                }
+                return _debugName;
+            }
+        }
 
         /// <summary>
         /// The signed drift velocity (in units per second) in the lateral (x, + = right)
@@ -72,36 +80,38 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public void Engage() {
-            D.Assert(!IsDriftCorrectionEngaged);
-            string jobName = "{0}.DriftCorrectionJob".Inject(Name);
+            D.AssertNull(_driftCorrectionJob);
+
+            string jobName = "{0}.DriftCorrectionJob".Inject(DebugName);
             _driftCorrectionJob = _jobMgr.StartGameplayJob(OperateDriftCorrection(), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
-                if (!jobWasKilled) {
-                    //D.Log("{0}: DriftCorrection completed normally. Negating remaining drift.", Name);
-                    Vector3 localVelocity = _transform.InverseTransformDirection(_rigidbody.velocity);
-                    Vector3 localVelocityWithoutDrift = localVelocity.SetX(Constants.ZeroF);
-                    localVelocityWithoutDrift = localVelocityWithoutDrift.SetY(Constants.ZeroF);
-                    _rigidbody.velocity = _transform.TransformDirection(localVelocityWithoutDrift);
+                if (jobWasKilled) {
+                    // 12.12.16 An AssertNull(_jobRef) here can fail as the reference can refer to a new Job, created 
+                    // right after the old one was killed due to the 1 frame delay in execution of jobCompleted(). My attempts at allowing
+                    // the AssertNull to occur failed. I believe this is OK as _jobRef is nulled from KillXXXJob() and, if 
+                    // the reference is replaced by a new Job, then the old Job is no longer referenced which is the objective. Jobs Kill()ed
+                    // centrally by JobManager won't null the reference, but this only occurs during scene transitions.
                 }
                 else {
-                    //D.Log("{0}: DriftCorrection killed.", Name);
+                    NegateRemainingDrift();
+                    _driftCorrectionJob = null; // 12.16.16 moved after NegateRemainingDrift so IsCorrectionUnderway is accurate
                 }
             });
         }
 
         private IEnumerator OperateDriftCorrection() {
-            //D.Log("{0}: Initiating DriftCorrection.", Name);
+            //D.Log("{0}: Initiating DriftCorrection.", DebugName);
             Vector2 cumDriftDistanceDuringCorrection = Vector2.zero;
-            int fixedUpdateCount = 0;
+            //int fixedUpdateCount = 0;
             Vector2 currentDriftVelocityPerSec;
             while ((currentDriftVelocityPerSec = CurrentDriftVelocityPerSec).sqrMagnitude > DriftVelocityInUnitsPerSecSqrMagnitudeThreshold) {
-                //D.Log("{0}: DriftVelocity/sec at FixedUpdateCount {1} = {2}.", Name, fixedUpdateCount, currentDriftVelocityPerSec.ToPreciseString());
+                //D.Log("{0}: DriftVelocity/sec at FixedUpdateCount {1} = {2}.", DebugName, fixedUpdateCount, currentDriftVelocityPerSec.ToPreciseString());
                 ApplyCorrection(currentDriftVelocityPerSec);
                 cumDriftDistanceDuringCorrection += currentDriftVelocityPerSec * Time.fixedDeltaTime;
-                fixedUpdateCount++;
+                //fixedUpdateCount++;
                 yield return Yielders.WaitForFixedUpdate;
             }
             if (cumDriftDistanceDuringCorrection.sqrMagnitude > 0.02F) { // HACK > 0.14 magnitude
-                //D.Log("{0}: Cumulative Drift during Correction = {1}.", Name, cumDriftDistanceDuringCorrection.ToPreciseString());
+                //D.Log("{0}: Cumulative Drift during Correction = {1}.", DebugName, cumDriftDistanceDuringCorrection.ToPreciseString());
             }
         }
 
@@ -110,11 +120,27 @@ namespace CodeEnv.Master.GameContent {
             _rigidbody.AddRelativeForce(-driftVelocityPerSec.y * CorrectionFactor * Vector3.up, ForceMode.Force);
         }
 
+        private void NegateRemainingDrift() {
+            //D.Log("{0}: DriftCorrection completed normally. Negating remaining drift.", DebugName);
+            Vector3 localVelocity = _transform.InverseTransformDirection(_rigidbody.velocity);
+            Vector3 localVelocityWithoutDrift = localVelocity.SetX(Constants.ZeroF);
+            localVelocityWithoutDrift = localVelocityWithoutDrift.SetY(Constants.ZeroF);
+            _rigidbody.velocity = _transform.TransformDirection(localVelocityWithoutDrift);
+        }
+
         public void Disengage() {
-            if (IsDriftCorrectionEngaged) {
-                //D.Log("{0}: Disengaging DriftCorrection.", Name);
-                _driftCorrectionJob.Kill();
+            if (KillDriftCorrectionJob()) {
+                //D.Log("{0}: Disengaging DriftCorrection.", DebugName);
             }
+        }
+
+        private bool KillDriftCorrectionJob() {
+            if (_driftCorrectionJob != null) {
+                _driftCorrectionJob.Kill();
+                _driftCorrectionJob = null;
+                return true;
+            }
+            return false;
         }
 
         // 8.12.16 Handling pausing for all Jobs moved to JobManager
@@ -124,9 +150,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Cleanup() {
-            if (_driftCorrectionJob != null) {
-                _driftCorrectionJob.Dispose();
-            }
+            // 12.8.16 Job Disposal centralized in JobManager
+            KillDriftCorrectionJob();
         }
 
         #region IDisposable

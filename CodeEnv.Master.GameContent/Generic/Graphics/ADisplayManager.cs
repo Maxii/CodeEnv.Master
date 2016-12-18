@@ -25,11 +25,19 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class ADisplayManager : APropertyChangeTracking {
 
-        protected const string NameFormat = "{0}.{1}";
+        protected const string DebugNameFormat = "{0}.{1}";
 
         protected static readonly Color HiddenMeshColor = GameColor.Clear.ToUnityColor();
 
-        protected virtual string Name { get { return NameFormat.Inject(_trackedItemGo.name, GetType().Name); } }
+        private string _debugName;
+        protected virtual string DebugName {
+            get {
+                if (_debugName == null) {
+                    _debugName = DebugNameFormat.Inject(_trackedItemGo.name, GetType().Name);
+                }
+                return _debugName;
+            }
+        }
 
         private bool _isInMainCameraLOS = true;
         /// <summary>
@@ -104,7 +112,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void IsDisplayEnabledPropChangedHandler() {
-            //D.Log("{0}.IsDisplayEnabled changed to {1}.", Name, IsDisplayEnabled);
+            //D.Log("{0}.IsDisplayEnabled changed to {1}.", DebugName, IsDisplayEnabled);
             AssessComponentsToShowOrOperate();
         }
 
@@ -118,7 +126,7 @@ namespace CodeEnv.Master.GameContent {
         private void ShowPrimaryMesh(bool toShow) {
             // can't disable meshRenderer as lose OnMeshInCameraLOSChanged events
             if (__isPrimaryMeshShowing == toShow) {
-                //D.Log("{0} recording duplicate call to ShowPrimaryMesh({1}).", Name, toShow);
+                //D.Log("{0} recording duplicate call to ShowPrimaryMesh({1}).", DebugName, toShow);
                 return;
             }
             if (toShow) {
@@ -160,7 +168,7 @@ namespace CodeEnv.Master.GameContent {
         protected void __ValidateAndCorrectMeshLayer(GameObject meshGo) {
             if ((Layers)meshGo.layer != _meshLayer) {
                 D.Warn("{0} mesh {1} layer improperly set to {2}. Changing to {3}.",
-                    Name, meshGo.name, ((Layers)meshGo.layer).GetValueName(), _meshLayer.GetValueName());
+                    DebugName, meshGo.name, ((Layers)meshGo.layer).GetValueName(), _meshLayer.GetValueName());
                 UnityUtility.SetLayerRecursively(meshGo.transform, _meshLayer);
             }
         }

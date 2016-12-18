@@ -112,14 +112,14 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         IDisposable d;
         if (toSubscribe) {
             d = MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, IntVector3>(cc => cc.SectorID, CameraSectorIdPropChangedHandler);
-            D.Assert(!_subscriptions.Contains(d), DisplayName);
+            D.Assert(!_subscriptions.Contains(d), DebugName);
             _subscriptions.Add(d);
             UICamera.onMouseMove += MouseMovedEventHandler;
         }
         else {
             d = _subscriptions.Single(s => s as DisposePropertyChangedSubscription<MainCameraControl> != null);
             bool isRemoved = _subscriptions.Remove(d);
-            D.Assert(isRemoved, DisplayName);
+            D.Assert(isRemoved, DebugName);
             d.Dispose();
             UICamera.onMouseMove -= MouseMovedEventHandler;
         }
@@ -207,9 +207,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
 
     private void HandleHoveredChanged(bool isOver) {
         if (_viewMode == PlayerViewMode.SectorView) {
-            if (ShowDebugLog) {
-                D.Log("SectorExaminer calling Sector {0}.ShowHud({1}).", CurrentSectorID, isOver);
-            }
+            D.Log(ShowDebugLog, "SectorExaminer calling Sector {0}.ShowHud({1}).", CurrentSectorID, isOver);
             Sector sector;
             if (_sectorGrid.__TryGetSector(CurrentSectorID, out sector)) {
                 sector.ShowHud(isOver);
@@ -279,9 +277,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         if (toShow == IsSectorWireframeShowing) {
             return;
         }
-        if (ShowDebugLog) {
-            D.Log("{0}.ShowSectorWireframe({1})", GetType().Name, toShow);
-        }
+        //D.Log(ShowDebugLog, "{0}.ShowSectorWireframe({1})", GetType().Name, toShow);
 
         if (toShow) {
             if (_wireframe == null) {
@@ -296,9 +292,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     private void HighlightSectorContents(bool toShow) {
         IEnumerable<ISectorViewHighlightable> highlightablesInSector;
         if (GameManager.Instance.UserAIManager.Knowledge.TryGetSectorViewHighlightables(CurrentSectorID, out highlightablesInSector)) {
-            if (ShowDebugLog) {
-                D.Log("{0} found {1} to highlight in Sector {2}.", GetType().Name, highlightablesInSector.Select(h => h.DisplayName).Concatenate(), CurrentSectorID);
-            }
+            D.Log(ShowDebugLog, "{0} found {1} to highlight in Sector {2}.", GetType().Name, highlightablesInSector.Select(h => h.DebugName).Concatenate(), CurrentSectorID);
             highlightablesInSector.ForAll(highlightable => {
                 if (highlightable.IsSectorViewHighlightShowing != toShow) {
                     highlightable.ShowSectorViewHighlight(toShow);
@@ -366,7 +360,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
 
     public Vector3 Position { get { return transform.position; } }
 
-    public string DisplayName { get { return GetType().Name; } }
+    public string DebugName { get { return GetType().Name; } }
 
     #endregion
 

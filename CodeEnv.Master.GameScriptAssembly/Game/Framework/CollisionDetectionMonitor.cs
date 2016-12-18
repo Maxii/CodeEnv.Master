@@ -21,18 +21,25 @@ using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
 /// Detects ObstacleZoneColliders entering and exiting this ship's collision detection zone.
 /// </summary>
 public class CollisionDetectionMonitor : AColliderMonitor {
 
-    private const string NameFormat = "{0}.{1}";
+    private const string DebugNameFormat = "{0}.{1}";
 
-    public override string FullName {
+    private string _debugName;
+    public override string DebugName {
         get {
-            if (ParentItem == null) { return base.FullName; }
-            return NameFormat.Inject(ParentItem.FullName, GetType().Name);
+            if (ParentItem == null) {
+                return base.DebugName;
+            }
+            if (_debugName == null) {
+                _debugName = DebugNameFormat.Inject(ParentItem.DebugName, GetType().Name);
+            }
+            return _debugName;
         }
     }
 
@@ -65,12 +72,12 @@ public class CollisionDetectionMonitor : AColliderMonitor {
     /// Can also be another ship's collision detection collider.</param>
     void OnTriggerEnter(Collider obstacleZoneCollider) {
         if (obstacleZoneCollider == _collider) {
-            D.Warn("{0} entering its own CollisionDetectionCollider?!", FullName);
+            D.Warn("{0} entering its own CollisionDetectionCollider?!", DebugName);
             return;
         }
         IObstacle obstacle = obstacleZoneCollider.gameObject.GetSafeFirstInterfaceInParents<IObstacle>(excludeSelf: true);
         if (_gameMgr.IsPaused) {
-            D.Warn("{0}.OnTriggerEnter() tripped by {1} while paused.", FullName, obstacle.FullName);
+            D.Warn("{0}.OnTriggerEnter() tripped by {1} while paused.", DebugName, obstacle.DebugName);
             RecordObstacleEnteringWhilePaused(obstacle);
             return;
         }
@@ -84,12 +91,12 @@ public class CollisionDetectionMonitor : AColliderMonitor {
     /// Can also be another ship's collision detection collider.</param>
     void OnTriggerExit(Collider obstacleZoneCollider) {
         if (obstacleZoneCollider == _collider) {
-            D.Warn("{0} exiting its own CollisionDetectionCollider?!", FullName);
+            D.Warn("{0} exiting its own CollisionDetectionCollider?!", DebugName);
             return;
         }
         IObstacle obstacle = obstacleZoneCollider.gameObject.GetSafeFirstInterfaceInParents<IObstacle>(excludeSelf: true);
         if (_gameMgr.IsPaused) {
-            D.Warn("{0}.OnTriggerExit() tripped by {1} while paused.", FullName, obstacle.FullName);
+            D.Warn("{0}.OnTriggerExit() tripped by {1} while paused.", DebugName, obstacle.DebugName);
             RecordObstacleExitingWhilePaused(obstacle);
             return;
         }
@@ -102,7 +109,7 @@ public class CollisionDetectionMonitor : AColliderMonitor {
         base.HandleParentItemSet();
         RangeDistance = ParentItem.Radius * 2F;
         if (RangeDistance > TempGameValues.LargestShipCollisionDetectionZoneRadius) {
-            D.Warn("{0}: CollisionDetectionZoneRadius {1:0.##} > {2:0.##}.", FullName, RangeDistance, TempGameValues.LargestShipCollisionDetectionZoneRadius);
+            D.Warn("{0}: CollisionDetectionZoneRadius {1:0.##} > {2:0.##}.", DebugName, RangeDistance, TempGameValues.LargestShipCollisionDetectionZoneRadius);
         }
     }
 
@@ -126,7 +133,7 @@ public class CollisionDetectionMonitor : AColliderMonitor {
         }
         if (CheckForPreviousPausedExitOf(obstacle)) {
             // while paused, previously exited and now entered so record to take action when unpaused
-            D.Warn("{0} removing entering obstacle {1} already recorded as exited while paused.", FullName, obstacle.FullName);
+            D.Warn("{0} removing entering obstacle {1} already recorded as exited while paused.", DebugName, obstacle.DebugName);
             _exitingObstaclesEncounteredWhilePaused.Remove(obstacle);
         }
         _enteringObstaclesEncounteredWhilePaused.Add(obstacle);
@@ -138,7 +145,7 @@ public class CollisionDetectionMonitor : AColliderMonitor {
         }
         if (CheckForPreviousPausedEntryOf(obstacle)) {
             // while paused, previously entered and now exited so eliminate record as no action should be taken when unpaused
-            D.Warn("{0} removing exiting obstacle {1} already recorded as entered while paused.", FullName, obstacle.FullName);
+            D.Warn("{0} removing exiting obstacle {1} already recorded as entered while paused.", DebugName, obstacle.DebugName);
             _enteringObstaclesEncounteredWhilePaused.Remove(obstacle);
             return;
         }
@@ -146,7 +153,7 @@ public class CollisionDetectionMonitor : AColliderMonitor {
     }
 
     private void HandleObstaclesEncounteredWhilePaused() {
-        //D.Log(ShowDebugLog, "{0} handling obstacles encountered while paused, if any.", Name);
+        //D.Log(ShowDebugLog, "{0} handling obstacles encountered while paused, if any.", DebugName);
         __ValidateObstaclesEncounteredWhilePaused();
         if (!_enteringObstaclesEncounteredWhilePaused.IsNullOrEmpty()) {
             _enteringObstaclesEncounteredWhilePaused.ForAll(obs => ParentItem.HandlePendingCollisionWith(obs));
@@ -196,7 +203,7 @@ public class CollisionDetectionMonitor : AColliderMonitor {
 
     protected override void CompleteResetForReuse() {
         base.CompleteResetForReuse();
-        D.Error("{0} does not support reuse.", FullName);
+        D.Error("{0} does not support reuse.", DebugName);
     }
 
     protected override void Cleanup() {
@@ -233,7 +240,7 @@ public class CollisionDetectionMonitor : AColliderMonitor {
         if (debugValues != null) {
             debugValues.showShipCollisionDetectionZones -= ShowDebugCollisionDetectionZonesChangedEventHandler;
         }
-        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
         DrawColliderGizmo drawCntl = gameObject.GetComponent<DrawColliderGizmo>();
         Profiler.EndSample();
 

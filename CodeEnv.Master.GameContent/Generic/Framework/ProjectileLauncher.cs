@@ -44,8 +44,6 @@ namespace CodeEnv.Master.GameContent {
 
         protected new ProjectileWeaponStat Stat { get { return base.Stat as ProjectileWeaponStat; } }
 
-        private IList<IOrdnance> _activeFiredOrdnanceNew;  // OPTIMIZE not currently used
-
         /// <summary>
         /// Initializes a new instance of the <see cref="ProjectileLauncher"/> class.
         /// </summary>
@@ -53,17 +51,11 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="name">The optional unique name for this equipment. If not provided, the name embedded in the stat will be used.</param>
         public ProjectileLauncher(ProjectileWeaponStat stat, string name = null)
             : base(stat, name) {
-            _activeFiredOrdnanceNew = new List<IOrdnance>();
         }
 
-        protected override void RecordFiredOrdnance(IOrdnance ordnanceFired) {
-            _activeFiredOrdnanceNew.Add(ordnanceFired);
-        }
+        protected override void RecordFiredOrdnance(IOrdnance ordnanceFired) { }
 
-        protected override void RemoveFiredOrdnanceFromRecord(IOrdnance ordnance) {
-            var isRemoved = _activeFiredOrdnanceNew.Remove(ordnance);
-            D.Assert(isRemoved);
-        }
+        protected override void RemoveFiredOrdnanceFromRecord(IOrdnance ordnance) { }
 
         public override void CheckActiveOrdnanceTargeting() { } // Projectile ordnance cannot be remotely terminated
 

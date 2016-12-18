@@ -40,7 +40,7 @@ public class PlanetoidCtxControl : ACtxControl {
 
     protected sealed override Vector3 PositionForDistanceMeasurements { get { return _planetoidMenuOperator.Position; } }
 
-    protected sealed override string OperatorName { get { return _planetoidMenuOperator.FullName; } }
+    protected sealed override string OperatorName { get { return _planetoidMenuOperator.DebugName; } }
 
     protected APlanetoidItem _planetoidMenuOperator;
 

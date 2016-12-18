@@ -89,7 +89,7 @@ namespace CodeEnv.Master.GameContent {
             string homeSystemName = unusedHomeSystemNames.First();
             bool isRemoved = _unusedProperNames.Remove(homeSystemName);
             if (!isRemoved) {
-                D.Error("{0} could not validate {1}'s HomeSystemName {2}.", Name, player.Species.GetValueName(), homeSystemName);
+                D.Error("{0} could not validate {1}'s HomeSystemName {2}.", DebugName, player.Species.GetValueName(), homeSystemName);
             }
             return homeSystemName;
         }
@@ -116,7 +116,7 @@ namespace CodeEnv.Master.GameContent {
         [Obsolete]
         public void MarkNameAsUsed(string systemName) {
             bool isRemoved = _unusedProperNames.Remove(systemName);
-            D.Assert(isRemoved, "{0} did not find SystemName {1} in unused system names.", Name, systemName);
+            D.Assert(isRemoved, "{0} did not find SystemName {1} in unused system names.", DebugName, systemName);
         }
 
         public void Reset() {

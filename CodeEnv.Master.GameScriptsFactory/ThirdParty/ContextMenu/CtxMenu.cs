@@ -21,7 +21,7 @@ using System;
 using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using UnityEngine;
-
+using UnityEngine.Profiling;
 
 /// <summary>
 /// Context Menu. Similar in functionality to NGUI UIPopupList, but better
@@ -722,7 +722,7 @@ public class CtxMenu : AMonoBase {
                         if (_itemData[i].background != null) {
                             _itemData[i].background.color = backgroundColorDisabled;
 
-                            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+                            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
                             var collider = _itemData[i].background.GetComponent<Collider>();
                             Profiler.EndSample();
 
@@ -734,7 +734,7 @@ public class CtxMenu : AMonoBase {
                     else {
                         if (_itemData[i].highlight != null) {
 
-                            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+                            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
                             var collider = _itemData[i].highlight.GetComponent<Collider>();
                             Profiler.EndSample();
 
@@ -760,7 +760,7 @@ public class CtxMenu : AMonoBase {
                         if (_itemData[i].background != null) {
                             _itemData[i].background.color = backgroundColor;
 
-                            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+                            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
                             var collider = _itemData[i].background.GetComponent<Collider>();
                             Profiler.EndSample();
 
@@ -779,7 +779,7 @@ public class CtxMenu : AMonoBase {
                     else {
                         if (_itemData[i].highlight != null) {
 
-                            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+                            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
                             var collider = _itemData[i].highlight.GetComponent<Collider>();
                             Profiler.EndSample();
 
@@ -1369,7 +1369,7 @@ public class CtxMenu : AMonoBase {
             return false;
         }
 
-        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
         CtxMenu menu = go.GetComponent<CtxMenu>();
         Profiler.EndSample();
 

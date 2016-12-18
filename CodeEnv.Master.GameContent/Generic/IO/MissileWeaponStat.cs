@@ -68,7 +68,7 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(turnRate > Constants.ZeroF);
             D.Assert(courseUpdateFreq > Constants.ZeroF);
             if (maxSteeringInaccuracy > 5F) {
-                D.Warn("{0} MaxSteeringInaccuracy of {1:0.#} is very high.", Name, MaxSteeringInaccuracy);
+                D.Warn("{0} MaxSteeringInaccuracy of {1:0.#} is very high.", DebugName, MaxSteeringInaccuracy);
             }
             TurnRate = turnRate;
             CourseUpdateFrequency = courseUpdateFreq;

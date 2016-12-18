@@ -32,9 +32,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         private static readonly float HudRefreshPeriod = GeneralSettings.Instance.HudRefreshPeriod;
 
-        public bool IsHudShowing { get { return IsHudRefreshJobRunning; } }
-
-        private bool IsHudRefreshJobRunning { get { return _hudRefreshJob != null && _hudRefreshJob.IsRunning; } }
+        public bool IsHudShowing { get { return _hudRefreshJob != null; } }
 
         private APublisher _publisher;
         private Job _hudRefreshJob;
@@ -55,7 +53,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void Show(bool toShow) {
             if (toShow) {
-                if (!IsHudRefreshJobRunning) {
+                if (_hudRefreshJob == null) {
                     var itemHud = References.HoveredItemHudWindow;
                     string jobName = "{0}.HudRefreshJob".Inject(GetType().Name);
                     // Note: This job refreshes the values in the HUD as item values can change when the game is not paused.
@@ -69,10 +67,15 @@ namespace CodeEnv.Master.GameContent {
                 }
             }
             else {
-                if (IsHudRefreshJobRunning) {
-                    _hudRefreshJob.Kill();
-                }
+                KillHudRefreshJob();
                 References.HoveredItemHudWindow.Hide();
+            }
+        }
+
+        private void KillHudRefreshJob() {
+            if (_hudRefreshJob != null) {
+                _hudRefreshJob.Kill();
+                _hudRefreshJob = null;
             }
         }
 
@@ -81,9 +84,8 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         private void Cleanup() {
-            if (_hudRefreshJob != null) {
-                _hudRefreshJob.Dispose();
-            }
+            // 12.8.16 Job Disposal centralized in JobManager
+            KillHudRefreshJob();
         }
 
         public override string ToString() {

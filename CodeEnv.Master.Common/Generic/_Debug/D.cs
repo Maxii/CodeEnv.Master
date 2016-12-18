@@ -16,7 +16,9 @@
 ////#define DEBUG_ERROR   // Show Errors and Asserts only
 ////#define DEBUG_LOG
 
+#if DEBUG_ERROR
 #define UNITY_ASSERTIONS
+#endif
 
 namespace CodeEnv.Master.Common {
 
@@ -78,8 +80,6 @@ namespace CodeEnv.Master.Common {
             Debug.LogFormat(context, BoldFormat.Inject(formattedMsg), paramList);
         }
 
-        #region Obsolete
-
         /// <summary>
         /// If <c>condition</c> is <c>true</c>, sends the composite message format string to the Unity.Debug log.
         /// <remarks>Warning: Allocates memory on the heap whether condition is satisfied or not.</remarks>
@@ -90,7 +90,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="formattedMsg">The formatted text message.</param>
         /// <param name="paramList">The parameters to insert into the composite message string.</param>
         [System.Diagnostics.Conditional("DEBUG_LOG")]
-        [System.Obsolete("Use external condition check then Log() instead.")]
+        //[System.Obsolete("Use external condition check then Log() instead.")]
         public static void Log(bool condition, string formattedMsg, params object[] paramList) {
             if (condition) {
                 Debug.LogFormat(formattedMsg, paramList);
@@ -107,7 +107,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="formattedMsg">The formatted text message.</param>
         /// <param name="paramList">The parameters to insert into the composite message string.</param>
         [System.Diagnostics.Conditional("DEBUG_LOG")]
-        [System.Obsolete("Use external condition check then LogBold() instead.")]
+        //[System.Obsolete("Use external condition check then LogBold() instead.")]
         public static void LogBold(bool condition, string formattedMsg, params object[] paramList) {
             if (condition) {
                 Debug.LogFormat(BoldFormat.Inject(formattedMsg), paramList);
@@ -125,7 +125,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="formattedMsg">The formatted text message.</param>
         /// <param name="paramList">The parameter list.</param>
         [System.Diagnostics.Conditional("DEBUG_LOG")]
-        [System.Obsolete("Use external condition check then LogContext() instead.")]
+        //[System.Obsolete("Use external condition check then LogContext() instead.")]
         public static void LogContext(bool condition, Object context, string formattedMsg, params object[] paramList) {
             if (condition) {
                 Debug.LogFormat(context, formattedMsg, paramList);
@@ -150,13 +150,16 @@ namespace CodeEnv.Master.Common {
             }
         }
 
+
+        #region Obsolete
+
         /// <summary>
         /// Sends the specified message object (typically a composite message string) to the Unity.Debug log.
         /// </summary>
         /// <param name="obj">A System.Object to use ToString() or a composite message format string.</param>
         /// <param name="paramList">The parameters to insert into the composite message format string.</param>
         [System.Diagnostics.Conditional("DEBUG_LOG")]
-        [System.Obsolete("Use Log(formattedMsg, paramList instead.")]
+        //[System.Obsolete("Use Log(formattedMsg, paramList instead.")]
         public static void Log(object obj, params object[] paramList) {
             string objText = obj as string;
             if (objText != null) {

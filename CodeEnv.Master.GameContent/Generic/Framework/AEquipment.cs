@@ -28,6 +28,9 @@ namespace CodeEnv.Master.GameContent {
 
         public event EventHandler isDamagedChanged;
 
+        /// <summary>
+        /// The name of this piece of equipment for display purposes.
+        /// </summary>
         public virtual string Name { get; private set; }
 
         public AtlasID ImageAtlasID { get { return Stat.ImageAtlasID; } }
@@ -68,6 +71,7 @@ namespace CodeEnv.Master.GameContent {
         protected AEquipmentStat Stat { get; private set; }
 
         protected IJobManager _jobMgr;
+        protected IGameManager _gameMgr;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AEquipment"/> class.
@@ -78,17 +82,18 @@ namespace CodeEnv.Master.GameContent {
             Stat = stat;
             Name = name != null ? name : stat.Name;
             _jobMgr = References.JobManager;
+            _gameMgr = References.GameManager;
         }
 
         #region Event and Property Change Handlers
 
         private void IsActivatedPropChangedHandler() {
-            //D.Log("{0}.IsActivated changed to {1}.", Name, IsActivated);
+            //D.Log("{0}.IsActivated changed to {1}.", DebugName, IsActivated);
             AssessIsOperational();
         }
 
         private void IsDamagedPropChangedHandler() {
-            //D.Log("{0}.IsDamaged changed to {1}.", Name, IsDamaged);
+            //D.Log("{0}.IsDamaged changed to {1}.", DebugName, IsDamaged);
             OnIsDamagedChanged();
             AssessIsOperational();
         }
@@ -98,7 +103,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected virtual void IsOperationalPropChangedHandler() {
-            //D.Log("{0}.IsOperational changed to {1}.", Name, IsOperational);
+            //D.Log("{0}.IsOperational changed to {1}.", DebugName, IsOperational);
             OnIsOperationalChanged();
         }
 

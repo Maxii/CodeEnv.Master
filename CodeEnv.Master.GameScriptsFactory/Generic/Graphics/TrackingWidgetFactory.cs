@@ -21,6 +21,7 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
 /// Singleton Factory that creates pre-configured ITrackingWidgets.
@@ -56,7 +57,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         trackingWidget.Target = trackedTgt;
         trackingWidget.Placement = placement;
         trackingWidget.SetShowDistance(min, max);
-        //D.Log("{0} made a {1} for {2}.", Name, typeof(UITrackingLabel).Name, target.DisplayName);
+        //D.Log("{0} made a {1} for {2}.", DebugName, typeof(UITrackingLabel).Name, trackedTgt.DebugName);
         return trackingWidget;
     }
 
@@ -81,7 +82,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         trackingWidget.Target = trackedTgt;
         trackingWidget.Placement = placement;
         ////trackingSprite.SetShowDistance(min, max);
-        //D.Log("{0} made a {1} for {2}.", Name, typeof(UITrackingSprite).Name, target.DisplayName);
+        //D.Log("{0} made a {1} for {2}.", DebugName, typeof(UITrackingSprite).Name, trackedTgt.DebugName);
         return trackingWidget;
     }
 
@@ -98,11 +99,14 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         GameObject trackingPrefabGo = RequiredPrefabs.Instance.worldTrackingSprite;
         GameObject trackingWidgetGo = NGUITools.AddChild(trackedTgt.transform.gameObject, trackingPrefabGo);
 
+        Profiler.BeginSample("Proper AddComponent allocation", (trackedTgt as Component).gameObject);
         var trackingSprite = trackingWidgetGo.AddComponent<ResponsiveTrackingSprite>();   // AddComponent() runs Awake before returning
+        Profiler.EndSample();
+
         trackingSprite.Target = trackedTgt;
         trackingSprite.IconInfo = iconInfo;
         ////trackingSprite.SetShowDistance(min, max);
-        //D.Log("{0} made a {1} for {2}.", Name, typeof(ResponsiveTrackingSprite).Name, target.DisplayName);
+        //D.Log("{0} made a {1} for {2}.", DebugName, typeof(ResponsiveTrackingSprite).Name, trackedTgt.DebugName);
         return trackingSprite;
     }
 
@@ -120,11 +124,14 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         Layers trackingPrefabLayer = (Layers)trackingPrefabGo.layer;
         NGUITools.SetLayer(trackingWidgetGo, (int)trackingPrefabLayer);
 
+        Profiler.BeginSample("Proper AddComponent allocation", (trackedTgt as Component).gameObject);
         var trackingWidget = trackingWidgetGo.AddComponent<VariableSizeTrackingLabel>();   // AddComponent() runs Awake before returning
+        Profiler.EndSample();
+
         trackingWidget.Target = trackedTgt;
         trackingWidget.Placement = placement;
         ////trackingSprite.SetShowDistance(min);
-        //D.Log("{0} made a {1} for {2}.", Name, typeof(VariableSizeTrackingSprite).Name, target.DisplayName);
+        //D.Log("{0} made a {1} for {2}.", DebugName, typeof(VariableSizeTrackingSprite).Name, trackedTgt.DebugName);
         return trackingWidget;
     }
 
@@ -144,12 +151,15 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         Layers trackingPrefabLayer = (Layers)trackingPrefabGo.layer;
         NGUITools.SetLayer(trackingWidgetGo, (int)trackingPrefabLayer);
 
+        Profiler.BeginSample("Proper AddComponent allocation", (trackedTgt as Component).gameObject);
         var trackingWidget = trackingWidgetGo.AddComponent<VariableSizeTrackingSprite>();  // AddComponent() runs Awake before returning
+        Profiler.EndSample();
+
         trackingWidget.AtlasID = atlasID;
         trackingWidget.Target = trackedTgt;
         trackingWidget.Placement = placement;
         ////trackingSprite.SetShowDistance(min);
-        //D.Log("{0} made a {1} for {2}.", Name, typeof(VariableSizeTrackingSprite).Name, target.DisplayName);
+        //D.Log("{0} made a {1} for {2}.", DebugName, typeof(VariableSizeTrackingSprite).Name, trackedTgt.DebugName);
         return trackingWidget;
     }
 
@@ -163,11 +173,14 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         GameObject trackingPrefabGo = RequiredPrefabs.Instance.worldTrackingSprite;
         GameObject trackingWidgetGo = NGUITools.AddChild(trackedTgt.transform.gameObject, trackingPrefabGo);
 
+        Profiler.BeginSample("Proper AddComponent allocation", (trackedTgt as Component).gameObject);
         var trackingSprite = trackingWidgetGo.AddComponent<ConstantSizeTrackingSprite>();  // AddComponent() runs Awake before returning
+        Profiler.EndSample();
+
         trackingSprite.Target = trackedTgt;
         trackingSprite.IconInfo = iconInfo;
         ////trackingSprite.SetShowDistance(min, max);
-        //D.Log("{0} made a {1} for {2}.", Name, typeof(ConstantSizeTrackingSprite).Name, target.DisplayName);
+        //D.Log("{0} made a {1} for {2}.", DebugName, typeof(ConstantSizeTrackingSprite).Name, trackedTgt.DebugName);
         return trackingSprite;
     }
 
@@ -185,11 +198,14 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         Layers trackingPrefabLayer = (Layers)trackingPrefabGo.layer;
         NGUITools.SetLayer(trackingWidgetGo, (int)trackingPrefabLayer);
 
+        Profiler.BeginSample("Proper AddComponent allocation", (trackedTgt as Component).gameObject);
         var trackingWidget = trackingWidgetGo.AddComponent<ConstantSizeTrackingLabel>();   // AddComponent() runs Awake before returning
+        Profiler.EndSample();
+
         trackingWidget.Target = trackedTgt;
         trackingWidget.Placement = placement;
         ////trackingWidget.SetShowDistance(min, max);
-        //D.Log("{0} made a {1} for {2}.", Name, typeof(ConstantSizeTrackingSprite).Name, target.DisplayName);
+        //D.Log("{0} made a {1} for {2}.", DebugName, typeof(ConstantSizeTrackingSprite).Name, trackedTgt.DebugName);
         return trackingWidget;
     }
 
@@ -201,7 +217,11 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     /// <returns></returns>
     public ICameraLosChangedListener MakeInvisibleCameraLosChangedListener(IWidgetTrackable trackedTgt, Layers listenerLayer) {
         GameObject listenerGo = new GameObject(InvisibleListenerName);
+
+        Profiler.BeginSample("Proper AddComponent allocation", trackedTgt.transform.gameObject);
         ICameraLosChangedListener listener = listenerGo.AddComponent<CameraLosChangedListener>();
+        Profiler.EndSample();
+
         UnityUtility.AttachChildToParent(listenerGo, trackedTgt.transform.gameObject);
         listenerGo.layer = (int)listenerLayer;
         return listener;
@@ -223,7 +243,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         Layers targetLayer = (Layers)trackedTgt.transform.gameObject.layer;
         Layers prefabLayer = (Layers)trackingWidgetPrefab.layer;
         if (prefabLayer != Layers.UI && prefabLayer != Layers.TransparentFX && prefabLayer != targetLayer) {
-            D.Warn("{0}: Target {1} of Layer {2} being assigned TrackingWidget of Layer {3}.", Name, trackedTgt.transform.name, targetLayer.GetValueName(), prefabLayer.GetValueName());
+            D.Warn("{0}: Target {1} of Layer {2} being assigned TrackingWidget of Layer {3}.", DebugName, trackedTgt.DebugName, targetLayer.GetValueName(), prefabLayer.GetValueName());
         }
     }
 

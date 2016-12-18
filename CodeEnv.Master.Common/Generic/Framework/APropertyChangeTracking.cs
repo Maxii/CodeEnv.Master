@@ -27,6 +27,7 @@ namespace CodeEnv.Master.Common {
     using System;
     using System.Collections.Generic;
     using System.ComponentModel;
+    using UnityEngine.Profiling;
 
     /// <summary>
     /// Abstract base class for classes that wish to communicate changes to their properties. Capabilities include 1) knowing when one or more of their properties have changed ,and 2)
@@ -49,13 +50,16 @@ namespace CodeEnv.Master.Common {
         /// <param name="onChanged">Optional local method to call when the property is changed.</param>
         /// <param name="onChanging">Optional local method to call before the property is changed. The proposed new value is provided as the parameter.</param>
         protected void SetProperty<T>(ref T backingStore, T value, string propertyName, Action onChanged = null, Action<T> onChanging = null) {
+            Profiler.BeginSample("Debug SetProperty Checks");
             __VerifyCallerIsProperty(propertyName);
             if (EqualityComparer<T>.Default.Equals(backingStore, value)) {
                 if (!CheckForDestroyedMonobehaviourInterface(backingStore)) {
                     __TryWarn<T>(backingStore, value, propertyName);
+                    Profiler.EndSample();
                     return;
                 }
             }
+            Profiler.EndSample();
             //D.Log("SetProperty called. {0} changing to {1}.", propertyName, value);
 
             if (onChanging != null) { onChanging(value); }

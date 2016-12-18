@@ -35,7 +35,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public sealed override string ToString() {
-            return _toStringFormat.Inject(GetType().Name, Weapon.FullName, EnemyTarget.FullName);
+            return _toStringFormat.Inject(GetType().Name, Weapon.DebugName, EnemyTarget.DebugName);
         }
 
     }

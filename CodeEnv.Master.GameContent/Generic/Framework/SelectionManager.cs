@@ -40,7 +40,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected sealed override void Initialize() {
-            //D.Log("{0}.Initialize() called.", Name);
+            //D.Log("{0}.Initialize() called.", DebugName);
             _inputMgr = References.InputManager;
             _sfxMgr = References.SFXManager;
             Subscribe();

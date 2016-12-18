@@ -97,7 +97,9 @@ namespace CodeEnv.Master.Common {
         /// Presents the Range in readable format.
         /// </summary>
         /// <returns>String representation of the Range</returns>
-        public override string ToString() { return _toStringFormat.Inject(Minimum, Maximum); }
+        public override string ToString() {
+            return _toStringFormat.Inject(Minimum, Maximum);
+        }
 
 
     }

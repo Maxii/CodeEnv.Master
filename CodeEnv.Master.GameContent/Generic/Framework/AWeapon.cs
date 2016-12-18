@@ -39,7 +39,7 @@ namespace CodeEnv.Master.GameContent {
         public bool IsWeaponDiscernibleToUser {
             get { return _isWeaponDiscernibleToUser; }
             set {
-                //D.Log("{0}.IsWeaponDiscernibleToUser set to {1}.", Name, value);
+                //D.Log(ShowDebugLog, "{0}.IsWeaponDiscernibleToUser set to {1}.", DebugName, value);
                 SetProperty<bool>(ref _isWeaponDiscernibleToUser, value, "IsWeaponDiscernibleToUser");
             }
         }
@@ -60,8 +60,8 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public override string FullName {
-            get { return RangeMonitor != null ? _fullNameFormat.Inject(RangeMonitor.FullName, Name) : Name; }
+        public override string DebugName {
+            get { return RangeMonitor != null ? DebugNameFormat.Inject(RangeMonitor.DebugName, Name) : Name; }
         }
 
         public WDVCategory DeliveryVehicleCategory { get { return DeliveryVehicleStrength.Category; } }
@@ -69,6 +69,8 @@ namespace CodeEnv.Master.GameContent {
         public WDVStrength DeliveryVehicleStrength { get { return Stat.DeliveryVehicleStrength; } }
 
         public DamageStrength DamagePotential { get { return Stat.DamagePotential; } }
+
+        public IUnitElement Element { get { return RangeMonitor.ParentItem; } }
 
         public float ReloadPeriod {
             get {
@@ -78,6 +80,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public Player Owner { get { return RangeMonitor.Owner; } }
+
+        public bool ShowDebugLog { get { return RangeMonitor != null ? RangeMonitor.ShowDebugLog : true; } }
 
         protected new AWeaponStat Stat { get { return base.Stat as AWeaponStat; } }
 
@@ -114,14 +118,10 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<bool>(ref _isFiringSequenceUnderway, value, "IsFiringSequenceUnderway", IsFiringSequenceUnderwayPropChangedHandler); }
         }
 
-        private bool IsReloadJobRunning { get { return _reloadJob != null && _reloadJob.IsRunning; } }
-
-        private bool IsCheckForFiringSolutionsJobRunning { get { return _checkForFiringSolutionsJob != null && _checkForFiringSolutionsJob.IsRunning; } }
-
         /// <summary>
         /// The list of enemy targets in range that qualify as targets of this weapon.
         /// </summary>
-        protected IList<IElementAttackable> _qualifiedEnemyTargets;
+        private HashSet<IElementAttackable> _qualifiedEnemyTargets;
 
         /// <summary>
         /// Lookup table for CombatResults keyed by the target of this weapon.
@@ -133,8 +133,6 @@ namespace CodeEnv.Master.GameContent {
         private Job _reloadJob;
         private Job _checkForFiringSolutionsJob;
         private GameTime _gameTime;
-        private IGameManager _gameMgr;
-        private IList<IDisposable> _subscriptions;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AWeapon" /> class.
@@ -144,8 +142,7 @@ namespace CodeEnv.Master.GameContent {
         public AWeapon(AWeaponStat stat, string name = null)
             : base(stat, name) {
             _gameTime = GameTime.Instance;
-            _gameMgr = References.GameManager;
-            _qualifiedEnemyTargets = new List<IElementAttackable>();
+            _qualifiedEnemyTargets = new HashSet<IElementAttackable>();
             _combatResults = new Dictionary<IElementAttackable, CombatResult>();
         }
 
@@ -176,11 +173,11 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="enemyTarget">The enemy target.</param>
         /// <param name="isInRange">if set to <c>true</c> [is in range].</param>
         public void HandleEnemyTargetInRangeChanged(IElementAttackable enemyTarget, bool isInRange) {
-            //D.Log("{0} received HandleEnemyTargetInRangeChanged. EnemyTarget: {1}, InRange: {2}.", Name, enemyTarget.FullName, isInRange);
+            //D.Log(ShowDebugLog, "{0} received HandleEnemyTargetInRangeChanged. EnemyTarget: {1}, InRange: {2}.", DebugName, enemyTarget.DebugName, isInRange);
             if (isInRange) {
                 if (IsQualifiedEnemyTarget(enemyTarget)) {
                     if (_qualifiedEnemyTargets.Contains(enemyTarget)) {
-                        D.Error("{0} found {1} already being tracked as enemy.", FullName, enemyTarget.FullName);
+                        D.Error("{0} found {1} already being tracked as enemy.", DebugName, enemyTarget.DebugName);
                     }
                     _qualifiedEnemyTargets.Add(enemyTarget);
                 }
@@ -200,11 +197,15 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Confirms the provided enemyTarget is in range PRIOR to launching the weapon's ordnance.
+        /// <remarks>12.15.16 Got a HandleFiringInitiated error so added _qualifiedEnemyTgt criteria as 
+        /// WeaponMount range confirmation is not exactly the same thing. I'm theorizing that the target was
+        /// barely in range of the mount (measured from the mount's hub), but just outside of the Weapon's 
+        /// Monitor range implying that the target had already been removed via OnTriggerExit().</remarks>
         /// </summary>
         /// <param name="enemyTarget">The target.</param>
         /// <returns></returns>
         public bool ConfirmInRangeForLaunch(IElementAttackable enemyTarget) {
-            return WeaponMount.ConfirmInRangeForLaunch(enemyTarget);
+            return _qualifiedEnemyTargets.Contains(enemyTarget) && WeaponMount.ConfirmInRangeForLaunch(enemyTarget);
         }
 
         /// <summary>
@@ -232,14 +233,14 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="ordnanceFired">The ordnance fired.</param>
         public virtual void HandleFiringInitiated(IElementAttackable targetFiredOn, IOrdnance ordnanceFired) {
             if (!IsOperational) {
-                D.Error("{0} fired at {1} while not operational.", Name, targetFiredOn.FullName);
+                D.Error("{0} fired at {1} while not operational.", Name, targetFiredOn.DebugName);
             }
 
             if (!_qualifiedEnemyTargets.Contains(targetFiredOn)) {
-                D.Error("{0} fired at {1} but not in list of targets.", Name, targetFiredOn.FullName);
+                D.Error("{0} fired at {1} but not in list of targets.", Name, targetFiredOn.DebugName);
             }
 
-            //D.Log("{0}.HandleFiringInitiated(Target: {1}, Ordnance: {2}) called.", Name, targetFiredOn.FullName, ordnanceFired.Name);
+            //D.Log(ShowDebugLog, "{0}.HandleFiringInitiated(Target: {1}, Ordnance: {2}) called.", DebugName, targetFiredOn.DebugName, ordnanceFired.Name);
             RecordFiredOrdnance(ordnanceFired);
             ordnanceFired.deathOneShot += OrdnanceDeathEventHandler;
 
@@ -257,7 +258,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="ordnanceFired">The ordnance fired.</param>
         public virtual void HandleFiringComplete(IOrdnance ordnanceFired) {
             D.Assert(!_isLoaded);
-            //D.Log("{0}.HandleFiringComplete({1}) called.", Name, ordnanceFired.Name);
+            //D.Log(ShowDebugLog, "{0}.HandleFiringComplete({1}) called.", DebugName, ordnanceFired.Name);
             IsFiringSequenceUnderway = false;
             InitiateReloadCycle();
         }
@@ -281,13 +282,12 @@ namespace CodeEnv.Master.GameContent {
 
         private void OrdnanceDeathEventHandler(object sender, EventArgs e) {
             IOrdnance terminatedOrdnance = sender as IOrdnance;
-            if (terminatedOrdnance != null) {
-                RemoveFiredOrdnanceFromRecord(terminatedOrdnance);
-            }
+            D.AssertNotNull(terminatedOrdnance, sender.ToString());
+            RemoveFiredOrdnanceFromRecord(terminatedOrdnance);
         }
 
         protected override void IsOperationalPropChangedHandler() {
-            //D.Log("{0}.IsOperational changed to {1}.", Name, IsOperational);
+            //D.Log(ShowDebugLog, "{0}.IsOperational changed to {1}.", DebugName, IsOperational);
             if (IsOperational) {
                 // just became operational so if not already loaded, reload
                 if (!_isLoaded) {
@@ -296,9 +296,7 @@ namespace CodeEnv.Master.GameContent {
             }
             else {
                 // just lost operational status so kill any reload in process
-                if (IsReloadJobRunning) {
-                    _reloadJob.Kill();
-                }
+                KillReloadJob();
             }
             AssessReadiness();
             OnIsOperationalChanged();
@@ -321,7 +319,7 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         private void HandleReloaded() {
-            //D.Log("{0} completed reload.", Name);
+            //D.Log(ShowDebugLog, "{0} completed reload.", DebugName);
             _isLoaded = true;
             AssessReadiness();
         }
@@ -331,7 +329,6 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="ordnanceFired">The ordnance fired.</param>
         protected abstract void RecordFiredOrdnance(IOrdnance ordnanceFired);
-
 
         /// <summary>
         /// Removes the fired ordnance from the record as having been fired.
@@ -344,14 +341,30 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void InitiateReloadCycle() {
-            //D.Log("{0} is initiating its reload cycle. Duration: {1:0.#} hours.", Name, ReloadPeriod);
-            D.Assert(!IsReloadJobRunning, Name);
-            string jobName = "{0}.ReloadJob".Inject(FullName);
+            D.AssertNull(_reloadJob);
+            //D.Log(ShowDebugLog, "{0} is initiating its reload cycle. Duration: {1:0.#} hours.", DebugName, ReloadPeriod);
+
+            string jobName = "{0}.ReloadJob".Inject(DebugName);
             _reloadJob = _jobMgr.WaitForHours(ReloadPeriod, jobName, waitFinished: (jobWasKilled) => {
-                if (!jobWasKilled) {
+                if (jobWasKilled) {
+                    // 12.12.16 An AssertNull(_jobRef) here can fail as the reference can refer to a new Job, created 
+                    // right after the old one was killed due to the 1 frame delay in execution of jobCompleted(). My attempts at allowing
+                    // the AssertNull to occur failed. I believe this is OK as _jobRef is nulled from KillXXXJob() and, if 
+                    // the reference is replaced by a new Job, then the old Job is no longer referenced which is the objective. Jobs Kill()ed
+                    // centrally by JobManager won't null the reference, but this only occurs during scene transitions.
+                }
+                else {
+                    _reloadJob = null;
                     HandleReloaded();
                 }
             });
+        }
+
+        private void KillReloadJob() {
+            if (_reloadJob != null) {
+                _reloadJob.Kill();
+                _reloadJob = null;
+            }
         }
 
         private void AssessReadiness() {
@@ -390,12 +403,12 @@ namespace CodeEnv.Master.GameContent {
             KillFiringSolutionsCheckJob();
             D.Assert(IsReady);
             D.Assert(IsAnyEnemyInRange);
-            //D.Log("{0}: Launching FiringSolutionsCheckJob.", Name);
+            //D.Log(ShowDebugLog, "{0}: Launching FiringSolutionsCheckJob.", DebugName);
             IList<WeaponFiringSolution> firingSolutions;
-            string jobName = "{0}.CheckForFiringSolutionsJob".Inject(FullName);
+            string jobName = "{0}.CheckForFiringSolutionsJob".Inject(DebugName);
             _checkForFiringSolutionsJob = _jobMgr.RecurringWaitForHours(FiringSolutionCheckPeriod, jobName, waitMilestone: () => {
                 if (TryGetFiringSolutions(out firingSolutions)) {
-                    //D.Log("{0}.CheckForFiringSolutions() Job has uncovered one or more firing solutions.", Name);
+                    //D.Log(ShowDebugLog, "{0}.CheckForFiringSolutions() Job has uncovered one or more firing solutions.", DebugName);
                     IsFiringSequenceUnderway = true;
                     OnReadyToFire(firingSolutions);
                     KillFiringSolutionsCheckJob();
@@ -404,9 +417,10 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void KillFiringSolutionsCheckJob() {
-            if (IsCheckForFiringSolutionsJobRunning) {
-                //D.Log("{0} FiringSolutionsCheckJob is being killed.", Name);
+            if (_checkForFiringSolutionsJob != null) {
+                //D.Log(ShowDebugLog, "{0} FiringSolutionsCheckJob is being killed.", DebugName);
                 _checkForFiringSolutionsJob.Kill();
+                _checkForFiringSolutionsJob = null;
             }
         }
 
@@ -430,10 +444,10 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="target">The target.</param>
         private void RecordShotFired(IElementAttackable target) {
-            string targetName = target.DisplayName;
+            string targetName = target.DebugName;
             CombatResult combatResult;
             if (!_combatResults.TryGetValue(target, out combatResult)) {
-                combatResult = new CombatResult(FullName, targetName);
+                combatResult = new CombatResult(DebugName, targetName);
                 _combatResults.Add(target, combatResult);
             }
             combatResult.ShotsTaken++;
@@ -482,12 +496,9 @@ namespace CodeEnv.Master.GameContent {
         // 8.12.16 Handling pausing for all Jobs moved to JobManager
 
         private void Cleanup() {
-            if (_reloadJob != null) {   // can be null if element is destroyed before Running
-                _reloadJob.Dispose();
-            }
-            if (_checkForFiringSolutionsJob != null) {
-                _checkForFiringSolutionsJob.Dispose();
-            }
+            // 12.8.16 Job Disposal centralized in JobManager
+            KillReloadJob();
+            KillFiringSolutionsCheckJob();
         }
 
         public sealed override string ToString() { return Stat.ToString(); }

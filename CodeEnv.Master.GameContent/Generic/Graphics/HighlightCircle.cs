@@ -60,8 +60,6 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<List<float>>(ref _widths, value, "Widths"); }
         }
 
-        private bool IsDrawCirclesJobRunning { get { return _drawCirclesJob != null && _drawCirclesJob.IsRunning; } }
-
         private bool[] _circlesToShow;
         private int _segmentsPerCircle = 30;
         private int _circleSeparation = 3;
@@ -90,7 +88,6 @@ namespace CodeEnv.Master.GameContent {
             //InitializeCamera();
         }
 
-        // Note: no pausing of the drawCirclesJob as I want circles to adjust to camera moves when paused
 
         /// <summary>
         /// Initializes the camera so highlight circles appear behind UI elements.
@@ -99,9 +96,9 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         private void InitializeCamera() {
             if (VectorLine.canvas == null) {
-                D.Log("Initializing HighlightCircle Camera and RenderMode.");
+                //D.Log("Initializing HighlightCircle Camera and RenderMode.");
                 VectorLine.SetCanvasCamera(References.GuiCameraControl.GuiCamera);  // sets up the canvas
-                D.Log("{0}: Canvas RenderMode is now {1}.", LineName, VectorLine.canvas.renderMode.GetValueName());
+                //D.Log("{0}: Canvas RenderMode is now {1}.", LineName, VectorLine.canvas.renderMode.GetValueName());
                 //VectorLine.canvas.renderMode = RenderMode.ScreenSpaceCamera;    // SetCanvasCamera() sets mode to ScreenSpaceCamera
                 VectorLine.canvas.planeDistance = 1;
                 VectorLine.canvas.sortingOrder = -1;
@@ -123,17 +120,15 @@ namespace CodeEnv.Master.GameContent {
 
             if (toShow) {
                 string jobName = "{0}.DrawCirclesJob".Inject(LineName);
+                // Note: no pausing  as I want circles to adjust to camera moves when paused
                 _drawCirclesJob = _drawCirclesJob ?? _jobMgr.StartGameplayJob(DrawCircles(), jobName, isPausable: false, jobCompleted: (jobWasKilled) => {
                     D.Assert(jobWasKilled);
-                    //TODO
                 });
                 AddCircle(index);
                 _line.active = true;
             }
             else {
-                if (IsDrawCirclesJobRunning) {
-                    RemoveCircle(index);
-                }
+                RemoveCircle(index);
             }
         }
 
@@ -177,9 +172,9 @@ namespace CodeEnv.Master.GameContent {
         private void RemoveCircle(int index) {
             if (_circlesToShow[index]) {
                 _circlesToShow[index] = false;
-                D.Log("Circle {0} removed from {1}.", index, LineName);
+                //D.Log("Circle {0} removed from {1}.", index, LineName);
 
-                //_line.ZeroPoints();   // ZeroPoints() removed in Vectrosity 4.0
+                ////_line.ZeroPoints();   // ZeroPoints() removed in Vectrosity 4.0
                 // HACK my replacement for ZeroPoints() as whole class needs to be re-designed for Vectrosity 4.0
                 _line.points2.Clear();
                 _line.Draw();   // clears the screen of all circles. Coroutine will refill with showing circles
@@ -189,9 +184,8 @@ namespace CodeEnv.Master.GameContent {
                 InitializeWidths();
 
                 if (_circlesToShow.Where(cShowing => cShowing == true).IsNullOrEmpty()) {
-                    D.Log("Line {0} no longer active.", LineName);
-                    _drawCirclesJob.Kill();
-                    _drawCirclesJob = null;
+                    //D.Log("Line {0} no longer active.", LineName);
+                    KillDrawCirclesJob();
                     _line.active = false;
                 }
             }
@@ -247,11 +241,17 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        private void KillDrawCirclesJob() {
+            if (_drawCirclesJob != null) {
+                _drawCirclesJob.Kill();
+                _drawCirclesJob = null;
+            }
+        }
+
         protected override void Cleanup() {
             base.Cleanup();
-            if (_drawCirclesJob != null) {
-                _drawCirclesJob.Dispose();
-            }
+            // 12.8.16 Job Disposal centralized in JobManager
+            KillDrawCirclesJob();
         }
 
         public override string ToString() {

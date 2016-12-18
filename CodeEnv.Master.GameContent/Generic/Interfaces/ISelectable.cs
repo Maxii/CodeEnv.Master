@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
 
         bool IsSelected { get; set; }
 
-        string DisplayName { get; }
+        string DebugName { get; }
 
     }
 }

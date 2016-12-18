@@ -20,6 +20,7 @@ using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
 /// Formation station for a ship in a Fleet formation.
@@ -54,9 +55,7 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
     private IShip _assignedShip;
     public IShip AssignedShip {
         get { return _assignedShip; }
-        set {
-            SetProperty<IShip>(ref _assignedShip, value, "AssignedShip");
-        }
+        set { SetProperty<IShip>(ref _assignedShip, value, "AssignedShip"); }
     }
 
     public float DistanceToStation { get { return Vector3.Distance(Position, AssignedShip.Position); } }
@@ -77,12 +76,12 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
     }
 
     private void OnSpawned() {
-        //D.Log("{0}.OnSpawned() called.", FullName);
+        //D.Log("{0}.OnSpawned() called.", DebugName);
         InitializeDebugShowFleetFormationStation();
     }
 
     private void OnDespawned() {
-        //D.Log("{0}.OnDespawned() called.", FullName);
+        //D.Log("{0}.OnDespawned() called.", DebugName);
         StationInfo = default(FormationStationSlotInfo);
         D.AssertNull(AssignedShip);
         CleanupDebugShowFleetFormationStation();
@@ -124,7 +123,7 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
         if (debugValues != null) {
             debugValues.showFleetFormationStations -= ShowDebugFleetFormationStationsChangedEventHandler;
         }
-        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
         DrawSphereGizmo drawCntl = gameObject.GetComponent<DrawSphereGizmo>();
         Profiler.EndSample();
 
@@ -137,16 +136,16 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
 
     #region INavigable Members
 
-    public string DisplayName {
+    public string Name {
         get {
-            string nameText = AssignedShip != null ? AssignedShip.DisplayName : "NoAssignedShip";
+            string nameText = AssignedShip != null ? AssignedShip.Name : "NoAssignedShip";
             return NameFormat.Inject(nameText, GetType().Name);
         }
     }
 
-    public string FullName {
+    public string DebugName {
         get {
-            string nameText = AssignedShip != null ? AssignedShip.FullName : "NoAssignedShip";
+            string nameText = AssignedShip != null ? AssignedShip.DebugName : "NoAssignedShip";
             return NameFormat.Inject(nameText, GetType().Name);
         }
     }

@@ -41,7 +41,7 @@ public class BaseCtxControl_AI : ACtxControl {
 
     protected override Vector3 PositionForDistanceMeasurements { get { return _baseMenuOperator.Position; } }
 
-    protected override string OperatorName { get { return _baseMenuOperator.FullName; } }
+    protected override string OperatorName { get { return _baseMenuOperator.DebugName; } }
 
     private AUnitBaseCmdItem _baseMenuOperator;
 

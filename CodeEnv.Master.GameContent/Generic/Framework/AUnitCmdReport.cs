@@ -198,7 +198,7 @@ namespace CodeEnv.Master.GameContent {
         //    UnitCurrentHitPoints = elementReports.Select(e => er.CurrentHitPoints).NullableSum();
         //    //elementReports.ForAll(e => {
         //    //    D.Log("{0}.{1}.{2} IntelCoverage = {3}, CurrentHitPts = {4}, MaxHitPts = {5}, Health = {6}.", 
-        //    //        cmdData.FullName, e.GetType().Name, e.Name, e.IntelCoverage.GetValueName(), e.CurrentHitPoints, e.MaxHitPoints, e.Health);
+        //    //        cmdData.DebugName, e.GetType().Name, e.Name, e.IntelCoverage.GetValueName(), e.CurrentHitPoints, e.MaxHitPoints, e.Health);
         //    //});
 
         //    UnitHealth = CalcUnitHealth(UnitCurrentHitPoints, UnitMaxHitPoints);

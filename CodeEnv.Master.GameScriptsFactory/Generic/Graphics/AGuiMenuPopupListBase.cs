@@ -24,9 +24,17 @@ using CodeEnv.Master.Common;
 /// </summary>
 public abstract class AGuiMenuPopupListBase : AGuiMenuElement {
 
-    private const string NameFormat = "{0}.{1}";
+    private const string DebugNameFormat = "{0}.{1}";
 
-    public string Name { get { return NameFormat.Inject(GetType().Name, ElementID.GetValueName()); } }
+    private string _debugName;
+    public string DebugName {
+        get {
+            if (_debugName == null) {
+                _debugName = DebugNameFormat.Inject(GetType().Name, ElementID.GetValueName());
+            }
+            return _debugName;
+        }
+    }
 
     /// <summary>
     /// The currently selected value of the PopupList as a string.

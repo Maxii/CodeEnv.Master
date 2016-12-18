@@ -27,16 +27,21 @@ namespace CodeEnv.Master.GameContent {
         public static ParticleScalerOptions defaultOptions = new ParticleScalerOptions();
 
         public static void ScaleByTransform(ParticleSystem particles, float scale, bool includeChildren = true) {
-            particles.scalingMode = ParticleSystemScalingMode.Local;
+            var mainModule = particles.main;  // particles.scalingMode = ParticleSystemScalingMode.Local; Deprecated in Unity 5.5
+
+            mainModule.scalingMode = ParticleSystemScalingMode.Local;
             particles.transform.localScale = particles.transform.localScale * scale;
-            particles.gravityModifier *= scale;
+            mainModule.gravityModifierMultiplier *= scale;    //particles.gravityModifier *= scale; Deprecated in Unity 5.5
             if (includeChildren) {
                 var children = particles.GetComponentsInChildren<ParticleSystem>(includeInactive: true);    // my includeInactive addition
                 for (var i = children.Length; i-- > 0;) {
-                    if (children[i] == particles) { continue; }
-                    children[i].scalingMode = ParticleSystemScalingMode.Local;
+                    if (children[i] == particles) {
+                        continue;
+                    }
+                    var childMainModule = children[i].main;
+                    childMainModule.scalingMode = ParticleSystemScalingMode.Local;   //children[i].scalingMode = ParticleSystemScalingMode.Local; Deprecated in Unity 5.5
                     children[i].transform.localScale = children[i].transform.localScale * scale;
-                    children[i].gravityModifier *= scale;
+                    childMainModule.gravityModifierMultiplier *= scale; // children[i].gravityModifier *= scale; Deprecated in Unity 5.5
                 }
             }
         }
@@ -53,12 +58,17 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private static void ScaleSystem(ParticleSystem particles, float scale, bool scalePosition, ParticleScalerOptions options = null) {
-            if (options == null) { options = defaultOptions; }
-            if (scalePosition) { particles.transform.localPosition *= scale; }
+            if (options == null) {
+                options = defaultOptions;
+            }
+            if (scalePosition) {
+                particles.transform.localPosition *= scale;
+            }
 
-            particles.startSize *= scale;
-            particles.gravityModifier *= scale;
-            particles.startSpeed *= scale;
+            var mainModule = particles.main;
+            mainModule.startSizeMultiplier *= scale;    //particles.startSize *= scale; Deprecated in Unity 5.5
+            mainModule.gravityModifierMultiplier *= scale;  //particles.gravityModifier *= scale;   Deprecated in Unity 5.5
+            mainModule.startSpeedMultiplier *= scale;   //particles.startSpeed *= scale;    Deprecated in Unity 5.5
 
             if (options.shape) {
                 var shape = particles.shape;
@@ -92,7 +102,7 @@ namespace CodeEnv.Master.GameContent {
         // *****************************************************************************************************
 
         private static ParticleSystem.MinMaxCurve ScaleMinMaxCurve(ParticleSystem.MinMaxCurve curve, float scale) {
-            curve.curveScalar *= scale;
+            curve.curveMultiplier *= scale; //curve.curveScalar *= scale; Deprecated in Unity 5.5
             curve.constantMin *= scale;
             curve.constantMax *= scale;
             ScaleCurve(curve.curveMin, scale);

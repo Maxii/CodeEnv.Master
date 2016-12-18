@@ -136,6 +136,30 @@ namespace CodeEnv.Master.GameContent {
         Job WaitForHours(float hours, string jobName, Action<bool> waitFinished);
 
         /// <summary>
+        /// Debug version that waits the designated number of hours during GamePlay, then executes the provided delegate.
+        /// Automatically accounts for Pause and GameSpeed changes. Used with workaround to accommodate
+        /// the 1 frame gap between when the coroutine finishes (or is killed) and when waitFinished fires.
+        /// Usage:
+        /// WaitForHours(hours, jobName, isInterveningJobRef, waitFinished: (jobWasKilled) =&gt; {
+        /// Code to execute after the wait;
+        /// });
+        /// WARNING: This method uses a coroutine Job. Accordingly, after being called it will
+        /// immediately return which means the code you have following it will execute
+        /// before the code assigned to the waitFinished delegate.
+        /// </summary>
+        /// <param name="hours">The hours to wait.</param>
+        /// <param name="jobName">Name of the job.</param>
+        /// <param name="isInterveningJobRef">Reference&lt;bool&gt; to allow the WaitForHours coroutine to toggle it to false 
+        /// when it starts running.</param>
+        /// <param name="waitFinished">The delegate to execute once the wait is finished. The
+        /// signature is waitFinished(jobWasKilled).</param>
+        /// <returns>
+        /// A reference to the Job so it can be killed before it finishes, if needed.
+        /// </returns>
+        [Obsolete]
+        Job __WaitForHours(float hours, string jobName, Reference<bool> isInterveningJobRef, Action<bool> waitFinished);
+
+        /// <summary>
         /// Waits the designated (but variable) duration during GamePlay, then executes the provided waitMilestone delegate and repeats.
         /// Automatically accounts for Pause and GameSpeed changes.
         /// Usage:

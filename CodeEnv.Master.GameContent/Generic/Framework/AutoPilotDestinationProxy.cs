@@ -24,9 +24,17 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class AutoPilotDestinationProxy {
 
-        private const string NameFormat = "{0}.{1}";
+        private const string DebugNameFormat = "{0}.{1}";
 
-        public string FullName { get { return NameFormat.Inject(Destination.FullName, typeof(AutoPilotDestinationProxy).Name); } }
+        private string _debugName;
+        public string DebugName {
+            get {
+                if (_debugName == null) {
+                    _debugName = DebugNameFormat.Inject(Destination.DebugName, typeof(AutoPilotDestinationProxy).Name);
+                }
+                return _debugName;
+            }
+        }
 
         public Vector3 Position { get { return Destination.Position + _destOffset; } }
 

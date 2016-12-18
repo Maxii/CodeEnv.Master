@@ -50,9 +50,9 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<IActiveCountermeasureRangeMonitor>(ref _rangeMonitor, value, "RangeMonitor"); }
         }
 
-        public override string FullName {
+        public override string DebugName {
             get {
-                return RangeMonitor != null ? _fullNameFormat.Inject(RangeMonitor.FullName, Name) : Name;
+                return RangeMonitor != null ? DebugNameFormat.Inject(RangeMonitor.DebugName, Name) : Name;
             }
         }
 
@@ -69,9 +69,9 @@ namespace CodeEnv.Master.GameContent {
 
         public float InterceptAccuracy { get { return Stat.InterceptAccuracy; } }
 
-        protected new ActiveCountermeasureStat Stat { get { return base.Stat as ActiveCountermeasureStat; } }
+        protected bool ShowDebugLog { get { return RangeMonitor != null ? RangeMonitor.ShowDebugLog : true; } }
 
-        private bool IsReloadJobRunning { get { return _reloadJob != null && _reloadJob.IsRunning; } }
+        protected new ActiveCountermeasureStat Stat { get { return base.Stat as ActiveCountermeasureStat; } }
 
         /// <summary>
         /// The list of IInterceptableOrdnance threats in range that qualify as targets of this countermeasure.
@@ -114,7 +114,7 @@ namespace CodeEnv.Master.GameContent {
             var threat = firingSolution.Threat;
             HandleFiringInitiated(threat);
 
-            D.Log("{0} is firing on {1}. Qualified Threats = {2}.", FullName, threat.FullName, _qualifiedThreats.Select(t => t.FullName).Concatenate());
+            //D.Log(ShowDebugLog, "{0} is firing on {1}. Qualified Threats = {2}.", DebugName, threat.DebugName, _qualifiedThreats.Select(t => t.DebugName).Concatenate());
             bool isThreatHit = false;
             float hitChance = InterceptAccuracy;
             if (RandomExtended.Chance(hitChance)) {
@@ -140,7 +140,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="threat">The ordnance threat.</param>
         /// <param name="isInRange">if set to <c>true</c> [is in range].</param>
         public void HandleThreatInRangeChanged(IInterceptableOrdnance threat, bool isInRange) {
-            D.Log("{0} received HandleThreatInRangeChanged. Threat: {1}, InRange: {2}.", Name, threat.FullName, isInRange);
+            //D.Log(ShowDebugLog, "{0} received HandleThreatInRangeChanged. Threat: {1}, InRange: {2}.", DebugName, threat.DebugName, isInRange);
             if (isInRange) {
                 if (CheckIfQualified(threat)) {
                     D.Assert(!_qualifiedThreats.Contains(threat));
@@ -163,7 +163,7 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(firingSolutions.Count >= Constants.One);    // must have one or more firingSolutions to be ready to fire
             var bestFiringSolution = PickBestFiringSolution(firingSolutions);
             bool isThreatHit = Fire(bestFiringSolution);
-            //D.Log(isThreatHit, "{0} has hit threat {1}.", Name, bestFiringSolution.Threat.FullName);
+            //D.Log(ShowDebugLog && isThreatHit, "{0} has hit threat {1}.", DebugName, bestFiringSolution.Threat.DebugName);
         }
 
         /// <summary>
@@ -173,7 +173,7 @@ namespace CodeEnv.Master.GameContent {
         /// this was a public method called by the fired ordnance.</remarks>
         /// <param name="threatFiredOn">The target fired on.</param>
         private void HandleFiringInitiated(IInterceptableOrdnance threatFiredOn) {
-            D.Assert(IsOperational, Name);
+            D.Assert(IsOperational, DebugName);
             D.Assert(_qualifiedThreats.Contains(threatFiredOn));
 
             _isLoaded = false;
@@ -202,7 +202,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override void IsOperationalPropChangedHandler() {
-            //D.Log("{0}.IsOperational changed to {1}.", Name, IsOperational);
+            //D.Log(ShowDebugLog, "{0}.IsOperational changed to {1}.", DebugName, IsOperational);
             if (IsOperational) {
                 // just became operational so if not already loaded, reload
                 if (!_isLoaded) {
@@ -211,9 +211,7 @@ namespace CodeEnv.Master.GameContent {
             }
             else {
                 // just lost operational status so kill any reload in process
-                if (IsReloadJobRunning) {
-                    _reloadJob.Kill();
-                }
+                KillReloadJob();
             }
             AssessReadiness();
             OnIsOperationalChanged();
@@ -222,7 +220,7 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         private void HandleReloaded() {
-            //D.Log("{0} completed reload.", Name);
+            //D.Log(ShowDebugLog, "{0} completed reload.", DebugName);
             _isLoaded = true;
             AssessReadiness();
         }
@@ -230,16 +228,25 @@ namespace CodeEnv.Master.GameContent {
         private bool CheckIfQualified(IInterceptableOrdnance threat) {
             bool isQualified = InterceptStrengths.Select(intS => intS.Category).Contains(threat.DeliveryVehicleStrength.Category);
             string isQualMsg = isQualified ? "is qualified" : "is not qualified";
-            D.Log("{0} {1} to intercept {2} which uses a {3} WDV.", Name, isQualMsg, threat.FullName, threat.DeliveryVehicleStrength.Category.GetValueName());
+            //D.Log(ShowDebugLog, "{0} {1} to intercept {2} which uses a {3} WDV.", Name, isQualMsg, threat.DebugName, threat.DeliveryVehicleStrength.Category.GetValueName());
             return isQualified;
         }
 
         private void InitiateReloadCycle() {
-            //D.Log("{0} is initiating its reload cycle. Duration: {1} hours.", Name, ReloadPeriod);
-            D.Assert(!IsReloadJobRunning, Name);
+            //D.Log(ShowDebugLog, "{0} is initiating its reload cycle. Duration: {1} hours.", DebugName, ReloadPeriod);
+            D.AssertNull(_reloadJob);
+
             string jobName = "{0}.ReloadJob".Inject(Name);
             _reloadJob = _jobMgr.WaitForHours(ReloadPeriod, jobName, waitFinished: (jobWasKilled) => {
-                if (!jobWasKilled) {
+                if (jobWasKilled) {
+                    // 12.12.16 An AssertNull(_jobRef) here can fail as the reference can refer to a new Job, created 
+                    // right after the old one was killed due to the 1 frame delay in execution of jobCompleted(). My attempts at allowing
+                    // the AssertNull to occur failed. I believe this is OK as _jobRef is nulled from KillXXXJob() and, if 
+                    // the reference is replaced by a new Job, then the old Job is no longer referenced which is the objective. Jobs Kill()ed
+                    // centrally by JobManager won't null the reference, but this only occurs during scene transitions.
+                }
+                else {
+                    _reloadJob = null;
                     HandleReloaded();
                 }
             });
@@ -283,14 +290,20 @@ namespace CodeEnv.Master.GameContent {
             else {
                 // With one or more qualified threats in range, there should always be a firing solution
                 // This is because all ActiveCMs now always can bear on their target
-                D.Error("{0} was unable to find any FiringSolutions.", Name);
+                D.Error("{0} was unable to find any FiringSolutions.", DebugName);
+            }
+        }
+
+        private void KillReloadJob() {
+            if (_reloadJob != null) {
+                _reloadJob.Kill();
+                _reloadJob = null;
             }
         }
 
         private void Cleanup() {
-            if (_reloadJob != null) {   // can be null if element is destroyed before Running
-                _reloadJob.Dispose();
-            }
+            // 12.8.16 Job Disposal centralized in JobManager
+            KillReloadJob();
         }
 
         public sealed override string ToString() { return Stat.ToString(); }
@@ -406,7 +419,7 @@ namespace CodeEnv.Master.GameContent {
         //    KillFiringSolutionsCheckJob();
         //    D.Assert(IsReady);
         //    D.Assert(IsAnyThreatInRange);
-        //    //D.Log("{0}: Launching FiringSolutionsCheckJob.", Name);
+        //    //D.Log("{0}: Launching FiringSolutionsCheckJob.", DebugName);
         //    _checkForFiringSolutionsJob = new Job(CheckForFiringSolutions(), toStart: true, onJobComplete: (jobWasKilled) => {
         //        //TODO
         //    });
@@ -423,7 +436,7 @@ namespace CodeEnv.Master.GameContent {
         //        IList<CountermeasureFiringSolution> firingSolutions;
         //        if (TryGetFiringSolutions(out firingSolutions)) {
         //            hasFiringSolutions = true;
-        //            //D.Log("{0}.CheckForFiringSolutions() Job has uncovered one or more firing solutions.", Name);
+        //            //D.Log("{0}.CheckForFiringSolutions() Job has uncovered one or more firing solutions.", DebugName);
         //            HandleReadyToFire(firingSolutions);
         //        }
         //        // OPTIMIZE can also handle this changeable waitDuration by subscribing to a GameSpeed change
@@ -434,7 +447,7 @@ namespace CodeEnv.Master.GameContent {
 
         //private void KillFiringSolutionsCheckJob() {
         //    if (_checkForFiringSolutionsJob != null && _checkForFiringSolutionsJob.IsRunning) {
-        //        //D.Log("{0} FiringSolutionsCheckJob is being killed.", Name);
+        //        //D.Log("{0} FiringSolutionsCheckJob is being killed.", DebugName);
         //        _checkForFiringSolutionsJob.Kill();
         //    }
         //}

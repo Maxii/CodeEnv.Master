@@ -46,7 +46,7 @@ public class InputModeControlButton : AGuiButton {
     #region Event and Property Change Handlers
 
     protected override void HandleValidClick() {
-        D.AssertNotEqual(GameManager.SceneID.LobbyScene, _gameMgr.CurrentSceneID);
+        D.AssertNotEqual(SceneID.LobbyScene, _gameMgr.CurrentSceneID);
         GameInputMode gameInputMode;
         switch (_inputModeOnClick) {
             case GameSceneInputMode.PartialPopup:

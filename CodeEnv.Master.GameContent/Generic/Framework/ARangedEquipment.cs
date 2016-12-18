@@ -23,19 +23,15 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class ARangedEquipment : AEquipment {
 
-        private const string _nameFormat = "{0}[{1}({2:0.})]";
+        private const string NameFormat = "{0}[{1}({2:0.})]";
 
-        protected const string _fullNameFormat = "{0}.{1}";
+        protected const string DebugNameFormat = "{0}.{1}";
 
         public RangeCategory RangeCategory { get { return Stat.RangeCategory; } }
 
-        public abstract string FullName { get; }
+        public abstract string DebugName { get; }
 
-        public override string Name {
-            get {
-                return _nameFormat.Inject(base.Name, RangeCategory.GetValueName(), RangeDistance);
-            }
-        }
+        public override string Name { get { return NameFormat.Inject(base.Name, RangeCategory.GetValueName(), RangeDistance); } }
 
         /// <summary>
         /// The equipment's range in units adjusted for any range modifiers from owners, etc.

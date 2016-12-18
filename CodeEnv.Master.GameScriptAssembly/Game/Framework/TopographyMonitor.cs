@@ -20,17 +20,28 @@ using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
 /// Detects ships entering/exiting a region of space and notifies them of the Topography change.
-/// <remarks><see cref="http://forum.unity3d.com/threads/physics-ignorecollision-that-does-not-reset-trigger-state.340836/"/></remarks>
+/// <remarks><see cref="http://forum.unity3d.com/threads/physics-ignorecollision-that-does-not-reset-trigger-state.340836/"/>
+/// 11.30.16 Bug reportedly fixed in Unity 5.5.</remarks>
 /// </summary>
 public class TopographyMonitor : AColliderMonitor {
 
-    private const string FullNameFormat = "{0}.{1}";
+    private const string DebugNameFormat = "{0}.{1}";
 
-    public override string FullName {
-        get { return ParentItem != null ? FullNameFormat.Inject(ParentItem.FullName, base.FullName) : base.FullName; }
+    private string _debugName;
+    public override string DebugName {
+        get {
+            if (ParentItem == null) {
+                return base.DebugName;
+            }
+            if (_debugName == null) {
+                _debugName = DebugNameFormat.Inject(ParentItem.DebugName, base.DebugName);
+            }
+            return _debugName;
+        }
     }
 
     private Topography _surroundingTopography;  // IMPROVE ParentItem should know about their surrounding topology
@@ -47,14 +58,14 @@ public class TopographyMonitor : AColliderMonitor {
 
     void OnTriggerEnter(Collider other) {
         if (_gameMgr.IsPaused) {
-            D.Warn("{0}.OnTriggerEnter() tripped by {1} while paused.", FullName, other.name);
+            D.Warn("{0}.OnTriggerEnter() tripped by {1} while paused.", DebugName, other.name);
         }
         if (other.isTrigger) {
             return;
         }
-        //D.Log(ShowDebugLog, "{0}.{1}.OnTriggerEnter() tripped by Collider {2}. Distance from Monitor = {3:0.##}, RangeDistance = {4:0.##}.",
-        //ParentItem.FullName, GetType().Name, other.name, Vector3.Distance(other.transform.position, transform.position), RangeDistance);
-        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+        //D.Log(ShowDebugLog, "{0}.OnTriggerEnter() tripped by Collider {1}. Distance from Monitor = {2:0.##}, RangeDistance = {3:0.##}.",
+        //DebugName, other.name, Vector3.Distance(other.transform.position, transform.position), RangeDistance);
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
         var listener = other.GetComponent<ITopographyChangeListener>();
         Profiler.EndSample();
         if (listener != null) {
@@ -66,14 +77,14 @@ public class TopographyMonitor : AColliderMonitor {
 
     void OnTriggerExit(Collider other) {
         if (_gameMgr.IsPaused) {
-            D.Warn("{0}.OnTriggerExit() tripped by {1} while paused.", FullName, other.name);
+            D.Warn("{0}.OnTriggerExit() tripped by {1} while paused.", DebugName, other.name);
         }
         if (other.isTrigger) {
             return;
         }
-        //D.Log(ShowDebugLog, "{0}.{1}.OnTriggerExit() tripped by Collider {2}. Distance from Monitor = {3:0.##}, RangeDistance = {4:0.##}.",
-        //  ParentItem.FullName, GetType().Name, other.name, Vector3.Distance(other.transform.position, transform.position), RangeDistance);
-        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+        //D.Log(ShowDebugLog, "{0}.OnTriggerExit() tripped by Collider {1}. Distance from Monitor = {2:0.##}, RangeDistance = {3:0.##}.",
+        //DebugName, other.name, Vector3.Distance(other.transform.position, transform.position), RangeDistance);
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
         var listener = other.GetComponent<ITopographyChangeListener>();
         Profiler.EndSample();
 
@@ -98,7 +109,7 @@ public class TopographyMonitor : AColliderMonitor {
     /// Checks the validity of this trigger event as showing an actual topography change.
     /// Works by validating that the listener is located near the edge of the system.
     /// <remarks>Bug workaround. http://forum.unity3d.com/threads/physics-ignorecollision-that-does-not-reset-trigger-state.340836/
-    /// </remarks>
+    /// 11.30.16 Bug reportedly fixed in Unity 5.5.</remarks>
     /// </summary>
     /// <param name="listener">The listener.</param>
     /// <returns></returns>
@@ -109,8 +120,8 @@ public class TopographyMonitor : AColliderMonitor {
         bool isValid = Mathfx.Approx(distanceToListener, parentSystem.Radius, 5F);
         if (!isValid) {
             if (Mathfx.Approx(distanceToListener, parentSystem.Radius, 10F)) {
-                D.Warn("{0} has found a marginal invalid Topography change for {1} at distance {2:0.0}. Validating.",
-                    FullName, (listener as Component).transform.name, distanceToListener);
+                D.Warn("{0} has detected a marginally invalid Topography change for {1} at distance {2:0.0}. Validating.",
+                    DebugName, (listener as Component).transform.name, distanceToListener);
                 isValid = true;
             }
         }

@@ -23,6 +23,7 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
 /// Abstract base class for Context Menu Controls.
@@ -144,7 +145,10 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     }
 
     private void InitializeContextMenu(GameObject ctxObjectGO, MenuPositionMode menuPosition) {    // IMPROVE use of strings
+
+        Profiler.BeginSample("Proper AddComponent allocation", _ctxObject);
         _ctxObject = ctxObjectGO.AddMissingComponent<CtxObject>();
+        Profiler.EndSample();
 
         switch (menuPosition) {
             case MenuPositionMode.Over:

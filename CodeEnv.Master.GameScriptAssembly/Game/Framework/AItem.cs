@@ -81,17 +81,12 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
         protected set { Data.IsOperational = value; }
     }
 
-    /// <summary>
-    /// The name to use for display in the UI.
-    /// </summary>
-    public virtual string DisplayName { get { return Name; } }
-
-    public string FullName {
+    public string DebugName {
         get {
             if (Data == null) {
                 return "{0}(from transform)".Inject(transform.name);
             }
-            return Data.FullName;
+            return Data.DebugName;
         }
     }
 
@@ -228,7 +223,7 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
     }
 
     private void NamePropChangedHandler() {
-        transform.name = Name;
+        transform.name = Name; // 12.5.16 Don't use DebugName
     }
 
     private void IsOperationalPropChangedHandler() {
@@ -272,9 +267,7 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
                 case GameInputMode.NoInput:
                 case GameInputMode.PartialPopup:
                 case GameInputMode.FullPopup:
-                    if (ShowDebugLog) {
-                    D.Log("InputMode changed to {0}. {1} is no longer showing HUD.", inputMode.GetValueName(), FullName);
-                    }
+                    //D.Log(ShowDebugLog, "InputMode changed to {0}. {1} is no longer showing HUD.", inputMode.GetValueName(), DebugName);
                     ShowHud(false);
                     break;
                 case GameInputMode.Normal:
@@ -393,7 +386,7 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
     public override void LogEvent() {
         if ((_debugSettings.EnableEventLogging && ShowDebugLog)) {
             string methodName = GetCallingMethodName();
-            string fullMethodName = AItemDebugLogEventMethodNameFormat.Inject(FullName, methodName);
+            string fullMethodName = AItemDebugLogEventMethodNameFormat.Inject(DebugName, methodName);
             Debug.Log("{0} beginning execution.".Inject(fullMethodName));
         }
     }

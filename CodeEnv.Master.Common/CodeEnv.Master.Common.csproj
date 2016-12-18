@@ -70,6 +70,7 @@
     <Compile Include="Generic\Framework\MyWaitWhile.cs" />
     <Compile Include="Game\Gameplay\TeamID.cs" />
     <Compile Include="Generic\Framework\Priority.cs" />
+    <Compile Include="SceneID.cs" />
     <Compile Include="ThirdParty\AStateMachine.cs" />
     <Compile Include="ThirdParty\ABackgroundTask.cs" />
     <Compile Include="ThirdParty\ATask.cs" />
@@ -127,6 +128,7 @@
     <Compile Include="Generic\Framework\DisposePropertyChangedSubscription.cs" />
     <Compile Include="Generic\IO\UnityUpdateEvent.cs" />
     <Compile Include="Generic\Math\Vector3EqualityComparer.cs" />
+    <Compile Include="Generic\Math\Vector2EqualityComparer.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CodeEnv.Master.Common.LocalResources\CodeEnv.Master.Common.LocalResources.csproj">

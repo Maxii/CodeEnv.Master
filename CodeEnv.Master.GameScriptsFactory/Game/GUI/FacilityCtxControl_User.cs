@@ -34,7 +34,7 @@ public class FacilityCtxControl_User : ACtxControl_User<FacilityDirective> {
 
     protected override Vector3 PositionForDistanceMeasurements { get { return _facilityMenuOperator.Position; } }
 
-    protected override string OperatorName { get { return _facilityMenuOperator.FullName; } }
+    protected override string OperatorName { get { return _facilityMenuOperator.DebugName; } }
 
     private FacilityItem _facilityMenuOperator;
 
@@ -72,7 +72,7 @@ public class FacilityCtxControl_User : ACtxControl_User<FacilityDirective> {
 
     private void IssueUserFacilityMenuOperatorOrder(int itemID) {
         FacilityDirective directive = (FacilityDirective)_directiveLookup[itemID];
-        D.Log("{0} selected directive {1} from context menu.", _facilityMenuOperator.FullName, directive.GetValueName());
+        D.Log("{0} selected directive {1} from context menu.", _facilityMenuOperator.DebugName, directive.GetValueName());
         _facilityMenuOperator.CurrentOrder = new FacilityOrder(directive, OrderSource.User);
     }
 

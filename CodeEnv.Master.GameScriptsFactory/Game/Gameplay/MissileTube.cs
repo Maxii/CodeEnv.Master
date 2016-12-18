@@ -54,7 +54,7 @@ public class MissileTube : AWeaponMount {
         D.Assert(enemyTarget.IsAttackByAllowed(Weapon.Owner));
 
         if (!ConfirmInRangeForLaunch(enemyTarget)) {
-            //D.Log("{0}.CheckFiringSolution({1}) has determined target is out of range.", Name, enemyTarget.FullName);
+            //D.Log("{0}.CheckFiringSolution({1}) has determined target is out of range.", DebugName, enemyTarget.DebugName);
             firingSolution = null;
             return false;
         }

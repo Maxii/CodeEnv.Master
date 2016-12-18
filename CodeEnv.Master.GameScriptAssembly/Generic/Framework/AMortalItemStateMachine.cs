@@ -57,9 +57,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
             D.Warn("Calling method name: {0) should start with 'Upon'.", callingMethodName);
         }
         var message = CurrentState.ToString() + Constants.Underscore + callingMethodName;
-        if (ShowDebugLog) {
-            D.Log("{0} looking for method signature {1}.", Name, message);
-        }
+        //D.Log(ShowDebugLog, "{0} looking for method signature {1}.", DebugName, message);
         return SendMessageEx(message, param);
     }
 
@@ -140,7 +138,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
             if (!param.IsNullOrEmpty()) {
                 parameters = param.Select(arg => arg.ToString()).Concatenate();
             }
-            D.Warn("{0} did not find Method with signature {1}({2}). Is it a private method in a base class?", FullName, message, parameters);  // my addition
+            D.Warn("{0} did not find Method with signature {1}({2}). Is it a private method in a base class?", DebugName, message, parameters);  // my addition
             return false;   // my addition
         }
     }
@@ -276,10 +274,8 @@ public abstract class AMortalItemStateMachine : AMortalItem {
             D.Assert(!state.Equals(value)); // a state object and a state's currentState should never be equal
             __ValidateNoNewStateSetDuringVoidEnterState(value);
             ChangingState();
-            if (ShowDebugLog) {
-                string lastStateMsg = LastState != null ? LastState.ToString() : "null";
-                D.Log("{0} changing CurrentState from {1} to {2}.", FullName, lastStateMsg, value.ToString());
-            }
+            //string lastStateMsg = LastState != null ? LastState.ToString() : "null";
+            //D.Log(ShowDebugLog, "{0} changing CurrentState from {1} to {2}.", DebugName, lastStateMsg, value.ToString());
             state.currentState = value;
             ConfigureCurrentState();
             __ResetStateChangeValidationTest();
@@ -305,9 +301,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     protected void Call(object stateToActivate) {
         var callerEnterState = state.enterState;
         D.AssertEqual(typeof(IEnumerator), callerEnterState.Method.ReturnType);
-        if (ShowDebugLog) {
-            D.Log("{0}.Call({1}) called.", FullName, stateToActivate.ToString());
-        }
+        //D.Log(ShowDebugLog, "{0}.Call({1}) called.", DebugName, stateToActivate.ToString());
         state.time = timeInCurrentState;
         state.enterStack = enterStateCoroutine.CreateStack();
         state.exitStack = exitStateCoroutine.CreateStack();
@@ -322,11 +316,11 @@ public abstract class AMortalItemStateMachine : AMortalItem {
 
     //Configures the state machine when the new state has been called
     private void ConfigureCurrentStateForCall() {
-        //D.Log(ShowDebugLog, "{0}.ConfigureCurrentStateForCall() called.", FullName);
+        //D.Log(ShowDebugLog, "{0}.ConfigureCurrentStateForCall() called.", DebugName);
         GetStateMethods();
         if (state.enterState != null) {
             PreconfigureCurrentState(); // 10.16.16 My addition
-            //D.Log(ShowDebugLog, "{0} setting up {1}_EnterState() to execute a Call().", FullName, CurrentState.ToString());
+            //D.Log(ShowDebugLog, "{0} setting up {1}_EnterState() to execute a Call().", DebugName, CurrentState.ToString());
             state.enterStateEnumerator = state.enterState();
             enterStateCoroutine.Run(state.enterStateEnumerator);    // must call as null stops any prior IEnumerator still running
         }
@@ -338,11 +332,9 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     /// CallingState_EnterState() will resume execution from where it Call()ed CalledState during the next Update().
     /// </summary>
     protected void Return() {
-        if (ShowDebugLog) {
-            D.Log("{0}: Return() from state {1} called.", FullName, CurrentState.ToString());
-        }
+        //D.Log("{0}: Return() from state {1} called.", DebugName, CurrentState.ToString());
         if (state.exitState != null) {
-            //D.Log(ShowDebugLog, "{0} setting up {1}_ExitState() to run in Return(). MethodName: {2}.", FullName, CurrentState.ToString(), state.exitState.Method.Name);
+            //D.Log(ShowDebugLog, "{0} setting up {1}_ExitState() to run in Return(). MethodName: {2}.", DebugName, CurrentState.ToString(), state.exitState.Method.Name);
             state.exitStateEnumerator = state.exitState();  // a void exitState() method executes immediately here rather than wait until the enterCoroutine makes its next pass
             exitStateCoroutine.Run(state.exitStateEnumerator);  // must call as null stops any prior IEnumerator still running
         }
@@ -353,12 +345,12 @@ public abstract class AMortalItemStateMachine : AMortalItem {
         if (_stack.Count > 0) {
             ChangingState();    // my addition to keep lastState in sync
             state = _stack.Pop();
-            //D.Log(ShowDebugLog, "{0} setting up resumption of {1}_EnterState() in Return(). MethodName: {2}.", FullName, CurrentState.ToString(), state.enterState.Method.Name);
+            //D.Log(ShowDebugLog, "{0} setting up resumption of {1}_EnterState() in Return(). MethodName: {2}.", DebugName, CurrentState.ToString(), state.enterState.Method.Name);
             enterStateCoroutine.Run(state.enterStateEnumerator, state.enterStack);
             _timeEnteredState = Time.time - state.time;
         }
         else {
-            D.Error("{0} StateMachine: Return() called from state {1} that wasn't Call()ed.", FullName, state.currentState.ToString());
+            D.Error("{0} StateMachine: Return() called from state {1} that wasn't Call()ed.", DebugName, state.currentState.ToString());
             // UNCLEAR CurrentState remains the same, but it has already run it's ExitState(). What does that mean?
             // Shouldn't ExitState() run only if _stack.Count > 0? -> Return() is ignored if state wasn't Call()ed
         }
@@ -372,9 +364,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     /// The state to use if there is no waiting calling state.
     /// </param>
     protected void Return(object baseState) {
-        if (ShowDebugLog) {
-            D.Log("{0}.Return({1}) from state {2} called.", FullName, baseState.ToString(), CurrentState.ToString());
-        }
+        //D.Log("{0}.Return({1}) from state {2} called.", DebugName, baseState.ToString(), CurrentState.ToString());
         if (state.exitState != null) {
             state.exitStateEnumerator = state.exitState();
             exitStateCoroutine.Run(state.exitStateEnumerator);  // must call as null stops any prior IEnumerator still running
@@ -389,7 +379,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
         else {
             // Warn just for visibility
             D.Warn("{0} StateMachine: Return({1}) called from state {2} that wasn't Call()ed.",
-                FullName, baseState.ToString(), state.currentState.ToString());
+                DebugName, baseState.ToString(), state.currentState.ToString());
             CurrentState = baseState;
         }
         _timeEnteredState = Time.time - state.time;
@@ -399,7 +389,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     /// Caches previous states
     /// </summary>
     private void ChangingState() {
-        //D.Log(ShowDebugLog, "{0}.ChangingState() called.", FullName);
+        //D.Log(ShowDebugLog, "{0}.ChangingState() called.", DebugName);
         LastState = state.currentState;
         _timeEnteredState = Time.time;
     }
@@ -408,13 +398,11 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     /// Configures the state machine for the current state
     /// </summary>
     private void ConfigureCurrentState() {
-        //D.Log(ShowDebugLog, "{0}.ConfigureCurrentState() called.", FullName);
+        //D.Log(ShowDebugLog, "{0}.ConfigureCurrentState() called.", DebugName);
         bool doesExitStateMethodReturnIEnumerator = false;
         if (state.exitState != null) {
             if (LastState != null) {    // object null conditional test in D generates nullReferenceExceptions if object is used in the msg
-                if (ShowDebugLog) {
-                    D.Log("{0} setting up {1}_ExitState() to run.", FullName, LastState.ToString());
-                }
+                //D.Log(ShowDebugLog, "{0} setting up {1}_ExitState() to run.", DebugName, LastState.ToString());
             }
 
             // runs the exitState of the PREVIOUS state as the state delegates haven't been changed yet
@@ -431,20 +419,18 @@ public abstract class AMortalItemStateMachine : AMortalItem {
             bool doesEnterStateMethodReturnVoid = state.enterState.Method.ReturnType != typeof(IEnumerator);
             __ValidateMethodReturnTypes(doesExitStateMethodReturnIEnumerator, doesEnterStateMethodReturnVoid);
 
-            //D.Log(ShowDebugLog, "{0} setting up {1}_EnterState() to run. MethodName: {2}.", FullName, CurrentState.ToString(), state.enterState.Method.Name);
+            //D.Log(ShowDebugLog, "{0} setting up {1}_EnterState() to run. MethodName: {2}.", DebugName, CurrentState.ToString(), state.enterState.Method.Name);
             state.enterStateEnumerator = state.enterState();    // a void enterState() method executes immediately here rather than wait until the enterCoroutine makes its next pass
                                                                 //D.Log(ShowDebugLog && state.enterStateEnumerator == null, "{0}: {1}.enterStateEnumerator is null and about to run in EnterStateCoroutine. MethodName: {2}.", 
-                                                                //FullName, CurrentState.ToString(), state.enterState.Method.Name);
+                                                                //DebugName, CurrentState.ToString(), state.enterState.Method.Name);
             enterStateCoroutine.Run(state.enterStateEnumerator);    // must call as null stops any prior IEnumerator still running
-            if (ShowDebugLog) {
-                D.Log("{0} after setting up {1}_EnterState() to run.", FullName, CurrentState.ToString());
-            }
+            //D.Log(ShowDebugLog, "{0} after setting up {1}_EnterState() to run.", DebugName, CurrentState.ToString());
         }
     }
 
     //Retrieves all of the methods for the current state
     private void GetStateMethods() {
-        //D.Log(ShowDebugLog, "{0}.GetStateMethods() called.", FullName);
+        //D.Log(ShowDebugLog, "{0}.GetStateMethods() called.", DebugName);
         //Now we need to configure all of the methods
         state.DoUpdate = ConfigureDelegate<Action>("Update", DoNothing);
         ////state.DoOccasionalUpdate = ConfigureDelegate<Action>("OccasionalUpdate", DoNothing);
@@ -528,12 +514,12 @@ public abstract class AMortalItemStateMachine : AMortalItem {
                 returnValue = Default as Delegate;
                 if (methodRoot == EnterStateText || methodRoot == ExitStateText) {
                     D.Warn("{0} did not find method {1}_{2}. Is it a private method in a base class?",
-                        FullName, state.currentState.ToString(), methodRoot);
+                        DebugName, state.currentState.ToString(), methodRoot);
                 }
                 else {
                     //                    D.Log(ShowDebugLog, @"{0} did not find method {1}_{2}. \n
                     //                            This is probably because it is not present, but could it be a private method in a base class?",
-                    //                            FullName, state.currentState.ToString(), methodRoot);
+                    //                            DebugName, state.currentState.ToString(), methodRoot);
                 }
             }
             lookup[methodRoot] = returnValue;
@@ -544,7 +530,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     private void __ValidateMethodReturnTypes(bool exitStateMethodReturnsIEnumerator, bool enterStateMethodReturnsVoid) {
         if (exitStateMethodReturnsIEnumerator && enterStateMethodReturnsVoid) {
             string lastStateMsg = LastState != null ? LastState.ToString() : "null";
-            string msg = "{0} Illegal Combination of return types. ExitState: {1}, EntryState: {2}.".Inject(FullName, lastStateMsg, CurrentState.ToString());
+            string msg = "{0} Illegal Combination of return types. ExitState: {1}, EntryState: {2}.".Inject(DebugName, lastStateMsg, CurrentState.ToString());
             throw new InvalidOperationException(msg);  // deadly combination as enter will execute before exit
         }
     }
@@ -644,16 +630,16 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     /// the coroutine that executes the EnterState() is only run after CurrentState_set completes.
     /// </summary>
     private void __ValidateNoNewStateSetDuringVoidEnterState(object incomingState) {
-        //D.Log(ShowDebugLog, "{0}.__ValidateNoNewStateSetDuringVoidEnterState() called. CurrentState = {1}, IncomingState = {2}.", FullName, CurrentState, incomingState);
+        //D.Log(ShowDebugLog, "{0}.__ValidateNoNewStateSetDuringVoidEnterState() called. CurrentState = {1}, IncomingState = {2}.", DebugName, CurrentState, incomingState);
         if (!__hasCurrentState_setFinishedWithoutInterveningSet) {
-            D.Error("{0} cannot change state to {1} while executing {2}_EnterState().", FullName, incomingState, CurrentState);
+            D.Error("{0} cannot change state to {1} while executing {2}_EnterState().", DebugName, incomingState, CurrentState);
             return;
         }
         __hasCurrentState_setFinishedWithoutInterveningSet = false;
     }
 
     private void __ResetStateChangeValidationTest() {
-        //D.Log(ShowDebugLog, "{0}.__ResetStateChangeValidationTest() called. CurrentState = {1}.", FullName, CurrentState);
+        //D.Log(ShowDebugLog, "{0}.__ResetStateChangeValidationTest() called. CurrentState = {1}.", DebugName, CurrentState);
         __hasCurrentState_setFinishedWithoutInterveningSet = true;
     }
 
@@ -666,9 +652,17 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     /// </summary>
     private class InterruptableCoroutine {
 
-        private const string NameFormat = "{0}_{1}";
+        private const string DebugNameFormat = "{0}_{1}";
 
-        private string Name { get { return NameFormat.Inject(_fsm.FullName, _coroutineName); } }
+        private string _debugName;
+        private string DebugName {
+            get {
+                if (_debugName == null) {
+                    _debugName = DebugNameFormat.Inject(_fsm.DebugName, _coroutineName);
+                }
+                return _debugName;
+            }
+        }
 
         /// <summary>
         /// Returns the appropriate state name depending on whether this Coroutine
@@ -750,17 +744,17 @@ public abstract class AMortalItemStateMachine : AMortalItem {
             //Loop forever
             while (true) {
                 //Check if we have a current coroutine
-                //D.Log(ShowDebugLog, "Updating {0}.Run(). Frame: {1}.", Name, Time.frameCount);
+                //D.Log(ShowDebugLog, "Updating {0}.Run(). Frame: {1}.", DebugName, Time.frameCount);
                 if (_enumerator != null) {
-                    //D.Log(ShowDebugLog, "Updating {0}.Run() with non-null IEnumerator. State: {1}, Frame: {2}.", Name, ApplicableStateName, Time.frameCount);
+                    //D.Log(ShowDebugLog, "Updating {0}.Run() with non-null IEnumerator. State: {1}, Frame: {2}.", DebugName, ApplicableStateName, Time.frameCount);
                     //Make a copy of the enumerator in case it changes
                     var enm = _enumerator;
                     //Execute the next step of the coroutine    
-                    //D.Log(ShowDebugLog, "{0} code block is about to execute. State: {1}, Frame: {2}.", Name, ApplicableStateName, Time.frameCount);
+                    //D.Log(ShowDebugLog, "{0} code block is about to execute. State: {1}, Frame: {2}.", DebugName, ApplicableStateName, Time.frameCount);
                     // MoveNext executes the code block up to the next yield or the end of the method. Returns true when it finds a yield at the end
                     // of the code block, false if no yield indicating no more code remaining to execute
                     var valid = _enumerator.MoveNext();
-                    //D.Log(ShowDebugLog, "{0} after MoveNext(). State: {1}, Valid = {2}, Frame: {3}.", Name, ApplicableStateName, valid, Time.frameCount);
+                    //D.Log(ShowDebugLog, "{0} after MoveNext(). State: {1}, Valid = {2}, Frame: {3}.", DebugName, ApplicableStateName, valid, Time.frameCount);
                     // See if the enumerator has changed. This only happens as a result of the just executed code block changing state.
                     if (enm == _enumerator) {
                         //If this is the same enumerator
@@ -769,7 +763,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
                             var result = _enumerator.Current;   // the return value of the yield
                             //Check if it is a coroutine
                             if (result is IEnumerator) {    // wait until another coroutine completes, e.g. CustomYieldInstruction
-                                //D.Log(ShowDebugLog, "{0} CodeBlock is IEnumerator. State: {1}.", Name, ApplicableStateName); 
+                                //D.Log(ShowDebugLog, "{0} CodeBlock is IEnumerator. State: {1}.", DebugName, ApplicableStateName); 
                                 //Push the current coroutine and execute the new one
                                 _stack.Push(_enumerator);
                                 _enumerator = result as IEnumerator;
@@ -777,7 +771,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
                             }
                             //Check if it is a yield instruction
                             else if (result is YieldInstruction) {  // a YieldInstruction is the parent of the built in WaitFor... classes
-                                //D.Log(ShowDebugLog, "{0} CodeBlock is YieldInstruction. State: {1}.", Name, ApplicableStateName); 
+                                //D.Log(ShowDebugLog, "{0} CodeBlock is YieldInstruction. State: {1}.", DebugName, ApplicableStateName); 
                                 //To be able to interrupt yield instructions we need to run them as a separate coroutine and wait for them
                                 _stack.Push(_enumerator);
                                 //Create the coroutine to wait for the yield instruction
@@ -787,7 +781,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
                             // Otherwise return the value return by the yield (typically null, aka yield return null)
                             else {
                                 //D.Log(ShowDebugLog, "{0} returning _enumerator.Current. Next comment from {1} should be from frame after this. Frame: {2}.",
-                                //    Name, typeof(InterruptableCoroutine).Name, Time.frameCount);
+                                //    DebugName, typeof(InterruptableCoroutine).Name, Time.frameCount);
                                 yield return _enumerator.Current;
                             }
                         }
@@ -811,7 +805,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
 
                                 //if (_enumerator != enm) { 
                                 //    D.Error("{0} attempting to null _enumerator that has changed. ApplicableState: {1}, _enumerator is null: {2}, enm is null: {3}, CurrentState: {4}, LastState: {5}.",
-                                //    Name, ApplicableStateName, _enumerator == null, enm == null, _fsm.CurrentState.ToString(), _fsm.LastState.ToString());
+                                //    DebugName, ApplicableStateName, _enumerator == null, enm == null, _fsm.CurrentState.ToString(), _fsm.LastState.ToString());
                                 //}
 
                                 // Note: Nulling _enumerator after _enumerator has just changed will result in the new _enumerator NOT 
@@ -829,7 +823,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
                                 if (_enumerator == enm) {
                                     // _enumerator hasn't been changed externally during the frame it took to get here so it is OK to null
                                     _enumerator = null;
-                                    //D.Log(ShowDebugLog, "{0}.Run() _enumerator set to null. Frame: {1}.", Name, Time.frameCount);
+                                    //D.Log(ShowDebugLog, "{0}.Run() _enumerator set to null. Frame: {1}.", DebugName, Time.frameCount);
                                 }
 
                             }
@@ -839,7 +833,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
                     else {
                         //_enumerator changed by MoveNext() executed code assigning a new state. _enumerator here will be null if the
                         // Enter/ExitState() method of the new state returns void
-                        //D.Log(ShowDebugLog, "{0}.Run()._enumerator was changed by executed code block. State: {1}, Frame: {2}.", Name, ApplicableStateName, Time.frameCount);
+                        //D.Log(ShowDebugLog, "{0}.Run()._enumerator was changed by executed code block. State: {1}, Frame: {2}.", DebugName, ApplicableStateName, Time.frameCount);
                         yield return null;
                     }
                 }
@@ -871,10 +865,10 @@ public abstract class AMortalItemStateMachine : AMortalItem {
         /// The stack that should be used for this coroutine
         /// </param>
         public void Run(IEnumerator enm, Stack<IEnumerator> stack = null) {
-            //string msg = enm != null ? "IEnumerator" : "NULL_IEnumerator";
-            //D.Log(ShowDebugLog, "{0}.Run({1}) called. CurrentState: {2}, Frame: {3}.", Name, msg, CurrentStateName, Time.frameCount);
+            //string msg = en != null ? "IEnumerator" : "NULL_IEnumerator";
+            //D.Log(ShowDebugLog, "{0}.Run({1}) called. CurrentState: {2}, Frame: {3}.", DebugName, msg, CurrentStateName, Time.frameCount);
             //if (msg == "NULL_IEnumerator") {
-            //    D.Log(ShowDebugLog, "{0}.Run() was called with null IEnumerator so has already executed. {0} will not execute.", Name);
+            //    D.Log(ShowDebugLog, "{0}.Run() was called with null IEnumerator so has already executed. {0} will not execute.", DebugName);
             //}
             _enumerator = enm;
             if (stack != null) {
@@ -986,10 +980,10 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     //        _cachedEvents[type] = lookup;
     //    }
     //    if (!lookup.TryGetValue(cs, out events)) {
-    //        var len = CurrentState.ToString().Length + 3;
+    //        var length = CurrentState.ToString().Length + 3;
     //        events = type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.InvokeMethod)
     //            .Where(m => m.Name.StartsWith(CurrentState.ToString() + "_On"))
-    //            .Select(m => new { name = m.Name.Substring(len), method = m })
+    //            .Select(m => new { name = m.Name.Substring(length), method = m })
     //            .Where(n => n.name.IndexOf("_") > 1)
     //            .Select(n => new EventDef {
     //                eventName = n.name.Substring(0, n.name.IndexOf("_")),
@@ -1042,7 +1036,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     //    if (extra != null) {
     //        objects.AddRange(extra);
     //        if (objects.Count > 0) {
-    //            D.Log("Fast OnWireEvent was the source of target gameobjects for search.");
+    //            D.Log("Fast OnWireEvent was the source of target gameObjects for search.");
     //            return objects;
     //        }
     //    }
@@ -1058,7 +1052,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
 
     //    objects.Add(GameObject.Find(eventInfo.selector));
     //    if (objects.Count > 0) {
-    //        D.Log("Slow GameObject.Find(Selector) was used to find target gameobject for search.");
+    //        D.Log("Slow GameObject.Find(Selector) was used to find target gameObject for search.");
     //    }
     //    return objects;
     //}

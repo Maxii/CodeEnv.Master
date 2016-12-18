@@ -40,9 +40,9 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         float FieldOfView { get; }
 
-        string DisplayName { get; }
+        string Name { get; }
 
-        string FullName { get; }
+        string DebugName { get; }
 
     }
 }

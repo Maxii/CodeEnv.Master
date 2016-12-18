@@ -48,9 +48,6 @@
       <HintPath>..\packages\morelinq.1.4.0\lib\net35\MoreLinq.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Pathfinding.JsonFx">
-      <HintPath>..\..\..\Plugins\AStarPlugins\JsonFx\Pathfinding.JsonFx.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Data" />

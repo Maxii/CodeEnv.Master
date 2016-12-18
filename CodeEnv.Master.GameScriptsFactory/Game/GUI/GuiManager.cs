@@ -21,6 +21,7 @@ using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Profiling;
 using UnityEngine.Serialization;
 
 /// <summary>
@@ -47,7 +48,7 @@ public class GuiManager : AMonoSingleton<GuiManager> {
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
         _hiddenPanels = new List<UIPanel>();
-        if (GameManager.Instance.CurrentSceneID == GameManager.SceneID.GameScene && _fixedGuiPanels.IsNullOrEmpty()) {
+        if (GameManager.Instance.CurrentSceneID == SceneID.GameScene && _fixedGuiPanels.IsNullOrEmpty()) {
             D.WarnContext(gameObject, "{0}.fixedGuiPanels list is empty.", GetType().Name);
         }
         CheckDebugSettings();
@@ -58,7 +59,7 @@ public class GuiManager : AMonoSingleton<GuiManager> {
         _buttonLookup = new Dictionary<GuiElementID, GameObject>(GuiElementIDEqualityComparer.Default);
         var allButtons = gameObject.GetSafeComponentsInChildren<UIButton>(includeInactive: true);
 
-        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
         var buttonGuiElements = allButtons.Select(b => b.GetComponent<AGuiElement>()).Where(ge => ge != null);
         Profiler.EndSample();
 

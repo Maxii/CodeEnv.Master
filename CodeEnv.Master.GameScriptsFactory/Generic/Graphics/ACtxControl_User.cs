@@ -124,7 +124,7 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
 
                     string textFormat = i == 0 ? SubmenuItemTextFormat_ClosestTarget : SubmenuItemTextFormat_Target;
                     subMenu.items[i] = new CtxMenu.Item() {
-                        text = textFormat.Inject(target.DisplayName, GetDistanceTo(target)),
+                        text = textFormat.Inject(target.DebugName, GetDistanceTo(target)),
                         id = subMenuItemId
                     };
                     _unitTargetLookup.Add(subMenuItemId, target);

@@ -21,12 +21,13 @@ using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
 /// Abstract base class for a spherical collider GameObject whose parent is an AItem. 
 /// Called a Monitor as it generally is used to take action on objects that enter/exit the collider.
 /// </summary>
-public abstract class AColliderMonitor : AMonoBase {
+public abstract class AColliderMonitor : AMonoBase, IColliderMonitor {
 
     /// <summary>
     /// Control for enabling/disabling the monitor's collider.
@@ -43,7 +44,7 @@ public abstract class AColliderMonitor : AMonoBase {
         }
     }
 
-    public virtual string FullName { get { return transform.name; } }
+    public virtual string DebugName { get { return transform.name; } }
 
     private float _rangeDistance;
     /// <summary>
@@ -65,6 +66,8 @@ public abstract class AColliderMonitor : AMonoBase {
 
     public Player Owner { get { return ParentItem.Owner; } }
 
+    public bool ShowDebugLog { get { return ParentItem.ShowDebugLog; } }
+
     /// <summary>
     /// Flag indicating whether a Kinematic Rigidbody is required by the monitor. 
     /// <remarks>A Kinematic Rigidbody is required if the collider is a regular collider and its parent has a regular collider. 
@@ -79,8 +82,6 @@ public abstract class AColliderMonitor : AMonoBase {
     /// Flag indicating whether the collider used should be a trigger or normal collider.
     /// </summary>
     protected abstract bool IsTriggerCollider { get; }
-
-    protected bool ShowDebugLog { get { return ParentItem.ShowDebugLog; } }
 
     protected bool _isResetting;
     protected SphereCollider _collider;
@@ -104,12 +105,12 @@ public abstract class AColliderMonitor : AMonoBase {
         }
         else {
 
-            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
             var rigidbody = gameObject.GetComponent<Rigidbody>();
             Profiler.EndSample();
 
             if (rigidbody != null) {
-                D.Warn("{0} has a rigidbody it doesn't need.", FullName);
+                D.Warn("{0} has a rigidbody it doesn't need.", DebugName);
             }
         }
         _collider = UnityUtility.ValidateComponentPresence<SphereCollider>(gameObject);
@@ -142,9 +143,7 @@ public abstract class AColliderMonitor : AMonoBase {
     }
 
     protected virtual void HandleRangeDistanceChanged() {
-        if (ShowDebugLog) {
-            D.Log("{0} had its RangeDistance changed from {1:0.#} to {2:0.#}.", FullName, _collider.radius, RangeDistance);
-        }
+        //D.Log(ShowDebugLog, "{0} had its RangeDistance changed from {1:0.#} to {2:0.#}.", DebugName, _collider.radius, RangeDistance);
         _collider.radius = RangeDistance;
     }
 
@@ -176,9 +175,7 @@ public abstract class AColliderMonitor : AMonoBase {
     /// </summary>
     protected void ResetForReuse() {
         _isResetting = true;
-        if (ShowDebugLog) {
-            D.Log("{0} is being reset for future reuse.", FullName);
-        }
+        D.Log(ShowDebugLog, "{0} is being reset for future reuse.", DebugName);
         IsOperational = false;
         RangeDistance = Constants.ZeroF;
         D.AssertNotNull(ParentItem);

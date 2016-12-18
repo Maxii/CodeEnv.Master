@@ -30,9 +30,17 @@ using UnityEngine;
 /// </summary>
 public class SystemCreator : AMonoBase {
 
-    private const string NameFormat = "{0}.{1}";
+    private const string DebugNameFormat = "{0}.{1}";
 
-    public string Name { get { return NameFormat.Inject(SystemName, GetType().Name); } }
+    private string _debugName;
+    public string DebugName {
+        get {
+            if (_debugName == null) {
+                _debugName = DebugNameFormat.Inject(SystemName, GetType().Name);
+            }
+            return _debugName;
+        }
+    }
 
     public string SystemName {
         get { return transform.name; }
@@ -50,6 +58,8 @@ public class SystemCreator : AMonoBase {
             SetProperty<SystemCreatorConfiguration>(ref _configuration, value, "Configuration", ConfigurationSetHandler);
         }
     }
+
+    protected bool ShowDebugLog { get { return DebugControls.Instance.ShowDeploymentDebugLogs; } }
 
     protected SystemItem _system;
     protected StarItem _star;
@@ -74,7 +84,7 @@ public class SystemCreator : AMonoBase {
     protected override void Start() {
         base.Start();
         if (!gameObject.isStatic) {
-            D.Error("{0} should be static after being positioned.", Name);
+            D.Error("{0} should be static after being positioned.", DebugName);
         }
     }
 
@@ -104,7 +114,7 @@ public class SystemCreator : AMonoBase {
         FocusableItemCameraStat cameraStat = MakeSystemCameraStat();
         _system = _systemFactory.MakeSystemInstance(SystemName, gameObject, cameraStat);
         if (!_system.gameObject.isStatic) {
-            D.Error("{0} should be static after being positioned.", _system.FullName);
+            D.Error("{0} should be static after being positioned.", _system.DebugName);
         }
 
         _system.SettlementOrbitData = InitializeSettlementOrbitSlot();
@@ -140,9 +150,9 @@ public class SystemCreator : AMonoBase {
             float sysOrbitSlotDepth;
             if (planet.Data.CloseOrbitOuterRadius > (sysOrbitSlotDepth = __CalcSystemOrbitSlotDepth(_star))) {
                 D.Warn("{0}: {1} reqd orbit slot depth of {2:0.#} > SystemOrbitSlotDepth of {3:0.#}.",
-                    Name, planet.FullName, planet.Data.CloseOrbitOuterRadius, sysOrbitSlotDepth);
+                    DebugName, planet.DebugName, planet.Data.CloseOrbitOuterRadius, sysOrbitSlotDepth);
             }
-            //D.Log("{0} has assumed orbit slot {1} in System {2}.", planet.FullName, planetOrbitSlot.SlotIndex, SystemName);
+            //D.Log(ShowDebugLog, "{0} has assumed orbit slot {1} in System {2}.", planet.DebugName, planetOrbitSlot.SlotIndex, SystemName);
             _planets.Add(planet);
         }
     }
@@ -164,7 +174,7 @@ public class SystemCreator : AMonoBase {
                 orbitSlot.AssignOrbitedItem(aPlanet.gameObject, aPlanet.IsMobile);
                 orbitSlot.ToOrbit = true;
                 MoonItem moon = _systemFactory.MakeInstance(moonDesign, cameraStat, orbitSlot);
-                //D.Log("{0} has assumed orbit slot {1} around {2}.", moon.FullName, orbitSlot.SlotIndex, aPlanet.FullName);
+                //D.Log(ShowDebugLog, "{0} has assumed orbit slot {1} around {2}.", moon.DebugName, orbitSlot.SlotIndex, aPlanet.DebugName);
                 _moons.Add(moon);
             }
         }

@@ -26,8 +26,6 @@ using UnityEngine;
 /// </summary>
 public class ShipCloseOrbitSimulator : OrbitSimulator, IShipCloseOrbitSimulator, IShipNavigable {
 
-    private const string NameFormat = "{0}.{1}";
-
     /// <summary>
     /// Checks the ship's position to see whether the ship should simply be manually placed in close orbit.
     /// Returns <c>true</c> if the ship
@@ -45,7 +43,7 @@ public class ShipCloseOrbitSimulator : OrbitSimulator, IShipCloseOrbitSimulator,
     }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
     #region IShipOrbitSimulator Members Archive
@@ -65,10 +63,10 @@ public class ShipCloseOrbitSimulator : OrbitSimulator, IShipCloseOrbitSimulator,
     //        float distanceFromOrbitedObjectToDesiredPosition = slotMeanRadius;
     //        float maxAllowedShipOrbitRadius = OrbitData.OuterRadius - ship.CollisionDetectionZoneRadius;
     //        D.Warn(distanceFromOrbitedObjectToDesiredPosition > maxAllowedShipOrbitRadius, "{0} CollisionDetectionZone is protruding from ShipOrbitSlot. {1:0.##} > {2:0.##}.",
-    //            ship.FullName, distanceFromOrbitedObjectToDesiredPosition, maxAllowedShipOrbitRadius);
+    //            ship.DebugName, distanceFromOrbitedObjectToDesiredPosition, maxAllowedShipOrbitRadius);
     //        float minAllowedShipOrbitRadius = OrbitData.InnerRadius + ship.CollisionDetectionZoneRadius;
     //        D.Warn(distanceFromOrbitedObjectToDesiredPosition < minAllowedShipOrbitRadius, "{0} CollisionDetectionZone is protruding from ShipOrbitSlot. {1:0.##} < {2:0.##}.",
-    //            ship.FullName, distanceFromOrbitedObjectToDesiredPosition, minAllowedShipOrbitRadius);
+    //            ship.DebugName, distanceFromOrbitedObjectToDesiredPosition, minAllowedShipOrbitRadius);
 
     //        Vector3 orbitedObjectPosition = transform.position; // same as orbitedItem
     //        Vector3 directionToDesiredOrbitPosition = (ship.Position - orbitedObjectPosition).normalized;
@@ -84,12 +82,12 @@ public class ShipCloseOrbitSimulator : OrbitSimulator, IShipCloseOrbitSimulator,
 
     #region INavigable Members
 
-    public string DisplayName { get { return FullName; } }
+    public string Name { get { return DebugName; } }
 
-    public string FullName {
+    public override string DebugName {
         get {
             IShipCloseOrbitable closeOrbitableItem = OrbitData.OrbitedItem.GetComponent<IShipCloseOrbitable>();
-            return NameFormat.Inject(closeOrbitableItem.FullName, GetType().Name);
+            return DebugNameFormat.Inject(closeOrbitableItem.DebugName, GetType().Name);
         }
     }
 

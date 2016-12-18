@@ -88,11 +88,13 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
 
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
+        //D.Log("{0}.InitializeOnInstance", GetType().Name);
         References.InputManager = Instance;
     }
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
+        //D.Log("{0}.InitializeOnAwake", GetType().Name);
         InitializeLocalReferencesAndValues();
         InitializeNonpersistentReferences();
         InputMode = GameInputMode.NoInput;
@@ -107,7 +109,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     private void InitializeNonpersistentReferences() {
         //D.Log("{0}_{1} is [re]initializing non-persistent references.", GetType().Name, InstanceCount);
         InitializeUIEventDispatcher();
-        if (_gameMgr.CurrentSceneID == GameManager.SceneID.GameScene) {
+        if (_gameMgr.CurrentSceneID == SceneID.GameScene) {
             _playerViews = PlayerViews.Instance;
             InitializeWorldEventDispatchers();
         }
@@ -115,10 +117,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
 
     private void InitializeUIEventDispatcher() {
         UIEventDispatcher = UICamera.first;
-
-        //UIEventDispatcher.eventType = UICamera.EventType.UI_2D;
-        UIEventDispatcher.eventType = UICamera.EventType.UI_3D;
-
+        UIEventDispatcher.eventType = UICamera.EventType.UI_3D; //UIEventDispatcher.eventType = UICamera.EventType.UI_2D;
         UIEventDispatcher.useKeyboard = true;
         UIEventDispatcher.useMouse = true;
         UIEventDispatcher.eventsGoToColliders = true;
@@ -220,7 +219,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
                 _enableArrowKeys = false;
                 _enableScreenEdge = false;
                 UnsubscribeToViewModeKeyEvents();
-                if (_gameMgr.CurrentSceneID == GameManager.SceneID.GameScene) {
+                if (_gameMgr.CurrentSceneID == SceneID.GameScene) {
                     WorldEventDispatchers.ForAll(wed => wed.eventReceiverMask = EventDispatcherMask_NoInput);
                     UnsubscribeToWorldMouseEvents();
                 }
@@ -233,7 +232,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
                 UnsubscribeToViewModeKeyEvents();
                 break;
             case GameInputMode.PartialPopup:
-                D.AssertEqual(GameManager.SceneID.GameScene, _gameMgr.CurrentSceneID);
+                D.AssertEqual(SceneID.GameScene, _gameMgr.CurrentSceneID);
                 UIEventDispatcher.eventReceiverMask = UIEventDispatcherMask_NormalInput;
                 _enableArrowKeys = true;
                 _enableScreenEdge = true;
@@ -242,7 +241,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
                 UnsubscribeToWorldMouseEvents();
                 break;
             case GameInputMode.FullPopup:
-                D.AssertEqual(GameManager.SceneID.GameScene, _gameMgr.CurrentSceneID);
+                D.AssertEqual(SceneID.GameScene, _gameMgr.CurrentSceneID);
                 UIEventDispatcher.eventReceiverMask = UIEventDispatcherMask_NormalInput;
                 _enableArrowKeys = false;
                 _enableScreenEdge = false;
@@ -251,7 +250,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
                 UnsubscribeToWorldMouseEvents();
                 break;
             case GameInputMode.Normal:
-                D.AssertEqual(GameManager.SceneID.GameScene, _gameMgr.CurrentSceneID);
+                D.AssertEqual(SceneID.GameScene, _gameMgr.CurrentSceneID);
                 UIEventDispatcher.eventReceiverMask = UIEventDispatcherMask_NormalInput;
                 _enableArrowKeys = true;
                 _enableScreenEdge = true;
@@ -620,7 +619,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
 
     private void InvalidateNonpersistentReferences() {
         UIEventDispatcher = null;
-        if (_gameMgr.CurrentSceneID == GameManager.SceneID.GameScene) {
+        if (_gameMgr.CurrentSceneID == SceneID.GameScene) {
             if (!IsApplicationQuiting) { // GameManager.DisposeOfGlobals() handles this when Quiting
                 _playerViews.Dispose();
             }
@@ -681,7 +680,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     ///This is accomplished by trying to access their gameObject. If they are destroyed, Unity will throw an error.
     /// </summary>
     private void __ValidateEventDispatchersNotDestroyed() {
-        if (_gameMgr.CurrentSceneID == GameManager.SceneID.GameScene) {
+        if (_gameMgr.CurrentSceneID == SceneID.GameScene) {
 #pragma warning disable 0168
             var dummy = UIEventDispatcher.gameObject;
             WorldEventDispatchers.ForAll(wed => dummy = wed.gameObject);

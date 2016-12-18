@@ -67,7 +67,7 @@ namespace CodeEnv.Master.GameContent {
         #region Event and Property Change Handlers
 
         protected override void HandleOwnerChanged() {
-            throw new System.InvalidOperationException("Illegal attempt by {0} to set Owner: {1}.".Inject(FullName, Owner.LeaderName));
+            throw new System.InvalidOperationException("Illegal attempt by {0} to set Owner: {1}.".Inject(DebugName, Owner.LeaderName));
         }
 
         #endregion

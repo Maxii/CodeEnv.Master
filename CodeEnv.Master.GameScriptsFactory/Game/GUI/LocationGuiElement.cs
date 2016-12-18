@@ -104,7 +104,7 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
         }
         _label.text = LabelFormat.Inject(distanceText, SectorID);
 
-        string baseText = myClosestBase != null ? myClosestBase.DisplayName : _unknown;
+        string baseText = myClosestBase != null ? myClosestBase.DebugName : _unknown;
         _tooltipContent = TooltipFormat.Inject(baseText, distanceText);
     }
 

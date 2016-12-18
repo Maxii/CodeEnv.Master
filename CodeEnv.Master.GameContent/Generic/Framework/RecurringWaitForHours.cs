@@ -59,7 +59,7 @@ namespace CodeEnv.Master.GameContent {
         private void RefreshValues() {
             _startDate = _gameTime.CurrentDate;
             var targetDate = new GameDate(_startDate, _duration);
-            //D.Log("{0} is refreshing target date to {1}.", Name, targetDate);
+            //D.Log("{0} is refreshing target date to {1}.", DebugName, targetDate);
             _targetDate = targetDate;
         }
 

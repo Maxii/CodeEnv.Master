@@ -56,7 +56,7 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
 
     public event EventHandler showUnitTrackingLabels;
 
-    #region Item Debug Log Editor Fields
+    #region Debug Log Editor Fields
 
     [Tooltip("Check to show debug logs for all ships")]
     [SerializeField]
@@ -93,6 +93,16 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     private bool _showSystemDebugLogs = false;
     public bool ShowSystemDebugLogs { get { return _showSystemDebugLogs; } }
 
+    [Tooltip("Check to show debug logs for Deployment (Configurators and Creators)")]
+    [SerializeField]
+    private bool _showDeploymentDebugLogs = false;
+    public bool ShowDeploymentDebugLogs { get { return _showDeploymentDebugLogs; } }
+
+    [Tooltip("Check to show debug logs for Ordnance")]
+    [SerializeField]
+    private bool _showOrdnanceDebugLogs = false;
+    public bool ShowOrdnanceDebugLogs { get { return _showOrdnanceDebugLogs; } }
+
     #endregion
 
     #region AI Editor Fields
@@ -116,6 +126,10 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     /// Players meet when they first detect a HQ Element owned by another player.
     /// </summary>
     public bool IsAllIntelCoverageComprehensive { get { return _allIntelCoverageIsComprehensive; } }
+
+    #endregion
+
+    #region General Editor Fields
 
     #endregion
 
@@ -244,7 +258,7 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     private bool _showFleetCoursePlotsPrev = false;
     private void CheckShowFleetCoursePlots() {
         if (_showFleetCoursePlots != _showFleetCoursePlotsPrev) {
-            //D.Log("{0}.ShowFleetCoursePlots has changed from {1} to {2}.", Name, _showFleetCoursePlotsPrev, _showFleetCoursePlots);
+            //D.Log("{0}.ShowFleetCoursePlots has changed from {1} to {2}.", DebugName, _showFleetCoursePlotsPrev, _showFleetCoursePlots);
             _showFleetCoursePlotsPrev = _showFleetCoursePlots;
             OnShowFleetCoursePlotsChanged();
         }
@@ -253,7 +267,7 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     private bool _showShipCoursePlotsPrev = false;
     private void CheckShowShipCoursePlots() {
         if (_showShipCoursePlots != _showShipCoursePlotsPrev) {
-            //D.Log("{0}.ShowShipCoursePlots has changed from {1} to {2}.", Name, _showShipCoursePlotsPrev, _showShipCoursePlots);
+            //D.Log("{0}.ShowShipCoursePlots has changed from {1} to {2}.", DebugName, _showShipCoursePlotsPrev, _showShipCoursePlots);
             _showShipCoursePlotsPrev = _showShipCoursePlots;
             OnShowShipCoursePlotsChanged();
         }
@@ -262,7 +276,7 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     private bool _showFleetVelocityRaysPrev = false;
     private void CheckShowFleetVelocityRays() {
         if (_showFleetVelocityRays != _showFleetVelocityRaysPrev) {
-            //D.Log("{0}.ShowFleetVelocityRays has changed from {1} to {2}.", Name, _showFleetVelocityRaysPrev, _showFleetVelocityRays);
+            //D.Log("{0}.ShowFleetVelocityRays has changed from {1} to {2}.", DebugName, _showFleetVelocityRaysPrev, _showFleetVelocityRays);
             _showFleetVelocityRaysPrev = _showFleetVelocityRays;
             OnShowFleetVelocityRaysChanged();
         }
@@ -271,7 +285,7 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     private bool _showShipVelocityRaysPrev = false;
     private void CheckShowShipVelocityRays() {
         if (_showShipVelocityRays != _showShipVelocityRaysPrev) {
-            //D.Log("{0}.ShowShipVelocityRays has changed from {1} to {2}.", Name, _showShipVelocityRaysPrev, _showShipVelocityRays);
+            //D.Log("{0}.ShowShipVelocityRays has changed from {1} to {2}.", DebugName, _showShipVelocityRaysPrev, _showShipVelocityRays);
             _showShipVelocityRaysPrev = _showShipVelocityRays;
             OnShowShipVelocityRaysChanged();
         }
@@ -280,7 +294,7 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     private bool _showFleetFormationStationsPrev;
     private void CheckShowFleetFormationStations() {
         if (_showFleetFormationStations != _showFleetFormationStationsPrev) {
-            //D.Log("{0}.ShowShipFormationStations has changed from {1} to {2}.", Name, _showFleetFormationStationsPrev, _showFleetFormationStations);
+            //D.Log("{0}.ShowShipFormationStations has changed from {1} to {2}.", DebugName, _showFleetFormationStationsPrev, _showFleetFormationStations);
             _showFleetFormationStationsPrev = _showFleetFormationStations;
             OnShowFormationStationsChanged();
         }
@@ -289,7 +303,7 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     private bool _showShipCollisionDetectionZonesPrev;
     private void CheckShowShipCollisionDetectionZones() {
         if (_showShipCollisionDetectionZones != _showShipCollisionDetectionZonesPrev) {
-            //D.Log("{0}.ShowShipCollisionDetectionZones has changed from {1} to {2}.", Name, _showShipCollisionDetectionZonesPrev, _showShipCollisionDetectionZones);
+            //D.Log("{0}.ShowShipCollisionDetectionZones has changed from {1} to {2}.", DebugName, _showShipCollisionDetectionZonesPrev, _showShipCollisionDetectionZones);
             _showShipCollisionDetectionZonesPrev = _showShipCollisionDetectionZones;
             OnShowShipCollisionDetectionZonesChanged();
         }
@@ -298,7 +312,7 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     private bool _showShieldsPrev;
     private void CheckShowShields() {
         if (_showShields != _showShieldsPrev) {
-            //D.Log("{0}.ShowShields has changed from {1} to {2}.", Name, _showShieldsPrev, _showShields);
+            //D.Log("{0}.ShowShields has changed from {1} to {2}.", DebugName, _showShieldsPrev, _showShields);
             _showShieldsPrev = _showShields;
             OnShowShieldsChanged();
         }
@@ -307,7 +321,7 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     private bool _showSensorsPrev;
     private void CheckShowSensors() {
         if (_showSensors != _showSensorsPrev) {
-            //D.Log("{0}.ShowSensors has changed from {1} to {2}.", Name, _showSensorsPrev, _showSensors);
+            //D.Log("{0}.ShowSensors has changed from {1} to {2}.", DebugName, _showSensorsPrev, _showSensors);
             _showSensorsPrev = _showSensors;
             OnShowSensorsChanged();
         }
@@ -316,7 +330,7 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     private bool _showObstacleZonesPrev;
     private void CheckShowObstacleZones() {
         if (_showObstacleZones != _showObstacleZonesPrev) {
-            //D.Log("{0}.ShowObstacleZones has changed from {1} to {2}.", Name, _showObstacleZonesPrev, _showObstacleZones);
+            //D.Log("{0}.ShowObstacleZones has changed from {1} to {2}.", DebugName, _showObstacleZonesPrev, _showObstacleZones);
             _showObstacleZonesPrev = _showObstacleZones;
             OnShowObstacleZonesChanged();
         }
@@ -325,7 +339,7 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     private bool _showSystemTrackingLabelsPrev;
     private void CheckShowSystemTrackingLabels() {
         if (_showSystemTrackingLabels != _showSystemTrackingLabelsPrev) {
-            //D.Log("{0}.ShowSystemTrackingLabels has changed from {1} to {2}.", Name, _showSystemTrackingLabelsPrev, _showSystemTrackingLabels);
+            //D.Log("{0}.ShowSystemTrackingLabels has changed from {1} to {2}.", DebugName, _showSystemTrackingLabelsPrev, _showSystemTrackingLabels);
             _showSystemTrackingLabelsPrev = _showSystemTrackingLabels;
             OnShowSystemTrackingLabels();
         }
@@ -334,7 +348,7 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     private bool _showUnitTrackingLabelsPrev;
     private void CheckShowUnitTrackingLabels() {
         if (_showUnitTrackingLabels != _showUnitTrackingLabelsPrev) {
-            //D.Log("{0}.ShowUnitTrackingLabels has changed from {1} to {2}.", Name, _showUnitTrackingLabelsPrev, _showUnitTrackingLabels);
+            //D.Log("{0}.ShowUnitTrackingLabels has changed from {1} to {2}.", DebugName, _showUnitTrackingLabelsPrev, _showUnitTrackingLabels);
             _showUnitTrackingLabelsPrev = _showUnitTrackingLabels;
             OnShowUnitTrackingLabels();
         }

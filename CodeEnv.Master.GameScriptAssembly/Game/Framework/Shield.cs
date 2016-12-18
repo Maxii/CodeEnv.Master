@@ -22,6 +22,7 @@ using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
 /// Protective Shield for an element. 
@@ -65,10 +66,7 @@ public class Shield : AEquipmentMonitor<ShieldGenerator>, IShield {
     #region Event and Property Change Handlers
 
     protected override void HandleIsOperationalChanged() {
-        string shieldStateMsg = IsOperational ? "is being raised" : "has failed";
-        if (ShowDebugLog) {
-            D.Log("{0} {1}.", FullName, shieldStateMsg);
-        }
+        D.Log(ShowDebugLog, "{0} {1}.", DebugName, (IsOperational ? "is being raised" : "has failed"));
         HandleDebugShieldIsOperationalChanged();
     }
 
@@ -95,7 +93,7 @@ public class Shield : AEquipmentMonitor<ShieldGenerator>, IShield {
         }
         bool isShieldStillUp = unabsorbedImpact == Constants.ZeroF;
         if (ShowDebugLog && !isShieldStillUp) {
-            D.Log("{0} has failed.", FullName);
+            D.Log(ShowDebugLog, "{0} has failed.", DebugName);
         }
         return isShieldStillUp;
     }
@@ -158,7 +156,7 @@ public class Shield : AEquipmentMonitor<ShieldGenerator>, IShield {
         if (debugValues != null) {
             debugValues.showShields -= ShowDebugShieldsChangedEventHandler;
         }
-        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
         DrawColliderGizmo drawCntl = gameObject.GetComponent<DrawColliderGizmo>();
         Profiler.EndSample();
 

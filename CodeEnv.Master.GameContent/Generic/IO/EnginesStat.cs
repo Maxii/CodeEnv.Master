@@ -51,7 +51,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="fullStlPropulsionPower">The maximum total propulsion power the STL engine(s) can generate.</param>
         /// <param name="maxTurnRate">The maximum turn rate the engines are capable of.</param>
         /// <param name="size">The total physical space consumed by the engine(s).</param>
-        /// <param name="mass">The total mass of the engin(s).</param>
+        /// <param name="mass">The total mass of the engine(s).</param>
         /// <param name="expense">The total expense consumed by the engine(s).</param>
         /// <param name="ftlPropulsionPowerFactor">The FTL power multiplier of these engine(s).</param>
         /// <param name="engineQty">The number of engine(s).</param>
@@ -60,11 +60,10 @@ namespace CodeEnv.Master.GameContent {
             : base(name, imageAtlasID, imageFilename, description, size * engineQty, mass * engineQty, Constants.ZeroF, expense * engineQty) {
             FullStlPropulsionPower = fullStlPropulsionPower * engineQty;
             FullFtlPropulsionPower = fullStlPropulsionPower * engineQty * ftlPropulsionPowerFactor;
+            if (maxTurnRate < TempGameValues.MinimumTurnRate) {
+                D.Warn("{0}'s MaxTurnRate {1:0.#} is too low. Game MinTurnRate = {2:0.#}.", DebugName, maxTurnRate, TempGameValues.MinimumTurnRate);
+            }
             MaxTurnRate = maxTurnRate;
-        }
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
         }
 
     }

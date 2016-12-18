@@ -39,6 +39,11 @@ namespace CodeEnv.Master.Common {
             _setter = setter;
         }
 
+        public Reference(Action<T> setter) {
+            _getter = null;
+            _setter = setter;
+        }
+
         public T Value {
             get { return _getter(); }
             set {

@@ -19,6 +19,7 @@
 
 using CodeEnv.Master.Common;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
 /// Abstract base class world-space tracking widget that becomes parented to and tracks a world target. The user perceives
@@ -31,7 +32,9 @@ public abstract class AWorldTrackingWidget_ConstantSize : AWorldTrackingWidget {
     protected override void Awake() {
         base.Awake();
         // placing this scaler above the UIPanel keeps Widget.onChange from firing every time the scale changes
+        Profiler.BeginSample("Proper AddComponent allocation", gameObject);
         _scaler = _billboard.gameObject.AddComponent<ScaleRelativeToCamera>();
+        Profiler.EndSample();
     }
 
     protected override void Show() {

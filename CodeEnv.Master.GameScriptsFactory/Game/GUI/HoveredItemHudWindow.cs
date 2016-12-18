@@ -46,7 +46,7 @@ public class HoveredItemHudWindow : AHudWindow<HoveredItemHudWindow>, IHoveredHu
     protected override void AcquireReferences() {
         base.AcquireReferences();
         _startingLocalPosition = transform.localPosition;
-        //D.Log("{0} initial local position: {1}.", GetType().Name, _startingLocalPosition);
+        //D.Log("{0} initial local position: {1}.", DebugName, _startingLocalPosition);
     }
 
     private void Subscribe() {
@@ -63,14 +63,14 @@ public class HoveredItemHudWindow : AHudWindow<HoveredItemHudWindow>, IHoveredHu
     }
 
     public void Show(string text) {
-        //D.Log("{0}.Show() called at {1}.", GetType().Name, Utility.TimeStamp);
+        //D.Log("{0}.Show() called at {1}.", DebugName, Utility.TimeStamp);
         var form = PrepareForm(FormID.TextHud);
         (form as TextForm).Text = text;
         ShowForm(form);
     }
 
     protected override void PositionWindow() {
-        //D.Log("{0}.PositionWindow() called.", GetType().Name);
+        //D.Log("{0}.PositionWindow() called.", DebugName);
         Vector3 intendedLocalPosition;
         if (SelectedItemHudWindow.Instance.IsShowing) {
             var selectionPopupLocalCorners = SelectedItemHudWindow.Instance.LocalCorners;
@@ -93,6 +93,14 @@ public class HoveredItemHudWindow : AHudWindow<HoveredItemHudWindow>, IHoveredHu
     }
 
     #endregion
+
+    [Obsolete]
+    protected override void __ValidateKilledFadeJobReference(Job fadeJobRef) {
+        if (fadeJobRef != null) {
+            // 12.9.16 Nothing to be done about this. I just want to know how frequently it occurs. See base.Validate for context.
+            D.WarnContext(this, "{0}'s {1} replaced previous reference before this validation test could occur.", DebugName, fadeJobRef.JobName);
+        }
+    }
 
     protected override void Cleanup() {
         base.Cleanup();

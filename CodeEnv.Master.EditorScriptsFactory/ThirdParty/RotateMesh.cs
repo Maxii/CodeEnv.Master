@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
 /// Takes a scaled, rotatedGameObject containing a mesh and makes a clone that has local scale of (1,1,1) and rotation (0,0,0). 
@@ -148,23 +149,43 @@ public class RotateMesh : EditorWindow {
         Selection.activeObject = curr.gameObject;
 
         //--- Do a rudimentary fix of mesh, box, and sphere colliders----
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
         MeshCollider mc = curr.GetComponent<MeshCollider>();
+        Profiler.EndSample();
+
         if (mc != null) {
             mc.sharedMesh = mf.sharedMesh;
         }
 
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
         BoxCollider bc = curr.GetComponent<BoxCollider>();
+        Profiler.EndSample();
+
         if (bc != null) {
             DestroyImmediate(bc);
+
+            Profiler.BeginSample("Proper AddComponent allocation");
             curr.gameObject.AddComponent<BoxCollider>();
-        }
-        SphereCollider sc = curr.GetComponent<SphereCollider>();
-        if (sc != null) {
-            DestroyImmediate(sc);
-            curr.gameObject.AddComponent<SphereCollider>();
+            Profiler.EndSample();
         }
 
-        if (curr.GetComponent<Collider>()) {
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+        SphereCollider sc = curr.GetComponent<SphereCollider>();
+        Profiler.EndSample();
+
+        if (sc != null) {
+            DestroyImmediate(sc);
+
+            Profiler.BeginSample("Proper AddComponent allocation");
+            curr.gameObject.AddComponent<SphereCollider>();
+            Profiler.EndSample();
+        }
+
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+        var col = curr.GetComponent<Collider>();
+        Profiler.EndSample();
+
+        if (col) {
             error = "Be sure to verify size of collider.";
         }
 

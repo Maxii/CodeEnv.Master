@@ -21,6 +21,7 @@ namespace CodeEnv.Master.GameContent {
     using System.ComponentModel;
     using CodeEnv.Master.Common;
     using UnityEngine;
+    using UnityEngine.SceneManagement;
 
     /// <summary>
     /// Interface allowing access to the associated Unity-compiled script. 
@@ -70,6 +71,17 @@ namespace CodeEnv.Master.GameContent {
         bool IsPaused { get; }
 
         bool IsRunning { get; }
+
+        /// <summary>
+        /// The SceneID of the CurrentScene that is showing. 
+        /// </summary>
+        SceneID CurrentSceneID { get; }
+
+        /// <summary>
+        /// The last SceneID that was showing before CurrentSceneID. If this is the
+        /// first scene after initialization, LastSceneID will == CurrentSceneID.
+        /// </summary>
+        SceneID LastSceneID { get; }
 
         IList<Player> AllPlayers { get; }
 

@@ -63,7 +63,7 @@ public class SphericalHighlight : AMonoBase, ISphericalHighlight {
         set { SetProperty<GameColor>(ref _color, value, "Color", ColorPropChangedEventHandler); }
     }
 
-    public string TargetName { get { return _target != null ? _target.DisplayName : "None"; } }
+    public string TargetName { get { return _target != null ? _target.DebugName : "None"; } }
 
     private IWidgetTrackable _target;
     private Renderer _renderer;

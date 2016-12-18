@@ -43,7 +43,7 @@ public class StarCtxControl : ACtxControl {
 
     protected override Vector3 PositionForDistanceMeasurements { get { return _starMenuOperator.Position; } }
 
-    protected override string OperatorName { get { return _starMenuOperator.FullName; } }
+    protected override string OperatorName { get { return _starMenuOperator.DebugName; } }
 
     private StarItem _starMenuOperator;
 

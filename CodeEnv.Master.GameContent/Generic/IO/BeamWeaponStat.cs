@@ -56,7 +56,7 @@ namespace CodeEnv.Master.GameContent {
             : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, deliveryVehicleStrength, reloadPeriod, damagePotential) {
             D.Assert(duration > Constants.ZeroF);
             if (maxLaunchInaccuracy > 5F) {
-                D.Warn("{0} MaxLaunchInaccuracy of {1:0.#} is very high.", Name, MaxLaunchInaccuracy);
+                D.Warn("{0} MaxLaunchInaccuracy of {1:0.#} is very high.", DebugName, MaxLaunchInaccuracy);
             }
             Duration = duration;
             MaxLaunchInaccuracy = maxLaunchInaccuracy;

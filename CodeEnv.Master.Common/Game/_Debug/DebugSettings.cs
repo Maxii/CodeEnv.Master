@@ -179,6 +179,7 @@ namespace CodeEnv.Master.Common {
         }
 
         private bool _enableStartupTimeout;
+        [Obsolete]
         public bool EnableStartupTimeout {
             get {
                 CheckValuesInitialized();

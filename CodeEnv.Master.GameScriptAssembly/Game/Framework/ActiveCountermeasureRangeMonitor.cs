@@ -21,6 +21,7 @@ using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
 /// Detects IInterceptableOrdnance that enter and exit the range of its active countermeasures and notifies each countermeasure of such.
@@ -47,14 +48,12 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
 
     protected override void HandleDetectedObjectAdded(IInterceptableOrdnance newlyDetectedThreat) {
         if (CanThreatBeIgnored(newlyDetectedThreat)) {
-            if (ShowDebugLog) {
-            D.Log("{0} is ignoring friendly detected threat {1} moving away.", FullName, newlyDetectedThreat.FullName);
-            }
+            //D.Log(ShowDebugLog, "{0} is ignoring friendly detected threat {1} moving away.", DebugName, newlyDetectedThreat.DebugName);
             return;
         }
         if (ShowDebugLog) {
-            var distanceFromMonitor = Vector3.Distance(newlyDetectedThreat.Position, transform.position);
-            D.Log("{0} added {1}. Distance from Monitor = {2:0.#}, Monitor Range = {3:0.#}.", FullName, newlyDetectedThreat.FullName, distanceFromMonitor, RangeDistance);
+            //var distanceFromMonitor = Vector3.Distance(newlyDetectedThreat.Position, transform.position);
+            //D.Log("{0} added {1}. Distance from Monitor = {2:0.#}, Monitor Range = {3:0.#}.", DebugName, newlyDetectedThreat.DebugName, distanceFromMonitor, RangeDistance);
         }
         AddThreat(newlyDetectedThreat);
     }
@@ -69,7 +68,11 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
     /// </summary>
     /// <param name="newThreat">The IInterceptableOrdnance threat.</param>
     private void AddThreat(IInterceptableOrdnance newThreat) {
+
+        Profiler.BeginSample("Proper Event Subscription allocation", gameObject);
         newThreat.deathOneShot += ThreatDeathEventHandler;
+        Profiler.EndSample();
+
         _equipmentList.ForAll(cm => {
             // GOTCHA!! As each CM receives this inRange notice, it can attack and destroy the threat
             // before the next ThreatInRange notice is sent to the next CM. As a result, IsOperational must
@@ -104,7 +107,7 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
     }
 
     private void HandleThreatDeath(IOrdnance deadThreat) {
-        //D.Log(ShowDebugLog, "{0} received threatDeath event for {1}.", Name, deadThreat.Name);
+        //D.Log(ShowDebugLog, "{0} received threatDeath event for {1}.", DebugName, deadThreat.Name);
         RemoveDetectedObject(deadThreat as IInterceptableOrdnance);
     }
 
@@ -162,8 +165,6 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
 
     protected override void Cleanup() {
         base.Cleanup();
-        // It is important to cleanup the subscriptions for each threat detected when this Monitor is dying of natural causes. 
-        IsOperational = false;
     }
 
     public override string ToString() {

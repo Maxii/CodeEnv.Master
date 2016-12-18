@@ -20,6 +20,7 @@ using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
 /// Event Hook class lets you easily add remote Event listener methods to a GameObject.
@@ -36,13 +37,10 @@ public class MyEventListener : AMonoBase, IMyEventListener {
     /// </summary>
     public static MyEventListener Get(GameObject go) {
 
-        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
-        MyEventListener listener = go.GetComponent<MyEventListener>();
+        Profiler.BeginSample("Proper AddComponent allocation", go);
+        MyEventListener listener = go.AddMissingComponent<MyEventListener>();
         Profiler.EndSample();
 
-        if (listener == null) {
-            listener = go.AddComponent<MyEventListener>();
-        }
         return listener;
     }
 

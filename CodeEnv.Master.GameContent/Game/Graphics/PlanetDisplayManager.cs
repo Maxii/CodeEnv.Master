@@ -20,6 +20,7 @@ namespace CodeEnv.Master.GameContent {
     using System.Linq;
     using CodeEnv.Master.Common;
     using UnityEngine;
+    using UnityEngine.Profiling;
 
     /// <summary>
     /// DisplayManager for Planets.
@@ -39,7 +40,7 @@ namespace CodeEnv.Master.GameContent {
             var meshRenderers = itemGo.GetComponentsInImmediateChildren<MeshRenderer>();
             var primaryMeshRenderer = meshRenderers.Single(mr => {
 
-                Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+                Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", (_trackedItem as Component).gameObject);
                 var ir = mr.GetComponent<IRevolver>();
                 Profiler.EndSample();
 

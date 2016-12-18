@@ -59,7 +59,7 @@ namespace CodeEnv.Master.GameContent {
             base.AssessComponentsToShowOrOperate();
             _revolver.IsActivated = IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS;
             _orbitSimulator.IsActivated = IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS;
-            //D.Log("{0}: Revolver and OrbitSimulator IsActivated = {1}.", Name, IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS);
+            //D.Log("{0}: Revolver and OrbitSimulator IsActivated = {1}.", DebugName, IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS);
         }
 
         // Once showing (aka DisplayMgr instance created when first discerned) a Planet/Moon never has to 

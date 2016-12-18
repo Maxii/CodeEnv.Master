@@ -93,43 +93,6 @@ namespace CodeEnv.Master.GameContent {
             return new ObjectAnalyzer().ToString(this);
         }
 
-        #region Archive
-
-        //protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {
-        //    base.AssignIncrementalValues_IntelCoverageComprehensive(data);
-        //    var planetoidData = data as PlanetoidData;
-        //    CurrentHitPoints = planetoidData.CurrentHitPoints;
-        //    Health = planetoidData.Health;
-        //}
-
-        //protected override void AssignIncrementalValues_IntelCoverageBroad(AItemData data) {
-        //    base.AssignIncrementalValues_IntelCoverageBroad(data);
-        //    var planetoidData = data as PlanetoidData;
-        //    MaxHitPoints = planetoidData.MaxHitPoints;
-        //    DefensiveStrength = planetoidData.DefensiveStrength;
-        //    Mass = planetoidData.Mass;
-        //    Capacity = planetoidData.Capacity;
-        //    Resources = planetoidData.Resources;
-        //}
-
-        //protected override void AssignIncrementalValues_IntelCoverageEssential(AItemData data) {
-        //    base.AssignIncrementalValues_IntelCoverageEssential(data);
-        //    var planetoidData = data as PlanetoidData;
-        //    Owner = planetoidData.Owner;
-        //    Category = planetoidData.Category;
-        //    OrbitalSpeed = planetoidData.OrbitalSpeed;
-        //    Position = planetoidData.Position;
-        //}
-
-        //protected override void AssignIncrementalValues_IntelCoverageBasic(AItemData data) {
-        //    base.AssignIncrementalValues_IntelCoverageBasic(data);
-        //    var planetoidData = data as PlanetoidData;
-        //    Name = planetoidData.Name;
-        //    ParentName = planetoidData.ParentName;
-        //    SectorID = planetoidData.SectorID;
-        //}
-
-        #endregion
 
     }
 }

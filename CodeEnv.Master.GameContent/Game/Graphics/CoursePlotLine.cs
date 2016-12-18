@@ -60,7 +60,7 @@ namespace CodeEnv.Master.GameContent {
             List<Vector3> waypointLocations = new List<Vector3>(course.Count);
             for (int i = 0; i < course.Count; i++) {
                 INavigable waypoint = course[i];
-                D.AssertNotNull(waypoint, course.Select(wpt => wpt.FullName).Concatenate());
+                D.AssertNotNull(waypoint, course.Select(wpt => wpt.DebugName).Concatenate());
                 waypointLocations.Add(waypoint.Position);
             }
             Points = waypointLocations;

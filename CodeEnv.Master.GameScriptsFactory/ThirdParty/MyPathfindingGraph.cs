@@ -22,7 +22,6 @@ namespace Pathfinding {
     using CodeEnv.Master.Common;
     using CodeEnv.Master.GameContent;
     using Serialization;
-    using Serialization.JsonFx;
     using UnityEngine;
 
     /// <summary>
@@ -748,7 +747,7 @@ namespace Pathfinding {
         /// </summary>
         /// <param name="baseCmd">The Starbase command.</param>
         public void AddToGraph(StarbaseCmdItem baseCmd) {
-            //D.Log("{0}.AddToGraph({1}) called.", GetType().Name, baseCmd.FullName);
+            //D.Log("{0}.AddToGraph({1}) called.", GetType().Name, baseCmd.DebugName);
             // Note: active.IsAnyGraphUpdatesQueued is never true except when using UpdateGraphs(). I've replaced UpdateGraphs(GUO) with WorkItems
 
             // forceCompletion is set by AstarPath internally 
@@ -782,8 +781,9 @@ namespace Pathfinding {
         /// </summary>
         /// <param name="baseCmd">The Starbase command.</param>
         public void RemoveFromGraph(StarbaseCmdItem baseCmd) {
-            D.Log("{0}.RemoveFromGraph({1}) called.", GetType().Name, baseCmd.FullName);
-            // Note: active.IsAnyGraphUpdatesQueued is never true except when using UpdateGraphs(). I've replaced UpdateGraphs(GUO) with WorkItems
+            D.Log("{0}.RemoveFromGraph({1}) called.", GetType().Name, baseCmd.DebugName);
+            // Note: active.IsAnyGraphUpdatesQueued is never true except when using UpdateGraphs(). 
+            // I've replaced UpdateGraphs(GUO) with WorkItems
 
             // forceCompletion is set by AstarPath internally 
             var makeApproachNodesUnwalkable = new AstarPath.AstarWorkItem(update: (forceCompletion) => {
@@ -1054,10 +1054,10 @@ namespace Pathfinding {
 
         //public void AddToGraph(StarbaseCmdItem baseCmd) {
         //if (active.IsAnyGraphUpdatesQueued) {
-        //    D.Log("{0}.AddToGraph({1}) was called with graph updates already queued.", GetType().Name, baseCmd.FullName);
+        //    D.Log("{0}.AddToGraph({1}) was called with graph updates already queued.", GetType().Name, baseCmd.DebugName);
         //}
         //else {
-        //    D.Log("{0}.AddToGraph({1}) called.", GetType().Name, baseCmd.FullName);
+        //    D.Log("{0}.AddToGraph({1}) called.", GetType().Name, baseCmd.DebugName);
         //}
 
         // forceCompletion is set by AstarPath internally 
@@ -1095,9 +1095,9 @@ namespace Pathfinding {
         //}
 
         //public void RemoveFromGraph(StarbaseCmdItem baseCmd) {
-        //    D.Log("{0}.RemoveFromGraph({1}) called.", GetType().Name, baseCmd.FullName);
+        //    D.Log("{0}.RemoveFromGraph({1}) called.", GetType().Name, baseCmd.DebugName);
         //    if (active.IsAnyGraphUpdatesQueued) {
-        //        D.Log("{0}.RemoveFromGraph({1}) was called with graph updates already queued.", GetType().Name, baseCmd.FullName);
+        //        D.Log("{0}.RemoveFromGraph({1}) was called with graph updates already queued.", GetType().Name, baseCmd.DebugName);
         //    }
 
         //    GraphUpdateObject guo;
@@ -1110,7 +1110,7 @@ namespace Pathfinding {
         //            __GraphUpdateStartTime = Utility.SystemTime;
         //        }
 
-        //        D.LogBold("{0}: RevertFromBackup() about to be called upon removal of {1}.", GetType().Name, baseCmd.FullName);
+        //        D.LogBold("{0}: RevertFromBackup() about to be called upon removal of {1}.", GetType().Name, baseCmd.DebugName);
         //        guo.RevertFromBackup();
 
         //        // Notes: RevertFromBackup() instantly reverses the node changes made when StarBase was added, but it DOES NOT re-establish 

@@ -24,6 +24,7 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
 /// Class for AUnitElementItems that are Facilities.
@@ -103,18 +104,18 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         _obstacleZoneCollider.enabled = false;
         _obstacleZoneCollider.isTrigger = true;
         _obstacleZoneCollider.radius = Radius * 2F;
-        //D.Log(ShowDebugLog, "{0} ObstacleZoneRadius = {1:0.##}.", FullName, _obstacleZoneCollider.radius);
+        //D.Log(ShowDebugLog, "{0} ObstacleZoneRadius = {1:0.##}.", DebugName, _obstacleZoneCollider.radius);
         if (_obstacleZoneCollider.radius > TempGameValues.LargestFacilityObstacleZoneRadius) {
-            D.Warn("{0}: ObstacleZoneRadius {1:0.##} > {2:0.##}.", FullName, _obstacleZoneCollider.radius, TempGameValues.LargestFacilityObstacleZoneRadius);
+            D.Warn("{0}: ObstacleZoneRadius {1:0.##} > {2:0.##}.", DebugName, _obstacleZoneCollider.radius, TempGameValues.LargestFacilityObstacleZoneRadius);
         }
         // Static trigger collider (no rigidbody) is OK as a ship's CollisionDetectionCollider has a kinematic rigidbody
 
-        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
         var rigidbody = _obstacleZoneCollider.gameObject.GetComponent<Rigidbody>();
         Profiler.EndSample();
 
         if (rigidbody != null) {
-            D.Warn("{0}.ObstacleZone has a Rigidbody it doesn't need.", FullName);
+            D.Warn("{0}.ObstacleZone has a Rigidbody it doesn't need.", DebugName);
         }
         InitializeObstacleDetourGenerator();
         InitializeDebugShowObstacleZone();
@@ -176,7 +177,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     protected override void __ValidateRadius(float radius) {
         if (radius > TempGameValues.FacilityMaxRadius) {
-            D.Error("{0} Radius {1:0.00} must be <= Max {2:0.00}.", FullName, radius, TempGameValues.FacilityMaxRadius);
+            D.Error("{0} Radius {1:0.00} must be <= Max {2:0.00}.", DebugName, radius, TempGameValues.FacilityMaxRadius);
         }
     }
 
@@ -236,9 +237,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         D.AssertNotEqual(FacilityState.Repairing, CurrentState);
 
         if (CurrentOrder != null) {
-            if (ShowDebugLog) {
-                D.Log("{0} received new order {1}.", FullName, CurrentOrder.Directive.GetValueName());
-            }
+            D.Log(ShowDebugLog, "{0} received new order {1}.", DebugName, CurrentOrder.Directive.GetValueName());
             FacilityDirective directive = CurrentOrder.Directive;
             __ValidateKnowledgeOfOrderTarget(CurrentOrder.Target, directive);
 
@@ -251,7 +250,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
                     CurrentState = FacilityState.Idling;
                     break;
                 case FacilityDirective.Repair:
-                    CurrentState = FacilityState.Repairing;
+                    CurrentState = FacilityState.ExecuteRepairOrder;
                     break;
                 case FacilityDirective.Refit:
                     CurrentState = FacilityState.Refitting;
@@ -279,7 +278,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             return;
         }
         if (!OwnerAIMgr.HasKnowledgeOf(target as IItem_Ltd)) {
-            D.Error("{0} received {1} order with Target {2} that {3} has no knowledge of.", FullName, directive.GetValueName(), target.FullName, Owner.LeaderName);
+            D.Error("{0} received {1} order with Target {2} that {3} has no knowledge of.", DebugName, directive.GetValueName(), target.DebugName, Owner.LeaderName);
         }
     }
 
@@ -299,7 +298,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         get { return (FacilityState)base.CurrentState; }
         set {
             if (base.CurrentState != null && CurrentState == value) {
-                D.Warn("{0} duplicate state {1} set attempt.", FullName, value.GetValueName());
+                D.Warn("{0} duplicate state {1} set attempt.", DebugName, value.GetValueName());
             }
             base.CurrentState = value;
         }
@@ -345,22 +344,18 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         if (CurrentOrder != null) {
             // check for a standing order to execute
             if (CurrentOrder.StandingOrder != null) {
-                if (ShowDebugLog) {
-                    D.LogBold("{0} returning to execution of standing order {1}.", FullName, CurrentOrder.StandingOrder);
-                }
+                D.LogBold(ShowDebugLog, "{0} returning to execution of standing order {1}.", DebugName, CurrentOrder.StandingOrder);
 
                 OrderSource standingOrderSource = CurrentOrder.StandingOrder.Source;
                 if (standingOrderSource != OrderSource.CmdStaff && standingOrderSource != OrderSource.User) {
-                    D.Error("{0} StandingOrder {1} source can't be {2}.", FullName, CurrentOrder.StandingOrder, standingOrderSource.GetValueName());
+                    D.Error("{0} StandingOrder {1} source can't be {2}.", DebugName, CurrentOrder.StandingOrder, standingOrderSource.GetValueName());
                 }
 
                 CurrentOrder = CurrentOrder.StandingOrder;
                 yield return null;
-                D.Error("{0} should never get here as CurrentOrder was changed to {1}.", FullName, CurrentOrder);
+                D.Error("{0} should never get here as CurrentOrder was changed to {1}.", DebugName, CurrentOrder);
             }
-            if (ShowDebugLog) {
-                D.Log("{0} has completed {1} with no standing order queued.", FullName, CurrentOrder);
-            }
+            //D.Log(ShowDebugLog, "{0} has completed {1} with no standing order queued.", DebugName, CurrentOrder);
             CurrentOrder = null;
         }
         IsAvailable = true; // 10.3.16 this can instantly generate a new Order (and thus a state change). Accordingly,  this EnterState
@@ -563,26 +558,30 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     // 7.2.16 Call()ed State
 
+    void Repairing_UponPreconfigureState() {
+        LogEvent();
+        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
+        D.Assert(!_debugSettings.DisableRepair);
+    }
+
     IEnumerator Repairing_EnterState() {
         LogEvent();
-        D.Assert(!_debugSettings.DisableRepair);
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
 
         StartEffectSequence(EffectSequenceID.Repairing);
 
         float repairCapacityPerDay = GetRepairCapacity();
-        string jobName = "{0}.RepairJob".Inject(FullName);
+        string jobName = "{0}.RepairJob".Inject(DebugName);
         _repairJob = _jobMgr.RecurringWaitForHours(GameTime.HoursPerDay, jobName, waitMilestone: () => {
             var repairedHitPts = repairCapacityPerDay;
             Data.CurrentHitPoints += repairedHitPts;
-            //D.Log(ShowDebugLog, "{0} repaired {1:0.#} hit points.", FullName, repairedHitPts);
+            //D.Log(ShowDebugLog, "{0} repaired {1:0.#} hit points.", DebugName, repairedHitPts);
         });
 
         while (Data.Health < Constants.OneHundredPercent) {
             // Wait here until repair finishes
             yield return null;
         }
-        _repairJob.Kill();
+        KillRepairJob();
 
         // HACK
         Data.PassiveCountermeasures.ForAll(cm => cm.IsDamaged = false);
@@ -593,9 +592,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         if (IsHQ) {
             Command.Data.CurrentHitPoints = Command.Data.MaxHitPoints;  // HACK
         }
-        if (ShowDebugLog) {
-            D.Log("{0}'s repair is complete. Health = {1:P01}.", FullName, Data.Health);
-        }
+        D.Log(ShowDebugLog, "{0}'s repair is complete. Health = {1:P01}.", DebugName, Data.Health);
 
         StopEffectSequence(EffectSequenceID.Repairing);
         Return();
@@ -631,13 +628,12 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     void Repairing_UponDeath() {
         LogEvent();
         _orderFailureCause = UnitItemOrderFailureCause.UnitItemDeath;
+        Return();
     }
 
     void Repairing_ExitState() {
         LogEvent();
-        if (_repairJob != null && _repairJob.IsRunning) {
-            _repairJob.Kill();
-        }
+        KillRepairJob();
     }
 
     #endregion
@@ -689,7 +685,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void Dead_UponPreconfigureState() {
         LogEvent();
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
+        // 12.17.16 _orderFailureCause can be UnitItemDeath or None depending on what FSM was doing when died
     }
 
     void Dead_EnterState() {
@@ -737,9 +733,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             healthThreshold = Constants.OneHundredPercent;
         }
         if (Data.Health < healthThreshold) {
-            if (ShowDebugLog) {
-                D.Log("{0} has determined it needs Repair.", FullName);
-            }
+            D.Log(ShowDebugLog, "{0} has determined it needs Repair.", DebugName);
             return true;
         }
         return false;
@@ -797,7 +791,11 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     }
 
     private void EnableDebugShowObstacleZone(bool toEnable) {
+
+        Profiler.BeginSample("Proper AddComponent allocation", gameObject);
         DrawColliderGizmo drawCntl = _obstacleZoneCollider.gameObject.AddMissingComponent<DrawColliderGizmo>();
+        Profiler.EndSample();
+
         drawCntl.Color = Color.red;
         drawCntl.enabled = toEnable;
     }
@@ -813,7 +811,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         }
         if (_obstacleZoneCollider != null) { // can be null if creator destroys facility 
 
-            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
             DrawColliderGizmo drawCntl = _obstacleZoneCollider.gameObject.GetComponent<DrawColliderGizmo>();
             Profiler.EndSample();
 
@@ -830,10 +828,10 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     //public override void TakeHit(CombatStrength attackerWeaponStrength) {
     //    CombatStrength damage = attackerWeaponStrength - Data.DefensiveStrength;
     //    if (damage.Combined == Constants.ZeroF) {
-    //        D.Log("{0} has been hit but incurred no damage.", FullName);
+    //        D.Log("{0} has been hit but incurred no damage.", DebugName);
     //        return;
     //    }
-    //    D.Log("{0} has been hit. Distributing {1} damage.", FullName, damage.Combined);
+    //    D.Log("{0} has been hit. Distributing {1} damage.", DebugName, damage.Combined);
     //    DistributeDamage(damage);
     //}
 
@@ -872,7 +870,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     ///// <param name="damage">The damage to apply to this facility.</param>
     ///// <param name="isDirectlyAttacked">if set to <c>true</c> this facility is the one being directly attacked.</param>
     //private void TakeDistributedDamage(float damage, bool isDirectlyAttacked) {
-    //    D.Assert(IsAliveAndOperating, "{0} should not already be dead!".Inject(FullName));
+    //    D.Assert(IsAliveAndOperating, "{0} should not already be dead!".Inject(DebugName));
 
     //    bool isElementAlive = ApplyDamage(damage);
 
@@ -909,6 +907,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         Idling,
 
         ExecuteAttackOrder,
+
+        ExecuteRepairOrder,
 
         Repairing,
 

@@ -73,13 +73,13 @@ public class FleetCreator : AAutoUnitCreator {
 
     protected override void AddUnitToGameKnowledge() {
         LogEvent();
-        //D.Log("{0} is adding Unit {1} to GameKnowledge.", Name, UnitName);
+        //D.Log(ShowDebugLog, "{0} is adding Unit {1} to GameKnowledge.", DebugName, UnitName);
         _gameMgr.GameKnowledge.AddUnit(_command, _elements.Cast<IUnitElement>());
     }
 
     protected override void AddUnitToOwnerAndAllysKnowledge() {
         LogEvent();
-        //D.Log("{0} is adding Unit {1} to {2}'s Knowledge.", Name, UnitName, Owner);
+        //D.Log(ShowDebugLog, "{0} is adding Unit {1} to {2}'s Knowledge.", DebugName, UnitName, Owner);
         var ownerAIMgr = _gameMgr.GetAIManagerFor(Owner);
         _elements.ForAll(e => ownerAIMgr.HandleGainedItemOwnership(e));
         ownerAIMgr.HandleGainedItemOwnership(_command);    // OPTIMIZE not really needed as this happens automatically when elements handled
@@ -87,7 +87,7 @@ public class FleetCreator : AAutoUnitCreator {
         var alliedPlayers = Owner.GetOtherPlayersWithRelationship(DiplomaticRelationship.Alliance);
         if (alliedPlayers.Any()) {
             alliedPlayers.ForAll(ally => {
-                //D.Log("{0} is adding Unit {1} to {2}'s Knowledge as Ally.", Name, UnitName, ally);
+                //D.Log(ShowDebugLog, "{0} is adding Unit {1} to {2}'s Knowledge as Ally.", DebugName, UnitName, ally);
                 var allyAIMgr = _gameMgr.GetAIManagerFor(ally);
                 _elements.ForAll(e => allyAIMgr.HandleChgdItemOwnerIsAlly(e));
                 allyAIMgr.HandleChgdItemOwnerIsAlly(_command);  // OPTIMIZE not really needed as this happens automatically when elements handled
@@ -113,10 +113,10 @@ public class FleetCreator : AAutoUnitCreator {
     [Obsolete]
     protected override void __IssueFirstUnitOrder(Action onCompleted) {
         LogEvent();
-        //D.Log("{0} launching 1 hour wait on {1}. Frame {2}, UnityTime {3:0.0}, SystemTimeStamp {4}.", Name, GameTime.Instance.CurrentDate, Time.frameCount, Time.time, Utility.TimeStamp);
+        //D.Log(ShowDebugLog, "{0} launching 1 hour wait on {1}. Frame {2}, UnityTime {3:0.0}, SystemTimeStamp {4}.", DebugName, GameTime.Instance.CurrentDate, Time.frameCount, Time.time, Utility.TimeStamp);
 
         // The following delay avoids script execution order issue when this creator receives IsRunning before other creators
-        string jobName = "{0}.WaitToIssueFirstOrderJob".Inject(Name);
+        string jobName = "{0}.WaitToIssueFirstOrderJob".Inject(DebugName);
         _jobMgr.WaitForHours(1F, jobName, waitFinished: delegate {    // makes sure Owner's knowledge of universe has been constructed before selecting its target
             __GetFleetUnderway();
             onCompleted();
@@ -137,12 +137,12 @@ public class FleetCreator : AAutoUnitCreator {
         }
 
         if (!moveTgts.Any()) {
-            D.Log("{0} can find no MoveTargets that meet the selection criteria. Picking an unowned Sector.", Name);
+            D.Log("{0} can find no MoveTargets that meet the selection criteria. Picking an unowned Sector.", DebugName);
             moveTgts.AddRange(SectorGrid.Instance.Sectors.Where(s => s.Owner == TempGameValues.NoPlayer).Cast<IFleetNavigable>());
         }
         IFleetNavigable destination;
         destination = moveTgts.MaxBy(mt => Vector3.SqrMagnitude(mt.Position - transform.position));
-        //D.Log("{0} destination is {1}.", UnitName, destination.FullName);
+        //D.Log(ShowDebugLog, "{0} destination is {1}.", UnitName, destination.DebugName);
         _command.CurrentOrder = new FleetOrder(FleetDirective.Move, OrderSource.CmdStaff, destination);
     }
 
@@ -181,7 +181,7 @@ public class FleetCreator : AAutoUnitCreator {
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
         }
         float radius = hullStat.HullDimensions.magnitude / 2F;
-        //D.Log("Radius of {0} is {1:0.##}.", hullCat.GetValueName(), radius);
+        //D.Log(ShowDebugLog, "Radius of {0} is {1:0.##}.", hullCat.GetValueName(), radius);
         float minViewDistance = radius * 2F;
         float optViewDistance = radius * 3F;
         float distanceDampener = 3F;    // default

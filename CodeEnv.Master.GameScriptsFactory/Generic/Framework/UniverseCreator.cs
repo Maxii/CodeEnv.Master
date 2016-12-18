@@ -35,7 +35,9 @@ public class UniverseCreator {
 
     public NewGameUnitConfigurator UnitConfigurator { get; private set; }
 
-    private string Name { get { return GetType().Name; } }
+    private string DebugName { get { return GetType().Name; } }
+
+    private bool ShowDebugLog { get { return DebugControls.Instance.ShowDeploymentDebugLogs; } }
 
     private IDictionary<DiplomaticRelationship, IList<Player>> _aiPlayerInitialUserRelationsLookup;
     private IDictionary<Player, IntVector3> _playersHomeSectorLookup;
@@ -125,7 +127,7 @@ public class UniverseCreator {
         deployedSystemCreators = SystemConfigurator.ConfigureExistingDebugCreators(remainingSystemQty, occupiedSectorIDs).Cast<SystemCreator>();
         _systemCreators.AddRange(deployedSystemCreators);
         occupiedSectorIDs.AddRange(deployedSystemCreators.Select(c => c.SectorID));
-        //D.Log("{0} _systemCreators contents: {1}.", Name, _systemCreators.Select(c => c.Name).Concatenate());
+        //D.Log(ShowDebugLog, "{0} _systemCreators contents: {1}.", DebugName, _systemCreators.Select(c => c.DebugName).Concatenate());
         remainingSystemQty = systemQty - _systemCreators.Count;
         D.Assert(remainingSystemQty >= 0);
         if (remainingSystemQty == 0) {
@@ -145,10 +147,10 @@ public class UniverseCreator {
         });
 
         int randomSystemQtyDeployed = sectorIDsToDeployTo.Count();
-        D.Log("{0} deployed and configured {1} additional random {2}s.", GetType().Name, randomSystemQtyDeployed, typeof(SystemCreator).Name);
+        D.Log(ShowDebugLog, "{0} deployed and configured {1} additional random {2}s.", DebugName, randomSystemQtyDeployed, typeof(SystemCreator).Name);
         int systemQtyNotDeployed = remainingSystemQty - randomSystemQtyDeployed;
         if (systemQtyNotDeployed > 0) {
-            D.Warn("{0} ran out of sectors to deploy {1} remaining systems.", Name, systemQtyNotDeployed);
+            D.Warn("{0} ran out of sectors to deploy {1} remaining systems.", DebugName, systemQtyNotDeployed);
         }
     }
 
@@ -157,7 +159,7 @@ public class UniverseCreator {
     /// </summary>
     public void BuildSystems() {
         _systemCreators.ForAll(sc => {
-            //D.Log("{0} is about to call {1}.BuildAndDeploySystem().", Name, sc.Name);
+            //D.Log(ShowDebugLog, "{0} is about to call {1}.BuildAndDeploySystem().", DebugName, sc.DebugName);
             sc.BuildAndDeploySystem();
         });
     }
@@ -263,7 +265,7 @@ public class UniverseCreator {
                 settlementDebugCreatorsDeployed = settlementCreatorsDeployed.Where(c => c is ADebugUnitCreator).Cast<ADebugUnitCreator>();
                 settlementDebugCreators = settlementDebugCreators.Except(settlementDebugCreatorsDeployed);
             }
-            D.Log("{0} deployed an additional {1} AI unit creators.", Name, additionalDeployedCreatorCount);
+            D.Log(ShowDebugLog, "{0} deployed an additional {1} AI unit creators.", DebugName, additionalDeployedCreatorCount);
         }
 
         List<ADebugUnitCreator> debugCreatorsToDestroy = new List<ADebugUnitCreator>();
@@ -271,7 +273,7 @@ public class UniverseCreator {
         debugCreatorsToDestroy.AddRange(starbaseDebugCreators);
         debugCreatorsToDestroy.AddRange(settlementDebugCreators);
         debugCreatorsToDestroy.ForAll(c => {
-            //D.Log("{0} is about to destroy excess {1}.", Name, c.Name);
+            //D.Log(ShowDebugLog, "{0} is about to destroy excess {1}.", DebugName, c.DebugName);
             GameUtility.Destroy(c.gameObject);
         });
     }
@@ -291,7 +293,7 @@ public class UniverseCreator {
 
         HashSet<DiplomaticRelationship> uniqueDesiredAiUserRelationships =
             new HashSet<DiplomaticRelationship>(desiredAiUserRelationships, DiplomaticRelationshipEqualityComparer.Default);
-        //D.Log("{0}: Unique desired AI/User Relationships = {1}.", Name, uniqueDesiredAiUserRelationships.Select(r => r.GetValueName()).Concatenate());
+        //D.Log(ShowDebugLog, "{0}: Unique desired AI/User Relationships = {1}.", DebugName, uniqueDesiredAiUserRelationships.Select(r => r.GetValueName()).Concatenate());
 
         // Setup initial AIPlayer <-> User relationships derived from editorCreators..
         Dictionary<DiplomaticRelationship, IList<Player>> aiPlayerInitialUserRelationsLookup =
@@ -300,7 +302,7 @@ public class UniverseCreator {
         uniqueDesiredAiUserRelationships.ForAll(aiUserRelationship => {
             if (unassignedAIPlayers.Count > Constants.Zero) {
                 var aiPlayer = unassignedAIPlayers.Pop();
-                //D.Log("{0} about to set {1}'s user relationship to {2}.", Name, aiPlayer, aiUserRelationship.GetValueName());
+                //D.Log(ShowDebugLog, "{0} about to set {1}'s user relationship to {2}.", DebugName, aiPlayer, aiUserRelationship.GetValueName());
                 userPlayer.SetInitialRelationship(aiPlayer, aiUserRelationship);  // will auto handle both assignments
                 aiPlayerInitialUserRelationsLookup.Add(aiUserRelationship, new List<Player>() { aiPlayer });
             }
@@ -313,7 +315,7 @@ public class UniverseCreator {
                 aiPlayerInitialUserRelationsLookup.Add(DiplomaticRelationship.Neutral, neutralAiPlayers);
             }
             unassignedAIPlayers.ForAll(aiPlayer => {
-                //D.Log("{0} about to set {1}'s user relationship to {2}.", Name, aiPlayer, DiplomaticRelationship.Neutral.GetValueName());
+                //D.Log(ShowDebugLog, "{0} about to set {1}'s user relationship to {2}.", DebugName, aiPlayer, DiplomaticRelationship.Neutral.GetValueName());
                 userPlayer.SetInitialRelationship(aiPlayer); // Neutral, will auto handle both assignments
                 neutralAiPlayers.Add(aiPlayer);
             });
@@ -347,7 +349,7 @@ public class UniverseCreator {
             SectorGrid sectorGrid = SectorGrid.Instance;
             var gameKnowledge = _gameMgr.GameKnowledge;
             IList<IntVector3> candidateSectorIDs = new List<IntVector3>();
-            D.Assert(_playersHomeSectorLookup.ContainsKey(player), player.Name);
+            D.Assert(_playersHomeSectorLookup.ContainsKey(player), player.DebugName);
             IntVector3 homeSectorID = _playersHomeSectorLookup[player];
 
             IEnumerable<IntVector3> homeNeighborSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID);
@@ -358,10 +360,10 @@ public class UniverseCreator {
                 }
             }
             if (candidateSectorIDs.Count < qtyToDeploy) {
-                D.Warn("{0} only found {1} of the {2} sectors reqd to deploy all of {3}'s Starbases. Fixing.", Name, candidateSectorIDs.Count, qtyToDeploy, player);
+                D.Warn("{0} only found {1} of the {2} sectors reqd to deploy all of {3}'s Starbases. Fixing.", DebugName, candidateSectorIDs.Count, qtyToDeploy, player);
                 candidateSectorIDs = homeNeighborSectorIDs.ToList();
                 if (candidateSectorIDs.Count < qtyToDeploy) {
-                    D.Error("{0} only found {1} of the {2} sectors reqd to deploy all of {3}'s Starbases.", Name, candidateSectorIDs.Count, qtyToDeploy, player);
+                    D.Error("{0} only found {1} of the {2} sectors reqd to deploy all of {3}'s Starbases.", DebugName, candidateSectorIDs.Count, qtyToDeploy, player);
                     // Unlikely to occur, but if it does, I'll need to find other sectors to add
                 }
             }
@@ -419,12 +421,12 @@ public class UniverseCreator {
             SectorGrid sectorGrid = SectorGrid.Instance;
             var gameKnowledge = _gameMgr.GameKnowledge;
             Stack<IntVector3> sectorIDsToDeployTo = new Stack<IntVector3>(qtyToDeploy);
-            D.Assert(_playersHomeSectorLookup.ContainsKey(player), player.Name);
+            D.Assert(_playersHomeSectorLookup.ContainsKey(player), player.DebugName);
             IntVector3 homeSectorID = _playersHomeSectorLookup[player];
 
             ISystem unused;
             if (!gameKnowledge.TryGetSystem(homeSectorID, out unused)) {
-                D.Error("{0} couldn't find a system in {1}'s home sector.", Name, player);
+                D.Error("{0} couldn't find a system in {1}'s home sector.", DebugName, player);
             }
 
             sectorIDsToDeployTo.Push(homeSectorID); // if start with fleet(s), always deploy one in the home sector
@@ -441,7 +443,7 @@ public class UniverseCreator {
                 }
 
                 if (sectorIDsToDeployTo.Count < qtyToDeploy) {
-                    D.Warn("{0} only found {1} of the {2} sectors reqd to deploy all of {3}'s Fleets. Fixing.", Name, sectorIDsToDeployTo.Count, qtyToDeploy, player);
+                    D.Warn("{0} only found {1} of the {2} sectors reqd to deploy all of {3}'s Fleets. Fixing.", DebugName, sectorIDsToDeployTo.Count, qtyToDeploy, player);
                     foreach (var neighborSectorID in homeNeighborSectorIDs) {
                         if (gameKnowledge.TryGetSystem(neighborSectorID, out unused)) {
                             sectorIDsToDeployTo.Push(neighborSectorID);
@@ -451,7 +453,7 @@ public class UniverseCreator {
                         }
                     }
                     if (sectorIDsToDeployTo.Count < qtyToDeploy) {
-                        D.Error("{0} only found {1} of the {2} sectors reqd to deploy all of {3}'s Fleets.", Name, sectorIDsToDeployTo.Count, qtyToDeploy, player);
+                        D.Error("{0} only found {1} of the {2} sectors reqd to deploy all of {3}'s Fleets.", DebugName, sectorIDsToDeployTo.Count, qtyToDeploy, player);
                         // Unlikely to occur, but if it does, I'll need to find other sectors to add
                     }
                 }
@@ -513,12 +515,12 @@ public class UniverseCreator {
         if (qtyToDeploy > Constants.Zero) {
             var gameKnowledge = _gameMgr.GameKnowledge;
             Stack<ISystem> systemsToDeployTo = new Stack<ISystem>(qtyToDeploy);
-            D.Assert(_playersHomeSectorLookup.ContainsKey(player), player.Name);
+            D.Assert(_playersHomeSectorLookup.ContainsKey(player), player.DebugName);
             IntVector3 homeSectorID = _playersHomeSectorLookup[player];
 
             ISystem system;
             if (!gameKnowledge.TryGetSystem(homeSectorID, out system)) {
-                D.Error("{0} couldn't find a system in {1}'s home sector.", Name, player);
+                D.Error("{0} couldn't find a system in {1}'s home sector.", DebugName, player);
             }
             systemsToDeployTo.Push(system); // places home system on bottom but who cares?
             if (qtyToDeploy > Constants.One) {
@@ -537,7 +539,7 @@ public class UniverseCreator {
                 }
                 // IMPROVE It seems theoretically possible that I won't be able to find enough systems...
                 if (systemsToDeployTo.Count != qtyToDeploy) {
-                    D.Error("{0} only found {1} rather than {2} additional systems to deploy {3}'s Settlements.", Name, systemsToDeployTo.Count, qtyToDeploy, player);
+                    D.Error("{0} only found {1} rather than {2} additional systems to deploy {3}'s Settlements.", DebugName, systemsToDeployTo.Count, qtyToDeploy, player);
                 }
             }
 
@@ -641,7 +643,7 @@ public class UniverseCreator {
             }
 
             if (sectorIDsToDeployTo.Count < qtyToDeploy) {
-                D.Log("{0} only found {1} rather than {2} available sectors without systems to deploy {3}'s additional Starbases.", Name, sectorIDsToDeployTo.Count, qtyToDeploy, player);
+                D.Log(ShowDebugLog, "{0} only found {1} rather than {2} available sectors without systems to deploy {3}'s additional Starbases.", DebugName, sectorIDsToDeployTo.Count, qtyToDeploy, player);
                 qtyToDeploy = sectorIDsToDeployTo.Count;
             }
 
@@ -704,7 +706,7 @@ public class UniverseCreator {
             }
 
             if (sectorIDsToDeployTo.Count < qtyToDeploy) {
-                D.Log("{0} only found {1} rather than {2} available sectors to deploy {3}'s additional Fleets.", Name, sectorIDsToDeployTo.Count, qtyToDeploy, player);
+                D.Log(ShowDebugLog, "{0} only found {1} rather than {2} available sectors to deploy {3}'s additional Fleets.", DebugName, sectorIDsToDeployTo.Count, qtyToDeploy, player);
                 qtyToDeploy = sectorIDsToDeployTo.Count;
             }
 
@@ -774,7 +776,7 @@ public class UniverseCreator {
             }
 
             if (systemsToDeployTo.Count < qtyToDeploy) {
-                D.Log("{0} only found {1} rather than {2} available systems to deploy {3}'s additional Settlements.", Name, systemsToDeployTo.Count, qtyToDeploy, player);
+                D.Log(ShowDebugLog, "{0} only found {1} rather than {2} available systems to deploy {3}'s additional Settlements.", DebugName, systemsToDeployTo.Count, qtyToDeploy, player);
                 qtyToDeploy = systemsToDeployTo.Count;
             }
 
@@ -939,10 +941,10 @@ public class UniverseCreator {
         int minReqdSystemQty = universeSize.MinReqdSystemQty();
         if (result < minReqdSystemQty) {
             D.Warn("{0}: Calculated System Qty {1} < Min Reqd System Qty {2}. Correcting. SystemDensity = {3}, UniverseSize = {4}.",
-                Name, result, minReqdSystemQty, systemDensity.GetValueName(), universeSize.GetValueName());
+                DebugName, result, minReqdSystemQty, systemDensity.GetValueName(), universeSize.GetValueName());
             result = minReqdSystemQty;
         }
-        D.Log("{0} calculated a need for {1} Systems in a universe of {2} non-peripheral sectors.", Name, result, nonPeripheralSectorQty);
+        D.Log(ShowDebugLog, "{0} calculated a need for {1} Systems in a universe of {2} non-peripheral sectors.", DebugName, result, nonPeripheralSectorQty);
         return result;
     }
 
@@ -959,7 +961,7 @@ public class UniverseCreator {
         int qtyDeployed = creatorsDeployed.Count;
         int debugCreatorDeployedQty = creatorsDeployed.Select(c => c is ADebugUnitCreator).Count();
         int autoCreatorDeployedQty = qtyDeployed - debugCreatorDeployedQty;
-        D.Log("{0} deployed {1} {2} for {3}. DebugCreators: {4}, AutoCreators: {5}.", Name, qtyDeployed, deployedType.Name, player, debugCreatorDeployedQty, autoCreatorDeployedQty);
+        D.Log(ShowDebugLog, "{0} deployed {1} {2} for {3}. DebugCreators: {4}, AutoCreators: {5}.", DebugName, qtyDeployed, deployedType.Name, player, debugCreatorDeployedQty, autoCreatorDeployedQty);
     }
 
     /// <summary>
@@ -984,7 +986,7 @@ public class UniverseCreator {
     /// <returns></returns>
     private List<SystemCreator> __ConfigureExistingDebugCreatorsOnly_System() {
         DebugSystemCreator[] existingDebugCreators = UniverseFolder.Instance.GetComponentsInChildren<DebugSystemCreator>();
-        D.Log("{0} found {1} existing {2}s to configure.", Name, existingDebugCreators.Count(), typeof(DebugSystemCreator).Name);
+        D.Log(ShowDebugLog, "{0} found {1} existing {2}s to configure.", DebugName, existingDebugCreators.Count(), typeof(DebugSystemCreator).Name);
 
         existingDebugCreators.ForAll(c => {
             string existingSystemName = c.SystemName;
@@ -1031,7 +1033,7 @@ public class UniverseCreator {
             }
 
             remainingSettlementCreators.ForAll(c => {
-                D.Log("{0} is about to destroy excess Creator {1}.", Name, c.Name);
+                D.Log(ShowDebugLog, "{0} is about to destroy excess Creator {1}.", DebugName, c.DebugName);
                 GameUtility.Destroy(c.gameObject);
             });
         }
@@ -1070,7 +1072,7 @@ public class UniverseCreator {
             remainingStarbaseCreators = remainingStarbaseCreators.Except(configuredStarbaseCreators.Cast<ADebugUnitCreator>());
 
             remainingStarbaseCreators.ForAll(c => {
-                D.Log("{0} is about to destroy excess Creator {1}.", Name, c.Name);
+                D.Log(ShowDebugLog, "{0} is about to destroy excess Creator {1}.", DebugName, c.DebugName);
                 GameUtility.Destroy(c.gameObject);
             });
         }
@@ -1109,7 +1111,7 @@ public class UniverseCreator {
             remainingFleetCreators = remainingFleetCreators.Except(configuredFleetCreators.Cast<ADebugUnitCreator>());
 
             remainingFleetCreators.ForAll(c => {
-                D.Log("{0} is about to destroy excess Creator {1}.", Name, c.Name);
+                D.Log(ShowDebugLog, "{0} is about to destroy excess Creator {1}.", DebugName, c.DebugName);
                 GameUtility.Destroy(c.gameObject);
             });
         }

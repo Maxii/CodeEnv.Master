@@ -57,7 +57,7 @@ namespace CodeEnv.Master.GameContent {
         public override void FinalInitialize() {
             base.FinalInitialize();
             // Deployment has already occurred
-            // D.Log("{0}.FinalInitialize() called. Initializing SectorID.", FullName);
+            // D.Log("{0}.FinalInitialize() called. Initializing SectorID.", DebugName);
             _sectorID = InitializeSectorID();
         }
 
@@ -74,7 +74,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void HandleUnitWeaponsRangeChanged() {
             if (UnitWeaponsRange.Max > TempGameValues.__MaxBaseWeaponsRangeDistance) {
-                D.Warn("{0} max UnitWeaponsRange {1:0.#} > {2:0.#}.", FullName, UnitWeaponsRange.Max, TempGameValues.__MaxBaseWeaponsRangeDistance);
+                D.Warn("{0} max UnitWeaponsRange {1:0.#} > {2:0.#}.", DebugName, UnitWeaponsRange.Max, TempGameValues.__MaxBaseWeaponsRangeDistance);
             }
         }
 

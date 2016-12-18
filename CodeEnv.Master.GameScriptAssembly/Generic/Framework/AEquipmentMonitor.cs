@@ -28,12 +28,14 @@ using CodeEnv.Master.GameContent;
 /// <typeparam name="EquipmentType">The Type of ranged equipment.</typeparam>
 public abstract class AEquipmentMonitor<EquipmentType> : AColliderMonitor where EquipmentType : ARangedEquipment {
 
-    private const string NameFormat = "{0}.{1}[{2}, {3:0.} Units]";
+    private const string DebugNameFormat = "{0}.{1}[{2}, {3:0.} Units]";
 
-    public sealed override string FullName {
+    public sealed override string DebugName {
         get {
-            if (ParentItem == null) { return base.FullName; }
-            return NameFormat.Inject(ParentItem.FullName, GetType().Name, RangeCategory.GetValueName(), RangeDistance);
+            if (ParentItem == null) {
+                return base.DebugName;
+            }
+            return DebugNameFormat.Inject(ParentItem.DebugName, GetType().Name, RangeCategory.GetValueName(), RangeDistance);
         }
     }
 

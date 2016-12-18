@@ -72,7 +72,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         get { return _settlement; }
         set {
             if (_settlement != null && value != null) {
-                D.Error("{0} cannot assign {1} when {2} is already present.", FullName, value.FullName, _settlement.FullName);
+                D.Error("{0} cannot assign {1} when {2} is already present.", DebugName, value.DebugName, _settlement.DebugName);
             }
             SetProperty<SettlementCmdItem>(ref _settlement, value, "Settlement", SettlementPropChangedHandler);
         }
@@ -82,7 +82,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
     public StarItem Star {
         get { return _star; }
         set {
-            D.AssertNull(_star, FullName);
+            D.AssertNull(_star, DebugName);
             SetProperty<StarItem>(ref _star, value, "Star", StarPropSetHandler);
         }
     }
@@ -137,8 +137,12 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
 
     private void __InitializeOrbitalPlaneMeshCollider() {
         _orbitalPlaneCollider = gameObject.GetComponentInChildren<MeshCollider>();
-        _orbitalPlaneCollider.convex = true;    // must precede isTrigger = true as Trigger's aren't supported on concave meshColliders
-        _orbitalPlaneCollider.isTrigger = true;
+
+        // 12.2.16 Being convex allowed the collider to be a trigger. Ngui 3.11.0 events now ignore trigger colliders when Ngui's EventType 
+        // is World_3D so the collider can no longer be a trigger. Also being convex was reqd to use a rigidbody and was reqd to allow 
+        // collisions with other mesh colliders. As I don't need either, it is no longer convex. As the whole GameObject is on its
+        // own layer (Layers.SystemOrbitalPlane) and has no allowed collisions (ProjectSettings.Physics), it doesn't need to be a trigger.
+        _orbitalPlaneCollider.convex = false;
         _orbitalPlaneCollider.enabled = true;
     }
 
@@ -255,7 +259,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         if (IsOperational) { // don't activate until operational, otherwise Assert(IsRunning) will fail in OrbitData
             settlementCmd.CelestialOrbitSimulator.IsActivated = true;
         }
-        D.Log(ShowDebugLog, "{0} has been deployed to {1}.", settlementCmd.DisplayName, FullName);
+        D.Log(ShowDebugLog, "{0} has been deployed to {1}.", settlementCmd.DebugName, DebugName);
     }
 
     protected override void ShowSelectedItemHud() {
@@ -279,9 +283,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
             if (IsOperational) { // don't activate until operational, otherwise Assert(IsRunning) will fail in OrbitData
                 Settlement.CelestialOrbitSimulator.IsActivated = true;
             }
-            if (ShowDebugLog) {
-                D.Log("{0} has been deployed to {1}.", Settlement.DisplayName, FullName);
-            }
+            D.Log(ShowDebugLog, "{0} has been deployed to {1}.", Settlement.DebugName, DebugName);
         }
         else {
             // The existing Settlement has died, so cleanup the orbit slot in prep for a future Settlement
@@ -326,7 +328,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
             if (_trackingLabel == null) {
                 float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
                 _trackingLabel = TrackingWidgetFactory.Instance.MakeUITrackingLabel(this, WidgetPlacement.Above, minShowDistance);
-                _trackingLabel.Set(DisplayName);
+                _trackingLabel.Set(DebugName);
                 _trackingLabel.Color = Owner.Color;
             }
             AssessShowTrackingLabel();
@@ -391,9 +393,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         var sectorViewHighlightMgr = GetHighlightMgr(HighlightMgrID.SectorView) as SectorViewHighlightManager;
         if (!IsDiscernibleToUser) {
             if (sectorViewHighlightMgr.IsHighlightShowing) {
-                if (ShowDebugLog) {
-                    D.Log("{0} received ShowSectorViewHighlight({1}) when not discernible but showing. Sending Show(false) to sync HighlightMgr.", FullName, toShow);
-                }
+                //D.Log(ShowDebugLog, "{0} received ShowSectorViewHighlight({1}) when not discernible but showing. Sending Show(false) to sync HighlightMgr.", DebugName, toShow);
                 sectorViewHighlightMgr.Show(false);
             }
             return;

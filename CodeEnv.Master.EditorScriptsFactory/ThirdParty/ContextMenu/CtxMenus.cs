@@ -19,6 +19,7 @@
 
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
 /// Static helper class for CtxMenus.
@@ -40,7 +41,10 @@ public static class CtxMenus {
             ct.localRotation = Quaternion.identity;
             ct.localScale = Vector3.one;
 
+            Profiler.BeginSample("Proper AddComponent allocation");
             ctxMenuObj.AddComponent<CtxMenu>();
+            Profiler.EndSample();
+
             Selection.activeGameObject = ctxMenuObj;
 
             Undo.RegisterCreatedObjectUndo(ctxMenuObj, "Add a Context Menu");
@@ -62,7 +66,10 @@ public static class CtxMenus {
             ct.localRotation = Quaternion.identity;
             ct.localScale = Vector3.one;
 
+            Profiler.BeginSample("Proper AddComponent allocation");
             CtxMenu menu = ctxMenuObj.AddComponent<CtxMenu>();
+            Profiler.EndSample();
+
             menu.atlas = PickAtlas();
             menu.font = PickFont();
 
@@ -102,10 +109,12 @@ public static class CtxMenus {
             menuButton.contextMenu = menu;
             menuButton.currentItemLabel = lbl;
 
+            Profiler.BeginSample("Proper AddComponent allocation");
             ctxButtonObj.AddComponent<UIButton>().tweenTarget = bg.gameObject;
             ctxButtonObj.AddComponent<UIButtonScale>();
             ctxButtonObj.AddComponent<UIButtonOffset>();
             ctxButtonObj.AddComponent<UIPlaySound>();
+            Profiler.EndSample();
 
             Selection.activeGameObject = ctxButtonObj;
 
@@ -127,7 +136,10 @@ public static class CtxMenus {
             ct.localRotation = Quaternion.identity;
             ct.localScale = Vector3.one;
 
+            Profiler.BeginSample("Proper AddComponent allocation");
             CtxMenu ctxMenu = ctxMenuObj.AddComponent<CtxMenu>();
+            Profiler.EndSample();
+
             ctxMenu.isMenuBar = true;
             ctxMenu.style = CtxMenu.Style.Horizontal;
 

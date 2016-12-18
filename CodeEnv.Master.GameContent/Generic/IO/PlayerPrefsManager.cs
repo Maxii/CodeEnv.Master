@@ -262,7 +262,7 @@ namespace CodeEnv.Master.GameContent {
         public void RecordGamePlayOptions(GamePlayOptionSettings settings) {
             GameSpeedOnLoad = settings.GameSpeedOnLoad;
             IsZoomOutOnCursorEnabled = settings.IsZoomOutOnCursorEnabled;
-            //D.Log("{0}: At OptionChangeEvent, PlayerPrefsMgr.IsZoomOutOnCursorEnabled = {1}.", Name, IsZoomOutOnCursorEnabled);
+            //D.Log("{0}: At OptionChangeEvent, PlayerPrefsMgr.IsZoomOutOnCursorEnabled = {1}.", DebugName, IsZoomOutOnCursorEnabled);
             IsResetOnFocusEnabled = settings.IsResetOnFocusEnabled;
             IsCameraRollEnabled = settings.IsCameraRollEnabled;
             IsPauseOnLoadEnabled = settings.IsPauseOnLoadEnabled;
@@ -484,7 +484,7 @@ namespace CodeEnv.Master.GameContent {
 
             PlayerPrefs.Save();
             //var retrievedPlayerCount = RetrieveIntPref(_playerCountKey, UniverseSize.Normal.DefaultPlayerCount());
-            //D.Log("{0} confirming PlayerCount value stored is {1}.", Name, retrievedPlayerCount);
+            //D.Log("{0} confirming PlayerCount value stored is {1}.", DebugName, retrievedPlayerCount);
         }
 
         private void StoreBooleanPref(string key, bool value) {
@@ -498,7 +498,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void StoreIntPref(string key, int value) {
             PlayerPrefs.SetInt(key, Encrypt(value));
-            D.Log("{0} is storing value {1} for key {2}.", Name, value, key);
+            //D.Log("{0} is storing value {1} for key {2}.", DebugName, value, key);
         }
 
         private void StoreFloatPref(string key, float value) {
@@ -507,7 +507,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void StoreEnumPref<T>(string key, T value) where T : struct {
             if (!Enums<T>.IsDefined(value)) {
-                D.Error("{0}: Undefined value {1} of EnumType {2}.", Name, value.ToString(), typeof(T));
+                D.Error("{0}: Undefined value {1} of EnumType {2}.", DebugName, value.ToString(), typeof(T));
             }
             if (!value.Equals(default(T))) {
                 PlayerPrefs.SetString(key, Encrypt(value.ToString()));
@@ -639,7 +639,7 @@ namespace CodeEnv.Master.GameContent {
                 string decryptedStringValue = DecryptToString(PlayerPrefs.GetString(key));
                 T pref;
                 if (!Enums<T>.TryParse(decryptedStringValue, out pref)) {
-                    D.Error("{0}: Unable to parse Preference {1} of Type {2}.", Name, decryptedStringValue, typeof(T).Name);
+                    D.Error("{0}: Unable to parse Preference {1} of Type {2}.", DebugName, decryptedStringValue, typeof(T).Name);
                 }
                 return pref;
             }
@@ -653,6 +653,12 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        public override string ToString() {
+            return new ObjectAnalyzer().ToString(this);
+        }
+
+        #region Debug
+
         private void __ValidatePlayerColorPreferences() {
             var playerColorPrefs = new GameColor[] {UserPlayerColor, AIPlayer1Color, AIPlayer2Color, AIPlayer3Color, AIPlayer4Color,
             AIPlayer5Color, AIPlayer6Color, AIPlayer7Color };
@@ -660,12 +666,6 @@ namespace CodeEnv.Master.GameContent {
                 D.Assert(pref.EqualsAnyOf(TempGameValues.AllPlayerColors), pref.GetValueName());
             });
         }
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
-        #region Debug
 
         [System.Diagnostics.Conditional("UNITY_EDITOR")]
         private void ValidateState() {

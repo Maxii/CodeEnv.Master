@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IWidgetTrackable {
 
-        string DisplayName { get; }
+        string DebugName { get; }
 
         Vector3 Position { get; }
 

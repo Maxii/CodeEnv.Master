@@ -211,7 +211,7 @@ namespace CodeEnv.Master.Common {
         /// <returns></returns>
         public static Vector3 FindClosestPointOnSphereOrthogonalToIntersectingLine(Vector3 startLinePt, Vector3 endLinePtOnSphere, Vector3 sphereCenter, float sphereRadius) {
             var linePtOnSphereToCenterDistance = Vector3.Distance(endLinePtOnSphere, sphereCenter);
-            D.AssertApproxEqual(sphereRadius, linePtOnSphereToCenterDistance);  // 11.10.16 tolerance .01F -> .0001F
+            D.AssertApproxEqual(sphereRadius, linePtOnSphereToCenterDistance, "MyMath.FindClosest...");  // 11.10.16 tolerance .01F -> .0001F
             Vector3 midPtOfLineInsideSphere = Mathfx.NearestPoint(startLinePt, endLinePtOnSphere, sphereCenter);
             if (midPtOfLineInsideSphere != sphereCenter) {
                 return FindClosestPointOnSphereTo(midPtOfLineInsideSphere, sphereCenter, sphereRadius);

@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class SensorStat : ARangedEquipmentStat {
 
-        private const string _toStringFormat = "{0}: Name[{1}], Range[{2}].";
+        private const string DebugNameFormat = "{0}(Range[{1}]).";
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SensorStat" /> struct.
@@ -41,8 +41,13 @@ namespace CodeEnv.Master.GameContent {
             float expense, RangeCategory rangeCat)
             : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat) { }
 
-        public override string ToString() {
-            return _toStringFormat.Inject(typeof(Sensor).Name, Name, RangeCategory.GetValueName());
+        public override string DebugName {
+            get {
+                if (_debugName == null) {
+                    _debugName = DebugNameFormat.Inject(base.DebugName, RangeCategory.GetValueName());
+                }
+                return _debugName;
+            }
         }
 
     }

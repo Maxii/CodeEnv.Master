@@ -29,12 +29,12 @@ namespace CodeEnv.Master.GameContent {
 
         public sealed override bool HasAccessToInfo(Player player, ItemInfoID infoID) {
             if (player == TempGameValues.NoPlayer) {
-                D.Error("{0}: NoPlayer used to attempt access to {1}.{2}.", _data.FullName, typeof(ItemInfoID).Name, infoID.GetValueName());
+                D.Error("{0}: NoPlayer used to attempt access to {1}.{2}.", _data.DebugName, typeof(ItemInfoID).Name, infoID.GetValueName());
             }
             D.AssertNotDefault((int)infoID);
 
             var coverage = (_data as AIntelItemData).GetIntelCoverage(player);
-            //D.Log(ShowDebugLog, "{0}: {1}.IntelCoverage for {2} is {3}.", GetType().Name, _data.FullName, player, coverage.GetValueName());
+            //D.Log(ShowDebugLog, "{0}: {1}.IntelCoverage for {2} is {3}.", GetType().Name, _data.DebugName, player, coverage.GetValueName());
             return HasAccessToInfo(coverage, infoID, player);
         }
 

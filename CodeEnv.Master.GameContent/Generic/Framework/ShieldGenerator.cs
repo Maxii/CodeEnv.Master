@@ -34,8 +34,8 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public event EventHandler hasChargeChanged;
 
-        public override string FullName {
-            get { return Shield != null ? _fullNameFormat.Inject(Shield.FullName, Name) : Name; }
+        public override string DebugName {
+            get { return Shield != null ? DebugNameFormat.Inject(Shield.DebugName, Name) : Name; }
         }
 
         private IShield _shield;
@@ -86,18 +86,17 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public DamageStrength DamageMitigation { get { return Stat.DamageMitigation; } }
 
+        protected bool ShowDebugLog { get { return Shield != null ? Shield.ShowDebugLog : true; } }
+
         protected new ShieldGeneratorStat Stat { get { return base.Stat as ShieldGeneratorStat; } }
 
-        private bool IsReloadJobRunning { get { return _reloadJob != null && _reloadJob.IsRunning; } }
+        private bool IsReloading { get { return _reloadJob != null; } }
 
-        private bool IsRechargeJobRunning { get { return _rechargeJob != null && _rechargeJob.IsRunning; } }
+        private bool IsRecharging { get { return _rechargeJob != null; } }
 
         private GameTime _gameTime;
         private Job _reloadJob;
         private Job _rechargeJob;
-        private bool _isRecharging;
-        private bool _isReloading;
-        private IGameManager _gameMgr;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ShieldGenerator"/> class.
@@ -107,7 +106,6 @@ namespace CodeEnv.Master.GameContent {
         public ShieldGenerator(ShieldGeneratorStat stat, string name = null)
             : base(stat, name) {
             _gameTime = GameTime.Instance;
-            _gameMgr = References.GameManager;
             CurrentCharge = Constants.ZeroF;
         }
 
@@ -123,7 +121,7 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(IsOperational);
             D.Assert(HasCharge);
 
-            D.Log("{0}.{1} with charge {2.0.#) is attempting to absorb a {3:0.#} impact.", Shield.FullName, Name, CurrentCharge, deliveryVehicleImpactValue);
+            //D.Log(ShowDebugLog, "{0}.{1} with charge {2.0.#) is attempting to absorb a {3:0.#} impact.", Shield.DebugName, Name, CurrentCharge, deliveryVehicleImpactValue);
             bool isHitCompletelyAbsorbed = true;
             unabsorbedImpactValue = Constants.ZeroF;
             if (CurrentCharge < deliveryVehicleImpactValue) {
@@ -139,7 +137,7 @@ namespace CodeEnv.Master.GameContent {
                 AssessRechargeState();
             }
             if (!HasCharge) {
-            D.Log("{0}.{1} has failed.", Shield.FullName, Name);
+                D.Log(ShowDebugLog, "{0}.{1} has failed.", Shield.DebugName, Name);
             }
             return isHitCompletelyAbsorbed;
         }
@@ -184,9 +182,9 @@ namespace CodeEnv.Master.GameContent {
         #region Recharging
 
         private void AssessRechargeState() {
-            if (_isRecharging) {
+            if (IsRecharging) {
                 if (!HasCharge || CurrentCharge == MaximumCharge) {
-                    CancelRecharge();
+                    KillRechargeJob();
                 }
             }
             else {
@@ -197,16 +195,22 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void InitiateRechargeProcess() {
-
             D.Assert(HasCharge);
-            D.Assert(!_isRecharging);
-            D.Log("{0}.{1} initiating recharge process. TrickleRechargeRate: {2} joules/hour.", Shield.FullName, Name, TrickleChargeRate);
-            _isRecharging = true;
+            D.AssertNull(_rechargeJob);
+            //D.Log(ShowDebugLog, "{0}.{1} initiating recharge process. TrickleRechargeRate: {2} joules/hour.", Shield.DebugName, Name, TrickleChargeRate);
+
             string jobName = "ShieldRechargeJob";
             _rechargeJob = _jobMgr.StartGameplayJob(Recharge(), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
-                _isRecharging = false;
-                if (!jobWasKilled) {
-                    D.Log("{0}.{1} completed recharging.", Shield.FullName, Name);
+                if (jobWasKilled) {
+                    // 12.12.16 An AssertNull(_jobRef) here can fail as the reference can refer to a new Job, created 
+                    // right after the old one was killed due to the 1 frame delay in execution of jobCompleted(). My attempts at allowing
+                    // the AssertNull to occur failed. I believe this is OK as _jobRef is nulled from KillXXXJob() and, if 
+                    // the reference is replaced by a new Job, then the old Job is no longer referenced which is the objective. Jobs Kill()ed
+                    // centrally by JobManager won't null the reference, but this only occurs during scene transitions.
+                }
+                else {
+                    _rechargeJob = null;
+                    //D.Log(ShowDebugLog, "{0}.{1} completed recharging.", Shield.DebugName, Name);
                 }
             });
         }
@@ -218,10 +222,11 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private void CancelRecharge() {
-            D.Assert(_isRecharging);
-            _rechargeJob.Kill();
-            _isRecharging = false;
+        private void KillRechargeJob() {
+            if (_rechargeJob != null) {
+                _rechargeJob.Kill();
+                _rechargeJob = null;
+            }
         }
 
         #endregion
@@ -229,9 +234,9 @@ namespace CodeEnv.Master.GameContent {
         #region Reloading
 
         private void AssessReloadState() {
-            if (_isReloading) {
+            if (IsReloading) {
                 if (!IsOperational || HasCharge) {
-                    CancelReload();
+                    KillReloadJob();
                 }
             }
             else {
@@ -243,23 +248,31 @@ namespace CodeEnv.Master.GameContent {
 
         private void InitiateReloadCycle() {
             D.Assert(!HasCharge);
-            D.Assert(!_isReloading);
-            _isReloading = true;
-            D.Log("{0}.{1} is initiating its reload cycle. Duration: {2:0.} hours.", Shield.FullName, Name, ReloadPeriod);
-            string jobName = "{0}.ReloadJob".Inject(FullName);
+            D.AssertNull(_reloadJob);
+            //D.Log(ShowDebugLog, "{0}.{1} is initiating its reload cycle. Duration: {2:0.} hours.", Shield.DebugName, Name, ReloadPeriod);
+
+            string jobName = "{0}.ReloadJob".Inject(DebugName);
             _reloadJob = _jobMgr.WaitForHours(ReloadPeriod, jobName, waitFinished: (jobWasKilled) => {
-                _isReloading = false;
-                if (!jobWasKilled) {
-                    D.Log("{0}.{1} completed reload.", Shield.FullName, Name);
+                if (jobWasKilled) {
+                    // 12.12.16 An AssertNull(_jobRef) here can fail as the reference can refer to a new Job, created 
+                    // right after the old one was killed due to the 1 frame delay in execution of jobCompleted(). My attempts at allowing
+                    // the AssertNull to occur failed. I believe this is OK as _jobRef is nulled from KillXXXJob() and, if 
+                    // the reference is replaced by a new Job, then the old Job is no longer referenced which is the objective. Jobs Kill()ed
+                    // centrally by JobManager won't null the reference, but this only occurs during scene transitions.
+                }
+                else {
+                    _reloadJob = null;
+                    //D.Log(ShowDebugLog, "{0}.{1} completed reload.", Shield.DebugName, Name);
                     HandleReloaded();
                 }
             });
         }
 
-        private void CancelReload() {
-            D.Assert(_isReloading);
-            _reloadJob.Kill();
-            _isReloading = false;
+        private void KillReloadJob() {
+            if (_reloadJob != null) {
+                _reloadJob.Kill();
+                _reloadJob = null;
+            }
         }
 
         #endregion
@@ -267,14 +280,9 @@ namespace CodeEnv.Master.GameContent {
         // 8.12.16 Job pausing moved to JobManager to consolidate handling
 
         private void Cleanup() {
-            //D.Log("{0}.Cleanup() called.", FullName);
-            if (_reloadJob != null) {   // can be null if element is destroyed before Running
-                //D.Log("{0} reloadJob.Dispose() being called.", FullName);
-                _reloadJob.Dispose();
-            }
-            if (_rechargeJob != null) {
-                _rechargeJob.Dispose();
-            }
+            // 12.8.16 Job Disposal centralized in JobManager
+            KillReloadJob();
+            KillRechargeJob();
         }
 
         public override string ToString() {

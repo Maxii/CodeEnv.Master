@@ -246,21 +246,21 @@ namespace CodeEnv.Master.GameContent {
             // A Star should only be added once when all players get Basic IntelCoverage of all stars
             bool isAdded = _stars.Add(star);
             isAdded = isAdded & _items.Add(star);
-            D.Assert(isAdded, star.FullName);
+            D.Assert(isAdded, star.DebugName);
             AddSystem(star.ParentSystem);
         }
 
         private void AddPlanetoid(IPlanetoid planetoid) {
             bool isAdded = _planetoids.Add(planetoid);
             isAdded = isAdded & _items.Add(planetoid);
-            D.Assert(isAdded, planetoid.FullName);
+            D.Assert(isAdded, planetoid.DebugName);
             planetoid.deathOneShot += ItemDeathEventHandler;
         }
 
         private void AddElement(IUnitElement element) {
             var isAdded = _elements.Add(element);
             isAdded = isAdded & _items.Add(element);
-            D.Assert(isAdded, element.FullName);
+            D.Assert(isAdded, element.DebugName);
             element.deathOneShot += ItemDeathEventHandler;
         }
 
@@ -274,7 +274,7 @@ namespace CodeEnv.Master.GameContent {
             }
             else {
                 IUnitCmd deadCmd = deadItem as IUnitCmd;
-                if (deadItem != null) {
+                if (deadCmd != null) {
                     RemoveDeadCommand(deadCmd);
                 }
                 else {
@@ -292,7 +292,7 @@ namespace CodeEnv.Master.GameContent {
             isAdded = isAdded & _items.Add(command);
             D.Assert(isAdded);
             command.deathOneShot += ItemDeathEventHandler;
-            //D.Log("{0} has added Command {1}.", Name, command.FullName);
+            //D.Log("{0} has added Command {1}.", DebugName, command.DebugName);
 
             // populate Starbase lookup
             IStarbaseCmd sbCmd = command as IStarbaseCmd;
@@ -314,7 +314,7 @@ namespace CodeEnv.Master.GameContent {
             isRemoved = isRemoved & _items.Remove(deadCmd);
             D.Assert(isRemoved);
             deadCmd.deathOneShot -= ItemDeathEventHandler;  // OPTIMIZE not really necessary as only way Cmd is removed is via death
-            //D.Log("{0} has removed Command {1}.", Name, deadCmd.FullName);
+            //D.Log("{0} has removed Command {1}.", DebugName, deadCmd.DebugName);
 
             // remove from Starbase lookup
             IStarbaseCmd sbCmd = deadCmd as IStarbaseCmd;
@@ -332,7 +332,7 @@ namespace CodeEnv.Master.GameContent {
         private void AddSystem(ISystem system) {
             _systemLookupBySectorID.Add(system.SectorID, system);
             bool isAdded = _items.Add(system);
-            D.Assert(isAdded, system.FullName);
+            D.Assert(isAdded, system.DebugName);
         }
 
         /// <summary>
@@ -344,7 +344,7 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(!deadElement.IsOperational);
             var isRemoved = _elements.Remove(deadElement);
             isRemoved = isRemoved & _items.Remove(deadElement);
-            D.Assert(isRemoved, deadElement.FullName);
+            D.Assert(isRemoved, deadElement.DebugName);
             deadElement.deathOneShot -= ItemDeathEventHandler;  // OPTIMIZE not really necessary as only way element is removed is via death
         }
 
@@ -359,7 +359,7 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(!deadPlanetoid.IsOperational);
             var isRemoved = _planetoids.Remove(deadPlanetoid);
             isRemoved = isRemoved & _items.Remove(deadPlanetoid);
-            D.Assert(isRemoved, deadPlanetoid.FullName);
+            D.Assert(isRemoved, deadPlanetoid.DebugName);
             deadPlanetoid.deathOneShot -= ItemDeathEventHandler;  // OPTIMIZE not really necessary as only way planetoid is removed is via death
         }
 
@@ -408,10 +408,10 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void __ValidateKnowledgeNow() {
-            D.Log("{0} is validating all Knowledge.", Name);
+            D.Log("{0} is validating all Knowledge.", DebugName);
             foreach (var item in _items) {
                 if (!item.IsOperational) {
-                    D.Error("{0} has retained knowledge of dead {1}.", Name, item.FullName);
+                    D.Error("{0} has retained knowledge of dead {1}.", DebugName, item.DebugName);
                 }
             }
         }

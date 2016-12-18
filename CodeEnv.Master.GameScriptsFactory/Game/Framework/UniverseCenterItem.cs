@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
 /// Class for the ADiscernibleItem that is the UniverseCenter.
@@ -97,13 +98,13 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
         _obstacleZoneCollider.isTrigger = true;
         _obstacleZoneCollider.radius = Data.CloseOrbitInnerRadius;
 
-        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
         var rigidbody = _obstacleZoneCollider.gameObject.GetComponent<Rigidbody>();
         Profiler.EndSample();
 
         // Static trigger collider (no rigidbody) is OK as the ship's CollisionDetectionZone collider has a kinematic rigidbody
         if (rigidbody != null) {
-            D.Warn("{0}.ObstacleZone has a Rigidbody it doesn't need.", FullName);
+            D.Warn("{0}.ObstacleZone has a Rigidbody it doesn't need.", DebugName);
         }
 
         InitializeObstacleDetourGenerator();
@@ -221,7 +222,11 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
     }
 
     private void EnableDebugShowObstacleZone(bool toEnable) {
+
+        Profiler.BeginSample("Proper AddComponent allocation", gameObject);
         DrawColliderGizmo drawCntl = _obstacleZoneCollider.gameObject.AddMissingComponent<DrawColliderGizmo>();
+        Profiler.EndSample();
+
         drawCntl.Color = Color.red;
         drawCntl.enabled = toEnable;
     }
@@ -235,7 +240,7 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
         if (debugValues != null) {
             debugValues.showObstacleZones -= ShowDebugObstacleZonesChangedEventHandler;
         }
-        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
         DrawColliderGizmo drawCntl = _obstacleZoneCollider.GetComponent<DrawColliderGizmo>();
         Profiler.EndSample();
 
@@ -257,9 +262,11 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
         _shipsInHighOrbit.Add(ship);
 
         if (_highOrbitRigidbody == null) {
-            _highOrbitRigidbody = gameObject.AddMissingComponent<Rigidbody>();
-            _highOrbitRigidbody.useGravity = false;
-            _highOrbitRigidbody.isKinematic = true;
+            //D.Log(ShowDebugLog, "{0} is adding high orbit rigidbody for {1}.", DebugName, ship.DebugName);
+            _highOrbitRigidbody = GeneralFactory.Instance.MakeShipHighOrbitAttachPoint(gameObject);
+        }
+        if (!_highOrbitRigidbody.gameObject.activeSelf) {
+            _highOrbitRigidbody.gameObject.SetActive(true);
         }
         shipOrbitJoint.connectedBody = _highOrbitRigidbody;
     }
@@ -277,19 +284,22 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
         if (IsInHighOrbit(ship)) {
             var isRemoved = _shipsInHighOrbit.Remove(ship);
             D.Assert(isRemoved);
-            D.Log("{0} has left high orbit around {1}.", ship.FullName, FullName);
+            D.Log(ShowDebugLog, "{0} has left high orbit around {1}.", ship.DebugName, DebugName);
+            if (_shipsInHighOrbit.Count == Constants.Zero) {
+                _highOrbitRigidbody.gameObject.SetActive(false);
+            }
             return;
         }
         if (IsInCloseOrbit(ship)) {
             D.AssertNotNull(_closeOrbitSimulator);
             var isRemoved = _shipsInCloseOrbit.Remove(ship);
             D.Assert(isRemoved);
-            D.Log("{0} has left close orbit around {1}.", ship.FullName, FullName);
+            D.Log(ShowDebugLog, "{0} has left close orbit around {1}.", ship.DebugName, DebugName);
             float shipDistance = Vector3.Distance(ship.Position, Position);
             float minOutsideOfOrbitCaptureRadius = Data.CloseOrbitOuterRadius - ship.CollisionDetectionZoneRadius_Debug;
             if (shipDistance > minOutsideOfOrbitCaptureRadius) {
                 D.Warn("{0} is leaving orbit of {1} but is not within {2:0.0000}. Ship's current orbit distance is {3:0.0000}.",
-                    ship.FullName, FullName, minOutsideOfOrbitCaptureRadius, shipDistance);
+                    ship.DebugName, DebugName, minOutsideOfOrbitCaptureRadius, shipDistance);
             }
             if (_shipsInCloseOrbit.Count == Constants.Zero) {
                 // Choose either to deactivate the OrbitSimulator or destroy it, but not both
@@ -298,7 +308,7 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
             }
             return;
         }
-        D.Error("{0}.HandleBrokeOrbit() called, but {1} not in orbit.", FullName, ship.FullName);
+        D.Error("{0}.HandleBrokeOrbit() called, but {1} not in orbit.", DebugName, ship.DebugName);
     }
 
     #endregion

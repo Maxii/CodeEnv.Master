@@ -65,10 +65,6 @@ namespace CodeEnv.Master.GameContent {
             Income = income;
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
     }
 }
 

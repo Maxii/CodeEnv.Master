@@ -30,7 +30,7 @@ using UnityEngine;
 /// </summary>
 public class UnitDebugControl : AMonoBase {
 
-    private const string NameFormat = "{0}.{1}";
+    private const string DebugNameFormat = "{0}.{1}";
 
     /// <summary>
     /// Returns <c>true</c> if the UnitDebugControl script should be enabled in the editor,
@@ -38,7 +38,7 @@ public class UnitDebugControl : AMonoBase {
     /// </summary>
     public bool EnableDebugCntlInEditor { get; private set; }
 
-    private string Name { get { return _unitCmd != null ? NameFormat.Inject(_unitCmd.FullName, GetType().Name) : GetType().Name; } }
+    private string DebugName { get { return _unitCmd != null ? DebugNameFormat.Inject(_unitCmd.DebugName, GetType().Name) : GetType().Name; } }
 
     [Tooltip("This Unit's current relationship with the User")]
     [SerializeField]
@@ -108,13 +108,13 @@ public class UnitDebugControl : AMonoBase {
     }
 
     private void AssignOwnerName() {
-        _ownerName = _unitCmd.Owner.Name;
+        _ownerName = _unitCmd.Owner.DebugName;
     }
 
     #region Value Change Checking
 
     void OnValidate() {
-        //D.Log("{0}.OnValidate() called.", Name);
+        //D.Log("{0}.OnValidate() called.", DebugName);
         CheckValuesForChange();
     }
 
@@ -149,7 +149,7 @@ public class UnitDebugControl : AMonoBase {
                         newOwner = newOwnerCandidates.Shuffle().First();
                     }
                     else {
-                        D.Warn("{0} has found no players who have or will have the desired user relationship {1}.", Name, newOwnerUserRelationshipChoice.GetValueName());
+                        D.Warn("{0} has found no players who have or will have the desired user relationship {1}.", DebugName, newOwnerUserRelationshipChoice.GetValueName());
                         SyncUserRelationsFieldsTo(_currentOwnerUserRelations);
                         return;
                     }
@@ -157,7 +157,7 @@ public class UnitDebugControl : AMonoBase {
             }
 
             var tempNewOwnerUserRelationsChoice = _newOwnerUserRelationsChoice; // choice can be changed by owner change event
-            D.LogBold("{0} has selected {1} as its new owner.", Name, newOwner);
+            D.LogBold("{0} has selected {1} as its new owner.", DebugName, newOwner);
             _unitCmd.Owner = newOwner;  // generates an ownerChange event which will sync to current user relationship
 
             if (_currentOwnerUserRelations == DiplomaticRelationship.None) {

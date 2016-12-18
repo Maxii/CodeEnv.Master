@@ -28,9 +28,17 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class PlayerAIManager : IDisposable {
 
-        private const string NameFormat = "{0}'s {1}";
+        private const string DebugNameFormat = "{0}'s {1}";
 
-        protected string Name { get { return NameFormat.Inject(Owner.LeaderName, GetType().Name); } }
+        private string _debugName;
+        protected string DebugName {
+            get {
+                if (_debugName == null) {
+                    _debugName = DebugNameFormat.Inject(Owner.DebugName, GetType().Name);
+                }
+                return _debugName;
+            }
+        }
 
         public PlayerKnowledge Knowledge { get; private set; }
 
@@ -197,7 +205,7 @@ namespace CodeEnv.Master.GameContent {
             if (detectedItem is IStar_Ltd || detectedItem is IUniverseCenter_Ltd) {
                 return; // these are added at startup and never removed so no need to add again
             }
-            D.Assert(detectedItem.IsOperational, detectedItem.FullName);
+            D.Assert(detectedItem.IsOperational, detectedItem.DebugName);
 
             var element = detectedItem as IUnitElement_Ltd;
             if (element != null) {
@@ -210,12 +218,12 @@ namespace CodeEnv.Master.GameContent {
             else {
                 var planetoid = detectedItem as IPlanetoid_Ltd;
                 if (planetoid == null) {
-                    D.Error("{0}: Unanticipated Type {1} attempting to add {2}.", Name, detectedItem.GetType().Name, detectedItem.FullName);
+                    D.Error("{0}: Unanticipated Type {1} attempting to add {2}.", DebugName, detectedItem.GetType().Name, detectedItem.DebugName);
                 }
                 if (_debugControls.IsAllIntelCoverageComprehensive) {
                     // all planetoids are already known as each Knowledge was fully populated with them before game start
                     if (!Knowledge.HasKnowledgeOf(planetoid)) {
-                        D.Error("{0} has no knowledge of {1}.", Name, planetoid.FullName);
+                        D.Error("{0} has no knowledge of {1}.", DebugName, planetoid.DebugName);
                     }
                     return;
                 }
@@ -242,7 +250,7 @@ namespace CodeEnv.Master.GameContent {
             else {
                 var planetoid = detectedItem as IPlanetoid_Ltd;
                 if (planetoid == null) {
-                    D.Error("{0}: Unanticipated Type {1} attempting to remove {2}.", Name, detectedItem.GetType().Name, detectedItem.FullName);
+                    D.Error("{0}: Unanticipated Type {1} attempting to remove {2}.", DebugName, detectedItem.GetType().Name, detectedItem.DebugName);
                 }
                 // planetoids are not removed when they lose detection as they can't regress IntelCoverage
                 D.Assert(planetoid.IsOperational);
@@ -260,7 +268,7 @@ namespace CodeEnv.Master.GameContent {
                 bool isAlreadyKnown = Owner.IsKnown(newlyDiscoveredPlayerCandidate);
                 if (!isAlreadyKnown) {
                     Player newlyDiscoveredPlayer = newlyDiscoveredPlayerCandidate;
-                    D.LogBold("{0} discovered new {1}.", Name, newlyDiscoveredPlayer);
+                    D.LogBold("{0} discovered new {1}.", DebugName, newlyDiscoveredPlayer);
                     SubscribeToPlayerRelationsChange(newlyDiscoveredPlayer);
 
                     Owner.HandleMetNewPlayer(newlyDiscoveredPlayer);
@@ -288,7 +296,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="myOwnedItem">My owned item.</param>
         public void HandleGainedItemOwnership(IItem myOwnedItem) {
-            //D.Log("{0}.HandleGainedItemOwnership({1}) called.", Name, myOwnedItem.FullName);
+            //D.Log("{0}.HandleGainedItemOwnership({1}) called.", DebugName, myOwnedItem.DebugName);
             D.AssertEqual(Owner, myOwnedItem.Owner);
             D.Assert(!(myOwnedItem is IUniverseCenter));
 
@@ -322,14 +330,14 @@ namespace CodeEnv.Master.GameContent {
             if (element != null) {
                 element.SetIntelCoverage(Owner, IntelCoverage.Comprehensive);
                 bool isAdded = Knowledge.AddElement(element as IUnitElement_Ltd);
-                //D.Log(!isAdded, "{0} tried to add {1} it already has.", Name, element.FullName);
+                //D.Log(!isAdded, "{0} tried to add {1} it already has.", DebugName, element.DebugName);
             }
             else {
                 var planetoid = item as IPlanetoid;
                 if (planetoid != null) {
                     planetoid.SetIntelCoverage(Owner, IntelCoverage.Comprehensive);
                     bool isAdded = Knowledge.AddPlanetoid(planetoid as IPlanetoid_Ltd);
-                    //D.Log(!isAdded, "{0} tried to add {1} it already has.", Name, planetoid.FullName);
+                    //D.Log(!isAdded, "{0} tried to add {1} it already has.", DebugName, planetoid.DebugName);
                 }
                 else {
                     var star = item as IStar;
@@ -349,7 +357,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="myUnitCmd">My unit command.</param>
         public void RegisterForOrders(IUnitCmd myUnitCmd) {
             D.AssertEqual(Owner, myUnitCmd.Owner);
-            //D.Log("{0} is registering {1} in prep for being issued orders. IsAvailable = {2}.", Name, myUnitCmd.FullName, myUnitCmd.IsAvailable);
+            //D.Log("{0} is registering {1} in prep for being issued orders. IsAvailable = {2}.", DebugName, myUnitCmd.DebugName, myUnitCmd.IsAvailable);
             if (myUnitCmd.IsAvailable) {
                 D.Assert(!_availableCmds.Contains(myUnitCmd));
                 _availableCmds.Add(myUnitCmd);
@@ -395,16 +403,21 @@ namespace CodeEnv.Master.GameContent {
                 if (fleetCmd != null) {
                     if (GameTime.Instance.CurrentDate == GameTime.GameStartDate) {
                         float hoursDelay = 1F;
-                        //D.Log("{0} is issuing order to {1} with a {2} hour delay.", Name, fleetCmd.FullName, hoursDelay);
+                        //D.Log("{0} is issuing order to {1} with a {2} hour delay.", DebugName, fleetCmd.DebugName, hoursDelay);
 
                         // makes sure Owner's knowledge of universe has been constructed before selecting its target
-                        string jobName = "{0}.WaitToIssueFirstOrderJob".Inject(Name);
-                        References.JobManager.WaitForHours(hoursDelay, jobName, waitFinished: delegate {
-                            __IssueFleetOrder(fleetCmd);
+                        string jobName = "{0}.WaitToIssueFirstOrderJob".Inject(DebugName);
+                        References.JobManager.WaitForHours(hoursDelay, jobName, waitFinished: (jobWasKilled) => {
+                            if (jobWasKilled) {
+                                // No local reference to kill so JobManager is only source of kills (during scene transition)
+                            }
+                            else {
+                                __IssueFleetOrder(fleetCmd);
+                            }
                         });
                     }
                     else {
-                        //D.Log("{0} is issuing order to {1} with no delay.", Name, fleetCmd.FullName);
+                        //D.Log("{0} is issuing order to {1} with no delay.", DebugName, fleetCmd.DebugName);
                         __IssueFleetOrder(fleetCmd);
                     }
                 }
@@ -450,7 +463,7 @@ namespace CodeEnv.Master.GameContent {
             var allyItems = allyAIMgr.Knowledge.OwnerItems;
             allyItems.ForAll(allyItem => {
                 D.Assert(!(allyItem is IUniverseCenter));
-                //D.Log("{0} is adding Ally {1}'s item {2} to knowledge with IntelCoverage = Comprehensive.", Name, ally, allyItem.FullName);
+                //D.Log("{0} is adding Ally {1}'s item {2} to knowledge with IntelCoverage = Comprehensive.", DebugName, ally, allyItem.DebugName);
                 ChangeIntelCoverageToComprehensiveAndPopulateKnowledge(allyItem);
             });
         }
@@ -529,7 +542,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Tries to issue a fleet move order. Returns
+        /// Tries to issue a fleet attack order. Returns
         /// <c>true</c> if the order was issued, <c>false</c> otherwise.
         /// </summary>
         /// <param name="fleetCmd">The fleet command.</param>
@@ -539,9 +552,9 @@ namespace CodeEnv.Master.GameContent {
             List<IUnitAttackable> attackTgts = Knowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsWarAttackByAllowed(Owner)).ToList();
             attackTgts.AddRange(Knowledge.Starbases.Cast<IUnitAttackable>().Where(sb => sb.IsWarAttackByAllowed(Owner)));
             attackTgts.AddRange(Knowledge.Settlements.Cast<IUnitAttackable>().Where(s => s.IsWarAttackByAllowed(Owner)));
-            attackTgts.AddRange(Knowledge.Planets.Cast<IUnitAttackable>().Where(p => p.IsWarAttackByAllowed(Owner)));
+            ////attackTgts.AddRange(Knowledge.Planets.Cast<IUnitAttackable>().Where(p => p.IsWarAttackByAllowed(Owner)));
             if (!attackTgts.Any()) {
-                D.LogBold("{0}: {1} can find no WarAttackTargets of any sort.", Name, fleetCmd.FullName);
+                D.LogBold("{0}: {1} can find no WarAttackTargets of any sort.", DebugName, fleetCmd.DebugName);
                 return false;
             }
             IUnitAttackable attackTgt;
@@ -551,13 +564,13 @@ namespace CodeEnv.Master.GameContent {
             else {
                 attackTgt = attackTgts.MinBy(t => Vector3.SqrMagnitude(t.Position - fleetCmd.Position));
             }
-            //D.Log("{0} attack target is {1}.", fleetCmd.FullName, attackTgt.FullName);
+            //D.Log("{0} attack target is {1}.", fleetCmd.DebugName, attackTgt.DebugName);
             fleetCmd.CurrentOrder = new FleetOrder(FleetDirective.Attack, OrderSource.CmdStaff, attackTgt);
             return true;
         }
 
         /// <summary>
-        /// Tries to issue a fleet attack order. Returns
+        /// Tries to issue a fleet move order. Returns
         /// <c>true</c> if the order was issued, <c>false</c> otherwise.
         /// </summary>
         /// <param name="fleetCmd">The fleet command.</param>
@@ -567,14 +580,14 @@ namespace CodeEnv.Master.GameContent {
             List<IFleetNavigable> moveTgts = Knowledge.Starbases.Cast<IFleetNavigable>().ToList();
             moveTgts.AddRange(Knowledge.Settlements.Cast<IFleetNavigable>());
             moveTgts.AddRange(Knowledge.Planets.Cast<IFleetNavigable>());
-            //moveTgts.AddRange(Knowledge.Systems.Cast<IFleetNavigable>());   // UNCLEAR or Stars?
+            ////moveTgts.AddRange(Knowledge.Systems.Cast<IFleetNavigable>());
             moveTgts.AddRange(Knowledge.Stars.Cast<IFleetNavigable>());
             if (Knowledge.UniverseCenter != null) {
                 moveTgts.Add(Knowledge.UniverseCenter as IFleetNavigable);
             }
 
             if (!moveTgts.Any()) {
-                D.LogBold("{0}: {1} can find no MoveTargets that meet the selection criteria.", Name, fleetCmd.FullName);
+                D.LogBold("{0}: {1} can find no MoveTargets that meet the selection criteria.", DebugName, fleetCmd.DebugName);
                 return false;
             }
             IFleetNavigable destination;
@@ -584,7 +597,7 @@ namespace CodeEnv.Master.GameContent {
             else {
                 destination = moveTgts.MinBy(mt => Vector3.SqrMagnitude(mt.Position - fleetCmd.Position));
             }
-            //D.Log("{0} move destination is {1}.", fleetCmd.FullName, destination.FullName);
+            //D.Log("{0} move destination is {1}.", fleetCmd.DebugName, destination.DebugName);
             fleetCmd.CurrentOrder = new FleetOrder(FleetDirective.Move, OrderSource.CmdStaff, destination);
             return true;
         }
@@ -598,7 +611,7 @@ namespace CodeEnv.Master.GameContent {
             if (explorableUnexploredSystems.Any()) {
                 var closestUnexploredSystem = explorableUnexploredSystems.MinBy(sys => Vector3.SqrMagnitude(fleetCmd.Position - sys.Position));
                 //D.Log("{0} is issuing an explore order to {1} with target {2}. IsExploringAllowed = {3}, IsFullyExplored = {4}.",
-                //    Name, fleetCmd.FullName, closestUnexploredSystem.FullName, closestUnexploredSystem.IsExploringAllowedBy(Owner), closestUnexploredSystem.IsFullyExploredBy(Owner));
+                //    DebugName, fleetCmd.DebugName, closestUnexploredSystem.DebugName, closestUnexploredSystem.IsExploringAllowedBy(Owner), closestUnexploredSystem.IsFullyExploredBy(Owner));
                 fleetCmd.CurrentOrder = new FleetOrder(FleetDirective.Explore, OrderSource.CmdStaff, closestUnexploredSystem);
             }
             else {
@@ -607,7 +620,7 @@ namespace CodeEnv.Master.GameContent {
                     fleetCmd.CurrentOrder = new FleetOrder(FleetDirective.Explore, OrderSource.CmdStaff, uCenter);
                 }
                 else {
-                    D.LogBold("{0}: Fleet {1} has completed exploration of explorable universe.", Name, fleetCmd.FullName);
+                    D.LogBold("{0}: Fleet {1} has completed exploration of explorable universe.", DebugName, fleetCmd.DebugName);
                 }
             }
         }

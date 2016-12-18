@@ -28,8 +28,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class VelocityRay : A3DVectrosityBase {
 
-        private bool IsRefreshSpeedValueJobRunning { get { return _refreshSpeedValueJob != null && _refreshSpeedValueJob.IsRunning; } }
-
         private Reference<float> _speed;
 
         /// <summary>
@@ -66,11 +64,10 @@ namespace CodeEnv.Master.GameContent {
         protected override void HandleLineActivated() {
             base.HandleLineActivated();
             D.Assert(IsLineActive);
-            D.Assert(!IsRefreshSpeedValueJobRunning);
+            D.AssertNull(_refreshSpeedValueJob);
             string jobName = "{0}.RefreshSpeedJob".Inject(LineName);
             _refreshSpeedValueJob = _jobMgr.StartGameplayJob(UpdateSpeed(), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
                 D.Assert(jobWasKilled);
-                // TODO
             });
         }
 
@@ -84,8 +81,15 @@ namespace CodeEnv.Master.GameContent {
         protected override void HandleLineDeactivated() {
             base.HandleLineDeactivated();
             D.Assert(!IsLineActive);
-            D.Assert(IsRefreshSpeedValueJobRunning);
-            _refreshSpeedValueJob.Kill();
+            D.AssertNotNull(_refreshSpeedValueJob);
+            KillRefreshSpeedValueJob();
+        }
+
+        private void KillRefreshSpeedValueJob() {
+            if (_refreshSpeedValueJob != null) {
+                _refreshSpeedValueJob.Kill();
+                _refreshSpeedValueJob = null;
+            }
         }
 
         #region Event and Property Change Handlers
@@ -96,9 +100,8 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void Cleanup() {
             base.Cleanup();
-            if (_refreshSpeedValueJob != null) {
-                _refreshSpeedValueJob.Dispose();
-            }
+            // 12.8.16 Job Disposal centralized in JobManager
+            KillRefreshSpeedValueJob();
         }
 
         public override string ToString() {

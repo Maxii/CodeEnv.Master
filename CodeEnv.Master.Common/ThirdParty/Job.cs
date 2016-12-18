@@ -24,7 +24,7 @@ namespace CodeEnv.Master.Common {
 
     /// <summary>
     /// Interruptible Coroutine container that is executed on IJobRunner.
-    /// WARNING: Jobs should not be reused after having been started. Instead, create a new Job using JobManager.
+    /// 12.8.16 Jobs are now re-usable after they complete by using Restart(). JobManager handles Job recycling.
     /// </summary>
     public class Job : IDisposable {
 
@@ -43,8 +43,6 @@ namespace CodeEnv.Master.Common {
          * completes. 2) add a KillXXXJob() method that both kills the job and immediately unsubscribes from the event. 
          * This handles the scenario where the job is killed before it naturally completes.
          **************************************************************************************************************/
-
-        private const string DefaultJobName = "UnnamedJob";
 
         public static IJobRunner JobRunner { private get; set; }
 
@@ -67,22 +65,22 @@ namespace CodeEnv.Master.Common {
             }
         }
 
+        /// <summary>
+        /// Indicates whether this Job has completed execution thereby being ready for reuse.
+        /// <remarks>My 12.7.16 addition to allow reuse and solve the following problem: 
+        /// A Coroutine once started, that naturally runs to completion (_coroutine.MoveNext() returns false), is ended with yield break;, or is
+        /// killed after running part way through (_coroutine.MoveNext() returns true, but the element that _coroutine.Current
+        /// points at is not the first element) cannot be reused as there is no way to reset the iterator back to the first element 
+        /// of the IEnumerator coroutine (IEnumerator.Reset() is not supported).</remarks>
+        /// </summary>
+        public bool IsCompleted { get; private set; }
+
         public string JobName { get; private set; } // My 4.26.16 addition
 
         private APausableKillableYieldInstruction _customYI;   // My 8.12.16 addition
         private IEnumerator _coroutine;
         private bool _jobWasKilled;
         private Stack<Job> _childJobStack;
-        /// <summary>
-        /// Note: A Job that naturally runs to completion or is ended with yield break; (_coroutine.MoveNext() returns false) or is
-        /// killed after running part way through (_coroutine.MoveNext() returns true, but the element that _coroutine.Current
-        /// points at is not the first element) cannot be reused as there is no way to reset the iterator back to the first element 
-        /// (IEnumerator.Reset() is not supported). Theoretically, to reuse a Job instance the _coroutine must use while(true)
-        /// so it doesn't end itself, you manually kill it, and it should have no state (i.e. it doesn't make any difference which 
-        /// element of the coroutine is used when restarting. As this is way too complicated to govern, I've added a test in Start
-        /// that will not allow reuse. Instead, create a new Job for each use.
-        /// </summary>
-        private bool _hasBeenPreviouslyRun;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Job"/> class.
@@ -94,8 +92,26 @@ namespace CodeEnv.Master.Common {
         /// <param name="toStart">if set to <c>true</c> [to start].</param>
         /// <param name="jobCompleted">Action delegate executed when the job is completed. Contains a
         /// boolean indicating whether the job was killed or completed normally.</param>
-        public Job(IEnumerator coroutine, string jobName = DefaultJobName, APausableKillableYieldInstruction customYI = null,
-            bool toStart = false, Action<bool> jobCompleted = null) {
+        public Job(IEnumerator coroutine, string jobName, APausableKillableYieldInstruction customYI = null, Action<bool> jobCompleted = null) {
+            _coroutine = coroutine;
+            JobName = jobName;      // My 4.26.16 addition
+            _customYI = customYI;   // My 8.12.16 addition
+            this.jobCompleted = jobCompleted;
+            Start();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Job"/> class.
+        /// <remarks>Warning: See Note 1 above on the time delay that comes from using the optional delegate jobCompleted.</remarks>
+        /// </summary>
+        /// <param name="coroutine">The coroutine to execute.</param>
+        /// <param name="jobName">Name of the job.</param>
+        /// <param name="customYI">Optional custom YieldInstruction.</param>
+        /// <param name="toStart">if set to <c>true</c> [to start].</param>
+        /// <param name="jobCompleted">Action delegate executed when the job is completed. Contains a
+        /// boolean indicating whether the job was killed or completed normally.</param>
+        [Obsolete]
+        public Job(IEnumerator coroutine, bool toStart, string jobName, APausableKillableYieldInstruction customYI = null, Action<bool> jobCompleted = null) {
             _coroutine = coroutine;
             JobName = jobName;      // My 4.26.16 addition
             _customYI = customYI;   // My 8.12.16 addition
@@ -113,17 +129,21 @@ namespace CodeEnv.Master.Common {
                     yield return null;
                 }
                 else {
-                    //D.Log(JobName != DefaultJobName, "{0}.MoveNext being called.", JobName);
+                    //D.Log("{0}.MoveNext being called.", JobName);
                     // run the next iteration and stop if we are done
-                    if (_coroutine.MoveNext()) {
+                    if (_coroutine.MoveNext()) {    // .MoveNext returns false when it reaches the end of the method
+                        //D.Log("{0} executing code on frame {1}.", JobName, UnityEngine.Time.frameCount);
                         yield return _coroutine.Current;
                     }
                     else {
+                        //D.Log("{0} finished executing code on frame {1}.", JobName, UnityEngine.Time.frameCount);
+
                         // ************** My Addition **************
                         // IsRunning = false must occur before OnJobCompleted as the onJobCompleted event can immediately generate
                         // another Job of the same type before the IsRunning = false below is executed. This is a problem when I check
                         // for whether the first Job is still running and thrown an error if it is...
                         IsRunning = false;
+                        IsCompleted = true;
                         OnJobCompleted();
                         // ******************************************
 
@@ -156,13 +176,15 @@ namespace CodeEnv.Master.Common {
             // Note: adding OnJobCompleted above to support child jobs and deleting the final OnJobCompleted
             // resulted in OnJobCompleted never being called if a Job was killed.
             if (_jobWasKilled) {    // filter keeps OnJobCompleted from being called twice when completing normally
+                IsCompleted = true; // 12.7.16
                 OnJobCompleted();
             }
             // ************************************************************************************
 
             // *************** My Addition to allow GC of this Job instance ***************
-            JobRunner.StopCoroutine(_coroutine);        // added 3.24.16
+            // JobRunner.StopCoroutine(_coroutine);        // added 3.24.16, 12.7.16 incorporated into ResetOnCompletion
             // ************************************************************************************
+            ResetOnCompletion();    // Added 12.7.16
         }
 
         #region public API
@@ -173,13 +195,15 @@ namespace CodeEnv.Master.Common {
         //    return j;
         //}
         // ************** My Replacement **************
+        [Obsolete("12.6.16 Not currently used")]
         public Job CreateAndAddChildJob(IEnumerator coroutine, Action<bool> jobCompleted = null) {
-            var j = new Job(coroutine, toStart: false, jobCompleted: jobCompleted);
+            var j = new Job(coroutine, false, "ChildJob", jobCompleted: jobCompleted);
             AddChildJob(j);
             return j;
         }
         // ******************************************
 
+        [Obsolete("12.6.16 Not currently used")]
         public void AddChildJob(Job childJob) {
             if (_childJobStack == null) {
                 _childJobStack = new Stack<Job>();
@@ -187,6 +211,7 @@ namespace CodeEnv.Master.Common {
             _childJobStack.Push(childJob);
         }
 
+        [Obsolete("12.6.16 Not currently used")]
         public void RemoveChildJob(Job childJob) {
             if (_childJobStack.Contains(childJob)) {
                 var childStack = new Stack<Job>(_childJobStack.Count - 1);
@@ -203,15 +228,34 @@ namespace CodeEnv.Master.Common {
             }
         }
 
-        public void Start() {
-            //D.Log(JobName != DefaultJobName, "{0}.Start called.", JobName);
-            D.Assert(!_hasBeenPreviouslyRun, JobName);
-            IsRunning = true;
-            JobRunner.StartCoroutine(Run());
-            _hasBeenPreviouslyRun = true;
+        // 12.6.16 public Start never used as I always start when Job is created
+        //public void Start() {   
+        //    D.Assert(IsReadyToStart, JobName);
+        //    //D.Log(JobName != DefaultJobName, "{0}.Start called.", JobName);
+        //    //D.Assert(!_hasCoroutineBeenPreviouslyRun, JobName);
+        //    IsRunning = true;
+        //    JobRunner.StartCoroutine(Run());
+        //    //_hasCoroutineBeenPreviouslyRun = true;
+        //    IsReadyToStart = false;
+        //}
+
+        /// <summary>
+        /// Restarts a Job with the included settings after it has completed a previous job.
+        /// </summary>
+        /// <param name="coroutine">The coroutine.</param>
+        /// <param name="jobName">Name of the job.</param>
+        /// <param name="customYI">The custom yield instruction.</param>
+        /// <param name="jobCompleted">The job completed delegate.</param>
+        public void Restart(IEnumerator coroutine, string jobName, APausableKillableYieldInstruction customYI = null, Action<bool> jobCompleted = null) {
+            D.Assert(IsCompleted, jobName);
+            _coroutine = coroutine;
+            JobName = jobName;
+            _customYI = customYI;
+            this.jobCompleted = jobCompleted;
+            Start();
         }
 
-        //public IEnumerator StartAsCoroutine() {   // UNDONE not clear how to use, and how to integrate with _hasRunToCompletion
+        //public IEnumerator StartAsCoroutine() {   // not clear how to use
         //    IsRunning = true;
         //    yield return jobRunner.StartCoroutine(Run());
         //}
@@ -221,7 +265,7 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         public void Kill() {
             if (IsRunning) {
-                //D.Log(JobName != DefaultJobName, "{0} was killed while running.", JobName);
+                //D.Log("{0} was killed while running.", JobName);
                 _jobWasKilled = true;
                 IsRunning = false;
                 KillYieldInstruction();
@@ -230,7 +274,7 @@ namespace CodeEnv.Master.Common {
             //_isPaused = false;    // no real purpose for this anyhow
         }
 
-        // IMPROVE This and KillInDays needs to use GameTime which includes gameSpeed and pausing
+        [Obsolete("Not currently used")]        // IMPROVE This and KillInDays needs to use GameTime which includes gameSpeed and pausing
         public void Kill(float delayInSeconds) {
             var delay = (int)(delayInSeconds * 1000);
             new System.Threading.Timer(obj => {
@@ -258,7 +302,6 @@ namespace CodeEnv.Master.Common {
             PauseYieldInstruction(IsPaused);
         }
 
-
         private void OnJobCompleted() {
             if (jobCompleted != null) {
                 jobCompleted(_jobWasKilled);
@@ -266,6 +309,32 @@ namespace CodeEnv.Master.Common {
         }
 
         #endregion
+
+        private void Start() {  // 12.6.16 replaced public API Start()
+            //D.Log("{0}.Start called.", JobName);
+            IsRunning = true;
+            JobRunner.StartCoroutine(Run());
+            IsCompleted = false;
+        }
+
+        /// <summary>
+        /// Resets this Job when completed in preparation for reuse.
+        /// <remarks>A Job can become 'completed' either by executing all its code or by being killed.</remarks>
+        /// </summary>
+        private void ResetOnCompletion() {
+            D.Assert(!IsRunning, JobName);
+            D.Assert(IsCompleted, JobName);
+            JobRunner.StopCoroutine(_coroutine);
+
+            _isPaused = false;
+            _jobWasKilled = false;
+
+            jobCompleted = null;
+            _customYI = null;
+            _childJobStack = null;
+            _coroutine = null;
+            JobName = "CompletedJob";
+        }
 
         private void PauseYieldInstruction(bool toPause) {  // My 8.12.16 addition
             if (_customYI != null) {
@@ -309,7 +378,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="isExplicitlyDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
         protected virtual void Dispose(bool isExplicitlyDisposing) {
             if (_alreadyDisposed) { // Allows Dispose(isExplicitlyDisposing) to mistakenly be called more than once
-                D.Warn("{0} has already been disposed.", JobName);
+                D.Warn("{0} has already disposed of {1}.", GetType().Name, JobName);
                 return; //throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
             }
 
@@ -322,6 +391,7 @@ namespace CodeEnv.Master.Common {
             // may as well clean up both managed and unmanaged at the same time, or 2) the Finalizer has
             // called Dispose(false) to cleanup unmanaged resources
 
+            //D.Log("{0} has completed disposal of Job {1}.", GetType().Name, JobName);
             _alreadyDisposed = true;
         }
 

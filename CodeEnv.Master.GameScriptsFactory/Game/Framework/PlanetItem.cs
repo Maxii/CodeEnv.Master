@@ -55,7 +55,7 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
     /// </summary>
     public IList<MoonItem> ChildMoons {
         get {
-            _childMoons = _childMoons ?? GetComponentsInChildren<MoonItem>();
+            _childMoons = _childMoons ?? GetComponentsInChildren<MoonItem>().ToList();
             return _childMoons;
         }
     }
@@ -119,7 +119,7 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
         if (DisplayMgr != null) {
             var iconInfo = RefreshIconInfo();
             if (DisplayMgr.IconInfo != iconInfo) {    // avoid property not changed warning
-                //D.Log(ShowDebugLog, "{0} changing IconInfo from {1} to {2}.", FullName, DisplayMgr.IconInfo, iconInfo);
+                //D.Log(ShowDebugLog, "{0} changing IconInfo from {1} to {2}.", DebugName, DisplayMgr.IconInfo, iconInfo);
                 DisplayMgr.IconInfo = iconInfo;
             }
         }
@@ -137,7 +137,7 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
 
     public override void HandleEffectSequenceFinished(EffectSequenceID effectID) {
         base.HandleEffectSequenceFinished(effectID);
-        //D.Log(ShowDebugLog, "{0}.HandleEffectFinished({1}) called.", FullName, effectID.GetValueName());
+        //D.Log(ShowDebugLog, "{0}.HandleEffectFinished({1}) called.", DebugName, effectID.GetValueName());
         switch (effectID) {
             case EffectSequenceID.Dying:
                 if (ChildMoons.Any()) {
@@ -172,7 +172,7 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
     }
 
     private void HandleMoonDeathEffectFinished() {
-        //D.Log(ShowDebugLog, "{0}.HandleMoonDeathEffectFinished() called. Remaining Moons: {1}", FullName, ChildMoons.Count);
+        //D.Log(ShowDebugLog, "{0}.HandleMoonDeathEffectFinished() called. Remaining Moons: {1}", DebugName, ChildMoons.Count);
         if (ChildMoons.Count() == Constants.Zero) {
             // The last moon has shown its death effect as a result of the planet's death
             DestroyMe();
@@ -278,12 +278,12 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
             D.AssertNotNull(_closeOrbitSimulator);
             var isRemoved = _shipsInCloseOrbit.Remove(ship);
             D.Assert(isRemoved);
-            D.Log("{0} has left close orbit around {1}.", ship.FullName, FullName);
+            D.Log("{0} has left close orbit around {1}.", ship.DebugName, DebugName);
             float shipDistance = Vector3.Distance(ship.Position, Position);
             float minOutsideOfOrbitCaptureRadius = Data.CloseOrbitOuterRadius - ship.CollisionDetectionZoneRadius_Debug;
             if (shipDistance > minOutsideOfOrbitCaptureRadius) {
                 D.Warn("{0} is leaving orbit of {1} but is not within {2:0.0000}. Ship's current orbit distance is {3:0.0000}.",
-                    ship.FullName, FullName, minOutsideOfOrbitCaptureRadius, shipDistance);
+                    ship.DebugName, DebugName, minOutsideOfOrbitCaptureRadius, shipDistance);
             }
             if (_shipsInCloseOrbit.Count == Constants.Zero) {
                 // Choose either to deactivate the OrbitSimulator or destroy it, but not both

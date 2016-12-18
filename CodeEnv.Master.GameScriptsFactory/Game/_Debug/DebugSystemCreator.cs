@@ -59,7 +59,7 @@ public class DebugSystemCreator : SystemCreator {
                     for (int planetIndex = 0; planetIndex < planetQty; planetIndex++) {
                         PlanetItem planet = planets[planetIndex];
                         PlanetoidCategory[] childMoonCategories = planet.GetComponentsInChildren<MoonItem>().Select(m => m.category).ToArray();
-                        //D.Log("{0} assigning childMoonCategories to presetMoonCategories at index {1}.", Name, planetIndex);
+                        //D.Log(ShowDebugLog, "{0} assigning childMoonCategories to presetMoonCategories at index {1}.", DebugName, planetIndex);
                         presetMoonCategories.Add(childMoonCategories);  //presetMoonCategories[planetIndex] = childMoonCategories;
 
                     }
@@ -88,7 +88,7 @@ public class DebugSystemCreator : SystemCreator {
         }
 
         bool systemHasStar = GetComponentInChildren<StarItem>() != null;
-        D.AssertEqual(transform.childCount > Constants.Zero, systemHasStar, Name);
+        D.AssertEqual(transform.childCount > Constants.Zero, systemHasStar, DebugName);
         if (systemHasStar) {
             _isCompositionPreset = true;
             int activePlanetCount = GetComponentsInChildren<PlanetItem>().Count();
@@ -118,7 +118,7 @@ public class DebugSystemCreator : SystemCreator {
 
             _systemFactory.PopulateSystemInstance(SystemName, cameraStat, ref _system);
             if (!_system.gameObject.isStatic) {
-                D.Error("{0} should be static after being positioned.", _system.FullName);
+                D.Error("{0} should be static after being positioned.", _system.DebugName);
             }
 
             _system.SettlementOrbitData = InitializeSettlementOrbitSlot();
@@ -160,9 +160,9 @@ public class DebugSystemCreator : SystemCreator {
                 float sysOrbitSlotDepth;
                 if (planet.Data.CloseOrbitOuterRadius > (sysOrbitSlotDepth = __CalcSystemOrbitSlotDepth(_star))) {
                     D.Warn("{0}: {1} reqd orbit slot depth of {2:0.#} > SystemOrbitSlotDepth of {3:0.#}.",
-                        Name, planet.FullName, planet.Data.CloseOrbitOuterRadius, sysOrbitSlotDepth);
+                        DebugName, planet.DebugName, planet.Data.CloseOrbitOuterRadius, sysOrbitSlotDepth);
                 }
-                //D.Log("{0} has assumed orbit slot {1} in System {2}.", planet.FullName, planetOrbitSlot.SlotIndex, SystemName);
+                //D.Log(ShowDebugLog, "{0} has assumed orbit slot {1} in System {2}.", planet.DebugName, planetOrbitSlot.SlotIndex, SystemName);
             }
 
             // A planet design and orbit slot can be left out of Configuration during its creation if there aren't enough
@@ -171,7 +171,7 @@ public class DebugSystemCreator : SystemCreator {
             if (extraPlanets.Any()) {
                 extraPlanets.ForAll(p => {
                     _planets.Remove(p);
-                    D.Warn("{0} is destroying extra preset planet {1}. Check the preset design.", Name, p.FullName);
+                    D.Warn("{0} is destroying extra preset planet {1}. Check the preset design.", DebugName, p.DebugName);
                     Destroy(p.gameObject);
                 });
             }
@@ -205,7 +205,7 @@ public class DebugSystemCreator : SystemCreator {
                     MoonItem moon = aPlanetsPresetMoons.Where(m => m.category == moonDesign.Stat.Category).Except(populatedMoons).First();
                     _systemFactory.PopulateInstance(moonDesign, cameraStat, moonOrbitSlot, ref moon);
                     populatedMoons.Add(moon);
-                    //D.Log("{0} has assumed orbit slot {1} around Planet {2}.", moon.FullName, moonOrbitSlot.SlotIndex, aPlanet.FullName);
+                    //D.Log(ShowDebugLog, "{0} has assumed orbit slot {1} around Planet {2}.", moon.DebugName, moonOrbitSlot.SlotIndex, aPlanet.DebugName);
                 }
             }
 
@@ -215,7 +215,7 @@ public class DebugSystemCreator : SystemCreator {
             if (extraMoons.Any()) {
                 extraMoons.ForAll(m => {
                     _moons.Remove(m);
-                    D.Warn("{0} is destroying extra preset moon {1}. Check the preset design.", Name, m.FullName);
+                    D.Warn("{0} is destroying extra preset moon {1}. Check the preset design.", DebugName, m.DebugName);
                     Destroy(m.gameObject);
                 });
             }

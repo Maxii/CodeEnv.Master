@@ -39,7 +39,7 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<string>(ref _parentName, value, "ParentName"); }
         }
 
-        // Star FullName already includes its System's name
+        // Star DebugName already includes its System's name
 
         private int _capacity;
         public int Capacity {

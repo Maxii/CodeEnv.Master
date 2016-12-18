@@ -24,9 +24,12 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AItemData : APropertyChangeTracking {
 
+        /// <summary>
+        /// The display name of this item.
+        /// </summary>
         public string Name { get { return Item.Name; } }
 
-        public virtual string FullName { get { return Name; } }
+        public virtual string DebugName { get { return Name; } }
 
         private Player _owner;
         public Player Owner {
@@ -37,7 +40,7 @@ namespace CodeEnv.Master.GameContent {
         private Topography _topography;
         public Topography Topography {
             get {
-                D.AssertNotDefault((int)_topography, FullName);
+                D.AssertNotDefault((int)_topography, DebugName);
                 return _topography;
             }
             set { SetProperty<Topography>(ref _topography, value, "Topography", TopographyPropChangedHandler); }
@@ -115,7 +118,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected virtual void HandleOwnerChanged() {
-            //D.Log(ShowDebugLog, "{0} Owner has changed to {1}.", FullName, Owner.LeaderName);
+            //D.Log(ShowDebugLog, "{0} Owner has changed to {1}.", DebugName, Owner.LeaderName);
         }
 
         private void TopographyPropChangedHandler() {

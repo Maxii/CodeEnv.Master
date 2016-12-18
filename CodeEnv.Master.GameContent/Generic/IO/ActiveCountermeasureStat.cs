@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ActiveCountermeasureStat : ARangedEquipmentStat {
 
-        private static string _toStringFormat = "{0}({1})";
+        private static string DebugNameFormat = "{0}({1})";
 
         public WDVStrength[] InterceptStrengths { get; private set; }
 
@@ -62,10 +62,19 @@ namespace CodeEnv.Master.GameContent {
             DamageMitigation = damageMitigation;
         }
 
-        public override string ToString() {
-            string interceptTypesMsg = InterceptStrengths.Select(intS => intS.Category.GetEnumAttributeText()).Concatenate();
-            return _toStringFormat.Inject(Name, interceptTypesMsg);
+        #region IDebugable Members
+
+        public override string DebugName {
+            get {
+                if (_debugName == null) {
+                    _debugName = DebugNameFormat.Inject(base.DebugName, InterceptStrengths.Select(intS => intS.Category.GetEnumAttributeText()).Concatenate());
+                }
+                return _debugName;
+            }
         }
+
+        #endregion
+
 
         #region ActiveCM Firing Solutions Check Job Archive
 

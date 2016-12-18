@@ -29,9 +29,17 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
 
     private const int UpdateOrbitCounterThreshold = 4;
 
-    private const string NameFormat = "{0}.{1}";
+    protected const string DebugNameFormat = "{0}.{1}";
 
-    public string Name { get { return NameFormat.Inject(OrbitData.OrbitedItem.name, GetType().Name); } }
+    private string _debugName;
+    public virtual string DebugName {
+        get {
+            if (_debugName == null) {
+                _debugName = DebugNameFormat.Inject(OrbitData.OrbitedItem.name, GetType().Name);
+            }
+            return _debugName;
+        }
+    }
 
     /// <summary>
     /// The relative orbit speed of the object around the location. A value of 1 means
@@ -115,7 +123,7 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
         float orbitSpeedInUnitsPerHour = (2F * Mathf.PI * OrbitData.MeanRadius) / (OrbitData.OrbitPeriod.TotalInHours / _relativeOrbitRate);
         if (!(this is ShipCloseOrbitSimulator)) {
             if (orbitSpeedInUnitsPerHour > TempGameValues.__MaxPlanetoidOrbitSpeed) {
-                D.Warn("{0} orbitSpeed {1:0.0000} > max {2:0.0000}.", Name, orbitSpeedInUnitsPerHour, TempGameValues.__MaxPlanetoidOrbitSpeed);
+                D.Warn("{0} orbitSpeed {1:0.0000} > max {2:0.0000}.", DebugName, orbitSpeedInUnitsPerHour, TempGameValues.__MaxPlanetoidOrbitSpeed);
             }
         }
         return orbitSpeedInUnitsPerHour;
@@ -174,7 +182,7 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
     }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
 

@@ -60,7 +60,7 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
 
     protected override Vector3 PositionForDistanceMeasurements { get { return _baseMenuOperator.Position; } }
 
-    protected override string OperatorName { get { return _baseMenuOperator.FullName; } }
+    protected override string OperatorName { get { return _baseMenuOperator.DebugName; } }
 
     private AUnitBaseCmdItem _baseMenuOperator;
 
@@ -179,8 +179,8 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
         BaseDirective directive = (BaseDirective)_directiveLookup[itemID];
         INavigable target;
         bool isTarget = _unitTargetLookup.TryGetValue(itemID, out target);
-        string tgtMsg = isTarget ? target.FullName : "[none]";
-        D.Log("{0} selected directive {1} and target {2} from context menu.", _baseMenuOperator.FullName, directive.GetValueName(), tgtMsg);
+        string tgtMsg = isTarget ? target.DebugName : "[none]";
+        D.Log("{0} selected directive {1} and target {2} from context menu.", _baseMenuOperator.DebugName, directive.GetValueName(), tgtMsg);
         _baseMenuOperator.CurrentOrder = new BaseOrder(directive, OrderSource.User, target as IUnitAttackable);
     }
 

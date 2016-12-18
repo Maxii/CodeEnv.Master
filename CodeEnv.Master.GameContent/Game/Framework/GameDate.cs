@@ -20,6 +20,7 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
     using UnityEngine;
+    using UnityEngine.Profiling;
 
     /// <summary>
     /// Immutable, data container structure that holds the game date.

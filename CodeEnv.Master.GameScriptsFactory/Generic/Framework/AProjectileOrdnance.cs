@@ -23,6 +23,7 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
 /// Abstract base class for missile or projectile ordnance containing effects for muzzle flash, inFlightOperation and impact.  
@@ -31,7 +32,11 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
 
     private const int CheckProgressCounterThreshold = 16;
 
-    protected const float __ImpactEffectScalerValue = .01F;
+    protected const float __ImpactEffectScaleReductionFactor = .01F;
+
+    protected const float __ImpactEffectScaleRestoreFactor = 100F;
+
+    private static Vector3 __ColliderSize = new Vector3(.01F, .01F, .03F);
 
     /// <summary>
     /// The maximum speed of this projectile in units per hour when in Topography.OpenSpace.
@@ -62,9 +67,9 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
 
     protected Rigidbody _rigidbody;
     protected Vector3 _launchPosition;
+    protected BoxCollider _collider;
 
     private bool _hasWeaponFired;
-    private BoxCollider _collider;
     private AProjectileDisplayManager _displayMgr;
     private int _checkProgressCounter;
 
@@ -72,7 +77,6 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     /// The velocity to restore in gameSpeed-adjusted units per second after the pause is resumed.
     /// </summary>
     private Vector3 _velocityToRestoreAfterPause;
-    private bool _isVelocityToRestoreAfterPauseRecorded;
 
     protected override void Awake() {
         base.Awake();
@@ -83,6 +87,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         _collider = UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
         _collider.enabled = false;  // 7.19.16 now spawning so start not enabled so OnSpawned Assert passes
         ValidateEffects();
+        //__ValidateColliderSize();
     }
 
     protected abstract void ValidateEffects();
@@ -98,6 +103,8 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
             // way before OnLevelIsLoaded() is called which is when GameMgr refreshes static References - aka TrackingWidgetFactory
             _displayMgr = InitializeDisplayMgr();
         }
+        _displayMgr.IsDisplayEnabled = true;
+
         PrepareForLaunch(target, weapon);
         D.AssertEqual(Layers.Projectiles, (Layers)gameObject.layer, ((Layers)gameObject.layer).GetValueName());
         _launchPosition = transform.position;
@@ -112,7 +119,6 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     private AProjectileDisplayManager InitializeDisplayMgr() {
         AProjectileDisplayManager displayMgr = MakeDisplayMgr();
         displayMgr.Initialize();
-        displayMgr.IsDisplayEnabled = true;
         return displayMgr;
     }
 
@@ -133,9 +139,9 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     /// <returns></returns>
     protected virtual float CheckProgress() {
         var distanceTraveled = GetDistanceTraveled();
-        //D.Log("{0} distanceTraveled = {1}.", Name, distanceTraveled);
+        //D.Log(ShowDebugLog, "{0} distanceTraveled = {1}.", DebugName, distanceTraveled);
         if (distanceTraveled > _range) {
-            //D.Log("{0} has exceeded range of {1:0.#}. Actual distanceTraveled = {2:0.#}.", Name, _range, distanceTraveled);
+            //D.Log(ShowDebugLog, "{0} has exceeded range of {1:0.#}. Actual distanceTraveled = {2:0.#}.", DebugName, _range, distanceTraveled);
             // No self destruction effect
             if (Target.IsOperational) {
                 // reporting a miss after the target is dead will just muddy the combat report
@@ -150,20 +156,30 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     }
 
     private void HandleCollision(Collision collision) {
-        //string collidedObjectName = collision.collider.transform.parent.name + collision.collider.name;
-        //D.Log("{0}.OnCollisionEnter() called from layer {1}. Collided with {2} on layer {3}.",
-        //Name, ((Layers)(gameObject.layer)).GetValueName(), collidedObjectName, ((Layers)collision.collider.gameObject.layer).GetValueName());
-        //D.Log("{0} distance to intended target on collision: {1}.", Name, Vector3.Distance(transform.position, Target.Position));
+        if (Target == null) {
+            // 12.17.16 parent name is name of Unit, collider name is name of element
+            string collidedObjectName = collision.collider.transform.parent.name + Constants.Underscore + collision.collider.name;
+            // 12.17.16 If DebugName has no _###, then its the root name and Launch has not yet been called. I don't understand why
+            D.Warn("{0}.OnCollisionEnter() called from layer {1}. Ignoring collision with {2} on layer {3} before Launching.",
+                DebugName, ((Layers)(gameObject.layer)).GetValueName(), collidedObjectName, ((Layers)collision.collider.gameObject.layer).GetValueName());
+            // 12.17.16 FIXME OnCollisionEnter is being called when both _collider and monoBehaviour are disabled. According to Unity 5.0 
+            // release notes, this should no longer happen when monoBehaviour is disabled. However, OnCollisionEnter docs say 
+            // "Collision events will be sent to disabled MonoBehaviours, to allow enabling Behaviours in response to collisions." Anyhow,
+            // its occurring as both D.Assert(enabled) and D.Assert(_collider.enabled) will fail here. I'm just going to warn and ignore
+            // for now until this gets clarified.
+            return;
+        }
+        //D.Log(ShowDebugLog, "{0} distance to intended target on collision: {1}.", DebugName, Vector3.Distance(transform.position, Target.Position));
         bool isImpactEffectRunning = false;
         var impactedGo = collision.collider.gameObject;
 
-        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
         var impactedTarget = impactedGo.GetComponent<IElementAttackable>();
         Profiler.EndSample();
 
         if (impactedTarget != null) {
             // hit an attackableTarget
-            //D.Log("{0} collided with {1}.", Name, impactedTarget.FullName);
+            //D.Log(ShowDebugLog, "{0} collided with {1}.", DebugName, impactedTarget.DebugName);
             ContactPoint contactPoint = collision.contacts[0];
             // The application of impact force is already handled by the physics engine when regular rigidbodies collide
             TryApplyImpactForce(impactedGo, contactPoint);
@@ -172,7 +188,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
                     ReportTargetHit();
                 }
                 else {
-                    ReportInterdiction();
+                    ReportInterdiction();   // Not from ActiveCM as they don't collide
                 }
                 impactedTarget.TakeHit(DamagePotential);
                 // if target is killed by this hit, TerminateNow will be immediately called by Weapon
@@ -181,7 +197,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
                 // target survived the hit
                 if (impactedTarget.IsVisualDetailDiscernibleToUser) {
                     // target is being viewed by user so show impact effect
-                    //D.Log("{0} starting impact effect on {1}.", Name, impactedTarget.DisplayName);
+                    //D.Log(ShowDebugLog, "{0} starting impact effect on {1}.", DebugName, impactedTarget.DisplayName);
                     var impactEffectLocation = contactPoint.point + contactPoint.normal * 0.01F;    // HACK
                     // IMPROVE = Quaternion.FromToRotation(Vector3.up, contact.normal); // see http://docs.unity3d.com/ScriptReference/Collider.OnCollisionEnter.html
                     ShowImpactEffects(impactEffectLocation);
@@ -216,14 +232,14 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     /// <returns></returns>
     private bool TryApplyImpactForce(GameObject impactedGo, ContactPoint contactPoint) {
 
-        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
         var impactedTargetRigidbody = impactedGo.GetComponent<Rigidbody>();
         Profiler.EndSample();
 
         if (impactedTargetRigidbody != null && !impactedTargetRigidbody.isKinematic) {
             // target has a rigidbody so apply impact force
             var force = GetForceOfImpact();
-            //D.Log("{0} applying impact force of {1} to {2}.", Name, force, impactedGo.name);
+            //D.Log(ShowDebugLog, "{0} applying impact force of {1} to {2}.", DebugName, force, impactedGo.name);
             impactedTargetRigidbody.AddForceAtPosition(force, contactPoint.point, ForceMode.Impulse);
             return true;
         }
@@ -272,14 +288,20 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     protected override void OnSpawned() {
         base.OnSpawned();
         // 11.3.16 First Spawn occurs before first Launch is called
-        ////D.Assert(_displayMgr != null);    
+        if (_displayMgr != null) {
+            D.Assert(!_displayMgr.IsDisplayEnabled);
+        }
         D.AssertNotNull(_rigidbody);
         D.AssertNotNull(_collider);
-        D.Assert(!_collider.enabled, FullName);
+        D.Assert(!_collider.enabled, DebugName);
+        __ValidateColliderSize();
         D.Assert(_launchPosition == default(Vector3));  //D.AssertDefault(_launchPosition);
         D.Assert(!_hasWeaponFired);
         D.AssertDefault(_checkProgressCounter);
-        _collider.enabled = true;
+        D.Assert(!__isVelocityToRestoreAfterPauseRecorded);
+        D.Assert(_velocityToRestoreAfterPause == default(Vector3));
+        D.Assert(!__doesImpactEffectScaleNeedToBeRestored);
+        // 12.15.16 Moved collider.enabled to Launch as enabling here caused collisions before Launch called
     }
 
     void OnCollisionEnter(Collision collision) {
@@ -303,31 +325,35 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         _launchPosition = Vector3.zero;
         _hasWeaponFired = false;
         _checkProgressCounter = Constants.Zero;
-        _rigidbody.velocity = Vector3.zero;
-        _collider.enabled = false;        // UNCLEAR deactivating (disabling?) the collider removes Physics.IgnoreCollision
+        __isVelocityToRestoreAfterPauseRecorded = false;
+        _velocityToRestoreAfterPause = default(Vector3);
+        D.Assert(!_collider.enabled);
+        D.Assert(!_displayMgr.IsDisplayEnabled);
+        D.Assert(_rigidbody.velocity == default(Vector3));
+        D.Assert(!__doesImpactEffectScaleNeedToBeRestored);
     }
 
     #endregion
 
     private void PauseVelocity(bool toPause) {
         if (toPause) {
-            D.Assert(!_isVelocityToRestoreAfterPauseRecorded);
+            D.Assert(!__isVelocityToRestoreAfterPauseRecorded);
             _velocityToRestoreAfterPause = _rigidbody.velocity;
             _rigidbody.isKinematic = true;
-            _isVelocityToRestoreAfterPauseRecorded = true;
+            __isVelocityToRestoreAfterPauseRecorded = true;
         }
         else {
-            D.Assert(_isVelocityToRestoreAfterPauseRecorded);
+            D.Assert(__isVelocityToRestoreAfterPauseRecorded);
             _rigidbody.isKinematic = false;
             _rigidbody.velocity = _velocityToRestoreAfterPause;
             _rigidbody.WakeUp();
-            _isVelocityToRestoreAfterPauseRecorded = false;
+            __isVelocityToRestoreAfterPauseRecorded = false;
         }
     }
 
     private void AdjustForGameSpeed(float gameSpeedChangeRatio) {
         if (_gameMgr.IsPaused) {
-            D.Assert(_isVelocityToRestoreAfterPauseRecorded, Name);
+            D.Assert(__isVelocityToRestoreAfterPauseRecorded, DebugName);
             _velocityToRestoreAfterPause *= gameSpeedChangeRatio;
         }
         else {
@@ -340,7 +366,49 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         // Deactivating the gameObject when despawned will disable the PrimaryMeshRenderer stopping LOS events.
         // Don't also do it here using DisplayMgr.HandleDeath() as it won't be enabled again when re-spawned.
         _displayMgr.IsDisplayEnabled = false;
+        // 12.15.16 Moved the following here to avoid any issue with Despawn changing parent
+        _rigidbody.velocity = Vector3.zero;
+        _collider.enabled = false;  // UNCLEAR disabling the collider removes Physics.IgnoreCollision? 12.16.16 Probably not
+        if (Weapon.Element.IsOperational) {  // avoids trying to access Destroyed gameObject
+            Physics.IgnoreCollision(_collider, (Weapon.Element as Component).gameObject.GetSafeComponent<BoxCollider>(), ignore: false);   // HACK
+        }
+        //D.Log(ShowDebugLog, "{0} and {1} no longer ignoring collisions.", DebugName, Weapon.Element.DebugName);
     }
+
+    #region Debug
+
+    private bool __isVelocityToRestoreAfterPauseRecorded = false;
+
+    /// <summary>
+    /// Validates the size and scale of the collider.
+    /// <remarks>Trying to find source of Invalid AABB errors.</remarks>
+    /// </summary>
+    private void __ValidateColliderSize() {
+        D.Assert(_collider.transform.lossyScale == Vector3.one, DebugName);
+        D.Assert(_collider.size == __ColliderSize, DebugName);
+    }
+
+    private bool __doesImpactEffectScaleNeedToBeRestored = false;
+
+    protected void __ReduceScaleOfImpactEffect() {
+        __ExecuteImpactEffectScaleReduction();
+        __doesImpactEffectScaleNeedToBeRestored = true;
+    }
+
+    protected abstract void __ExecuteImpactEffectScaleReduction();
+
+    protected bool __TryRestoreScaleOfImpactEffect() {
+        if (__doesImpactEffectScaleNeedToBeRestored) {
+            __ExecuteImpactEffectScaleRestoration();
+            __doesImpactEffectScaleNeedToBeRestored = false;
+            return true;
+        }
+        return false;
+    }
+
+    protected abstract void __ExecuteImpactEffectScaleRestoration();
+
+    #endregion
 
     #region IInterceptableOrdnance Members
 
@@ -348,7 +416,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
 
     public void TakeHit(WDVStrength interceptStrength) {
         if (DeliveryVehicleStrength.Category != interceptStrength.Category) {
-            D.Warn("{0}[{1}] improperly intercepted by {2} interceptor.", Name, DeliveryVehicleStrength.Category.GetValueName(), interceptStrength.Category.GetValueName());
+            D.Warn("{0}[{1}] improperly intercepted by {2} interceptor.", DebugName, DeliveryVehicleStrength.Category.GetValueName(), interceptStrength.Category.GetValueName());
             return;
         }
         if (DeliveryVehicleStrength.Value == Constants.ZeroF) {
@@ -358,13 +426,14 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
             // late CM that is notified of a 'live' threat tries to destroy it, resulting in this warning and the subsequent "object already
             // destroyed" error.
             D.Error("{0} has been intercepted when VehicleStrength.Value = 0. IsOperational = {1}. Bypassing duplicate termination.",
-                Name, IsOperational);
+                DebugName, IsOperational);
         }
         else {
-            //D.Log("{0} intercepted. InterceptStrength: {1}, SurvivalStrength: {2}.", Name, interceptStrength, DeliveryVehicleStrength);
+            //D.Log(ShowDebugLog, "{0} intercepted. InterceptStrength: {1}, SurvivalStrength: {2}.", DebugName, interceptStrength, DeliveryVehicleStrength);
             DeliveryVehicleStrength = DeliveryVehicleStrength - interceptStrength;
             if (DeliveryVehicleStrength.Value == Constants.ZeroF) {
                 ReportInterdiction();
+                D.Log(ShowDebugLog, "{0} was intercepted and destroyed.", DebugName);
                 if (IsOperational) {
                     // ordnance has not already been terminated by other paths such as the death of the target
                     TerminateNow();
@@ -378,15 +447,13 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     #region ITopographyChangeListener Members
 
     public void ChangeTopographyTo(Topography newTopography) {
-        //D.Log("{0}.ChangeTopographyTo({1}).", FullName, newTopography.GetValueName());
+        D.Log(ShowDebugLog, "{0}.ChangeTopographyTo({1}).", DebugName, newTopography.GetValueName());
         _rigidbody.drag = OpenSpaceDrag * newTopography.GetRelativeDensity();
     }
 
     #endregion
 
     #region IWidgetTrackable Members
-
-    public string DisplayName { get { return Name; } }
 
     public Vector3 GetOffset(WidgetPlacement placement) {
         switch (placement) {

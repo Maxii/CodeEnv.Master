@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AWeaponStat : ARangedEquipmentStat {
 
-        private const string _toStringFormat = "{0}: Name[{1}], DeliveryVehicleStrength[{2}], DamagePotential[{3}], Range[{4}].";
+        private const string DebugNameFormat = "{0}(DeliveryVehicleStrength[{1}], DamagePotential[{2}], Range[{3}]).";
 
         public WDVCategory DeliveryVehicleCategory { get { return DeliveryVehicleStrength.Category; } }
 
@@ -57,10 +57,20 @@ namespace CodeEnv.Master.GameContent {
             DamagePotential = damagePotential;
         }
 
-        public override sealed string ToString() {
-            return _toStringFormat.Inject(GetType().Name, Name, DeliveryVehicleStrength.ToString(), DamagePotential.ToString(),
-                RangeCategory.GetValueName());
+        #region IDebugable Members
+
+        public override string DebugName {
+            get {
+                if (_debugName == null) {
+                    _debugName = DebugNameFormat.Inject(base.DebugName, DeliveryVehicleStrength.ToString(), DamagePotential.ToString(),
+                        RangeCategory.GetValueName());
+                }
+                return _debugName;
+            }
         }
+
+        #endregion
+
 
     }
 }

@@ -55,7 +55,7 @@ public abstract class ADebugUnitCreator : AUnitCreator {
     private int _yearDelay = 0;
 
     [SerializeField]
-    protected DebugWeaponLoadout _losWeaponsPerElement;
+    protected DebugLosWeaponLoadout _losWeaponsPerElement;
 
     [SerializeField]
     protected DebugWeaponLoadout _missileWeaponsPerElement;
@@ -126,7 +126,7 @@ public abstract class ADebugUnitCreator : AUnitCreator {
         int activeElementCount = GetComponentsInChildren<AUnitElementItem>().Count();
         bool hasActiveElements = activeElementCount > Constants.Zero;
         if (hasActiveElements != (transform.childCount > Constants.Zero)) {
-            D.Error("{0} elements not properly configured.", Name);
+            D.Error("{0} elements not properly configured.", DebugName);
         }
         if (hasActiveElements) {
             _isCompositionPreset = true;
@@ -174,7 +174,7 @@ public abstract class ADebugUnitCreator : AUnitCreator {
     //    }
 
     //    if (aiOwner != null) {
-    //        D.Log(ShowCmdHQDebugLog, "{0} picked AI Owner {1}. User relationship upon detection will be {2}.", Name, aiOwner.LeaderName, desiredUserRelations.GetValueName());
+    //        D.Log(ShowCmdHQDebugLog, "{0} picked AI Owner {1}. User relationship upon detection will be {2}.", DebugName, aiOwner.LeaderName, desiredUserRelations.GetValueName());
     //    }
     //    return aiOwner;
     //}
@@ -219,7 +219,7 @@ public abstract class ADebugUnitCreator : AUnitCreator {
     //    }
 
     //    if (aiOwner != null) {
-    //        D.Log(ShowCmdHQDebugLog, "{0} picked AI Owner {1}. User relationship upon detection will be {2}.", Name, aiOwner.LeaderName, desiredUserRelations.GetValueName());
+    //        D.Log(ShowCmdHQDebugLog, "{0} picked AI Owner {1}. User relationship upon detection will be {2}.", DebugName, aiOwner.LeaderName, desiredUserRelations.GetValueName());
     //    }
     //    return aiOwner;
     //}

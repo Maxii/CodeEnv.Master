@@ -71,7 +71,7 @@ namespace CodeEnv.Master.GameContent {
         #region Event and Property Change Handlers
 
         private void ViewModePropChangedHandler() {
-            D.Log("{0} ViewMode changed to {1}.", Name, ViewMode.GetValueName());
+            D.Log("{0} ViewMode changed to {1}.", DebugName, ViewMode.GetValueName());
             switch (ViewMode) {
                 case PlayerViewMode.SectorView:
                     // allow the camera to see the sectorViewMode layer so the UICamera can also see it

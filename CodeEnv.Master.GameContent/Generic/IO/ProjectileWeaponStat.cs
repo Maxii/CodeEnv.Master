@@ -53,7 +53,7 @@ namespace CodeEnv.Master.GameContent {
             float ordnanceMaxSpeed, float ordnanceMass, float ordnanceDrag, float maxLaunchInaccuracy)
             : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, deliveryVehicleStrength, reloadPeriod, damagePotential, ordnanceMaxSpeed, ordnanceMass, ordnanceDrag) {
             if (maxLaunchInaccuracy > 5F) {
-                D.Warn("{0} MaxLaunchInaccuracy of {1:0.#} is very high.", Name, maxLaunchInaccuracy);
+                D.Warn("{0} MaxLaunchInaccuracy of {1:0.#} is very high.", DebugName, maxLaunchInaccuracy);
             }
             MaxLaunchInaccuracy = maxLaunchInaccuracy;
         }

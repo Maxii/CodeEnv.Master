@@ -17,7 +17,9 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// The desired weapons load of each element in the unit. Used for debug settings in the editor. 
+    /// The desired weapons load of each element in the unit. 
+    /// <remarks>Used for debug settings in the editor.</remarks> 
+    /// <remarks>12.15.16 Currently only used for Missiles as LosWeapons got DebugLosWeaponLoadout.</remarks>
     /// </summary>
     public enum DebugWeaponLoadout {
 

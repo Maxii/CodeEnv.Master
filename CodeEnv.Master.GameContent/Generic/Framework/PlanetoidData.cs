@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class PlanetoidData : AMortalItemData {
 
-        private const string FullNameFormat = "{0}_{1}";
+        private const string DebugNameFormat = "{0}_{1}";
 
         public PlanetoidCategory Category { get; private set; }
 

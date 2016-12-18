@@ -23,6 +23,7 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
 /// Abstract class for AMortalItem's that are Unit Commands.
@@ -32,6 +33,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     public event EventHandler isAvailableChanged;
 
     public Formation UnitFormation { get { return Data.UnitFormation; } }
+
+    public string UnitName { get { return Data.ParentName; } }
 
     /// <summary>
     /// The maximum radius of this Unit's current formation, independent of the number of elements currently assigned a
@@ -174,13 +177,20 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     private void InitializeHQAttachmentSystem() {
+
+        Profiler.BeginSample("Proper AddComponent allocation", gameObject);
         var rigidbody = gameObject.AddComponent<Rigidbody>();   // OPTIMIZE add to prefab
+        Profiler.EndSample();
+
         rigidbody.isKinematic = false; // FixedJoint needs a Rigidbody. If isKinematic acts as anchor for HQShip
         rigidbody.useGravity = false;
         rigidbody.mass = Constants.ZeroF;
         rigidbody.drag = Constants.ZeroF;
         rigidbody.angularDrag = Constants.ZeroF;
+
+        Profiler.BeginSample("Proper AddComponent allocation", gameObject);
         _hqJoint = gameObject.AddComponent<FixedJoint>();   // OPTIMIZE add to prefab
+        Profiler.EndSample();
     }
 
     public override void FinalInitialize() {
@@ -205,13 +215,13 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     /// <param name="element">The Element to add.</param>
     public virtual void AddElement(AUnitElementItem element) {
         if (Elements.Contains(element)) {
-            D.Error("{0} attempting to add {1} that is already present.", FullName, element.FullName);
+            D.Error("{0} attempting to add {1} that is already present.", DebugName, element.DebugName);
         }
         if (element.IsHQ) {
-            D.Error("{0} adding element {1} already designated as the HQ Element.", FullName, element.FullName);
+            D.Error("{0} adding element {1} already designated as the HQ Element.", DebugName, element.DebugName);
         }
         if (element.IsOperational != IsOperational) {
-            D.Error("{0}: Adding element {1} with incorrect IsOperational state.", FullName, element.FullName);
+            D.Error("{0}: Adding element {1} with incorrect IsOperational state.", DebugName, element.DebugName);
         }
         Elements.Add(element);
         Data.AddElement(element.Data);
@@ -220,7 +230,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         //TODO consider changing HQElement
         var unattachedSensors = element.Data.Sensors.Where(sensor => sensor.RangeMonitor == null);
         if (unattachedSensors.Any()) {
-            //D.Log(ShowDebugLog, "{0} is attaching {1}'s sensors: {2}.", FullName, element.FullName, unattachedSensors.Select(s => s.Name).Concatenate());
+            //D.Log(ShowDebugLog, "{0} is attaching {1}'s sensors: {2}.", DebugName, element.DebugName, unattachedSensors.Select(s => s.Name).Concatenate());
             AttachSensorsToMonitors(unattachedSensors.ToList());
             // WARNING: IEnumerable<T> lazy evaluation GOTCHA! The IEnumerable unattachedSensors at this point (after AttachSensorsToMonitors
             // completes) no longer points to any sensors as they would now all be attached. This is because the IEnumerable is not an 
@@ -273,7 +283,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
                 monitor.enemyTargetsInRange -= EnemyTargetsInSensorRangeChangedEventHandler;
                 monitor.Reset();    // OPTIMIZE either reset or destroy, not both
                 SensorRangeMonitors.Remove(monitor);
-                //D.Log(ShowDebugLog, "{0} is destroying unused {1} as a result of removing {2}.", FullName, typeof(SensorRangeMonitor).Name, sensor.Name);
+                //D.Log(ShowDebugLog, "{0} is destroying unused {1} as a result of removing {2}.", DebugName, typeof(SensorRangeMonitor).Name, sensor.Name);
                 GameUtility.DestroyIfNotNullOrAlreadyDestroyed(monitor);
             }
         });
@@ -281,7 +291,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     public virtual void RemoveElement(AUnitElementItem element) {
         bool isRemoved = Elements.Remove(element);
-        D.Assert(isRemoved, element.FullName);
+        D.Assert(isRemoved, element.DebugName);
         Data.RemoveElement(element.Data);
 
         DetachSensorsFromMonitors(element.Data.Sensors);
@@ -290,7 +300,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         }
         if (Elements.Count == Constants.Zero) {
             if (Data.UnitHealth > Constants.ZeroF) {
-                D.Error("{0} has UnitHealth of {1:0.0000} remaining.", FullName, Data.UnitHealth);
+                D.Error("{0} has UnitHealth of {1:0.0000} remaining.", DebugName, Data.UnitHealth);
             }
             IsOperational = false;  // tell Cmd its dead
             return;
@@ -316,9 +326,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     public void HandleSubordinateElementDeath(IUnitElement deadSubordinateElement) {
-        if (ShowDebugLog) {
-            D.Log("{0} acknowledging {1} has been lost.", FullName, deadSubordinateElement.FullName);
-        }
+        // No ShowDebugLog as I always want this to report except when it doesn't compile
+        D.LogBold("{0} acknowledging {1} has been lost.", DebugName, deadSubordinateElement.DebugName);
         RemoveElement(deadSubordinateElement as AUnitElementItem);
         // state machine notification is after removal so attempts to acquire a replacement don't come up with same element
         if (IsOperational) {    // no point in notifying Cmd's Dead state of the subordinate element's death that killed it
@@ -334,8 +343,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         // Note: Assigning connectedBody links the two rigidbodies at their current relative positions. Therefore the Cmd must be
         // relocated to the HQElement before the joint is made. Making the joint does not itself relocate Cmd to the newly connectedBody.
         _hqJoint.connectedBody = HQElement.gameObject.GetSafeComponent<Rigidbody>();
-        //D.Log(ShowDebugLog, "{0}.Position = {1}, {2}.position = {3}.", HQElement.FullName, HQElement.Position, FullName, transform.position);
-        //D.Log(ShowDebugLog, "{0} after attached by FixedJoint, rotation = {1}, {2}.rotation = {3}.", HQElement.FullName, HQElement.transform.rotation, FullName, transform.rotation);
+        //D.Log(ShowDebugLog, "{0}.Position = {1}, {2}.position = {3}.", HQElement.DebugName, HQElement.Position, DebugName, transform.position);
+        //D.Log(ShowDebugLog, "{0} after attached by FixedJoint, rotation = {1}, {2}.rotation = {3}.", HQElement.DebugName, HQElement.transform.rotation, DebugName, transform.rotation);
     }
 
     #region Command Icon Management
@@ -346,7 +355,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         var iconInfo = RefreshIconInfo();
         if (DisplayMgr.IconInfo != iconInfo) {    // avoid property not changed warning
             UnsubscribeToIconEvents(DisplayMgr.Icon);
-            //D.Log(ShowDebugLog, "{0} changing IconInfo from {1} to {2}.", FullName, DisplayMgr.IconInfo, iconInfo);
+            //D.Log(ShowDebugLog, "{0} changing IconInfo from {1} to {2}.", DebugName, DisplayMgr.IconInfo, iconInfo);
             DisplayMgr.IconInfo = iconInfo;
             SubscribeToIconEvents(DisplayMgr.Icon);
         }
@@ -364,8 +373,11 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     /// Assesses the alert status based on the proximity of enemy elements detected by sensors.
     /// </summary>
     protected void AssessAlertStatus() {
+
+        Profiler.BeginSample("AssessAlertStatus LINQ IEnumerables", gameObject);
         var sensorRangeCatsDetectingEnemy = SensorRangeMonitors.Where(srm => srm.AreEnemyTargetsInRange).Select(srm => srm.RangeCategory);
         var sensorRangeCatsDetectingWarEnemy = SensorRangeMonitors.Where(srm => srm.AreEnemyWarTargetsInRange).Select(srm => srm.RangeCategory);
+        Profiler.EndSample();
 
         if (sensorRangeCatsDetectingWarEnemy.Contains(RangeCategory.Short)) {
             Data.AlertStatus = AlertStatus.Red;
@@ -443,12 +455,12 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
             D.Assert(!IsOperational);
             // OPTIMIZE Just a FYI warning as formations currently assume this
             if (newHQElement.transform.rotation != Quaternion.identity) {
-                D.Warn("{0} first HQ Element rotation = {1}.", FullName, newHQElement.transform.rotation);
+                D.Warn("{0} first HQ Element rotation = {1}.", DebugName, newHQElement.transform.rotation);
             }
         }
         if (!Elements.Contains(newHQElement)) {
             // the player will typically select/change the HQ element of a Unit from the elements already present in the unit
-            D.Warn("{0} assigned HQElement {1} that is not already present in Unit.", FullName, newHQElement.FullName);
+            D.Warn("{0} assigned HQElement {1} that is not already present in Unit.", DebugName, newHQElement.DebugName);
             AddElement(newHQElement);
         }
     }
@@ -601,11 +613,11 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     /// <returns></returns>
     public bool __CheckForDamage(bool isHQElementAlive, DamageStrength elementDamageSustained, float elementDamageSeverity) {
         //D.Log(ShowDebugLog, "{0}.__CheckForDamage() called. IsHQElementAlive = {1}, ElementDamageSustained = {2}, ElementDamageSeverity = {3}.",
-        //FullName, isHQElementAlive, elementDamageSustained, elementDamageSeverity);
+        //DebugName, isHQElementAlive, elementDamageSustained, elementDamageSeverity);
         var cmdMissedChance = Constants.OneHundredPercent - elementDamageSeverity;
         bool missed = (isHQElementAlive) ? RandomExtended.Chance(cmdMissedChance) : false;
         if (missed) {
-            //D.Log(ShowDebugLog, "{0} avoided a hit.", FullName);
+            //D.Log(ShowDebugLog, "{0} avoided a hit.", DebugName);
         }
         else {
             TakeHit(elementDamageSustained);
@@ -620,7 +632,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         DamageStrength damageToCmd = elementDamageSustained - Data.DamageMitigation;
         float unusedDamageSeverity;
         bool isCmdAlive = ApplyDamage(damageToCmd, out unusedDamageSeverity);
-        D.Assert(isCmdAlive, Data.FullName);
+        D.Assert(isCmdAlive, Data.DebugName);
     }
 
     /// <summary>
@@ -677,7 +689,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
             if (_trackingLabel == null) {
                 float minShowDistance = TempGameValues.MinTrackingLabelShowDistance;
                 _trackingLabel = TrackingWidgetFactory.Instance.MakeUITrackingLabel(this, WidgetPlacement.AboveRight, minShowDistance);
-                _trackingLabel.Set(DisplayName);
+                _trackingLabel.Set(UnitName);
                 _trackingLabel.Color = Owner.Color;
             }
             AssessShowTrackingLabel();
@@ -819,7 +831,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(subscriptionMode));
         }
         if (isDuplicateSubscriptionAttempted) {
-            D.Warn("{0}: Attempting to subscribe to {1}'s {2} when already subscribed.", FullName, fsmTgt.FullName, subscriptionMode.GetValueName());
+            D.Warn("{0}: Attempting to subscribe to {1}'s {2} when already subscribed.", DebugName, fsmTgt.DebugName, subscriptionMode.GetValueName());
         }
         if (isSubscribeActionTaken) {
             __subscriptionStatusLookup[subscriptionMode] = toSubscribe;
@@ -830,12 +842,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     public override void __SimulateAttacked() {
         Elements.ForAll(e => e.__SimulateAttacked());
     }
-
-    #endregion
-
-    #region INavigable Members
-
-    public override string DisplayName { get { return Data.ParentName; } }
 
     #endregion
 
@@ -873,7 +879,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     public virtual void PositionElementInFormation(IUnitElement element, FormationStationSlotInfo stationSlotInfo) {
         (element as AUnitElementItem).transform.localPosition = stationSlotInfo.LocalOffset;
         //D.Log(ShowDebugLog, "{0} positioned at {1}, offset by {2} from {3} at {4}.",
-        //element.FullName, element.Position, stationSlotInfo.LocalOffset, HQElement.FullName, HQElement.Position);
+        //element.DebugName, element.Position, stationSlotInfo.LocalOffset, HQElement.DebugName, HQElement.Position);
     }
 
     #endregion

@@ -84,7 +84,7 @@ namespace CodeEnv.Master.GameContent {
             _primaryMeshRenderer.GetPropertyBlock(_primaryMeshMPB);
             // renderer's existing MaterialPropertyBlock color is also black, implying that the existing property block is the default, at least wrt color
             _primaryMeshMPB.SetColor(UnityConstants.StdShader_Property_AlbedoColor, primaryMeshColor);
-            //D.Log("{0}.PrimaryMeshMPB color after initialization = {1}.", Name, _primaryMeshMPB.GetVector(UnityConstants.StdShader_Property_AlbedoColor));
+            //D.Log("{0}.PrimaryMeshMPB color after initialization = {1}.", DebugName, _primaryMeshMPB.GetVector(UnityConstants.StdShader_Property_AlbedoColor));
 
             if (_hiddenMeshMPB == null) {
                 _hiddenMeshMPB = new MaterialPropertyBlock();

@@ -16,13 +16,18 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
+    using CodeEnv.Master.Common;
+
     /// <summary>
     /// Immutable abstract base class for Equipment stats.
     /// </summary>
-    public abstract class AEquipmentStat {
+    public abstract class AEquipmentStat : IDebugable {
+
+        private const string DebugNameFormat = "{0}.{1}";
 
         /// <summary>
-        /// Name of the equipment.
+        /// Display name of the equipment.
         /// </summary>
         public string Name { get; private set; }
 
@@ -47,7 +52,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Initializes a new instance of the <see cref="AEquipmentStat" /> class.
         /// </summary>
-        /// <param name="name">The name of the Equipment.</param>
+        /// <param name="name">The display name of the Equipment.</param>
         /// <param name="imageAtlasID">The image atlas identifier.</param>
         /// <param name="imageFilename">The image filename.</param>
         /// <param name="description">The description.</param>
@@ -65,6 +70,24 @@ namespace CodeEnv.Master.GameContent {
             PowerRequirement = pwrRqmt;
             Expense = expense;
         }
+
+        public sealed override string ToString() {
+            return DebugName;
+        }
+
+        #region IDebugable Members
+
+        protected string _debugName;
+        public virtual string DebugName {
+            get {
+                if (_debugName == null) {
+                    _debugName = DebugNameFormat.Inject(Name, GetType().Name);
+                }
+                return _debugName;
+            }
+        }
+
+        #endregion
 
     }
 }

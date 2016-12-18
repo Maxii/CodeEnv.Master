@@ -29,6 +29,8 @@ using UnityEngine;
 /// <remarks>A replacement for SpaceD UIWindow without all the automatic _panel depth changes.</remarks>
 public abstract class AGuiWindow : AMonoBase {
 
+    private const string DebugNameFormat = "{0}.{1}";
+
     /// <summary>
     /// A delegate invoked when the window begins to show.
     /// </summary>
@@ -62,11 +64,22 @@ public abstract class AGuiWindow : AMonoBase {
 
     protected abstract Transform ContentHolder { get; }
 
-    private bool IsFadeJobRunning { get { return _fadeJob != null && _fadeJob.IsRunning; } }
+    private string _debugName;
+    protected string DebugName {
+        get {
+            if (_debugName == null) {
+                _debugName = DebugNameFormat.Inject(gameObject.name, GetType().Name);
+            }
+            return _debugName;
+        }
+    }
+
+    protected GameManager _gameMgr;
 
     private UIPanel _panel;
     private FadeMode _currentFadeMode = FadeMode.None;
-    private Job _fadeJob;
+    private Job _fadeInJob;
+    private Job _fadeOutJob;
     private GameTime _gameTime;
     private JobManager _jobMgr;
 
@@ -80,6 +93,7 @@ public abstract class AGuiWindow : AMonoBase {
 
     protected virtual void AcquireReferences() {
         _gameTime = GameTime.Instance;
+        _gameMgr = GameManager.Instance;
         _jobMgr = JobManager.Instance;
         _panel = UnityUtility.ValidateComponentPresence<UIPanel>(gameObject);
     }
@@ -155,16 +169,30 @@ public abstract class AGuiWindow : AMonoBase {
 
         if (_currentFadeMode == FadeMode.In) {
             // ignore command if we are already actively fading in
-            D.Assert(IsFadeJobRunning);
+            D.AssertNotNull(_fadeInJob);
             return;
         }
 
-        if (IsFadeJobRunning) {
-            _fadeJob.Kill();
+        if (_currentFadeMode == FadeMode.Out) {
+            D.AssertNotNull(_fadeOutJob);
+            KillFadeOutJob();
             _currentFadeMode = FadeMode.None;
         }
-        string jobName = "{0}.FadeInJob".Inject(GetType().Name);    // no pause controls on fadeJob as I want window access while paused
-        _fadeJob = _jobMgr.StartNonGameplayJob(FadeAnimation(FadeMode.In, duration), jobName);
+
+        string jobName = "{0}.FadeInJob".Inject(DebugName);    // no pause controls on fadeJob as I want window access while paused
+        _fadeInJob = _jobMgr.StartNonGameplayJob(FadeAnimation(FadeMode.In, duration), jobName, jobCompleted: (jobWasKilled) => {
+            if (jobWasKilled) {
+                // 12.12.16 An AssertNull(_jobRef) here can fail as the reference can refer to a new Job, created 
+                // right after the old one was killed due to the 1 frame delay in execution of jobCompleted(). My attempts at allowing
+                // the AssertNull to occur failed. I believe this is OK as _jobRef is nulled from KillXXXJob() and, if 
+                // the reference is replaced by a new Job, then the old Job is no longer referenced which is the objective. Jobs Kill()ed
+                // centrally by JobManager won't null the reference, but this only occurs during scene transitions.
+                ////__ValidateKilledFadeJobReference(_fadeInJob);
+            }
+            else {
+                _fadeInJob = null;
+            }
+        });
     }
 
     /// <summary>
@@ -178,16 +206,30 @@ public abstract class AGuiWindow : AMonoBase {
 
         if (_currentFadeMode == FadeMode.Out) {
             // ignore command if we are already actively fading out
-            D.Assert(IsFadeJobRunning);
+            D.AssertNotNull(_fadeOutJob);
             return;
         }
 
-        if (IsFadeJobRunning) {
-            _fadeJob.Kill();
+        if (_currentFadeMode == FadeMode.In) {
+            D.AssertNotNull(_fadeInJob);
+            KillFadeInJob();
             _currentFadeMode = FadeMode.None;
         }
-        string jobName = "{0}.FadeOutJob".Inject(GetType().Name);    // no pause controls on fadeJob as I want window access while paused
-        _fadeJob = _jobMgr.StartNonGameplayJob(FadeAnimation(FadeMode.Out, duration), jobName);
+
+        string jobName = "{0}.FadeOutJob".Inject(DebugName);    // no pause controls on fadeJob as I want window access while paused
+        _fadeOutJob = _jobMgr.StartNonGameplayJob(FadeAnimation(FadeMode.Out, duration), jobName, jobCompleted: (jobWasKilled) => {
+            if (jobWasKilled) {
+                // 12.12.16 An AssertNull(_jobRef) here can fail as the reference can refer to a new Job, created 
+                // right after the old one was killed due to the 1 frame delay in execution of jobCompleted(). My attempts at allowing
+                // the AssertNull to occur failed. I believe this is OK as _jobRef is nulled from KillXXXJob() and, if 
+                // the reference is replaced by a new Job, then the old Job is no longer referenced which is the objective. Jobs Kill()ed
+                // centrally by JobManager won't null the reference, but this only occurs during scene transitions.
+                ////__ValidateKilledFadeJobReference(_fadeOutJob);
+            }
+            else {
+                _fadeOutJob = null;
+            }
+        });
     }
 
     private IEnumerator FadeAnimation(FadeMode mode, float duration) {
@@ -229,10 +271,43 @@ public abstract class AGuiWindow : AMonoBase {
         _currentFadeMode = FadeMode.None;
     }
 
-    protected override void Cleanup() {
-        if (_fadeJob != null && _fadeJob.IsRunning) {
-            _fadeJob.Kill();
+    /// <summary>
+    /// Validates the provided fade Job reference that has been killed. 
+    /// 
+    /// <remarks>Usually a fadeJob that has been killed has its reference set to null. 
+    /// However, the single instance HoveredItemHud derived class can fail this test as
+    /// initiating and ending a fade is completely asynchronous (mouse hover events
+    /// can change rapidly). With the 1 frame delay in the execution of 
+    /// jobCompleted, the reference can be re-populated with another fade Job before this 
+    /// validation test is called. This occurs when the sequence FadeA, FadeB, FadeA occurs 
+    /// within the 1 frame timing gap as FadeB kills the first FadeA, then the second FadeA
+    /// re-populates the reference before the first FadeA.onCompletion fires.</remarks>
+    /// <remarks>FIXME Are there other derived classes with the same issue?</remarks>
+    /// </summary>
+    /// <param name="fadeJobRef">The fade job reference.</param>
+    [System.Obsolete]
+    protected virtual void __ValidateKilledFadeJobReference(Job fadeJobRef) {
+        D.AssertNull(fadeJobRef, DebugName);    // if this Assert fails, another derived class also has the problem above
+    }
+
+    private void KillFadeInJob() {
+        if (_fadeInJob != null) {
+            _fadeInJob.Kill();
+            _fadeInJob = null;
         }
+    }
+
+    private void KillFadeOutJob() {
+        if (_fadeOutJob != null) {
+            _fadeOutJob.Kill();
+            _fadeOutJob = null;
+        }
+    }
+
+    protected override void Cleanup() {
+        // 12.8.16 Job Disposal centralized in JobManager
+        KillFadeInJob();
+        KillFadeOutJob();
     }
 
     #region Nested Classes

@@ -75,6 +75,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The number of GameHours in a real-time Second at 
         /// a GameSpeedMultiplier of 1 (aka GameSpeed.Normal).
+        /// <remarks>12.12.16 ~ 2 hours per second.</remarks>
         /// </summary>
         public float HoursPerSecond {
             get {

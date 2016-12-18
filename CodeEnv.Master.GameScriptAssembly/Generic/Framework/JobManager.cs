@@ -24,6 +24,7 @@ using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
 /// Singleton. MonoBehaviour that creates, launches, executes and manages the lifecycle of Jobs.
@@ -31,21 +32,28 @@ using UnityEngine;
 /// </summary>
 public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
 
-    private const string JobCreationProfilerTextFormat = "{0} Creation";
+    private const string JobReuseOrCreationProfilerText = "Job Reuse or Creation";
 
     public override bool IsPersistentAcrossScenes { get { return true; } }
 
     private bool IsGameRunning { get { return _gameMgr.IsRunning; } }
 
     /// <summary>
-    /// All the Jobs currently running.
+    /// Jobs that are available for reuse by using Job.Restart().
     /// </summary>
-    private List<Job> _allRunningJobs;
+    private Stack<Job> _reusableJobCache;
 
     /// <summary>
-    /// Running Jobs that will automatically be Kill()ed when IsRunning changes to false.
+    /// Jobs that have been started and are either
+    /// 1) not yet completed, or
+    /// 2) if completed, they have not yet been recycled.
     /// </summary>
-    private List<Job> _jobsToKillWhenGameNoLongerRunning;
+    private HashSet<Job> _allExecutingJobs;
+
+    /// <summary>
+    /// Jobs that will automatically be Kill()ed on transition to a new scene.
+    /// </summary>
+    private HashSet<Job> _killableJobs;
 
     /// <summary>
     /// Running Jobs that are allowed to change pause state when the game changes pause state.
@@ -56,7 +64,7 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
     /// Examples of 2 include eye candy animations like rotation or beam operation and GUI fades when 
     /// opening or closing menus.
     /// </summary>
-    private List<Job> _pausableJobs;
+    private HashSet<Job> _pausableJobs;
     private GameTime _gameTime;
     private bool _isGamePaused;
     private IGameManager _gameMgr;
@@ -72,32 +80,34 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
         base.InitializeOnAwake();
         _gameTime = GameTime.Instance;
         _gameMgr = References.GameManager;
-        _allRunningJobs = new List<Job>(500);
-        _jobsToKillWhenGameNoLongerRunning = new List<Job>(500);
-        _pausableJobs = new List<Job>(500);
+        _allExecutingJobs = new HashSet<Job>();
+        _killableJobs = new HashSet<Job>();
+        _pausableJobs = new HashSet<Job>();
+        _reusableJobCache = new Stack<Job>(100);
         Subscribe();
+        //__TestCoroutineExecutionSequencing();
     }
 
     private void Subscribe() {
         _subscribers = new List<IDisposable>();
-        _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<IGameManager, bool>(gm => gm.IsRunning, IsRunningPropChangedHandler));
         _subscribers.Add(_gameMgr.SubscribeToPropertyChanged<IGameManager, bool>(gm => gm.IsPaused, IsPausedPropChangedHandler));
+        _gameMgr.sceneLoading += SceneLoadingEventHandler;
+        _gameMgr.newGameBuilding += NewGameBuildingEventHandler;
     }
 
     #region Event and Property Change Handlers
 
-    private void IsRunningPropChangedHandler() {
-        HandleIsRunningChanged();
+    private void SceneLoadingEventHandler(object sender, EventArgs e) {
+        KillAllKillableJobs();
     }
 
-    private void HandleIsRunningChanged() {
-        //D.Log("{0} received IsRunning = {1} event.", GetType().Name, IsGameRunning);
-        if (IsGameRunning) {
-            //D.Log("{0}: {1} Jobs running when IsRunning -> true. Jobs: {2}.", GetType().Name, _allRunningJobs.Count, _allRunningJobs.Select(job => job.JobName).Concatenate());
-        }
-        else {
-            KillAllKillableJobs();
-        }
+    private void NewGameBuildingEventHandler(object sender, EventArgs e) {
+        RecycleAllCompletedJobs();
+        // 12.8.16 GameManager's ProgressCheckJob will always be running during a scene transition
+        D.AssertEqual(Constants.One, _allExecutingJobs.Count, "{0}".Inject(_allExecutingJobs.Select(job => job.JobName).Concatenate()));
+        D.AssertEqual(Constants.Zero, _killableJobs.Count, "{0}".Inject(_killableJobs.Select(job => job.JobName).Concatenate()));
+        D.AssertEqual(Constants.Zero, _pausableJobs.Count, "{0}".Inject(_pausableJobs.Select(job => job.JobName).Concatenate()));
+        //__WarnOfJobsRunning("starting Scene {0}".Inject(_gameMgr.CurrentSceneID.GetValueName()));
     }
 
     private void IsPausedPropChangedHandler() {
@@ -110,44 +120,26 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
     #endregion
 
     /// <summary>
-    /// Removes any completed (no longer running) jobs from the collections of Jobs.
-    /// <remarks>Jobs that are 'killed' by the Job client will automatically be removed here.</remarks>
+    /// Initiates execution of a Job. The Job used will either be from the reusable cache of Jobs or a new Job if none are available.
     /// </summary>
-    private void RemoveCompletedJobs() {
-        // http://stackoverflow.com/questions/17233558/remove-add-items-to-from-a-list-while-iterating-it
-        _allRunningJobs.RemoveAll(job => !job.IsRunning);
-        _jobsToKillWhenGameNoLongerRunning.RemoveAll(job => !job.IsRunning);
-        _pausableJobs.RemoveAll(job => !job.IsRunning);
-    }
-
-    /// <summary>
-    /// Kills all the Jobs designated as killable.
-    /// </summary>
-    private void KillAllKillableJobs() {
-        D.Assert(!IsGameRunning);
-        //D.Log("{0}.KillAllKillableJobs() called in Frame {1}.", GetType().Name, Time.frameCount);
-        _jobsToKillWhenGameNoLongerRunning.ForAll(job => job.Kill());
-        // 8.11.16 IMPROVE Rarely there could be jobs that continue to run and complete even when IsRunning becomes false.
-        // To my knowledge, the only current candidates would be GuiWindow Fade jobs that may not yet have completed their 
-        // fade. Currently they are not auto killable as GuiWindows like the Tooltip window need to be operational in the Lobby.
-        // Right now, I don't offer a StartJob method that allows a Job to start when not running, yet also allows the Job to
-        // be auto killed when IsRunning becomes false. This can be changed of course.
-        IEnumerable<Job> runningJobs;
-        if ((runningJobs = _allRunningJobs.Where(job => job.IsRunning)).Any()) {
-            string runningJobNames = runningJobs.Select(job => job.JobName).Concatenate();
-            D.Warn("{0} has found {1} Jobs that continue to run when Game not running. They are: {2}.", GetType().Name, runningJobs.Count(), runningJobNames);
+    /// <param name="coroutine">The coroutine.</param>
+    /// <param name="jobName">Name of the job.</param>
+    /// <param name="customYI">The custom yield instruction. Can be null.</param>
+    /// <param name="jobCompleted">The delegate fired on Job Completion. Can be null.</param>
+    /// <returns></returns>
+    private Job RunJob(IEnumerator coroutine, string jobName, APausableKillableYieldInstruction customYI, Action<bool> jobCompleted) {
+        Job job;
+        if (_reusableJobCache.Count > Constants.Zero) {
+            job = _reusableJobCache.Pop();
+            //D.Log("{0} is about to reuse a recycled Job to make Job {1}.", GetType().Name, jobName);
+            job.Restart(coroutine, jobName, customYI, jobCompleted);
+            __cumReusedJobCount++;
         }
-        D.Log("{0}: {1} Jobs killed. Jobs: {2}.", GetType().Name, _jobsToKillWhenGameNoLongerRunning.Count, _jobsToKillWhenGameNoLongerRunning.Select(job => job.JobName).Concatenate());
-        // Note: when jobs are killed, they remove themselves from the lists the next frame. I see no reason to wait
-        RemoveCompletedJobs();
-    }
-
-    /// <summary>
-    /// Changes the pause state of all pausable Jobs.
-    /// </summary>
-    private void ChangePauseStateOfJobs(bool toPause) {
-        //D.Log("{0}.ChangePauseStateOfJobs({1}) called in Frame {2}.", GetType().Name, toPause, Time.frameCount);
-        _pausableJobs.ForAll(job => job.IsPaused = toPause);
+        else {
+            //D.Log("{0} is about to create new Job {1} as no recycled Jobs are available.", GetType().Name, jobName);
+            job = new Job(coroutine, jobName, customYI, jobCompleted);
+        }
+        return job;
     }
 
     /// <summary>
@@ -156,17 +148,119 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
     /// <param name="job">The job.</param>
     /// <param name="isPausable">if set to <c>true</c> the job is pausable and should have its 
     /// paused state changed when the game changes its paused state.</param>
-    /// <param name="isAutoKillable">if set to <c>true</c> this job should be killed when the game instance
-    /// is no longer running, aka GameMgr.IsRunning changed to false.</param>
-    private void AddRunningJob(Job job, bool isPausable, bool isAutoKillable = true) {
+    /// <param name="isKillable">if set to <c>true</c> this job should be killed when the previous scene
+    /// stops running and a new scene begins loading, aka when GameMgr.sceneLoading fires.</param>
+    private void AddRunningJob(Job job, bool isPausable, bool isKillable = true) {
         D.Assert(job.IsRunning);
-        _allRunningJobs.Add(job);
-        if (isAutoKillable) {
-            _jobsToKillWhenGameNoLongerRunning.Add(job);
+        //D.Log("{0} is adding {1} to _allExecutingJobs.", GetType().Name, job.JobName);
+        _allExecutingJobs.Add(job);
+        if (isKillable) {
+            _killableJobs.Add(job);
         }
         if (isPausable) {
             _pausableJobs.Add(job);
         }
+    }
+
+    #region Recycling
+
+    /// <summary>
+    /// The number of completed Jobs to allow to accumulate before initiating a recycle.
+    /// </summary>
+    private const int CompletedJobRecycleThreshold = 10;
+
+    /// <summary>
+    /// The buffer used to temporarily store completed jobs. Avoids excessive heap memory allocations.
+    /// </summary>
+    private IList<Job> _completedJobsBuffer = new List<Job>(CompletedJobRecycleThreshold);
+
+    private int _completedJobCount;
+
+    /// <summary>
+    /// Called when a Job completes, this method accumulates completed jobs
+    /// until the CompletedJobRecycleThreshold is reached, then recycles them.
+    /// </summary>
+    /// <returns></returns>
+    private bool TryRecycleCompletedJobs(string jobName) {
+        _completedJobCount++;
+        //D.Log("{0}.TryRecycleCompletedJobs() called by {1}. {2} Jobs now awaiting recycle.", GetType().Name, jobName, _completedJobCount);
+        if (_completedJobCount == CompletedJobRecycleThreshold) {
+            _completedJobCount = 0;
+            D.Assert(_completedJobsBuffer.Count == Constants.Zero);
+
+            RecycleAllCompletedJobs();
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Recycles all the jobs that have completed.
+    /// </summary>
+    private void RecycleAllCompletedJobs() {
+        //D.Log("{0}.RecycleAllCompletedJobs() called in Frame {1}.", GetType().Name, Time.frameCount);
+        foreach (Job job in _allExecutingJobs) {
+            if (job.IsCompleted) {
+                _completedJobsBuffer.Add(job);
+            }
+        }
+        foreach (Job completedJob in _completedJobsBuffer) {
+            Recycle(completedJob);
+        }
+        _completedJobsBuffer.Clear();
+    }
+
+    /// <summary>
+    /// Recycles the provided job into the reusable Job cache.
+    /// </summary>
+    private void Recycle(Job job) {
+        D.Assert(job.IsCompleted);
+        D.Assert(!job.IsRunning);
+        bool isRemoved = _allExecutingJobs.Remove(job);
+        D.Assert(isRemoved);
+
+        _killableJobs.Remove(job);
+        _pausableJobs.Remove(job);
+        _reusableJobCache.Push(job);
+        //D.Log("{0} has recycled a Job for future reuse.", GetType().Name);
+        //D.Log("Remaining Jobs in _allExecutingJobs after recycle = {0}.", _allExecutingJobs.Select(j => j.JobName).Concatenate());
+    }
+
+    #endregion
+
+    /// <summary>
+    /// Kills all the Jobs designated as killable.
+    /// </summary>
+    private void KillAllKillableJobs() {
+        D.Assert(!IsGameRunning);
+        //D.Log("{0}.KillAllKillableJobs() called in Frame {1}.", GetType().Name, Time.frameCount);
+        var runningJobsToKill = _killableJobs.Where(job => job.IsRunning).ToArray();   // ToArray reqd to avoid lazy evaluation gotcha!
+        runningJobsToKill.ForAll(job => job.Kill());
+        // 12.8.16 There are jobs that should continue to execute even after IsRunning becomes false. These jobs are launched
+        // with StartNonGameplayJob() and are not designated as killable. The only current candidates are GameMgr's 
+        // GameStateProgressReadinessCheck job and GuiWindow Fade jobs. GuiWindows like the Tooltip window need to be operational 
+        // in the Lobby.
+
+        Debug.LogFormat("{0}: {1} Jobs killed. {2} cum Jobs reused. Killed Jobs: {3}.", GetType().Name, runningJobsToKill.Count(), __cumReusedJobCount, runningJobsToKill.Select(job => job.JobName).Concatenate());
+
+        // Note: when jobs are killed, they attempt to remove themselves from the lists the next frame when the jobCompleted delegate fires. 
+        // Trying to remove them now won't work as the criteria for removal is Job.IsCompleted which is set just before the delegate fires.
+    }
+
+    /// <summary>
+    /// Changes the pause state of all pausable Jobs.
+    /// </summary>
+    /// <param name="toPause">if set to <c>true</c> [to pause].</param>
+    private void ChangePauseStateOfJobs(bool toPause) {
+        //D.Log("{0}.ChangePauseStateOfJobs({1}) called in Frame {2}.", GetType().Name, toPause, Time.frameCount);
+        _pausableJobs.ForAll(job => {
+            if (!job.IsCompleted) {
+                // 12.13.16 Avoids Job.IsPaused = toPause Assert failure when job.IsCompleted (-> _isPaused reset to false) 
+                // but not yet removed from _pausableJobs. Jobs can be killed (and therefore completed) while paused so when
+                // trying to unpause them after game is paused, it trips the 'already unpaused' Assert
+                job.IsPaused = toPause;
+            }
+        });
     }
 
     /// <summary>
@@ -189,15 +283,17 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
     /// A reference to the Job so it can be killed before it finishes, if needed.
     /// </returns>
     public Job StartNonGameplayJob(IEnumerator coroutine, string jobName, Action<bool> jobCompleted = null) {
-        Profiler.BeginSample(JobCreationProfilerTextFormat.Inject(jobName));
-        var job = new Job(coroutine, jobName, toStart: true, jobCompleted: (jobWasKilled) => {
+
+        Profiler.BeginSample(JobReuseOrCreationProfilerText, gameObject);
+        Job job = RunJob(coroutine, jobName, null, jobCompleted: (jobWasKilled) => {
             if (jobCompleted != null) {
                 jobCompleted(jobWasKilled);
             }
-            RemoveCompletedJobs();
+            TryRecycleCompletedJobs(jobName);
         });
         Profiler.EndSample();
-        AddRunningJob(job, isPausable: false, isAutoKillable: false);
+
+        AddRunningJob(job, isPausable: false, isKillable: false);
         return job;
     }
 
@@ -227,17 +323,19 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
     /// </returns>
     public Job StartGameplayJob(IEnumerator coroutine, string jobName, bool isPausable, Action<bool> jobCompleted = null) {
         ValidateGameIsRunning(jobName);
-        Profiler.BeginSample(JobCreationProfilerTextFormat.Inject(jobName));
-        var job = new Job(coroutine, jobName, toStart: true, jobCompleted: (jobWasKilled) => {
+
+        Profiler.BeginSample(JobReuseOrCreationProfilerText, gameObject);
+        Job job = RunJob(coroutine, jobName, null, jobCompleted: (jobWasKilled) => {
             if (jobCompleted != null) {
                 jobCompleted(jobWasKilled);
             }
-            RemoveCompletedJobs();
+            TryRecycleCompletedJobs(jobName);
         });
         Profiler.EndSample();
+
         AddRunningJob(job, isPausable);
         if (isPausable && _isGamePaused) {
-            D.Log("{0} has paused {1} immediately after starting it.", GetType().Name, jobName);
+            //D.Log("{0} has paused {1} immediately after starting it.", GetType().Name, jobName);
             job.IsPaused = true;
         }
         return job;
@@ -263,12 +361,14 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
     /// </returns>
     public Job WaitForGameplaySeconds(float seconds, string jobName, Action<bool> waitFinished) {
         ValidateGameIsRunning(jobName);
-        Profiler.BeginSample(JobCreationProfilerTextFormat.Inject(jobName));
-        var job = new Job(WaitForSeconds(seconds), jobName, toStart: true, jobCompleted: (jobWasKilled) => {
+
+        Profiler.BeginSample(JobReuseOrCreationProfilerText, gameObject);
+        Job job = RunJob(WaitForSeconds(seconds), jobName, null, jobCompleted: (jobWasKilled) => {
             waitFinished(jobWasKilled);
-            RemoveCompletedJobs();
+            TryRecycleCompletedJobs(jobName);
         });
         Profiler.EndSample();
+
         AddRunningJob(job, isPausable: false);
         return job;
     }
@@ -295,12 +395,14 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
     /// </returns>
     public Job RecurringWaitForGameplaySeconds(float initialWait, float recurringWait, string jobName, Action waitMilestone) {
         ValidateGameIsRunning(jobName);
-        Profiler.BeginSample(JobCreationProfilerTextFormat.Inject(jobName));
-        var job = new Job(RepeatingWaitForSeconds(initialWait, recurringWait, waitMilestone), jobName, toStart: true, jobCompleted: (jobWasKilled) => {
-            D.Assert(jobWasKilled);
-            RemoveCompletedJobs();
+
+        Profiler.BeginSample(JobReuseOrCreationProfilerText, gameObject);
+        Job job = RunJob(RepeatingWaitForSeconds(initialWait, recurringWait, waitMilestone), jobName, null, jobCompleted: (jobWasKilled) => {
+            D.Assert(jobWasKilled, jobName);
+            TryRecycleCompletedJobs(jobName);
         });
         Profiler.EndSample();
+
         AddRunningJob(job, isPausable: false);
         return job;
     }
@@ -325,16 +427,59 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
     /// </returns>
     public Job WaitForHours(float hours, string jobName, Action<bool> waitFinished) {
         ValidateGameIsRunning(jobName);
-        Profiler.BeginSample(JobCreationProfilerTextFormat.Inject(jobName));
+
+        Profiler.BeginSample(JobReuseOrCreationProfilerText, gameObject);
         WaitForHours waitYieldInstruction = new WaitForHours(hours);
-        var job = new Job(WaitForHours(waitYieldInstruction), jobName, waitYieldInstruction, toStart: true, jobCompleted: (jobWasKilled) => {
+        Job job = RunJob(WaitForHours(waitYieldInstruction), jobName, waitYieldInstruction, jobCompleted: (jobWasKilled) => {
             waitFinished(jobWasKilled);
-            RemoveCompletedJobs();
+            TryRecycleCompletedJobs(jobName);
         });
         Profiler.EndSample();
+
         AddRunningJob(job, isPausable: true);
         if (_isGamePaused) {
-            D.Log("{0} has paused {1} immediately after starting it.", GetType().Name, jobName);
+            //D.Log("{0} has paused {1} immediately after starting it.", GetType().Name, jobName);
+            job.IsPaused = true;
+        }
+        return job;
+    }
+
+    /// <summary>
+    /// Debug version that waits the designated number of hours during GamePlay, then executes the provided delegate.
+    /// Automatically accounts for Pause and GameSpeed changes. Used with workaround to accommodate
+    /// the 1 frame gap between when the coroutine finishes (or is killed) and when waitFinished fires.
+    /// Usage:
+    /// WaitForHours(hours, jobName, isInterveningJobRef, waitFinished: (jobWasKilled) =&gt; {
+    /// Code to execute after the wait;
+    /// });
+    /// WARNING: This method uses a coroutine Job. Accordingly, after being called it will
+    /// immediately return which means the code you have following it will execute
+    /// before the code assigned to the waitFinished delegate.
+    /// </summary>
+    /// <param name="hours">The hours to wait.</param>
+    /// <param name="jobName">Name of the job.</param>
+    /// <param name="isInterveningJobRef">Reference&lt;bool&gt; to allow the WaitForHours coroutine to toggle it to false 
+    /// when it starts running.</param>
+    /// <param name="waitFinished">The delegate to execute once the wait is finished. The
+    /// signature is waitFinished(jobWasKilled).</param>
+    /// <returns>
+    /// A reference to the Job so it can be killed before it finishes, if needed.
+    /// </returns>
+    [Obsolete]
+    public Job __WaitForHours(float hours, string jobName, Reference<bool> isInterveningJobRef, Action<bool> waitFinished) {
+        ValidateGameIsRunning(jobName);
+
+        Profiler.BeginSample(JobReuseOrCreationProfilerText, gameObject);
+        WaitForHours waitYieldInstruction = new WaitForHours(hours);
+        Job job = RunJob(__WaitForHours(waitYieldInstruction, isInterveningJobRef), jobName, waitYieldInstruction, jobCompleted: (jobWasKilled) => {
+            waitFinished(jobWasKilled);
+            TryRecycleCompletedJobs(jobName);
+        });
+        Profiler.EndSample();
+
+        AddRunningJob(job, isPausable: true);
+        if (_isGamePaused) {
+            //D.Log("{0} has paused {1} immediately after starting it.", GetType().Name, jobName);
             job.IsPaused = true;
         }
         return job;
@@ -362,13 +507,15 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
     public Job RecurringWaitForHours(Reference<GameTimeDuration> durationReference, string jobName, Action waitMilestone) {
         ValidateGameIsRunning(jobName);
         //D.Log("Launching new RecurringWaitForHours(Ref) Job named {0}. Hours = {1}.", jobName, durationReference.Value.TotalInHours);
-        Profiler.BeginSample(JobCreationProfilerTextFormat.Inject(jobName));
+
+        Profiler.BeginSample(JobReuseOrCreationProfilerText, gameObject);
         RecurringWaitForHours waitYieldInstruction = new RecurringWaitForHours(durationReference);
-        var job = new Job(RepeatingWaitForHours(waitYieldInstruction, waitMilestone), jobName, waitYieldInstruction, toStart: true, jobCompleted: (jobWasKilled) => {
-            D.Assert(jobWasKilled);
-            RemoveCompletedJobs();
+        Job job = RunJob(RecurringWaitForHours(waitYieldInstruction, waitMilestone), jobName, waitYieldInstruction, jobCompleted: (jobWasKilled) => {
+            D.Assert(jobWasKilled, jobName);
+            TryRecycleCompletedJobs(jobName);
         });
         Profiler.EndSample();
+
         AddRunningJob(job, isPausable: true);
         if (_isGamePaused) {
             D.Log("{0} has paused {1} immediately after starting it.", GetType().Name, jobName);
@@ -398,16 +545,18 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
     public Job RecurringWaitForHours(GameTimeDuration duration, string jobName, Action waitMilestone) {
         ValidateGameIsRunning(jobName);
         //D.Log("Launching new RecurringWaitForHours Job named {0} Hours = {1}.", jobName, duration.TotalInHours);
-        Profiler.BeginSample(JobCreationProfilerTextFormat.Inject(jobName));
+
+        Profiler.BeginSample(JobReuseOrCreationProfilerText, gameObject);
         RecurringWaitForHours waitYieldInstruction = new RecurringWaitForHours(duration);
-        var job = new Job(RepeatingWaitForHours(waitYieldInstruction, waitMilestone), jobName, waitYieldInstruction, toStart: true, jobCompleted: (jobWasKilled) => {
-            D.Assert(jobWasKilled);
-            RemoveCompletedJobs();
+        Job job = RunJob(RecurringWaitForHours(waitYieldInstruction, waitMilestone), jobName, waitYieldInstruction, jobCompleted: (jobWasKilled) => {
+            D.Assert(jobWasKilled, jobName);
+            TryRecycleCompletedJobs(jobName);
         });
         Profiler.EndSample();
+
         AddRunningJob(job, isPausable: true);
         if (_isGamePaused) {
-            D.Log("{0} has paused {1} immediately after starting it.", GetType().Name, jobName);
+            //D.Log("{0} has paused {1} immediately after starting it.", GetType().Name, jobName);
             job.IsPaused = true;
         }
         return job;
@@ -458,16 +607,18 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
         if (futureDate < _gameTime.CurrentDate) {
             D.Warn("Future date {0} < Current date {1}.", futureDate, _gameTime.CurrentDate);
         }
-        Profiler.BeginSample(JobCreationProfilerTextFormat.Inject(jobName));
+
+        Profiler.BeginSample(JobReuseOrCreationProfilerText, gameObject);
         WaitForDate waitYieldInstruction = new WaitForDate(futureDate);
-        var job = new Job(WaitForDate(waitYieldInstruction), jobName, waitYieldInstruction, toStart: true, jobCompleted: (jobWasKilled) => {
+        Job job = RunJob(WaitForDate(waitYieldInstruction), jobName, waitYieldInstruction, jobCompleted: (jobWasKilled) => {
             waitFinished(jobWasKilled);
-            RemoveCompletedJobs();
+            TryRecycleCompletedJobs(jobName);
         });
         Profiler.EndSample();
+
         AddRunningJob(job, isPausable: true);
         if (_isGamePaused) {
-            D.Log("{0} has paused {1} immediately after starting it.", GetType().Name, jobName);
+            //D.Log("{0} has paused {1} immediately after starting it.", GetType().Name, jobName);
             job.IsPaused = true;
         }
         return job;
@@ -484,19 +635,47 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
     /// <returns>A reference to the Job so it can be killed before it finishes, if needed.</returns>
     public Job WaitWhile(Func<bool> waitWhileCondition, string jobName, bool isPausable, Action<bool> waitFinished) {
         ValidateGameIsRunning(jobName);
-        Profiler.BeginSample(JobCreationProfilerTextFormat.Inject(jobName));
-        MyWaitWhile waitWhileYI = new MyWaitWhile(waitWhileCondition);
-        var job = new Job(WaitWhileCondition(waitWhileYI), jobName, waitWhileYI, toStart: true, jobCompleted: (jobWasKilled) => {
+
+        Profiler.BeginSample(JobReuseOrCreationProfilerText, gameObject);
+        MyWaitWhile waitYieldInstruction = new MyWaitWhile(waitWhileCondition);
+        Job job = RunJob(WaitWhileCondition(waitYieldInstruction), jobName, waitYieldInstruction, jobCompleted: (jobWasKilled) => {
             waitFinished(jobWasKilled);
-            RemoveCompletedJobs();
+            TryRecycleCompletedJobs(jobName);
         });
         Profiler.EndSample();
+
         AddRunningJob(job, isPausable);
         if (isPausable && _isGamePaused) {
             D.Log("{0} has paused {1} immediately after starting it.", GetType().Name, jobName);
             job.IsPaused = true;
         }
         return job;
+    }
+
+    /// <summary>
+    /// Makes a one-time execution of the delegate during FixedUpdate.
+    /// <remarks>12.17.16 I was thinking I would use this to manipulate values like velocity, rotation, etc in a Rigidbody,
+    /// but according to Eric5h5 below, it's not necessary.</remarks>
+    /// <see cref="http://answers.unity3d.com/questions/270552/not-sure-if-this-should-go-in-update-or-fixedupdat.html"/>
+    /// </summary>
+    /// <param name="jobName">Name of the job.</param>
+    /// <param name="isPausable">if set to <c>true</c> [is pausable].</param>
+    /// <param name="execInFixedUpdate">The execute in fixed update.</param>
+    public void OneTimeExecutionInFixedUpdate(string jobName, bool isPausable, Action execInFixedUpdate) {
+        Profiler.BeginSample(JobReuseOrCreationProfilerText, gameObject);
+        Job job = RunJob(OneTimeWaitForFixedUpdate(), jobName, null, jobCompleted: (jobWasKilled) => {
+            if (!jobWasKilled) {
+                execInFixedUpdate();
+            }
+            TryRecycleCompletedJobs(jobName);
+        });
+        Profiler.EndSample();
+
+        AddRunningJob(job, isPausable);
+        if (isPausable && _isGamePaused) {
+            D.Log("{0} has paused {1} immediately after starting it.", GetType().Name, jobName);
+            job.IsPaused = true;
+        }
     }
 
     /// <summary>
@@ -512,20 +691,25 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
     /// <returns></returns>
     public Job WaitForParticleSystemCompletion(ParticleSystem particleSystem, bool includeChildren, string jobName, bool isPausable, Action<bool> waitFinished) {
         ValidateGameIsRunning(jobName);
-        D.Assert(!particleSystem.loop);
+        D.Assert(!particleSystem.main.loop); //D.Assert(!particleSystem.loop); Deprecated in Unity 5.5
         if (includeChildren && particleSystem.transform.childCount > Constants.Zero) {
             var childParticleSystems = particleSystem.gameObject.GetComponentsInChildren<ParticleSystem>().Except(particleSystem);
-            childParticleSystems.ForAll(cps => D.Assert(!cps.loop));
+            childParticleSystems.ForAll(cps => {
+                var childMainModule = cps.main;
+                D.Assert(!childMainModule.loop);    // childParticleSystems.ForAll(cps => D.Assert(!cps.loop)); Deprecated in Unity 5.5
+            });
         }
-        Profiler.BeginSample(JobCreationProfilerTextFormat.Inject(jobName));
-        var job = new Job(WaitForParticleSystemCompletion(particleSystem, includeChildren), jobName, toStart: true, jobCompleted: (jobWasKilled) => {
+
+        Profiler.BeginSample(JobReuseOrCreationProfilerText, gameObject);
+        Job job = RunJob(WaitForParticleSystemCompletion(particleSystem, includeChildren), jobName, null, jobCompleted: (jobWasKilled) => {
             waitFinished(jobWasKilled);
-            RemoveCompletedJobs();
+            TryRecycleCompletedJobs(jobName);
         });
         Profiler.EndSample();
+
         AddRunningJob(job, isPausable);
         if (isPausable && _isGamePaused) {
-            D.Log("{0} has paused {1} immediately after starting it.", GetType().Name, jobName);
+            //D.Log("{0} has paused {1} immediately after starting it.", GetType().Name, jobName);
             job.IsPaused = true;
         }
         return job;
@@ -533,12 +717,6 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
 
     private void ValidateGameIsRunning(string jobName) {
         D.Assert(IsGameRunning, jobName);
-    }
-
-    [Obsolete]  // 8.15.16 Keeping Jobs from starting when paused is no longer reqd as most JobStart methods here check for the game
-    // being paused if they are pausable
-    private void ValidateGameNotPaused(string jobName) {
-        D.Assert(!_isGamePaused, jobName);
     }
 
     #region Coroutines
@@ -562,7 +740,13 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
         yield return waitYI;
     }
 
-    private IEnumerator RepeatingWaitForHours(WaitForHours waitYI, Action waitMilestone) {
+    [Obsolete]
+    private IEnumerator __WaitForHours(WaitForHours waitYI, Reference<bool> isInterveningJobRef) {
+        isInterveningJobRef.Value = false;
+        yield return waitYI;
+    }
+
+    private IEnumerator RecurringWaitForHours(WaitForHours waitYI, Action waitMilestone) {
         while (true) {
             yield return waitYI;
             //D.Log("RepeatingWaitForHours Milestone with Wait = {0:0.#} fired on frame {1}.", waitYI.DurationInHours, Time.frameCount);
@@ -577,8 +761,9 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
     private IEnumerator WaitWhileCondition(MyWaitWhile waitWhileYI) {
         yield return waitWhileYI;
     }
-    private IEnumerator WaitWhileCondition(Func<bool> waitWhileCondition) {
-        yield return new WaitWhile(waitWhileCondition);
+
+    private IEnumerator OneTimeWaitForFixedUpdate() {
+        yield return Yielders.WaitForFixedUpdate;
     }
 
     private IEnumerator WaitForParticleSystemCompletion(ParticleSystem particleSystem, bool includeChildren) {
@@ -589,14 +774,13 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
 
     #endregion
 
+
     #region Cleanup
 
     protected override void Cleanup() {
         Unsubscribe();
-        if (_allRunningJobs.Any()) {
-            // GameMgr.IsRunning should be set to false when the application is quiting so only a few, if any, Jobs should be remaining
-            _allRunningJobs.ForAll(job => job.Kill());
-        }
+        _allExecutingJobs.ForAll(job => job.Dispose());
+        _reusableJobCache.ForAll(job => job.Dispose());
         Job.JobRunner = null;
         References.JobManager = null;
     }
@@ -604,6 +788,8 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
     private void Unsubscribe() {
         _subscribers.ForAll(d => d.Dispose());
         _subscribers.Clear();
+        _gameMgr.sceneLoading -= SceneLoadingEventHandler;
+        _gameMgr.newGameBuilding -= NewGameBuildingEventHandler;
     }
 
     #endregion
@@ -611,6 +797,39 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region Debug
+
+    private int __cumReusedJobCount;
+
+    private void __WarnOfJobsRunning(string whenMsg) {
+        IEnumerable<Job> remainingRunningJobs;
+        if ((remainingRunningJobs = _allExecutingJobs.Where(job => job.IsRunning)).Any()) {
+            var runningJobNamesExceptProgressCheckJob = remainingRunningJobs.Select(job => job.JobName).Except(TempGameValues.__GameMgrProgressCheckJobName);
+            if (runningJobNamesExceptProgressCheckJob.Any()) {
+                string warningJobNames = runningJobNamesExceptProgressCheckJob.Concatenate();
+                D.Warn("{0} has found {1} Jobs that are running when {2}. {3}.", GetType().Name, remainingRunningJobs.Count(), whenMsg, runningJobNamesExceptProgressCheckJob);
+            }
+        }
+    }
+
+    private void __TestCoroutineExecutionSequencing() {
+        __LaunchPrintJob("A");
+        __LaunchPrintJob("B");    // 12.11.16 Testing shows sequence is always A, B
+    }
+
+    private void __LaunchPrintJob(string msg) {
+        new Job(Print(msg), "Job");
+    }
+
+    private IEnumerator Print(string msg) {
+        while (true) {
+            D.Log(msg);
+            yield return null;
+        }
+    }
+
+    #endregion
 
 }
 

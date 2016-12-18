@@ -74,7 +74,9 @@ public class NewGameSystemConfigurator {
         PlanetoidCategory.Moon_001, PlanetoidCategory.Moon_002, PlanetoidCategory.Moon_003
     };
 
-    private string Name { get { return GetType().Name; } }
+    private string DebugName { get { return GetType().Name; } }
+
+    private bool ShowDebugLog { get { return DebugControls.Instance.ShowDeploymentDebugLogs; } }
 
     private GameTimeDuration _minSystemOrbitPeriod = GameTimeDuration.OneYear;
     private GameTimeDuration _systemOrbitPeriodIncrement = new GameTimeDuration(hours: 0, days: GameTime.DaysPerYear / 2, years: 0);
@@ -162,7 +164,7 @@ public class NewGameSystemConfigurator {
             homeNeighboringSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID);
             sectorIDsToAvoid_Internal.AddRange(homeNeighboringSectorIDs);
         }
-        D.Log("{0} deployed {1} Home {2}s. Names: {3}.", Name, deployedCreatorLookup.Count, typeof(SystemCreator).Name,
+        D.Log(ShowDebugLog, "{0} deployed {1} Home {2}s. Names: {3}.", DebugName, deployedCreatorLookup.Count, typeof(SystemCreator).Name,
             deployedCreatorLookup.Values.Select(c => c.SystemName).Concatenate());
         return deployedCreatorLookup;
     }
@@ -196,12 +198,12 @@ public class NewGameSystemConfigurator {
 
         IEnumerable<IntVector3> candidateSectorIDs = sectorGrid.GetSurroundingSectorIdsBetween(userHomeSectorID, minSectorDistanceFromUserHome, maxSectorDistanceFromUserHome);
         if (!candidateSectorIDs.Any()) {
-            D.Error("{0} could get no surrounding sectors around {1} between distances {2} and {3}.", Name, userHomeSectorID, minSectorDistanceFromUserHome, maxSectorDistanceFromUserHome);
+            D.Error("{0} could get no surrounding sectors around {1} between distances {2} and {3}.", DebugName, userHomeSectorID, minSectorDistanceFromUserHome, maxSectorDistanceFromUserHome);
         }
         var tempCandidateSectorIDs = candidateSectorIDs;
         candidateSectorIDs = candidateSectorIDs.Except(sectorIDsToAvoid);
         if (!candidateSectorIDs.Any()) {
-            D.Error("{0} found no sectors to place AIPlayer's home sector. Candidates = {1}, ToAvoid = {2}.", Name, tempCandidateSectorIDs.Concatenate(), sectorIDsToAvoid.Concatenate());
+            D.Error("{0} found no sectors to place AIPlayer's home sector. Candidates = {1}, ToAvoid = {2}.", DebugName, tempCandidateSectorIDs.Concatenate(), sectorIDsToAvoid.Concatenate());
         }
         var homeSectorID = RandomExtended.Choice(candidateSectorIDs);
         return homeSectorID;
@@ -249,7 +251,7 @@ public class NewGameSystemConfigurator {
     /// <returns></returns>
     public IList<DebugSystemCreator> ConfigureExistingDebugCreators(int allowedQty, IEnumerable<IntVector3> sectorIDsToAvoid) {
         var existingDebugCreators = UniverseFolder.Instance.GetComponentsInChildren<DebugSystemCreator>();
-        D.Log("{0} found {1} existing {2}s to contribute to populating {3} remaining Systems.", Name, existingDebugCreators.Count(), typeof(DebugSystemCreator).Name, allowedQty);
+        D.Log(ShowDebugLog, "{0} found {1} existing {2}s to contribute to populating {3} remaining Systems.", DebugName, existingDebugCreators.Count(), typeof(DebugSystemCreator).Name, allowedQty);
 
         List<DebugSystemCreator> deployedCreators;
         List<DebugSystemCreator> creatorsToDestroy;
@@ -283,7 +285,7 @@ public class NewGameSystemConfigurator {
         });
 
         creatorsToDestroy.ForAll(c => {
-            D.Log("{0} is about to destroy excess Creator {1}.", Name, c.Name);
+            D.Log(ShowDebugLog, "{0} is about to destroy excess Creator {1}.", DebugName, c.DebugName);
             GameUtility.Destroy(c.gameObject);
         });
 
@@ -342,7 +344,7 @@ public class NewGameSystemConfigurator {
         SystemCreatorConfiguration config = new SystemCreatorConfiguration(systemName, starDesignName, settlementOrbitSlot, planetDesignNames,
             planetOrbitSlots, moonDesignNames, moonOrbitSlots);
         debugCreator.Configuration = config;
-        //D.Log("{0} assigned a configuration to {1}.", Name, creator.Name);
+        //D.Log(ShowDebugLog, "{0} assigned a configuration to {1}.", DebugName, creator.Name);
     }
 
     #endregion
@@ -473,7 +475,7 @@ public class NewGameSystemConfigurator {
             }
             int moonQty = RandomExtended.Range(0, maxMoonQty);
             PlanetoidCategory[] mCats = RandomExtended.Choices<PlanetoidCategory>(acceptableMoonCats, moonQty).ToArray();
-            //D.Log("{0}: Index = {1}, PlanetCategoryQty = {2}.", Name, pIndex, planetCatQty);
+            //D.Log(ShowDebugLog, "{0}: Index = {1}, PlanetCategoryQty = {2}.", DebugName, pIndex, planetCatQty);
             moonCatsByPlanetIndex.Add(mCats);   //moonCatsByPlanetIndex[pIndex] = mCats;
         }
         return moonCatsByPlanetIndex;
@@ -488,14 +490,14 @@ public class NewGameSystemConfigurator {
             OrbitData assignedSlot;
             if (TryAssignPlanetOrbitSlot(pCat, innerOrbitSlots, goldilocksOrbitSlots, outerOrbitSlots, out assignedSlot)) {
                 assignedOrbitSlots.Add(assignedSlot);   //assignedOrbitSlots[pIndex] = assignedSlot;
-                //D.Log("{0} fit planetCat {1} in system orbit slot {2}.", Name, pCat.GetValueName(), pIndex);
+                //D.Log(ShowDebugLog, "{0} fit planetCat {1} in system orbit slot {2}.", DebugName, pCat.GetValueName(), pIndex);
 
                 string designName = MakeAndRecordPlanetDesign(pCat, /*passiveCmQty*/desirability);
                 designNames.Add(designName);    //designNames[pIndex] = designName;
             }
             else {
                 unassignedPlanetIndices.Add(pIndex);
-                D.Log("{0} could not fit planetCat {1} in system orbit slot {2}.", GetType().Name, pCat.GetValueName(), pIndex);
+                D.Log(ShowDebugLog, "{0} could not fit planetCat {1} in system orbit slot {2}.", GetType().Name, pCat.GetValueName(), pIndex);
             }
         }
         return designNames;
@@ -523,8 +525,8 @@ public class NewGameSystemConfigurator {
                     OrbitData assignedMoonOrbitSlot;
                     if (TryAssignMoonOrbitSlot(mCat, mSlotIndex, moonOrbitSlotStartDepth, out assignedMoonOrbitSlot)) {
                         moonOrbitSlots.Add(assignedMoonOrbitSlot);  //moonOrbitSlots[mSlotIndex] = assignedMoonOrbitSlot;
-                        //D.Log("{0} fit moonCat {1} in orbit slot {2} around planetCat {3}.",
-                        //    Name, mCat.GetValueName(), mSlotIndex, pCat.GetValueName());
+                        //D.Log(ShowDebugLog, "{0} fit moonCat {1} in orbit slot {2} around planetCat {3}.",
+                        //    DebugName, mCat.GetValueName(), mSlotIndex, pCat.GetValueName());
 
                         string moonDesignName = MakeAndRecordMoonDesign(mCat, desirability);
                         moonDesignNames.Add(moonDesignName);    //moonDesignNames[mSlotIndex] = moonDesignName;
@@ -532,8 +534,8 @@ public class NewGameSystemConfigurator {
                         moonOrbitSlotStartDepth += assignedMoonOrbitSlot.OuterRadius;
                     }
                     else {
-                        //D.Log("{0} could not fit moonCat {1} in orbit slot {2} around planetCat {3}.",
-                        //    Name, mCat.GetValueName(), mSlotIndex, pCat.GetValueName());
+                        //D.Log(ShowDebugLog, "{0} could not fit moonCat {1} in orbit slot {2} around planetCat {3}.",
+                        //    DebugName, mCat.GetValueName(), mSlotIndex, pCat.GetValueName());
                     }
                 }
             }
@@ -639,7 +641,7 @@ public class NewGameSystemConfigurator {
     private void GenerateSystemOrbitSlots(float sysOrbitSlotsStartRadius, out Stack<OrbitData> innerSlots, out Stack<OrbitData> goldilocksSlots, out Stack<OrbitData> outerSlots) {
         float systemRadiusAvailableForAllOrbits = TempGameValues.SystemRadius - sysOrbitSlotsStartRadius;
         __systemOrbitSlotDepth = systemRadiusAvailableForAllOrbits / (float)TempGameValues.TotalOrbitSlotsPerSystem;
-        //D.Log("{0}: SystemOrbitSlotDepth = {1:0.#}.", Name, _systemOrbitSlotDepth);
+        //D.Log(ShowDebugLog, "{0}: SystemOrbitSlotDepth = {1:0.#}.", DebugName, _systemOrbitSlotDepth);
 
         innerSlots = new Stack<OrbitData>(1);
         goldilocksSlots = new Stack<OrbitData>(3);
@@ -649,7 +651,7 @@ public class NewGameSystemConfigurator {
             float insideRadius = sysOrbitSlotsStartRadius + __systemOrbitSlotDepth * slotIndex;
             float outsideRadius = insideRadius + __systemOrbitSlotDepth;
             var orbitPeriod = _minSystemOrbitPeriod + (slotIndex * _systemOrbitPeriodIncrement);
-            //D.Log("{0}: Orbit slot index {1} OrbitPeriod = {2}.", Name, slotIndex, orbitPeriod);
+            //D.Log(ShowDebugLog, "{0}: Orbit slot index {1} OrbitPeriod = {2}.", DebugName, slotIndex, orbitPeriod);
             OrbitData slot = new OrbitData(slotIndex, insideRadius, outsideRadius, orbitPeriod);
 
             switch (slotIndex) {

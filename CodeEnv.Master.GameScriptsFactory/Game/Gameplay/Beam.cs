@@ -21,6 +21,7 @@ using System.Collections;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
 /// Beam ordnance on the way to a target containing effects for muzzle flash, beam operation and impact.  
@@ -72,8 +73,6 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     }
 
     private bool IsBeamEndLocationInCameraLos { get { return _beamEndListener != null && _beamEndListener.InCameraLOS; } }
-
-    private bool IsAnimateOperatingEffectJobRunning { get { return _animateOperatingEffectJob != null && _animateOperatingEffectJob.IsRunning; } }
 
     private bool IsOperatingAudioPlaying { get { return _operatingAudioSource != null && _operatingAudioSource.isPlaying; } }
 
@@ -140,12 +139,14 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     }
 
     private void ValidateEffects() {
-        D.AssertNotNull(_muzzleEffect, Name);
-        D.Assert(!_muzzleEffect.playOnAwake);
-        D.Assert(_muzzleEffect.loop);
-        D.AssertNotNull(_impactEffect, Name);
-        D.Assert(!_impactEffect.playOnAwake);
-        D.Assert(_impactEffect.loop);
+        D.AssertNotNull(_muzzleEffect, DebugName);
+        var muzzleEffectMainModule = _muzzleEffect.main;
+        D.Assert(!muzzleEffectMainModule.playOnAwake);   //D.Assert(!_muzzleEffect.playOnAwake); Deprecated in Unity 5.5
+        D.Assert(muzzleEffectMainModule.loop);  //D.Assert(_muzzleEffect.loop); Deprecated in Unity 5.5
+        D.AssertNotNull(_impactEffect, DebugName);
+        var impactEffectMainModule = _impactEffect.main;
+        D.Assert(!impactEffectMainModule.playOnAwake);   //D.Assert(!_impactEffect.playOnAwake); Deprecated in Unity 5.5
+        D.Assert(impactEffectMainModule.loop);  //D.Assert(_impactEffect.loop); Deprecated in Unity 5.5
     }
 
     public void Launch(IElementAttackable target, AWeapon weapon) {
@@ -166,15 +167,20 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         _beamEndListener.inCameraLosChanged += BeamEndInCameraLosChangedEventHandler;
     }
 
+    /// <summary>
+    /// Adjusts this beam's heading for inaccuracy.
+    /// <see cref="http://answers.unity3d.com/questions/887852/help-with-gun-accuracy-in-degrees.html"/>
+    /// </summary>
     private void AdjustHeadingForInaccuracy() {
-        Quaternion initialRotation = transform.rotation;
-        Vector3 initialEulerHeading = initialRotation.eulerAngles;
-        float inaccuracyInDegrees = Weapon.MaxLaunchInaccuracy;
-        float newHeadingX = initialEulerHeading.x + UnityEngine.Random.Range(-inaccuracyInDegrees, inaccuracyInDegrees);
-        float newHeadingY = initialEulerHeading.y + UnityEngine.Random.Range(-inaccuracyInDegrees, inaccuracyInDegrees);
-        Vector3 adjustedEulerHeading = new Vector3(newHeadingX, newHeadingY, initialEulerHeading.z);
-        transform.rotation = Quaternion.Euler(adjustedEulerHeading);
-        //D.Log("{0} has incorporated {1:0.0} degrees of inaccuracy into its trajectory.", Name, Quaternion.Angle(initialRotation, transform.rotation));
+        Vector2 error = UnityEngine.Random.insideUnitCircle * Weapon.MaxLaunchInaccuracy;
+        Quaternion errorRotation = Quaternion.Euler(error.x, error.y, Constants.ZeroF);
+        Quaternion finalRotation = transform.rotation * errorRotation;
+        if (ShowDebugLog) {
+            Quaternion accurateRotation = transform.rotation;
+            float errorAngle = Quaternion.Angle(accurateRotation, finalRotation);
+            D.Log("{0} has incorporated {1:0.0} degrees of inaccuracy into its trajectory.", DebugName, errorAngle);
+        }
+        transform.rotation = finalRotation;
     }
 
     void Update() {
@@ -224,7 +230,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     }
 
     private void HandleImpact(RaycastHit impactInfo, float deltaTimeInHours) {
-        //D.Log("{0} impacted on {1}.", Name, impactInfo.collider.name);
+        //D.Log(ShowDebugLog, "{0} impacted on {1}.", DebugName, impactInfo.collider.name);
         RefreshImpactLocation(impactInfo);
 
         var impactedGo = impactInfo.collider.gameObject;
@@ -237,13 +243,13 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
             return;
         }
 
-        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
         var impactedTarget = impactedGo.GetComponent<IElementAttackable>();
         Profiler.EndSample();
 
         if (impactedTarget != null) {
             // hit an attackableTarget
-            //D.Log("{0} has hit {1} {2}.", Name, typeof(IElementAttackable).Name, impactedTarget.DisplayName);
+            //D.Log(ShowDebugLog, "{0} has hit {1} {2}.", DebugName, typeof(IElementAttackable).Name, impactedTarget.DebugName);
             if (impactedTarget != _impactedTarget) {
                 // hit a new target that can take damage, so apply cumDamage to previous impactedTarget, if any
                 AssessApplyDamage();
@@ -252,7 +258,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
 
             float percentOfBeamDuration = deltaTimeInHours / Weapon.Duration;    // the percentage of the beam's duration that deltaTime represents
 
-            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
             var impactedTargetRigidbody = impactedGo.GetComponent<Rigidbody>();
             Profiler.EndSample();
 
@@ -260,7 +266,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
                 // target has a normal rigidbody so apply impact force
                 float forceMagnitude = DamagePotential.Total * percentOfBeamDuration;
                 Vector3 force = transform.forward * forceMagnitude;
-                //D.Log("{0} applying impact force of {1} to {2}.", Name, force, impactedTarget.DisplayName);
+                //D.Log(ShowDebugLog, "{0} applying impact force of {1} to {2}.", DebugName, force, impactedTarget.DisplayName);
                 impactedTargetRigidbody.AddForceAtPosition(force, impactInfo.point, ForceMode.Impulse);
             }
             // accumulate total impact time on _impactedTarget
@@ -346,7 +352,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     /// Applies accumulated damage to the _impactedTarget, if any.
     /// </summary>
     private void AssessApplyDamage() {
-        //D.Log("{0}.AssessApplyDamage() called.", Name);
+        //D.Log(ShowDebugLog, "{0}.AssessApplyDamage() called.", DebugName);
         if (_impactedTarget == null) {
             // no target that can take damage has been hit, so _cumImpactTime should be zero
             D.AssertEqual(Constants.ZeroF, _cumHoursOfImpactOnImpactedTarget);
@@ -360,10 +366,11 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         }
 
         DamageStrength cumDamageToApply = DamagePotential * (_cumHoursOfImpactOnImpactedTarget / Weapon.Duration);
-        //D.Log("{0} is applying hit of strength {1} to {2}.", Name, cumDamageToApply, _impactedTarget.DisplayName);
+        //D.Log(ShowDebugLog, "{0} is applying hit of strength {1} to {2}.", DebugName, cumDamageToApply, _impactedTarget.DisplayName);
         _impactedTarget.TakeHit(cumDamageToApply);
 
         if (_impactedTarget == Target) {
+            D.Log(ShowDebugLog, "{0} has hit its intended target {1}.", DebugName, _impactedTarget.DebugName);
             _isIntendedTargetHit = true;
         }
         else {
@@ -395,7 +402,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     private void AssessShowOperatingEffects() {
         var toShow = ToShowOperatingEffects;
         ShowOperatingEffects(toShow);
-        //D.Log("{0}.AssessShow(), toShow = {1}.", Name, toShow);
+        //D.Log(ShowDebugLog, "{0}.AssessShow(), toShow = {1}.", DebugName, toShow);
     }
 
     private void ShowOperatingEffects(bool toShow) {
@@ -403,12 +410,13 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         _operatingEffectRenderer.enabled = toShow;
 
         // Beam animation
-        if (IsAnimateOperatingEffectJobRunning) {
-            _animateOperatingEffectJob.Kill();
-        }
+        KillAnimateOperatingEffectJob();
+
         if (toShow) {
-            string jobName = "{0}.AnimateOpsEffectJob".Inject(Name);
-            _animateOperatingEffectJob = _jobMgr.StartGameplayJob(AnimateBeam(), jobName, isPausable: true);
+            string jobName = "{0}.AnimateOpsEffectJob".Inject(DebugName);
+            _animateOperatingEffectJob = _jobMgr.StartGameplayJob(AnimateBeam(), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
+                D.Assert(jobWasKilled);
+            });
         }
 
         // Beam audio
@@ -429,7 +437,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     }
 
     private void AssessImpactEffects() {
-        //D.Log("{0}.AssessImpactEffects() called. ToShowEffects: {1}, IsImpact: {2}.", Name, ToShowEffects, _isImpact);
+        //D.Log(ShowDebugLog, "{0}.AssessImpactEffects() called. ToShowEffects: {1}, IsImpact: {2}.", DebugName, ToShowEffects, _isImpact);
         // beam impactEffects are not destroyed when used
         if (ToShowImpactEffects) {
             ShowImpactEffects(_impactLocation);
@@ -446,7 +454,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     }
 
     protected override void ShowImpactEffects(Vector3 position, Quaternion rotation) {
-        //D.Log("{0}.ShowImpactEffects() called.", Name);
+        //D.Log(ShowDebugLog, "{0}.ShowImpactEffects() called.", DebugName);
         D.Assert(ToShowImpactEffects);
         if (_impactEffect.isPlaying) {
             _impactEffect.Stop();
@@ -503,13 +511,11 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     protected override void PrepareForTermination() {
         base.PrepareForTermination();
         if (IsOperatingAudioPlaying) {
-            //D.Log("{0}.OnTerminate() called. OperatingAudioSource stopping.", Name);
+            //D.Log(ShowDebugLog, "{0}.OnTerminate() called. OperatingAudioSource stopping.", DebugName);
             _operatingAudioSource.Stop();
         }
         _operatingEffectRenderer.enabled = false;
-        if (IsAnimateOperatingEffectJobRunning) {
-            _animateOperatingEffectJob.Kill();
-        }
+        KillAnimateOperatingEffectJob();
         AssessCombatResults();
         Weapon.HandleFiringComplete(this);
     }
@@ -522,15 +528,21 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     }
 
     protected override void Despawn() { // OPTIMIZE 5.19.16 not really necessary
-        //D.Log("{0} is about to despawn and re-parent to OrdnanceSpawnPool.", Name);
+        //D.Log(ShowDebugLog, "{0} is about to despawn and re-parent to OrdnanceSpawnPool.", DebugName);
         MyPoolManager.Instance.DespawnOrdnance(transform, MyPoolManager.Instance.OrdnanceSpawnPool);
+    }
+
+    private void KillAnimateOperatingEffectJob() {
+        if (_animateOperatingEffectJob != null) {
+            _animateOperatingEffectJob.Kill();
+            _animateOperatingEffectJob = null;
+        }
     }
 
     protected override void Cleanup() {
         base.Cleanup();
-        if (_animateOperatingEffectJob != null) {
-            _animateOperatingEffectJob.Dispose();
-        }
+        // 12.8.16 Job Disposal centralized in JobManager
+        KillAnimateOperatingEffectJob();
     }
 
     protected override void Unsubscribe() {
@@ -544,6 +556,23 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region AdjustHeadingForInaccuracy Archive
+
+    // This version has nothing wrong with it. I just think the other is more logical.
+
+    //private void AdjustHeadingForInaccuracy() {
+    //    Quaternion initialRotation = transform.rotation;
+    //    Vector3 initialEulerHeading = initialRotation.eulerAngles;
+    //    float inaccuracyInDegrees = Weapon.MaxLaunchInaccuracy;
+    //    float newHeadingX = initialEulerHeading.x + UnityEngine.Random.Range(-inaccuracyInDegrees, inaccuracyInDegrees);
+    //    float newHeadingY = initialEulerHeading.y + UnityEngine.Random.Range(-inaccuracyInDegrees, inaccuracyInDegrees);
+    //    Vector3 adjustedEulerHeading = new Vector3(newHeadingX, newHeadingY, initialEulerHeading.z);
+    //    transform.rotation = Quaternion.Euler(adjustedEulerHeading);
+    //    //D.Log(ShowDebugLog, "{0} has incorporated {1:0.0} degrees of inaccuracy into its trajectory.", DebugName, Quaternion.Angle(initialRotation, transform.rotation));
+    //}
+
+    #endregion
 
     #region ITerminatableOrdnance Members
 

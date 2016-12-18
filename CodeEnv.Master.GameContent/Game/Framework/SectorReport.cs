@@ -62,24 +62,6 @@ namespace CodeEnv.Master.GameContent {
             return new ObjectAnalyzer().ToString(this);
         }
 
-        #region Archive
-
-        //public SectorReport(SectorData data, Player player, ISector item)
-        //    : base(player, item) {
-        //    AssignValues(data);
-        //}
-
-        //private void AssignValues(AItemData data) {
-        //    var sData = data as SectorData;
-        //    Name = sData.Name;
-        //    Owner = sData.Owner;
-        //    Position = sData.Position;
-        //    SectorID = sData.SectorID;
-        //    //Density = sData.Density;
-        //}
-
-        #endregion
-
     }
 }
 

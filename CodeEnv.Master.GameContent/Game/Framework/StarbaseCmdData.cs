@@ -89,9 +89,7 @@ namespace CodeEnv.Master.GameContent {
 
         public StarbaseCategory GenerateCmdCategory(BaseComposition unitComposition) {
             int elementCount = unitComposition.GetTotalElementsCount();
-            if (ShowDebugLog) {
-                D.Log("{0}'s known elements count = {1}.", FullName, elementCount);
-            }
+            //D.Log(ShowDebugLog, "{0}'s known elements count = {1}.", DebugName, elementCount);
             if (elementCount >= 8) {
                 return StarbaseCategory.TerritorialBase;
             }

@@ -73,7 +73,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public override string ToString() {
-            string targetText = Target != null ? Target.FullName : "none";
+            string targetText = Target != null ? Target.DebugName : "none";
             string followonOrderText = FollowonOrder != null ? FollowonOrder.ToString() : "none";
             string standingOrderText = StandingOrder != null ? StandingOrder.ToString() : "none";
             return ToStringFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), ToNotifyCmd, targetText, followonOrderText, standingOrderText);

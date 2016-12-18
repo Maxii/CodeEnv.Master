@@ -22,7 +22,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     ///  Interface allowing access to RangedEquipmentMonitors.
     /// </summary>
-    public interface IRangedEquipmentMonitor : IDebugable {
+    public interface IRangedEquipmentMonitor : IColliderMonitor, IDebugable {
 
         RangeCategory RangeCategory { get; }
 

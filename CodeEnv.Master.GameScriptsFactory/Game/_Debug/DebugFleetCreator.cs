@@ -67,6 +67,7 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
     /// <summary>
     /// The exclusions when randomly picking ShipCombatStances.
     /// </summary>
+    [Tooltip("Controls available Combat Stances that can be assigned. Note: HQ will always be assigned Defensive")]
     [SerializeField]
     private DebugShipCombatStanceExclusions _stanceExclusions = default(DebugShipCombatStanceExclusions);
 
@@ -97,7 +98,7 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
 
     protected override void ValidateStaticSetting() {
         if (gameObject.isStatic) {
-            D.Warn("{0} should not start as static. Correcting.", Name);
+            D.Warn("{0} should not start as static. Correcting.", DebugName);
             gameObject.isStatic = false;
         }
     }
@@ -183,13 +184,13 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
 
     protected override void AddUnitToGameKnowledge() {
         LogEvent();
-        //D.Log("{0} is adding Unit {1} to GameKnowledge.", Name, UnitName);
+        //D.Log(ShowDebugLog, "{0} is adding Unit {1} to GameKnowledge.", DebugName, UnitName);
         _gameMgr.GameKnowledge.AddUnit(_command, _elements.Cast<IUnitElement>());
     }
 
     protected override void AddUnitToOwnerAndAllysKnowledge() {
         LogEvent();
-        //D.Log("{0} is adding Unit {1} to {2}'s Knowledge.", Name, UnitName, Owner);
+        //D.Log(ShowDebugLog, "{0} is adding Unit {1} to {2}'s Knowledge.", DebugName, UnitName, Owner);
         var ownerAIMgr = _gameMgr.GetAIManagerFor(Owner);
         _elements.ForAll(e => ownerAIMgr.HandleGainedItemOwnership(e));
         ownerAIMgr.HandleGainedItemOwnership(_command);    // OPTIMIZE not really needed as this happens automatically when elements handled?
@@ -197,7 +198,7 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
         var alliedPlayers = Owner.GetOtherPlayersWithRelationship(DiplomaticRelationship.Alliance);
         if (alliedPlayers.Any()) {
             alliedPlayers.ForAll(ally => {
-                //D.Log("{0} is adding Unit {1} to {2}'s Knowledge as Ally.", Name, UnitName, ally);
+                //D.Log(ShowDebugLog, "{0} is adding Unit {1} to {2}'s Knowledge as Ally.", DebugName, UnitName, ally);
                 var allyAIMgr = _gameMgr.GetAIManagerFor(ally);
                 _elements.ForAll(e => allyAIMgr.HandleChgdItemOwnerIsAlly(e));
                 allyAIMgr.HandleChgdItemOwnerIsAlly(_command);  // OPTIMIZE not really needed as this happens automatically when elements handled?
@@ -227,12 +228,12 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
     [Obsolete]
     protected override void __IssueFirstUnitOrder(Action onCompleted) {
         LogEvent();
-        //D.Log("{0} launching 1 hour wait on {1}. Frame {2}, UnityTime {3:0.0}, SystemTimeStamp {4}.", Name, GameTime.Instance.CurrentDate, Time.frameCount, Time.time, Utility.TimeStamp);
+        //D.Log(ShowDebugLog, "{0} launching 1 hour wait on {1}. Frame {2}, UnityTime {3:0.0}, SystemTimeStamp {4}.", DebugName, GameTime.Instance.CurrentDate, Time.frameCount, Time.time, Utility.TimeStamp);
 
         // The following delay avoids script execution order issue when this creator receives IsRunning before other creators
-        string jobName = "{0}.WaitToIssueFirstOrderJob".Inject(Name);
+        string jobName = "{0}.WaitToIssueFirstOrderJob".Inject(DebugName);
         _jobMgr.WaitForHours(1F, jobName, waitFinished: delegate {    // makes sure Owner's knowledge of universe has been constructed before selecting its target
-            //D.Log("{0} finished 1 hour wait on {1}. Frame {2}, UnityTime {3:0.0}, SystemTimeStamp {4}.", Name, GameTime.Instance.CurrentDate, Time.frameCount, Time.time, Utility.TimeStamp);
+            //D.Log(ShowDebugLog, "{0} finished 1 hour wait on {1}. Frame {2}, UnityTime {3:0.0}, SystemTimeStamp {4}.", DebugName, GameTime.Instance.CurrentDate, Time.frameCount, Time.time, Utility.TimeStamp);
             if (_move) {
                 if (_attack) {
                     __GetFleetAttackUnderway();
@@ -260,7 +261,7 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
         }
 
         if (!moveTgts.Any()) {
-            D.Log("{0} can find no MoveTargets that meet the selection criteria. Picking an unowned Sector.", Name);
+            D.Log(ShowDebugLog, "{0} can find no MoveTargets that meet the selection criteria. Picking an unowned Sector.", DebugName);
             moveTgts.AddRange(SectorGrid.Instance.Sectors.Where(s => s.Owner == TempGameValues.NoPlayer).Cast<IFleetNavigable>());
         }
         IFleetNavigable destination;
@@ -270,7 +271,7 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
         else {
             destination = moveTgts.MinBy(mt => Vector3.SqrMagnitude(mt.Position - transform.position));
         }
-        //D.Log("{0} destination is {1}.", UnitName, destination.FullName);
+        //D.Log(ShowDebugLog, "{0} destination is {1}.", UnitName, destination.DebugName);
         _command.CurrentOrder = new FleetOrder(FleetDirective.Move, OrderSource.CmdStaff, destination);
     }
 
@@ -284,7 +285,7 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
         attackTgts.AddRange(fleetOwnerKnowledge.Settlements.Cast<IUnitAttackable>().Where(s => s.IsAttackByAllowed(fleetOwner)));
         attackTgts.AddRange(fleetOwnerKnowledge.Planets.Cast<IUnitAttackable>().Where(p => p.IsAttackByAllowed(fleetOwner)));
         if (attackTgts.IsNullOrEmpty()) {
-            D.Log("{0} can find no AttackTargets of any sort. Defaulting to __GetFleetUnderway().", Name);
+            D.Log(ShowDebugLog, "{0} can find no AttackTargets of any sort. Defaulting to __GetFleetUnderway().", DebugName);
             __GetFleetUnderway();
             return;
         }
@@ -295,7 +296,7 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
         else {
             attackTgt = attackTgts.MinBy(t => Vector3.SqrMagnitude(t.Position - transform.position));
         }
-        //D.Log("{0} attack target is {1}.", UnitName, attackTgt.FullName);
+        //D.Log(ShowDebugLog, "{0} attack target is {1}.", UnitName, attackTgt.DebugName);
         _command.CurrentOrder = new FleetOrder(FleetDirective.Attack, OrderSource.CmdStaff, attackTgt);
     }
 
@@ -334,7 +335,7 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
         }
         float radius = hullStat.HullDimensions.magnitude / 2F;
-        //D.Log("Radius of {0} is {1:0.##}.", hullCat.GetValueName(), radius);
+        //D.Log(ShowDebugLog, ShowDebugLog, "Radius of {0} is {1:0.##}.", hullCat.GetValueName(), radius);
         float minViewDistance = radius * 2F;
         float optViewDistance = radius * 3F;
         float distanceDampener = 3F;    // default
@@ -391,7 +392,7 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
     //    else {
     //        destination = moveTgts.MinBy(mt => Vector3.SqrMagnitude(mt.Position - transform.position));
     //    }
-    //    //D.Log("{0} destination is {1}.", UnitName, destination.FullName);
+    //    //D.Log("{0} destination is {1}.", UnitName, destination.DebugName);
     //    _command.CurrentOrder = new FleetOrder(FleetDirective.Move, OrderSource.CmdStaff, destination);
     //}
 
@@ -424,7 +425,7 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
     //    else {
     //        attackTgt = attackTgts.MinBy(t => Vector3.SqrMagnitude(t.Position - transform.position));
     //    }
-    //    //D.Log("{0} attack target is {1}.", UnitName, attackTgt.FullName);
+    //    //D.Log("{0} attack target is {1}.", UnitName, attackTgt.DebugName);
     //    _command.CurrentOrder = new FleetOrder(FleetDirective.Attack, OrderSource.CmdStaff, attackTgt);
     //}
 

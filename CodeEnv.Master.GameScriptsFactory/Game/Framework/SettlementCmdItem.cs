@@ -37,7 +37,7 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmd, ISettlementCm
         private get { return _parentSystem; }
         set {
             if (_parentSystem != null) {
-                D.Error("Parent System {0} of {1} can only be set once.", _parentSystem.FullName, FullName);
+                D.Error("Parent System {0} of {1} can only be set once.", _parentSystem.DebugName, DebugName);
             }
             SetProperty<SystemItem>(ref _parentSystem, value, "ParentSystem", ParentSystemPropSetHandler);
         }
@@ -104,6 +104,10 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmd, ISettlementCm
 
     protected override void ConnectHighOrbitRigidbodyToShipOrbitJoint(FixedJoint shipOrbitJoint) {
         shipOrbitJoint.connectedBody = CelestialOrbitSimulator.OrbitRigidbody;
+    }
+
+    protected override void AttemptHighOrbitRigidbodyDeactivation() {
+        // Do nothing as Settlement HighOrbitRigidbody is on CelestialOrbitSimulator which needs to stay activated
     }
 
     #region Event and Property Change Handlers

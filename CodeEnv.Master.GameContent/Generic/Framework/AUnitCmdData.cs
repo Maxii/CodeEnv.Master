@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AUnitCmdData : AMortalItemData {
 
-        private const string FullNameFormat = "{0}_{1}";
+        private const string DebugNameFormat = "{0}_{1}";
 
         private float _unitMaxFormationRadius;
         /// <summary>
@@ -56,16 +56,16 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<string>(ref _parentName, value, "ParentName", ParentNamePropChangedHandler); }
         }
 
-        private string _fullName;
-        public override string FullName {
+        private string _debugName;
+        public override string DebugName {
             get {
                 if (ParentName.IsNullOrEmpty()) {
-                    return Name;
+                    return base.DebugName;
                 }
-                if (_fullName.IsNullOrEmpty()) {
-                    _fullName = FullNameFormat.Inject(ParentName, Name);
+                if (_debugName == null) {
+                    _debugName = DebugNameFormat.Inject(ParentName, Name);
                 }
-                return _fullName;
+                return _debugName;
             }
         }
 
@@ -78,7 +78,7 @@ namespace CodeEnv.Master.GameContent {
         private Formation _unitFormation;
         public Formation UnitFormation {
             get {
-                D.AssertNotDefault((int)_unitFormation, FullName);
+                D.AssertNotDefault((int)_unitFormation, DebugName);
                 return _unitFormation;
             }
             set { SetProperty<Formation>(ref _unitFormation, value, "UnitFormation"); }
@@ -254,9 +254,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void HandleAlertStatusChanged() {
-            if (ShowDebugLog) {
-                D.LogBold("{0} AlertStatus changed to {1}. Notifying Elements.", FullName, AlertStatus.GetValueName());
-            }
+            D.LogBold(ShowDebugLog, "{0} AlertStatus changed to {1}. Notifying Elements.", DebugName, AlertStatus.GetValueName());
             ElementsData.ForAll(eData => eData.AlertStatus = AlertStatus);
         }
 
@@ -271,7 +269,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected virtual void HandleHQElementDataChanging(AUnitElementData newHQElementData) {
-            //D.Log(ShowDebugLog, "{0}.HQElementData is about to change.", FullName);
+            //D.Log(ShowDebugLog, "{0}.HQElementData is about to change.", DebugName);
             var previousHQElementData = HQElementData;
             if (previousHQElementData != null) {
                 previousHQElementData.intelCoverageChanged -= HQElementIntelCoverageChangedEventHandler;
@@ -284,7 +282,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected virtual void HandleHQElementDataChanged() {
-            D.Assert(_elementsData.Contains(HQElementData), HQElementData.FullName);
+            D.Assert(_elementsData.Contains(HQElementData), HQElementData.DebugName);
             HQElementData.intelCoverageChanged += HQElementIntelCoverageChangedEventHandler;
             Topography = GetTopography();
             HQElementData.topographyChanged += HQElementTopographyChangedEventHandler;
@@ -303,7 +301,7 @@ namespace CodeEnv.Master.GameContent {
             var isIntelCoverageSet = SetIntelCoverage(playerWhosCoverageChgd, playerIntelCoverageOfHQElement);
             D.Assert(isIntelCoverageSet);
             //D.Log(ShowDebugLog, "{0}.HQElement's IntelCoverage for {1} has changed to {2}. {0} has assumed the same value.", 
-            //    FullName, playerWhosCoverageChgd.LeaderName, playerIntelCoverageOfHQElement.GetValueName());
+            //    DebugName, playerWhosCoverageChgd.LeaderName, playerIntelCoverageOfHQElement.GetValueName());
         }
 
         private void UnitMaxHitPtsPropChangingHandler(float newMaxHitPts) {
@@ -337,7 +335,7 @@ namespace CodeEnv.Master.GameContent {
         /// and Health consistent with the way other Item's values are treated for any future subscribers to health changes.
         /// </summary>
         private void HandleUnitHealthChanged() {
-            //D.Log(ShowDebugLog, "{0}: UnitHealth {1}, UnitCurrentHitPoints {2}, UnitMaxHitPoints {3}.", FullName, _unitHealth, UnitCurrentHitPoints, UnitMaxHitPoints);
+            //D.Log(ShowDebugLog, "{0}: UnitHealth {1}, UnitCurrentHitPoints {2}, UnitMaxHitPoints {3}.", DebugName, _unitHealth, UnitCurrentHitPoints, UnitMaxHitPoints);
             if (UnitHealth <= Constants.ZeroF) {
                 CurrentHitPoints -= MaxHitPoints;
             }
@@ -422,7 +420,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public virtual void AddElement(AUnitElementData elementData) {
-            D.Assert(!_elementsData.Contains(elementData), elementData.FullName);
+            D.Assert(!_elementsData.Contains(elementData), elementData.DebugName);
             __ValidateOwner(elementData);
             UpdateElementParentName(elementData);
             _elementsData.Add(elementData);
@@ -435,11 +433,11 @@ namespace CodeEnv.Master.GameContent {
         private void __ValidateOwner(AUnitElementData elementData) {
             D.AssertNotEqual(Owner, TempGameValues.NoPlayer, "Owner should be set before adding elements.");
             if (elementData.Owner == TempGameValues.NoPlayer) {
-                D.Warn("{0} owner should be set before adding element to {1}.", elementData.Name, Name);
+                D.Warn("{0} owner should be set before adding element to {1}.", elementData.Name, DebugName);
                 elementData.Owner = Owner;
             }
             else if (elementData.Owner != Owner) {
-                D.Warn("{0} owner {1} is different from {2} owner {3}.", elementData.Name, elementData.Owner.LeaderName, Name, Owner.LeaderName);
+                D.Warn("{0} owner {1} is different from {2} owner {3}.", elementData.Name, elementData.Owner, DebugName, Owner);
                 elementData.Owner = Owner;
             }
         }
@@ -452,7 +450,7 @@ namespace CodeEnv.Master.GameContent {
 
         public virtual void RemoveElement(AUnitElementData elementData) {
             bool isRemoved = _elementsData.Remove(elementData);
-            D.Assert(isRemoved, elementData.FullName);
+            D.Assert(isRemoved, elementData.DebugName);
 
             RefreshComposition();
             Unsubscribe(elementData);

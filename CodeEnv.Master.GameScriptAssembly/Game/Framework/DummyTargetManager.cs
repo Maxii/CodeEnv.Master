@@ -25,7 +25,7 @@ using UnityEngine;
 /// </summary>
 public class DummyTargetManager : AMonoSingleton<DummyTargetManager>, ICameraTargetable {
 
-    private const float CameraMinViewingDistance_DummyTarget = 50F;
+    private const float CameraMinViewingDistance_DummyTarget = 5F;
 
     protected override void Cleanup() { }
 

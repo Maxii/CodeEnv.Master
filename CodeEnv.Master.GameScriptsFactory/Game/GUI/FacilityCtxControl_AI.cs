@@ -25,7 +25,7 @@ using UnityEngine;
 /// </summary>
 public class FacilityCtxControl_AI : ACtxControl {
 
-    protected override string OperatorName { get { return _facilityMenuOperator.FullName; } }
+    protected override string OperatorName { get { return _facilityMenuOperator.DebugName; } }
 
     protected override Vector3 PositionForDistanceMeasurements { get { return _facilityMenuOperator.Position; } }
 

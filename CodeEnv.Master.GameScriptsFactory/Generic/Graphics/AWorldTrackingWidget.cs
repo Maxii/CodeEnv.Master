@@ -55,7 +55,7 @@ public abstract class AWorldTrackingWidget : ATrackingWidget {
     }
 
     protected override void SetPosition() {
-        //D.Log("{0} aligning position with target {1}. Offset is {2}.", Name, Target.Transform.name, _offset);
+        //D.Log("{0} aligning position with target {1}. Offset is {2}.", DebugName, Target.Transform.name, _offset);
         transform.localPosition = _offset;
     }
 

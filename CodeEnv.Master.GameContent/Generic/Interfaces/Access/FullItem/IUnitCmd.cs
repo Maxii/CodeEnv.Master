@@ -30,6 +30,8 @@ namespace CodeEnv.Master.GameContent {
 
         bool IsAvailable { get; }
 
+        string UnitName { get; }
+
         float ClearanceRadius { get; }
 
         IList<ISensorRangeMonitor> SensorRangeMonitors { get; }

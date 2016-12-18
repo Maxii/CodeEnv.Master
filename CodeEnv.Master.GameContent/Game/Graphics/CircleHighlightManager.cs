@@ -75,7 +75,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void ShowCircle(CircleHighlightID id) {
             if (_circles == null) {
-                D.AssertNotNull(_trackedClientTransform, Name);
+                D.AssertNotNull(_trackedClientTransform, DebugName);
                 _circles = new HighlightCircle(CircleTitle, _trackedClientTransform, _circleRadius, _isCircleSizeDynamic, maxCircles: 3);
                 _circles.Colors = new List<GameColor>() { TempGameValues.FocusedColor, TempGameValues.SelectedColor, TempGameValues.GeneralHighlightColor };
                 _circles.Widths = new List<float>() { 2F, 2F, 1F };

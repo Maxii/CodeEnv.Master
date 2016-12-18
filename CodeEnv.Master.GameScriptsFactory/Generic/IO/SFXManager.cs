@@ -19,6 +19,7 @@
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
 /// Singleton controlling Game SoundEffects.
@@ -97,7 +98,10 @@ public class SFXManager : AMonoSingleton<SFXManager>, ISFXManager {
     /// <returns></returns>
     public AudioSource PlayCappedSFX(GameObject go, SfxClipID clipID, SfxCapID capID) {
         //TODO verify clip is coded as 3D - need AudioImporter???
+        Profiler.BeginSample("Proper AddComponent allocation", gameObject);
         var aS = go.AddMissingComponent<AudioSource>();
+        Profiler.EndSample();
+
         return SoundManager.PlayCappedSFX(aS, clipID.GetValueName(), capID.GetValueName());
     }
 

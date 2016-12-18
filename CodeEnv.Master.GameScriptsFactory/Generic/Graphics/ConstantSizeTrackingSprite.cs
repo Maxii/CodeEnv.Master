@@ -19,6 +19,7 @@
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
 /// Sprite resident in world space that tracks world objects.  
@@ -41,7 +42,10 @@ public class ConstantSizeTrackingSprite : AWorldTrackingWidget_ConstantSize, ITr
         D.Assert(Widget.localSize != new Vector2(2, 2) && Widget.localSize != Vector2.zero, gameObject, "Sprite size not set.");
 
         GameObject widgetGo = WidgetTransform.gameObject;
+
+        Profiler.BeginSample("Proper AddComponent allocation", gameObject);
         CameraLosChangedListener = widgetGo.AddComponent<CameraLosChangedListener>();
+        Profiler.EndSample();
         // Note: do not disable CameraLosChangedListener, as disabling it will also eliminate OnBecameVisible() events
     }
 

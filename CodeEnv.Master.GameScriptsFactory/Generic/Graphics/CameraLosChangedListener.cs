@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
 /// Event Hook class lets you easily add remote Camera LineOfSight Changed listener functions to an object.
@@ -29,7 +30,7 @@ using UnityEngine;
 /// </summary>
 public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
 
-    private const string NameFormat = "{0}.{1}";
+    private const string DebugNameFormat = "{0}.{1}";
 
     private const string MeshGoNameFormat = "{0} Invisible Bounds";
 
@@ -46,13 +47,10 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
     /// </summary>
     public static CameraLosChangedListener Get(GameObject go) {
 
-        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
-        CameraLosChangedListener listener = go.GetComponent<CameraLosChangedListener>();
+        Profiler.BeginSample("Proper AddComponent allocation", go);
+        CameraLosChangedListener listener = go.AddMissingComponent<CameraLosChangedListener>();
         Profiler.EndSample();
 
-        if (listener == null) {
-            listener = go.AddComponent<CameraLosChangedListener>();
-        }
         return listener;
     }
 
@@ -67,7 +65,7 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
         private set { SetProperty<bool>(ref _inCameraLOS, value, "InCameraLOS"); }
     }
 
-    private string Name { get { return NameFormat.Inject(name, typeof(CameraLosChangedListener).Name); } }
+    private string DebugName { get { return DebugNameFormat.Inject(name, typeof(CameraLosChangedListener).Name); } }
 
     private Renderer _renderer;
     private bool _isInvisibleMesh;
@@ -79,7 +77,11 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
     }
 
     private void Initialize() {
+
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
         _renderer = GetComponent<Renderer>();
+        Profiler.EndSample();
+
         if (_renderer == null) {
             InitializeInvisibleMesh();  // creates and assigns _renderer
         }
@@ -102,14 +104,14 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
 
     void OnBecameVisible() {
         if (enabled) {
-            //D.LogContext(this, "{0} has received OnBecameVisible().", Name);
+            //D.LogContext(this, "{0} has received OnBecameVisible().", DebugName);
             InCameraLOS = true;
             OnInCameraLosChanged();
         }
         else {
             if (!_isInvisibleMesh) {    // invisible mesh will always immediately generate an event as I can't instantiate it disabled
                 D.WarnContext(this, "{0}.OnBecameVisible() called while not enabled. This is probably because the MeshRenderer on this object started enabled in the Inspector.",
-                    Name);
+                    DebugName);
             }
         }
     }
@@ -121,14 +123,14 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
         }
 
         if (enabled) {
-            //D.LogContext(this, "{0} has received OnBecameInvisible().", Name);
+            //D.LogContext(this, "{0} has received OnBecameInvisible().", DebugName);
             InCameraLOS = false;
             OnInCameraLosChanged();
         }
         else {
             if (!_isInvisibleMesh) {  // invisible mesh will always immediately generate an event as I can't instantiate it disabled
                 D.WarnContext(this, "{0}.OnBecameInvisible() called while not enabled. This is probably because the MeshRenderer on this object started enabled in the Inspector.",
-                    Name);
+                    DebugName);
             }
         }
     }
@@ -138,7 +140,7 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
             inCameraLosChanged(this, EventArgs.Empty);
         }
         else {
-            D.WarnContext(this, "{0} has no subscriber. InCameraLOS = {1}.", Name, InCameraLOS);
+            D.WarnContext(this, "{0} has no subscriber. InCameraLOS = {1}.", DebugName, InCameraLOS);
         }
     }
 
@@ -146,7 +148,7 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
 
     #region Invisible Mesh System supporting OnBecameVisible/Invisible
 
-    private static IDictionary<string, Mesh> _meshCache = new Dictionary<string, Mesh>();
+    private static IDictionary<Vector2, Mesh> _meshCache = new Dictionary<Vector2, Mesh>(Vector2EqualityComparer.Default);
 
     /// <summary>
     /// Temporary workaround used to filter out all UIWidget.onChange events that aren't caused by a change in Widget Dimensions.
@@ -161,14 +163,17 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
     /// </summary>
     private void InitializeInvisibleMesh() {
         _isInvisibleMesh = true;
-        _meshFilter = gameObject.AddMissingComponent<MeshFilter>();
 
+        Profiler.BeginSample("Proper AddComponent allocation", gameObject);
+        _meshFilter = gameObject.AddMissingComponent<MeshFilter>();
         _renderer = gameObject.AddMissingComponent<MeshRenderer>();
+        Profiler.EndSample();
+
         _renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         _renderer.receiveShadows = false;
         D.Assert(_renderer.enabled);    // renderers do not deliver OnBecameVisible() events if not enabled
 
-        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
         _widget = gameObject.GetComponent<UIWidget>();
         Profiler.EndSample();
 
@@ -183,21 +188,21 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
     /// This is typically called when the Widget's dimensions change.
     /// </summary>
     private void CheckInvisibleMeshSize() {
-        var meshSize = _widget != null ? _widget.localSize : DefaultMeshSize;
+        Vector2 meshSize = _widget != null ? _widget.localSize : DefaultMeshSize;
         if (__previousMeshSize == meshSize) {
-            //D.Warn("{0} invisible mesh size {1} check without a widget dimension change.", Name, meshSize);
+            //D.Warn("{0} invisible mesh size {1} check without a widget dimension change.", DebugName, meshSize);
             return;
         }
         __previousMeshSize = meshSize;
 
-        string cacheKey = meshSize.ToString();  // "[0.0, 1.0]"
+        Vector2 cacheKey = meshSize; // meshSize.ToString();  // "[0.0, 1.0]"
         if (!_meshCache.ContainsKey(cacheKey)) {
             Vector3[] meshLocalCorners = _widget != null ? _widget.localCorners : DefaultMeshLocalCorners;
             _meshCache.Add(cacheKey, MakeBoundsMesh(UnityUtility.GetBounds(meshLocalCorners)));
             _meshCache[cacheKey].name = MeshGoNameFormat.Inject(cacheKey);
         }
         else {
-            //D.Log("{0} is reusing {1} mesh.", Name, _meshCache[cacheKey].name);
+            //D.Log("{0} is reusing {1} mesh.", DebugName, _meshCache[cacheKey].name);
         }
         _meshFilter.mesh = _meshCache[cacheKey];
     }

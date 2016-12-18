@@ -21,6 +21,7 @@ using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
 /// Class for AUnitBaseCmdItems that are Starbases.
@@ -81,11 +82,14 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd,
 
     protected override void ConnectHighOrbitRigidbodyToShipOrbitJoint(FixedJoint shipOrbitJoint) {
         if (_highOrbitRigidbody == null) {
-            _highOrbitRigidbody = gameObject.AddMissingComponent<Rigidbody>();
-            _highOrbitRigidbody.useGravity = false;
-            _highOrbitRigidbody.isKinematic = true;
+            _highOrbitRigidbody = GeneralFactory.Instance.MakeShipHighOrbitAttachPoint(gameObject);
         }
         shipOrbitJoint.connectedBody = _highOrbitRigidbody;
+    }
+
+    protected override void AttemptHighOrbitRigidbodyDeactivation() {
+        D.Assert(_highOrbitRigidbody.gameObject.activeSelf);
+        _highOrbitRigidbody.gameObject.SetActive(false);
     }
 
     #region Event and Property Change Handlers
@@ -110,9 +114,7 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd,
         var sectorViewHighlightMgr = GetHighlightMgr(HighlightMgrID.SectorView) as SectorViewHighlightManager;
         if (!IsDiscernibleToUser) {
             if (sectorViewHighlightMgr.IsHighlightShowing) {
-                if (ShowDebugLog) {
-                    D.Log("{0} received ShowSectorViewHighlight({1}) when not discernible but showing. Sending Show(false) to sync HighlightMgr.", FullName, toShow);
-                }
+                D.Log(ShowDebugLog, "{0} received ShowSectorViewHighlight({1}) when not discernible but showing. Sending Show(false) to sync HighlightMgr.", DebugName, toShow);
                 sectorViewHighlightMgr.Show(false);
             }
             return;

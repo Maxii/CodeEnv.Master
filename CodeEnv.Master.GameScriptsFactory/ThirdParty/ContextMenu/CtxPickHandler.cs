@@ -19,6 +19,7 @@
 
 using CodeEnv.Master.Common;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
 /// A component which drives the picking process for the context menu objects
@@ -109,7 +110,7 @@ public class CtxPickHandler : AMonoBase {
 
     private CtxObject Pick(Vector3 mousePos) {
 
-        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
         Camera cam = GetComponent<Camera>();
         Profiler.EndSample();
 

@@ -20,15 +20,17 @@ namespace CodeEnv.Master.GameContent {
     using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common;
+    using UnityEngine;
+    using UnityEngine.Profiling;
 
     /// <summary>
     /// Component that handles detection events for IDetectable items.
     /// </summary>
     public class DetectionHandler : IDisposable {
 
-        private const string FullNameFormat = "{0}.{1}";
+        private const string DebugNameFormat = "{0}.{1}";
 
-        public string FullName { get { return FullNameFormat.Inject(_item.FullName, typeof(DetectionHandler).Name); } }
+        public string DebugName { get { return DebugNameFormat.Inject(_item.DebugName, typeof(DetectionHandler).Name); } }
 
         private bool ShowDebugLog { get { return _item.ShowDebugLog; } }
 
@@ -50,22 +52,30 @@ namespace CodeEnv.Master.GameContent {
 
         public void HandleDetectionBy(Player detectingPlayer, IUnitCmd_Ltd cmdItem, RangeCategory sensorRange) {
             if (!_item.IsOperational) {
-                D.Error("{0} should not be detected by {1} when dead!", _item.FullName, cmdItem.FullName);
+                D.Error("{0} should not be detected by {1} when dead!", _item.DebugName, cmdItem.DebugName);
             }
-            //D.Log(ShowDebugLog, "{0}.HandleDetectionBy called. Detecting Cmd: {1}, SensorRange: {2}.", FullName, cmdItem.FullName, sensorRange.GetValueName());
+            //D.Log(ShowDebugLog, "{0}.HandleDetectionBy called. Detecting Cmd: {1}, SensorRange: {2}.", DebugName, cmdItem.DebugName, sensorRange.GetValueName());
 
             IDictionary<RangeCategory, IList<IUnitCmd_Ltd>> rangeLookup;
             if (!_detectionLookup.TryGetValue(detectingPlayer, out rangeLookup)) {
-                rangeLookup = new Dictionary<RangeCategory, IList<IUnitCmd_Ltd>>(RangeCategoryEqualityComparer.Default);
+
+                Profiler.BeginSample("Proper Dictionary allocation", (_item as Component).gameObject);
+                rangeLookup = new Dictionary<RangeCategory, IList<IUnitCmd_Ltd>>(3, RangeCategoryEqualityComparer.Default); // OPTIMIZE check size
+                Profiler.EndSample();
+
                 _detectionLookup.Add(detectingPlayer, rangeLookup);
             }
 
             IList<IUnitCmd_Ltd> cmds;
             if (!rangeLookup.TryGetValue(sensorRange, out cmds)) {
+
+                Profiler.BeginSample("Proper List allocation", (_item as Component).gameObject);
                 cmds = new List<IUnitCmd_Ltd>();
+                Profiler.EndSample();
+
                 rangeLookup.Add(sensorRange, cmds);
             }
-            D.Assert(!cmds.Contains(cmdItem), cmdItem.FullName);
+            D.Assert(!cmds.Contains(cmdItem), cmdItem.DebugName);
             cmds.Add(cmdItem);
 
             // The following returns can not move earlier in method as detection state must be kept current to support Reset
@@ -75,7 +85,7 @@ namespace CodeEnv.Master.GameContent {
                 // Note: this debug setting DOES NOT pre-populate all player's knowledge
                 if (_item.Owner.IsRelationshipWith(detectingPlayer, DiplomaticRelationship.Alliance, DiplomaticRelationship.Self)) {
                     // even with DebugSettings all coverage comprehensive, still no reason to update if Alliance or Self
-                    __ValidatePlayerIntelCoverageOfItemIsComprehensive(detectingPlayer);
+                    __ValidatePlayerIntelCoverageOfItemIsComprehensive(detectingPlayer);    // UNCLEAR why called again?
                     __ValidatePlayerKnowledgeOfItem(detectingPlayer);
                     return;
                 }
@@ -90,31 +100,35 @@ namespace CodeEnv.Master.GameContent {
                 return; // continuing could regress coverage on items that allow it
             }
 
+            Profiler.BeginSample("AssignDetectingPlayerIntelCoverage", (_item as Component).gameObject);
             AssignDetectingPlayerIntelCoverage(detectingPlayer);
+            Profiler.EndSample();
+            Profiler.BeginSample("UpdatePlayerKnowledge", (_item as Component).gameObject);
             UpdatePlayerKnowledge(detectingPlayer);
+            Profiler.EndSample();
         }
 
         public void HandleDetectionLostBy(Player detectingPlayer, IUnitCmd_Ltd cmdItem, RangeCategory sensorRange) {
             D.AssertNotDefault((int)sensorRange);
             if (!_item.IsOperational) {    // 7.20.16 detected items no longer notified of lost detection when they die
-                D.Error("{0} should not be notified by {1} of detection lost when dead!", FullName, cmdItem.FullName);
+                D.Error("{0} should not be notified by {1} of detection lost when dead!", DebugName, cmdItem.DebugName);
             }
-            //D.Log(ShowDebugLog, "{0}.HandleDetectionLostBy called. Detecting Cmd: {1}, SensorRange: {2}.", FullName, cmdItem.FullName, sensorRange.GetValueName());
+            //D.Log(ShowDebugLog, "{0}.HandleDetectionLostBy called. Detecting Cmd: {1}, SensorRange: {2}.", DebugName, cmdItem.DebugName, sensorRange.GetValueName());
 
             IDictionary<RangeCategory, IList<IUnitCmd_Ltd>> rangeLookup;
             if (!_detectionLookup.TryGetValue(detectingPlayer, out rangeLookup)) {
-                D.Error("{0} found no Sensor Range lookup. Detecting Cmd: {1}.", FullName, cmdItem.FullName);
+                D.Error("{0} found no Sensor Range lookup. Detecting Cmd: {1}.", DebugName, cmdItem.DebugName);
                 return;
             }
 
             IList<IUnitCmd_Ltd> cmds;
             if (!rangeLookup.TryGetValue(sensorRange, out cmds)) {
-                D.Error("{0} found no List of Commands. Detecting Cmd: {1}, SensorRange: {2}.", FullName, cmdItem.FullName, sensorRange.GetValueName());
+                D.Error("{0} found no List of Commands. Detecting Cmd: {1}, SensorRange: {2}.", DebugName, cmdItem.DebugName, sensorRange.GetValueName());
                 return;
             }
 
             bool isRemoved = cmds.Remove(cmdItem);
-            D.Assert(isRemoved, cmdItem.FullName);
+            D.Assert(isRemoved, cmdItem.DebugName);
             if (cmds.Count == Constants.Zero) {
                 rangeLookup.Remove(sensorRange);
                 if (rangeLookup.Count == Constants.Zero) {
@@ -183,9 +197,7 @@ namespace CodeEnv.Master.GameContent {
             }
 
             if (_item.SetIntelCoverage(player, newCoverage)) {
-                if (ShowDebugLog) {
-                D.Log("{0} successfully set {1}'s IntelCoverage to {2}.", FullName, player, newCoverage.GetValueName());
-                }
+                //D.Log(ShowDebugLog, "{0} successfully set {1}'s IntelCoverage to {2}.", DebugName, player, newCoverage.GetValueName());
             }
         }
 
@@ -245,7 +257,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void __ValidatePlayerIntelCoverageOfItemIsComprehensive(Player player) {
             if (_item.GetIntelCoverage(player) != IntelCoverage.Comprehensive) {
-                D.Error("{0}: {1}'s IntelCoverage of {2} should be Comprehensive rather than {3}.", FullName, player, _item.FullName, _item.GetIntelCoverage(player));
+                D.Error("{0}: {1}'s IntelCoverage of {2} should be Comprehensive rather than {3}.", DebugName, player, _item.DebugName, _item.GetIntelCoverage(player));
             }
         }
 
@@ -256,8 +268,8 @@ namespace CodeEnv.Master.GameContent {
             }
             var playerAIMgr = _gameMgr.GetAIManagerFor(player);
             if (!playerAIMgr.HasKnowledgeOf(_item as IIntelItem_Ltd)) {
-                string itemsKnownText = playerAIMgr.__GetItemsOwnedBy(_item.Owner).Select(item => item.FullName).Concatenate();
-                D.Error("{0}: {1} has no knowledge of {2}. IsOperational = {3}. Items known: {4}.", FullName, player, _item.FullName, _item.IsOperational, itemsKnownText);
+                string itemsKnownText = playerAIMgr.__GetItemsOwnedBy(_item.Owner).Select(item => item.DebugName).Concatenate();
+                D.Error("{0}: {1} has no knowledge of {2}. IsOperational = {3}. Items known: {4}.", DebugName, player, _item.DebugName, _item.IsOperational, itemsKnownText);
             }
         }
 
@@ -310,7 +322,7 @@ namespace CodeEnv.Master.GameContent {
         //private void AssessPlayerIntelState(Player player) {
         //    IDictionary<DistanceRange, IList<ICommandItem>> rangeLookup;
         //    if (!_detectionLookup.TryGetValue(player, out rangeLookup)) {
-        //        D.Error("{0} found no Sensor Range lookup. Player: {1}.", _data.FullName, player.LeaderName);
+        //        D.Error("{0} found no Sensor Range lookup. Player: {1}.", _data.DebugName, player.LeaderName);
         //        return;
         //    }
         //    IntelCoverage newCoverage;
@@ -331,7 +343,7 @@ namespace CodeEnv.Master.GameContent {
         //    }
 
         //    if (_data.TrySetIntelCoverage(player, newCoverage)) {
-        //        D.Log("{0} successfully set {1}'s IntelCoverage to {2}.", _data.FullName, player.LeaderName, newCoverage.GetValueName());
+        //        D.Log("{0} successfully set {1}'s IntelCoverage to {2}.", _data.DebugName, player.LeaderName, newCoverage.GetValueName());
         //    }
         //}
 

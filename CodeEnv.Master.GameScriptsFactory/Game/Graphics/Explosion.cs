@@ -42,9 +42,7 @@ public class Explosion : AMonoBase, IEffect {
         set { SetProperty<bool>(ref _isPaused, value, "IsPaused", IsPausedPropChangedHandler); }
     }
 
-    public bool IsPlaying { get { return IsExplosionPlaying; } }
-
-    private bool IsExplosionPlaying { get { return _waitForExplosionFinishedJob != null && _waitForExplosionFinishedJob.IsRunning; } }
+    public bool IsPlaying { get { return _waitForExplosionFinishedJob != null; } }
 
     private Job _waitForExplosionFinishedJob;
     private ParticleSystem _primaryParticleSystem;
@@ -71,10 +69,23 @@ public class Explosion : AMonoBase, IEffect {
             _prevScale = currentScale;
         }
         _primaryParticleSystem.Play(withChildren: true);
+
+        D.AssertNull(_waitForExplosionFinishedJob);
         bool includeChildren = true;
         string jobName = "WaitForExplosionFinishedJob";
         _waitForExplosionFinishedJob = _jobMgr.WaitForParticleSystemCompletion(_primaryParticleSystem, includeChildren, jobName, isPausable: true, waitFinished: (jobWasKilled) => {
-            HandleExplosionFinished();
+            if (jobWasKilled) {
+                // 12.12.16 An AssertNull(_jobRef) here can fail as the reference can refer to a new Job, created 
+                // right after the old one was killed due to the 1 frame delay in execution of jobCompleted(). My attempts at allowing
+                // the AssertNull to occur failed. I believe this is OK as _jobRef is nulled from KillXXXJob() and, if 
+                // the reference is replaced by a new Job, then the old Job is no longer referenced which is the objective. Jobs Kill()ed
+                // centrally by JobManager won't null the reference, but this only occurs during scene transitions.
+            }
+            else {
+                _waitForExplosionFinishedJob = null;
+                HandleExplosionFinished();
+            }
+            MyPoolManager.Instance.DespawnEffect(transform);
         });
     }
 
@@ -83,7 +94,6 @@ public class Explosion : AMonoBase, IEffect {
     }
 
     private void HandleExplosionFinished() {
-        MyPoolManager.Instance.DespawnEffect(transform);
         OnExplosionFinished();
     }
 
@@ -114,7 +124,7 @@ public class Explosion : AMonoBase, IEffect {
     #endregion
 
     private void Pause(bool toPause) {
-        if (IsExplosionPlaying) {
+        if (IsPlaying) {
             if (toPause) {
                 _primaryParticleSystem.Pause(withChildren: true);
             }
@@ -125,10 +135,21 @@ public class Explosion : AMonoBase, IEffect {
     }
 
     private void ResetEffectsForReuse() {
+        KillWaitForExplosionFinishedJob();
         _primaryParticleSystem.Clear(withChildren: true);
     }
 
-    protected override void Cleanup() { }
+    private void KillWaitForExplosionFinishedJob() {
+        if (_waitForExplosionFinishedJob != null) {
+            _waitForExplosionFinishedJob.Kill();
+            _waitForExplosionFinishedJob = null;
+        }
+    }
+
+    protected override void Cleanup() {
+        // 12.8.16 Job Disposal centralized in JobManager
+        KillWaitForExplosionFinishedJob();
+    }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

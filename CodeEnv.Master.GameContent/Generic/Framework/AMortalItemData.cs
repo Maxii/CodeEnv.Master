@@ -117,9 +117,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void HandleCountermeasureIsDamagedChanged(AEquipment countermeasure) {
-            if (ShowDebugLog) {
-                D.Log("{0}'s {1}.IsDamaged is now {2}.", FullName, countermeasure.Name, countermeasure.IsDamaged);
-            }
+            D.Log(ShowDebugLog, "{0}'s {1} is {2}.", DebugName, countermeasure.Name, countermeasure.IsDamaged ? "damaged" : "repaired");
             RecalcDefensiveValues();
         }
 
@@ -149,9 +147,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected virtual void HandleHealthChanged() {
-            if (ShowDebugLog) {
-                D.Log("{0}: Health {1}, CurrentHitPoints {2}, MaxHitPoints {3}.", FullName, _health, CurrentHitPoints, MaxHitPoints);
-            }
+            //D.Log(ShowDebugLog, "{0}: Health {1}, CurrentHitPoints {2}, MaxHitPoints {3}.", DebugName, _health, CurrentHitPoints, MaxHitPoints);
         }
 
         protected sealed override void HandleIsOperationalChanged() {

@@ -20,6 +20,7 @@ namespace CodeEnv.Master.GameContent {
     using System.Collections.Generic;
     using CodeEnv.Master.Common;
     using UnityEngine;
+    using UnityEngine.Profiling;
 
     /// <summary>
     /// Abstract class for Data associated with an AIntelItem.
@@ -92,15 +93,20 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="newCoverage">The new coverage.</param>
         /// <returns></returns>
         public bool SetIntelCoverage(Player player, IntelCoverage newCoverage) {
+
+            Profiler.BeginSample("AIntelItemData.SetIntelCoverage");
             var playerIntel = GetIntel(player);
             if (playerIntel.IsCoverageChangeAllowed(newCoverage)) {
                 playerIntel.CurrentCoverage = newCoverage;
                 HandleIntelCoverageChangedFor(player);
                 OnIntelCoverageChanged(player);
+                Profiler.EndSample();
                 return true;
             }
             //D.Log(ShowDebugLog, "{0} properly ignored changing {1}'s IntelCoverage from {2} to {3}.",
-            //    FullName, player, playerIntel.CurrentCoverage.GetValueName(), newCoverage.GetValueName());
+            //    DebugName, player, playerIntel.CurrentCoverage.GetValueName(), newCoverage.GetValueName());
+            Profiler.EndSample();
+
             return false;
         }
 

@@ -55,7 +55,7 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
     /// </param>
     protected void RelayToCurrentState(params object[] param) {
         if (CurrentState.Equals(default(E))) {
-            return;
+            //D.Warn("{0}.RelayToCurrentState() called using default({1}).", GetType().Name, typeof(E).Name);
         }
         string callingMethodName = new System.Diagnostics.StackFrame(1).GetMethod().Name;
         if (!callingMethodName.StartsWith("Upon")) {
@@ -404,7 +404,7 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
         if (_stack.Count > 0) {
             ChangingState();    // my addition to keep lastState in sync
             state = _stack.Pop();
-            //D.Log(ShowDebugLog, "{0} setting up resumption of {1}_EnterState() in Return(). MethodName: {2}.", FullName, CurrentState.ToString(), state.enterState.Method.Name);
+            //D.Log(ShowDebugLog, "{0} setting up resumption of {1}_EnterState() in Return(). MethodName: {2}.", DebugName, CurrentState.ToString(), state.enterState.Method.Name);
             enterStateCoroutine.Run(state.enterStateEnumerator, state.enterStack);
             _timeEnteredState = Time.time - state.time;
         }

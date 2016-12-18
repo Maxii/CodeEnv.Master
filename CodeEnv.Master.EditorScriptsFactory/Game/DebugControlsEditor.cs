@@ -36,22 +36,24 @@ public class DebugControlsEditor : Editor {
         {
             GUILayout.Space(10F);
 
-            if (NGUIEditorTools.DrawHeader("Item DebugLog Settings")) {
+            if (NGUIEditorTools.DrawHeader("Log Settings")) {
                 NGUIEditorTools.BeginContents();
                 {
                     NGUIEditorTools.SetLabelWidth(180F);
-                    NGUIEditorTools.DrawProperty("Show Ship Debug Logs", serializedObject, "_showShipDebugLogs");
-                    NGUIEditorTools.DrawProperty("Show Facility Debug Logs", serializedObject, "_showFacilityDebugLogs");
-                    NGUIEditorTools.DrawProperty("Show Star Debug Logs", serializedObject, "_showStarDebugLogs");
-                    NGUIEditorTools.DrawProperty("Show Planetoid Debug Logs", serializedObject, "_showPlanetoidDebugLogs");
-                    NGUIEditorTools.DrawProperty("Show BaseCmd Debug Logs", serializedObject, "_showBaseCmdDebugLogs");
-                    NGUIEditorTools.DrawProperty("Show FleetCmd Debug Logs", serializedObject, "_showFleetCmdDebugLogs");
-                    NGUIEditorTools.DrawProperty("Show System Debug Logs", serializedObject, "_showSystemDebugLogs");
+                    NGUIEditorTools.DrawProperty("Show Ship Logs", serializedObject, "_showShipDebugLogs");
+                    NGUIEditorTools.DrawProperty("Show Facility Logs", serializedObject, "_showFacilityDebugLogs");
+                    NGUIEditorTools.DrawProperty("Show Star Logs", serializedObject, "_showStarDebugLogs");
+                    NGUIEditorTools.DrawProperty("Show Planetoid Logs", serializedObject, "_showPlanetoidDebugLogs");
+                    NGUIEditorTools.DrawProperty("Show BaseCmd Logs", serializedObject, "_showBaseCmdDebugLogs");
+                    NGUIEditorTools.DrawProperty("Show FleetCmd Logs", serializedObject, "_showFleetCmdDebugLogs");
+                    NGUIEditorTools.DrawProperty("Show System Logs", serializedObject, "_showSystemDebugLogs");
+                    NGUIEditorTools.DrawProperty("Show Deployment Logs", serializedObject, "_showDeploymentDebugLogs");
+                    NGUIEditorTools.DrawProperty("Show Ordnance Logs", serializedObject, "_showOrdnanceDebugLogs");
                 }
                 NGUIEditorTools.EndContents();
             }
 
-            if (NGUIEditorTools.DrawHeader("AI Debug Settings")) {
+            if (NGUIEditorTools.DrawHeader("AI Settings")) {
                 NGUIEditorTools.BeginContents();
                 {
                     NGUIEditorTools.SetLabelWidth(100F);

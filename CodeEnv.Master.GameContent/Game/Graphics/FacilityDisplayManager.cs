@@ -35,7 +35,7 @@ namespace CodeEnv.Master.GameContent {
             _revolver = itemGo.GetSingleInterfaceInChildren<IRevolver>();
             //_revolver.IsActivated = false;    // enabled = false in Awake
             if (_revolver.RotateDuringPause) {
-                D.Warn("FYI. {0} revolver set to rotate during a pause.", Name);
+                D.Warn("FYI. {0} revolver set to rotate during a pause.", DebugName);
             }
             //TODO Revolver settings
         }

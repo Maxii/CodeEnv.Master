@@ -21,6 +21,8 @@ namespace CodeEnv.Master.GameContent {
 
     public static class TempGameValues {
 
+        public const string __GameMgrProgressCheckJobName = "GameMgrProgressCheckJob";
+
         public const bool DoSettlementsActivelyOrbit = false;
 
         /// <summary>
@@ -32,6 +34,15 @@ namespace CodeEnv.Master.GameContent {
         /// The maximum range of any weapon in a fleet.
         /// </summary>
         public const float __MaxFleetWeaponsRangeDistance = 20F;
+
+        /// <summary>
+        /// The Game's minimum allowed turn rate of a ship in degrees per hour.
+        /// <remarks>Used to calculate the lowest turn rate in degrees per frame 
+        /// that a ship can have. Prevents a ship from correcting its heading too often
+        /// when following a course which can cause the ChangeHeadingJob to constantly 
+        /// kill and recreate itself, thereby never turning.</remarks>
+        /// </summary>
+        public const float MinimumTurnRate = 90F;
 
         /// <summary>
         /// The maximum allowed orbit speed in units per hour of each planetoid.

@@ -64,7 +64,7 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
         int currentTouchID = UICamera.currentTouchID;
         if (warn) {
             if (!Utility.IsInRange(currentTouchID, -3, -1)) {
-                D.Warn("{0}: CurrentTouchID of {1} is not a mouse button.", Name, currentTouchID);
+                D.Warn("{0}: CurrentTouchID of {1} is not a mouse button.", DebugName, currentTouchID);
             }
         }
         return (NguiMouseButton)currentTouchID;
@@ -171,13 +171,13 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
 
     public bool IsHorizontalMouseMovement(out float value) {
         value = Input.GetAxis(UnityConstants.MouseAxisName_Horizontal);
-        //D.Log("{0}: Mouse Horizontal Movement value = {1:0.0000}.", Name, value);
+        //D.Log("{0}: Mouse Horizontal Movement value = {1:0.0000}.", DebugName, value);
         return value != 0F; // No floating point equality issues as value is smoothed by Unity
     }
 
     public bool IsVerticalMouseMovement(out float value) {
         value = Input.GetAxis(UnityConstants.MouseAxisName_Vertical);
-        //D.Log("{0}: Mouse Vertical Movement value = {1:0.0000}.", Name, value);
+        //D.Log("{0}: Mouse Vertical Movement value = {1:0.0000}.", DebugName, value);
         return value != 0F; // No floating point equality issues as value is smoothed by Unity
     }
 
@@ -236,7 +236,7 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
     /// <param name="obj">Optional parameter associated with the method.</param>
     public void Notify(GameObject go, string methodName, object obj = null) {
         if (_isNotifying) {
-            D.Error("{0}: Notify called when not yet finished from previous call. \nPreviousGO = {1}, NewGO = {2}.", Name, __previousGo.name, go.name);
+            D.Error("{0}: Notify called when not yet finished from previous call. \nPreviousGO = {1}, NewGO = {2}.", DebugName, __previousGo.name, go.name);
             return; // This should not happen. See http://answers.unity3d.com/questions/672269/is-sendmessage-immediate-or-not.html
         }
         _isNotifying = true;

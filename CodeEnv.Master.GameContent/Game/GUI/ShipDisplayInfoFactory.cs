@@ -77,7 +77,7 @@ namespace CodeEnv.Master.GameContent {
                         break;
                     case ItemInfoID.Target:
                         isSuccess = true;
-                        colorizedText = _lineTemplate.Inject(report.Target != null ? report.Target.DisplayName : Unknown);
+                        colorizedText = _lineTemplate.Inject(report.Target != null ? report.Target.DebugName : Unknown);
                         break;
                     case ItemInfoID.TargetDistance:
                         isSuccess = true;

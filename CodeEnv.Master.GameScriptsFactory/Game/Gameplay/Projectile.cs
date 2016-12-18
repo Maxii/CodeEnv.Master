@@ -57,18 +57,15 @@ public class Projectile : AProjectileOrdnance {
 
     protected new ProjectileLauncher Weapon { get { return base.Weapon as ProjectileLauncher; } }
 
-    private bool IsWaitForImpactEffectCompletionJobRunning { get { return _waitForImpactEffectCompletionJob != null && _waitForImpactEffectCompletionJob.IsRunning; } }
-
-    private bool IsWaitForMuzzleEffectCompletionJobRunning { get { return _waitForMuzzleEffectCompletionJob != null && _waitForMuzzleEffectCompletionJob.IsRunning; } }
-
-    private Job _waitForImpactEffectCompletionJob;
-    private Job _waitForMuzzleEffectCompletionJob;
+    private Job _impactEffectCompletionJob;
+    private Job _muzzleEffectCompletionJob;
 
     public override void Launch(IElementAttackable target, AWeapon weapon, Topography topography) {
         base.Launch(target, weapon, topography);
         AdjustHeadingForInaccuracy();
         InitializeVelocity();
         enabled = true;
+        _collider.enabled = true;
     }
 
     protected override void ValidateEffects() {
@@ -76,11 +73,14 @@ public class Projectile : AProjectileOrdnance {
         D.Assert(!_muzzleEffect.activeSelf, _muzzleEffect.name);
         if (_operatingEffect != null) {
             // ParticleSystem Operating Effect can be null. If so, it will be replaced by an Icon
-            D.Assert(!_operatingEffect.playOnAwake);
-            D.Assert(_operatingEffect.loop);
+            var operatingEffectMainModule = _operatingEffect.main;
+            D.Assert(!operatingEffectMainModule.playOnAwake); //D.Assert(!_operatingEffect.playOnAwake); Deprecated in Unity 5.5
+            D.Assert(operatingEffectMainModule.loop);   //D.Assert(_operatingEffect.loop); Deprecated in Unity 5.5
         }
         D.AssertNotNull(_impactEffect);
-        D.Assert(!_impactEffect.playOnAwake);   // Awake only called once during GameObject life -> can't use with pooling
+        var impactEffectMainModule = _impactEffect.main;
+        // Awake only called once during GameObject life -> can't use with pooling
+        D.Assert(!impactEffectMainModule.playOnAwake); //D.Assert(!_impactEffect.playOnAwake); Deprecated in Unity 5.5
         D.Assert(_impactEffect.gameObject.activeSelf, _impactEffect.name);
     }
 
@@ -88,15 +88,20 @@ public class Projectile : AProjectileOrdnance {
         return new ProjectileDisplayManager(this, Layers.Cull_15, _operatingEffect);
     }
 
+    /// <summary>
+    /// Adjusts this projectile's heading for inaccuracy.
+    /// <see cref="http://answers.unity3d.com/questions/887852/help-with-gun-accuracy-in-degrees.html"/>
+    /// </summary>
     private void AdjustHeadingForInaccuracy() {
-        Quaternion initialRotation = transform.rotation;
-        Vector3 initialEulerHeading = initialRotation.eulerAngles;
-        float inaccuracyInDegrees = Weapon.MaxLaunchInaccuracy;
-        float newHeadingX = initialEulerHeading.x + UnityEngine.Random.Range(-inaccuracyInDegrees, inaccuracyInDegrees);
-        float newHeadingY = initialEulerHeading.y + UnityEngine.Random.Range(-inaccuracyInDegrees, inaccuracyInDegrees);
-        Vector3 adjustedEulerHeading = new Vector3(newHeadingX, newHeadingY, initialEulerHeading.z);
-        transform.rotation = Quaternion.Euler(adjustedEulerHeading);
-        //D.Log("{0} has incorporated {1:0.0} degrees of inaccuracy into its trajectory.", Name, Quaternion.Angle(initialRotation, transform.rotation));
+        Vector2 error = UnityEngine.Random.insideUnitCircle * Weapon.MaxLaunchInaccuracy;
+        Quaternion errorRotation = Quaternion.Euler(error.x, error.y, Constants.ZeroF);
+        Quaternion finalRotation = transform.rotation * errorRotation;
+        if (ShowDebugLog) {
+            Quaternion accurateRotation = transform.rotation;
+            float errorAngle = Quaternion.Angle(accurateRotation, finalRotation);
+            D.Log("{0} has incorporated {1:0.0} degrees of inaccuracy into its trajectory.", DebugName, errorAngle);
+        }
+        transform.rotation = finalRotation;
     }
 
     /// <summary>
@@ -107,16 +112,26 @@ public class Projectile : AProjectileOrdnance {
     }
 
     protected override void ShowMuzzleEffect() {
-        D.Assert(!IsWaitForMuzzleEffectCompletionJobRunning);
+        D.AssertNull(_muzzleEffectCompletionJob);
         // relocate this Effect so it doesn't move with the projectile while showing
         UnityUtility.AttachChildToParent(_muzzleEffect, DynamicObjectsFolder.Instance.gameObject);
         _muzzleEffect.layer = (int)Layers.TransparentFX;
         _muzzleEffect.transform.position = Position;
         _muzzleEffect.transform.rotation = transform.rotation;
         _muzzleEffect.SetActive(true);
-        string jobName = "{0}.WaitForMuzzleEffectCompletionJob".Inject(Name);
-        _waitForMuzzleEffectCompletionJob = _jobMgr.WaitForGameplaySeconds(0.2F, jobName, waitFinished: (jobWasKilled) => {
+        string jobName = "{0}.WaitForMuzzleEffectCompletionJob".Inject(DebugName);
+        _muzzleEffectCompletionJob = _jobMgr.WaitForGameplaySeconds(0.2F, jobName, waitFinished: (jobWasKilled) => {
             _muzzleEffect.SetActive(false);
+            if (jobWasKilled) {
+                // 12.12.16 An AssertNull(_jobRef) here can fail as the reference can refer to a new Job, created 
+                // right after the old one was killed due to the 1 frame delay in execution of jobCompleted(). My attempts at allowing
+                // the AssertNull to occur failed. I believe this is OK as _jobRef is nulled from KillXXXJob() and, if 
+                // the reference is replaced by a new Job, then the old Job is no longer referenced which is the objective. Jobs Kill()ed
+                // centrally by JobManager won't null the reference, but this only occurs during scene transitions.
+            }
+            else {
+                _muzzleEffectCompletionJob = null;
+            }
         });
         //TODO Add audio
     }
@@ -125,18 +140,28 @@ public class Projectile : AProjectileOrdnance {
     protected override void ShowImpactEffects(Vector3 position, Quaternion rotation) {
         base.ShowImpactEffects(position, rotation);
         D.Assert(!_impactEffect.isPlaying); // should not be called more than once
-        D.Assert(!IsWaitForImpactEffectCompletionJobRunning);   // should not be called more than once
+        D.AssertNull(_impactEffectCompletionJob);   // should not be called more than once
         D.Assert(IsOperational);
-        ParticleScaler.Scale(_impactEffect, __ImpactEffectScalerValue, includeChildren: true);   // HACK .01F was used by VisualEffectScale
+        __ReduceScaleOfImpactEffect();
         _impactEffect.transform.position = position;
         _impactEffect.transform.rotation = rotation;
         _impactEffect.Play();
         bool includeChildren = true;
-        string jobName = "{0}.WaitForImpactEffectCompletionJob".Inject(Name);   // pausable for debug observation
-        _waitForImpactEffectCompletionJob = _jobMgr.WaitForParticleSystemCompletion(_impactEffect, includeChildren, jobName, isPausable: true, waitFinished: (jobWasKilled) => {
-            if (IsOperational) {
-                // ordnance has not already been terminated by other paths such as the death of the target
-                TerminateNow();
+        string jobName = "{0}.WaitForImpactEffectCompletionJob".Inject(DebugName);   // pausable for debug observation
+        _impactEffectCompletionJob = _jobMgr.WaitForParticleSystemCompletion(_impactEffect, includeChildren, jobName, isPausable: true, waitFinished: (jobWasKilled) => {
+            if (jobWasKilled) {
+                // 12.12.16 An AssertNull(_jobRef) here can fail as the reference can refer to a new Job, created 
+                // right after the old one was killed due to the 1 frame delay in execution of jobCompleted(). My attempts at allowing
+                // the AssertNull to occur failed. I believe this is OK as _jobRef is nulled from KillXXXJob() and, if 
+                // the reference is replaced by a new Job, then the old Job is no longer referenced which is the objective. Jobs Kill()ed
+                // centrally by JobManager won't null the reference, but this only occurs during scene transitions.
+            }
+            else {
+                _impactEffectCompletionJob = null;
+                if (IsOperational) {    // UNCLEAR needed now that this is only reached when naturally completing?
+                    // Ordnance has not already been terminated by other paths such as the death of the target
+                    TerminateNow();
+                }
             }
         });
     }
@@ -157,14 +182,14 @@ public class Projectile : AProjectileOrdnance {
         base.OnSpawned();
         D.Assert(_rigidbody.velocity == default(Vector3));  //D.AssertDefault(_rigidbody.velocity);
         D.Assert(!enabled);
-        D.AssertNull(_waitForImpactEffectCompletionJob);
-        D.AssertNull(_waitForMuzzleEffectCompletionJob);
+        D.AssertNull(_impactEffectCompletionJob);
+        D.AssertNull(_muzzleEffectCompletionJob);
     }
 
     protected override void OnDespawned() {
         base.OnDespawned();
-        _waitForImpactEffectCompletionJob = null;
-        _waitForMuzzleEffectCompletionJob = null;
+        D.AssertNull(_impactEffectCompletionJob);
+        D.AssertNull(_muzzleEffectCompletionJob);
     }
 
     #endregion
@@ -184,13 +209,23 @@ public class Projectile : AProjectileOrdnance {
             // ordnance was terminated by other paths such as the death of the target
             _impactEffect.Stop();
         }
-        if (IsWaitForImpactEffectCompletionJobRunning) {
-            _waitForImpactEffectCompletionJob.Kill();
-        }
-        if (IsWaitForMuzzleEffectCompletionJobRunning) {
-            _waitForMuzzleEffectCompletionJob.Kill();
-        }
+        KillImpactEffectCompletionJob();
+        KillMuzzleEffectCompletionJob();
         // FIXME what about audio?
+    }
+
+    private void KillMuzzleEffectCompletionJob() {
+        if (_muzzleEffectCompletionJob != null) {
+            _muzzleEffectCompletionJob.Kill();
+            _muzzleEffectCompletionJob = null;
+        }
+    }
+
+    private void KillImpactEffectCompletionJob() {
+        if (_impactEffectCompletionJob != null) {
+            _impactEffectCompletionJob.Kill();
+            _impactEffectCompletionJob = null;
+        }
     }
 
     protected override void ResetEffectsForReuse() {
@@ -209,7 +244,7 @@ public class Projectile : AProjectileOrdnance {
 #pragma warning restore 0219
         }
 
-        ParticleScaler.Scale(_impactEffect, 1F / __ImpactEffectScalerValue, includeChildren: true);   // HACK .01F was used by VisualEffectScale
+        __TryRestoreScaleOfImpactEffect();
         _impactEffect.transform.localPosition = Vector3.zero;
         _impactEffect.transform.localRotation = Quaternion.identity;
         _impactEffect.Clear();
@@ -217,17 +252,43 @@ public class Projectile : AProjectileOrdnance {
 
     protected override void Cleanup() {
         base.Cleanup();
-        if (_waitForImpactEffectCompletionJob != null) {
-            _waitForImpactEffectCompletionJob.Dispose();
-        }
-        if (_waitForMuzzleEffectCompletionJob != null) {
-            _waitForMuzzleEffectCompletionJob.Dispose();
-        }
+        // 12.8.16 Job Disposal centralized in JobManager
+        KillImpactEffectCompletionJob();
+        KillMuzzleEffectCompletionJob();
     }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region Debug
+
+    protected override void __ExecuteImpactEffectScaleReduction() {
+        ParticleScaler.Scale(_impactEffect, __ImpactEffectScaleReductionFactor, includeChildren: true);   // HACK .01F was used by VisualEffectScale
+    }
+
+    protected override void __ExecuteImpactEffectScaleRestoration() {
+        ParticleScaler.Scale(_impactEffect, __ImpactEffectScaleRestoreFactor, includeChildren: true);   // HACK
+    }
+
+    #endregion
+
+    #region AdjustHeadingForInaccuracy Archive
+
+    // This version has nothing wrong with it. I just think the other is more logical.
+
+    //private void AdjustHeadingForInaccuracy() {
+    //    Quaternion initialRotation = transform.rotation;
+    //    Vector3 initialEulerHeading = initialRotation.eulerAngles;
+    //    float inaccuracyInDegrees = Weapon.MaxLaunchInaccuracy;
+    //    float newHeadingX = initialEulerHeading.x + UnityEngine.Random.Range(-inaccuracyInDegrees, inaccuracyInDegrees);
+    //    float newHeadingY = initialEulerHeading.y + UnityEngine.Random.Range(-inaccuracyInDegrees, inaccuracyInDegrees);
+    //    Vector3 adjustedEulerHeading = new Vector3(newHeadingX, newHeadingY, initialEulerHeading.z);
+    //    transform.rotation = Quaternion.Euler(adjustedEulerHeading);
+    //    //D.Log(ShowDebugLog, "{0} has incorporated {1:0.0} degrees of inaccuracy into its trajectory.", DebugName, Quaternion.Angle(initialRotation, transform.rotation));
+    //}
+
+    #endregion
 
 }
 

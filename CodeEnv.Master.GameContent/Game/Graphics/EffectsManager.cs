@@ -51,7 +51,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="effectSeqID">The effect identifier.</param>
         public virtual void StartEffect(EffectSequenceID effectSeqID) {
-            //D.Log("{0}.{1}.StartEffect({2}) called.", _effectsClient.FullName, typeof(EffectsManager).Name, effectSeqID.GetValueName());
+            //D.Log("{0}.{1}.StartEffect({2}) called.", _effectsClient.DebugName, typeof(EffectsManager).Name, effectSeqID.GetValueName());
             _effectsClient.HandleEffectSequenceFinished(effectSeqID);
         }
 

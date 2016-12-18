@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AFormationManager {
 
-        private string Name { get { return "{0}_{1}".Inject(_unitCmd.FullName, GetType().Name); } }
+        private string DebugName { get { return "{0}_{1}".Inject(_unitCmd.DebugName, GetType().Name); } }
 
         private bool ShowDebugLog { get { return _unitCmd.ShowDebugLog; } }
 
@@ -53,7 +53,7 @@ namespace CodeEnv.Master.GameContent {
                 _occupiedStationSlotLookup.Clear();
                 float formationRadius;
                 _availableStationSlots = GenerateFormationSlotInfo(formation, _unitCmd.transform, out formationRadius);
-                //D.Log(ShowDebugLog, "{0} generated {1} {2}s for Formation {3} => {4}.", Name, _availableStationSlots.Count, typeof(FormationStationSlotInfo).Name, formation.GetValueName(), _availableStationSlots.Concatenate());
+                //D.Log(ShowDebugLog, "{0} generated {1} {2}s for Formation {3} => {4}.", DebugName, _availableStationSlots.Count, typeof(FormationStationSlotInfo).Name, formation.GetValueName(), _availableStationSlots.Concatenate());
                 _unitCmd.UnitMaxFormationRadius = formationRadius;
                 _currentFormation = formation;
             }
@@ -117,7 +117,7 @@ namespace CodeEnv.Master.GameContent {
             if (_occupiedStationSlotLookup.TryGetValue(element, out slotInfo)) {
                 // return element's existing slotInfo BEFORE selecting another
                 isRemoved = _occupiedStationSlotLookup.Remove(element);
-                D.Assert(isRemoved, element.FullName);
+                D.Assert(isRemoved, element.DebugName);
                 _availableStationSlots.Add(slotInfo);
             }
             slotInfo = SelectSlotInfoFor(element, selectionConstraints);
@@ -136,7 +136,7 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         private FormationStationSlotInfo SelectSlotInfoFor(IUnitElement element, FormationStationSelectionCriteria selectionConstraints) {
             if (element.IsHQ) {
-                //D.Log(ShowDebugLog, "{0} is about to validate {1} is only HQ.", Name, element.FullName);
+                //D.Log(ShowDebugLog, "{0} is about to validate {1} is only HQ.", DebugName, element.DebugName);
                 __ValidateSingleHqSlotAvailable();
                 return _availableStationSlots.Single(sInfo => sInfo.IsHQSlot);  // 7.15.16 Single violation recorded
             }
@@ -146,7 +146,7 @@ namespace CodeEnv.Master.GameContent {
                 result = _availableStationSlots.Where(sInfo => !sInfo.IsHQSlot).FirstOrDefault();
             }
             if (result == default(FormationStationSlotInfo)) {
-                D.Error("{0}: Cannot find {1} meeting Constraint {2} for {3}.", Name, typeof(FormationStationSlotInfo).Name, selectionConstraints, element.FullName);
+                D.Error("{0}: Cannot find {1} meeting Constraint {2} for {3}.", DebugName, typeof(FormationStationSlotInfo).Name, selectionConstraints, element.DebugName);
             }
             return result;
         }
@@ -155,7 +155,7 @@ namespace CodeEnv.Master.GameContent {
             int count = _availableStationSlots.Where(sInfo => sInfo.IsHQSlot).Count();
             if (count != Constants.One) {
                 D.Error("{0}: Expecting 1 HQ formation slot but found {1}. Formation = {2}, AvailableSlots = {3}, OccupiedSlots = {4}.",
-                    Name, count, _currentFormation.GetValueName(), _availableStationSlots.Concatenate(), _occupiedStationSlotLookup.Values.Concatenate());
+                    DebugName, count, _currentFormation.GetValueName(), _availableStationSlots.Concatenate(), _occupiedStationSlotLookup.Values.Concatenate());
             }
         }
 
@@ -178,7 +178,7 @@ namespace CodeEnv.Master.GameContent {
         public void HandleElementRemoval(IUnitElement element) {
             FormationStationSlotInfo elementStationInfo;
             bool isStationSlotFound = _occupiedStationSlotLookup.TryGetValue(element, out elementStationInfo);
-            D.Assert(isStationSlotFound, element.FullName);
+            D.Assert(isStationSlotFound, element.DebugName);
             _occupiedStationSlotLookup.Remove(element);
             _availableStationSlots.Add(elementStationInfo);
         }

@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AUnitElementData : AMortalItemData {
 
-        private const string FullNameFormat = "{0}_{1}";
+        private const string DebugNameFormat = "{0}_{1}";
 
         public event EventHandler topographyChanged;
 
@@ -47,16 +47,16 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<string>(ref _parentName, value, "ParentName"); }
         }
 
-        private string _fullName;
-        public override string FullName {
+        private string _debugName;
+        public override string DebugName {
             get {
                 if (ParentName.IsNullOrEmpty()) {
-                    return Name;
+                    return base.DebugName;
                 }
-                if (_fullName.IsNullOrEmpty()) {
-                    _fullName = FullNameFormat.Inject(ParentName, Name);
+                if (_debugName == null) {
+                    _debugName = DebugNameFormat.Inject(ParentName, Name);
                 }
-                return _fullName;
+                return _debugName;
             }
         }
 
@@ -160,7 +160,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void InitializeWeapons() {
             // weapons are already present in hullEquipment
-            //D.Log(ShowDebugLog, "{0} is about to initialize {1} Weapons.", FullName, Weapons.Count);
+            //D.Log(ShowDebugLog, "{0} is about to initialize {1} Weapons.", DebugName, Weapons.Count);
             Weapons.ForAll(weap => {
                 D.AssertNotNull(weap.RangeMonitor);
                 D.AssertNotNull(weap.WeaponMount);
@@ -243,15 +243,30 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void SensorIsDamagedChangedEventHandler(object sender, EventArgs e) {
+            HandleSensorIsDamagedChanged(sender as Sensor);
+        }
+
+        private void HandleSensorIsDamagedChanged(Sensor sensor) {
+            D.Log(ShowDebugLog, "{0}'s {1} is {2}.", DebugName, sensor.Name, sensor.IsDamaged ? "damaged" : "repaired");
             RecalcSensorRange();
         }
 
         private void WeaponIsDamagedChangedEventHandler(object sender, EventArgs e) {
+            HandleWeaponIsDamagedChanged(sender as AWeapon);
+        }
+
+        private void HandleWeaponIsDamagedChanged(AWeapon weapon) {
+            D.Log(ShowDebugLog, "{0}'s {1} is {2}.", DebugName, weapon.Name, weapon.IsDamaged ? "damaged" : "repaired");
             RecalcWeaponsRange();
             RecalcOffensiveStrength();
         }
 
         private void ShieldGeneratorIsDamagedChangedEventHandler(object sender, EventArgs e) {
+            HandleShieldGeneratorIsDamagedChanged(sender as ShieldGenerator);
+        }
+
+        private void HandleShieldGeneratorIsDamagedChanged(ShieldGenerator sGen) {
+            D.Log(ShowDebugLog, "{0}'s {1} is {2}.", DebugName, sGen.Name, sGen.IsDamaged ? "damaged" : "repaired");
             RecalcShieldRange();
             RecalcDefensiveValues();
         }
@@ -278,7 +293,7 @@ namespace CodeEnv.Master.GameContent {
             float mediumRangeDistance = mediumRangeSensors.Any() ? mediumRangeSensors.First().RangeDistance : Constants.ZeroF;
             float longRangeDistance = longRangeSensors.Any() ? longRangeSensors.First().RangeDistance : Constants.ZeroF;
             SensorRange = new RangeDistance(shortRangeDistance, mediumRangeDistance, longRangeDistance);
-            //D.Log(ShowDebugLog, "{0} recalculated SensorRange: {1}.", FullName, SensorRange);
+            //D.Log(ShowDebugLog, "{0} recalculated SensorRange: {1}.", DebugName, SensorRange);
         }
 
         private void RecalcWeaponsRange() {
@@ -287,12 +302,12 @@ namespace CodeEnv.Master.GameContent {
             var mediumRangeWeapons = undamagedWeapons.Where(w => w.RangeCategory == RangeCategory.Medium);
             var longRangeWeapons = undamagedWeapons.Where(w => w.RangeCategory == RangeCategory.Long);
             //D.Log(ShowDebugLog, "{0} found {1} short, {2} medium and {3} long range undamaged weapons when recalculating WeaponsRange.", 
-            //FullName, shortRangeWeapons.Count(), mediumRangeWeapons.Count(), longRangeWeapons.Count());
+            //DebugName, shortRangeWeapons.Count(), mediumRangeWeapons.Count(), longRangeWeapons.Count());
             float shortRangeDistance = shortRangeWeapons.Any() ? shortRangeWeapons.First().RangeDistance : Constants.ZeroF;
             float mediumRangeDistance = mediumRangeWeapons.Any() ? mediumRangeWeapons.First().RangeDistance : Constants.ZeroF;
             float longRangeDistance = longRangeWeapons.Any() ? longRangeWeapons.First().RangeDistance : Constants.ZeroF;
             WeaponsRange = new RangeDistance(shortRangeDistance, mediumRangeDistance, longRangeDistance);
-            //D.Log(ShowDebugLog, "{0} recalculated WeaponsRange: {1}.", FullName, WeaponsRange);
+            //D.Log(ShowDebugLog, "{0} recalculated WeaponsRange: {1}.", DebugName, WeaponsRange);
         }
 
         private void RecalcShieldRange() {
@@ -304,7 +319,7 @@ namespace CodeEnv.Master.GameContent {
             float mediumRangeDistance = mediumRangeGenerators.Any() ? mediumRangeGenerators.First().RangeDistance : Constants.ZeroF;
             float longRangeDistance = longRangeGenerators.Any() ? longRangeGenerators.First().RangeDistance : Constants.ZeroF;
             ShieldRange = new RangeDistance(shortRangeDistance, mediumRangeDistance, longRangeDistance);
-            //D.Log(ShowDebugLog, "{0} recalculated ShieldRange: {1}.", FullName, ShieldRange);
+            //D.Log(ShowDebugLog, "{0} recalculated ShieldRange: {1}.", DebugName, ShieldRange);
         }
 
         protected override void RecalcDefensiveValues() {

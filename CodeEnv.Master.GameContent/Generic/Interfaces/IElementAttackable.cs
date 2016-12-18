@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IElementAttackable : IShipNavigable, ISensorDetectable, IAttackable {
 
-        new string FullName { get; }
+        new string DebugName { get; }
 
         new Vector3 Position { get; }
 

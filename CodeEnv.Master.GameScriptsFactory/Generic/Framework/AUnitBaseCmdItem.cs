@@ -192,6 +192,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected abstract void ConnectHighOrbitRigidbodyToShipOrbitJoint(FixedJoint shipOrbitJoint);
 
+    protected abstract void AttemptHighOrbitRigidbodyDeactivation();
+
     #region Event and Property Change Handlers
 
     protected sealed override void HandleEnemyTargetsInSensorRangeChanged() {
@@ -222,9 +224,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         //D.Assert(CurrentState != BaseState.Attacking);
 
         if (CurrentOrder != null) {
-            if (ShowDebugLog) {
-                D.Log("{0} received new {1}.", FullName, CurrentOrder);
-            }
+            D.Log(ShowDebugLog, "{0} received new {1}.", DebugName, CurrentOrder);
             BaseDirective directive = CurrentOrder.Directive;
             switch (directive) {
                 case BaseDirective.Attack:
@@ -254,7 +254,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         get { return (BaseState)base.CurrentState; }
         set {
             if (base.CurrentState != null && CurrentState == value) {
-                D.Warn("{0} duplicate state {1} set attempt.", FullName, value.GetValueName());
+                D.Warn("{0} duplicate state {1} set attempt.", DebugName, value.GetValueName());
             }
             base.CurrentState = value;
         }
@@ -339,7 +339,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected void ExecuteAttackOrder_UponPreconfigureState() {
         LogEvent();
         if (_fsmTgt != null) {
-            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", FullName, _fsmTgt.FullName);
+            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", DebugName, _fsmTgt.DebugName);
         }
         D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
 
@@ -364,7 +364,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected void ExecuteAttackOrder_UponOrderOutcome(FacilityDirective directive, FacilityItem facility, bool isSuccess, IElementAttackable target, UnitItemOrderFailureCause failCause) {
         LogEvent();
         if (directive != FacilityDirective.Attack) {
-            D.Warn("{0} State {1} erroneously received OrderOutcome callback with {2} {3}.", FullName, CurrentState.GetValueName(), typeof(FacilityDirective).Name, directive.GetValueName());
+            D.Warn("{0} State {1} erroneously received OrderOutcome callback with {2} {3}.", DebugName, CurrentState.GetValueName(), typeof(FacilityDirective).Name, directive.GetValueName());
             return;
         }
         // TODO What? It will be common for an attack by a facility to fail for cause unreachable as its target moves out of range...
@@ -393,7 +393,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected void ExecuteAttackOrder_UponFsmTgtDeath(IMortalItem_Ltd deadFsmTgt) {
         LogEvent();
         if (_fsmTgt != deadFsmTgt) {
-            D.Error("{0}.target {1} is not dead target {2}.", FullName, _fsmTgt.FullName, deadFsmTgt.FullName);
+            D.Error("{0}.target {1} is not dead target {2}.", DebugName, _fsmTgt.DebugName, deadFsmTgt.DebugName);
         }
         // TODO Notify Superiors of success - unit target death
     }
@@ -502,7 +502,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     /// </summary>
     [Obsolete]
     private void HandleInvalidOrder() {
-        D.LogBold(ShowDebugLog, "{0} received {1} that is no longer valid. Idling and resuming availability.", FullName, CurrentOrder);
+        D.LogBold(ShowDebugLog, "{0} received {1} that is no longer valid. Idling and resuming availability.", DebugName, CurrentOrder);
         // Note: Occurs during the 1 frame delay between order being issued and the execution of the EnterState this came from
         // IMPROVE: return an UnitItemOrderFailureCause to source of order?
         CurrentState = BaseState.Idling;
@@ -611,34 +611,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     #region IShipOrbitable Members
 
-    public void HandleBrokeOrbit(IShip_Ltd ship) {
-        if (IsInHighOrbit(ship)) {
-            var isRemoved = _shipsInHighOrbit.Remove(ship);
-            D.Assert(isRemoved);
-            D.Log("{0} has left high orbit around {1}.", ship.FullName, FullName);
-            return;
-        }
-        if (IsInCloseOrbit(ship)) {
-            D.AssertNotNull(_closeOrbitSimulator);
-            var isRemoved = _shipsInCloseOrbit.Remove(ship);
-            D.Assert(isRemoved);
-            D.Log("{0} has left close orbit around {1}.", ship.FullName, FullName);
-            float shipDistance = Vector3.Distance(ship.Position, Position);
-            float minOutsideOfOrbitCaptureRadius = CloseOrbitOuterRadius - ship.CollisionDetectionZoneRadius_Debug;
-            if (shipDistance > minOutsideOfOrbitCaptureRadius) {
-                D.Warn("{0} is leaving orbit of {1} but is not within {2:0.0000}. Ship's current orbit distance is {3:0.0000}.",
-                    ship.FullName, FullName, minOutsideOfOrbitCaptureRadius, shipDistance);
-            }
-            if (_shipsInCloseOrbit.Count == Constants.Zero) {
-                // Choose either to deactivate the OrbitSimulator or destroy it, but not both
-                CloseOrbitSimulator.IsActivated = false;
-                //DestroyOrbitSimulator();
-            }
-            return;
-        }
-        D.Error("{0}.HandleBrokeOrbit() called, but {1} not in orbit.", FullName, ship.FullName);
-    }
-
     public bool IsInHighOrbit(IShip_Ltd ship) {
         if (_shipsInHighOrbit == null || !_shipsInHighOrbit.Contains(ship)) {
             return false;
@@ -655,6 +627,37 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     }
 
     public bool IsHighOrbitAllowedBy(Player player) { return true; }
+
+    public void HandleBrokeOrbit(IShip_Ltd ship) {
+        if (IsInHighOrbit(ship)) {
+            var isRemoved = _shipsInHighOrbit.Remove(ship);
+            D.Assert(isRemoved);
+            D.Log(ShowDebugLog, "{0} has left high orbit around {1}.", ship.DebugName, DebugName);
+            if (_shipsInHighOrbit.Count == Constants.Zero) {
+                AttemptHighOrbitRigidbodyDeactivation();
+            }
+            return;
+        }
+        if (IsInCloseOrbit(ship)) {
+            D.AssertNotNull(_closeOrbitSimulator);
+            var isRemoved = _shipsInCloseOrbit.Remove(ship);
+            D.Assert(isRemoved);
+            D.Log(ShowDebugLog, "{0} has left close orbit around {1}.", ship.DebugName, DebugName);
+            float shipDistance = Vector3.Distance(ship.Position, Position);
+            float minOutsideOfOrbitCaptureRadius = CloseOrbitOuterRadius - ship.CollisionDetectionZoneRadius_Debug;
+            if (shipDistance > minOutsideOfOrbitCaptureRadius) {
+                D.Warn("{0} is leaving orbit of {1} but is not within {2:0.0000}. Ship's current orbit distance is {3:0.0000}.",
+                    ship.DebugName, DebugName, minOutsideOfOrbitCaptureRadius, shipDistance);
+            }
+            if (_shipsInCloseOrbit.Count == Constants.Zero) {
+                // Choose either to deactivate the OrbitSimulator or destroy it, but not both
+                CloseOrbitSimulator.IsActivated = false;
+                //DestroyOrbitSimulator();
+            }
+            return;
+        }
+        D.Error("{0}.HandleBrokeOrbit() called, but {1} not in orbit.", DebugName, ship.DebugName);
+    }
 
     public IList<StationaryLocation> LocalAssemblyStations { get { return GuardStations; } }
 

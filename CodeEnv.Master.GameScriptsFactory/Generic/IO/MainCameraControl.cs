@@ -23,6 +23,7 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Profiling;
 using UnityEditor;
 
 /// <summary>
@@ -60,13 +61,27 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     private static LayerMask _mainCamerasLightCullingMask = _mainCamerasCullingMask.RemoveFromMask(Layers.SystemOrbitalPlane, Layers.Cull_200, Layers.Cull_400);
 
     /// <summary>
-    /// The universe edge culling mask. The UniverseEdge's layer is Default. The edge is only used 
-    /// when trying to find the spot to locate the DummyTarget by coming back in toward the universe
-    /// from outside. Objects in the universe should not be located outside to interfere in this
-    /// search for the edge, but SensorRangeMonitors and the like can extend colliders beyond the 
-    /// edge, thereby interfering in this search without using this mask.
+    /// The universe edge culling mask. The UniverseEdge's layer is TransparentFX. The edge is only used 
+    /// when trying to find the spot to locate the DummyTarget by coming back in toward the universe sphere collider
+    /// from outside which is reqd to find the collider. TransparentFX objects in the universe should not be located 
+    /// outside to interfere in this search for the edge. 
+    /// <remarks>A RangeMonitor's Trigger Collider can extend beyond the edge, but use of this LayerMask and the
+    /// fact that the Raycast is told not to recognize triggers should allow the raycast to only find the UniverseEdge Collider.</remarks>
+    /// <remarks>In reality, any layer that doesn't allow collisions (ProjectSettings.Physics) with any other layer could be used.</remarks>
     /// </summary>
-    private static LayerMask _universeEdgeCullingMask = LayerMaskUtility.CreateInclusiveMask(Layers.Default);
+    private static LayerMask _universeEdgeCullingMask = LayerMaskUtility.CreateInclusiveMask(Layers.TransparentFX);
+
+    /// <summary>
+    /// Dedicated buffer for capturing RaycastHits when zooming. 
+    /// <remarks>Used by Physics.RaycastNonAlloc() to avoid heap memory allocations.</remarks>
+    /// </summary>
+    private static RaycastHit[] _zoomRaycastHitBuffer = new RaycastHit[50];
+
+    /// <summary>
+    /// Dedicated list of eligible ICameraTargetable SimpleRaycastHits used to avoid excess heap memory allocations.
+    /// <remarks>Must be cleared prior to each use.</remarks>
+    /// </summary>
+    private static IList<SimpleRaycastHit> _eligibleIctHits = new List<SimpleRaycastHit>(50);
 
     #region Camera Control Configurations
     // WARNING: Initializing non-Mono classes declared in a Mono class, outside of Awake or Start causes them to be instantiated by Unity AT EDITOR TIME (aka before runtime). 
@@ -333,10 +348,10 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     }
 
     private void SetCameraSettings() {
+        // UICamera settings (event dispatchers) handled by InputManager
         // Note: multiple camera system to eliminate Z fighting  http://www.davenewson.com/dev/unity-notes-on-rendering-the-big-and-the-small
 
         // DEPTH IS IMPORTANT Camera with lower depth draws first
-        // Ngui GuiCamera depth = 1
         MainCamera_Near.depth = -1F;
         MainCamera_Far.depth = -2F;
         // SpaceUnity sky box camera depth = -3F
@@ -430,22 +445,34 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     private SphereCollider CreateUniverseEdge() {
         GameObject universeEdge = new GameObject("UniverseEdge");
         universeEdge.isStatic = true;
+
+        Profiler.BeginSample("Proper AddComponent allocation", gameObject);
         SphereCollider universeEdgeCollider = universeEdge.AddComponent<SphereCollider>();
+        Profiler.EndSample();
+
         UnityUtility.AttachChildToParent(universeEdge, UniverseFolder.Instance.Folder.gameObject);
-        D.AssertEqual(Layers.Default, (Layers)universeEdge.layer);
-        universeEdgeCollider.isTrigger = true;
+        universeEdge.layer = (int)Layers.TransparentFX; // must set after Attach
+        universeEdgeCollider.isTrigger = false;    // Ngui 3.11.0 events now ignore trigger colliders when Ngui's EventType is World_3D 
+                                                   // so the collider can no longer be a trigger. As the whole GameObject is on Layers.TransparentFX and 
+                                                   // has no allowed collisions (ProjectSettings.Physics), it doesn't need to be a trigger.
         universeEdgeCollider.radius = _universeRadius;
         return universeEdgeCollider;
     }
 
     private Transform CreateDummyTarget() {
         GameObject dummyTgt = new GameObject("DummyTarget");
+
+        Profiler.BeginSample("Proper AddComponent allocation", gameObject);
         SphereCollider dummyTgtCollider = dummyTgt.AddComponent<SphereCollider>();
-        dummyTgtCollider.isTrigger = true;
         dummyTgtCollider.radius = DummyTargetColliderRadius;
         dummyTgt.AddComponent<DummyTargetManager>();
+        Profiler.EndSample();
+
         UnityUtility.AttachChildToParent(dummyTgt, DynamicObjectsFolder.Instance.gameObject);
-        D.AssertEqual(Layers.Default, (Layers)dummyTgt.layer);
+        dummyTgt.layer = (int)Layers.TransparentFX; // must set after Attach
+        dummyTgtCollider.isTrigger = false; // Ngui 3.11.0 events now ignore trigger colliders when Ngui's EventType is World_3D 
+                                            // so the collider can no longer be a trigger. As the whole GameObject is on Layers.TransparentFX and 
+                                            // has no allowed collisions (ProjectSettings.Physics), it doesn't need to be a trigger.
         return dummyTgt.transform;
     }
 
@@ -873,7 +900,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         _targetDirection = transform.forward;
 
         // clamp here so optimalDistance never goes below minimumDistance as optimalDistance gets assigned to the focus when focus changes. Also effectively clamps requestedDistance
-        _optimalDistanceFromTarget = Mathf.Clamp(_optimalDistanceFromTarget, _minimumDistanceFromTarget, Mathf.Infinity);
+        _optimalDistanceFromTarget = Mathf.Clamp(_optimalDistanceFromTarget, _minimumDistanceFromTarget, _universeDiameter);
         _requestedDistanceFromTarget = _optimalDistanceFromTarget;
 
         // OPTIMIZE lets me change the values on the fly in the inspector
@@ -1131,7 +1158,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         // some values are continuously recalculated in update as the target moves so they don't need to be here too
 
         ICameraFollowable icfTarget = _target.GetComponent<ICameraFollowable>();
-        D.Log("Follow Target is now {0}.", icfTarget.FullName);
+        D.Log("Follow Target is now {0}.", icfTarget.DebugName);
         _cameraRotationDampener = icfTarget.FollowRotationDampener;
         _cameraDistanceDampener = icfTarget.FollowDistanceDampener;
 
@@ -1390,7 +1417,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             ResetToWorldspace();
         }
 
-        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
         ICameraFocusable qualifiedCameraFocusTarget = focus.GetComponent<ICameraFollowable>();
         Profiler.EndSample();
 
@@ -1436,7 +1463,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         // NOTE: As Rigidbodies consume child collider events, a hit on a child collider when there is a rigidbody parent 
         // involved, will return the transform of the parent, not the child. By not including inspection of the children for this interface,
         // I am requiring that the interface be present with the Rigidbody.
-        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
         ICameraTargetable qualifiedCameraTarget = newTarget.GetComponent<ICameraTargetable>();
         Profiler.EndSample();
 
@@ -1447,7 +1474,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             _minimumDistanceFromTarget = qualifiedCameraTarget.MinimumCameraViewingDistance;
             //D.Log("Target {0} _minimumDistanceFromTarget set to {1:0.#}.".Inject(newTarget.name, _minimumDistanceFromTarget));
 
-            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
             ICameraFocusable qualifiedCameraFocusTarget = newTarget.GetComponent<ICameraFocusable>();
             Profiler.EndSample();
 
@@ -1511,12 +1538,6 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     private void ProcessChanges(float deltaTime) {
         transform.rotation = CalculateCameraRotation(_cameraRotationDampener * deltaTime);
         //transform.localRotation = CalculateCameraRotation(_cameraRotationDampener * deltaTime);
-
-        // Moved min distance from target clamp of requestedDistance into states so both requested and optimal distance are clamped
-        // This way, optimal distance will never be less than minimum distance when assigned to the previous focus
-        //_requestedDistanceFromTarget = Mathf.Clamp(_requestedDistanceFromTarget, _minimumDistanceFromTarget, Mathf.Infinity);
-
-        //D.Log("RequestedDistanceFromTarget = {0}.".Inject(_requestedDistanceFromTarget));
 
         //_distanceFromTarget = Mathfx.Hermite(_distanceFromTarget, _requestedDistanceFromTarget, _cameraDistanceDampener * deltaTime);
         _distanceFromTarget = Mathfx.Lerp(_distanceFromTarget, _requestedDistanceFromTarget, _cameraDistanceDampener * deltaTime);
@@ -1602,17 +1623,17 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// </returns>
     private bool TrySetZoomTargetAt(Vector3 screenPoint) {
         Ray ray = MainCamera_Near.ScreenPointToRay(screenPoint);   // Use _mainCamera_Near as ray is cast starting at camera's nearClipPlane
-        // OPTIMIZE 11.15.16 Consider using Physics.RaycastNonAlloc(). Biggest issue is knowing the reqd size of the hits buffer
-        RaycastHit[] hits = Physics.RaycastAll(ray, _universeDiameter, InputManager.WorldEventDispatcherMask_NormalInput);
+        int hitCount = Physics.RaycastNonAlloc(ray, _zoomRaycastHitBuffer, _universeDiameter,
+            InputManager.WorldEventDispatcherMask_NormalInput, QueryTriggerInteraction.Ignore);
 
-        var eligibleIctHits = ConvertToEligibleICameraTargetableHits(hits);
+        IList<SimpleRaycastHit> eligibleIctHits = ConvertToEligibleICameraTargetableHits(hitCount);
 
         //D.Log("Eligible {0} RaycastHits on Zoom: {1}.", typeof(ICameraTargetable).Name, eligibleIctHits.Select(h => h.transform.name).Concatenate());
-        if (eligibleIctHits.Any()) {
+        if (eligibleIctHits.Count > Constants.Zero) {
             // one or more ICameraTargetable objects under cursor encountered
             Transform proposedZoomTarget;
             Vector3 proposedZoomPoint;
-            if (eligibleIctHits.Count() == 1) {
+            if (eligibleIctHits.Count == Constants.One) {
                 // only one eligibleIct object encountered is likely to be the dummyTarget
                 var hit = eligibleIctHits.First();
                 proposedZoomTarget = hit.transform;
@@ -1622,7 +1643,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
                 }
 
                 // there is only one hit so determine the proposedZoomPoint and done
-                Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+                Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
                 var ztf = proposedZoomTarget.GetComponent<IZoomToFurthest>();
                 Profiler.EndSample();
 
@@ -1639,10 +1660,9 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             // involved will return the transform of the parent, not the child. 
 
             // there are multiple eligibleIctHits
-            //var zoomToFurthestHits = from h in eligibleIctHits where h.transform.GetInterface<IZoomToFurthest>() != null select h;
             var zoomToFurthestHits = eligibleIctHits.Where(ictHit => {
 
-                Profiler.BeginSample("Editor-only GC allocation (GetComponent return null)");
+                Profiler.BeginSample("Editor-only GC allocation (GetComponent return null)", gameObject);
                 var ztf = ictHit.transform.GetComponent<IZoomToFurthest>();
                 Profiler.EndSample();
 
@@ -1651,6 +1671,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
                 }
                 return false;
             });
+
             var remainingHits = eligibleIctHits.Except(zoomToFurthestHits);
             if (remainingHits.Any()) {
                 // there is a hit that isn't a IZoomToFurthest, so pick the closest and done
@@ -1675,18 +1696,22 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     }
 
     /// <summary>
-    /// Converts RaycastHit[] to a collection of eligible hits that implement the ICameraTargetable interface. 
-    /// Hits that don't implement ICameraTargetable (e.g. OrbitalPlane, Icons, etc.) have their parents searched 
+    /// Converts RaycastHits to a collection of eligible hits that implement the ICameraTargetable interface.
+    /// Hits that don't implement ICameraTargetable (e.g. OrbitalPlane, Icons, etc.) have their parents searched
     /// for the interface. If found, that transform is substituted as the transform that was hit.
+    /// <remarks>As _zoomRaycastHitBuffer[] is a fixed size buffer of hits, hitCount is reqd to limit access to
+    /// only those hits that were placed in the buffer from the RaycastNonAlloc() call just prior to use of this method.</remarks>
     /// </summary>
-    /// <param name="hits">The hits.</param>
+    /// <param name="hitCount">The hit count.</param>
     /// <returns></returns>
-    private IEnumerable<SimpleRaycastHit> ConvertToEligibleICameraTargetableHits(RaycastHit[] hits) {
-        var eligibleIctHits = new List<SimpleRaycastHit>();
-        foreach (var hit in hits) {
+    private IList<SimpleRaycastHit> ConvertToEligibleICameraTargetableHits(int hitCount) {
+        _eligibleIctHits.Clear();
+        for (int hitIndex = 0; hitIndex < hitCount; hitIndex++) {
             SimpleRaycastHit eligibleIctHit = default(SimpleRaycastHit);
 
-            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+            RaycastHit hit = _zoomRaycastHitBuffer[hitIndex];
+
+            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
             ICameraTargetable ict = hit.transform.GetComponent<ICameraTargetable>();
             Profiler.EndSample();
 
@@ -1696,7 +1721,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
                 }
             }
             else {
-                ict = hit.transform.gameObject.GetComponentInParent<ICameraTargetable>();
+                ict = hit.transform.GetComponentInParent<ICameraTargetable>();
                 if (ict != null && ict.IsCameraTargetEligible) {
                     Transform ictTransform = (ict as Component).transform;
                     eligibleIctHit = new SimpleRaycastHit(ictTransform, hit.point);
@@ -1704,10 +1729,10 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             }
 
             if (eligibleIctHit != default(SimpleRaycastHit)) {
-                eligibleIctHits.Add(eligibleIctHit);
+                _eligibleIctHits.Add(eligibleIctHit);
             }
         }
-        return eligibleIctHits;
+        return _eligibleIctHits;
     }
 
     /// <summary>
@@ -1758,8 +1783,8 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
         Ray ray = new Ray(Position, direction);
         RaycastHit targetHit;
-        Vector3 pointOutsideUniverse = ray.GetPoint(_universeRadius * 2F);
-        if (Physics.Raycast(pointOutsideUniverse, -ray.direction, out targetHit, _universeRadius * 2F, _universeEdgeCullingMask)) {
+        Vector3 pointOutsideUniverse = ray.GetPoint(_universeDiameter);
+        if (Physics.Raycast(pointOutsideUniverse, -ray.direction, out targetHit, _universeDiameter, _universeEdgeCullingMask, QueryTriggerInteraction.Ignore)) {
             if (targetHit.collider != _universeEdgeCollider) {
                 float distanceToOrigin = targetHit.point.magnitude;
                 D.Error("{0}: Expected to hit UniverseEdgeCollider. Instead hit {1}! UniverseRadius = {2:0.}, HitDistanceFromOrigin = {3:0.}.",
@@ -1869,12 +1894,27 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     /// <summary>
     /// Substitute for Unity's RaycastHit whose constructors are not accessible to me.
-    /// <remarks>Changed from a struct as per Jon Skeet: mutable references in a immutable struct are sneakily evil, aka Transform.</remarks>
-    /// <remarks>OPTIMIZE worthwhile noting that Unity's RaycastHit is a mutable structure.</remarks>
+    /// <remarks>Originally a class per Jon Skeet: mutable references in a immutable struct are sneakily evil, aka Transform.</remarks>
+    /// <remarks>12.3.16 Reverted to a struct to avoid allocations. Note that Unity's RaycastHit is a mutable structure.</remarks>
     /// </summary>
-    private class SimpleRaycastHit {
+    private struct SimpleRaycastHit : IEquatable<SimpleRaycastHit> {
 
-        private static string _toStringFormat = "{0}[Transform: {1}, HitPoint: {2}]";
+        private const string ToStringFormat = "{0}[Transform: {1}, HitPoint: {2}]";
+
+        #region Comparison Operators Override
+
+        // see C# 4.0 In a Nutshell, page 254
+
+        public static bool operator ==(SimpleRaycastHit left, SimpleRaycastHit right) {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(SimpleRaycastHit left, SimpleRaycastHit right) {
+            return !left.Equals(right);
+        }
+
+        #endregion
+
 
         public readonly Transform transform;
         public readonly Vector3 point;
@@ -1884,9 +1924,42 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             this.point = point;
         }
 
-        public override string ToString() {
-            return _toStringFormat.Inject(typeof(SimpleRaycastHit).Name, transform.name, point);
+        #region Object.Equals and GetHashCode Override
+
+        public override bool Equals(object obj) {
+            if (!(obj is SimpleRaycastHit)) { return false; }
+            return Equals((SimpleRaycastHit)obj);
         }
+
+        /// <summary>
+        /// Returns a hash code for this instance.
+        /// See "Page 254, C# 4.0 in a Nutshell."
+        /// </summary>
+        /// <returns>
+        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
+        /// </returns>
+        public override int GetHashCode() {
+            unchecked { // http://dobrzanski.net/2010/09/13/csharp-gethashcode-cause-overflowexception/
+                int hash = 17;  // 17 = some prime number
+                hash = hash * 31 + transform.GetHashCode(); // 31 = another prime number
+                hash = hash * 31 + point.GetHashCode();
+                return hash;
+            }
+        }
+
+        #endregion
+
+        public override string ToString() {
+            return ToStringFormat.Inject(typeof(SimpleRaycastHit).Name, transform.name, point);
+        }
+
+        #region IEquatable<SimpleRaycastHit> Members
+
+        public bool Equals(SimpleRaycastHit other) {
+            return transform == other.transform && point == other.point;
+        }
+
+        #endregion
 
     }
 

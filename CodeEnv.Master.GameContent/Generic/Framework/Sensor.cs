@@ -31,9 +31,9 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<ISensorRangeMonitor>(ref _rangeMonitor, value, "RangeMonitor"); }
         }
 
-        public override string FullName {
+        public override string DebugName {
             get {
-                return RangeMonitor != null ? _fullNameFormat.Inject(RangeMonitor.FullName, Name) : Name;
+                return RangeMonitor != null ? DebugNameFormat.Inject(RangeMonitor.DebugName, Name) : Name;
             }
         }
 

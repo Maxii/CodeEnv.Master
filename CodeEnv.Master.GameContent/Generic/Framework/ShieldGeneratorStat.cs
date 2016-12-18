@@ -69,10 +69,6 @@ namespace CodeEnv.Master.GameContent {
             DamageMitigation = damageMitigation;
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
     }
 }
 

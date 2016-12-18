@@ -67,6 +67,7 @@ public class RequiredPrefabs : AMonoSingleton<RequiredPrefabs> {
     public MobileOrbitSimulator mobileOrbitSimulator;
     public ShipCloseOrbitSimulator shipCloseOrbitSimulator;
     public MobileShipCloseOrbitSimulator mobileShipCloseOrbitSimulator;
+    public Rigidbody highOrbitAttachPoint;
 
     [Header("Creators")]
     public FleetCreator fleetCreator;

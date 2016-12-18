@@ -18,9 +18,11 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
 /// Guided AProjectileOrdnance containing effects for muzzle flash, inFlight operation and impact.  
@@ -96,20 +98,12 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
 
     protected new MissileLauncher Weapon { get { return base.Weapon as MissileLauncher; } }
 
-    private bool IsChangeHeadingJobRunning { get { return _changeHeadingJob != null && _changeHeadingJob.IsRunning; } }
-
-    private bool IsCourseUpdateJobRunning { get { return _courseUpdateJob != null && _courseUpdateJob.IsRunning; } }
-
-    private bool IsWaitForImpactEffectCompletionJobRunning { get { return _waitForImpactEffectCompletionJob != null && _waitForImpactEffectCompletionJob.IsRunning; } }
-
-    private bool IsWaitForMuzzleEffectCompletionJobRunning { get { return _waitForMuzzleEffectCompletionJob != null && _waitForMuzzleEffectCompletionJob.IsRunning; } }
-
-    private Job _waitForMuzzleEffectCompletionJob;
-    private Job _waitForImpactEffectCompletionJob;
+    private Job _muzzleEffectCompletionJob;
+    private Job _impactEffectCompletionJob;
     private float _cumDistanceTraveled;
     private Vector3 _positionLastRangeCheck;
     private Job _courseUpdateJob;
-    private Job _changeHeadingJob;
+    private Job _chgHeadingJob;
     private GameTimeDuration _courseUpdatePeriod;
     private bool _hasPushedOver;
     private DriftCorrector _driftCorrector;
@@ -126,8 +120,9 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         _courseUpdatePeriod = new GameTimeDuration(1F / CourseUpdateFrequency);
         SteeringInaccuracy = CalcSteeringInaccuracy();
         target.deathOneShot += TargetDeathEventHandler;
-        _driftCorrector.ClientName = FullName;
+        _driftCorrector.ClientName = DebugName;
         enabled = true;
+        _collider.enabled = true;
     }
 
     protected override AProjectileDisplayManager MakeDisplayMgr() {
@@ -139,25 +134,38 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         D.Assert(!_muzzleEffect.activeSelf, _muzzleEffect.name);
         if (_operatingEffect != null) {
             // ParticleSystem Operating Effect can be null. If so, it will be replaced by an Icon
-            D.Assert(!_operatingEffect.playOnAwake);
-            D.Assert(_operatingEffect.loop);
+            var operatingEffectMainModule = _operatingEffect.main;
+            D.Assert(!operatingEffectMainModule.playOnAwake);   //D.Assert(!_operatingEffect.playOnAwake); Deprecated in Unity 5.5
+            D.Assert(operatingEffectMainModule.loop);   //D.Assert(_operatingEffect.loop); Deprecated in Unity 5.5
         }
         D.AssertNotNull(_impactEffect);
-        D.Assert(!_impactEffect.playOnAwake);   // Awake only called once during GameObject life -> can't use with pooling
+        var impactEffectMainModule = _impactEffect.main;
+        // Awake only called once during GameObject life -> can't use with pooling
+        D.Assert(!impactEffectMainModule.playOnAwake);   //D.Assert(!_impactEffect.playOnAwake); Deprecated in Unity 5.5
         D.Assert(_impactEffect.gameObject.activeSelf, _impactEffect.name);
     }
 
     protected override void ShowMuzzleEffect() {
-        D.Assert(!IsWaitForMuzzleEffectCompletionJobRunning);
+        D.AssertNull(_muzzleEffectCompletionJob);
         // relocate this Effect so it doesn't move with the projectile while showing
         UnityUtility.AttachChildToParent(_muzzleEffect, DynamicObjectsFolder.Instance.gameObject);
         _muzzleEffect.layer = (int)Layers.TransparentFX;
         _muzzleEffect.transform.position = Position;
         _muzzleEffect.transform.rotation = transform.rotation;
         _muzzleEffect.SetActive(true);
-        string jobName = "{0}.WaitForMuzzleEffectCompletionJob".Inject(Name);
-        _waitForMuzzleEffectCompletionJob = _jobMgr.WaitForGameplaySeconds(0.2F, jobName, waitFinished: (jobWasKilled) => {
+        string jobName = "{0}.WaitForMuzzleEffectCompletionJob".Inject(DebugName);
+        _muzzleEffectCompletionJob = _jobMgr.WaitForGameplaySeconds(0.2F, jobName, waitFinished: (jobWasKilled) => {
             _muzzleEffect.SetActive(false);
+            if (jobWasKilled) {
+                // 12.12.16 An AssertNull(_jobRef) here can fail as the reference can refer to a new Job, created 
+                // right after the old one was killed due to the 1 frame delay in execution of jobCompleted(). My attempts at allowing
+                // the AssertNull to occur failed. I believe this is OK as _jobRef is nulled from KillXXXJob() and, if 
+                // the reference is replaced by a new Job, then the old Job is no longer referenced which is the objective. Jobs Kill()ed
+                // centrally by JobManager won't null the reference, but this only occurs during scene transitions.
+            }
+            else {
+                _muzzleEffectCompletionJob = null;
+            }
         });
         //TODO Add audio
     }
@@ -166,30 +174,36 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     protected override void ShowImpactEffects(Vector3 position, Quaternion rotation) {
         base.ShowImpactEffects(position, rotation);
         D.Assert(!_impactEffect.isPlaying); // should not be called more than once
-        D.Assert(!IsWaitForImpactEffectCompletionJobRunning);   // should not be called more than once
+        D.AssertNull(_impactEffectCompletionJob);   // should not be called more than once
         D.Assert(IsOperational);
-        ParticleScaler.Scale(_impactEffect, __ImpactEffectScalerValue, includeChildren: true);   // HACK .01F was used by VisualEffectScale
+        __ReduceScaleOfImpactEffect();  //ParticleScaler.Scale(_impactEffect, __ImpactEffectScaleReductionValue, includeChildren: true);   // HACK .01F was used by VisualEffectScale
         _impactEffect.transform.position = position;
         _impactEffect.transform.rotation = rotation;
         _impactEffect.Play();
         bool includeChildren = true;
-        string jobName = "{0}.WaitForImpactEffectCompletionJob".Inject(Name);   // pausable for debug observation
-        _waitForImpactEffectCompletionJob = _jobMgr.WaitForParticleSystemCompletion(_impactEffect, includeChildren, jobName, isPausable: true, waitFinished: (jobWasKilled) => {
-            if (IsOperational) {
-                // ordnance has not already been terminated by other paths such as the death of the target
-                TerminateNow();
+        string jobName = "{0}.WaitForImpactEffectCompletionJob".Inject(DebugName);   // pausable for debug observation
+        _impactEffectCompletionJob = _jobMgr.WaitForParticleSystemCompletion(_impactEffect, includeChildren, jobName, isPausable: true, waitFinished: (jobWasKilled) => {
+            if (jobWasKilled) {
+                // 12.12.16 An AssertNull(_jobRef) here can fail as the reference can refer to a new Job, created 
+                // right after the old one was killed due to the 1 frame delay in execution of jobCompleted(). My attempts at allowing
+                // the AssertNull to occur failed. I believe this is OK as _jobRef is nulled from KillXXXJob() and, if 
+                // the reference is replaced by a new Job, then the old Job is no longer referenced which is the objective. Jobs Kill()ed
+                // centrally by JobManager won't null the reference, but this only occurs during scene transitions.
+            }
+            else {
+                _impactEffectCompletionJob = null;
+                if (IsOperational) {    // UNCLEAR needed now that this is only reached when naturally completing?
+                    // Ordnance has not already been terminated by other paths such as the death of the target
+                    TerminateNow();
+                }
             }
         });
     }
 
     protected override void HandleImpactEffectsBegun() {
         base.HandleImpactEffectsBegun();
-        if (IsChangeHeadingJobRunning) {
-            _changeHeadingJob.Kill();   // shutdown any heading changes
-        }
-        if (IsCourseUpdateJobRunning) {
-            _courseUpdateJob.Kill();    // shutdown course correction checks
-        }
+        KillCourseUpdateJob();
+        KillChangeHeadingJob();
     }
 
     protected override void HearImpactEffect(Vector3 position) {
@@ -211,7 +225,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     }
 
     private void HandlePushover() {
-        //D.Log("{0} has reached pushover. Checking course to target {1}.", Name, Target.FullName);
+        //D.Log(ShowDebugLog, "{0} has reached pushover. Starting course updates to {1}.", DebugName, Target.DebugName);
         LaunchCourseUpdateJob();
     }
 
@@ -222,12 +236,16 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         D.AssertDefault(_cumDistanceTraveled);
         D.Assert(_positionLastRangeCheck == default(Vector3));  //D.AssertDefault(_positionLastRangeCheck);
         D.AssertNull(_courseUpdateJob);
-        D.AssertNull(_changeHeadingJob);
-        D.AssertNull(_waitForImpactEffectCompletionJob);
-        D.AssertNull(_waitForMuzzleEffectCompletionJob);
+        D.AssertNull(_chgHeadingJob);
+        D.AssertNull(_impactEffectCompletionJob);
+        D.AssertNull(_muzzleEffectCompletionJob);
         D.AssertDefault(_courseUpdatePeriod);
         D.Assert(!_hasPushedOver);
         D.Assert(!enabled);
+
+        D.AssertDefault(__allowedTurns.Count);
+        D.AssertDefault(__actualTurns.Count);
+        D.AssertNull(__allowedAndActualTurnSteps);
     }
 
     void FixedUpdate() {
@@ -245,7 +263,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         IElementAttackable deadTarget = sender as IElementAttackable;
         D.AssertEqual(Target, deadTarget);
         if (IsOperational) {
-            //D.Log("{0} is self terminating as its Target {1} is dead.", Name, Target.FullName);
+            D.Log(ShowDebugLog, "{0} is self terminating as its Target {1} is dead.", DebugName, Target.DebugName);
             TerminateNow();
         }
     }
@@ -255,9 +273,9 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         _cumDistanceTraveled = Constants.ZeroF;
         _positionLastRangeCheck = Vector3.zero;
         _courseUpdateJob = null;
-        _changeHeadingJob = null;
-        _waitForImpactEffectCompletionJob = null;
-        _waitForMuzzleEffectCompletionJob = null;
+        _chgHeadingJob = null;
+        _impactEffectCompletionJob = null;
+        _muzzleEffectCompletionJob = null;
         _courseUpdatePeriod = default(GameTimeDuration);
         _hasPushedOver = false;
     }
@@ -266,16 +284,17 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
 
     private void ApplyThrust() {
         // Note: Rigidbody.drag already adjusted for any Topography changes
+        Vector3 headingBeforeThrust = CurrentHeading;
         float propulsionPower = GameUtility.CalculateReqdPropulsionPower(MaxSpeed, Mass, _rigidbody.drag);
         var gameSpeedAdjustedThrust = LocalSpaceForward * propulsionPower * _gameTime.GameSpeedAdjustedHoursPerSecond;
         _rigidbody.AddRelativeForce(gameSpeedAdjustedThrust, ForceMode.Force);
-        //D.Log("{0} applying thrust of {1}. Velocity is now {2}.", Name, gameSpeedAdjustedThrust.ToPreciseString(), _rigidbody.velocity.ToPreciseString());
+        //D.Log(ShowDebugLog, "{0} applying thrust of {1}. Velocity is now {2}.", DebugName, gameSpeedAdjustedThrust.ToPreciseString(), _rigidbody.velocity.ToPreciseString());
     }
 
     private void LaunchCourseUpdateJob() {
         D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
-        D.Assert(!IsCourseUpdateJobRunning);
-        string jobName = "{0}.CourseUpdateJob".Inject(FullName);
+        D.AssertNull(_courseUpdateJob);
+        string jobName = "{0}.CourseUpdateJob".Inject(DebugName);
         _courseUpdateJob = _jobMgr.RecurringWaitForHours(_courseUpdatePeriod, jobName, waitMilestone: () => {
             CheckCourse();
         });
@@ -290,46 +309,94 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     }
 
     private void LaunchChangeHeadingJob(Vector3 newHeading) {
+        //D.Log(ShowDebugLog, "{0}.LaunchChangeHeadingJob() called.", DebugName);
         D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
-        if (IsChangeHeadingJobRunning) {
-            D.Warn("{0}.LaunchChangeHeadingJob() called while another already running.", Name);
+        if (_chgHeadingJob != null) {
+            D.Warn("{0}.LaunchChangeHeadingJob() called while another already running.", DebugName);
             // -> course update freq is too high or turnRate too low as missile should be able to complete a turn between course updates
-            _changeHeadingJob.Kill();
+            KillChangeHeadingJob();
         }
         HandleTurnBeginning();
-        GameDate errorDate = GameUtility.CalcWarningDateForRotation(TurnRate, MaxReqdHeadingChange);
-        string jobName = "{0}.ChgHeadingJob".Inject(Name);
-        _changeHeadingJob = _jobMgr.StartGameplayJob(ChangeHeading(newHeading, errorDate), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
-            if (IsOperational && !jobWasKilled) {
-                //D.Log("{0} has completed a heading change.", Name);
-                HandleTurnCompleted();
+
+        string jobName = "{0}.ChgHeadingJob".Inject(DebugName);
+        _chgHeadingJob = _jobMgr.StartGameplayJob(ChangeHeading(newHeading/*, errorDate*/), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
+            if (jobWasKilled) {
+                // 12.12.16 An AssertNull(_jobRef) here can fail as the reference can refer to a new Job, created 
+                // right after the old one was killed due to the 1 frame delay in execution of jobCompleted(). My attempts at allowing
+                // the AssertNull to occur failed. I believe this is OK as _jobRef is nulled from KillXXXJob() and, if 
+                // the reference is replaced by a new Job, then the old Job is no longer referenced which is the objective. Jobs Kill()ed
+                // centrally by JobManager won't null the reference, but this only occurs during scene transitions.
+            }
+            else {
+                _chgHeadingJob = null;
+                if (IsOperational) {
+                    //D.Log(ShowDebugLog, "{0} has completed a heading change.", DebugName);
+                    HandleTurnCompleted();
+                }
             }
         });
     }
 
     /// <summary>
-    /// Changes the heading.
-    /// OPTIMIZE use Quaternions like ShipNav?
+    /// Executes a heading change.
     /// </summary>
     /// <param name="requestedHeading">The requested heading.</param>
-    /// <param name="allowedTime">The allowed time in seconds before an error is thrown.
     /// <returns></returns>
-    private IEnumerator ChangeHeading(Vector3 requestedHeading, GameDate errorDate) {
-        //Vector3 startingHeading = CurrentHeading;
-        while (!CurrentHeading.IsSameDirection(requestedHeading, SteeringInaccuracy)) {
-            float maxTurnRateInRadiansPerSecond = Mathf.Deg2Rad * TurnRate * _gameTime.GameSpeedAdjustedHoursPerSecond;
-            float allowedTurn = maxTurnRateInRadiansPerSecond * _gameTime.DeltaTime;
-            Vector3 newHeading = Vector3.RotateTowards(CurrentHeading, requestedHeading, allowedTurn, maxMagnitudeDelta: 1F);
-            // maxMagnitudeDelta > 0F appears to be important. Otherwise RotateTowards can stop rotating when it gets very close
-            transform.rotation = Quaternion.LookRotation(newHeading); // UNCLEAR turn kinematic on and off while rotating?
-            //D.Log("{0} actual heading after turn step: {1}.", Name, Heading);
-            GameDate currentDate;
-            if ((currentDate = _gameTime.CurrentDate) > errorDate) {
-                D.Warn("{0}: CurrentDate {1} > ErrorDate {2} while changing heading.", Name, currentDate, errorDate);
+    private IEnumerator ChangeHeading(Vector3 requestedHeading) {
+        D.Assert(!_driftCorrector.IsCorrectionUnderway);
+
+        Profiler.BeginSample("Missile ChangeHeading Job Setup", this);
+        bool isInformedOfDateError = false;
+        __allowedTurns.Clear();
+        __actualTurns.Clear();
+
+        //int startingFrame = Time.frameCount;
+        Quaternion startingRotation = transform.rotation;
+        Quaternion intendedHeadingRotation = Quaternion.LookRotation(requestedHeading);
+        D.Log(ShowDebugLog, "{0} initiating turn of {1:0.#} degrees at {2:0.} degrees/hour. SteeringInaccuracy = {3:0.##} degrees.", DebugName, Quaternion.Angle(startingRotation, intendedHeadingRotation), TurnRate, SteeringInaccuracy);
+#pragma warning disable 0219
+        GameDate currentDate = _gameTime.CurrentDate;
+#pragma warning restore 0219
+
+        float deltaTime;
+        float deviationInDegrees;
+        GameDate errorDate = DebugUtility.CalcWarningDateForRotation(TurnRate, MaxReqdHeadingChange);
+        bool isRqstdHeadingReached = CurrentHeading.IsSameDirection(requestedHeading, out deviationInDegrees, SteeringInaccuracy);
+        Profiler.EndSample();
+
+        while (!isRqstdHeadingReached) {
+            //D.Log(ShowDebugLog, "{0} continuing another turn step. LastDeviation = {1:0.#} degrees, AllowedDeviation = {2:0.#}.", DebugName, deviationInDegrees, SteeringInaccuracy);
+
+            Profiler.BeginSample("Missile ChangeHeading Job Execution", this);
+            deltaTime = _gameTime.DeltaTime;
+            float allowedTurn = TurnRate * _gameTime.GameSpeedAdjustedHoursPerSecond * deltaTime;
+            __allowedTurns.Add(allowedTurn);
+
+            Quaternion currentRotation = transform.rotation;
+            Quaternion inprocessRotation = Quaternion.RotateTowards(currentRotation, intendedHeadingRotation, allowedTurn);
+            float actualTurn = Quaternion.Angle(currentRotation, inprocessRotation);
+            __actualTurns.Add(actualTurn);
+
+            //Vector3 headingBeforeRotation = CurrentHeading;
+            transform.rotation = inprocessRotation;
+            //D.Log(ShowDebugLog, "{0} BEFORE ROTATION heading: {1}, AFTER ROTATION heading: {2}, rotationApplied: {3}.",
+            //    DebugName, headingBeforeRotation.ToPreciseString(), CurrentHeading.ToPreciseString(), inprocessRotation);
+
+            isRqstdHeadingReached = CurrentHeading.IsSameDirection(requestedHeading, out deviationInDegrees, SteeringInaccuracy);
+            if (!isRqstdHeadingReached && (currentDate = _gameTime.CurrentDate) > errorDate) {
+                float desiredTurn = Quaternion.Angle(startingRotation, intendedHeadingRotation);
+                float resultingTurn = Quaternion.Angle(startingRotation, inprocessRotation);
+                __ReportTurnTimeWarning(errorDate, currentDate, desiredTurn, resultingTurn, __allowedTurns, __actualTurns, ref isInformedOfDateError);
             }
-            yield return null;
+            Profiler.EndSample();
+
+            yield return null; // WARNING: must count frames between passes if use yield return WaitForSeconds()
         }
-        //D.Log("{0} has completed heading change of {1:0.#} degrees.", Name, Vector3.Angle(startingHeading, CurrentHeading));
+        //D.Log(ShowDebugLog, "{0}: Rotation completed. DegreesRotated = {1:0.##}, ErrorDate = {2}, ActualDate = {3}.",
+        //    DebugName, Quaternion.Angle(startingRotation, transform.rotation), errorDate, currentDate);
+        //D.Log(ShowDebugLog, "{0}: Rotation completed. DegreesRotated = {1:0.#}, FramesReqd = {2}, AvgDegreesPerFrame = {3:0.#}.",
+        //    DebugName, Quaternion.Angle(startingRotation, transform.rotation), Time.frameCount - startingFrame,
+        //    Quaternion.Angle(startingRotation, transform.rotation) / (Time.frameCount - startingFrame));
     }
 
     private void HandleTurnBeginning() {
@@ -369,21 +436,45 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
             // ordnance was terminated by other paths such as the death of the target
             _impactEffect.Stop();
         }
-        if (IsWaitForImpactEffectCompletionJobRunning) {
-            _waitForImpactEffectCompletionJob.Kill();
-        }
-        if (IsWaitForMuzzleEffectCompletionJobRunning) {
-            _waitForMuzzleEffectCompletionJob.Kill();
-        }
-        if (IsChangeHeadingJobRunning) {
-            _changeHeadingJob.Kill();
-        }
-        if (IsCourseUpdateJobRunning) {
-            _courseUpdateJob.Kill();
-        }
-        _driftCorrector.Disengage();
+        KillImpactEffectCompletionJob();
+        KillMuzzleEffectCompletionJob();
+        KillChangeHeadingJob();
+        KillCourseUpdateJob();
+        DisengageDriftCorrection();
         Target.deathOneShot -= TargetDeathEventHandler;
+
+        __allowedTurns.Clear();
+        __actualTurns.Clear();
+        __allowedAndActualTurnSteps = null;
         // FIXME what about audio?
+    }
+
+    private void KillImpactEffectCompletionJob() {
+        if (_impactEffectCompletionJob != null) {
+            _impactEffectCompletionJob.Kill();
+            _impactEffectCompletionJob = null;
+        }
+    }
+
+    private void KillMuzzleEffectCompletionJob() {
+        if (_muzzleEffectCompletionJob != null) {
+            _muzzleEffectCompletionJob.Kill();
+            _muzzleEffectCompletionJob = null;
+        }
+    }
+
+    private void KillCourseUpdateJob() {
+        if (_courseUpdateJob != null) {
+            _courseUpdateJob.Kill();
+            _courseUpdateJob = null;
+        }
+    }
+
+    private void KillChangeHeadingJob() {
+        if (_chgHeadingJob != null) {
+            _chgHeadingJob.Kill();
+            _chgHeadingJob = null;
+        }
     }
 
     protected override void ResetEffectsForReuse() {
@@ -402,7 +493,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
 #pragma warning restore 0219
         }
 
-        ParticleScaler.Scale(_impactEffect, 1F / __ImpactEffectScalerValue, includeChildren: true);   // HACK .01F was used by VisualEffectScale
+        __TryRestoreScaleOfImpactEffect();  //ParticleScaler.Scale(_impactEffect, __ImpactEffectScaleRestoreValue, includeChildren: true);   // HACK
         _impactEffect.transform.localPosition = Vector3.zero;
         _impactEffect.transform.localRotation = Quaternion.identity;
         _impactEffect.Clear();
@@ -410,24 +501,61 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
 
     protected override void Cleanup() {
         base.Cleanup();
-        if (_courseUpdateJob != null) {
-            _courseUpdateJob.Dispose();
-        }
-        if (_changeHeadingJob != null) {
-            _changeHeadingJob.Dispose();
-        }
-        if (_waitForImpactEffectCompletionJob != null) {
-            _waitForImpactEffectCompletionJob.Dispose();
-        }
-        if (_waitForMuzzleEffectCompletionJob != null) {
-            _waitForMuzzleEffectCompletionJob.Dispose();
-        }
+        // 12.8.16 Job Disposal centralized in JobManager
+        KillCourseUpdateJob();
+        KillChangeHeadingJob();
+        KillImpactEffectCompletionJob();
+        KillMuzzleEffectCompletionJob();
         _driftCorrector.Dispose();
     }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region Debug
+
+    protected override void __ExecuteImpactEffectScaleReduction() {
+        ParticleScaler.Scale(_impactEffect, __ImpactEffectScaleReductionFactor, includeChildren: true);   // HACK .01F was used by VisualEffectScale
+    }
+
+    protected override void __ExecuteImpactEffectScaleRestoration() {
+        ParticleScaler.Scale(_impactEffect, __ImpactEffectScaleRestoreFactor, includeChildren: true);   // HACK
+    }
+
+    #region Debug Turn Error Reporting
+
+    private const string __TurnTimeLineFormat = "Allowed: {0:0.00}, Actual: {1:0.00}";
+
+    private IList<float> __allowedTurns = new List<float>();
+    private IList<float> __actualTurns = new List<float>();
+    private IList<string> __allowedAndActualTurnSteps;
+
+    private void __ReportTurnTimeWarning(GameDate errorDate, GameDate currentDate, float desiredTurn, float resultingTurn,
+        IList<float> allowedTurns, IList<float> actualTurns, ref bool isInformedOfDateError) {
+        if (!isInformedOfDateError) {
+            D.Warn("{0}.ChangeHeading of {1:0.##} degrees. CurrentDate {2} > ErrorDate {3}. Turn accomplished: {4:0.##} degrees.",
+                DebugName, desiredTurn, currentDate, errorDate, resultingTurn);
+            isInformedOfDateError = true;
+        }
+        if (ShowDebugLog) {
+            if (__allowedAndActualTurnSteps == null) {
+                __allowedAndActualTurnSteps = new List<string>();
+            }
+            __allowedAndActualTurnSteps.Clear();
+            for (int i = 0; i < allowedTurns.Count; i++) {
+                string line = __TurnTimeLineFormat.Inject(allowedTurns[i], actualTurns[i]);
+                __allowedAndActualTurnSteps.Add(line);
+            }
+            D.Log("Allowed vs Actual TurnSteps:\n {0}", __allowedAndActualTurnSteps.Concatenate());
+        }
+    }
+
+
+    #endregion
+
+
+    #endregion
 
     #region ITerminatableOrdnance Members
 

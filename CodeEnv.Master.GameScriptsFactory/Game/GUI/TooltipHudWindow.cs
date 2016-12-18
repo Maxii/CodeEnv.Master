@@ -23,6 +23,7 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
 /// Singleton. My advanced Tooltip window supporting multiple customized Forms
@@ -78,18 +79,18 @@ public class TooltipHudWindow : AHudWindow<TooltipHudWindow>, ITooltipHudWindow 
         var hoveredObject = UICamera.hoveredObject;
         if (hoveredObject != null) {
 
-            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
             var hoveredWidget = hoveredObject.GetComponent<UIWidget>();
             Profiler.EndSample();
 
             if (hoveredWidget != null) {
                 var hoveredWidgetViewportPosition = _uiCamera.WorldToViewportPoint(hoveredWidget.worldCenter);
-                //D.Log("{0}: Viewport position of Hovered Widget = {1}.", GetType().Name, hoveredWidgetViewportPosition);
+                //D.Log("{0}: Viewport position of Hovered Widget = {1}.", DebugName, hoveredWidgetViewportPosition);
 
                 WidgetCorner cornerToAlignTo = PickCornerOfHoveredWidgetToAlignTooltip(hoveredWidgetViewportPosition);
-                //D.Log("{0}: Hovered Widget corner to align to = {1}.", GetType().Name, cornerToAlignTo.GetValueName());
+                //D.Log("{0}: Hovered Widget corner to align to = {1}.", DebugName, cornerToAlignTo.GetValueName());
                 Vector3 tooltipPosition = CalcTooltipWorldPosition(hoveredWidget, cornerToAlignTo);
-                //D.Log("{0}: new world position: {1}.", GetType().Name, tooltipPosition);
+                //D.Log("{0}: new world position: {1}.", DebugName, tooltipPosition);
                 transform.position = tooltipPosition;
             }
         }
@@ -148,7 +149,7 @@ public class TooltipHudWindow : AHudWindow<TooltipHudWindow>, ITooltipHudWindow 
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hoveredWidgetAlignmentCorner));
         }
-        //D.Log("{0}: BackgroundWidgetCornerToCenterOffset = {1}.", GetType().Name, tooltipCornerToCenterViewportOffset);
+        //D.Log("{0}: BackgroundWidgetCornerToCenterOffset = {1}.", DebugName, tooltipCornerToCenterViewportOffset);
 
         Vector2 hoveredWidgetCornerViewportPosition = GetAlignmentCornerViewportPosition(hoveredWidget, hoveredWidgetAlignmentCorner);
         Vector2 desiredTooltipViewportPosition = hoveredWidgetCornerViewportPosition + tooltipCornerToCenterViewportOffset;

@@ -30,9 +30,17 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class PlayerKnowledge : IDisposable {
 
-        private const string NameFormat = "{0}'s {1}";
+        private const string DebugNameFormat = "{0}'s {1}";
 
-        private string Name { get { return NameFormat.Inject(Owner.LeaderName, typeof(PlayerKnowledge).Name); } }
+        private string _debugName;
+        private string DebugName {
+            get {
+                if (_debugName == null) {
+                    _debugName = DebugNameFormat.Inject(Owner.DebugName, typeof(PlayerKnowledge).Name);
+                }
+                return _debugName;
+            }
+        }
 
         public Player Owner { get; private set; }
 
@@ -348,7 +356,7 @@ namespace CodeEnv.Master.GameContent {
         public bool TryGetSystem(IntVector3 sectorID, out ISystem_Ltd system) {
             bool isSystemFound = _systemLookupBySectorID.TryGetValue(sectorID, out system);
             if (isSystemFound) {
-                //D.Log("{0} found System {1} in Sector {2}.", Name, system.FullName, sectorID);
+                //D.Log("{0} found System {1} in Sector {2}.", DebugName, system.DebugName, sectorID);
             }
             return isSystemFound;
         }
@@ -420,17 +428,17 @@ namespace CodeEnv.Master.GameContent {
             }
             if (item is IUniverseCenter_Ltd) {
                 D.AssertEqual(UniverseCenter, item);
-                D.Warn("{0}: unnecessary check for knowledge of {1}.", Name, item.FullName);
+                D.Warn("{0}: unnecessary check for knowledge of {1}.", DebugName, item.DebugName);
                 return true;
             }
             if (item is IStar_Ltd) {
                 D.Assert(_stars.Contains(item as IStar_Ltd));
-                D.Warn("{0}: unnecessary check for knowledge of {1}.", Name, item.FullName);
+                D.Warn("{0}: unnecessary check for knowledge of {1}.", DebugName, item.DebugName);
                 return true;
             }
             if (item is ISystem_Ltd) {
                 D.Assert(_systemLookupBySectorID.Values.Contains(item as ISystem_Ltd));
-                D.Warn("{0}: unnecessary check for knowledge of {1}.", Name, item.FullName);
+                D.Warn("{0}: unnecessary check for knowledge of {1}.", DebugName, item.DebugName);
                 return true;
             }
             return false;
@@ -463,7 +471,7 @@ namespace CodeEnv.Master.GameContent {
             // A Star should only be added once when all players get Basic IntelCoverage of all stars
             bool isAdded = _stars.Add(star);
             isAdded = isAdded & _items.Add(star);
-            D.Assert(isAdded, star.FullName);
+            D.Assert(isAdded, star.DebugName);
         }
 
         private void AddAllSystems(IEnumerable<IStar_Ltd> allStars) {   // properly sizes the dictionary
@@ -475,7 +483,7 @@ namespace CodeEnv.Master.GameContent {
             bool isAdded = _planetoids.Add(planetoid);
             isAdded = isAdded & _items.Add(planetoid);
             if (!isAdded) {
-                //D.Log("{0} tried to add Planetoid {1} it already has.", Name, planetoid.FullName);
+                //D.Log("{0} tried to add Planetoid {1} it already has.", DebugName, planetoid.DebugName);
                 return false;
             }
             planetoid.deathOneShot += ItemDeathEventHandler;
@@ -486,7 +494,7 @@ namespace CodeEnv.Master.GameContent {
             var isAdded = _elements.Add(element);
             isAdded = isAdded & _items.Add(element);
             if (!isAdded) {
-                //D.Log("{0} tried to add Element {1} it already has.", Name, element.FullName);
+                //D.Log("{0} tried to add Element {1} it already has.", DebugName, element.DebugName);
                 return false;
             }
             element.isHQChanged += ElementIsHQChangedEventHandler;
@@ -531,7 +539,7 @@ namespace CodeEnv.Master.GameContent {
             var isAdded = _commands.Add(command);
             isAdded = isAdded & _items.Add(command);
             D.Assert(isAdded);  // Cmd cannot already be present. If adding due to a change in an element's IsHQ state, then previous HQElement removed Cmd before this Add
-                                //D.Log("{0} has added Command {1}.", Name, command.FullName);
+                                //D.Log("{0} has added Command {1}.", DebugName, command.DebugName);
 
             IStarbaseCmd_Ltd sbCmd = command as IStarbaseCmd_Ltd;
             if (sbCmd != null) {
@@ -550,7 +558,7 @@ namespace CodeEnv.Master.GameContent {
                 if (settlementCmd != null) {
                     var sSectorID = settlementCmd.SectorID;
                     //if (_settlementLookupBySectorID.ContainsKey(sSectorID)) {
-                    //    D.Error("{0}.AddCmd({1}) found {2} already occupied by {3}.", Name, command.FullName, sSectorID, _settlementLookupBySectorID[sSectorID].FullName);
+                    //    D.Error("{0}.AddCmd({1}) found {2} already occupied by {3}.", DebugName, command.DebugName, sSectorID, _settlementLookupBySectorID[sSectorID].DebugName);
                     //}
                     _settlementLookupBySectorID.Add(sSectorID, settlementCmd);
                 }
@@ -561,7 +569,7 @@ namespace CodeEnv.Master.GameContent {
             var isRemoved = _commands.Remove(command);
             isRemoved = isRemoved & _items.Remove(command);
             D.Assert(isRemoved);
-            //D.Log("{0} has removed Command {1}.", Name, command.FullName);
+            //D.Log("{0} has removed Command {1}.", DebugName, command.DebugName);
 
             IStarbaseCmd_Ltd sbCmd = command as IStarbaseCmd_Ltd;
             if (sbCmd != null) {
@@ -594,10 +602,10 @@ namespace CodeEnv.Master.GameContent {
         internal void RemoveElement(IUnitElement_Ltd element) {
             var isRemoved = _elements.Remove(element);
             isRemoved = isRemoved & _items.Remove(element);
-            D.Assert(isRemoved, element.FullName);
+            D.Assert(isRemoved, element.DebugName);
 
             if (element.IsOperational && (element as IUnitElement).Owner.IsRelationshipWith(Owner, DiplomaticRelationship.Alliance)) {
-                D.Error("{0}: {1} is alive and being removed while in Alliance!", Name, element.FullName);
+                D.Error("{0}: {1} is alive and being removed while in Alliance!", DebugName, element.DebugName);
             }
 
             element.isHQChanged -= ElementIsHQChangedEventHandler;
@@ -618,7 +626,7 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(!deadPlanetoid.IsOperational);
             var isRemoved = _planetoids.Remove(deadPlanetoid);
             isRemoved = isRemoved & _items.Remove(deadPlanetoid);
-            D.Assert(isRemoved, deadPlanetoid.FullName);
+            D.Assert(isRemoved, deadPlanetoid.DebugName);
         }
 
         private void Cleanup() {
@@ -665,17 +673,17 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void __ValidatePlayerKnowledgeNow() {
-            D.Log("{0} is validating all Player Knowledge.", Name);
+            D.Log("{0} is validating all Player Knowledge.", DebugName);
             IList<IItem> myItems = OwnerItems.ToList();
             foreach (var item in _items) {
-                D.Assert(item.IsOperational, item.FullName);
+                D.Assert(item.IsOperational, item.DebugName);
                 IntelCoverage coverage = (item as IIntelItem).GetIntelCoverage(Owner);
                 if (myItems.Contains(item as IItem)) {
                     // item is mine so should be comprehensive
                     D.AssertEqual(IntelCoverage.Comprehensive, coverage, coverage.GetValueName());
                     continue;
                 }
-                D.AssertNotDefault((int)coverage, item.FullName);
+                D.AssertNotDefault((int)coverage, item.DebugName);
             }
         }
 

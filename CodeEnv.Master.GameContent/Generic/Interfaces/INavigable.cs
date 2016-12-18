@@ -26,9 +26,9 @@ namespace CodeEnv.Master.GameContent {
     public interface INavigable : IDebugable {
 
         /// <summary>
-        /// The name to use for displaying in the UI.
+        /// The name to use for display.
         /// </summary>
-        string DisplayName { get; }
+        string Name { get; }
 
         Vector3 Position { get; }
 

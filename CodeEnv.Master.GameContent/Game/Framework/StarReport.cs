@@ -71,38 +71,6 @@ namespace CodeEnv.Master.GameContent {
             return new ObjectAnalyzer().ToString(this);
         }
 
-        #region Archive
-
-        //protected override void AssignIncrementalValues_IntelCoverageComprehensive(AItemData data) {
-        //    base.AssignIncrementalValues_IntelCoverageComprehensive(data);
-        //    var starData = data as StarData;
-        //}
-
-        //protected override void AssignIncrementalValues_IntelCoverageBroad(AItemData data) {
-        //    base.AssignIncrementalValues_IntelCoverageBroad(data);
-        //    var starData = data as StarData;
-        //    Capacity = starData.Capacity;
-        //    Resources = starData.Resources;
-        //}
-
-        //protected override void AssignIncrementalValues_IntelCoverageEssential(AItemData data) {
-        //    base.AssignIncrementalValues_IntelCoverageEssential(data);
-        //    var starData = data as StarData;
-        //    Owner = starData.Owner;
-        //}
-
-        //protected override void AssignIncrementalValues_IntelCoverageBasic(AItemData data) {
-        //    base.AssignIncrementalValues_IntelCoverageBasic(data);
-        //    var starData = data as StarData;
-        //    Name = starData.Name;
-        //    ParentName = starData.ParentName;
-        //    Position = starData.Position;
-        //    Category = starData.Category;
-        //    SectorID = starData.SectorID;
-        //}
-
-        #endregion
-
     }
 }
 

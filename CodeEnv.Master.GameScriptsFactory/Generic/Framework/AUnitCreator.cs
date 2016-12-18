@@ -25,9 +25,17 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public abstract class AUnitCreator : AMonoBase {
 
-    private const string NameFormat = "{0}.{1}";
+    private const string DebugNameFormat = "{0}.{1}";
 
-    public string Name { get { return NameFormat.Inject(UnitName, GetType().Name); } }
+    private string _debugName;
+    public string DebugName {
+        get {
+            if (_debugName == null) {
+                _debugName = DebugNameFormat.Inject(UnitName, GetType().Name);
+            }
+            return _debugName;
+        }
+    }
 
     /// <summary>
     /// The name of the top level Unit, aka the Settlement, Starbase or Fleet name.
@@ -50,6 +58,8 @@ public abstract class AUnitCreator : AMonoBase {
     }
 
     protected Player Owner { get { return Configuration.Owner; } }
+
+    protected bool ShowDebugLog { get { return DebugControls.Instance.ShowDeploymentDebugLogs; } }
 
     protected JobManager _jobMgr;
     protected GameManager _gameMgr;
@@ -94,7 +104,7 @@ public abstract class AUnitCreator : AMonoBase {
     /// </summary>
     public void AuthorizeDeployment() {
         D.AssertNotNull(Configuration);    // would only be called with a Configuration
-        D.Log("{0} is authorizing deployment of {1}. Targeted DeployDate = {2}.", Name, Configuration.UnitName, Configuration.DeployDate);
+        D.Log(ShowDebugLog, "{0} is authorizing deployment of {1}. Targeted DeployDate = {2}.", DebugName, Configuration.UnitName, Configuration.DeployDate);
         var currentDate = GameTime.Instance.CurrentDate;
         D.Assert(currentDate >= GameTime.GameStartDate, currentDate.ToString());
         if (currentDate >= Configuration.DeployDate) {
@@ -107,10 +117,14 @@ public abstract class AUnitCreator : AMonoBase {
 
     protected void BuildDeployAndBeginUnitOpsOnDeployDate() {
         D.Assert(_gameMgr.IsRunning);
-        string jobName = "{0}.WaitForDeployDate({1})".Inject(Name, Configuration.DeployDate);
+        string jobName = "{0}.WaitForDeployDate({1})".Inject(DebugName, Configuration.DeployDate);
         _jobMgr.WaitForDate(Configuration.DeployDate, jobName, waitFinished: (jobWasKilled) => {
-            D.Assert(!jobWasKilled);
-            HandleDeployDateReached();
+            if (jobWasKilled) {
+                // Job without a local reference is only Kill()ed by JobManager during scene transitions
+            }
+            else {
+                HandleDeployDateReached();
+            }
         });
     }
 
@@ -118,12 +132,12 @@ public abstract class AUnitCreator : AMonoBase {
         GameDate currentDate = GameTime.Instance.CurrentDate;
         GameDate dateToDeploy = Configuration.DeployDate;
         if (currentDate < dateToDeploy) {
-            D.Error("{0}: {1} should not be < {2}.", Name, currentDate, dateToDeploy);
+            D.Error("{0}: {1} should not be < {2}.", DebugName, currentDate, dateToDeploy);
         }
         if (currentDate > dateToDeploy) {
-            D.Log("{0} exceeded DeployDate {1}. Current date = {2}.", Name, dateToDeploy, currentDate);
+            D.Log(ShowDebugLog, "{0} exceeded DeployDate {1}. Current date = {2}.", DebugName, dateToDeploy, currentDate);
         }
-        //D.Log("{0} is about to build, deploy and begin ops of {1}'s {2} on {3}.", Name, Owner, Configuration.UnitName, currentDate);
+        //D.Log(ShowDebugLog, "{0} is about to build, deploy and begin ops of {1}'s {2} on {3}.", DebugName, Owner, Configuration.UnitName, currentDate);
 
         MakeUnitAndPrepareForDeployment();
         _isUnitDeployed = DeployUnit();
@@ -255,7 +269,7 @@ public abstract class AUnitCreator : AMonoBase {
     /// </summary>
     //private void SubscribeStaticallyOnce() {
     //    if (!_isStaticallySubscribed) {
-    //        //D.Log("{0} is subscribing statically to {1}.", Name, _gameMgr.GetType().Name);
+    //        //D.Log("{0} is subscribing statically to {1}.", DebugName, _gameMgr.GetType().Name);
     //        _gameMgr.sceneLoaded += SceneLoadedEventHandler;
     //        _isStaticallySubscribed = true;
     //    }

@@ -24,6 +24,7 @@ using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using PathologicalGames;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
 /// Abstract class for AMortalItem's that are Unit Elements.
@@ -61,7 +62,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         get {
             if (_radius == Constants.ZeroF) {
                 _radius = Data.HullDimensions.magnitude / 2F;
-                //D.Log(ShowDebugLog, "{0} Radius set to {1:0.000}.", FullName, _radius);
+                //D.Log(ShowDebugLog, "{0} Radius set to {1:0.000}.", DebugName, _radius);
                 __ValidateRadius(_radius);
             }
             return _radius;
@@ -123,7 +124,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         _primaryCollider = UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
         // Early detection of colliders that start out enabled can occur when data is added during runtime
         if (_primaryCollider.enabled) {
-            D.Warn("{0}'s primary collider should start disabled to avoid early detection by monitors.", FullName);
+            D.Warn("{0}'s primary collider should start disabled to avoid early detection by monitors.", DebugName);
         }
         _primaryCollider.isTrigger = false;
         _primaryCollider.enabled = false;
@@ -299,7 +300,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     /// <summary>
     /// Spawns and launches the ordnance.
-    /// <remarks>Physics.IgnoreCollision below resets the trigger state of each collider, thereby
+    /// <remarks>12.1.16 Fixed in Unity 5.5. Physics.IgnoreCollision below resets the trigger state of each collider, thereby
     /// generating sequential OnTriggerExit and OnTriggerEnter events in any Monitor in the area.</remarks>
     /// <see cref="http://forum.unity3d.com/threads/physics-ignorecollision-that-does-not-reset-trigger-state.340836/"/>
     /// </summary>
@@ -315,21 +316,29 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
             Beam beam = ordnanceTransform.GetComponent<Beam>();
             beam.Launch(target, weapon);
         }
-        else if (category == WDVCategory.Missile) {
-            ordnanceTransform = MyPoolManager.Instance.Spawn(category, launchLoc, launchRotation);
-            //Physics.IgnoreCollision(ordnanceTransform.GetComponent<Collider>(), _primaryCollider);    // 7.20.16
-            Missile missile = ordnanceTransform.GetComponent<Missile>();
-            missile.ElementVelocityAtLaunch = Rigidbody.velocity;
-            missile.Launch(target, weapon, Topography);
-        }
         else {
-            D.AssertEqual(WDVCategory.Projectile, category);
+            // Projectiles are located under PoolManager in the scene
             ordnanceTransform = MyPoolManager.Instance.Spawn(category, launchLoc, launchRotation);
-            //Physics.IgnoreCollision(ordnanceTransform.GetComponent<Collider>(), _primaryCollider);    // 7.20.16
-            Projectile projectile = ordnanceTransform.GetComponent<Projectile>();
-            projectile.Launch(target, weapon, Topography);
+            Collider ordnanceCollider = UnityUtility.ValidateComponentPresence<Collider>(ordnanceTransform.gameObject);
+            ////D.Assert(!ordnanceCollider.enabled);
+            D.Assert(ordnanceTransform.gameObject.activeSelf);  // ordnanceGo must be active for IgnoreCollision
+            Physics.IgnoreCollision(ordnanceCollider, _primaryCollider);
+            ////D.Assert(!ordnanceCollider.enabled);    // makes sure IgnoreCollision doesn't enable collider
+
+            if (category == WDVCategory.Missile) {
+                Missile missile = ordnanceTransform.GetComponent<Missile>();
+                ////D.Assert(!missile.enabled);
+                missile.ElementVelocityAtLaunch = Rigidbody.velocity;
+                missile.Launch(target, weapon, Topography);
+            }
+            else {
+                D.AssertEqual(WDVCategory.Projectile, category);
+                Projectile projectile = ordnanceTransform.GetComponent<Projectile>();
+                ////D.Assert(!projectile.enabled);
+                projectile.Launch(target, weapon, Topography);
+            }
         }
-        //D.Log(ShowDebugLog, "{0} has fired {1} against {2} on {3}.", FullName, ordnance.Name, target.FullName, GameTime.Instance.CurrentDate);
+        //D.Log(ShowDebugLog, "{0} has fired {1} against {2} on {3}.", DebugName, ordnance.Name, target.DebugName, GameTime.Instance.CurrentDate);
         /***********************************************************************************************************************************************
          * Note on Target Death: When a target dies, the fired ordnance detects it and takes appropriate action. All ordnance types will no longer
          * apply damage to a dead target, but the impact effect will still show if applicable. This is so the viewer still sees impacts even while the
@@ -391,7 +400,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     //        InitiateFiringSequence(weapon, enemyTarget);
     //    }
     //    else {
-    //        D.Log("{0} did not fire weapon {1}.", FullName, weapon.Name);
+    //        D.Log("{0} did not fire weapon {1}.", DebugName, weapon.Name);
     //    }
     //}
 
@@ -438,10 +447,10 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     //    if (weapon.IsReadyToFire) {
     //        if (!_readyWeaponsInventory.Contains(weapon)) {
     //            _readyWeaponsInventory.Add(weapon);
-    //            //D.Log("{0} added Weapon {1} to ReadyWeaponsInventory.", FullName, weapon.Name);
+    //            //D.Log("{0} added Weapon {1} to ReadyWeaponsInventory.", DebugName, weapon.Name);
     //        }
     //        else {
-    //            //D.Log("{0} properly avoided adding duplicate Weapon {1} to ReadyWeaponsInventory.", FullName, weapon.Name);
+    //            //D.Log("{0} properly avoided adding duplicate Weapon {1} to ReadyWeaponsInventory.", DebugName, weapon.Name);
     //            // this occurs when a weapon attempts to fire but doesn't (usually due to LOS interference) and therefore remains
     //            // IsReadyToFire. If it had fired, it wouldn't be ready and therefore would have been removed below
     //        }
@@ -449,7 +458,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     //    else {
     //        if (_readyWeaponsInventory.Contains(weapon)) {
     //            _readyWeaponsInventory.Remove(weapon);
-    //            //D.Log("{0} removed Weapon {1} from ReadyWeaponsInventory.", FullName, weapon.Name);
+    //            //D.Log("{0} removed Weapon {1} from ReadyWeaponsInventory.", DebugName, weapon.Name);
     //        }
     //    }
     //}
@@ -514,7 +523,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
             var iconInfo = RefreshIconInfo();
             if (DisplayMgr.IconInfo != iconInfo) {    // avoid property not changed warning
                 UnsubscribeToIconEvents(DisplayMgr.Icon);
-                //D.Log(ShowDebugLog, "{0} changing IconInfo from {1} to {2}.", FullName, DisplayMgr.IconInfo, iconInfo);
+                //D.Log(ShowDebugLog, "{0} changing IconInfo from {1} to {2}.", DebugName, DisplayMgr.IconInfo, iconInfo);
                 DisplayMgr.IconInfo = iconInfo;
                 SubscribeToIconEvents(DisplayMgr.Icon);
             }
@@ -741,25 +750,25 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         var undamagedWeapons = Data.Weapons.Where(w => !w.IsDamaged);
         undamagedWeapons.ForAll(w => {
             w.IsDamaged = RandomExtended.Chance(equipDamageChance);
-            //D.Log(ShowDebugLog && w.IsDamaged, "{0}'s weapon {1} has been damaged.", FullName, w.Name);
+            //D.Log(ShowDebugLog && w.IsDamaged, "{0}'s weapon {1} has been damaged.", DebugName, w.Name);
         });
 
         var undamagedSensors = Data.Sensors.Where(s => !s.IsDamaged);
         undamagedSensors.ForAll(s => {
             s.IsDamaged = RandomExtended.Chance(equipDamageChance);
-            //D.Log(ShowDebugLog && s.IsDamaged, "{0}'s sensor {1} has been damaged.", FullName, s.Name);
+            //D.Log(ShowDebugLog && s.IsDamaged, "{0}'s sensor {1} has been damaged.", DebugName, s.Name);
         });
 
         var undamagedActiveCMs = Data.ActiveCountermeasures.Where(cm => !cm.IsDamaged);
         undamagedActiveCMs.ForAll(cm => {
             cm.IsDamaged = RandomExtended.Chance(equipDamageChance);
-            //D.Log(ShowDebugLog && cm.IsDamaged, "{0}'s ActiveCM {1} has been damaged.", FullName, cm.Name);
+            //D.Log(ShowDebugLog && cm.IsDamaged, "{0}'s ActiveCM {1} has been damaged.", DebugName, cm.Name);
         });
 
         var undamagedGenerators = Data.ShieldGenerators.Where(gen => !gen.IsDamaged);
         undamagedGenerators.ForAll(gen => {
             gen.IsDamaged = RandomExtended.Chance(equipDamageChance);
-            //D.Log(ShowDebugLog && gen.IsDamaged, "{0}'s shield generator {1} has been damaged.", FullName, gen.Name);
+            //D.Log(ShowDebugLog && gen.IsDamaged, "{0}'s shield generator {1} has been damaged.", DebugName, gen.Name);
         });
     }
 
@@ -767,15 +776,19 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #endregion
 
+    protected void KillRepairJob() {
+        if (_repairJob != null) {
+            _repairJob.Kill();
+            _repairJob = null;
+        }
+    }
+
     #region Cleanup
 
     protected override void Cleanup() {
         base.Cleanup();
         if (_detectionHandler != null) {
             _detectionHandler.Dispose();
-        }
-        if (_repairJob != null) {
-            _repairJob.Dispose();
         }
     }
 
@@ -880,7 +893,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(subscriptionMode));
         }
         if (isDuplicateSubscriptionAttempted) {
-            D.Warn("{0}: Attempting to subscribe to {1}'s {2} when already subscribed.", FullName, fsmTgt.FullName, subscriptionMode.GetValueName());
+            D.Warn("{0}: Attempting to subscribe to {1}'s {2} when already subscribed.", DebugName, fsmTgt.DebugName, subscriptionMode.GetValueName());
         }
         if (isSubscribeActionTaken) {
             __subscriptionStatusLookup[subscriptionMode] = toSubscribe;
@@ -889,14 +902,22 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     }
 
     protected void __ReportCollision(Collision collision) {
-        SphereCollider sphereCollider = collision.collider as SphereCollider;
-        BoxCollider boxCollider = collision.collider as BoxCollider;
-        string colliderSizeMsg = (sphereCollider != null) ? "radius = " + sphereCollider.radius : ((boxCollider != null) ? "size = " + boxCollider.size.ToPreciseString() : "size unknown");
         if (ShowDebugLog) {
-            D.Log("While {0}, {1} collided with {2} whose {3}. Velocity after impact = {4}.",
-                CurrentState.ToString(), FullName, collision.collider.name, colliderSizeMsg, Rigidbody.velocity.ToPreciseString());
-            //D.Log("{0}: Detail on collision - Distance between collider centers = {1:0.##}", FullName, Vector3.Distance(Position, collision.collider.transform.position));
-            // AngularVelocity no longer reported as element's rigidbody.freezeRotation = true
+
+            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+            var ordnance = collision.transform.GetComponent<AOrdnance>();
+            Profiler.EndSample();
+
+            if (ordnance == null) {
+                // its not ordnance we collided with so report it
+                SphereCollider sphereCollider = collision.collider as SphereCollider;
+                BoxCollider boxCollider = collision.collider as BoxCollider;
+                string colliderSizeMsg = (sphereCollider != null) ? "radius = " + sphereCollider.radius : ((boxCollider != null) ? "size = " + boxCollider.size.ToPreciseString() : "size unknown");
+                D.Log("While {0}, {1} collided with {2} whose {3}. Velocity after impact = {4}.",
+                    CurrentState.ToString(), DebugName, collision.collider.name, colliderSizeMsg, Rigidbody.velocity.ToPreciseString());
+                //D.Log("{0}: Detail on collision - Distance between collider centers = {1:0.##}", DebugName, Vector3.Distance(Position, collision.collider.transform.position));
+                // AngularVelocity no longer reported as element's rigidbody.freezeRotation = true
+            }
         }
     }
 
@@ -912,12 +933,10 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         D.Assert(IsOperational);
         DamageStrength damage = damagePotential - Data.DamageMitigation;
         if (damage.Total == Constants.ZeroF) {
-            //D.Log("{0} has been hit but incurred no damage.", FullName);
+            //D.Log("{0} has been hit but incurred no damage.", DebugName);
             return;
         }
-        if (ShowDebugLog) {
-            D.Log("{0} has been hit. Taking {1:0.#} damage.", FullName, damage.Total);
-        }
+        D.Log(ShowDebugLog, "{0} has been hit. Taking {1:0.#} damage.", DebugName, damage.Total);
 
         bool isCmdHit = false;
         float damageSeverity;

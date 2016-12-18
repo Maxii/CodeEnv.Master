@@ -49,7 +49,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public override string ToString() {
-            string targetText = Target != null ? Target.FullName : "null";
+            string targetText = Target != null ? Target.DebugName : "null";
             return ToStringFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), targetText);
         }
 

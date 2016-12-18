@@ -44,15 +44,11 @@ namespace CodeEnv.Master.GameContent {
             if (!IsCachedReportCurrent(player, out cachedReport)) {
                 cachedReport = MakeReportInstance(player);
                 CacheReport(player, cachedReport);
-                if (ShowDebugLog) {
-                    D.Log("{0} generated and cached a new {1} for {2}.", GetType().Name, typeof(ReportType).Name, player.LeaderName);
-                    _data.AcceptChanges();
-                }
+                //D.Log(ShowDebugLog, "{0} generated and cached a new {1} for {2}.", GetType().Name, typeof(ReportType).Name, player.LeaderName);
+                _data.AcceptChanges();
             }
             else {
-                if (ShowDebugLog) {
-                    D.Log("{0} reusing cached {1} for {2}.", GetType().Name, typeof(ReportType).Name, player.LeaderName);
-                }
+                //D.Log(ShowDebugLog, "{0} reusing cached {1} for {2}.", GetType().Name, typeof(ReportType).Name, player.LeaderName);
             }
             return cachedReport;
         }

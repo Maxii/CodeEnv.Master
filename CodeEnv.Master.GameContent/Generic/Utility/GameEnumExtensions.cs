@@ -1460,11 +1460,11 @@ namespace CodeEnv.Master.GameContent {
             float fullSpeedValue = Constants.ZeroF;
             if (shipData != null) {
                 fullSpeedValue = shipData.FullSpeedValue; // 11.24.15 InSystem, STL = 1.6, OpenSpace, FTL = 40
-                //D.Log("{0}.FullSpeed = {1} units/hour. IsFtlOperational = {2}.", shipData.FullName, fullSpeedValue, shipData.IsFtlOperational);
+                //D.Log("{0}.FullSpeed = {1} units/hour. IsFtlOperational = {2}.", shipData.DebugName, fullSpeedValue, shipData.IsFtlOperational);
             }
             else {
                 fullSpeedValue = fleetData.UnitFullSpeedValue;   // 11.24.15 InSystem, STL = 1.6, OpenSpace, FTL = 40
-                //D.Log("{0}.FullSpeed = {1} units/hour.", fleetData.FullName, fullSpeedValue);
+                //D.Log("{0}.FullSpeed = {1} units/hour.", fleetData.DebugName, fullSpeedValue);
             }
             return speed.GetUnitsPerHour(fullSpeedValue);
         }
