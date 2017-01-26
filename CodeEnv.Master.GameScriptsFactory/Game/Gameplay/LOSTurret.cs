@@ -256,6 +256,8 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         });
     }
 
+    private GameDate __executeTraverseErrorDate;
+
     /// <summary>
     /// Coroutine that executes a traverse without overshooting.
     /// </summary>
@@ -263,7 +265,8 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// <param name="reqdBarrelElevation">The required (local) elevation of the barrel.</param>
     /// <returns></returns>
     private IEnumerator ExecuteTraverse(Quaternion reqdHubRotation, Quaternion reqdBarrelElevation) {
-        bool isInformedOfDateError = false;
+        bool isInformedOfDateWarning = false;
+        __executeTraverseErrorDate = default(GameDate);
         Quaternion startingHubRotation = _hub.rotation;
         Quaternion startingBarrelElevation = _barrel.localRotation;
         float reqdHubRotationInDegrees = Quaternion.Angle(startingHubRotation, reqdHubRotation);
@@ -276,7 +279,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         float actualBarrelElevationInDegrees = 0F;
         float deltaTime;
 
-        GameDate errorDate = CalcLatestDateToCompleteTraverse();
+        GameDate warnDate = CalcLatestDateToCompleteTraverse();
         GameDate currentDate = _gameTime.CurrentDate;
         while (!isTraverseCompleted) {
             deltaTime = _gameTime.DeltaTime;
@@ -301,18 +304,28 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
             }
             isTraverseCompleted = isHubRotationCompleted && isBarrelElevationCompleted;
 
-            if (!isTraverseCompleted && (currentDate = _gameTime.CurrentDate) > errorDate) {
-                if (!isInformedOfDateError) {
-                    D.Warn("{0}: CurrentDate {1} > ErrorDate {2} while traversing.", DebugName, currentDate, errorDate);
-                    isInformedOfDateError = true;
+            if (!isTraverseCompleted && (currentDate = _gameTime.CurrentDate) > warnDate) {
+                if (!isInformedOfDateWarning) {
+                    D.Log("{0}: CurrentDate {1} > WarnDate {2} while traversing.", DebugName, currentDate, warnDate);
+                    isInformedOfDateWarning = true;
                 }
-                if (!isHubRotationCompleted) {
-                    actualHubRotationInDegrees = Quaternion.Angle(startingHubRotation, _hub.rotation);
-                    D.Warn("{0}: ReqdHubRotation = {1}, ActualHubRotation = {2}, AllowedInaccuracy = {3:0.00}.", DebugName, reqdHubRotationInDegrees, actualHubRotationInDegrees, AllowedTraverseInaccuracy);
+                if (__executeTraverseErrorDate == default(GameDate)) {
+                    __executeTraverseErrorDate = new GameDate(warnDate, GameTimeDuration.OneDay);
                 }
-                if (!isBarrelElevationCompleted) {
-                    actualBarrelElevationInDegrees = Quaternion.Angle(startingBarrelElevation, _barrel.localRotation);
-                    D.Warn("{0}: ReqdBarrelElevation = {1}, ActualBarrelElevation = {2}, AllowedInaccuracy = {3:0.00}.", DebugName, reqdBarrelElevationInDegrees, actualBarrelElevationInDegrees, AllowedTraverseInaccuracy);
+
+                if (currentDate > __executeTraverseErrorDate) {
+                    D.Error("{0}.ExecuteTraverse timed out.", DebugName);
+                }
+
+                if (ShowDebugLog) {
+                    if (!isHubRotationCompleted) {
+                        actualHubRotationInDegrees = Quaternion.Angle(startingHubRotation, _hub.rotation);
+                        D.Log("{0}: ReqdHubRotation = {1}, ActualHubRotation = {2}, AllowedInaccuracy = {3:0.00}.", DebugName, reqdHubRotationInDegrees, actualHubRotationInDegrees, AllowedTraverseInaccuracy);
+                    }
+                    if (!isBarrelElevationCompleted) {
+                        actualBarrelElevationInDegrees = Quaternion.Angle(startingBarrelElevation, _barrel.localRotation);
+                        D.Log("{0}: ReqdBarrelElevation = {1}, ActualBarrelElevation = {2}, AllowedInaccuracy = {3:0.00}.", DebugName, reqdBarrelElevationInDegrees, actualBarrelElevationInDegrees, AllowedTraverseInaccuracy);
+                    }
                 }
             }
             yield return null;

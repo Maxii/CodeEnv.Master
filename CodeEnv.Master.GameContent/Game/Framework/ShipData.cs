@@ -167,7 +167,13 @@ namespace CodeEnv.Master.GameContent {
         private float _fullSpeedValue;
         public float FullSpeedValue {
             get { return _fullSpeedValue; }
-            private set { SetProperty<float>(ref _fullSpeedValue, value, "FullSpeedValue"); }
+            private set {
+                if (value > TempGameValues.__ShipMaxSpeedValue) {
+                    D.Warn("{0}.FullSpeedValue {1:0.000000} > MaxSpeedValue {2:0.##}. Correcting.", DebugName, value, TempGameValues.__ShipMaxSpeedValue);
+                    value = TempGameValues.__ShipMaxSpeedValue;
+                }
+                SetProperty<float>(ref _fullSpeedValue, value, "FullSpeedValue");
+            }
         }
 
         /// <summary>

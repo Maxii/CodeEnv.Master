@@ -113,7 +113,8 @@ namespace CodeEnv.Master.GameContent {
         private string _isCameraRollEnabledKey = "Camera Roll";
         private string _isResetOnFocusEnabledKey = "Reset On Focus";
         private string _isPauseOnLoadEnabledKey = "Paused On Load";
-        private string _isElementIconsEnabledKey = "Element Icons";
+        // 1.15.17 TEMP removed to allow addition of DebugControls.IsElementIconsEnabled
+        //private string _isElementIconsEnabledKey = "Element Icons";
         private string _qualitySettingKey = "Quality Setting";
 
         #endregion
@@ -225,11 +226,12 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<bool>(ref _isResetOnFocusEnabled, value, "IsResetOnFocusEnabled"); }
         }
 
-        private bool _isElementIconsEnabled;
-        public bool IsElementIconsEnabled {
-            get { return _isElementIconsEnabled; }
-            private set { SetProperty<bool>(ref _isElementIconsEnabled, value, "IsElementIconsEnabled"); }
-        }
+        // 1.15.17 TEMP removed to allow addition of DebugControls.IsElementIconsEnabled
+        //private bool _isElementIconsEnabled;
+        //public bool IsElementIconsEnabled {
+        //    get { return _isElementIconsEnabled; }
+        //    private set { SetProperty<bool>(ref _isElementIconsEnabled, value, "IsElementIconsEnabled"); }
+        //}
 
         private string _qualitySetting;
         public string QualitySetting {
@@ -273,7 +275,8 @@ namespace CodeEnv.Master.GameContent {
             if (!QualitySetting.Equals(settings.QualitySetting)) {  // HACK avoids property equal warning
                 QualitySetting = settings.QualitySetting;
             }
-            IsElementIconsEnabled = settings.IsElementIconsEnabled;
+            // 1.15.17 TEMP removed to allow addition of DebugControls.IsElementIconsEnabled
+            //IsElementIconsEnabled = settings.IsElementIconsEnabled;
         }
 
         public void RecordNewGameSettings(NewGamePreferenceSettings settings) {
@@ -470,7 +473,8 @@ namespace CodeEnv.Master.GameContent {
             StoreBooleanPref(_isCameraRollEnabledKey, IsCameraRollEnabled);
             StoreBooleanPref(_isResetOnFocusEnabledKey, IsResetOnFocusEnabled);
             StoreBooleanPref(_isPauseOnLoadEnabledKey, IsPauseOnLoadEnabled);
-            StoreBooleanPref(_isElementIconsEnabledKey, IsElementIconsEnabled);
+            // 1.15.17 TEMP removed to allow addition of DebugControls.IsElementIconsEnabled
+            //StoreBooleanPref(_isElementIconsEnabledKey, IsElementIconsEnabled);
 
             StoreStringPref(_qualitySettingKey, QualitySetting);
             StoreStringPref(_usernameKey, Username);
@@ -604,7 +608,8 @@ namespace CodeEnv.Master.GameContent {
             IsZoomOutOnCursorEnabled = RetrieveBooleanPref(_isZoomOutOnCursorEnabledKey, true);
             IsCameraRollEnabled = RetrieveBooleanPref(_isCameraRollEnabledKey, false);
             IsResetOnFocusEnabled = RetrieveBooleanPref(_isResetOnFocusEnabledKey, true);
-            IsElementIconsEnabled = RetrieveBooleanPref(_isElementIconsEnabledKey, true);
+            // 1.16.17 TEMP removed to allow addition of DebugControls.ShowElementIcons
+            // IsElementIconsEnabled = RetrieveBooleanPref(_isElementIconsEnabledKey, true);
 
             QualitySetting = RetrieveStringPref(_qualitySettingKey, QualitySettings.names[QualitySettings.GetQualityLevel()]);
 
@@ -663,7 +668,7 @@ namespace CodeEnv.Master.GameContent {
             var playerColorPrefs = new GameColor[] {UserPlayerColor, AIPlayer1Color, AIPlayer2Color, AIPlayer3Color, AIPlayer4Color,
             AIPlayer5Color, AIPlayer6Color, AIPlayer7Color };
             playerColorPrefs.ForAll(pref => {
-                D.Assert(pref.EqualsAnyOf(TempGameValues.AllPlayerColors), pref.GetValueName());
+                D.Assert(TempGameValues.AllPlayerColors.Contains(pref), pref.GetValueName());
             });
         }
 

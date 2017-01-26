@@ -24,7 +24,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class world-space tracking widget that becomes parented to and tracks a world target.
 /// </summary>
-public abstract class AWorldTrackingWidget : ATrackingWidget {
+public abstract class AWorldTrackingWidget : ATrackingWidget, IWorldTrackingWidget {
 
     public override IWidgetTrackable Target {
         get { return base.Target; }
@@ -42,6 +42,8 @@ public abstract class AWorldTrackingWidget : ATrackingWidget {
     protected override void Awake() {
         base.Awake();
         _billboard = gameObject.GetSingleComponentInChildren<Billboard>();
+        _billboard.WarnIfUIPanelPresentInParents = false;
+        _billboard.enabled = false;
     }
 
     protected override void Show() {
@@ -54,10 +56,17 @@ public abstract class AWorldTrackingWidget : ATrackingWidget {
         _billboard.enabled = false;
     }
 
-    protected override void SetPosition() {
-        //D.Log("{0} aligning position with target {1}. Offset is {2}.", DebugName, Target.Transform.name, _offset);
-        transform.localPosition = _offset;
+    #region Debug
+
+    protected override void __RenameGameObjects() {
+        base.__RenameGameObjects();
+        if (Target != null) {   // Target can be null if OptionalRootName is set before Target
+            var rootName = OptionalRootName.IsNullOrEmpty() ? Target.DebugName : OptionalRootName;
+            _billboard.name = rootName + Constants.Space + typeof(Billboard).Name;
+        }
     }
+
+    #endregion
 
 }
 

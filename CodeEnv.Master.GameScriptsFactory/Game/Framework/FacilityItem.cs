@@ -124,11 +124,11 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     private void InitializeObstacleDetourGenerator() {
         if (IsMobile) {
             Reference<Vector3> obstacleZoneCenter = new Reference<Vector3>(() => _obstacleZoneCollider.transform.TransformPoint(_obstacleZoneCollider.center));
-            _detourGenerator = new DetourGenerator(obstacleZoneCenter, _obstacleZoneCollider.radius, _obstacleZoneCollider.radius);
+            _detourGenerator = new DetourGenerator(DebugName, obstacleZoneCenter, _obstacleZoneCollider.radius, _obstacleZoneCollider.radius);
         }
         else {
             Vector3 obstacleZoneCenter = _obstacleZoneCollider.transform.TransformPoint(_obstacleZoneCollider.center);
-            _detourGenerator = new DetourGenerator(obstacleZoneCenter, _obstacleZoneCollider.radius, _obstacleZoneCollider.radius);
+            _detourGenerator = new DetourGenerator(DebugName, obstacleZoneCenter, _obstacleZoneCollider.radius, _obstacleZoneCollider.radius);
         }
     }
 
@@ -169,10 +169,18 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         // Keep the obstacleZoneCollider enabled to keep ships from flying through this exploding facility
     }
 
+    public override void HandleLocalPositionManuallyChanged() {
+        // Facilities have their local position manually changed whenever there is a Formation change
+        // even if operational. As a Facility has an obstacle detour generator which needs to know the (supposedly unmoving) 
+        // facility's position, we have to regenerate that generator if manually relocated.
+        D.AssertNotNull(_detourGenerator, DebugName);   // TEMP just proves that InitializeDetourGenerator() initially called before local position is changed
+        InitializeObstacleDetourGenerator();
+    }
+
     protected override IconInfo MakeIconInfo() {
         var report = UserReport;
         GameColor iconColor = report.Owner != null ? report.Owner.Color : GameColor.White;
-        return new IconInfo("FleetIcon_Unknown", AtlasID.Fleet, iconColor, IconSize, WidgetPlacement.Over, Layers.Cull_200);
+        return new IconInfo("FleetIcon_Unknown", AtlasID.Fleet, iconColor, IconSize, WidgetPlacement.Over, TempGameValues.FacilityIconCullLayer);
     }
 
     protected override void __ValidateRadius(float radius) {
@@ -185,13 +193,13 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         switch (Data.HullCategory) {
             case FacilityHullCategory.CentralHub:
             case FacilityHullCategory.Defense:
-                return Layers.Cull_15;
+                return TempGameValues.LargerFacilityMeshCullLayer;
             case FacilityHullCategory.Factory:
             case FacilityHullCategory.Barracks:
             case FacilityHullCategory.ColonyHab:
             case FacilityHullCategory.Economic:
             case FacilityHullCategory.Laboratory:
-                return Layers.Cull_8;
+                return TempGameValues.SmallerFacilityMeshCullLayer;
             case FacilityHullCategory.None:
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(Data.HullCategory));
@@ -200,6 +208,15 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #region Orders
 
+    public bool IsCurrentOrderDirectiveAnyOf(FacilityDirective directiveA) {
+        return CurrentOrder != null && CurrentOrder.Directive == directiveA;
+    }
+
+    public bool IsCurrentOrderDirectiveAnyOf(FacilityDirective directiveA, FacilityDirective directiveB) {
+        return CurrentOrder != null && (CurrentOrder.Directive == directiveA || CurrentOrder.Directive == directiveB);
+    }
+
+    [Obsolete]
     public bool IsCurrentOrderDirectiveAnyOf(params FacilityDirective[] directives) {
         return CurrentOrder != null && CurrentOrder.Directive.EqualsAnyOf(directives);
     }
@@ -924,6 +941,16 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #region IShipNavigable Members
 
+    public override bool IsMobile {
+        get {
+            // Can't use Command.IsMobile as Command is initially null
+            if (TempGameValues.DoSettlementsActivelyOrbit != base.IsMobile) {
+                D.Error("Facility.IsMobile needs to be adjusted.");
+            }
+            return base.IsMobile;
+        }
+    }
+
     public override AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition) {
         float innerShellRadius = _obstacleZoneCollider.radius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of obstacle zone
         float outerShellRadius = innerShellRadius + 1F;   // HACK depth of arrival shell is 1
@@ -934,16 +961,30 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #region IAvoidableObstacle Members
 
-    public Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float fleetRadius) {
+    public float __ObstacleZoneRadius { get { return _obstacleZoneCollider.radius; } }
+
+    public Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float shipOrFleetClearanceRadius) {
         var formation = Command.UnitFormation;
         switch (formation) {
             case Formation.Plane:
             case Formation.Spread:
-                return _detourGenerator.GenerateDetourAtObstaclePoles(shipOrFleetPosition, fleetRadius);
             case Formation.Globe:
             case Formation.Wedge:
             case Formation.Diamond:
-                return _detourGenerator.GenerateDetourFromObstacleZoneHit(shipOrFleetPosition, zoneHitInfo.point, fleetRadius);
+                Vector3 detour = _detourGenerator.GenerateDetourFromObstacleZoneHit(shipOrFleetPosition, zoneHitInfo.point, shipOrFleetClearanceRadius);
+                if (!_detourGenerator.IsDetourCleanlyReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius)) {
+                    detour = _detourGenerator.GenerateDetourFromZoneHitAroundPoles(shipOrFleetPosition, zoneHitInfo.point, shipOrFleetClearanceRadius);
+                    if (!_detourGenerator.IsDetourCleanlyReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius)) {
+                        detour = _detourGenerator.GenerateDetourAtObstaclePoles(shipOrFleetPosition, shipOrFleetClearanceRadius);
+                        if (!_detourGenerator.IsDetourCleanlyReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius)) {
+                            detour = _detourGenerator.GenerateDetourAroundObstaclePoles(shipOrFleetPosition, shipOrFleetClearanceRadius);
+                            // 1.26.17 This is going to fail as I haven't solved detours for facilities yet
+                            D.Assert(_detourGenerator.IsDetourCleanlyReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius),
+                                "{0} detour {1} not reachable. Ship/Fleet.Position = {2}, ClearanceRadius = {3:0.##}.".Inject(DebugName, detour, shipOrFleetPosition, shipOrFleetClearanceRadius));
+                        }
+                    }
+                }
+                return detour;
             case Formation.None:
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(formation));
@@ -954,9 +995,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #region IShipAttackable Members
 
-    public override AutoPilotDestinationProxy GetApAttackTgtProxy(float minRangeToTgtSurface, float maxRangeToTgtSurface) {
-        float innerRadius = _obstacleZoneCollider.radius + minRangeToTgtSurface;
-        float outerRadius = Radius + maxRangeToTgtSurface;
+    public override AutoPilotDestinationProxy GetApAttackTgtProxy(float minDesiredDistanceToTgtSurface, float maxDesiredDistanceToTgtSurface) {
+        float innerRadius = _obstacleZoneCollider.radius + minDesiredDistanceToTgtSurface;
+        float outerRadius = Radius + maxDesiredDistanceToTgtSurface;
         return new AutoPilotDestinationProxy(this, Vector3.zero, innerRadius, outerRadius);
     }
 

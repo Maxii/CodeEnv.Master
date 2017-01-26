@@ -48,7 +48,7 @@ public class StarCtxControl : ACtxControl {
     private StarItem _starMenuOperator;
 
     public StarCtxControl(StarItem star)
-        : base(star.gameObject, uniqueSubmenusReqd: Constants.Zero, menuPosition: MenuPositionMode.Offset) {
+        : base(star.gameObject, uniqueSubmenuQtyReqd: Constants.Zero, menuPosition: MenuPositionMode.Offset) {
         _starMenuOperator = star;
     }
 

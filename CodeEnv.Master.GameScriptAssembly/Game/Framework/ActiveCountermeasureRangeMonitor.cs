@@ -69,7 +69,7 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
     /// <param name="newThreat">The IInterceptableOrdnance threat.</param>
     private void AddThreat(IInterceptableOrdnance newThreat) {
 
-        Profiler.BeginSample("Proper Event Subscription allocation", gameObject);
+        Profiler.BeginSample("Event Subscription allocation", gameObject);
         newThreat.deathOneShot += ThreatDeathEventHandler;
         Profiler.EndSample();
 

@@ -48,7 +48,7 @@ public class SectorCtxControl : ACtxControl {
     private Sector _sector;
 
     public SectorCtxControl(SectorExaminer sectorExaminer)
-        : base(sectorExaminer.gameObject, uniqueSubmenusReqd: Constants.Zero, menuPosition: MenuPositionMode.Offset) {
+        : base(sectorExaminer.gameObject, uniqueSubmenuQtyReqd: Constants.Zero, menuPosition: MenuPositionMode.Offset) {
         _sectorExaminerMenuOperator = sectorExaminer;
     }
 

@@ -430,6 +430,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     protected virtual void HandleMiddlePressRelease() { }
     protected virtual void HandleRightPressRelease() {
         if (!_inputMgr.IsDragging) {
+            //D.Log(ShowDebugLog, "{0}.HandleRightPressRelease called.", DebugName);
             // right press release while not dragging means both press and release were over this object
             if (_ctxControl == null) {
                 D.Assert(_hasInitOnFirstDiscernibleToUserRun);
@@ -492,6 +493,9 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
         }
         if (EffectsMgr != null) {
             EffectsMgr.Dispose();
+        }
+        if (DisplayMgr != null) {
+            DisplayMgr.Dispose();
         }
         CleanupHighlights();
     }

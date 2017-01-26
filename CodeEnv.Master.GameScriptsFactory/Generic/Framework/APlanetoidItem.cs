@@ -55,20 +55,30 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
 
     public override float Radius { get { return Data.Radius; } }
 
-    public float ObstacleZoneRadius { get { return ObstacleZoneCollider.radius; } }
-
-    protected SystemItem ParentSystem { get; private set; }
-    protected SphereCollider ObstacleZoneCollider { get; private set; }
+    //public float ObstacleZoneRadius { get { return ObstacleZoneCollider.radius; } }
 
     public new FollowableItemCameraStat CameraStat {
         protected get { return base.CameraStat as FollowableItemCameraStat; }
         set { base.CameraStat = value; }
     }
 
+    /// <summary>
+    /// The distance from the obstacle's center required to clear it when navigating around it.
+    /// <remarks>The clearance a ship requires from its own position to avoid having its collision detection zone
+    /// encounter the obstacle's zone must be added to this value to successfully avoid a collision between the zones.</remarks>
+    /// </summary>
+    protected abstract float ObstacleClearanceDistance { get; }
+    protected SystemItem ParentSystem { get; private set; }
+    //protected SphereCollider ObstacleZoneCollider { get; private set; }
+
     private PlanetoidPublisher _publisher;
     private PlanetoidPublisher Publisher {
         get { return _publisher = _publisher ?? new PlanetoidPublisher(Data, this); }
     }
+
+    protected SphereCollider _obstacleZoneCollider;
+
+    private DetourGenerator _detourGenerator;
 
     private DetectionHandler _detectionHandler;
     private SphereCollider _primaryCollider;
@@ -98,21 +108,52 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         _primaryCollider.radius = Data.Radius;
     }
 
-    protected virtual void InitializeObstacleZone() {
-        ObstacleZoneCollider = gameObject.GetComponentsInImmediateChildren<SphereCollider>().Where(c => c.gameObject.layer == (int)Layers.AvoidableObstacleZone).Single();
-        ObstacleZoneCollider.enabled = false;
-        ObstacleZoneCollider.isTrigger = true;
+    private void InitializeObstacleZone() {
+        _obstacleZoneCollider = gameObject.GetComponentsInImmediateChildren<SphereCollider>().Where(c => c.gameObject.layer == (int)Layers.AvoidableObstacleZone).Single();
+        _obstacleZoneCollider.enabled = false;
+        _obstacleZoneCollider.isTrigger = true;
+        _obstacleZoneCollider.radius = InitializeObstacleZoneRadius();
 
         Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
-        var rigidbody = ObstacleZoneCollider.gameObject.GetComponent<Rigidbody>();
+        var rigidbody = _obstacleZoneCollider.gameObject.GetComponent<Rigidbody>();
         Profiler.EndSample();
 
         // Static trigger collider (no rigidbody) is OK as the ship's CollisionDetectionZone Collider has a kinematic rigidbody
         if (rigidbody != null) {
             D.Warn("{0}.ObstacleZone has a Rigidbody it doesn't need.", DebugName);
         }
+        InitializeObstacleDetourGenerator();
         InitializeDebugShowObstacleZone();
     }
+    //protected virtual void InitializeObstacleZone() {
+    //    ObstacleZoneCollider = gameObject.GetComponentsInImmediateChildren<SphereCollider>().Where(c => c.gameObject.layer == (int)Layers.AvoidableObstacleZone).Single();
+    //    ObstacleZoneCollider.enabled = false;
+    //    ObstacleZoneCollider.isTrigger = true;
+
+    //    Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
+    //    var rigidbody = ObstacleZoneCollider.gameObject.GetComponent<Rigidbody>();
+    //    Profiler.EndSample();
+
+    //    // Static trigger collider (no rigidbody) is OK as the ship's CollisionDetectionZone Collider has a kinematic rigidbody
+    //    if (rigidbody != null) {
+    //        D.Warn("{0}.ObstacleZone has a Rigidbody it doesn't need.", DebugName);
+    //    }
+    //    InitializeDebugShowObstacleZone();
+    //}
+
+    protected abstract float InitializeObstacleZoneRadius();
+
+    private void InitializeObstacleDetourGenerator() {
+        if (IsMobile) {
+            Reference<Vector3> obstacleZoneCenter = new Reference<Vector3>(() => _obstacleZoneCollider.transform.TransformPoint(_obstacleZoneCollider.center));
+            _detourGenerator = new DetourGenerator(DebugName, obstacleZoneCenter, _obstacleZoneCollider.radius, ObstacleClearanceDistance);
+        }
+        else {
+            Vector3 obstacleZoneCenter = _obstacleZoneCollider.transform.TransformPoint(_obstacleZoneCollider.center);
+            _detourGenerator = new DetourGenerator(DebugName, obstacleZoneCenter, _obstacleZoneCollider.radius, ObstacleClearanceDistance);
+        }
+    }
+
 
     protected override void InitializeOnFirstDiscernibleToUser() {
         base.InitializeOnFirstDiscernibleToUser();
@@ -141,10 +182,15 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
 
     #endregion
 
+    //public override void CommenceOperations() {
+    //    base.CommenceOperations();
+    //    _primaryCollider.enabled = true;
+    //    ObstacleZoneCollider.enabled = true;
+    //}
     public override void CommenceOperations() {
         base.CommenceOperations();
         _primaryCollider.enabled = true;
-        ObstacleZoneCollider.enabled = true;
+        _obstacleZoneCollider.enabled = true;
     }
 
     public PlanetoidReport GetReport(Player player) { return Publisher.GetReport(player); }
@@ -264,10 +310,19 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         }
     }
 
+    //private void EnableDebugShowObstacleZone(bool toEnable) {
+
+    //    Profiler.BeginSample("Proper AddComponent allocation", gameObject);
+    //    DrawColliderGizmo drawCntl = ObstacleZoneCollider.gameObject.AddMissingComponent<DrawColliderGizmo>();
+    //    Profiler.EndSample();
+
+    //    drawCntl.Color = Color.red;
+    //    drawCntl.enabled = toEnable;
+    //}
     private void EnableDebugShowObstacleZone(bool toEnable) {
 
         Profiler.BeginSample("Proper AddComponent allocation", gameObject);
-        DrawColliderGizmo drawCntl = ObstacleZoneCollider.gameObject.AddMissingComponent<DrawColliderGizmo>();
+        DrawColliderGizmo drawCntl = _obstacleZoneCollider.gameObject.AddMissingComponent<DrawColliderGizmo>();
         Profiler.EndSample();
 
         drawCntl.Color = Color.red;
@@ -278,15 +333,31 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         EnableDebugShowObstacleZone(DebugControls.Instance.ShowObstacleZones);
     }
 
+    //private void CleanupDebugShowObstacleZone() {
+    //    var debugValues = DebugControls.Instance;
+    //    if (debugValues != null) {
+    //        debugValues.showObstacleZones -= ShowDebugObstacleZonesChangedEventHandler;
+    //    }
+    //    if (ObstacleZoneCollider != null) {
+
+    //        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
+    //        DrawColliderGizmo drawCntl = ObstacleZoneCollider.gameObject.GetComponent<DrawColliderGizmo>();
+    //        Profiler.EndSample();
+
+    //        if (drawCntl != null) {
+    //            Destroy(drawCntl);
+    //        }
+    //    }
+    //}
     private void CleanupDebugShowObstacleZone() {
         var debugValues = DebugControls.Instance;
         if (debugValues != null) {
             debugValues.showObstacleZones -= ShowDebugObstacleZonesChangedEventHandler;
         }
-        if (ObstacleZoneCollider != null) {
+        if (_obstacleZoneCollider != null) {
 
             Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
-            DrawColliderGizmo drawCntl = ObstacleZoneCollider.gameObject.GetComponent<DrawColliderGizmo>();
+            DrawColliderGizmo drawCntl = _obstacleZoneCollider.gameObject.GetComponent<DrawColliderGizmo>();
             Profiler.EndSample();
 
             if (drawCntl != null) {
@@ -356,9 +427,14 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
 
     #region IShipAttackable Members
 
-    public AutoPilotDestinationProxy GetApAttackTgtProxy(float minRangeToTgtSurface, float maxRangeToTgtSurface) {
-        float innerRadius = ObstacleZoneRadius + minRangeToTgtSurface;
-        float outerRadius = Radius + maxRangeToTgtSurface;
+    //public AutoPilotDestinationProxy GetApAttackTgtProxy(float minDesiredDistanceToTgtSurface, float maxDesiredDistanceToTgtSurface) {
+    //    float innerRadius = ObstacleZoneRadius + minDesiredDistanceToTgtSurface;
+    //    float outerRadius = Radius + maxDesiredDistanceToTgtSurface;
+    //    return new AutoPilotDestinationProxy(this, Vector3.zero, innerRadius, outerRadius);
+    //}
+    public AutoPilotDestinationProxy GetApAttackTgtProxy(float minDesiredDistanceToTgtSurface, float maxDesiredDistanceToTgtSurface) {
+        float innerRadius = _obstacleZoneCollider.radius + minDesiredDistanceToTgtSurface;
+        float outerRadius = Radius + maxDesiredDistanceToTgtSurface;
         return new AutoPilotDestinationProxy(this, Vector3.zero, innerRadius, outerRadius);
     }
 
@@ -403,13 +479,64 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
 
     #region IFleetNavigable Members
 
-    public abstract float GetObstacleCheckRayLength(Vector3 fleetPosition);
+    //public abstract float GetObstacleCheckRayLength(Vector3 fleetPosition);
+    public float GetObstacleCheckRayLength(Vector3 fleetPosition) {
+        return Vector3.Distance(fleetPosition, Position) - _obstacleZoneCollider.radius - TempGameValues.ObstacleCheckRayLengthBuffer;
+    }
 
     #endregion
 
     #region IAvoidableObstacle Members
 
-    public abstract Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float fleetRadius);
+    //public float __ObstacleZoneRadius { get { return ObstacleZoneCollider.radius; } }
+    public float __ObstacleZoneRadius { get { return _obstacleZoneCollider.radius; } }
+
+    //public abstract Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float shipOrFleetClearanceRadius);
+    //public Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float shipOrFleetClearanceRadius) {
+    //    Vector3 detour = _detourGenerator.GenerateDetourAtObstaclePoles(shipOrFleetPosition, shipOrFleetClearanceRadius);
+    //    if (!_detourGenerator.IsDetourCleanlyReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius)) {
+    //        detour = _detourGenerator.GenerateDetourAroundObstaclePoles(shipOrFleetPosition, shipOrFleetClearanceRadius);
+    //        D.Assert(_detourGenerator.IsDetourCleanlyReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius),
+    //            "{0} detour {1} not reachable. Ship/Fleet.Position = {2}, ClearanceRadius = {3:0.##}.".Inject(DebugName, detour, shipOrFleetPosition, shipOrFleetClearanceRadius));
+    //    }
+    //    return detour;
+    //}
+    public Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float shipOrFleetClearanceRadius) {
+        Vector3 detour = _detourGenerator.GenerateDetourFromObstacleZoneHit(shipOrFleetPosition, zoneHitInfo.point, shipOrFleetClearanceRadius);
+        if (!_detourGenerator.IsDetourCleanlyReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius)) {
+            DetourGenerator.ApproachPath approachPath = _detourGenerator.GetApproachPath(shipOrFleetPosition, zoneHitInfo.point);
+            switch (approachPath) {
+                case DetourGenerator.ApproachPath.Polar:
+                    detour = _detourGenerator.GenerateDetourFromZoneHitAroundBelt(shipOrFleetPosition, zoneHitInfo.point, shipOrFleetClearanceRadius);
+                    if (!_detourGenerator.IsDetourCleanlyReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius)) {
+                        detour = _detourGenerator.GenerateDetourFromZoneHitAroundPoles(shipOrFleetPosition, zoneHitInfo.point, shipOrFleetClearanceRadius);
+                        if (!_detourGenerator.IsDetourCleanlyReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius)) {
+                            detour = _detourGenerator.GenerateDetourAroundObstaclePoles(shipOrFleetPosition, shipOrFleetClearanceRadius);
+                            D.Assert(_detourGenerator.IsDetourReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius),
+                                "{0} detour {1} not reachable. Ship/Fleet.Position = {2}, ClearanceRadius = {3:0.##}. Position = {4}."
+                                .Inject(DebugName, detour, shipOrFleetPosition, shipOrFleetClearanceRadius, Position));
+                        }
+                    }
+                    break;
+                case DetourGenerator.ApproachPath.Belt:
+                    detour = _detourGenerator.GenerateDetourFromZoneHitAroundPoles(shipOrFleetPosition, zoneHitInfo.point, shipOrFleetClearanceRadius);
+                    if (!_detourGenerator.IsDetourCleanlyReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius)) {
+                        detour = _detourGenerator.GenerateDetourFromZoneHitAroundBelt(shipOrFleetPosition, zoneHitInfo.point, shipOrFleetClearanceRadius);
+                        if (!_detourGenerator.IsDetourCleanlyReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius)) {
+                            detour = _detourGenerator.GenerateDetourAroundObstaclePoles(shipOrFleetPosition, shipOrFleetClearanceRadius);
+                            D.Assert(_detourGenerator.IsDetourReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius),
+                                "{0} detour {1} not reachable. Ship/Fleet.Position = {2}, ClearanceRadius = {3:0.##}. Position = {4}."
+                                .Inject(DebugName, detour, shipOrFleetPosition, shipOrFleetClearanceRadius, Position));
+                        }
+                    }
+                    break;
+                case DetourGenerator.ApproachPath.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(approachPath));
+            }
+        }
+        return detour;
+    }
 
     #endregion
 

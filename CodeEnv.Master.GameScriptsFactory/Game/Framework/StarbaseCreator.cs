@@ -60,7 +60,7 @@ public class StarbaseCreator : AAutoUnitCreator {
     protected override bool DeployUnit() {
         LogEvent();
         // Starbases don't need to be deployed. They are already on location
-        PathfindingManager.Instance.Graph.AddToGraph(_command);
+        PathfindingManager.Instance.Graph.AddToGraph(_command, SectorID);
         return true;
     }
 

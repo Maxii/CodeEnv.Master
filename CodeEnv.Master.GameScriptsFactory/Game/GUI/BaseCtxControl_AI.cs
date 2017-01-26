@@ -46,7 +46,7 @@ public class BaseCtxControl_AI : ACtxControl {
     private AUnitBaseCmdItem _baseMenuOperator;
 
     public BaseCtxControl_AI(AUnitBaseCmdItem baseCmd)
-        : base(baseCmd.gameObject, uniqueSubmenusReqd: Constants.Zero, menuPosition: MenuPositionMode.Over) {
+        : base(baseCmd.gameObject, uniqueSubmenuQtyReqd: Constants.Zero, menuPosition: MenuPositionMode.Over) {
         _baseMenuOperator = baseCmd;
     }
 

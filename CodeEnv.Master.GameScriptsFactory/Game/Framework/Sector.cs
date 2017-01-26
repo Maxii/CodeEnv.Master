@@ -149,6 +149,11 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
         get { return _publisher = _publisher ?? new SectorPublisher(Data, this); }
     }
 
+    /// <summary>
+    /// A randomly selected point guaranteed to be inside the sector.
+    /// <remarks>Warning: If this sector is on the periphery of the universe,
+    /// the point returned is NOT guaranteed to be within the universe's radius.</remarks>
+    /// </summary>
     private Vector3 RandomInsidePoint {
         get {
             float radius = Radius;
@@ -284,6 +289,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
 
     /// <summary>
     /// Returns a random position inside the sector that is clear of any interference.
+    /// The point returned is guaranteed to be inside the radius of the universe.
     /// </summary>
     /// <returns></returns>
     public Vector3 GetClearRandomPointInsideSector() {
@@ -292,11 +298,23 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
 
     private Vector3 GetClearRandomPointInsideSector(int iterateCount) {
         var pointCandidate = RandomInsidePoint;
-        if (ConfirmLocationIsClear(pointCandidate)) {
-            return pointCandidate;
+        if (!IsOnPeriphery) {
+            if (ConfirmLocationIsClear(pointCandidate)) {
+                return pointCandidate;
+            }
         }
-
-        D.AssertException(iterateCount < 100, DebugName);
+        else {
+            // on the periphery so may be outside universe radius
+            float universeRadius = _gameMgr.GameSettings.UniverseSize.Radius();
+            if (Vector3.SqrMagnitude(pointCandidate - GameConstants.UniverseOrigin) < universeRadius * universeRadius) {
+                // inside the universe
+                if (ConfirmLocationIsClear(pointCandidate)) {
+                    return pointCandidate;
+                }
+            }
+        }
+        // 1.18.17 IMPROVE I'm guessing this can easily fail if a peripheral sector
+        D.AssertException(iterateCount < 100, "{0}: Iterate check error. IsOnPeriphery = {1}.".Inject(DebugName, IsOnPeriphery));
         iterateCount++;
         return GetClearRandomPointInsideSector(iterateCount);
     }
@@ -310,16 +328,16 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     private bool ConfirmLocationIsClear(Vector3 location) {
         bool isInsideSystem = false;
         if (System != null) {
-            if (MyMath.IsPointInsideSphere(System.Position, System.ClearanceRadius, location)) {
+            if (MyMath.IsPointOnOrInsideSphere(System.Position, System.ClearanceRadius, location)) {
                 // point is close to or inside System
-                if (MyMath.IsPointInsideSphere(System.Star.Position, System.Star.ClearanceRadius, location)) {
+                if (MyMath.IsPointOnOrInsideSphere(System.Star.Position, System.Star.ClearanceRadius, location)) {
                     return false;
                 }
-                if (System.Settlement != null && MyMath.IsPointInsideSphere(System.Settlement.Position, System.Settlement.ClearanceRadius, location)) {
+                if (System.Settlement != null && MyMath.IsPointOnOrInsideSphere(System.Settlement.Position, System.Settlement.ClearanceRadius, location)) {
                     return false;   // IMPROVE Settlement can be null while a Settlement is being built in the system
                 }
                 foreach (var planet in System.Planets) {
-                    if (MyMath.IsPointInsideSphere(planet.Position, planet.ClearanceRadius, location)) {
+                    if (MyMath.IsPointOnOrInsideSphere(planet.Position, planet.ClearanceRadius, location)) {
                         return false;
                     }
                 }
@@ -332,14 +350,14 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
             // UNCLEAR can starbases be inside system?
             var uCenter = gameKnowledge.UniverseCenter;
             if (uCenter != null) {
-                if (MyMath.IsPointInsideSphere(uCenter.Position, uCenter.ClearanceRadius, location)) {
+                if (MyMath.IsPointOnOrInsideSphere(uCenter.Position, uCenter.ClearanceRadius, location)) {
                     return false;
                 }
             }
             IEnumerable<IStarbaseCmd> starbases;
             if (gameKnowledge.TryGetStarbases(SectorID, out starbases)) {
                 foreach (var sbase in starbases) {
-                    if (MyMath.IsPointInsideSphere(sbase.Position, sbase.ClearanceRadius, location)) {
+                    if (MyMath.IsPointOnOrInsideSphere(sbase.Position, sbase.ClearanceRadius, location)) {
                         return false;
                     }
                 }
@@ -349,7 +367,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
         IEnumerable<IFleetCmd> fleets;
         if (gameKnowledge.TryGetFleets(SectorID, out fleets)) {
             foreach (var fleet in fleets) {
-                if (MyMath.IsPointInsideSphere(fleet.Position, fleet.ClearanceRadius, location)) {
+                if (MyMath.IsPointOnOrInsideSphere(fleet.Position, fleet.ClearanceRadius, location)) {
                     return false;
                 }
             }

@@ -28,27 +28,45 @@ public class RequiredPrefabs : AMonoSingleton<RequiredPrefabs> {
 
     #region Prefabs
 
-    [Header("Tracking Widgets")]
-    /// <summary>
-    /// A generic prefab for labels that track the world object they are parented too.
-    /// They need to have specific scripts added after instantiation to function.
-    /// </summary>
-    public GameObject worldTrackingLabel;
+    [Header("UI Tracking Widgets")]
     /// <summary>
     /// A specific prefab for labels that track world objects from the UI layer.
     /// Includes all scripts.
     /// </summary>
     public UITrackingLabel uiTrackingLabel;
-    /// <summary>
-    /// Prefab for sprites that track the world object they are parented too.
-    /// They need specific scripts and an atlas added after instantiation to function.
-    /// </summary>
-    public GameObject worldTrackingSprite;
+
     /// <summary>
     /// Prefab for sprites that track world objects from the UI layer.
     /// Includes all scripts but needs an atlas added.
     /// </summary>
     public UITrackingSprite uiTrackingSprite;
+
+    [Header("World Tracking Widgets")]
+    /// <summary>
+    /// Prefab for labels that track a world object. The label is parented to a common
+    /// UIPanel. They need specific scripts and an atlas added after instantiation to function.
+    /// </summary>
+    public GameObject worldTrackingLabel;
+
+    /// <summary>
+    /// Prefab for sprites that track a world object. The sprite is parented to a common
+    /// UIPanel. They need specific scripts and an atlas added after instantiation to function.
+    /// </summary>
+    public GameObject worldTrackingSprite;
+
+    [Header("Independent World Tracking Widgets")]
+    /// <summary>
+    /// A generic prefab for labels that track the world object they are parented too.
+    /// They need to have specific scripts added after instantiation to function.
+    /// </summary>
+    public GameObject worldTrackingLabel_Independent;
+
+    /// <summary>
+    /// Prefab for sprites that track the world object they are parented too.
+    /// They need specific scripts and an atlas added after instantiation to function.
+    /// </summary>
+    public GameObject worldTrackingSprite_Independent;
+
 
     [Header("Sprite Atlases")]
     public UIAtlas fleetIconAtlas;

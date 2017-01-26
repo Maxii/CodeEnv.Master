@@ -37,15 +37,26 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
         set { base.Data = value; }
     }
 
+    //public override float ClearanceRadius {
+    //    get {
+    //        float baseClearance = Data.CloseOrbitOuterRadius;
+    //        if (ChildMoons.Any()) {
+    //            MoonItem outerMoon = ChildMoons.MaxBy(moon => Vector3.SqrMagnitude(moon.Position - Position));
+    //            float distanceToOuterMoon = Vector3.Distance(outerMoon.Position, Position);
+    //            baseClearance = distanceToOuterMoon + outerMoon.ObstacleZoneRadius;
+    //        }
+    //        return baseClearance * 2F;  // HACK
+    //    }
+    //}
     public override float ClearanceRadius {
         get {
             float baseClearance = Data.CloseOrbitOuterRadius;
             if (ChildMoons.Any()) {
                 MoonItem outerMoon = ChildMoons.MaxBy(moon => Vector3.SqrMagnitude(moon.Position - Position));
                 float distanceToOuterMoon = Vector3.Distance(outerMoon.Position, Position);
-                baseClearance = distanceToOuterMoon + outerMoon.ObstacleZoneRadius;
+                baseClearance = distanceToOuterMoon + outerMoon.ClearanceRadius;
             }
-            return baseClearance * 2F;
+            return baseClearance * 2F;  // HACK
         }
     }
 
@@ -60,29 +71,31 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
         }
     }
 
+    protected override float ObstacleClearanceDistance { get { return Data.CloseOrbitOuterRadius; } }
+
     protected new PlanetDisplayManager DisplayMgr { get { return base.DisplayMgr as PlanetDisplayManager; } }
 
-    private DetourGenerator _detourGenerator;
+    //private DetourGenerator _detourGenerator;
     private IList<IShip_Ltd> _shipsInCloseOrbit;
 
     #region Initialization
 
-    protected override void InitializeObstacleZone() {
-        base.InitializeObstacleZone();
-        ObstacleZoneCollider.radius = Data.CloseOrbitInnerRadius;
-        InitializeObstacleDetourGenerator();
-    }
+    //protected override void InitializeObstacleZone() {
+    //    base.InitializeObstacleZone();
+    //    ObstacleZoneCollider.radius = Data.CloseOrbitInnerRadius;
+    //    InitializeObstacleDetourGenerator();
+    //}
 
-    private void InitializeObstacleDetourGenerator() {
-        if (IsMobile) {
-            Reference<Vector3> obstacleZoneCenter = new Reference<Vector3>(() => ObstacleZoneCollider.transform.TransformPoint(ObstacleZoneCollider.center));
-            _detourGenerator = new DetourGenerator(obstacleZoneCenter, ObstacleZoneRadius, Data.CloseOrbitOuterRadius);
-        }
-        else {
-            Vector3 obstacleZoneCenter = ObstacleZoneCollider.transform.TransformPoint(ObstacleZoneCollider.center);
-            _detourGenerator = new DetourGenerator(obstacleZoneCenter, ObstacleZoneRadius, Data.CloseOrbitOuterRadius);
-        }
-    }
+    //private void InitializeObstacleDetourGenerator() {
+    //    if (IsMobile) {
+    //        Reference<Vector3> obstacleZoneCenter = new Reference<Vector3>(() => ObstacleZoneCollider.transform.TransformPoint(ObstacleZoneCollider.center));
+    //        _detourGenerator = new DetourGenerator(DebugName, obstacleZoneCenter, ObstacleZoneCollider.radius, Data.CloseOrbitOuterRadius);
+    //    }
+    //    else {
+    //        Vector3 obstacleZoneCenter = ObstacleZoneCollider.transform.TransformPoint(ObstacleZoneCollider.center);
+    //        _detourGenerator = new DetourGenerator(DebugName, obstacleZoneCenter, ObstacleZoneCollider.radius, Data.CloseOrbitOuterRadius);
+    //    }
+    //}
 
     protected override ADisplayManager MakeDisplayManagerInstance() {
         return new PlanetDisplayManager(this, __DetermineCullingLayer());
@@ -90,7 +103,7 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
 
     protected override void InitializeDisplayManager() {
         base.InitializeDisplayManager();
-        DisplayMgr.IconInfo = MakeIconInfo();
+        InitializeIcon();
     }
 
     protected override ICtxControl InitializeContextMenu(Player owner) {
@@ -100,6 +113,10 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
     protected override HoverHighlightManager InitializeHoverHighlightMgr() {
         float highlightRadius = Radius * 2F;
         return new HoverHighlightManager(this, highlightRadius);
+    }
+
+    protected override float InitializeObstacleZoneRadius() {
+        return Data.CloseOrbitInnerRadius;
     }
 
     #endregion
@@ -113,26 +130,6 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
         D.Assert(!moon.IsOperational);
         bool isRemoved = ChildMoons.Remove(moon);
         D.Assert(isRemoved);
-    }
-
-    private void AssessIcon() {
-        if (DisplayMgr != null) {
-            var iconInfo = RefreshIconInfo();
-            if (DisplayMgr.IconInfo != iconInfo) {    // avoid property not changed warning
-                //D.Log(ShowDebugLog, "{0} changing IconInfo from {1} to {2}.", DebugName, DisplayMgr.IconInfo, iconInfo);
-                DisplayMgr.IconInfo = iconInfo;
-            }
-        }
-    }
-
-    private IconInfo RefreshIconInfo() {
-        return MakeIconInfo();
-    }
-
-    private IconInfo MakeIconInfo() {
-        var report = UserReport;
-        GameColor iconColor = report.Owner != null ? report.Owner.Color : GameColor.White;
-        return new IconInfo("Icon02", AtlasID.Contextual, iconColor, IconSize, WidgetPlacement.Over, Layers.Cull_1000);
     }
 
     public override void HandleEffectSequenceFinished(EffectSequenceID effectID) {
@@ -196,35 +193,108 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
         switch (Data.Category) {
             case PlanetoidCategory.GasGiant:    // radius 5
             case PlanetoidCategory.Ice:         // radius 2 with rings
-                return Layers.Cull_400;
+                return TempGameValues.LargerPlanetMeshCullLayer;
             case PlanetoidCategory.Terrestrial: // radius 2
             case PlanetoidCategory.Volcanic:    // radius 1
-                return Layers.Cull_200;
+                return TempGameValues.SmallerPlanetMeshCullLayer;
             case PlanetoidCategory.None:
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(Data.Category));
         }
     }
 
-    #region Cleanup
+    #region Show Icon
 
-    //protected override void Unsubscribe() {
-    //    base.Unsubscribe();
+    private void InitializeIcon() {
+        DebugControls debugControls = DebugControls.Instance;
+        debugControls.showPlanetIcons += ShowPlanetIconsChangedEventHandler;
+        if (debugControls.ShowPlanetIcons) {
+            EnableIcon(true);
+        }
+    }
+
+    private void EnableIcon(bool toEnable) {
+        if (toEnable) {
+            if (DisplayMgr.Icon == null) {
+                DisplayMgr.IconInfo = MakeIconInfo();
+            }
+        }
+        else {
+            if (DisplayMgr.Icon != null) {
+                DisplayMgr.IconInfo = default(IconInfo);
+            }
+        }
+    }
+
+    private void AssessIcon() {
+        if (DisplayMgr != null) {
+            if (DisplayMgr.Icon != null) {
+                var iconInfo = RefreshIconInfo();
+                if (DisplayMgr.IconInfo != iconInfo) {    // avoid property not changed warning
+                    //D.Log(ShowDebugLog, "{0} changing IconInfo from {1} to {2}.", DebugName, DisplayMgr.IconInfo, iconInfo);
+                    DisplayMgr.IconInfo = iconInfo;
+                }
+            }
+            else {
+                D.Assert(!DebugControls.Instance.ShowPlanetIcons);
+            }
+        }
+    }
+
+    private IconInfo RefreshIconInfo() {
+        return MakeIconInfo();
+    }
+
+    private IconInfo MakeIconInfo() {
+        var report = UserReport;
+        GameColor iconColor = report.Owner != null ? report.Owner.Color : GameColor.White;
+        return new IconInfo("Icon02", AtlasID.Contextual, iconColor, IconSize, WidgetPlacement.Over, TempGameValues.PlanetIconCullLayer);
+    }
+
+    private void ShowPlanetIconsChangedEventHandler(object sender, EventArgs e) {
+        EnableIcon(DebugControls.Instance.ShowPlanetIcons);
+    }
+
+    /// <summary>
+    /// Cleans up any icon subscriptions.
+    /// <remarks>The icon itself will be cleaned up when DisplayMgr.Dispose() is called.</remarks>
+    /// </summary>
+    private void CleanupIconSubscriptions() {
+        var debugControls = DebugControls.Instance;
+        if (debugControls != null) {
+            debugControls.showPlanetIcons -= ShowPlanetIconsChangedEventHandler;
+        }
+    }
+
+    #region Planet Icon Archive
+
+    // 1.16.17 TEMP Replaced fixed use of Icons with easily accessible DebugControls setting
+
+    //protected override void InitializeDisplayManager() {
+    //    base.InitializeDisplayManager();
+    //    DisplayMgr.IconInfo = MakeIconInfo();
+    //}
+
+    //private void AssessIcon() {
     //    if (DisplayMgr != null) {
-    //        var icon = DisplayMgr.Icon;
-    //        if (icon != null) {
-    //            UnsubscribeToIconEvents(icon);
+    //        var iconInfo = RefreshIconInfo();
+    //        if (DisplayMgr.IconInfo != iconInfo) {    // avoid property not changed warning
+    //            //D.Log(ShowDebugLog, "{0} changing IconInfo from {1} to {2}.", DebugName, DisplayMgr.IconInfo, iconInfo);
+    //            DisplayMgr.IconInfo = iconInfo;
     //        }
     //    }
     //}
 
-    //private void UnsubscribeToIconEvents(IResponsiveTrackingSprite icon) {
-    //    var iconEventListener = icon.EventListener;
-    //    iconEventListener.onHover -= HoverEventHandler;
-    //    iconEventListener.onClick -= ClickEventHandler;
-    //    iconEventListener.onDoubleClick -= DoubleClickEventHandler;
-    //    iconEventListener.onPress -= PressEventHandler;
-    //}
+    #endregion
+
+    #endregion
+
+    #region Cleanup
+
+    protected override void Unsubscribe() {
+        base.Unsubscribe();
+        CleanupIconSubscriptions();
+    }
 
     #endregion
 
@@ -278,12 +348,16 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
             D.AssertNotNull(_closeOrbitSimulator);
             var isRemoved = _shipsInCloseOrbit.Remove(ship);
             D.Assert(isRemoved);
-            D.Log("{0} has left close orbit around {1}.", ship.DebugName, DebugName);
+            D.Log(ShowDebugLog, "{0} has left close orbit around {1}.", ship.DebugName, DebugName);
             float shipDistance = Vector3.Distance(ship.Position, Position);
-            float minOutsideOfOrbitCaptureRadius = Data.CloseOrbitOuterRadius - ship.CollisionDetectionZoneRadius_Debug;
-            if (shipDistance > minOutsideOfOrbitCaptureRadius) {
-                D.Warn("{0} is leaving orbit of {1} but is not within {2:0.0000}. Ship's current orbit distance is {3:0.0000}.",
-                    ship.DebugName, DebugName, minOutsideOfOrbitCaptureRadius, shipDistance);
+            float insideOrbitSlotThreshold = Data.CloseOrbitOuterRadius - ship.CollisionDetectionZoneRadius_Debug;
+            if (shipDistance > insideOrbitSlotThreshold) {
+                D.Log(ShowDebugLog, "{0} is leaving orbit of {1} but collision detection zone is poking outside of orbit slot by {2:0.0000} units.",
+                    ship.DebugName, DebugName, shipDistance - insideOrbitSlotThreshold);
+                float halfOutsideOrbitSlotThreshold = Data.CloseOrbitOuterRadius;
+                if (shipDistance > halfOutsideOrbitSlotThreshold) {
+                    D.Warn("{0} is leaving orbit of {1} but collision detection zone is half outside of orbit slot.", ship.DebugName, DebugName);
+                }
             }
             if (_shipsInCloseOrbit.Count == Constants.Zero) {
                 // Choose either to deactivate the OrbitSimulator or destroy it, but not both
@@ -298,19 +372,28 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
 
     #endregion
 
-    #region IFleetNavigable Members
+    //#region IFleetNavigable Members
 
-    public override float GetObstacleCheckRayLength(Vector3 fleetPosition) {
-        float radiusContainingKnownObstacles = ObstacleZoneRadius;
-        if (ChildMoons.Any()) {
-            MoonItem outerMoon = ChildMoons.MaxBy(moon => Vector3.SqrMagnitude(moon.Position - Position));
-            float distanceToOuterMoon = Vector3.Distance(outerMoon.Position, Position);
-            radiusContainingKnownObstacles = distanceToOuterMoon + outerMoon.ObstacleZoneRadius;
-        }
-        return Vector3.Distance(fleetPosition, Position) - radiusContainingKnownObstacles - TempGameValues.ObstacleCheckRayLengthBuffer; ;
-    }
+    //public override float GetObstacleCheckRayLength(Vector3 fleetPosition) {
+    //    float radiusContainingKnownObstacles = ObstacleZoneRadius;
+    //    if (ChildMoons.Any()) {
+    //        MoonItem outerMoon = ChildMoons.MaxBy(moon => Vector3.SqrMagnitude(moon.Position - Position));
+    //        float distanceToOuterMoon = Vector3.Distance(outerMoon.Position, Position);
+    //        radiusContainingKnownObstacles = distanceToOuterMoon + outerMoon.ObstacleZoneRadius;
+    //    }
+    //    return Vector3.Distance(fleetPosition, Position) - radiusContainingKnownObstacles - TempGameValues.ObstacleCheckRayLengthBuffer; ;
+    //}
+    //public override float GetObstacleCheckRayLength(Vector3 fleetPosition) {
+    //    float radiusContainingKnownObstacles = _obstacleZoneCollider.radius;
+    //    if (ChildMoons.Any()) {
+    //        MoonItem outerMoon = ChildMoons.MaxBy(moon => Vector3.SqrMagnitude(moon.Position - Position));
+    //        float distanceToOuterMoon = Vector3.Distance(outerMoon.Position, Position);
+    //        radiusContainingKnownObstacles = distanceToOuterMoon + outerMoon.ObstacleZoneRadius;
+    //    }
+    //    return Vector3.Distance(fleetPosition, Position) - radiusContainingKnownObstacles - TempGameValues.ObstacleCheckRayLengthBuffer; ;
+    //}
 
-    #endregion
+    //#endregion
 
     #region IShipNavigable Members
 
@@ -332,13 +415,20 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
 
     #endregion
 
-    #region IAvoidableObstacle Members
+    //#region IAvoidableObstacle Members
 
-    public override Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float fleetRadius) {
-        return _detourGenerator.GenerateDetourAtObstaclePoles(shipOrFleetPosition, fleetRadius);
-    }
+    //public override Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float shipOrFleetClearanceRadius) {
+    //    return _detourGenerator.GenerateDetourAtOrAroundObstaclePoles(shipOrFleetPosition, shipOrFleetClearanceRadius);
+    //}
+    //public override Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float shipOrFleetClearanceRadius) {
+    //    Vector3 detour = _detourGenerator.GenerateDetourAtObstaclePoles(shipOrFleetPosition, shipOrFleetClearanceRadius);
+    //    if (_detourGenerator.CheckIfDetourReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius)) {
+    //        return detour;
+    //    }
+    //    return _detourGenerator.GenerateDetourAroundObstaclePoles(shipOrFleetPosition, shipOrFleetClearanceRadius);
+    //}
 
-    #endregion
+    //#endregion
 
     #region IShipExplorable Members
 

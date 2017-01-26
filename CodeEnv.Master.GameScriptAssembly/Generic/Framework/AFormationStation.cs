@@ -24,12 +24,12 @@ public abstract class AFormationStation : AMonoBase {
     protected sealed override void Awake() {
         base.Awake();
         InitializeValuesAndReferences();
-        Validate();
+        ValidateOnAwake();
     }
 
     protected virtual void InitializeValuesAndReferences() { }
 
-    protected virtual void Validate() { }
+    protected virtual void ValidateOnAwake() { }
 
 
 }

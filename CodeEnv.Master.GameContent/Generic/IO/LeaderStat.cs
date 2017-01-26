@@ -44,8 +44,18 @@ namespace CodeEnv.Master.GameContent {
 
         public string ImageFilename { get; private set; }
 
-        public LeaderStat(string name) : this(name, AtlasID.None, null) { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LeaderStat"/> struct for NoPlayer.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        public LeaderStat(string name) : this(name, AtlasID.MyGui, TempGameValues.AnImageFilename) { }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LeaderStat"/> struct for a real Player.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <param name="imageAtlasID">The image atlas identifier.</param>
+        /// <param name="imageFilename">The image filename.</param>
         public LeaderStat(string name, AtlasID imageAtlasID, string imageFilename)
             : this() {
             Name = name;

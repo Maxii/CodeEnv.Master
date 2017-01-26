@@ -110,10 +110,11 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
         IEnumerable<INavigable> targets;
         bool isSubmenuSupported = TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(directive, out targets);
         if (isSubmenuSupported) {
-            // directive requires a submenu, although targets maybe empty
+            // directive requires a submenu, although targets may be empty
             var targetsStack = new Stack<INavigable>(targets);
             int submenuItemCount = targetsStack.Count;
 
+            //D.Log("{0}: _unusedSubMenu count = {1}.", OperatorName, _unusedSubMenus.Count);
             if (submenuItemCount > Constants.Zero) {
                 submenuItemCount++; // make room for a Closest item
                 var subMenu = _unusedSubMenus.Pop();
@@ -164,6 +165,24 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
         return targets.MinBy(t => Vector3.SqrMagnitude(t.Position - position));
     }
 
+    #region Debug
+
+    /// <summary>
+    /// Validates that the unique submenus Qty reqd value submitted equals the number of subMenus actually required
+    /// as determined by TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected().
+    /// </summary>
+    protected void __ValidateUniqueSubmenuQtyReqd() {
+        IEnumerable<INavigable> unusedTgts;
+        int submenusReqd = Constants.Zero;
+        foreach (var directive in UserMenuOperatorDirectives) {
+            if (TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(directive, out unusedTgts)) {
+                submenusReqd++;
+            }
+        }
+        D.AssertEqual(submenusReqd, _uniqueSubmenuQtyReqd, "{0}: Erroneous number of Reqd Submenus specified {1}.".Inject(OperatorName, _uniqueSubmenuQtyReqd));
+    }
+
+    #endregion
 
 }
 

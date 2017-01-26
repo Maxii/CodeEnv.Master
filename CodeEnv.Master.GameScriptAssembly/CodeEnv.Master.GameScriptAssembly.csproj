@@ -63,6 +63,8 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\_Debug\CmdIconsFolder.cs" />
+    <Compile Include="Game\_Debug\ElementIconsFolder.cs" />
     <Compile Include="Game\_Debug\GameSettingsDebugControl.cs" />
     <Compile Include="Game\_Debug\EffectsFolder.cs" />
     <Compile Include="Generic\Framework\AFormationStation.cs" />
@@ -108,6 +110,8 @@
     <Compile Include="Generic\Graphics\OrbitSimulator.cs" />
     <Compile Include="Generic\Graphics\ShipCloseOrbitSimulator.cs" />
     <Compile Include="Game\_Debug\SystemsFolder.cs" />
+    <Compile Include="Game\_Debug\PlanetIconsFolder.cs" />
+    <Compile Include="Game\_Debug\StarIconsFolder.cs" />
     <Compile Include="ThirdParty\AMonoStateMachine_NoCall.cs" />
     <Compile Include="ThirdParty\TaskManager.cs" />
     <Compile Include="Generic\Framework\JobManager.cs" />

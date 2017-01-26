@@ -27,9 +27,37 @@ using UnityEngine;
 /// </summary>
 public class OrbitSimulator : AMonoBase, IOrbitSimulator {
 
-    private const int UpdateOrbitCounterThreshold = 4;
-
     protected const string DebugNameFormat = "{0}.{1}";
+
+    #region Static Spread UpdateOrbit Load Fields
+
+    /// <summary>
+    /// The number of frames over which to spread the UpdateOrbit() load.
+    /// </summary>
+    private const int FramesToSpreadUpdate = 4;
+
+    /// <summary>
+    /// The frameCount value that most recently completed execution of its UpdateOrbit() load.
+    /// </summary>
+    private static int _frameUpdated;
+
+    /// <summary>
+    /// The next index of _allOrbitSims that should have UpdateOrbit executed.
+    /// </summary>
+    private static int _nextSimUpdateIndex;
+
+    /// <summary>
+    /// All the OrbitSimulators currently present in the scene whether enabled or not.
+    /// <remarks>Used List rather than HashSet to gain guaranteed iteration order.</remarks>
+    /// </summary>
+    private static IList<OrbitSimulator> _allOrbitSims = new List<OrbitSimulator>();
+
+    /// <summary>
+    /// Allows a one time static subscription to events from this class.
+    /// </summary>
+    private static bool _isStaticallySubscribed;
+
+    #endregion
 
     private string _debugName;
     public virtual string DebugName {
@@ -104,7 +132,6 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
 
     private IList<IDisposable> _subscriptions;
     private IGameManager _gameMgr;
-    private int _updateOrbitCounter;
 
     protected override void Awake() {
         base.Awake();
@@ -112,11 +139,25 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
         _gameTime = GameTime.Instance;
         Subscribe();
         enabled = false;
+
+        _allOrbitSims.Add(this);
     }
 
     private void Subscribe() {
         _subscriptions = new List<IDisposable>();
         _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<IGameManager, bool>(gm => gm.IsPaused, IsPausedPropChangedHandler));
+        SubscribeStaticallyOnce();
+    }
+
+    /// <summary>
+    /// Subscribes this class using static event handler(s) to instance events exactly one time.
+    /// </summary>
+    private void SubscribeStaticallyOnce() {
+        if (!_isStaticallySubscribed) {
+            //D.Log("{0} is subscribing statically to {1}'s sceneLoading event.", typeof(OrbitSimulator).Name, _gameMgr.GetType().Name);
+            _gameMgr.sceneLoading += SceneLoadingEventHandler;
+            _isStaticallySubscribed = true;
+        }
     }
 
     private float InitializeOrbitSpeed() {
@@ -129,14 +170,41 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
         return orbitSpeedInUnitsPerHour;
     }
 
-    void Update() {
-        if (_updateOrbitCounter >= UpdateOrbitCounterThreshold) {
-            float deltaTimeSinceLastUpdate = _gameTime.DeltaTime * _updateOrbitCounter;
-            UpdateOrbit(deltaTimeSinceLastUpdate);
-            _updateOrbitCounter = Constants.Zero;
-            return;
+    private void Update() {
+#if UNITY_EDITOR
+        if (_frameUpdated != Time.frameCount || !Application.isPlaying) {
+#else
+        if(_frameUpdated != Time.frameCount) {
+#endif
+            // Spreads the UpdateOrbit() load over a designated number of frames - FramesToSpreadUpdate
+
+            // This Simulator is the first to have its Update called in the new frame indicated by Time.frameCount.
+            // As a result, it gets to call UpdateOrbit() for the Simulators that are next in line to run.
+
+            _frameUpdated = Time.frameCount;
+
+            int allSimCount = _allOrbitSims.Count;
+            if (_nextSimUpdateIndex >= allSimCount) {
+                _nextSimUpdateIndex = Constants.Zero;
+            }
+
+            int simQtyToUpdate = Mathf.CeilToInt(allSimCount / (float)FramesToSpreadUpdate);
+            int lastSimUpdateIndex = _nextSimUpdateIndex + simQtyToUpdate - 1;
+            if (lastSimUpdateIndex > allSimCount - 1) {
+                lastSimUpdateIndex = allSimCount - 1;
+            }
+
+            float deltaTime = _gameTime.DeltaTime * FramesToSpreadUpdate;
+            for (int i = _nextSimUpdateIndex; i <= lastSimUpdateIndex; i++) {
+                var sim = _allOrbitSims[i];
+                if (sim.enabled) {
+                    sim.UpdateOrbit(deltaTime);
+                }
+            }
+            //D.LogBold("{0} updated OrbitSimulator Indices {1} - {2} during Frame {3}. AllSimCount = {4}.",
+            //DebugName, _nextSimUpdateIndex, lastSimUpdateIndex, _frameUpdated, allSimCount);
+            _nextSimUpdateIndex = lastSimUpdateIndex + 1;
         }
-        _updateOrbitCounter++;
     }
 
     /// <summary>
@@ -166,6 +234,10 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
         RelativeOrbitSpeed = InitializeOrbitSpeed();
     }
 
+    private static void SceneLoadingEventHandler(object sender, EventArgs e) {
+        CleanupStaticMembers();
+    }
+
     #endregion
 
     private void AssessEnabled() {
@@ -174,6 +246,33 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
 
     protected override void Cleanup() {
         Unsubscribe();
+        _allOrbitSims.Remove(this);
+        if (IsApplicationQuiting) {
+            UnsubscribeStaticallyOnceOnQuit();
+        }
+    }
+
+    /// <summary>
+    /// Cleans up static members of this class whose value should not persist across scenes.
+    /// UNCLEAR This is called whether the scene loaded is from a saved game or a new game. 
+    /// Should static values be reset on a scene change from a saved game? 1) do the static members
+    /// retain their value after deserialization, and/or 2) can static members even be serialized? 
+    /// </summary>
+    private static void CleanupStaticMembers() {
+        //D.Log("{0}'s static CleanupStaticMembers() called.", typeof(OrbitSimulator).Name);
+        _nextSimUpdateIndex = Constants.Zero;
+        _allOrbitSims.Clear();
+    }
+
+    /// <summary>
+    /// Unsubscribes this class from all events that use a static event handler on Quit.
+    /// </summary>
+    private void UnsubscribeStaticallyOnceOnQuit() {
+        if (_isStaticallySubscribed) {
+            //D.Log("{0} is unsubscribing statically to {1}.", typeof(OrbitSimulator).Name, _gameMgr.GetType().Name);
+            _gameMgr.sceneLoaded -= SceneLoadingEventHandler;
+            _isStaticallySubscribed = false;
+        }
     }
 
     private void Unsubscribe() {

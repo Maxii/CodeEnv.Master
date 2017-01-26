@@ -156,17 +156,13 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     }
 
     private void HandleCollision(Collision collision) {
-        if (Target == null) {
+        if (!enabled) {
             // 12.17.16 parent name is name of Unit, collider name is name of element
             string collidedObjectName = collision.collider.transform.parent.name + Constants.Underscore + collision.collider.name;
-            // 12.17.16 If DebugName has no _###, then its the root name and Launch has not yet been called. I don't understand why
-            D.Warn("{0}.OnCollisionEnter() called from layer {1}. Ignoring collision with {2} on layer {3} before Launching.",
-                DebugName, ((Layers)(gameObject.layer)).GetValueName(), collidedObjectName, ((Layers)collision.collider.gameObject.layer).GetValueName());
-            // 12.17.16 FIXME OnCollisionEnter is being called when both _collider and monoBehaviour are disabled. According to Unity 5.0 
-            // release notes, this should no longer happen when monoBehaviour is disabled. However, OnCollisionEnter docs say 
-            // "Collision events will be sent to disabled MonoBehaviours, to allow enabling Behaviours in response to collisions." Anyhow,
-            // its occurring as both D.Assert(enabled) and D.Assert(_collider.enabled) will fail here. I'm just going to warn and ignore
-            // for now until this gets clarified.
+            D.AssertNull(Target, collidedObjectName);
+            D.Assert(!_collider.enabled, collidedObjectName);
+            // 1.6.17 OnCollisionEnter is called even when both _collider and monoBehaviour are disabled according to OnCollisionEnter 
+            // docs: "Collision events will be sent to disabled MonoBehaviours, to allow enabling Behaviours in response to collisions." 
             return;
         }
         //D.Log(ShowDebugLog, "{0} distance to intended target on collision: {1}.", DebugName, Vector3.Distance(transform.position, Target.Position));
@@ -375,6 +371,13 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         //D.Log(ShowDebugLog, "{0} and {1} no longer ignoring collisions.", DebugName, Weapon.Element.DebugName);
     }
 
+    protected override void Cleanup() {
+        base.Cleanup();
+        if (_displayMgr != null) {
+            _displayMgr.Dispose();
+        }
+    }
+
     #region Debug
 
     private bool __isVelocityToRestoreAfterPauseRecorded = false;
@@ -454,6 +457,8 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     #endregion
 
     #region IWidgetTrackable Members
+
+    public bool IsMobile { get { return true; } }
 
     public Vector3 GetOffset(WidgetPlacement placement) {
         switch (placement) {

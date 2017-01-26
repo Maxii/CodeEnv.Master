@@ -382,7 +382,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         cullDistances[(int)Layers.Cull_1000] = TempGameValues.CullDistance_1000;
         cullDistances[(int)Layers.Cull_3000] = TempGameValues.CullDistance_3000;
 
-        cullDistances[(int)Layers.SystemOrbitalPlane] = TempGameValues.CullDistance_3000;
+        cullDistances[(int)Layers.SystemOrbitalPlane] = TempGameValues.__CullDistance_6000;
 
         _mainCameras.ForAll(cam => {
             cam.orthographic = false;

@@ -26,10 +26,10 @@ namespace CodeEnv.Master.GameContent {
         /// The distances provided allow the proxy to help the ship stay within its desired range envelope of the target.
         /// <remarks>There is no target offset as ships don't attack in formation.</remarks>
         /// </summary>
-        /// <param name="minRangeToTgtSurface">The minimum desired distance of this ship from the target's surface.</param>
-        /// <param name="maxRangeToTgtSurface">The maximum desired distance of this ship from the target's surface.</param>
+        /// <param name="minDesiredDistanceToTgtSurface">The minimum desired distance of this ship from the target's surface.</param>
+        /// <param name="maxDesiredDistanceToTgtSurface">The maximum desired distance of this ship from the target's surface.</param>
         /// <returns></returns>
-        AutoPilotDestinationProxy GetApAttackTgtProxy(float minRangeToTgtSurface, float maxRangeToTgtSurface);
+        AutoPilotDestinationProxy GetApAttackTgtProxy(float minDesiredDistanceToTgtSurface, float maxDesiredDistanceToTgtSurface);
 
     }
 }

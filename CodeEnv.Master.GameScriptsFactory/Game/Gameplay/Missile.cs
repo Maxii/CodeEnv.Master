@@ -346,9 +346,8 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         D.Assert(!_driftCorrector.IsCorrectionUnderway);
 
         Profiler.BeginSample("Missile ChangeHeading Job Setup", this);
-        bool isInformedOfDateError = false;
-        __allowedTurns.Clear();
-        __actualTurns.Clear();
+        bool isInformedOfDateWarning = false;
+        __ResetTurnTimeWarningFields();
 
         //int startingFrame = Time.frameCount;
         Quaternion startingRotation = transform.rotation;
@@ -386,7 +385,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
             if (!isRqstdHeadingReached && (currentDate = _gameTime.CurrentDate) > errorDate) {
                 float desiredTurn = Quaternion.Angle(startingRotation, intendedHeadingRotation);
                 float resultingTurn = Quaternion.Angle(startingRotation, inprocessRotation);
-                __ReportTurnTimeWarning(errorDate, currentDate, desiredTurn, resultingTurn, __allowedTurns, __actualTurns, ref isInformedOfDateError);
+                __ReportTurnTimeWarning(errorDate, currentDate, desiredTurn, resultingTurn, __allowedTurns, __actualTurns, ref isInformedOfDateWarning);
             }
             Profiler.EndSample();
 
@@ -489,7 +488,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         else {
             // if icon has been destroyed, it won't be created again when reused. This will throw an error if not present
 #pragma warning disable 0219
-            ITrackingSprite operatingIcon = gameObject.GetSingleInterfaceInChildren<ITrackingSprite>();
+            IWorldTrackingSprite operatingIcon = gameObject.GetSingleInterfaceInChildren<IWorldTrackingSprite>();
 #pragma warning restore 0219
         }
 
@@ -530,14 +529,24 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     private IList<float> __allowedTurns = new List<float>();
     private IList<float> __actualTurns = new List<float>();
     private IList<string> __allowedAndActualTurnSteps;
+    private GameDate __turnTimeErrorDate;
 
-    private void __ReportTurnTimeWarning(GameDate errorDate, GameDate currentDate, float desiredTurn, float resultingTurn,
-        IList<float> allowedTurns, IList<float> actualTurns, ref bool isInformedOfDateError) {
-        if (!isInformedOfDateError) {
-            D.Warn("{0}.ChangeHeading of {1:0.##} degrees. CurrentDate {2} > ErrorDate {3}. Turn accomplished: {4:0.##} degrees.",
-                DebugName, desiredTurn, currentDate, errorDate, resultingTurn);
-            isInformedOfDateError = true;
+    private void __ReportTurnTimeWarning(GameDate warnDate, GameDate currentDate, float desiredTurn, float resultingTurn,
+        IList<float> allowedTurns, IList<float> actualTurns, ref bool isInformedOfDateWarning) {
+        if (!isInformedOfDateWarning) {
+            D.Log("{0}.ChangeHeading of {1:0.##} degrees. CurrentDate {2} > WarnDate {3}. Turn accomplished: {4:0.##} degrees.",
+                DebugName, desiredTurn, currentDate, warnDate, resultingTurn);
+            isInformedOfDateWarning = true;
         }
+
+        if (__turnTimeErrorDate == default(GameDate)) {
+            __turnTimeErrorDate = new GameDate(warnDate, GameTimeDuration.OneDay);
+        }
+
+        if (currentDate > __turnTimeErrorDate) {
+            D.Error("{0}.ChangeHeading timed out.", DebugName);
+        }
+
         if (ShowDebugLog) {
             if (__allowedAndActualTurnSteps == null) {
                 __allowedAndActualTurnSteps = new List<string>();
@@ -549,6 +558,12 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
             }
             D.Log("Allowed vs Actual TurnSteps:\n {0}", __allowedAndActualTurnSteps.Concatenate());
         }
+    }
+
+    private void __ResetTurnTimeWarningFields() {
+        __allowedTurns.Clear();
+        __actualTurns.Clear();
+        __turnTimeErrorDate = default(GameDate);
     }
 
 

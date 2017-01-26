@@ -26,12 +26,14 @@ using UnityEngine;
 /// </summary>
 public class FpsReadout : AGuiLabelReadout {
 
-    public static float FramesPerSecond { get { return _lastFpsValue; } }
+    private const string FormattedFpsText = "{0:F1} FPS";
+
 
     private static float _redFramerate = TempGameValues.MinimumFramerate;
     private static float _yellowFramerate = TempGameValues.MinimumFramerate + 5F;
-    private static string _formattedFpsText = "{0:F1} FPS";
     private static float _lastFpsValue = 500F;
+
+    public static float FramesPerSecond { get { return _lastFpsValue; } }
 
     public float secondsBetweenDisplayRefresh = 0.5F;
 
@@ -86,7 +88,7 @@ public class FpsReadout : AGuiLabelReadout {
         else if (_lastFpsValue < _yellowFramerate) {
             color = GameColor.Yellow;
         }
-        RefreshReadout(_formattedFpsText.Inject(_lastFpsValue), color);
+        RefreshReadout(FormattedFpsText.Inject(_lastFpsValue), color);
     }
 
     #region Event and Property Change Handlers

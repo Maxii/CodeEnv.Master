@@ -27,7 +27,9 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class PlanetDisplayManager : AIconDisplayManager, IMortalDisplayManager {
 
-        protected override int IconDepth { get { return -6; } }
+        public new IWorldTrackingSprite Icon { get { return base.Icon; } }
+
+        protected override int IconDepth { get { return 2; } }
 
         private IRevolver _revolver;
         private IEnumerable<MeshRenderer> _secondaryMeshRenderers;
@@ -85,10 +87,9 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        protected override ITrackingSprite MakeIconInstance() {
-            return References.TrackingWidgetFactory.MakeConstantSizeTrackingSprite(_trackedItem, IconInfo);
+        protected override IWorldTrackingSprite MakeIconInstance() {
+            return References.TrackingWidgetFactory.MakeWorldTrackingSprite(_trackedItem, IconInfo);
         }
-
 
         #region Hide Primary Mesh Archive
 
@@ -131,6 +132,7 @@ namespace CodeEnv.Master.GameContent {
         public void HandleDeath() {
             IsDisplayEnabled = false;
             _primaryMeshRenderer.enabled = false;
+            DestroyIcon();
         }
 
         #endregion

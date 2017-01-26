@@ -35,6 +35,13 @@ namespace CodeEnv.Master.GameContent {
 
         Transform transform { get; }
 
+        /// <summary>
+        /// Checks whether the InvisibleMesh's size should be changed if present.
+        /// <remarks>Typically called after there is a change to the associated widget's mesh size.</remarks>
+        /// </summary>
+        void CheckForInvisibleMeshSizeChange();
+
+
     }
 }
 

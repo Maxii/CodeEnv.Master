@@ -30,9 +30,9 @@ namespace CodeEnv.Master.GameContent {
             Layers.Cull_Tiny, Layers.Cull_1, Layers.Cull_2, Layers.Cull_3, Layers.Cull_4, Layers.Cull_8, Layers.Cull_15, Layers.Cull_200,
             Layers.Cull_400, Layers.Cull_1000, Layers.Cull_3000, Layers.Projectiles, Layers.Shields, Layers.SystemOrbitalPlane);
 
-        public new IResponsiveTrackingSprite Icon { get { return base.Icon as IResponsiveTrackingSprite; } }
+        public new IInteractiveWorldTrackingSprite Icon { get { return base.Icon as IInteractiveWorldTrackingSprite; } }
 
-        protected override int IconDepth { get { return -4; } }
+        protected override int IconDepth { get { return 3; } }
 
         private IBillboard _glowBillboard;
         private IRevolver[] _revolvers; // star mesh and 2 glows
@@ -85,6 +85,17 @@ namespace CodeEnv.Master.GameContent {
             base.AssessComponentsToShowOrOperate();
             _glowBillboard.enabled = IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS;
             _revolvers.ForAll(r => r.IsActivated = IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS);
+        }
+
+        /// <summary>
+        /// Changes the primary mesh and 2 glow layers to <c>layer</c>.
+        /// <remarks>TEMP method to make stars visible from further away when star icons aren't used.</remarks>
+        /// </summary>
+        /// <param name="layer">The layer.</param>
+        public void __ChangeMeshLayersTo(Layers layer) {
+            _revolvers.ForAll(r => {
+                (r as Component).gameObject.layer = (int)layer;
+            });
         }
 
         public override string ToString() {

@@ -75,27 +75,36 @@ public abstract class AGuiWindow : AMonoBase {
     }
 
     protected GameManager _gameMgr;
+    protected UIPanel _panel;
 
-    private UIPanel _panel;
     private FadeMode _currentFadeMode = FadeMode.None;
     private Job _fadeInJob;
     private Job _fadeOutJob;
     private GameTime _gameTime;
     private JobManager _jobMgr;
+    /// <summary>
+    /// Indicates whether to optimize the widgets are static value when showing/hiding a window.
+    /// <remarks>If true, the editor value of widgetsAreStatic is false meaning there are widgets that can move under the panel.</remarks>
+    /// </summary>
+    private bool _optimizeWidgetsAreStatic;
 
     /// <summary>
     /// Note: InitializeOnAwake() must be called from Awake() from a derived class.
     /// </summary>
     /// <remarks> This is because derived class AHudWindow is a singleton, using InitializeOnAwake(), not Awake().</remarks>
     protected virtual void InitializeOnAwake() {
-        AcquireReferences();
+        InitializeValuesAndReferences();
     }
 
-    protected virtual void AcquireReferences() {
+    protected virtual void InitializeValuesAndReferences() {
         _gameTime = GameTime.Instance;
         _gameMgr = GameManager.Instance;
         _jobMgr = JobManager.Instance;
         _panel = UnityUtility.ValidateComponentPresence<UIPanel>(gameObject);
+        _optimizeWidgetsAreStatic = !_panel.widgetsAreStatic;
+        if (_optimizeWidgetsAreStatic) {
+            _panel.widgetsAreStatic = true; // OPTIMIZE see http://www.tasharen.com/forum/index.php?board=1.0
+        }
     }
 
     protected override void Start() {
@@ -123,6 +132,11 @@ public abstract class AGuiWindow : AMonoBase {
         if (!enabled || !gameObject.activeSelf || IsShowing) {
             return;
         }
+
+        if (_optimizeWidgetsAreStatic) {
+            _panel.widgetsAreStatic = false;
+        }
+
         IsShowing = true;
 
         if (!useFading) {
@@ -155,6 +169,10 @@ public abstract class AGuiWindow : AMonoBase {
         else {
             FadeOut(fadeDuration);
             EventDelegate.Execute(onHideBegin);
+        }
+
+        if (_optimizeWidgetsAreStatic) {
+            _panel.widgetsAreStatic = true;
         }
     }
 

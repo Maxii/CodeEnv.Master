@@ -196,7 +196,7 @@ public class NewGameSystemConfigurator {
             maxSectorDistanceFromUserHome = closestAllowedSectorDistanceToUserHome + maxClosestAdder;
         }
 
-        IEnumerable<IntVector3> candidateSectorIDs = sectorGrid.GetSurroundingSectorIdsBetween(userHomeSectorID, minSectorDistanceFromUserHome, maxSectorDistanceFromUserHome);
+        IEnumerable<IntVector3> candidateSectorIDs = sectorGrid.GetSurroundingSectorIDsBetween(userHomeSectorID, minSectorDistanceFromUserHome, maxSectorDistanceFromUserHome, includePeriphery: false);
         if (!candidateSectorIDs.Any()) {
             D.Error("{0} could get no surrounding sectors around {1} between distances {2} and {3}.", DebugName, userHomeSectorID, minSectorDistanceFromUserHome, maxSectorDistanceFromUserHome);
         }
@@ -210,7 +210,7 @@ public class NewGameSystemConfigurator {
     }
 
     /// <summary>
-    /// Deploys and configures any additional creators around the player's homeSectorID
+    /// Deploys and configures any additional system creators around the player's homeSectorID
     /// if startLevel indicates there will be more player owned settlements.
     /// </summary>
     /// <param name="homeSectorID">The home sector identifier.</param>
@@ -224,9 +224,9 @@ public class NewGameSystemConfigurator {
 
         var deployedCreators = new List<SystemCreator>(additionalCreatorQtyToDeploy);
         SectorGrid sectorGrid = SectorGrid.Instance;
-        var homeNeighboringSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID);
+        var homeNeighboringSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID, includePeriphery: false);
         var sectorIDsToDeployTo = homeNeighboringSectorIDs.Shuffle().Take(additionalCreatorQtyToDeploy);
-        D.AssertEqual(sectorIDsToDeployTo.Count(), additionalCreatorQtyToDeploy);  // was there a shortage of sectorIndicesSurroundingHome?
+        D.AssertEqual(sectorIDsToDeployTo.Count(), additionalCreatorQtyToDeploy);  // probable shortage of homeNeighboringSectorIDs due to periphery
 
         int[] systemDesirabilityWeighting = new int[] { 1, 3, 1 };
         SystemDesirability[] systemDesirabilityChoices = Enums<SystemDesirability>.GetValues(excludeDefault: true).ToArray();

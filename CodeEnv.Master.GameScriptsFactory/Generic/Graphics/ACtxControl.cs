@@ -51,7 +51,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     /// a single CtxMenu object could act as the submenu object for all items because the unique submenu items were
     /// held by item.submenuItems, not the submenu object itself.]
     /// </summary>
-    protected static List<CtxMenu> _availableSubMenus = new List<CtxMenu>();
+    protected static CtxMenu[] _availableSubMenus; // = new List<CtxMenu>();
 
     /// <summary>
     /// Lookup table for the directive associated with the menu item selected, keyed by the ID of the menu item selected.
@@ -59,7 +59,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     protected static IDictionary<int, ValueType> _directiveLookup = new Dictionary<int, ValueType>();
 
     /// <summary>
-    /// Allows a one time static subscription to event publishers from this class.
+    /// Allows a one time static subscription to events from this class.
     /// </summary>
     private static bool _isStaticallySubscribed;
     private static CtxMenu _generalCtxMenu;
@@ -122,24 +122,24 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     /// on the orbital plane are going to be overrun by orbiting planets.
     /// </summary>
     protected Vector3 _lastPressReleasePosition;
+    protected int _uniqueSubmenuQtyReqd;
     protected Player _user;
     protected CtxObject _ctxObject;
     private GameManager _gameMgr;
     private int _optimalFocusDistanceItemID;
-    private int _uniqueSubmenusReqd;
     private CtxMenuOpenedMode _menuOpenedMode;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ACtxControl" /> class.
     /// </summary>
     /// <param name="ctxObjectGO">The gameObject where the desired CtxObject is located.</param>
-    /// <param name="uniqueSubmenusReqd">The number of unique sub-menus reqd by this CtxControl.</param>
+    /// <param name="uniqueSubmenuQtyReqd">The number of unique sub-menus reqd by this CtxControl.</param>
     /// <param name="menuPosition">The position to place the menu.</param>
-    public ACtxControl(GameObject ctxObjectGO, int uniqueSubmenusReqd, MenuPositionMode menuPosition) {
+    public ACtxControl(GameObject ctxObjectGO, int uniqueSubmenuQtyReqd, MenuPositionMode menuPosition) {
         //D.Log("Creating {0} for {1}.", GetType().Name, ctxObjectGO.name);
         _gameMgr = GameManager.Instance;
         _user = _gameMgr.UserPlayer;
-        _uniqueSubmenusReqd = uniqueSubmenusReqd;   // done this way to avoid CA2214 - accessing a virtual property from constructor
+        _uniqueSubmenuQtyReqd = uniqueSubmenuQtyReqd;   // done this way to avoid CA2214 - accessing a virtual property from constructor
         InitializeContextMenu(ctxObjectGO, menuPosition);
         Subscribe();
     }
@@ -172,11 +172,10 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
         // Accordingly, the work around is 1) to either use the editor to set the items using a CtxMenu dedicated to ships, or 2) have this already dedicated 
         // CtxObject hold the .menuItems that are set programmatically when Show is called. 
 
-        if (_availableSubMenus.Count == Constants.Zero) {
-            _availableSubMenus.AddRange(GuiManager.Instance.gameObject.GetSafeComponentsInChildren<CtxMenu>()
-                .Where(menu => menu.gameObject.name.Equals("SubMenu")));
-            D.Assert(_uniqueSubmenusReqd <= _availableSubMenus.Count);
-        }
+        _availableSubMenus = _availableSubMenus ?? GuiManager.Instance.gameObject.GetSafeComponentsInChildren<CtxMenu>()
+            .Where(menu => menu.gameObject.name.Equals("SubMenu")).ToArray();
+        D.Assert(_uniqueSubmenuQtyReqd <= _availableSubMenus.Length);
+
         if (_generalCtxMenu == null) {
             _generalCtxMenu = GuiManager.Instance.gameObject.GetSafeComponentsInChildren<CtxMenu>()
                 .Single(menu => menu.gameObject.name.Equals("GeneralMenu"));
@@ -385,7 +384,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
         OnHideComplete();
     }
 
-    private void SceneLoadedEventHandler(object sender, EventArgs e) {
+    private static void SceneLoadedEventHandler(object sender, EventArgs e) {
         CleanupStaticMembers();
     }
 
@@ -566,11 +565,9 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     /// retain their value after deserialization, and/or 2) can static members even be serialized? 
     /// </summary>
     private static void CleanupStaticMembers() {
-        if (_isStaticallySubscribed) {
-            //D.Log("{0}'s static CleanupStaticMembers() called.", typeof(ACtxControl).Name);
-            _availableSubMenus.Clear();
-            _generalCtxMenu = null;
-        }
+        //D.Log("{0}'s static CleanupStaticMembers() called.", typeof(ACtxControl).Name);
+        _availableSubMenus = null;
+        _generalCtxMenu = null;
     }
 
     /// <summary>

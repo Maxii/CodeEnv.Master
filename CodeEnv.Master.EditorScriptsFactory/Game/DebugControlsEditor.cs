@@ -72,6 +72,15 @@ public class DebugControlsEditor : Editor {
                 }
                 NGUIEditorTools.EndContents();
             }
+
+            if (NGUIEditorTools.DrawHeader("General Settings")) {
+                NGUIEditorTools.BeginContents();
+                {
+                    NGUIEditorTools.SetLabelWidth(160F);
+                    NGUIEditorTools.DrawProperty("One UIPanel per widget", serializedObject, "_useIndependentUIPanelWidgets");
+                }
+                NGUIEditorTools.EndContents();
+            }
         }
         EditorGUI.EndDisabledGroup();
 
@@ -129,6 +138,20 @@ public class DebugControlsEditor : Editor {
                     }
                     NGUIEditorTools.EndContents();
                 }
+
+                GUILayout.Space(5F);
+
+                if (NGUIEditorTools.DrawHeader("Show Icons")) {
+                    NGUIEditorTools.BeginContents();
+                    {
+                        NGUIEditorTools.SetLabelWidth(80F);
+                        NGUIEditorTools.DrawProperty("Element", serializedObject, "_showElementIcons");
+                        NGUIEditorTools.DrawProperty("Planet", serializedObject, "_showPlanetIcons");
+                        NGUIEditorTools.DrawProperty("Star", serializedObject, "_showStarIcons");
+                    }
+                    NGUIEditorTools.EndContents();
+                }
+
             }
             GUILayout.Space(10F);
             NGUIEditorTools.EndContents();

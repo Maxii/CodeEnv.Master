@@ -23,6 +23,7 @@ using System.Linq;
 using System.Reflection;
 using CodeEnv.Master.Common;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
 ///  Abstract Base class for MortalItem State Machines to inherit from.
@@ -744,7 +745,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
             //Loop forever
             while (true) {
                 //Check if we have a current coroutine
-                //D.Log(ShowDebugLog, "Updating {0}.Run(). Frame: {1}.", DebugName, Time.frameCount);
+                //D.Log(ShowDebugLog, "{0} beginning another while(true) pass during Frame {1}.", DebugName, Time.frameCount);
                 if (_enumerator != null) {
                     //D.Log(ShowDebugLog, "Updating {0}.Run() with non-null IEnumerator. State: {1}, Frame: {2}.", DebugName, ApplicableStateName, Time.frameCount);
                     //Make a copy of the enumerator in case it changes
@@ -780,9 +781,9 @@ public abstract class AMortalItemStateMachine : AMortalItem {
                             }
                             // Otherwise return the value return by the yield (typically null, aka yield return null)
                             else {
-                                //D.Log(ShowDebugLog, "{0} returning _enumerator.Current. Next comment from {1} should be from frame after this. Frame: {2}.",
-                                //    DebugName, typeof(InterruptableCoroutine).Name, Time.frameCount);
-                                yield return _enumerator.Current;
+                                //string currentMsg = result != null ? "_enumerator.Current ({0})".Inject(result.ToString()) : "_enumerator.Current (null)";
+                                //D.Log(ShowDebugLog, "{0} returning {1}. Next comment should be from frame {2}.", DebugName, currentMsg, Time.frameCount + 1);
+                                yield return result;    //_enumerator.Current;
                             }
                         }
                         else {
@@ -825,9 +826,9 @@ public abstract class AMortalItemStateMachine : AMortalItem {
                                     _enumerator = null;
                                     //D.Log(ShowDebugLog, "{0}.Run() _enumerator set to null. Frame: {1}.", DebugName, Time.frameCount);
                                 }
-
                             }
                             // Starts at top again without waiting for the next frame
+                            //D.Log(ShowDebugLog, "{0}.Run() is continuing in same frame. Frame: {1}.", DebugName, Time.frameCount);
                         }
                     }
                     else {
@@ -841,6 +842,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
                     //If the enumerator was null then just yield    // aka there is no method currently present to execute right now
                     yield return null;
                 }
+                //D.Log(ShowDebugLog, "{0} is returning for another while(true) pass during Frame {1}.", DebugName, Time.frameCount);
             }
         }
 

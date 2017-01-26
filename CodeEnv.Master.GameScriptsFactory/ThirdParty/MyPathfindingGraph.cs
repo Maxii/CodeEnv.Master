@@ -457,7 +457,25 @@ namespace Pathfinding {
 
         #region My Work
 
+        private string DebugName { get { return GetType().Name; } }
+
+        /// <summary>
+        /// The distance between nodes to use when adding new nodes when you want the nodes to connect to their neighbors.
+        /// <remarks>This value is a small amount less than the maxDistance value used to validate node connections.</remarks>
+        /// </summary>
         private float _nodeSeparationDistance;
+
+        /// <summary>
+        /// The approach nodes that were made to surround a starbase.
+        /// <remarks>Used to make these nodes unwalkable when/if the starbase is removed.</remarks>
+        /// </summary>
+        private IDictionary<StarbaseCmdItem, IList<PointNode>> _starbaseApproachNodes = new Dictionary<StarbaseCmdItem, IList<PointNode>>();
+
+        /// <summary>
+        /// The sector navigation nodes that were made unwalkable when the starbase was added.
+        /// <remarks>Used to make these sector navigation nodes walkable again when/if the starbase is removed.</remarks>
+        /// </summary>
+        private IDictionary<StarbaseCmdItem, IList<PointNode>> _sectorNavNodesMadeUnwalkableByStarbase = new Dictionary<StarbaseCmdItem, IList<PointNode>>();
 
         public override void ScanInternal(OnScanStatus statusCallback) {
             var walkableOpenSpaceWaypoints = GenerateWalkableOpenSpaceWaypoints();
@@ -470,30 +488,18 @@ namespace Pathfinding {
             MakeConnections();
         }
 
-        private IList<Vector3> GenerateWalkableInteriorSystemWaypoints() {
-            D.AssertNotDefault(_nodeSeparationDistance);   // method should follow GenerateWalkableOpenSpaceWaypoints
-            List<Vector3> allSystemInteriorWaypoints = new List<Vector3>();
-            var systems = GameManager.Instance.GameKnowledge.Systems;
-            if (systems.Any()) {
-                systems.ForAll(sys => {
-                    var aSystemInteriorWaypoints = MyMath.CalcVerticesOfInscribedCubeInsideSphere(sys.Position, sys.Radius * SystemItem.InteriorWaypointDistanceMultiplier);
-                    allSystemInteriorWaypoints.AddRange(aSystemInteriorWaypoints);
-                });
-            }
-            return allSystemInteriorWaypoints;
-        }
-
         private IList<Vector3> GenerateWalkableOpenSpaceWaypoints() {
 #pragma warning disable 0219
             System.DateTime startTime = Utility.SystemTime;
 #pragma warning restore 0219
+            GameManager gameMgr = GameManager.Instance;
             List<Vector3> walkableOpenSpaceWaypoints = new List<Vector3>();
 
             // Generate System approach waypoints surrounding systems, deriving maxNodeDistance
             List<Vector3> systemApproachWaypoints = new List<Vector3>();
             float distanceBetweenSystemApproachWaypoints = Constants.ZeroF;         // 174.7
             float maxNodeDistance = Constants.ZeroF;    // 282.6 // max distance allowed before waypoints are skipped
-            var allSystems = GameManager.Instance.GameKnowledge.Systems;    //SystemCreator.AllSystems;
+            var allSystems = gameMgr.GameKnowledge.Systems;
             bool hasSystems = allSystems.Any();
             if (hasSystems) {
                 foreach (SystemItem system in allSystems) { // 6.15.16 replaced box with icosahedron whose edges are all the same length
@@ -529,39 +535,70 @@ namespace Pathfinding {
             }
 
             //D.Log("{0} took {1:0.##} secs generating {2} SystemApproachWaypoints for {3} Systems.",
-            //    GetType().Name, (Utility.SystemTime - startTime).TotalSeconds, systemApproachWaypoints.Count, allSystems.Count);
+            //    DebugName, (Utility.SystemTime - startTime).TotalSeconds, systemApproachWaypoints.Count, allSystems.Count);
             //startTime = Utility.SystemTime;
 
             // populate all space with sector navigation waypoints separated by nodeSeparationDistance
-            IList<Sector> allSectors = SectorGrid.Instance.Sectors.ToList();     //// = __GetAllowedSectorsToScan();
-            //D.Log("{0}: Sectors to scan = {1}.", GetType().Name, allSectors.Count);
-            List<Vector3> sectorNavWaypoints = new List<Vector3>(allSectors.Count * 25);
+            IList<Sector> allSectors = SectorGrid.Instance.Sectors.ToList();
+            //D.Log("{0}: Sectors to scan = {1}.", DebugName, allSectors.Count);
+            List<Vector3> sectorNavWaypoints = new List<Vector3>(allSectors.Count * 37);
             float distanceToCorners = TempGameValues.SectorDiagonalLength / 2F; // 1039.2
-            //D.Log("{0}: Distance to Sector Corners = {1:0.#}.", GetType().Name, distanceToCorners);
+            float distanceToFaces = TempGameValues.SectorSideLength / 2F;   // 600
+            int outsideOfUniverseWaypointCount = Constants.Zero;
+
+            float universeRadiusSqrd = gameMgr.GameSettings.UniverseSize.Radius() * gameMgr.GameSettings.UniverseSize.Radius();
+            //D.Log("{0}: Distance to Sector Corners = {1:0.#}.", DebugName, distanceToCorners);
+            IList<Vector3> aSectorWaypoints = new List<Vector3>(37);
+            List<Vector3> aSectorCornerWaypoints = new List<Vector3>(24);
+            List<Vector3> aSectorFaceWaypoints = new List<Vector3>(12);
             foreach (var sector in allSectors) {
-                List<Vector3> aSectorWaypoints = new List<Vector3>(17);
+                aSectorWaypoints.Clear();
                 aSectorWaypoints.Add(sector.Position);
+
                 float distanceFromCenter = _nodeSeparationDistance;
-                // propagate sector nav waypoints outward, inside corners
                 while (distanceFromCenter < distanceToCorners) {    // 275, 550, 825
-                    aSectorWaypoints.AddRange(MyMath.CalcVerticesOfInscribedCubeInsideSphere(sector.Position, distanceFromCenter));
+                    // propagate sector navWaypoints outward along direction to corners    // 24 per sector
+                    aSectorCornerWaypoints.Clear();
+                    aSectorCornerWaypoints.AddRange(MyMath.CalcVerticesOfInscribedCubeInsideSphere(sector.Position, distanceFromCenter));
+                    foreach (var aCornerWaypoint in aSectorCornerWaypoints) {
+                        if (IsInsideUniverseBoundaries(aCornerWaypoint, universeRadiusSqrd)) {
+                            aSectorWaypoints.Add(aCornerWaypoint);
+                        }
+                        else {
+                            outsideOfUniverseWaypointCount++;
+                        }
+                    }
+
+                    // propagate sector navWaypoints outward along direction to face centers    // 12 per sector 
+                    if (distanceFromCenter < distanceToFaces) {   // 275, 550 
+                        aSectorFaceWaypoints.Clear();
+                        aSectorFaceWaypoints.AddRange(MyMath.CalcCubeFaceCentersAroundPoint(sector.Position, distanceFromCenter));
+                        foreach (var aFaceWaypoint in aSectorFaceWaypoints) {
+                            if (IsInsideUniverseBoundaries(aFaceWaypoint, universeRadiusSqrd)) {
+                                aSectorWaypoints.Add(aFaceWaypoint);
+                            }
+                            else {
+                                outsideOfUniverseWaypointCount++;
+                            }
+                        }
+                    }
                     distanceFromCenter += _nodeSeparationDistance;
                 }
-                // place a sector nav waypoint inside each corner (outside of radius)
                 sectorNavWaypoints.AddRange(aSectorWaypoints);
             }
 #pragma warning disable 0219
             int sectorNavWaypointCount = sectorNavWaypoints.Count;
 #pragma warning restore 0219
             //D.Log("{0} took {1:0.##} secs generating {2} SectorNavWaypoints for {3} sectors.",
-            //    GetType().Name, (Utility.SystemTime - startTime).TotalSeconds, sectorNavWaypointCount, allSectors.Count);
+            //    DebugName, (Utility.SystemTime - startTime).TotalSeconds, sectorNavWaypointCount, allSectors.Count);
             //startTime = Utility.SystemTime;
 
+            //D.Log("{0} filtered out {1} waypoints which were outside of the universe.", DebugName, outsideOfUniverseWaypointCount);
 
             //TODO Validate that sectors outside waypoint is within nodeSeparationDistance of neighboring sectors outside waypoint
             // With Sector Radius of 600 and NodeSeparationDistance of 275, expect sector to sector waypoint distance ~ 90
 
-            // Remove SectorNavigationWaypoints present inside sphere containing SystemApproachWaypoints    
+            // Remove SectorNavWaypoints present inside sphere containing SystemApproachWaypoints    
             // https://en.wikipedia.org/wiki/Regular_icosahedron#Dimensions
             float systemApproachWaypointsCircumscribedSphereRadius = distanceBetweenSystemApproachWaypoints * 0.9510565163F;
             float radiusOfSphereContainingSystemApproachWaypoints = systemApproachWaypointsCircumscribedSphereRadius + 1F;
@@ -570,7 +607,7 @@ namespace Pathfinding {
                 foreach (var system in allSystems) {
                     List<Vector3> tmpSectorNavWaypoints = new List<Vector3>(sectorNavWaypoints.Count);
                     foreach (var sectorNavWaypoint in sectorNavWaypoints) {
-                        if (!MyMath.IsPointInsideSphere(system.Position, radiusOfSphereContainingSystemApproachWaypoints, sectorNavWaypoint)) {
+                        if (!MyMath.IsPointOnOrInsideSphere(system.Position, radiusOfSphereContainingSystemApproachWaypoints, sectorNavWaypoint)) {
                             tmpSectorNavWaypoints.Add(sectorNavWaypoint);
                         }
                     }
@@ -578,7 +615,7 @@ namespace Pathfinding {
                 }
             }
             //D.Log("{0} took {1:0.##} secs removing {2} SectorNavWaypoints from {3} Systems.",
-            //    GetType().Name, (Utility.SystemTime - startTime).TotalSeconds, sectorNavWaypointCount - sectorNavWaypoints.Count, allSystems.Count);
+            //    DebugName, (Utility.SystemTime - startTime).TotalSeconds, sectorNavWaypointCount - sectorNavWaypoints.Count, allSystems.Count);
             //startTime = Utility.SystemTime;
             sectorNavWaypointCount = sectorNavWaypoints.Count;
 
@@ -592,14 +629,14 @@ namespace Pathfinding {
                 if (distanceBetweenUCenterWaypoints > _nodeSeparationDistance) {
                     D.Error("{0} should be <= {1}.", distanceBetweenUCenterWaypoints, _nodeSeparationDistance);
                 }
-                //D.Log("{0}: Distance between UCenterWaypoints = {1:0.#}.", GetType().Name, distanceBetweenUCenterWaypoints);
+                //D.Log("{0}: Distance between UCenterWaypoints = {1:0.#}.", DebugName, distanceBetweenUCenterWaypoints);
 
                 // remove SectorNavigationWaypoints present inside sphere containing UniverseCenterWaypoints
                 float uCenterWaypointsCircumscribedSphereRadius = distanceBetweenUCenterWaypoints * 0.9510565163F;
                 float radiusOfSphereContainingUCenterWaypoints = uCenterWaypointsCircumscribedSphereRadius + 1F;
                 List<Vector3> tmpSectorNavWaypoints = new List<Vector3>(sectorNavWaypoints.Count);
                 foreach (var sectorNavWaypoint in sectorNavWaypoints) {
-                    if (!MyMath.IsPointInsideSphere(universeCenter.Position, radiusOfSphereContainingUCenterWaypoints, sectorNavWaypoint)) {
+                    if (!MyMath.IsPointOnOrInsideSphere(universeCenter.Position, radiusOfSphereContainingUCenterWaypoints, sectorNavWaypoint)) {
                         tmpSectorNavWaypoints.Add(sectorNavWaypoint);
                     }
                 }
@@ -607,7 +644,7 @@ namespace Pathfinding {
             }
 
             //D.Log("{0} took {1:0.##} secs removing {2} SectorNavWaypoints around UniverseCenter.",
-            //    GetType().Name, (Utility.SystemTime - startTime).TotalSeconds, sectorNavWaypointCount - sectorNavWaypoints.Count);
+            //    DebugName, (Utility.SystemTime - startTime).TotalSeconds, sectorNavWaypointCount - sectorNavWaypoints.Count);
             //startTime = Utility.SystemTime;
 
             walkableOpenSpaceWaypoints.AddRange(sectorNavWaypoints);
@@ -615,13 +652,36 @@ namespace Pathfinding {
             walkableOpenSpaceWaypoints.AddRange(systemApproachWaypoints);
 
             //D.Log("{0} took {1:0.##} secs generating {2} WalkableOpenSpaceWaypoints for {3} Sectors.",
-            //    GetType().Name, (Utility.SystemTime - startTime).TotalSeconds, walkableOpenSpaceWaypoints.Count, allSectors.Count);
+            //    DebugName, (Utility.SystemTime - startTime).TotalSeconds, walkableOpenSpaceWaypoints.Count, allSectors.Count);
 
             return walkableOpenSpaceWaypoints;
         }
 
-        private void AddNodes(IList<Vector3> waypoints, uint tag, ref int nextNodeIndex) {
+        private IList<Vector3> GenerateWalkableInteriorSystemWaypoints() {
+            D.AssertNotDefault(_nodeSeparationDistance);   // method should follow GenerateWalkableOpenSpaceWaypoints
+            List<Vector3> allSystemInteriorWaypoints = new List<Vector3>();
+            var systems = GameManager.Instance.GameKnowledge.Systems;
+            if (systems.Any()) {
+                systems.ForAll(sys => {
+                    var aSystemInteriorWaypoints = MyMath.CalcVerticesOfInscribedCubeInsideSphere(sys.Position, sys.Radius * SystemItem.InteriorWaypointDistanceMultiplier);
+                    allSystemInteriorWaypoints.AddRange(aSystemInteriorWaypoints);
+                });
+            }
+            return allSystemInteriorWaypoints;
+        }
+
+        /// <summary>
+        /// Adds walkable nodes derived from the provided waypoints to the graph's collection of nodes,
+        /// returning the added nodes.
+        /// </summary>
+        /// <param name="waypoints">The waypoints.</param>
+        /// <param name="tag">The tag for the nodes.</param>
+        /// <param name="nextNodeIndex">Index of the next node.</param>
+        /// <returns></returns>
+        private IList<PointNode> AddNodes(IList<Vector3> waypoints, uint tag, ref int nextNodeIndex) {
             CheckAndAdjustNodesSize(waypoints.Count);
+
+            IList<PointNode> nodesAdded = new List<PointNode>(waypoints.Count);
 
             int indexAfterLastNode = nextNodeIndex + waypoints.Count;
             for (int index = nextNodeIndex; index < indexAfterLastNode; index++) {
@@ -632,11 +692,14 @@ namespace Pathfinding {
                 node.Tag = tag;
                 nodes[index] = node;
 
+                nodesAdded.Add(node);
+
                 nodeCount++;
                 AddToLookup(node);
             }
             D.AssertEqual(nodes.Length, nodeCount);
             nextNodeIndex = indexAfterLastNode;
+            return nodesAdded;
         }
 
         private void CheckAndAdjustNodesSize(int additionalNodes) {
@@ -647,7 +710,7 @@ namespace Pathfinding {
                     nds[i] = nodes[i];
                 }
                 nodes = nds;
-                //D.Log("{0}.CheckAndAdjustNodesSize({1}) took {2:0.00} seconds.", GetType().Name, additionalNodes, (Utility.SystemTime - startTime).TotalSeconds);
+                //D.Log("{0}.CheckAndAdjustNodesSize({1}) took {2:0.00} seconds.", DebugName, additionalNodes, (Utility.SystemTime - startTime).TotalSeconds);
             }
         }
 
@@ -730,39 +793,35 @@ namespace Pathfinding {
 
                 if (connectionCountChg == Constants.Zero) {
                     D.Warn("{0}.MakeConnections() took {1:0.##} secs generating {2}/{3} valid pathfinding connections, but no connections (net) added or removed?",
-                        GetType().Name, (Utility.SystemTime - startTime).TotalSeconds, connectionCount, totalConnectionsAttempted);
+                        DebugName, (Utility.SystemTime - startTime).TotalSeconds, connectionCount, totalConnectionsAttempted);
                 }
                 else {
                     // (net) refers to the net of added and removed. I can't separate them using this approach to making connections
                     string connectionCountChgText = connectionCountChg < 0 ? "removed" : "added";
                     D.Log("{0}.MakeConnections() took {1:0.##} secs generating {2}/{3} valid pathfinding connections. {4} connections (net) were {5}.",
-                        GetType().Name, (Utility.SystemTime - startTime).TotalSeconds, connectionCount, totalConnectionsAttempted, Mathf.Abs(connectionCountChg), connectionCountChgText);
+                        DebugName, (Utility.SystemTime - startTime).TotalSeconds, connectionCount, totalConnectionsAttempted, Mathf.Abs(connectionCountChg), connectionCountChgText);
                 }
             }
         }
 
         /// <summary>
-        /// Updates the graph during runtime adding approach waypoints for this starbase, 
+        /// Updates the graph during runtime adding approach waypoints for this starbase,
         /// and makes any waypoints located inside the new approach waypoints unwalkable, then reconnects.
         /// </summary>
         /// <param name="baseCmd">The Starbase command.</param>
-        public void AddToGraph(StarbaseCmdItem baseCmd) {
-            //D.Log("{0}.AddToGraph({1}) called.", GetType().Name, baseCmd.DebugName);
+        /// <param name="sectorID">The sector ID where the Starbase is located. Note that the StarbaseCmdItem
+        /// itself does not know its sectorID until FinalInitialize.</param>
+        public void AddToGraph(StarbaseCmdItem baseCmd, IntVector3 sectorID) {
+            //D.Log("{0}.AddToGraph({1}) called.", DebugName, baseCmd.DebugName);
             // Note: active.IsAnyGraphUpdatesQueued is never true except when using UpdateGraphs(). I've replaced UpdateGraphs(GUO) with WorkItems
 
             // forceCompletion is set by AstarPath internally 
-            var makeNodesInsideApproachNodesUnwalkableWorkItem = new AstarPath.AstarWorkItem(update: (forceCompletion) => {
+            var handleStarbaseAddedWorkItem = new AstarPath.AstarWorkItem(update: (forceCompletion) => {
                 active.QueueWorkItemFloodFill();
-                ChangeWalkabilityOfNodesInsideApproachNodes(baseCmd, isWalkable: false);
+                HandleStarbaseAdded(baseCmd, sectorID);
                 return true;
             });
-            active.AddWorkItem(makeNodesInsideApproachNodesUnwalkableWorkItem);
-
-            var addApproachNodesWorkItem = new AstarPath.AstarWorkItem(update: (forceCompletion) => {
-                AddStarbaseApproachNodes(baseCmd);
-                return true;
-            });
-            active.AddWorkItem(addApproachNodesWorkItem);
+            active.AddWorkItem(handleStarbaseAddedWorkItem);
 
             // Note: 8.17.16 no current way to remove a work item once added. Otherwise, if I got another call to this
             // method with IsAnyGraphUpdatesQueued = true, I'd remove the previous queued MakeConnections and replace 
@@ -770,6 +829,7 @@ namespace Pathfinding {
 
             var makeConnectionsWorkItem = new AstarPath.AstarWorkItem(update: (forceCompletion) => {
                 MakeConnections();
+                //D.Log("{0} has completed making node connections for {1}.", DebugName, baseCmd.DebugName);
                 return true;
             });
             active.AddWorkItem(makeConnectionsWorkItem);
@@ -781,25 +841,17 @@ namespace Pathfinding {
         /// </summary>
         /// <param name="baseCmd">The Starbase command.</param>
         public void RemoveFromGraph(StarbaseCmdItem baseCmd) {
-            D.Log("{0}.RemoveFromGraph({1}) called.", GetType().Name, baseCmd.DebugName);
+            //D.Log("{0}.RemoveFromGraph({1}) called.", DebugName, baseCmd.DebugName);
             // Note: active.IsAnyGraphUpdatesQueued is never true except when using UpdateGraphs(). 
             // I've replaced UpdateGraphs(GUO) with WorkItems
 
             // forceCompletion is set by AstarPath internally 
-            var makeApproachNodesUnwalkable = new AstarPath.AstarWorkItem(update: (forceCompletion) => {
+            var handleStarbaseBeingRemovedWorkItem = new AstarPath.AstarWorkItem(update: (forceCompletion) => {
                 active.QueueWorkItemFloodFill();
-                MakeStarbaseApproachNodesUnwalkable(baseCmd);
+                HandleStarbaseRemoved(baseCmd);
                 return true;
             });
-            active.AddWorkItem(makeApproachNodesUnwalkable);
-
-            // restore any nodes made unwalkable when this starbase was added
-            // Note: cannot precede makeApproachNodesUnwalkable as the above also makes all nodes INSIDE the approach nodes unwalkable
-            var restoreNodesInsideApproachNodesWorkItem = new AstarPath.AstarWorkItem(update: (forceCompletion) => {
-                ChangeWalkabilityOfNodesInsideApproachNodes(baseCmd, isWalkable: true);
-                return true;
-            });
-            active.AddWorkItem(restoreNodesInsideApproachNodesWorkItem);
+            active.AddWorkItem(handleStarbaseBeingRemovedWorkItem);
 
             // Note: 8.17.16 no current way to remove a work item once added. Otherwise, if I got another call to this
             // method with IsAnyGraphUpdatesQueued = true, I'd remove the previous queued MakeConnections and replace 
@@ -807,6 +859,7 @@ namespace Pathfinding {
 
             var makeConnectionsWorkItem = new AstarPath.AstarWorkItem(update: (forceCompletion) => {
                 MakeConnections();
+                //D.Log("{0} has completed making node connections for {1}.", DebugName, baseCmd.DebugName);
                 return true;
             });
             active.AddWorkItem(makeConnectionsWorkItem);
@@ -815,17 +868,95 @@ namespace Pathfinding {
         // NOTE: For now, no Add/Remove(Settlement). Settlements aren't likely to be on top of existing waypoints, and,
         // surrounding them with waypoints makes no sense if I allow them to orbit
 
-        private void ChangeWalkabilityOfNodesInsideApproachNodes(StarbaseCmdItem starbaseCmd, bool isWalkable) {
-            float radiusOfApproachWaypointsInscribedSphere = starbaseCmd.CloseOrbitOuterRadius * StarbaseCmdItem.RadiusMultiplierForApproachWaypointsInscribedSphere;
-            Vector3 sphereCenter = starbaseCmd.Position;
-            float sphereRadius = radiusOfApproachWaypointsInscribedSphere;
+        private void HandleStarbaseAdded(StarbaseCmdItem starbaseCmd, IntVector3 sectorID) {
+            D.Assert(!_sectorNavNodesMadeUnwalkableByStarbase.ContainsKey(starbaseCmd), DebugName);
+            D.Assert(!_starbaseApproachNodes.ContainsKey(starbaseCmd), DebugName);
+
+            // Make Sector nav nodes (inside where inner approach nodes will go) unwalkable 
+            IList<PointNode> nds = new List<PointNode>();
+            float radiusOfInnerApproachWaypointsInscribedSphere = starbaseCmd.CloseOrbitOuterRadius * StarbaseCmdItem.RadiusMultiplierForApproachWaypointsInscribedSphere;
             for (int i = 0; i < nodeCount; i++) {
-                if (MyMath.IsPointInsideSphere(sphereCenter, sphereRadius, (Vector3)nodes[i].position)) {
-                    nodes[i].Walkable = isWalkable;
+                if (MyMath.IsPointOnOrInsideSphere(starbaseCmd.Position, radiusOfInnerApproachWaypointsInscribedSphere, (Vector3)nodes[i].position)) {
+                    nodes[i].Walkable = false;
+                    nds.Add(nodes[i]);
                 }
             }
+            _sectorNavNodesMadeUnwalkableByStarbase.Add(starbaseCmd, nds);
+            if (nds.Count > Constants.Zero) {
+                D.Log("{0} has completed making {1} sector nav nodes unwalkable as a result of {2}'s addition.", DebugName, nds.Count, starbaseCmd.DebugName);
+            }
+
+            // Note: There may be unwalkable approach nodes from a previously removed starbase at the same locations, but
+            // I am choosing to ignore them rather than try to make them walkable again. Can't currently remove nodes once added
+
+            // Now add the walkable inner approach waypoints for this starbase
+            float vertexDistanceFromStarbase;
+            List<Vector3> approachWaypoints = MyMath.CalcVerticesOfCubeSurroundingInscribedSphere(starbaseCmd.Position, radiusOfInnerApproachWaypointsInscribedSphere, out vertexDistanceFromStarbase);
+            //D.Log("{0}: {1}'s Inner Approach Node distance = {2:0.##}.", DebugName, starbaseCmd.DebugName, vertexDistanceFromStarbase);
+            if (vertexDistanceFromStarbase > maxDistance) {
+                D.Warn("{0}: {1}'s Inner Approach Node distance {2:0.##} > MaxDistance {3:0.##}.", DebugName, starbaseCmd.DebugName, vertexDistanceFromStarbase, maxDistance);
+            }
+
+            // ... and then the walkable outer approach waypoints
+            approachWaypoints.AddRange(MyMath.CalcVerticesOfInscribedCubeInsideSphere(starbaseCmd.Position, _nodeSeparationDistance));
+
+            float universeRadiusSqrd = GameManager.Instance.GameSettings.UniverseSize.Radius() * GameManager.Instance.GameSettings.UniverseSize.Radius();
+            foreach (var waypoint in approachWaypoints) {
+                if (!IsInsideUniverseBoundaries(waypoint, universeRadiusSqrd)) {
+                    D.Warn("{0} is excluding {1}'s proposed approach waypoint that is outside the universe.", DebugName, starbaseCmd.DebugName);
+                    approachWaypoints.Remove(waypoint);
+                }
+            }
+
+            ISystem systemInSector;
+            bool doesSectorContainSystem = GameManager.Instance.GameKnowledge.TryGetSystem(sectorID, out systemInSector);
+            if (doesSectorContainSystem) {
+                foreach (var waypoint in approachWaypoints) {
+                    if (MyMath.IsPointOnOrInsideSphere(systemInSector.Position, systemInSector.Radius, waypoint)) {
+                        // FIXME warn for now as I should preclude locating a Starbase close to a system
+                        D.Warn("{0} is excluding {1}'s proposed approach waypoint that is inside adjacent System {2}.", DebugName, starbaseCmd.DebugName, systemInSector.DebugName);
+                        approachWaypoints.Remove(waypoint);
+                    }
+                }
+            }
+
+            int nextNodeIndex = nodeCount;
+            nds = AddNodes(approachWaypoints, Topography.OpenSpace.AStarTagValue(), ref nextNodeIndex);
+            //D.Log("{0} has completed adding {1}'s {2} approach nodes.", DebugName, starbaseCmd.DebugName, nds.Count);
+            _starbaseApproachNodes.Add(starbaseCmd, nds);
         }
 
+        [Obsolete]
+        private void ChangeWalkabilityOfNodesInsideApproachNodes(StarbaseCmdItem starbaseCmd, bool isBaseBeingAdded) {
+            IList<PointNode> nodesMadeUnwalkable;
+            if (isBaseBeingAdded) {
+                // starbase is being added so make Sector nav nodes inside approach nodes unwalkable
+                nodesMadeUnwalkable = new List<PointNode>();
+                float radiusOfApproachWaypointsInscribedSphere = starbaseCmd.CloseOrbitOuterRadius * StarbaseCmdItem.RadiusMultiplierForApproachWaypointsInscribedSphere;
+                Vector3 sphereCenter = starbaseCmd.Position;
+                float sphereRadius = radiusOfApproachWaypointsInscribedSphere;
+                for (int i = 0; i < nodeCount; i++) {
+                    if (MyMath.IsPointOnOrInsideSphere(sphereCenter, sphereRadius, (Vector3)nodes[i].position)) {
+                        nodes[i].Walkable = false;
+                        nodesMadeUnwalkable.Add(nodes[i]);
+                    }
+                }
+                D.Assert(!_sectorNavNodesMadeUnwalkableByStarbase.ContainsKey(starbaseCmd), DebugName);
+                _sectorNavNodesMadeUnwalkableByStarbase.Add(starbaseCmd, nodesMadeUnwalkable);
+            }
+            else {
+                // starbase is being removed so make Sector nav nodes previously made unwalkable, walkable again
+                D.Assert(_sectorNavNodesMadeUnwalkableByStarbase.ContainsKey(starbaseCmd), DebugName);
+                nodesMadeUnwalkable = _sectorNavNodesMadeUnwalkableByStarbase[starbaseCmd];
+                foreach (var unwalkableNode in nodesMadeUnwalkable) {
+                    unwalkableNode.Walkable = true;
+                }
+                _sectorNavNodesMadeUnwalkableByStarbase.Remove(starbaseCmd);
+            }
+            D.Log("{0} has completed making {1} nodes inside {2}'s approach nodes {3}.", DebugName, nodesMadeUnwalkable.Count, starbaseCmd.DebugName, isBaseBeingAdded ? "unwalkable" : "walkable");
+        }
+
+        [Obsolete]
         private void AddStarbaseApproachNodes(StarbaseCmdItem starbaseCmd) {
             // Note: There may be unwalkable approach nodes from a previously removed starbase at the same locations, but
             // I am choosing to ignore them rather than try to make them walkable again. Can't currently remove nodes once added
@@ -833,24 +964,51 @@ namespace Pathfinding {
 
             Vector3 sphereCenter = starbaseCmd.Position;
             float sphereRadius = radiusOfApproachWaypointsInscribedSphere;
-            var approachWaypoints = MyMath.CalcVerticesOfCubeSurroundingInscribedSphere(sphereCenter, sphereRadius);
-
-            int nextNodeIndex = nodeCount;
-            AddNodes(approachWaypoints, Topography.OpenSpace.AStarTagValue(), ref nextNodeIndex);
-        }
-
-        private void MakeStarbaseApproachNodesUnwalkable(StarbaseCmdItem starbaseCmd) {
-            float radiusOfApproachWaypointsInscribedSphere = starbaseCmd.CloseOrbitOuterRadius * StarbaseCmdItem.RadiusMultiplierForApproachWaypointsInscribedSphere;
             float vertexDistanceFromStarbase;
-            MyMath.CalcVerticesOfCubeSurroundingInscribedSphere(starbaseCmd.Position, radiusOfApproachWaypointsInscribedSphere, out vertexDistanceFromStarbase);
+            var approachWaypoints = MyMath.CalcVerticesOfCubeSurroundingInscribedSphere(sphereCenter, sphereRadius, out vertexDistanceFromStarbase);
+            D.Log("{0}: {1}'s Approach Node distance = {2:0.##}.", DebugName, starbaseCmd.DebugName, vertexDistanceFromStarbase);
+            if (vertexDistanceFromStarbase > maxDistance) {
+                D.Warn("{0}: {1}'s Approach Node distance {2:0.##} > MaxDistance {3:0.##}.", DebugName, starbaseCmd.DebugName, vertexDistanceFromStarbase, maxDistance);
+            }
 
-            Vector3 sphereCenter = starbaseCmd.Position;
-            float sphereRadius = vertexDistanceFromStarbase + 0.1F; // just beyond approach waypoints
-            for (int i = 0; i < nodeCount; i++) {
-                if (MyMath.IsPointInsideSphere(sphereCenter, sphereRadius, (Vector3)nodes[i].position)) {
-                    nodes[i].Walkable = false;
+            float universeRadiusSqrd = GameManager.Instance.GameSettings.UniverseSize.Radius() * GameManager.Instance.GameSettings.UniverseSize.Radius();
+            foreach (var waypoint in approachWaypoints) {
+                if (!IsInsideUniverseBoundaries(waypoint, universeRadiusSqrd)) {
+                    D.Warn("{0} is excluding {1}'s proposed approach waypoint that is outside the universe.", DebugName, starbaseCmd.DebugName);
+                    approachWaypoints.Remove(waypoint);
                 }
             }
+
+            int nextNodeIndex = nodeCount;
+            IList<PointNode> approachNodesAdded = AddNodes(approachWaypoints, Topography.OpenSpace.AStarTagValue(), ref nextNodeIndex);
+            //D.Log("{0} has completed adding {1} approach nodes for {2}.", DebugName, approachWaypoints.Count, starbaseCmd.DebugName);
+
+            D.Assert(!_starbaseApproachNodes.ContainsKey(starbaseCmd), DebugName);
+            _starbaseApproachNodes.Add(starbaseCmd, approachNodesAdded);
+        }
+
+        private void HandleStarbaseRemoved(StarbaseCmdItem starbaseCmd) {
+            // Make existing Starbase approach nodes unwalkable
+            D.Assert(_starbaseApproachNodes.ContainsKey(starbaseCmd), DebugName);
+            IList<PointNode> nds = _starbaseApproachNodes[starbaseCmd];
+            foreach (var approachNode in nds) {
+                approachNode.Walkable = false;
+            }
+            _starbaseApproachNodes.Remove(starbaseCmd);
+            D.Log("{0} has completed making {1} approach nodes unwalkable as a result of {2}'s removal.", DebugName, nds.Count, starbaseCmd.DebugName);
+
+            // Now make Sector nav nodes previously made unwalkable, walkable again
+            D.Assert(_sectorNavNodesMadeUnwalkableByStarbase.ContainsKey(starbaseCmd), DebugName);
+            nds = _sectorNavNodesMadeUnwalkableByStarbase[starbaseCmd];
+            foreach (var unwalkableSectorNavNode in nds) {
+                unwalkableSectorNavNode.Walkable = true;
+            }
+            _sectorNavNodesMadeUnwalkableByStarbase.Remove(starbaseCmd);
+            D.Log("{0} has completed making {1} sector nav nodes walkable again as a result of {2}'s removal.", DebugName, nds.Count, starbaseCmd.DebugName);
+        }
+
+        private bool IsInsideUniverseBoundaries(Vector3 point, float universeRadiusSqrd) {
+            return Vector3.SqrMagnitude(point - GameConstants.UniverseOrigin) < universeRadiusSqrd;
         }
 
         #endregion
@@ -1017,13 +1175,13 @@ namespace Pathfinding {
                 if (Mathf.Abs(index.x) <= maxIndexX) {
                     if (Mathf.Abs(index.y) <= maxIndexY) {
                         if (Mathf.Abs(index.z) <= maxIndexZ) {
-                            //D.Log("{0} adding Sector {1} to scan.", GetType().Name, s);
+                            //D.Log("{0} adding Sector {1} to scan.", DebugName, s);
                             sectorsToScan.Add(s);
                         }
                     }
                 }
             });
-            //D.Log("{0}: Total Sector Count = {1}, Sectors to scan = {2}.", GetType().Name, allSectors.Count, sectorsToScan.Count);
+            //D.Log("{0}: Total Sector Count = {1}, Sectors to scan = {2}.", DebugName, allSectors.Count, sectorsToScan.Count);
             return sectorsToScan;
         }
 

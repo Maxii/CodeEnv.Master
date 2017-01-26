@@ -84,6 +84,7 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd,
         if (_highOrbitRigidbody == null) {
             _highOrbitRigidbody = GeneralFactory.Instance.MakeShipHighOrbitAttachPoint(gameObject);
         }
+        _highOrbitRigidbody.gameObject.SetActive(true);
         shipOrbitJoint.connectedBody = _highOrbitRigidbody;
     }
 

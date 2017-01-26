@@ -44,19 +44,15 @@ public class TooltipHudWindow : AHudWindow<TooltipHudWindow>, ITooltipHudWindow 
         References.TooltipHudWindow = Instance;
     }
 
-    protected override void AcquireReferences() {
-        base.AcquireReferences();
+    protected override void InitializeValuesAndReferences() {
+        base.InitializeValuesAndReferences();
         _uiCamera = NGUITools.FindCameraForLayer(gameObject.layer);
+        if (!_panel.widgetsAreStatic) {
+            D.Warn("{0}: Can't UIPanel.widgetsAreStatic = true?", DebugName);
+        }
     }
 
     #endregion
-
-    public void Show(string text) {
-        if (text.IsNullOrEmpty()) { return; }
-        var form = PrepareForm(FormID.TextHud);
-        (form as TextForm).Text = text;
-        ShowForm(form);
-    }
 
     public void Show(StringBuilder sb) {
         Show(sb.ToString());
@@ -64,6 +60,15 @@ public class TooltipHudWindow : AHudWindow<TooltipHudWindow>, ITooltipHudWindow 
 
     public void Show(ColoredStringBuilder csb) {
         Show(csb.ToString());
+    }
+
+    public void Show(string text) {
+        if (text.IsNullOrEmpty()) {
+            return;
+        }
+        var form = PrepareForm(FormID.TextHud);
+        (form as TextForm).Text = text;
+        ShowForm(form);
     }
 
     public void Show(ResourceID resourceID) {

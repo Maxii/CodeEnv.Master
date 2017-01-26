@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AutoPilotTarget.cs
+// File: AutoPilotDestinationProxy.cs
 // Proxy used by a Ship Helm's pilot to navigate to an IShipNavigable destination.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -49,6 +49,10 @@ namespace CodeEnv.Master.GameContent {
 
         public IShipNavigable Destination { get; private set; }
 
+        public Vector3 __DestinationOffset { get { return _destOffset; } }
+
+        private IFleetFormationStation __formationStation;
+
         private Vector3 _destOffset;
         private float _innerRadiusSqrd;
         private float _outerRadiusSqrd;
@@ -58,6 +62,7 @@ namespace CodeEnv.Master.GameContent {
             Utility.ValidateNotNegative(innerRadius);
             Utility.ValidateForRange(outerRadius, innerRadius, Mathf.Infinity); // HACK
             Destination = destination;
+            __formationStation = destination as IFleetFormationStation;
             _destOffset = destOffset;
             InnerRadius = innerRadius;
             _innerRadiusSqrd = innerRadius * innerRadius;
@@ -68,7 +73,16 @@ namespace CodeEnv.Master.GameContent {
 
         public bool HasArrived(Vector3 shipPosition) {
             float shipSqrdDistanceToDest = Vector3.SqrMagnitude(Position - shipPosition);
-            if (shipSqrdDistanceToDest.IsGreaterThanOrEqualTo(_innerRadiusSqrd) && shipSqrdDistanceToDest.IsLessThanOrEqualTo(_outerRadiusSqrd)) {
+            if (shipSqrdDistanceToDest >= _innerRadiusSqrd && shipSqrdDistanceToDest <= _outerRadiusSqrd) {
+                if (__formationStation != null) {
+                    //D.Log("{0} is a {1} and is testing for IsOnStation.", DebugName, typeof(IFleetFormationStation).Name);
+                    if (!__formationStation.IsOnStation) {
+                        D.Warn(@"{0}: Inconsistent results between FormationStation.IsOnStation and its ApTgtProxy.HasArrived. 
+                            /n_shipDistanceToDest = {1}, _innerRadius = {2}, _outerRadius = {3}, __DistanceFromStation = {4}.",
+                            DebugName, Mathf.Sqrt(shipSqrdDistanceToDest), InnerRadius, OuterRadius, __formationStation.__DistanceFromOnStation);
+                        return false;
+                    }
+                }
                 // ship has arrived
                 return true;
             }
@@ -102,7 +116,15 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public float GetObstacleCheckRayLength(Vector3 shipPosition) {
-            return Vector3.Distance(Position, shipPosition) - OuterRadius;
+            // Note: Outer boundary of avoidableObstacleZone, if present, will usually be InnerRadius of Proxy
+            // Warning: If InnerRadius is used here, the obstacleZone around the destination could be detected while 
+            // within the 'HasArrived' window of the destination, thereby generating a detour just before "HasArrived".
+            float rayLength = Vector3.Distance(Position, shipPosition) - OuterRadius;
+            if (rayLength < Constants.ZeroF) {
+                // 1.24.17 Physics.Raycast() using rayLength <= Zero results in false, aka no ray cast attempted
+                return Constants.ZeroF;
+            }
+            return rayLength;
         }
 
         public void ResetOffset() {

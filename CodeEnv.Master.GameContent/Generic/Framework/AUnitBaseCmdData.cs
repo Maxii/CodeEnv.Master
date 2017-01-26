@@ -40,14 +40,13 @@ namespace CodeEnv.Master.GameContent {
 
         public new IEnumerable<FacilityData> ElementsData { get { return base.ElementsData.Cast<FacilityData>(); } }
 
+        private IntVector3 _sectorID;
         public override IntVector3 SectorID {
             get {
                 D.AssertNotDefault(_sectorID, "SectorID has not been set.");
                 return _sectorID;
             }
         }
-
-        private IntVector3 _sectorID;
 
         #region Initialization 
 

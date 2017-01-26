@@ -49,7 +49,7 @@ public class FleetCtxControl_AI : ACtxControl {
     private FleetCmdItem _fleetMenuOperator;
 
     public FleetCtxControl_AI(FleetCmdItem fleetCmd)
-        : base(fleetCmd.gameObject, uniqueSubmenusReqd: Constants.Zero, menuPosition: MenuPositionMode.Over) {
+        : base(fleetCmd.gameObject, uniqueSubmenuQtyReqd: Constants.Zero, menuPosition: MenuPositionMode.Over) {
         _fleetMenuOperator = fleetCmd;
     }
 

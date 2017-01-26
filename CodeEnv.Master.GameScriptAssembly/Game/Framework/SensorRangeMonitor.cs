@@ -96,8 +96,12 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
         D.Assert(_equipmentList.Contains(sensor));
 
         sensor.RangeMonitor = null;
+
+        Profiler.BeginSample("Event Subscription allocation", gameObject);
         sensor.isOperationalChanged -= EquipmentIsOperationalChangedEventHandler;
         sensor.isDamagedChanged -= EquipmentIsDamagedChangedEventHandler;
+        Profiler.EndSample();
+
         _equipmentList.Remove(sensor);
         if (_equipmentList.Count == Constants.Zero) {
             return false;
@@ -116,7 +120,7 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
         var attackableDetectedItem = newlyDetectedItem as IElementAttackable;
         if (attackableDetectedItem != null) {
 
-            Profiler.BeginSample("Proper Event Subscription allocation", gameObject);
+            Profiler.BeginSample("Event Subscription allocation", gameObject);
             attackableDetectedItem.ownerChanged += DetectedItemOwnerChangedEventHandler;
             attackableDetectedItem.deathOneShot += DetectedItemDeathEventHandler;
             attackableDetectedItem.infoAccessChgd += DetectedItemInfoAccessChangedEventHandler;
@@ -129,9 +133,12 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
     protected override void HandleDetectedObjectRemoved(ISensorDetectable lostDetectionItem) {
         var attackableLostDetectionItem = lostDetectionItem as IElementAttackable;
         if (attackableLostDetectionItem != null) {
+
+            Profiler.BeginSample("Event Subscription allocation", gameObject);
             attackableLostDetectionItem.ownerChanged -= DetectedItemOwnerChangedEventHandler;
             attackableLostDetectionItem.deathOneShot -= DetectedItemDeathEventHandler;
             attackableLostDetectionItem.infoAccessChgd -= DetectedItemInfoAccessChangedEventHandler;
+            Profiler.EndSample();
 
             RemoveRecord(attackableLostDetectionItem);
         }

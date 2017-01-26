@@ -46,7 +46,7 @@ public class SystemCtxControl : ACtxControl {
     private SystemItem _systemMenuOperator;
 
     public SystemCtxControl(SystemItem system)
-        : base(system.gameObject, uniqueSubmenusReqd: Constants.One, menuPosition: MenuPositionMode.AtCursor) {
+        : base(system.gameObject, uniqueSubmenuQtyReqd: Constants.One, menuPosition: MenuPositionMode.AtCursor) {
         _systemMenuOperator = system;
     }
 

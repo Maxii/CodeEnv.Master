@@ -211,6 +211,15 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     #region Orders
 
+    public bool IsCurrentOrderDirectiveAnyOf(BaseDirective directiveA) {
+        return CurrentOrder != null && CurrentOrder.Directive == directiveA;
+    }
+
+    public bool IsCurrentOrderDirectiveAnyOf(BaseDirective directiveA, BaseDirective directiveB) {
+        return CurrentOrder != null && (CurrentOrder.Directive == directiveA || CurrentOrder.Directive == directiveB);
+    }
+
+    [Obsolete]
     public bool IsCurrentOrderDirectiveAnyOf(params BaseDirective[] directives) {
         return CurrentOrder != null && CurrentOrder.Directive.EqualsAnyOf(directives);
     }
@@ -218,7 +227,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     private void HandleNewOrder() {
         // TODO no Call()ed states currently
         // Pattern that handles Call()ed states that goes more than one layer deep
-        //while (CurrentState == BaseState.Attacking) { 
+        //while (CurrentState == BaseState.Attacking || ...) { 
         //    UponNewOrderReceived();
         //}
         //D.Assert(CurrentState != BaseState.Attacking);
@@ -644,10 +653,14 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
             D.Assert(isRemoved);
             D.Log(ShowDebugLog, "{0} has left close orbit around {1}.", ship.DebugName, DebugName);
             float shipDistance = Vector3.Distance(ship.Position, Position);
-            float minOutsideOfOrbitCaptureRadius = CloseOrbitOuterRadius - ship.CollisionDetectionZoneRadius_Debug;
-            if (shipDistance > minOutsideOfOrbitCaptureRadius) {
-                D.Warn("{0} is leaving orbit of {1} but is not within {2:0.0000}. Ship's current orbit distance is {3:0.0000}.",
-                    ship.DebugName, DebugName, minOutsideOfOrbitCaptureRadius, shipDistance);
+            float insideOrbitSlotThreshold = CloseOrbitOuterRadius - ship.CollisionDetectionZoneRadius_Debug;
+            if (shipDistance > insideOrbitSlotThreshold) {
+                D.Log(ShowDebugLog, "{0} is leaving orbit of {1} but collision detection zone is poking outside of orbit slot by {2:0.0000} units.",
+                    ship.DebugName, DebugName, shipDistance - insideOrbitSlotThreshold);
+                float halfOutsideOrbitSlotThreshold = CloseOrbitOuterRadius;
+                if (shipDistance > halfOutsideOrbitSlotThreshold) {
+                    D.Warn("{0} is leaving orbit of {1} but collision detection zone is half outside of orbit slot.", ship.DebugName, DebugName);
+                }
             }
             if (_shipsInCloseOrbit.Count == Constants.Zero) {
                 // Choose either to deactivate the OrbitSimulator or destroy it, but not both

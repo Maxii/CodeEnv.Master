@@ -162,7 +162,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
     }
 
     protected override ADisplayManager MakeDisplayManagerInstance() {
-        return new SystemDisplayManager(gameObject, Layers.SystemOrbitalPlane);
+        return new SystemDisplayManager(gameObject, TempGameValues.SystemMeshCullLayer);
     }
 
     private IList<StationaryLocation> InitializePatrolStations() {

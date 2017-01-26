@@ -44,14 +44,29 @@ namespace CodeEnv.Master.Common {
             get { return Environment.ExpandEnvironmentVariables(@"%UnityEnvDir%UnityEntry\"); }
         }
 
-        // Note: when using relative vs absolute path notation, Unity current directory is always the Project root working directory.
-        // The project folder can always be acquired by System.IO.Directory.GetCurrentDirectory as the editor requires that
-        // the current working directory be set to the project folder at all times.
-        // Application.dataPath returns the absolute path to where the project data resides depending on the platform. In the UnityEditor,
-        // this path is the path to the Assets folder in the current project.
+        private static string _dataLibraryDir;
+        /// <summary>
+        /// Gets the directory path to the DataLibrary, aka where all the Xml values are stored.
+        /// <remarks>When using relative vs absolute path notation, Unity current directory is always the Project root working directory.
+        /// The project folder can always be acquired by System.IO.Directory.GetCurrentDirectory as the editor requires that
+        /// the current working directory be set to the project folder at all times.
+        /// Application.dataPath returns the absolute path to where the project data resides depending on the platform. In the UnityEditor,
+        /// this path is the path to the Assets folder in the current project.</remarks>
+        /// <remarks>Avoids calling Application.dataPath more than once. As of Unity 5.x it can only be called from
+        /// a MonoBehaviour Awake() or Start() event. This way GameManager.Awake() can indirectly initialize the first class that uses
+        /// it (an AXmlReader) and then it won't be called again.</remarks>
+        /// </summary>
         public static string DataLibraryDir {
-            get { return Application.dataPath + @"\..\DataLibrary\"; }  // \..\ moves up one directory level
+            get {
+                if (_dataLibraryDir == null) {
+                    _dataLibraryDir = Application.dataPath + @"\..\DataLibrary\";  // \..\ moves up one directory level
+                }
+                return _dataLibraryDir;
+            }
         }
+        //public static string DataLibraryDir {
+        //    get { return Application.dataPath + @"\..\DataLibrary\"; }  // \..\ moves up one directory level
+        //}
 
         public const string MouseAxisName_Horizontal = "Mouse X";
         public const string MouseAxisName_Vertical = "Mouse Y";

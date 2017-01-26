@@ -26,6 +26,8 @@ using UnityEngine;
 /// </summary>
 public class UITrackingSprite : AUITrackingWidget {
 
+    private static Vector2 v2Two = new Vector2(2, 2);
+
     private AtlasID _atlasID;
     public AtlasID AtlasID {
         get { return _atlasID; }
@@ -41,7 +43,7 @@ public class UITrackingSprite : AUITrackingWidget {
 
     protected override void Awake() {
         base.Awake();
-        D.Assert(Widget.localSize != new Vector2(2, 2) && Widget.localSize != Vector2.zero, gameObject, "Sprite size not set.");
+        D.Assert(Widget.localSize != v2Two && Widget.localSize != Vector2.zero, gameObject, "Sprite size not set.");
         __AdjustSpriteSize();
     }
 

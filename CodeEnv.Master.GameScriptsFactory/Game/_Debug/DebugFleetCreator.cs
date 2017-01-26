@@ -96,13 +96,6 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
     private FleetCmdItem _command;
     private IList<ShipItem> _elements;
 
-    protected override void ValidateStaticSetting() {
-        if (gameObject.isStatic) {
-            D.Warn("{0} should not start as static. Correcting.", DebugName);
-            gameObject.isStatic = false;
-        }
-    }
-
     protected override void MakeElements() {
         _elements = new List<ShipItem>();
 

@@ -84,6 +84,14 @@ public abstract class ADebugUnitCreator : AUnitCreator {
 
     public abstract AUnitCreatorEditorSettings EditorSettings { get; }
 
+    /// <summary>
+    /// The date to deploy the unit from this DebugCreator.
+    /// <remarks>This value is used to construct an EditorSetting for this DebugCreator. That EditorSetting
+    /// is used by the UniverseCreator and UnitConfigurator to create a Configuration for this DebugCreator.
+    /// The Configuration may or may not use this DateToDeploy value. It will not use it if this 
+    /// creator is used as part of the initial creators reqd on the GameStart date. It will always be used
+    /// if DebugControls.UseDebugCreatorsOnly is true.</remarks>
+    /// </summary>
     protected GameDate DateToDeploy {
         get {
             if (_toDelayOperations) {
@@ -94,8 +102,6 @@ public abstract class ADebugUnitCreator : AUnitCreator {
     }
 
     protected bool IsCompositionPreset { get { return _isCompositionPreset; } }
-
-    protected abstract void ValidateStaticSetting();
 
     // 10.12.16 Eliminated overridden InitiateDeployment() which checked ValidateConfiguration() as un-configured DebugUnitCreators
     // are destroyed by UniverseCreator. It makes no sense for UniverseCreator to call InitiateDeployment on a Creator that
@@ -108,7 +114,6 @@ public abstract class ADebugUnitCreator : AUnitCreator {
             return; // Uses ExecuteInEditMode
         }
         base.Awake();
-        ValidateStaticSetting();
     }
 
     protected sealed override void Start() {
@@ -142,6 +147,7 @@ public abstract class ADebugUnitCreator : AUnitCreator {
     }
 
     #endregion
+
 
     /// <summary>
     /// Adjusts the serialized element qty field in the editor to the provided value.

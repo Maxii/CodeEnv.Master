@@ -35,6 +35,9 @@ public abstract class AWorldTrackingWidget_ConstantSize : AWorldTrackingWidget {
         Profiler.BeginSample("Proper AddComponent allocation", gameObject);
         _scaler = _billboard.gameObject.AddComponent<ScaleRelativeToCamera>();
         Profiler.EndSample();
+
+        _scaler.WarnIfUIPanelPresentInParents = false;
+        _scaler.enabled = false;
     }
 
     protected override void Show() {

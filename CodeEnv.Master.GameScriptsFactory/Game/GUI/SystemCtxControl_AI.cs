@@ -48,7 +48,7 @@ public class SystemCtxControl_AI : ACtxControl {
     private SettlementCmdItem _settlement;
 
     public SystemCtxControl_AI(SystemItem system)
-        : base(system.gameObject, uniqueSubmenusReqd: Constants.Zero, menuPosition: MenuPositionMode.AtCursor) {
+        : base(system.gameObject, uniqueSubmenuQtyReqd: Constants.Zero, menuPosition: MenuPositionMode.AtCursor) {
         _systemMenuOperator = system;
         _settlement = system.Settlement;
         D.AssertNotNull(_settlement);

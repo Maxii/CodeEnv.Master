@@ -23,6 +23,11 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IFleetFormationStation {
 
+        bool IsOnStation { get; }
+
+        float __DistanceFromOnStation { get; }
+
+
     }
 }
 

@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2014 Strategic Forge
+// Copyright © 2012 - 2017 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ConstantSizeTrackingSprite.cs
-//  Sprite resident in world space that tracks world objects.
+// File: WorldTrackingSprite.cs
+// Sprite resident in world space that tracks world objects and maintains a constant size on the screen.  
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,10 +22,12 @@ using UnityEngine;
 using UnityEngine.Profiling;
 
 /// <summary>
-/// Sprite resident in world space that tracks world objects.  
-/// The user perceives the widget at a constant size as the camera and/or tracked gameObject moves. 
+/// Sprite resident in world space that tracks world objects and maintains a constant size on the screen.  
+/// <remarks>This version is parented to a common UIPanel for the tracked target's type. It does not interact with the mouse.</remarks>
 /// </summary>
-public class ConstantSizeTrackingSprite : AWorldTrackingWidget_ConstantSize, ITrackingSprite {
+public class WorldTrackingSprite : AWorldTrackingWidget_ConstantSize, IWorldTrackingSprite {
+
+    private static Vector2 v2Two = new Vector2(2, 2);
 
     public ICameraLosChangedListener CameraLosChangedListener { get; private set; }
 
@@ -39,7 +41,7 @@ public class ConstantSizeTrackingSprite : AWorldTrackingWidget_ConstantSize, ITr
 
     protected override void Awake() {
         base.Awake();
-        D.Assert(Widget.localSize != new Vector2(2, 2) && Widget.localSize != Vector2.zero, gameObject, "Sprite size not set.");
+        D.Assert(Widget.localSize != v2Two && Widget.localSize != Vector2.zero, gameObject, "Sprite size not set.");
 
         GameObject widgetGo = WidgetTransform.gameObject;
 
@@ -58,19 +60,46 @@ public class ConstantSizeTrackingSprite : AWorldTrackingWidget_ConstantSize, ITr
         Widget.spriteName = spriteFilename;
     }
 
+    protected override void Show() {
+        base.Show();
+        enabled = Target.IsMobile;
+    }
+
+    protected override void Hide() {
+        base.Hide();
+        enabled = false;
+    }
+
     protected virtual void SetDimensions(Vector2 size) {
         Widget.SetDimensions(Mathf.RoundToInt(size.x), Mathf.RoundToInt(size.y));
+    }
+
+    void Update() {
+        RefreshPosition();
+    }
+
+    protected void RefreshPosition() {
+        SetPosition();
+    }
+
+    protected override void SetPosition() {
+        //D.Log("{0} aligning position with target {1}. Offset is {2}.", DebugName, Target.Transform.name, _offset);
+        transform.position = Target.Position + _offset;
     }
 
     #region Event and Property Change Handlers
 
     private void IconInfoPropChangedHandler() {
+        D.AssertNotDefault(IconInfo);
+
         Widget.atlas = IconInfo.AtlasID.GetAtlas();
         Set(IconInfo.Filename);
         Color = IconInfo.Color;
         SetDimensions(IconInfo.Size);
         Placement = IconInfo.Placement;
         NGUITools.SetLayer(gameObject, (int)IconInfo.Layer);
+
+        CameraLosChangedListener.CheckForInvisibleMeshSizeChange();
     }
 
     #endregion

@@ -36,7 +36,7 @@ public class ShipCloseOrbitSimulator : OrbitSimulator, IShipCloseOrbitSimulator,
     /// </summary>
     /// <param name="ship">The ship.</param>
     /// <returns></returns>
-    private bool CheckWeatherToManuallyPlaceShipInCloseOrbit(IShip ship) {
+    private bool CheckWetherToManuallyPlaceShipInCloseOrbit(IShip ship) {
         float shipDistanceToOrbitedObject = Vector3.Distance(ship.Position, transform.position);    // same as OrbitedItem
         float minOutsideOfOrbitCaptureRadius = OrbitData.OuterRadius - ship.CollisionDetectionZoneRadius;
         return shipDistanceToOrbitedObject < minOutsideOfOrbitCaptureRadius;

@@ -107,11 +107,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         Shields = new List<IShield>();
     }
 
-    protected override void Subscribe() {
-        base.Subscribe();
-        _subscriptions.Add(PlayerPrefsManager.Instance.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsElementIconsEnabled, IsElementIconsEnabledPropChangedHandler));
-    }
-
     protected override void InitializeOnData() {
         base.InitializeOnData();
         InitializePrimaryCollider();
@@ -154,19 +149,9 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     protected sealed override void InitializeDisplayManager() {
         base.InitializeDisplayManager();
-        if (PlayerPrefsManager.Instance.IsElementIconsEnabled) {
-            DisplayMgr.IconInfo = MakeIconInfo();
-            SubscribeToIconEvents(DisplayMgr.Icon);
-        }
+        // 1.16.17 TEMP Replaced User Option/Preference with easily accessible DebugControls setting
+        InitializeIcon();
         DisplayMgr.MeshColor = Owner.Color;
-    }
-
-    private void SubscribeToIconEvents(IResponsiveTrackingSprite icon) {
-        var iconEventListener = icon.EventListener;
-        iconEventListener.onHover += HoverEventHandler;
-        iconEventListener.onClick += ClickEventHandler;
-        iconEventListener.onDoubleClick += DoubleClickEventHandler;
-        iconEventListener.onPress += PressEventHandler;
     }
 
     protected sealed override CircleHighlightManager InitializeCircleHighlightMgr() {
@@ -209,6 +194,15 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
             transform.parent = unitContainer;
         }
     }
+
+    /// <summary>
+    /// Called when the local position of this element has been manually changed by its Command.
+    /// <remarks>1.21.17 Currently called when the FormationMgr manually repositions
+    /// the element. For ships, manual repositioning only occurs when the formation is 
+    /// initially changed before it becomes operational. IMPROVE For facilities, manual repositioning
+    /// occurs even if operational which of course will have to be improved.</remarks>
+    /// </summary>
+    public abstract void HandleLocalPositionManuallyChanged();
 
     protected override void HandleDeathBeforeBeginningDeathEffect() {
         base.HandleDeathBeforeBeginningDeathEffect();
@@ -514,33 +508,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #endregion
 
-    #region Icon and Highlighting
-
-    private void AssessIcon() {
-        D.AssertNotNull(DisplayMgr);
-
-        if (PlayerPrefsManager.Instance.IsElementIconsEnabled) {
-            var iconInfo = RefreshIconInfo();
-            if (DisplayMgr.IconInfo != iconInfo) {    // avoid property not changed warning
-                UnsubscribeToIconEvents(DisplayMgr.Icon);
-                //D.Log(ShowDebugLog, "{0} changing IconInfo from {1} to {2}.", DebugName, DisplayMgr.IconInfo, iconInfo);
-                DisplayMgr.IconInfo = iconInfo;
-                SubscribeToIconEvents(DisplayMgr.Icon);
-            }
-        }
-        else {
-            if (DisplayMgr.Icon != null) {
-                UnsubscribeToIconEvents(DisplayMgr.Icon);
-                DisplayMgr.IconInfo = default(IconInfo);
-            }
-        }
-    }
-
-    private IconInfo RefreshIconInfo() {
-        return MakeIconInfo();
-    }
-
-    protected abstract IconInfo MakeIconInfo();
+    #region Highlighting
 
     public override void AssessCircleHighlighting() {
         if (IsDiscernibleToUser) {
@@ -635,12 +603,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     protected override void HandleIsVisualDetailDiscernibleToUserChanged() {
         base.HandleIsVisualDetailDiscernibleToUserChanged();
         Data.Weapons.ForAll(w => w.IsWeaponDiscernibleToUser = IsVisualDetailDiscernibleToUser);
-    }
-
-    private void IsElementIconsEnabledPropChangedHandler() {
-        if (DisplayMgr != null) {
-            AssessIcon();
-        }
     }
 
     protected override void HandleUserIntelCoverageChanged() {
@@ -783,6 +745,151 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         }
     }
 
+    #region Show Icon
+
+    private void InitializeIcon() {
+        DebugControls debugControls = DebugControls.Instance;
+        debugControls.showElementIcons += ShowElementIconsChangedEventHandler;
+        if (debugControls.ShowElementIcons) {
+            EnableIcon(true);
+        }
+    }
+
+    private void EnableIcon(bool toEnable) {
+        if (toEnable) {
+            if (DisplayMgr.Icon == null) {
+                DisplayMgr.IconInfo = MakeIconInfo();
+                SubscribeToIconEvents(DisplayMgr.Icon);
+            }
+        }
+        else {
+            if (DisplayMgr.Icon != null) {
+                UnsubscribeToIconEvents(DisplayMgr.Icon);
+                DisplayMgr.IconInfo = default(IconInfo);
+            }
+        }
+    }
+
+    private void AssessIcon() {
+        if (DisplayMgr != null) {
+            if (DisplayMgr.Icon != null) {
+                var iconInfo = RefreshIconInfo();
+                if (DisplayMgr.IconInfo != iconInfo) {    // avoid property not changed warning
+                    UnsubscribeToIconEvents(DisplayMgr.Icon);
+                    //D.Log(ShowDebugLog, "{0} changing IconInfo from {1} to {2}.", DebugName, DisplayMgr.IconInfo, iconInfo);
+                    DisplayMgr.IconInfo = iconInfo;
+                    SubscribeToIconEvents(DisplayMgr.Icon);
+                }
+            }
+            else {
+                D.Assert(!DebugControls.Instance.ShowElementIcons);
+            }
+        }
+    }
+
+    private void SubscribeToIconEvents(IInteractiveWorldTrackingSprite icon) {
+        var iconEventListener = icon.EventListener;
+        iconEventListener.onHover += HoverEventHandler;
+        iconEventListener.onClick += ClickEventHandler;
+        iconEventListener.onDoubleClick += DoubleClickEventHandler;
+        iconEventListener.onPress += PressEventHandler;
+    }
+
+    private IconInfo RefreshIconInfo() {
+        return MakeIconInfo();
+    }
+
+    protected abstract IconInfo MakeIconInfo();
+
+    private void ShowElementIconsChangedEventHandler(object sender, EventArgs e) {
+        EnableIcon(DebugControls.Instance.ShowElementIcons);
+    }
+
+    /// <summary>
+    /// Cleans up any icon subscriptions.
+    /// <remarks>The icon itself will be cleaned up when DisplayMgr.Dispose() is called.</remarks>
+    /// </summary>
+    private void CleanupIconSubscriptions() {
+        var debugControls = DebugControls.Instance;
+        if (debugControls != null) {
+            debugControls.showElementIcons -= ShowElementIconsChangedEventHandler;
+        }
+        if (DisplayMgr != null) {
+            var icon = DisplayMgr.Icon;
+            if (icon != null) {
+                UnsubscribeToIconEvents(icon);
+            }
+        }
+    }
+
+    private void UnsubscribeToIconEvents(IInteractiveWorldTrackingSprite icon) {
+        var iconEventListener = icon.EventListener;
+        iconEventListener.onHover -= HoverEventHandler;
+        iconEventListener.onClick -= ClickEventHandler;
+        iconEventListener.onDoubleClick -= DoubleClickEventHandler;
+        iconEventListener.onPress -= PressEventHandler;
+    }
+
+    #region Element Icon Preference Archive
+
+    // 1.16.17 TEMP Replaced User Option/Preference with easily accessible DebugControls setting
+    //  - Graphics Options Menu Window's ElementIcons Checkbox has been deactivated.
+    //  - PlayerPrefsMgr's preference value implementation has been commented out
+
+    //protected override void Subscribe() {
+    //    base.Subscribe();
+    //    _subscriptions.Add(PlayerPrefsManager.Instance.SubscribeToPropertyChanged<PlayerPrefsManager, bool>(ppm => ppm.IsElementIconsEnabled, IsElementIconsEnabledPropChangedHandler));
+    //}
+
+    //protected sealed override void InitializeDisplayManager() {
+    //    base.InitializeDisplayManager();
+    //    if (PlayerPrefsManager.Instance.IsElementIconsEnabled) {
+    //        DisplayMgr.IconInfo = MakeIconInfo();
+    //        SubscribeToIconEvents(DisplayMgr.Icon);
+    //    }
+    //    DisplayMgr.MeshColor = Owner.Color;
+    //}
+
+    //private void IsElementIconsEnabledPropChangedHandler() {
+    //    if (DisplayMgr != null) {
+    //        AssessIcon();
+    //    }
+    //}
+
+    //private void AssessIcon() {
+    //    D.AssertNotNull(DisplayMgr);
+
+    //    if (PlayerPrefsManager.Instance.IsElementIconsEnabled) {
+    //        var iconInfo = RefreshIconInfo();
+    //        if (DisplayMgr.IconInfo != iconInfo) {    // avoid property not changed warning
+    //            UnsubscribeToIconEvents(DisplayMgr.Icon);
+    //            //D.Log(ShowDebugLog, "{0} changing IconInfo from {1} to {2}.", DebugName, DisplayMgr.IconInfo, iconInfo);
+    //            DisplayMgr.IconInfo = iconInfo;
+    //            SubscribeToIconEvents(DisplayMgr.Icon);
+    //        }
+    //    }
+    //    else {
+    //        if (DisplayMgr.Icon != null) {
+    //            UnsubscribeToIconEvents(DisplayMgr.Icon);
+    //            DisplayMgr.IconInfo = default(IconInfo);
+    //        }
+    //    }
+    //}
+
+    //protected override void Unsubscribe() {
+    //    base.Unsubscribe();
+    //    if (DisplayMgr != null) {
+    //        var icon = DisplayMgr.Icon;
+    //        if (icon != null) {
+    //            UnsubscribeToIconEvents(icon);
+    //        }
+    //    }
+    //}
+
+    #endregion
+
+    #endregion
+
     #region Cleanup
 
     protected override void Cleanup() {
@@ -794,20 +901,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     protected override void Unsubscribe() {
         base.Unsubscribe();
-        if (DisplayMgr != null) {
-            var icon = DisplayMgr.Icon;
-            if (icon != null) {
-                UnsubscribeToIconEvents(icon);
-            }
-        }
-    }
-
-    private void UnsubscribeToIconEvents(IResponsiveTrackingSprite icon) {
-        var iconEventListener = icon.EventListener;
-        iconEventListener.onHover -= HoverEventHandler;
-        iconEventListener.onClick -= ClickEventHandler;
-        iconEventListener.onDoubleClick -= DoubleClickEventHandler;
-        iconEventListener.onPress -= PressEventHandler;
+        CleanupIconSubscriptions();
     }
 
     #endregion
@@ -959,7 +1053,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #region IShipAttackable Members
 
-    public abstract AutoPilotDestinationProxy GetApAttackTgtProxy(float minRangeToTgtSurface, float maxRangeToTgtSurface);
+    public abstract AutoPilotDestinationProxy GetApAttackTgtProxy(float minDesiredDistanceToTgtSurface, float maxDesiredDistanceToTgtSurface);
 
     #endregion
 

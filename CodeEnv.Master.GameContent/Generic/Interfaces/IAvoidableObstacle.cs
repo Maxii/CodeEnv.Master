@@ -24,14 +24,19 @@ namespace CodeEnv.Master.GameContent {
     public interface IAvoidableObstacle : IObstacle {
 
         /// <summary>
+        /// The radius of the ObstacleZone. 1.24.17 For debug only.
+        /// </summary>
+        float __ObstacleZoneRadius { get; }
+
+        /// <summary>
         /// Returns the detour to get by this avoidable obstacle. Detours do not
         /// account for a ship's formation station offset. Ship navigation handles that itself.
         /// </summary>
         /// <param name="shipOrFleetPosition">The ship or fleet position.</param>
         /// <param name="zoneHitInfo">The zone hit information.</param>
-        /// <param name="fleetRadius">The fleet radius.</param>
+        /// <param name="fleetOrShipClearanceRadius">The clearance radius reqd by the ship or fleet.</param>
         /// <returns></returns>
-        Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float fleetRadius);
+        Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float fleetOrShipClearanceRadius);
 
     }
 }

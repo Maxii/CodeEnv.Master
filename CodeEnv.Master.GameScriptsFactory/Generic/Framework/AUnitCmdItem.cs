@@ -143,7 +143,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     protected sealed override ADisplayManager MakeDisplayManagerInstance() {
-        return new UnitCmdDisplayManager(this, Layers.Cull_200);
+        return new UnitCmdDisplayManager(this, TempGameValues.CmdMeshCullLayer);
     }
 
     protected sealed override void InitializeDisplayManager() {
@@ -158,7 +158,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         return new UnitCmdEffectsManager(this);
     }
 
-    private void SubscribeToIconEvents(IResponsiveTrackingSprite icon) {
+    private void SubscribeToIconEvents(IInteractiveWorldTrackingSprite icon) {
         var iconEventListener = icon.EventListener;
         iconEventListener.onHover += HoverEventHandler;
         iconEventListener.onClick += ClickEventHandler;
@@ -350,14 +350,14 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     #region Command Icon Management
 
     public void AssessIcon() {
-        if (DisplayMgr == null) { return; }
-
-        var iconInfo = RefreshIconInfo();
-        if (DisplayMgr.IconInfo != iconInfo) {    // avoid property not changed warning
-            UnsubscribeToIconEvents(DisplayMgr.Icon);
-            //D.Log(ShowDebugLog, "{0} changing IconInfo from {1} to {2}.", DebugName, DisplayMgr.IconInfo, iconInfo);
-            DisplayMgr.IconInfo = iconInfo;
-            SubscribeToIconEvents(DisplayMgr.Icon);
+        if (DisplayMgr != null) {
+            var iconInfo = RefreshIconInfo();
+            if (DisplayMgr.IconInfo != iconInfo) {    // avoid property not changed warning
+                UnsubscribeToIconEvents(DisplayMgr.Icon);
+                //D.Log(ShowDebugLog, "{0} changing IconInfo from {1} to {2}.", DebugName, DisplayMgr.IconInfo, iconInfo);
+                DisplayMgr.IconInfo = iconInfo;
+                SubscribeToIconEvents(DisplayMgr.Icon);
+            }
         }
     }
 
@@ -556,7 +556,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     protected void UnregisterForOrders() {
-        OwnerAIMgr.UnregisterForOrders(this);
+        OwnerAIMgr.DeregisterForOrders(this);
     }
 
     protected void Dead_ExitState() {
@@ -739,7 +739,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         }
     }
 
-    private void UnsubscribeToIconEvents(IResponsiveTrackingSprite icon) {
+    private void UnsubscribeToIconEvents(IInteractiveWorldTrackingSprite icon) {
         var iconEventListener = icon.EventListener;
         iconEventListener.onHover -= HoverEventHandler;
         iconEventListener.onClick -= ClickEventHandler;
@@ -877,7 +877,9 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     /// <param name="element">The element.</param>
     /// <param name="stationSlotInfo">The slot information.</param>
     public virtual void PositionElementInFormation(IUnitElement element, FormationStationSlotInfo stationSlotInfo) {
-        (element as AUnitElementItem).transform.localPosition = stationSlotInfo.LocalOffset;
+        AUnitElementItem unitElement = element as AUnitElementItem;
+        unitElement.transform.localPosition = stationSlotInfo.LocalOffset;
+        unitElement.HandleLocalPositionManuallyChanged();
         //D.Log(ShowDebugLog, "{0} positioned at {1}, offset by {2} from {3} at {4}.",
         //element.DebugName, element.Position, stationSlotInfo.LocalOffset, HQElement.DebugName, HQElement.Position);
     }

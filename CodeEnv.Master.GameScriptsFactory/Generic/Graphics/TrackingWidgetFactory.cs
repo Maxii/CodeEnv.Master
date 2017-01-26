@@ -38,9 +38,9 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     protected sealed override void Initialize() { }
 
     /// <summary>
-    /// Creates a label on the UI layer that tracks the <c>target</c>.
+    /// Creates a label on the UI layer that tracks the <c>target</c>. It does not interact with the mouse.
     /// </summary>
-    /// <param name="trackedTgt">The target.</param>
+    /// <param name="trackedTgt">The tracked target.</param>
     /// <param name="placement">The placement.</param>
     /// <param name="min">The minimum show distance from the camera.</param>
     /// <param name="max">The maximum show distance from the camera.</param>
@@ -62,10 +62,9 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     }
 
     /// <summary>
-    /// Creates a sprite on the UI layer that tracks the <c>target</c>.
-    /// IMPROVE Use IconInfo?
+    /// Creates a sprite on the UI layer that tracks the <c>target</c>. It does not interact with the mouse.
     /// </summary>
-    /// <param name="trackedTgt">The target.</param>
+    /// <param name="trackedTgt">The tracked target.</param>
     /// <param name="atlasID">The atlas identifier.</param>
     /// <param name="placement">The placement.</param>
     /// <returns></returns>
@@ -87,111 +86,152 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     }
 
     /// <summary>
-    /// Creates a tracking sprite which can respond to the mouse.
-    /// The sprite's size stays constant, parented to and tracks the <c>target</c>.
+    /// Creates a sprite whose size doesn't change on the screen. It does interact with the mouse.
+    /// <remarks>The approach taken to UIPanel usage will be determined by the DebugControls setting.</remarks>
     /// </summary>
     /// <param name="trackedTgt">The target this sprite will track.</param>
     /// <param name="iconInfo">The info needed to build the sprite.</param>
-    /// <param name="min">The minimum show distance.</param>
-    /// <param name="max">The maximum show distance.</param>
     /// <returns></returns>
-    public IResponsiveTrackingSprite MakeResponsiveTrackingSprite(IWidgetTrackable trackedTgt, IconInfo iconInfo) {
-        GameObject trackingPrefabGo = RequiredPrefabs.Instance.worldTrackingSprite;
+    public IInteractiveWorldTrackingSprite MakeInteractiveWorldTrackingSprite(IWidgetTrackable trackedTgt, IconInfo iconInfo) {
+        if (DebugControls.Instance.UseIndependentUIPanelWidgets) {
+            return MakeInteractiveWorldTrackingSprite_Independent(trackedTgt, iconInfo);
+        }
+        else {
+            return MakeInteractiveWorldTrackingSprite_Common(trackedTgt, iconInfo);
+        }
+    }
+
+    /// <summary>
+    /// Creates a sprite whose size doesn't change on the screen. It does interact with the mouse.
+    /// <remarks>This version has its own UIPanel which is parented to the tracked target.</remarks>
+    /// </summary>
+    /// <param name="trackedTgt">The target this sprite will track.</param>
+    /// <param name="iconInfo">The info needed to build the sprite.</param>
+    /// <returns></returns>
+    public IInteractiveWorldTrackingSprite_Independent MakeInteractiveWorldTrackingSprite_Independent(IWidgetTrackable trackedTgt, IconInfo iconInfo) {
+        GameObject trackingPrefabGo = RequiredPrefabs.Instance.worldTrackingSprite_Independent;
         GameObject trackingWidgetGo = NGUITools.AddChild(trackedTgt.transform.gameObject, trackingPrefabGo);
 
         Profiler.BeginSample("Proper AddComponent allocation", (trackedTgt as Component).gameObject);
-        var trackingSprite = trackingWidgetGo.AddComponent<ResponsiveTrackingSprite>();   // AddComponent() runs Awake before returning
+        var trackingSprite = trackingWidgetGo.AddComponent<InteractiveWorldTrackingSprite_Independent>();   // AddComponent() runs Awake before returning
         Profiler.EndSample();
 
         trackingSprite.Target = trackedTgt;
         trackingSprite.IconInfo = iconInfo;
         ////trackingSprite.SetShowDistance(min, max);
-        //D.Log("{0} made a {1} for {2}.", DebugName, typeof(ResponsiveTrackingSprite).Name, trackedTgt.DebugName);
+        //D.Log("{0} made a {1} for {2}.", DebugName, typeof(InteractiveWorldTrackingSprite_Independent).Name, trackedTgt.DebugName);
         return trackingSprite;
     }
 
     /// <summary>
-    /// Creates a label whose size scales with the size of the target, parented to and tracking the <c>target</c>.
+    /// Creates a sprite whose size doesn't change on the screen. It does interact with the mouse.
+    /// <remarks>This version is parented to a common UIPanel for the tracked target's type.</remarks>
     /// </summary>
-    /// <param name="trackedTgt">The target.</param>
-    /// <param name="placement">The placement.</param>
+    /// <param name="trackedTgt">The target this sprite will track.</param>
+    /// <param name="iconInfo">The info needed to build the sprite.</param>
     /// <returns></returns>
-    public ITrackingWidget MakeVariableSizeTrackingLabel(IWidgetTrackable trackedTgt, WidgetPlacement placement = WidgetPlacement.Above) {
-        GameObject trackingPrefabGo = RequiredPrefabs.Instance.worldTrackingLabel;
-        GameObject trackingWidgetGo = NGUITools.AddChild(trackedTgt.transform.gameObject, trackingPrefabGo);
-
-        __WarnIfUnexpectedLayers(trackedTgt, trackingPrefabGo);
-        Layers trackingPrefabLayer = (Layers)trackingPrefabGo.layer;
-        NGUITools.SetLayer(trackingWidgetGo, (int)trackingPrefabLayer);
-
-        Profiler.BeginSample("Proper AddComponent allocation", (trackedTgt as Component).gameObject);
-        var trackingWidget = trackingWidgetGo.AddComponent<VariableSizeTrackingLabel>();   // AddComponent() runs Awake before returning
-        Profiler.EndSample();
-
-        trackingWidget.Target = trackedTgt;
-        trackingWidget.Placement = placement;
-        ////trackingSprite.SetShowDistance(min);
-        //D.Log("{0} made a {1} for {2}.", DebugName, typeof(VariableSizeTrackingSprite).Name, trackedTgt.DebugName);
-        return trackingWidget;
-    }
-
-    /// <summary>
-    /// Creates a sprite whose size scales with the size of the target, parented to and tracking the <c>target</c>.
-    /// IMPROVE Use of IconInfo deferred until I have a specific usage case.
-    /// </summary>
-    /// <param name="trackedTgt">The target.</param>
-    /// <param name="atlasID">The atlas identifier.</param>
-    /// <param name="placement">The placement.</param>
-    /// <returns></returns>
-    public ITrackingWidget MakeVariableSizeTrackingSprite(IWidgetTrackable trackedTgt, AtlasID atlasID, WidgetPlacement placement = WidgetPlacement.Above) {
+    public IInteractiveWorldTrackingSprite MakeInteractiveWorldTrackingSprite_Common(IWidgetTrackable trackedTgt, IconInfo iconInfo) {
         GameObject trackingPrefabGo = RequiredPrefabs.Instance.worldTrackingSprite;
-        GameObject trackingWidgetGo = NGUITools.AddChild(trackedTgt.transform.gameObject, trackingPrefabGo);
-
-        __WarnIfUnexpectedLayers(trackedTgt, trackingPrefabGo);
-        Layers trackingPrefabLayer = (Layers)trackingPrefabGo.layer;
-        NGUITools.SetLayer(trackingWidgetGo, (int)trackingPrefabLayer);
+        GameObject trackingWidgetGo = NGUITools.AddChild(null, trackingPrefabGo);
+        AttachWidgetAsChildOfParentFolder(trackingWidgetGo, trackedTgt);
 
         Profiler.BeginSample("Proper AddComponent allocation", (trackedTgt as Component).gameObject);
-        var trackingWidget = trackingWidgetGo.AddComponent<VariableSizeTrackingSprite>();  // AddComponent() runs Awake before returning
+        var trackingSprite = trackingWidgetGo.AddComponent<InteractiveWorldTrackingSprite>();   // AddComponent() runs Awake before returning
         Profiler.EndSample();
 
-        trackingWidget.AtlasID = atlasID;
-        trackingWidget.Target = trackedTgt;
-        trackingWidget.Placement = placement;
-        ////trackingSprite.SetShowDistance(min);
-        //D.Log("{0} made a {1} for {2}.", DebugName, typeof(VariableSizeTrackingSprite).Name, trackedTgt.DebugName);
-        return trackingWidget;
+        trackingSprite.Target = trackedTgt;
+        trackingSprite.IconInfo = iconInfo;
+        ////trackingSprite.SetShowDistance(min, max);
+        //D.Log("{0} made a {1} for {2}.", DebugName, typeof(InteractiveWorldTrackingSprite).Name, trackedTgt.DebugName);
+        return trackingSprite;
     }
 
     /// <summary>
-    /// Creates a sprite whose size stays constant, independent of the size of the target, parented to and tracking the <c>target</c>.
+    /// Creates a sprite whose size doesn't change on the screen. It does not interact with the mouse.
+    /// <remarks>The approach taken to UIPanel usage will be determined by the DebugControls setting.</remarks>
+    /// </summary>
+    /// <param name="trackedTgt">The target this sprite will track.</param>
+    /// <param name="iconInfo">The info needed to build the sprite.</param>
+    /// <returns></returns>
+    public IWorldTrackingSprite MakeWorldTrackingSprite(IWidgetTrackable trackedTgt, IconInfo iconInfo) {
+        if (DebugControls.Instance.UseIndependentUIPanelWidgets) {
+            return MakeWorldTrackingSprite_Independent(trackedTgt, iconInfo);
+        }
+        else {
+            return MakeWorldTrackingSprite_Common(trackedTgt, iconInfo);
+        }
+    }
+
+    /// <summary>
+    /// Creates a sprite whose size doesn't change on the screen. It does not interact with the mouse.
+    /// <remarks>This version has its own UIPanel which is parented to the tracked target.</remarks>
     /// </summary>
     /// <param name="trackedTgt">The target.</param>
     /// <param name="iconInfo">The icon information.</param>
     /// <returns></returns>
-    public ITrackingSprite MakeConstantSizeTrackingSprite(IWidgetTrackable trackedTgt, IconInfo iconInfo) {
-        GameObject trackingPrefabGo = RequiredPrefabs.Instance.worldTrackingSprite;
+    public IWorldTrackingSprite_Independent MakeWorldTrackingSprite_Independent(IWidgetTrackable trackedTgt, IconInfo iconInfo) {
+        GameObject trackingPrefabGo = RequiredPrefabs.Instance.worldTrackingSprite_Independent;
         GameObject trackingWidgetGo = NGUITools.AddChild(trackedTgt.transform.gameObject, trackingPrefabGo);
 
         Profiler.BeginSample("Proper AddComponent allocation", (trackedTgt as Component).gameObject);
-        var trackingSprite = trackingWidgetGo.AddComponent<ConstantSizeTrackingSprite>();  // AddComponent() runs Awake before returning
+        var trackingSprite = trackingWidgetGo.AddComponent<WorldTrackingSprite_Independent>();  // AddComponent() runs Awake before returning
         Profiler.EndSample();
 
         trackingSprite.Target = trackedTgt;
         trackingSprite.IconInfo = iconInfo;
         ////trackingSprite.SetShowDistance(min, max);
-        //D.Log("{0} made a {1} for {2}.", DebugName, typeof(ConstantSizeTrackingSprite).Name, trackedTgt.DebugName);
+        //D.Log("{0} made a {1} for {2}.", DebugName, typeof(WorldTrackingSprite_Independent).Name, trackedTgt.DebugName);
         return trackingSprite;
     }
 
     /// <summary>
-    /// Creates a label whose size stays constant, independent of the size of the target, parented to and tracking the <c>target</c>.
+    /// Creates a sprite whose size doesn't change on the screen. It does not interact with the mouse.
+    /// <remarks>This version is parented to a common UIPanel for the tracked target's type.</remarks>
+    /// </summary>
+    /// <param name="trackedTgt">The tracked target.</param>
+    /// <param name="iconInfo">The icon information.</param>
+    /// <returns></returns>
+    public IWorldTrackingSprite MakeWorldTrackingSprite_Common(IWidgetTrackable trackedTgt, IconInfo iconInfo) {
+        GameObject trackingPrefabGo = RequiredPrefabs.Instance.worldTrackingSprite;
+        GameObject trackingWidgetGo = NGUITools.AddChild(null, trackingPrefabGo);
+        AttachWidgetAsChildOfParentFolder(trackingWidgetGo, trackedTgt);
+
+        Profiler.BeginSample("Proper AddComponent allocation", (trackedTgt as Component).gameObject);
+        var trackingSprite = trackingWidgetGo.AddComponent<WorldTrackingSprite>();  // AddComponent() runs Awake before returning
+        Profiler.EndSample();
+
+        trackingSprite.Target = trackedTgt;
+        trackingSprite.IconInfo = iconInfo;
+        ////trackingSprite.SetShowDistance(min, max);
+        //D.Log("{0} made a {1} for {2}.", DebugName, typeof(WorldTrackingSprite).Name, trackedTgt.DebugName);
+        return trackingSprite;
+    }
+
+    /// <summary>
+    /// Creates a sprite whose size doesn't change on the screen. It does not interact with the mouse.
+    /// <remarks>The approach taken to UIPanel usage will be determined by the DebugControls setting.</remarks>
+    /// </summary>
+    /// <param name="trackedTgt">The target this sprite will track.</param>
+    /// <param name="iconInfo">The info needed to build the sprite.</param>
+    /// <returns></returns>
+    public ITrackingWidget MakeWorldTrackingLabel(IWidgetTrackable trackedTgt, WidgetPlacement placement = WidgetPlacement.Above) {
+        if (DebugControls.Instance.UseIndependentUIPanelWidgets) {
+            return MakeWorldTrackingLabel_Independent(trackedTgt, placement);
+        }
+        else {
+            return MakeWorldTrackingLabel_Common(trackedTgt, placement);
+        }
+    }
+
+    /// <summary>
+    /// Creates a label whose size doesn't change on the screen. It does not interact with the mouse.
+    /// <remarks>This version has its own UIPanel which is parented to the tracked target.</remarks>
     /// </summary>
     /// <param name="trackedTgt">The target.</param>
     /// <param name="placement">The placement.</param>
     /// <returns></returns>
-    public ITrackingWidget MakeConstantSizeTrackingLabel(IWidgetTrackable trackedTgt, WidgetPlacement placement = WidgetPlacement.Above) {
-        GameObject trackingPrefabGo = RequiredPrefabs.Instance.worldTrackingLabel;
+    public ITrackingWidget MakeWorldTrackingLabel_Independent(IWidgetTrackable trackedTgt, WidgetPlacement placement = WidgetPlacement.Above) {
+        GameObject trackingPrefabGo = RequiredPrefabs.Instance.worldTrackingLabel_Independent;
         GameObject trackingWidgetGo = NGUITools.AddChild(trackedTgt.transform.gameObject, trackingPrefabGo);
 
         __WarnIfUnexpectedLayers(trackedTgt, trackingPrefabGo);
@@ -199,20 +239,43 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         NGUITools.SetLayer(trackingWidgetGo, (int)trackingPrefabLayer);
 
         Profiler.BeginSample("Proper AddComponent allocation", (trackedTgt as Component).gameObject);
-        var trackingWidget = trackingWidgetGo.AddComponent<ConstantSizeTrackingLabel>();   // AddComponent() runs Awake before returning
+        var trackingWidget = trackingWidgetGo.AddComponent<WorldTrackingLabel_Independent>();   // AddComponent() runs Awake before returning
         Profiler.EndSample();
 
         trackingWidget.Target = trackedTgt;
         trackingWidget.Placement = placement;
         ////trackingWidget.SetShowDistance(min, max);
-        //D.Log("{0} made a {1} for {2}.", DebugName, typeof(ConstantSizeTrackingSprite).Name, trackedTgt.DebugName);
+        //D.Log("{0} made a {1} for {2}.", DebugName, typeof(WorldTrackingLabel_Independent).Name, trackedTgt.DebugName);
+        return trackingWidget;
+    }
+
+    /// <summary>
+    /// Creates a label whose size doesn't change on the screen. It does not interact with the mouse.
+    /// <remarks>This version is parented to a common UIPanel for the tracked target's type.</remarks>
+    /// </summary>
+    /// <param name="trackedTgt">The tracked target.</param>
+    /// <param name="placement">The placement.</param>
+    /// <returns></returns>
+    public ITrackingWidget MakeWorldTrackingLabel_Common(IWidgetTrackable trackedTgt, WidgetPlacement placement = WidgetPlacement.Above) {
+        GameObject trackingPrefabGo = RequiredPrefabs.Instance.worldTrackingLabel;
+        GameObject trackingWidgetGo = NGUITools.AddChild(null, trackingPrefabGo);
+        AttachWidgetAsChildOfParentFolder(trackingWidgetGo, trackedTgt);
+
+        Profiler.BeginSample("Proper AddComponent allocation", (trackedTgt as Component).gameObject);
+        var trackingWidget = trackingWidgetGo.AddComponent<WorldTrackingLabel>();   // AddComponent() runs Awake before returning
+        Profiler.EndSample();
+
+        trackingWidget.Target = trackedTgt;
+        trackingWidget.Placement = placement;
+        ////trackingWidget.SetShowDistance(min, max);
+        //D.Log("{0} made a {1} for {2}.", DebugName, typeof(WorldTrackingLabel).Name, trackedTgt.DebugName);
         return trackingWidget;
     }
 
     /// <summary>
     /// Makes and returns an invisible CameraLosChangedListener, parented to and tracking the trackedTgt.
     /// </summary>
-    /// <param name="trackedTgt">The tracked TGT.</param>
+    /// <param name="trackedTgt">The tracked target.</param>
     /// <param name="listenerLayer">The listener layer.</param>
     /// <returns></returns>
     public ICameraLosChangedListener MakeInvisibleCameraLosChangedListener(IWidgetTrackable trackedTgt, Layers listenerLayer) {
@@ -237,6 +300,85 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
         WidgetTrackableLocation wtLoc = trackableLocGo.AddComponent<WidgetTrackableLocation>();
         UnityUtility.AttachChildToParent(trackableLocGo, parent);
         return wtLoc;
+    }
+
+    /// <summary>
+    /// Creates a label whose size changes on the screen. It does not interact with the mouse.
+    /// <remarks>This version has its own UIPanel which is parented to the tracked target.</remarks>
+    /// </summary>
+    /// <param name="trackedTgt">The tracked target.</param>
+    /// <param name="placement">The placement.</param>
+    /// <returns></returns>
+    public ITrackingWidget MakeWorldTrackingLabel_IndependentVariableSize(IWidgetTrackable trackedTgt, WidgetPlacement placement = WidgetPlacement.Above) {
+        GameObject trackingPrefabGo = RequiredPrefabs.Instance.worldTrackingLabel_Independent;
+        GameObject trackingWidgetGo = NGUITools.AddChild(trackedTgt.transform.gameObject, trackingPrefabGo);
+
+        __WarnIfUnexpectedLayers(trackedTgt, trackingPrefabGo);
+        Layers trackingPrefabLayer = (Layers)trackingPrefabGo.layer;
+        NGUITools.SetLayer(trackingWidgetGo, (int)trackingPrefabLayer);
+
+        Profiler.BeginSample("Proper AddComponent allocation", (trackedTgt as Component).gameObject);
+        var trackingWidget = trackingWidgetGo.AddComponent<WorldTrackingLabel_IndependentVariableSize>();   // AddComponent() runs Awake before returning
+        Profiler.EndSample();
+
+        trackingWidget.Target = trackedTgt;
+        trackingWidget.Placement = placement;
+        ////trackingSprite.SetShowDistance(min);
+        //D.Log("{0} made a {1} for {2}.", DebugName, typeof(WorldTrackingLabel_IndependentVariableSize).Name, trackedTgt.DebugName);
+        return trackingWidget;
+    }
+
+    /// <summary>
+    /// Creates a sprite whose size changes on the screen. It does not interact with the mouse.
+    /// <remarks>This version has its own UIPanel which is parented to the tracked target.</remarks>
+    /// IMPROVE Use of IconInfo deferred until I have a specific usage case.
+    /// </summary>
+    /// <param name="trackedTgt">The tracked target.</param>
+    /// <param name="atlasID">The atlas identifier.</param>
+    /// <param name="placement">The placement.</param>
+    /// <returns></returns>
+    public ITrackingWidget MakeWorldTrackingSprite_IndependentVariableSize(IWidgetTrackable trackedTgt, AtlasID atlasID, WidgetPlacement placement = WidgetPlacement.Above) {
+        GameObject trackingPrefabGo = RequiredPrefabs.Instance.worldTrackingSprite_Independent;
+        GameObject trackingWidgetGo = NGUITools.AddChild(trackedTgt.transform.gameObject, trackingPrefabGo);
+
+        __WarnIfUnexpectedLayers(trackedTgt, trackingPrefabGo);
+        Layers trackingPrefabLayer = (Layers)trackingPrefabGo.layer;
+        NGUITools.SetLayer(trackingWidgetGo, (int)trackingPrefabLayer);
+
+        Profiler.BeginSample("Proper AddComponent allocation", (trackedTgt as Component).gameObject);
+        var trackingWidget = trackingWidgetGo.AddComponent<WorldTrackingSprite_IndependentVariableSize>();  // AddComponent() runs Awake before returning
+        Profiler.EndSample();
+
+        trackingWidget.AtlasID = atlasID;
+        trackingWidget.Target = trackedTgt;
+        trackingWidget.Placement = placement;
+        ////trackingSprite.SetShowDistance(min);
+        //D.Log("{0} made a {1} for {2}.", DebugName, typeof(WorldTrackingSprite_IndependentVariableSize).Name, trackedTgt.DebugName);
+        return trackingWidget;
+    }
+
+
+    /// <summary>
+    /// Attaches the provided widget to the proper parent folder as determined from trackedTgt.
+    /// </summary>
+    /// <param name="widgetGo">The widget GameObject.</param>
+    /// <param name="trackedTgt">The tracked target.</param>
+    private void AttachWidgetAsChildOfParentFolder(GameObject widgetGo, IWidgetTrackable trackedTgt) {
+        GameObject parentFolder = null;
+        if (trackedTgt is AUnitElementItem) {
+            parentFolder = ElementIconsFolder.Instance.gameObject;
+        }
+        else if (trackedTgt is PlanetItem) {
+            parentFolder = PlanetIconsFolder.Instance.gameObject;
+        }
+        else if (trackedTgt is StarItem) {
+            parentFolder = StarIconsFolder.Instance.gameObject;
+        }
+        else {
+            D.Assert(trackedTgt is AUnitCmdItem);
+            parentFolder = CmdIconsFolder.Instance.gameObject;
+        }
+        UnityUtility.AttachChildToParent(widgetGo, parentFolder);
     }
 
     private void __WarnIfUnexpectedLayers(IWidgetTrackable trackedTgt, GameObject trackingWidgetPrefab) {

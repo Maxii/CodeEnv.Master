@@ -240,7 +240,7 @@ public class Projectile : AProjectileOrdnance {
         else {
             // if icon has been destroyed, it won't be created again when reused. This will throw an error if not present
 #pragma warning disable 0219
-            ITrackingSprite operatingIcon = gameObject.GetSingleInterfaceInChildren<ITrackingSprite>();
+            IWorldTrackingSprite operatingIcon = gameObject.GetSingleInterfaceInChildren<IWorldTrackingSprite>();
 #pragma warning restore 0219
         }
 

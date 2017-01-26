@@ -1517,7 +1517,7 @@ namespace CodeEnv.Master.GameContent {
             float speedValueResult = fullSpeedFactor * fullSpeedValue;
             if (speedValueResult < TempGameValues.ShipMinimumSpeedValue) {
                 speedValueResult = TempGameValues.ShipMinimumSpeedValue;
-                D.Log("Speed {0} value has been clamped to {1:0.00}.", speed.GetValueName(), speedValueResult);
+                //D.Log("Speed {0} value has been clamped to {1:0.00}.", speed.GetValueName(), speedValueResult);
             }
             return speedValueResult;
         }

@@ -63,14 +63,6 @@ public class DebugSettlementCreator : ADebugUnitCreator {
     private SettlementCmdItem _command;
     private IList<FacilityItem> _elements;
 
-    protected override void ValidateStaticSetting() {
-        if (gameObject.isStatic) {
-            D.Warn("{0} should not start as static. Correcting.", DebugName);
-            gameObject.isStatic = false;
-        }
-    }
-
-
     protected override void MakeElements() {
         _elements = new List<FacilityItem>();
 

@@ -67,6 +67,7 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
     public BaseCtxControl_User(AUnitBaseCmdItem baseCmd)
         : base(baseCmd.gameObject, uniqueSubmenusReqd: 1, menuPosition: MenuPositionMode.Over) {
         _baseMenuOperator = baseCmd;
+        __ValidateUniqueSubmenuQtyReqd();
     }
 
     protected override bool IsSelectedItemMenuOperator(ISelectable selected) {
@@ -203,6 +204,7 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
 
 }
 

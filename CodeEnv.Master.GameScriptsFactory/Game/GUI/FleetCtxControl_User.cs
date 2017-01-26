@@ -67,8 +67,9 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
     private FleetCmdItem _fleetMenuOperator;
 
     public FleetCtxControl_User(FleetCmdItem fleetCmd)
-        : base(fleetCmd.gameObject, uniqueSubmenusReqd: 4, menuPosition: MenuPositionMode.Over) {
+        : base(fleetCmd.gameObject, uniqueSubmenusReqd: 10, menuPosition: MenuPositionMode.Over) {
         _fleetMenuOperator = fleetCmd;
+        __ValidateUniqueSubmenuQtyReqd();
     }
 
     protected override bool IsSelectedItemMenuOperator(ISelectable selected) {

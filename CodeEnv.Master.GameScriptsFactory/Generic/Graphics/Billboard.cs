@@ -36,31 +36,37 @@ public class Billboard : AMonoBase, IBillboard {
     //[FormerlySerializedAs("reverseLabelFacing")]
     [SerializeField]
     private bool _reverseLabelFacing = false;
+
+    private bool _warnIfUIPanelPresentInParents = true;
+    public bool WarnIfUIPanelPresentInParents { set { _warnIfUIPanelPresentInParents = value; } }
+
     private Transform _cameraTransform;
     private int __checkFacingCounter;
 
     protected override void Awake() {
         base.Awake();
-        WarnIfUIPanelPresentInParents();
         enabled = false;
     }
 
-    private void WarnIfUIPanelPresentInParents() {
+    protected override void Start() {
+        base.Start();
+        if (_warnIfUIPanelPresentInParents) {
+            CheckIfUIPanelPresentInParents();
+        }
+        _cameraTransform = Camera.main.transform;
+        PrepareLabel();
+    }
+
+    private void CheckIfUIPanelPresentInParents() {
         if (gameObject.GetComponentInParent<UIPanel>() != null) {
             // changing anything about a widget beneath a UIPanel causes Widget.onChange to be called
             D.WarnContext(this, "{0} is located beneath a UIPanel.\nConsider locating it above to improve performance.", GetType().Name);
         }
     }
 
-    protected override void Start() {
-        base.Start();
-        _cameraTransform = Camera.main.transform;
-        PrepareLabel();
-    }
-
     private void PrepareLabel() {
         UIWidget widget = gameObject.GetComponentInChildren<UIWidget>();
-        if (widget && widget as UILabel != null) {
+        if (widget != null && widget as UILabel != null) {
             if (_reverseLabelFacing) {
                 widget.transform.forward = -widget.transform.forward;
             }
@@ -85,7 +91,7 @@ public class Billboard : AMonoBase, IBillboard {
     }
 
     private void UpdateFacing() {
-        // Rotates the billboard t provided so its forward aligns with that of the provided camera's t, ie. the direction the camera is looking.
+        // Rotates the billboard t provided so its forward aligns with that of the provided camera's t, IE. the direction the camera is looking.
         // In effect, by adopting the camera's forward direction, the billboard is pointing at the camera's focal plane, not at the camera. 
         // It is the camera's focal plane whose image is projected onto the screen so that is what must be 'looked at'.
         Vector3 targetPos = transform.position + _cameraTransform.rotation * (_reverseFacing ? Vector3.forward : Vector3.back);

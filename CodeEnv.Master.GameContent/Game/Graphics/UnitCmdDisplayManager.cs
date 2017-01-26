@@ -42,9 +42,9 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<GameColor>(ref _meshColor, value, "MeshColor", MeshColorPropChangedHandler); }
         }
 
-        public new IResponsiveTrackingSprite Icon { get { return base.Icon as IResponsiveTrackingSprite; } }
+        public new IInteractiveWorldTrackingSprite Icon { get { return base.Icon as IInteractiveWorldTrackingSprite; } }
 
-        protected override int IconDepth { get { return -3; } }
+        protected override int IconDepth { get { return 4; } }
 
         private float _currentPrimaryMeshRadius;
         private MaterialPropertyBlock _primaryMeshMPB;
@@ -137,11 +137,6 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        protected override void DestroyIcon() {
-            throw new NotSupportedException("{0}'s cannot destroy Icons during runtime.".Inject(GetType().Name));
-            // UnitCmd's use the Icon as the transform upon which to center highlighting
-        }
-
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
@@ -154,6 +149,7 @@ namespace CodeEnv.Master.GameContent {
         public void HandleDeath() {
             IsDisplayEnabled = false;
             _primaryMeshRenderer.enabled = false;
+            DestroyIcon();
         }
 
         #endregion

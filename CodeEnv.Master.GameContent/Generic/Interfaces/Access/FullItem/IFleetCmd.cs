@@ -23,7 +23,9 @@ namespace CodeEnv.Master.GameContent {
 
         FleetCmdReport UserReport { get; }
 
-        FleetOrder CurrentOrder { set; }
+        FleetOrder CurrentOrder { get; set; }
+
+        bool IsCurrentOrderDirectiveAnyOf(params FleetDirective[] directives);
 
         FleetCmdReport GetReport(Player player);
 

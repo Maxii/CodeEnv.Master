@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using MoreLinq;
 using UnityEngine;
@@ -30,7 +31,7 @@ using UnityEngine.Profiling;
 /// </summary>
 public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDetectable, IAvoidableObstacle, IShipExplorable {
 
-    private static readonly Vector2 IconSize = new Vector2(24F, 24F);
+    private static readonly Vector2 IconSize = new Vector2(12F, 12F);
 
     public StarCategory category = StarCategory.None;
 
@@ -107,11 +108,11 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
     private void InitializeObstacleDetourGenerator() {
         if (IsMobile) {
             Reference<Vector3> obstacleZoneCenter = new Reference<Vector3>(() => _obstacleZoneCollider.transform.TransformPoint(_obstacleZoneCollider.center));
-            _detourGenerator = new DetourGenerator(obstacleZoneCenter, _obstacleZoneCollider.radius, Data.CloseOrbitOuterRadius);
+            _detourGenerator = new DetourGenerator(DebugName, obstacleZoneCenter, _obstacleZoneCollider.radius, Data.CloseOrbitOuterRadius);
         }
         else {
             Vector3 obstacleZoneCenter = _obstacleZoneCollider.transform.TransformPoint(_obstacleZoneCollider.center);
-            _detourGenerator = new DetourGenerator(obstacleZoneCenter, _obstacleZoneCollider.radius, Data.CloseOrbitOuterRadius);
+            _detourGenerator = new DetourGenerator(DebugName, obstacleZoneCenter, _obstacleZoneCollider.radius, Data.CloseOrbitOuterRadius);
         }
     }
 
@@ -124,21 +125,12 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
     }
 
     protected override ADisplayManager MakeDisplayManagerInstance() {
-        return new StarDisplayManager(this, Layers.Cull_3000);
+        return new StarDisplayManager(this, TempGameValues.StarMeshCullLayer);
     }
 
     protected override void InitializeDisplayManager() {
         base.InitializeDisplayManager();
-        DisplayMgr.IconInfo = MakeIconInfo();
-        SubscribeToIconEvents(DisplayMgr.Icon);
-    }
-
-    private void SubscribeToIconEvents(IResponsiveTrackingSprite icon) {
-        var iconEventListener = icon.EventListener;
-        iconEventListener.onHover += HoverEventHandler;
-        iconEventListener.onClick += ClickEventHandler;
-        iconEventListener.onDoubleClick += DoubleClickEventHandler;
-        iconEventListener.onPress += PressEventHandler;
+        InitializeIcon();
     }
 
     protected override CircleHighlightManager InitializeCircleHighlightMgr() {
@@ -160,28 +152,6 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
     }
 
     public StarReport GetReport(Player player) { return Publisher.GetReport(player); }
-
-    private void AssessIcon() {
-        if (DisplayMgr == null) { return; }
-
-        var iconInfo = RefreshIconInfo();
-        if (DisplayMgr.IconInfo != iconInfo) {    // avoid property not changed warning
-            UnsubscribeToIconEvents(DisplayMgr.Icon);
-            D.Log(ShowDebugLog, "{0} changing IconInfo from {1} to {2}.", DebugName, DisplayMgr.IconInfo, iconInfo);
-            DisplayMgr.IconInfo = iconInfo;
-            SubscribeToIconEvents(DisplayMgr.Icon);
-        }
-    }
-
-    private IconInfo RefreshIconInfo() {
-        return MakeIconInfo();
-    }
-
-    private IconInfo MakeIconInfo() {
-        var report = UserReport;
-        GameColor iconColor = report.Owner != null ? report.Owner.Color : GameColor.White;
-        return new IconInfo("Icon01", AtlasID.Contextual, iconColor, IconSize, WidgetPlacement.Over, Layers.TransparentFX);
-    }
 
     protected override void ShowSelectedItemHud() {
         SelectedItemHudWindow.Instance.Show(FormID.SelectedStar, UserReport);
@@ -210,6 +180,135 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
         ResetBasedOnCurrentDetection(Owner);
     }
 
+    #region Show Icon
+
+    private void InitializeIcon() {
+        DebugControls debugControls = DebugControls.Instance;
+        debugControls.showStarIcons += ShowStarIconsChangedEventHandler;
+        if (debugControls.ShowStarIcons) {
+            EnableIcon(true);
+        }
+    }
+
+    private void EnableIcon(bool toEnable) {
+        if (toEnable) {
+            D.AssertNull(DisplayMgr.Icon);
+            DisplayMgr.IconInfo = MakeIconInfo();
+            SubscribeToIconEvents(DisplayMgr.Icon);
+
+            // DisplayMgr will have its meshes on Layers.TransparentFX if Icon was previously disabled
+            DisplayMgr.__ChangeMeshLayersTo(TempGameValues.StarMeshCullLayer);
+        }
+        else {
+            D.AssertNotNull(DisplayMgr.Icon);
+            UnsubscribeToIconEvents(DisplayMgr.Icon);
+            DisplayMgr.IconInfo = default(IconInfo);
+
+            // No StarIcon so don't cull Star meshes
+            DisplayMgr.__ChangeMeshLayersTo(Layers.TransparentFX);
+        }
+    }
+
+    private void AssessIcon() {
+        if (DisplayMgr != null) {
+            if (DisplayMgr.Icon != null) {
+                var iconInfo = RefreshIconInfo();
+                if (DisplayMgr.IconInfo != iconInfo) {    // avoid property not changed warning
+                    UnsubscribeToIconEvents(DisplayMgr.Icon);
+                    //D.Log(ShowDebugLog, "{0} changing IconInfo from {1} to {2}.", DebugName, DisplayMgr.IconInfo, iconInfo);
+                    DisplayMgr.IconInfo = iconInfo;
+                    SubscribeToIconEvents(DisplayMgr.Icon);
+                }
+            }
+            else {
+                D.Assert(!DebugControls.Instance.ShowStarIcons);
+            }
+        }
+    }
+
+    private void SubscribeToIconEvents(IInteractiveWorldTrackingSprite icon) {
+        var iconEventListener = icon.EventListener;
+        iconEventListener.onHover += HoverEventHandler;
+        iconEventListener.onClick += ClickEventHandler;
+        iconEventListener.onDoubleClick += DoubleClickEventHandler;
+        iconEventListener.onPress += PressEventHandler;
+    }
+
+    private IconInfo RefreshIconInfo() {
+        return MakeIconInfo();
+    }
+
+    private IconInfo MakeIconInfo() {
+        var report = UserReport;
+        GameColor iconColor = report.Owner != null ? report.Owner.Color : GameColor.White;
+        return new IconInfo("Icon01", AtlasID.Contextual, iconColor, IconSize, WidgetPlacement.Over, TempGameValues.StarIconCullLayer);
+    }
+
+    private void ShowStarIconsChangedEventHandler(object sender, EventArgs e) {
+        EnableIcon(DebugControls.Instance.ShowStarIcons);
+    }
+
+    /// <summary>
+    /// Cleans up any icon subscriptions.
+    /// <remarks>The icon itself will be cleaned up when DisplayMgr.Dispose() is called.</remarks>
+    /// </summary>
+    private void CleanupIconSubscriptions() {
+        var debugControls = DebugControls.Instance;
+        if (debugControls != null) {
+            debugControls.showStarIcons -= ShowStarIconsChangedEventHandler;
+        }
+        if (DisplayMgr != null) {
+            var icon = DisplayMgr.Icon;
+            if (icon != null) {
+                UnsubscribeToIconEvents(icon);
+            }
+        }
+    }
+
+    private void UnsubscribeToIconEvents(IInteractiveWorldTrackingSprite icon) {
+        var iconEventListener = icon.EventListener;
+        iconEventListener.onHover -= HoverEventHandler;
+        iconEventListener.onClick -= ClickEventHandler;
+        iconEventListener.onDoubleClick -= DoubleClickEventHandler;
+        iconEventListener.onPress -= PressEventHandler;
+    }
+
+    #region Element Icon Preference Archive
+
+    // 1.16.17 TEMP Replaced fixed use of Icons with easily accessible DebugControls setting
+
+    //protected override void InitializeDisplayManager() {
+    //    base.InitializeDisplayManager();
+    //    DisplayMgr.IconInfo = MakeIconInfo();
+    //    SubscribeToIconEvents(DisplayMgr.Icon);
+    //}
+
+    //private void AssessIcon() {
+    //    if (DisplayMgr == null) { return; }
+
+    //    var iconInfo = RefreshIconInfo();
+    //    if (DisplayMgr.IconInfo != iconInfo) {    // avoid property not changed warning
+    //        UnsubscribeToIconEvents(DisplayMgr.Icon);
+    //        D.Log(ShowDebugLog, "{0} changing IconInfo from {1} to {2}.", DebugName, DisplayMgr.IconInfo, iconInfo);
+    //        DisplayMgr.IconInfo = iconInfo;
+    //        SubscribeToIconEvents(DisplayMgr.Icon);
+    //    }
+    //}
+
+    //protected override void Unsubscribe() {
+    //    base.Unsubscribe();
+    //    if (DisplayMgr != null) {
+    //        var icon = DisplayMgr.Icon;
+    //        if (icon != null) {
+    //            UnsubscribeToIconEvents(icon);
+    //        }
+    //    }
+    //}
+
+    #endregion
+
+    #endregion
+
     #region Cleanup
 
     protected override void Cleanup() {
@@ -222,20 +321,7 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
 
     protected override void Unsubscribe() {
         base.Unsubscribe();
-        if (DisplayMgr != null) {
-            var icon = DisplayMgr.Icon;
-            if (icon != null) {
-                UnsubscribeToIconEvents(icon);
-            }
-        }
-    }
-
-    private void UnsubscribeToIconEvents(IResponsiveTrackingSprite icon) {
-        var iconEventListener = icon.EventListener;
-        iconEventListener.onHover -= HoverEventHandler;
-        iconEventListener.onClick -= ClickEventHandler;
-        iconEventListener.onDoubleClick -= DoubleClickEventHandler;
-        iconEventListener.onPress -= PressEventHandler;
+        CleanupIconSubscriptions();
     }
 
     #endregion
@@ -392,10 +478,14 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
             D.Assert(isRemoved);
             D.Log(ShowDebugLog, "{0} has left close orbit around {1}.", ship.DebugName, DebugName);
             float shipDistance = Vector3.Distance(ship.Position, Position);
-            float minOutsideOfOrbitCaptureRadius = Data.CloseOrbitOuterRadius - ship.CollisionDetectionZoneRadius_Debug;
-            if (shipDistance > minOutsideOfOrbitCaptureRadius) {
-                D.Warn("{0} is leaving orbit of {1} but is not within {2:0.0000}. Ship's current orbit distance is {3:0.0000}.",
-                ship.DebugName, DebugName, minOutsideOfOrbitCaptureRadius, shipDistance);
+            float insideOrbitSlotThreshold = Data.CloseOrbitOuterRadius - ship.CollisionDetectionZoneRadius_Debug;
+            if (shipDistance > insideOrbitSlotThreshold) {
+                D.Log(ShowDebugLog, "{0} is leaving orbit of {1} but collision detection zone is poking outside of orbit slot by {2:0.0000} units.",
+                    ship.DebugName, DebugName, shipDistance - insideOrbitSlotThreshold);
+                float halfOutsideOrbitSlotThreshold = Data.CloseOrbitOuterRadius;
+                if (shipDistance > halfOutsideOrbitSlotThreshold) {
+                    D.Warn("{0} is leaving orbit of {1} but collision detection zone is half outside of orbit slot.", ship.DebugName, DebugName);
+                }
             }
             if (_shipsInCloseOrbit.Count == Constants.Zero) {
                 // Choose either to deactivate the OrbitSimulator or destroy it, but not both
@@ -452,8 +542,55 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
 
     #region IAvoidableObstacle Members
 
-    public Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float fleetRadius) {
-        return _detourGenerator.GenerateDetourAroundPolesFromZoneHit(shipOrFleetPosition, zoneHitInfo.point, fleetRadius);
+    public float __ObstacleZoneRadius { get { return _obstacleZoneCollider.radius; } }
+
+    //public Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float shipOrFleetClearanceRadius) {
+    //    return _detourGenerator.GenerateDetourFromZoneHitAroundPoles(shipOrFleetPosition, zoneHitInfo.point, shipOrFleetClearanceRadius);
+    //}
+    //public Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float shipOrFleetClearanceRadius) {
+    //    Vector3 detour = _detourGenerator.GenerateDetourAtObstaclePoles(shipOrFleetPosition, shipOrFleetClearanceRadius);
+    //    if (!_detourGenerator.IsDetourCleanlyReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius)) {
+    //        detour = _detourGenerator.GenerateDetourAroundObstaclePoles(shipOrFleetPosition, shipOrFleetClearanceRadius);
+    //        D.Assert(_detourGenerator.IsDetourCleanlyReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius),
+    //            "{0} detour {1} not reachable. Ship/Fleet.Position = {2}, ClearanceRadius = {3:0.##}.".Inject(DebugName, detour, shipOrFleetPosition, shipOrFleetClearanceRadius));
+    //    }
+    //    return detour;
+    //}
+    public Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float shipOrFleetClearanceRadius) {
+        Vector3 detour = _detourGenerator.GenerateDetourFromObstacleZoneHit(shipOrFleetPosition, zoneHitInfo.point, shipOrFleetClearanceRadius);
+        if (!_detourGenerator.IsDetourCleanlyReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius)) {
+            DetourGenerator.ApproachPath approachPath = _detourGenerator.GetApproachPath(shipOrFleetPosition, zoneHitInfo.point);
+            switch (approachPath) {
+                case DetourGenerator.ApproachPath.Polar:
+                    detour = _detourGenerator.GenerateDetourFromZoneHitAroundBelt(shipOrFleetPosition, zoneHitInfo.point, shipOrFleetClearanceRadius);
+                    if (!_detourGenerator.IsDetourCleanlyReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius)) {
+                        detour = _detourGenerator.GenerateDetourFromZoneHitAroundPoles(shipOrFleetPosition, zoneHitInfo.point, shipOrFleetClearanceRadius);
+                        if (!_detourGenerator.IsDetourCleanlyReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius)) {
+                            detour = _detourGenerator.GenerateDetourAroundObstaclePoles(shipOrFleetPosition, shipOrFleetClearanceRadius);
+                            D.Assert(_detourGenerator.IsDetourReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius),
+                                "{0} detour {1} not reachable. Ship/Fleet.Position = {2}, ClearanceRadius = {3:0.##}. Position = {4}."
+                                .Inject(DebugName, detour, shipOrFleetPosition, shipOrFleetClearanceRadius, Position));
+                        }
+                    }
+                    break;
+                case DetourGenerator.ApproachPath.Belt:
+                    detour = _detourGenerator.GenerateDetourFromZoneHitAroundPoles(shipOrFleetPosition, zoneHitInfo.point, shipOrFleetClearanceRadius);
+                    if (!_detourGenerator.IsDetourCleanlyReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius)) {
+                        detour = _detourGenerator.GenerateDetourFromZoneHitAroundBelt(shipOrFleetPosition, zoneHitInfo.point, shipOrFleetClearanceRadius);
+                        if (!_detourGenerator.IsDetourCleanlyReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius)) {
+                            detour = _detourGenerator.GenerateDetourAroundObstaclePoles(shipOrFleetPosition, shipOrFleetClearanceRadius);
+                            D.Assert(_detourGenerator.IsDetourReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius),
+                                "{0} detour {1} not reachable. Ship/Fleet.Position = {2}, ClearanceRadius = {3:0.##}. Position = {4}."
+                                .Inject(DebugName, detour, shipOrFleetPosition, shipOrFleetClearanceRadius, Position));
+                        }
+                    }
+                    break;
+                case DetourGenerator.ApproachPath.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(approachPath));
+            }
+        }
+        return detour;
     }
 
     #endregion

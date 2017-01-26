@@ -15,7 +15,7 @@
 ////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
-
+    using System.Linq;
     using CodeEnv.Master.Common;
 
     /// <summary>
@@ -63,7 +63,7 @@ namespace CodeEnv.Master.GameContent {
                 D.AssertEqual(typeof(ShipMoveOrder), GetType());
                 D.Assert(!toNotifyCmd);
             }
-            if (directive.EqualsAnyOf(DirectivesWithNullTarget)) {
+            if (DirectivesWithNullTarget.Contains(directive)) {
                 D.AssertNull(target, ToString());
             }
             Directive = directive;

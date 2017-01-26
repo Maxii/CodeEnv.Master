@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -170,7 +171,8 @@ public class CollisionDetectionMonitor : AColliderMonitor {
         if (_enteringObstaclesEncounteredWhilePaused.IsNullOrEmpty() || _exitingObstaclesEncounteredWhilePaused.IsNullOrEmpty()) {
             return;
         }
-        D.Assert(!_enteringObstaclesEncounteredWhilePaused.EqualsAnyOf(_exitingObstaclesEncounteredWhilePaused));
+        // 1.23.17 Previous test D.Assert(!_enteringObstaclesEncounteredWhilePaused.EqualsAnyOf(_exitingObstaclesEncounteredWhilePaused)); did not work
+        D.AssertEqual(Constants.Zero, _enteringObstaclesEncounteredWhilePaused.Intersect(_exitingObstaclesEncounteredWhilePaused).Count());
     }
 
     /// <summary>

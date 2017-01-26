@@ -41,6 +41,7 @@ public class FacilityCtxControl_User : ACtxControl_User<FacilityDirective> {
     public FacilityCtxControl_User(FacilityItem facility)
     : base(facility.gameObject, uniqueSubmenusReqd: 0, menuPosition: MenuPositionMode.Offset) {
         _facilityMenuOperator = facility;
+        __ValidateUniqueSubmenuQtyReqd();
     }
 
     protected override bool IsSelectedItemMenuOperator(ISelectable selected) {

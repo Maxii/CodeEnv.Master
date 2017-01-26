@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ResponsiveTrackingSprite.cs
+// File: InteractiveWorldTrackingSprite.cs
 // Sprite resident in world space that can respond to the mouse. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -25,7 +25,7 @@ using UnityEngine.Profiling;
 /// Sprite resident in world space that can respond to the mouse. 
 /// The user perceives the widget at a constant size, independent of camera distance.
 /// </summary>
-public class ResponsiveTrackingSprite : ConstantSizeTrackingSprite, IResponsiveTrackingSprite {
+public class InteractiveWorldTrackingSprite : WorldTrackingSprite, IInteractiveWorldTrackingSprite {
 
     public IMyEventListener EventListener { get; private set; }
 
@@ -36,7 +36,6 @@ public class ResponsiveTrackingSprite : ConstantSizeTrackingSprite, IResponsiveT
         GameObject widgetGo = WidgetTransform.gameObject;
         NGUITools.AddWidgetCollider(widgetGo);
         _collider = widgetGo.GetComponent<Collider>();
-        D.AssertEqual(Layers.TransparentFX, (Layers)widgetGo.layer, ((Layers)widgetGo.layer).GetValueName());
         _collider.isTrigger = false;    // Ngui 3.11.0 events now ignore trigger colliders when Ngui's EventType is World_3D so the
                                         // collider can no longer be a trigger. As the whole GameObject is on Layers.TransparentFX and 
                                         // has no allowed collisions (ProjectSettings.Physics), it doesn't need to be a trigger.

@@ -80,7 +80,11 @@ namespace CodeEnv.Master.GameContent {
         #region Static Methods
 
         /// <summary>
-        /// Validates the provided hours value is no more precise than GameConstants.HoursPrecision.
+        /// Validates the provided hours value has already been converted to a value that
+        /// has no non-zero decimal point digits past HoursPrecision, at least through
+        /// UnityConstants.FloatEqualityPrecision.
+        /// <remarks>When using Mathf.Approximately() equality differences start showing up
+        /// at about 6 - 7 digits.</remarks>
         /// </summary>
         /// <param name="hours">The hours.</param>
         public static void ValidateHoursValue(float hours) {

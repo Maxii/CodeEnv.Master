@@ -34,7 +34,8 @@ public class GraphicsOptionMenuAcceptButton : AGuiMenuAcceptButton {
     protected override string TooltipContent { get { return "Click to implement Option changes."; } }
 
     private string _qualitySetting;
-    private bool _isElementIconsEnabled;
+    // 1.15.17 TEMP removed to allow addition of DebugControls.IsElementIconsEnabled
+    //private bool _isElementIconsEnabled;
 
     protected override void RecordPopupListState(GuiElementID popupListID, string selection, string convertedSelection) {
         base.RecordPopupListState(popupListID, selection, convertedSelection);
@@ -51,7 +52,8 @@ public class GraphicsOptionMenuAcceptButton : AGuiMenuAcceptButton {
         base.RecordCheckboxState(checkboxID, isChecked);
         switch (checkboxID) {
             case GuiElementID.ElementIconsCheckbox:
-                _isElementIconsEnabled = isChecked;
+                // 1.15.17 TEMP removed to allow addition of DebugControls.IsElementIconsEnabled
+                //_isElementIconsEnabled = isChecked;
                 break;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(checkboxID));
@@ -64,7 +66,8 @@ public class GraphicsOptionMenuAcceptButton : AGuiMenuAcceptButton {
         base.HandleValidClick();
         GraphicsOptionSettings settings = new GraphicsOptionSettings() {
             QualitySetting = _qualitySetting,
-            IsElementIconsEnabled = _isElementIconsEnabled
+            // 1.15.17 TEMP removed to allow addition of DebugControls.IsElementIconsEnabled
+            //IsElementIconsEnabled = _isElementIconsEnabled
         };
         _playerPrefsMgr.RecordGraphicsOptions(settings);
     }

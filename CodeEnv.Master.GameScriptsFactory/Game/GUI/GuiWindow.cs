@@ -42,9 +42,13 @@ public class GuiWindow : AGuiWindow {
         D.Assert(contentHolder != null, gameObject, DebugName);
     }
 
-    public void Show() { ShowWindow(); }
+    public void Show() {
+        ShowWindow();
+    }
 
-    public void Hide() { HideWindow(); }
+    public void Hide() {
+        HideWindow();
+    }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

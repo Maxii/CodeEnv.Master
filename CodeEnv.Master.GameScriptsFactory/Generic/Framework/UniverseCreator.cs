@@ -352,7 +352,7 @@ public class UniverseCreator {
             D.Assert(_playersHomeSectorLookup.ContainsKey(player), player.DebugName);
             IntVector3 homeSectorID = _playersHomeSectorLookup[player];
 
-            IEnumerable<IntVector3> homeNeighborSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID);
+            IEnumerable<IntVector3> homeNeighborSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID, includePeriphery: false);
             foreach (var neighborSectorID in homeNeighborSectorIDs) {
                 ISystem unusedSystem;
                 if (!gameKnowledge.TryGetSystem(neighborSectorID, out unusedSystem)) {
@@ -360,7 +360,8 @@ public class UniverseCreator {
                 }
             }
             if (candidateSectorIDs.Count < qtyToDeploy) {
-                D.Warn("{0} only found {1} of the {2} sectors reqd to deploy all of {3}'s Starbases. Fixing.", DebugName, candidateSectorIDs.Count, qtyToDeploy, player);
+                D.Warn(@"{0} only found {1} of the {2} sectors reqd to deploy all of {3}'s Starbases. /n
+                    Attempting to fix by expanding criteria to include sectors with systems.", DebugName, candidateSectorIDs.Count, qtyToDeploy, player);
                 candidateSectorIDs = homeNeighborSectorIDs.ToList();
                 if (candidateSectorIDs.Count < qtyToDeploy) {
                     D.Error("{0} only found {1} of the {2} sectors reqd to deploy all of {3}'s Starbases.", DebugName, candidateSectorIDs.Count, qtyToDeploy, player);
@@ -432,7 +433,7 @@ public class UniverseCreator {
             sectorIDsToDeployTo.Push(homeSectorID); // if start with fleet(s), always deploy one in the home sector
             if (qtyToDeploy > Constants.One) {
                 // there are additional fleets to deploy around the home system
-                IEnumerable<IntVector3> homeNeighborSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID);
+                IEnumerable<IntVector3> homeNeighborSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID, includePeriphery: false);
                 foreach (var neighborSectorID in homeNeighborSectorIDs) {
                     if (!gameKnowledge.TryGetSystem(neighborSectorID, out unused)) {
                         sectorIDsToDeployTo.Push(neighborSectorID);
@@ -443,7 +444,8 @@ public class UniverseCreator {
                 }
 
                 if (sectorIDsToDeployTo.Count < qtyToDeploy) {
-                    D.Warn("{0} only found {1} of the {2} sectors reqd to deploy all of {3}'s Fleets. Fixing.", DebugName, sectorIDsToDeployTo.Count, qtyToDeploy, player);
+                    D.Warn(@"{0} only found {1} of the {2} sectors reqd to deploy all of {3}'s Fleets. /n
+                        Attempting to fix by expanding criteria to include sectors with systems.", DebugName, sectorIDsToDeployTo.Count, qtyToDeploy, player);
                     foreach (var neighborSectorID in homeNeighborSectorIDs) {
                         if (gameKnowledge.TryGetSystem(neighborSectorID, out unused)) {
                             sectorIDsToDeployTo.Push(neighborSectorID);
@@ -526,7 +528,7 @@ public class UniverseCreator {
             if (qtyToDeploy > Constants.One) {
                 // there are additional settlements to deploy around the home system
                 SectorGrid sectorGrid = SectorGrid.Instance;
-                IEnumerable<IntVector3> homeNeighborSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID);
+                IEnumerable<IntVector3> homeNeighborSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID, includePeriphery: false);
                 foreach (var neighborSectorID in homeNeighborSectorIDs) {
                     if (gameKnowledge.TryGetSystem(neighborSectorID, out system)) {
                         if (!usedSystems.Contains(system)) {

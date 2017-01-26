@@ -30,6 +30,16 @@ namespace CodeEnv.Master.Common {
 
         public static float SqrtOfThree = Mathf.Sqrt(3.0F);
 
+        public static Vector3[] FaceCenterOffsetsAroundPoint = {
+            new Vector3(1F, 0F, 0F),
+            new Vector3(-1F, 0F, 0F),
+            new Vector3(0F, 1F, 0F),
+            new Vector3(0F, -1F, 0F),
+            new Vector3(0F, 0F, 1F),
+            new Vector3(0F, 0F, -1F)
+        };
+
+
         /// <summary>
         /// Returns the percentage distance along the line where the nearest point on the line is located.
         /// 1.0 = 100%. The value can be greater than 1.0 if point is beyond lineEnd.
@@ -103,12 +113,29 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
+        /// Returns the center point of each of the 6 faces of a cube around a central point.
+        /// </summary>
+        /// <param name="center">The center point.</param>
+        /// <param name="faceDistance">The distance of all faces from the center.</param>
+        /// <returns></returns>
+        public static Vector3[] CalcCubeFaceCentersAroundPoint(Vector3 center, float faceDistance) {
+            return new Vector3[] {
+                center + FaceCenterOffsetsAroundPoint[0] * faceDistance,
+                center + FaceCenterOffsetsAroundPoint[1] * faceDistance,
+                center + FaceCenterOffsetsAroundPoint[2] * faceDistance,
+                center + FaceCenterOffsetsAroundPoint[3] * faceDistance,
+                center + FaceCenterOffsetsAroundPoint[4] * faceDistance,
+                center + FaceCenterOffsetsAroundPoint[5] * faceDistance
+            };
+        }
+
+        /// <summary>
         /// Calculates the vertices of a (circumscribed) cube surrounding an inscribed sphere with the provided radius and center point.
         /// </summary>
         /// <param name="center">The center.</param>
         /// <param name="radius">The radius.</param>
         /// <returns></returns>
-        public static IList<Vector3> CalcVerticesOfCubeSurroundingInscribedSphere(Vector3 center, float radius) {
+        public static List<Vector3> CalcVerticesOfCubeSurroundingInscribedSphere(Vector3 center, float radius) {
             float unusedVertexDistance;
             return CalcVerticesOfCubeSurroundingInscribedSphere(center, radius, out unusedVertexDistance);
         }
@@ -120,9 +147,9 @@ namespace CodeEnv.Master.Common {
         /// <param name="radius">The radius.</param>
         /// <param name="vertexDistance">The resulting distance from center to each vertex.</param>
         /// <returns></returns>
-        public static IList<Vector3> CalcVerticesOfCubeSurroundingInscribedSphere(Vector3 center, float radius, out float vertexDistance) {
-            IList<Vector3> vertices = new List<Vector3>(8);
-            IList<Vector3> normalizedVertices = Constants.NormalizedCubeVertices;
+        public static List<Vector3> CalcVerticesOfCubeSurroundingInscribedSphere(Vector3 center, float radius, out float vertexDistance) {
+            List<Vector3> vertices = new List<Vector3>(8);
+            var normalizedVertices = Constants.NormalizedCubeVertices;
             vertexDistance = radius * SqrtOfThree;  // https://en.wikipedia.org/wiki/Cube
             foreach (var normalizedVertex in normalizedVertices) {
                 vertices.Add(center + normalizedVertex * vertexDistance);
@@ -137,30 +164,37 @@ namespace CodeEnv.Master.Common {
         /// <param name="center">The center.</param>
         /// <param name="radius">The radius.</param>
         /// <returns></returns>
-        public static IList<Vector3> CalcVerticesOfInscribedCubeInsideSphere(Vector3 center, float radius) {
-            IList<Vector3> vertices = new List<Vector3>(8);
-            IList<Vector3> normalizedVertices = Constants.NormalizedCubeVertices;
+        public static List<Vector3> CalcVerticesOfInscribedCubeInsideSphere(Vector3 center, float radius) {
+            List<Vector3> vertices = new List<Vector3>(8);
+            var normalizedVertices = Constants.NormalizedCubeVertices;
             foreach (var normalizedVertex in normalizedVertices) {
-                vertices.Add(center + normalizedVertex * radius);
+                vertices.Add(center + (normalizedVertex * radius));
             }
             //D.Log("Center = {0}, Radius = {1}, Vertices = {2}.", center, radius, vertices.Concatenate());
             return vertices;
         }
 
         /// <summary>
-        /// Determines whether the provided worldspace <c>point</c> is inside a sphere 
+        /// Determines whether the provided worldspace <c>point</c> is on (surface) or inside a sphere 
         /// defined by <c>radius</c> and <c>center</c>.
         /// </summary>
         /// <param name="center">The worldspace center of the sphere.</param>
         /// <param name="radius">The radius of the sphere.</param>
         /// <param name="point">The worldspace point to test.</param>
         /// <returns></returns>
-        public static bool IsPointInsideSphere(Vector3 center, float radius, Vector3 point) {
-            return Vector3.SqrMagnitude(point - center) < radius * radius;
+        public static bool IsPointOnOrInsideSphere(Vector3 center, float radius, Vector3 point) {
+            return Vector3.SqrMagnitude(point - center) <= radius * radius;
         }
 
         /// <summary>
         /// Returns true if the line segment intersects the sphere.
+        /// <remarks>Test Suite:
+        /// D.Assert(MyMath.DoesLineSegmentIntersectSphere(new Vector3(1F, 0F, 0F), Vector3.one, Vector3.zero, 1F));    // tangent
+        /// D.Assert(!MyMath.DoesLineSegmentIntersectSphere(Vector3.one, 2 * Vector3.one, Vector3.zero, 1F)); // non-intersecting line segment
+        /// D.Assert(MyMath.DoesLineSegmentIntersectSphere(Vector3.zero, Vector3.one, Vector3.zero, 1F));    // intersecting one inside
+        /// D.Assert(MyMath.DoesLineSegmentIntersectSphere(new Vector3(-0.5F, 0F, 0F), new Vector3(0.5F, 0F, 0F), Vector3.zero, 1F));    // intersecting all inside
+        /// D.Assert(MyMath.DoesLineSegmentIntersectSphere(new Vector3(-1.5F, 0F, 0F), new Vector3(1.5F, 0F, 0F), Vector3.zero, 1F));    // intersecting none inside
+        /// </remarks>
         /// </summary>
         /// <param name="linePt1">One end of the segment.</param>
         /// <param name="linePt2">Other end of the segment.</param>
@@ -169,7 +203,25 @@ namespace CodeEnv.Master.Common {
         /// <returns></returns>
         public static bool DoesLineSegmentIntersectSphere(Vector3 linePt1, Vector3 linePt2, Vector3 sphereCenter, float sphereRadius) {
             Vector3 closestPtOnLineSegmentToSphereCenter = Math3D.ProjectPointOnLineSegment(linePt1, linePt2, sphereCenter);
-            return Vector3.SqrMagnitude(closestPtOnLineSegmentToSphereCenter - sphereCenter) <= sphereRadius * sphereRadius;
+            return IsPointOnOrInsideSphere(sphereCenter, sphereRadius, closestPtOnLineSegmentToSphereCenter);
+        }
+
+        /// <summary>
+        /// Returns true if the line defined by linePt and lineDirection intersects the sphere
+        /// defined by center and radius.
+        /// <see cref="https://en.wikipedia.org/wiki/Line%E2%80%93sphere_intersection"/> 
+        /// </summary>
+        /// <param name="center">The sphere center.</param>
+        /// <param name="radius">The sphere radius.</param>
+        /// <param name="linePt">The line point origin</param>
+        /// <param name="lineDirection">The line direction.</param>
+        /// <returns></returns>
+        [Obsolete("Use DoesLineSegmentIntersectSphere")]    // 1.24.17 I'm not clear how reliable this is
+        public static bool DoesLineIntersectSphere(Vector3 center, float radius, Vector3 linePt, Vector3 lineDirection) {
+            lineDirection.ValidateNormalized();
+            Vector3 centerToLinePoint = linePt - center;
+            float dot = Vector3.Dot(lineDirection, centerToLinePoint);
+            return (dot * dot) - Vector3.SqrMagnitude(centerToLinePoint) + (radius * radius) >= Constants.ZeroF;
         }
 
         /// <summary>
@@ -211,7 +263,9 @@ namespace CodeEnv.Master.Common {
         /// <returns></returns>
         public static Vector3 FindClosestPointOnSphereOrthogonalToIntersectingLine(Vector3 startLinePt, Vector3 endLinePtOnSphere, Vector3 sphereCenter, float sphereRadius) {
             var linePtOnSphereToCenterDistance = Vector3.Distance(endLinePtOnSphere, sphereCenter);
-            D.AssertApproxEqual(sphereRadius, linePtOnSphereToCenterDistance, "MyMath.FindClosest...");  // 11.10.16 tolerance .01F -> .0001F
+            // 11.10.16 tolerance .01F -> .0001F // 1.23.17 tolerance .0001F -> .001F
+            D.Assert(Mathfx.Approx(sphereRadius, linePtOnSphereToCenterDistance, .001F), "{0} should equal {1}.".Inject(linePtOnSphereToCenterDistance, sphereRadius));
+
             Vector3 midPtOfLineInsideSphere = Mathfx.NearestPoint(startLinePt, endLinePtOnSphere, sphereCenter);
             if (midPtOfLineInsideSphere != sphereCenter) {
                 return FindClosestPointOnSphereTo(midPtOfLineInsideSphere, sphereCenter, sphereRadius);

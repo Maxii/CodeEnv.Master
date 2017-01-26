@@ -97,8 +97,8 @@ public abstract class AHudWindow<T> : AGuiWindow where T : AHudWindow<T> {
         DeactivateAllForms();
     }
 
-    protected override void AcquireReferences() {
-        base.AcquireReferences();
+    protected override void InitializeValuesAndReferences() {
+        base.InitializeValuesAndReferences();
         _backgroundEnvelopContent = gameObject.GetSingleComponentInChildren<MyEnvelopContent>();
         //TODO set envelopContent padding programmatically once background is permanently picked?
         _backgroundWidget = _backgroundEnvelopContent.gameObject.GetSafeComponent<UIWidget>();

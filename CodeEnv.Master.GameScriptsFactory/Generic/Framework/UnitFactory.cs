@@ -101,7 +101,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             D.Error("{0}: {1} should not start static as it has yet to be positioned.", DebugName, typeof(FleetCreator).Name);
         }
         creatorGo.transform.position = location;
-        creatorGo.isStatic = true;
+        // UNCLEAR 1.17.17 what is the value of being static for this kind of object?
+        ////creatorGo.isStatic = true;
         var creator = creatorGo.GetComponent<FleetCreator>();
         creator.Configuration = config;
         return creator;
@@ -282,7 +283,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             D.Error("{0}: {1} should not start static as it has yet to be positioned.", DebugName, typeof(StarbaseCreator).Name);
         }
         creatorGo.transform.position = location;
-        creatorGo.isStatic = true;
+        // UNCLEAR 1.17.17 what is the value of being static for this kind of object?
+        ////creatorGo.isStatic = true;
         var creator = creatorGo.GetComponent<StarbaseCreator>();
         creator.Configuration = config;
         return creator;

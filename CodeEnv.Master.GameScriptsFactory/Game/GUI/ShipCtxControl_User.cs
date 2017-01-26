@@ -54,6 +54,7 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
     public ShipCtxControl_User(ShipItem ship)
         : base(ship.gameObject, uniqueSubmenusReqd: 3, menuPosition: MenuPositionMode.Offset) {
         _shipMenuOperator = ship;
+        __ValidateUniqueSubmenuQtyReqd();
     }
 
     protected override bool IsSelectedItemMenuOperator(ISelectable selected) {

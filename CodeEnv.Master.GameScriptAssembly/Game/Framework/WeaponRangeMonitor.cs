@@ -76,7 +76,7 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackable, AW
     protected override void HandleDetectedObjectAdded(IElementAttackable newlyDetectedItem) {
         //D.Log(ShowDebugLog, "{0} detected and added {1}.", DebugName, newlyDetectedItem.DebugName);
 
-        Profiler.BeginSample("Proper Event Subscription allocation", gameObject);
+        Profiler.BeginSample("Event Subscription allocation", gameObject);
         newlyDetectedItem.ownerChanged += DetectedItemOwnerChangedEventHandler;
         newlyDetectedItem.deathOneShot += DetectedItemDeathEventHandler;
         newlyDetectedItem.infoAccessChgd += DetectedItemInfoAccessChangedEventHandler;
@@ -88,9 +88,12 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackable, AW
 
     protected override void HandleDetectedObjectRemoved(IElementAttackable lostDetectionItem) {
         //D.Log(ShowDebugLog, "{0} lost detection and removed {1}.", DebugName, lostDetectionItem.DebugName);
+
+        Profiler.BeginSample("Event Subscription allocation", gameObject);
         lostDetectionItem.ownerChanged -= DetectedItemOwnerChangedEventHandler;
         lostDetectionItem.deathOneShot -= DetectedItemDeathEventHandler;
         lostDetectionItem.infoAccessChgd -= DetectedItemInfoAccessChangedEventHandler;
+        Profiler.EndSample();
 
         bool wasItemPreviouslyCategorizedAsEnemy = _attackableEnemyTargetsDetected.Contains(lostDetectionItem);
         RemoveRecord(lostDetectionItem);

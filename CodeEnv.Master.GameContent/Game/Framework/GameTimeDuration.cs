@@ -42,7 +42,8 @@ namespace CodeEnv.Master.GameContent {
         // see C# 4.0 In a Nutshell, page 254
 
         public static bool operator <(GameTimeDuration left, GameTimeDuration right) {
-            return left.TotalInHours < right.TotalInHours;
+            // GameTime.ValidateHoursValue only confirms these values to be valid for comparison within FloatEqualityPrecision
+            return left.TotalInHours < right.TotalInHours - UnityConstants.FloatEqualityPrecision;
         }
 
         public static bool operator <=(GameTimeDuration left, GameTimeDuration right) {
@@ -53,7 +54,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public static bool operator >(GameTimeDuration left, GameTimeDuration right) {
-            return left.TotalInHours > right.TotalInHours;
+            // GameTime.ValidateHoursValue only confirms these values to be valid for comparison within FloatEqualityPrecision
+            return left.TotalInHours > right.TotalInHours + UnityConstants.FloatEqualityPrecision;
         }
 
         public static bool operator >=(GameTimeDuration left, GameTimeDuration right) {
@@ -132,7 +134,7 @@ namespace CodeEnv.Master.GameContent {
             : this() {
             Utility.ValidateForRange(hours, Constants.ZeroF, GameTime.HoursPerDay - UnityConstants.FloatEqualityPrecision);
             Utility.ValidateNotNegative(days);
-            float totalHours = (days * GameTime.HoursPerDay) + GameTime.ConvertHoursValue(hours);
+            float totalHours = GameTime.ConvertHoursValue((days * GameTime.HoursPerDay) + hours);
             Initialize(totalHours);
         }
 
@@ -147,7 +149,7 @@ namespace CodeEnv.Master.GameContent {
             Utility.ValidateForRange(hours, Constants.ZeroF, GameTime.HoursPerDay - UnityConstants.FloatEqualityPrecision);
             Utility.ValidateForRange(days, Constants.Zero, GameTime.DaysPerYear - 1);
             Utility.ValidateNotNegative(years);
-            float totalHours = (years * GameTime.DaysPerYear + days) * GameTime.HoursPerDay + GameTime.ConvertHoursValue(hours);
+            float totalHours = GameTime.ConvertHoursValue((((years * GameTime.DaysPerYear) + days) * GameTime.HoursPerDay) + hours);
             Initialize(totalHours);
         }
 
@@ -167,17 +169,17 @@ namespace CodeEnv.Master.GameContent {
             : this() {
             GameUtility.ValidateForRange(startDate, GameTime.GameStartDate, GameTime.GameEndDate);
             GameUtility.ValidateForRange(endDate, startDate, GameTime.GameEndDate);
-            float totalHours = endDate.TotalHoursSinceGameStart - startDate.TotalHoursSinceGameStart;
+            float totalHours = GameTime.ConvertHoursValue(endDate.TotalHoursSinceGameStart - startDate.TotalHoursSinceGameStart);
             Initialize(totalHours);
         }
 
         private void Initialize(float totalHours) {
             GameTime.ValidateHoursValue(totalHours);
-            Hours = totalHours % GameTime.HoursPerDay;
+            Hours = GameTime.ConvertHoursValue(totalHours % GameTime.HoursPerDay);
             int days = Mathf.FloorToInt(totalHours / GameTime.HoursPerDay);
             Days = days % GameTime.DaysPerYear;
             Years = days / GameTime.DaysPerYear;
-            TotalInHours = totalHours;
+            TotalInHours = GameTime.ConvertHoursValue(totalHours);
         }
 
         #region Object.Equals and GetHashCode Override

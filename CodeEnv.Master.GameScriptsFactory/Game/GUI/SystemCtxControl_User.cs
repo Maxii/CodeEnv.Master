@@ -71,6 +71,7 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
         _systemMenuOperator = system;
         _settlement = system.Settlement;
         D.AssertNotNull(_settlement);
+        __ValidateUniqueSubmenuQtyReqd();
     }
 
     protected override bool IsSelectedItemMenuOperator(ISelectable selected) {
@@ -191,7 +192,10 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
 
     private void IssueRemoteUserFleetOrder(int itemID) {
         var directive = (FleetDirective)_directiveLookup[itemID];
-        IFleetNavigable target = directive.EqualsAnyOf(FleetDirective.Disband, FleetDirective.Refit, FleetDirective.Repair) ? _settlement as IFleetNavigable : _systemMenuOperator;
+        IFleetNavigable target = _systemMenuOperator;
+        if (directive == FleetDirective.Disband || directive == FleetDirective.Refit || directive == FleetDirective.Repair) {
+            target = _settlement;
+        }
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target);
     }

@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
@@ -33,17 +34,18 @@ public class GuiManager : AMonoSingleton<GuiManager> {
 
     /// <summary>
     /// The fixed panels of the GUI that should normally be hidden when a pop up shows.
-    /// Use GuiShowModeControlButton.exceptions to exclude a _panel listed here from being hidden.
+    /// Use GuiShowModeControlButton.exceptions to exclude a panel listed here from being hidden.
     /// </summary>
     //[FormerlySerializedAs("fixedGuiPanels")]
     [Tooltip("The fixed panels of the GUI that should be hidden when a pop up shows.")]
     [SerializeField]
-    private List<UIPanel> _fixedGuiPanels;
+    private UIPanel[] _fixedGuiPanels;
 
 #pragma warning restore 0649
 
     private IDictionary<GuiElementID, GameObject> _buttonLookup;
     private List<UIPanel> _hiddenPanels;
+    private List<UIWidget> _allGuiWidgets;
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
@@ -53,6 +55,7 @@ public class GuiManager : AMonoSingleton<GuiManager> {
         }
         CheckDebugSettings();
         InitializeButtonClickSystem();
+        Subscribe();
     }
 
     private void InitializeButtonClickSystem() {
@@ -68,6 +71,32 @@ public class GuiManager : AMonoSingleton<GuiManager> {
             D.Log("{0} added {1} to ButtonLookup.", GetType().Name, bge.ElementID.GetValueName());
         });
     }
+
+    private void Subscribe() {
+        UICamera.onScreenResize += ScreenResizedEventHandler;
+    }
+
+    #region Event and Property Change Handlers
+
+    private void ScreenResizedEventHandler() {
+        HandleScreenResized();
+    }
+
+    private void HandleScreenResized() {
+        if (_allGuiWidgets == null) {
+            _allGuiWidgets = new List<UIWidget>(200);
+        }
+        _allGuiWidgets.Clear();
+        _allGuiWidgets.AddRange(gameObject.GetSafeComponentsInChildren<UIWidget>(includeInactive: true));
+        foreach (var w in _allGuiWidgets) {
+            if (w.isAnchored) {
+                w.UpdateAnchors();
+            }
+        }
+        D.LogBold("{0}: Screen has resized. {1} WidgetAnchors have been updated.", GetType().Name, _allGuiWidgets.Count);
+    }
+
+    #endregion
 
     /// <summary>
     /// Calls "OnClick" on the gameObject associated with this buttonID.
@@ -98,7 +127,13 @@ public class GuiManager : AMonoSingleton<GuiManager> {
         });
     }
 
-    protected override void Cleanup() { }
+    protected override void Cleanup() {
+        Unsubscribe();
+    }
+
+    private void Unsubscribe() {
+        UICamera.onScreenResize -= ScreenResizedEventHandler;
+    }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

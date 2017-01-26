@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
+using UnityEngine.Profiling;
 
 /// <summary>
 /// Abstract base class for a ColliderMonitor that contains a list of ranged equipment that operate it.
@@ -103,8 +104,11 @@ public abstract class AEquipmentMonitor<EquipmentType> : AColliderMonitor where 
         D.AssertEqual(RangeCategory, pieceOfEquipment.RangeCategory);
         AssignMonitorTo(pieceOfEquipment);
         _equipmentList.Add(pieceOfEquipment);
+
+        Profiler.BeginSample("Event Subscription allocation", gameObject);
         pieceOfEquipment.isOperationalChanged += EquipmentIsOperationalChangedEventHandler;
         pieceOfEquipment.isDamagedChanged += EquipmentIsDamagedChangedEventHandler;
+        Profiler.EndSample();
     }
 
     protected abstract void AssignMonitorTo(EquipmentType pieceOfEquipment);
@@ -153,10 +157,13 @@ public abstract class AEquipmentMonitor<EquipmentType> : AColliderMonitor where 
 
     protected override void Unsubscribe() {
         base.Unsubscribe();
+
+        Profiler.BeginSample("Event Subscription allocation", gameObject);
         _equipmentList.ForAll(e => {
             e.isOperationalChanged -= EquipmentIsOperationalChangedEventHandler;
             e.isDamagedChanged -= EquipmentIsDamagedChangedEventHandler;
         });
+        Profiler.EndSample();
     }
 
 }

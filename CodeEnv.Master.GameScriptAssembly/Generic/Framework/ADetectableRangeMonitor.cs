@@ -317,7 +317,8 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
         if (_enteringObjectsDetectedWhilePaused.IsNullOrEmpty() || _exitingObjectsDetectedWhilePaused.IsNullOrEmpty()) {
             return;
         }
-        D.Assert(!_enteringObjectsDetectedWhilePaused.EqualsAnyOf(_exitingObjectsDetectedWhilePaused));
+        // 1.23.17 Previous test D.Assert(!_enteringObjectsDetectedWhilePaused.EqualsAnyOf(_exitingObjectsDetectedWhilePaused)); did not work
+        D.AssertEqual(Constants.Zero, _enteringObjectsDetectedWhilePaused.Intersect(_exitingObjectsDetectedWhilePaused).Count());
     }
 
     /// <summary>

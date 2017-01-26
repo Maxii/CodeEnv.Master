@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2016 
+// Copyright © 2012 - 2017 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ITrackingSprite.cs
-// Interface for easy access to ConstantSizeTrackingSprite.
+// File: IWorldTrackingWidget.cs
+// Interface for easy access to WorldTrackingWidgets.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -14,19 +14,14 @@
 ////#define DEBUG_WARN
 ////#define DEBUG_ERROR
 
-using CodeEnv.Master.Common;
-
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Interface for easy access to ConstantSizeTrackingSprite.
+    /// Interface for easy access to WorldTrackingWidgets.
     /// </summary>
-    public interface ITrackingSprite : ITrackingWidget {
+    public interface IWorldTrackingWidget : ITrackingWidget {
 
-        IconInfo IconInfo { get; set; }
-
-        ICameraLosChangedListener CameraLosChangedListener { get; }
-
+        // 1.14.17 DrawDepth moved to _Independent versions
     }
 }
 

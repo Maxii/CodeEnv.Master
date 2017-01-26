@@ -622,14 +622,29 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     }
 
     /// <summary>
+    /// Returns <c>true</c> if this sectorID is a peripheral sector in the universe.
+    /// Throws an error if not found within the universe.
+    /// </summary>
+    /// <param name="sectorID">The sector identifier.</param>
+    /// <returns></returns>
+    public bool IsSectorOnPeriphery(IntVector3 sectorID) {
+        if (_nonPeripheralSectorIDs.Contains(sectorID)) {
+            return false;
+        }
+        D.Assert(_sectorIdToSectorLookup.ContainsKey(sectorID), "SectorID {0} is not within Universe.".Inject(sectorID));
+        return true;
+    }
+
+    /// <summary>
     /// Returns the sectorIDs surrounding <c>centerID</c> that are between <c>minDistance</c> and <c>maxDistance</c>
     /// from <c>centerID</c>. The UOM for both distance values is sectors.
     /// </summary>
     /// <param name="centerID">The center.</param>
     /// <param name="minDistance">The minimum distance in sectors.</param>
     /// <param name="maxDistance">The maximum distance in sectors.</param>
+    /// <param name="includePeriphery">if set to <c>true</c> [include peripheral sectors].</param>
     /// <returns></returns>
-    public IList<IntVector3> GetSurroundingSectorIdsBetween(IntVector3 centerID, int minDistance, int maxDistance) {
+    public IList<IntVector3> GetSurroundingSectorIDsBetween(IntVector3 centerID, int minDistance, int maxDistance, bool includePeriphery = true) {
         D.AssertNotDefault(centerID);
         D.Assert(__IsSectorPresentAt(centerID));
         Utility.ValidateForRange(minDistance, 0, maxDistance - 1);
@@ -652,7 +667,10 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
             float vectorSqrMagnitude = vectorFromCenterToCandidateCell.sqrMagnitude;
             if (vectorSqrMagnitude >= minDistanceSqrd && vectorSqrMagnitude <= maxDistanceSqrd) {
                 IntVector3 candidateSectorID = _cellGridCoordinatesToSectorIdLookup[candidateCell];
-                resultingSectorIDs.Add(candidateSectorID);
+                bool toAdd = includePeriphery || !IsSectorOnPeriphery(candidateSectorID);
+                if (toAdd) {
+                    resultingSectorIDs.Add(candidateSectorID);
+                }
             }
         }
 
@@ -663,13 +681,14 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     }
 
     /// <summary>
-    /// Gets the IDs of the neighbors to this sectorID. 
-    /// A sector must be present at the centerID location to be included. 
+    /// Gets the IDs of the neighbors to the sector indicated by centerID.
+    /// The sector at centerID can be a peripheral sector.
     /// The ID of the sector at centerID is not included.
     /// </summary>
     /// <param name="centerID">The center.</param>
+    /// <param name="includePeriphery">if set to <c>true</c> [include peripheral sectors].</param>
     /// <returns></returns>
-    public IList<IntVector3> GetNeighboringSectorIDs(IntVector3 centerID) {
+    public IList<IntVector3> GetNeighboringSectorIDs(IntVector3 centerID, bool includePeriphery = true) {
         IList<IntVector3> neighbors = new List<IntVector3>();
         int[] xValuePair = CalcNeighborPair(centerID.x);
         int[] yValuePair = CalcNeighborPair(centerID.y);
@@ -679,7 +698,10 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
                 foreach (var z in zValuePair) {
                     IntVector3 sectorID = new IntVector3(x, y, z);
                     if (__IsSectorPresentAt(sectorID)) {
-                        neighbors.Add(sectorID);
+                        bool toAdd = includePeriphery || !IsSectorOnPeriphery(sectorID);
+                        if (toAdd) {
+                            neighbors.Add(sectorID);
+                        }
                     }
                 }
             }
@@ -696,14 +718,16 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     }
 
     /// <summary>
-    /// Gets the neighboring sectors to this <c>center</c> sectorID. 
-    /// A sector must be present at the centerID location to be included. The sector at center is not included.
+    /// Gets the neighboring sectors to the sector at centerID.
+    /// The sector at centerID can be on the periphery.
+    /// The sector at centerID is not included.
     /// </summary>
     /// <param name="centerID">The centerID.</param>
+    /// <param name="includePeriphery">if set to <c>true</c> [include peripheral sectors].</param>
     /// <returns></returns>
-    public IEnumerable<ISector_Ltd> GetNeighboringSectors(IntVector3 centerID) {
+    public IEnumerable<ISector_Ltd> GetNeighboringSectors(IntVector3 centerID, bool includePeriphery = true) {
         IList<ISector_Ltd> neighborSectors = new List<ISector_Ltd>();
-        foreach (var sectorID in GetNeighboringSectorIDs(centerID)) {
+        foreach (var sectorID in GetNeighboringSectorIDs(centerID, includePeriphery)) {
             neighborSectors.Add(GetSector(sectorID));
         }
         return neighborSectors;

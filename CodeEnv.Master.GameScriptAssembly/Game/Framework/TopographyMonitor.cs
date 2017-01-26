@@ -117,11 +117,11 @@ public class TopographyMonitor : AColliderMonitor {
         Vector3 listenerPosition = (listener as Component).transform.position;
         ISystem parentSystem = ParentItem as ISystem;
         float distanceToListener = Vector3.Distance(parentSystem.Position, listenerPosition);
-        bool isValid = Mathfx.Approx(distanceToListener, parentSystem.Radius, 5F);
+        bool isValid = Mathfx.Approx(distanceToListener, parentSystem.Radius, 7F);
         if (!isValid) {
             if (Mathfx.Approx(distanceToListener, parentSystem.Radius, 10F)) {
-                D.Warn("{0} has detected a marginally invalid Topography change for {1} at distance {2:0.0}. Validating.",
-                    DebugName, (listener as Component).transform.name, distanceToListener);
+                D.Warn("{0} has detected a marginally invalid Topography change for {1} at distance {2:0.0} vs expected {3:0.0}. Validating.",
+                    DebugName, (listener as Component).transform.name, distanceToListener, parentSystem.Radius);
                 isValid = true;
             }
         }

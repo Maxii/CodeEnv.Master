@@ -179,23 +179,24 @@ namespace CodeEnv.Master.Common {
         public const bool Won = true;
         public const bool Lost = false;
 
-        private static IList<Vector3> _normalizedCubeVertices;
+        private static Vector3[] _normalizedCubeVertices;
         /// <summary>
-        /// List of the eight vertices of a cube at a normalized distance of 1 unit from the cube center.
+        /// Array of the eight vertices of a cube at a normalized distance of 1 unit from the cube center.
         /// </summary>
-        public static IList<Vector3> NormalizedCubeVertices {
+        public static Vector3[] NormalizedCubeVertices {
             get {
                 if (_normalizedCubeVertices.IsNullOrEmpty()) {
-                    _normalizedCubeVertices = new List<Vector3>(8);
+                    var normalizedCubeVertices = new List<Vector3>(8);
                     var pair = new float[] { -1F, 1F };
                     foreach (var x in pair) {
                         foreach (var y in pair) {
                             foreach (var z in pair) {
                                 var normalizedBoxVertex = new Vector3(x, y, z).normalized;
-                                _normalizedCubeVertices.Add(normalizedBoxVertex);
+                                normalizedCubeVertices.Add(normalizedBoxVertex);
                             }
                         }
                     }
+                    _normalizedCubeVertices = normalizedCubeVertices.ToArray();
                 }
                 //D.Log("Normalized cube vertices: {0}.", _normalizedCubeVertices.Concatenate());
                 return _normalizedCubeVertices;

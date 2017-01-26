@@ -36,7 +36,8 @@ namespace CodeEnv.Master.GameContent {
         // see C# 4.0 In a Nutshell, page 254
 
         public static bool operator <(GameDate left, GameDate right) {
-            return left.TotalHoursSinceGameStart < right.TotalHoursSinceGameStart;
+            // GameTime.ValidateHoursValue only confirms these values to be valid for comparison within FloatEqualityPrecision
+            return left.TotalHoursSinceGameStart < right.TotalHoursSinceGameStart - UnityConstants.FloatEqualityPrecision;
         }
 
         public static bool operator <=(GameDate left, GameDate right) {
@@ -47,7 +48,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public static bool operator >(GameDate left, GameDate right) {
-            return left.TotalHoursSinceGameStart > right.TotalHoursSinceGameStart;
+            // GameTime.ValidateHoursValue only confirms these values to be valid for comparison within FloatEqualityPrecision
+            return left.TotalHoursSinceGameStart > right.TotalHoursSinceGameStart + UnityConstants.FloatEqualityPrecision;
         }
 
         public static bool operator >=(GameDate left, GameDate right) {
@@ -115,7 +117,7 @@ namespace CodeEnv.Master.GameContent {
         public GameDate(GameDate startDate, GameTimeDuration timeFromStartDate) : this() {
             float totalHoursSinceGameStart = startDate.TotalHoursSinceGameStart;
             totalHoursSinceGameStart += timeFromStartDate.TotalInHours;
-            Initialize(totalHoursSinceGameStart);
+            Initialize(GameTime.ConvertHoursValue(totalHoursSinceGameStart));
         }
 
         /// <summary>
@@ -161,7 +163,7 @@ namespace CodeEnv.Master.GameContent {
             int hoursPerYear = GameTime.DaysPerYear * GameTime.HoursPerDay;
             Year = GameTime.GameStartYear + Mathf.FloorToInt(totalHoursSinceGameStart / hoursPerYear);
             DayOfYear = elapsedDays % GameTime.DaysPerYear;
-            HourOfDay = totalHoursSinceGameStart % GameTime.HoursPerDay;
+            HourOfDay = GameTime.ConvertHoursValue(totalHoursSinceGameStart % GameTime.HoursPerDay);
             GameTime.ValidateHoursValue(HourOfDay);
         }
 

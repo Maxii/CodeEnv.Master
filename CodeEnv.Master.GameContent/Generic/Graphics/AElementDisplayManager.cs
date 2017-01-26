@@ -35,9 +35,9 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<GameColor>(ref _meshColor, value, "MeshColor", MeshColorPropChangedHandler); }
         }
 
-        public new IResponsiveTrackingSprite Icon { get { return base.Icon as IResponsiveTrackingSprite; } }
+        public new IInteractiveWorldTrackingSprite Icon { get { return base.Icon as IInteractiveWorldTrackingSprite; } }
 
-        protected override int IconDepth { get { return -5; } }
+        protected override int IconDepth { get { return 1; } }
 
         private IEnumerable<MeshRenderer> _secondaryMeshRenderers;
         private MaterialPropertyBlock _primaryMeshMPB;
@@ -176,6 +176,7 @@ namespace CodeEnv.Master.GameContent {
         public void HandleDeath() {
             IsDisplayEnabled = false;
             _primaryMeshRenderer.enabled = false;
+            DestroyIcon();
         }
 
         #endregion

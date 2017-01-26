@@ -15,7 +15,7 @@
 ////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
-
+    using System.Linq;
     using CodeEnv.Master.Common;
 
     /// <summary>
@@ -55,7 +55,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="toNotifyCmd">if set to <c>true</c> the facility will notify its Cmd of the outcome.</param>
         /// <param name="target">The target of this order. Default is null.</param>
         public FacilityOrder(FacilityDirective directive, OrderSource source, bool toNotifyCmd = false, IUnitAttackable target = null) {
-            if (directive.EqualsAnyOf(DirectivesWithNullTarget)) {
+            if (DirectivesWithNullTarget.Contains(directive)) {
                 D.AssertNull(target, ToString());
             }
             Directive = directive;

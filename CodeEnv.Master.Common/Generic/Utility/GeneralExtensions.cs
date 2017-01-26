@@ -339,9 +339,17 @@ namespace CodeEnv.Master.Common {
         /// <returns></returns>
         /// <exception cref="System.ArgumentException">Source argument cannot be IEnumerable.</exception>
         /// <exception cref="System.ArgumentNullException">source</exception>
+        [Obsolete("Avoid usage as creates garbage on the heap.")]
         public static bool EqualsAnyOf<T>(this T source, params T[] itemsToCompare) {
             //  'this' source can never be null without the CLR throwing a Null reference exception
-            if (source is IEnumerable<T>) {
+
+            // 1.23.17 This test can never fail as source is of type T and T if IEnumerable is IEnumerable<?>, not IEnumerable<T>
+            ////if(source is IEnumerable<T>) {
+            ////    throw new ArgumentException("Source argument cannot be IEnumerable.");
+            ////}
+
+            // 1.23.17 This works if T is IEnumerable<?> but not if just IEnumerable. Don't know why.
+            if (typeof(T).GetInterface("IEnumerable") != null) {
                 throw new ArgumentException("Source argument cannot be IEnumerable.");
             }
             Utility.ValidateNotNullOrEmpty(itemsToCompare);
@@ -426,6 +434,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="equalsTolerance">The positive equals tolerance that is subtracted from targetValue.
         /// Default is UnityConstants.FloatEqualityPrecision.</param>
         /// <returns></returns>
+        [Obsolete("Too many problems introduced thru its use")]
         public static bool IsGreaterThanOrEqualTo(this float value, float targetValue, float equalsTolerance = UnityConstants.FloatEqualityPrecision) {
             Utility.ValidateNotNegative(equalsTolerance);
             return value >= targetValue - equalsTolerance;
@@ -440,6 +449,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="equalsTolerance">The positive equals tolerance that is added to targetValue.
         /// Default is UnityConstants.FloatEqualityPrecision.</param>
         /// <returns></returns>
+        [Obsolete("Too many problems introduced thru its use")]
         public static bool IsLessThanOrEqualTo(this float value, float targetValue, float equalsTolerance = UnityConstants.FloatEqualityPrecision) {
             Utility.ValidateNotNegative(equalsTolerance);
             return value <= targetValue + equalsTolerance;

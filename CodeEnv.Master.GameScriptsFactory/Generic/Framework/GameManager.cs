@@ -322,6 +322,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     /// </summary>
     public void LaunchInLobby() {
         D.AssertEqual(SceneID.LobbyScene, CurrentSceneID);
+        // 1.17.17 ResetConditionsForGameStartup() not needed here as no game has yet been started to require reset
         CurrentState = GameState.Lobby;
     }
 
@@ -614,31 +615,16 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     public void InitiateNewGame(GameSettings gameSettings) {
         //D.Log("{0}.InitiateNewGame() called.", DebugName);
         GameSettings = gameSettings;
-        StartGameStateProgressionReadinessChecks(); //CurrentState = GameState.Loading;
-        // if startup, CurrentState progression occurs automatically from here due to GameSettings.IsStartup
 
-        if (!gameSettings.__IsStartup) { // Avoid reloading the scene that was just loaded by the editor
+        ResetConditionsForGameStartup();    // 1.17.17 moved here to catch all NewGame starts except from Lobby
+
+        StartGameStateProgressionReadinessChecks(); // Begins progression from either Lobby or Running
+
+        if (!gameSettings.__IsStartup) {
             // UNDONE when I allow in game return to Lobby, I'll need to call this just before I use SceneMgr to load the LobbyScene
             RefreshLastSceneID();
-
-            //D.Log("SceneManager.LoadScene({0}) being called.", SceneID.GameScene.GetValueName());
-            //SceneManager.LoadScene(SceneID.GameScene.GetValueName(), LoadSceneMode.Single); //Application.LoadLevel(index) deprecated by Unity 5.3
         }
     }
-    //public void InitiateNewGame(GameSettings gameSettings) {
-    //    //D.Log("{0}.InitiateNewGame() called.", DebugName);
-    //    GameSettings = gameSettings;
-    //    CurrentState = GameState.Loading;
-    //    // if startup, CurrentState progression occurs automatically from here due to GameSettings.IsStartup
-
-    //    if (!gameSettings.__IsStartup) { // Avoid reloading the scene that was just loaded by the editor
-    //        // UNDONE when I allow in game return to Lobby, I'll need to call this just before I use SceneMgr to load the LobbyScene
-    //        RefreshLastSceneID();
-
-    //        //D.Log("SceneManager.LoadScene({0}) being called.", SceneID.GameScene.GetValueName());
-    //        SceneManager.LoadScene(SceneID.GameScene.GetValueName(), LoadSceneMode.Single); //Application.LoadLevel(index) deprecated by Unity 5.3
-    //    }
-    //}
 
     #endregion
 
@@ -827,12 +813,8 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         __RecordDurationStartTime();
         RecordGameStateProgressionReadiness(Instance, GameState.Loading, isReady: false);
 
-
-        ResetConditionsForGameStartup();    // 8.9.16 moved here from Building as ReadinessChecks don't like starting paused
-        // Start state progression checks here as Loading is always called whether a new game, loading saved game or startup simulation
-        //StartGameStateProgressionReadinessChecks();
-
         if (GameSettings.__IsStartup) {
+            // no need to reload the scene that has just been loaded
             RecordGameStateProgressionReadiness(Instance, GameState.Loading, isReady: true);
             return;
         }
@@ -841,7 +823,6 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         SceneManager.LoadScene(SceneID.GameScene.GetValueName(), LoadSceneMode.Single); //Application.LoadLevel(index) deprecated by Unity 5.3
 
 
-        //RecordGameStateProgressionReadiness(Instance, GameState.Loading, isReady: false);
         // tell ManagementObjects to drop its children (including SaveGameManager!) before the scene gets reloaded
         IsSceneLoading = true;
         OnSceneLoading();

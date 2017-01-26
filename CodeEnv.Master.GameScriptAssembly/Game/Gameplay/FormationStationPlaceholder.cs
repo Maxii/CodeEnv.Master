@@ -43,8 +43,8 @@ public class FormationStationPlaceholder : AFormationStation {
         base.InitializeValuesAndReferences();
     }
 
-    protected override void Validate() {
-        base.Validate();
+    protected override void ValidateOnAwake() {
+        base.ValidateOnAwake();
         D.AssertNotDefault((int)SlotID);
         D.AssertNotNull(gameObject.GetSingleComponentInChildren<MeshRenderer>());
     }

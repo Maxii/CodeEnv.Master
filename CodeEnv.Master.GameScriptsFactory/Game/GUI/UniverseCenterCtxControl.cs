@@ -45,7 +45,7 @@ public class UniverseCenterCtxControl : ACtxControl {
     private UniverseCenterItem _universeCenterMenuOperator;
 
     public UniverseCenterCtxControl(UniverseCenterItem universeCenter)
-        : base(universeCenter.gameObject, uniqueSubmenusReqd: Constants.Zero, menuPosition: MenuPositionMode.Offset) {
+        : base(universeCenter.gameObject, uniqueSubmenuQtyReqd: Constants.Zero, menuPosition: MenuPositionMode.Offset) {
         _universeCenterMenuOperator = universeCenter;
     }
 

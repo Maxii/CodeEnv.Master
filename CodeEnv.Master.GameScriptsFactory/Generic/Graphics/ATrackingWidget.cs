@@ -44,20 +44,8 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     /// will be the root name supplemented by the widget Type name.
     /// </summary>
     public string OptionalRootName {
-        private get { return _optionalRootName; }
+        protected get { return _optionalRootName; }
         set { SetProperty<string>(ref _optionalRootName, value, "OptionalRootName", OptionalRootNamePropChangedHandler); }
-    }
-
-    private int _drawDepth = -5;
-    /// <summary>
-    /// The depth of the UIPanel that determines draw order. Higher values will be
-    /// drawn after lower values placing them in front of the lower values. In general, 
-    /// these depth values should be less than 0 as the Panels that manage the UI are
-    /// usually set to 0 so they draw over other Panels.
-    /// </summary>
-    public int DrawDepth {
-        get { return _drawDepth; }
-        set { SetProperty<int>(ref _drawDepth, value, "DrawDepth", DrawDepthPropChangedHandler); }
     }
 
     private GameColor _color = GameColor.White;
@@ -124,17 +112,14 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     private float _minShowDistance = Constants.ZeroF;
     private float _maxShowDistance = Mathf.Infinity;
 
-    private UIPanel _panel;
-
     protected override void Awake() {
         base.Awake();
         Widget = gameObject.GetSingleComponentInChildren<UIWidget>();
         Widget.color = Color.ToUnityColor();
+        Widget.alpha = Constants.ZeroF;
         Widget.enabled = false;
-        _panel = gameObject.GetSingleComponentInChildren<UIPanel>();
-        _panel.depth = DrawDepth;
-        enabled = false;
-        // can't use Show here as derived classes reference other fields not yet set
+        // enabled handled by derived classes that use Update()
+        // Warning: Can't use Hide here as derived classes reference other fields not yet set
     }
 
     // UNCLEAR These show distances are only enforced when Show(true) is called. How much value does this provide?
@@ -194,17 +179,13 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     #region Event and Property Change Handlers
 
     protected virtual void TargetPropChangedHandler() {
-        RenameGameObjects();
+        __RenameGameObjects();
         RefreshWidgetValues();
     }
 
     private void PlacementPropChangedHandler() {
         //D.Log("{0} Placement changed to {1}.", DebugName, Placement.GetValueName());
         RefreshWidgetValues();
-    }
-
-    private void DrawDepthPropChangedHandler() {
-        _panel.depth = DrawDepth;
     }
 
     private void ColorPropChangedHandler() {
@@ -225,7 +206,7 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     }
 
     private void OptionalRootNamePropChangedHandler() {
-        RenameGameObjects();
+        __RenameGameObjects();
     }
 
     #endregion
@@ -316,13 +297,17 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     /// </summary>
     protected abstract void SetPosition();
 
-    private void RenameGameObjects() {
+    #region Debug
+
+    protected virtual void __RenameGameObjects() {
         if (Target != null) {   // Target can be null if OptionalRootName is set before Target
             var rootName = OptionalRootName.IsNullOrEmpty() ? Target.DebugName : OptionalRootName;
             transform.name = rootName + Constants.Space + GetType().Name;
             WidgetTransform.name = rootName + Constants.Space + Widget.GetType().Name;
         }
     }
+
+    #endregion
 
 }
 

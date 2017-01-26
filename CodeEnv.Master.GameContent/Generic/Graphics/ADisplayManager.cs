@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Abstract base class for DisplayManagers.
     /// </summary>
-    public abstract class ADisplayManager : APropertyChangeTracking {
+    public abstract class ADisplayManager : APropertyChangeTracking, IDisposable {
 
         protected const string DebugNameFormat = "{0}.{1}";
 
@@ -78,7 +78,9 @@ namespace CodeEnv.Master.GameContent {
 
         protected MeshRenderer _primaryMeshRenderer;
         protected Layers _meshLayer;
+
         private bool __isPrimaryMeshShowing;
+        private ICameraLosChangedListener _primaryMeshCameraLosChgdListener;
         private GameObject _trackedItemGo;
 
         public ADisplayManager(GameObject _trackedItemGo, Layers meshLayer) {
@@ -90,9 +92,9 @@ namespace CodeEnv.Master.GameContent {
             _primaryMeshRenderer = InitializePrimaryMesh(_trackedItemGo);
             _primaryMeshRenderer.enabled = true;
 
-            var primaryMeshCameraLosChgdListener = _primaryMeshRenderer.GetComponent<ICameraLosChangedListener>();
-            primaryMeshCameraLosChgdListener.inCameraLosChanged += PrimaryMeshInCameraLosChangedEventHandler;
-            primaryMeshCameraLosChgdListener.enabled = true;
+            _primaryMeshCameraLosChgdListener = _primaryMeshRenderer.GetComponent<ICameraLosChangedListener>();
+            _primaryMeshCameraLosChgdListener.inCameraLosChanged += PrimaryMeshInCameraLosChangedEventHandler;
+            _primaryMeshCameraLosChgdListener.enabled = true;
 
             InitializeSecondaryMeshes(_trackedItemGo);
             InitializeOther(_trackedItemGo);
@@ -108,7 +110,11 @@ namespace CodeEnv.Master.GameContent {
         #region Event and Property Change Handlers
 
         private void PrimaryMeshInCameraLosChangedEventHandler(object sender, EventArgs e) {
-            IsPrimaryMeshInMainCameraLOS = (sender as ICameraLosChangedListener).InCameraLOS;
+            HandlePrimaryMeshInCameraLosChanged(sender as ICameraLosChangedListener);
+        }
+
+        private void HandlePrimaryMeshInCameraLosChanged(ICameraLosChangedListener cameraLosChgdListener) {
+            IsPrimaryMeshInMainCameraLOS = cameraLosChgdListener.InCameraLOS;
         }
 
         private void IsDisplayEnabledPropChangedHandler() {
@@ -165,6 +171,20 @@ namespace CodeEnv.Master.GameContent {
             IsInMainCameraLOS = IsPrimaryMeshInMainCameraLOS;
         }
 
+        #region Cleanup
+
+        protected virtual void Cleanup() {
+            Unsubscribe();
+        }
+
+        protected virtual void Unsubscribe() {
+            _primaryMeshCameraLosChgdListener.inCameraLosChanged -= PrimaryMeshInCameraLosChangedEventHandler;
+        }
+
+        #endregion
+
+        #region Debug
+
         protected void __ValidateAndCorrectMeshLayer(GameObject meshGo) {
             if ((Layers)meshGo.layer != _meshLayer) {
                 D.Warn("{0} mesh {1} layer improperly set to {2}. Changing to {3}.",
@@ -172,6 +192,49 @@ namespace CodeEnv.Master.GameContent {
                 UnityUtility.SetLayerRecursively(meshGo.transform, _meshLayer);
             }
         }
+
+        #endregion
+
+        #region IDisposable
+
+        private bool _alreadyDisposed = false;
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose() {
+
+            Dispose(true);
+
+            // This object is being cleaned up by you explicitly calling Dispose() so take this object off
+            // the finalization queue and prevent finalization code from 'disposing' a second time
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Releases unmanaged and - optionally - managed resources.
+        /// </summary>
+        /// <param name="isExplicitlyDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+        protected virtual void Dispose(bool isExplicitlyDisposing) {
+            if (_alreadyDisposed) { // Allows Dispose(isExplicitlyDisposing) to mistakenly be called more than once
+                D.Warn("{0} has already been disposed.", GetType().Name);
+                return; //throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
+            }
+
+            if (isExplicitlyDisposing) {
+                // Dispose of managed resources here as you have called Dispose() explicitly
+                Cleanup();
+            }
+
+            // Dispose of unmanaged resources here as either 1) you have called Dispose() explicitly so
+            // may as well clean up both managed and unmanaged at the same time, or 2) the Finalizer has
+            // called Dispose(false) to cleanup unmanaged resources
+
+            _alreadyDisposed = true;
+        }
+
+        #endregion
+
 
     }
 }

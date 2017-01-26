@@ -44,6 +44,8 @@ public class WidgetTrackableLocation : AMonoBase, IWidgetTrackable {
         return Vector3.zero;
     }
 
+    public bool IsMobile { get { return true; } }
+
     #endregion
 }
 

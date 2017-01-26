@@ -43,9 +43,12 @@ public class HoveredItemHudWindow : AHudWindow<HoveredItemHudWindow>, IHoveredHu
         Subscribe();
     }
 
-    protected override void AcquireReferences() {
-        base.AcquireReferences();
+    protected override void InitializeValuesAndReferences() {
+        base.InitializeValuesAndReferences();
         _startingLocalPosition = transform.localPosition;
+        if (!_panel.widgetsAreStatic) {
+            D.Warn("{0}: Can't UIPanel.widgetsAreStatic = true?", DebugName);
+        }
         //D.Log("{0} initial local position: {1}.", DebugName, _startingLocalPosition);
     }
 

@@ -38,6 +38,13 @@ public class SelectedItemHudWindow : AHudWindow<SelectedItemHudWindow>, ISelecte
         References.SelectedItemHudWindow = Instance;
     }
 
+    protected override void InitializeValuesAndReferences() {
+        base.InitializeValuesAndReferences();
+        if (!_panel.widgetsAreStatic) {
+            D.Warn("{0}: Can't UIPanel.widgetsAreStatic = true?", DebugName);
+        }
+    }
+
     public void Show(FormID formID, AItemReport report) {
         var form = PrepareForm(formID);
         (form as AReportForm).Report = report;

@@ -27,20 +27,33 @@ using UnityEngine;
 /// </summary>
 public class MoonItem : APlanetoidItem, IMoon, IMoon_Ltd {
 
-    public override float ClearanceRadius { get { return ObstacleZoneRadius * 2F; } }
+    //public override float ClearanceRadius { get { return ObstacleZoneRadius * 2F; } }
+    public override float ClearanceRadius { get { return _obstacleZoneCollider.radius * 2F; } }  // HACK
+
+    //public float ObstacleZoneRadius { get { return _obstacleZoneCollider.radius; } }
+
+    protected override float ObstacleClearanceDistance {
+        get {
+            return _obstacleZoneCollider.radius;
+        }
+    }
 
     private PlanetItem _parentPlanet;
     private bool _isParentPlanetDying;
 
     #region Initialization
 
-    protected override void InitializeObstacleZone() {
-        base.InitializeObstacleZone();
-        ObstacleZoneCollider.radius = Radius + TempGameValues.MoonObstacleZoneRadiusAdder;
+    //protected override void InitializeObstacleZone() {
+    //    base.InitializeObstacleZone();
+    //    ObstacleZoneCollider.radius = Radius + TempGameValues.MoonObstacleZoneRadiusAdder;
+    //}
+
+    protected override float InitializeObstacleZoneRadius() {
+        return Radius + TempGameValues.MoonObstacleZoneRadiusAdder;
     }
 
     protected override ADisplayManager MakeDisplayManagerInstance() {
-        return new MoonDisplayManager(gameObject, Layers.Cull_200);
+        return new MoonDisplayManager(gameObject, TempGameValues.MoonMeshCullLayer);
     }
 
     protected override HoverHighlightManager InitializeHoverHighlightMgr() {
@@ -121,30 +134,35 @@ public class MoonItem : APlanetoidItem, IMoon, IMoon_Ltd {
 
     #region IShipNavigable Members
 
+    //public override AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition) {
+    //    float innerShellRadius = ObstacleZoneRadius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of obstacle zone
+    //    float outerShellRadius = innerShellRadius + 1F;   // HACK depth of arrival shell is 1
+    //    return new AutoPilotDestinationProxy(this, tgtOffset, innerShellRadius, outerShellRadius);
+    //}
     public override AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition) {
-        float innerShellRadius = ObstacleZoneRadius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of obstacle zone
+        float innerShellRadius = _obstacleZoneCollider.radius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of obstacle zone
         float outerShellRadius = innerShellRadius + 1F;   // HACK depth of arrival shell is 1
         return new AutoPilotDestinationProxy(this, tgtOffset, innerShellRadius, outerShellRadius);
     }
 
     #endregion
 
-    #region IFleetNavigable Members
+    //#region IFleetNavigable Members
 
-    public override float GetObstacleCheckRayLength(Vector3 fleetPosition) {
-        return Vector3.Distance(fleetPosition, Position) - ObstacleZoneRadius - TempGameValues.ObstacleCheckRayLengthBuffer;
-    }
+    //public override float GetObstacleCheckRayLength(Vector3 fleetPosition) {
+    //    return Vector3.Distance(fleetPosition, Position) - ObstacleZoneRadius - TempGameValues.ObstacleCheckRayLengthBuffer;
+    //}
 
-    #endregion
+    //#endregion
 
-    #region IAvoidableObstacle Members
+    //#region IAvoidableObstacle Members
 
-    public override Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float fleetRadius) {
-        // Very simple: if ship below plane go below parent planet, if above go above parent planet  // Note: zoneHitInfo not used
-        return (_parentPlanet as IAvoidableObstacle).GetDetour(shipOrFleetPosition, zoneHitInfo, fleetRadius);
-    }
+    //public override Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float shipOrFleetClearanceRadius) {
+    //    // Very simple: if ship below plane go below parent planet, if above go above parent planet  // Note: zoneHitInfo not used
+    //    return (_parentPlanet as IAvoidableObstacle).GetDetour(shipOrFleetPosition, zoneHitInfo, shipOrFleetClearanceRadius);
+    //}
 
-    #endregion
+    //#endregion
 
 }
 

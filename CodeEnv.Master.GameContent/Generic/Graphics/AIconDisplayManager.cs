@@ -41,10 +41,10 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private ITrackingSprite _icon;
-        protected ITrackingSprite Icon {
+        private IWorldTrackingSprite _icon;
+        protected IWorldTrackingSprite Icon {
             get { return _icon; }
-            private set { SetProperty<ITrackingSprite>(ref _icon, value, "Icon"); }
+            private set { SetProperty<IWorldTrackingSprite>(ref _icon, value, "Icon"); }
         }
 
         /// <summary>
@@ -80,7 +80,7 @@ namespace CodeEnv.Master.GameContent {
             D.AssertNotNull(_primaryMeshRenderer, "Always Initialize before setting IconInfo.");
             if (Icon != null) {
                 // icon already present
-                if (IconInfo != null) {
+                if (IconInfo != default(IconInfo)) {
                     // something about the existing icon needs to change
                     Icon.IconInfo = IconInfo;
                 }
@@ -103,17 +103,19 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        private ITrackingSprite MakeIcon() {
+        private IWorldTrackingSprite MakeIcon() {
             var icon = MakeIconInstance();
-            icon.DrawDepth = IconDepth;
+            if (icon is IWorldTrackingSprite_Independent) {
+                (icon as IWorldTrackingSprite_Independent).DrawDepth = IconDepth;
+            }
             var iconCameraLosChgdListener = icon.CameraLosChangedListener;
             iconCameraLosChgdListener.inCameraLosChanged += IconInCameraLosChangedEventHandler;
             iconCameraLosChgdListener.enabled = true;
             return icon;
         }
 
-        protected virtual ITrackingSprite MakeIconInstance() {
-            return References.TrackingWidgetFactory.MakeResponsiveTrackingSprite(_trackedItem, IconInfo);
+        protected virtual IWorldTrackingSprite MakeIconInstance() {
+            return References.TrackingWidgetFactory.MakeInteractiveWorldTrackingSprite(_trackedItem, IconInfo);
         }
 
         protected override void AssessInMainCameraLOS() {
@@ -142,19 +144,31 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Destroys the icon.
+        /// Destroys the icon if present, include any subscription un-wiring required.
         /// WARNING: Destroying an Icon that is used for other purposes by the Item can result in difficult to diagnose errors.
-        /// e.g. CmdIcon transforms are used by the Highlighter to position highlights.
+        /// e.g. Cmds use the Icon as the transform upon which to center highlighting.
         /// </summary>
-        protected virtual void DestroyIcon() {
-            //D.Log("{0}.Icon about to be destroyed.", DebugName);
-            D.AssertNotNull(Icon);
-            ShowIcon(false); // accessing destroy gameObject error if we are showing it while destroying it
-            var iconCameraLosChgdListener = Icon.CameraLosChangedListener;
-            iconCameraLosChgdListener.inCameraLosChanged -= IconInCameraLosChangedEventHandler;
-            // event subscriptions already removed by Item before Icon changed
-            GameUtility.DestroyIfNotNullOrAlreadyDestroyed(Icon);
+        protected void DestroyIcon() {
+            if (Icon != null) {  // Use of Element Icons is an option
+                //D.Log("{0}.Icon about to be destroyed.", DebugName);
+                ShowIcon(false); // accessing destroy gameObject error if we are showing it while destroying it
+                var iconCameraLosChgdListener = Icon.CameraLosChangedListener;
+                iconCameraLosChgdListener.inCameraLosChanged -= IconInCameraLosChangedEventHandler;
+                // event subscriptions already removed by Item before Icon changed
+                iconCameraLosChgdListener.enabled = false;  // avoids no subscribers warning when OnBecameInvisible is called when destroyed
+                GameUtility.DestroyIfNotNullOrAlreadyDestroyed(Icon);
+                Icon = null;    // Destroying the Icon doesn't null the reference
+            }
         }
+
+        #region Cleanup
+
+        protected override void Cleanup() {
+            base.Cleanup();
+            DestroyIcon();
+        }
+
+        #endregion
     }
 
 }

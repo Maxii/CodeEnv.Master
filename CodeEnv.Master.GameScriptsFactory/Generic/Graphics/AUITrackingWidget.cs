@@ -31,10 +31,11 @@ public abstract class AUITrackingWidget : ATrackingWidget {
         base.Awake();
         D.AssertEqual(Layers.UI, (Layers)gameObject.layer);
         _uiCamera = NGUITools.FindCameraForLayer((int)Layers.UI);
+        enabled = false;
     }
 
     void Update() {  // OPTIMIZE Could be done ~ 4 times less frequently, change when improve TrackingWidget
-        RefreshPosition();  // 
+        RefreshPosition();  // Position updates are reqd as screen position varies with camera location, facing etc
         AssessShowDistance();
     }
 

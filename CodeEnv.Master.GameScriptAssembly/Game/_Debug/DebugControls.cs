@@ -32,6 +32,8 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     // Allows concurrent use of [Tooltip("")]. NguiEditorTools do not offer a separate tooltip option because this concurrent use is allowed.
     // [Header("")] can also be used concurrently, but this can also be done in the custom editor with greater location precision.
 
+    #region Event Delegates
+
     public event EventHandler validatePlayerKnowledgeNow;
 
     public event EventHandler showFleetCoursePlots;
@@ -55,6 +57,14 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     public event EventHandler showSystemTrackingLabels;
 
     public event EventHandler showUnitTrackingLabels;
+
+    public event EventHandler showElementIcons;
+
+    public event EventHandler showPlanetIcons;
+
+    public event EventHandler showStarIcons;
+
+    #endregion
 
     #region Debug Log Editor Fields
 
@@ -107,11 +117,11 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
 
     #region AI Editor Fields
 
-    [Tooltip("Check if fleets should auto explore without countervailing orders")]
+    [Tooltip("Check if fleets should automatically explore and visit bases without countervailing orders")]
     [SerializeField]
     private bool _fleetsAutoExplore = true;
     /// <summary>
-    /// Indicates whether fleets should automatically explore without countervailing orders.
+    /// Indicates whether fleets should automatically explore and visit bases without countervailing orders.
     /// <remarks>10.17.16 The only current source of countervailing orders are from editor fields
     /// on DebugFleetCreators.</remarks>
     /// </summary>
@@ -121,15 +131,38 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     [SerializeField]
     private bool _allIntelCoverageIsComprehensive = false;
     /// <summary>
-    /// If <c>true</c> every player knows everything about every item they detect. 
-    /// It DOES NOT MEAN that they have detected everything or that players have met yet.
-    /// Players meet when they first detect a HQ Element owned by another player.
+    /// If <c>true</c> every player knows everything about every item independent of whether
+    /// their sensors have detected the item. 
+    /// <remarks>It DOES NOT MEAN that the players have met yet as Players meet when they first 
+    /// detect a HQ Element owned by another player.</remarks>
     /// </summary>
     public bool IsAllIntelCoverageComprehensive { get { return _allIntelCoverageIsComprehensive; } }
 
     #endregion
 
+    #region Audio Editor Fields
+
+    [Tooltip("Check if Weapon Impact SFX should always be heard, even when the visual effect may not show")]
+    [SerializeField]
+    private bool _alwaysHearWeaponImpacts = false;
+    /// <summary>
+    /// Indicates whether weapon impact SFX should always be heard, even when the 
+    /// visual effect is not showing.
+    /// </summary>
+    public bool AlwaysHearWeaponImpacts { get { return _alwaysHearWeaponImpacts; } }
+
+    #endregion
+
     #region General Editor Fields
+
+    [Tooltip("Check if world tracking sprites and labels should use one UIPanel per widget")]
+    [SerializeField]
+    private bool _useIndependentUIPanelWidgets = false;
+    /// <summary>
+    /// If <c>true</c> all world tracking sprites and labels will use one UIPanel per widget,
+    /// otherwise all world tracking sprites and labels will be consolidated under a few UIPanels.
+    /// </summary>
+    public bool UseIndependentUIPanelWidgets { get { return _useIndependentUIPanelWidgets; } }
 
     #endregion
 
@@ -190,18 +223,29 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     private bool _showSystemTrackingLabels = false;
     public bool ShowSystemTrackingLabels { get { return _showSystemTrackingLabels; } }
 
-    #endregion
-
-    #region Audio Editor Fields
-
-    [Tooltip("Check if Weapon Impact SFX should always be heard, even when the visual effect may not show")]
+    [Tooltip("Check if Icons for Elements should show")]
     [SerializeField]
-    private bool _alwaysHearWeaponImpacts = false;
+    private bool _showElementIcons = true;
     /// <summary>
-    /// Indicates whether weapon impact SFX should always be heard, even when the 
-    /// visual effect is not showing.
+    /// If <c>true</c> elements will display 2D icons when the camera is too far away to discern the mesh.
     /// </summary>
-    public bool AlwaysHearWeaponImpacts { get { return _alwaysHearWeaponImpacts; } }
+    public bool ShowElementIcons { get { return _showElementIcons; } }
+
+    [Tooltip("Check if Icons for Planets should show")]
+    [SerializeField]
+    private bool _showPlanetIcons = true;
+    /// <summary>
+    /// If <c>true</c> planets will display 2D icons when the camera is too far away to discern the mesh.
+    /// </summary>
+    public bool ShowPlanetIcons { get { return _showPlanetIcons; } }
+
+    [Tooltip("Check if Icons for Stars should show")]
+    [SerializeField]
+    private bool _showStarIcons = true;
+    /// <summary>
+    /// If <c>true</c> stars will display 2D icons when the camera is too far away to discern the mesh.
+    /// </summary>
+    public bool ShowStarIcons { get { return _showStarIcons; } }
 
     #endregion
 
@@ -253,6 +297,10 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
 
         CheckShowSystemTrackingLabels();
         CheckShowUnitTrackingLabels();
+
+        CheckShowElementIcons();
+        CheckShowPlanetIcons();
+        CheckShowStarIcons();
     }
 
     private bool _showFleetCoursePlotsPrev = false;
@@ -354,6 +402,32 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
         }
     }
 
+    private bool _showElementIconsPrev;
+    private void CheckShowElementIcons() {
+        if (_showElementIcons != _showElementIconsPrev) {
+            //D.Log("{0}.ShowElementIcons has changed from {1} to {2}.", DebugName, _showElementIconsPrev, _showElementIcons);
+            _showElementIconsPrev = _showElementIcons;
+            OnShowElementIcons();
+        }
+    }
+
+    private bool _showPlanetIconsPrev;
+    private void CheckShowPlanetIcons() {
+        if (_showPlanetIcons != _showPlanetIconsPrev) {
+            //D.Log("{0}.ShowPlanetIcons has changed from {1} to {2}.", DebugName, _showPlanetIconsPrev, _showPlanetIcons);
+            _showPlanetIconsPrev = _showPlanetIcons;
+            OnShowPlanetIcons();
+        }
+    }
+
+    private bool _showStarIconsPrev;
+    private void CheckShowStarIcons() {
+        if (_showStarIcons != _showStarIconsPrev) {
+            //D.Log("{0}.ShowStarIcons has changed from {1} to {2}.", DebugName, _showStarIconsPrev, _showStarIcons);
+            _showStarIconsPrev = _showStarIcons;
+            OnShowStarIcons();
+        }
+    }
 
     #endregion
 
@@ -428,6 +502,24 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     private void OnShowUnitTrackingLabels() {
         if (showUnitTrackingLabels != null) {
             showUnitTrackingLabels(Instance, EventArgs.Empty);
+        }
+    }
+
+    private void OnShowElementIcons() {
+        if (showElementIcons != null) {
+            showElementIcons(Instance, EventArgs.Empty);
+        }
+    }
+
+    private void OnShowPlanetIcons() {
+        if (showPlanetIcons != null) {
+            showPlanetIcons(Instance, EventArgs.Empty);
+        }
+    }
+
+    private void OnShowStarIcons() {
+        if (showStarIcons != null) {
+            showStarIcons(Instance, EventArgs.Empty);
         }
     }
 

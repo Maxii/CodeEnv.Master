@@ -35,17 +35,26 @@ public class ScaleRelativeToCamera : AMonoBase {
 
     public Vector3 Scale { get; private set; }
 
+    private bool _warnIfUIPanelPresentInParents = true;
+    public bool WarnIfUIPanelPresentInParents { set { _warnIfUIPanelPresentInParents = value; } }
+
     private Vector3 _initialScale;
 
     protected override void Awake() {
         base.Awake();
         // record initial scale of the GO and use it as a basis
         _initialScale = transform.localScale;
-        WarnIfUIPanelPresentInParents();
         enabled = false;
     }
 
-    private void WarnIfUIPanelPresentInParents() {
+    protected override void Start() {
+        base.Start();
+        if (_warnIfUIPanelPresentInParents) {
+            CheckForUIPanelPresentInParents();
+        }
+    }
+
+    private void CheckForUIPanelPresentInParents() {
         if (gameObject.GetComponentInParent<UIPanel>() != null) {
             // changing anything about a widget beneath a UIPanel causes Widget.onChange to be called
             D.WarnContext(this, "{0} is located beneath a UIPanel.\nConsider locating it above to improve performance.", GetType().Name);

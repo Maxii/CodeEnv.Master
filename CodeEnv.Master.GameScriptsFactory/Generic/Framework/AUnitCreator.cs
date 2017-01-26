@@ -68,6 +68,7 @@ public abstract class AUnitCreator : AMonoBase {
 
     protected override void Awake() {
         base.Awake();
+        __ValidateStaticSetting();
         InitializeValuesAndReferences();
     }
 
@@ -134,9 +135,6 @@ public abstract class AUnitCreator : AMonoBase {
         if (currentDate < dateToDeploy) {
             D.Error("{0}: {1} should not be < {2}.", DebugName, currentDate, dateToDeploy);
         }
-        if (currentDate > dateToDeploy) {
-            D.Log(ShowDebugLog, "{0} exceeded DeployDate {1}. Current date = {2}.", DebugName, dateToDeploy, currentDate);
-        }
         //D.Log(ShowDebugLog, "{0} is about to build, deploy and begin ops of {1}'s {2} on {3}.", DebugName, Owner, Configuration.UnitName, currentDate);
 
         MakeUnitAndPrepareForDeployment();
@@ -144,6 +142,12 @@ public abstract class AUnitCreator : AMonoBase {
         if (!_isUnitDeployed) {
             Destroy(gameObject);
             return;
+        }
+        if (currentDate > dateToDeploy) {
+            D.Log(ShowDebugLog, "{0} exceeded DeployDate {1}, so actually deployed on {2}.", DebugName, dateToDeploy, currentDate);
+        }
+        else {
+            D.Log(ShowDebugLog, "{0} was deployed on {1}.", DebugName, currentDate);
         }
         PrepareForUnitOperations();
         BeginUnitOperations();
@@ -232,6 +236,16 @@ public abstract class AUnitCreator : AMonoBase {
     /// </summary>
     protected abstract void BeginCommandOperations();
 
+    #region Debug
+
+    private void __ValidateStaticSetting() {
+        if (gameObject.isStatic) {
+            D.Warn("{0} should never be marked static as they must be relocatable. Correcting.", DebugName);
+            // UNCLEAR Is there any advantage marking them static after they are relocated?
+            gameObject.isStatic = false;
+        }
+    }
+
     private void InitializeUnitDebugControl() {
         var unitDebugCntl = UnityUtility.ValidateComponentPresence<UnitDebugControl>(gameObject);
         unitDebugCntl.Initialize();
@@ -244,6 +258,9 @@ public abstract class AUnitCreator : AMonoBase {
     private void RemoveCreatorScript() {
         Destroy(this);
     }
+
+    #endregion
+
 
     #region Static Member Management in non-persistent MonoBehaviours Archive
 

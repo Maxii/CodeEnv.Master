@@ -45,7 +45,7 @@ public class PlanetoidCtxControl : ACtxControl {
     protected APlanetoidItem _planetoidMenuOperator;
 
     public PlanetoidCtxControl(APlanetoidItem planetoid)
-        : base(planetoid.gameObject, uniqueSubmenusReqd: Constants.Zero, menuPosition: MenuPositionMode.Offset) {
+        : base(planetoid.gameObject, uniqueSubmenuQtyReqd: Constants.Zero, menuPosition: MenuPositionMode.Offset) {
         _planetoidMenuOperator = planetoid;
     }
 

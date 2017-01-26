@@ -68,7 +68,7 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
     private string DebugName { get { return DebugNameFormat.Inject(name, typeof(CameraLosChangedListener).Name); } }
 
     private Renderer _renderer;
-    private bool _isInvisibleMesh;
+    private bool _hasInvisibleMesh;
 
     protected override void Awake() {
         base.Awake();
@@ -109,7 +109,7 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
             OnInCameraLosChanged();
         }
         else {
-            if (!_isInvisibleMesh) {    // invisible mesh will always immediately generate an event as I can't instantiate it disabled
+            if (!_hasInvisibleMesh) {    // invisible mesh will always immediately generate an event as I can't instantiate it disabled
                 D.WarnContext(this, "{0}.OnBecameVisible() called while not enabled. This is probably because the MeshRenderer on this object started enabled in the Inspector.",
                     DebugName);
             }
@@ -128,7 +128,7 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
             OnInCameraLosChanged();
         }
         else {
-            if (!_isInvisibleMesh) {  // invisible mesh will always immediately generate an event as I can't instantiate it disabled
+            if (!_hasInvisibleMesh) {  // invisible mesh will always immediately generate an event as I can't instantiate it disabled
                 D.WarnContext(this, "{0}.OnBecameInvisible() called while not enabled. This is probably because the MeshRenderer on this object started enabled in the Inspector.",
                     DebugName);
             }
@@ -162,7 +162,7 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
     /// even without having a pre-installed Renderer. Derived from Vectrosity.VectorManager.
     /// </summary>
     private void InitializeInvisibleMesh() {
-        _isInvisibleMesh = true;
+        _hasInvisibleMesh = true;
 
         Profiler.BeginSample("Proper AddComponent allocation", gameObject);
         _meshFilter = gameObject.AddMissingComponent<MeshFilter>();
@@ -177,9 +177,15 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
         _widget = gameObject.GetComponent<UIWidget>();
         Profiler.EndSample();
 
-        if (_widget != null) {
-            _widget.onChange += CheckInvisibleMeshSize;
-        }
+        // 1.14.17 Replaced subscription to widget.onChange with CheckForInvisibleMeshSizeChange()
+        CheckInvisibleMeshSize();
+    }
+
+    /// <summary>
+    /// Checks whether the InvisibleMesh's size should be changed if any is present.
+    /// <remarks>Typically called after there is a change to the associated widget's mesh size.</remarks>
+    /// </summary>
+    public void CheckForInvisibleMeshSizeChange() {
         CheckInvisibleMeshSize();
     }
 
@@ -190,9 +196,12 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
     private void CheckInvisibleMeshSize() {
         Vector2 meshSize = _widget != null ? _widget.localSize : DefaultMeshSize;
         if (__previousMeshSize == meshSize) {
+            // 1.14.17 Occurs infrequently, typically when a TrackingWidget's IconInfo changes after initially being set.
+            // This is caused most commonly by the need for an icon color or composition change.
             //D.Warn("{0} invisible mesh size {1} check without a widget dimension change.", DebugName, meshSize);
             return;
         }
+        //D.Log("{0} invisible mesh size changing from {1} to {2}.", DebugName, __previousMeshSize, meshSize);
         __previousMeshSize = meshSize;
 
         Vector2 cacheKey = meshSize; // meshSize.ToString();  // "[0.0, 1.0]"

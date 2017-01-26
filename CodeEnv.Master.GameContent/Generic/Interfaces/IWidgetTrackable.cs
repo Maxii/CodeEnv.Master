@@ -33,6 +33,8 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         Transform transform { get; }
 
+        bool IsMobile { get; }
+
         /// <summary>
         /// Gets the offset used to place the widget, relative to this IWidgetTrackable object.
         /// </summary>

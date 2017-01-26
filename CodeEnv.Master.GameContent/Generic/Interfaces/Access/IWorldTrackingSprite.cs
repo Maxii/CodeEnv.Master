@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2015 Strategic Forge
+// Copyright © 2012 - 2016 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IResponsiveTrackingSprite.cs
-// Interface for easy access to ResponsiveTrackingSprite.
+// File: IWorldTrackingSprite.cs
+// Interface for easy access to WorldTrackingSprites (ConstantSize).
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,14 +16,14 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System.ComponentModel;
-
     /// <summary>
-    /// Interface for easy access to ResponsiveTrackingSprite.
+    /// Interface for easy access to WorldTrackingSprites (ConstantSize).
     /// </summary>
-    public interface IResponsiveTrackingSprite : ITrackingSprite {
+    public interface IWorldTrackingSprite : IWorldTrackingWidget {
 
-        IMyEventListener EventListener { get; }
+        IconInfo IconInfo { get; set; }
+
+        ICameraLosChangedListener CameraLosChangedListener { get; }
 
     }
 }

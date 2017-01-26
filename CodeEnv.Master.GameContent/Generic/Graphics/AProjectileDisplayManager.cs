@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
 
         private IWidgetTrackable _trackedProjectile;
         private ParticleSystem _operatingEffect;
-        private ITrackingSprite _icon;
+        private IWorldTrackingSprite _icon;
 
         public AProjectileDisplayManager(IWidgetTrackable trackedProjectile, Layers meshLayer, ParticleSystem operatingEffect = null)
             : base(trackedProjectile.transform.gameObject, meshLayer) {
@@ -41,11 +41,13 @@ namespace CodeEnv.Master.GameContent {
             if (_operatingEffect == null) {
                 // no particle operating effect will be used so make a projectile icon to show
                 IconInfo projectileIconInfo = MakeIconInfo();
-                _icon = References.TrackingWidgetFactory.MakeConstantSizeTrackingSprite(_trackedProjectile, projectileIconInfo);
+                _icon = References.TrackingWidgetFactory.MakeWorldTrackingSprite_Independent(_trackedProjectile, projectileIconInfo);
+                (_icon as IWorldTrackingSprite_Independent).DrawDepth = 7;  // HACK
                 listener = _icon.CameraLosChangedListener;
             }
             else {
-                // particle operating effect will be used so make a CameraLosChangedListener to tell it when to show
+                // Note: Particle operating effect will be used so make a CameraLosChangedListener to tell it when to show.
+                // Listener wiring done by ADisplayManager.
                 listener = References.TrackingWidgetFactory.MakeInvisibleCameraLosChangedListener(_trackedProjectile, _meshLayer);
             }
             var primaryMeshRenderer = listener.transform.GetComponent<MeshRenderer>();

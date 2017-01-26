@@ -57,11 +57,12 @@ public abstract class ATableWindow : AGuiWindow {
         Subscribe();
     }
 
-    protected override void AcquireReferences() {
-        base.AcquireReferences();
+    protected override void InitializeValuesAndReferences() {
+        base.InitializeValuesAndReferences();
         _table = gameObject.GetSingleComponentInChildren<UITable>();
         _table.sorting = UITable.Sorting.Custom;
         _rowForms = new List<ATableRowForm>();
+        _panel.widgetsAreStatic = true; // OPTIMIZE see http://www.tasharen.com/forum/index.php?topic=261.0
     }
 
     private void InitializeContentHolder() {
@@ -98,12 +99,16 @@ public abstract class ATableWindow : AGuiWindow {
     /// <summary>
     /// Show the Window.
     /// </summary>
-    public void Show() { ShowWindow(); }
+    public void Show() {
+        ShowWindow();
+    }
 
     /// <summary>
     /// Hide the Window.
     /// </summary>
-    public void Hide() { HideWindow(); }
+    public void Hide() {
+        HideWindow();
+    }
 
     /// <summary>
     /// Build a new table sorted by Name.

@@ -122,8 +122,8 @@ namespace CodeEnv.Master.GameContent {
 
         public float GetYield(ResourceID resourceID) {
             float result = Constants.ZeroF;
-            if (!TryGetYield(resourceID, out result)) {
-                D.Warn("{0} {1} is not present in {2}. Empty System?", typeof(ResourceID).Name, resourceID.GetValueName(), GetType().Name);
+            if (!TryGetYield(resourceID, out result) && resourceID == ResourceID.Energy) {
+                D.Warn("{0} {1} is not present in {2}. Empty System with no Star?", typeof(ResourceID).Name, resourceID.GetValueName(), GetType().Name);
             }
             return result;
         }

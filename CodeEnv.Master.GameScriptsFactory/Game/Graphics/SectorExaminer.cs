@@ -360,6 +360,8 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
 
     public Vector3 Position { get { return transform.position; } }
 
+    public bool IsMobile { get { return true; } }
+
     public string DebugName { get { return GetType().Name; } }
 
     #endregion

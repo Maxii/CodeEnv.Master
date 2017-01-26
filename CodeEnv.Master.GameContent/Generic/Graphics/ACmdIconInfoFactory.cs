@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
         where ReportType : AUnitCmdReport
         where FactoryType : ACmdIconInfoFactory<ReportType, FactoryType> {
 
-        private static readonly Layers Layer = Layers.TransparentFX;
+        private static readonly Layers Layer = TempGameValues.CmdIconCullLayer;
 
         private static readonly WidgetPlacement Placement = WidgetPlacement.Above;
 

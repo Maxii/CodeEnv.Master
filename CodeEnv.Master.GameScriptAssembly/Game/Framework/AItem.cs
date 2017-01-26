@@ -117,19 +117,6 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
         set { Data.Owner = value; }
     }
 
-    public bool TryGetOwner(Player requestingPlayer, out Player owner) {
-        if (InfoAccessCntlr.HasAccessToInfo(requestingPlayer, ItemInfoID.Owner)) {
-            owner = Data.Owner;
-            return true;
-        }
-        owner = null;
-        return false;
-    }
-
-    public bool IsOwnerAccessibleTo(Player player) {
-        return InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner);
-    }
-
     protected PlayerAIManager OwnerAIMgr { get; private set; }  // will be null if Owner is NoPlayer
 
     protected AInfoAccessController InfoAccessCntlr { get { return Data.InfoAccessCntlr; } }
@@ -402,6 +389,23 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
     #region IShipNavigable Members
 
     public abstract AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition);
+
+    #endregion
+
+    #region IItem_Ltd Members
+
+    public bool TryGetOwner(Player requestingPlayer, out Player owner) {
+        if (InfoAccessCntlr.HasAccessToInfo(requestingPlayer, ItemInfoID.Owner)) {
+            owner = Data.Owner;
+            return true;
+        }
+        owner = null;
+        return false;
+    }
+
+    public bool IsOwnerAccessibleTo(Player player) {
+        return InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner);
+    }
 
     #endregion
 

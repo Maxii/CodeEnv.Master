@@ -135,7 +135,7 @@
     <Compile Include="Generic\Graphics\CameraLosChangedListener.cs" />
     <Compile Include="Generic\Graphics\AWorldTrackingWidget.cs" />
     <Compile Include="Generic\Graphics\AWorldTrackingWidget_ConstantSize.cs" />
-    <Compile Include="Game\Graphics\ResponsiveTrackingSprite.cs" />
+    <Compile Include="Game\Graphics\InteractiveWorldTrackingSprite.cs" />
     <Compile Include="Generic\Graphics\ATrackingWidget.cs" />
     <Compile Include="Generic\Graphics\AWorldTrackingWidget_VariableSize.cs" />
     <Compile Include="Generic\Graphics\AUITrackingWidget.cs" />
@@ -249,6 +249,7 @@
     <Compile Include="Game\GUI\GuiAiPlayerUserSeparationPopupList.cs" />
     <Compile Include="Game\GUI\GuiPlayerHomeDesirabilityPopupList.cs" />
     <Compile Include="Game\GUI\GuiPlayerStartLevelPopupList.cs" />
+    <Compile Include="Generic\Graphics\InteractiveWorldTrackingSprite_Independent.cs" />
     <Compile Include="ThirdParty\MyPathfindingGraph.cs" />
     <Compile Include="ThirdParty\MyPoolManager.cs" />
     <Compile Include="ThirdParty\ContextMenu\CtxHelper.cs" />
@@ -267,15 +268,17 @@
     <Compile Include="Game\Graphics\SectorExaminer.cs" />
     <Compile Include="Generic\Graphics\UITrackingLabel.cs" />
     <Compile Include="Generic\Graphics\UITrackingSprite.cs" />
-    <Compile Include="Generic\Graphics\VariableSizeTrackingLabel.cs" />
-    <Compile Include="Generic\Graphics\VariableSizeTrackingSprite.cs" />
-    <Compile Include="Generic\Graphics\ConstantSizeTrackingLabel.cs" />
-    <Compile Include="Generic\Graphics\ConstantSizeTrackingSprite.cs" />
+    <Compile Include="Generic\Graphics\WorldTrackingLabel_IndependentVariableSize.cs" />
+    <Compile Include="Generic\Graphics\WorldTrackingSprite_IndependentVariableSize.cs" />
+    <Compile Include="Generic\Graphics\WorldTrackingLabel_Independent.cs" />
+    <Compile Include="Generic\Graphics\WorldTrackingSprite_Independent.cs" />
     <Compile Include="Game\Framework\UniverseCenterItem.cs" />
     <Compile Include="Game\GUI\UniverseCenterCtxControl.cs" />
     <Compile Include="Generic\_Debug\VisualEffectScale.cs" />
     <Compile Include="Generic\_Debug\UnitDebugControl.cs" />
     <Compile Include="Generic\Framework\UniverseCreator.cs" />
+    <Compile Include="Generic\Graphics\WorldTrackingSprite.cs" />
+    <Compile Include="Generic\Graphics\WorldTrackingLabel.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">
