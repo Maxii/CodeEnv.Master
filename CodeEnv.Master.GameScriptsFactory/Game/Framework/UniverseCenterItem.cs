@@ -160,6 +160,11 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
         return new CircleHighlightManager(transform, radius);
     }
 
+    public override void FinalInitialize() {
+        base.FinalInitialize();
+        IsOperational = true;
+    }
+
     #endregion
 
     public override void CommenceOperations() {
@@ -177,11 +182,11 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
     #region Event and Property Change Handlers
 
     protected override void HandleOwnerChanging(Player newOwner) {
-        throw new System.NotSupportedException("{0}.Owner is not allowed to change.".Inject(GetType().Name));
+        throw new System.NotSupportedException("{0}.Owner is not allowed to change.".Inject(DebugName));
     }
 
     protected override void HandleOwnerChanged() {
-        throw new System.NotSupportedException("{0}.Owner is not allowed to change.".Inject(GetType().Name));
+        throw new System.NotSupportedException("{0}.Owner is not allowed to change.".Inject(DebugName));
     }
 
     protected sealed override void HandleIsOperationalChanged() {
@@ -409,24 +414,6 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
 
     public float __ObstacleZoneRadius { get { return _obstacleZoneCollider.radius; } }
 
-    //public Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float shipOrFleetClearanceRadius) {
-    //    return _detourGenerator.GenerateDetourFromObstacleZoneHit(shipOrFleetPosition, zoneHitInfo.point, shipOrFleetClearanceRadius);
-    //}
-    //public Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float shipOrFleetClearanceRadius) {
-    //    Vector3 detour = _detourGenerator.GenerateDetourFromObstacleZoneHit(shipOrFleetPosition, zoneHitInfo.point, shipOrFleetClearanceRadius);
-    //    if (!_detourGenerator.IsDetourCleanlyReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius)) {
-    //        detour = _detourGenerator.GenerateDetourFromZoneHitAroundPoles(shipOrFleetPosition, zoneHitInfo.point, shipOrFleetClearanceRadius);
-    //        if (!_detourGenerator.IsDetourCleanlyReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius)) {
-    //            detour = _detourGenerator.GenerateDetourAtObstaclePoles(shipOrFleetPosition, shipOrFleetClearanceRadius);
-    //            if (!_detourGenerator.IsDetourCleanlyReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius)) {
-    //                detour = _detourGenerator.GenerateDetourAroundObstaclePoles(shipOrFleetPosition, shipOrFleetClearanceRadius);
-    //                D.Assert(_detourGenerator.IsDetourCleanlyReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius),
-    //                    "{0} detour {1} not reachable. Ship/Fleet.Position = {2}, ClearanceRadius = {3:0.##}.".Inject(DebugName, detour, shipOrFleetPosition, shipOrFleetClearanceRadius));
-    //            }
-    //        }
-    //    }
-    //    return detour;
-    //}
     public Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float shipOrFleetClearanceRadius) {
         Vector3 detour = _detourGenerator.GenerateDetourFromObstacleZoneHit(shipOrFleetPosition, zoneHitInfo.point, shipOrFleetClearanceRadius);
         if (!_detourGenerator.IsDetourCleanlyReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius)) {
@@ -463,7 +450,6 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
         }
         return detour;
     }
-
 
     #endregion
 

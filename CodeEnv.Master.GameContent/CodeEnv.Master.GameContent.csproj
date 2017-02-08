@@ -63,6 +63,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Framework\FacilityDetourGenerator.cs" />
     <Compile Include="Generic\Utility\DebugUtility.cs" />
     <Compile Include="Generic\_Debug\DebugLosWeaponLoadout.cs" />
     <Compile Include="Generic\Math\FormationStationSlotIDEqualityComparer.cs" />
@@ -254,8 +255,8 @@
     <Compile Include="Game\Gameplay\ShipDirective.cs" />
     <Compile Include="Generic\Framework\StationaryLocation.cs" />
     <Compile Include="Game\Gameplay\StarbaseCategory.cs" />
-    <Compile Include="Game\Gameplay\Intel.cs" />
-    <Compile Include="Game\Gameplay\ImprovingIntel.cs" />
+    <Compile Include="Game\Gameplay\RegressibleIntel.cs" />
+    <Compile Include="Game\Gameplay\NonRegressibleIntel.cs" />
     <Compile Include="Generic\Interfaces\Access\IDynamicObjectsFolder.cs" />
     <Compile Include="Generic\Interfaces\Access\IGameManager.cs" />
     <Compile Include="Generic\_Debug\References.cs" />

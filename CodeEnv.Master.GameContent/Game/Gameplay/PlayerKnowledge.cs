@@ -17,12 +17,9 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common;
-    using MoreLinq;
-    using UnityEngine;
 
     /// <summary>
     /// Holds the current knowledge of a player about items in the universe.
@@ -283,7 +280,6 @@ namespace CodeEnv.Master.GameContent {
         /// The Settlements this player has knowledge of.
         /// </summary>
         public IEnumerable<ISettlementCmd_Ltd> Settlements { get { return _settlementLookupBySectorID.Values; } }
-        //public IEnumerable<ISettlementCmd_Ltd> Settlements { get { return _commands.Where(cmd => cmd is ISettlementCmd_Ltd).Cast<ISettlementCmd_Ltd>(); } }
 
         /// <summary>
         /// The Starbases this player has knowledge of.
@@ -298,7 +294,6 @@ namespace CodeEnv.Master.GameContent {
                 return Enumerable.Empty<IStarbaseCmd_Ltd>();
             }
         }
-        //public IEnumerable<IStarbaseCmd_Ltd> Starbases { get { return _commands.Where(cmd => cmd is IStarbaseCmd_Ltd).Cast<IStarbaseCmd_Ltd>(); } }
 
         // Note: Other players this Player has met is held by the Player
 
@@ -486,10 +481,19 @@ namespace CodeEnv.Master.GameContent {
                 //D.Log("{0} tried to add Planetoid {1} it already has.", DebugName, planetoid.DebugName);
                 return false;
             }
+            //D.Log("{0} is adding {1} to its knowledge base.", DebugName, planetoid.DebugName);
+
             planetoid.deathOneShot += ItemDeathEventHandler;
             return true;
         }
 
+        /// <summary>
+        /// Attempts to add the provided element to this player's knowledge, returning
+        /// <c>true</c> if it was not present and therefore added, <c>false</c> if it was
+        /// already present.
+        /// </summary>
+        /// <param name="element">The element.</param>
+        /// <returns></returns>
         internal bool AddElement(IUnitElement_Ltd element) {
             var isAdded = _elements.Add(element);
             isAdded = isAdded & _items.Add(element);
@@ -497,49 +501,55 @@ namespace CodeEnv.Master.GameContent {
                 //D.Log("{0} tried to add Element {1} it already has.", DebugName, element.DebugName);
                 return false;
             }
-            element.isHQChanged += ElementIsHQChangedEventHandler;
+            //D.Log("{0} is adding {1} to its knowledge base.", DebugName, element.DebugName);
             element.deathOneShot += ItemDeathEventHandler;  // 8.21.16 was missing?
-
-            if (element.IsHQ) {
-                AddCommand(element.Command);
-            }
             return true;
         }
 
         #region Event and Property Change Handlers
 
-        private void ElementIsHQChangedEventHandler(object sender, EventArgs e) {
-            IUnitElement_Ltd element = sender as IUnitElement_Ltd;
-            if (element.IsHQ) {
-                // this known element is now a HQ
-                AddCommand(element.Command);
-            }
-            else {
-                // this known element is no longer a HQ
-                RemoveCommand(element.Command);
-            }
-        }
-
         private void ItemDeathEventHandler(object sender, EventArgs e) {
             IMortalItem_Ltd deadItem = sender as IMortalItem_Ltd;
+            D.AssertNotNull(deadItem);
+            HandleItemDeath(deadItem);
+        }
+
+        #endregion
+
+        private void HandleItemDeath(IMortalItem_Ltd deadItem) {
+            D.Assert(!deadItem.IsOperational, DebugName);
             IUnitElement_Ltd deadElement = deadItem as IUnitElement_Ltd;
             if (deadElement != null) {
                 RemoveElement(deadElement);
             }
             else {
                 IPlanetoid_Ltd deadPlanetoid = deadItem as IPlanetoid_Ltd;
-                D.AssertNotNull(deadPlanetoid); // UNCLEAR could this interface indicate null for dead(destroyed) Planetoid?
-                RemoveDeadPlanetoid(deadPlanetoid);
+                if (deadPlanetoid != null) {
+                    RemoveDeadPlanetoid(deadPlanetoid);
+                }
+                else {
+                    IUnitCmd_Ltd deadCmd = deadItem as IUnitCmd_Ltd;
+                    D.AssertNotNull(deadCmd, DebugName);
+                    RemoveCommand(deadCmd);
+                }
             }
         }
 
-        #endregion
-
-        private void AddCommand(IUnitCmd_Ltd command) {
+        /// <summary>
+        /// Attempts to add the provided command to this player's knowledge, returning
+        /// <c>true</c> if it was not present and therefore added, <c>false</c> if it was
+        /// already present.
+        /// </summary>
+        /// <param name="command">The command.</param>
+        /// <returns></returns>
+        internal bool AddCommand(IUnitCmd_Ltd command) {
             var isAdded = _commands.Add(command);
             isAdded = isAdded & _items.Add(command);
-            D.Assert(isAdded);  // Cmd cannot already be present. If adding due to a change in an element's IsHQ state, then previous HQElement removed Cmd before this Add
-                                //D.Log("{0} has added Command {1}.", DebugName, command.DebugName);
+            if (!isAdded) {
+                //D.Log("{0} tried to add Command {1} it already has.", DebugName, command.DebugName);
+                return false;
+            }
+            //D.Log("{0} is adding {1} to its knowledge base.", DebugName, command.DebugName);
 
             IStarbaseCmd_Ltd sbCmd = command as IStarbaseCmd_Ltd;
             if (sbCmd != null) {
@@ -557,15 +567,20 @@ namespace CodeEnv.Master.GameContent {
                 ISettlementCmd_Ltd settlementCmd = command as ISettlementCmd_Ltd;
                 if (settlementCmd != null) {
                     var sSectorID = settlementCmd.SectorID;
-                    //if (_settlementLookupBySectorID.ContainsKey(sSectorID)) {
-                    //    D.Error("{0}.AddCmd({1}) found {2} already occupied by {3}.", DebugName, command.DebugName, sSectorID, _settlementLookupBySectorID[sSectorID].DebugName);
-                    //}
                     _settlementLookupBySectorID.Add(sSectorID, settlementCmd);
                 }
             }
+
+            command.deathOneShot += ItemDeathEventHandler;
+            return true;
         }
 
-        private void RemoveCommand(IUnitCmd_Ltd command) {
+        /// <summary>
+        /// Removes the provided command from this player's knowledge. Throws
+        /// an error if not present.
+        /// </summary>
+        /// <param name="command">The command.</param>
+        internal void RemoveCommand(IUnitCmd_Ltd command) {
             var isRemoved = _commands.Remove(command);
             isRemoved = isRemoved & _items.Remove(command);
             D.Assert(isRemoved);
@@ -590,16 +605,22 @@ namespace CodeEnv.Master.GameContent {
                     D.Assert(isRemoved);
                 }
             }
+
+            if (command.IsOperational && command.Owner_Debug.IsRelationshipWith(Owner, DiplomaticRelationship.Alliance)) {
+                D.Error("{0}: {1} is alive and being removed while in Alliance!", DebugName, command.DebugName);
+            }
+            command.deathOneShot -= ItemDeathEventHandler;
         }
 
         /// <summary>
         /// Removes the element from this player's knowledge. Element's are
-        /// removed when they lose all <c>Player</c> detection. Losing all
-        /// detection by <c>Player</c> occurs for 1 reason - no Player Cmds
-        /// in sensor range. Removal because of death is handled by this Knowledge.
+        /// removed when this Player's IntelCoverage of the element changes to None from another value.
+        /// This only happens to ships and only when Player loses detection of the element,
+        /// aka when no Player Cmds remain within sensor range. Removal because of death is handled by this Knowledge.
         /// </summary>
         /// <param name="element">The element.</param>
         internal void RemoveElement(IUnitElement_Ltd element) {
+            D.Assert(element is IShip_Ltd, element.DebugName);
             var isRemoved = _elements.Remove(element);
             isRemoved = isRemoved & _items.Remove(element);
             D.Assert(isRemoved, element.DebugName);
@@ -607,12 +628,7 @@ namespace CodeEnv.Master.GameContent {
             if (element.IsOperational && (element as IUnitElement).Owner.IsRelationshipWith(Owner, DiplomaticRelationship.Alliance)) {
                 D.Error("{0}: {1} is alive and being removed while in Alliance!", DebugName, element.DebugName);
             }
-
-            element.isHQChanged -= ElementIsHQChangedEventHandler;
             element.deathOneShot -= ItemDeathEventHandler;
-            if (element.IsHQ) {
-                RemoveCommand(element.Command);
-            }
         }
 
         /// <summary>
@@ -635,10 +651,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Unsubscribe() {
-            _elements.ForAll(e => {
-                e.isHQChanged -= ElementIsHQChangedEventHandler;
-                e.deathOneShot -= ItemDeathEventHandler;
-            });
+            _elements.ForAll(e => e.deathOneShot -= ItemDeathEventHandler);
+            _commands.ForAll(cmd => cmd.deathOneShot -= ItemDeathEventHandler);
             _planetoids.ForAll(p => p.deathOneShot -= ItemDeathEventHandler);
         }
 

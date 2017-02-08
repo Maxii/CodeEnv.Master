@@ -17,6 +17,8 @@
 // default namespace
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
@@ -39,6 +41,11 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem, IIntelItem_Ltd 
         Data.intelCoverageChanged += IntelCoverageChangedEventHandler;
     }
 
+    public override void FinalInitialize() {
+        base.FinalInitialize();
+        AssessAssigningComprehensiveIntelCoverage();
+    }
+
     #endregion
 
     public IntelCoverage GetIntelCoverage(Player player) { return Data.GetIntelCoverage(player); }
@@ -57,8 +64,8 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem, IIntelItem_Ltd 
 
     protected override void AssessIsDiscernibleToUser() {
         // 11.13.16 isInMainCameraLOS must start true to initialize DisplayMgr when UserIntelCoverage > None
-        // as this assessment is only called from DisplayMgr or when UserIntelCoverage changes. Without starting
-        // true, if UserIntelCoverage starts > None (DebugControls.FullCoverage or User-owned item), 
+        // as this assessment is only called from CommenceOperations, DisplayMgr or when UserIntelCoverage changes. 
+        // Without starting true, if UserIntelCoverage starts > None (DebugControls.FullIntelOfDetectedItems or User-owned item), 
         // the assessment wouldn't be done again until coverage changed again, if ever.
         var isInMainCameraLOS = DisplayMgr != null ? DisplayMgr.IsInMainCameraLOS : true;
         IsDiscernibleToUser = isInMainCameraLOS && UserIntelCoverage > IntelCoverage.None;
@@ -71,18 +78,21 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem, IIntelItem_Ltd 
     }
 
     private void HandleIntelCoverageChanged(Player playerWhosCoverageChgd) {
-        if (!IsOperational) {
-            // can be called before CommenceOperations if DebugSettings.AllIntelCoverageComprehensive = true
-            return;
-        }
         //D.Log(ShowDebugLog, "{0}.IntelCoverageChangedHandler() called. {1}'s new IntelCoverage = {2}.", DebugName, playerWhosCoverageChgd.Name, GetIntelCoverage(playerWhosCoverageChgd));
-        if (playerWhosCoverageChgd == _gameMgr.UserPlayer) {
-            HandleUserIntelCoverageChanged();
-        }
 
-        Player playerWhosInfoAccessChgd = playerWhosCoverageChgd;
-        OnInfoAccessChanged(playerWhosInfoAccessChgd);
+        var playerWhosCoverageChgdAIMgr = _gameMgr.GetAIManagerFor(playerWhosCoverageChgd);
+        playerWhosCoverageChgdAIMgr.HandleItemIntelCoverageChanged(this);
+
+        if (IsOperational) {    // Will be called during FinalInitialize if Item should be IntelCoverage.Comprehensive
+            if (playerWhosCoverageChgd == _gameMgr.UserPlayer) {
+                HandleUserIntelCoverageChanged();
+            }
+
+            Player playerWhosInfoAccessChgd = playerWhosCoverageChgd;
+            OnInfoAccessChanged(playerWhosInfoAccessChgd);
+        }
     }
+
 
     /// <summary>
     /// Handles a change in the User's IntelCoverage of this item.
@@ -96,7 +106,37 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem, IIntelItem_Ltd 
         DisplayMgr.IsDisplayEnabled = UserIntelCoverage != IntelCoverage.None;
     }
 
+    protected override void HandleOwnerChanged() {
+        base.HandleOwnerChanged();
+        AssessAssigningComprehensiveIntelCoverage();
+    }
+
     #endregion
+
+    private void AssessAssigningComprehensiveIntelCoverage() {
+        if (DebugControls.Instance.IsAllIntelCoverageComprehensive) {
+            foreach (var player in _gameMgr.AllPlayers) {
+                SetIntelCoverage(player, IntelCoverage.Comprehensive);
+            }
+            return;
+        }
+
+        if (Owner != TempGameValues.NoPlayer) {
+            SetIntelCoverage(Owner, IntelCoverage.Comprehensive);
+
+            IEnumerable<Player> allies;
+            if (TryGetAllies(out allies)) {
+                allies.ForAll(ally => SetIntelCoverage(ally, IntelCoverage.Comprehensive));
+            }
+        }
+    }
+
+    protected bool TryGetAllies(out IEnumerable<Player> alliedPlayers) {
+        D.AssertNotEqual(TempGameValues.NoPlayer, Owner);
+        alliedPlayers = Owner.GetOtherPlayersWithRelationship(DiplomaticRelationship.Alliance);
+        return alliedPlayers.Any();
+    }
+
 
     #region Cleanup
 

@@ -185,7 +185,7 @@ public abstract class AUnitCreator : AMonoBase {
         LogEvent();
         CompleteUnitInitialization();   // 10.19.16 Moved up from last as Knowledge organizes Cmds by their sectorID which this initializes
         AddUnitToGameKnowledge();
-        AddUnitToOwnerAndAllysKnowledge();
+        ////AddUnitToOwnerAndAllysKnowledge();
         RegisterCommandForOrders();
     }
 
@@ -195,13 +195,6 @@ public abstract class AUnitCreator : AMonoBase {
     /// Adds the unit to game knowledge.
     /// </summary>
     protected abstract void AddUnitToGameKnowledge();
-
-    /// <summary>
-    /// Adds the unit to its owner's knowledge as well as any of the owner's allies. 
-    /// <remarks>OPTIMIZE 8.2.16 Currently required as can't rely on Owner changed events to handle all this 
-    /// since owner is set in data before owner changed events are wired.</remarks>
-    /// </summary>
-    protected abstract void AddUnitToOwnerAndAllysKnowledge();
 
     /// <summary>
     /// Registers the command with the Owner's AIMgr so it can receive orders.
@@ -220,10 +213,10 @@ public abstract class AUnitCreator : AMonoBase {
         // should find it out now as this can easily happen during the game.
 
         InitializeUnitDebugControl();
-        //__IssueFirstUnitOrder(onCompleted: delegate {
-        //    //// issuing the first unit order can sometimes require access to this creator script so remove it after the order has been issued
-        //    //RemoveCreatorScript();
-        //});
+        ////__IssueFirstUnitOrder(onCompleted: delegate {
+        ////    // issuing the first unit order can sometimes require access to this creator script so remove it after the order has been issued
+        ////    //RemoveCreatorScript();
+        ////});
     }
 
     /// <summary>
@@ -260,6 +253,16 @@ public abstract class AUnitCreator : AMonoBase {
     }
 
     #endregion
+
+    #region Archive
+
+    /// <summary>
+    /// Adds the unit to its owner's knowledge as well as any of the owner's allies. 
+    /// <remarks>OPTIMIZE 8.2.16 Currently required as can't rely on Owner changed events to handle all this 
+    /// since owner is set in data before owner changed events are wired.</remarks>
+    /// </summary>
+    [Obsolete]
+    protected abstract void AddUnitToOwnerAndAllysKnowledge();
 
 
     #region Static Member Management in non-persistent MonoBehaviours Archive
@@ -348,6 +351,7 @@ public abstract class AUnitCreator : AMonoBase {
 
     #endregion
 
+    #endregion
 }
 
 

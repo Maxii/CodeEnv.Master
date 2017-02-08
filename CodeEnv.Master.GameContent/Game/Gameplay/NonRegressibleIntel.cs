@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ImprovingIntel.cs
+// File: NonRegressibleIntel.cs
 // Metadata describing the degree of intelligence coverage a player has about a particular item. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -21,37 +21,34 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Metadata describing the degree of intelligence coverage a player has about a particular item. 
-    /// This version has a CurrentCoverage value that can only improve once instantiated. 
-    /// It never regresses to a lower value.
+    /// This version has a CurrentCoverage value that is not allowed to regress to a lower value than it
+    /// has already attained. It can only improve once instantiated. 
     /// </summary>
-    public class ImprovingIntel : AIntel {
+    public class NonRegressibleIntel : AIntel {
 
         /// <summary>
-        /// The current level of data coverage achieved on this object.
+        /// Initializes a new instance of the <see cref="NonRegressibleIntel"/> class.
         /// </summary>
-        public override IntelCoverage CurrentCoverage {
-            get { return base.CurrentCoverage; }
-            set {
-                D.Assert(IsCoverageChangeAllowed(value));
-                base.CurrentCoverage = value;
-            }
-        }
+        public NonRegressibleIntel() : base() { }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ImprovingIntel"/> class.
-        /// </summary>
-        public ImprovingIntel() : base() { }
-
-        /// <summary>
-        /// Copy constructor. Initializes a new instance of the <see cref="ImprovingIntel"/> class,
+        /// Copy constructor. Initializes a new instance of the <see cref="NonRegressibleIntel"/> class,
         /// a copy of <c>intelToCopy</c>.
         /// </summary>
         /// <param name="intelToCopy">The intel to copy.</param>
-        public ImprovingIntel(ImprovingIntel intelToCopy)
+        public NonRegressibleIntel(NonRegressibleIntel intelToCopy)
             : base(intelToCopy) { }
 
+        /// <summary>
+        /// Returns <c>true</c> if an assignment to newCoverage is allowed (including the case where newCoverage == CurrentCoverage),
+        /// <c>false</c> if the assignment is not allowed due to the inability of IntelCoverage to regress to newCoverage.
+        /// </summary>
+        /// <param name="newCoverage">The new coverage.</param>
+        /// <returns>
+        ///   <c>true</c> if [is coverage change allowed] [the specified new coverage]; otherwise, <c>false</c>.
+        /// </returns>
         public override bool IsCoverageChangeAllowed(IntelCoverage newCoverage) {
-            return newCoverage > CurrentCoverage;
+            return newCoverage >= CurrentCoverage;
         }
 
         public override string ToString() {

@@ -99,6 +99,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     /// </summary>
     public bool IsOperational {
         get { return Data != null ? Data.IsOperational : false; }
+        private set { Data.IsOperational = value; }
     }
 
     public string DebugName { get { return Data.DebugName; } }
@@ -235,6 +236,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     /// </summary>
     public void FinalInitialize() {
         Data.FinalInitialize();
+        IsOperational = true;
     }
 
     #endregion

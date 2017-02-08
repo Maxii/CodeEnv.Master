@@ -277,7 +277,6 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     }
 
     protected override void HandleOwnerChanging(Player newOwner) {
-        base.HandleOwnerChanging(newOwner);
         if (_ctxControl != null) {
             D.Assert(_hasInitOnFirstDiscernibleToUserRun);
             if (Owner == TempGameValues.NoPlayer || newOwner == TempGameValues.NoPlayer || Owner.IsUser != newOwner.IsUser) {

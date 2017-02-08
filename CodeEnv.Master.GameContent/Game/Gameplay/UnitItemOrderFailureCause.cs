@@ -22,11 +22,37 @@ namespace CodeEnv.Master.GameContent {
     public enum UnitItemOrderFailureCause {
 
         None,
+
+        /// <summary>
+        /// The target has been determined to be uncatchable. 
+        /// <remarks>Typically this means the target is moving faster than we can move,
+        /// or we have lost awareness of the target, aka our sensors can no longer detect it.</remarks>
+        /// </summary>
         TgtUncatchable,
+
+        /// <summary>
+        /// The target has been determined to be unreachable.
+        /// <remarks>Typically this refers to the inability to plot a course to reach the target.</remarks>
+        /// </summary>
         TgtUnreachable,
+
+        /// <summary>
+        /// Our relationship with the target has changed in a way that no longer
+        /// allows execution of the current state.
+        /// </summary>
         TgtRelationship,
+
         TgtDeath,
+
+        /// <summary>
+        /// This Unit Cmd or Element needs repair.  
+        /// UNCLEAR Cmd or whole Unit?
+        /// </summary>
         UnitItemNeedsRepair,
+
+        /// <summary>
+        /// This Unit Cmd or Element has died.
+        /// </summary>
         UnitItemDeath
 
     }

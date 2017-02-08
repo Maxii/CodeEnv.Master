@@ -15,6 +15,7 @@
 ////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
+
     using System;
     using CodeEnv.Master.Common;
     using UnityEngine;
@@ -58,10 +59,8 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        protected override AIntel MakeIntel(IntelCoverage initialcoverage) {
-            var intel = new ImprovingIntel();
-            intel.InitializeCoverage(initialcoverage);
-            return intel;
+        protected override AIntel MakeIntelInstance() {
+            return new NonRegressibleIntel();
         }
 
         #region Event and Property Change Handlers

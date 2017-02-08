@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: Intel.cs
+// File: RegressibleIntel.cs
 // Metadata describing the degree of intelligence coverage a player has about a particular item.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -20,11 +20,12 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Metadata describing the degree of intelligence coverage a player has about a particular item.
-    /// This version keeps track of the previous high of knowledge obtained on the object (DatedCoverage)
-    /// along with the date it was obtained (DateStamp), so that we remember how much was known at a
-    /// particular point in history, even if our CurrentCoverage is no longer that high.
+    /// This version's CurrentCoverage value is allowed to regress to a lower value after being instantiated. 
+    /// <remarks>It keeps track of the previous coverage high (DatedCoverage) along with the date it was obtained (DateStamp), 
+    /// so that the player 'remembers' how much was known at a particular point in time, 
+    /// even if CurrentCoverage has regressed since that high.</remarks>
     /// </summary>
-    public class Intel : AIntel {
+    public class RegressibleIntel : AIntel {
 
         /// <summary>
         /// The DatedCoverage and DateStamp values spend much of their time reset to their default value.
@@ -33,7 +34,7 @@ namespace CodeEnv.Master.GameContent {
 
         private IntelCoverage _datedCoverage;
         /// <summary>
-        /// The highest level of data coverage previously achieved on this object, now out of date.
+        /// The highest level of intel coverage previously achieved on this object, now out of date.
         /// </summary>
         public IntelCoverage DatedCoverage {
             get { return _datedCoverage; }
@@ -47,21 +48,38 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public GameDate DateStamp { get; set; }
 
-        public Intel() : base() { }
+        /// <summary>
+        /// The lowest IntelCoverage value this Intel is allowed to regress too.
+        /// </summary>
+        private IntelCoverage _lowestRegressedCoverage;
 
         /// <summary>
-        /// Copy constructor. Initializes a new instance of the <see cref="Intel"/> class,
+        /// Initializes a new instance of the <see cref="RegressibleIntel"/> class.
+        /// </summary>
+        /// <param name="lowestRegressedCoverage">The lowest IntelCoverage value this Intel is allowed to regress too.</param>
+        public RegressibleIntel(IntelCoverage lowestRegressedCoverage) : base() {
+            _lowestRegressedCoverage = lowestRegressedCoverage;
+        }
+
+        /// <summary>
+        /// Copy constructor. Initializes a new instance of the <see cref="RegressibleIntel"/> class,
         /// a copy of <c>intelToCopy</c>.
         /// </summary>
         /// <param name="intelToCopy">The intel to copy.</param>
-        public Intel(Intel intelToCopy)
+        public RegressibleIntel(RegressibleIntel intelToCopy)
             : base(intelToCopy) {
             DatedCoverage = intelToCopy.DatedCoverage;
             DateStamp = intelToCopy.DateStamp;
+            _lowestRegressedCoverage = intelToCopy._lowestRegressedCoverage;
         }
 
         public override bool IsCoverageChangeAllowed(IntelCoverage newCoverage) {
-            return CurrentCoverage != newCoverage;
+            if (CurrentCoverage < _lowestRegressedCoverage) {
+                // CurrentCoverage has not yet been set at or above _lowestRegressedCoverage so any value is acceptable.
+                // Once CurrentCoverage becomes >= _lowestRegressedCoverage, it won't be able to be set back below _lowestRegressedCoverage.
+                return true;
+            }
+            return newCoverage >= _lowestRegressedCoverage;
         }
 
         /// <summary>

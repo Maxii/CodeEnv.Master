@@ -288,6 +288,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         // can be received when activation of sensors immediately finds another player
     }
 
+    protected void FinalInitialize_UponAwarenessOfFleetChanged(IFleetCmd_Ltd fleet, bool isAware) {
+        LogEvent();
+        // Nothing to do
+    }
+
     protected void FinalInitialize_ExitState() {
         LogEvent();
     }
@@ -324,6 +329,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected void Idling_UponEnemyDetected() {
         LogEvent();
         // TODO
+    }
+
+    protected void Idling_UponAwarenessOfFleetChanged(IFleetCmd_Ltd fleet, bool isAware) {
+        LogEvent();
+        // Nothing to do
     }
 
     protected void Idling_UponSubordinateElementDeath(AUnitElementItem deadSubordinateElement) {
@@ -399,17 +409,26 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         // TODO
     }
 
+    protected void ExecuteAttackOrder_UponEnemyDetected() {
+        LogEvent();
+        // TODO
+    }
+
+    protected void ExecuteAttackOrder_UponAwarenessOfFleetChanged(IFleetCmd_Ltd fleet, bool isAware) {
+        LogEvent();
+        if (fleet == _fsmTgt) {
+            D.Assert(!isAware); // can't become newly aware of a fleet we are attacking without first losing awareness
+                                // our attack target is the fleet we've lost awareness of
+            CurrentState = BaseState.Idling;
+        }
+    }
+
     protected void ExecuteAttackOrder_UponFsmTgtDeath(IMortalItem_Ltd deadFsmTgt) {
         LogEvent();
         if (_fsmTgt != deadFsmTgt) {
             D.Error("{0}.target {1} is not dead target {2}.", DebugName, _fsmTgt.DebugName, deadFsmTgt.DebugName);
         }
         // TODO Notify Superiors of success - unit target death
-    }
-
-    protected void ExecuteAttackOrder_UponEnemyDetected() {
-        LogEvent();
-        // TODO
     }
 
     protected void ExecuteAttackOrder_UponDeath() {

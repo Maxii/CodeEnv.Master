@@ -70,6 +70,11 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmd, ISettlementCm
         return new ItemHudManager(Publisher);
     }
 
+    public override void FinalInitialize() {
+        base.FinalInitialize();
+        IsOperational = true;
+    }
+
     #endregion
 
     public SettlementCmdReport GetReport(Player player) { return Publisher.GetReport(player); }

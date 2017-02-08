@@ -30,11 +30,18 @@ namespace CodeEnv.Master.GameContent {
 
         public new FacilityInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as FacilityInfoAccessController; } }
 
-        public override IntVector3 SectorID { get { return _sectorID; } }
 
         protected new FacilityHullEquipment HullEquipment { get { return base.HullEquipment as FacilityHullEquipment; } }
 
         private IntVector3 _sectorID;
+        public override IntVector3 SectorID {
+            get {
+                if (_sectorID == default(IntVector3)) {
+                    _sectorID = InitializeSectorID();
+                }
+                return _sectorID;
+            }
+        }
 
         #region Initialization 
 
@@ -60,6 +67,10 @@ namespace CodeEnv.Master.GameContent {
             Income = hullEquipment.Income;
         }
 
+        protected override AIntel MakeIntelInstance() {
+            return new RegressibleIntel(lowestRegressedCoverage: IntelCoverage.Basic);
+        }
+
         protected override AInfoAccessController InitializeInfoAccessController() {
             return new FacilityInfoAccessController(this);
         }
@@ -67,7 +78,6 @@ namespace CodeEnv.Master.GameContent {
         public override void FinalInitialize() {
             base.FinalInitialize();
             // Deployment has already occurred
-            _sectorID = InitializeSectorID();
         }
 
         private IntVector3 InitializeSectorID() {

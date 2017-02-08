@@ -117,7 +117,11 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
         set { Data.Owner = value; }
     }
 
-    protected PlayerAIManager OwnerAIMgr { get; private set; }  // will be null if Owner is NoPlayer
+    /// <summary>
+    /// The PlayerAIManager for the owner of this item. 
+    /// <remarks>Will be null if Owner is NoPlayer.</remarks>
+    /// </summary>
+    protected PlayerAIManager OwnerAIMgr { get; private set; }
 
     protected AInfoAccessController InfoAccessCntlr { get { return Data.InfoAccessCntlr; } }
 
@@ -168,17 +172,32 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
         _subscriptions.Add(Data.SubscribeToPropertyChanged<AItemData, bool>(d => d.IsOperational, IsOperationalPropChangedHandler));
     }
 
+    /// <summary>
+    /// Initializes the Owner's PlayerAIManager for this item. Returns <c>true</c>
+    /// if the OwnerAIMgr was initialized (aka the Owner is not NoPlayer), <c>false</c>
+    /// if the Owner is NoPlayer and OwnerAIMgr is null.
+    /// </summary>
+    /// <returns></returns>
+    protected virtual bool InitializeOwnerAIManager() {
+        if (Owner != TempGameValues.NoPlayer) {
+            OwnerAIMgr = _gameMgr.GetAIManagerFor(Owner);
+            return true;
+        }
+        OwnerAIMgr = null;
+        return false;
+    }
+
     protected sealed override void Start() {
         base.Start();
     }
 
     /// <summary>
     /// The final Initialization opportunity before CommenceOperations().
+    /// <remarks>Derived classes must set IsOperational to true after all FinalInitialization is complete.</remarks>
     /// </summary>
     public virtual void FinalInitialize() {
         Data.FinalInitialize();
-        D.Assert(IsOperational);
-        OwnerAIMgr = Owner != TempGameValues.NoPlayer ? _gameMgr.GetAIManagerFor(Owner) : null;
+        InitializeOwnerAIManager();
     }
 
     #endregion
@@ -187,6 +206,7 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
     /// Called when the Item should begin operations.
     /// </summary>
     public virtual void CommenceOperations() {
+        D.Assert(IsOperational);
         D.Assert(_gameMgr.IsRunning);
         Data.CommenceOperations();
     }
@@ -223,26 +243,20 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
 
     private void OwnerPropChangingHandler(Player newOwner) {
         HandleOwnerChanging(newOwner);
-    }
-
-    protected virtual void HandleOwnerChanging(Player newOwner) {
-        if (Owner != TempGameValues.NoPlayer) {
-            HandleAIMgrLosingOwnership();
-        }
         OnOwnerChanging(newOwner);
     }
 
+    protected abstract void HandleOwnerChanging(Player newOwner);
+
     private void OwnerPropChangedHandler() {
         HandleOwnerChanged();
+        OnOwnerChanged();
     }
 
     protected virtual void HandleOwnerChanged() {
-        OwnerAIMgr = Owner != TempGameValues.NoPlayer ? _gameMgr.GetAIManagerFor(Owner) : null;
-        if (OwnerAIMgr != null) {
-            HandleAIMgrGainedOwnership();
-        }
-        OnOwnerChanged();
+        InitializeOwnerAIManager();
     }
+
 
     private void InputModePropChangedHandler() {
         HandleInputModeChanged(_inputMgr.InputMode);
@@ -287,47 +301,6 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
 
     #endregion
 
-    /// <summary>
-    /// Handles AIMgr notifications when the current Owner just gained ownership of this item.
-    /// <remarks>Warning: The item handler that calls this method gets subscribed to data's owner property change once data has been 
-    /// assigned to this item. All Items get assigned their initial owner via the Data constructor. As a result, this method is not be 
-    /// called on the initial owner change. This doesn't matter for celestial objects (planets, stars, etc) as their initial owner is 
-    /// NoPlayer. Subsequent owner changes, if any, all take place during runtime when this handler will fire. However, for Unit cmds 
-    /// and elements, their initial owner is an actual player assigned prior to commencing operation. Accordingly, it is the responsibility 
-    /// of the UnitCreator to inform the first owner's PlayerAIMgr of their ownership using PlayerAIMgr.HandleGainedItemOwnership() just 
-    /// prior to commencing operation. IMPROVE There is another way to handle this - take the owner out of the Data.Constructor and assign 
-    /// the owner (including NoPlayer) just prior to commencing operation. As a result, PlayerAIMgr's knowledge of ownership would be 
-    /// completely handled by the Item's OwnerChanging/Changed handlers and this exception that requires the UnitCreator to handle it 
-    /// would be eliminated.</remarks>
-    /// </summary>
-    protected virtual void HandleAIMgrGainedOwnership() {
-        D.AssertEqual(OwnerAIMgr.Owner, Owner);
-        OwnerAIMgr.HandleGainedItemOwnership(this);
-
-        IEnumerable<Player> allies;
-        if (TryGetAllies(out allies)) {
-            allies.ForAll(ally => {
-                var allyAIMgr = _gameMgr.GetAIManagerFor(ally);
-                allyAIMgr.HandleChgdItemOwnerIsAlly(this);
-            });
-        }
-    }
-
-    /// <summary>
-    /// Handles the condition where the current Owner of this item is about to be replaced by another owner.
-    /// </summary>
-    protected virtual void HandleAIMgrLosingOwnership() {
-        D.AssertEqual(OwnerAIMgr.Owner, Owner);
-        D.AssertNotEqual(TempGameValues.NoPlayer, Owner);
-        OwnerAIMgr.HandleLosingItemOwnership(this);
-    }
-
-    private bool TryGetAllies(out IEnumerable<Player> alliedPlayers) {
-        D.AssertNotEqual(TempGameValues.NoPlayer, Owner);
-        alliedPlayers = Owner.GetOtherPlayersWithRelationship(DiplomaticRelationship.Alliance);
-        return alliedPlayers.Any();
-    }
-
     #region Cleanup
 
     protected sealed override void OnDestroy() {
@@ -362,8 +335,6 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
     /// </summary>
     public bool ShowDebugLog { get; private set; }
 
-    public Player Owner_Debug { get { return Data.Owner; } }
-
     private const string AItemDebugLogEventMethodNameFormat = "{0}.{1}()";
 
     /// <summary>
@@ -376,6 +347,54 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
             string fullMethodName = AItemDebugLogEventMethodNameFormat.Inject(DebugName, methodName);
             Debug.Log("{0} beginning execution.".Inject(fullMethodName));
         }
+    }
+
+    #endregion
+
+    #region Archive
+
+    /// <summary>
+    /// Handles AIMgr notifications when the current Owner just gained ownership of this item.
+    /// <remarks>Warning: The item handler that calls this method gets subscribed to data's owner property change once data has been 
+    /// assigned to this item. All Items get assigned their initial owner via the Data constructor. As a result, this method is not 
+    /// called on the initial owner change. This doesn't matter for celestial objects (planets, stars, etc) as their initial owner is 
+    /// NoPlayer. Subsequent owner changes, if any, all take place during runtime when this handler will fire. However, for Unit cmds 
+    /// and elements, their initial owner is an actual player assigned prior to commencing operation. Accordingly, it is the responsibility 
+    /// of the UnitCreator to inform the first owner's PlayerAIMgr of their ownership using PlayerAIMgr.HandleGainedItemOwnership() just 
+    /// prior to commencing operation. IMPROVE There is another way to handle this - take the owner out of the Data.Constructor and assign 
+    /// the owner (including NoPlayer) just prior to commencing operation. As a result, PlayerAIMgr's knowledge of ownership would be 
+    /// completely handled by the Item's OwnerChanging/Changed handlers and this exception that requires the UnitCreator to handle it 
+    /// would be eliminated.</remarks>
+    /// </summary>
+    [Obsolete]
+    protected virtual void HandleAIMgrGainedOwnership() {
+        D.AssertEqual(OwnerAIMgr.Owner, Owner);
+        OwnerAIMgr.HandleGainedItemOwnership(this);
+
+        IEnumerable<Player> allies;
+        if (TryGetAllies(out allies)) {
+            allies.ForAll(ally => {
+                var allyAIMgr = _gameMgr.GetAIManagerFor(ally);
+                allyAIMgr.HandleChgdItemOwnerIsAlly(this);
+            });
+        }
+    }
+
+    /// <summary>
+    /// Handles the condition where the current Owner of this item is about to be replaced by another owner.
+    /// </summary>
+    [Obsolete]
+    protected virtual void HandleAIMgrLosingOwnership() {
+        D.AssertEqual(OwnerAIMgr.Owner, Owner);
+        D.AssertNotEqual(TempGameValues.NoPlayer, Owner);
+        OwnerAIMgr.HandleLosingItemOwnership(this);
+    }
+
+    [Obsolete]
+    private bool TryGetAllies(out IEnumerable<Player> alliedPlayers) {
+        D.AssertNotEqual(TempGameValues.NoPlayer, Owner);
+        alliedPlayers = Owner.GetOtherPlayersWithRelationship(DiplomaticRelationship.Alliance);
+        return alliedPlayers.Any();
     }
 
     #endregion
@@ -393,6 +412,8 @@ public abstract class AItem : AMonoBase, IItem, IItem_Ltd, IShipNavigable {
     #endregion
 
     #region IItem_Ltd Members
+
+    public Player Owner_Debug { get { return Data.Owner; } }
 
     public bool TryGetOwner(Player requestingPlayer, out Player owner) {
         if (InfoAccessCntlr.HasAccessToInfo(requestingPlayer, ItemInfoID.Owner)) {

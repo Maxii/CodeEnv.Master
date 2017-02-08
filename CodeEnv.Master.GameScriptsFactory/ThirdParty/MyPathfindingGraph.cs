@@ -898,15 +898,21 @@ namespace Pathfinding {
             }
 
             // ... and then the walkable outer approach waypoints
+            IList<Vector3> approachWaypointsToRemove = new List<Vector3>(); // avoids modifying approachWaypoints while iterating
             approachWaypoints.AddRange(MyMath.CalcVerticesOfInscribedCubeInsideSphere(starbaseCmd.Position, _nodeSeparationDistance));
 
             float universeRadiusSqrd = GameManager.Instance.GameSettings.UniverseSize.Radius() * GameManager.Instance.GameSettings.UniverseSize.Radius();
             foreach (var waypoint in approachWaypoints) {
                 if (!IsInsideUniverseBoundaries(waypoint, universeRadiusSqrd)) {
                     D.Warn("{0} is excluding {1}'s proposed approach waypoint that is outside the universe.", DebugName, starbaseCmd.DebugName);
-                    approachWaypoints.Remove(waypoint);
+                    approachWaypointsToRemove.Add(waypoint);
                 }
             }
+
+            foreach (var waypoint in approachWaypointsToRemove) {
+                approachWaypoints.Remove(waypoint);
+            }
+            approachWaypointsToRemove.Clear();
 
             ISystem systemInSector;
             bool doesSectorContainSystem = GameManager.Instance.GameKnowledge.TryGetSystem(sectorID, out systemInSector);
@@ -915,9 +921,13 @@ namespace Pathfinding {
                     if (MyMath.IsPointOnOrInsideSphere(systemInSector.Position, systemInSector.Radius, waypoint)) {
                         // FIXME warn for now as I should preclude locating a Starbase close to a system
                         D.Warn("{0} is excluding {1}'s proposed approach waypoint that is inside adjacent System {2}.", DebugName, starbaseCmd.DebugName, systemInSector.DebugName);
-                        approachWaypoints.Remove(waypoint);
+                        approachWaypointsToRemove.Add(waypoint);
                     }
                 }
+            }
+
+            foreach (var waypoint in approachWaypointsToRemove) {
+                approachWaypoints.Remove(waypoint);
             }
 
             int nextNodeIndex = nodeCount;

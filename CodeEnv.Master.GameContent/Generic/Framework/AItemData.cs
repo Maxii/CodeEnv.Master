@@ -76,6 +76,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="owner">The owner.</param>
         public AItemData(IItem item, Player owner) {
             Item = item;
+            D.AssertNotNull(owner, DebugName);  // owner can be NoPlayer but never null
             _owner = owner;
             // 7.9.16 Initialize(); now called by AItem.InitializeOnData to move out of constructor
         }
@@ -91,8 +92,9 @@ namespace CodeEnv.Master.GameContent {
         /// providing an opportunity to complete initialization before CommenceOperations is called.
         /// </summary>
         public virtual void FinalInitialize() {
-            // 8.1.16 moved from CommenceOperations to allow all items to be IsOperational before the first Item.CommenceOperations is called
-            IsOperational = true;
+            // 8.1.16 moved IsOperational = true here from CommenceOperations to allow all items to be IsOperational 
+            // before the first Item.CommenceOperations is called.
+            // 2.6.17 moved IsOperational = true to last thing Item does in FinalInitialize. Its presence here was the first thing that happened.
         }
 
         #endregion
@@ -114,11 +116,12 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void OwnerPropChangedHandler() {
+            D.AssertNotNull(Owner, DebugName);  // owner can be NoPlayer but never null
             HandleOwnerChanged();
         }
 
         protected virtual void HandleOwnerChanged() {
-            //D.Log(ShowDebugLog, "{0} Owner has changed to {1}.", DebugName, Owner.LeaderName);
+            //D.Log(ShowDebugLog, "{0} Owner has changed to {1}.", DebugName, Owner);
         }
 
         private void TopographyPropChangedHandler() {

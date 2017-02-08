@@ -50,6 +50,13 @@ namespace CodeEnv.Master.GameContent {
             _detectionLookup = new Dictionary<Player, IDictionary<RangeCategory, IList<IUnitCmd_Ltd>>>(_gameMgr.AllPlayers.Count);
         }
 
+        /// <summary>
+        /// Handles detection by <c>detectingPlayer</c>'s <c>cmdItem</c>.
+        /// <remarks>2.6.17 Removed use of obsolete UpdatePlayerKnowledge(). Knowledge now updated as a result of IntelCoverage changes.</remarks>
+        /// </summary>
+        /// <param name="detectingPlayer">The detecting player.</param>
+        /// <param name="cmdItem">The command item.</param>
+        /// <param name="sensorRange">The sensor range.</param>
         public void HandleDetectionBy(Player detectingPlayer, IUnitCmd_Ltd cmdItem, RangeCategory sensorRange) {
             if (!_item.IsOperational) {
                 D.Error("{0} should not be detected by {1} when dead!", _item.DebugName, cmdItem.DebugName);
@@ -78,18 +85,11 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(!cmds.Contains(cmdItem), cmdItem.DebugName);
             cmds.Add(cmdItem);
 
-            // The following returns can not move earlier in method as detection state must be kept current to support Reset
+            // The following returns can not move earlier in method as _detectionLookup must be kept current to support Reset
             if (_debugControls.IsAllIntelCoverageComprehensive) {
                 // Should already be set to comprehensive during game startup
                 __ValidatePlayerIntelCoverageOfItemIsComprehensive(detectingPlayer);
-                // Note: this debug setting DOES NOT pre-populate all player's knowledge
-                if (_item.Owner.IsRelationshipWith(detectingPlayer, DiplomaticRelationship.Alliance, DiplomaticRelationship.Self)) {
-                    // even with DebugSettings all coverage comprehensive, still no reason to update if Alliance or Self
-                    __ValidatePlayerIntelCoverageOfItemIsComprehensive(detectingPlayer);    // UNCLEAR why called again?
-                    __ValidatePlayerKnowledgeOfItem(detectingPlayer);
-                    return;
-                }
-                UpdatePlayerKnowledge(detectingPlayer);
+                __ValidatePlayerKnowledgeOfItem(detectingPlayer);
                 return; // continuing could regress coverage on items that allow it
             }
 
@@ -103,11 +103,15 @@ namespace CodeEnv.Master.GameContent {
             Profiler.BeginSample("AssignDetectingPlayerIntelCoverage", (_item as Component).gameObject);
             AssignDetectingPlayerIntelCoverage(detectingPlayer);
             Profiler.EndSample();
-            Profiler.BeginSample("UpdatePlayerKnowledge", (_item as Component).gameObject);
-            UpdatePlayerKnowledge(detectingPlayer);
-            Profiler.EndSample();
         }
 
+        /// <summary>
+        /// Handles detection lost by <c>detectingPlayer</c>'s <c>cmdItem</c>.
+        /// <remarks>2.6.17 Removed use of obsolete UpdatePlayerKnowledge(). Knowledge now updated as a result of IntelCoverage changes.</remarks>
+        /// </summary>
+        /// <param name="detectingPlayer">The detecting player.</param>
+        /// <param name="cmdItem">The command item.</param>
+        /// <param name="sensorRange">The sensor range.</param>
         public void HandleDetectionLostBy(Player detectingPlayer, IUnitCmd_Ltd cmdItem, RangeCategory sensorRange) {
             D.AssertNotDefault((int)sensorRange);
             if (!_item.IsOperational) {    // 7.20.16 detected items no longer notified of lost detection when they die
@@ -140,7 +144,7 @@ namespace CodeEnv.Master.GameContent {
             if (_debugControls.IsAllIntelCoverageComprehensive) {
                 // Should already be set to comprehensive during game startup
                 __ValidatePlayerIntelCoverageOfItemIsComprehensive(detectingPlayer);
-                __ValidatePlayerKnowledgeOfItem(detectingPlayer);   // must have already detected item to have lost it
+                __ValidatePlayerKnowledgeOfItem(detectingPlayer);   //// must have already detected item to have lost it
                 return; // continuing could regress coverage on items that allow it
             }
 
@@ -152,7 +156,6 @@ namespace CodeEnv.Master.GameContent {
             }
 
             AssignDetectingPlayerIntelCoverage(detectingPlayer);
-            UpdatePlayerKnowledge(detectingPlayer);
         }
 
         /// <summary>
@@ -167,6 +170,8 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Assesses and assigns the Item's IntelCoverage for this <c>player</c>.
         /// Makes no changes if item Owner is allied with player.
+        /// <remarks>Player can be self when the current owner is losing ownership and needs to 
+        /// reassess their coverage (and knowledge) of their [about to be former] item.</remarks>
         /// </summary>
         /// <param name="player">The player.</param>
         private void AssignIntelCoverage(Player player) {
@@ -174,9 +179,6 @@ namespace CodeEnv.Master.GameContent {
             D.AssertNotEqual(TempGameValues.NoPlayer, player);
             D.Assert(!_debugControls.IsAllIntelCoverageComprehensive);
             D.Assert(!_item.Owner.IsRelationshipWith(player, DiplomaticRelationship.Alliance));
-
-            // Note: Player can be self when the current owner is losing ownership and needs to reassess their coverage
-            // and knowledge of their (about to be former) item
 
             IntelCoverage newCoverage;
             IDictionary<RangeCategory, IList<IUnitCmd_Ltd>> rangeLookup;
@@ -201,28 +203,6 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private void UpdatePlayerKnowledge(Player player) {
-            D.Assert(!_item.Owner.IsRelationshipWith(player, DiplomaticRelationship.Alliance));
-
-            // Notes: 
-            // 1)   AllIntelCoverageComprehensive does not pre-populate all player's knowledge so this can still be called 
-            //      when player first detects this item
-            // 2)   Player can be self when the current owner is losing ownership and needs to reassess their coverage
-            //      and knowledge of their (about to be former) item
-
-            var playerAiMgr = _gameMgr.GetAIManagerFor(player);
-
-            IDictionary<RangeCategory, IList<IUnitCmd_Ltd>> rangeLookup;
-            if (!_detectionLookup.TryGetValue(player, out rangeLookup)) {
-                playerAiMgr.HandleItemDetectionLost(_item as ISensorDetectable);
-            }
-            else {
-                // there are one or more DistanceRange keys so some Cmd of player has this item in sensor range
-                D.Assert(rangeLookup.Keys.Count > Constants.Zero);
-                playerAiMgr.HandleItemDetection(_item as ISensorDetectable);
-            }
-        }
-
         #region Event and Property Change Handlers
 
         // 8.3.16 Owner changing/changed now handled by Items
@@ -230,8 +210,8 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         /// <summary>
-        /// Reassesses the player's coverage and knowledge of this item based on 
-        /// current detection levels.
+        /// Reassesses the player's IntelCoverage of this item based on current detection levels.
+        /// <remarks>If IntelCoverage is changed as a result, this can affect <c>player</c>'s knowledge of the item.</remarks>
         /// </summary>
         /// <param name="player">The player.</param>
         public void ResetBasedOnCurrentDetection(Player player) {
@@ -239,15 +219,13 @@ namespace CodeEnv.Master.GameContent {
                 // player must already know about this item to call this so can't lose knowledge once Comprehensive and aware of it
                 return;
             }
-            AssignIntelCoverage(player);
-
             // by definition, the player must have knowledge of the item before reassessing that knowledge
             __ValidatePlayerKnowledgeOfItem(player);
-            UpdatePlayerKnowledge(player);
+
+            AssignIntelCoverage(player);
         }
 
         private void Cleanup() { }
-
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
@@ -315,37 +293,32 @@ namespace CodeEnv.Master.GameContent {
             _alreadyDisposed = true;
         }
 
-        #endregion 
+        #endregion
 
         #region Archive
 
-        //private void AssessPlayerIntelState(Player player) {
-        //    IDictionary<DistanceRange, IList<ICommandItem>> rangeLookup;
-        //    if (!_detectionLookup.TryGetValue(player, out rangeLookup)) {
-        //        D.Error("{0} found no Sensor Range lookup. Player: {1}.", _data.DebugName, player.LeaderName);
-        //        return;
-        //    }
-        //    IntelCoverage newCoverage;
-        //    if (player == _data.Owner) {
-        //        newCoverage = IntelCoverage.Comprehensive;
-        //    }
-        //    else if (rangeLookup.ContainsKey(DistanceRange.Short)) {
-        //        newCoverage = IntelCoverage.Moderate;
-        //    }
-        //    else if (rangeLookup.ContainsKey(DistanceRange.Medium)) {
-        //        newCoverage = IntelCoverage.Minimal;
-        //    }
-        //    else if (rangeLookup.ContainsKey(DistanceRange.Long)) {
-        //        newCoverage = IntelCoverage.Aware;
-        //    }
-        //    else {
-        //        newCoverage = IntelCoverage.None;
-        //    }
+        [Obsolete]
+        private void UpdatePlayerKnowledge(Player player) {
+            D.Assert(!_item.Owner.IsRelationshipWith(player, DiplomaticRelationship.Alliance));
 
-        //    if (_data.TrySetIntelCoverage(player, newCoverage)) {
-        //        D.Log("{0} successfully set {1}'s IntelCoverage to {2}.", _data.DebugName, player.LeaderName, newCoverage.GetValueName());
-        //    }
-        //}
+            // Notes: 
+            // 1)   AllIntelCoverageComprehensive does not pre-populate all player's knowledge so this can still be called 
+            //      when player first detects this item
+            // 2)   Player can be self when the current owner is losing ownership and needs to reassess their coverage
+            //      and knowledge of their (about to be former) item
+
+            var playerAiMgr = _gameMgr.GetAIManagerFor(player);
+
+            IDictionary<RangeCategory, IList<IUnitCmd_Ltd>> rangeLookup;
+            if (!_detectionLookup.TryGetValue(player, out rangeLookup)) {
+                playerAiMgr.HandleItemDetectionLost(_item as ISensorDetectable);
+            }
+            else {
+                // there are one or more DistanceRange keys so some Cmd of player has this item in sensor range
+                D.Assert(rangeLookup.Keys.Count > Constants.Zero);
+                playerAiMgr.HandleItemDetection(_item as ISensorDetectable);
+            }
+        }
 
         #endregion
 

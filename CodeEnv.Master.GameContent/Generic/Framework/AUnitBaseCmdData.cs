@@ -43,7 +43,9 @@ namespace CodeEnv.Master.GameContent {
         private IntVector3 _sectorID;
         public override IntVector3 SectorID {
             get {
-                D.AssertNotDefault(_sectorID, "SectorID has not been set.");
+                if (_sectorID == default(IntVector3)) {
+                    _sectorID = InitializeSectorID();
+                }
                 return _sectorID;
             }
         }
@@ -53,11 +55,13 @@ namespace CodeEnv.Master.GameContent {
         public AUnitBaseCmdData(IUnitCmd cmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, UnitCmdStat cmdStat)
             : base(cmd, owner, passiveCMs, cmdStat) { }
 
+        protected override AIntel MakeIntelInstance() {
+            return new RegressibleIntel(lowestRegressedCoverage: IntelCoverage.Basic);
+        }
+
         public override void FinalInitialize() {
             base.FinalInitialize();
             // Deployment has already occurred
-            // D.Log("{0}.FinalInitialize() called. Initializing SectorID.", DebugName);
-            _sectorID = InitializeSectorID();
         }
 
         private IntVector3 InitializeSectorID() {

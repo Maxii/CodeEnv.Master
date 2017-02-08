@@ -95,10 +95,8 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        protected override AIntel MakeIntel(IntelCoverage initialcoverage) {
-            var intel = new ImprovingIntel();
-            intel.InitializeCoverage(initialcoverage);
-            return intel;
+        protected override AIntel MakeIntelInstance() {
+            return new NonRegressibleIntel();
         }
 
         #region Event and Property Change Handlers

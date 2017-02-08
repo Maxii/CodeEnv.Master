@@ -77,6 +77,7 @@ public class FleetCreator : AAutoUnitCreator {
         _gameMgr.GameKnowledge.AddUnit(_command, _elements.Cast<IUnitElement>());
     }
 
+    [Obsolete]
     protected override void AddUnitToOwnerAndAllysKnowledge() {
         LogEvent();
         //D.Log(ShowDebugLog, "{0} is adding Unit {1} to {2}'s Knowledge.", DebugName, UnitName, Owner);

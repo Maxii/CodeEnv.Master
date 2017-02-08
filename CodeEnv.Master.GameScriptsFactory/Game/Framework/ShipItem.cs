@@ -193,6 +193,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     public override void FinalInitialize() {
         base.FinalInitialize();
         CurrentState = ShipState.FinalInitialize;   //= ShipState.Idling;
+        IsOperational = true;
     }
 
     #endregion
@@ -269,18 +270,43 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         if (IsOperational) {    // avoid initiating collision avoidance if dead but not yet destroyed
             // Note: no need to filter out other colliders as the CollisionDetection layer 
             // can only interact with itself or the AvoidableObstacle layer. Both use SphereColliders
-            __WarnIfOrbitalEncounter(obstacle);
+
+            if (IsInOrbit) {
+                // FixedJoint already attached so can't move
+                D.AssertNotNull(_orbitingJoint);
+                if (_obstaclesCollidedWithWhileInOrbit == null) {
+                    _obstaclesCollidedWithWhileInOrbit = new List<IObstacle>(2);
+                }
+                D.Assert(!_obstaclesCollidedWithWhileInOrbit.Contains(obstacle));
+                _obstaclesCollidedWithWhileInOrbit.Add(obstacle);
+
+                if (ShowDebugLog) {
+                    string orbitStateMsg = IsInCloseOrbit ? "in close " : "in high ";
+                    D.Log("{0} has recorded a pending collision with {1} while {2} orbit of {3}.", DebugName, obstacle.DebugName, orbitStateMsg, _itemBeingOrbited.DebugName);
+                }
+                return;
+            }
+
+            // If in process of AssumingCloseOrbit, AssumingCloseOrbit_EnterState will wait until no longer colliding
+            // (aka Helm.IsActivelyUnderway == false) before completing orbit assumption.
+            // If in process of AssumingHighOrbit after executing a move, ExecuteMoveOrder_EnterState will wait until no longer colliding
+            // (aka Helm.IsActivelyUnderway == false) before completing orbit assumption.
+
             _helm.HandlePendingCollisionWith(obstacle);
         }
     }
 
     public void HandlePendingCollisionAverted(IObstacle obstacle) {
         if (IsOperational) {
+            if (_obstaclesCollidedWithWhileInOrbit != null && _obstaclesCollidedWithWhileInOrbit.Contains(obstacle)) {
+                _obstaclesCollidedWithWhileInOrbit.Remove(obstacle);
+                return;
+            }
             _helm.HandlePendingCollisionAverted(obstacle);
         }
     }
 
-    public override void HandleLocalPositionManuallyChanged() {
+    public override void __HandleLocalPositionManuallyChanged() {
         // Nothing to do as manual reposition only occurs when the formation is initially changed before the ship becomes operational
     }
 
@@ -433,7 +459,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             }
         }
         if (!OwnerAIMgr.HasKnowledgeOf(target as IItem_Ltd)) {
-            D.Error("{0} received {1} order with Target {2} that {3} has no knowledge of.", DebugName, directive.GetValueName(), target.DebugName, Owner.LeaderName);
+            D.Warn("{0} received {1} order with Target {2} that Owner {3} has no knowledge of.", DebugName, directive.GetValueName(), target.DebugName, Owner.LeaderName);
         }
     }
 
@@ -827,12 +853,25 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
         IShipOrbitable highOrbitTgt;
         if (__TryValidateRightToAssumeHighOrbit(_fsmTgt, out highOrbitTgt)) {
-            GameDate errorDate = new GameDate(new GameTimeDuration(3F));    // HACK
+            GameDate warnDate = new GameDate(new GameTimeDuration(4F));    // HACK  // 2.8.17 Warning at 3F
+            GameDate errorDate = default(GameDate);
             GameDate currentDate;
+            bool isWarned = false;
             while (!AttemptHighOrbitAround(highOrbitTgt)) {
-                // wait here until high orbit is assumed
-                if ((currentDate = _gameTime.CurrentDate) > errorDate) {
-                    D.Warn("{0}: CurrentDate {1} > ErrorDate {2} while assuming high orbit.", DebugName, currentDate, errorDate);
+                // wait here until high orbit is attained
+                if ((currentDate = _gameTime.CurrentDate) > warnDate) {
+                    if (!isWarned) {
+                        D.Warn("{0}: CurrentDate {1} > WarnDate {2} while assuming high orbit around {3}.", DebugName, currentDate, warnDate, highOrbitTgt.DebugName);
+                        isWarned = true;
+                    }
+                    if (errorDate == default(GameDate)) {
+                        errorDate = new GameDate(warnDate, GameTimeDuration.OneDay);
+                    }
+                    else {
+                        if (currentDate > errorDate) {
+                            D.Error("{0} wait while assuming high orbit has timed out.", DebugName);
+                        }
+                    }
                 }
                 yield return null;
             }
@@ -1372,7 +1411,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
         IShipCloseOrbitable closeOrbitTgt = _fsmTgt as IShipCloseOrbitable;
         D.Assert(closeOrbitTgt != null);
-        // Note: _fsmTgt (now closeOrbitTgt) death has already been subscribed too if it can
+        // Note: _fsmTgt (now closeOrbitTgt) death has already been subscribed too if _fsmTgt is mortal
     }
 
     IEnumerator AssumingCloseOrbit_EnterState() {
@@ -1386,23 +1425,21 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         float apTgtStandoffDistance = CollisionDetectionZoneRadius;
         AutoPilotDestinationProxy closeOrbitApTgtProxy = closeOrbitApTgt.GetApMoveTgtProxy(apTgtOffset, apTgtStandoffDistance, Position);
         _helm.EngagePilotToMoveTo(closeOrbitApTgtProxy, Speed.Slow, isFleetwideMove: false);
+        // 2.8.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
+        // I think it is because there is a rare scenario where no yield return is encountered below this. 
+        // See http://answers.unity3d.com/questions/158917/error-quotmcoroutineenumeratorgchandle-0quot.html
         yield return null;
 
-        // Wait here until we arrive. When we arrive, AssumingCloseOrbit_UponApTargetReached() will disengage APilot
-        while (_helm.IsPilotEngaged) {
-            yield return null;
-        }
-
-        // Assume Orbit
-        GameDate warnDate = new GameDate(new GameTimeDuration(3F));    // HACK
         GameDate currentDate;
+        GameDate warnDate = new GameDate(GameTimeDuration.OneDay);    // HACK
         GameDate errorDate = default(GameDate);
         bool isWarned = false;
-        while (!AttemptCloseOrbitAround(closeOrbitTgt)) {
-            // wait here until close orbit is attained
+
+        // Wait here until we arrive. When we arrive, AssumingCloseOrbit_UponApTargetReached() will disengage APilot
+        while (_helm.IsPilotEngaged) {  // even if collision avoidance becomes engaged, pilot will remain engaged
             if ((currentDate = _gameTime.CurrentDate) > warnDate) {
                 if (!isWarned) {
-                    D.Warn("{0}: CurrentDate {1} > WarnDate {2} while assuming close orbit.", DebugName, currentDate, warnDate);
+                    D.Warn("{0}: CurrentDate {1} > WarnDate {2} while moving to close orbit around {3}.", DebugName, currentDate, warnDate, closeOrbitTgt.DebugName);
                     isWarned = true;
                 }
                 if (errorDate == default(GameDate)) {
@@ -1410,7 +1447,30 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 }
                 else {
                     if (currentDate > errorDate) {
-                        D.Error("{0} wait for close orbit has timed out.", DebugName);
+                        D.Error("{0} wait while moving to close orbit slot has timed out.", DebugName);
+                    }
+                }
+            }
+            yield return null;
+        }
+
+        // Assume Orbit
+        warnDate = new GameDate(new GameTimeDuration(5F));    // HACK   // 2.8.17 Warning at 3F
+        errorDate = default(GameDate);
+        isWarned = false;
+        while (!AttemptCloseOrbitAround(closeOrbitTgt)) {
+            // wait here until close orbit is attained
+            if ((currentDate = _gameTime.CurrentDate) > warnDate) {
+                if (!isWarned) {
+                    D.Warn("{0}: CurrentDate {1} > WarnDate {2} while assuming close orbit around {3}.", DebugName, currentDate, warnDate, closeOrbitTgt.DebugName);
+                    isWarned = true;
+                }
+                if (errorDate == default(GameDate)) {
+                    errorDate = new GameDate(warnDate, GameTimeDuration.OneDay);
+                }
+                else {
+                    if (currentDate > errorDate) {
+                        D.Error("{0} wait while assuming close orbit has timed out.", DebugName);
                     }
                 }
             }
@@ -2366,6 +2426,12 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     #region Orbit Support
 
     /// <summary>
+    /// List of obstacles (typically ships) collided with while in orbit. If the ship obstacle is present, once the 
+    /// collision is averted by the other ship, this ship won't attempt to HandlePendingCollisionAverted.
+    /// </summary>
+    private List<IObstacle> _obstaclesCollidedWithWhileInOrbit;
+
+    /// <summary>
     /// Assesses whether this ship should attempt to assume close orbit around the provided target.
     /// </summary>
     /// <param name="target">The target to assess close orbiting.</param>
@@ -2391,9 +2457,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     }
 
     /// <summary>
-    /// Tries to assume close orbit around the provided, already confirmed
-    /// closeOrbitTarget. Returns <c>true</c> once the ship is no longer
-    /// actively underway and close orbit has been assumed, <c>false</c> otherwise.
+    /// Tries to assume close orbit around the provided, already confirmed closeOrbitTarget. 
+    /// Returns <c>true</c> once the ship is no longer actively underway (including collision avoidance) 
+    /// and close orbit has been assumed, <c>false</c> otherwise.
     /// </summary>
     /// <param name="closeOrbitTgt">The close orbit target.</param>
     /// <returns></returns>
@@ -2412,16 +2478,16 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 mortalCloseOrbitTgt.deathOneShot += OrbitedObjectDeathEventHandler;
             }
             _itemBeingOrbited = closeOrbitTgt;
-            D.LogBold(ShowDebugLog, "{0} has assumed close orbit around {1}.", DebugName, closeOrbitTgt.DebugName);
+            D.Log(ShowDebugLog, "{0} has assumed close orbit around {1}.", DebugName, closeOrbitTgt.DebugName);
             return true;
         }
         return false;
     }
 
     /// <summary>
-    /// Tries to assume high orbit around the provided, already confirmed
-    /// highOrbitTarget. Returns <c>true</c> once the ship is no longer
-    /// actively underway and high orbit has been assumed, <c>false</c> otherwise.
+    /// Tries to assume high orbit around the provided, already confirmed highOrbitTarget. 
+    /// Returns <c>true</c> once the ship is no longer actively underway (including collision avoidance) 
+    /// and high orbit has been assumed, <c>false</c> otherwise.
     /// </summary>
     /// <param name="highOrbitTgt">The high orbit target.</param>
     /// <returns></returns>
@@ -3074,33 +3140,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         float calcVelocity = distanceTraveled / elapsedTime;
         D.Log(ShowDebugLog, "{0}.Rigidbody.velocity = {1} units/sec, ShipData.currentSpeed = {2} units/hour, Calculated Velocity = {3} units/sec.",
             DebugName, Rigidbody.velocity.magnitude, ActualSpeedValue, calcVelocity);
-    }
-
-    #endregion
-
-    #region Debug Orbit Collision Detection Reporting
-
-    private void __WarnIfOrbitalEncounter(IObstacle obstacle) {
-        if (CurrentState != ShipState.AssumingCloseOrbit && !IsInOrbit) {
-            return;
-        }
-        string orbitTgtMsg = null;
-        string orbitStateMsg = null;
-        if (CurrentState == ShipState.AssumingCloseOrbit) {
-            orbitStateMsg = "assuming close";
-            orbitTgtMsg = _fsmTgt.DebugName;
-        }
-        else if (IsInCloseOrbit) {
-            orbitStateMsg = "in close";
-            orbitTgtMsg = _itemBeingOrbited.DebugName;
-        }
-        else if (IsInHighOrbit) {
-            orbitStateMsg = "in high";
-            orbitTgtMsg = _itemBeingOrbited.DebugName;
-        }
-        //if (orbitStateMsg != null) {
-        D.Warn("{0} has recorded a pending collision with {1} while {2} orbit of {3}.", DebugName, obstacle.DebugName, orbitStateMsg, orbitTgtMsg);
-        //}
     }
 
     #endregion
@@ -4258,13 +4297,14 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                         IAvoidableObstacle newObstacle;
                         if (TryCheckForObstacleEnrouteTo(detourProxy, out newDetourProxy, out newObstacle, ref iterationCount)) {
                             if (obstacle == newObstacle) {
+                                // 2.7.17 UNCLEAR redundant? IAvoidableObstacle.GetDetour() should fail if can't get to detour, although check uses math rather than a ray
                                 D.Error("{0} generated detour {1} that does not get around obstacle {2}.", DebugName, newDetourProxy.DebugName, obstacle.DebugName);
                             }
                             else {
                                 D.Log(ShowDebugLog, "{0} found another obstacle {1} on the way to detour {2} around obstacle {3}.", DebugName, newObstacle.DebugName, detourProxy.DebugName, obstacle.DebugName);
                             }
                             detourProxy = newDetourProxy;
-                            //obstacle = newObstacle;
+                            obstacle = newObstacle; // UNCLEAR whether useful. 2.7.17 Only use is to compare whether obstacle is the same
                         }
                         isDetourGenerated = true;
                     }
@@ -4288,7 +4328,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         private bool TryGenerateDetourAroundObstacle(IAvoidableObstacle obstacle, RaycastHit zoneHitInfo, out AutoPilotDestinationProxy detourProxy) {
             detourProxy = GenerateDetourAroundObstacle(obstacle, zoneHitInfo);
             if (MyMath.DoesLineSegmentIntersectSphere(Position, detourProxy.Position, obstacle.Position, obstacle.__ObstacleZoneRadius)) {
-                // This can marginally fail when traveling as a fleet when the ship's FleetFormationStation is at the closest edge of the
+                // 1.26.17 This can marginally fail when traveling as a fleet when the ship's FleetFormationStation is at the closest edge of the
                 // formation to the obstacle. As the proxy incorporates this station offset into its "Position" to keep ships from bunching
                 // up when detouring as a fleet, the resulting detour destination can be very close to the edge of the obstacle's Zone.
                 // If/when this does occur, I expect the offset to be large.
@@ -4311,7 +4351,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 }
             }
             if (useDetour) {
-                D.Log(/*ShowDebugLog, */"{0} has generated detour {1} to get by obstacle {2} in Frame {3}. Reqd Turn = {4:0.#} degrees.", DebugName, detourProxy.DebugName, obstacle.DebugName, Time.frameCount, reqdTurnAngleToDetour);
+                D.Log(ShowDebugLog, "{0} has generated detour {1} to get by obstacle {2} in Frame {3}. Reqd Turn = {4:0.#} degrees.", DebugName, detourProxy.DebugName, obstacle.DebugName, Time.frameCount, reqdTurnAngleToDetour);
             }
             else {
                 D.Log(ShowDebugLog, "{0} has declined to use detour {1} to get by mobile obstacle {2}. Reqd Turn = {3:0.#} degrees.", DebugName, detourProxy.DebugName, obstacle.DebugName, reqdTurnAngleToDetour);
@@ -5377,22 +5417,33 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 D.Assert(!_caPropulsionJobs.ContainsKey(obstacle));
                 Vector3 worldSpaceDirectionToAvoidCollision = (_shipData.Position - obstacle.Position).normalized;
 
-                GameDate errorDate = new GameDate(new GameTimeDuration(5F));    // HACK
                 string jobName = "{0}.CollisionAvoidanceJob".Inject(DebugName);
-                Job caJob = _jobMgr.StartGameplayJob(OperateCollisionAvoidancePropulsionIn(worldSpaceDirectionToAvoidCollision, errorDate), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
+                Job caJob = _jobMgr.StartGameplayJob(OperateCollisionAvoidancePropulsionIn(worldSpaceDirectionToAvoidCollision), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
                     D.Assert(jobWasKilled); // CA Jobs never complete naturally
                 });
                 _caPropulsionJobs.Add(obstacle, caJob);
             }
 
-            private IEnumerator OperateCollisionAvoidancePropulsionIn(Vector3 worldSpaceDirectionToAvoidCollision, GameDate errorDate) {
+            private IEnumerator OperateCollisionAvoidancePropulsionIn(Vector3 worldSpaceDirectionToAvoidCollision) {
                 worldSpaceDirectionToAvoidCollision.ValidateNormalized();
+                GameDate warnDate = new GameDate(new GameTimeDuration(5F));    // HACK  // 2.8.17 Warning at 3F
+                GameDate errorDate = default(GameDate);
                 GameDate currentDate;
+                bool hasBeenWarned = false;
                 while (true) {
                     ApplyCollisionAvoidancePropulsionIn(worldSpaceDirectionToAvoidCollision);
                     currentDate = _gameTime.CurrentDate;
-                    if (currentDate > errorDate) {
-                        D.Warn("{0}: CurrentDate {1} > ErrorDate {2} while avoiding collision.", DebugName, currentDate, errorDate);
+                    if (currentDate > warnDate) {
+                        if (!hasBeenWarned) {
+                            D.Warn("{0}: CurrentDate {1} > WarnDate {2} while avoiding collision.", DebugName, currentDate, warnDate);
+                            hasBeenWarned = true;
+                        }
+                        if (errorDate == default(GameDate)) {
+                            errorDate = new GameDate(warnDate, GameTimeDuration.OneDay);
+                        }
+                        if (currentDate > errorDate) {
+                            D.Error("{0}.OperateCollisionAvoidancePropulsion has timed out.", DebugName);
+                        }
                     }
                     yield return Yielders.WaitForFixedUpdate;
                 }

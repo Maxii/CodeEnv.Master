@@ -283,7 +283,19 @@ namespace CodeEnv.Master.GameContent {
 
         protected virtual void HandleHQElementDataChanged() {
             D.Assert(_elementsData.Contains(HQElementData), HQElementData.DebugName);
+            // Align the IntelCoverage of this Cmd with that of its new HQ
+            var otherPlayers = _gameMgr.AllPlayers.Except(Owner);
+            foreach (var player in otherPlayers) {
+                IntelCoverage playerIntelCoverageOfNewHQ = HQElementData.GetIntelCoverage(player);
+                bool isPlayerIntelCoverageAccepted = SetIntelCoverage(player, playerIntelCoverageOfNewHQ);
+                // 2.6.17 FIXME It seems unlikely but possible that a new Facility HQ could have IntelCoverage.None when the
+                // previous HQ had > None, thereby attempting to illegally regress a BaseCmd's IntelCoverage to None from > None.
+                // Same thing could happen to FleetCmd except regress to None wouldn't be illegal. It WOULD result in the Fleet disappearing...
+                // Possible fixes: if illegal, force change of new HQ IntelCoverage to what old HQ was?
+                D.Assert(isPlayerIntelCoverageAccepted);
+            }
             HQElementData.intelCoverageChanged += HQElementIntelCoverageChangedEventHandler;
+
             Topography = GetTopography();
             HQElementData.topographyChanged += HQElementTopographyChangedEventHandler;
         }
@@ -298,8 +310,8 @@ namespace CodeEnv.Master.GameContent {
 
         private void HandleHQElementIntelCoverageChanged(Player playerWhosCoverageChgd) {
             var playerIntelCoverageOfHQElement = HQElementData.GetIntelCoverage(playerWhosCoverageChgd);
-            var isIntelCoverageSet = SetIntelCoverage(playerWhosCoverageChgd, playerIntelCoverageOfHQElement);
-            D.Assert(isIntelCoverageSet);
+            var isIntelCoverageAccepted = SetIntelCoverage(playerWhosCoverageChgd, playerIntelCoverageOfHQElement);
+            D.Assert(isIntelCoverageAccepted);
             //D.Log(ShowDebugLog, "{0}.HQElement's IntelCoverage for {1} has changed to {2}. {0} has assumed the same value.", 
             //    DebugName, playerWhosCoverageChgd.LeaderName, playerIntelCoverageOfHQElement.GetValueName());
         }

@@ -25,11 +25,14 @@ namespace CodeEnv.Master.GameContent {
 
         private IntelCoverage _currentCoverage;
         /// <summary>
-        /// The current level of data coverage achieved on this object.
+        /// The current level of IntelCoverage achieved on this object.
         /// </summary>
         public virtual IntelCoverage CurrentCoverage {
             get { return _currentCoverage; }
-            set { SetProperty<IntelCoverage>(ref _currentCoverage, value, "CurrentCoverage", null, CurrentCoveragePropChangingHandler); }
+            set {
+                D.Assert(IsCoverageChangeAllowed(value));
+                SetProperty<IntelCoverage>(ref _currentCoverage, value, "CurrentCoverage", null, CurrentCoveragePropChangingHandler);
+            }
         }
 
         public AIntel() { }
@@ -48,6 +51,14 @@ namespace CodeEnv.Master.GameContent {
             _currentCoverage = coverage;
         }
 
+        /// <summary>
+        /// Returns <c>true</c> if an assignment to newCoverage is allowed (including the case where newCoverage == CurrentCoverage), 
+        /// <c>false</c> if the assignment is not allowed due to the inability of IntelCoverage to regress to newCoverage.
+        /// </summary>
+        /// <param name="newCoverage">The new coverage.</param>
+        /// <returns>
+        ///   <c>true</c> if [is coverage change allowed] [the specified new coverage]; otherwise, <c>false</c>.
+        /// </returns>
         public abstract bool IsCoverageChangeAllowed(IntelCoverage newCoverage);
 
         #region Event and Property Change Handlers

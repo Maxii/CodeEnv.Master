@@ -151,10 +151,8 @@ namespace CodeEnv.Master.GameContent {
             AssessIntelCoverage();
         }
 
-        protected override AIntel MakeIntel(IntelCoverage initialcoverage) {
-            var intel = new ImprovingIntel();
-            intel.InitializeCoverage(initialcoverage);
-            return intel;
+        protected override AIntel MakeIntelInstance() {
+            return new NonRegressibleIntel();
         }
 
         #region Assess System IntelCoverage
@@ -189,14 +187,14 @@ namespace CodeEnv.Master.GameContent {
             }
 
             IntelCoverage lowestCommonCoverage = GetLowestCommonCoverage(_allMemberIntelCoverages);
-            var isCoverageSet = SetIntelCoverage(player, lowestCommonCoverage);
-            if (isCoverageSet) {
-                //D.Log(ShowDebugLog, "{0} has assessed its IntelCoverage for {1} and changed it from {2} to the lowest common member value {3}.",
-                //    DebugName, player.Name, GetIntelCoverage(player).GetValueName(), lowestCommonCoverage.GetValueName());
+            var isCoverageAccepted = SetIntelCoverage(player, lowestCommonCoverage);
+            if (isCoverageAccepted) {
+                //D.Log(ShowDebugLog, "{0} has assessed its IntelCoverage for {1} and set it to the lowest common member value {2}.",
+                //    DebugName, player.DebugName, lowestCommonCoverage.GetValueName());
             }
             else {
                 //D.Log(ShowDebugLog, "{0} has assessed its IntelCoverage for {1} and declined to change it from {2} to the lowest common member value {3}.",
-                //    DebugName, player.Name, GetIntelCoverage(player).GetValueName(), lowestCommonCoverage.GetValueName());
+                //    DebugName, player.DebugName, GetIntelCoverage(player).GetValueName(), lowestCommonCoverage.GetValueName());
             }
         }
 
@@ -227,7 +225,7 @@ namespace CodeEnv.Master.GameContent {
             // Existing settlements will always be destroyed (data = null) before changing to a new settlement
             if (SettlementData != null) {
                 SubscribeToSettlementDataValueChanges();
-                //D.Log("{0} is about to have its owner changed to {1}'s Owner {2}.", DebugName, SettlementData.DebugName, SettlementData.Owner);
+                //D.Log(ShowDebugLog, "{0} is about to have its owner changed to {1}'s Owner {2}.", DebugName, SettlementData.DebugName, SettlementData.Owner);
                 Owner = SettlementData.Owner;
             }
             else {

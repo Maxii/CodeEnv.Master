@@ -42,9 +42,13 @@ namespace CodeEnv.Master.GameContent {
 
         Vector3 Position { get; }
 
+        Player Owner_Debug { get; }
+
         bool TryGetOwner(Player requestingPlayer, out Player owner);
 
         bool IsOwnerAccessibleTo(Player player);
+
+
     }
 }
 

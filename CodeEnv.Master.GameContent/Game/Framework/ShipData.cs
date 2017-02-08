@@ -220,6 +220,10 @@ namespace CodeEnv.Master.GameContent {
             InitializeLocalValuesAndReferences();
         }
 
+        protected override AIntel MakeIntelInstance() {
+            return new RegressibleIntel(lowestRegressedCoverage: IntelCoverage.None);
+        }
+
         private void InitializeLocalValuesAndReferences() {
             _gameTime = GameTime.Instance;
             _intendedHeading = CurrentHeading;  // initialize to something other than Vector3.zero which causes problems with LookRotation
@@ -300,11 +304,6 @@ namespace CodeEnv.Master.GameContent {
         protected override void HandleTopographyChanged() {
             base.HandleTopographyChanged();
             CurrentDrag = OpenSpaceDrag * Topography.GetRelativeDensity();
-        }
-
-        protected override void HandleIntelCoverageChangedFor(Player player) {
-            base.HandleIntelCoverageChangedFor(player);
-            //D.Log(ShowDebugLog, "{0}.IntelCoverage changed for {1} to {2}.", DebugName, player, GetIntelCoverage(player).GetValueName());
         }
 
         #endregion

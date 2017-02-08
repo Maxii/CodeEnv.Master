@@ -132,6 +132,10 @@ namespace CodeEnv.Master.GameContent {
         public FleetCmdData(IFleetCmd fleetCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, UnitCmdStat cmdStat)
             : base(fleetCmd, owner, passiveCMs, cmdStat) { }
 
+        protected override AIntel MakeIntelInstance() {
+            return new RegressibleIntel(lowestRegressedCoverage: IntelCoverage.None);
+        }
+
         protected override AInfoAccessController InitializeInfoAccessController() {
             return new FleetInfoAccessController(this);
         }

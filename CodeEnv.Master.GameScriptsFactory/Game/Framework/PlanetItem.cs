@@ -37,17 +37,6 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
         set { base.Data = value; }
     }
 
-    //public override float ClearanceRadius {
-    //    get {
-    //        float baseClearance = Data.CloseOrbitOuterRadius;
-    //        if (ChildMoons.Any()) {
-    //            MoonItem outerMoon = ChildMoons.MaxBy(moon => Vector3.SqrMagnitude(moon.Position - Position));
-    //            float distanceToOuterMoon = Vector3.Distance(outerMoon.Position, Position);
-    //            baseClearance = distanceToOuterMoon + outerMoon.ObstacleZoneRadius;
-    //        }
-    //        return baseClearance * 2F;  // HACK
-    //    }
-    //}
     public override float ClearanceRadius {
         get {
             float baseClearance = Data.CloseOrbitOuterRadius;
@@ -75,27 +64,9 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
 
     protected new PlanetDisplayManager DisplayMgr { get { return base.DisplayMgr as PlanetDisplayManager; } }
 
-    //private DetourGenerator _detourGenerator;
     private IList<IShip_Ltd> _shipsInCloseOrbit;
 
     #region Initialization
-
-    //protected override void InitializeObstacleZone() {
-    //    base.InitializeObstacleZone();
-    //    ObstacleZoneCollider.radius = Data.CloseOrbitInnerRadius;
-    //    InitializeObstacleDetourGenerator();
-    //}
-
-    //private void InitializeObstacleDetourGenerator() {
-    //    if (IsMobile) {
-    //        Reference<Vector3> obstacleZoneCenter = new Reference<Vector3>(() => ObstacleZoneCollider.transform.TransformPoint(ObstacleZoneCollider.center));
-    //        _detourGenerator = new DetourGenerator(DebugName, obstacleZoneCenter, ObstacleZoneCollider.radius, Data.CloseOrbitOuterRadius);
-    //    }
-    //    else {
-    //        Vector3 obstacleZoneCenter = ObstacleZoneCollider.transform.TransformPoint(ObstacleZoneCollider.center);
-    //        _detourGenerator = new DetourGenerator(DebugName, obstacleZoneCenter, ObstacleZoneCollider.radius, Data.CloseOrbitOuterRadius);
-    //    }
-    //}
 
     protected override ADisplayManager MakeDisplayManagerInstance() {
         return new PlanetDisplayManager(this, __DetermineCullingLayer());
@@ -117,6 +88,11 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
 
     protected override float InitializeObstacleZoneRadius() {
         return Data.CloseOrbitInnerRadius;
+    }
+
+    public override void FinalInitialize() {
+        base.FinalInitialize();
+        IsOperational = true;
     }
 
     #endregion
@@ -372,29 +348,6 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
 
     #endregion
 
-    //#region IFleetNavigable Members
-
-    //public override float GetObstacleCheckRayLength(Vector3 fleetPosition) {
-    //    float radiusContainingKnownObstacles = ObstacleZoneRadius;
-    //    if (ChildMoons.Any()) {
-    //        MoonItem outerMoon = ChildMoons.MaxBy(moon => Vector3.SqrMagnitude(moon.Position - Position));
-    //        float distanceToOuterMoon = Vector3.Distance(outerMoon.Position, Position);
-    //        radiusContainingKnownObstacles = distanceToOuterMoon + outerMoon.ObstacleZoneRadius;
-    //    }
-    //    return Vector3.Distance(fleetPosition, Position) - radiusContainingKnownObstacles - TempGameValues.ObstacleCheckRayLengthBuffer; ;
-    //}
-    //public override float GetObstacleCheckRayLength(Vector3 fleetPosition) {
-    //    float radiusContainingKnownObstacles = _obstacleZoneCollider.radius;
-    //    if (ChildMoons.Any()) {
-    //        MoonItem outerMoon = ChildMoons.MaxBy(moon => Vector3.SqrMagnitude(moon.Position - Position));
-    //        float distanceToOuterMoon = Vector3.Distance(outerMoon.Position, Position);
-    //        radiusContainingKnownObstacles = distanceToOuterMoon + outerMoon.ObstacleZoneRadius;
-    //    }
-    //    return Vector3.Distance(fleetPosition, Position) - radiusContainingKnownObstacles - TempGameValues.ObstacleCheckRayLengthBuffer; ;
-    //}
-
-    //#endregion
-
     #region IShipNavigable Members
 
     public override AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition) {
@@ -414,21 +367,6 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
     }
 
     #endregion
-
-    //#region IAvoidableObstacle Members
-
-    //public override Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float shipOrFleetClearanceRadius) {
-    //    return _detourGenerator.GenerateDetourAtOrAroundObstaclePoles(shipOrFleetPosition, shipOrFleetClearanceRadius);
-    //}
-    //public override Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float shipOrFleetClearanceRadius) {
-    //    Vector3 detour = _detourGenerator.GenerateDetourAtObstaclePoles(shipOrFleetPosition, shipOrFleetClearanceRadius);
-    //    if (_detourGenerator.CheckIfDetourReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius)) {
-    //        return detour;
-    //    }
-    //    return _detourGenerator.GenerateDetourAroundObstaclePoles(shipOrFleetPosition, shipOrFleetClearanceRadius);
-    //}
-
-    //#endregion
 
     #region IShipExplorable Members
 

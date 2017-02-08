@@ -64,30 +64,40 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private AIntel InitializeIntelState(Player player) {
-            bool isCoverageComprehensive = References.DebugControls.IsAllIntelCoverageComprehensive || Owner == player;
-            // 8.1.16 OPTIMIZE alliance test may not be needed. Currently, new items created in runtime test for this in their creators
-            isCoverageComprehensive = isCoverageComprehensive || Owner.IsRelationshipWith(player, DiplomaticRelationship.Alliance);
-            var coverage = isCoverageComprehensive ? IntelCoverage.Comprehensive : DefaultStartingIntelCoverage;
-            return MakeIntel(coverage);
+            // 2.6.17 Moved decision of whether to use Comprehensive to Item.FinalInitialize which uses SetIntelCoverage().
+            // SetIntelCoverage is the single place which calls PlayerAIMgr.HandleItemIntelCoverageChanged() when IntelCoverage
+            // changes. This is the mechanism that manages a player's knowledge of an item. If the item's IntelCoverage > None,
+            // the player has knowledge of the item, if None it doesn't.
+            // WARNING: Using a DefaultStartingIntelCoverage value here besides None can result in SetIntelCoverage NOT calling 
+            // PlayerAIMgr.HandleItemIntelCoverageChanged() if in fact IntelCoverage is being set to the same value as that
+            // set here. This could result in the player not having knowledge of an item it should know about.
+            // Currently, only Stars and the UCenter start with a DefaultStartingIntelCoverage other than None -> Basic. This is not
+            // a problem as all Stars and UCenter are provided to PlayerKnowledge when instantiated and therefore don't rely
+            // on PlayerAIMgr.HandleItemIntelCoverageChanged() to populate a player's knowledge.
+            return InitializeIntel(DefaultStartingIntelCoverage);
         }
 
         #endregion
 
-        /// <summary>
-        /// Derived classes should override this if they have a different type of AIntel than <see cref="Intel" />.
-        /// </summary>
-        /// <param name="initialcoverage">The initial coverage.</param>
-        /// <returns></returns>
-        protected virtual AIntel MakeIntel(IntelCoverage initialcoverage) {
-            var intel = new Intel();
+        private AIntel InitializeIntel(IntelCoverage initialcoverage) {
+            var intel = MakeIntelInstance();
             intel.InitializeCoverage(initialcoverage);
             return intel;
         }
 
         /// <summary>
+        /// Derived classes should instantiate their own AIntel-derived instance.
+        /// </summary>
+        /// <returns></returns>
+        protected abstract AIntel MakeIntelInstance();
+
+        /// <summary>
         /// Sets the intel coverage for this player. Returns <c>true</c> if the <c>newCoverage</c>
-        /// was successfully applied, and <c>false</c> if it was rejected due to the inability of
+        /// was successfully accepted, <c>false</c> if it was rejected due to the inability of
         /// the item to regress its IntelCoverage.
+        /// <remarks>If newCoverage == CurrentCoverage, this method will return true as the value
+        /// was 'successfully accepted', but will not initiate any related coverage changed activity
+        /// since coverage properly stayed the same.</remarks>
         /// </summary>
         /// <param name="player">The player.</param>
         /// <param name="newCoverage">The new coverage.</param>
@@ -97,9 +107,17 @@ namespace CodeEnv.Master.GameContent {
             Profiler.BeginSample("AIntelItemData.SetIntelCoverage");
             var playerIntel = GetIntel(player);
             if (playerIntel.IsCoverageChangeAllowed(newCoverage)) {
-                playerIntel.CurrentCoverage = newCoverage;
-                HandleIntelCoverageChangedFor(player);
-                OnIntelCoverageChanged(player);
+                if (playerIntel.CurrentCoverage != newCoverage) {
+                    //D.Log(ShowDebugLog, "{0} is changing {1}'s IntelCoverage from {2} to {3}.", 
+                    //    DebugName, player.DebugName, playerIntel.CurrentCoverage.GetValueName(), newCoverage.GetValueName());
+                    playerIntel.CurrentCoverage = newCoverage;
+                    HandleIntelCoverageChangedFor(player);
+                    OnIntelCoverageChanged(player);
+                }
+                else {
+                    //D.Log(ShowDebugLog, "{0} has declined to change {1}'s IntelCoverage to {2} because its the same value.", 
+                    //    DebugName, player.DebugName, newCoverage.GetValueName());
+                }
                 Profiler.EndSample();
                 return true;
             }
@@ -124,10 +142,10 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         public AIntel GetIntelCopy(Player player) {
             AIntel intelToCopy = GetIntel(player);
-            if (intelToCopy is Intel) {
-                return new Intel(intelToCopy as Intel);
+            if (intelToCopy is RegressibleIntel) {
+                return new RegressibleIntel(intelToCopy as RegressibleIntel);
             }
-            return new ImprovingIntel(intelToCopy as ImprovingIntel);
+            return new NonRegressibleIntel(intelToCopy as NonRegressibleIntel);
         }
 
         private AIntel GetIntel(Player player) {
@@ -144,11 +162,16 @@ namespace CodeEnv.Master.GameContent {
         /// access to this knowledge stored in data by using the item's InfoAccessController.</remarks>
         /// </summary>
         /// <param name="player">The player.</param>
-        protected virtual void HandleIntelCoverageChangedFor(Player player) { }
+        protected virtual void HandleIntelCoverageChangedFor(Player player) {
+            D.Log(ShowDebugLog, "{0}.IntelCoverage changed for {1} to {2}.", DebugName, player, GetIntelCoverage(player).GetValueName());
+        }
 
         private void OnIntelCoverageChanged(Player player) {
             if (intelCoverageChanged != null) {
                 intelCoverageChanged(this, new IntelCoverageChangedEventArgs(player));
+            }
+            else {
+                D.Warn("{0} is not firing its intelCoverageChanged event as it has no subscribers.", DebugName);
             }
         }
 

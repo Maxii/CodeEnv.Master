@@ -40,7 +40,7 @@ namespace CodeEnv.Master.GameContent {
         private string ConstructIntelText(AIntel intel) {
             string intelMsg = intel.CurrentCoverage.GetValueName();
             string addendum = ". Intel is current.";
-            var intelWithDatedCoverage = intel as Intel;
+            var intelWithDatedCoverage = intel as RegressibleIntel;
             if (intelWithDatedCoverage != null && intelWithDatedCoverage.IsDatedCoverageValid) {
                 //D.Log("DateStamp = {0}, CurrentDate = {1}.", intelWithDatedCoverage.DateStamp, GameTime.Instance.CurrentDate);
                 GameTimeDuration intelAge = new GameTimeDuration(intelWithDatedCoverage.DateStamp, GameTime.Instance.CurrentDate);

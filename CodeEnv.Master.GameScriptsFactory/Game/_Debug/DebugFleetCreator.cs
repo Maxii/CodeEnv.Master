@@ -181,24 +181,6 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
         _gameMgr.GameKnowledge.AddUnit(_command, _elements.Cast<IUnitElement>());
     }
 
-    protected override void AddUnitToOwnerAndAllysKnowledge() {
-        LogEvent();
-        //D.Log(ShowDebugLog, "{0} is adding Unit {1} to {2}'s Knowledge.", DebugName, UnitName, Owner);
-        var ownerAIMgr = _gameMgr.GetAIManagerFor(Owner);
-        _elements.ForAll(e => ownerAIMgr.HandleGainedItemOwnership(e));
-        ownerAIMgr.HandleGainedItemOwnership(_command);    // OPTIMIZE not really needed as this happens automatically when elements handled?
-
-        var alliedPlayers = Owner.GetOtherPlayersWithRelationship(DiplomaticRelationship.Alliance);
-        if (alliedPlayers.Any()) {
-            alliedPlayers.ForAll(ally => {
-                //D.Log(ShowDebugLog, "{0} is adding Unit {1} to {2}'s Knowledge as Ally.", DebugName, UnitName, ally);
-                var allyAIMgr = _gameMgr.GetAIManagerFor(ally);
-                _elements.ForAll(e => allyAIMgr.HandleChgdItemOwnerIsAlly(e));
-                allyAIMgr.HandleChgdItemOwnerIsAlly(_command);  // OPTIMIZE not really needed as this happens automatically when elements handled?
-            });
-        }
-    }
-
     protected override void RegisterCommandForOrders() {
         var ownerAIMgr = _gameMgr.GetAIManagerFor(Owner);
         ownerAIMgr.RegisterForOrders(_command);
@@ -216,81 +198,6 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
 
     private void __SetFtlDamagedState(ShipItem element) {
         element.Data.IsFtlDamaged = _ftlStartsDamaged;
-    }
-
-    [Obsolete]
-    protected override void __IssueFirstUnitOrder(Action onCompleted) {
-        LogEvent();
-        //D.Log(ShowDebugLog, "{0} launching 1 hour wait on {1}. Frame {2}, UnityTime {3:0.0}, SystemTimeStamp {4}.", DebugName, GameTime.Instance.CurrentDate, Time.frameCount, Time.time, Utility.TimeStamp);
-
-        // The following delay avoids script execution order issue when this creator receives IsRunning before other creators
-        string jobName = "{0}.WaitToIssueFirstOrderJob".Inject(DebugName);
-        _jobMgr.WaitForHours(1F, jobName, waitFinished: delegate {    // makes sure Owner's knowledge of universe has been constructed before selecting its target
-            //D.Log(ShowDebugLog, "{0} finished 1 hour wait on {1}. Frame {2}, UnityTime {3:0.0}, SystemTimeStamp {4}.", DebugName, GameTime.Instance.CurrentDate, Time.frameCount, Time.time, Utility.TimeStamp);
-            if (_move) {
-                if (_attack) {
-                    __GetFleetAttackUnderway();
-                }
-                else {
-                    __GetFleetUnderway();
-                }
-            }
-            onCompleted();
-        });
-    }
-
-    [Obsolete]
-    private void __GetFleetUnderway() { // 7.12.16 Removed 'not enemy' criteria for move
-        LogEvent();
-        Player fleetOwner = Owner;
-        var fleetOwnerKnowledge = GameManager.Instance.GetAIManagerFor(fleetOwner).Knowledge;
-        List<IFleetNavigable> moveTgts = fleetOwnerKnowledge.Starbases.Cast<IFleetNavigable>().ToList();
-        moveTgts.AddRange(fleetOwnerKnowledge.Settlements.Cast<IFleetNavigable>());
-        moveTgts.AddRange(fleetOwnerKnowledge.Planets.Cast<IFleetNavigable>());
-        //moveTgts.AddRange(fleetOwnerKnowledge.Systems.Cast<IFleetNavigable>());   // UNCLEAR or Stars?
-        moveTgts.AddRange(fleetOwnerKnowledge.Stars.Cast<IFleetNavigable>());
-        if (fleetOwnerKnowledge.UniverseCenter != null) {
-            moveTgts.Add(fleetOwnerKnowledge.UniverseCenter as IFleetNavigable);
-        }
-
-        if (!moveTgts.Any()) {
-            D.Log(ShowDebugLog, "{0} can find no MoveTargets that meet the selection criteria. Picking an unowned Sector.", DebugName);
-            moveTgts.AddRange(SectorGrid.Instance.Sectors.Where(s => s.Owner == TempGameValues.NoPlayer).Cast<IFleetNavigable>());
-        }
-        IFleetNavigable destination;
-        if (_findFarthest) {
-            destination = moveTgts.MaxBy(mt => Vector3.SqrMagnitude(mt.Position - transform.position));
-        }
-        else {
-            destination = moveTgts.MinBy(mt => Vector3.SqrMagnitude(mt.Position - transform.position));
-        }
-        //D.Log(ShowDebugLog, "{0} destination is {1}.", UnitName, destination.DebugName);
-        _command.CurrentOrder = new FleetOrder(FleetDirective.Move, OrderSource.CmdStaff, destination);
-    }
-
-    [Obsolete]
-    private void __GetFleetAttackUnderway() {
-        LogEvent();
-        Player fleetOwner = Owner;
-        var fleetOwnerKnowledge = _gameMgr.GetAIManagerFor(fleetOwner).Knowledge;
-        List<IUnitAttackable> attackTgts = fleetOwnerKnowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsAttackByAllowed(fleetOwner)).ToList();
-        attackTgts.AddRange(fleetOwnerKnowledge.Starbases.Cast<IUnitAttackable>().Where(sb => sb.IsAttackByAllowed(fleetOwner)));
-        attackTgts.AddRange(fleetOwnerKnowledge.Settlements.Cast<IUnitAttackable>().Where(s => s.IsAttackByAllowed(fleetOwner)));
-        attackTgts.AddRange(fleetOwnerKnowledge.Planets.Cast<IUnitAttackable>().Where(p => p.IsAttackByAllowed(fleetOwner)));
-        if (attackTgts.IsNullOrEmpty()) {
-            D.Log(ShowDebugLog, "{0} can find no AttackTargets of any sort. Defaulting to __GetFleetUnderway().", DebugName);
-            __GetFleetUnderway();
-            return;
-        }
-        IUnitAttackable attackTgt;
-        if (_findFarthest) {
-            attackTgt = attackTgts.MaxBy(t => Vector3.SqrMagnitude(t.Position - transform.position));
-        }
-        else {
-            attackTgt = attackTgts.MinBy(t => Vector3.SqrMagnitude(t.Position - transform.position));
-        }
-        //D.Log(ShowDebugLog, "{0} attack target is {1}.", UnitName, attackTgt.DebugName);
-        _command.CurrentOrder = new FleetOrder(FleetDirective.Attack, OrderSource.CmdStaff, attackTgt);
     }
 
     private FleetCmdCameraStat MakeCmdCameraStat(float maxElementRadius) {
@@ -346,7 +253,102 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
         return new ObjectAnalyzer().ToString(this);
     }
 
-    #region GetFleetUnderway Archive
+    #region Archive
+
+    [Obsolete]
+    protected override void AddUnitToOwnerAndAllysKnowledge() {
+        LogEvent();
+        //D.Log(ShowDebugLog, "{0} is adding Unit {1} to {2}'s Knowledge.", DebugName, UnitName, Owner);
+        var ownerAIMgr = _gameMgr.GetAIManagerFor(Owner);
+        _elements.ForAll(e => ownerAIMgr.HandleGainedItemOwnership(e));
+        ownerAIMgr.HandleGainedItemOwnership(_command);    // OPTIMIZE not really needed as this happens automatically when elements handled?
+
+        var alliedPlayers = Owner.GetOtherPlayersWithRelationship(DiplomaticRelationship.Alliance);
+        if (alliedPlayers.Any()) {
+            alliedPlayers.ForAll(ally => {
+                //D.Log(ShowDebugLog, "{0} is adding Unit {1} to {2}'s Knowledge as Ally.", DebugName, UnitName, ally);
+                var allyAIMgr = _gameMgr.GetAIManagerFor(ally);
+                _elements.ForAll(e => allyAIMgr.HandleChgdItemOwnerIsAlly(e));
+                allyAIMgr.HandleChgdItemOwnerIsAlly(_command);  // OPTIMIZE not really needed as this happens automatically when elements handled?
+            });
+        }
+    }
+
+    [Obsolete]
+    protected override void __IssueFirstUnitOrder(Action onCompleted) {
+        LogEvent();
+        //D.Log(ShowDebugLog, "{0} launching 1 hour wait on {1}. Frame {2}, UnityTime {3:0.0}, SystemTimeStamp {4}.", DebugName, GameTime.Instance.CurrentDate, Time.frameCount, Time.time, Utility.TimeStamp);
+
+        // The following delay avoids script execution order issue when this creator receives IsRunning before other creators
+        string jobName = "{0}.WaitToIssueFirstOrderJob".Inject(DebugName);
+        _jobMgr.WaitForHours(1F, jobName, waitFinished: delegate {    // makes sure Owner's knowledge of universe has been constructed before selecting its target
+            //D.Log(ShowDebugLog, "{0} finished 1 hour wait on {1}. Frame {2}, UnityTime {3:0.0}, SystemTimeStamp {4}.", DebugName, GameTime.Instance.CurrentDate, Time.frameCount, Time.time, Utility.TimeStamp);
+            if (_move) {
+                if (_attack) {
+                    __GetFleetAttackUnderway();
+                }
+                else {
+                    __GetFleetUnderway();
+                }
+            }
+            onCompleted();
+        });
+    }
+
+    [Obsolete]
+    private void __GetFleetUnderway() { // 7.12.16 Removed 'not enemy' criteria for move
+        LogEvent();
+        Player fleetOwner = Owner;
+        var fleetOwnerKnowledge = GameManager.Instance.GetAIManagerFor(fleetOwner).Knowledge;
+        List<IFleetNavigable> moveTgts = fleetOwnerKnowledge.Starbases.Cast<IFleetNavigable>().ToList();
+        moveTgts.AddRange(fleetOwnerKnowledge.Settlements.Cast<IFleetNavigable>());
+        moveTgts.AddRange(fleetOwnerKnowledge.Planets.Cast<IFleetNavigable>());
+        //moveTgts.AddRange(fleetOwnerKnowledge.Systems.Cast<IFleetNavigable>());   // UNCLEAR or Stars?
+        moveTgts.AddRange(fleetOwnerKnowledge.Stars.Cast<IFleetNavigable>());
+        if (fleetOwnerKnowledge.UniverseCenter != null) {
+            moveTgts.Add(fleetOwnerKnowledge.UniverseCenter as IFleetNavigable);
+        }
+
+        if (!moveTgts.Any()) {
+            D.Log(ShowDebugLog, "{0} can find no MoveTargets that meet the selection criteria. Picking an unowned Sector.", DebugName);
+            moveTgts.AddRange(SectorGrid.Instance.Sectors.Where(s => s.Owner == TempGameValues.NoPlayer).Cast<IFleetNavigable>());
+        }
+        IFleetNavigable destination;
+        if (_findFarthest) {
+            destination = moveTgts.MaxBy(mt => Vector3.SqrMagnitude(mt.Position - transform.position));
+        }
+        else {
+            destination = moveTgts.MinBy(mt => Vector3.SqrMagnitude(mt.Position - transform.position));
+        }
+        //D.Log(ShowDebugLog, "{0} destination is {1}.", UnitName, destination.DebugName);
+        _command.CurrentOrder = new FleetOrder(FleetDirective.Move, OrderSource.CmdStaff, destination);
+    }
+
+
+    [Obsolete]
+    private void __GetFleetAttackUnderway() {
+        LogEvent();
+        Player fleetOwner = Owner;
+        var fleetOwnerKnowledge = _gameMgr.GetAIManagerFor(fleetOwner).Knowledge;
+        List<IUnitAttackable> attackTgts = fleetOwnerKnowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsAttackByAllowed(fleetOwner)).ToList();
+        attackTgts.AddRange(fleetOwnerKnowledge.Starbases.Cast<IUnitAttackable>().Where(sb => sb.IsAttackByAllowed(fleetOwner)));
+        attackTgts.AddRange(fleetOwnerKnowledge.Settlements.Cast<IUnitAttackable>().Where(s => s.IsAttackByAllowed(fleetOwner)));
+        attackTgts.AddRange(fleetOwnerKnowledge.Planets.Cast<IUnitAttackable>().Where(p => p.IsAttackByAllowed(fleetOwner)));
+        if (attackTgts.IsNullOrEmpty()) {
+            D.Log(ShowDebugLog, "{0} can find no AttackTargets of any sort. Defaulting to __GetFleetUnderway().", DebugName);
+            __GetFleetUnderway();
+            return;
+        }
+        IUnitAttackable attackTgt;
+        if (_findFarthest) {
+            attackTgt = attackTgts.MaxBy(t => Vector3.SqrMagnitude(t.Position - transform.position));
+        }
+        else {
+            attackTgt = attackTgts.MinBy(t => Vector3.SqrMagnitude(t.Position - transform.position));
+        }
+        //D.Log(ShowDebugLog, "{0} attack target is {1}.", UnitName, attackTgt.DebugName);
+        _command.CurrentOrder = new FleetOrder(FleetDirective.Attack, OrderSource.CmdStaff, attackTgt);
+    }
 
     //private void __GetFleetUnderway() { // 7.12.16 Removed 'not enemy' criteria for move
     //    LogEvent();

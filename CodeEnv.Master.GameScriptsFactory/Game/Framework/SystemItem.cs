@@ -198,6 +198,11 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         return new HoverHighlightManager(this, Radius);
     }
 
+    public override void FinalInitialize() {
+        base.FinalInitialize();
+        IsOperational = true;
+    }
+
     #endregion
 
     public override void CommenceOperations() {

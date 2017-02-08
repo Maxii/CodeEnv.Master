@@ -256,8 +256,6 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         });
     }
 
-    private GameDate __executeTraverseErrorDate;
-
     /// <summary>
     /// Coroutine that executes a traverse without overshooting.
     /// </summary>
@@ -266,7 +264,6 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// <returns></returns>
     private IEnumerator ExecuteTraverse(Quaternion reqdHubRotation, Quaternion reqdBarrelElevation) {
         bool isInformedOfDateWarning = false;
-        __executeTraverseErrorDate = default(GameDate);
         Quaternion startingHubRotation = _hub.rotation;
         Quaternion startingBarrelElevation = _barrel.localRotation;
         float reqdHubRotationInDegrees = Quaternion.Angle(startingHubRotation, reqdHubRotation);
@@ -280,6 +277,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         float deltaTime;
 
         GameDate warnDate = CalcLatestDateToCompleteTraverse();
+        GameDate errorDate = default(GameDate);
         GameDate currentDate = _gameTime.CurrentDate;
         while (!isTraverseCompleted) {
             deltaTime = _gameTime.DeltaTime;
@@ -309,11 +307,11 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
                     D.Log("{0}: CurrentDate {1} > WarnDate {2} while traversing.", DebugName, currentDate, warnDate);
                     isInformedOfDateWarning = true;
                 }
-                if (__executeTraverseErrorDate == default(GameDate)) {
-                    __executeTraverseErrorDate = new GameDate(warnDate, GameTimeDuration.OneDay);
+                if (errorDate == default(GameDate)) {
+                    errorDate = new GameDate(warnDate, GameTimeDuration.OneDay);
                 }
 
-                if (currentDate > __executeTraverseErrorDate) {
+                if (currentDate > errorDate) {
                     D.Error("{0}.ExecuteTraverse timed out.", DebugName);
                 }
 

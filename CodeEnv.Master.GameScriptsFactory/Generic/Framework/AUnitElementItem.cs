@@ -202,7 +202,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// initially changed before it becomes operational. IMPROVE For facilities, manual repositioning
     /// occurs even if operational which of course will have to be improved.</remarks>
     /// </summary>
-    public abstract void HandleLocalPositionManuallyChanged();
+    public abstract void __HandleLocalPositionManuallyChanged();
 
     protected override void HandleDeathBeforeBeginningDeathEffect() {
         base.HandleDeathBeforeBeginningDeathEffect();
@@ -583,6 +583,21 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         }
     }
 
+    protected override void HandleOwnerChanging(Player newOwner) {
+        base.HandleOwnerChanging(newOwner);
+        if (Owner != TempGameValues.NoPlayer) {
+            // Owner is about to lose ownership of item so reset owner and allies IntelCoverage of item to what they should know
+            ResetBasedOnCurrentDetection(Owner);
+
+            IEnumerable<Player> allies;
+            if (TryGetAllies(out allies)) {
+                allies.ForAll(ally => ResetBasedOnCurrentDetection(ally));
+            }
+        }
+        // Note: A Cmd will track its HQ Element's IntelCoverage change for a player
+    }
+
+
     protected override void HandleOwnerChanged() {
         base.HandleOwnerChanged();
         if (DisplayMgr != null) {
@@ -642,17 +657,19 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #endregion
 
-    protected sealed override void HandleAIMgrLosingOwnership() {
-        base.HandleAIMgrLosingOwnership();
-        ResetBasedOnCurrentDetection(Owner);
-    }
-
     #region StateMachine Support Members
 
     /// <summary>
     /// The reported cause of a failure to complete execution of an Order.
     /// </summary>
     protected UnitItemOrderFailureCause _orderFailureCause;
+
+    protected void KillRepairJob() {
+        if (_repairJob != null) {
+            _repairJob.Kill();
+            _repairJob = null;
+        }
+    }
 
     protected sealed override void PreconfigureCurrentState() {
         base.PreconfigureCurrentState();
@@ -737,13 +754,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     #endregion
 
     #endregion
-
-    protected void KillRepairJob() {
-        if (_repairJob != null) {
-            _repairJob.Kill();
-            _repairJob = null;
-        }
-    }
 
     #region Show Icon
 

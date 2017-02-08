@@ -319,7 +319,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         HandleTurnBeginning();
 
         string jobName = "{0}.ChgHeadingJob".Inject(DebugName);
-        _chgHeadingJob = _jobMgr.StartGameplayJob(ChangeHeading(newHeading/*, errorDate*/), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
+        _chgHeadingJob = _jobMgr.StartGameplayJob(ChangeHeading(newHeading), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
             if (jobWasKilled) {
                 // 12.12.16 An AssertNull(_jobRef) here can fail as the reference can refer to a new Job, created 
                 // right after the old one was killed due to the 1 frame delay in execution of jobCompleted(). My attempts at allowing
@@ -359,7 +359,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
 
         float deltaTime;
         float deviationInDegrees;
-        GameDate errorDate = DebugUtility.CalcWarningDateForRotation(TurnRate, MaxReqdHeadingChange);
+        GameDate warnDate = DebugUtility.CalcWarningDateForRotation(TurnRate, MaxReqdHeadingChange);
         bool isRqstdHeadingReached = CurrentHeading.IsSameDirection(requestedHeading, out deviationInDegrees, SteeringInaccuracy);
         Profiler.EndSample();
 
@@ -382,10 +382,10 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
             //    DebugName, headingBeforeRotation.ToPreciseString(), CurrentHeading.ToPreciseString(), inprocessRotation);
 
             isRqstdHeadingReached = CurrentHeading.IsSameDirection(requestedHeading, out deviationInDegrees, SteeringInaccuracy);
-            if (!isRqstdHeadingReached && (currentDate = _gameTime.CurrentDate) > errorDate) {
+            if (!isRqstdHeadingReached && (currentDate = _gameTime.CurrentDate) > warnDate) {
                 float desiredTurn = Quaternion.Angle(startingRotation, intendedHeadingRotation);
                 float resultingTurn = Quaternion.Angle(startingRotation, inprocessRotation);
-                __ReportTurnTimeWarning(errorDate, currentDate, desiredTurn, resultingTurn, __allowedTurns, __actualTurns, ref isInformedOfDateWarning);
+                __ReportTurnTimeWarning(warnDate, currentDate, desiredTurn, resultingTurn, __allowedTurns, __actualTurns, ref isInformedOfDateWarning);
             }
             Profiler.EndSample();
 

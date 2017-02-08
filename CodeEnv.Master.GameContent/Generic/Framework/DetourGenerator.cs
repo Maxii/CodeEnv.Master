@@ -32,7 +32,7 @@ namespace CodeEnv.Master.GameContent {
         /// The distance buffer used to make sure detours are located far enough 
         /// away from the obstacle to avoid failing the Asserts in IsDetourReachable.
         /// </summary>
-        private const float DetourDistanceBuffer = 0.1F;
+        protected const float DetourDistanceBuffer = 0.1F;
 
         public string DebugName { get; private set; }
 
@@ -41,7 +41,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The center of the obstacle zone in world space.
         /// </summary>
-        private Vector3 ObstacleZoneCenter {
+        protected Vector3 ObstacleZoneCenter {
             get {
                 if (_obstacleZoneCenterRef != null) {
                     return _obstacleZoneCenterRef.Value;
@@ -50,7 +50,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private float _obstacleZoneRadius;
+        protected float _obstacleZoneRadius;
         private float _distanceToClearObstacle;
 
         /// <summary>
@@ -84,9 +84,9 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Generates a detour location based on where the Obstacle's AvoidableObstacleZone was hit. The resulting detour
         /// will be located outside the zone and as a function of the zone hit point.
-        /// <remarks>This algorithm can result in detours that cannot be reached by the ship of fleet without 
+        /// <remarks>This algorithm can result in detours that cannot be reached by the ship or fleet without 
         /// encountering the same obstacle. This most commonly happens when they are too close to the obstacle. 
-        /// Use CheckForDetourReachable() to determine whether this is the case, and if so, choose another algorithm.</remarks>
+        /// Use IsDetourCleanlyReachable() to determine whether this is the case, and if so, choose another algorithm.</remarks>
         /// <remarks>The detour locations do not account for reqd offsets when ships are traveling as fleets.
         /// This is handled later when the Detour's ApDestinationProxy is generated for each ship.</remarks>
         /// </summary>
@@ -102,30 +102,6 @@ namespace CodeEnv.Master.GameContent {
             Vector3 detour = ObstacleZoneCenter + directionToDetourFromObstacleCenter * distanceToDetourFromObstacleCenter;
             return detour;
         }
-        //public Vector3 GenerateDetourFromObstacleZoneHit(Vector3 shipOrFleetPosition, Vector3 zoneHitPt, float shipOrFleetClearanceRadius) {
-        //    Vector3 ptOnZonePerimeterOnWayToZoneHitDetour = MyMath.FindClosestPointOnSphereOrthogonalToIntersectingLine(shipOrFleetPosition, zoneHitPt, ObstacleZoneCenter, _obstacleZoneRadius);
-        //    Vector3 directionToZoneHitDetourFromZoneCenter = (ptOnZonePerimeterOnWayToZoneHitDetour - ObstacleZoneCenter).normalized;
-        //    float distanceToZoneHitDetourFromZoneCenter = _distanceToClearObstacle + shipOrFleetClearanceRadius;
-        //    Vector3 zoneHitDetour = ObstacleZoneCenter + directionToZoneHitDetourFromZoneCenter * distanceToZoneHitDetourFromZoneCenter;
-
-        //    Vector3 shipToObstacleDirection = (ObstacleZoneCenter - shipOrFleetPosition).normalized;
-        //    // pt in direction of obstacle that is shipOrFleetClearanceDistance away from shipOrFleetPosition
-        //    Vector3 shipOrFleetClosestPtToObstacleOutsideClearanceZone = shipOrFleetPosition + shipToObstacleDirection * shipOrFleetClearanceRadius;
-
-        //    // pt in direction of obstacle that is shipOrFleetClearanceDistance away from zoneHitDetour
-        //    Vector3 zoneHitDetourClosestPtToObstacleOutsideClearanceZone = zoneHitDetour + (-directionToZoneHitDetourFromZoneCenter * shipOrFleetClearanceRadius);
-
-        //    Vector3 linePt1 = shipOrFleetClosestPtToObstacleOutsideClearanceZone;
-        //    Vector3 linePt2 = zoneHitDetourClosestPtToObstacleOutsideClearanceZone;
-
-        //    // If linePt starts inside of sphere, the line will always intersect the sphere. The other end of the line will never be inside the sphere
-        //    if (MyMath.DoesLineSegmentIntersectSphere(linePt1, linePt2, ObstacleZoneCenter, _obstacleZoneRadius)) {
-        //        // Ship or fleet is too close to Obstacle to get directly to zoneHitDetour without encountering Obstacle again
-        //        D.Log("{0} is generating alternative detour around poles as ship/fleet cannot reach zoneHit detour.", DebugName);
-        //        return GenerateDetourAroundObstaclePoles(shipOrFleetPosition, shipOrFleetClearanceRadius);
-        //    }
-        //    return zoneHitDetour;
-        //}
 
         /// <summary>
         /// Generates a detour location in one of the 4 XZ quadrants around the belt of the obstacle.
@@ -163,7 +139,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Generates a detour location directly above or below the poles of the obstacle.
         /// The resulting detour will be located outside the zone. Which pole is determined by the position of the ship or fleet.
-        /// <remarks>This algorithm can result in detours that cannot be reached by the ship of fleet without 
+        /// <remarks>This algorithm can result in detours that cannot be reached by the ship or fleet without 
         /// encountering the same obstacle. This most commonly happens when they are too close to the obstacle
         /// at or around the belt.
         /// Use IsDetourCleanlyReachable() to determine whether this is the case, and if so, choose another algorithm.</remarks>
@@ -184,33 +160,6 @@ namespace CodeEnv.Master.GameContent {
             Vector3 detour = ObstacleZoneCenter + directionToDetourFromObstacleCenter * distanceToDetourFromObstacleCenter;
             return detour;
         }
-        //public Vector3 GenerateDetourAtOrAroundObstaclePoles(Vector3 shipOrFleetPosition, float shipOrFleetClearanceRadius) {
-        //    // Very simple: if below plane go below down pole, if on or above go above up pole
-        //    float centerPlaneY = ObstacleZoneCenter.y;
-
-        //    bool isShipOrFleetOnOrAbovePlane = shipOrFleetPosition.y - centerPlaneY >= Constants.ZeroF;
-        //    Vector3 directionToDetourFromZoneCenter = isShipOrFleetOnOrAbovePlane ? Vector3.up : Vector3.down;
-        //    float distanceToDetourFromZoneCenter = _distanceToClearObstacle + shipOrFleetClearanceRadius;
-        //    Vector3 poleDetour = ObstacleZoneCenter + directionToDetourFromZoneCenter * distanceToDetourFromZoneCenter;
-
-        //    Vector3 shipToObstacleDirection = (ObstacleZoneCenter - shipOrFleetPosition).normalized;
-        //    // pt in direction of obstacle that is shipOrFleetClearanceDistance away from shipOrFleetPosition
-        //    Vector3 shipOrFleetClosestPtToObstacleOutsideClearanceZone = shipOrFleetPosition + shipToObstacleDirection * shipOrFleetClearanceRadius;
-
-        //    // pt in direction of obstacle that is shipOrFleetClearanceDistance away from poleDetour
-        //    Vector3 poleDetourClosestPtToObstacleOutsideClearanceZone = poleDetour + (-directionToDetourFromZoneCenter * shipOrFleetClearanceRadius);
-
-        //    Vector3 linePt1 = shipOrFleetClosestPtToObstacleOutsideClearanceZone;
-        //    Vector3 linePt2 = poleDetourClosestPtToObstacleOutsideClearanceZone;
-
-        //    // If linePt starts inside of sphere, the line will always intersect the sphere. The other end of the line will never be inside the sphere
-        //    if (MyMath.DoesLineSegmentIntersectSphere(linePt1, linePt2, ObstacleZoneCenter, _obstacleZoneRadius)) {
-        //        // Ship or fleet is too close to Obstacle to get directly to pole without encountering Obstacle again
-        //        D.Log("{0} is generating alternative detour around poles as ship/fleet cannot reach pole detour.", DebugName);
-        //        return GenerateDetourAroundObstaclePoles(shipOrFleetPosition, shipOrFleetClearanceRadius);
-        //    }
-        //    return poleDetour;
-        //}
 
         /// <summary>
         /// Generates a detour around the poles of the obstacle based on where the
@@ -268,7 +217,7 @@ namespace CodeEnv.Master.GameContent {
         /// zone as a function of the zone hit point, but always right or left of the belt's X value,
         /// and fwd or back of the belt's Z value.
         /// Which belt quadrant is determined by the position of the ship or fleet.
-        /// <remarks>This algorithm can result in detours that cannot be reached by the ship of fleet without 
+        /// <remarks>This algorithm can result in detours that cannot be reached by the ship or fleet without 
         /// encountering the same obstacle. This most commonly happens when they are too close to the obstacle
         /// around the poles. Use IsDetourCleanlyReachable() to determine whether this is the case, and if so, 
         /// choose another algorithm.</remarks>
@@ -355,7 +304,7 @@ namespace CodeEnv.Master.GameContent {
         /// Obstacle's Zone was hit. The resulting detour will be located outside the
         /// zone as a function of the zone hit point, but always above or below the pole's Y value.
         /// Which pole is determined by the position of the ship or fleet.
-        /// <remarks>This algorithm can result in detours that cannot be reached by the ship of fleet without 
+        /// <remarks>This algorithm can result in detours that cannot be reached by the ship or fleet without 
         /// encountering the same obstacle. This most commonly happens when they are too close to the obstacle
         /// around the belt. Use IsDetourCleanlyReachable() to determine whether this is the case, and if so, 
         /// choose another algorithm.</remarks>
@@ -404,102 +353,6 @@ namespace CodeEnv.Master.GameContent {
             Vector3 finalDetour = initialDetour.SetY(finalDetourY);
             return finalDetour;
         }
-        //public Vector3 GenerateDetourFromZoneHitAroundPoles(Vector3 shipOrFleetPosition, Vector3 zoneHitPt, float shipOrFleetClearanceRadius) {
-        //    Vector3 ptOnZonePerimeterOnWayToInitialZoneHitDetour = MyMath.FindClosestPointOnSphereOrthogonalToIntersectingLine(shipOrFleetPosition, zoneHitPt, ObstacleZoneCenter, _obstacleZoneRadius);
-        //    Vector3 directionToInitialZoneHitDetourFromZoneCenter = (ptOnZonePerimeterOnWayToInitialZoneHitDetour - ObstacleZoneCenter).normalized;
-        //    float distanceToInitialZoneHitDetourFromZoneCenter = _distanceToClearObstacle + shipOrFleetClearanceRadius;
-        //    // the initialDetour is located along the infinite line connecting the obstacle and the point derived from the zoneHitPt
-        //    Vector3 initialZoneHitDetour = ObstacleZoneCenter + directionToInitialZoneHitDetourFromZoneCenter * distanceToInitialZoneHitDetourFromZoneCenter;
-
-        //    float centerPlaneY = ObstacleZoneCenter.y;
-        //    float desiredClearanceFromPlane = _distanceToClearObstacle + shipOrFleetClearanceRadius;
-        //    float initialZoneHitDetourYRelativeToPlane = initialZoneHitDetour.y - centerPlaneY;
-        //    // place detour above or below plane
-        //    float finalZoneHitDetourYRelativeToPlane = initialZoneHitDetourYRelativeToPlane;
-        //    if (Mathfx.Approx(initialZoneHitDetourYRelativeToPlane, Constants.ZeroF, .01F)) {
-        //        // initialDetour is right on plane so finalDetour placement above or below plane determined by shipOrFleetPosition
-        //        bool isShipOrFleetOnOrAbovePlane = shipOrFleetPosition.y - centerPlaneY >= Constants.ZeroF;
-        //        finalZoneHitDetourYRelativeToPlane += isShipOrFleetOnOrAbovePlane ? desiredClearanceFromPlane : -desiredClearanceFromPlane;
-        //    }
-        //    else if (initialZoneHitDetourYRelativeToPlane > Constants.ZeroF) {
-        //        // initialDetour is above plane
-        //        finalZoneHitDetourYRelativeToPlane += desiredClearanceFromPlane;
-        //    }
-        //    else {
-        //        // initialDetour is below plane
-        //        finalZoneHitDetourYRelativeToPlane -= desiredClearanceFromPlane;
-        //    }
-
-        //    // avoid going above or below the plane more than needed
-        //    if (finalZoneHitDetourYRelativeToPlane > Constants.ZeroF) {
-        //        finalZoneHitDetourYRelativeToPlane = Mathf.Min(finalZoneHitDetourYRelativeToPlane, desiredClearanceFromPlane);
-        //    }
-        //    else {        // can't be == 0 as has to be either above or below
-        //        finalZoneHitDetourYRelativeToPlane = Mathf.Max(finalZoneHitDetourYRelativeToPlane, -desiredClearanceFromPlane);
-        //    }
-        //    float finalZoneHitDetourY = centerPlaneY + finalZoneHitDetourYRelativeToPlane;
-        //    Vector3 finalZoneHitDetour = initialZoneHitDetour.SetY(finalZoneHitDetourY);
-
-
-        //    Vector3 directionToFinalZoneHitDetourFromZoneCenter = (finalZoneHitDetour - ObstacleZoneCenter).normalized;
-
-        //    Vector3 shipOrFleetToObstacleDirection = (ObstacleZoneCenter - shipOrFleetPosition).normalized;
-        //    // pt in direction of obstacle that is shipOrFleetClearanceDistance away from shipOrFleetPosition
-        //    Vector3 shipOrFleetClosestPtToObstacleOutsideClearanceZone = shipOrFleetPosition + shipOrFleetToObstacleDirection * shipOrFleetClearanceRadius;
-
-        //    // pt in direction of obstacle that is shipOrFleetClearanceDistance away from finalZoneHitDetour
-        //    Vector3 finalZoneHitDetourClosestPtToObstacleOutsideClearanceZone = finalZoneHitDetour + (-directionToFinalZoneHitDetourFromZoneCenter * shipOrFleetClearanceRadius);
-
-        //    Vector3 linePt1 = shipOrFleetClosestPtToObstacleOutsideClearanceZone;
-        //    Vector3 linePt2 = finalZoneHitDetourClosestPtToObstacleOutsideClearanceZone;
-
-        //    // If linePt starts inside of sphere, the line will always intersect the sphere. The other end of the line will never be inside the sphere
-        //    if (MyMath.DoesLineSegmentIntersectSphere(linePt1, linePt2, ObstacleZoneCenter, _obstacleZoneRadius)) {
-        //        // Ship or fleet is too close to Obstacle to get directly to finalZoneHitDetour without encountering Obstacle again
-        //        D.Log("{0} is generating alternative detour around poles as ship/fleet cannot reach zoneHitDetour.", DebugName);
-        //        return GenerateDetourAroundObstaclePoles(shipOrFleetPosition, shipOrFleetClearanceRadius);
-        //    }
-        //    return finalZoneHitDetour;
-        //}
-        //public Vector3 GenerateDetourFromZoneHitAroundPoles(Vector3 shipOrFleetPosition, Vector3 zoneHitPt, float shipOrFleetClearanceRadius) {
-        //    Vector3 ptOnZonePerimeterOnWayToInitialDetour = MyMath.FindClosestPointOnSphereOrthogonalToIntersectingLine(shipOrFleetPosition, zoneHitPt, ObstacleZoneCenter, _obstacleZoneRadius);
-        //    Vector3 directionToInitialDetourFromZoneCenter = (ptOnZonePerimeterOnWayToInitialDetour - ObstacleZoneCenter).normalized;
-        //    float distanceToInitialHQDetourFromZoneCenter = _distanceToClearObstacle + shipOrFleetClearanceRadius;
-        //    // the initialDetour is located along the infinite line connecting the obstacle and the point derived from the zoneHitPt
-        //    Vector3 initialDetour = ObstacleZoneCenter + directionToInitialDetourFromZoneCenter * distanceToInitialHQDetourFromZoneCenter;
-
-        //    float centerPlaneY = ObstacleZoneCenter.y;
-        //    float desiredClearanceFromPlane = _distanceToClearObstacle + shipOrFleetClearanceRadius;
-        //    float initialDetourYRelativeToPlane = initialDetour.y - centerPlaneY;
-        //    // place detour above or below plane
-        //    float finalDetourYRelativeToPlane = initialDetourYRelativeToPlane;
-        //    if (Mathfx.Approx(initialDetourYRelativeToPlane, Constants.ZeroF, .01F)) {
-        //        // initialDetour is right on plane so finalDetour placement above or below plane determined by shipOrFleetPosition
-        //        bool isShipOrFleetOnOrAbovePlane = shipOrFleetPosition.y - centerPlaneY >= Constants.ZeroF;
-        //        finalDetourYRelativeToPlane += isShipOrFleetOnOrAbovePlane ? desiredClearanceFromPlane : -desiredClearanceFromPlane;
-        //    }
-        //    else if (initialDetourYRelativeToPlane > Constants.ZeroF) {
-        //        // initialDetour is above plane
-        //        finalDetourYRelativeToPlane += desiredClearanceFromPlane;
-        //    }
-        //    else {
-        //        // initialDetour is below plane
-        //        finalDetourYRelativeToPlane -= desiredClearanceFromPlane;
-        //    }
-
-        //    // avoid going above or below the plane more than needed
-        //    if (finalDetourYRelativeToPlane > Constants.ZeroF) {
-        //        finalDetourYRelativeToPlane = Mathf.Min(finalDetourYRelativeToPlane, desiredClearanceFromPlane);
-        //    }
-        //    else {        // can't be == 0 as has to be either above or below
-        //        finalDetourYRelativeToPlane = Mathf.Max(finalDetourYRelativeToPlane, -desiredClearanceFromPlane);
-        //    }
-        //    float finalDetourY = centerPlaneY + finalDetourYRelativeToPlane;
-        //    Vector3 finalDetour = initialDetour.SetY(finalDetourY);
-        //    return finalDetour;
-        //}
-
-
 
         /// <summary>
         /// Returns <c>true</c> if the detour is reachable by the ship or fleet without any contact between the ship(s) collision
@@ -571,7 +424,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Gets the approach path derived from the approach direction derived from the provided points.
+        /// Gets the approach path derived from the direction of approach.
         /// </summary>
         /// <param name="shipOrFleetPosition">The ship or fleet position.</param>
         /// <param name="zoneHitPt">The obstacle zone hit point.</param>
@@ -591,7 +444,6 @@ namespace CodeEnv.Master.GameContent {
             }
             return ApproachPath.Belt;
         }
-
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

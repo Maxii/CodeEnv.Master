@@ -238,6 +238,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
     /// <param name="delayInHours">The delay in hours.</param>
     /// <param name="onCompletion">Optional delegate that fires onCompletion.</param>
     protected virtual void DestroyMe(float delayInHours = Constants.ZeroF, Action onCompletion = null) {
+        D.Log("{0} is being destroyed.", DebugName);
         GameUtility.Destroy(gameObject, delayInHours, onCompletion);
     }
 

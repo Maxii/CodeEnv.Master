@@ -72,8 +72,16 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         get { return _publisher = _publisher ?? new FacilityPublisher(Data, this); }
     }
 
+    private FacilityDetourGenerator _obstacleDetourGenerator;
+    private FacilityDetourGenerator ObstacleDetourGenerator {
+        get {
+            if (_obstacleDetourGenerator == null) {
+                InitializeObstacleDetourGenerator();
+            }
+            return _obstacleDetourGenerator;
+        }
+    }
     private SphereCollider _obstacleZoneCollider;
-    private DetourGenerator _detourGenerator;
 
     #region Initialization
 
@@ -117,24 +125,35 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         if (rigidbody != null) {
             D.Warn("{0}.ObstacleZone has a Rigidbody it doesn't need.", DebugName);
         }
-        InitializeObstacleDetourGenerator();
+        // 2.7.17 Lazy instantiated        ////InitializeObstacleDetourGenerator();    
         InitializeDebugShowObstacleZone();
     }
 
     private void InitializeObstacleDetourGenerator() {
+        // IMPROVE assume for now that Commands are always at the center of a base formation
+        Vector3 baseFormationCenter = Command.Position;
+        D.Assert(baseFormationCenter != default(Vector3));
+        float baseFormationRadius = Command.UnitMaxFormationRadius;
+        D.AssertNotDefault(baseFormationRadius);
+        float distanceToClearBase = Command.CloseOrbitOuterRadius;
+        D.AssertNotDefault(distanceToClearBase);
+
         if (IsMobile) {
             Reference<Vector3> obstacleZoneCenter = new Reference<Vector3>(() => _obstacleZoneCollider.transform.TransformPoint(_obstacleZoneCollider.center));
-            _detourGenerator = new DetourGenerator(DebugName, obstacleZoneCenter, _obstacleZoneCollider.radius, _obstacleZoneCollider.radius);
+            _obstacleDetourGenerator = new FacilityDetourGenerator(DebugName, obstacleZoneCenter, _obstacleZoneCollider.radius, _obstacleZoneCollider.radius,
+                baseFormationCenter, baseFormationRadius, distanceToClearBase);
         }
         else {
             Vector3 obstacleZoneCenter = _obstacleZoneCollider.transform.TransformPoint(_obstacleZoneCollider.center);
-            _detourGenerator = new DetourGenerator(DebugName, obstacleZoneCenter, _obstacleZoneCollider.radius, _obstacleZoneCollider.radius);
+            _obstacleDetourGenerator = new FacilityDetourGenerator(DebugName, obstacleZoneCenter, _obstacleZoneCollider.radius, _obstacleZoneCollider.radius,
+                baseFormationCenter, baseFormationRadius, distanceToClearBase);
         }
     }
 
     public override void FinalInitialize() {
         base.FinalInitialize();
         CurrentState = FacilityState.FinalInitialize;   //= FacilityState.Idling;
+        IsOperational = true;
     }
 
     #endregion
@@ -169,12 +188,11 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         // Keep the obstacleZoneCollider enabled to keep ships from flying through this exploding facility
     }
 
-    public override void HandleLocalPositionManuallyChanged() {
-        // Facilities have their local position manually changed whenever there is a Formation change
+    public override void __HandleLocalPositionManuallyChanged() {
+        // TEMP Facilities have their local position manually changed whenever there is a Formation change
         // even if operational. As a Facility has an obstacle detour generator which needs to know the (supposedly unmoving) 
         // facility's position, we have to regenerate that generator if manually relocated.
-        D.AssertNotNull(_detourGenerator, DebugName);   // TEMP just proves that InitializeDetourGenerator() initially called before local position is changed
-        InitializeObstacleDetourGenerator();
+        _obstacleDetourGenerator = null;
     }
 
     protected override IconInfo MakeIconInfo() {
@@ -295,7 +313,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             return;
         }
         if (!OwnerAIMgr.HasKnowledgeOf(target as IItem_Ltd)) {
-            D.Error("{0} received {1} order with Target {2} that {3} has no knowledge of.", DebugName, directive.GetValueName(), target.DebugName, Owner.LeaderName);
+            D.Warn("{0} received {1} order with Target {2} that {3} has no knowledge of.", DebugName, directive.GetValueName(), target.DebugName, Owner.LeaderName);
         }
     }
 
@@ -964,31 +982,47 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     public float __ObstacleZoneRadius { get { return _obstacleZoneCollider.radius; } }
 
     public Vector3 GetDetour(Vector3 shipOrFleetPosition, RaycastHit zoneHitInfo, float shipOrFleetClearanceRadius) {
-        var formation = Command.UnitFormation;
-        switch (formation) {
-            case Formation.Plane:
-            case Formation.Spread:
-            case Formation.Globe:
-            case Formation.Wedge:
-            case Formation.Diamond:
-                Vector3 detour = _detourGenerator.GenerateDetourFromObstacleZoneHit(shipOrFleetPosition, zoneHitInfo.point, shipOrFleetClearanceRadius);
-                if (!_detourGenerator.IsDetourCleanlyReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius)) {
-                    detour = _detourGenerator.GenerateDetourFromZoneHitAroundPoles(shipOrFleetPosition, zoneHitInfo.point, shipOrFleetClearanceRadius);
-                    if (!_detourGenerator.IsDetourCleanlyReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius)) {
-                        detour = _detourGenerator.GenerateDetourAtObstaclePoles(shipOrFleetPosition, shipOrFleetClearanceRadius);
-                        if (!_detourGenerator.IsDetourCleanlyReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius)) {
-                            detour = _detourGenerator.GenerateDetourAroundObstaclePoles(shipOrFleetPosition, shipOrFleetClearanceRadius);
-                            // 1.26.17 This is going to fail as I haven't solved detours for facilities yet
-                            D.Assert(_detourGenerator.IsDetourCleanlyReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius),
-                                "{0} detour {1} not reachable. Ship/Fleet.Position = {2}, ClearanceRadius = {3:0.##}.".Inject(DebugName, detour, shipOrFleetPosition, shipOrFleetClearanceRadius));
-                        }
+        string detourRoute = "failed";
+        FacilityDetourGenerator detourGenerator = ObstacleDetourGenerator;
+        Vector3 detour = default(Vector3);
+        DetourGenerator.ApproachPath approachPath = detourGenerator.GetApproachPath(shipOrFleetPosition, zoneHitInfo.point);
+        switch (approachPath) {
+            case DetourGenerator.ApproachPath.Polar:
+                detour = detourGenerator.GenerateDetourAtBaseBelt(shipOrFleetPosition, shipOrFleetClearanceRadius);
+                detourRoute = "belt";
+                if (!detourGenerator.IsDetourCleanlyReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius)) {
+                    detour = detourGenerator.GenerateDetourAtBasePoles(shipOrFleetPosition, shipOrFleetClearanceRadius);
+                    detourRoute = "pole";
+                    if (!detourGenerator.IsDetourCleanlyReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius)) {
+                        detour = detourGenerator.GenerateDetourAroundBasePoles(shipOrFleetPosition, shipOrFleetClearanceRadius);
+                        detourRoute = "around pole";
+                        D.Assert(detourGenerator.IsDetourReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius),
+                            "{0} detour {1} not reachable. Ship/Fleet.Position = {2}, ClearanceRadius = {3:0.##}. Position = {4}."
+                            .Inject(DebugName, detour, shipOrFleetPosition, shipOrFleetClearanceRadius, Position));
                     }
                 }
-                return detour;
-            case Formation.None:
+                break;
+            case DetourGenerator.ApproachPath.Belt:
+                detour = detourGenerator.GenerateDetourAtBasePoles(shipOrFleetPosition, shipOrFleetClearanceRadius);
+                detourRoute = "pole";
+                if (!detourGenerator.IsDetourCleanlyReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius)) {
+                    detour = detourGenerator.GenerateDetourAtBaseBelt(shipOrFleetPosition, shipOrFleetClearanceRadius);
+                    detourRoute = "belt";
+                    if (!detourGenerator.IsDetourCleanlyReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius)) {
+                        detour = detourGenerator.GenerateDetourAroundBasePoles(shipOrFleetPosition, shipOrFleetClearanceRadius);
+                        detourRoute = "around pole";
+                        D.Assert(detourGenerator.IsDetourReachable(detour, shipOrFleetPosition, shipOrFleetClearanceRadius),
+                            "{0} detour {1} not reachable. Ship/Fleet.Position = {2}, ClearanceRadius = {3:0.##}. Position = {4}."
+                            .Inject(DebugName, detour, shipOrFleetPosition, shipOrFleetClearanceRadius, Position));
+                    }
+                }
+                break;
+            case DetourGenerator.ApproachPath.None:
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(formation));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(approachPath));
         }
+        D.LogBold(ShowDebugLog, "{0} is providing a cleanly reachable {1} detour around Base {2} from ApproachPath {3}.", DebugName, detourRoute, Command.UnitName, approachPath.GetValueName());
+        return detour;
     }
 
     #endregion

@@ -146,24 +146,6 @@ public class DebugSettlementCreator : ADebugUnitCreator {
         _gameMgr.GameKnowledge.AddUnit(_command, _elements.Cast<IUnitElement>());
     }
 
-    protected override void AddUnitToOwnerAndAllysKnowledge() {
-        LogEvent();
-        //D.Log(ShowDebugLog, "{0} is adding Unit {1} to {2}'s Knowledge.", DebugName, UnitName, Owner);
-        var ownerAIMgr = _gameMgr.GetAIManagerFor(Owner);
-        _elements.ForAll(e => ownerAIMgr.HandleGainedItemOwnership(e));
-        ownerAIMgr.HandleGainedItemOwnership(_command);    // OPTIMIZE not really needed as this happens automatically when elements handled
-
-        var alliedPlayers = Owner.GetOtherPlayersWithRelationship(DiplomaticRelationship.Alliance);
-        if (alliedPlayers.Any()) {
-            alliedPlayers.ForAll(ally => {
-                //D.Log("{0} is adding Unit {1} to {2}'s Knowledge as Ally.", DebugName, UnitName, ally);
-                var allyAIMgr = _gameMgr.GetAIManagerFor(ally);
-                _elements.ForAll(e => allyAIMgr.HandleChgdItemOwnerIsAlly(e));
-                allyAIMgr.HandleChgdItemOwnerIsAlly(_command);  // OPTIMIZE not really needed as this happens automatically when elements handled
-            });
-        }
-    }
-
     protected override void RegisterCommandForOrders() {
         var ownerAIMgr = _gameMgr.GetAIManagerFor(Owner);
         ownerAIMgr.RegisterForOrders(_command);
@@ -177,12 +159,6 @@ public class DebugSettlementCreator : ADebugUnitCreator {
     protected override void BeginCommandOperations() {
         LogEvent();
         _command.CommenceOperations();
-    }
-
-    [Obsolete]
-    protected override void __IssueFirstUnitOrder(Action onCompleted) {
-        LogEvent();
-        onCompleted();
     }
 
     private CmdCameraStat MakeCmdCameraStat(float maxElementRadius) {
@@ -226,6 +202,35 @@ public class DebugSettlementCreator : ADebugUnitCreator {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region Archive
+
+    [Obsolete]
+    protected override void AddUnitToOwnerAndAllysKnowledge() {
+        LogEvent();
+        //D.Log(ShowDebugLog, "{0} is adding Unit {1} to {2}'s Knowledge.", DebugName, UnitName, Owner);
+        var ownerAIMgr = _gameMgr.GetAIManagerFor(Owner);
+        _elements.ForAll(e => ownerAIMgr.HandleGainedItemOwnership(e));
+        ownerAIMgr.HandleGainedItemOwnership(_command);    // OPTIMIZE not really needed as this happens automatically when elements handled
+
+        var alliedPlayers = Owner.GetOtherPlayersWithRelationship(DiplomaticRelationship.Alliance);
+        if (alliedPlayers.Any()) {
+            alliedPlayers.ForAll(ally => {
+                //D.Log("{0} is adding Unit {1} to {2}'s Knowledge as Ally.", DebugName, UnitName, ally);
+                var allyAIMgr = _gameMgr.GetAIManagerFor(ally);
+                _elements.ForAll(e => allyAIMgr.HandleChgdItemOwnerIsAlly(e));
+                allyAIMgr.HandleChgdItemOwnerIsAlly(_command);  // OPTIMIZE not really needed as this happens automatically when elements handled
+            });
+        }
+    }
+
+    [Obsolete]
+    protected override void __IssueFirstUnitOrder(Action onCompleted) {
+        LogEvent();
+        onCompleted();
+    }
+
+    #endregion
 
 
 }

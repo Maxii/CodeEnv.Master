@@ -58,6 +58,11 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd,
         return new SectorViewHighlightManager(this, UnitMaxFormationRadius * 10F);
     }
 
+    public override void FinalInitialize() {
+        base.FinalInitialize();
+        IsOperational = true;
+    }
+
     #endregion
 
     public StarbaseCmdReport GetReport(Player player) { return Publisher.GetReport(player); }
