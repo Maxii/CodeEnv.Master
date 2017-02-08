@@ -70,7 +70,7 @@
     <Compile Include="Generic\Framework\MyWaitWhile.cs" />
     <Compile Include="Game\Gameplay\TeamID.cs" />
     <Compile Include="Generic\Framework\Priority.cs" />
-    <Compile Include="SceneID.cs" />
+    <Compile Include="Game\Framework\SceneID.cs" />
     <Compile Include="ThirdParty\AStateMachine.cs" />
     <Compile Include="ThirdParty\ABackgroundTask.cs" />
     <Compile Include="ThirdParty\ATask.cs" />
