@@ -422,7 +422,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
                 // Works as we would never become aware of a fleet when it was already dead
                 return;
             }
-            D.LogBold(/*ShowDebugLog, */"{0} has just {1} of {2}.", DebugName, isAware ? "become aware" : "lost awareness", fleet.DebugName);
+            D.Log(ShowDebugLog, "{0} has just {1} of {2}.", DebugName, isAware ? "become aware" : "lost awareness", fleet.DebugName);
             HandleAwarenessOfFleetChanged(fleet, isAware);
         }
     }
