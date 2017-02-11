@@ -59,7 +59,7 @@ public class DebugControlsEditor : Editor {
                     NGUIEditorTools.SetLabelWidth(100F);
                     NGUIEditorTools.DrawProperty("AutoExplore", serializedObject, "_fleetsAutoExplore");
                     NGUIEditorTools.SetLabelWidth(200F);
-                    NGUIEditorTools.DrawProperty("Full Intel of Detected Items", serializedObject, "_allIntelCoverageIsComprehensive");
+                    NGUIEditorTools.DrawProperty("Full Intel of All Items", serializedObject, "_allIntelCoverageIsComprehensive");
                 }
                 NGUIEditorTools.EndContents();
             }

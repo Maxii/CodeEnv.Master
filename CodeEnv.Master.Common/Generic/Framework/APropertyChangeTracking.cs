@@ -50,16 +50,16 @@ namespace CodeEnv.Master.Common {
         /// <param name="onChanged">Optional local method to call when the property is changed.</param>
         /// <param name="onChanging">Optional local method to call before the property is changed. The proposed new value is provided as the parameter.</param>
         protected void SetProperty<T>(ref T backingStore, T value, string propertyName, Action onChanged = null, Action<T> onChanging = null) {
-            Profiler.BeginSample("Debug SetProperty Checks");
+            ////Profiler.BeginSample("Debug SetProperty Checks");
             __VerifyCallerIsProperty(propertyName);
             if (EqualityComparer<T>.Default.Equals(backingStore, value)) {
                 if (!CheckForDestroyedMonobehaviourInterface(backingStore)) {
                     __TryWarn<T>(backingStore, value, propertyName);
-                    Profiler.EndSample();
+                    ////Profiler.EndSample();
                     return;
                 }
             }
-            Profiler.EndSample();
+            ////Profiler.EndSample();
             //D.Log("SetProperty called. {0} changing to {1}.", propertyName, value);
 
             if (onChanging != null) { onChanging(value); }
@@ -110,16 +110,16 @@ namespace CodeEnv.Master.Common {
         /// <param name="backingStore">The backing store.</param>
         /// <param name="value">The value.</param>
         /// <param name="propertyName">Name of the property.</param>
-        [System.Diagnostics.Conditional("UNITY_EDITOR")]
+        [System.Diagnostics.Conditional("DEBUG_VALIDATE_PROPERTY")]
         private static void __TryWarn<T>(T backingStore, T value, string propertyName) {
             Type tType = typeof(T);
             if (!tType.IsValueType) {
                 if (value != null) {
                     if (tType == typeof(string)) {
-                        D.Warn("{0} BackingStore {1} and value {2} are equal. Property not changed.", propertyName, backingStore, value);
+                        UnityEngine.Debug.LogWarningFormat("{0} BackingStore {1} and value {2} are equal. Property not changed.", propertyName, backingStore, value);
                     }
                     else {
-                        D.Warn("{0} BackingStore and value of Type {1} are equal. Property not changed.", propertyName, tType.Name);
+                        UnityEngine.Debug.LogWarningFormat("{0} BackingStore and value of Type {1} are equal. Property not changed.", propertyName, tType.Name);
                     }
                 }
             }
@@ -147,7 +147,7 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         /// <param name="propertyName">Name of the property.</param>
         /// <exception cref="System.InvalidOperationException">Called SetProperty {0} from {1}. Check spelling of Property.".Inject(propertyName, caller.Name)</exception>
-        [System.Diagnostics.Conditional("UNITY_EDITOR")]
+        [System.Diagnostics.Conditional("DEBUG_VALIDATE_PROPERTY")]
         private void __VerifyCallerIsProperty(string propertyName) {
             string callerName = new System.Diagnostics.StackFrame(2).GetMethod().Name;
             if (callerName.Equals("set_" + propertyName, StringComparison.InvariantCulture)) {

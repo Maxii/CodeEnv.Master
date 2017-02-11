@@ -81,7 +81,7 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem, IIntelItem_Ltd 
         //D.Log(ShowDebugLog, "{0}.IntelCoverageChangedHandler() called. {1}'s new IntelCoverage = {2}.", DebugName, playerWhosCoverageChgd.Name, GetIntelCoverage(playerWhosCoverageChgd));
 
         var playerWhosCoverageChgdAIMgr = _gameMgr.GetAIManagerFor(playerWhosCoverageChgd);
-        playerWhosCoverageChgdAIMgr.HandleItemIntelCoverageChanged(this);
+        playerWhosCoverageChgdAIMgr.AssessAwarenessOf(this);
 
         if (IsOperational) {    // Will be called during FinalInitialize if Item should be IntelCoverage.Comprehensive
             if (playerWhosCoverageChgd == _gameMgr.UserPlayer) {
@@ -92,7 +92,6 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem, IIntelItem_Ltd 
             OnInfoAccessChanged(playerWhosInfoAccessChgd);
         }
     }
-
 
     /// <summary>
     /// Handles a change in the User's IntelCoverage of this item.

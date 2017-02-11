@@ -117,7 +117,7 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
 
     #region AI Editor Fields
 
-    [Tooltip("Check if fleets should automatically explore and visit bases without countervailing orders")]
+    [Tooltip("Check if fleets should automatically explore and visit bases without countervailing orders.")]
     [SerializeField]
     private bool _fleetsAutoExplore = true;
     /// <summary>
@@ -127,14 +127,14 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     /// </summary>
     public bool FleetsAutoExploreAsDefault { get { return _fleetsAutoExplore; } }
 
-    [Tooltip("Check if all players know everything about the objects they detect")]
+    [Tooltip("Check if all players know everything about all objects, even those that are outside detection range.")]
     [SerializeField]
     private bool _allIntelCoverageIsComprehensive = false;
     /// <summary>
     /// If <c>true</c> every player knows everything about every item independent of whether
     /// their sensors have detected the item. 
-    /// <remarks>It DOES NOT MEAN that the players have met yet as Players meet when they first 
-    /// detect a HQ Element owned by another player.</remarks>
+    /// <remarks>It also means that all players have met as Players meet when they first become
+    /// aware of a Cmd owned by another player.</remarks>
     /// </summary>
     public bool IsAllIntelCoverageComprehensive { get { return _allIntelCoverageIsComprehensive; } }
 

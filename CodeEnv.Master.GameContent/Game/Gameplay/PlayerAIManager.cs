@@ -58,6 +58,7 @@ namespace CodeEnv.Master.GameContent {
         // TODO use these when needing to search for commands to take an action
         private IList<IUnitCmd> _availableCmds;
         private IList<IUnitCmd> _unavailableCmds;
+        private bool _areAllPlayersDiscovered;
 
         private IGameManager _gameMgr;
         private IDebugControls _debugControls;
@@ -202,13 +203,18 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         /// <summary>
-        /// Called whenever the PlayerAIMgr's Owner has had its IntelCoverage of the provided item changed, 
-        /// no matter what it is changed too. Attempts to record/delete PlayerKnowledge existence of this item
-        /// and checks whether Owner may have just discovered a new player. If attempting to record, 
-        /// ignores items that Owner already has knowledge of.
+        /// Assesses whether the [Owner] of this PlayerAIMgr is aware of this Item's existence. If already aware and [Owner] should
+        /// lose awareness (IntelCoverage has regressed to None), the [Owner]'s Knowledge of the item is removed.
+        /// If not already aware, the knowledge is added and [Owner] becomes aware. If aware of the item,
+        /// the item is a Command, and [Owner] has not yet met the Command's owner, then [Owner] has just discovered
+        /// a new player. If [Owner] has just gained or lost awareness of a FleetCmd due to an increase or reduction of 
+        /// [Owner]'s IntelCoverage, this AIMgr will fire an awarenessOfFleetChgd event. Obviously, if fleet awareness is lost
+        /// it won't be owned by [Owner].
+        /// <remarks>Called whenever an item has had its IntelCoverage by [Owner] changed. Does nothing if already aware of
+        /// the item without losing that awareness.</remarks>
         /// </summary>
-        /// <param name="item">The item whose IntelCoverage has changed.</param>
-        public void HandleItemIntelCoverageChanged(IItem_Ltd item) {
+        /// <param name = "item" > The item whose IntelCoverage by [Owner] has changed.</param>
+        public void AssessAwarenessOf(IItem_Ltd item) {
             // TEMP
             IIntelItem intelItem = item as IIntelItem;
             IntelCoverage intelCoverage = intelItem.GetIntelCoverage(Owner);
@@ -254,12 +260,14 @@ namespace CodeEnv.Master.GameContent {
                                 return;
                             }
                         }
-                        Knowledge.AddCommand(cmd);
-                        if (fleetCmd != null) {
+                        bool isNewlyAware = Knowledge.AddCommand(cmd);
+                        if (fleetCmd != null && isNewlyAware) {
                             OnAwarenessOfFleetChanged(fleetCmd, isAware: true);
                         }
-                        // Don't filter for Cmd to be newly discovered as most newly discovered Cmds will be at LongRange with no access to Owner
-                        CheckForDiscoveryOfNewPlayer(cmd);
+                        // Don't filter for Cmd to be newly aware as most newly discovered Cmds will be at LongRange with no access to Owner
+                        if (!_areAllPlayersDiscovered) {
+                            CheckForDiscoveryOfNewPlayer(cmd);
+                        }
                     }
                     else {
                         D.Error("{0}: Unanticipated Type {1} attempting to add {2}.", DebugName, item.GetType().Name, item.DebugName);
@@ -282,6 +290,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void CheckForDiscoveryOfNewPlayer(IUnitCmd_Ltd cmd) {
+            D.Assert(!_areAllPlayersDiscovered);
             Player newlyDiscoveredPlayerCandidate;
             if (cmd.TryGetOwner(Owner, out newlyDiscoveredPlayerCandidate)) {
                 if (newlyDiscoveredPlayerCandidate == Owner) {
@@ -295,6 +304,7 @@ namespace CodeEnv.Master.GameContent {
                     SubscribeToPlayerRelationsChange(newlyDiscoveredPlayer);
 
                     Owner.HandleMetNewPlayer(newlyDiscoveredPlayer);
+                    _areAllPlayersDiscovered = Owner.OtherKnownPlayers.Count() == _gameMgr.AllPlayers.Count - 1;
                 }
             }
         }
@@ -724,7 +734,7 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(!(losingOwnedItem is IUniverseCenter));
 
             // Items that are losing their owner call Item.DetectionHandler.ResetBasedOnCurrentDetection() to re-determine the
-            // (soon to be) former owner's intel coverage (and if appropriate, de-populate knowledge)
+            // (soon to be) former owner's intel coverage (and if appropriate, depopulate knowledge)
         }
 
         [Obsolete]

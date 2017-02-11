@@ -29,16 +29,6 @@ namespace CodeEnv.Master.GameContent {
 
         private const string DebugNameFormat = "{0}'s {1}";
 
-        private string _debugName;
-        private string DebugName {
-            get {
-                if (_debugName == null) {
-                    _debugName = DebugNameFormat.Inject(Owner.DebugName, typeof(PlayerKnowledge).Name);
-                }
-                return _debugName;
-            }
-        }
-
         public Player Owner { get; private set; }
 
         public IUniverseCenter_Ltd UniverseCenter { get; private set; }
@@ -295,6 +285,16 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        private string _debugName;
+        private string DebugName {
+            get {
+                if (_debugName == null) {
+                    _debugName = DebugNameFormat.Inject(Owner.DebugName, typeof(PlayerKnowledge).Name);
+                }
+                return _debugName;
+            }
+        }
+
         // Note: Other players this Player has met is held by the Player
 
         private IDictionary<IntVector3, ISystem_Ltd> _systemLookupBySectorID;
@@ -306,7 +306,6 @@ namespace CodeEnv.Master.GameContent {
         private HashSet<IUnitElement_Ltd> _elements = new HashSet<IUnitElement_Ltd>();
         private HashSet<IUnitCmd_Ltd> _commands = new HashSet<IUnitCmd_Ltd>();
         private HashSet<IItem_Ltd> _items = new HashSet<IItem_Ltd>();
-        private DebugSettings _debugSettings;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PlayerKnowledge" /> class.
@@ -338,9 +337,7 @@ namespace CodeEnv.Master.GameContent {
             __InitializeValidatePlayerKnowledge();
         }
 
-        private void InitializeValuesAndReferences() {
-            _debugSettings = DebugSettings.Instance;
-        }
+        private void InitializeValuesAndReferences() { }
 
         /// <summary>
         /// Returns true if the sector indicated by sectorID contains a System.

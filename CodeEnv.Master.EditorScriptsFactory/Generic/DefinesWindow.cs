@@ -35,16 +35,31 @@ public class DefinesWindow : EditorWindow {
     /// </summary>
     private const string Define_GridFramework = "GRID_FRAMEWORK_VECTROSITY";
 
+    /// <summary>
+    /// The DEFINE that enables validation of Property names and Warns if values are equal
+    /// in my implementations of IChangeTracking, INotifyPropertyChanged, INotifyPropertyChanging.
+    /// <remarks>My implementations are APropertyChangeTracking and AMonoBase.</remarks>
+    /// <remarks>I usually want to disable this when profiling as its commonly used, 
+    /// expensive and generates garbage on the heap.</remarks>
+    /// </summary>
+    private const string Define_DebugValidatePropertyChange = "DEBUG_VALIDATE_PROPERTY";
+
     [MenuItem("My Tools/DEFINEs to Include")]
     public static void ShowDefinesWindow() {
         var window = GetWindow<DefinesWindow>();
         window.Show();
     }
 
-    public bool _isDebugLogEnabled;
+    [SerializeField]
+    private bool _isDebugLogEnabled;
 
-    [SerializeField]    // UNCLEAR why?
+    [SerializeField]
+    private bool _isDebugPropChangeEnabled;
+
+    // UNCLEAR 2.10.17 Thought this was reqd to 'remember' but seems to work right 
+    ////[SerializeField]   
     private bool _previousDebugLogEnabledValue = true;  // most of the time I have it enabled
+    private bool _previousDebugPropChangeEnabledValue = true;
     private bool _isGuiEnabled = true;
 
     #region Event and Property Change Handlers
@@ -60,11 +75,16 @@ public class DefinesWindow : EditorWindow {
     void OnGUI() {
         CheckForRecompile();
         GUI.enabled = _isGuiEnabled;
-        _isDebugLogEnabled = EditorGUILayout.Toggle("Enable Scripts Debug Log", _isDebugLogEnabled);
+        _isDebugLogEnabled = GUILayout.Toggle(_isDebugLogEnabled, new GUIContent("Scripts Debug Log", "Check to compile D.Logs for all my loose scripts."));
+        _isDebugPropChangeEnabled = GUILayout.Toggle(_isDebugPropChangeEnabled, new GUIContent("Scripts Prop Validation", "Check to compile Property change name checks and equals warnings for all my loose scripts."));
         GUI.enabled = true;
         if (_isGuiEnabled && _isDebugLogEnabled != _previousDebugLogEnabledValue) {
             _previousDebugLogEnabledValue = _isDebugLogEnabled;
             DebugLogEnabledChangedHandler();
+        }
+        if (_isGuiEnabled && _isDebugPropChangeEnabled != _previousDebugPropChangeEnabledValue) {
+            _previousDebugPropChangeEnabledValue = _isDebugPropChangeEnabled;
+            DebugPropEnabledChangedHandler();
         }
     }
 
@@ -75,6 +95,10 @@ public class DefinesWindow : EditorWindow {
     }
 
     private void DebugLogEnabledChangedHandler() {
+        CheckConditionalCompilationSettings();
+    }
+
+    private void DebugPropEnabledChangedHandler() {
         CheckConditionalCompilationSettings();
     }
 
@@ -106,6 +130,9 @@ public class DefinesWindow : EditorWindow {
         IList<string> definesToInclude = new List<string>() { Define_DebugError, Define_DebugWarn, Define_GridFramework };
         if (_isDebugLogEnabled) {
             definesToInclude.Add(Define_DebugLog);
+        }
+        if (_isDebugPropChangeEnabled) {
+            definesToInclude.Add(Define_DebugValidatePropertyChange);
         }
         UnityEditorUtility.ResetConditionalCompilation(platformTargets, definesToInclude.ToArray<string>());
     }

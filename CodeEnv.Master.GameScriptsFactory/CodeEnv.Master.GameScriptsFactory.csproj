@@ -20,7 +20,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;UNITY_EDITOR; DEBUG_ERROR; DEBUG_WARN; DEBUG_LOG</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;UNITY_EDITOR; DEBUG_ERROR; DEBUG_WARN; DEBUG_LOG; DEBUG_VALIDATE_PROPERTY</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
