@@ -123,6 +123,16 @@ namespace CodeEnv.Master.GameContent {
             return new ObjectAnalyzer().ToString(this);
         }
 
+        #region Debug
+
+        protected override List<MeshRenderer> __GetMeshRenderers() {
+            List<MeshRenderer> result = base.__GetMeshRenderers();
+            result.AddRange(_secondaryMeshRenderers);
+            return result;
+        }
+
+        #endregion
+
         #region IMortalDisplayManager Members
 
         /// <summary>

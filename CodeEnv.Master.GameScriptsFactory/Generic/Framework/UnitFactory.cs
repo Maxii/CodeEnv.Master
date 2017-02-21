@@ -258,9 +258,15 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var shieldGenerators = MakeShieldGenerators(design.ShieldGeneratorStats, element);
         Priority hqPriority = design.HQPriority;
 
+        var stlEngine = MakeEngine(design.StlEngineStat, "StlEngine");
+        FtlEngine ftlEngine = null;
+        if (design.FtlEngineStat != null) {
+            ftlEngine = MakeEngine(design.FtlEngineStat, "FtlEngine") as FtlEngine;
+        }
+
         element.Name = GetUniqueElementName(hullCategory);
         ShipData data = new ShipData(element, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, hqPriority,
-            design.EnginesStat, design.CombatStance);
+            stlEngine, ftlEngine, design.CombatStance);
         element.GetComponent<Rigidbody>().mass = data.Mass; // 7.26.16 Set externally to keep the Rigidbody out of Data
         element.CameraStat = cameraStat;
         element.Data = data;
@@ -587,6 +593,19 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     #endregion
 
     #region Support Members
+
+    /// <summary>
+    /// Makes an STL or FTL Engine, depending on the indicator in engineStat.
+    /// </summary>
+    /// <param name="engineStat">The engine stat.</param>
+    /// <param name="name">The optional engine name.</param>
+    /// <returns></returns>
+    private Engine MakeEngine(EngineStat engineStat, string name = null) {
+        if (engineStat.IsFtlEngine) {
+            return new FtlEngine(engineStat, name);
+        }
+        return new Engine(engineStat, name);
+    }
 
     /// <summary>
     /// Makes and returns passive countermeasures made from the provided stats. PassiveCountermeasures do not use RangeMonitors.

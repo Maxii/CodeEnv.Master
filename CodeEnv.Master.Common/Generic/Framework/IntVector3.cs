@@ -113,7 +113,7 @@ namespace CodeEnv.Master.Common {
             return ToStringFormat.Inject(x, y, z);
         }
 
-        #region IEquatable<Index3D> Members
+        #region IEquatable<IntVector3> Members
 
         public bool Equals(IntVector3 other) {
             return x == other.x && y == other.y && z == other.z;
@@ -121,7 +121,7 @@ namespace CodeEnv.Master.Common {
 
         #endregion
 
-        #region IComparable<Index3D> Members
+        #region IComparable<IntVector3> Members
 
         public int CompareTo(IntVector3 other) {
             // orders by x, then y, then z

@@ -22,7 +22,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Immutable abstract base class for Equipment stats.
     /// </summary>
-    public abstract class AEquipmentStat : IDebugable {
+    public abstract class AEquipmentStat {
 
         private const string DebugNameFormat = "{0}.{1}";
 
@@ -49,6 +49,8 @@ namespace CodeEnv.Master.GameContent {
 
         public float Expense { get; private set; }
 
+        public bool IsDamageable { get; private set; }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="AEquipmentStat" /> class.
         /// </summary>
@@ -60,7 +62,9 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="mass">The mass of the equipment.</param>
         /// <param name="pwrRqmt">The power required to operate the equipment.</param>
         /// <param name="expense">The expense required to operate this equipment.</param>
-        public AEquipmentStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass, float pwrRqmt, float expense) {
+        /// <param name="isDamageable">if set to <c>true</c> [is damageable].</param>
+        public AEquipmentStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass, float pwrRqmt,
+            float expense, bool isDamageable) {
             Name = name;
             ImageAtlasID = imageAtlasID;
             ImageFilename = imageFilename;
@@ -69,6 +73,7 @@ namespace CodeEnv.Master.GameContent {
             Mass = mass;
             PowerRequirement = pwrRqmt;
             Expense = expense;
+            IsDamageable = isDamageable;
         }
 
         public sealed override string ToString() {

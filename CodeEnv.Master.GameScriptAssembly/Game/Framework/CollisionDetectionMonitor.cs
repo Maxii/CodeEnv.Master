@@ -29,21 +29,6 @@ using UnityEngine.Profiling;
 /// </summary>
 public class CollisionDetectionMonitor : AColliderMonitor {
 
-    private const string DebugNameFormat = "{0}.{1}";
-
-    private string _debugName;
-    public override string DebugName {
-        get {
-            if (ParentItem == null) {
-                return base.DebugName;
-            }
-            if (_debugName == null) {
-                _debugName = DebugNameFormat.Inject(ParentItem.DebugName, GetType().Name);
-            }
-            return _debugName;
-        }
-    }
-
     public new IShip ParentItem {
         get { return base.ParentItem as IShip; }
         set { base.ParentItem = value as IShip; }

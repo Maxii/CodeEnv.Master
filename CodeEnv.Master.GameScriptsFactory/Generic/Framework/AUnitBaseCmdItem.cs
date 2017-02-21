@@ -172,6 +172,12 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         return bestElement as FacilityItem;
     }
 
+    protected override void ResetOrdersAndStateOnNewOwner() {
+        CurrentOrder = null;
+        RegisterForOrders();    // must occur prior to Idling
+        CurrentState = BaseState.Idling;
+    }
+
     protected override void InitiateDeadState() {
         UponDeath();
         CurrentState = BaseState.Dead;
@@ -314,11 +320,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         yield return null;
     }
 
-    protected void Idling_UponOwnerChanged() {
-        LogEvent();
-        // TODO
-    }
-
     protected void Idling_UponRelationsChanged(Player chgdRelationsPlayer) {
         LogEvent();
         // TODO
@@ -390,11 +391,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     }
 
     protected void ExecuteAttackOrder_UponRelationsChanged(Player chgdRelationsPlayer) {
-        LogEvent();
-        // TODO
-    }
-
-    protected void ExecuteAttackOrder_UponOwnerChanged() {
         LogEvent();
         // TODO
     }
@@ -508,8 +504,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void Dead_EnterState() {
         LogEvent();
-
-        UnregisterForOrders();
         HandleDeathBeforeBeginningDeathEffect();
         StartEffectSequence(EffectSequenceID.Dying);    // currently no death effect for a BaseCmd, just its elements
         HandleDeathAfterBeginningDeathEffect();

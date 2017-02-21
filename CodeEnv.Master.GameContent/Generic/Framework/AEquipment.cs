@@ -55,7 +55,10 @@ namespace CodeEnv.Master.GameContent {
         private bool _isDamaged;
         public bool IsDamaged {
             get { return _isDamaged; }
-            set { SetProperty<bool>(ref _isDamaged, value, "IsDamaged", IsDamagedPropChangedHandler); }
+            set {
+                D.Assert(IsDamageable, "Attempting to set damaged state of equipment that is not damageable.");
+                SetProperty<bool>(ref _isDamaged, value, "IsDamaged", IsDamagedPropChangedHandler);
+            }
         }
 
         private bool _isOperational;
@@ -65,8 +68,13 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public bool IsOperational {
             get { return _isOperational; }
-            private set { SetProperty<bool>(ref _isOperational, value, "IsOperational", IsOperationalPropChangedHandler); }
+            protected set { SetProperty<bool>(ref _isOperational, value, "IsOperational", IsOperationalPropChangedHandler); }
         }
+
+        /// <summary>
+        /// Indicates whether the equipment can be damaged.
+        /// </summary>
+        public bool IsDamageable { get { return Stat.IsDamageable; } }
 
         protected AEquipmentStat Stat { get; private set; }
 
@@ -98,7 +106,7 @@ namespace CodeEnv.Master.GameContent {
             AssessIsOperational();
         }
 
-        private void AssessIsOperational() {
+        protected virtual void AssessIsOperational() {
             IsOperational = IsActivated && !IsDamaged;
         }
 

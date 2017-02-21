@@ -25,6 +25,8 @@ namespace CodeEnv.Master.GameContent {
 
         bool IsOnStation { get; }
 
+        Vector3 LocalOffset { get; }
+
         float __DistanceFromOnStation { get; }
 
 

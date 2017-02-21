@@ -65,7 +65,7 @@ namespace CodeEnv.Master.GameContent {
 
         public bool ShowDebugLog { get { return Item.ShowDebugLog; } }
 
-        protected IItem Item { get; private set; }
+        protected IOwnerItem Item { get; private set; }
 
         #region Initialization
 
@@ -74,7 +74,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="item">The item.</param>
         /// <param name="owner">The owner.</param>
-        public AItemData(IItem item, Player owner) {
+        public AItemData(IOwnerItem item, Player owner) {
             Item = item;
             D.AssertNotNull(owner, DebugName);  // owner can be NoPlayer but never null
             _owner = owner;

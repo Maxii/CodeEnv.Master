@@ -37,9 +37,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="pwrRqmt">The power required to operate the sensor.</param>
         /// <param name="expense">The expense.</param>
         /// <param name="rangeCat">The range category of the sensor.</param>
+        /// <param name="isDamageable">if set to <c>true</c> [is damageable].</param>
         public SensorStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass, float pwrRqmt,
-            float expense, RangeCategory rangeCat)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat) { }
+            float expense, RangeCategory rangeCat, bool isDamageable)
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, isDamageable) { }
 
         public override string DebugName {
             get {

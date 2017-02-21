@@ -60,11 +60,11 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="turnRate">The turn rate of the ordnance in degrees per hour .</param>
         /// <param name="courseUpdateFreq">How often the ordnance's course is updated in updates per hour.</param>
         /// <param name="maxSteeringInaccuracy">The maximum steering inaccuracy in degrees.</param>
-
+        /// <param name="isDamageable">if set to <c>true</c> [is damageable].</param>
         public MissileWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass, float pwrRqmt,
             float expense, RangeCategory rangeCat, WDVStrength deliveryVehicleStrength, float reloadPeriod, DamageStrength damagePotential,
-            float ordnanceMaxSpeed, float ordnanceMass, float ordnanceDrag, float turnRate, float courseUpdateFreq, float maxSteeringInaccuracy)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, deliveryVehicleStrength, reloadPeriod, damagePotential, ordnanceMaxSpeed, ordnanceMass, ordnanceDrag) {
+            float ordnanceMaxSpeed, float ordnanceMass, float ordnanceDrag, float turnRate, float courseUpdateFreq, float maxSteeringInaccuracy, bool isDamageable)
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, deliveryVehicleStrength, reloadPeriod, damagePotential, ordnanceMaxSpeed, ordnanceMass, ordnanceDrag, isDamageable) {
             D.Assert(turnRate > Constants.ZeroF);
             D.Assert(courseUpdateFreq > Constants.ZeroF);
             if (maxSteeringInaccuracy > 5F) {

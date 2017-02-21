@@ -36,6 +36,19 @@ namespace CodeEnv.Master.GameContent {
         public const float __MaxFleetWeaponsRangeDistance = 20F;
 
         /// <summary>
+        /// TEMP The minimum weapons range distance. Used for warning if weapons range is not sufficient.
+        /// <remarks>Bit of overkill as doesn't account for distance from item to closest surface.</remarks>
+        /// </summary>
+        public static float __MinWeaponsRangeDistance
+            = Mathf.Max(LargestPlanetoidObstacleZoneRadius, LargestFacilityObstacleZoneRadius, LargestShipCollisionDetectionZoneRadius)
+            + LargestShipCollisionDetectionZoneRadius;
+
+        /// <summary>
+        /// The minimum expected turn rate in degrees per frame at the game's slowest allowed FPS rate.
+        /// </summary>
+        ////public static float __MinExpectedTurnratePerFrameAtSlowestFPS = (GameTime.HoursPerSecond * MinimumTurnRate) / MinimumFramerate;
+
+        /// <summary>
         /// The Game's minimum allowed turn rate of a ship in degrees per hour.
         /// <remarks>Used to calculate the lowest turn rate in degrees per frame 
         /// that a ship can have. Prevents a ship from correcting its heading too often
@@ -138,6 +151,9 @@ namespace CodeEnv.Master.GameContent {
 
         public const int MaxShipsPerFleet = 25;
 
+        public const float LargestPlanetoidObstacleZoneRadius = 6.1F; // Gas Giant = 6.0
+
+        public const float LargestFacilityObstacleZoneRadius = 0.7F;  // Central Hub
 
         public const float LargestShipCollisionDetectionZoneRadius = 0.35F; // Carrier  // Smallest = 0.06F Frigate
 
@@ -148,7 +164,6 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public static readonly float FleetFormationStationRadius = LargestShipCollisionDetectionZoneRadius * 2F;    // 0.7
 
-        public const float LargestFacilityObstacleZoneRadius = 0.7F;  // Central Hub
 
         /// <summary>
         /// The length in world units of a sector side along any of the axis. As a sector

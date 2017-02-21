@@ -181,6 +181,7 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
         _gameMgr.GameKnowledge.AddUnit(_command, _elements.Cast<IUnitElement>());
     }
 
+    [Obsolete]
     protected override void RegisterCommandForOrders() {
         var ownerAIMgr = _gameMgr.GetAIManagerFor(Owner);
         ownerAIMgr.RegisterForOrders(_command);
@@ -197,6 +198,7 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
     }
 
     private void __SetFtlDamagedState(ShipItem element) {
+        D.Assert(element.Data.IsFtlCapable);
         element.Data.IsFtlDamaged = _ftlStartsDamaged;
     }
 

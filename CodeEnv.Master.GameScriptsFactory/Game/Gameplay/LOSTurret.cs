@@ -264,13 +264,17 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// <returns></returns>
     private IEnumerator ExecuteTraverse(Quaternion reqdHubRotation, Quaternion reqdBarrelElevation) {
         bool isInformedOfDateWarning = false;
+        bool isInformedOfDateError = false;
         Quaternion startingHubRotation = _hub.rotation;
         Quaternion startingBarrelElevation = _barrel.localRotation;
         float reqdHubRotationInDegrees = Quaternion.Angle(startingHubRotation, reqdHubRotation);
         float reqdBarrelElevationInDegrees = Quaternion.Angle(startingBarrelElevation, reqdBarrelElevation);
         //D.Log(ShowDebugLog, "Initiating {0} traversal. ReqdHubRotationInDegrees: {1:0.#}, ReqdBarrelElevationInDegrees: {2:0.#}.", DebugName, reqdHubRotationInDegrees, reqdBarrelElevationInDegrees);
-        bool isHubRotationCompleted = _hub.rotation.IsSame(reqdHubRotation, AllowedTraverseInaccuracy);
-        bool isBarrelElevationCompleted = _barrel.localRotation.IsSame(reqdBarrelElevation, AllowedTraverseInaccuracy);
+        float hubActualDeviation;
+        float barrelActualDeviation;
+
+        bool isHubRotationCompleted = _hub.rotation.IsSame(reqdHubRotation, out hubActualDeviation, AllowedTraverseInaccuracy);
+        bool isBarrelElevationCompleted = _barrel.localRotation.IsSame(reqdBarrelElevation, out barrelActualDeviation, AllowedTraverseInaccuracy);
         bool isTraverseCompleted = isHubRotationCompleted && isBarrelElevationCompleted;
         float actualHubRotationInDegrees = 0F;
         float actualBarrelElevationInDegrees = 0F;
@@ -287,7 +291,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
                 Quaternion inprocessRotation = Quaternion.RotateTowards(previousHubRotation, reqdHubRotation, allowedHubRotationChange);
                 //float rotationChangeInDegrees = Quaternion.Angle(previousHubRotation, inprocessRotation);
                 //D.Log(ShowDebugLog, "{0}: AllowedHubRotationChange = {1}, ActualHubRotationChange = {2}.", DebugName, allowedHubRotationChange, rotationChangeInDegrees);
-                isHubRotationCompleted = inprocessRotation.IsSame(reqdHubRotation, AllowedTraverseInaccuracy);
+                isHubRotationCompleted = inprocessRotation.IsSame(reqdHubRotation, out hubActualDeviation, AllowedTraverseInaccuracy);
                 _hub.rotation = inprocessRotation;
             }
 
@@ -297,22 +301,35 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
                 Quaternion inprocessElevation = Quaternion.RotateTowards(previousBarrelElevation, reqdBarrelElevation, allowedBarrelElevationChange);
                 //float elevationChangeInDegrees = Quaternion.Angle(previousBarrelElevation, inprocessElevation);
                 //D.Log(ShowDebugLog, "{0}: AllowedBarrelElevationChange = {1}, ActualBarrelElevationChange = {2}.", DebugName, allowedBarrelElevationChange, elevationChangeInDegrees);
-                isBarrelElevationCompleted = inprocessElevation.IsSame(reqdBarrelElevation, AllowedTraverseInaccuracy);
+                isBarrelElevationCompleted = inprocessElevation.IsSame(reqdBarrelElevation, out barrelActualDeviation, AllowedTraverseInaccuracy);
                 _barrel.localRotation = inprocessElevation;
             }
             isTraverseCompleted = isHubRotationCompleted && isBarrelElevationCompleted;
 
             if (!isTraverseCompleted && (currentDate = _gameTime.CurrentDate) > warnDate) {
                 if (!isInformedOfDateWarning) {
-                    D.Log("{0}: CurrentDate {1} > WarnDate {2} while traversing.", DebugName, currentDate, warnDate);
+                    D.Warn("{0}: CurrentDate {1} > WarnDate {2} while traversing. HubActualDeviation = {3}, BarrelActualDeviation = {4}.",
+                        DebugName, currentDate, warnDate, hubActualDeviation, barrelActualDeviation);
                     isInformedOfDateWarning = true;
                 }
                 if (errorDate == default(GameDate)) {
                     errorDate = new GameDate(warnDate, GameTimeDuration.OneDay);
                 }
 
-                if (currentDate > errorDate) {
-                    D.Error("{0}.ExecuteTraverse timed out.", DebugName);
+                if (!isInformedOfDateError) {
+                    if (currentDate > errorDate) {
+                        if (!isHubRotationCompleted) {
+                            actualHubRotationInDegrees = Quaternion.Angle(startingHubRotation, _hub.rotation);
+                            D.Error("{0}.ExecuteTraverse timed out: ReqdHubRotation = {1}, ActualHubRotation = {2}, ActualDeviation = {3}, AllowedDeviation = {4:0.00}.",
+                                DebugName, reqdHubRotationInDegrees, actualHubRotationInDegrees, hubActualDeviation, AllowedTraverseInaccuracy);
+                        }
+                        if (!isBarrelElevationCompleted) {
+                            actualBarrelElevationInDegrees = Quaternion.Angle(startingBarrelElevation, _barrel.localRotation);
+                            D.Error("{0}.ExecuteTraverse timed out: ReqdBarrelElevation = {1}, ActualBarrelElevation = {2}, ActualDeviation = {3}, AllowedDeviation = {4:0.00}.",
+                                DebugName, reqdBarrelElevationInDegrees, actualBarrelElevationInDegrees, barrelActualDeviation, AllowedTraverseInaccuracy);
+                        }
+                        isInformedOfDateError = true;
+                    }
                 }
 
                 if (ShowDebugLog) {
@@ -332,6 +349,83 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         //D.Warn(actualHubRotationInDegrees < Constants.ZeroF || actualHubRotationInDegrees > HubMaxRotationTraversal, "{0} completed Traverse Job with unexpected Hub Rotation change of {1:0.#} degrees.", DebugName, actualHubRotationInDegrees);
         //D.Warn(actualBarrelElevationInDegrees < Constants.ZeroF || actualBarrelElevationInDegrees > BarrelMaxElevationTraversal, "{0} completed Traverse Job with unexpected Barrel Elevation change of {1:0.#} degrees.", DebugName, actualBarrelElevationInDegrees);
     }
+    //private IEnumerator ExecuteTraverse(Quaternion reqdHubRotation, Quaternion reqdBarrelElevation) {
+    //    bool isInformedOfDateWarning = false;
+    //    Quaternion startingHubRotation = _hub.rotation;
+    //    Quaternion startingBarrelElevation = _barrel.localRotation;
+    //    float reqdHubRotationInDegrees = Quaternion.Angle(startingHubRotation, reqdHubRotation);
+    //    float reqdBarrelElevationInDegrees = Quaternion.Angle(startingBarrelElevation, reqdBarrelElevation);
+    //    //D.Log(ShowDebugLog, "Initiating {0} traversal. ReqdHubRotationInDegrees: {1:0.#}, ReqdBarrelElevationInDegrees: {2:0.#}.", DebugName, reqdHubRotationInDegrees, reqdBarrelElevationInDegrees);
+    //    bool isHubRotationCompleted = _hub.rotation.IsSame(reqdHubRotation, AllowedTraverseInaccuracy);
+    //    bool isBarrelElevationCompleted = _barrel.localRotation.IsSame(reqdBarrelElevation, AllowedTraverseInaccuracy);
+    //    bool isTraverseCompleted = isHubRotationCompleted && isBarrelElevationCompleted;
+    //    float actualHubRotationInDegrees = 0F;
+    //    float actualBarrelElevationInDegrees = 0F;
+    //    float deltaTime;
+
+    //    GameDate warnDate = CalcLatestDateToCompleteTraverse();
+    //    GameDate errorDate = default(GameDate);
+    //    GameDate currentDate = _gameTime.CurrentDate;
+    //    while (!isTraverseCompleted) {
+    //        deltaTime = _gameTime.DeltaTime;
+    //        if (!isHubRotationCompleted) {
+    //            Quaternion previousHubRotation = _hub.rotation;
+    //            float allowedHubRotationChange = HubRotationRate * _gameTime.GameSpeedAdjustedHoursPerSecond * deltaTime;
+    //            Quaternion inprocessRotation = Quaternion.RotateTowards(previousHubRotation, reqdHubRotation, allowedHubRotationChange);
+    //            //float rotationChangeInDegrees = Quaternion.Angle(previousHubRotation, inprocessRotation);
+    //            //D.Log(ShowDebugLog, "{0}: AllowedHubRotationChange = {1}, ActualHubRotationChange = {2}.", DebugName, allowedHubRotationChange, rotationChangeInDegrees);
+    //            isHubRotationCompleted = inprocessRotation.IsSame(reqdHubRotation, AllowedTraverseInaccuracy);
+    //            _hub.rotation = inprocessRotation;
+    //        }
+
+    //        if (!isBarrelElevationCompleted) {
+    //            Quaternion previousBarrelElevation = _barrel.localRotation;
+    //            float allowedBarrelElevationChange = BarrelElevationRate * _gameTime.GameSpeedAdjustedHoursPerSecond * deltaTime;
+    //            Quaternion inprocessElevation = Quaternion.RotateTowards(previousBarrelElevation, reqdBarrelElevation, allowedBarrelElevationChange);
+    //            //float elevationChangeInDegrees = Quaternion.Angle(previousBarrelElevation, inprocessElevation);
+    //            //D.Log(ShowDebugLog, "{0}: AllowedBarrelElevationChange = {1}, ActualBarrelElevationChange = {2}.", DebugName, allowedBarrelElevationChange, elevationChangeInDegrees);
+    //            isBarrelElevationCompleted = inprocessElevation.IsSame(reqdBarrelElevation, AllowedTraverseInaccuracy);
+    //            _barrel.localRotation = inprocessElevation;
+    //        }
+    //        isTraverseCompleted = isHubRotationCompleted && isBarrelElevationCompleted;
+
+    //        if (!isTraverseCompleted && (currentDate = _gameTime.CurrentDate) > warnDate) {
+    //            if (!isInformedOfDateWarning) {
+    //                D.Log("{0}: CurrentDate {1} > WarnDate {2} while traversing.", DebugName, currentDate, warnDate);
+    //                isInformedOfDateWarning = true;
+    //            }
+    //            if (errorDate == default(GameDate)) {
+    //                errorDate = new GameDate(warnDate, GameTimeDuration.OneDay);
+    //            }
+
+    //            if (currentDate > errorDate) {
+    //                if (!isHubRotationCompleted) {
+    //                    actualHubRotationInDegrees = Quaternion.Angle(startingHubRotation, _hub.rotation);
+    //                    D.Error("{0}.ExecuteTraverse timed out: ReqdHubRotation = {1}, ActualHubRotation = {2}, AllowedInaccuracy = {3:0.00}.", DebugName, reqdHubRotationInDegrees, actualHubRotationInDegrees, AllowedTraverseInaccuracy);
+    //                }
+    //                if (!isBarrelElevationCompleted) {
+    //                    actualBarrelElevationInDegrees = Quaternion.Angle(startingBarrelElevation, _barrel.localRotation);
+    //                    D.Error("{0}.ExecuteTraverse timed out: ReqdBarrelElevation = {1}, ActualBarrelElevation = {2}, AllowedInaccuracy = {3:0.00}.", DebugName, reqdBarrelElevationInDegrees, actualBarrelElevationInDegrees, AllowedTraverseInaccuracy);
+    //                }
+    //            }
+
+    //            if (ShowDebugLog) {
+    //                if (!isHubRotationCompleted) {
+    //                    actualHubRotationInDegrees = Quaternion.Angle(startingHubRotation, _hub.rotation);
+    //                    D.Log("{0}: ReqdHubRotation = {1}, ActualHubRotation = {2}, AllowedInaccuracy = {3:0.00}.", DebugName, reqdHubRotationInDegrees, actualHubRotationInDegrees, AllowedTraverseInaccuracy);
+    //                }
+    //                if (!isBarrelElevationCompleted) {
+    //                    actualBarrelElevationInDegrees = Quaternion.Angle(startingBarrelElevation, _barrel.localRotation);
+    //                    D.Log("{0}: ReqdBarrelElevation = {1}, ActualBarrelElevation = {2}, AllowedInaccuracy = {3:0.00}.", DebugName, reqdBarrelElevationInDegrees, actualBarrelElevationInDegrees, AllowedTraverseInaccuracy);
+    //                }
+    //            }
+    //        }
+    //        yield return null;
+    //    }
+    //    //D.Log(ShowDebugLog, "{0} completed Traverse Job on {1}. Hub rotated {2:0.#} degrees, Barrel elevated {3:0.#} degrees.", DebugName, currentDate, reqdHubRotationInDegrees, reqdBarrelElevationInDegrees);
+    //    //D.Warn(actualHubRotationInDegrees < Constants.ZeroF || actualHubRotationInDegrees > HubMaxRotationTraversal, "{0} completed Traverse Job with unexpected Hub Rotation change of {1:0.#} degrees.", DebugName, actualHubRotationInDegrees);
+    //    //D.Warn(actualBarrelElevationInDegrees < Constants.ZeroF || actualBarrelElevationInDegrees > BarrelMaxElevationTraversal, "{0} completed Traverse Job with unexpected Barrel Elevation change of {1:0.#} degrees.", DebugName, actualBarrelElevationInDegrees);
+    //}
 
     /// <summary>
     /// Tests whether this turret can traverse to acquire the provided targetPosition. 

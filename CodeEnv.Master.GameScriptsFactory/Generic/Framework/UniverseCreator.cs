@@ -287,6 +287,27 @@ public class UniverseCreator {
         Player userPlayer = _gameMgr.UserPlayer;
         IList<Player> aiPlayers = _gameMgr.AIPlayers;
         int aiPlayerQty = aiPlayers.Count;
+        Dictionary<DiplomaticRelationship, IList<Player>> aiPlayerInitialUserRelationsLookup =
+            new Dictionary<DiplomaticRelationship, IList<Player>>(aiPlayerQty, DiplomaticRelationshipEqualityComparer.Default);
+
+        if (DebugControls.Instance.FleetsAutoAttackAsDefault) {
+            // Setup initial AIPlayer <-> User relationships as War and record in lookup...
+            IList<Player> aiPlayersAtWarWithUser = new List<Player>(aiPlayerQty);
+            aiPlayerInitialUserRelationsLookup.Add(DiplomaticRelationship.War, aiPlayersAtWarWithUser);
+            foreach (var aiPlayer in aiPlayers) {
+                userPlayer.SetInitialRelationship(aiPlayer, DiplomaticRelationship.War);
+                aiPlayersAtWarWithUser.Add(aiPlayer);
+            }
+            // ... then set initial AIPlayer <-> AIPlayer relationship to War
+            for (int j = 0; j < aiPlayerQty; j++) {
+                for (int k = j + 1; k < aiPlayerQty; k++) {
+                    Player jAiPlayer = aiPlayers[j];
+                    Player kAiPlayer = aiPlayers[k];
+                    jAiPlayer.SetInitialRelationship(kAiPlayer, DiplomaticRelationship.War);    // Will auto handle both assignments
+                }
+            }
+            return aiPlayerInitialUserRelationsLookup;
+        }
 
         var aiOwnedDebugUnitCreators = existingDebugUnitCreators.Where(uc => !uc.EditorSettings.IsOwnerUser);
         var desiredAiUserRelationships = aiOwnedDebugUnitCreators.Select(uc => uc.EditorSettings.DesiredRelationshipWithUser.Convert());
@@ -296,8 +317,6 @@ public class UniverseCreator {
         //D.Log(ShowDebugLog, "{0}: Unique desired AI/User Relationships = {1}.", DebugName, uniqueDesiredAiUserRelationships.Select(r => r.GetValueName()).Concatenate());
 
         // Setup initial AIPlayer <-> User relationships derived from editorCreators..
-        Dictionary<DiplomaticRelationship, IList<Player>> aiPlayerInitialUserRelationsLookup =
-            new Dictionary<DiplomaticRelationship, IList<Player>>(aiPlayerQty, DiplomaticRelationshipEqualityComparer.Default);
         Stack<Player> unassignedAIPlayers = new Stack<Player>(aiPlayers);
         uniqueDesiredAiUserRelationships.ForAll(aiUserRelationship => {
             if (unassignedAIPlayers.Count > Constants.Zero) {

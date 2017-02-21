@@ -32,11 +32,11 @@ namespace CodeEnv.Master.GameContent {
 
         string UnitName { get; }
 
+        float UnitMaxFormationRadius { get; }
+
         float ClearanceRadius { get; }
 
         IList<ISensorRangeMonitor> SensorRangeMonitors { get; }
-
-        Transform transform { get; }
 
         void HandleRelationsChanged(Player chgdRelationsPlayer);
 

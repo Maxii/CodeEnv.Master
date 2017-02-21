@@ -25,37 +25,29 @@ namespace CodeEnv.Master.Common.LocalResources {
     /// </summary>
     public static class ResourceMgrFactory {
 
-        public enum ResourceFileName {
-            None = 0,
-            ErrorMessages = 1,
-            GeneralMessages = 2,
-            CommonTerms = 3,
-            UIMessages = 4
-        }
-
-        private static Dictionary<ResourceFileName, ResourceManager> resourceMgrs = new Dictionary<ResourceFileName, ResourceManager>();
+        private static Dictionary<ResourceFilename, ResourceManager> resourceMgrs = new Dictionary<ResourceFilename, ResourceManager>(ResourceFilenameEqualityComparer.Default);
         private static string rootResourceNamespace = typeof(ResourceMgrFactory).Namespace;
         /// <summary>
-        /// Gets the <c>ResourceManager</c> referred to by <c>ResourceFileName</c>.
+        /// Gets the <c>ResourceManager</c> referred to by <c>ResourceFilename</c>.
         /// </summary>
-        /// <param name="resxFileName">Name of the .resx file.</param>
+        /// <param name="resxFilename">Name of the .resx file.</param>
         /// <returns></returns>
         /// <exception cref="System.ArgumentOutOfRangeException"></exception>
-        public static ResourceManager GetManager(ResourceFileName resxFileName) {
-            if (!Enum.IsDefined(typeof(ResourceFileName), resxFileName)) {  // Circular ref w/Enums<> 
+        public static ResourceManager GetManager(ResourceFilename resxFilename) {
+            if (!Enum.IsDefined(typeof(ResourceFilename), resxFilename)) {  // Circular ref w/Enums<> 
                 string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
-                throw new ArgumentOutOfRangeException(String.Format(CultureInfo.InvariantCulture, ErrorMessages.UndefinedEnum, resxFileName, callingMethodName));    // Circular ref w/Inject()
+                throw new ArgumentOutOfRangeException(String.Format(CultureInfo.InvariantCulture, ErrorMessages.UndefinedEnum, resxFilename, callingMethodName));    // Circular ref w/Inject()
             }
 
             ResourceManager rm = null;
-            if (!resourceMgrs.ContainsKey(resxFileName)) {
-                rm = resourceMgrs[resxFileName];
+            if (!resourceMgrs.ContainsKey(resxFilename)) {
+                rm = resourceMgrs[resxFilename];
             }
             else {
-                string resMgrAccessName = rootResourceNamespace + "." + Enum.GetName(typeof(ResourceFileName), resxFileName);
+                string resMgrAccessName = rootResourceNamespace + "." + Enum.GetName(typeof(ResourceFilename), resxFilename);
                 rm = new ResourceManager(resMgrAccessName, Assembly.GetExecutingAssembly());
-                resourceMgrs.Add(resxFileName, rm);
-                // string ns = Assembly.GetEntryAssembly().GetType("NeedsFullyQualifiedName", true, true).Namespace;
+                resourceMgrs.Add(resxFilename, rm);
+                //// string ns = Assembly.GetEntryAssembly().GetType("NeedsFullyQualifiedName", true, true).Namespace;
             }
             return rm;
         }
@@ -66,8 +58,8 @@ namespace CodeEnv.Master.Common.LocalResources {
         /// <param name="resxFileName">Name of the .resx file.</param>
         /// <param name="resourceKeyName">The key name of the string value we want.</param>
         /// <returns></returns>
-        /// <exception cref="System.ArgumentException">ResourceFileName does not refer to a .resx file of Type string.</exception>
-        public static string GetString(ResourceFileName resxFileName, string resourceKeyName) {
+        /// <exception cref="System.ArgumentException">ResourceFilename does not refer to a .resx file of Type string.</exception>
+        public static string GetString(ResourceFilename resxFileName, string resourceKeyName) {
             ResourceManager rm = GetManager(resxFileName);
             if (!rm.ResourceSetType.Equals(typeof(string))) {
                 string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;
@@ -75,6 +67,42 @@ namespace CodeEnv.Master.Common.LocalResources {
             }
             return rm.GetString(resourceKeyName);
         }
+
+        #region Nested Classes
+
+        public enum ResourceFilename {
+            None = 0,
+            ErrorMessages = 1,
+            GeneralMessages = 2,
+            CommonTerms = 3,
+            UIMessages = 4
+        }
+
+        /// <summary>
+        /// IEqualityComparer for ResourceFilename. 
+        /// <remarks>For use when ResourceFilename is used as a Dictionary key as it avoids boxing from use of object.Equals.</remarks>
+        /// </summary>
+        public class ResourceFilenameEqualityComparer : IEqualityComparer<ResourceFilename> {
+
+            public static readonly ResourceFilenameEqualityComparer Default = new ResourceFilenameEqualityComparer();
+
+            #region IEqualityComparer<DiplomaticRelationship> Members
+
+            public bool Equals(ResourceFilename value1, ResourceFilename value2) {
+                return value1 == value2;
+            }
+
+            public int GetHashCode(ResourceFilename value) {
+                return value.GetHashCode();
+            }
+
+            #endregion
+
+        }
+
+        #endregion
+
+        #region Archive
 
         /// <summary>
         /// Initializes the strongly typed resource accessor, allowing syntax like StronglyTypedResourceAccessor.NameOfResource.
@@ -84,7 +112,7 @@ namespace CodeEnv.Master.Common.LocalResources {
         //    string desiredAccessorClassName = "StronglyTypedResourceAccessor";
         //    string desiredAccessorFileName = @".\" + desiredAccessorClassName + ".cs";
         //    string accessorCodeNamespace = GetType().Namespace;
-        //    StreamWriter sw = new StreamWriter(desiredAccessorFileName);    // creates the .cs file to write code too
+        //    StreamWriter w = new StreamWriter(desiredAccessorFileName);    // creates the .cs file to write code too
         //    string resxFilePath = rootResourceNamespace + "\\ErrorStrings.resx";
         //    string[] errors = null;
         //    CSharpCodeProvider provider = new CSharpCodeProvider(); // specifies use of C# as the code language of the accessor
@@ -98,9 +126,11 @@ namespace CodeEnv.Master.Common.LocalResources {
         //            Debug.WriteLine(error);
         //        }
         //    }
-        //    provider.GenerateCodeFromCompileUnit(code, sw, new CodeGeneratorOptions());
-        //    sw.Close();
+        //    provider.GenerateCodeFromCompileUnit(code, w, new CodeGeneratorOptions());
+        //    w.Close();
         //}
+
+        #endregion
 
     }
 }

@@ -73,23 +73,16 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
      ********************************************************************************************************************************/
 
     /// <summary>
+    /// Execute any preparation work that must occur prior to others hearing about this Item's death.
+    /// The normal death shutdown process is handled by HandleDeathXXX() which is called by the 
+    /// Item's Dead_EnterState method up to a frame later.
+    /// </summary>
+    protected abstract void PrepareForDeathNotification();
+
+    /// <summary>
     /// Hook for derived classes to initiate transition to their DeadState.
     /// </summary>
     protected abstract void InitiateDeadState();
-
-    /// <summary>
-    /// Execute any preparation work that must occur prior to others hearing about this Item's death.
-    /// The normal death shutdown process is handled by HandleDeath() which is called by the 
-    /// Item's Dead_EnterState method up to a frame later.
-    /// <remarks>Obsoleted 5.5.16 and replaced by HandleDeath().</remarks>
-    /// </summary>
-    [Obsolete]
-    protected virtual void PrepareForDeathNotification() {
-        // Moved this to HandleDeath 2.x.16 without noticing a problem when obsoleted 5.5.16
-        //if (IsSelected) {
-        //    SelectionManager.Instance.CurrentSelection = null; 
-        //}
-    }
 
     /// <summary>
     /// Handles the death shutdown process prior to beginning the
@@ -107,7 +100,6 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
         if (IsHudShowing) {
             ShowHud(false);
         }
-        //(DisplayMgr as IMortalDisplayManager).HandleDeath();
 
         HandleDeathForHighlights();
     }
@@ -132,11 +124,13 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
     /// Handles the death shutdown process after beginning the death effect. Called by the item's Dead state.
     /// <remarks>Death Effect will not begin if DisplayMgr has already disabled the display.
     /// When the display is disabled, the dead item thinks the primary mesh is no longer in the camera's LOS
-    /// which results in IsVisualDetailDiscernibleToUser returning false, aka 'nobody can see it so don't show it'
+    /// which results in IsVisualDetailDiscernibleToUser returning false, aka 'nobody can see it so don't show it'.
     ///</remarks>
     /// </summary>
     protected virtual void HandleDeathAfterBeginningDeathEffect() {
-        (DisplayMgr as IMortalDisplayManager).HandleDeath();
+        if (DisplayMgr != null) {
+            (DisplayMgr as IMortalDisplayManager).HandleDeath();
+        }
     }
 
     #region Event and Property Change Handlers
@@ -157,11 +151,10 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
         base.HandleIsOperationalChanged();
         if (!IsOperational) {
             //D.Log(ShowDebugLog, "{0} is initiating death sequence.", DebugName);
-            InitiateDeadState();
-            // HandleDeath gets called after this, from Dead_EnterState
-            //PrepareForDeathNotification();
+            PrepareForDeathNotification();
             OnDeath();
-            //CleanupAfterDeathNotification();
+            InitiateDeadState();
+            // HandleDeathXXX() gets called after this, from Dead_EnterState
         }
     }
 
@@ -215,8 +208,8 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
     protected virtual void AssessCripplingDamageToEquipment(float damageSeverity) {
         Utility.ValidateForRange(damageSeverity, Constants.ZeroPercent, Constants.OneHundredPercent);
         var passiveCmDamageChance = damageSeverity;
-        var undamagedPassiveCMs = Data.PassiveCountermeasures.Where(cm => !cm.IsDamaged);
-        undamagedPassiveCMs.ForAll(cm => cm.IsDamaged = RandomExtended.Chance(passiveCmDamageChance));
+        var undamagedDamageablePassiveCMs = Data.PassiveCountermeasures.Where(cm => cm.IsDamageable && !cm.IsDamaged);
+        undamagedDamageablePassiveCMs.ForAll(cm => cm.IsDamaged = RandomExtended.Chance(passiveCmDamageChance));
     }
 
     #endregion

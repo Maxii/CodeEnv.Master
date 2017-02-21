@@ -45,7 +45,7 @@ public class FormationGridOrganizer : AMonoBase {
     private float _initialValue;
     private float _incrementValue;
 
-    [ContextMenu("Execute")]
+    [ContextMenu("Organize")]
     private void Organize() {
         D.Log("{0}.Organize() called.", GetType().Name);
         ValidateValueSettings();
@@ -54,11 +54,21 @@ public class FormationGridOrganizer : AMonoBase {
         PositionGridElements();
     }
 
+    // 2.14.17 Not currently used. Good approach but already handled by EditModeController.EnableRenderers
+    [System.Obsolete]
+    ////[ContextMenu("ToggleShowMesh")]
+    private void ToggleShowMesh() {
+        var placeholderMeshRenderers = GetComponentsInChildren<MeshRenderer>();
+        bool areRenderersEnabled = placeholderMeshRenderers.First().enabled;
+        D.Assert(placeholderMeshRenderers.All(pmr => pmr.enabled == areRenderersEnabled));
+        placeholderMeshRenderers.ForAll(pmr => pmr.enabled = !areRenderersEnabled);
+    }
+
     private void ValidateValueSettings() {
-        D.Assert(cellSize != default(Vector3));  //D.AssertNotDefault(cellSize);
+        D.Assert(cellSize != default(Vector3));
         D.AssertApproxEqual(cellSize.x, cellSize.y);
         D.AssertApproxEqual(cellSize.y, cellSize.z);
-        D.Assert(gridDimensions != default(Vector3));   //D.AssertNotDefault(gridDimensions);
+        D.Assert(gridDimensions != default(Vector3));
         D.Assert(gridDimensions.x > Constants.ZeroF && gridDimensions.y > Constants.ZeroF && gridDimensions.z > Constants.ZeroF);
         ValidateAsInteger(gridDimensions.x);
         ValidateAsInteger(gridDimensions.y);
@@ -134,7 +144,15 @@ public class FormationGridOrganizer : AMonoBase {
         D.Assert(Mathfx.Approx((value * 10F) % 10F, Constants.ZeroF, 0.01F));
     }
 
-    protected override void Cleanup() { }
+    [System.Obsolete]
+    private void DisableAllPlaceholderRenderers() {
+        var placeholderMeshRenderers = GetComponentsInChildren<MeshRenderer>();
+        placeholderMeshRenderers.ForAll(pmr => pmr.enabled = false);
+    }
+
+    protected override void Cleanup() {
+        ////DisableAllPlaceholderRenderers();
+    }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

@@ -82,25 +82,20 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
     #endregion
 
     protected virtual void PopulateElementWidgets() {
-        bool isPositionValid = false;
         Vector3 position;
-
         if (Position.HasValue) {
             position = Position.Value;
-            isPositionValid = true;
         }
-        else if (SectorGrid.Instance.__TryGetSectorPosition(SectorID, out position)) {
-            isPositionValid = true;
+        else {
+            position = SectorGrid.Instance.GetSectorPosition(SectorID);
         }
 
         IUnitBaseCmd myClosestBase = null;
         string distanceText = _unknown;
-        if (isPositionValid) {
-            // can return false if there are no bases currently owned by the user
-            if (GameManager.Instance.UserAIManager.TryFindMyClosestItem<IUnitBaseCmd>(position, out myClosestBase)) {
-                _closestBaseDistanceInSectors = SectorGrid.Instance.GetDistanceInSectors(SectorID, myClosestBase.SectorID);
-                distanceText = Constants.FormatFloat_1DpMax.Inject(_closestBaseDistanceInSectors.Value);
-            }
+        // can return false if there are no bases currently owned by the user
+        if (GameManager.Instance.UserAIManager.TryFindMyClosestItem<IUnitBaseCmd>(position, out myClosestBase)) {
+            _closestBaseDistanceInSectors = SectorGrid.Instance.GetDistanceInSectors(SectorID, myClosestBase.SectorID);
+            distanceText = Constants.FormatFloat_1DpMax.Inject(_closestBaseDistanceInSectors.Value);
         }
         _label.text = LabelFormat.Inject(distanceText, SectorID);
 

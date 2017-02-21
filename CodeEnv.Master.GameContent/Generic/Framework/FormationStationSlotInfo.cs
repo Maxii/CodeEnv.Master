@@ -57,12 +57,13 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public Vector3 LocalOffset { get; private set; }
 
-        public bool IsHQSlot { get { return LocalOffset == Vector3.zero; } }
+        public bool IsHQSlot { get; private set; }
 
         public FormationStationSlotInfo(FormationStationSlotID slotID, bool isReserve, Vector3 localOffset) : this() {
             SlotID = slotID;
             IsReserve = isReserve;
             LocalOffset = localOffset;
+            IsHQSlot = localOffset == Vector3.zero;
         }
 
         #region Object.Equals and GetHashCode Override

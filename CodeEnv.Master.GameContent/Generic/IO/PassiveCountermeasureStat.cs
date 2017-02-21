@@ -38,7 +38,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="expense">The expense.</param>
         /// <param name="damageMitigation">The damage mitigation.</param>
         public PassiveCountermeasureStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass, float pwrRqmt, float expense, DamageStrength damageMitigation)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense) {
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, isDamageable: true) {
             DamageMitigation = damageMitigation;
         }
 

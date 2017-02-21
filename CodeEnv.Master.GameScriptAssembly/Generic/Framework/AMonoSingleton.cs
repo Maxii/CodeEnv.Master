@@ -48,7 +48,7 @@ public abstract class AMonoSingleton<T> : AMonoBaseSingleton, IInstanceCount whe
         get {
             if (_instance == null) {
                 if (IsApplicationQuiting) {
-                    //D.Warn("Application is quiting while trying to access {0}.Instance.".Inject(typeof(T).Name));
+                    //D.Log("Application is quiting while trying to access {0}.Instance.".Inject(typeof(T).Name));
                     return null;
                 }
                 // Instance is required for the first time, so look for it                        

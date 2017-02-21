@@ -306,29 +306,25 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         WDVCategory category = weapon.DeliveryVehicleCategory;
         Transform ordnanceTransform;
         if (category == WDVCategory.Beam) {
-            ordnanceTransform = MyPoolManager.Instance.Spawn(category, launchLoc, launchRotation, weapon.WeaponMount.Muzzle);
+            ordnanceTransform = GamePoolManager.Instance.Spawn(category, launchLoc, launchRotation, weapon.WeaponMount.Muzzle);
             Beam beam = ordnanceTransform.GetComponent<Beam>();
             beam.Launch(target, weapon);
         }
         else {
-            // Projectiles are located under PoolManager in the scene
-            ordnanceTransform = MyPoolManager.Instance.Spawn(category, launchLoc, launchRotation);
+            // Projectiles are located under PoolingManager in the scene
+            ordnanceTransform = GamePoolManager.Instance.Spawn(category, launchLoc, launchRotation);
             Collider ordnanceCollider = UnityUtility.ValidateComponentPresence<Collider>(ordnanceTransform.gameObject);
-            ////D.Assert(!ordnanceCollider.enabled);
             D.Assert(ordnanceTransform.gameObject.activeSelf);  // ordnanceGo must be active for IgnoreCollision
             Physics.IgnoreCollision(ordnanceCollider, _primaryCollider);
-            ////D.Assert(!ordnanceCollider.enabled);    // makes sure IgnoreCollision doesn't enable collider
 
             if (category == WDVCategory.Missile) {
                 Missile missile = ordnanceTransform.GetComponent<Missile>();
-                ////D.Assert(!missile.enabled);
                 missile.ElementVelocityAtLaunch = Rigidbody.velocity;
                 missile.Launch(target, weapon, Topography);
             }
             else {
                 D.AssertEqual(WDVCategory.Projectile, category);
                 Projectile projectile = ordnanceTransform.GetComponent<Projectile>();
-                ////D.Assert(!projectile.enabled);
                 projectile.Launch(target, weapon, Topography);
             }
         }
@@ -726,26 +722,26 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         base.AssessCripplingDamageToEquipment(damageSeverity);
         var equipDamageChance = damageSeverity;
 
-        var undamagedWeapons = Data.Weapons.Where(w => !w.IsDamaged);
-        undamagedWeapons.ForAll(w => {
+        var undamagedDamageableWeapons = Data.Weapons.Where(w => w.IsDamageable && !w.IsDamaged);
+        undamagedDamageableWeapons.ForAll(w => {
             w.IsDamaged = RandomExtended.Chance(equipDamageChance);
             //D.Log(ShowDebugLog && w.IsDamaged, "{0}'s weapon {1} has been damaged.", DebugName, w.Name);
         });
 
-        var undamagedSensors = Data.Sensors.Where(s => !s.IsDamaged);
-        undamagedSensors.ForAll(s => {
+        var undamagedDamageableSensors = Data.Sensors.Where(s => s.IsDamageable && !s.IsDamaged);
+        undamagedDamageableSensors.ForAll(s => {
             s.IsDamaged = RandomExtended.Chance(equipDamageChance);
             //D.Log(ShowDebugLog && s.IsDamaged, "{0}'s sensor {1} has been damaged.", DebugName, s.Name);
         });
 
-        var undamagedActiveCMs = Data.ActiveCountermeasures.Where(cm => !cm.IsDamaged);
-        undamagedActiveCMs.ForAll(cm => {
+        var undamagedDamageableActiveCMs = Data.ActiveCountermeasures.Where(cm => cm.IsDamageable && !cm.IsDamaged);
+        undamagedDamageableActiveCMs.ForAll(cm => {
             cm.IsDamaged = RandomExtended.Chance(equipDamageChance);
             //D.Log(ShowDebugLog && cm.IsDamaged, "{0}'s ActiveCM {1} has been damaged.", DebugName, cm.Name);
         });
 
-        var undamagedGenerators = Data.ShieldGenerators.Where(gen => !gen.IsDamaged);
-        undamagedGenerators.ForAll(gen => {
+        var undamagedDamageableGenerators = Data.ShieldGenerators.Where(gen => gen.IsDamageable && !gen.IsDamaged);
+        undamagedDamageableGenerators.ForAll(gen => {
             gen.IsDamaged = RandomExtended.Chance(equipDamageChance);
             //D.Log(ShowDebugLog && gen.IsDamaged, "{0}'s shield generator {1} has been damaged.", DebugName, gen.Name);
         });
@@ -1063,7 +1059,26 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #region IShipAttackable Members
 
-    public abstract AutoPilotDestinationProxy GetApAttackTgtProxy(float minDesiredDistanceToTgtSurface, float maxDesiredDistanceToTgtSurface);
+    public abstract AutoPilotDestinationProxy GetApAttackTgtProxy(ValueRange<float> desiredWeaponsRangeEnvelope, float shipCollisionDetectionRadius);
+
+    /// <summary>
+    /// Returns the shortest distance between the element's center (position)
+    /// and a surface that could incur a weapon impact.
+    /// <remarks>UNCLEAR I believe HullDimensions is derived from the collider 
+    /// that was fitted around the hull mesh.</remarks>
+    /// </summary>
+    /// <returns></returns>
+    protected float GetDistanceToClosestWeaponImpactSurface() {
+        Vector3 hullDimensions = Data.HullDimensions;
+        float shortestHullDimension = hullDimensions.x;
+        if (hullDimensions.y < shortestHullDimension) {
+            shortestHullDimension = hullDimensions.y;
+        }
+        if (hullDimensions.z < shortestHullDimension) {
+            shortestHullDimension = hullDimensions.z;
+        }
+        return shortestHullDimension / 2F;
+    }
 
     #endregion
 

@@ -29,21 +29,6 @@ using UnityEngine.Profiling;
 /// </summary>
 public class TopographyMonitor : AColliderMonitor {
 
-    private const string DebugNameFormat = "{0}.{1}";
-
-    private string _debugName;
-    public override string DebugName {
-        get {
-            if (ParentItem == null) {
-                return base.DebugName;
-            }
-            if (_debugName == null) {
-                _debugName = DebugNameFormat.Inject(ParentItem.DebugName, base.DebugName);
-            }
-            return _debugName;
-        }
-    }
-
     private Topography _surroundingTopography;  // IMPROVE ParentItem should know about their surrounding topology
     public Topography SurroundingTopography {
         get { return _surroundingTopography; }
@@ -53,6 +38,13 @@ public class TopographyMonitor : AColliderMonitor {
     protected override bool IsTriggerCollider { get { return true; } }
 
     protected override bool IsKinematicRigidbodyReqd { get { return false; } }  // Ships and ProjectileOrdnance have rigidbodies
+
+    private GameTime __gameTime;
+
+    protected override void InitializeValuesAndReferences() {
+        base.InitializeValuesAndReferences();
+        __gameTime = GameTime.Instance;
+    }
 
     #region Event and Property Change Handlers
 
@@ -103,7 +95,17 @@ public class TopographyMonitor : AColliderMonitor {
 
     protected override void HandleIsOperationalChanged() { }
 
+    protected override void CompleteResetForReuse() {
+        base.CompleteResetForReuse();
+        D.Error("{0} does not support reuse.", DebugName);
+    }
+
     #endregion
+
+    #region Debug
+
+    private const float __ValidThresholdBase = 4F;
+    private const float __WarnThresholdBase = 6F;
 
     /// <summary>
     /// Checks the validity of this trigger event as showing an actual topography change.
@@ -114,19 +116,24 @@ public class TopographyMonitor : AColliderMonitor {
     /// <param name="listener">The listener.</param>
     /// <returns></returns>
     private bool __ValidateTopographyChange(ITopographyChangeListener listener) {
-        Vector3 listenerPosition = (listener as Component).transform.position;
+        float gameSpeedMultiplier = __gameTime.GameSpeedMultiplier;  // 0.25 - 4.0
+        float fastMoverMultiplier = listener is IInterceptableOrdnance ? 2F : 1F;
+        float validAdder = 1F * gameSpeedMultiplier * fastMoverMultiplier;    // 0.25 - 8
+
         ISystem parentSystem = ParentItem as ISystem;
-        float distanceToListener = Vector3.Distance(parentSystem.Position, listenerPosition);
-        bool isValid = Mathfx.Approx(distanceToListener, parentSystem.Radius, 7F);
+        float distanceToListener = Vector3.Distance(parentSystem.Position, listener.Position);
+        bool isValid = Mathfx.Approx(distanceToListener, parentSystem.Radius, __ValidThresholdBase + validAdder); // 4.25 - 12
         if (!isValid) {
-            if (Mathfx.Approx(distanceToListener, parentSystem.Radius, 10F)) {
+            if (Mathfx.Approx(distanceToListener, parentSystem.Radius, __WarnThresholdBase * gameSpeedMultiplier)) { // 6.5 - 14
                 D.Warn("{0} has detected a marginally invalid Topography change for {1} at distance {2:0.0} vs expected {3:0.0}. Validating.",
-                    DebugName, (listener as Component).transform.name, distanceToListener, parentSystem.Radius);
+                    DebugName, listener.DebugName, distanceToListener, parentSystem.Radius);
                 isValid = true;
             }
         }
         return isValid;
     }
+
+    #endregion
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

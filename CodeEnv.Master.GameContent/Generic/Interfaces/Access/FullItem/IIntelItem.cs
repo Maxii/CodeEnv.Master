@@ -19,9 +19,9 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Interface for easy access to MonoBehaviours that are AIntelItems.
+    /// Interface for easy access to IItems that support IntelCoverage (including Sector).
     /// </summary>
-    public interface IIntelItem : IItem {
+    public interface IIntelItem : IOwnerItem {
 
         IntelCoverage UserIntelCoverage { get; }
 

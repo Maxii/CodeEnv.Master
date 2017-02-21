@@ -17,6 +17,7 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
+    using System.Collections.Generic;
     using CodeEnv.Master.Common;
     using CodeEnv.Master.GameContent;
     using UnityEngine;
@@ -34,6 +35,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override int IconDepth { get { return 3; } }
 
+        private IEnumerable<MeshRenderer> __secondaryMeshRenderers;
         private IBillboard _glowBillboard;
         private IRevolver[] _revolvers; // star mesh and 2 glows
 
@@ -49,11 +51,11 @@ namespace CodeEnv.Master.GameContent {
             return primaryMeshRenderer;
         }
 
-        protected override void InitializeSecondaryMeshes(GameObject itemGo) {
+        protected override void InitializeSecondaryMeshes(GameObject itemGo) {  // Glow Renderers
             base.InitializeSecondaryMeshes(itemGo);
 
-            var glowRenderers = itemGo.GetComponentsInChildren<MeshRenderer>().Except(_primaryMeshRenderer);
-            glowRenderers.ForAll(gr => {
+            __secondaryMeshRenderers = itemGo.GetComponentsInChildren<MeshRenderer>().Except(_primaryMeshRenderer);
+            __secondaryMeshRenderers.ForAll(gr => {
                 gr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 gr.receiveShadows = false;
                 __ValidateAndCorrectMeshLayer(gr.gameObject);
@@ -101,6 +103,17 @@ namespace CodeEnv.Master.GameContent {
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
+
+        #region Debug
+
+        protected override List<MeshRenderer> __GetMeshRenderers() {
+            List<MeshRenderer> result = base.__GetMeshRenderers();
+            result.AddRange(__secondaryMeshRenderers);
+            return result;
+        }
+
+        #endregion
+
     }
 
 }

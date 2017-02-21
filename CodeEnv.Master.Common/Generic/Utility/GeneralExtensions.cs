@@ -157,7 +157,7 @@ namespace CodeEnv.Master.Common {
                 D.Warn("Attempted to remove string {0} from {1} but did not find it.", stringToRemove, source);
             }
             else {
-                D.Log("Removed string {0} from {1} resulting in {2}.", stringToRemove, source, result);
+                //D.Log("Removed string {0} from {1} resulting in {2}.", stringToRemove, source, result);
             }
             return result;
         }

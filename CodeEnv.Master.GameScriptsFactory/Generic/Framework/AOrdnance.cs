@@ -27,14 +27,17 @@ using UnityEngine;
 
 /// <summary>
 /// Abstract base class for Beam, Missile and Projectile Ordnance. 
+/// <remarks>2.15.17 Added IEquatable to allow pool-generated instances to be used in Dictionary and HashSet.
+/// Without it, a reused instance appears to be equal to another reused instance if from the same instance. Probably doesn't matter
+/// as only 1 reused instance from an instance can exist at the same time, but...</remarks>
 /// </summary>
-public abstract class AOrdnance : AMonoBase, IOrdnance {
+public abstract class AOrdnance : AMonoBase, IOrdnance, IEquatable<AOrdnance> {
 
     private const string DebugNameFormat = "{0}_{1}";
     private const string NameSubstringToRemove = "(Clone)";
-    private static int __InstanceCount = 1;
+    private static int _UniqueIDCount = 1;
 
-    public event EventHandler deathOneShot;
+    public event EventHandler terminationOneShot;
 
     public string Name { get; private set; }    // 12.10.16 return transform.name generated 'transform destroyed' error on editor exit
 
@@ -74,7 +77,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
 
     public DamageStrength DamagePotential { get { return Weapon.DamagePotential; } }
 
-    protected bool ShowDebugLog { get { return DebugControls.Instance.ShowOrdnanceDebugLogs; } }
+    public bool ShowDebugLog { get { return DebugControls.Instance.ShowOrdnanceDebugLogs; } }
 
     protected virtual bool ToShowMuzzleEffects { get { return IsWeaponDiscernibleToUser; } }
 
@@ -94,7 +97,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     protected JobManager _jobMgr;
     protected IList<IDisposable> _subscriptions;
 
-    private int __instanceID;
+    private int _uniqueID;
     private string _rootName;
     private bool _isNameInitialized;
 
@@ -160,11 +163,11 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         }
         D.AssertNull(Target);
         D.AssertNull(Weapon);
-        D.AssertDefault(__instanceID);
+        D.AssertDefault(_uniqueID);
         D.AssertDefault(_range);
         D.Assert(!IsOperational);
-        __instanceID = __InstanceCount;
-        __InstanceCount++;
+        _uniqueID = _UniqueIDCount;
+        _UniqueIDCount++;
     }
 
     protected virtual void IsWeaponDiscernibleToUserPropChangedHandler() {
@@ -175,10 +178,10 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         enabled = !_gameMgr.IsPaused;
     }
 
-    private void OnDeath() {
-        if (deathOneShot != null) {
-            deathOneShot(this, EventArgs.Empty);
-            deathOneShot = null;
+    private void OnTermination() {
+        if (terminationOneShot != null) {
+            terminationOneShot(this, EventArgs.Empty);
+            terminationOneShot = null;
         }
     }
 
@@ -187,9 +190,11 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         Unsubscribe();
         Target = null;
         Weapon = null;
-        __instanceID = Constants.Zero;
+        D.AssertNotEqual(Constants.Zero, _uniqueID);
+        _uniqueID = Constants.Zero;
         _range = Constants.ZeroF;
-        RestoreRootName();
+        // RootName is restored after returning to pool so that it doesn't show in Unity with its most recent _uniqueID name
+        //RestoreRootName();    // Remove when debugging a problem where despawning is occurring before you expect it and you need its uniqueID
     }
 
     #endregion
@@ -218,7 +223,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     /// Adds __instanceID to the root name.
     /// </summary>
     private void AssignName() {
-        transform.name = DebugNameFormat.Inject(_rootName, __instanceID);
+        transform.name = DebugNameFormat.Inject(_rootName, _uniqueID);
         Name = transform.name;
     }
 
@@ -239,13 +244,13 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
         PrepareForTermination();
         ResetEffectsForReuse();
 
-        OnDeath();
+        OnTermination();
         Despawn();
     }
 
     protected virtual void Despawn() {
         //D.Log(ShowDebugLog, "{0} is about to despawn.", DebugName);
-        MyPoolManager.Instance.DespawnOrdnance(transform);
+        GamePoolManager.Instance.DespawnOrdnance(transform);
     }
 
     /// <summary>
@@ -265,6 +270,30 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     /// </summary>
     protected abstract void ResetEffectsForReuse();
 
+    #region Object.Equals and GetHashCode Override
+
+    public override bool Equals(object obj) {
+        if (!(obj is AOrdnance)) { return false; }
+        return Equals((AOrdnance)obj);
+    }
+
+    /// <summary>
+    /// Returns a hash code for this instance.
+    /// See "Page 254, C# 4.0 in a Nutshell."
+    /// </summary>
+    /// <returns>
+    /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
+    /// </returns>
+    public override int GetHashCode() {
+        unchecked { // http://dobrzanski.net/2010/09/13/csharp-gethashcode-cause-overflowexception/
+            int hash = base.GetHashCode();
+            hash = hash * 31 + _uniqueID.GetHashCode(); // 31 = another prime number
+            return hash;
+        }
+    }
+
+    #endregion
+
     #region Cleanup
 
     protected override void Cleanup() {
@@ -274,6 +303,15 @@ public abstract class AOrdnance : AMonoBase, IOrdnance {
     protected virtual void Unsubscribe() {
         _subscriptions.ForAll(d => d.Dispose());
         _subscriptions.Clear();
+    }
+
+    #endregion
+
+    #region IEquatable<AOrdnance> Members
+
+    public bool Equals(AOrdnance other) {
+        // if the same instance and _uniqueID are equal, then its the same
+        return base.Equals(other) && _uniqueID == other._uniqueID;  // need instance comparison as _uniqueID is 0 in PoolMgr
     }
 
     #endregion

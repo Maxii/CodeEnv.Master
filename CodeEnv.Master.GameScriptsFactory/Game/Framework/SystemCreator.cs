@@ -47,7 +47,7 @@ public class SystemCreator : AMonoBase {
         private set { transform.name = value; }
     }
 
-    public IntVector3 SectorID { get { return SectorGrid.Instance.GetSectorIdThatContains(transform.position); } }
+    public IntVector3 SectorID { get { return SectorGrid.Instance.GetSectorIDThatContains(transform.position); } }
 
 
     private SystemCreatorConfiguration _configuration;

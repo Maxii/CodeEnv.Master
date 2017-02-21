@@ -127,6 +127,19 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     /// </summary>
     public bool FleetsAutoExploreAsDefault { get { return _fleetsAutoExplore; } }
 
+
+    [Tooltip("Check if fleets should automatically attack all other players.")]
+    [SerializeField]
+    private bool _fleetsAutoAttack = false;
+    /// <summary>
+    /// Indicates whether fleets should automatically attack all war enemies. All players, when they first
+    /// meet will have their relationship set to War. If a fleet can find no enemy to attack, it will explore,
+    /// then after exploring, check to see if it can now attack.
+    /// <remarks>2.14.17 User Relationship Settings and existing orders for DebugUnitCreators will be ignored
+    /// as all players will have their relationship set to War when they first meet.</remarks>
+    /// </summary>
+    public bool FleetsAutoAttackAsDefault { get { return _fleetsAutoAttack; } }
+
     [Tooltip("Check if all players know everything about all objects, even those that are outside detection range.")]
     [SerializeField]
     private bool _allIntelCoverageIsComprehensive = false;
@@ -157,12 +170,12 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
 
     [Tooltip("Check if world tracking sprites and labels should use one UIPanel per widget")]
     [SerializeField]
-    private bool _useIndependentUIPanelWidgets = false;
+    private bool _useOneUIPanelPerWidget = false;
     /// <summary>
     /// If <c>true</c> all world tracking sprites and labels will use one UIPanel per widget,
     /// otherwise all world tracking sprites and labels will be consolidated under a few UIPanels.
     /// </summary>
-    public bool UseIndependentUIPanelWidgets { get { return _useIndependentUIPanelWidgets; } }
+    public bool UseOneUIPanelPerWidget { get { return _useOneUIPanelPerWidget; } }
 
     #endregion
 

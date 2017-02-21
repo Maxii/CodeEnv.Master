@@ -29,6 +29,8 @@ using UnityEngine.Profiling;
 /// </summary>
 public abstract class AColliderMonitor : AMonoBase, IColliderMonitor {
 
+    private const string DebugNameFormat = "{0}.{1}";
+
     /// <summary>
     /// Control for enabling/disabling the monitor's collider.
     /// <remarks>Property not subscribable.</remarks>
@@ -44,7 +46,7 @@ public abstract class AColliderMonitor : AMonoBase, IColliderMonitor {
         }
     }
 
-    public virtual string DebugName { get { return transform.name; } }
+    public virtual string DebugName { get { return DebugNameFormat.Inject(ParentItem != null ? ParentItem.DebugName : transform.name, GetType().Name); } }
 
     private float _rangeDistance;
     /// <summary>
@@ -55,18 +57,18 @@ public abstract class AColliderMonitor : AMonoBase, IColliderMonitor {
         protected set { SetProperty<float>(ref _rangeDistance, value, "RangeDistance", RangeDistancePropChangedHandler); }
     }
 
-    private IItem _parentItem;
-    public IItem ParentItem {
+    private IOwnerItem _parentItem;
+    public IOwnerItem ParentItem {
         get { return _parentItem; }
         set {
             D.AssertNull(_parentItem);   // should only happen once
-            SetProperty<IItem>(ref _parentItem, value, "ParentItem", ParentItemPropSetHandler);
+            SetProperty<IOwnerItem>(ref _parentItem, value, "ParentItem", ParentItemPropSetHandler);
         }
     }
 
     public Player Owner { get { return ParentItem.Owner; } }
 
-    public bool ShowDebugLog { get { return ParentItem.ShowDebugLog; } }
+    public bool ShowDebugLog { get { return ParentItem != null ? ParentItem.ShowDebugLog : true; } }
 
     /// <summary>
     /// Flag indicating whether a Kinematic Rigidbody is required by the monitor. 
@@ -181,6 +183,7 @@ public abstract class AColliderMonitor : AMonoBase, IColliderMonitor {
         D.AssertNotNull(ParentItem);
         CompleteResetForReuse();
         _isResetting = false;
+
     }
 
     /// <summary>

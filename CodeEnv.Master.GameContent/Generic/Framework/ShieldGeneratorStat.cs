@@ -62,7 +62,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="damageMitigation">The damage mitigation.</param>
         public ShieldGeneratorStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass,
             float pwrRqmt, float expense, RangeCategory rangeCat, float maximumCharge, float trickleChargeRate, float reloadPeriod, DamageStrength damageMitigation)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat) {
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, isDamageable: true) {
             MaximumCharge = maximumCharge;
             TrickleChargeRate = trickleChargeRate;
             ReloadPeriod = reloadPeriod;

@@ -214,6 +214,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     public override void CommenceOperations() {
         base.CommenceOperations();
+        RegisterForOrders();
     }
 
     /// <summary>
@@ -403,6 +404,21 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         return hqCandidates.Any();
     }
 
+    protected override void PrepareForDeathNotification() {
+        // 2.15.17 Moved here from Dead State in case Dead_EnterState becomes IEnumerator
+        UnregisterForOrders();
+    }
+
+    protected abstract void ResetOrdersAndStateOnNewOwner();
+
+    protected void RegisterForOrders() {
+        OwnerAIMgr.RegisterForOrders(this);
+    }
+
+    private void UnregisterForOrders() {
+        OwnerAIMgr.DeregisterForOrders(this);
+    }
+
     // 7.20.16 Not needed as Cmd is not detectable. The only way Cmd IntelCoverage changes is when HQELement Coverage changes.
     // Icon needs to be assessed when any of Cmd's elements has its coverage changed as that can change which icon to show
     //// protected override void HandleUserIntelCoverageChanged() {
@@ -433,7 +449,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         D.AssertNotEqual(Owner, fleet.Owner_Debug); // should never be an awareness change from one of our own
         UponAwarenessOfFleetChanged(fleet, isAware);
     }
-
 
     private void EnemyTargetsInSensorRangeChangedEventHandler(object sender, EventArgs e) {
         HandleEnemyTargetsInSensorRangeChanged();
@@ -522,6 +537,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     private void HandleFsmTgtInfoAccessChgd(Player playerWhoseInfoAccessChgd, IItem_Ltd fsmTgt) {
         if (playerWhoseInfoAccessChgd == Owner) {
+            D.Log(/*ShowDebugLog,*/ "{0}'s access to info about Target {1} has changed.", DebugName, fsmTgt.DebugName);
             UponFsmTgtInfoAccessChgd(fsmTgt);
         }
     }
@@ -539,9 +555,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         base.HandleOwnerChanging(newOwner);
         OwnerAIMgr.awarenessOfFleetChanged -= AwarenessOfFleetChangedEventHandler;
         // TODO what to do about existing orders and availability?
-        ////UnregisterForOrders();
+        UnregisterForOrders();
     }
-
 
     protected override void HandleOwnerChanged() {
         base.HandleOwnerChanged();
@@ -552,10 +567,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
             DisplayMgr.MeshColor = Owner.Color;
         }
         AssessIcon();
-        UponOwnerChanged();
-        // TODO what to do about existing orders and availability?
-        ////OwnerAIMgr.RegisterForOrders(this);
 
+        ResetOrdersAndStateOnNewOwner();
     }
 
     private void UnitFormationPropChangedHandler() {
@@ -584,10 +597,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     protected sealed override void PreconfigureCurrentState() {
         base.PreconfigureCurrentState();
         UponPreconfigureState();
-    }
-
-    protected void UnregisterForOrders() {
-        OwnerAIMgr.DeregisterForOrders(this);
     }
 
     protected void Dead_ExitState() {
@@ -622,7 +631,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     private void UponRelationsChanged(Player chgdRelationsPlayer) { RelayToCurrentState(chgdRelationsPlayer); }
 
-    private void UponOwnerChanged() { RelayToCurrentState(); }
+    // 2.15.17 No need for state-specific handling as existing orders are canceled and state returned to Idling
+    ////private void UponOwnerChanged() { RelayToCurrentState(); }
 
     private void UponFsmTgtDeath(IMortalItem_Ltd deadFsmTgt) { RelayToCurrentState(deadFsmTgt); }
 

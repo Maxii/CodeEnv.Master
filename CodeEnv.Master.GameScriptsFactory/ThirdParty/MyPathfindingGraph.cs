@@ -797,9 +797,9 @@ namespace Pathfinding {
                 }
                 else {
                     // (net) refers to the net of added and removed. I can't separate them using this approach to making connections
-                    string connectionCountChgText = connectionCountChg < 0 ? "removed" : "added";
-                    D.Log("{0}.MakeConnections() took {1:0.##} secs generating {2}/{3} valid pathfinding connections. {4} connections (net) were {5}.",
-                        DebugName, (Utility.SystemTime - startTime).TotalSeconds, connectionCount, totalConnectionsAttempted, Mathf.Abs(connectionCountChg), connectionCountChgText);
+                    //string connectionCountChgText = connectionCountChg < 0 ? "removed" : "added";
+                    //D.Log("{0}.MakeConnections() took {1:0.##} secs generating {2}/{3} valid pathfinding connections. {4} connections (net) were {5}.",
+                    //    DebugName, (Utility.SystemTime - startTime).TotalSeconds, connectionCount, totalConnectionsAttempted, Mathf.Abs(connectionCountChg), connectionCountChgText);
                 }
             }
         }

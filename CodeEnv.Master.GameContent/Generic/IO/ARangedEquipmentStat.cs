@@ -35,9 +35,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="pwrRqmt">The power needed to operate this equipment.</param>
         /// <param name="expense">The expense.</param>
         /// <param name="rangeCat">The range category.</param>
+        /// <param name="isDamageable">if set to <c>true</c> [is damageable].</param>
         public ARangedEquipmentStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass,
-            float pwrRqmt, float expense, RangeCategory rangeCat)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense) {
+            float pwrRqmt, float expense, RangeCategory rangeCat, bool isDamageable)
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, isDamageable) {
             RangeCategory = rangeCat;
         }
 

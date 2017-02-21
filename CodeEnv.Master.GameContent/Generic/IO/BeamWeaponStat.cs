@@ -50,10 +50,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="damagePotential">The damage potential.</param>
         /// <param name="duration">The firing duration in hours.</param>
         /// <param name="maxLaunchInaccuracy">The maximum launch inaccuracy in degrees.</param>
+        /// <param name="isDamageable">if set to <c>true</c> [is damageable].</param>
         public BeamWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass,
-            float pwrRqmt, float expense, RangeCategory rangeCat, WDVStrength deliveryVehicleStrength,
-            float reloadPeriod, DamageStrength damagePotential, float duration, float maxLaunchInaccuracy)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, deliveryVehicleStrength, reloadPeriod, damagePotential) {
+            float pwrRqmt, float expense, RangeCategory rangeCat, WDVStrength deliveryVehicleStrength, float reloadPeriod,
+            DamageStrength damagePotential, float duration, float maxLaunchInaccuracy, bool isDamageable)
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, deliveryVehicleStrength, reloadPeriod,
+                  damagePotential, isDamageable) {
             D.Assert(duration > Constants.ZeroF);
             if (maxLaunchInaccuracy > 5F) {
                 D.Warn("{0} MaxLaunchInaccuracy of {1:0.#} is very high.", DebugName, MaxLaunchInaccuracy);

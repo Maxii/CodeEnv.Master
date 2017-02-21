@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected IEffectsMgrClient _effectsClient;
         protected IGeneralFactory _generalFactory;
-        protected IMyPoolManager _myPoolMgr;
+        protected IGamePoolManager _gamePoolMgr;
         protected IGameManager _gameMgr;
         protected IList<IDisposable> _subscriptions;
 
@@ -35,7 +35,7 @@ namespace CodeEnv.Master.GameContent {
             _effectsClient = effectsClient;
             _generalFactory = References.GeneralFactory;
             _gameMgr = References.GameManager;
-            _myPoolMgr = References.MyPoolManager;
+            _gamePoolMgr = References.GamePoolManager;
             Subscribe();
         }
 

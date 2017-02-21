@@ -23,8 +23,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IUnitAttackable : IFleetNavigable, IAttackable {
 
-        bool IsOperational { get; }
-
         Player Owner_Debug { get; }
 
     }

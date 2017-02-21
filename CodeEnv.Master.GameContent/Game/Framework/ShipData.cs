@@ -29,44 +29,46 @@ namespace CodeEnv.Master.GameContent {
 
         #region FTL
 
-        // Assume for now that all ships are FTL capable. In the future, I will want some defensive ships to be limited to System space.
-        // IMPROVE will need to replace this with FtlShipData-derived class as non-FTL ships won't be part of fleets, aka FormationStation, etc
-        // public bool IsShipFtlCapable { get { return true; } }
+        /// <summary>
+        /// Indicates whether this ship has FTL capability. If <c>true</c> it does not imply
+        /// that capability is currently operational. If <c>false</c> the ship does not have an FTL engine installed.
+        /// </summary>
+        public bool IsFtlCapable { get { return _ftlEngine != null; } }
 
-        private bool _isFtlOperational;
         /// <summary>
         /// Indicates whether the FTL engines are operational, aka activated, undamaged and not damped by an FTL damping field.
+        /// <remarks>Test IsFtlCapable before using this property as if not, this property will always return false.</remarks>
         /// </summary>
-        public bool IsFtlOperational {
-            get { return _isFtlOperational; }
-            private set { SetProperty<bool>(ref _isFtlOperational, value, "IsFtlOperational", IsFtlOperationalPropChangedHandler); }
-        }
+        public bool IsFtlOperational { get { return _ftlEngine != null && _ftlEngine.IsOperational; } }
 
-        private bool _isFtlDamaged;
         /// <summary>
         /// Indicates whether the FTL engines are damaged. 
+        /// <remarks>Test IsFtlCapable before using this property as if not, this property will always return false.</remarks>
         /// </summary>
         public bool IsFtlDamaged {
-            get { return _isFtlDamaged; }
-            set { SetProperty<bool>(ref _isFtlDamaged, value, "IsFtlDamaged", IsFtlDamagedPropChangedHandler); }
+            get { return _ftlEngine != null && _ftlEngine.IsDamaged; }
+            set {
+                if (_ftlEngine == null) {
+                    D.Warn("{0}: Attempting to change the damage state of an FtlEngine that is not present.", DebugName);
+                    return;
+                }
+                _ftlEngine.IsDamaged = value;
+            }
         }
 
-        private bool _isFtlActivated;
-        /// <summary>
-        /// Indicates whether the FTL engines are activated. 
-        /// </summary>
-        public bool IsFtlActivated {
-            get { return _isFtlActivated; }
-            set { SetProperty<bool>(ref _isFtlActivated, value, "IsFtlActivated", IsFtlActivatedPropChangedHandler); }
-        }
-
-        private bool _isFtlDampedByField;
         /// <summary>
         /// Indicates whether the FTL engines are damped by an FTL Damping Field. 
+        /// <remarks>Test IsFtlCapable before using this property as if not, this property will always return false.</remarks>
         /// </summary>
         public bool IsFtlDampedByField {
-            get { return _isFtlDampedByField; }
-            set { SetProperty<bool>(ref _isFtlDampedByField, value, "IsFtlDampedByField", IsFtlDampedByFieldPropChangedHandler); }
+            get { return _ftlEngine != null && _ftlEngine.IsDampedByField; }
+            set {
+                if (_ftlEngine == null) {
+                    D.Warn("{0}: Attempting to change the damped state of an FtlEngine that is not present.", DebugName);
+                    return;
+                }
+                _ftlEngine.IsDampedByField = value;
+            }
         }
 
         #endregion
@@ -131,23 +133,7 @@ namespace CodeEnv.Master.GameContent {
         /// NOTE: This value uses a Game Hour denominator. It is adjusted in realtime to a Unity seconds value 
         /// in the EngineRoom using GameTime.GameSpeedAdjustedHoursPerSecond.
         /// </summary>
-        public float FullPropulsionPower { get { return IsFtlOperational ? FullFtlPropulsionPower : FullStlPropulsionPower; } }
-
-        /// <summary>
-        /// The maximum power that can be projected by the STL engines.         
-        /// <remarks>See Flight.txt for equations.</remarks>
-        /// NOTE: This value uses a Game Hour denominator. It is adjusted in realtime to a Unity seconds value 
-        /// in the EngineRoom using GameTime.GameSpeedAdjustedHoursPerSecond.
-        /// </summary>
-        public float FullStlPropulsionPower { get { return _enginesStat.FullStlPropulsionPower; } }
-
-        /// <summary>
-        /// The maximum power that can be projected by the FTL engines.
-        /// <remarks>See Flight.txt for equations.</remarks>
-        /// NOTE: This value uses a Game Hour denominator. It is adjusted in realtime to a Unity seconds value 
-        /// in the EngineRoom using GameTime.GameSpeedAdjustedHoursPerSecond.
-        /// </summary>
-        public float FullFtlPropulsionPower { get { return _enginesStat.FullFtlPropulsionPower; } }
+        public float FullPropulsionPower { get { return IsFtlOperational ? _ftlEngine.FullPropulsionPower : _stlEngine.FullPropulsionPower; } }
 
         private Vector3 _intendedHeading;
         /// <summary>
@@ -179,9 +165,9 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The maximum turn rate of the ship in degrees per hour.
         /// </summary>
-        public float MaxTurnRate { get { return _enginesStat.MaxTurnRate; } }
+        public float MaxTurnRate { get { return IsFtlOperational ? _ftlEngine.MaxTurnRate : _stlEngine.MaxTurnRate; } }
 
-        public override IntVector3 SectorID { get { return References.SectorGrid.GetSectorIdThatContains(Position); } }
+        public override IntVector3 SectorID { get { return References.SectorGrid.GetSectorIDThatContains(Position); } }
 
         public new ShipInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as ShipInfoAccessController; } }
 
@@ -189,33 +175,44 @@ namespace CodeEnv.Master.GameContent {
 
         private new ShipHullEquipment HullEquipment { get { return base.HullEquipment as ShipHullEquipment; } }
 
-        private EnginesStat _enginesStat;
+        /// <summary>
+        /// Indicates and controls whether the FTL engines are activated. 
+        /// <remarks>Throws an error if no FtlEngine is present, so use IsFtlCapable to test for it.</remarks>
+        /// <remarks>Used to deactivate/reactivate the engine when entering/leaving Attacking state.</remarks>
+        /// </summary>
+        public bool IsFtlActivated {
+            get { return _ftlEngine != null && _ftlEngine.IsActivated; }
+            set {
+                D.AssertNotNull(_ftlEngine);
+                _ftlEngine.IsActivated = value;
+            }
+        }
+
+        private Engine _stlEngine;
+        private FtlEngine _ftlEngine;
         private GameTime _gameTime;
 
         #region Initialization 
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ShipData" /> class.
-        /// </summary>
-        /// <param name="ship">The ship.</param>
-        /// <param name="owner">The owner.</param>
-        /// <param name="passiveCMs">The passive countermeasures.</param>
-        /// <param name="hullEquipment">The hull equipment.</param>
-        /// <param name="activeCMs">The active countermeasures.</param>
-        /// <param name="sensors">The sensors.</param>
-        /// <param name="shieldGenerators">The shield generators.</param>
-        /// <param name="hqPriority">The HQ priority.</param>
-        /// <param name="enginesStat">The engines stat.</param>
-        /// <param name="combatStance">The combat stance.</param>
         public ShipData(IShip ship, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, ShipHullEquipment hullEquipment,
             IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<Sensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators,
-            Priority hqPriority, EnginesStat enginesStat, ShipCombatStance combatStance)
+            Priority hqPriority, Engine stlEngine, ShipCombatStance combatStance)
+            : this(ship, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, hqPriority, stlEngine, null, combatStance) {
+        }
+
+        public ShipData(IShip ship, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, ShipHullEquipment hullEquipment,
+            IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<Sensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators,
+            Priority hqPriority, Engine stlEngine, FtlEngine ftlEngine, ShipCombatStance combatStance)
             : base(ship, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, hqPriority) {
             Science = hullEquipment.Science;
             Culture = hullEquipment.Culture;
             Income = hullEquipment.Income;
 
-            _enginesStat = enginesStat;
+            _stlEngine = stlEngine;
+            _ftlEngine = ftlEngine;
+            if (ftlEngine != null) {
+                ftlEngine.isOperationalChanged += IsFtlOperationalChangedEventHandler;
+            }
             CombatStance = combatStance;
             InitializeLocalValuesAndReferences();
         }
@@ -243,7 +240,11 @@ namespace CodeEnv.Master.GameContent {
         public override void CommenceOperations() {
             base.CommenceOperations();
             //D.Log(ShowDebugLog, "{0}.CommenceOperations() setting Topography to {1}.", DebugName, Topography.GetValueName());
-            IsFtlActivated = true;  // will trigger Data.AssessIsFtlOperational()
+            _stlEngine.IsActivated = true;
+            if (_ftlEngine != null) {
+                _ftlEngine.IsActivated = true;
+            }
+            RefreshFullSpeedValue();
         }
 
         /// <summary>
@@ -276,25 +277,13 @@ namespace CodeEnv.Master.GameContent {
 
         #region Event and Property Change Handlers
 
-        private void IsFtlOperationalPropChangedHandler() {
+        private void IsFtlOperationalChangedEventHandler(object sender, EventArgs e) {
             HandleIsFtlOperationalChanged();
         }
 
         private void HandleIsFtlOperationalChanged() {
             //D.Log(ShowDebugLog, "{0} FTL is {1} operational.", DebugName, IsFtlOperational ? "now" : "no longer");
             RefreshFullSpeedValue();
-        }
-
-        private void IsFtlDampedByFieldPropChangedHandler() {
-            AssessIsFtlOperational();
-        }
-
-        private void IsFtlDamagedPropChangedHandler() {
-            AssessIsFtlOperational();
-        }
-
-        private void IsFtlActivatedPropChangedHandler() {
-            AssessIsFtlOperational();
         }
 
         private void CurrentDragPropChangedHandler() {
@@ -315,8 +304,11 @@ namespace CodeEnv.Master.GameContent {
             FullSpeedValue = GameUtility.CalculateMaxAttainableSpeed(FullPropulsionPower, Mass, CurrentDrag);
         }
 
-        private void AssessIsFtlOperational() {
-            IsFtlOperational = IsFtlActivated && !IsFtlDamaged && !IsFtlDampedByField;
+        protected override void Unsubscribe() {
+            base.Unsubscribe();
+            if (_ftlEngine != null) {
+                _ftlEngine.isOperationalChanged -= IsFtlOperationalChangedEventHandler;
+            }
         }
 
         public override string ToString() {

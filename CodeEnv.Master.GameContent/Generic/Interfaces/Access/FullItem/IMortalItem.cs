@@ -18,6 +18,7 @@ namespace CodeEnv.Master.GameContent {
 
     using System;
     using CodeEnv.Master.Common;
+    using UnityEngine;
 
     /// <summary>
     /// Interface for easy access to MonoBehaviours that are AMortalItems.
@@ -27,6 +28,8 @@ namespace CodeEnv.Master.GameContent {
         event EventHandler deathOneShot;
 
         IntVector3 SectorID { get; }
+
+        Transform transform { get; }
 
     }
 }

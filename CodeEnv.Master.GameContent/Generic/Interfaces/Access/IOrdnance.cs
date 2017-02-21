@@ -25,7 +25,13 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IOrdnance : IDebugable {
 
-        event EventHandler deathOneShot;
+        /// <summary>
+        /// Occurs when an ordnance terminates.
+        /// <remarks>Beams only self terminate either by order from its weapon or when its duration has run its course.</remarks>
+        /// <remarks>AProjectile ordnance also self terminate either by order from its weapon or when it reaches its max range.
+        /// They can also be intercepted which can result in their self termination.</remarks>
+        /// </summary>
+        event EventHandler terminationOneShot;
 
         Vector3 CurrentHeading { get; }
 

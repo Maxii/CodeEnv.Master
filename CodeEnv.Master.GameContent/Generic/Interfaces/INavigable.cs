@@ -23,16 +23,20 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Base Interface for a destination that can be navigated to.
     /// </summary>
-    public interface INavigable : IDebugable {
+    public interface INavigable {
 
         /// <summary>
         /// The name to use for display.
         /// </summary>
         string Name { get; }
 
+        string DebugName { get; }
+
         Vector3 Position { get; }
 
         bool IsMobile { get; }
+
+        bool IsOperational { get; }
 
     }
 }

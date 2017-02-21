@@ -24,10 +24,9 @@ using UnityEngine;
 /// <summary>
 /// Frames Per Second readout label for debug support.
 /// </summary>
-public class FpsReadout : AGuiLabelReadout {
+public class FpsReadout : AGuiLabelReadout, IFpsReadout {
 
     private const string FormattedFpsText = "{0:F1} FPS";
-
 
     private static float _redFramerate = TempGameValues.MinimumFramerate;
     private static float _yellowFramerate = TempGameValues.MinimumFramerate + 5F;
@@ -47,6 +46,7 @@ public class FpsReadout : AGuiLabelReadout {
         base.Awake();
         _timeRemainingInInterval = secondsBetweenDisplayRefresh;
         _accumulatedFpsOverInterval = _yellowFramerate; // HACK starts FPS in Green if initial real FPS should be in Green
+        References.FpsReadout = this;
     }
 
     protected override void Start() {   // using Start to take out extra frame delay before Update starts running
@@ -104,6 +104,12 @@ public class FpsReadout : AGuiLabelReadout {
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region IFpsReadout Members
+
+    float IFpsReadout.FramesPerSecond { get { return _lastFpsValue; } }
+
+    #endregion
 
 }
 

@@ -118,6 +118,10 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         _obstacleZoneCollider.enabled = false;
         _obstacleZoneCollider.isTrigger = true;
         _obstacleZoneCollider.radius = InitializeObstacleZoneRadius();
+        //D.Log(ShowDebugLog, "{0}'s ObstacleZoneCollider radius set to {1:0.##}.", DebugName, _obstacleZoneCollider.radius);
+        if (_obstacleZoneCollider.radius > TempGameValues.LargestPlanetoidObstacleZoneRadius) {
+            D.Warn("{0}'s ObstacleZoneCollider radius {1:0.##} > Max {2:0.##}.", DebugName, _obstacleZoneCollider.radius, TempGameValues.LargestPlanetoidObstacleZoneRadius);
+        }
 
         Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
         var rigidbody = _obstacleZoneCollider.gameObject.GetComponent<Rigidbody>();
@@ -190,6 +194,8 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
     public void __Die() {
         IsOperational = false;
     }
+
+    protected override void PrepareForDeathNotification() { }
 
     protected sealed override void InitiateDeadState() {
         D.Log(ShowDebugLog, "{0} is setting Dead state.", DebugName);
@@ -428,15 +434,28 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
 
     #region IShipAttackable Members
 
-    //public AutoPilotDestinationProxy GetApAttackTgtProxy(float minDesiredDistanceToTgtSurface, float maxDesiredDistanceToTgtSurface) {
-    //    float innerRadius = ObstacleZoneRadius + minDesiredDistanceToTgtSurface;
-    //    float outerRadius = Radius + maxDesiredDistanceToTgtSurface;
-    //    return new AutoPilotDestinationProxy(this, Vector3.zero, innerRadius, outerRadius);
-    //}
-    public AutoPilotDestinationProxy GetApAttackTgtProxy(float minDesiredDistanceToTgtSurface, float maxDesiredDistanceToTgtSurface) {
-        float innerRadius = _obstacleZoneCollider.radius + minDesiredDistanceToTgtSurface;
-        float outerRadius = Radius + maxDesiredDistanceToTgtSurface;
-        return new AutoPilotDestinationProxy(this, Vector3.zero, innerRadius, outerRadius);
+    /// <summary>
+    /// Returns the proxy for this target for use by a Ship's Pilot when attacking this target.
+    /// The values provided allow the proxy to help the ship stay within its desired weapons range envelope relative to the target's surface.
+    /// <remarks>There is no target offset as ships don't attack in formation.</remarks>
+    /// </summary>
+    /// <param name="desiredWeaponsRangeEnvelope">The ship's desired weapons range envelope relative to the target's surface.</param>
+    /// <param name="shipCollisionDetectionRadius">The attacking ship's collision detection radius.</param>
+    /// <returns></returns>
+    public AutoPilotDestinationProxy GetApAttackTgtProxy(ValueRange<float> desiredWeaponsRangeEnvelope, float shipCollisionDetectionRadius) {
+        float shortestDistanceFromTgtToTgtSurface = Radius;
+        float innerProxyRadius = desiredWeaponsRangeEnvelope.Minimum + shortestDistanceFromTgtToTgtSurface;
+        float minInnerProxyRadiusToAvoidCollision = _obstacleZoneCollider.radius + shipCollisionDetectionRadius;
+        if (innerProxyRadius < minInnerProxyRadiusToAvoidCollision) {
+            innerProxyRadius = minInnerProxyRadiusToAvoidCollision;
+        }
+
+        float outerProxyRadius = desiredWeaponsRangeEnvelope.Maximum + shortestDistanceFromTgtToTgtSurface;
+        D.Assert(outerProxyRadius > innerProxyRadius);
+
+        var attackProxy = new AutoPilotDestinationProxy(this, Vector3.zero, innerProxyRadius, outerProxyRadius);
+        D.LogBold(ShowDebugLog, "{0} has constructed an AttackProxy with an ArrivalWindowDepth of {1:0.#} units.", DebugName, attackProxy.ArrivalWindowDepth);
+        return attackProxy;
     }
 
     #endregion

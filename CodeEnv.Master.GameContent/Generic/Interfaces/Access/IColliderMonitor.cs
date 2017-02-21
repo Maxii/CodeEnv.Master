@@ -19,9 +19,8 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for all collider monitors.
     /// </summary>
-    public interface IColliderMonitor {
+    public interface IColliderMonitor : IDebugable {
 
-        bool ShowDebugLog { get; }
 
     }
 }

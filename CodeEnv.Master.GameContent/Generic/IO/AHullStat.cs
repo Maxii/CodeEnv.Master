@@ -43,7 +43,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="hullDimensions">The hull dimensions.</param>
         public AHullStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass,
             float pwrRqmt, float expense, float maxHitPts, DamageStrength damageMitigation, Vector3 hullDimensions)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense) {
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, isDamageable: false) {
             MaxHitPoints = maxHitPts;
             DamageMitigation = damageMitigation;
             HullDimensions = hullDimensions;

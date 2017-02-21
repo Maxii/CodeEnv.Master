@@ -178,6 +178,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #endregion
 
+    protected override void PrepareForDeathNotification() { }
+
     protected override void InitiateDeadState() {
         UponDeath();
         CurrentState = FacilityState.Dead;
@@ -532,7 +534,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         LogEvent();
 
         Call(FacilityState.Repairing);
-        yield return null;  // required so Return()s here
+        yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
         if (_orderFailureCause != UnitItemOrderFailureCause.None) {
             switch (_orderFailureCause) {
@@ -619,11 +621,11 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         KillRepairJob();
 
         // HACK
-        Data.PassiveCountermeasures.ForAll(cm => cm.IsDamaged = false);
-        Data.ActiveCountermeasures.ForAll(cm => cm.IsDamaged = false);
-        Data.ShieldGenerators.ForAll(gen => gen.IsDamaged = false);
-        Data.Weapons.ForAll(w => w.IsDamaged = false);
-        Data.Sensors.ForAll(s => s.IsDamaged = false);
+        Data.PassiveCountermeasures.Where(cm => cm.IsDamageable).ForAll(cm => cm.IsDamaged = false);
+        Data.ActiveCountermeasures.Where(cm => cm.IsDamageable).ForAll(cm => cm.IsDamaged = false);
+        Data.ShieldGenerators.Where(gen => gen.IsDamageable).ForAll(gen => gen.IsDamaged = false);
+        Data.Weapons.Where(w => w.IsDamageable).ForAll(w => w.IsDamaged = false);
+        Data.Sensors.Where(s => s.IsDamageable).ForAll(s => s.IsDamaged = false);
         if (IsHQ) {
             Command.Data.CurrentHitPoints = Command.Data.MaxHitPoints;  // HACK
         }
@@ -1029,10 +1031,28 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #region IShipAttackable Members
 
-    public override AutoPilotDestinationProxy GetApAttackTgtProxy(float minDesiredDistanceToTgtSurface, float maxDesiredDistanceToTgtSurface) {
-        float innerRadius = _obstacleZoneCollider.radius + minDesiredDistanceToTgtSurface;
-        float outerRadius = Radius + maxDesiredDistanceToTgtSurface;
-        return new AutoPilotDestinationProxy(this, Vector3.zero, innerRadius, outerRadius);
+    /// <summary>
+    /// Returns the proxy for this target for use by a Ship's Pilot when attacking this target.
+    /// The values provided allow the proxy to help the ship stay within its desired weapons range envelope relative to the target's surface.
+    /// <remarks>There is no target offset as ships don't attack in formation.</remarks>
+    /// </summary>
+    /// <param name="desiredWeaponsRangeEnvelope">The ship's desired weapons range envelope relative to the target's surface.</param>
+    /// <param name="shipCollisionDetectionRadius">The attacking ship's collision detection radius.</param>
+    /// <returns></returns>
+    public override AutoPilotDestinationProxy GetApAttackTgtProxy(ValueRange<float> desiredWeaponsRangeEnvelope, float shipCollisionDetectionRadius) {
+        float shortestDistanceFromTgtToTgtSurface = GetDistanceToClosestWeaponImpactSurface();
+        float innerProxyRadius = desiredWeaponsRangeEnvelope.Minimum + shortestDistanceFromTgtToTgtSurface;
+        float minInnerProxyRadiusToAvoidCollision = _obstacleZoneCollider.radius + shipCollisionDetectionRadius;
+        if (innerProxyRadius < minInnerProxyRadiusToAvoidCollision) {
+            innerProxyRadius = minInnerProxyRadiusToAvoidCollision;
+        }
+
+        float outerProxyRadius = desiredWeaponsRangeEnvelope.Maximum + shortestDistanceFromTgtToTgtSurface;
+        D.Assert(outerProxyRadius > innerProxyRadius);
+
+        var attackProxy = new AutoPilotDestinationProxy(this, Vector3.zero, innerProxyRadius, outerProxyRadius);    // 2.14.17 ArrivalWindowDepth typ 4.4-8.8 units
+        D.Log(ShowDebugLog, "{0} has constructed an AttackProxy with an ArrivalWindowDepth of {1:0.#} units.", DebugName, attackProxy.ArrivalWindowDepth);
+        return attackProxy;
     }
 
     #endregion

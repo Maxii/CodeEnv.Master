@@ -96,6 +96,7 @@ public class FleetCreator : AAutoUnitCreator {
         }
     }
 
+    [Obsolete]
     protected override void RegisterCommandForOrders() {
         var ownerAIMgr = _gameMgr.GetAIManagerFor(Owner);
         ownerAIMgr.RegisterForOrders(_command);

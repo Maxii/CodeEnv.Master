@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: DummyTargetManager.cs
-// A ICameraTargetable gameObject moved around the edge of the universe to allow the camera to zoom, truck and pedestal.
+// A ICameraTargetable gameObject moved around the camera's OuterBoundary to allow the camera to zoom, truck and pedestal.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,7 +21,7 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// A ICameraTargetable gameObject moved around the edge of the universe to allow the camera to zoom, truck and pedestal.
+/// A ICameraTargetable gameObject moved around the camera's OuterBoundary to allow the camera to zoom, truck and pedestal.
 /// </summary>
 public class DummyTargetManager : AMonoSingleton<DummyTargetManager>, ICameraTargetable {
 

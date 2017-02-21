@@ -53,10 +53,9 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
 
     private string DebugName { get { return GetType().Name; } }
 
-    [Tooltip("Controls how many layers of sectors are visible when in SectorViewMode")]
-    [Range(2F, 5F)]
+    [Tooltip("Controls how many layers of sectors are visible when in SectorViewMode. 0 = ShowAll.")]
     [SerializeField]
-    private float _sectorVisibilityDepth = 3F;
+    private int _sectorVisibilityDepth = 3;
 
     /// <summary>
     /// The size of the grid of cells that encompasses the universe. Many of these cells are outside
@@ -172,12 +171,10 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
 
     private void DynamicallySubscribe(bool toSubscribe) {
         if (toSubscribe) {
-            _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, IntVector3>(cc => cc.SectorID, CameraSectorIdPropChangedHandler));
+            MainCameraControl.Instance.sectorIDChanged += CameraSectorIDChangedEventHandler;
         }
         else {
-            IDisposable d = _subscriptions.Single(s => s as DisposePropertyChangedSubscription<MainCameraControl> != null);
-            _subscriptions.Remove(d);
-            d.Dispose();
+            MainCameraControl.Instance.sectorIDChanged -= CameraSectorIDChangedEventHandler;
         }
     }
 
@@ -198,7 +195,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         D.AssertApproxEqual(Constants.ZeroF, _gridSize.x % 2F, _gridSize.ToString());
 
         _outermostCellVertexGridCoordinates = _gridSize / 2F;
-        D.Log("{0}: Universe Grid Size = {1}.", DebugName, _gridSize);
+        //D.Log("{0}: Universe Grid Size = {1}.", DebugName, _gridSize);
     }
 
     private int CalcCellCountInsideUniverseAlongAGridAxis() {
@@ -226,18 +223,59 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         }
     }
 
-    private void CameraSectorIdPropChangedHandler() {
+    private void CameraSectorIDChangedEventHandler(object sender, EventArgs e) {
         D.AssertEqual(PlayerViewMode.SectorView, PlayerViews.Instance.ViewMode);   // not subscribed unless in SectorViewMode
         D.Assert(IsGridWireframeShowing);
-        //D.Log("{0}: CameraSectorID has changed. Generating new grid points.", DebugName);
-        _gridWireframe.Points = GenerateWireframeGridPoints(MainCameraControl.Instance.SectorID);
+        HandleCameraSectorIDChanged();
+    }
+
+    private void HandleCameraSectorIDChanged() {
+        IntVector3 cameraSectorID;
+        bool isCameraInsideUniverse = MainCameraControl.Instance.TryGetSectorID(out cameraSectorID);
+        //D.Log("{0}: CameraSectorID has changed to {1}. Generating new grid points.", DebugName, cameraSectorID);
+        if (!isCameraInsideUniverse || _sectorVisibilityDepth == Constants.Zero) {
+            // Camera has just moved outside the universe or its moved within the universe but we are supposed to show all 
+            _gridWireframe.Points = GenerateAllWireframeGridPoints();
+        }
+        else {
+            // Camera has just moved within the universe, or from outside in and we aren't supposed to show all
+            _gridWireframe.Points = GenerateWireframeGridPoints(cameraSectorID);
+        }
     }
 
     #endregion
 
+    private List<Vector3> GenerateAllWireframeGridPoints() {
+        // per GridFramework: grid needs to be at origin for rendering to align properly with the grid ANY TIME vectrosity points are generated
+        D.Assert(Mathfx.Approx(transform.position, Vector3.zero, .01F), transform.position.ToString());
+
+        // construct from and to values
+        float xRenderFrom = -_outermostCellVertexGridCoordinates.x;
+        float yRenderFrom = -_outermostCellVertexGridCoordinates.y;
+        float zRenderFrom = -_outermostCellVertexGridCoordinates.z;
+
+        float xRenderTo = _outermostCellVertexGridCoordinates.x;
+        float yRenderTo = _outermostCellVertexGridCoordinates.y;
+        float zRenderTo = _outermostCellVertexGridCoordinates.z;
+
+        Vector3 renderFrom = new Vector3(xRenderFrom, yRenderFrom, zRenderFrom);
+        Vector3 renderTo = new Vector3(xRenderTo, yRenderTo, zRenderTo);
+        //D.Log("{0}: RenderFrom {1}, RenderTo {2}.", DebugName,  renderFrom, renderTo);
+
+        // reqd as Version 2 GetVectrosityPoints() directly derives from Renderer's From and To
+        _gridRenderer.From = renderFrom;
+        _gridRenderer.To = renderTo;
+        List<Vector3> gridPoints = _gridRenderer.GetVectrosityPoints();
+
+        D.Assert(gridPoints.Any(), "No grid points to render.");
+        return gridPoints;
+    }
+
     private List<Vector3> GenerateWireframeGridPoints(IntVector3 cameraSectorID) {
         // per GridFramework: grid needs to be at origin for rendering to align properly with the grid ANY TIME vectrosity points are generated
         D.Assert(Mathfx.Approx(transform.position, Vector3.zero, .01F), transform.position.ToString());
+        D.AssertNotEqual(Constants.Zero, _sectorVisibilityDepth);
+        D.AssertNotDefault(cameraSectorID);
         Vector3 cameraCellVertexGridCoordinates = GetCellVertexGridCoordinatesFrom(cameraSectorID);
 
         float cameraCellVertexGridCoordinate_X = cameraCellVertexGridCoordinates.x;
@@ -273,19 +311,18 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
 
     /// <summary>
     /// Confirms (and modifies if necessary) that there will be a minimum depth of one sector
-    /// visible in the grid to render no matter how far away the camera is.
+    /// visible in the grid to render.
     /// </summary>
     /// <param name="from">The from value.</param>
     /// <param name="to">The to value.</param>
     private void ConfirmOneBoxDeep(ref float from, ref float to) {
         if (from.ApproxEquals(to)) {
-            return;
-        }
-        if (to > Constants.ZeroF) {
-            from = to - 1F;
-        }
-        else if (from < Constants.ZeroF) {
-            to = from + 1F;
+            if (to >= Constants.ZeroF) {
+                from = to - 1F;
+            }
+            else if (from <= Constants.ZeroF) {
+                to = from + 1F;
+            }
         }
     }
 
@@ -352,33 +389,6 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         D.Log("{0} inspected {1} grid cells, creating {2} sectors of which {3} are non-periphery.",
         DebugName, inspectedCellCount, _sectorIdToSectorLookup.Keys.Count, _sectorIdToSectorLookup.Keys.Count - peripheryCellCount);
         __LogDuration("{0}.ConstructSectors()".Inject(DebugName));
-    }
-
-    /// <summary>
-    /// Returns <c>true</c> if the provided cell vertex world location is contained within the radius of the universe, <c>false</c> otherwise.
-    /// </summary>
-    /// <param name="cellVertexWorldLoc">The cell vertex world location.</param>
-    /// <param name="universeRadiusSqrd">The universe radius SQRD.</param>
-    /// <param name="onPeripheryRadiusSqrd">The on periphery radius SQRD.</param>
-    /// <param name="isCellOnPeriphery">if set to <c>true</c> the cell represented by this cellVertex location is on the periphery of the universe,
-    /// aka its the outer cell along the universe border.</param>
-    /// <returns></returns>
-    [Obsolete]
-    private bool TryDetermineCellVertexInsideUniverse(Vector3 cellVertexWorldLoc, float universeRadiusSqrd, float onPeripheryRadiusSqrd, out bool isCellOnPeriphery) {
-        isCellOnPeriphery = false;
-        bool isCellVertexInsideUniverse = false;
-        float distanceFromUniverseCenterToCellVertexSqrd = Vector3.SqrMagnitude(cellVertexWorldLoc);
-
-        // Note: use of '<' excludes negative vertices on the edge of the universe. 
-        // Positive vertices on the edge are already excluded prior to this method as the cell, by definition would be outside the universe
-
-        // Negative cells with its vertex outside can still have part of the cell inside which means a lot of the universe on
-        // the periphery has no assigned cell,  aka Sector
-        if (distanceFromUniverseCenterToCellVertexSqrd <= universeRadiusSqrd) {
-            isCellOnPeriphery = distanceFromUniverseCenterToCellVertexSqrd > onPeripheryRadiusSqrd;
-            isCellVertexInsideUniverse = true;
-        }
-        return isCellVertexInsideUniverse;
     }
 
     /// <summary>
@@ -481,41 +491,18 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
 
     /// <summary>
     /// Returns the SectorID that contains the provided world location.
+    /// Throws an error if <c>worldLocation</c> is not within the universe.
+    /// <remarks>Provided as a convenience when the client knows the location provided is inside the universe.
+    /// If this is not certain, use TryGetSectorIDThatContains(worldLocation) instead.</remarks>
     /// </summary>
     /// <param name="worldLocation">The world location.</param>
     /// <returns></returns>
-    public IntVector3 GetSectorIdThatContains(Vector3 worldLocation) {
+    public IntVector3 GetSectorIDThatContains(Vector3 worldLocation) {
         IntVector3 sectorID;
         Vector3 nearestCellGridCoordinates = _grid.NearestCell(worldLocation, RectGrid.CoordinateSystem.Grid);
-        if (!_cellGridCoordinatesToSectorIdLookup.TryGetValue(nearestCellGridCoordinates, out sectorID)) {
-            //// 8.9.16 Should never occur unless debugMaxGridSize is used as all worldLocations inside Universe should be 
-            //// encompassed by a cell. Currently using debugMaxGridSize always results in Camera initial location warning
-            ////D.Warn(!_enableGridSizeLimit, "No Index stored at CellGridCoordinates {0}. Adding.", nearestCellGridCoordinates);
-            Vector3 peripheralCellGridCoordinates = _outermostCellVertexGridCoordinates + _cellVertexGridCoordinatesToCellGridCoordinatesOffset;
-            D.Warn("{0}: No SectorID stored at CellGridCoordinates {1}. Adding. Peripheral CellGridCoordinates = {2}",
-                DebugName, nearestCellGridCoordinates, peripheralCellGridCoordinates);
-            sectorID = Instance.CalculateSectorIDFromCellGridCoordindates(nearestCellGridCoordinates);
-            _cellGridCoordinatesToSectorIdLookup.Add(nearestCellGridCoordinates, sectorID);
-            _sectorIdToCellGridCoordinatesLookup.Add(sectorID, nearestCellGridCoordinates);
-        }
+        bool isSectorIDPresent = _cellGridCoordinatesToSectorIdLookup.TryGetValue(nearestCellGridCoordinates, out sectorID);
+        D.Assert(isSectorIDPresent, "{0}: No SectorID stored at CellGridCoordinates {1}.".Inject(DebugName, nearestCellGridCoordinates));
         return sectorID;
-    }
-
-    /// <summary>
-    /// Returns <c>true</c> if the sector's world position was acquired, <c>false</c> otherwise.
-    /// Warning: While debugging, only a limited number of sectors are 'built' to
-    /// reduce the time needed to construct valid paths for pathfinding.
-    /// </summary>
-    /// <param name="sectorID">ID of the sector.</param>
-    /// <param name="worldPosition">The world position of the sector's center.</param>
-    /// <returns></returns>
-    public bool __TryGetSectorPosition(IntVector3 sectorID, out Vector3 worldPosition) {
-        D.AssertNotDefault(sectorID);
-        bool isSectorFound = _sectorIdToCellWorldLocationLookup.TryGetValue(sectorID, out worldPosition);
-        if (!isSectorFound) {
-            D.Warn("{0} could not find a sector at sectorID {1}.", DebugName, sectorID);
-        }
-        return isSectorFound;
     }
 
     /// <summary>
@@ -533,35 +520,19 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     }
 
     /// <summary>
-    /// Returns <c>true</c> if the sector was acquired, <c>false</c> otherwise.
-    /// Warning: While debugging, only a limited number of sectors are 'built' to
-    /// reduce the time needed to construct valid paths for pathfinding.
+    /// Returns <c>true</c> if a sectorID has been assigned containing this worldLocation, <c>false</c> otherwise.
+    /// <remarks>Locations inside the universe have assigned SectorIDs, while those outside do not.</remarks>
     /// </summary>
-    /// <param name="sectorID">The sectorID.</param>
-    /// <param name="sector">The sector.</param>
+    /// <param name="worldLocation">The world location.</param>
+    /// <param name="sectorID">The resulting sectorID.</param>
     /// <returns></returns>
-    public bool __TryGetSector(IntVector3 sectorID, out Sector sector) {
-        D.AssertNotDefault(sectorID);
-        return _sectorIdToSectorLookup.TryGetValue(sectorID, out sector);
-    }
-
-    /// <summary>
-    /// Returns <c>true</c> if a sector is present at this sectorID, <c>false</c> otherwise.
-    /// Warning: While debugging, only a limited number of sectors are 'built' to
-    /// reduce the time needed to construct valid paths for pathfinding.
-    /// <remarks>DebugInfo uses this to properly construct CameraLocation text as the
-    /// camera can move to the edge of the universe even if sectors are not present.</remarks>
-    /// </summary>
-    /// <param name="sectorID">ID of the sector.</param>
-    /// <returns></returns>
-    public bool __IsSectorPresentAt(IntVector3 sectorID) {
-        return _sectorIdToSectorLookup.ContainsKey(sectorID);
+    public bool TryGetSectorIDThatContains(Vector3 worldLocation, out IntVector3 sectorID) {
+        Vector3 nearestCellGridCoordinates = _grid.NearestCell(worldLocation, RectGrid.CoordinateSystem.Grid);
+        return _cellGridCoordinatesToSectorIdLookup.TryGetValue(nearestCellGridCoordinates, out sectorID);
     }
 
     /// <summary>
     /// Gets the sector associated with this sectorID. 
-    /// Warning: Can be null while debugging as only a limited number of sectors are 'built'
-    /// to reduce the time needed to construct valid paths for pathfinding.
     /// </summary>
     /// <param name="sectorID">The sectorID.</param>
     /// <returns></returns>
@@ -569,36 +540,64 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         D.AssertNotDefault(sectorID);
         Sector sector;
         if (!_sectorIdToSectorLookup.TryGetValue(sectorID, out sector)) {
-            D.Warn("{0}: No Sector at {1}, returning null.", DebugName, sectorID);
+            D.Error("{0}: No Sector at {1}.", DebugName, sectorID);
         }
         return sector;
     }
 
     /// <summary>
-    /// Gets the sector containing the provided worldPoint.
-    /// Warning: Can be null while debugging as only a limited number of sectors are 'built'
-    /// to reduce the time needed to construct valid paths for pathfinding.
+    /// Returns <c>true</c> if a sector has been assigned containing this worldLocation, <c>false</c> otherwise.
+    /// <remarks>Locations inside the universe have assigned Sectors, while those outside do not.</remarks>
+    /// </summary>
+    /// <param name="worldLocation">The world location.</param>
+    /// <param name="sectorID">The sector.</param>
+    /// <returns></returns>
+    public bool TryGetSectorContaining(Vector3 worldLocation, out Sector sector) {
+        IntVector3 sectorID;
+        if (TryGetSectorIDThatContains(worldLocation, out sectorID)) {
+            sector = GetSector(sectorID);
+            return true;
+        }
+        sector = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Gets the nearest SectorID to the provided <c>worldLocation</c>.
+    /// <remarks>Expensive.</remarks>
+    /// <remarks>2.11.17 Not currently used.</remarks>
+    /// </summary>
+    /// <param name="worldLocation">The world location.</param>
+    /// <returns></returns>
+    public IntVector3 GetNearestSectorIDTo(Vector3 worldLocation) {
+        Vector3 nearestCellToWorldLocation = _grid.NearestCell(worldLocation, RectGrid.CoordinateSystem.Grid);
+        Vector3 nearestUCell = default(Vector3);    // the nearest cell grid coordinates within the universe defined by universeRadius
+        float smallestSqrDistanceToUCell = float.MaxValue;
+
+        // all the cell grid coordinates located within the universe defined by universeRadius
+        var allUniverseCells = _cellGridCoordinatesToSectorIdLookup.Keys;
+        float sqrDistance;
+        foreach (var uCell in allUniverseCells) {
+            if ((sqrDistance = Vector3.SqrMagnitude(nearestCellToWorldLocation - uCell)) < smallestSqrDistanceToUCell) {
+                nearestUCell = uCell;
+                smallestSqrDistanceToUCell = sqrDistance;
+            }
+        }
+        D.Assert(nearestUCell != default(Vector3));
+        return _cellGridCoordinatesToSectorIdLookup[nearestUCell];
+    }
+
+    /// <summary>
+    /// Gets the sector containing the provided worldLocation.
+    /// Throws an error if <c>worldLocation</c> is not within the universe.
+    /// <remarks>Provided as a convenience when the client knows the location provided is inside the universe.
+    /// If this is not certain, use TryGetSectorContaining(worldLocation) instead.</remarks>
     /// </summary>
     /// <param name="worldLocation">The world point.</param>
     /// <returns></returns>
     public Sector GetSectorContaining(Vector3 worldLocation) {
-        var sectorID = GetSectorIdThatContains(worldLocation);
+        var sectorID = GetSectorIDThatContains(worldLocation);
         return GetSector(sectorID);
-    }
-
-    /// <summary>
-    /// Gets a random sectorID.
-    /// </summary>
-    /// <param name="includePeriphery">if set to <c>true</c> [include periphery].</param>
-    /// <param name="excludedIds">The excluded sectorIDs.</param>
-    /// <returns></returns>
-    [Obsolete]
-    public IntVector3 GetRandomSectorID(bool includePeriphery = false, IEnumerable<IntVector3> excludedIds = null) {
-        IEnumerable<IntVector3> sectorIdsToChooseFrom = includePeriphery ? _sectorIdToSectorLookup.Keys : _nonPeripheralSectorIDs;
-        if (excludedIds != null) {
-            sectorIdsToChooseFrom = sectorIdsToChooseFrom.Except(excludedIds);
-        }
-        return RandomExtended.Choice(sectorIdsToChooseFrom);
     }
 
     /// <summary>
@@ -638,6 +637,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     /// <summary>
     /// Returns the sectorIDs surrounding <c>centerID</c> that are between <c>minDistance</c> and <c>maxDistance</c>
     /// from <c>centerID</c>. The UOM for both distance values is sectors.
+    /// <remarks>All SectorIDs returned will be within the universe.</remarks>
     /// </summary>
     /// <param name="centerID">The center.</param>
     /// <param name="minDistance">The minimum distance in sectors.</param>
@@ -646,7 +646,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     /// <returns></returns>
     public IList<IntVector3> GetSurroundingSectorIDsBetween(IntVector3 centerID, int minDistance, int maxDistance, bool includePeriphery = true) {
         D.AssertNotDefault(centerID);
-        D.Assert(__IsSectorPresentAt(centerID));
+        D.Assert(_sectorIdToSectorLookup.ContainsKey(centerID));
         Utility.ValidateForRange(minDistance, 0, maxDistance - 1);
         Utility.ValidateForRange(maxDistance, minDistance + 1, _gameMgr.GameSettings.UniverseSize.RadiusInSectors() * 2);
 
@@ -697,7 +697,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
             foreach (var y in yValuePair) {
                 foreach (var z in zValuePair) {
                     IntVector3 sectorID = new IntVector3(x, y, z);
-                    if (__IsSectorPresentAt(sectorID)) {
+                    if (_sectorIdToSectorLookup.ContainsKey(sectorID)) {
                         bool toAdd = includePeriphery || !IsSectorOnPeriphery(sectorID);
                         if (toAdd) {
                             neighbors.Add(sectorID);
@@ -757,16 +757,27 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     /// <returns></returns>
     public float GetDistanceInSectorsFromOrigin(IntVector3 sectorID) {
         Vector3 cellGridCoordinates = GetCellGridCoordinatesFor(sectorID);
-        return Vector3.Distance(cellGridCoordinates, Vector3.zero);
+        return Vector3.Distance(cellGridCoordinates, GameConstants.UniverseOrigin);
     }
 
-    public void ShowSectorGrid(bool toShow) {
+    private void ShowSectorGrid(bool toShow) {
         if (IsGridWireframeShowing == toShow) {
             return;
         }
         if (toShow) {
             D.Assert(!IsGridWireframeShowing);
-            List<Vector3> gridPoints = GenerateWireframeGridPoints(MainCameraControl.Instance.SectorID);
+            IntVector3 cameraSectorID;
+            bool isCameraInsideUniverse = MainCameraControl.Instance.TryGetSectorID(out cameraSectorID);
+
+            List<Vector3> gridPoints;
+            if (!isCameraInsideUniverse || _sectorVisibilityDepth == Constants.Zero) {
+                // Camera is outside the universe or we are supposed to show all 
+                gridPoints = GenerateAllWireframeGridPoints();
+            }
+            else {
+                // Camera is inside the universe, or we aren't supposed to show all
+                gridPoints = GenerateWireframeGridPoints(cameraSectorID);
+            }
             _gridWireframe = new GridWireframe("GridWireframe", gridPoints);
             _gridWireframe.Show(true);
         }
@@ -830,6 +841,112 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         return sector;
     }
 
+    /// <summary>
+    /// Returns <c>true</c> if the provided cell vertex world location is contained within the radius of the universe, <c>false</c> otherwise.
+    /// </summary>
+    /// <param name="cellVertexWorldLoc">The cell vertex world location.</param>
+    /// <param name="universeRadiusSqrd">The universe radius SQRD.</param>
+    /// <param name="onPeripheryRadiusSqrd">The on periphery radius SQRD.</param>
+    /// <param name="isCellOnPeriphery">if set to <c>true</c> the cell represented by this cellVertex location is on the periphery of the universe,
+    /// aka its the outer cell along the universe border.</param>
+    /// <returns></returns>
+    [Obsolete]
+    private bool TryDetermineCellVertexInsideUniverse(Vector3 cellVertexWorldLoc, float universeRadiusSqrd, float onPeripheryRadiusSqrd, out bool isCellOnPeriphery) {
+        isCellOnPeriphery = false;
+        bool isCellVertexInsideUniverse = false;
+        float distanceFromUniverseCenterToCellVertexSqrd = Vector3.SqrMagnitude(cellVertexWorldLoc);
+
+        // Note: use of '<' excludes negative vertices on the edge of the universe. 
+        // Positive vertices on the edge are already excluded prior to this method as the cell, by definition would be outside the universe
+
+        // Negative cells with its vertex outside can still have part of the cell inside which means a lot of the universe on
+        // the periphery has no assigned cell,  aka Sector
+        if (distanceFromUniverseCenterToCellVertexSqrd <= universeRadiusSqrd) {
+            isCellOnPeriphery = distanceFromUniverseCenterToCellVertexSqrd > onPeripheryRadiusSqrd;
+            isCellVertexInsideUniverse = true;
+        }
+        return isCellVertexInsideUniverse;
+    }
+
+    [Obsolete]
+    public IntVector3 GetSectorIdThatContains(Vector3 worldLocation) {
+        IntVector3 sectorID;
+        Vector3 nearestCellGridCoordinates = _grid.NearestCell(worldLocation, RectGrid.CoordinateSystem.Grid);
+        if (!_cellGridCoordinatesToSectorIdLookup.TryGetValue(nearestCellGridCoordinates, out sectorID)) {
+            //// 8.9.16 Should never occur unless debugMaxGridSize is used as all worldLocations inside Universe should be 
+            //// encompassed by a cell. Currently using debugMaxGridSize always results in Camera initial location warning
+            ////D.Warn(!_enableGridSizeLimit, "No Index stored at CellGridCoordinates {0}. Adding.", nearestCellGridCoordinates);
+            Vector3 peripheralCellGridCoordinates = _outermostCellVertexGridCoordinates + _cellVertexGridCoordinatesToCellGridCoordinatesOffset;
+            D.Warn("{0}: No SectorID stored at CellGridCoordinates {1}. Adding. Peripheral CellGridCoordinates = {2}",
+                DebugName, nearestCellGridCoordinates, peripheralCellGridCoordinates);
+            sectorID = CalculateSectorIDFromCellGridCoordindates(nearestCellGridCoordinates);
+            _cellGridCoordinatesToSectorIdLookup.Add(nearestCellGridCoordinates, sectorID);
+            _sectorIdToCellGridCoordinatesLookup.Add(sectorID, nearestCellGridCoordinates);
+        }
+        return sectorID;
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if the sector's world position was acquired, <c>false</c> otherwise.
+    //// Warning: While debugging, only a limited number of sectors are 'built' to
+    //// reduce the time needed to construct valid paths for pathfinding.
+    /// </summary>
+    /// <param name="sectorID">ID of the sector.</param>
+    /// <param name="worldPosition">The world position of the sector's center.</param>
+    /// <returns></returns>
+    [Obsolete]
+    public bool __TryGetSectorPosition(IntVector3 sectorID, out Vector3 worldPosition) {
+        D.AssertNotDefault(sectorID);
+        bool isSectorFound = _sectorIdToCellWorldLocationLookup.TryGetValue(sectorID, out worldPosition);
+        if (!isSectorFound) {
+            D.Warn("{0} could not find a sector at sectorID {1}.", DebugName, sectorID);
+        }
+        return isSectorFound;
+    }
+
+    /// <summary>
+    /// Gets a random sectorID.
+    /// </summary>
+    /// <param name="includePeriphery">if set to <c>true</c> [include periphery].</param>
+    /// <param name="excludedIds">The excluded sectorIDs.</param>
+    /// <returns></returns>
+    [Obsolete]
+    public IntVector3 GetRandomSectorID(bool includePeriphery = false, IEnumerable<IntVector3> excludedIds = null) {
+        IEnumerable<IntVector3> sectorIdsToChooseFrom = includePeriphery ? _sectorIdToSectorLookup.Keys : _nonPeripheralSectorIDs;
+        if (excludedIds != null) {
+            sectorIdsToChooseFrom = sectorIdsToChooseFrom.Except(excludedIds);
+        }
+        return RandomExtended.Choice(sectorIdsToChooseFrom);
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if the sector was acquired, <c>false</c> otherwise.
+    //// Warning: While debugging, only a limited number of sectors are 'built' to
+    //// reduce the time needed to construct valid paths for pathfinding.
+    /// </summary>
+    /// <param name="sectorID">The sectorID.</param>
+    /// <param name="sector">The sector.</param>
+    /// <returns></returns>
+    [Obsolete]
+    public bool __TryGetSector(IntVector3 sectorID, out Sector sector) {
+        D.AssertNotDefault(sectorID);
+        return _sectorIdToSectorLookup.TryGetValue(sectorID, out sector);
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if a sector is present at this sectorID, <c>false</c> otherwise.
+    //// Warning: While debugging, only a limited number of sectors are 'built' to
+    //// reduce the time needed to construct valid paths for pathfinding.
+    /// <remarks>DebugInfo uses this to properly construct CameraLocation text as the
+    /// camera can move to the edge of the universe even if sectors are not present.</remarks>
+    /// </summary>
+    /// <param name="sectorID">ID of the sector.</param>
+    /// <returns></returns>
+    [Obsolete]
+    public bool __IsSectorPresentAt(IntVector3 sectorID) {
+        return _sectorIdToSectorLookup.ContainsKey(sectorID);
+    }
+
     [Obsolete]
     public void CommenceSectorOperations() {
         Sectors.ForAll(s => {
@@ -854,11 +971,30 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     private void Unsubscribe() {
         _subscriptions.ForAll(s => s.Dispose());
         _subscriptions.Clear();
+        if (MainCameraControl.Instance != null) {
+            MainCameraControl.Instance.sectorIDChanged -= CameraSectorIDChangedEventHandler;
+        }
     }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
+
+    #region Archive
+
+    // Dynamic subscription approach using Property Changed
+    //private void DynamicallySubscribe(bool toSubscribe) {
+    //    if (toSubscribe) {
+    //        _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, IntVector3>(cc => cc.SectorID, CameraSectorIdPropChangedHandler));
+    //    }
+    //    else {
+    //        IDisposable d = _subscriptions.Single(s => s as DisposePropertyChangedSubscription<MainCameraControl> != null);
+    //        _subscriptions.Remove(d);
+    //        d.Dispose();
+    //    }
+    //}
+
+    #endregion
 
     #region ISectorGrid Members
 

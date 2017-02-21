@@ -176,7 +176,9 @@ namespace CodeEnv.Master.GameContent {
             set { _hoveredItemHudWindow = value; }
         }
 
+        [System.Obsolete]
         private static IMyPoolManager _myPoolManager;
+        [System.Obsolete]
         public static IMyPoolManager MyPoolManager {
             get {
                 D.AssertNotNull(_myPoolManager);
@@ -192,6 +194,26 @@ namespace CodeEnv.Master.GameContent {
                 return _debugControls;
             }
             set { _debugControls = value; }
+        }
+
+        private static IGamePoolManager _gamePoolManager;
+        public static IGamePoolManager GamePoolManager {
+            get {
+                D.AssertNotNull(_gamePoolManager);
+                return _gamePoolManager;
+            }
+            set { _gamePoolManager = value; }
+        }
+
+        // A 'defacto' Singleton as there is only 1 per scene
+        // I could make it a singleton, but it would take work as it : AGuiLabelReadout
+        private static IFpsReadout _fpsReadout;
+        public static IFpsReadout FpsReadout {
+            get {
+                D.AssertNotNull(_fpsReadout);
+                return _fpsReadout;
+            }
+            set { _fpsReadout = value; }
         }
 
         #endregion

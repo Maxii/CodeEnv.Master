@@ -99,10 +99,8 @@ namespace CodeEnv.Master.GameContent {
             // multiple pairs with the same resource type are not allowed
             CheckForDuplicateValues(resourceValuePairs);
 
-            _resourceValueLookup = new Dictionary<ResourceID, float>();
-
             foreach (var rvp in resourceValuePairs) {
-                _resourceValueLookup.Add(rvp.ResourceID, rvp.Value);
+                ResourceValueLookup.Add(rvp.ResourceID, rvp.Value);
             }
 
             // as a struct field, _toString must be assigned in the Constructor

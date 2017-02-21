@@ -98,7 +98,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     /// Read only. The actual speed of the ship in Units per hour. Whether paused or at a GameSpeed
     /// other than Normal (x1), this property always returns the proper reportable value.
     /// </summary>
-    public float ActualSpeedValue { get { return _helm.ActualSpeedValue; } }
+    public float ActualSpeedValue { get { return _engineRoom.ActualSpeedValue; } }
 
     /// <summary>
     /// The Speed the ship has been ordered to execute.
@@ -122,6 +122,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     public ShipReport UserReport { get { return Publisher.GetUserReport(); } }
 
+    private bool IsAttacking { get { return CurrentState == ShipState.Attacking; } }
+
     private ShipPublisher _publisher;
     private ShipPublisher Publisher {
         get { return _publisher = _publisher ?? new ShipPublisher(Data, this); }
@@ -143,7 +145,10 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
     }
 
-    private ShipHelm _helm;
+    //private ShipHelm _helm;
+    private ShipHelm2 _helm;
+    private EngineRoom _engineRoom;
+
     private FixedJoint _orbitingJoint;
     private IShipOrbitable _itemBeingOrbited;
     private CollisionDetectionMonitor _collisionDetectionMonitor;
@@ -162,8 +167,16 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     protected override void InitializeOnData() {
         base.InitializeOnData();
-        _helm = new ShipHelm(this, Rigidbody);
+        InitializeNavigation();
         InitializeCollisionDetectionZone();
+    }
+
+    private void InitializeNavigation() {
+        _engineRoom = new EngineRoom(this, Data, transform, Rigidbody);
+        _helm = new ShipHelm2(this, Data, transform, _engineRoom);
+        _helm.apCourseChanged += ApCourseChangedEventHandler;
+        _helm.apTargetReached += ApTargetReachedEventHandler;
+        _helm.apTargetUncatchable += ApTargetUncatchableEventHandler;
     }
 
     protected override void InitializeOnFirstDiscernibleToUser() {
@@ -208,6 +221,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     public void HandleFleetFullSpeedChanged() { _helm.HandleFleetFullSpeedValueChanged(); }
 
+    protected override void PrepareForDeathNotification() { }
+
     protected override void InitiateDeadState() {
         UponDeath();
         CurrentState = ShipState.Dead;
@@ -217,6 +232,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         base.HandleDeathBeforeBeginningDeathEffect();
         TryBreakOrbit();
         _helm.HandleDeath();
+        _engineRoom.HandleDeath();
         // Keep the collisionDetection Collider enabled to keep other ships from flying through this exploding ship
     }
 
@@ -264,6 +280,18 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         HandleNewOrder();
     }
 
+    private void ApTargetUncatchableEventHandler(object sender, EventArgs e) {
+        HandleApTargetUncatchable();
+    }
+
+    private void ApTargetReachedEventHandler(object sender, EventArgs e) {
+        HandleApTargetReached();
+    }
+
+    private void ApCourseChangedEventHandler(object sender, EventArgs e) {
+        UpdateDebugCoursePlot();
+    }
+
     #endregion
 
     public void HandlePendingCollisionWith(IObstacle obstacle) {
@@ -291,8 +319,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             // (aka Helm.IsActivelyUnderway == false) before completing orbit assumption.
             // If in process of AssumingHighOrbit after executing a move, ExecuteMoveOrder_EnterState will wait until no longer colliding
             // (aka Helm.IsActivelyUnderway == false) before completing orbit assumption.
-
-            _helm.HandlePendingCollisionWith(obstacle);
+            _engineRoom.HandlePendingCollisionWith(obstacle);
         }
     }
 
@@ -302,7 +329,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 _obstaclesCollidedWithWhileInOrbit.Remove(obstacle);
                 return;
             }
-            _helm.HandlePendingCollisionAverted(obstacle);
+            _engineRoom.HandlePendingCollisionAverted(obstacle);
         }
     }
 
@@ -667,6 +694,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         LogEvent();
 
         D.AssertNotNull(_fsmTgt);
+        D.Assert(_fsmTgt.IsOperational, _fsmTgt.DebugName);
         D.AssertNotDefault((int)_apMoveSpeed);
         D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
         D.Assert(!(_fsmTgt is IShipCloseOrbitSimulator));
@@ -826,7 +854,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         //ShipState.Moving.GetValueName(), _fsmTgt.DebugName, _apMoveSpeed.GetValueName(), currentShipMoveOrder.IsFleetwide);
 
         Call(ShipState.Moving);
-        yield return null;  // required so Return()s here
+        yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
         if (_orderFailureCause != UnitItemOrderFailureCause.None) {
             switch (_orderFailureCause) {
@@ -967,13 +995,13 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         _apMoveSpeed = Speed.Standard;
 
         if (ShowDebugLog) {
-            string speedMsg = "{0}({1:0.##}) units/hr".Inject(_apMoveSpeed.GetValueName(), _apMoveSpeed.GetUnitsPerHour(Data));
+            string speedMsg = "{0}({1:0.##}) units/hr".Inject(_apMoveSpeed.GetValueName(), _apMoveSpeed.GetUnitsPerHour(Data.FullSpeedValue));
             D.Log("{0} is initiating repositioning to FormationStation at speed {1}. Distance from OnStation: {2:0.##}.",
                 DebugName, speedMsg, FormationStation.__DistanceFromOnStation);
         }
 
         Call(ShipState.Moving);
-        yield return null;  // required so Return()s here
+        yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
         if (_orderFailureCause != UnitItemOrderFailureCause.None) {
             if (CurrentOrder.ToNotifyCmd) {
@@ -1006,8 +1034,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 // TEMP This approach minimizes the warnings as this check occurs 1 frame after Moving 'arrives' at the FormationStation.
                 // I know it arrives as I have a warning in the FormationStation's Moving proxy when the Station and Proxy don't agree
                 // that it has arrived. This should only warn at FPS < 25 and then only rarely.
-                D.Warn("{0} has exited 'Moving' to its formation station without being OnStation. Distance from OnStation = {1}. Frame = {2}.",
-                    DebugName, FormationStation.__DistanceFromOnStation, Time.frameCount);
+                D.Warn("{0} has exited 'Moving' to its formation station without being OnStation. Distance from OnStation = {1:0.00}. FPS = {2}.",
+                    DebugName, FormationStation.__DistanceFromOnStation, FpsReadout.FramesPerSecond);
             }
         }
 
@@ -1107,7 +1135,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         var exploreTgt = _fsmTgt as IShipExplorable;
         _apMoveSpeed = Speed.Standard;
         Call(ShipState.Moving);
-        yield return null;  // required so Return()s here
+        yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
         if (_orderFailureCause != UnitItemOrderFailureCause.None) {
             Command.HandleOrderOutcome(CurrentOrder.Directive, this, isSuccess: false, target: exploreTgt, failCause: _orderFailureCause);
@@ -1145,7 +1173,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
         else {
             Call(ShipState.AssumingCloseOrbit);
-            yield return null;  // required so Return()s here
+            yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
             if (_orderFailureCause != UnitItemOrderFailureCause.None) {
                 D.Log(ShowDebugLog, "{0} was unsuccessful exploring {1}.", DebugName, exploreTgt.DebugName);
@@ -1280,7 +1308,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
         _apMoveSpeed = Speed.Standard;
         Call(ShipState.Moving);
-        yield return null;  // required so Return()s here
+        yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
         //D.Log(ShowDebugLog, "{0} has just Return()ed from ShipState.Moving in ExecuteAssumeCloseOrbitOrder_EnterState.", DebugName);
 
         if (_orderFailureCause != UnitItemOrderFailureCause.None) {
@@ -1308,7 +1336,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
         //D.Log(ShowDebugLog, "{0} is now Call()ing ShipState.AssumingCloseOrbit in ExecuteAssumeCloseOrbitOrder_EnterState.", DebugName);
         Call(ShipState.AssumingCloseOrbit);
-        yield return null;  // required so Return()s here
+        yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
         if (_orderFailureCause != UnitItemOrderFailureCause.None) {
             switch (_orderFailureCause) {
@@ -1405,12 +1433,14 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     void AssumingCloseOrbit_UponPreconfigureState() {
         LogEvent();
 
+        D.AssertNotNull(_fsmTgt);
+        D.Assert(_fsmTgt.IsOperational, _fsmTgt.DebugName);
         D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
         D.Assert(_orbitingJoint == null);
         D.Assert(!IsInOrbit);
 
         IShipCloseOrbitable closeOrbitTgt = _fsmTgt as IShipCloseOrbitable;
-        D.Assert(closeOrbitTgt != null);
+        D.AssertNotNull(closeOrbitTgt);
         // Note: _fsmTgt (now closeOrbitTgt) death has already been subscribed too if _fsmTgt is mortal
     }
 
@@ -1723,7 +1753,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 _fsmTgt = primaryAttackTgt as IShipNavigable;
 
                 Call(ShipState.Attacking);
-                yield return null;  // reqd so Return()s here
+                yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
                 if (_orderFailureCause != UnitItemOrderFailureCause.None) {
                     Command.HandleOrderOutcome(CurrentOrder.Directive, this, isSuccess: false, target: primaryAttackTgt, failCause: _orderFailureCause);
@@ -1771,10 +1801,14 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void ExecuteAttackOrder_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         LogEvent();
-        // if this is called from this state, the ship has either 1) declined to pick a first or subsequent primary target in which
-        // case _fsmTgt will be null, or 2) _fsmTgt has been destroyed but has not yet had time to be nulled upon Return()ing from Attacking
-        if (_fsmTgt != null && (_fsmTgt as IShipAttackable).IsOperational) {
-            D.Error("{0} attack target {1} should be dead.", DebugName, _fsmTgt.DebugName);
+        // If this is called from this state, the ship has either 1) declined to pick a first or subsequent primary target in which
+        // case _fsmTgt will be null, 2) _fsmTgt has been killed but EnterState has not yet had time to null it upon Return()ing from 
+        // Attacking, or 3) _fsmTgt is still alive and EnterState has not yet processed the FailureCode it Return()ed with.
+        if (_fsmTgt != null && _fsmTgt.IsOperational) {
+            D.AssertNotDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
+            // 2.17.17 Got this failure so added OrderFailureCause fishing for more info
+            // 2.18.17 Got again. FailureCause = NeedsRepair. Appears that Return() from Call(Attacking) changes the state back
+            // but waits until the next frame before processing the failure cause in EnterState. This can occur in that 1 frame gap.
         }
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
         InitiateFiringSequence(selectedFiringSolution);
@@ -1829,8 +1863,14 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         D.AssertNotEqual(ShipCombatStance.Disengage, combatStance);
         D.AssertNotEqual(ShipCombatStance.Defensive, combatStance);
 
+        // Min and Max desired distances to the target's surface, derived from CombatStance and the range of available weapons.
+        // All weapon ranges already exceed the maximum possible reqd separation to avoid collisions between a ship and its target
+        // which is handled when the ranges are initially assigned. However, the min desired distance here can be as low as Zero
+        // which represents the weapons and PointBlank CombatStance saying "My weapons and stance require no separation between attacker
+        // and target". Any adjustments to derive AttackTgtProxy values that avoid collisions will be applied by the Target, if needed.
         float maxDesiredDistanceToTgtSurface = Constants.ZeroF;
         float minDesiredDistanceToTgtSurface = Constants.ZeroF;
+
         bool hasOperatingLRWeapons = weapRange.Long > Constants.ZeroF;
         bool hasOperatingMRWeapons = weapRange.Medium > Constants.ZeroF;
         bool hasOperatingSRWeapons = weapRange.Short > Constants.ZeroF;
@@ -1888,9 +1928,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(combatStance));
         }
 
-        minDesiredDistanceToTgtSurface = Mathf.Max(minDesiredDistanceToTgtSurface, CollisionDetectionZoneRadius);
         D.Assert(maxDesiredDistanceToTgtSurface > minDesiredDistanceToTgtSurface);
-        return attackTgt.GetApAttackTgtProxy(minDesiredDistanceToTgtSurface, maxDesiredDistanceToTgtSurface);
+        ValueRange<float> desiredWeaponsRangeEnvelope = new ValueRange<float>(minDesiredDistanceToTgtSurface, maxDesiredDistanceToTgtSurface);
+        return attackTgt.GetApAttackTgtProxy(desiredWeaponsRangeEnvelope, CollisionDetectionZoneRadius);
     }
 
     #endregion
@@ -1899,6 +1939,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         LogEvent();
 
         D.AssertNotNull(_fsmTgt);
+        D.Assert(_fsmTgt.IsOperational, _fsmTgt.DebugName);
         D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
 
         bool isSubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.TargetDeath, _fsmTgt, toSubscribe: true);
@@ -2119,7 +2160,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         //TryBreakOrbit();  // Ships can repair while in orbit
 
         Call(ShipState.Repairing);
-        yield return null;    // required so Return()s here
+        yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
         if (_orderFailureCause != UnitItemOrderFailureCause.None) {
             switch (_orderFailureCause) {
@@ -2209,12 +2250,14 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         KillRepairJob();
 
         // HACK
-        Data.PassiveCountermeasures.ForAll(cm => cm.IsDamaged = false);
-        Data.ActiveCountermeasures.ForAll(cm => cm.IsDamaged = false);
-        Data.ShieldGenerators.ForAll(gen => gen.IsDamaged = false);
-        Data.Weapons.ForAll(w => w.IsDamaged = false);
-        Data.Sensors.ForAll(s => s.IsDamaged = false);
-        Data.IsFtlDamaged = false;
+        Data.PassiveCountermeasures.Where(cm => cm.IsDamageable).ForAll(cm => cm.IsDamaged = false);
+        Data.ActiveCountermeasures.Where(cm => cm.IsDamageable).ForAll(cm => cm.IsDamaged = false);
+        Data.ShieldGenerators.Where(gen => gen.IsDamageable).ForAll(gen => gen.IsDamaged = false);
+        Data.Weapons.Where(w => w.IsDamageable).ForAll(w => w.IsDamaged = false);
+        Data.Sensors.Where(s => s.IsDamageable).ForAll(s => s.IsDamaged = false);
+        if (Data.IsFtlCapable) {
+            Data.IsFtlDamaged = false;
+        }
         if (IsHQ) {
             Command.Data.CurrentHitPoints = Command.Data.MaxHitPoints;  // HACK
         }
@@ -2668,7 +2711,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     protected override void AssessCripplingDamageToEquipment(float damageSeverity) {
         base.AssessCripplingDamageToEquipment(damageSeverity);
-        if (!Data.IsFtlDamaged) {
+        if (Data.IsFtlCapable && !Data.IsFtlDamaged) {
             var equipDamageChance = damageSeverity;
             Data.IsFtlDamaged = RandomExtended.Chance(equipDamageChance);
         }
@@ -2743,6 +2786,10 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         OnApTgtReached();
     }
 
+    private void HandleApTargetUncatchable() {
+        UponApTargetUncatchable();
+    }
+
     #endregion
 
     #endregion
@@ -2751,15 +2798,27 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     protected override void Cleanup() {
         base.Cleanup();
-        CleanupHelm();
+        CleanupNavClasses();
         CleanupDebugShowVelocityRay();
         CleanupDebugShowCoursePlot();
     }
 
-    private void CleanupHelm() {
+    protected override void Unsubscribe() {
+        base.Unsubscribe();
+        if (_helm != null) {
+            _helm.apCourseChanged -= ApCourseChangedEventHandler;
+            _helm.apTargetReached -= ApTargetReachedEventHandler;
+            _helm.apTargetUncatchable -= ApTargetUncatchableEventHandler;
+        }
+    }
+
+    private void CleanupNavClasses() {
         if (_helm != null) {
             // a preset fleet that begins ops during runtime won't build the ships until time for deployment
             _helm.Dispose();
+        }
+        if (_engineRoom != null) {
+            _engineRoom.Dispose();
         }
     }
 
@@ -3003,6 +3062,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     #region Debug Show Course Plot
 
     private const string __coursePlotNameFormat = "{0} CoursePlot";
+
     private CoursePlotLine __coursePlot;
 
     private void InitializeDebugShowCoursePlot() {
@@ -3254,2732 +3314,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         Repair
     }
 
-    /// <summary>
-    /// Navigation, Heading and Speed control for a ship.
-    /// </summary>
-    internal class ShipHelm : IDisposable {
-
-        /// <summary>
-        /// The maximum heading change a ship may be required to make in degrees.
-        /// <remarks>Rotations always go the shortest route.</remarks>
-        /// </summary>
-        //public const float MaxReqdHeadingChange = 180F;
-
-        /// <summary>
-        /// The minimum number of progress checks required to begin navigation to a destination.
-        /// </summary>
-        private const float MinNumberOfProgressChecksToBeginNavigation = 5F;
-
-        /// <summary>
-        /// The maximum number of remaining progress checks allowed 
-        /// before speed and progress check period reductions begin.
-        /// </summary>
-        private const float MaxNumberOfProgressChecksBeforeSpeedAndCheckPeriodReductionsBegin = 5F;
-
-        /// <summary>
-        /// The minimum number of remaining progress checks allowed before speed increases can begin.
-        /// </summary>
-        private const float MinNumberOfProgressChecksBeforeSpeedIncreasesCanBegin = 20F;
-
-        /// <summary>
-        /// The allowed deviation in degrees to the requestedHeading that is 'close enough'.
-        /// </summary>
-        private const float AllowedHeadingDeviation = 0.1F;
-
-        private const string DebugNameFormat = "{0}.{1}";
-
-        /// <summary>
-        /// The turn angle threshold (in degrees) used to determine when a detour around an obstacle
-        /// must be used. Logic: If the reqd turn to reach the detour is sharp (above this value), then
-        /// we are either very close or the obstacle is very large so it is time to redirect around the obstacle.
-        /// </summary>
-        private const float DetourTurnAngleThreshold = 15F;
-
-        public const float MinHoursPerProgressCheckPeriodAllowed = GameTime.HoursPrecision;
-
-        /// <summary>
-        /// The minimum expected turn rate in degrees per frame at the game's slowest allowed FPS rate.
-        /// </summary>
-        public static float MinExpectedTurnratePerFrameAtSlowestFPS
-            = (GameTime.HoursPerSecond * TempGameValues.MinimumTurnRate) / TempGameValues.MinimumFramerate;
-
-        private static readonly Speed[] InvalidApSpeeds = {
-                                                            Speed.None,
-                                                            Speed.HardStop,
-                                                            Speed.Stop
-                                                        };
-
-        private static readonly Speed[] __ValidExternalChangeSpeeds = {
-                                                                    Speed.HardStop,
-                                                                    Speed.Stop,
-                                                                    Speed.ThrustersOnly,
-                                                                    Speed.Docking,
-                                                                    Speed.DeadSlow,
-                                                                    Speed.Slow,
-                                                                    Speed.OneThird,
-                                                                    Speed.TwoThirds,
-                                                                    Speed.Standard,
-                                                                    Speed.Full,
-                                                                };
-
-        private static readonly LayerMask AvoidableObstacleZoneOnlyLayerMask = LayerMaskUtility.CreateInclusiveMask(Layers.AvoidableObstacleZone);
-
-        internal bool IsPilotEngaged { get; private set; }
-
-        internal string DebugName { get { return DebugNameFormat.Inject(_ship.DebugName, typeof(ShipHelm).Name); } }
-
-        /// <summary>
-        /// Indicates whether the ship is actively moving under power. <c>True</c> if under propulsion
-        /// or turning, <c>false</c> otherwise, including when still retaining some residual velocity.
-        /// </summary>
-        internal bool IsActivelyUnderway {
-            get {
-                //D.Log(ShowDebugLog, "{0}.IsActivelyUnderway called: Pilot = {1}, Propulsion = {2}, Turning = {3}.",
-                //    DebugName, IsPilotEngaged, _engineRoom.IsPropulsionEngaged, IsTurnUnderway);
-                return IsPilotEngaged || _engineRoom.IsPropulsionEngaged || IsTurnUnderway;
-            }
-        }
-
-        /// <summary>
-        /// The course this AutoPilot will follow when engaged. 
-        /// </summary>
-        internal IList<IShipNavigable> ApCourse { get; private set; }
-
-        internal bool IsTurnUnderway { get { return _chgHeadingJob != null; } }
-
-        /// <summary>
-        /// Read only. The actual speed of the ship in Units per hour. Whether paused or at a GameSpeed
-        /// other than Normal (x1), this property always returns the proper reportable value.
-        /// </summary>
-        internal float ActualSpeedValue { get { return _engineRoom.ActualSpeedValue; } }
-
-        /// <summary>
-        /// The Speed the ship is currently generating propulsion for.
-        /// </summary>
-        private Speed CurrentSpeedSetting { get { return _shipData.CurrentSpeedSetting; } }
-
-        /// <summary>
-        /// The current target (proxy) this Pilot is engaged to reach.
-        /// </summary>
-        private AutoPilotDestinationProxy ApTargetProxy { get; set; }
-
-        private string ApTargetFullName {
-            get { return ApTargetProxy != null ? ApTargetProxy.Destination.DebugName : "No ApTargetProxy"; }
-        }
-
-        /// <summary>
-        /// Distance from this AutoPilot's client to the TargetPoint.
-        /// </summary>
-        private float ApTargetDistance { get { return Vector3.Distance(Position, ApTargetProxy.Position); } }
-
-        private Vector3 Position { get { return _ship.Position; } }
-
-        private bool ShowDebugLog { get { return _ship.ShowDebugLog; } }
-
-        /// <summary>
-        /// The initial speed the autopilot should travel at. 
-        /// </summary>
-        private Speed ApSpeed { get; set; }
-
-        /// <summary>
-        /// Indicates whether this is a coordinated fleet move or a move by the ship on its own to the Target.
-        /// A coordinated fleet move has the ship pay attention to fleet desires like a coordinated departure, 
-        /// moving in formation and moving at speeds the whole fleet can maintain.
-        /// </summary>
-        private bool _isApFleetwideMove;
-
-        /// <summary>
-        /// Indicates whether the current speed of the ship is a fleet-wide value or ship-specific.
-        /// Valid only while the Pilot is engaged.
-        /// </summary>
-        private bool _isApCurrentSpeedFleetwide;
-
-        /// <summary>
-        /// Delegate pointing to an anonymous method handling work after the fleet has aligned for departure.
-        /// <remarks>This reference is necessary to allow removal of the callback from Fleet.WaitForFleetToAlign()
-        /// in cases where the AutoPilot is disengaged while waiting for the fleet to align. Delegate.Target.Type = ShipHelm.
-        /// </remarks>
-        /// </summary>
-        private Action _apActionToExecuteWhenFleetIsAligned;
-
-        /// <summary>
-        /// Indicates whether the Pilot is continuously pursuing the target. If <c>true</c> the pilot
-        /// will continue to pursue the target even after it dies. Clients are responsible for disengaging the
-        /// pilot in circumstances like this. If<c>false</c> the Pilot will report back to the ship when it
-        /// arrives at the target.
-        /// </summary>
-        private bool _isApInPursuit;
-        private bool _doesApProgressCheckPeriodNeedRefresh;
-        private bool _doesApObstacleCheckPeriodNeedRefresh;
-        private GameTimeDuration _apObstacleCheckPeriod;
-
-        private Job _apMaintainPositionWhilePursuingJob;
-        private Job _apObstacleCheckJob;
-        private Job _apNavJob;
-        private Job _chgHeadingJob;
-
-        private IList<IDisposable> _subscriptions;
-        private GameTime _gameTime;
-        private JobManager _jobMgr;
-        private ShipItem _ship;
-        private ShipData _shipData;
-        private EngineRoom _engineRoom;
-        //private GameManager _gameMgr;
-
-        #region Initialization
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ShipHelm" /> class.
-        /// </summary>
-        /// <param name="ship">The ship.</param>
-        /// <param name="shipRigidbody">The ship rigidbody.</param>
-        internal ShipHelm(ShipItem ship, Rigidbody shipRigidbody) {
-            ApCourse = new List<IShipNavigable>();
-            //_gameMgr = GameManager.Instance;
-            _gameTime = GameTime.Instance;
-            _jobMgr = JobManager.Instance;
-
-            _ship = ship;
-            _shipData = ship.Data;
-            _engineRoom = new EngineRoom(ship, shipRigidbody);
-            Subscribe();
-        }
-
-        private void Subscribe() {
-            _subscriptions = new List<IDisposable>();
-            _subscriptions.Add(_ship.Data.SubscribeToPropertyChanged<ShipData, float>(d => d.FullSpeedValue, FullSpeedPropChangedHandler));
-        }
-
-        /// <summary>
-        /// Engages the pilot to move to the target using the provided proxy. It will notify the ship
-        /// when it arrives via Ship.HandleTargetReached.
-        /// </summary>
-        /// <param name="apTgtProxy">The proxy for the target this Pilot is being engaged to reach.</param>
-        /// <param name="speed">The initial speed the pilot should travel at.</param>
-        /// <param name="isFleetwideMove">if set to <c>true</c> [is fleetwide move].</param>
-        internal void EngagePilotToMoveTo(AutoPilotDestinationProxy apTgtProxy, Speed speed, bool isFleetwideMove) {
-            Utility.ValidateNotNull(apTgtProxy);
-            D.Assert(!InvalidApSpeeds.Contains(speed), speed.GetValueName());
-            ApTargetProxy = apTgtProxy;
-            ApSpeed = speed;
-            _isApFleetwideMove = isFleetwideMove;
-            _isApCurrentSpeedFleetwide = isFleetwideMove;
-            _isApInPursuit = false;
-            RefreshCourse(CourseRefreshMode.NewCourse);
-            EngagePilot();
-        }
-
-        /// <summary>
-        /// Engages the pilot to pursue the target using the provided proxy. "Pursuit" here
-        /// entails continuously adjusting speed and heading to stay within the arrival window
-        /// provided by the proxy. There is no 'notification' to the ship as the pursuit never
-        /// terminates until the pilot is disengaged by the ship.
-        /// </summary>
-        /// <param name="apTgtProxy">The proxy for the target this Pilot is being engaged to pursue.</param>
-        /// <param name="apSpeed">The initial speed used by the pilot.</param>
-        internal void EngagePilotToPursue(AutoPilotDestinationProxy apTgtProxy, Speed apSpeed) {
-            Utility.ValidateNotNull(apTgtProxy);
-            ApTargetProxy = apTgtProxy;
-            ApSpeed = apSpeed;
-            _isApFleetwideMove = false;
-            _isApCurrentSpeedFleetwide = false;
-            _isApInPursuit = true;
-            RefreshCourse(CourseRefreshMode.NewCourse);
-            EngagePilot();
-        }
-
-        /// <summary>
-        /// Internal method that engages the pilot.
-        /// </summary>
-        private void EngagePilot() {
-            D.Assert(!IsPilotEngaged);
-            D.Assert(ApCourse.Count != Constants.Zero, DebugName);
-            // Note: A heading job launched by the captain should be overridden when the pilot becomes engaged
-            CleanupAnyRemainingJobs();
-            //D.Log(ShowDebugLog, "{0} Pilot engaging.", DebugName);
-            IsPilotEngaged = true;
-
-            // Note: Now OK to test for arrival here as WaitForFleetToAlign only waits for ship's that have registered their delegate.
-            // There is no longer any reason for WaitForFleetToAlign to warn if delegate count < Element count.
-            if (ApTargetProxy.HasArrived(Position)) {
-                D.Log(ShowDebugLog, "{0} has already arrived! It is engaging Pilot from within {1}.", DebugName, ApTargetProxy.DebugName);
-                HandleTargetReached();
-                return;
-            }
-            if (ShowDebugLog && ApTargetDistance < ApTargetProxy.InnerRadius) {
-                D.LogBold("{0} is inside {1}.InnerRadius!", DebugName, ApTargetProxy.DebugName);
-            }
-
-            AutoPilotDestinationProxy detour;
-            if (TryCheckForObstacleEnrouteTo(ApTargetProxy, out detour)) {
-                RefreshCourse(CourseRefreshMode.AddWaypoint, detour);
-                InitiateCourseToTargetVia(detour);
-            }
-            else {
-                InitiateDirectCourseToTarget();
-            }
-        }
-
-        #endregion
-
-        #region Course Navigation
-
-        /// <summary>
-        /// Initiates a direct course to target. This 'Initiate' version includes 2 responsibilities not present in the 'Resume' version.
-        /// 1) It waits for the fleet to align before departure, and 2) engages the engines.
-        /// </summary>
-        private void InitiateDirectCourseToTarget() {
-            D.AssertNull(_apNavJob);
-            D.AssertNull(_apObstacleCheckJob);
-            D.AssertNull(_apActionToExecuteWhenFleetIsAligned);
-            //D.Log(ShowDebugLog, "{0} beginning prep to initiate direct course to {1} at {2}. \nDistance to target = {3:0.0}.",
-            //Name, TargetFullName, ApTargetProxy.Position, ApTargetDistance);
-
-            Vector3 targetBearing = (ApTargetProxy.Position - Position).normalized;
-            if (targetBearing.IsSameAs(Vector3.zero)) {
-                D.Error("{0} ordered to move to target {1} at same location. This should be filtered out by EngagePilot().", DebugName, ApTargetFullName);
-            }
-            if (_isApFleetwideMove) {
-                ChangeHeading_Internal(targetBearing);
-
-                _apActionToExecuteWhenFleetIsAligned = () => {
-                    //D.Log(ShowDebugLog, "{0} reports fleet {1} is aligned. Initiating departure for target {2}.", DebugName, _ship.Command.Name, ApTargetFullName);
-                    _apActionToExecuteWhenFleetIsAligned = null;
-                    EngageEnginesAtApSpeed(isFleetSpeed: true);
-                    bool isAlreadyArrived = InitiateNavigationTo(ApTargetProxy, hasArrived: () => {
-                        HandleTargetReached();
-                    });
-                    if (!isAlreadyArrived) {
-                        InitiateObstacleCheckingEnrouteTo(ApTargetProxy, CourseRefreshMode.AddWaypoint);
-                    }
-                };
-                //D.Log(ShowDebugLog, "{0} starting wait for fleet to align, actual speed = {1:0.##}.", DebugName, ActualSpeedValue);
-                _ship.Command.WaitForFleetToAlign(_apActionToExecuteWhenFleetIsAligned, _ship);
-            }
-            else {
-                ChangeHeading_Internal(targetBearing, headingConfirmed: () => {
-                    //D.Log(ShowDebugLog, "{0} is initiating direct course to {1} in Frame {2}.", DebugName, ApTargetFullName, Time.frameCount);
-                    EngageEnginesAtApSpeed(isFleetSpeed: false);
-                    bool isAlreadyArrived = InitiateNavigationTo(ApTargetProxy, hasArrived: () => {
-                        HandleTargetReached();
-                    });
-                    if (!isAlreadyArrived) {
-                        InitiateObstacleCheckingEnrouteTo(ApTargetProxy, CourseRefreshMode.AddWaypoint);
-                    }
-                });
-            }
-        }
-
-        /// <summary>
-        /// Initiates a course to the target after first going to <c>obstacleDetour</c>. This 'Initiate' version includes 2 responsibilities
-        /// not present in the 'Continue' version. 1) It waits for the fleet to align before departure, and 2) engages the engines.
-        /// </summary>
-        /// <param name="obstacleDetour">The proxy for the obstacle detour.</param>
-        private void InitiateCourseToTargetVia(AutoPilotDestinationProxy obstacleDetour) {
-            D.AssertNull(_apNavJob);
-            D.AssertNull(_apObstacleCheckJob);
-            D.AssertNull(_apActionToExecuteWhenFleetIsAligned);
-            //D.Log(ShowDebugLog, "{0} initiating course to target {1} at {2} via obstacle detour {3}. Distance to detour = {4:0.0}.",
-            //Name, TargetFullName, ApTargetProxy.Position, obstacleDetour.DebugName, Vector3.Distance(Position, obstacleDetour.Position));
-
-            Vector3 newHeading = (obstacleDetour.Position - Position).normalized;
-            if (newHeading.IsSameAs(Vector3.zero)) {
-                D.Error("{0}: ObstacleDetour and current location shouldn't be able to be the same.", DebugName);
-            }
-            if (_isApFleetwideMove) {
-                ChangeHeading_Internal(newHeading);
-
-                _apActionToExecuteWhenFleetIsAligned = () => {
-                    //D.Log(ShowDebugLog, "{0} reports fleet {1} is aligned. Initiating departure for detour {2}.",
-                    //Name, _ship.Command.DisplayName, obstacleDetour.DebugName);
-                    _apActionToExecuteWhenFleetIsAligned = null;
-                    EngageEnginesAtApSpeed(isFleetSpeed: false);   // this is a detour so catch up
-                                                                   // even if this is an obstacle that has appeared on the way to another obstacle detour, go around it, then try direct to target
-
-                    bool isAlreadyArrived = InitiateNavigationTo(obstacleDetour, hasArrived: () => {
-                        RefreshCourse(CourseRefreshMode.RemoveWaypoint, obstacleDetour);
-                        ResumeDirectCourseToTarget();
-                    });
-                    if (!isAlreadyArrived) {
-                        InitiateObstacleCheckingEnrouteTo(obstacleDetour, CourseRefreshMode.ReplaceObstacleDetour);
-                    }
-                };
-                //D.Log(ShowDebugLog, "{0} starting wait for fleet to align, actual speed = {1:0.##}.", DebugName, ActualSpeedValue);
-                _ship.Command.WaitForFleetToAlign(_apActionToExecuteWhenFleetIsAligned, _ship);
-            }
-            else {
-                ChangeHeading_Internal(newHeading, headingConfirmed: () => {
-                    EngageEnginesAtApSpeed(isFleetSpeed: false);   // this is a detour so catch up
-                                                                   // even if this is an obstacle that has appeared on the way to another obstacle detour, go around it, then try direct to target
-                    bool isAlreadyArrived = InitiateNavigationTo(obstacleDetour, hasArrived: () => {
-                        RefreshCourse(CourseRefreshMode.RemoveWaypoint, obstacleDetour);
-                        ResumeDirectCourseToTarget();
-                    });
-                    if (!isAlreadyArrived) {
-                        InitiateObstacleCheckingEnrouteTo(obstacleDetour, CourseRefreshMode.ReplaceObstacleDetour);
-                    }
-                });
-            }
-        }
-
-        /// <summary>
-        /// Resumes a direct course to target. Called while underway upon completion of a detour routing around an obstacle.
-        /// Unlike the 'Initiate' version, this method neither waits for the rest of the fleet, nor engages the engines since they are already engaged.
-        /// </summary>
-        private void ResumeDirectCourseToTarget() {
-            CleanupAnyRemainingJobs();   // always called while already engaged
-                                         //D.Log(ShowDebugLog, "{0} beginning prep to resume direct course to {1} at {2}. \nDistance to target = {3:0.0}.",
-                                         //Name, TargetFullName, ApTargetProxy.Position, ApTargetDistance);
-
-            ResumeApSpeed();    // CurrentSpeed can be slow coming out of a detour, also uses ShipSpeed to catchup
-            Vector3 targetBearing = (ApTargetProxy.Position - Position).normalized;
-            ChangeHeading_Internal(targetBearing, headingConfirmed: () => {
-                //D.Log(ShowDebugLog, "{0} is now on heading toward {1}.", DebugName, TargetFullName);
-                bool isAlreadyArrived = InitiateNavigationTo(ApTargetProxy, hasArrived: () => {
-                    HandleTargetReached();
-                });
-                if (!isAlreadyArrived) {
-                    InitiateObstacleCheckingEnrouteTo(ApTargetProxy, CourseRefreshMode.AddWaypoint);
-                }
-            });
-        }
-
-        /// <summary>
-        /// Continues the course to target via the provided obstacleDetour. Called while underway upon encountering an obstacle.
-        /// </summary>
-        /// <param name="obstacleDetour">The obstacle detour's proxy.</param>
-        private void ContinueCourseToTargetVia(AutoPilotDestinationProxy obstacleDetour) {
-            CleanupAnyRemainingJobs();   // always called while already engaged
-            //D.Log(ShowDebugLog, "{0} continuing course to target {1} via obstacle detour {2}. Distance to detour = {3:0.0}.",
-            //    DebugName, ApTargetFullName, obstacleDetour.DebugName, Vector3.Distance(Position, obstacleDetour.Position));
-
-            ResumeApSpeed(); // Uses ShipSpeed to catchup as we must go through this detour
-            Vector3 newHeading = (obstacleDetour.Position - Position).normalized;
-            ChangeHeading_Internal(newHeading, headingConfirmed: () => {
-                //D.Log(ShowDebugLog, "{0} is now on heading to reach obstacle detour {1}.", DebugName, obstacleDetour.DebugName);
-                bool isAlreadyArrived = InitiateNavigationTo(obstacleDetour, hasArrived: () => {
-                    // even if this is an obstacle that has appeared on the way to another obstacle detour, go around it, then direct to target
-                    RefreshCourse(CourseRefreshMode.RemoveWaypoint, obstacleDetour);
-                    ResumeDirectCourseToTarget();
-                });
-                if (!isAlreadyArrived) {
-                    InitiateObstacleCheckingEnrouteTo(obstacleDetour, CourseRefreshMode.ReplaceObstacleDetour);
-                }
-            });
-        }
-
-        /// <summary>
-        /// Initiates navigation to the destination indicated by destProxy, returning <c>true</c> if already
-        /// at the destination, <c>false</c> if navigation to destination is still needed.
-        /// </summary>
-        /// <param name="destProxy">The destination proxy.</param>
-        /// <param name="hasArrived">Delegate executed when the ship has arrived at the destination.</param>
-        /// <returns></returns>
-        private bool InitiateNavigationTo(AutoPilotDestinationProxy destProxy, Action hasArrived = null) {
-            D.AssertNotNull(destProxy, "{0}.AutoPilotDestProxy is null. Frame = {1}.".Inject(DebugName, Time.frameCount));
-            if (!_engineRoom.IsPropulsionEngaged) {
-                D.Error("{0}.InitiateNavigationTo({1}) called without propulsion engaged. AutoPilotSpeed: {2}", DebugName, destProxy.DebugName, ApSpeed.GetValueName());
-            }
-            D.AssertNull(_apNavJob, DebugName);
-
-            bool isDestinationADetour = destProxy != ApTargetProxy;
-            bool isDestFastMover = destProxy.IsFastMover;
-            bool isIncreaseAboveApSpeedAllowed = isDestinationADetour || isDestFastMover;
-            GameTimeDuration progressCheckPeriod = default(GameTimeDuration);
-            Speed correctedSpeed;
-
-            float distanceToArrival;
-            Vector3 directionToArrival;
-#pragma warning disable 0219
-            bool isArrived = false;
-#pragma warning restore 0219
-            if (isArrived = !destProxy.TryGetArrivalDistanceAndDirection(Position, out directionToArrival, out distanceToArrival)) {
-                // arrived
-                if (hasArrived != null) {
-                    hasArrived();
-                }
-                return isArrived;   // true
-            }
-            else {
-                //D.Log(ShowDebugLog, "{0} powering up. Distance to arrival at {1} = {2:0.0}.", DebugName, destination.DebugName, distanceToArrival);
-                progressCheckPeriod = GenerateProgressCheckPeriod(distanceToArrival, out correctedSpeed);
-                if (correctedSpeed != default(Speed)) {
-                    //D.Log(ShowDebugLog, "{0} is correcting its speed to {1} to get a minimum of 5 progress checks.", DebugName, correctedSpeed.GetValueName());
-                    ChangeSpeed_Internal(correctedSpeed, _isApCurrentSpeedFleetwide);
-                }
-                //D.Log(ShowDebugLog, "{0} initial progress check period set to {1}.", DebugName, progressCheckPeriod);
-            }
-
-            int minFrameWaitBetweenAttemptedCourseCorrectionChecks = 0;
-            int previousFrameCourseWasCorrected = 0;
-
-            float halfArrivalWindowDepth = destProxy.ArrivalWindowDepth / 2F;
-
-            string jobName = "{0}.ApNavJob".Inject(DebugName);
-            _apNavJob = _jobMgr.RecurringWaitForHours(new Reference<GameTimeDuration>(() => progressCheckPeriod), jobName, waitMilestone: () => {
-                //D.Log(ShowDebugLog, "{0} making ApNav progress check on Date: {1}, Frame: {2}. CheckPeriod = {3}.", DebugName, _gameTime.CurrentDate, Time.frameCount, progressCheckPeriod);
-
-                Profiler.BeginSample("Ship ApNav Job Execution", _ship);
-                if (isArrived = !destProxy.TryGetArrivalDistanceAndDirection(Position, out directionToArrival, out distanceToArrival)) {
-                    KillApNavJob();
-                    if (hasArrived != null) {
-                        hasArrived();
-                    }
-                    Profiler.EndSample();
-                    return;
-                }
-
-                //D.Log(ShowDebugLog, "{0} beginning progress check on Date: {1}.", DebugName, _gameTime.CurrentDate);
-                if (CheckForCourseCorrection(directionToArrival, ref previousFrameCourseWasCorrected, ref minFrameWaitBetweenAttemptedCourseCorrectionChecks)) {
-                    //D.Log(ShowDebugLog, "{0} is making a mid course correction of {1:0.00} degrees. Frame = {2}.",
-                    //DebugName, Vector3.Angle(directionToArrival, _ship.Data.IntendedHeading), Time.frameCount);
-                    Profiler.BeginSample("ChangeHeading_Internal", _ship);
-                    ChangeHeading_Internal(directionToArrival);
-                    _ship.UpdateDebugCoursePlot();  // 5.7.16 added to keep plots current with moving targets
-                    Profiler.EndSample();
-                }
-
-                Profiler.BeginSample("TryCheckForPeriodOrSpeedCorrection", _ship);
-                GameTimeDuration correctedPeriod;
-                if (TryCheckForPeriodOrSpeedCorrection(distanceToArrival, isIncreaseAboveApSpeedAllowed, halfArrivalWindowDepth, progressCheckPeriod, out correctedPeriod, out correctedSpeed)) {
-                    if (correctedPeriod != default(GameTimeDuration)) {
-                        D.AssertDefault((int)correctedSpeed);
-                        //D.Log(ShowDebugLog, "{0} is correcting progress check period from {1} to {2} en-route to {3}, Distance to arrival = {4:0.0}.",
-                        //Name, progressCheckPeriod, correctedPeriod, destination.DebugName, distanceToArrival);
-                        progressCheckPeriod = correctedPeriod;
-                    }
-                    else {
-                        D.AssertNotDefault((int)correctedSpeed);
-                        //D.Log(ShowDebugLog, "{0} is correcting speed from {1} to {2} en-route to {3}, Distance to arrival = {4:0.0}.",
-                        //Name, CurrentSpeed.GetValueName(), correctedSpeed.GetValueName(), destination.DebugName, distanceToArrival);
-                        Profiler.BeginSample("ChangeSpeed_Internal", _ship);
-                        ChangeSpeed_Internal(correctedSpeed, _isApCurrentSpeedFleetwide);
-                        Profiler.EndSample();
-                    }
-                }
-                Profiler.EndSample();
-                //D.Log(ShowDebugLog, "{0} completed progress check on Date: {1}, NextProgressCheckPeriod: {2}.", DebugName, _gameTime.CurrentDate, progressCheckPeriod);
-                //D.Log(ShowDebugLog, "{0} not yet arrived. DistanceToArrival = {1:0.0}.", DebugName, distanceToArrival);
-                Profiler.EndSample();
-            });
-            return isArrived;   // false
-        }
-
-        /// <summary>
-        /// Generates a progress check period that allows <c>MinNumberOfProgressChecksToDestination</c> and
-        /// returns correctedSpeed if CurrentSpeed had to be reduced to achieve this min number of checks. If the
-        /// speed did not need to be corrected, Speed.None is returned.
-        /// <remarks>This algorithm most often returns a check period that allows <c>MinNumberOfProgressChecksToDestination</c>. 
-        /// However, in cases where the destination is a long way away or the current
-        /// speed is quite low, or both, it can return a check period that allows for many more checks.</remarks>
-        /// </summary>
-        /// <param name="distanceToArrival">The distance to arrival.</param>
-        /// <param name="correctedSpeed">The corrected speed.</param>
-        /// <returns></returns>
-        private GameTimeDuration GenerateProgressCheckPeriod(float distanceToArrival, out Speed correctedSpeed) {
-            // want period that allows a minimum of 5 checks before arrival
-            float maxHoursPerCheckPeriodAllowed = 10F;
-
-            float minHoursToArrival = distanceToArrival / _engineRoom.IntendedCurrentSpeedValue;
-            float checkPeriodHoursForMinNumberOfChecks = minHoursToArrival / MinNumberOfProgressChecksToBeginNavigation;
-
-            Speed speed = Speed.None;
-            float hoursPerCheckPeriod = checkPeriodHoursForMinNumberOfChecks;
-            if (hoursPerCheckPeriod < MinHoursPerProgressCheckPeriodAllowed) {
-                // speed is too fast to get min number of checks so reduce it until its not
-                speed = CurrentSpeedSetting;
-                while (hoursPerCheckPeriod < MinHoursPerProgressCheckPeriodAllowed) {
-                    Speed slowerSpeed;
-                    if (speed.TryDecreaseSpeed(out slowerSpeed)) {
-                        float slowerSpeedValue = _isApCurrentSpeedFleetwide ? slowerSpeed.GetUnitsPerHour(_ship.Command.Data) : slowerSpeed.GetUnitsPerHour(_ship.Data);
-                        minHoursToArrival = distanceToArrival / slowerSpeedValue;
-                        hoursPerCheckPeriod = minHoursToArrival / MinNumberOfProgressChecksToBeginNavigation;
-                        speed = slowerSpeed;
-                        continue;
-                    }
-                    // can't slow any further
-                    D.AssertEqual(Speed.ThrustersOnly, speed);  // slowest
-                    hoursPerCheckPeriod = MinHoursPerProgressCheckPeriodAllowed;
-                    D.LogBold(ShowDebugLog, "{0} is too close at {1:0.00} to generate a progress check period that meets the min number of checks {2:0.#}. Check Qty: {3:0.0}.",
-                        DebugName, distanceToArrival, MinNumberOfProgressChecksToBeginNavigation, minHoursToArrival / MinHoursPerProgressCheckPeriodAllowed);
-                }
-            }
-            else if (hoursPerCheckPeriod > maxHoursPerCheckPeriodAllowed) {
-                D.Log(ShowDebugLog, "{0} is clamping progress check period hours at {1:0.0}. Check Qty: {2:0.0}.",
-                    DebugName, maxHoursPerCheckPeriodAllowed, minHoursToArrival / maxHoursPerCheckPeriodAllowed);
-                hoursPerCheckPeriod = maxHoursPerCheckPeriodAllowed;
-            }
-            hoursPerCheckPeriod = VaryCheckPeriod(hoursPerCheckPeriod);
-            correctedSpeed = speed;
-            return new GameTimeDuration(hoursPerCheckPeriod);
-        }
-
-        /// <summary>
-        /// Returns <c>true</c> if the ship's intended heading is not the same as directionToDest
-        /// indicating a need for a course correction to <c>directionToDest</c>.
-        /// <remarks>12.12.16 lastFrameCorrected and minFrameWait are used to determine how frequently the method
-        /// actually attempts a check of the ship's heading, allowing the ship's ChangeHeading Job to 
-        /// have time to actually partially turn.</remarks>
-        /// </summary>
-        /// <param name="directionToDest">The direction to destination.</param>
-        /// <param name="lastFrameCorrected">The last frame number when this method indicated the need for a course correction.</param>
-        /// <param name="minFrameWait">The minimum number of frames to wait before attempting to check for another course correction. 
-        /// Allows ChangeHeading Job to actually make a portion of a turn before being killed and recreated.</param>
-        /// <returns></returns>
-        private bool CheckForCourseCorrection(Vector3 directionToDest, ref int lastFrameCorrected, ref int minFrameWait) {
-            //D.Log(ShowDebugLog, "{0} is attempting a course correction check.", DebugName);
-            int currentFrame = Time.frameCount;
-            if (currentFrame < lastFrameCorrected + minFrameWait) {
-                return false;
-            }
-            else {
-                // do a check
-                float reqdCourseCorrectionDegrees = Vector3.Angle(_ship.Data.IntendedHeading, directionToDest);
-                if (reqdCourseCorrectionDegrees <= 1F) {
-                    minFrameWait = 1;
-                    return false;
-                }
-
-                // 12.12.16 IMPROVE MinExpectedTurnratePerFrameAtSlowestFPS is ~ 7 degrees per frame
-                // At higher FPS (>> 25) the number of degrees turned per frame will be lower, so this minFrameWait calculated
-                // here will not normally allow a turn of 'reqdCourseCorrectionDegrees' to complete. I think this is OK
-                // for now as this wait does allow the ChangeHeading Job to actually make a partial turn.
-                // UNCLEAR use a max turn rate, max FPS???
-                minFrameWait = Mathf.CeilToInt(reqdCourseCorrectionDegrees / MinExpectedTurnratePerFrameAtSlowestFPS);
-                lastFrameCorrected = currentFrame;
-                //D.Log(ShowDebugLog, "{0}'s next Course Correction Check has been deferred {1} frames from {2}.", DebugName, minFrameWait, lastFrameCorrected);
-                return true;
-            }
-        }
-
-        /// <summary>
-        /// Checks for a progress check period correction, a speed correction and then a progress check period correction again in that order.
-        /// Returns <c>true</c> if a correction is provided, <c>false</c> otherwise. Only one correction at a time will be provided and
-        /// it must be tested against its default value to know which one it is.
-        /// </summary>
-        /// <param name="distanceToArrival">The distance to arrival.</param>
-        /// <param name="isIncreaseAboveApSpeedAllowed">if set to <c>true</c> [is increase above automatic pilot speed allowed].</param>
-        /// <param name="halfArrivalCaptureDepth">The half arrival capture depth.</param>
-        /// <param name="currentPeriod">The current period.</param>
-        /// <param name="correctedPeriod">The corrected period.</param>
-        /// <param name="correctedSpeed">The corrected speed.</param>
-        /// <returns></returns>
-        private bool TryCheckForPeriodOrSpeedCorrection(float distanceToArrival, bool isIncreaseAboveApSpeedAllowed, float halfArrivalCaptureDepth,
-            GameTimeDuration currentPeriod, out GameTimeDuration correctedPeriod, out Speed correctedSpeed) {
-            //D.Log(ShowDebugLog, "{0} called TryCheckForPeriodOrSpeedCorrection().", DebugName);
-            correctedSpeed = default(Speed);
-            correctedPeriod = default(GameTimeDuration);
-            if (_doesApProgressCheckPeriodNeedRefresh) {
-
-                Profiler.BeginSample("__RefreshProgressCheckPeriod", _ship);
-                correctedPeriod = __RefreshProgressCheckPeriod(currentPeriod);
-                Profiler.EndSample();
-
-                //D.Log(ShowDebugLog, "{0} is refreshing progress check period from {1} to {2}.", DebugName, currentPeriod, correctedPeriod);
-                _doesApProgressCheckPeriodNeedRefresh = false;
-                return true;
-            }
-
-            float maxDistanceCoveredDuringNextProgressCheck = currentPeriod.TotalInHours * _engineRoom.IntendedCurrentSpeedValue;
-            float checksRemainingBeforeArrival = distanceToArrival / maxDistanceCoveredDuringNextProgressCheck;
-            float checksRemainingThreshold = MaxNumberOfProgressChecksBeforeSpeedAndCheckPeriodReductionsBegin;
-
-            if (checksRemainingBeforeArrival < checksRemainingThreshold) {
-                // limit how far down progress check period reductions can go 
-                float minDesiredHoursPerCheckPeriod = MinHoursPerProgressCheckPeriodAllowed * 2F;
-                bool isMinDesiredCheckPeriod = currentPeriod.TotalInHours <= minDesiredHoursPerCheckPeriod;
-                bool isDistanceCoveredPerCheckTooHigh = maxDistanceCoveredDuringNextProgressCheck > halfArrivalCaptureDepth;
-
-                if (!isMinDesiredCheckPeriod && isDistanceCoveredPerCheckTooHigh) {
-                    // reduce progress check period to the desired minimum before considering speed reductions
-                    float correctedPeriodHours = currentPeriod.TotalInHours / 2F;
-                    if (correctedPeriodHours < minDesiredHoursPerCheckPeriod) {
-                        correctedPeriodHours = minDesiredHoursPerCheckPeriod;
-                        //D.Log(ShowDebugLog, "{0} has set progress check period hours to desired min {1:0.00}.", DebugName, minDesiredHoursPerCheckPeriod);
-                    }
-                    correctedPeriod = new GameTimeDuration(correctedPeriodHours);
-                    //D.Log(ShowDebugLog, "{0} is reducing progress check period to {1} to find halfArrivalCaptureDepth {2:0.00}.", DebugName, correctedPeriod, halfArrivalCaptureDepth);
-                    return true;
-                }
-
-                //D.Log(ShowDebugLog, "{0} distanceCovered during next progress check = {1:0.00}, halfArrivalCaptureDepth = {2:0.00}.", DebugName, maxDistanceCoveredDuringNextProgressCheck, halfArrivalCaptureDepth);
-                if (isDistanceCoveredPerCheckTooHigh) {
-                    // at this speed I could miss the arrival window
-                    //D.Log(ShowDebugLog, "{0} will arrive in as little as {1:0.0} checks and will miss front half depth {2:0.00} of arrival window.",
-                    //Name, checksRemainingBeforeArrival, halfArrivalCaptureDepth);
-                    if (CurrentSpeedSetting.TryDecreaseSpeed(out correctedSpeed)) {
-                        //D.Log(ShowDebugLog, "{0} is reducing speed to {1}.", DebugName, correctedSpeed.GetValueName());
-                        return true;
-                    }
-
-                    // Can't reduce speed further yet still covering too much ground per check so reduce check period to minimum
-                    correctedPeriod = new GameTimeDuration(MinHoursPerProgressCheckPeriodAllowed);
-                    maxDistanceCoveredDuringNextProgressCheck = correctedPeriod.TotalInHours * _engineRoom.IntendedCurrentSpeedValue;
-                    isDistanceCoveredPerCheckTooHigh = maxDistanceCoveredDuringNextProgressCheck > halfArrivalCaptureDepth;
-                    if (isDistanceCoveredPerCheckTooHigh) {
-                        D.Warn("{0} cannot cover less distance per check so could miss arrival window. DistanceCoveredBetweenChecks {1:0.00} > HalfArrivalCaptureDepth {2:0.00}.",
-                            DebugName, maxDistanceCoveredDuringNextProgressCheck, halfArrivalCaptureDepth);
-                    }
-                    return true;
-                }
-            }
-            else {
-                //D.Log(ShowDebugLog, "{0} ChecksRemainingBeforeArrival {1:0.0} > Threshold {2:0.0}.", DebugName, checksRemainingBeforeArrival, checksRemainingThreshold);
-                if (checksRemainingBeforeArrival > MinNumberOfProgressChecksBeforeSpeedIncreasesCanBegin) {
-                    if (isIncreaseAboveApSpeedAllowed || CurrentSpeedSetting < ApSpeed) {
-                        if (CurrentSpeedSetting.TryIncreaseSpeed(out correctedSpeed)) {
-                            //D.Log(ShowDebugLog, "{0} is increasing speed to {1}.", DebugName, correctedSpeed.GetValueName());
-                            return true;
-                        }
-                    }
-                }
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// Refreshes the progress check period.
-        /// <remarks>Current algorithm is a HACK.</remarks>
-        /// </summary>
-        /// <param name="currentPeriod">The current progress check period.</param>
-        /// <returns></returns>
-        private GameTimeDuration __RefreshProgressCheckPeriod(GameTimeDuration currentPeriod) {
-            float currentProgressCheckPeriodHours = currentPeriod.TotalInHours;
-            float intendedSpeedValueChangeRatio = _engineRoom.IntendedCurrentSpeedValue / _engineRoom.__PreviousIntendedCurrentSpeedValue;
-            // increase in speed reduces progress check period
-            float refreshedProgressCheckPeriodHours = currentProgressCheckPeriodHours / intendedSpeedValueChangeRatio;
-            if (refreshedProgressCheckPeriodHours < MinHoursPerProgressCheckPeriodAllowed) {
-                // 5.9.16 eliminated warning as this can occur when currentPeriod is at or close to minimum. This is a HACK after all
-                D.Log(ShowDebugLog, "{0}.__RefreshProgressCheckPeriod() generated period hours {1:0.0000} < MinAllowed {2:0.00}. Correcting.",
-                    DebugName, refreshedProgressCheckPeriodHours, MinHoursPerProgressCheckPeriodAllowed);
-                refreshedProgressCheckPeriodHours = MinHoursPerProgressCheckPeriodAllowed;
-            }
-            refreshedProgressCheckPeriodHours = VaryCheckPeriod(refreshedProgressCheckPeriodHours);
-            return new GameTimeDuration(refreshedProgressCheckPeriodHours);
-        }
-
-        /// <summary>
-        /// Calculates and returns the world space offset to the provided detour that when combined with the
-        /// detour's position, represents the actual location in world space this ship is trying to reach, 
-        /// aka DetourPoint. Used to keep ships from bunching up at the detour when many ships in a fleet encounter the same obstacle.
-        /// </summary>
-        /// <param name="detour">The detour.</param>
-        /// <returns></returns>
-        private Vector3 CalcDetourOffset(StationaryLocation detour) {
-            if (_isApFleetwideMove) {
-                // make separate detour offsets as there may be a lot of ships encountering this detour
-                Quaternion shipCurrentRotation = _ship.transform.rotation;
-                Vector3 shipToDetourDirection = (detour.Position - _ship.Position).normalized;
-                Quaternion shipRotationChgReqdToFaceDetour = Quaternion.FromToRotation(_ship.CurrentHeading, shipToDetourDirection);
-                Quaternion shipRotationThatFacesDetour = Math3D.AddRotation(shipCurrentRotation, shipRotationChgReqdToFaceDetour);
-                Vector3 shipLocalFormationOffset = _ship.FormationStation.LocalOffset;
-                Vector3 detourWorldSpaceOffset = Math3D.TransformDirectionMath(shipRotationThatFacesDetour, shipLocalFormationOffset);
-                return detourWorldSpaceOffset;
-            }
-            return Vector3.zero;
-        }
-
-        #endregion
-
-        #region Change Heading
-
-        /// <summary>
-        /// Primary exposed control that changes the direction the ship is headed and disengages the auto pilot.
-        /// For use when managing the heading of the ship without using the Autopilot.
-        /// </summary>
-        /// <param name="newHeading">The new direction in world coordinates, normalized.</param>
-        /// <param name="headingConfirmed">Delegate that fires when the ship gets to the new heading.</param>
-        internal void ChangeHeading(Vector3 newHeading, Action headingConfirmed = null) {
-            DisengagePilot(); // kills ChangeHeading job if pilot running
-            if (IsTurnUnderway) {
-                D.Warn("{0} received sequential ChangeHeading calls from Captain.", DebugName);
-            }
-            ChangeHeading_Internal(newHeading, headingConfirmed);
-        }
-
-        /// <summary>
-        /// Changes the direction the ship is headed. 
-        /// </summary>
-        /// <param name="newHeading">The new direction in world coordinates, normalized.</param>
-        /// <param name="headingConfirmed">Delegate that fires when the ship gets to the new heading.</param>
-        private void ChangeHeading_Internal(Vector3 newHeading, Action headingConfirmed = null) {
-            newHeading.ValidateNormalized();
-            //D.Log(ShowDebugLog, "{0} received ChangeHeading to (local){1}.", DebugName, _ship.transform.InverseTransformDirection(newHeading));
-
-            // Warning: Don't test for same direction here. Instead, if same direction, let the coroutine respond one frame
-            // later. Reasoning: If previous Job was just killed, next frame it will assert that the autoPilot isn't engaged. 
-            // However, if same direction is determined here, then onHeadingConfirmed will be
-            // executed before that assert test occurs. The execution of onHeadingConfirmed() could initiate a new autopilot order
-            // in which case the assert would fail the next frame. By allowing the coroutine to respond, that response occurs one frame later,
-            // allowing the assert to successfully pass before the execution of onHeadingConfirmed can initiate a new autopilot order.
-
-            if (IsTurnUnderway) {
-                // 5.8.16 allowing heading changes to kill existing heading jobs so course corrections don't get skipped if job running
-                //D.Log(ShowDebugLog, "{0} is killing existing change heading job and starting another. Frame: {1}.", DebugName, Time.frameCount);
-                KillChgHeadingJob();
-            }
-
-            D.AssertNull(_chgHeadingJob, DebugName);
-
-            _shipData.IntendedHeading = newHeading;
-            _engineRoom.HandleTurnBeginning();
-
-            string jobName = "{0}.ChgHeadingJob".Inject(DebugName);
-            _chgHeadingJob = _jobMgr.StartGameplayJob(ChangeHeading(newHeading), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
-                if (jobWasKilled) {
-                    // 5.8.16 Killed scenarios better understood: 1) External ChangeHeading call while in AutoPilot, 
-                    // 2) sequential external ChangeHeading calls, 3) AutoPilot detouring around an obstacle,  
-                    // 4) AutoPilot resuming course to Target after detour, 5) AutoPilot course correction, and
-                    // 6) 12.9.16 JobManager kill at beginning of scene change.
-
-                    // Thoughts: All Killed scenarios will result in an immediate call to this ChangeHeading_Internal method. Responding now 
-                    // (a frame later) with either onHeadingConfirmed or changing _ship.IsHeadingConfirmed is unnecessary and potentially 
-                    // wrong. It is unnecessary since the new ChangeHeading_Internal call will set IsHeadingConfirmed correctly and respond 
-                    // with onHeadingConfirmed() as soon as the new ChangeHeading Job properly finishes. 
-                    // UNCLEAR Thoughts on potentially wrong: Which onHeadingConfirmed delegate would be executed? 1) the previous source of the 
-                    // ChangeHeading order which is probably not listening (the autopilot navigation Job has been killed and may be about 
-                    // to be replaced by a new one) or 2) the new source that generated the kill? If it goes to the new source, 
-                    // that is going to be accomplished anyhow as soon as the ChangeHeading Job launched by the new source determines 
-                    // that the heading is confirmed so a response here would be a duplicate. 
-                    // 12.7.16 Almost certainly 1) as the delegate creates another complete class to hold all the values that 
-                    // need to be executed when fired.
-
-                    // 12.12.16 An AssertNull(_jobRef) here can fail as the reference can refer to a new Job, created 
-                    // right after the old one was killed due to the 1 frame delay in execution of jobCompleted(). My attempts at allowing
-                    // the AssertNull to occur failed. I believe this is OK as _jobRef is nulled from KillXXXJob() and, if 
-                    // the reference is replaced by a new Job, then the old Job is no longer referenced which is the objective. Jobs Kill()ed
-                    // centrally by JobManager won't null the reference, but this only occurs during scene transitions.
-                }
-                else {
-                    D.AssertNotNull(_chgHeadingJob, DebugName);
-                    _chgHeadingJob = null;
-                    //D.Log(ShowDebugLog, "{0}'s turn to {1} complete.  Deviation = {2:0.00} degrees.",
-                    //DebugName, _ship.Data.IntendedHeading, Vector3.Angle(_ship.Data.CurrentHeading, _ship.Data.IntendedHeading));
-                    _engineRoom.HandleTurnCompleted();
-                    if (headingConfirmed != null) {
-                        headingConfirmed();
-                    }
-                }
-            });
-        }
-
-        /// <summary>
-        /// Executes a heading change.
-        /// </summary>
-        /// <param name="requestedHeading">The requested heading.</param>
-        /// <returns></returns>
-        private IEnumerator ChangeHeading(Vector3 requestedHeading) {
-            D.Assert(!_engineRoom.IsDriftCorrectionUnderway);
-
-            Profiler.BeginSample("Ship ChangeHeading Job Setup", _ship);
-            bool isInformedOfDateWarning = false;
-            __ResetTurnTimeWarningFields();
-
-            //int startingFrame = Time.frameCount;
-            Quaternion startingRotation = _ship.transform.rotation;
-            Quaternion intendedHeadingRotation = Quaternion.LookRotation(requestedHeading);
-            float desiredTurn = Quaternion.Angle(startingRotation, intendedHeadingRotation);
-            D.Log(ShowDebugLog, "{0} initiating turn of {1:0.#} degrees at {2:0.} degrees/hour. AllowedHeadingDeviation = {3:0.##} degrees.",
-                DebugName, desiredTurn, _shipData.MaxTurnRate, AllowedHeadingDeviation);
-#pragma warning disable 0219
-            GameDate currentDate = _gameTime.CurrentDate;
-#pragma warning restore 0219
-
-            float deltaTime;
-            float deviationInDegrees;
-            GameDate warnDate = DebugUtility.CalcWarningDateForRotation(_shipData.MaxTurnRate);
-            bool isRqstdHeadingReached = _ship.CurrentHeading.IsSameDirection(requestedHeading, out deviationInDegrees, AllowedHeadingDeviation);
-            Profiler.EndSample();
-
-            while (!isRqstdHeadingReached) {
-                //D.Log(ShowDebugLog, "{0} continuing another turn step. LastDeviation = {1:0.#} degrees, AllowedDeviation = {2:0.#}.", DebugName, deviationInDegrees, SteeringInaccuracy);
-
-                Profiler.BeginSample("Ship ChangeHeading Job Execution", _ship);
-                deltaTime = _gameTime.DeltaTime;
-                float allowedTurn = _shipData.MaxTurnRate * _gameTime.GameSpeedAdjustedHoursPerSecond * deltaTime;
-                __allowedTurns.Add(allowedTurn);
-
-                Quaternion currentRotation = _ship.transform.rotation;
-                Quaternion inprocessRotation = Quaternion.RotateTowards(currentRotation, intendedHeadingRotation, allowedTurn);
-                float actualTurn = Quaternion.Angle(currentRotation, inprocessRotation);
-                __actualTurns.Add(actualTurn);
-
-                //Vector3 headingBeforeRotation = _ship.CurrentHeading;
-                _ship.transform.rotation = inprocessRotation;
-                //D.Log(ShowDebugLog, "{0} BEFORE ROTATION heading: {1}, AFTER ROTATION heading: {2}, rotationApplied: {3}.",
-                //    DebugName, headingBeforeRotation.ToPreciseString(), _ship.CurrentHeading.ToPreciseString(), inprocessRotation);
-
-                isRqstdHeadingReached = _ship.CurrentHeading.IsSameDirection(requestedHeading, out deviationInDegrees, AllowedHeadingDeviation);
-                if (!isRqstdHeadingReached && (currentDate = _gameTime.CurrentDate) > warnDate) {
-                    float resultingTurn = Quaternion.Angle(startingRotation, inprocessRotation);
-                    __ReportTurnTimeWarning(warnDate, currentDate, desiredTurn, resultingTurn, __allowedTurns, __actualTurns, ref isInformedOfDateWarning);
-                }
-                Profiler.EndSample();
-
-                yield return null; // WARNING: must count frames between passes if use yield return WaitForSeconds()
-            }
-            //D.Log(ShowDebugLog, "{0}: Rotation completed. DegreesRotated = {1:0.##}, ErrorDate = {2}, ActualDate = {3}.",
-            //    DebugName, desiredTurn, errorDate, currentDate);
-            //D.Log(ShowDebugLog, "{0}: Rotation completed. DegreesRotated = {1:0.#}, FramesReqd = {2}, AvgDegreesPerFrame = {3:0.#}.",
-            //    DebugName, desiredTurn, Time.frameCount - startingFrame, desiredTurn / (Time.frameCount - startingFrame));
-        }
-
-        #endregion
-
-        #region Change Speed
-
-        /// <summary>
-        /// Used by the Pilot to initially engage the engines at ApSpeed.
-        /// </summary>
-        /// <param name="isFleetSpeed">if set to <c>true</c> [is fleet speed].</param>
-        private void EngageEnginesAtApSpeed(bool isFleetSpeed) {
-            D.Assert(IsPilotEngaged);
-            //D.Log(ShowDebugLog, "{0} Pilot is engaging engines at speed {1}.", _ship.DebugName, ApSpeed.GetValueName());
-            ChangeSpeed_Internal(ApSpeed, isFleetSpeed);
-        }
-
-        /// <summary>
-        /// Used by the Pilot to resume ApSpeed going into or coming out of a detour course leg.
-        /// </summary>
-        private void ResumeApSpeed() {
-            D.Assert(IsPilotEngaged);
-            //D.Log(ShowDebugLog, "{0} Pilot is resuming speed {1}.", _ship.DebugName, ApSpeed.GetValueName());
-            ChangeSpeed_Internal(ApSpeed, isFleetSpeed: false);
-        }
-
-        /// <summary>
-        /// Primary exposed control that changes the speed of the ship and disengages the pilot.
-        /// For use when managing the speed of the ship without relying on  the Autopilot.
-        /// </summary>
-        /// <param name="newSpeed">The new speed.</param>
-        internal void ChangeSpeed(Speed newSpeed) {
-            D.Assert(__ValidExternalChangeSpeeds.Contains(newSpeed), newSpeed.GetValueName());
-            //D.Log(ShowDebugLog, "{0} is about to disengage pilot and change speed to {1}.", DebugName, newSpeed.GetValueName());
-            DisengagePilot();
-            ChangeSpeed_Internal(newSpeed, isFleetSpeed: false);
-        }
-
-        /// <summary>
-        /// Internal control that changes the speed the ship is currently traveling at. 
-        /// This version does not disengage the autopilot.
-        /// </summary>
-        /// <param name="newSpeed">The new speed.</param>
-        /// <param name="moveMode">The move mode.</param>
-        private void ChangeSpeed_Internal(Speed newSpeed, bool isFleetSpeed) {
-            float newSpeedValue = isFleetSpeed ? newSpeed.GetUnitsPerHour(_ship.Command.Data) : newSpeed.GetUnitsPerHour(_ship.Data);
-            _engineRoom.ChangeSpeed(newSpeed, newSpeedValue);
-            if (IsPilotEngaged) {
-                _isApCurrentSpeedFleetwide = isFleetSpeed;
-            }
-        }
-
-        /// <summary>
-        /// Refreshes the engine room speed values. This method is called whenever there is a change
-        /// in this ship's FullSpeed value or the fleet's FullSpeed value that could change the units/hour value
-        /// of the current speed. 
-        /// </summary>
-        private void RefreshEngineRoomSpeedValues(bool isFleetSpeed) {
-            //D.Log(ShowDebugLog, "{0} is refreshing engineRoom speed values.", _ship.DebugName);
-            ChangeSpeed_Internal(CurrentSpeedSetting, isFleetSpeed);
-        }
-
-        #endregion
-
-        #region Obstacle Checking
-
-        private void InitiateObstacleCheckingEnrouteTo(AutoPilotDestinationProxy destProxy, CourseRefreshMode courseRefreshMode) {
-            D.AssertNotNull(destProxy, "{0}.AutoPilotDestProxy is null. Frame = {1}.".Inject(DebugName, Time.frameCount));
-            D.AssertNull(_apObstacleCheckJob, DebugName);
-            _apObstacleCheckPeriod = __GenerateObstacleCheckPeriod();
-            AutoPilotDestinationProxy detourProxy;
-            string jobName = "{0}.ApObstacleCheckJob".Inject(DebugName);
-            _apObstacleCheckJob = _jobMgr.RecurringWaitForHours(new Reference<GameTimeDuration>(() => _apObstacleCheckPeriod), jobName, waitMilestone: () => {
-
-                Profiler.BeginSample("Ship ApObstacleCheckJob Execution", _ship);
-                if (TryCheckForObstacleEnrouteTo(destProxy, out detourProxy)) {
-                    KillApObstacleCheckJob();
-                    RefreshCourse(courseRefreshMode, detourProxy);
-                    Profiler.EndSample();
-                    ContinueCourseToTargetVia(detourProxy);
-                    return;
-                }
-                if (_doesApObstacleCheckPeriodNeedRefresh) {
-                    _apObstacleCheckPeriod = __GenerateObstacleCheckPeriod();
-                    _doesApObstacleCheckPeriodNeedRefresh = false;
-                }
-                Profiler.EndSample();
-
-            });
-        }
-
-        private GameTimeDuration __GenerateObstacleCheckPeriod() {
-            float relativeObstacleFreq;  // IMPROVE OK for now as obstacleDensity is related but not same as Topography.GetRelativeDensity()
-            float defaultHours;
-            ValueRange<float> hoursRange;
-            switch (_ship.Topography) {
-                case Topography.OpenSpace:
-                    relativeObstacleFreq = 40F;
-                    defaultHours = 20F;
-                    hoursRange = new ValueRange<float>(5F, 100F);
-                    break;
-                case Topography.System:
-                    relativeObstacleFreq = 4F;
-                    defaultHours = 3F;
-                    hoursRange = new ValueRange<float>(1F, 10F);
-                    break;
-                case Topography.DeepNebula:
-                case Topography.Nebula:
-                case Topography.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_ship.Topography));
-            }
-            float speedValue = _engineRoom.IntendedCurrentSpeedValue;
-            float hoursBetweenChecks = speedValue > Constants.ZeroF ? relativeObstacleFreq / speedValue : defaultHours;
-            hoursBetweenChecks = hoursRange.Clamp(hoursBetweenChecks);
-            hoursBetweenChecks = VaryCheckPeriod(hoursBetweenChecks);
-
-            float checksPerHour = 1F / hoursBetweenChecks;
-            if (checksPerHour * GameTime.Instance.GameSpeedAdjustedHoursPerSecond > FpsReadout.FramesPerSecond) {
-                // check frequency is higher than the game engine can run
-                D.Warn("{0} obstacleChecksPerSec {1:0.#} > FPS {2:0.#}.",
-                    DebugName, checksPerHour * GameTime.Instance.GameSpeedAdjustedHoursPerSecond, FpsReadout.FramesPerSecond);
-            }
-            return new GameTimeDuration(hoursBetweenChecks);
-        }
-
-        /// <summary>
-        /// Checks for an obstacle en-route to the provided <c>destProxy</c>. Returns true if one
-        /// is found that requires immediate action and provides the detour to avoid it, false otherwise.
-        /// </summary>
-        /// <param name="destProxy">The destination proxy. May be the AutoPilotTarget or an obstacle detour.</param>
-        /// <param name="detourProxy">The resulting obstacle detour proxy.</param>
-        /// <returns>
-        ///   <c>true</c> if an obstacle was found and a detour generated, false if the way is effectively clear.
-        /// </returns>
-        private bool TryCheckForObstacleEnrouteTo(AutoPilotDestinationProxy destProxy, out AutoPilotDestinationProxy detourProxy) {
-            D.AssertNotNull(destProxy, "{0}.AutoPilotDestProxy is null. Frame = {1}.".Inject(DebugName, Time.frameCount));
-            Profiler.BeginSample("Ship TryCheckForObstacleEnrouteTo Execution", _ship);
-            int iterationCount = Constants.Zero;
-            IAvoidableObstacle unusedObstacleFound;
-            bool hasDetour = TryCheckForObstacleEnrouteTo(destProxy, out detourProxy, out unusedObstacleFound, ref iterationCount);
-            Profiler.EndSample();
-            return hasDetour;
-        }
-
-        private bool TryCheckForObstacleEnrouteTo(AutoPilotDestinationProxy destProxy, out AutoPilotDestinationProxy detourProxy, out IAvoidableObstacle obstacle, ref int iterationCount) {
-            __ValidateIterationCount(iterationCount, destProxy, allowedIterations: 10);
-            iterationCount++;
-            detourProxy = null;
-            obstacle = null;
-            Vector3 destBearing = (destProxy.Position - Position).normalized;
-            float rayLength = destProxy.GetObstacleCheckRayLength(Position);
-            Ray ray = new Ray(Position, destBearing);
-
-            bool isDetourGenerated = false;
-            RaycastHit hitInfo;
-            if (Physics.Raycast(ray, out hitInfo, rayLength, AvoidableObstacleZoneOnlyLayerMask.value)) {
-                // there is an AvoidableObstacleZone in the way. Warning: hitInfo.transform returns the rigidbody parent since 
-                // the obstacleZone trigger collider is static. UNCLEAR if this means it forms a compound collider as this is a raycast
-                var obstacleZoneGo = hitInfo.collider.gameObject;
-                var obstacleZoneHitDistance = hitInfo.distance;
-                obstacle = obstacleZoneGo.GetSafeFirstInterfaceInParents<IAvoidableObstacle>(excludeSelf: true);
-
-                if (obstacle == destProxy.Destination) {
-                    D.LogBold(ShowDebugLog, "{0} encountered obstacle {1} which is the destination. \nRay length = {2:0.00}, DistanceToHit = {3:0.00}.",
-                        DebugName, obstacle.DebugName, rayLength, obstacleZoneHitDistance);
-                    HandleObstacleFoundIsTarget(obstacle);
-                }
-                else {
-                    D.Log(ShowDebugLog, "{0} encountered obstacle {1} at {2} when checking approach to {3}. \nRay length = {4:0.#}, DistanceToHit = {5:0.#}.",
-                        DebugName, obstacle.DebugName, obstacle.Position, destProxy.DebugName, rayLength, obstacleZoneHitDistance);
-                    if (TryGenerateDetourAroundObstacle(obstacle, hitInfo, out detourProxy)) {
-                        AutoPilotDestinationProxy newDetourProxy;
-                        IAvoidableObstacle newObstacle;
-                        if (TryCheckForObstacleEnrouteTo(detourProxy, out newDetourProxy, out newObstacle, ref iterationCount)) {
-                            if (obstacle == newObstacle) {
-                                // 2.7.17 UNCLEAR redundant? IAvoidableObstacle.GetDetour() should fail if can't get to detour, although check uses math rather than a ray
-                                D.Error("{0} generated detour {1} that does not get around obstacle {2}.", DebugName, newDetourProxy.DebugName, obstacle.DebugName);
-                            }
-                            else {
-                                D.Log(ShowDebugLog, "{0} found another obstacle {1} on the way to detour {2} around obstacle {3}.", DebugName, newObstacle.DebugName, detourProxy.DebugName, obstacle.DebugName);
-                            }
-                            detourProxy = newDetourProxy;
-                            obstacle = newObstacle; // UNCLEAR whether useful. 2.7.17 Only use is to compare whether obstacle is the same
-                        }
-                        isDetourGenerated = true;
-                    }
-                }
-            }
-            return isDetourGenerated;
-        }
-
-        /// <summary>
-        /// Tries to generate a detour around the provided obstacle. Returns <c>true</c> if a detour
-        /// was generated, <c>false</c> otherwise. 
-        /// <remarks>A detour can always be generated around an obstacle. However, this algorithm considers other factors
-        /// before initiating a heading change to redirect to a detour. E.g. moving obstacles that are far away 
-        /// and/or require only a small change in heading may not necessitate a diversion to a detour yet.
-        /// </remarks>
-        /// </summary>
-        /// <param name="obstacle">The obstacle.</param>
-        /// <param name="zoneHitInfo">The zone hit information.</param>
-        /// <param name="detourProxy">The resulting detour including any reqd offset for the ship when traveling as a fleet.</param>
-        /// <returns></returns>
-        private bool TryGenerateDetourAroundObstacle(IAvoidableObstacle obstacle, RaycastHit zoneHitInfo, out AutoPilotDestinationProxy detourProxy) {
-            detourProxy = GenerateDetourAroundObstacle(obstacle, zoneHitInfo);
-            if (MyMath.DoesLineSegmentIntersectSphere(Position, detourProxy.Position, obstacle.Position, obstacle.__ObstacleZoneRadius)) {
-                // 1.26.17 This can marginally fail when traveling as a fleet when the ship's FleetFormationStation is at the closest edge of the
-                // formation to the obstacle. As the proxy incorporates this station offset into its "Position" to keep ships from bunching
-                // up when detouring as a fleet, the resulting detour destination can be very close to the edge of the obstacle's Zone.
-                // If/when this does occur, I expect the offset to be large.
-                D.Warn("{0} generated detour {1} that {2} can't get too because {0} is in the way! Offset = {3:0.00}.", obstacle.DebugName, detourProxy.DebugName, DebugName, detourProxy.__DestinationOffset);
-            }
-
-            bool useDetour = true;
-            Vector3 detourBearing = (detourProxy.Position - Position).normalized;
-            float reqdTurnAngleToDetour = Vector3.Angle(_ship.CurrentHeading, detourBearing);
-            if (obstacle.IsMobile) {
-                if (reqdTurnAngleToDetour < DetourTurnAngleThreshold) {
-                    useDetour = false;
-                    // angle is still shallow but short remaining distance might require use of a detour
-                    float maxDistanceTraveledBeforeNextObstacleCheck = _engineRoom.IntendedCurrentSpeedValue * _apObstacleCheckPeriod.TotalInHours;
-                    float obstacleDistanceThresholdRequiringDetour = maxDistanceTraveledBeforeNextObstacleCheck * 2F;   // HACK
-                    float distanceToObstacleZone = zoneHitInfo.distance;
-                    if (distanceToObstacleZone <= obstacleDistanceThresholdRequiringDetour) {
-                        useDetour = true;
-                    }
-                }
-            }
-            if (useDetour) {
-                D.Log(ShowDebugLog, "{0} has generated detour {1} to get by obstacle {2} in Frame {3}. Reqd Turn = {4:0.#} degrees.", DebugName, detourProxy.DebugName, obstacle.DebugName, Time.frameCount, reqdTurnAngleToDetour);
-            }
-            else {
-                D.Log(ShowDebugLog, "{0} has declined to use detour {1} to get by mobile obstacle {2}. Reqd Turn = {3:0.#} degrees.", DebugName, detourProxy.DebugName, obstacle.DebugName, reqdTurnAngleToDetour);
-            }
-            return useDetour;
-        }
-
-        /// <summary>
-        /// Generates a detour around the provided obstacle. Includes any reqd offset for the
-        /// ship when traveling as a fleet.
-        /// </summary>
-        /// <param name="obstacle">The obstacle.</param>
-        /// <param name="hitInfo">The hit information.</param>
-        /// <returns></returns>
-        private AutoPilotDestinationProxy GenerateDetourAroundObstacle(IAvoidableObstacle obstacle, RaycastHit hitInfo) {
-            float reqdClearanceRadius = _isApFleetwideMove ? _ship.Command.UnitMaxFormationRadius : _ship.CollisionDetectionZoneRadius;
-            Vector3 detourPosition = obstacle.GetDetour(Position, hitInfo, reqdClearanceRadius);
-            StationaryLocation detour = new StationaryLocation(detourPosition);
-            Vector3 detourOffset = CalcDetourOffset(detour);
-            float tgtStandoffDistance = _ship.CollisionDetectionZoneRadius;
-            return detour.GetApMoveTgtProxy(detourOffset, tgtStandoffDistance, Position);
-        }
-
-        private AutoPilotDestinationProxy __initialDestination;
-        private IList<AutoPilotDestinationProxy> __destinationRecord;
-
-        private void __ValidateIterationCount(int iterationCount, AutoPilotDestinationProxy destProxy, int allowedIterations) {
-            if (iterationCount == Constants.Zero) {
-                __initialDestination = destProxy;
-            }
-            if (iterationCount > Constants.Zero) {
-                if (iterationCount == Constants.One) {
-                    __destinationRecord = __destinationRecord ?? new List<AutoPilotDestinationProxy>(allowedIterations + 1);
-                    __destinationRecord.Clear();
-                    __destinationRecord.Add(__initialDestination);
-                }
-                __destinationRecord.Add(destProxy);
-                D.AssertException(iterationCount <= allowedIterations, "{0}.ObstacleDetourCheck Iteration Error. Destination & Detours: {1}."
-                    .Inject(DebugName, __destinationRecord.Select(det => det.DebugName).Concatenate()));
-            }
-        }
-
-        #endregion
-
-        #region Pursuit
-
-        /// <summary>
-        /// Launches a Job to monitor whether the ship needs to move to stay with the target.
-        /// </summary>
-        private void MaintainPositionWhilePursuing() {
-            ChangeSpeed_Internal(Speed.Stop, isFleetSpeed: false);
-            //D.Log(ShowDebugLog, "{0} is launching ApMaintainPositionWhilePursuingJob of {1}.", DebugName, ApTargetFullName);
-
-            D.AssertNull(_apMaintainPositionWhilePursuingJob);
-            string jobName = "ShipApMaintainPositionWhilePursuingJob";
-            _apMaintainPositionWhilePursuingJob = _jobMgr.StartGameplayJob(WaitWhileArrived(), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
-                if (jobWasKilled) {    // killed only by CleanupAnyRemainingAutoPilotJobs
-                    // 12.12.16 An AssertNull(_jobRef) here can fail as the reference can refer to a new Job, created 
-                    // right after the old one was killed due to the 1 frame delay in execution of jobCompleted(). My attempts at allowing
-                    // the AssertNull to occur failed. I believe this is OK as _jobRef is nulled from KillXXXJob() and, if 
-                    // the reference is replaced by a new Job, then the old Job is no longer referenced which is the objective. Jobs Kill()ed
-                    // centrally by JobManager won't null the reference, but this only occurs during scene transitions.
-                }
-                else {
-                    _apMaintainPositionWhilePursuingJob = null;
-                    //D.Log(ShowDebugLog, "{0} has naturally finished ApMaintainPositionWhilePursuingJob and is resuming pursuit of {1}.", DebugName, ApTargetFullName);     // pursued enemy moved out of my pursuit window
-                    RefreshCourse(CourseRefreshMode.NewCourse);
-                    ResumeDirectCourseToTarget();
-                }
-            });
-        }
-
-        private IEnumerator WaitWhileArrived() {
-            while (ApTargetProxy.HasArrived(Position)) {
-                // Warning: Don't use the WaitWhile YieldInstruction here as we rely on the ability to 
-                // Kill the ApMaintainPositionWhilePursuingJob when the target represented by ApTargetProxy dies. Killing 
-                // the Job is key as shortly thereafter, ApTargetProxy is nulled. See: Learnings VS/CS Linq.
-                yield return null;
-            }
-        }
-
-        #endregion
-
-        #region Event and Property Change Handlers
-
-        private void FullSpeedPropChangedHandler() {
-            HandleFullSpeedValueChanged();
-        }
-
-        // Note: No need for TopographyPropChangedHandler as FullSpeedValues get changed when density (and therefore CurrentDrag) changes
-        // No need for GameSpeedPropChangedHandler as speedPerSec is no longer used
-
-        #endregion
-
-        /// <summary>
-        /// Handles a pending collision with the provided obstacle.
-        /// </summary>
-        /// <param name="obstacle">The obstacle.</param>
-        internal void HandlePendingCollisionWith(IObstacle obstacle) {
-            _engineRoom.HandlePendingCollisionWith(obstacle);
-        }
-
-        /// <summary>
-        /// Handles a pending collision that was averted with the provided obstacle. 
-        /// </summary>
-        /// <param name="obstacle">The obstacle.</param>
-        internal void HandlePendingCollisionAverted(IObstacle obstacle) {
-            _engineRoom.HandlePendingCollisionAverted(obstacle);
-        }
-
-        private void HandleObstacleFoundIsTarget(IAvoidableObstacle obstacle) {
-            if (_ship.IsHQ) {
-                // should never happen as HQ approach is always direct            
-                D.Warn("HQ {0} encountered obstacle {1} which is target.", DebugName, obstacle.DebugName);
-            }
-            ApTargetProxy.ResetOffset();   // go directly to target
-            if (_apNavJob != null) {
-                D.AssertNotNull(_apObstacleCheckJob);
-                ResumeDirectCourseToTarget();
-            }
-            // if no _apNavJob, HandleObstacleFoundIsTarget() call originated from EngagePilot which will InitiateDirectCourseToTarget
-        }
-
-        /// <summary>
-        /// Handles the death of the ship in both the Helm and EngineRoom.
-        /// Should be called from Dead_EnterState, not PrepareForDeathNotification().
-        /// </summary>
-        internal void HandleDeath() {
-            D.Assert(!IsPilotEngaged);  // should already be disengaged by Moving_ExitState if needed if in Dead_EnterState
-            CleanupAnyRemainingJobs();  // heading job from Captain could be running
-            _engineRoom.HandleDeath();
-        }
-
-        /// <summary>
-        /// Called when the ship 'arrives' at the Target.
-        /// </summary>
-        private void HandleTargetReached() {
-            D.Log(ShowDebugLog, "{0} at {1} has reached {2} \nat {3}. Actual proximity: {4:0.0000} units.", DebugName, Position, ApTargetFullName, ApTargetProxy.Position, ApTargetDistance);
-            RefreshCourse(CourseRefreshMode.ClearCourse);
-
-            if (_isApInPursuit) {
-                MaintainPositionWhilePursuing();
-            }
-            else {
-                _ship.HandleApTargetReached();
-            }
-        }
-
-        /// <summary>
-        /// Handles the situation where the Ship determines that the ApTarget can't be caught.
-        /// <remarks>TODO: Will need for 'can't catch' or out of sensor range when attacking a ship.</remarks>
-        /// </summary>
-        private void HandleTargetUncatchable() {
-            RefreshCourse(CourseRefreshMode.ClearCourse);
-            _ship.UponApTargetUncatchable();
-        }
-
-        internal void HandleFleetFullSpeedValueChanged() {
-            if (IsPilotEngaged) {
-                if (_isApCurrentSpeedFleetwide) {
-                    // EngineRoom's CurrentSpeed is a FleetSpeed value so the Fleet's FullSpeed change will affect its value
-                    RefreshEngineRoomSpeedValues(isFleetSpeed: true);
-                    // when CurrentSpeed values change as a result of a FullSpeed change, a refresh is needed
-                    _doesApProgressCheckPeriodNeedRefresh = true;
-                    _doesApObstacleCheckPeriodNeedRefresh = true;
-                }
-            }
-        }
-
-        private void HandleFullSpeedValueChanged() {
-            if (IsPilotEngaged) {
-                if (!_isApCurrentSpeedFleetwide) {
-                    // EngineRoom's CurrentSpeed is a ShipSpeed value so this Ship's FullSpeed change will affect its value
-                    RefreshEngineRoomSpeedValues(isFleetSpeed: false);
-                    // when CurrentSpeed values change as a result of a FullSpeed change, a refresh is needed
-                    _doesApProgressCheckPeriodNeedRefresh = true;
-                    _doesApObstacleCheckPeriodNeedRefresh = true;
-                }
-            }
-            else if (_engineRoom.IsPropulsionEngaged) {
-                // Propulsion is engaged and not by AutoPilot so must be external SpeedChange from Captain, value change will matter
-                RefreshEngineRoomSpeedValues(isFleetSpeed: false);
-            }
-        }
-
-        private void HandleCourseChanged() {
-            _ship.UpdateDebugCoursePlot();
-        }
-
-        /// <summary>
-        /// Disengages the pilot but does not change its heading or residual speed.
-        /// <remarks>Externally calling ChangeSpeed() or ChangeHeading() will also disengage the pilot
-        /// if needed and make a one time change to the ship's speed and/or heading.</remarks>
-        /// </summary>
-        internal void DisengagePilot() {
-            if (IsPilotEngaged) {
-                //D.Log(ShowDebugLog, "{0} Pilot disengaging.", DebugName);
-                IsPilotEngaged = false;
-                CleanupAnyRemainingJobs();
-                RefreshCourse(CourseRefreshMode.ClearCourse);
-                ApSpeed = Speed.None;
-                ApTargetProxy = null;
-                _isApFleetwideMove = false;
-                _isApCurrentSpeedFleetwide = false;
-                _doesApObstacleCheckPeriodNeedRefresh = false;
-                _doesApProgressCheckPeriodNeedRefresh = false;
-                _apObstacleCheckPeriod = default(GameTimeDuration);
-                _isApInPursuit = false;
-            }
-        }
-
-        /// <summary>
-        /// Refreshes the course.
-        /// </summary>
-        /// <param name="mode">The mode.</param>
-        /// <param name="wayPtProxy">The optional waypoint. When not null, this is always a StationaryLocation detour to avoid an obstacle.</param>
-        /// <exception cref="System.NotImplementedException"></exception>
-        private void RefreshCourse(CourseRefreshMode mode, AutoPilotDestinationProxy wayPtProxy = null) {
-            //D.Log(ShowDebugLog, "{0}.RefreshCourse() called. Mode = {1}. CourseCountBefore = {2}.", DebugName, mode.GetValueName(), AutoPilotCourse.Count);
-            switch (mode) {
-                case CourseRefreshMode.NewCourse:
-                    D.AssertNull(wayPtProxy);
-                    ApCourse.Clear();
-                    ApCourse.Add(_ship);
-                    IShipNavigable courseTgt;
-                    if (ApTargetProxy.IsMobile) {
-                        courseTgt = new MobileLocation(new Reference<Vector3>(() => ApTargetProxy.Position));
-                    }
-                    else {
-                        courseTgt = new StationaryLocation(ApTargetProxy.Position);
-                    }
-                    ApCourse.Add(courseTgt);  // includes fstOffset
-                    break;
-                case CourseRefreshMode.AddWaypoint:
-                    ApCourse.Insert(ApCourse.Count - 1, new StationaryLocation(wayPtProxy.Position));    // changes Course.Count
-                    break;
-                case CourseRefreshMode.ReplaceObstacleDetour:
-                    D.AssertEqual(3, ApCourse.Count);
-                    ApCourse.RemoveAt(ApCourse.Count - 2);          // changes Course.Count
-                    ApCourse.Insert(ApCourse.Count - 1, new StationaryLocation(wayPtProxy.Position));    // changes Course.Count
-                    break;
-                case CourseRefreshMode.RemoveWaypoint:
-                    D.AssertEqual(3, ApCourse.Count);
-                    bool isRemoved = ApCourse.Remove(new StationaryLocation(wayPtProxy.Position));     // Course.RemoveAt(Course.Count - 2);  // changes Course.Count
-                    D.Assert(isRemoved);
-                    break;
-                case CourseRefreshMode.ClearCourse:
-                    D.AssertNull(wayPtProxy);
-                    ApCourse.Clear();
-                    break;
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(mode));
-            }
-            //D.Log(ShowDebugLog, "CourseCountAfter = {0}.", Course.Count);
-            HandleCourseChanged();
-        }
-
-        /// <summary>
-        /// Varies the check period by plus or minus 10% to spread out recurring event firing.
-        /// </summary>
-        /// <param name="hoursPerCheckPeriod">The hours per check period.</param>
-        /// <returns></returns>
-        private float VaryCheckPeriod(float hoursPerCheckPeriod) {
-            return UnityEngine.Random.Range(hoursPerCheckPeriod * 0.9F, hoursPerCheckPeriod * 1.1F);
-        }
-
-        private void KillApNavJob() {
-            if (_apNavJob != null) {
-                _apNavJob.Kill();
-                _apNavJob = null;
-            }
-        }
-
-        private void KillApObstacleCheckJob() {
-            if (_apObstacleCheckJob != null) {
-                _apObstacleCheckJob.Kill();
-                _apObstacleCheckJob = null;
-            }
-        }
-
-        private void KillChgHeadingJob() {
-            if (_chgHeadingJob != null) {
-                //D.Log(ShowDebugLog, "{0}.ChgHeadingJob is about to be killed and nulled in Frame {1}. ChgHeadingJob.IsRunning = {2}.", DebugName, Time.frameCount, ChgHeadingJob.IsRunning);
-                _chgHeadingJob.Kill();
-                _chgHeadingJob = null;
-            }
-        }
-
-        private void KillApMaintainPositionWhilePursingJob() {
-            if (_apMaintainPositionWhilePursuingJob != null) {
-                _apMaintainPositionWhilePursuingJob.Kill();
-                _apMaintainPositionWhilePursuingJob = null;
-            }
-        }
-
-        #region Cleanup
-
-        private void CleanupAnyRemainingJobs() {
-            KillApNavJob();
-            KillApObstacleCheckJob();
-            KillChgHeadingJob();
-            if (_apActionToExecuteWhenFleetIsAligned != null) {
-                _ship.Command.RemoveFleetIsAlignedCallback(_apActionToExecuteWhenFleetIsAligned, _ship);
-                _apActionToExecuteWhenFleetIsAligned = null;
-            }
-            KillApMaintainPositionWhilePursingJob();
-        }
-
-        private void Cleanup() {
-            Unsubscribe();
-            // 12.8.16 Job Disposal centralized in JobManager
-            KillApNavJob();
-            KillChgHeadingJob();
-            KillApObstacleCheckJob();
-            KillApMaintainPositionWhilePursingJob();
-            _engineRoom.Dispose();
-        }
-
-        private void Unsubscribe() {
-            _subscriptions.ForAll(s => s.Dispose());
-            _subscriptions.Clear();
-        }
-
-        #endregion
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
-        #region Debug Turn Error Reporting
-
-        private const string __TurnTimeLineFormat = "Allowed: {0:0.00}, Actual: {1:0.00}";
-
-        private IList<float> __allowedTurns = new List<float>();
-        private IList<float> __actualTurns = new List<float>();
-        private IList<string> __allowedAndActualTurnSteps;
-        private GameDate __turnTimeErrorDate;
-
-        private void __ReportTurnTimeWarning(GameDate warnDate, GameDate currentDate, float desiredTurn, float resultingTurn, IList<float> allowedTurns, IList<float> actualTurns, ref bool isInformedOfDateWarning) {
-            if (!isInformedOfDateWarning) {
-                D.Log("{0}.ChangeHeading of {1:0.##} degrees. CurrentDate {2} > WarnDate {3}. Turn accomplished: {4:0.##} degrees.",
-                    DebugName, desiredTurn, currentDate, warnDate, resultingTurn);
-                isInformedOfDateWarning = true;
-            }
-            if (__turnTimeErrorDate == default(GameDate)) {
-                __turnTimeErrorDate = new GameDate(warnDate, GameTimeDuration.OneDay);
-            }
-            if (currentDate > __turnTimeErrorDate) {
-                D.Error("{0}.ChangeHeading timed out.", DebugName);
-            }
-
-            if (ShowDebugLog) {
-                if (__allowedAndActualTurnSteps == null) {
-                    __allowedAndActualTurnSteps = new List<string>();
-                }
-                __allowedAndActualTurnSteps.Clear();
-                for (int i = 0; i < allowedTurns.Count; i++) {
-                    string line = __TurnTimeLineFormat.Inject(allowedTurns[i], actualTurns[i]);
-                    __allowedAndActualTurnSteps.Add(line);
-                }
-                D.Log("Allowed vs Actual TurnSteps:\n {0}", __allowedAndActualTurnSteps.Concatenate());
-            }
-        }
-
-        private void __ResetTurnTimeWarningFields() {
-            __allowedTurns.Clear();
-            __actualTurns.Clear();
-            __turnTimeErrorDate = default(GameDate);
-        }
-
-        #endregion
-
-        #region Vector3 ExecuteHeadingChange Archive
-
-        //private IEnumerator ExecuteHeadingChange(float allowedTime) {
-        //    //D.Log("{0} initiating turn to heading {1} at {2:0.} degrees/hour.", DebugName, _ship.Data.RequestedHeading, _ship.Data.MaxTurnRate);
-        //    float cumTime = Constants.ZeroF;
-        //    while (!_ship.IsHeadingConfirmed) {
-        //        float maxTurnRateInRadiansPerSecond = Mathf.Deg2Rad * _ship.Data.MaxTurnRate * _gameTime.GameSpeedAdjustedHoursPerSecond;   //GameTime.HoursPerSecond;
-        //        float allowedTurn = maxTurnRateInRadiansPerSecond * _gameTime.DeltaTimeOrPaused;
-        //        Vector3 newHeading = Vector3.RotateTowards(_ship.Data.CurrentHeading, _ship.Data.RequestedHeading, allowedTurn, maxMagnitudeDelta: 1F);
-        //        // maxMagnitudeDelta > 0F appears to be important. Otherwise RotateTowards can stop rotating when it gets very close
-        //        _ship.transform.rotation = Quaternion.LookRotation(newHeading); // UNCLEAR turn kinematic on while rotating?
-        //                                                                        //D.Log("{0} actual heading after turn step: {1}.", DebugName, _ship.Data.CurrentHeading);
-        //        cumTime += _gameTime.DeltaTimeOrPaused;
-        //        D.Assert(cumTime < allowedTime, "{0}: CumTime {1:0.##} > AllowedTime {2:0.##}.".Inject(Name, cumTime, allowedTime));
-        //        yield return null; // WARNING: have to count frames between passes if use yield return WaitForSeconds()
-        //    }
-        //    //D.Log("{0} completed HeadingChange Job. Duration = {1:0.##} GameTimeSecs.", DebugName, cumTime);
-        //}
-
-        #endregion
-
-        #region SeparationDistance Archive
-
-        //private float __separationTestToleranceDistance;
-
-        /// <summary>
-        /// Checks whether the distance between this ship and its destination is increasing.
-        /// </summary>
-        /// <param name="distanceToCurrentDestination">The distance to current destination.</param>
-        /// <param name="previousDistance">The previous distance.</param>
-        /// <returns>
-        /// true if the separation distance is increasing.
-        /// </returns>
-        //private bool CheckSeparation(float distanceToCurrentDestination, ref float previousDistance) {
-        //    if (distanceToCurrentDestination > previousDistance + __separationTestToleranceDistance) {
-        //        D.Warn("{0} is separating from current destination. Distance = {1:0.00}, previous = {2:0.00}, tolerance = {3:0.00}.",
-        //            _ship.DebugName, distanceToCurrentDestination, previousDistance, __separationTestToleranceDistance);
-        //        return true;
-        //    }
-        //    if (distanceToCurrentDestination < previousDistance) {
-        //        // while we continue to move closer to the current destination, keep previous distance current
-        //        // once we start to move away, we must not update it if we want the tolerance check to catch it
-        //        previousDistance = distanceToCurrentDestination;
-        //    }
-        //    return false;
-        //}
-
-        /// <summary>
-        /// Returns the max separation distance the ship and a target moon could create between progress checks. 
-        /// This is determined by calculating the max distance the ship could cover moving away from the moon
-        /// during a progress check period and adding the max distance a moon could cover moving away from the ship
-        /// during a progress check period. A moon is used because it has the maximum potential speed, aka it is in the 
-        /// outer orbit slot of a planet which itself is in the outer orbit slot of a system.
-        /// This value is very conservative as the ship would only be traveling directly away from the moon at the beginning of a UTurn.
-        /// By the time it progressed through 90 degrees of the UTurn, theoretically it would no longer be moving away at all. 
-        /// After that it would no longer be increasing its separation from the moon. Of course, most of the time, 
-        /// it would need to make a turn of less than 180 degrees, but this is the max. 
-        /// IMPROVE use 90 degrees rather than 180 degrees per the argument above?
-        /// </summary>
-        /// <returns></returns>
-        //private float CalcSeparationTestTolerance() {
-        //    //var hrsReqdToExecuteUTurn = 180F / _ship.Data.MaxTurnRate;
-        //    // HoursPerSecond and GameSpeedMultiplier below cancel each other out
-        //    //var secsReqdToExecuteUTurn = hrsReqdToExecuteUTurn / (GameTime.HoursPerSecond * _gameSpeedMultiplier);
-        //    var speedInUnitsPerSec = _autoPilotSpeedInUnitsPerHour / (GameTime.HoursPerSecond * _gameSpeedMultiplier);
-        //    var maxDistanceCoveredByShipPerSecond = speedInUnitsPerSec;
-        //    //var maxDistanceCoveredExecutingUTurn = secsReqdToExecuteUTurn * speedInUnitsPerSec;
-        //    //var maxDistanceCoveredByShipExecutingUTurn = hrsReqdToExecuteUTurn * _autoPilotSpeedInUnitsPerHour;
-        //    //var maxUTurnDistanceCoveredByShipPerProgressCheck = maxDistanceCoveredByShipExecutingUTurn * _courseProgressCheckPeriod;
-        //    var maxDistanceCoveredByShipPerProgressCheck = maxDistanceCoveredByShipPerSecond * _courseProgressCheckPeriod;
-        //    var maxDistanceCoveredByMoonPerSecond = APlanetoidItem.MaxOrbitalSpeed / (GameTime.HoursPerSecond * _gameSpeedMultiplier);
-        //    var maxDistanceCoveredByMoonPerProgressCheck = maxDistanceCoveredByMoonPerSecond * _courseProgressCheckPeriod;
-
-        //    var maxSeparationDistanceCoveredPerProgressCheck = maxDistanceCoveredByShipPerProgressCheck + maxDistanceCoveredByMoonPerProgressCheck;
-        //    //D.Warn("UTurnHrs: {0}, MaxUTurnDistance: {1}, {2} perProgressCheck, MaxMoonDistance: {3} perProgressCheck.",
-        //    //    hrsReqdToExecuteUTurn, maxDistanceCoveredByShipExecutingUTurn, maxUTurnDistanceCoveredByShipPerProgressCheck, maxDistanceCoveredByMoonPerProgressCheck);
-        //    //D.Log("ShipMaxDistancePerSecond: {0}, ShipMaxDistancePerProgressCheck: {1}, MoonMaxDistancePerSecond: {2}, MoonMaxDistancePerProgressCheck: {3}.",
-        //    //    maxDistanceCoveredByShipPerSecond, maxDistanceCoveredByShipPerProgressCheck, maxDistanceCoveredByMoonPerSecond, maxDistanceCoveredByMoonPerProgressCheck);
-        //    return maxSeparationDistanceCoveredPerProgressCheck;
-        //}
-
-        #endregion
-
-        #region Debug Slowing Speed Progression Reporting Archive
-
-        //        // Reports how fast speed bleeds off when Slow, Stop, etc are used 
-
-        //        private static Speed[] __constantValueSpeeds = new Speed[] {    Speed.Stop,
-        //                                                                        Speed.Docking,
-        //                                                                        Speed.StationaryOrbit,
-        //                                                                        Speed.MovingOrbit,
-        //                                                                        Speed.Slow
-        //                                                                    };
-
-        //        private Job __speedProgressionReportingJob;
-        //        private Vector3 __positionWhenReportingBegun;
-
-        //        private void __TryReportSlowingSpeedProgression(Speed newSpeed) {
-        //            //D.Log(ShowDebugLog, "{0}.TryReportSlowingSpeedProgression({1}) called.", DebugName, newSpeed.GetValueName());
-        //            if (__constantValueSpeeds.Contains(newSpeed)) {
-        //                __ReportSlowingSpeedProgression(newSpeed);
-        //            }
-        //            else {
-        //                __TryKillSpeedProgressionReportingJob();
-        //            }
-        //        }
-
-        //        private void __ReportSlowingSpeedProgression(Speed constantValueSpeed) {
-        //            D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
-        //            D.Assert(__constantValueSpeeds.Contains(constantValueSpeed), "{0} speed {1} is not a constant value.", _ship.DebugName, constantValueSpeed.GetValueName());
-        //            if (__TryKillSpeedProgressionReportingJob()) {
-        //                __ReportDistanceTraveled();
-        //            }
-        //            if (constantValueSpeed == Speed.Stop && ActualSpeedValue == Constants.ZeroF) {
-        //                return; // don't bother reporting if not moving and Speed setting is Stop
-        //            }
-        //            __positionWhenReportingBegun = Position;
-        //            __speedProgressionReportingJob = new Job(__ContinuouslyReportSlowingSpeedProgression(constantValueSpeed), toStart: true);
-        //        }
-
-        //        private IEnumerator __ContinuouslyReportSlowingSpeedProgression(Speed constantSpeed) {
-        //#pragma warning disable 0219    // OPTIMIZE
-        //            string desiredSpeedText = "{0}'s Speed setting = {1}({2:0.###})".Inject(_ship.DebugName, constantSpeed.GetValueName(), constantSpeed.GetUnitsPerHour(ShipMoveMode.None, null, null));
-        //            float currentSpeed;
-        //#pragma warning restore 0219
-        //            int fixedUpdateCount = 0;
-        //            while ((currentSpeed = ActualSpeedValue) > Constants.ZeroF) {
-        //                //D.Log(ShowDebugLog, desiredSpeedText + " ActualSpeed = {0:0.###}, FixedUpdateCount = {1}.", currentSpeed, fixedUpdateCount);
-        //                fixedUpdateCount++;
-        //                yield return new WaitForFixedUpdate();
-        //            }
-        //            __ReportDistanceTraveled();
-        //        }
-
-        //        private bool __TryKillSpeedProgressionReportingJob() {
-        //            if (__speedProgressionReportingJob != null && __speedProgressionReportingJob.IsRunning) {
-        //                __speedProgressionReportingJob.Kill();
-        //                return true;
-        //            }
-        //            return false;
-        //        }
-
-        //        private void __ReportDistanceTraveled() {
-        //            Vector3 distanceTraveledVector = _ship.transform.InverseTransformDirection(Position - __positionWhenReportingBegun);
-        //            D.Log(ShowDebugLog, "{0} changed local position by {1} while reporting slowing speed.", _ship.DebugName, distanceTraveledVector);
-        //        }
-
-        #endregion
-
-        #region ShipHelm Nested Classes
-
-        private class EngineRoom : IDisposable {
-
-            private const string DebugNameFormat = "{0}.{1}";
-
-            private const float OpenSpaceReversePropulsionFactor = 50F;
-
-            /// <summary>
-            /// The percentage threshold above which
-            /// Full Forward Acceleration will be used to reach IntendedCurrentSpeedValue.
-            /// <remarks>Full Forward Acceleration is used if IntendedCurrentSpeedValue / ActualFowardSpeedValue &gt; threshold,
-            /// otherwise normal forward propulsion will be used to accelerate to IntendedCurrentSpeedValue.</remarks>
-            /// </summary>
-            private const float FullFwdAccelerationThreshold = 1.10F;
-
-            /// <summary>
-            /// The percentage threshold below which
-            /// Reverse Propulsion will be used to reach IntendedCurrentSpeedValue.
-            /// <remarks>Reverse Propulsion is used if IntendedCurrentSpeedValue / ActualFowardSpeedValue &lt; threshold,
-            /// otherwise normal forward propulsion will be used to slow to IntendedCurrentSpeedValue.</remarks>
-            /// </summary>
-            private const float RevPropulsionThreshold = 0.95F;
-
-            private static Vector3 _localSpaceForward = Vector3.forward;
-
-            /// <summary>
-            /// Indicates whether forward, reverse or collision avoidance propulsion is engaged.
-            /// </summary>
-            internal bool IsPropulsionEngaged {
-                get {
-                    //D.Log(ShowDebugLog, "{0}.IsPropulsionEngaged called. Forward = {1}, Reverse = {2}, CA = {3}.",
-                    //    DebugName, IsForwardPropulsionEngaged, IsReversePropulsionEngaged, IsCollisionAvoidanceEngaged);
-                    return IsForwardPropulsionEngaged || IsReversePropulsionEngaged || IsCollisionAvoidanceEngaged;
-                }
-            }
-
-            internal bool IsDriftCorrectionUnderway { get { return _driftCorrector.IsCorrectionUnderway; } }
-
-            /// <summary>
-            /// The current speed of the ship in Units per hour including any current drift velocity. 
-            /// Whether paused or at a GameSpeed other than Normal (x1), this property always returns the proper reportable value.
-            /// <remarks>Cheaper than ActualForwardSpeedValue.</remarks>
-            /// </summary>
-            internal float ActualSpeedValue {
-                get {
-                    Vector3 velocityPerSec = _shipRigidbody.velocity;
-                    if (_gameMgr.IsPaused) {
-                        velocityPerSec = _velocityToRestoreAfterPause;
-                    }
-                    float value = velocityPerSec.magnitude / _gameTime.GameSpeedAdjustedHoursPerSecond;
-                    //D.Log(ShowDebugLog, "{0}.ActualSpeedValue = {1:0.00}.", DebugName, value);
-                    return value;
-                }
-            }
-
-            /// <summary>
-            /// The CurrentSpeed value in UnitsPerHour the ship is intending to achieve.
-            /// </summary>
-            internal float IntendedCurrentSpeedValue { get; private set; }
-
-            internal float __PreviousIntendedCurrentSpeedValue { get; private set; }    // HACK
-
-            /// <summary>
-            /// The Speed the ship has been ordered to execute.
-            /// </summary>
-            private Speed CurrentSpeedSetting {
-                get { return _shipData.CurrentSpeedSetting; }
-                set { _shipData.CurrentSpeedSetting = value; }
-            }
-
-            private string DebugName { get { return DebugNameFormat.Inject(_ship.DebugName, typeof(EngineRoom).Name); } }
-
-            /// <summary>
-            /// The signed speed (in units per hour) in the ship's 'forward' direction.
-            /// <remarks>More expensive than ActualSpeedValue.</remarks>
-            /// </summary>
-            private float ActualForwardSpeedValue {
-                get {
-                    Vector3 velocityPerSec = _gameMgr.IsPaused ? _velocityToRestoreAfterPause : _shipRigidbody.velocity;
-                    float value = _shipTransform.InverseTransformDirection(velocityPerSec).z / _gameTime.GameSpeedAdjustedHoursPerSecond;
-                    //D.Log(ShowDebugLog, "{0}.ActualForwardSpeedValue = {1:0.00}.", DebugName, value);
-                    return value;
-                }
-            }
-
-            private bool IsForwardPropulsionEngaged { get { return _fwdPropulsionJob != null; } }
-
-            private bool IsReversePropulsionEngaged { get { return _revPropulsionJob != null; } }
-
-            private bool IsCollisionAvoidanceEngaged { get { return _caPropulsionJobs != null && _caPropulsionJobs.Count > Constants.Zero; } }
-
-            private bool ShowDebugLog { get { return _ship.ShowDebugLog; } }
-
-            private IDictionary<IObstacle, Job> _caPropulsionJobs;
-            private Job _fwdPropulsionJob;
-            private Job _revPropulsionJob;
-
-            /// <summary>
-            /// The multiplication factor to use when generating reverse propulsion. Speeds are faster in 
-            /// OpenSpace due to lower drag, so this factor is adjusted when drag changes so that ships slow
-            /// down at roughly comparable rates across different Topographies.
-            /// <remarks>Speeds are also affected by engine type, but Data.FullPropulsion values already
-            /// take that into account.</remarks>
-            /// </summary>
-            private float _reversePropulsionFactor;
-
-            /// <summary>
-            /// The velocity in units per second to restore after a pause is resumed.
-            /// This value is already adjusted for any GameSpeed changes that occur while paused.
-            /// </summary>
-            private Vector3 _velocityToRestoreAfterPause;
-            private DriftCorrector _driftCorrector;
-            private bool _isVelocityToRestoreAfterPauseRecorded;
-            private ShipItem _ship;
-            private ShipData _shipData;
-            private Rigidbody _shipRigidbody;
-            private Transform _shipTransform;
-            private IList<IDisposable> _subscriptions;
-            private GameManager _gameMgr;
-            private GameTime _gameTime;
-            private JobManager _jobMgr;
-
-            public EngineRoom(ShipItem ship, Rigidbody shipRigidbody) {
-                _ship = ship;
-                _shipData = ship.Data;
-                _shipTransform = ship.transform;
-                _shipRigidbody = shipRigidbody;
-                _gameMgr = GameManager.Instance;
-                _gameTime = GameTime.Instance;
-                _jobMgr = JobManager.Instance;
-                _driftCorrector = new DriftCorrector(ship.transform, shipRigidbody, DebugName);
-                Subscribe();
-            }
-
-            private void Subscribe() {
-                _subscriptions = new List<IDisposable>();
-                _subscriptions.Add(_gameTime.SubscribeToPropertyChanging<GameTime, GameSpeed>(gt => gt.GameSpeed, GameSpeedPropChangingHandler));
-                _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsPaused, IsPausedPropChangedHandler));
-                _subscriptions.Add(_shipData.SubscribeToPropertyChanged<ShipData, float>(data => data.CurrentDrag, CurrentDragPropChangedHandler));
-                _subscriptions.Add(_shipData.SubscribeToPropertyChanged<ShipData, Topography>(data => data.Topography, TopographyPropChangedHandler));
-            }
-
-            /// <summary>
-            /// Exposed method allowing the ShipHelm to change speed. Returns <c>true</c> if the
-            /// intendedNewSpeedValue was different than IntendedCurrentSpeedValue, false otherwise.
-            /// </summary>
-            /// <param name="newSpeed">The new speed.</param>
-            /// <param name="intendedNewSpeedValue">The new speed value in units per hour.</param>
-            /// <returns></returns>
-            internal void ChangeSpeed(Speed newSpeed, float intendedNewSpeedValue) {
-                //D.Log(ShowDebugLog, "{0}'s actual speed = {1:0.##} at EngineRoom.ChangeSpeed({2}, {3:0.##}).",
-                //Name, ActualSpeedValue, newSpeed.GetValueName(), intendedNewSpeedValue);
-
-                __PreviousIntendedCurrentSpeedValue = IntendedCurrentSpeedValue;
-                CurrentSpeedSetting = newSpeed;
-                IntendedCurrentSpeedValue = intendedNewSpeedValue;
-
-                if (newSpeed == Speed.HardStop) {
-                    //D.Log(ShowDebugLog, "{0} received ChangeSpeed to {1}!", DebugName, newSpeed.GetValueName());
-                    DisengageForwardPropulsion();
-                    DisengageReversePropulsion();
-                    DisengageDriftCorrection();
-                    // Can't terminate CollisionAvoidance as expect to find obstacle in Job lookup when collision averted
-                    _shipRigidbody.velocity = Vector3.zero;
-                    return;
-                }
-
-                if (Mathfx.Approx(intendedNewSpeedValue, __PreviousIntendedCurrentSpeedValue, .01F)) {
-                    if (newSpeed != Speed.Stop) {    // can't be HardStop
-                        if (!IsPropulsionEngaged) {
-                            D.Error("{0} received ChangeSpeed({1}, {2:0.00}) without propulsion engaged to execute it.", DebugName, newSpeed.GetValueName(), intendedNewSpeedValue);
-                        }
-                    }
-                    //D.Log(ShowDebugLog, "{0} is ignoring speed request of {1}({2:0.##}) as it is a duplicate.", DebugName, newSpeed.GetValueName(), intendedNewSpeedValue);
-                    return;
-                }
-
-                if (IsCollisionAvoidanceEngaged) {
-                    //D.Log(ShowDebugLog, "{0} is deferring engaging propulsion at Speed {1} until all collisions are averted.", 
-                    //    DebugName, newSpeed.GetValueName());
-                    return; // once collision is averted, ResumePropulsionAtRequestedSpeed() will be called
-                }
-                EngageOrContinuePropulsion();
-            }
-
-            internal void HandleTurnBeginning() {
-                // DriftCorrection defines drift as any velocity not in localspace forward direction.
-                // Turning changes local space forward so stop correcting while turning. As soon as 
-                // the turn ends, HandleTurnCompleted() will be called to correct any drift.
-                //D.Log(ShowDebugLog && IsDriftCorrectionEngaged, "{0} is disengaging DriftCorrection as turn is beginning.", DebugName);
-                DisengageDriftCorrection();
-            }
-
-            internal void HandleTurnCompleted() {
-                D.Assert(!_gameMgr.IsPaused, DebugName); // turn job should be paused if game is paused
-                if (IsCollisionAvoidanceEngaged || ActualSpeedValue == Constants.Zero) {
-                    // Ignore if currently avoiding collision. After CA completes, any drift will be corrected
-                    // Ignore if no speed => no drift to correct
-                    return;
-                }
-                EngageDriftCorrection();
-            }
-
-            internal void HandleDeath() {
-                DisengageForwardPropulsion();
-                DisengageReversePropulsion();
-                DisengageDriftCorrection();
-                DisengageAllCollisionAvoidancePropulsion();
-            }
-
-            private void HandleCurrentDragChanged() {
-                // Warning: Don't use rigidbody.drag anywhere else as it gets set here after all other
-                // results of changing ShipData.CurrentDrag have already propagated through. 
-                // Use ShipData.CurrentDrag as it will always be the correct value.
-                // CurrentDrag is initially set at CommenceOperations
-                _shipRigidbody.drag = _shipData.CurrentDrag;
-            }
-
-            private float CalcReversePropulsionFactor() {
-                return OpenSpaceReversePropulsionFactor / _shipData.Topography.GetRelativeDensity();
-            }
-
-            /// <summary>
-            /// Resumes propulsion at the current requested speed.
-            /// </summary>
-            private void ResumePropulsionAtIntendedSpeed() {
-                D.Assert(!IsPropulsionEngaged);
-                //D.Log(ShowDebugLog, "{0} is resuming propulsion at Speed {1}.", DebugName, CurrentSpeedSetting.GetValueName());
-                EngageOrContinuePropulsion();
-            }
-
-            private void EngageOrContinuePropulsion() {
-                float intendedToActualSpeedRatio = IntendedCurrentSpeedValue / ActualForwardSpeedValue;
-                if (intendedToActualSpeedRatio > FullFwdAccelerationThreshold) {
-                    EngageFwdPropulsion();
-                }
-                else if (intendedToActualSpeedRatio > RevPropulsionThreshold) {
-                    EngageOrContinueForwardPropulsion(intendedToActualSpeedRatio);
-                }
-                else {
-                    EngageOrContinueReversePropulsion(intendedToActualSpeedRatio);
-                }
-            }
-
-            #region Forward Propulsion
-
-            /// <summary>
-            /// Engages a new FwdPropulsion Job if it is needed or continues the existing Job if it already exists.
-            /// </summary>
-            private void EngageOrContinueForwardPropulsion(float intendedToActualSpeedRatio) {
-                if (intendedToActualSpeedRatio <= RevPropulsionThreshold) {
-                    D.Error("{0}: IntendedSpeedValue {1:0.###}, ActualFwdSpeed {2:0.###}, Ratio = {3:0.####}.",
-                        DebugName, IntendedCurrentSpeedValue, ActualForwardSpeedValue, intendedToActualSpeedRatio);
-                }
-
-                if (_fwdPropulsionJob == null) {
-                    EngageFwdPropulsion();
-                }
-                else {
-                    // 12.12.16 Don't need to worry about whether _fwdPropulsionJob is about to naturally complete.
-                    // It auto adjusts to meet whatever the current intended speed value is. 
-                    // It will only naturally complete when CurrentIntendedSpeedValue changes to zero.
-
-                    //D.Log(ShowDebugLog, "{0} is continuing forward propulsion at Speed {1}.", DebugName, CurrentSpeedSetting.GetValueName());
-                }
-            }
-
-            /// <summary>
-            /// Engages a new FwdPropulsion Job whether one is already running or not. 
-            /// This guarantees max acceleration until IntendedCurrentSpeedValue is achieved for the first time.
-            /// </summary>
-            private void EngageFwdPropulsion() {
-                DisengageReversePropulsion();
-
-                KillForwardPropulsionJob();
-                //D.Log(ShowDebugLog, "{0} is engaging forward propulsion at Speed {1}.", DebugName, CurrentSpeedSetting.GetValueName());
-
-                string jobName = "{0}.FwdPropulsionJob".Inject(DebugName);
-                _fwdPropulsionJob = _jobMgr.StartGameplayJob(OperateFwdPropulsion(), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
-                    //D.Log(ShowDebugLog, "{0} forward propulsion has ended.", DebugName);
-                    if (jobWasKilled) {
-                        // 12.12.16 An AssertNull(_jobRef) here can fail as the reference can refer to a new Job, created 
-                        // right after the old one was killed due to the 1 frame delay in execution of jobCompleted(). My attempts at allowing
-                        // the AssertNull to occur failed. I believe this is OK as _jobRef is nulled from KillXXXJob() and, if 
-                        // the reference is replaced by a new Job, then the old Job is no longer referenced which is the objective. Jobs Kill()ed
-                        // centrally by JobManager won't null the reference, but this only occurs during scene transitions.
-                    }
-                    else {
-                        _fwdPropulsionJob = null;
-                    }
-                });
-            }
-
-            #region Forward Propulsion Archive
-
-            /// <summary>
-            /// Coroutine that continuously applies forward thrust to reach IntendedCurrentSpeedValue.
-            /// Once it reaches that value it maintains it. The coroutine naturally completes if the
-            /// IntendedCurrentSpeedValue drops to zero. 
-            /// <remarks>While actual speed is below intended speed, this coroutine will adjust to a change
-            /// in intended speed. Once actual speed reaches intended speed, it will no longer adjust.
-            /// Instead, it relies on ChangeSpeed() to either initiate RevPropulsion to slow down
-            /// or launch a new FwdPropulsionJob to get to the new, faster, intended speed.</remarks>
-            /// </summary>
-            /// <returns></returns>
-            [Obsolete]
-            private IEnumerator OperateForwardPropulsion() {
-                bool isFullPropulsionPowerNeeded = true;
-                float propulsionPower = _shipData.FullPropulsionPower;
-                float intendedSpeedValue;
-                while ((intendedSpeedValue = IntendedCurrentSpeedValue) > Constants.ZeroF) {
-                    ApplyForwardThrust(propulsionPower);
-                    if (isFullPropulsionPowerNeeded && ActualForwardSpeedValue >= intendedSpeedValue) {
-                        propulsionPower = GameUtility.CalculateReqdPropulsionPower(intendedSpeedValue, _shipData.Mass, _shipData.CurrentDrag);
-                        D.Assert(propulsionPower > Constants.ZeroF, DebugName);
-                        isFullPropulsionPowerNeeded = false;
-                    }
-                    yield return Yielders.WaitForFixedUpdate;
-                }
-            }
-
-            #endregion
-
-            /// <summary>
-            /// Coroutine that continuously applies forward thrust to reach IntendedCurrentSpeedValue.
-            /// Once it reaches that value it maintains it. The coroutine naturally completes if the
-            /// IntendedCurrentSpeedValue drops to zero. 
-            /// <remarks>12.12.16 This version adjusts to changes in IntendedCurrentSpeedValue.
-            /// Caveats: If it needs to slow down, it will slow down slowly since it cannot initiate reverse
-            /// propulsion. If it needs to speed up, it will typically* speed up at an acceleration that is
-            /// below max acceleration, asymptoticly approaching IntendedCurrentSpeedValue.</remarks>
-            /// <remarks>* - typically here refers to the fact that it WILL accelerate at max acceleration
-            /// until it first reaches its target IntendedCurrentSpeedValue. Once that has been achieved for 
-            /// the first time, the acceleration used will only be that necessary to eventually get to
-            /// IntendedCurrentSpeedValue. IMPROVE This is due to the bool isFullPropulsionIntended.</remarks>
-            /// </summary>
-            /// <returns></returns>
-            private IEnumerator OperateFwdPropulsion() {
-                bool isFullPropulsionPowerNeeded = true;
-                float propulsionPower = _shipData.FullPropulsionPower;
-                float previousIntendedSpeedValue = Constants.ZeroF;
-                float intendedSpeedValue;
-                while ((intendedSpeedValue = IntendedCurrentSpeedValue) > Constants.ZeroF) {
-                    ApplyForwardThrust(propulsionPower);
-                    if (isFullPropulsionPowerNeeded) {
-                        if (ActualForwardSpeedValue >= intendedSpeedValue) {
-                            propulsionPower = GameUtility.CalculateReqdPropulsionPower(intendedSpeedValue, _shipData.Mass, _shipData.CurrentDrag);
-                            D.Assert(propulsionPower > Constants.ZeroF, DebugName);
-                            previousIntendedSpeedValue = intendedSpeedValue;
-                            isFullPropulsionPowerNeeded = false;
-                        }
-                    }
-                    else {
-                        D.AssertNotEqual(Constants.ZeroF, previousIntendedSpeedValue);
-                        // we are now at intended speed so adjust if it changes
-                        if (!Mathfx.Approx(previousIntendedSpeedValue, intendedSpeedValue, .01F)) {
-                            previousIntendedSpeedValue = intendedSpeedValue;
-                            propulsionPower = GameUtility.CalculateReqdPropulsionPower(intendedSpeedValue, _shipData.Mass, _shipData.CurrentDrag);
-                        }
-                    }
-                    yield return Yielders.WaitForFixedUpdate;
-                }
-            }
-
-            /// <summary>
-            /// Applies Thrust (direction and magnitude), adjusted for game speed. Clients should
-            /// call this method at a pace consistent with FixedUpdate().
-            /// </summary>
-            /// <param name="propulsionPower">The propulsion power.</param>
-            private void ApplyForwardThrust(float propulsionPower) {
-                Vector3 adjustedFwdThrust = _localSpaceForward * propulsionPower * _gameTime.GameSpeedAdjustedHoursPerSecond;
-                _shipRigidbody.AddRelativeForce(adjustedFwdThrust, ForceMode.Force);
-                //D.Log(ShowDebugLog, "{0}.Speed is now {1:0.####}.", DebugName, ActualSpeedValue);
-                //D.Log(ShowDebugLog, "{0}: DriftVelocity/sec during forward thrust = {1}.", DebugName, CurrentDriftVelocityPerSec.ToPreciseString());
-            }
-
-            /// <summary>
-            /// Disengages the forward propulsion engines if they are operating.
-            /// </summary>
-            private void DisengageForwardPropulsion() {
-                if (KillForwardPropulsionJob()) {
-                    //D.Log(ShowDebugLog, "{0} disengaging forward propulsion.", DebugName);
-                }
-            }
-
-            private bool KillForwardPropulsionJob() {
-                if (_fwdPropulsionJob != null) {
-                    _fwdPropulsionJob.Kill();
-                    _fwdPropulsionJob = null;
-                    return true;
-                }
-                return false;
-            }
-
-            #endregion
-
-            #region Reverse Propulsion
-
-            /// <summary>
-            /// Engages or continues reverse propulsion.
-            /// </summary>
-            private void EngageOrContinueReversePropulsion(float intendedToActualSpeedRatio) {
-                DisengageForwardPropulsion();
-
-                if (_revPropulsionJob == null) {
-                    if (intendedToActualSpeedRatio > RevPropulsionThreshold) {
-                        D.Error("{0}: ActualForwardSpeed {1.0.##}, IntendedSpeedValue {2:0.##}, Ratio = {3:0.####}.",
-                            DebugName, ActualForwardSpeedValue, IntendedCurrentSpeedValue, intendedToActualSpeedRatio);
-                    }
-                    //D.Log(ShowDebugLog, "{0} is engaging reverse propulsion to slow to {1}.", DebugName, CurrentSpeedSetting.GetValueName());
-
-                    string jobName = "{0}.RevPropulsionJob".Inject(DebugName);
-                    _revPropulsionJob = _jobMgr.StartGameplayJob(OperateReversePropulsion(), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
-                        if (jobWasKilled) {
-                            // 12.12.16 An AssertNull(_jobRef) here can fail as the reference can refer to a new Job, created 
-                            // right after the old one was killed due to the 1 frame delay in execution of jobCompleted(). My attempts at allowing
-                            // the AssertNull to occur failed. I believe this is OK as _jobRef is nulled from KillXXXJob() and, if 
-                            // the reference is replaced by a new Job, then the old Job is no longer referenced which is the objective. Jobs Kill()ed
-                            // centrally by JobManager won't null the reference, but this only occurs during scene transitions.
-                        }
-                        else {
-                            _revPropulsionJob = null;
-                            // ReverseEngines completed naturally and should engage forward engines unless RequestedSpeed is zero
-                            if (IntendedCurrentSpeedValue > Constants.ZeroF) {
-                                EngageOrContinuePropulsion();   //EngageOrContinueForwardPropulsion();
-                            }
-                        }
-                    });
-                }
-                else {
-                    //D.Log(ShowDebugLog, "{0} is continuing reverse propulsion.", DebugName);
-                }
-            }
-
-            private IEnumerator OperateReversePropulsion() {
-                while (ActualForwardSpeedValue > IntendedCurrentSpeedValue) {
-                    ApplyReverseThrust();
-                    yield return Yielders.WaitForFixedUpdate;
-                }
-                // the final thrust in reverse took us below our desired forward speed, so set it there
-                float intendedForwardSpeed = IntendedCurrentSpeedValue * _gameTime.GameSpeedAdjustedHoursPerSecond;
-                _shipRigidbody.velocity = _shipTransform.TransformDirection(new Vector3(Constants.ZeroF, Constants.ZeroF, intendedForwardSpeed));
-                //D.Log(ShowDebugLog, "{0} has completed reverse propulsion. CurrentVelocity = {1}.", DebugName, _shipRigidbody.velocity);
-            }
-
-            private void ApplyReverseThrust() {
-                Vector3 adjustedReverseThrust = -_localSpaceForward * _shipData.FullPropulsionPower * _reversePropulsionFactor * _gameTime.GameSpeedAdjustedHoursPerSecond;
-                _shipRigidbody.AddRelativeForce(adjustedReverseThrust, ForceMode.Force);
-                //D.Log(ShowDebugLog, "{0}: DriftVelocity/sec during reverse thrust = {1}.", DebugName, CurrentDriftVelocityPerSec.ToPreciseString());
-            }
-
-            /// <summary>
-            /// Disengages the reverse propulsion engines if they are operating.
-            /// </summary>
-            private void DisengageReversePropulsion() {
-                if (KillReversePropulsionJob()) {
-                    //D.Log(ShowDebugLog, "{0}: Disengaging ReversePropulsion.", DebugName);
-                }
-            }
-
-            private bool KillReversePropulsionJob() {
-                if (_revPropulsionJob != null) {
-                    _revPropulsionJob.Kill();
-                    _revPropulsionJob = null;
-                    return true;
-                }
-                return false;
-            }
-
-            #endregion
-
-            #region Drift Correction
-
-            private void EngageDriftCorrection() {
-                _driftCorrector.Engage();
-            }
-
-            private void DisengageDriftCorrection() {
-                _driftCorrector.Disengage();
-            }
-
-            #endregion
-
-            #region Collision Avoidance 
-
-            internal void HandlePendingCollisionWith(IObstacle obstacle) {
-                if (_caPropulsionJobs == null) {
-                    _caPropulsionJobs = new Dictionary<IObstacle, Job>(2);
-                }
-                DisengageForwardPropulsion();
-                DisengageReversePropulsion();
-                DisengageDriftCorrection();
-
-                var mortalObstacle = obstacle as AMortalItem;
-                if (mortalObstacle != null) {
-                    // obstacle could die while we are avoiding collision
-                    mortalObstacle.deathOneShot += CollidingObstacleDeathEventHandler;
-                }
-
-                //D.Log(ShowDebugLog, "{0} engaging Collision Avoidance to avoid {1}.", DebugName, obstacle.DebugName);
-                EngageCollisionAvoidancePropulsionFor(obstacle);
-            }
-
-            internal void HandlePendingCollisionAverted(IObstacle obstacle) {
-                D.AssertNotNull(_caPropulsionJobs);
-
-                Profiler.BeginSample("Local Reference variable creation", _ship);
-                var mortalObstacle = obstacle as AMortalItem;
-                Profiler.EndSample();
-                if (mortalObstacle != null) {
-                    Profiler.BeginSample("Unsubscribing to event", _ship);
-                    mortalObstacle.deathOneShot -= CollidingObstacleDeathEventHandler;
-                    Profiler.EndSample();
-                }
-                //D.Log(ShowDebugLog, "{0} dis-engaging Collision Avoidance for {1} as collision has been averted.", DebugName, obstacle.DebugName);
-
-                Profiler.BeginSample("DisengageCA", _ship);
-                DisengageCollisionAvoidancePropulsionFor(obstacle);
-                Profiler.EndSample();
-
-                if (!IsCollisionAvoidanceEngaged) {
-                    // last CA Propulsion Job has completed
-                    Profiler.BeginSample("Resume Propulsion", _ship);
-                    EngageOrContinuePropulsion();   //ResumePropulsionAtIntendedSpeed(); // UNCLEAR resume propulsion while turning?
-                    Profiler.EndSample();
-                    if (_ship.IsTurning) {
-                        // Turning so defer drift correction. Will engage when turn complete
-                        return;
-                    }
-                    Profiler.BeginSample("Engage Drift Correction", _ship);
-                    EngageDriftCorrection();
-                    Profiler.EndSample();
-                }
-                else {
-                    string caObstacles = _caPropulsionJobs.Keys.Select(obs => obs.DebugName).Concatenate();
-                    D.Log(ShowDebugLog, "{0} cannot yet resume propulsion as collision avoidance remains engaged avoiding {1}.", DebugName, caObstacles);
-                }
-            }
-
-            private void EngageCollisionAvoidancePropulsionFor(IObstacle obstacle) {
-                D.Assert(!_caPropulsionJobs.ContainsKey(obstacle));
-                Vector3 worldSpaceDirectionToAvoidCollision = (_shipData.Position - obstacle.Position).normalized;
-
-                string jobName = "{0}.CollisionAvoidanceJob".Inject(DebugName);
-                Job caJob = _jobMgr.StartGameplayJob(OperateCollisionAvoidancePropulsionIn(worldSpaceDirectionToAvoidCollision), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
-                    D.Assert(jobWasKilled); // CA Jobs never complete naturally
-                });
-                _caPropulsionJobs.Add(obstacle, caJob);
-            }
-
-            private IEnumerator OperateCollisionAvoidancePropulsionIn(Vector3 worldSpaceDirectionToAvoidCollision) {
-                worldSpaceDirectionToAvoidCollision.ValidateNormalized();
-                GameDate warnDate = new GameDate(new GameTimeDuration(5F));    // HACK  // 2.8.17 Warning at 3F
-                GameDate errorDate = default(GameDate);
-                GameDate currentDate;
-                bool hasBeenWarned = false;
-                while (true) {
-                    ApplyCollisionAvoidancePropulsionIn(worldSpaceDirectionToAvoidCollision);
-                    currentDate = _gameTime.CurrentDate;
-                    if (currentDate > warnDate) {
-                        if (!hasBeenWarned) {
-                            D.Warn("{0}: CurrentDate {1} > WarnDate {2} while avoiding collision.", DebugName, currentDate, warnDate);
-                            hasBeenWarned = true;
-                        }
-                        if (errorDate == default(GameDate)) {
-                            errorDate = new GameDate(warnDate, GameTimeDuration.OneDay);
-                        }
-                        if (currentDate > errorDate) {
-                            D.Error("{0}.OperateCollisionAvoidancePropulsion has timed out.", DebugName);
-                        }
-                    }
-                    yield return Yielders.WaitForFixedUpdate;
-                }
-            }
-
-            /// <summary>
-            /// Applies collision avoidance propulsion to move in the specified direction.
-            /// <remarks>
-            /// By using a worldSpace Direction (rather than localSpace), the ship is still 
-            /// allowed to concurrently change heading while avoiding collision.
-            /// </remarks>
-            /// </summary>
-            /// <param name="direction">The worldSpace direction to avoid collision.</param>
-            private void ApplyCollisionAvoidancePropulsionIn(Vector3 direction) {
-                Vector3 adjustedThrust = direction * _shipData.FullPropulsionPower * _gameTime.GameSpeedAdjustedHoursPerSecond;
-                _shipRigidbody.AddForce(adjustedThrust, ForceMode.Force);
-            }
-
-            private void DisengageCollisionAvoidancePropulsionFor(IObstacle obstacle) {
-                D.Assert(_caPropulsionJobs.ContainsKey(obstacle), obstacle.DebugName);
-                _caPropulsionJobs[obstacle].Kill();
-                _caPropulsionJobs.Remove(obstacle);
-            }
-
-            private void DisengageAllCollisionAvoidancePropulsion() {
-                KillAllCollisionAvoidancePropulsionJobs();
-            }
-
-            private void KillAllCollisionAvoidancePropulsionJobs() {
-                if (_caPropulsionJobs != null) {
-                    _caPropulsionJobs.Keys.ForAll(obstacle => {
-                        _caPropulsionJobs[obstacle].Kill();
-                        _caPropulsionJobs.Remove(obstacle);
-                    });
-                }
-            }
-
-            #endregion
-
-            #region Event and Property Change Handlers
-
-            /// <summary>
-            /// Handler that deals with the death of an obstacle if it occurs WHILE it is being avoided by
-            /// CollisionAvoidance. Ship only calls HandlePendingCollisionWith(obstacle) if the obstacle is 
-            /// not already dead and won't call HandlePendingCollisionAverted(obstacle) if it is dead.
-            /// </summary>
-            /// <param name="sender">The sender.</param>
-            /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
-            private void CollidingObstacleDeathEventHandler(object sender, EventArgs e) {
-                // Note: no reason to design HandlePendingCollisionAverted() to deal with a second call
-                // from a now destroyed obstacle as Ship filters out the call if the obstacle is already dead
-                IObstacle deadCollidingObstacle = sender as IObstacle;
-                D.LogBold("{0} reporting obstacle {1} has died during collision avoidance.", DebugName, deadCollidingObstacle.DebugName);
-                HandlePendingCollisionAverted(deadCollidingObstacle);
-            }
-
-            private void GameSpeedPropChangingHandler(GameSpeed newGameSpeed) {
-                float previousGameSpeedMultiplier = _gameTime.GameSpeedMultiplier;
-                float newGameSpeedMultiplier = newGameSpeed.SpeedMultiplier();
-                float gameSpeedChangeRatio = newGameSpeedMultiplier / previousGameSpeedMultiplier;
-                AdjustForGameSpeed(gameSpeedChangeRatio);
-            }
-
-            private void IsPausedPropChangedHandler() {
-                PauseVelocity(_gameMgr.IsPaused);
-            }
-
-            private void CurrentDragPropChangedHandler() {
-                HandleCurrentDragChanged();
-            }
-
-            private void TopographyPropChangedHandler() {
-                _reversePropulsionFactor = CalcReversePropulsionFactor();
-            }
-
-            #endregion
-
-            private void PauseVelocity(bool toPause) {
-                //D.Log(ShowDebugLog, "{0}.PauseVelocity({1}) called.", DebugName, toPause);
-                if (toPause) {
-                    D.Assert(!_isVelocityToRestoreAfterPauseRecorded);
-                    _velocityToRestoreAfterPause = _shipRigidbody.velocity;
-                    _isVelocityToRestoreAfterPauseRecorded = true;
-                    //D.Log(ShowDebugLog, "{0}.Rigidbody.velocity = {1} before setting IsKinematic to true. IsKinematic = {2}.", DebugName, _shipRigidbody.velocity.ToPreciseString(), _shipRigidbody.isKinematic);
-                    _shipRigidbody.isKinematic = true;
-                    //D.Log(ShowDebugLog, "{0}.Rigidbody.velocity = {1} after .isKinematic changed to true.", DebugName, _shipRigidbody.velocity.ToPreciseString());
-                    //D.Log(ShowDebugLog, "{0}.Rigidbody.isSleeping = {1}.", DebugName, _shipRigidbody.IsSleeping());
-                }
-                else {
-                    D.Assert(_isVelocityToRestoreAfterPauseRecorded);
-                    _shipRigidbody.isKinematic = false;
-                    _shipRigidbody.velocity = _velocityToRestoreAfterPause;
-                    _velocityToRestoreAfterPause = Vector3.zero;
-                    _shipRigidbody.WakeUp();    // OPTIMIZE superfluous?
-                    _isVelocityToRestoreAfterPauseRecorded = false;
-                }
-            }
-
-            // 8.12.16 Job pausing moved to JobManager to consolidate handling
-
-            /// <summary>
-            /// Adjusts the velocity and thrust of the ship to reflect the new GameSpeed setting. 
-            /// The reported speed and directional heading of the ship is not affected.
-            /// </summary>
-            /// <param name="gameSpeed">The game speed.</param>
-            private void AdjustForGameSpeed(float gameSpeedChangeRatio) {
-                // must immediately adjust velocity when game speed changes as just adjusting thrust takes
-                // a long time to get to increased/decreased velocity
-                if (_gameMgr.IsPaused) {
-                    D.Assert(_isVelocityToRestoreAfterPauseRecorded, DebugName);
-                    _velocityToRestoreAfterPause *= gameSpeedChangeRatio;
-                }
-                else {
-                    _shipRigidbody.velocity *= gameSpeedChangeRatio;
-                }
-            }
-
-            private void Cleanup() {
-                Unsubscribe();
-                // 12.8.16 Job Disposal centralized in JobManager
-                KillForwardPropulsionJob();
-                KillReversePropulsionJob();
-                KillAllCollisionAvoidancePropulsionJobs();
-                _driftCorrector.Dispose();
-            }
-
-            private void Unsubscribe() {
-                _subscriptions.ForAll(d => d.Dispose());
-                _subscriptions.Clear();
-            }
-
-            public override string ToString() {
-                return new ObjectAnalyzer().ToString(this);
-            }
-
-            #region IDisposable
-
-            private bool _alreadyDisposed = false;
-
-            /// <summary>
-            /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-            /// </summary>
-            public void Dispose() {
-
-                Dispose(true);
-
-                // This object is being cleaned up by you explicitly calling Dispose() so take this object off
-                // the finalization queue and prevent finalization code from 'disposing' a second time
-                GC.SuppressFinalize(this);
-            }
-
-            /// <summary>
-            /// Releases unmanaged and - optionally - managed resources.
-            /// </summary>
-            /// <param name="isExplicitlyDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
-            protected virtual void Dispose(bool isExplicitlyDisposing) {
-                if (_alreadyDisposed) { // Allows Dispose(isExplicitlyDisposing) to mistakenly be called more than once
-                    D.Warn("{0} has already been disposed.", GetType().Name);
-                    return; //throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
-                }
-
-                if (isExplicitlyDisposing) {
-                    // Dispose of managed resources here as you have called Dispose() explicitly
-                    Cleanup();
-                }
-
-                // Dispose of unmanaged resources here as either 1) you have called Dispose() explicitly so
-                // may as well clean up both managed and unmanaged at the same time, or 2) the Finalizer has
-                // called Dispose(false) to cleanup unmanaged resources
-
-                _alreadyDisposed = true;
-            }
-
-            #endregion
-
-        }
-
-        #region EngineRoom SpeedRange Approach Archive
-
-        /// <summary>
-        /// Runs the engines of a ship generating thrust.
-        /// </summary>
-        //private class EngineRoom : IDisposable {
-
-        //    private static Vector3 _localSpaceForward = Vector3.forward;
-
-        //    /// <summary>
-        //    /// Arbitrary value to correct drift from momentum when a turn is attempted.
-        //    /// Higher values cause sharper turns. Zero means no correction.
-        //    /// </summary>
-        //    private static float driftCorrectionFactor = 1F;
-
-        //    private static ValueRange<float> _speedGoalRange = new ValueRange<float>(0.99F, 1.01F);
-        //    private static ValueRange<float> _wayOverSpeedGoalRange = new ValueRange<float>(1.10F, float.PositiveInfinity);
-        //    private static ValueRange<float> _overSpeedGoalRange = new ValueRange<float>(1.01F, 1.10F);
-        //    private static ValueRange<float> _underSpeedGoalRange = new ValueRange<float>(0.90F, 0.99F);
-        //    private static ValueRange<float> _wayUnderSpeedGoalRange = new ValueRange<float>(Constants.ZeroF, 0.90F);
-
-        //    /// <summary>
-        //    /// Gets the ship's speed in Units per second at this instant. This value already
-        //    /// has current GameSpeed factored in, aka the value will already be larger 
-        //    /// if the GameSpeed is higher than Normal.
-        //    /// </summary>
-        //    internal float InstantSpeed { get { return _shipRigidbody.velocity.magnitude; } }
-
-        //    /// <summary>
-        //    /// Engine power output value suitable for slowing down when in the _overSpeedGoalRange.
-        //    /// </summary>
-        //    private float _pwrOutputGoalMinus;
-        //    /// <summary>
-        //    /// Engine power output value suitable for maintaining speed when in the _speedGoalRange.
-        //    /// </summary>
-        //    private float _pwrOutputGoal;
-        //    /// <summary>
-        //    /// Engine power output value suitable for speeding up when in the _underSpeedGoalRange.
-        //    /// </summary>
-        //    private float _pwrOutputGoalPlus;
-
-        //    private float _gameSpeedMultiplier;
-        //    private Vector3 _velocityOnPause;
-        //    private ShipData _shipData;
-        //    private Rigidbody _shipRigidbody;
-        //    private Job _operateEnginesJob;
-        //    private IList<IDisposable> _subscriptions;
-        //    private GameManager _gameMgr;
-        //    private GameTime _gameTime;
-
-        //    public EngineRoom(ShipData data, Rigidbody shipRigidbody) {
-        //        _shipData = data;
-        //        _shipRigidbody = shipRigidbody;
-        //        _gameMgr = GameManager.Instance;
-        //        _gameTime = GameTime.Instance;
-        //        _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
-        //        //D.Log("{0}.EngineRoom._gameSpeedMultiplier is {1}.", ship.DebugName, _gameSpeedMultiplier);
-        //        Subscribe();
-        //    }
-
-        //    private void Subscribe() {
-        //        _subscriptions = new List<IDisposable>();
-        //        _subscriptions.Add(GameTime.Instance.SubscribeToPropertyChanged<GameTime, GameSpeed>(gt => gt.GameSpeed, GameSpeedPropChangedHandler));
-        //        _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsPaused, IsPausedPropChangedHandler));
-        //    }
-
-        //    /// <summary>
-        //    /// Changes the speed.
-        //    /// </summary>
-        //    /// <param name="newSpeedRequest">The new speed request in units per hour.</param>
-        //    /// <returns></returns>
-        //    internal void ChangeSpeed(float newSpeedRequest) {
-        //        //D.Log("{0}'s speed = {1} at EngineRoom.ChangeSpeed({2}).", _shipData.DebugName, _shipData.CurrentSpeed, newSpeedRequest);
-        //        if (CheckForAcceptableSpeedValue(newSpeedRequest)) {
-        //            SetPowerOutputFor(newSpeedRequest);
-        //            if (_operateEnginesJob == null) {
-        //                _operateEnginesJob = new Job(OperateEngines(), toStart: true, jobCompleted: (wasKilled) => {
-        //                    // OperateEngines() can complete, but it is never killed
-        //                    if (_isDisposing) { return; }
-        //                    _operateEnginesJob = null;
-        //                    //string message = "{0} thrust stopped.  Coasting speed is {1:0.##} units/hour.";
-        //                    //D.Log(message, _shipData.DebugName, _shipData.CurrentSpeed);
-        //                });
-        //            }
-        //        }
-        //        else {
-        //            D.Warn("{0} is already generating thrust for {1:0.##} units/hour. Requested speed unchanged.", _shipData.DebugName, newSpeedRequest);
-        //        }
-        //    }
-
-        //    /// <summary>
-        //    /// Called when the Helm refreshes its navigational values due to changes that may
-        //    /// affect the speed float value.
-        //    /// </summary>
-        //    /// <param name="refreshedSpeedValue">The refreshed speed value.</param>
-        //    internal void RefreshSpeedValue(float refreshedSpeedValue) {
-        //        if (CheckForAcceptableSpeedValue(refreshedSpeedValue)) {
-        //            SetPowerOutputFor(refreshedSpeedValue);
-        //        }
-        //    }
-
-        //    /// <summary>
-        //    /// Checks whether the provided speed value is acceptable. 
-        //    /// Returns <c>true</c> if it is, <c>false</c> if it is a duplicate.
-        //    /// </summary>
-        //    /// <param name="speedValue">The speed value.</param>
-        //    /// <returns></returns>
-        //    private bool CheckForAcceptableSpeedValue(float speedValue) {
-        //        D.Assert(speedValue <= _shipData.FullSpeed, "{0}.{1} speedValue {2:0.0000} > FullSpeed {3:0.0000}. IsFtlAvailableForUse: {4}.".Inject(_shipData.DebugName, GetType().Name, speedValue, _shipData.FullSpeed, _shipData.IsFtlAvailableForUse));
-
-        //        float previousRequestedSpeed = _shipData.RequestedSpeed;
-        //        float newSpeedToRequestedSpeedRatio = (previousRequestedSpeed != Constants.ZeroF) ? speedValue / previousRequestedSpeed : Constants.ZeroF;
-        //        if (EngineRoom._speedGoalRange.ContainsValue(newSpeedToRequestedSpeedRatio)) {
-        //            return false;
-        //        }
-        //        return true;
-        //    }
-
-        //    private void GameSpeedPropChangedHandler() {
-        //        float previousGameSpeedMultiplier = _gameSpeedMultiplier;   // FIXME where/when to get initial GameSpeed before first GameSpeed change?
-        //        _gameSpeedMultiplier = _gameTime.GameSpeed.SpeedMultiplier();
-        //        float gameSpeedChangeRatio = _gameSpeedMultiplier / previousGameSpeedMultiplier;
-        //        AdjustForGameSpeed(gameSpeedChangeRatio);
-        //    }
-
-        //    private void IsPausedPropChangedHandler() {
-        //        if (_gameMgr.IsPaused) {
-        //            _velocityOnPause = _shipRigidbody.velocity;
-        //            _shipRigidbody.isKinematic = true;  // immediately stops rigidbody and puts it to sleep, but rigidbody.velocity value remains
-        //        }
-        //        else {
-        //            _shipRigidbody.isKinematic = false;
-        //            _shipRigidbody.velocity = _velocityOnPause;
-        //            _shipRigidbody.WakeUp();
-        //        }
-        //    }
-
-        //    /// <summary>
-        //    /// Sets the engine power output values needed to achieve the requested speed. This speed has already
-        //    /// been tested for acceptability, i.e. it has been clamped.
-        //    /// </summary>
-        //    /// <param name="acceptableRequestedSpeed">The acceptable requested speed in units/hr.</param>
-        //    private void SetPowerOutputFor(float acceptableRequestedSpeed) {
-        //        //D.Log("{0} adjusting engine power output to achieve requested speed of {1:0.##} units/hour.", _shipData.DebugName, acceptableRequestedSpeed);
-        //        _shipData.RequestedSpeed = acceptableRequestedSpeed;
-        //        float acceptablePwrOutput = acceptableRequestedSpeed * _shipData.Drag * _shipData.Mass;
-
-        //        _pwrOutputGoal = acceptablePwrOutput;
-        //        _pwrOutputGoalMinus = _pwrOutputGoal / _overSpeedGoalRange.Maximum;
-        //        _pwrOutputGoalPlus = Mathf.Min(_pwrOutputGoal / _underSpeedGoalRange.Minimum, _shipData.FullPropulsionPower);
-        //    }
-
-        //    // IMPROVE this approach will cause ships with higher speed capability to accelerate faster than ships with lower, separating members of the fleet
-        //    private Vector3 GetThrust() {
-        //        D.Assert(_shipData.RequestedSpeed > Constants.ZeroF);   // should not happen. coroutine will only call this while running, and it quits running if RqstSpeed is 0
-
-        //        float speedRatio = _shipData.CurrentSpeed / _shipData.RequestedSpeed;
-        //        //D.Log("{0}.EngineRoom speed ratio = {1:0.##}.", _shipData.DebugName, speedRatio);
-        //        float enginePowerOutput = Constants.ZeroF;
-        //        bool toDeployFlaps = false;
-        //        if (_speedGoalRange.ContainsValue(speedRatio)) {
-        //            enginePowerOutput = _pwrOutputGoal;
-        //        }
-        //        else if (_underSpeedGoalRange.ContainsValue(speedRatio)) {
-        //            enginePowerOutput = _pwrOutputGoalPlus;
-        //        }
-        //        else if (_overSpeedGoalRange.ContainsValue(speedRatio)) {
-        //            enginePowerOutput = _pwrOutputGoalMinus;
-        //        }
-        //        else if (_wayUnderSpeedGoalRange.ContainsValue(speedRatio)) {
-        //            enginePowerOutput = _shipData.FullPropulsionPower;
-        //        }
-        //        else if (_wayOverSpeedGoalRange.ContainsValue(speedRatio)) {
-        //            toDeployFlaps = true;
-        //        }
-        //        DeployFlaps(toDeployFlaps);
-        //        return enginePowerOutput * _localSpaceForward;
-        //    }
-
-        //    // IMPROVE I've implemented FTL using a thrust multiplier rather than
-        //    // a reduction in Drag. Changing Data.Drag (for flaps or FTL) causes
-        //    // Data.FullSpeed to change which affects lots of other things
-        //    // in Helm where the FullSpeed value affects a number of factors. My
-        //    // flaps implementation below changes rigidbody.drag not Data.Drag.
-        //    private void DeployFlaps(bool toDeploy) {
-        //        if (!_shipData.IsFlapsDeployed && toDeploy) {
-        //            _shipRigidbody.drag *= TempGameValues.FlapsMultiplier;
-        //            _shipData.IsFlapsDeployed = true;
-        //        }
-        //        else if (_shipData.IsFlapsDeployed && !toDeploy) {
-        //            _shipRigidbody.drag /= TempGameValues.FlapsMultiplier;
-        //            _shipData.IsFlapsDeployed = false;
-        //        }
-        //    }
-
-        //    /// <summary>
-        //    /// Coroutine that continuously applies thrust while RequestedSpeed is not Zero.
-        //    /// </summary>
-        //    /// <returns></returns>
-        //    private IEnumerator OperateEngines() {
-        //        yield return new WaitForFixedUpdate();  // required so first ApplyThrust will be applied in fixed update?
-        //        while (_shipData.RequestedSpeed != Constants.ZeroF) {
-        //            ApplyThrust();
-        //            yield return new WaitForFixedUpdate();
-        //        }
-        //        DeployFlaps(true);
-        //    }
-
-        //    /// <summary>
-        //    /// Applies Thrust (direction and magnitude), adjusted for game speed. Clients should
-        //    /// call this method at a pace consistent with FixedUpdate().
-        //    /// </summary>
-        //    private void ApplyThrust() {
-        //        Vector3 adjustedThrust = GetThrust() * _gameTime.GameSpeedAdjustedHoursPerSecond;
-        //        _shipRigidbody.AddRelativeForce(adjustedThrust, ForceMode.Force);
-        //        ReduceDrift();
-        //        //D.Log("Speed is now {0}.", _shipData.CurrentSpeed);
-        //    }
-
-        //    /// <summary>
-        //    /// Reduces the amount of drift of the ship in the direction it was heading prior to a turn.
-        //    /// IMPROVE Expensive to call every frame when no residual drift left after a turn.
-        //    /// </summary>
-        //    private void ReduceDrift() {
-        //        Vector3 relativeVelocity = _shipRigidbody.transform.InverseTransformDirection(_shipRigidbody.velocity);
-        //        _shipRigidbody.AddRelativeForce(-relativeVelocity.x * driftCorrectionFactor * Vector3.right);
-        //        _shipRigidbody.AddRelativeForce(-relativeVelocity.y * driftCorrectionFactor * Vector3.up);
-        //        //D.Log("RelVelocity = {0}.", relativeVelocity.ToPreciseString());
-        //    }
-
-        //    /// <summary>
-        //    /// Adjusts the velocity and thrust of the ship to reflect the new GameClockSpeed setting. 
-        //    /// The reported speed and directional heading of the ship is not affected.
-        //    /// </summary>
-        //    /// <param name="gameSpeed">The game speed.</param>
-        //    private void AdjustForGameSpeed(float gameSpeedChangeRatio) {
-        //        // must immediately adjust velocity when game speed changes as just adjusting thrust takes
-        //        // a long time to get to increased/decreased velocity
-        //        if (_gameMgr.IsPaused) {
-        //            D.Assert(_velocityOnPause != default(Vector3), "{0} has not yet recorded VelocityOnPause.".Inject(_shipData.DebugName));
-        //            _velocityOnPause *= gameSpeedChangeRatio;
-        //        }
-        //        else {
-        //            _shipRigidbody.velocity *= gameSpeedChangeRatio;
-        //            // drag should not be adjusted as it will change the velocity that can be supported by the adjusted thrust
-        //        }
-        //    }
-
-        //    private void Cleanup() {
-        //        Unsubscribe();
-        //        if (_operateEnginesJob != null) {
-        //            _operateEnginesJob.Dispose();
-        //        }
-        //        // other cleanup here including any tracking Gui2D elements
-        //    }
-
-        //    private void Unsubscribe() {
-        //        _subscriptions.ForAll(d => d.Dispose());
-        //        _subscriptions.Clear();
-        //    }
-
-        //    public override string ToString() {
-        //        return new ObjectAnalyzer().ToString(this);
-        //    }
-
-        //    #region IDisposable
-        //    [DoNotSerialize]
-        //    private bool _alreadyDisposed = false;
-        //    protected bool _isDisposing = false;
-
-        //    /// <summary>
-        //    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-        //    /// </summary>
-        //    public void Dispose() {
-        //        Dispose(true);
-        //        GC.SuppressFinalize(this);
-        //    }
-
-        //    /// <summary>
-        //    /// Releases unmanaged and - optionally - managed resources. Derived classes that need to perform additional resource cleanup
-        //    /// should override this Dispose(isDisposing) method, using its own alreadyDisposed flag to do it before calling base.Dispose(isDisposing).
-        //    /// </summary>
-        //    /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
-        //    protected virtual void Dispose(bool isDisposing) {
-        //        // Allows Dispose(isDisposing) to be called more than once
-        //        if (_alreadyDisposed) {
-        //            D.Warn("{0} has already been disposed.", GetType().Name);
-        //            return;
-        //        }
-
-        //        _isDisposing = isDisposing;
-        //        if (isDisposing) {
-        //            // free managed resources here including unhooking events
-        //            Cleanup();
-        //        }
-        //        // free unmanaged resources here
-
-        //        _alreadyDisposed = true;
-        //    }
-
-        //    // Example method showing check for whether the object has been disposed
-        //    //public void ExampleMethod() {
-        //    //    // throw Exception if called on object that is already disposed
-        //    //    if(alreadyDisposed) {
-        //    //        throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
-        //    //    }
-
-        //    //    // method content here
-        //    //}
-        //    #endregion
-
-        //}
-
-        #endregion
-
-        #endregion
-
-        #region IDisposable
-
-        private bool _alreadyDisposed = false;
-
-        /// <summary>
-        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-        /// </summary>
-        public void Dispose() {
-
-            Dispose(true);
-
-            // This object is being cleaned up by you explicitly calling Dispose() so take this object off
-            // the finalization queue and prevent finalization code from 'disposing' a second time
-            GC.SuppressFinalize(this);
-        }
-
-        /// <summary>
-        /// Releases unmanaged and - optionally - managed resources.
-        /// </summary>
-        /// <param name="isExplicitlyDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
-        protected virtual void Dispose(bool isExplicitlyDisposing) {
-            if (_alreadyDisposed) { // Allows Dispose(isExplicitlyDisposing) to mistakenly be called more than once
-                D.Warn("{0} has already been disposed.", GetType().Name);
-                return; //throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
-            }
-
-            if (isExplicitlyDisposing) {
-                // Dispose of managed resources here as you have called Dispose() explicitly
-                Cleanup();
-            }
-
-            // Dispose of unmanaged resources here as either 1) you have called Dispose() explicitly so
-            // may as well clean up both managed and unmanaged at the same time, or 2) the Finalizer has
-            // called Dispose(false) to cleanup unmanaged resources
-
-            _alreadyDisposed = true;
-        }
-
-        #endregion
-
-    }
-
     #endregion
 
     #region INavigable Members
@@ -6000,10 +3334,28 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     #region IShipAttackable Members
 
-    public override AutoPilotDestinationProxy GetApAttackTgtProxy(float minDesiredDistanceToTgtSurface, float maxDesiredDistanceToTgtSurface) {
-        float innerRadius = CollisionDetectionZoneRadius + minDesiredDistanceToTgtSurface;
-        float outerRadius = Radius + maxDesiredDistanceToTgtSurface;
-        return new AutoPilotDestinationProxy(this, Vector3.zero, innerRadius, outerRadius);
+    /// <summary>
+    /// Returns the proxy for this target for use by a Ship's Pilot when attacking this target.
+    /// The values provided allow the proxy to help the ship stay within its desired weapons range envelope relative to the target's surface.
+    /// <remarks>There is no target offset as ships don't attack in formation.</remarks>
+    /// </summary>
+    /// <param name="desiredWeaponsRangeEnvelope">The ship's desired weapons range envelope relative to the target's surface.</param>
+    /// <param name="shipCollisionDetectionRadius">The attacking ship's collision detection radius.</param>
+    /// <returns></returns>
+    public override AutoPilotDestinationProxy GetApAttackTgtProxy(ValueRange<float> desiredWeaponsRangeEnvelope, float shipCollisionDetectionRadius) {
+        float shortestDistanceFromTgtToTgtSurface = GetDistanceToClosestWeaponImpactSurface();
+        float innerProxyRadius = desiredWeaponsRangeEnvelope.Minimum + shortestDistanceFromTgtToTgtSurface;
+        float minInnerProxyRadiusToAvoidCollision = CollisionDetectionZoneRadius + shipCollisionDetectionRadius;
+        if (innerProxyRadius < minInnerProxyRadiusToAvoidCollision) {
+            innerProxyRadius = minInnerProxyRadiusToAvoidCollision;
+        }
+
+        float outerProxyRadius = desiredWeaponsRangeEnvelope.Maximum + shortestDistanceFromTgtToTgtSurface;
+        D.Assert(outerProxyRadius > innerProxyRadius);
+
+        var attackProxy = new AutoPilotDestinationProxy(this, Vector3.zero, innerProxyRadius, outerProxyRadius);    // 2.14.17 ArrivalWindowDepth typ 4.4-8.8 units
+        D.Log(ShowDebugLog, "{0} has constructed an AttackProxy with an ArrivalWindowDepth of {1:0.#} units.", DebugName, attackProxy.ArrivalWindowDepth);
+        return attackProxy;
     }
 
     #endregion
@@ -6022,6 +3374,14 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     public Reference<float> ActualSpeedValue_Debug { get { return new Reference<float>(() => ActualSpeedValue); } }
 
     public float CollisionDetectionZoneRadius_Debug { get { return CollisionDetectionZoneRadius; } }
+
+    #endregion
+
+    #region IShip Members
+
+    IFleetCmd IShip.Command { get { return Command; } }
+
+    IFleetFormationStation IShip.FormationStation { get { return FormationStation; } }
 
     #endregion
 }

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IDebugable.cs
-// Interface for objects that support debug logging on the Editor Console.
+// Interface for objects that support control of debug logging on the Editor Console.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,7 +17,7 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Interface for objects that support debug logging on the Editor Console.
+    /// Interface for objects that support control of debug logging on the Editor Console.
     /// </summary>
     public interface IDebugable {
 
@@ -25,6 +25,8 @@ namespace CodeEnv.Master.GameContent {
         /// The full name of the object for debugging use on the editor console.
         /// </summary>
         string DebugName { get; }
+
+        bool ShowDebugLog { get; }
 
 
     }

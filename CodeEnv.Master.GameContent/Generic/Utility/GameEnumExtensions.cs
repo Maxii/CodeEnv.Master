@@ -1358,13 +1358,13 @@ namespace CodeEnv.Master.GameContent {
             float range = Constants.ZeroF;
             switch (rangeCategory) {
                 case RangeCategory.Short:
-                    range = 7F;
+                    range = 8F;
                     break;
                 case RangeCategory.Medium:
-                    range = 10F;
+                    range = 12F;
                     break;
                 case RangeCategory.Long:
-                    range = 15F;
+                    range = 16F;
                     break;
                 case RangeCategory.None:
                 default:
@@ -1442,6 +1442,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="speed">The speed enum value.</param>
         /// <param name="fleetData">The fleet data.</param>
         /// <returns></returns>
+        [Obsolete]
         public static float GetUnitsPerHour(this Speed speed, FleetCmdData fleetData) {
             return GetUnitsPerHour(speed, null, fleetData);
         }
@@ -1452,10 +1453,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="speed">The speed enum value.</param>
         /// <param name="shipData">The ship data.</param>
         /// <returns></returns>
+        [Obsolete]
         public static float GetUnitsPerHour(this Speed speed, ShipData shipData) {
             return GetUnitsPerHour(speed, shipData, null);
         }
 
+        [Obsolete]
         private static float GetUnitsPerHour(Speed speed, ShipData shipData, FleetCmdData fleetData) {
             float fullSpeedValue = Constants.ZeroF;
             if (shipData != null) {

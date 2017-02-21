@@ -97,8 +97,8 @@ namespace CodeEnv.Master.GameContent {
         public IEnumerable<Player> OtherKnownPlayers { get { return _currentRelationship.Keys.Except(this); } }
 
         private IDictionary<Player, DiplomaticRelationship> _initialRelationship;
-        private IDictionary<Player, DiplomaticRelationship> _priorRelationship; // = new Dictionary<Player, DiplomaticRelationship>();
-        private IDictionary<Player, DiplomaticRelationship> _currentRelationship;   // = new Dictionary<Player, DiplomaticRelationship>();
+        private IDictionary<Player, DiplomaticRelationship> _priorRelationship;
+        private IDictionary<Player, DiplomaticRelationship> _currentRelationship;
         private LeaderStat _leaderStat;
         private SpeciesStat _speciesStat;
         private IGameManager _gameMgr;

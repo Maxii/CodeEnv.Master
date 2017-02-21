@@ -57,7 +57,13 @@ public class DebugControlsEditor : Editor {
                 NGUIEditorTools.BeginContents();
                 {
                     NGUIEditorTools.SetLabelWidth(100F);
-                    NGUIEditorTools.DrawProperty("AutoExplore", serializedObject, "_fleetsAutoExplore");
+                    var autoExploreSP = NGUIEditorTools.DrawProperty("AutoExplore", serializedObject, "_fleetsAutoExplore");
+
+                    EditorGUI.BeginDisabledGroup(autoExploreSP.boolValue);
+                    {
+                        NGUIEditorTools.DrawProperty("AutoAttack", serializedObject, "_fleetsAutoAttack");
+                    }
+                    EditorGUI.EndDisabledGroup();
                     NGUIEditorTools.SetLabelWidth(200F);
                     NGUIEditorTools.DrawProperty("Full Intel of All Items", serializedObject, "_allIntelCoverageIsComprehensive");
                 }
@@ -77,7 +83,7 @@ public class DebugControlsEditor : Editor {
                 NGUIEditorTools.BeginContents();
                 {
                     NGUIEditorTools.SetLabelWidth(160F);
-                    NGUIEditorTools.DrawProperty("One UIPanel per widget", serializedObject, "_useIndependentUIPanelWidgets");
+                    NGUIEditorTools.DrawProperty("One UIPanel per widget", serializedObject, "_useOneUIPanelPerWidget");
                 }
                 NGUIEditorTools.EndContents();
             }

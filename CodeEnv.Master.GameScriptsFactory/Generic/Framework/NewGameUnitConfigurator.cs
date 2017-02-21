@@ -248,7 +248,7 @@ public class NewGameUnitConfigurator {
     public FleetCreator GenerateRandomAutoFleetCreator(Player owner, Vector3 location, GameDate deployDate) {
         string unitName = GetUniqueUnitName("AutoFleet");
         int cmsPerCmd = RandomExtended.Range(0, 3);
-        Formation formation = Formation.Diamond; // = Enums<Formation>.GetRandom(excludeDefault: true);
+        Formation formation = Enums<Formation>.GetRandom(excludeDefault: true);    //= Formation.Diamond; 
         string cmdDesignName = MakeAndRecordFleetCmdDesign(owner, unitName, cmsPerCmd, formation);
 
         int elementQty = RandomExtended.Range(1, TempGameValues.MaxShipsPerFleet);
@@ -291,7 +291,7 @@ public class NewGameUnitConfigurator {
     public StarbaseCreator GenerateRandomAutoStarbaseCreator(Player owner, Vector3 location, GameDate deployDate) {
         string unitName = GetUniqueUnitName("AutoStarbase");
         int cmsPerCmd = RandomExtended.Range(0, 3);
-        Formation formation = Formation.Diamond;    // Enums<Formation>.GetRandomExcept(Formation.Wedge, default(Formation));
+        Formation formation = Enums<Formation>.GetRandomExcept(Formation.Wedge, default(Formation));   // = Formation.Diamond;    
         string cmdDesignName = MakeAndRecordStarbaseCmdDesign(owner, unitName, cmsPerCmd, formation);
 
         int elementQty = RandomExtended.Range(1, TempGameValues.MaxFacilitiesPerBase);
@@ -392,11 +392,11 @@ public class NewGameUnitConfigurator {
 
             RangeCategory rangeCat = RangeCategory.Long; ;
             float maxSteeringInaccuracy = UnityEngine.Random.Range(UnityConstants.AngleEqualityPrecision, 3F);    // 0.04 - 3 degrees
-            float reloadPeriod = UnityEngine.Random.Range(10F, 12F);
+            float reloadPeriod = UnityEngine.Random.Range(15F, 18F);    // 10-15
             string name = "Torpedo Launcher";
             float deliveryStrengthValue = UnityEngine.Random.Range(6F, 8F);
             var damageCategory = Enums<DamageCategory>.GetRandom(excludeDefault: true);
-            float damageValue = UnityEngine.Random.Range(3F, 8F);
+            float damageValue = UnityEngine.Random.Range(6F, 16F);  // 3-8
             float ordMaxSpeed = UnityEngine.Random.Range(4F, 6F);
             float ordMass = 5F;
             float ordDrag = 0.01F;
@@ -404,10 +404,11 @@ public class NewGameUnitConfigurator {
             float ordCourseUpdateFreq = 0.5F; // course updates per hour
             DamageStrength damagePotential = new DamageStrength(damageCategory, damageValue);
             WDVStrength deliveryVehicleStrength = new WDVStrength(deliveryVehicleCategory, deliveryStrengthValue);
+            bool isDamageable = true;
 
             var weapStat = new MissileWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F,
                 rangeCat, deliveryVehicleStrength, reloadPeriod, damagePotential, ordMaxSpeed, ordMass, ordDrag,
-                ordTurnRate, ordCourseUpdateFreq, maxSteeringInaccuracy);
+                ordTurnRate, ordCourseUpdateFreq, maxSteeringInaccuracy, isDamageable);
             statsList.Add(weapStat);
         }
         return statsList;
@@ -418,18 +419,19 @@ public class NewGameUnitConfigurator {
         for (int i = 0; i < quantity; i++) {
             RangeCategory rangeCat = RangeCategory.Short;
             float maxLaunchInaccuracy = UnityEngine.Random.Range(UnityConstants.AngleEqualityPrecision, 3F);  // 0.04 - 3 degrees
-            float reloadPeriod = UnityEngine.Random.Range(3F, 5F);
-            float duration = UnityEngine.Random.Range(1F, 2F);
+            float reloadPeriod = UnityEngine.Random.Range(6F, 10F); // 3-5
+            float duration = UnityEngine.Random.Range(2F, 3F);  //1-2
             string name = "Phaser Projector";
             float deliveryStrengthValue = UnityEngine.Random.Range(6F, 8F);
             var damageCategory = Enums<DamageCategory>.GetRandom(excludeDefault: true);
-            float damageValue = UnityEngine.Random.Range(3F, 8F);
+            float damageValue = UnityEngine.Random.Range(6F, 16F);   // 3-8
             DamageStrength damagePotential = new DamageStrength(damageCategory, damageValue);
             WDVCategory deliveryVehicleCategory = WDVCategory.Beam;
             WDVStrength deliveryVehicleStrength = new WDVStrength(deliveryVehicleCategory, deliveryStrengthValue);
+            bool isDamageable = true;
 
             AWeaponStat weapStat = new BeamWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F, rangeCat,
-                              deliveryVehicleStrength, reloadPeriod, damagePotential, duration, maxLaunchInaccuracy);
+                              deliveryVehicleStrength, reloadPeriod, damagePotential, duration, maxLaunchInaccuracy, isDamageable);
             statsList.Add(weapStat);
         }
         return statsList;
@@ -441,20 +443,21 @@ public class NewGameUnitConfigurator {
             AWeaponStat weapStat;
             RangeCategory rangeCat = RangeCategory.Medium;
             float maxLaunchInaccuracy = UnityEngine.Random.Range(UnityConstants.AngleEqualityPrecision, 3F);  // 0.04 - 3 degrees
-            float reloadPeriod = UnityEngine.Random.Range(2F, 4F);
+            float reloadPeriod = UnityEngine.Random.Range(4F, 6F);  // 2-4
             string name = "KineticKill Projector";
             float deliveryStrengthValue = UnityEngine.Random.Range(6F, 8F);
             var damageCategory = Enums<DamageCategory>.GetRandom(excludeDefault: true);
-            float damageValue = UnityEngine.Random.Range(3F, 8F);
+            float damageValue = UnityEngine.Random.Range(5F, 10F);   // 3-8
             DamageStrength damagePotential = new DamageStrength(damageCategory, damageValue);
             WDVCategory deliveryVehicleCategory = WDVCategory.Projectile;
             WDVStrength deliveryVehicleStrength = new WDVStrength(deliveryVehicleCategory, deliveryStrengthValue);
+            bool isDamageable = true;
 
             float ordMaxSpeed = UnityEngine.Random.Range(6F, 8F);
             float ordMass = 1F;
             float ordDrag = 0.02F;
             weapStat = new ProjectileWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F, rangeCat,
-                deliveryVehicleStrength, reloadPeriod, damagePotential, ordMaxSpeed, ordMass, ordDrag, maxLaunchInaccuracy);
+                deliveryVehicleStrength, reloadPeriod, damagePotential, ordMaxSpeed, ordMass, ordDrag, maxLaunchInaccuracy, isDamageable);
             statsList.Add(weapStat);
         }
         return statsList;
@@ -511,7 +514,7 @@ public class NewGameUnitConfigurator {
                         new WDVStrength(WDVCategory.Missile, 0.5F)
                     };
                     interceptAccuracy = 0.50F;
-                    reloadPeriod = 0.1F;
+                    reloadPeriod = 0.2F;    //0.1
                     break;
                 case RangeCategory.Medium:
                     name = "AvengerADS";
@@ -541,20 +544,22 @@ public class NewGameUnitConfigurator {
         return statsList;
     }
 
-    private SensorStat CreateShortRangeSensorStat() {
+    private SensorStat CreateReqdShortRangeSensorStat() {
         string name = "ProximityDetector";
-        return new SensorStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F, RangeCategory.Short);
+        return new SensorStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F, RangeCategory.Short, isDamageable: false);
     }
 
     private IList<SensorStat> __CreateAvailableSensorStats(int quantity) {
         IList<SensorStat> statsList = new List<SensorStat>(quantity);
         for (int i = 0; i < quantity; i++) {
             string name = string.Empty;
+            bool isDamageable = true;
             RangeCategory rangeCat = Enums<RangeCategory>.GetRandom(excludeDefault: true);
             //RangeCategory rangeCat = RangeCategory.Long;
             switch (rangeCat) {
                 case RangeCategory.Short:
                     name = "ProximityDetector";
+                    isDamageable = false;
                     break;
                 case RangeCategory.Medium:
                     name = "PulseSensor";
@@ -567,7 +572,7 @@ public class NewGameUnitConfigurator {
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(rangeCat));
             }
             var sensorStat = new SensorStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F,
-                rangeCat);
+                rangeCat, isDamageable);
             statsList.Add(sensorStat);
         }
         return statsList;
@@ -709,7 +714,7 @@ public class NewGameUnitConfigurator {
             var activeCmStats = _availableActiveCountermeasureStats.Shuffle().Take(activeCMsPerElement);
 
             List<SensorStat> sensorStats = new List<SensorStat>();
-            sensorStats.Add(CreateShortRangeSensorStat());
+            sensorStats.Add(CreateReqdShortRangeSensorStat());
             if (sensorsPerElement > 1) {
                 sensorStats.AddRange(_availableSensorStats.Shuffle().Take(sensorsPerElement - 1));
             }
@@ -748,7 +753,7 @@ public class NewGameUnitConfigurator {
             var activeCmStats = _availableActiveCountermeasureStats.Shuffle().Take(activeCMsPerElement);
 
             List<SensorStat> sensorStats = new List<SensorStat>();
-            sensorStats.Add(CreateShortRangeSensorStat());
+            sensorStats.Add(CreateReqdShortRangeSensorStat());
             if (sensorsPerElement > 1) {
                 sensorStats.AddRange(_availableSensorStats.Shuffle().Take(sensorsPerElement - 1));
             }
@@ -779,9 +784,10 @@ public class NewGameUnitConfigurator {
         IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<ActiveCountermeasureStat> activeCmStats,
         IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats, Priority hqPriority, ShipCombatStance stance) {
         ShipHullCategory hullCategory = hullStat.HullCategory;
-        var engineStat = MakeEnginesStat(hullCategory);
+        var stlEngineStat = MakeEngineStat(hullCategory, isFtlEngine: false);
+        var ftlEngineStat = MakeEngineStat(hullCategory, isFtlEngine: true);
         var weaponDesigns = _factory.__MakeWeaponDesigns(hullCategory, weaponStats);
-        var design = new ShipDesign(owner, designName, hullStat, engineStat, stance, weaponDesigns, passiveCmStats, activeCmStats,
+        var design = new ShipDesign(owner, designName, hullStat, stlEngineStat, ftlEngineStat, stance, weaponDesigns, passiveCmStats, activeCmStats,
             sensorStats, shieldGenStats, hqPriority);
         _gameMgr.PlayersDesigns.Add(design);
     }
@@ -838,14 +844,18 @@ public class NewGameUnitConfigurator {
 
     #endregion
 
-    private EnginesStat MakeEnginesStat(ShipHullCategory hullCategory) {
-        float maxTurnRate = UnityEngine.Random.Range(TempGameValues.MinimumTurnRate, 270F);
-        float singleEngineSize = 10F;
-        float singleEngineMass = GetEngineMass(hullCategory);
-        float singleEngineExpense = 5F;
-
-        float fullStlPropulsionPower = GetFullStlPropulsionPower(hullCategory);   // FullFtlOpenSpaceSpeed ~ 30-40 units/hour, FullStlSystemSpeed ~ 1.2 - 1.6 units/hour
-        return new EnginesStat("EngineName", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", fullStlPropulsionPower, maxTurnRate, singleEngineSize, singleEngineMass, singleEngineExpense, TempGameValues.__StlToFtlPropulsionPowerFactor, engineQty: 1);
+    private EngineStat MakeEngineStat(ShipHullCategory hullCategory, bool isFtlEngine) {
+        float maxTurnRate = isFtlEngine ? UnityEngine.Random.Range(180F, 270F) : UnityEngine.Random.Range(TempGameValues.MinimumTurnRate, 180F);
+        float engineSize = isFtlEngine ? 20F : 10F;
+        float engineMass = GetEngineMass(hullCategory);
+        float engineExpense = isFtlEngine ? 10F : 5F;
+        string engineName = isFtlEngine ? "FtlEngine" : "StlEngine";
+        bool isDamageable = isFtlEngine ? true : false;
+        float fullPropulsionPower = GetFullStlPropulsionPower(hullCategory);   // FullFtlOpenSpaceSpeed ~ 30-40 units/hour, FullStlSystemSpeed ~ 1.2 - 1.6 units/hour
+        if (isFtlEngine) {
+            fullPropulsionPower *= TempGameValues.__StlToFtlPropulsionPowerFactor;
+        }
+        return new EngineStat(engineName, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", fullPropulsionPower, maxTurnRate, engineSize, engineMass, engineExpense, isDamageable, isFtlEngine);
     }
 
     private float GetEngineMass(ShipHullCategory hullCat) {

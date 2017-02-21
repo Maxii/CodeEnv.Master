@@ -56,7 +56,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         get {
             if (_currentSectorID == default(IntVector3)) {
                 // First time initialization. Can't be done in Awake as it can run before SectorGrid.Awake?
-                _currentSectorID = _sectorGrid.GetSectorIdThatContains(Position);
+                _currentSectorID = _sectorGrid.GetSectorIDThatContains(Position);
             }
             return _currentSectorID;
         }
@@ -109,18 +109,12 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     }
 
     private void DynamicallySubscribe(bool toSubscribe) {
-        IDisposable d;
         if (toSubscribe) {
-            d = MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, IntVector3>(cc => cc.SectorID, CameraSectorIdPropChangedHandler);
-            D.Assert(!_subscriptions.Contains(d), DebugName);
-            _subscriptions.Add(d);
+            MainCameraControl.Instance.sectorIDChanged += CameraSectorIDChangedEventHandler;
             UICamera.onMouseMove += MouseMovedEventHandler;
         }
         else {
-            d = _subscriptions.Single(s => s as DisposePropertyChangedSubscription<MainCameraControl> != null);
-            bool isRemoved = _subscriptions.Remove(d);
-            D.Assert(isRemoved, DebugName);
-            d.Dispose();
+            MainCameraControl.Instance.sectorIDChanged -= CameraSectorIDChangedEventHandler;
             UICamera.onMouseMove -= MouseMovedEventHandler;
         }
     }
@@ -146,9 +140,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     }
 
     private void HandleCurrentSectorIdChanged() {
-        Vector3 sectorPosition;
-        bool isPositionFound = _sectorGrid.__TryGetSectorPosition(CurrentSectorID, out sectorPosition);
-        D.Assert(isPositionFound);  // CurrentSectorID doesn't change if no sector is present
+        Vector3 sectorPosition = _sectorGrid.GetSectorPosition(CurrentSectorID);    // CurrentSectorID doesn't change if no sector is present
         transform.position = sectorPosition;
         ShowSectorWireframe(true);
         UpdateSectorIDLabel();
@@ -156,7 +148,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         ShowSectorDebugLog(true);
     }
 
-    private void CameraSectorIdPropChangedHandler() {
+    private void CameraSectorIDChangedEventHandler(object sender, EventArgs e) {
         ShowSectorUnderMouse();
     }
 
@@ -188,11 +180,9 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
                 ShowSectorDebugLog(false);
 
                 // OPTIMIZE cache sector
-                Sector sector;
-                if (_sectorGrid.__TryGetSector(CurrentSectorID, out sector)) {
-                    if (sector.IsHudShowing) {
-                        sector.ShowHud(false);
-                    }
+                Sector sector = _sectorGrid.GetSector(CurrentSectorID);
+                if (sector.IsHudShowing) {
+                    sector.ShowHud(false);
                 }
                 break;
             case PlayerViewMode.None:
@@ -208,10 +198,8 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     private void HandleHoveredChanged(bool isOver) {
         if (_viewMode == PlayerViewMode.SectorView) {
             D.Log(ShowDebugLog, "SectorExaminer calling Sector {0}.ShowHud({1}).", CurrentSectorID, isOver);
-            Sector sector;
-            if (_sectorGrid.__TryGetSector(CurrentSectorID, out sector)) {
-                sector.ShowHud(isOver);
-            }
+            Sector sector = _sectorGrid.GetSector(CurrentSectorID);
+            sector.ShowHud(isOver);
         }
     }
 
@@ -259,8 +247,9 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
             Vector3 mousePosition = Input.mousePosition;
             mousePosition.z = _distanceToHighlightedSector;
             Vector3 mouseWorldPoint = Camera.main.ScreenToWorldPoint(mousePosition);
-            IntVector3 sectorIdUnderMouse = _sectorGrid.GetSectorIdThatContains(mouseWorldPoint);
-            if (_sectorGrid.__IsSectorPresentAt(sectorIdUnderMouse)) {
+            // mouseWorldPoint can be outside where SectorIDs are assigned, aka outside universe
+            IntVector3 sectorIdUnderMouse;
+            if (_sectorGrid.TryGetSectorIDThatContains(mouseWorldPoint, out sectorIdUnderMouse)) {
                 if (CurrentSectorID != sectorIdUnderMouse) {    // avoid the SetProperty equivalent warnings
                     CurrentSectorID = sectorIdUnderMouse;
                 }
@@ -302,11 +291,9 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     }
 
     private void ShowSectorDebugLog(bool toShow) {
-        if (_showDebugLog) {
-            Sector sector;
-            if (_sectorGrid.__TryGetSector(CurrentSectorID, out sector)) {
-                sector.ShowDebugLog = toShow;
-            }
+        if (ShowDebugLog) {
+            Sector sector = _sectorGrid.GetSector(CurrentSectorID);
+            sector.ShowDebugLog = toShow;
         }
     }
 
@@ -323,6 +310,9 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         _subscriptions.ForAll(s => s.Dispose());
         _subscriptions.Clear();
         UICamera.onMouseMove -= MouseMovedEventHandler;
+        if (MainCameraControl.Instance != null) {
+            MainCameraControl.Instance.sectorIDChanged -= CameraSectorIDChangedEventHandler;
+        }
     }
 
     public override string ToString() {
@@ -367,6 +357,33 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     #endregion
 
     #region Archive
+
+    // Dynamically subscribe approach using Property Change
+    //private void DynamicallySubscribe(bool toSubscribe) {
+    //    IDisposable d;
+    //    if (toSubscribe) {
+    //        d = MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, IntVector3>(cc => cc.SectorID, CameraSectorIdPropChangedHandler);
+    //        D.Assert(!_subscriptions.Contains(d), DebugName);
+    //        _subscriptions.Add(d);
+    //        UICamera.onMouseMove += MouseMovedEventHandler;
+    //    }
+    //    else {
+    //        d = _subscriptions.Single(s => s as DisposePropertyChangedSubscription<MainCameraControl> != null);
+    //        bool isRemoved = _subscriptions.Remove(d);
+    //        D.Assert(isRemoved, DebugName);
+    //        d.Dispose();
+    //        UICamera.onMouseMove -= MouseMovedEventHandler;
+    //    }
+    //}
+
+
+
+
+
+
+
+
+
 
     // The Wireframe Hot spot approach alternative to using a small collider
     ///// <summary>

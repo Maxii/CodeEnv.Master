@@ -29,14 +29,11 @@ using UnityEngine.Profiling;
 /// <typeparam name="EquipmentType">The Type of ranged equipment.</typeparam>
 public abstract class AEquipmentMonitor<EquipmentType> : AColliderMonitor where EquipmentType : ARangedEquipment {
 
-    private const string DebugNameFormat = "{0}.{1}[{2}, {3:0.} Units]";
+    private const string DebugNameFormat = "{0}[{1}, {2:0.} Units]";
 
     public sealed override string DebugName {
         get {
-            if (ParentItem == null) {
-                return base.DebugName;
-            }
-            return DebugNameFormat.Inject(ParentItem.DebugName, GetType().Name, RangeCategory.GetValueName(), RangeDistance);
+            return DebugNameFormat.Inject(base.DebugName, RangeCategory.GetValueName(), RangeDistance);
         }
     }
 

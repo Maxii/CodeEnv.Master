@@ -25,6 +25,8 @@ using UnityEngine;
 
 /// <summary>
 /// An pooled explosion effect, dynamically scaled to work with the item it is being applied too.
+/// <remarks>2.15.17 Declined to make this pooled item IEquatable to allow its use in Dictionary and HashSet.
+/// I can't imagine when that would be required.</remarks>
 /// </summary>
 public class Explosion : AMonoBase, IEffect {
 
@@ -85,7 +87,7 @@ public class Explosion : AMonoBase, IEffect {
                 _waitForExplosionFinishedJob = null;
                 HandleExplosionFinished();
             }
-            MyPoolManager.Instance.DespawnEffect(transform);
+            GamePoolManager.Instance.DespawnEffect(transform);
         });
     }
 

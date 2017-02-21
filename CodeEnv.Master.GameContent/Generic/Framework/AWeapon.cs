@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Abstract base class for an Element's offensive weapon.
     /// </summary>
-    public abstract class AWeapon : ARangedEquipment, IDisposable {
+    public abstract class AWeapon : ARangedEquipment, IDebugable, IDisposable {
 
         private static readonly GameTimeDuration FiringSolutionCheckPeriod = new GameTimeDuration(TempGameValues.HoursBetweenFiringSolutionChecks);
 
@@ -242,7 +242,7 @@ namespace CodeEnv.Master.GameContent {
 
             //D.Log(ShowDebugLog, "{0}.HandleFiringInitiated(Target: {1}, Ordnance: {2}) called.", DebugName, targetFiredOn.DebugName, ordnanceFired.Name);
             RecordFiredOrdnance(ordnanceFired);
-            ordnanceFired.deathOneShot += OrdnanceDeathEventHandler;
+            ordnanceFired.terminationOneShot += OrdnanceTerminationEventHandler;
 
             RecordShotFired(targetFiredOn);
 
@@ -265,6 +265,13 @@ namespace CodeEnv.Master.GameContent {
 
         #region Event and Property Change Handlers
 
+        protected override void HandleRangeDistanceChanged() {
+            base.HandleRangeDistanceChanged();
+            if (RangeDistance < TempGameValues.__MinWeaponsRangeDistance) {
+                D.Warn("{0}.RangeDistance of {1:0.##} < Min {2:0.##}.", DebugName, RangeDistance, TempGameValues.__MinWeaponsRangeDistance);
+            }
+        }
+
         private void IsFiringSequenceUnderwayPropChangedHandler() {
             AssessReadiness();
         }
@@ -280,7 +287,7 @@ namespace CodeEnv.Master.GameContent {
             WeaponMount.Weapon = this;
         }
 
-        private void OrdnanceDeathEventHandler(object sender, EventArgs e) {
+        private void OrdnanceTerminationEventHandler(object sender, EventArgs e) {
             IOrdnance terminatedOrdnance = sender as IOrdnance;
             D.AssertNotNull(terminatedOrdnance, sender.ToString());
             RemoveFiredOrdnanceFromRecord(terminatedOrdnance);
@@ -333,7 +340,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Removes the fired ordnance from the record as having been fired.
         /// </summary>
-        /// <param name="terminatedOrdnance">The dead ordnance.</param>
+        /// <param name="terminatedOrdnance">The terminated ordnance.</param>
         protected abstract void RemoveFiredOrdnanceFromRecord(IOrdnance terminatedOrdnance);
 
         private bool IsQualifiedEnemyTarget(IElementAttackable enemyTarget) {

@@ -29,8 +29,6 @@ namespace CodeEnv.Master.GameContent {
 
         Transform transform { get; }
 
-        bool ShowDebugLog { get; }
-
         void PositionElementInFormation(IUnitElement element, FormationStationSlotInfo slotInfo);
 
     }

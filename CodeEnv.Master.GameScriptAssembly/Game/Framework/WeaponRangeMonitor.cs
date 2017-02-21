@@ -326,7 +326,7 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackable, AW
         D.Assert(!_unknownTargetsDetected.Contains(unknownTgt));
         _unknownTargetsDetected.Add(unknownTgt);
 
-        __WarnIfShouldntBeUnknown(unknownTgt);
+        __WarnAsShouldntBeUnknown(unknownTgt);
     }
 
     /// <summary>
@@ -392,26 +392,42 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackable, AW
 
     #region Debug
 
-    private void __WarnIfShouldntBeUnknown(IElementAttackable unknownTgt) {
-        var operatingShortRangeCmdSensorMonitors = ParentItem.Command.SensorRangeMonitors.Where(srm => srm.RangeCategory == RangeCategory.Short && srm.IsOperational);
-        if (operatingShortRangeCmdSensorMonitors.Any()) {
-            D.Warn("{0} should not categorize {1} as unknownTarget with short range sensors on-line!", DebugName, unknownTgt.DebugName);
-            float rangeToUnknownTgt = Vector3.Distance(ParentItem.Position, unknownTgt.Position);
-            float rangeToSensorRangeMonitors = Vector3.Distance(ParentItem.Position, ParentItem.Command.Position);
-            float sensorRange = operatingShortRangeCmdSensorMonitors.First().RangeDistance;
-            D.Warn("{0} range to {1} = {2:0.#}, range to Cmd's SensorRangeMonitors = {3:0.#}, SensorRange = {4:0.#}.", DebugName, unknownTgt.DebugName, rangeToUnknownTgt, rangeToSensorRangeMonitors, sensorRange);
-            D.Warn("{0}: {1}.isOwnerAccessible = {2}.", DebugName, unknownTgt.DebugName, unknownTgt.IsOwnerAccessibleTo(Owner));
-        }
-        else {
-            var operatingMediumRangeCmdSensorMonitors = ParentItem.Command.SensorRangeMonitors.Where(srm => srm.RangeCategory == RangeCategory.Medium && srm.IsOperational);
-            if (operatingMediumRangeCmdSensorMonitors.Any()) {
-                D.Warn("{0} should not categorize {1} as unknownTarget with medium range sensors on-line!", DebugName, unknownTgt.DebugName);
-                float rangeToUnknownTgt = Vector3.Distance(ParentItem.Position, unknownTgt.Position);
-                float rangeToSensorRangeMonitors = Vector3.Distance(ParentItem.Position, ParentItem.Command.Position);
-                float sensorRange = operatingMediumRangeCmdSensorMonitors.First().RangeDistance;
-                D.Warn("{0} range to {1} = {2:0.#}, range to Cmd's SensorRangeMonitors = {3:0.#}, SensorRange = {4:0.#}.", DebugName, unknownTgt.DebugName, rangeToUnknownTgt, rangeToSensorRangeMonitors, sensorRange);
-                D.Warn("{0}: {1}.isOwnerAccessible = {2}.", DebugName, unknownTgt.DebugName, unknownTgt.IsOwnerAccessibleTo(Owner));
+    private const float __acceptableThresholdSubtractorBase = 1.25F;
+
+    protected override void __WarnOnErroneousTriggerExit(IElementAttackable exitingAttackableItem) {
+        if (exitingAttackableItem.IsOperational) {
+            float gameSpeedMultiplier = __gameTime.GameSpeedMultiplier;  // 0.25 - 4.0
+            float rangeDistanceSubtractor = __acceptableThresholdSubtractorBase * gameSpeedMultiplier;  // 0.3x - 1.25 - 5
+
+            float acceptableThreshold = Mathf.Clamp(RangeDistance - rangeDistanceSubtractor, 1F, Mathf.Infinity);
+            float acceptableThresholdSqrd = acceptableThreshold * acceptableThreshold;
+
+            float itemDistanceSqrd;
+            if ((itemDistanceSqrd = Vector3.SqrMagnitude(exitingAttackableItem.Position - transform.position)) < acceptableThresholdSqrd) {
+                D.Warn("{0}.OnTriggerExit() called. Exit Distance for {1} {2:0.##} is < AcceptableThreshold {3:0.##}.",
+                    DebugName, exitingAttackableItem.DebugName, Mathf.Sqrt(itemDistanceSqrd), acceptableThreshold);
             }
+        }
+    }
+
+    private void __WarnAsShouldntBeUnknown(IElementAttackable unknownTgt) {
+        var operatingShortRangeCmdSensorMonitors = ParentItem.Command.SensorRangeMonitors.Where(srm => srm.RangeCategory == RangeCategory.Short && srm.IsOperational);
+        // 2.13.17 At least 1 SR sensor is mandatory, and they are no longer damageable
+        D.Assert(operatingShortRangeCmdSensorMonitors.Any(), "{0}: There are no operating short range sensors!".Inject(DebugName));
+
+        float rangeToUnknownTgt = Vector3.Distance(ParentItem.Position, unknownTgt.Position);
+        float rangeToSensorRangeMonitors = Vector3.Distance(ParentItem.Position, ParentItem.Command.Position);
+        float sensorRange = operatingShortRangeCmdSensorMonitors.First().RangeDistance;
+        D.Warn(@"{0} should not categorize {1} as unknown with SR Sensors online. Distance = {2:0.#}, range to Cmd's 
+            SensorRangeMonitors = {3:0.#}, SensorRange = {4:0.#}.", DebugName, unknownTgt.DebugName, rangeToUnknownTgt, rangeToSensorRangeMonitors, sensorRange);
+
+        var operatingMediumRangeCmdSensorMonitors = ParentItem.Command.SensorRangeMonitors.Where(srm => srm.RangeCategory == RangeCategory.Medium && srm.IsOperational);
+        if (operatingMediumRangeCmdSensorMonitors.Any()) {
+            rangeToUnknownTgt = Vector3.Distance(ParentItem.Position, unknownTgt.Position);
+            rangeToSensorRangeMonitors = Vector3.Distance(ParentItem.Position, ParentItem.Command.Position);
+            sensorRange = operatingMediumRangeCmdSensorMonitors.First().RangeDistance;
+            D.Warn(@"{0} should not categorize {1}  as unknown with MR Sensors online. Distance = {2:0.#}, range to Cmd's 
+                SensorRangeMonitors = {3:0.#}, SensorRange = {4:0.#}.", DebugName, unknownTgt.DebugName, rangeToUnknownTgt, rangeToSensorRangeMonitors, sensorRange);
         }
         // 7.20.16 currently operating LR sensors would not provide access to unknownTgt.Owner, but short/medium would
     }

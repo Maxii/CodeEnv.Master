@@ -38,14 +38,14 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     private const float DummyTargetColliderRadius = 0.5F;
 
-    private static readonly float DummyTargetOffsetInsideUniverseEdge = DummyTargetColliderRadius + 0.1F;
+    /// <summary>
+    /// The multiplier used with the Universe Radius to establish the outer boundary for camera movement.
+    /// </summary>
+    private const float CameraOuterBoundaryMultiplier = 2F;
+
+    private static readonly float DummyTargetOffsetInsideOuterBoundary = DummyTargetColliderRadius + 0.1F;
 
     private const float CameraMaxClippingPlaneRatio = 10000F;  // OPTIMIZE up to 30000? http://forum.unity3d.com/threads/how-to-avoid-z-fighting.56418/
-
-    /// <summary>
-    /// 360 degrees in one rotation.
-    /// </summary>
-    private const int _degreesPerRotation = Constants.DegreesPerRotation;
 
     /// <summary>
     /// The layers the main 3DCameras are allowed to render.
@@ -61,15 +61,15 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     private static LayerMask _mainCamerasLightCullingMask = _mainCamerasCullingMask.RemoveFromMask(Layers.SystemOrbitalPlane, Layers.Cull_200, Layers.Cull_400);
 
     /// <summary>
-    /// The universe edge culling mask. The UniverseEdge's layer is TransparentFX. The edge is only used 
-    /// when trying to find the spot to locate the DummyTarget by coming back in toward the universe sphere collider
+    /// The culling mask for the Camera's OuterBoundary GameObject. The OuterBoundary's layer is TransparentFX. It is only used 
+    /// when trying to find the spot to locate the DummyTarget by coming back in toward the sphere collider located on the OuterBoundary
     /// from outside which is reqd to find the collider. TransparentFX objects in the universe should not be located 
-    /// outside to interfere in this search for the edge. 
-    /// <remarks>A RangeMonitor's Trigger Collider can extend beyond the edge, but use of this LayerMask and the
-    /// fact that the Raycast is told not to recognize triggers should allow the raycast to only find the UniverseEdge Collider.</remarks>
-    /// <remarks>In reality, any layer that doesn't allow collisions (ProjectSettings.Physics) with any other layer could be used.</remarks>
+    /// outside the OuterBoundary as they could interfere in this search for the OuterBoundary collider. 
+    /// <remarks>A RangeMonitor's Trigger Collider can extend beyond the OuterBoundary, but use of this LayerMask and the
+    /// fact that the Raycast is told not to recognize triggers should allow the raycast to only find the OuterBoundary Collider.</remarks>
+    /// <remarks>OPTIMIZE Any layer that doesn't allow collisions (ProjectSettings.Physics) with any other layer could be used.</remarks>
     /// </summary>
-    private static LayerMask _universeEdgeCullingMask = LayerMaskUtility.CreateInclusiveMask(Layers.TransparentFX);
+    private static LayerMask _outerBoundaryCullingMask = LayerMaskUtility.CreateInclusiveMask(Layers.TransparentFX);
 
     /// <summary>
     /// Dedicated buffer for capturing RaycastHits when zooming. 
@@ -84,6 +84,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     private static IList<SimpleRaycastHit> _eligibleIctHits = new List<SimpleRaycastHit>(50);
 
     #region Camera Control Configurations
+
     // WARNING: Initializing non-Mono classes declared in a Mono class, outside of Awake or Start causes them to be instantiated by Unity AT EDITOR TIME (aka before runtime). 
     //This means that their constructors will be called before ANYTHING else is called. Script execution order is irrelevant.
 
@@ -158,6 +159,8 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     // Dragging the mouse with any button held down works off screen OK, but upon release off screen, immediately enables edge scrolling and panning
     // Implement Camera controls such as clip planes, FieldOfView, RenderSettings.[flareStrength, haloStrength, ambientLight]
 
+    public event EventHandler sectorIDChanged;
+
     #region Editor Fields
 
     [SerializeField]    // OPTIMIZE
@@ -173,17 +176,18 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     #region Fields
 
-    private IntVector3 _sectorID;
     /// <summary>
-    /// Read only. The location of the camera in sector space.
+    /// The ID of the Sector where the camera is currently located.
+    /// <remarks>Sectors and their IDs only exist inside the radius of the universe. The camera can
+    /// be located outside this universe to allow viewing of the whole universe. If located
+    /// outside the universe, this ID will be its default value.</remarks>
     /// </summary>
-    public IntVector3 SectorID {
-        get { return _sectorID; }
-        private set { SetProperty<IntVector3>(ref _sectorID, value, "SectorID"); }
-    }
+    private IntVector3 _sectorID;
 
     /// <summary>
     /// The position of the camera in world space.
+    /// <remarks>The camera can be positioned outside the universe. It will 
+    /// always be within the OuterBoundary.</remarks>
     /// </summary>
     public Vector3 Position {
         get { return transform.position; }
@@ -223,7 +227,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     };
 
     /// <summary>
-    /// Indicates whether the Camera (in Follow mode)  is in the process of zooming.
+    /// Indicates whether the Camera (in Follow mode) is in the process of zooming.
     /// </summary>
     private bool _isFollowingCameraZooming;
     private bool _isResetOnFocusEnabled;
@@ -244,9 +248,12 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     private Vector3 _targetPoint;
     private Transform _target;
     private Transform _dummyTarget;
-    private SphereCollider _universeEdgeCollider;
+    private SphereCollider _cameraOuterBoundaryCollider;
+
     private float _universeRadius;
-    private float _universeDiameter;
+    private float _cameraOuterBoundaryRadius;
+    private float _cameraOuterBoundaryRadiusSqrd;
+    private float _cameraOuterBoundaryDiameter;
 
     private Vector3 _screenCenter = new Vector3(Screen.width / 2, Screen.height / 2, 0F);
 
@@ -361,7 +368,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         // MainCamera_Far must be set manually during development. Set it to Depth also if SpaceUnity sky box is active, otherwise Sky box or SolidColor if not
 
         // IMPORTANT Max far to near clip plane ratio <= 10,000
-        MainCamera_Far.farClipPlane = _universeDiameter;
+        MainCamera_Far.farClipPlane = _cameraOuterBoundaryRadius + _universeRadius;                 ////_universeDiameter;
         MainCamera_Far.nearClipPlane = (MainCamera_Far.farClipPlane / CameraMaxClippingPlaneRatio);
         MainCamera_Near.farClipPlane = MainCamera_Far.nearClipPlane + 1F;   // HACK 1F is overlap
         MainCamera_Near.nearClipPlane = 0.01F;
@@ -427,14 +434,18 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     }
 
     private void PositionCameraForGame() {
-        _universeEdgeCollider = CreateUniverseEdge();
+        _cameraOuterBoundaryCollider = CreateCameraOuterBoundary();
         _dummyTarget = CreateDummyTarget();
 
         // HACK start looking down from a far distance
         float yElevation = _universeRadius * 0.3F;
         float zDistance = -_universeRadius * 0.75F;
         Position = new Vector3(0F, yElevation, zDistance);
-        _sectorID = _sectorGrid.GetSectorIdThatContains(Position);
+
+        if (!_sectorGrid.TryGetSectorIDThatContains(Position, out _sectorID)) {        ////_sectorID = _sectorGrid.GetSectorIdThatContains(Position);
+            // Position is outside the universeRadius
+            _sectorID = default(IntVector3);    ////_sectorID = _sectorGrid.GetNearestSectorIDTo(Position);
+        }
         transform.rotation = Quaternion.Euler(new Vector3(20F, 0F, 0F));
 
         ResetAtCurrentLocation();
@@ -442,21 +453,21 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         //ResetToWorldspace();
     }
 
-    private SphereCollider CreateUniverseEdge() {
-        GameObject universeEdge = new GameObject("UniverseEdge");
-        universeEdge.isStatic = true;
+    private SphereCollider CreateCameraOuterBoundary() {
+        GameObject cameraOuterBoundary = new GameObject("OuterBoundary");
+        cameraOuterBoundary.isStatic = true;
 
         Profiler.BeginSample("Proper AddComponent allocation", gameObject);
-        SphereCollider universeEdgeCollider = universeEdge.AddComponent<SphereCollider>();
+        SphereCollider cameraOuterBoundaryCollider = cameraOuterBoundary.AddComponent<SphereCollider>();
         Profiler.EndSample();
 
-        UnityUtility.AttachChildToParent(universeEdge, UniverseFolder.Instance.Folder.gameObject);
-        universeEdge.layer = (int)Layers.TransparentFX; // must set after Attach
-        universeEdgeCollider.isTrigger = false;    // Ngui 3.11.0 events now ignore trigger colliders when Ngui's EventType is World_3D 
-                                                   // so the collider can no longer be a trigger. As the whole GameObject is on Layers.TransparentFX and 
-                                                   // has no allowed collisions (ProjectSettings.Physics), it doesn't need to be a trigger.
-        universeEdgeCollider.radius = _universeRadius;
-        return universeEdgeCollider;
+        UnityUtility.AttachChildToParent(cameraOuterBoundary, UniverseFolder.Instance.Folder.gameObject);
+        cameraOuterBoundary.layer = (int)Layers.TransparentFX; // must set after Attach
+        cameraOuterBoundaryCollider.isTrigger = false;    // Ngui 3.11.0 events now ignore trigger colliders when Ngui's EventType is World_3D 
+                                                          // so the collider can no longer be a trigger. As the whole GameObject is on Layers.TransparentFX and 
+                                                          // has no allowed collisions (ProjectSettings.Physics), it doesn't need to be a trigger.
+        cameraOuterBoundaryCollider.radius = _cameraOuterBoundaryRadius;
+        return cameraOuterBoundaryCollider;
     }
 
     private Transform CreateDummyTarget() {
@@ -485,7 +496,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         SphereCollider dummyTargetCollider = _dummyTarget.GetComponent<SphereCollider>();
         dummyTargetCollider.enabled = false;
         // the collider is disabled so the placement algorithm doesn't accidentally find it already in front of the camera
-        PlaceDummyTargetAtUniverseEdgeInDirection(transform.forward);
+        PlaceDummyTargetAtCameraOuterBoundaryInDirection(transform.forward);
         dummyTargetCollider.enabled = true;
         SyncRotation();
         CurrentState = CameraState.Freeform;
@@ -502,6 +513,12 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     #endregion
 
     #region Events and Property Change Handlers
+
+    private void OnSectorIDChanged() {
+        if (sectorIDChanged != null) {
+            sectorIDChanged(this, EventArgs.Empty);
+        }
+    }
 
     private void IsZoomOutOnCursorEnabledPropChangedHandler() {
         HandleIsZoomOutOnCursorPrefChanged();
@@ -632,12 +649,25 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     #endregion
 
     /// <summary>
+    /// Returns <c>true</c> if the Camera's current position is within the radius
+    /// of the universe and therefore has a valid SectorID, <c>false</c> otherwise.
+    /// </summary>
+    /// <param name="sectorID">The sectorID.</param>
+    /// <returns></returns>
+    public bool TryGetSectorID(out IntVector3 sectorID) {
+        sectorID = _sectorID;
+        return _sectorID != default(IntVector3);
+    }
+
+    /// <summary>
     /// Prepares the camera for activation.
     /// </summary>
     /// <param name="gameSettings">The game settings.</param>
     public void PrepareForActivation(GameSettings gameSettings) {
         _universeRadius = gameSettings.UniverseSize.Radius();
-        _universeDiameter = _universeRadius * 2F;
+        _cameraOuterBoundaryRadius = _universeRadius * CameraOuterBoundaryMultiplier;
+        _cameraOuterBoundaryDiameter = _cameraOuterBoundaryRadius * 2F;
+        _cameraOuterBoundaryRadiusSqrd = _cameraOuterBoundaryRadius * _cameraOuterBoundaryRadius;
         SetCameraSettings();
         InitializeCameraLight();
         InitializeCameraPreferences();
@@ -899,8 +929,10 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         // this is the key to re-positioning the already rotated camera so that it is looking at the target
         _targetDirection = transform.forward;
 
-        // clamp here so optimalDistance never goes below minimumDistance as optimalDistance gets assigned to the focus when focus changes. Also effectively clamps requestedDistance
-        _optimalDistanceFromTarget = Mathf.Clamp(_optimalDistanceFromTarget, _minimumDistanceFromTarget, _universeDiameter);
+        // Clamp here so optimalDistance never goes below minimumDistance as optimalDistance gets assigned to the focus when focus changes. 
+        // Also effectively clamps requestedDistance
+        ////_optimalDistanceFromTarget = Mathf.Clamp(_optimalDistanceFromTarget, _minimumDistanceFromTarget, _universeDiameter);
+        _optimalDistanceFromTarget = Mathf.Clamp(_optimalDistanceFromTarget, _minimumDistanceFromTarget, _cameraOuterBoundaryRadius);
         _requestedDistanceFromTarget = _optimalDistanceFromTarget;
 
         // OPTIMIZE lets me change the values on the fly in the inspector
@@ -987,13 +1019,13 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         }
         if (dragFreeTruck.IsActivated) {
             inputValue = _inputMgr.GetDragDelta().x;
-            PlaceDummyTargetAtUniverseEdgeInDirection(transform.right);
+            PlaceDummyTargetAtCameraOuterBoundaryInDirection(transform.right);
             distanceChange = inputValue * dragFreeTruck.InputTypeNormalizer * dragFreeTruck.sensitivity * distanceChgAllowedPerUnitInput;
             _requestedDistanceFromTarget += distanceChange;
         }
         if (dragFreePedestal.IsActivated) {
             inputValue = _inputMgr.GetDragDelta().y;
-            PlaceDummyTargetAtUniverseEdgeInDirection(transform.up);
+            PlaceDummyTargetAtCameraOuterBoundaryInDirection(transform.up);
             distanceChange = inputValue * dragFreePedestal.InputTypeNormalizer * dragFreePedestal.sensitivity * distanceChgAllowedPerUnitInput;
             _requestedDistanceFromTarget += distanceChange;
         }
@@ -1111,13 +1143,13 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             _requestedDistanceFromTarget -= distanceChange;
         }
         if (keyFreeTruck.IsActivated) {
-            PlaceDummyTargetAtUniverseEdgeInDirection(transform.right);
+            PlaceDummyTargetAtCameraOuterBoundaryInDirection(transform.right);
             inputValue = _inputMgr.GetArrowKeyEventValue(keyFreeTruck.keyboardAxis);
             distanceChange = inputValue * keyFreeTruck.InputTypeNormalizer * keyFreeTruck.sensitivity * distanceChgAllowedPerUnitInput;
             _requestedDistanceFromTarget -= distanceChange;
         }
         if (keyFreePedestal.IsActivated) {
-            PlaceDummyTargetAtUniverseEdgeInDirection(transform.up);
+            PlaceDummyTargetAtCameraOuterBoundaryInDirection(transform.up);
             inputValue = _inputMgr.GetArrowKeyEventValue(keyFreePedestal.keyboardAxis);
             distanceChange = inputValue * keyFreePedestal.InputTypeNormalizer * keyFreePedestal.sensitivity * distanceChgAllowedPerUnitInput;
             _requestedDistanceFromTarget -= distanceChange;
@@ -1560,11 +1592,14 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         if (currentPosition.IsSameAs(proposedPosition) || !ValidatePosition(proposedPosition)) {
             return;
         }
-        IntVector3 proposedSectorID = _sectorGrid.GetSectorIdThatContains(proposedPosition);
-        if (!proposedSectorID.Equals(SectorID)) {
-            SectorID = proposedSectorID;
-        }
         Position = proposedPosition;
+
+        IntVector3 sectorID;
+        _sectorGrid.TryGetSectorIDThatContains(proposedPosition, out sectorID);
+        if (_sectorID != sectorID) {
+            _sectorID = sectorID;
+            OnSectorIDChanged();
+        }
     }
 
     /// <summary>
@@ -1574,7 +1609,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// <returns> </returns>
     private bool ValidatePosition(Vector3 proposedPosition) {
         float sqrMagnitude = (proposedPosition - GameConstants.UniverseOrigin).sqrMagnitude;
-        if (sqrMagnitude > _universeRadius * _universeRadius) {
+        if (sqrMagnitude > _cameraOuterBoundaryRadiusSqrd) {
             return false;
         }
         return true;
@@ -1608,7 +1643,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         }
 
         // scroll event with a null target so position the dummyTarget
-        return PlaceDummyTargetAtUniverseEdgeInDirection(MainCamera_Near.ScreenPointToRay(screenPoint).direction);
+        return PlaceDummyTargetAtCameraOuterBoundaryInDirection(MainCamera_Near.ScreenPointToRay(screenPoint).direction);
     }
 
     /// <summary>
@@ -1623,7 +1658,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// </returns>
     private bool TrySetZoomTargetAt(Vector3 screenPoint) {
         Ray ray = MainCamera_Near.ScreenPointToRay(screenPoint);   // Use _mainCamera_Near as ray is cast starting at camera's nearClipPlane
-        int hitCount = Physics.RaycastNonAlloc(ray, _zoomRaycastHitBuffer, _universeDiameter,
+        int hitCount = Physics.RaycastNonAlloc(ray, _zoomRaycastHitBuffer, _cameraOuterBoundaryDiameter,
             InputManager.WorldEventDispatcherMask_NormalInput, QueryTriggerInteraction.Ignore);
 
         IList<SimpleRaycastHit> eligibleIctHits = ConvertToEligibleICameraTargetableHits(hitCount);
@@ -1691,8 +1726,8 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
             return TryChangeZoomTarget(proposedZoomTarget, proposedZoomPoint);
         }
 
-        // no eligibleIctHits encountered under cursor so move the dummy to the edge of the universe and designate it as the Target
-        return PlaceDummyTargetAtUniverseEdgeInDirection(ray.direction);
+        // no eligibleIctHits encountered under cursor so move the dummy to the OuterBoundary and designate it as the Target
+        return PlaceDummyTargetAtCameraOuterBoundaryInDirection(ray.direction);
     }
 
     /// <summary>
@@ -1762,19 +1797,19 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     }
 
     /// <summary>
-    /// Attempts to place the dummy Target at the edge of the universe located in the direction provided.
+    /// Attempts to place the dummy Target at the camera's OuterBoundary located in the direction provided.
     /// </summary>
     /// <param name="direction">The direction.</param>
     /// <returns>true if the DummyTarget was placed in a new location. False if it was not moved since it was already there.</returns>
-    private bool PlaceDummyTargetAtUniverseEdgeInDirection(Vector3 direction) {
-        //D.Log("{0}{1}.PlaceDummyTargetAtUniverseEdgeInDirection({2}) called.", GetType().Name, InstanceCount, direction);
+    private bool PlaceDummyTargetAtCameraOuterBoundaryInDirection(Vector3 direction) {
+        //D.Log("{0}{1}.PlaceDummyTargetAtCameraOuterBoundaryInDirection({2}) called.", GetType().Name, InstanceCount, direction);
         direction.ValidateNormalized();
 
         Vector3 currentDirectionToDummyTgt = (_dummyTarget.position - Position).normalized;
         if (direction.IsSameDirection(currentDirectionToDummyTgt)) {
             // DummyTarget is already there
             float dummyTgtDistanceToOrigin = Vector3.Distance(_dummyTarget.position, GameConstants.UniverseOrigin); // OPTIMIZE values too big to use SqrMagnitude
-            float expectedDummyTgtDistanceToOrigin = _universeRadius - DummyTargetOffsetInsideUniverseEdge;
+            float expectedDummyTgtDistanceToOrigin = _cameraOuterBoundaryRadius - DummyTargetOffsetInsideOuterBoundary;
             if (!Mathfx.Approx(dummyTgtDistanceToOrigin, expectedDummyTgtDistanceToOrigin, 0.5F)) {
                 D.Error("{0} != {1}.", dummyTgtDistanceToOrigin, expectedDummyTgtDistanceToOrigin);
             }
@@ -1783,22 +1818,22 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
         Ray ray = new Ray(Position, direction);
         RaycastHit targetHit;
-        Vector3 pointOutsideUniverse = ray.GetPoint(_universeDiameter);
-        if (Physics.Raycast(pointOutsideUniverse, -ray.direction, out targetHit, _universeDiameter, _universeEdgeCullingMask, QueryTriggerInteraction.Ignore)) {
-            if (targetHit.collider != _universeEdgeCollider) {
+        Vector3 pointOutsideOuterBoundary = ray.GetPoint(_cameraOuterBoundaryDiameter);
+        if (Physics.Raycast(pointOutsideOuterBoundary, -ray.direction, out targetHit, _cameraOuterBoundaryDiameter, _outerBoundaryCullingMask, QueryTriggerInteraction.Ignore)) {
+            if (targetHit.collider != _cameraOuterBoundaryCollider) {
                 float distanceToOrigin = targetHit.point.magnitude;
-                D.Error("{0}: Expected to hit UniverseEdgeCollider. Instead hit {1}! UniverseRadius = {2:0.}, HitDistanceFromOrigin = {3:0.}.",
-                    GetType().Name, targetHit.collider.name, _universeRadius, distanceToOrigin);
+                D.Error("{0}: Expected to hit CameraOuterBoundaryCollider. Instead hit {1}! OuterBoundaryRadius = {2:0.}, HitDistanceFromOrigin = {3:0.}.",
+                    GetType().Name, targetHit.collider.name, _cameraOuterBoundaryRadius, distanceToOrigin);
             }
-            // Place dummyTgt just inside UniverseEdge so its collider doesn't extend outside the UniverseEdge collider,
-            // otherwise we might hit the dummyTgt collider rather than the UniverseEdge collider
-            Vector3 hitPtOnUniverseEdgeCollider = targetHit.point;
-            _dummyTarget.position = hitPtOnUniverseEdgeCollider - ray.direction * DummyTargetOffsetInsideUniverseEdge;
+            // Place dummyTgt just inside OuterBoundary so its collider doesn't extend outside the OuterBoundary collider,
+            // otherwise we might hit the dummyTgt collider rather than the OuterBoundary collider
+            Vector3 hitPtOnOuterBoundaryCollider = targetHit.point;
+            _dummyTarget.position = hitPtOnOuterBoundaryCollider - ray.direction * DummyTargetOffsetInsideOuterBoundary;
             ChangeTarget(_dummyTarget, _dummyTarget.position);
             return true;
         }
 
-        D.Error("Camera has not found a Universe Edge point!");
+        D.Error("Camera has not found an OuterBoundary point!");
         return false;
     }
 
@@ -1809,9 +1844,10 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// <returns></returns>
     private Quaternion CalculateCameraRotation(float dampenedTimeSinceLastUpdate) {
         // keep rotation values exact as a substitute for the unreliable? accuracy that comes from reading EulerAngles from the Quaternion
-        _xAxisRotation %= _degreesPerRotation;
-        _yAxisRotation %= _degreesPerRotation;
-        _zAxisRotation %= _degreesPerRotation;
+        var degreesPerRotation = Constants.DegreesPerRotation;
+        _xAxisRotation %= degreesPerRotation;
+        _yAxisRotation %= degreesPerRotation;
+        _zAxisRotation %= degreesPerRotation;
 
         Vector3 desiredFacingDirection = new Vector3(_xAxisRotation, _yAxisRotation, _zAxisRotation);
 
@@ -1882,7 +1918,6 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     private void Unsubscribe() {
         _subscriptions.ForAll<IDisposable>(s => s.Dispose());
         _subscriptions.Clear();
-        //_gameMgr.gameStateChanged -= GameStateChangedEventHandler;
         _inputMgr.unconsumedPress -= UnconsumedPressEventHandler;
     }
 

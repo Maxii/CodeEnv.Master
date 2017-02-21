@@ -28,16 +28,25 @@ namespace CodeEnv.Master.GameContent {
 
         public ShipHullStat HullStat { get; private set; }
 
-        public EnginesStat EnginesStat { get; private set; }
+        public EngineStat StlEngineStat { get; private set; }
+
+        public EngineStat FtlEngineStat { get; private set; }
 
         public ShipCombatStance CombatStance { get; private set; }
 
-        public ShipDesign(Player player, string designName, ShipHullStat hullStat, EnginesStat enginesStat, ShipCombatStance combatStance,
+        public ShipDesign(Player player, string designName, ShipHullStat hullStat, EngineStat stlEngineStat, ShipCombatStance combatStance,
+            IEnumerable<WeaponDesign> weaponDesigns, IEnumerable<PassiveCountermeasureStat> passiveCmStats,
+            IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats, Priority hqPriority)
+            : this(player, designName, hullStat, stlEngineStat, null, combatStance, weaponDesigns, passiveCmStats, activeCmStats, sensorStats, shieldGenStats, hqPriority) {
+        }
+
+        public ShipDesign(Player player, string designName, ShipHullStat hullStat, EngineStat stlEngineStat, EngineStat ftlEngineStat, ShipCombatStance combatStance,
             IEnumerable<WeaponDesign> weaponDesigns, IEnumerable<PassiveCountermeasureStat> passiveCmStats,
             IEnumerable<ActiveCountermeasureStat> activeCmStats, IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats, Priority hqPriority)
             : base(player, designName, weaponDesigns, passiveCmStats, activeCmStats, sensorStats, shieldGenStats, hqPriority) {
             HullStat = hullStat;
-            EnginesStat = enginesStat;
+            StlEngineStat = stlEngineStat;
+            FtlEngineStat = ftlEngineStat;
             CombatStance = combatStance;
         }
 

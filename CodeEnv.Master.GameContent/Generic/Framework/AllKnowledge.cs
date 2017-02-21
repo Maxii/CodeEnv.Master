@@ -110,7 +110,7 @@ namespace CodeEnv.Master.GameContent {
         private HashSet<IStar> _stars = new HashSet<IStar>();
         private HashSet<IUnitElement> _elements = new HashSet<IUnitElement>();
         private HashSet<IUnitCmd> _commands = new HashSet<IUnitCmd>();
-        private HashSet<IItem> _items = new HashSet<IItem>();
+        private HashSet<IOwnerItem> _items = new HashSet<IOwnerItem>();
         private DebugSettings _debugSettings;
 
         private AllKnowledge() {
@@ -160,8 +160,8 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="player">The player.</param>
         /// <returns></returns>
-        public IEnumerable<IItem> GetItemsOwnedBy(Player player) {
-            var playerOwnedItems = new List<IItem>();
+        public IEnumerable<IOwnerItem> GetItemsOwnedBy(Player player) {
+            var playerOwnedItems = new List<IOwnerItem>();
             _items.ForAll(item => {
                 if (item.Owner == player) {
                     playerOwnedItems.Add(item);
@@ -230,7 +230,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="worldLocation">The world location.</param>
         /// <returns></returns>
         public Topography GetSpaceTopography(Vector3 worldLocation) {
-            IntVector3 sectorID = References.SectorGrid.GetSectorIdThatContains(worldLocation);
+            IntVector3 sectorID = References.SectorGrid.GetSectorIDThatContains(worldLocation);
             ISystem system;
             if (_systemLookupBySectorID.TryGetValue(sectorID, out system)) {
                 // the sector containing worldLocation has a system

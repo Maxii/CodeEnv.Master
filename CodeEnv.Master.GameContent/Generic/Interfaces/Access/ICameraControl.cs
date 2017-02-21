@@ -26,11 +26,6 @@ namespace CodeEnv.Master.GameContent {
     public interface ICameraControl {
 
         /// <summary>
-        /// Read-only. The location of the camera in sector space.
-        /// </summary>
-        IntVector3 SectorID { get; }
-
-        /// <summary>
         /// The position of the camera in world space.
         /// </summary>
         Vector3 Position { get; }
@@ -48,6 +43,14 @@ namespace CodeEnv.Master.GameContent {
         Camera MainCamera_Near { get; }
 
         Camera MainCamera_Far { get; }
+
+        /// <summary>
+        /// Returns <c>true</c> if the Camera's current position is within the radius
+        /// of the universe and therefore has a valid SectorID, <c>false</c> otherwise.
+        /// </summary>
+        /// <param name="sectorID">The sectorID.</param>
+        /// <returns></returns>
+        bool TryGetSectorID(out IntVector3 sectorID);
 
     }
 }

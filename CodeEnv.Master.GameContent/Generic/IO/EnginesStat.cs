@@ -20,7 +20,10 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Immutable stat for a ship's engine(s).
+    /// <remarks>IMPROVE Consider splitting into StlEnginesStat and FtlEnginesStat which would allow
+    /// the creation of ships with only STL engines.</remarks>
     /// </summary>
+    [System.Obsolete]
     public class EnginesStat : AEquipmentStat {
 
         /// <summary>
@@ -57,7 +60,11 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="engineQty">The number of engine(s).</param>
         public EnginesStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float fullStlPropulsionPower,
             float maxTurnRate, float size, float mass, float expense, float ftlPropulsionPowerFactor, int engineQty = Constants.One)
-            : base(name, imageAtlasID, imageFilename, description, size * engineQty, mass * engineQty, Constants.ZeroF, expense * engineQty) {
+            : base(name, imageAtlasID, imageFilename, description, size * engineQty, mass * engineQty, Constants.ZeroF, expense * engineQty,
+                  // IMPROVE re: isDamageable. FTL Engines are damageable, but STL aren't. There is no EngineEquipment class to use 
+                  // this stat value as ShipData holds the EngineStat. Consider splitting into StlEnginesStat and FtlEnginesStat which 
+                  // would allow the creation of ships with only STL engines as well as separate turn rates?
+                  isDamageable: false) {
             FullStlPropulsionPower = fullStlPropulsionPower * engineQty;
             FullFtlPropulsionPower = fullStlPropulsionPower * engineQty * ftlPropulsionPowerFactor;
             if (maxTurnRate < TempGameValues.MinimumTurnRate) {

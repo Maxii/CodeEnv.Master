@@ -172,10 +172,16 @@ namespace CodeEnv.Master.Common {
         /// uses Quaternions for rotations, even when the rotations are expressed
         /// using Vector3 directions as Unity uses Quaternions internally for all
         /// rotations.
+        /// <remarks>2.15.17 At 0.04, getting Quaternion.IsSame() failures where actualDeviation won't go below 0.05595291
+        /// rather than the 0.03956468 seen before and noted in the URL below. I can find no one else having this 
+        /// experience with this new value. IMPROVE As before, the actual rotated degrees vs the desired rotated degrees are
+        /// almost identical, within .0001 degrees so next step would be to convert to desired degrees and actual degrees
+        /// and compare those. That's certainly more work for a high frequency comparison and it will still suffer
+        /// from the same problem when desired and actual are very small values.</remarks>
         /// <remarks>http://answers.unity3d.com/questions/1036566/quaternionangle-is-inaccurate.html#answer-1162822 
         /// </remarks>
         /// </summary>
-        public const float AngleEqualityPrecision = 0.04F;
+        public const float AngleEqualityPrecision = 0.06F;
 
     }
 }

@@ -450,6 +450,25 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
         return new ObjectAnalyzer().ToString(this);
     }
 
+    #region Debug
+
+    private const float __acceptableThresholdMultiplierBase = 0.01F;
+
+
+    protected override void __WarnOnErroneousTriggerExit(ISensorDetectable lostDetectionItem) {
+        if (lostDetectionItem.IsOperational) {
+            float gameSpeedMultiplier = __gameTime.GameSpeedMultiplier;  // 0.25 - 4.0
+            float acceptableThresholdMultiplier = 1F - __acceptableThresholdMultiplierBase * gameSpeedMultiplier;   // ~1 - 0.99 - 0.96
+            float acceptableThreshold = RangeDistance * acceptableThresholdMultiplier;
+            float acceptableThresholdSqrd = acceptableThreshold * acceptableThreshold;
+            float lostDetectionItemDistanceSqrd;
+            if ((lostDetectionItemDistanceSqrd = Vector3.SqrMagnitude(lostDetectionItem.Position - transform.position)) < acceptableThresholdSqrd) {
+                D.Warn("{0}.OnTriggerExit() called. Exit Distance for {1} {2:0.##} is < AcceptableThreshold {3:0.##}.",
+                    DebugName, lostDetectionItem.DebugName, Mathf.Sqrt(lostDetectionItemDistanceSqrd), acceptableThreshold);
+            }
+        }
+    }
+
     #region Debug Show Sensors
 
     private void InitializeDebugShowSensor() {
@@ -508,6 +527,7 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
 
     #endregion
 
+    #endregion
 
 }
 

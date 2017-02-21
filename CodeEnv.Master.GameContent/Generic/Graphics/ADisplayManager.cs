@@ -17,6 +17,9 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Linq;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
@@ -187,10 +190,37 @@ namespace CodeEnv.Master.GameContent {
 
         protected void __ValidateAndCorrectMeshLayer(GameObject meshGo) {
             if ((Layers)meshGo.layer != _meshLayer) {
-                D.Warn("{0} mesh {1} layer improperly set to {2}. Changing to {3}.",
-                    DebugName, meshGo.name, ((Layers)meshGo.layer).GetValueName(), _meshLayer.GetValueName());
+                if (__CheckForCameraLosChangedListener(meshGo)) {
+                    return;
+                }
+                D.Warn("{0} mesh {1} layer improperly set to {2}. Changing to {3}. AllMeshRenderers: {4}.",
+                    DebugName, meshGo.name, ((Layers)meshGo.layer).GetValueName(), _meshLayer.GetValueName(),
+                    __GetMeshRenderers().Select(mr => mr.name).Concatenate());
                 UnityUtility.SetLayerRecursively(meshGo.transform, _meshLayer);
             }
+        }
+
+        /// <summary>
+        /// Returns <c>true</c> if a CameraLosChangedListener if found on or under meshGo.
+        /// <remarks>When this occurs it is typically an InvisibleCameraLosChangedListener attached to the
+        /// end of a BeamOrdnance.</remarks>
+        /// </summary>
+        /// <param name="meshGo">The mesh GameObject.</param>
+        /// <returns></returns>
+        private bool __CheckForCameraLosChangedListener(GameObject meshGo) {
+            return meshGo.GetComponentInChildren<ICameraLosChangedListener>() != null;
+        }
+
+        /// <summary>
+        /// Returns all the MeshRenderers that are controlled by this ADisplayManager.
+        /// <remarks>Used for debugging when a MeshRenderer on an unexpected layer is found.
+        /// 2.18.17 Found a InvisibleCameraLosChangedListener attached to the end of a Beam. Only occurred
+        /// when the ship was created, immediately launched a BeamOrdnance, and then the DisplayMgr was created
+        /// finding the LosChangedListener on a layer different than _meshLayer.</remarks>
+        /// </summary>
+        /// <returns></returns>
+        protected virtual List<MeshRenderer> __GetMeshRenderers() {
+            return new List<MeshRenderer>() { _primaryMeshRenderer };
         }
 
         #endregion

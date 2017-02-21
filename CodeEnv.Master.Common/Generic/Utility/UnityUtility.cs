@@ -30,6 +30,28 @@ namespace CodeEnv.Master.Common {
     public static class UnityUtility {
 
         /// <summary>
+        /// Finds the shortest distance from the center to a side of the provided boxCollider.
+        /// <remarks>Warning: For use only when boxCollider is aligned with the X,Y and Z axes as
+        /// the collider's Bounds is an axis aligned box.</remarks>
+        /// <see cref="https://docs.unity3d.com/ScriptReference/Bounds-size.html"/>
+        /// </summary>
+        /// <param name="bounds">The bounds.</param>
+        /// <returns></returns>
+        public static float FindShortestDistanceToSide(BoxCollider boxCollider) {
+            D.Assert(boxCollider.transform.rotation == Quaternion.identity, "BoxCollider {0} is rotated {1} degrees!"
+                .Inject(boxCollider.name, Quaternion.Angle(boxCollider.transform.rotation, Quaternion.identity)));
+            Vector3 boundsSize = boxCollider.bounds.size;
+            float shortestSideSeparation = boundsSize.x;
+            if (boundsSize.y < shortestSideSeparation) {
+                shortestSideSeparation = boundsSize.y;
+            }
+            if (boundsSize.z < shortestSideSeparation) {
+                shortestSideSeparation = boundsSize.z;
+            }
+            return shortestSideSeparation / 2F;
+        }
+
+        /// <summary>
         /// Determines whether the world point provided is currently within the view port of the main camera.
         /// </summary>
         /// <param name="worldPoint">The world point.</param>

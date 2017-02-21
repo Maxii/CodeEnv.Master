@@ -612,16 +612,34 @@ namespace CodeEnv.Master.Common {
         /// than UnityConstants.AngleEqualityPrecision due to Unity floating point precision.</param>
         /// <returns></returns>
         public static bool IsSame(this Quaternion sourceRotation, Quaternion otherRotation, float allowedDeviation = UnityConstants.AngleEqualityPrecision) {
-            //var actualDeviation = Quaternion.Angle(__FixQuaternion(sourceRotation), __FixQuaternion(otherRotation));
+            float unusedActualDeviation;
+            var isSame = IsSame(sourceRotation, otherRotation, out unusedActualDeviation, allowedDeviation);
+            return isSame;
+        }
+
+        /// <summary>
+        /// Determines whether the two rotations are the same within the allowedDeviation in degrees.
+        /// </summary>
+        /// <param name="sourceRotation">The source rotation.</param>
+        /// <param name="otherRotation">The other rotation.</param>
+        /// <param name="actualDeviation">The resulting actual deviation.</param>
+        /// <param name="allowedDeviation">The allowed deviation in degrees. Cannot be more precise
+        /// than UnityConstants.AngleEqualityPrecision due to Unity floating point precision.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified other rotation is same; otherwise, <c>false</c>.
+        /// </returns>
+        public static bool IsSame(this Quaternion sourceRotation, Quaternion otherRotation, out float actualDeviation, float allowedDeviation = UnityConstants.AngleEqualityPrecision) {
+            ////var actualDeviation = Quaternion.Angle(__FixQuaternion(sourceRotation), __FixQuaternion(otherRotation));
             if (allowedDeviation < UnityConstants.AngleEqualityPrecision) {
                 D.Warn("Angle Deviation precision {0} cannot be < {1}.", allowedDeviation, UnityConstants.AngleEqualityPrecision);
             }
             allowedDeviation = Mathf.Clamp(allowedDeviation, UnityConstants.AngleEqualityPrecision, 180F);
-            var actualDeviation = Quaternion.Angle(sourceRotation, otherRotation);
+            actualDeviation = Quaternion.Angle(sourceRotation, otherRotation);
             var isSame = actualDeviation <= allowedDeviation;
             //D.Log("IsSame result = {0}, remainingAngle: {1}, allowedDeviation: {2}.", isSame, actualDeviation, allowedDeviation);
             return isSame;
         }
+
 
         // see http://answers.unity3d.com/questions/1036566/quaternionangle-is-inaccurate.html#answer-1162822
         [Obsolete]

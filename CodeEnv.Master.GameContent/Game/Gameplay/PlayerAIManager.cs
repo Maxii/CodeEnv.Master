@@ -105,7 +105,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="closestItem">The returned closest item. Null if returns <c>false</c>.</param>
         /// <param name="excludedItems">The items to exclude, if any.</param>
         /// <returns></returns>
-        public bool TryFindMyClosestItem<T>(Vector3 worldPosition, out T closestItem, params T[] excludedItems) where T : IItem {
+        public bool TryFindMyClosestItem<T>(Vector3 worldPosition, out T closestItem, params T[] excludedItems) where T : IOwnerItem {
             Type tType = typeof(T);
             IEnumerable<T> itemCandidates = null;
             if (tType == typeof(IStarbaseCmd)) {
@@ -318,10 +318,12 @@ namespace CodeEnv.Master.GameContent {
             D.AssertEqual(Owner, myUnitCmd.Owner);
             //D.Log("{0} is registering {1} as {2} for orders.", DebugName, myUnitCmd.DebugName, myUnitCmd.IsAvailable ? "available" : "unavailable");
             if (myUnitCmd.IsAvailable) {
+                D.Assert(!_unavailableCmds.Contains(myUnitCmd));
                 D.Assert(!_availableCmds.Contains(myUnitCmd));
                 _availableCmds.Add(myUnitCmd);
             }
             else {
+                D.Assert(!_availableCmds.Contains(myUnitCmd));
                 D.Assert(!_unavailableCmds.Contains(myUnitCmd));
                 _unavailableCmds.Add(myUnitCmd);
             }
@@ -447,7 +449,7 @@ namespace CodeEnv.Master.GameContent {
         /// <remarks>This change will also result in Knowledge becoming aware of the item if it isn't already.</remarks>
         /// </summary>
         /// <param name="item">The item.</param>
-        private void ChangeIntelCoverageToComprehensive(IItem item) {
+        private void ChangeIntelCoverageToComprehensive(IOwnerItem item) {
             if (item is ISystem || item is IUnitCmd) {
                 // These will auto change to Comprehensive when their members do 
                 return;
@@ -494,7 +496,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="player">The player.</param>
         /// <returns></returns>
-        public IEnumerable<IItem> __GetItemsOwnedBy(Player player) {
+        public IEnumerable<IOwnerItem> __GetItemsOwnedBy(Player player) {
             return Knowledge.__GetItemsOwnedBy(player);
         }
 
@@ -503,6 +505,7 @@ namespace CodeEnv.Master.GameContent {
         private IList<IUnitBaseCmd> __basesVisited = new List<IUnitBaseCmd>();
         private bool __isUniverseFullyExplored = false; // avoids duplicate logging
         private bool __areAllBasesVisited = false;      // avoids duplicate logging
+        private bool __areAllTargetsAttacked = false;
 
         private void __AssessAndRecordUnitBaseVisit(IFleetCmd fleetCmd) {
             if (fleetCmd.IsCurrentOrderDirectiveAnyOf(FleetDirective.Move, FleetDirective.FullSpeedMove)) {
@@ -518,48 +521,181 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        private int __myActiveFleetCount;
+        private IList<IFleetCmd> __myAttackingFleets;
+
+        private void __MyAttackingFleetDeathEventHandler(object sender, EventArgs e) {
+            __myAttackingFleets.Remove(sender as IFleetCmd);
+        }
+
         /// <summary>
         /// Issues an order to the fleet.
         /// </summary>
         /// <param name="fleetCmd">The fleet command.</param>
         private void __IssueFleetOrder(IFleetCmd fleetCmd) {
-            var debugFleetCreator = fleetCmd.transform.GetComponentInParent<IDebugFleetCreator>();
-            if (debugFleetCreator != null) {
-                FleetCreatorEditorSettings editorSettings = debugFleetCreator.EditorSettings as FleetCreatorEditorSettings;
-                if (__IssueFleetOrderSpecifiedByCreator(fleetCmd, editorSettings)) {
-                    return;
-                }
-            }
-            if (References.DebugControls.FleetsAutoExploreAsDefault) {
-                if (__isUniverseFullyExplored && __areAllBasesVisited) {
+            if (References.DebugControls.FleetsAutoAttackAsDefault) {
+                if (__areAllTargetsAttacked && __isUniverseFullyExplored) {
                     return;
                 }
 
-                if (!__isUniverseFullyExplored) {
-                    bool tryExplore = RandomExtended.Chance(0.75F);
-                    if (tryExplore) {
-                        __isUniverseFullyExplored = !__IssueFleetExploreOrder(fleetCmd);
-                        if (__isUniverseFullyExplored && !__areAllBasesVisited) {
-                            __areAllBasesVisited = !__IssueFleetBaseMoveOrder(fleetCmd);
-                        };
+                if (__myAttackingFleets == null) {
+                    __myAttackingFleets = new List<IFleetCmd>();
+                }
+
+                __myActiveFleetCount = Knowledge.OwnerFleets.Count();
+
+                if (__myAttackingFleets.Count < Mathf.CeilToInt(__myActiveFleetCount / 2F)) {
+                    // room to assign another fleet to attack
+                    if (__IssueFleetAttackOrder(fleetCmd, findFarthestTgt: false)) {
+                        if (!__myAttackingFleets.Contains(fleetCmd)) {
+                            __myAttackingFleets.Add(fleetCmd);
+                            fleetCmd.deathOneShot += __MyAttackingFleetDeathEventHandler;
+                        }
+                        return;
                     }
                     else {
-                        __areAllBasesVisited = !__IssueFleetBaseMoveOrder(fleetCmd);
-                        if (__areAllBasesVisited) {
-                            __isUniverseFullyExplored = !__IssueFleetExploreOrder(fleetCmd);
+                        // no target detected to attack
+                        if (__myAttackingFleets.Contains(fleetCmd)) {
+                            __myAttackingFleets.Remove(fleetCmd);
+                            fleetCmd.deathOneShot -= __MyAttackingFleetDeathEventHandler;
+                        }
+
+                        __isUniverseFullyExplored = !__IssueFleetExploreOrder(fleetCmd);
+                        if (__isUniverseFullyExplored) {
+                            // couldn't find target to attack and universe is fully explored so all targets have been destroyed
+                            __areAllTargetsAttacked = true;
+                        }
+                        else {
+                            D.Log("{0}: Fleet {1} can't find an attack target so will explore another part of universe.", DebugName, fleetCmd.DebugName);
                         }
                     }
                 }
                 else {
-                    if (!__areAllBasesVisited) {
-                        __areAllBasesVisited = !__IssueFleetBaseMoveOrder(fleetCmd);
+                    // no room to assign more fleets so assign to explore
+                    if (__myAttackingFleets.Contains(fleetCmd)) {
+                        __myAttackingFleets.Remove(fleetCmd);
+                        fleetCmd.deathOneShot -= __MyAttackingFleetDeathEventHandler;
+                    }
+
+                    __isUniverseFullyExplored = !__IssueFleetExploreOrder(fleetCmd);
+                    if (__isUniverseFullyExplored) {
+                        // no room for more attacks and universe is fully explored so all targets that can be attacked have been
+                        __areAllTargetsAttacked = true;
+                    }
+                    else {
+                        D.Log("{0}: Fleet {1} is not allowed to attack so will explore another part of universe.", DebugName, fleetCmd.DebugName);
                     }
                 }
-                if (__isUniverseFullyExplored && __areAllBasesVisited) {
-                    D.LogBold("{0}: Fleet {1} has run out of unexplored explorable or unvisited visitable destinations in universe.", DebugName, fleetCmd.DebugName);
+
+                if (__areAllTargetsAttacked && __isUniverseFullyExplored) {
+                    D.LogBold("{0}: Fleet {1} has run out of attack targets and unexplored explorable destinations in universe.", DebugName, fleetCmd.DebugName);
+                }
+            }
+            else {  // FleetsAutoAttackAsDefault precludes all other orders
+                var debugFleetCreator = fleetCmd.transform.GetComponentInParent<IDebugFleetCreator>();
+                if (debugFleetCreator != null) {
+                    FleetCreatorEditorSettings editorSettings = debugFleetCreator.EditorSettings as FleetCreatorEditorSettings;
+                    if (__IssueFleetOrderSpecifiedByCreator(fleetCmd, editorSettings)) {
+                        return;
+                    }
+                }
+
+                if (References.DebugControls.FleetsAutoExploreAsDefault) {
+                    if (__isUniverseFullyExplored && __areAllBasesVisited) {
+                        return;
+                    }
+
+                    if (!__isUniverseFullyExplored) {
+                        bool tryExplore = RandomExtended.Chance(0.75F);
+                        if (tryExplore) {
+                            __isUniverseFullyExplored = !__IssueFleetExploreOrder(fleetCmd);
+                            if (__isUniverseFullyExplored && !__areAllBasesVisited) {
+                                __areAllBasesVisited = !__IssueFleetBaseMoveOrder(fleetCmd);
+                            };
+                        }
+                        else {
+                            __areAllBasesVisited = !__IssueFleetBaseMoveOrder(fleetCmd);
+                            if (__areAllBasesVisited) {
+                                __isUniverseFullyExplored = !__IssueFleetExploreOrder(fleetCmd);
+                            }
+                        }
+                    }
+                    else {
+                        if (!__areAllBasesVisited) {
+                            __areAllBasesVisited = !__IssueFleetBaseMoveOrder(fleetCmd);
+                        }
+                    }
+                    if (__isUniverseFullyExplored && __areAllBasesVisited) {
+                        D.LogBold("{0}: Fleet {1} has run out of unexplored explorable or unvisited visitable destinations in universe.", DebugName, fleetCmd.DebugName);
+                    }
                 }
             }
         }
+        //private void __IssueFleetOrder(IFleetCmd fleetCmd) {
+        //    if (References.DebugControls.FleetsAutoAttackAsDefault) {
+        //        if (__areAllTargetsAttacked && __isUniverseFullyExplored) {
+        //            return;
+        //        }
+
+        //        if (__IssueFleetAttackOrder(fleetCmd, findFarthestTgt: false)) {
+        //            return;
+        //        }
+        //        else {
+        //            // no target detected to attack
+        //            __isUniverseFullyExplored = !__IssueFleetExploreOrder(fleetCmd);
+        //            if (__isUniverseFullyExplored) {
+        //                // couldn't find target to attack and universe is fully explored so all targets have been destroyed
+        //                __areAllTargetsAttacked = true;
+        //            }
+        //            else {
+        //                //D.Log("{0}: Fleet {1} can't find an attack target so will explore another part of universe.", DebugName, fleetCmd.DebugName);
+        //            }
+        //        }
+        //        if (__areAllTargetsAttacked && __isUniverseFullyExplored) {
+        //            D.LogBold("{0}: Fleet {1} has run out of attack targets and unexplored explorable destinations in universe.", DebugName, fleetCmd.DebugName);
+        //        }
+        //    }
+        //    else {  // FleetsAutoAttackAsDefault precludes all other orders
+        //        var debugFleetCreator = fleetCmd.transform.GetComponentInParent<IDebugFleetCreator>();
+        //        if (debugFleetCreator != null) {
+        //            FleetCreatorEditorSettings editorSettings = debugFleetCreator.EditorSettings as FleetCreatorEditorSettings;
+        //            if (__IssueFleetOrderSpecifiedByCreator(fleetCmd, editorSettings)) {
+        //                return;
+        //            }
+        //        }
+
+        //        if (References.DebugControls.FleetsAutoExploreAsDefault) {
+        //            if (__isUniverseFullyExplored && __areAllBasesVisited) {
+        //                return;
+        //            }
+
+        //            if (!__isUniverseFullyExplored) {
+        //                bool tryExplore = RandomExtended.Chance(0.75F);
+        //                if (tryExplore) {
+        //                    __isUniverseFullyExplored = !__IssueFleetExploreOrder(fleetCmd);
+        //                    if (__isUniverseFullyExplored && !__areAllBasesVisited) {
+        //                        __areAllBasesVisited = !__IssueFleetBaseMoveOrder(fleetCmd);
+        //                    };
+        //                }
+        //                else {
+        //                    __areAllBasesVisited = !__IssueFleetBaseMoveOrder(fleetCmd);
+        //                    if (__areAllBasesVisited) {
+        //                        __isUniverseFullyExplored = !__IssueFleetExploreOrder(fleetCmd);
+        //                    }
+        //                }
+        //            }
+        //            else {
+        //                if (!__areAllBasesVisited) {
+        //                    __areAllBasesVisited = !__IssueFleetBaseMoveOrder(fleetCmd);
+        //                }
+        //            }
+        //            if (__isUniverseFullyExplored && __areAllBasesVisited) {
+        //                D.LogBold("{0}: Fleet {1} has run out of unexplored explorable or unvisited visitable destinations in universe.", DebugName, fleetCmd.DebugName);
+        //            }
+        //        }
+        //    }
+        //}
+
 
         /// <summary>
         /// Tries to issue the fleet order specified by the DebugUnitCreator. Returns
@@ -573,9 +709,11 @@ namespace CodeEnv.Master.GameContent {
             if (editorSettings.Move) {
                 if (editorSettings.Attack) {
                     isOrderIssued = __IssueFleetAttackOrder(fleetCmd, editorSettings.FindFarthest);
+                    D.LogBold(!isOrderIssued, "{0}: {1} can find no WarAttackTargets of any sort.", DebugName, fleetCmd.DebugName);
                 }
                 else {
                     isOrderIssued = __IssueFleetMoveOrder(fleetCmd, editorSettings.FindFarthest);
+                    D.LogBold(!isOrderIssued, "{0}: {1} can find no MoveTargets that meet the selection criteria.", DebugName, fleetCmd.DebugName);
                 }
             }
             return isOrderIssued;
@@ -594,7 +732,6 @@ namespace CodeEnv.Master.GameContent {
             attackTgts.AddRange(Knowledge.Settlements.Cast<IUnitAttackable>().Where(s => s.IsWarAttackByAllowed(Owner)));
             ////attackTgts.AddRange(Knowledge.Planets.Cast<IUnitAttackable>().Where(p => p.IsWarAttackByAllowed(Owner)));
             if (!attackTgts.Any()) {
-                D.LogBold("{0}: {1} can find no WarAttackTargets of any sort.", DebugName, fleetCmd.DebugName);
                 return false;
             }
             IUnitAttackable attackTgt;
@@ -604,7 +741,7 @@ namespace CodeEnv.Master.GameContent {
             else {
                 attackTgt = attackTgts.MinBy(t => Vector3.SqrMagnitude(t.Position - fleetCmd.Position));
             }
-            //D.Log("{0} attack target is {1}.", fleetCmd.DebugName, attackTgt.DebugName);
+            D.Log("{0} is issuing an attack order against {1}.", fleetCmd.DebugName, attackTgt.DebugName);
             fleetCmd.CurrentOrder = new FleetOrder(FleetDirective.Attack, OrderSource.CmdStaff, attackTgt);
             return true;
         }
@@ -627,7 +764,6 @@ namespace CodeEnv.Master.GameContent {
             }
 
             if (!moveTgts.Any()) {
-                D.LogBold("{0}: {1} can find no MoveTargets that meet the selection criteria.", DebugName, fleetCmd.DebugName);
                 return false;
             }
             IFleetNavigable destination;
@@ -700,7 +836,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="allyOwnedItem">The ally owned item.</param>
         [Obsolete]
-        public void HandleChgdItemOwnerIsAlly(IItem allyOwnedItem) {
+        public void HandleChgdItemOwnerIsAlly(IOwnerItem allyOwnedItem) {
             D.Assert(Owner.IsRelationshipWith(allyOwnedItem.Owner, DiplomaticRelationship.Alliance));
             D.Assert(!(allyOwnedItem is IUniverseCenter));
 
@@ -714,7 +850,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="myOwnedItem">My owned item.</param>
         [Obsolete]
-        public void HandleGainedItemOwnership(IItem myOwnedItem) {
+        public void HandleGainedItemOwnership(IOwnerItem myOwnedItem) {
             //D.Log("{0}.HandleGainedItemOwnership({1}) called.", DebugName, myOwnedItem.DebugName);
             D.AssertEqual(Owner, myOwnedItem.Owner);
             D.Assert(!(myOwnedItem is IUniverseCenter));
@@ -729,7 +865,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="losingOwnedItem">The losing owned item.</param>
         [Obsolete]
-        public void HandleLosingItemOwnership(IItem losingOwnedItem) {
+        public void HandleLosingItemOwnership(IOwnerItem losingOwnedItem) {
             D.AssertEqual(Owner, losingOwnedItem.Owner);
             D.Assert(!(losingOwnedItem is IUniverseCenter));
 
@@ -738,7 +874,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         [Obsolete]
-        private void ChangeIntelCoverageToComprehensiveAndPopulateKnowledge(IItem item) {
+        private void ChangeIntelCoverageToComprehensiveAndPopulateKnowledge(IOwnerItem item) {
             if (item is ISystem || item is IUnitCmd) {
                 // These will auto change to Comprehensive when their members do 
                 // and they auto populate knowledge based on their members populating it

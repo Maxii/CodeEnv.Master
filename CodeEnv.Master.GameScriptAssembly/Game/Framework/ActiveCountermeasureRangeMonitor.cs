@@ -17,6 +17,7 @@
 // default namespace
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
@@ -48,6 +49,11 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
 
     protected override void HandleDetectedObjectAdded(IInterceptableOrdnance newlyDetectedThreat) {
         if (CanThreatBeIgnored(newlyDetectedThreat)) {
+            // 2.25.27 shouldn't keep tracking it in base class if I'm not going to keep track of its death here
+            // If I don't remove it, it would stay tracked until it exited the trigger envelope. As trigger exits
+            // aren't a good idea to rely on, this approach will remove all tracked IInterceptableOrdnance since
+            // I track its guaranteed death if not removed here.
+            RemoveDetectedObject(newlyDetectedThreat);
             //D.Log(ShowDebugLog, "{0} is ignoring friendly detected threat {1} moving away.", DebugName, newlyDetectedThreat.DebugName);
             return;
         }
@@ -60,6 +66,8 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
 
     protected override void HandleDetectedObjectRemoved(IInterceptableOrdnance previousThreat) {
         RemoveThreat(previousThreat);
+        __threatDeathSubscriptionsRemoved.Add(previousThreat.DebugName);
+
     }
 
     /// <summary>
@@ -70,7 +78,8 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
     private void AddThreat(IInterceptableOrdnance newThreat) {
 
         Profiler.BeginSample("Event Subscription allocation", gameObject);
-        newThreat.deathOneShot += ThreatDeathEventHandler;
+        newThreat.terminationOneShot += ThreatDeathEventHandler;
+        __threatDeathSubscriptionsAdded.Add(newThreat.DebugName);
         Profiler.EndSample();
 
         _equipmentList.ForAll(cm => {
@@ -89,7 +98,7 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
     /// </summary>
     /// <param name="previousThreat">The previous threat.</param>
     private void RemoveThreat(IInterceptableOrdnance previousThreat) {
-        previousThreat.deathOneShot -= ThreatDeathEventHandler;
+        previousThreat.terminationOneShot -= ThreatDeathEventHandler;
         _equipmentList.ForAll(cm => cm.HandleThreatInRangeChanged(previousThreat, isInRange: false));
     }
 
@@ -107,7 +116,7 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
     }
 
     private void HandleThreatDeath(IOrdnance deadThreat) {
-        //D.Log(ShowDebugLog, "{0} received threatDeath event for {1}.", DebugName, deadThreat.Name);
+        //D.Log(ShowDebugLog, "{0} received threatDeath event for {1}.", DebugName, deadThreat.DebugName);
         RemoveDetectedObject(deadThreat as IInterceptableOrdnance);
     }
 
@@ -127,11 +136,24 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
 
     #endregion
 
+    private IList<string> __threatDeathSubscriptionsAdded = new List<string>(100);
+
+    private IList<string> __threatDeathSubscriptionsRemoved = new List<string>(100);
+
     protected override void ReviewKnowledgeOfAllDetectedObjects() {
         _objectsDetected.ForAll(threat => {
             // First, remove each threat's death subscription along with all ActiveCM knowledge of the threat.
-            // If the threat was initially ignored, HandleThreatOutOfRange will do nothing
+            //// 2.15.17 If the threat was initially ignored, HandleThreatOutOfRange will do nothing
             RemoveThreat(threat);
+            if (!threat.IsOperational) {
+                D.Error("{0}: Dead Threat {1} should have already been removed when death was detected.", DebugName, threat.DebugName);
+                D.Error("{0}: Subscribed to {1} ThreatDeaths: {2}.", DebugName, __threatDeathSubscriptionsAdded.Count, __threatDeathSubscriptionsAdded.Concatenate());
+                D.Error("{0}: Unsubscribed to {1} ThreatDeaths excluding {1}: {2}.", DebugName, __threatDeathSubscriptionsRemoved.Count, threat.DebugName, __threatDeathSubscriptionsRemoved.Concatenate());
+            }
+            // if its already dead, its probably been despawned which means all its values will be null
+
+            __threatDeathSubscriptionsRemoved.Add(threat.DebugName);
+
             // Now, if the threat can't be ignored, add back each threat's death subscription and ActiveCM knowledge of the threat.
             if (!CanThreatBeIgnored(threat)) {  // a parentItemOwner or player relationship change can affect whether to ignore the threat
                 AddThreat(threat);
@@ -171,6 +193,27 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
         return new ObjectAnalyzer().ToString(this);
     }
 
+    #region Debug
+
+    private const float __acceptableThresholdSubtractorBase = 1.2F;
+
+    protected override void __WarnOnErroneousTriggerExit(IInterceptableOrdnance exitingOrdnance) {
+        if (exitingOrdnance.IsOperational) {
+            float gameSpeedMultiplier = __gameTime.GameSpeedMultiplier;  // 0.25 - 4.0
+            float rangeDistanceSubtractor = __acceptableThresholdSubtractorBase * gameSpeedMultiplier;  // 0.3 - 1.2 - 4.8
+
+            float acceptableThreshold = Mathf.Clamp(RangeDistance - rangeDistanceSubtractor, 1F, Mathf.Infinity);
+            float acceptableThresholdSqrd = acceptableThreshold * acceptableThreshold;
+
+            float ordnanceDistanceSqrd;
+            if ((ordnanceDistanceSqrd = Vector3.SqrMagnitude(exitingOrdnance.Position - transform.position)) < acceptableThresholdSqrd) {
+                D.Warn("{0}.OnTriggerExit() called. Exit Distance for {1} {2:0.##} is < AcceptableThreshold {3:0.##}.",
+                    DebugName, exitingOrdnance.DebugName, Mathf.Sqrt(ordnanceDistanceSqrd), acceptableThreshold);
+            }
+        }
+    }
+
+    #endregion
 
 }
 

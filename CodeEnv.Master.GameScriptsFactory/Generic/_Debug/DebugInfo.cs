@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Text;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
 /// Singleton. Shows a tooltip containing debug info.
@@ -73,21 +74,22 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
         if (_gameMgr.CurrentSceneID == SceneID.GameScene) {
             _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, MainCameraControl.CameraState>(cc => cc.CurrentState, CameraStatePropChangedHandler));
             _subscriptions.Add(PlayerViews.Instance.SubscribeToPropertyChanged<PlayerViews, PlayerViewMode>(pv => pv.ViewMode, PlayerViewModePropChangedHandler));
-            _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, IntVector3>(cc => cc.SectorID, CameraSectorIdPropChangedHandler));
             _subscriptions.Add(InputManager.Instance.SubscribeToPropertyChanged<InputManager, GameInputMode>(im => im.InputMode, InputModePropChangedHandler));
+
+            MainCameraControl.Instance.sectorIDChanged += CameraSectorIDChangedEventHandler;
         }
     }
 
     private void BuildContent() {
         _debugInfoContent = _debugInfoContent ?? new StringBuilder();
         _debugInfoContent.Clear();
-        _debugInfoContent.AppendLine("PauseState: {0}".Inject(_gameMgr.PauseState.GetValueName()));
+        _debugInfoContent.AppendLine("PauseState: " + _gameMgr.PauseState.GetValueName());
         _debugInfoContent.AppendLine(ConstructQualityText());
         if (_gameMgr.CurrentSceneID == SceneID.GameScene) {
-            _debugInfoContent.AppendLine("CameraState: {0}".Inject(MainCameraControl.Instance.CurrentState.GetValueName()));
-            _debugInfoContent.AppendLine("ViewMode: {0}".Inject(PlayerViews.Instance.ViewMode.GetValueName()));
+            _debugInfoContent.AppendLine("CameraState: " + MainCameraControl.Instance.CurrentState.GetValueName());
+            _debugInfoContent.AppendLine("ViewMode: " + PlayerViews.Instance.ViewMode.GetValueName());
             _debugInfoContent.AppendLine(ConstructCameraSectorText());
-            _debugInfoContent.AppendLine("InputMode: {0}".Inject(InputManager.Instance.InputMode.GetValueName()));
+            _debugInfoContent.AppendLine("InputMode: " + InputManager.Instance.InputMode.GetValueName());
         }
     }
 
@@ -97,9 +99,12 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
     }
 
     private string ConstructCameraSectorText() {
-        IntVector3 cameraSectorID = MainCameraControl.Instance.SectorID;
-        string sectorText = SectorGrid.Instance.__IsSectorPresentAt(cameraSectorID) ? cameraSectorID.ToString() : "None";
-        return "Camera Sector: " + sectorText;
+        IntVector3 cameraSectorID;
+        if (MainCameraControl.Instance.TryGetSectorID(out cameraSectorID)) {
+            // camera is inside radius of universe
+            return "Camera Sector: " + cameraSectorID.ToString();
+        }
+        return "Camera Sector: None";
     }
 
     #region Event and Property Change Handlers
@@ -112,9 +117,9 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
 
     private void CameraStatePropChangedHandler() { BuildContent(); }
 
-    private void QualitySettingPropChangedHandler() { BuildContent(); }
+    private void CameraSectorIDChangedEventHandler(object sender, EventArgs e) { BuildContent(); }
 
-    private void CameraSectorIdPropChangedHandler() { BuildContent(); }
+    private void QualitySettingPropChangedHandler() { BuildContent(); }
 
     private void InputModePropChangedHandler() { BuildContent(); }
 
@@ -145,6 +150,10 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
     private void Unsubscribe() {
         _subscriptions.ForAll<IDisposable>(d => d.Dispose());
         _subscriptions.Clear();
+
+        if (MainCameraControl.Instance != null) {    // can be null if destroyed before this GO is destroyed
+            MainCameraControl.Instance.sectorIDChanged -= CameraSectorIDChangedEventHandler;
+        }
     }
 
     #endregion

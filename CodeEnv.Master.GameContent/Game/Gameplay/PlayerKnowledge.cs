@@ -202,8 +202,8 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public IEnumerable<IItem> OwnerItems {
-            get { return GetItemsOwnedBy(Owner).Cast<IItem>(); }
+        public IEnumerable<IOwnerItem> OwnerItems {
+            get { return GetItemsOwnedBy(Owner).Cast<IOwnerItem>(); }
         }
 
         [Obsolete]
@@ -617,7 +617,6 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="element">The element.</param>
         internal void RemoveElement(IUnitElement_Ltd element) {
-            D.Assert(element is IShip_Ltd, element.DebugName);
             var isRemoved = _elements.Remove(element);
             isRemoved = isRemoved & _items.Remove(element);
             D.Assert(isRemoved, element.DebugName);
@@ -665,9 +664,9 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="player">The player.</param>
         /// <returns></returns>
-        public IEnumerable<IItem> __GetItemsOwnedBy(Player player) {
-            var playerOwnedItems = new List<IItem>();
-            _items.Cast<IItem>().ForAll(item => {
+        public IEnumerable<IOwnerItem> __GetItemsOwnedBy(Player player) {
+            var playerOwnedItems = new List<IOwnerItem>();
+            _items.Cast<IOwnerItem>().ForAll(item => {
                 if (item.Owner == player) {
                     playerOwnedItems.Add(item);
                 }
@@ -685,11 +684,11 @@ namespace CodeEnv.Master.GameContent {
 
         private void __ValidatePlayerKnowledgeNow() {
             D.Log("{0} is validating all Player Knowledge.", DebugName);
-            IList<IItem> myItems = OwnerItems.ToList();
+            IList<IOwnerItem> myItems = OwnerItems.ToList();
             foreach (var item in _items) {
                 D.Assert(item.IsOperational, item.DebugName);
                 IntelCoverage coverage = (item as IIntelItem).GetIntelCoverage(Owner);
-                if (myItems.Contains(item as IItem)) {
+                if (myItems.Contains(item as IOwnerItem)) {
                     // item is mine so should be comprehensive
                     D.AssertEqual(IntelCoverage.Comprehensive, coverage, coverage.GetValueName());
                     continue;

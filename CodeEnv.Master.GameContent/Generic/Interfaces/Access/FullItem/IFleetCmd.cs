@@ -14,7 +14,10 @@
 ////#define DEBUG_WARN
 ////#define DEBUG_ERROR
 
+
 namespace CodeEnv.Master.GameContent {
+
+    using System;
 
     /// <summary>
     /// Interface for easy access to MonoBehaviours that are FleetCmds.
@@ -23,6 +26,8 @@ namespace CodeEnv.Master.GameContent {
 
         FleetCmdReport UserReport { get; }
 
+        float UnitFullSpeedValue { get; }
+
         FleetOrder CurrentOrder { get; set; }
 
         bool IsCurrentOrderDirectiveAnyOf(params FleetDirective[] directives);
@@ -30,6 +35,10 @@ namespace CodeEnv.Master.GameContent {
         FleetCmdReport GetReport(Player player);
 
         ShipReport[] GetElementReports(Player player);
+
+        void WaitForFleetToAlign(Action callback, IShip ship);
+
+        void RemoveFleetIsAlignedCallback(Action callback, IShip ship);
 
     }
 }

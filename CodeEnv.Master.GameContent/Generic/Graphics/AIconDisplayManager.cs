@@ -17,6 +17,8 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
@@ -144,7 +146,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Destroys the icon if present, include any subscription un-wiring required.
+        /// Destroys the icon if present, include any subscription unwiring required.
         /// WARNING: Destroying an Icon that is used for other purposes by the Item can result in difficult to diagnose errors.
         /// e.g. Cmds use the Icon as the transform upon which to center highlighting.
         /// </summary>
@@ -169,6 +171,19 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
+
+        #region Debug
+
+        protected override List<MeshRenderer> __GetMeshRenderers() {
+            List<MeshRenderer> result = base.__GetMeshRenderers();
+            if (Icon != null) {
+                result.AddRange((Icon as Component).GetComponentsInChildren<MeshRenderer>());
+            }
+            return result;
+        }
+
+        #endregion
+
     }
 
 }

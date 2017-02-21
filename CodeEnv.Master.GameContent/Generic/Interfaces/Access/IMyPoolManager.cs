@@ -21,6 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for easy access to the MyPoolManager MonoBehaviour singleton.
     /// </summary>
+    [System.Obsolete]
     public interface IMyPoolManager {
 
         Transform OrdnanceSpawnPool { get; }

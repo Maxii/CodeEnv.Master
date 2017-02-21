@@ -28,10 +28,15 @@ using UnityEngine.Profiling;
 /// is key to its functionality. As Cmd moves and rotates, this station moves as its child using
 /// its' local position value thereby keeping its position continuously accurate. This would be very
 /// hard to do using a regular class.</remarks>
+/// <remarks>2.15.17 Added IEquatable to allow pool-generated instances to be used in Dictionary and HashSet.
+/// Without it, a reused instance appears to be equal to another reused instance if from the same instance. Probably doesn't matter
+/// as only 1 reused instance from an instance can exist at the same time, but...</remarks>
 /// </summary>
-public class FleetFormationStation : AFormationStation, IFleetFormationStation, IShipNavigable {
+public class FleetFormationStation : AFormationStation, IFleetFormationStation, IShipNavigable, IEquatable<FleetFormationStation> {
 
     private const string NameFormat = "{0}.{1}";
+
+    private static int _UniqueIDCount = Constants.One;
 
     /// <summary>
     /// Indicates whether the assignedShip is completely on its formation station.
@@ -73,6 +78,8 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
 
     // Note: FormationStation's facing, as a child of FleetCmd, is always the same as FleetCmd's and Flagship's facing
 
+    private int _uniqueID;
+
     #region Event and Prop Change Handlers
 
     private void AssignedShipPropChangedHandler() {
@@ -85,7 +92,10 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
 
     private void OnSpawned() {
         //D.Log("{0}.OnSpawned() called.", DebugName);
+        D.AssertEqual(Constants.Zero, _uniqueID);
         InitializeDebugShowFleetFormationStation();
+        _uniqueID = _UniqueIDCount;
+        _UniqueIDCount++;
     }
 
     private void OnDespawned() {
@@ -93,6 +103,8 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
         StationInfo = default(FormationStationSlotInfo);
         D.AssertNull(AssignedShip);
         CleanupDebugShowFleetFormationStation();
+        D.AssertNotEqual(Constants.Zero, _uniqueID);
+        _uniqueID = Constants.Zero;
     }
 
     #endregion
@@ -109,6 +121,30 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
     protected override void Cleanup() {
         CleanupDebugShowFleetFormationStation();
     }
+
+    #region Object.Equals and GetHashCode Override
+
+    public override bool Equals(object obj) {
+        if (!(obj is FleetFormationStation)) { return false; }
+        return Equals((FleetFormationStation)obj);
+    }
+
+    /// <summary>
+    /// Returns a hash code for this instance.
+    /// See "Page 254, C# 4.0 in a Nutshell."
+    /// </summary>
+    /// <returns>
+    /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
+    /// </returns>
+    public override int GetHashCode() {
+        unchecked { // http://dobrzanski.net/2010/09/13/csharp-gethashcode-cause-overflowexception/
+            int hash = base.GetHashCode();
+            hash = hash * 31 + _uniqueID.GetHashCode(); // 31 = another prime number
+            return hash;
+        }
+    }
+
+    #endregion
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
@@ -171,6 +207,9 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
 
     public Vector3 Position { get { return transform.position; } }
 
+    public bool IsOperational { get { return AssignedShip != null; } }
+
+
     #endregion
 
     #region IShipNavigable Members
@@ -184,6 +223,14 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
 
     #endregion
 
+    #region IEquatable<FleetFormationStation> Members
+
+    public bool Equals(FleetFormationStation other) {
+        // if the same instance and _uniqueID are equal, then its the same
+        return base.Equals(other) && _uniqueID == other._uniqueID;  // need instance comparison as _uniqueID is 0 in PoolMgr
+    }
+
+    #endregion
 
 }
 

@@ -18,6 +18,7 @@
 namespace CodeEnv.Master.GameContent {
 
     using CodeEnv.Master.Common;
+    using UnityEngine;
 
     /// <summary>
     /// Interface for mobile objects (ships and projectileOrdnance) that listen for 
@@ -25,6 +26,10 @@ namespace CodeEnv.Master.GameContent {
     /// <remarks>Could also be called ITopographyMonitorCLient.</remarks>
     /// </summary>
     public interface ITopographyChangeListener {
+
+        string DebugName { get; }
+
+        Vector3 Position { get; }
 
         void ChangeTopographyTo(Topography newTopography);
 

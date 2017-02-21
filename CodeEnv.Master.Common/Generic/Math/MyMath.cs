@@ -39,7 +39,6 @@ namespace CodeEnv.Master.Common {
             new Vector3(0F, 0F, -1F)
         };
 
-
         /// <summary>
         /// Returns the percentage distance along the line where the nearest point on the line is located.
         /// 1.0 = 100%. The value can be greater than 1.0 if point is beyond lineEnd.
@@ -216,7 +215,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="linePt">The line point origin</param>
         /// <param name="lineDirection">The line direction.</param>
         /// <returns></returns>
-        [Obsolete("Use DoesLineSegmentIntersectSphere")]    // 1.24.17 I'm not clear how reliable this is
+        [Obsolete("Use DoesLineSegmentIntersectSphere")]    // 1.24.17 I'm not clear how reliable DoesLineIntersectSphere is
         public static bool DoesLineIntersectSphere(Vector3 center, float radius, Vector3 linePt, Vector3 lineDirection) {
             lineDirection.ValidateNormalized();
             Vector3 centerToLinePoint = linePt - center;
@@ -338,7 +337,7 @@ namespace CodeEnv.Master.Common {
             };
         }
 
-        private static IDictionary<float, Vector3[]> _icosahedronVerticesLookup = new Dictionary<float, Vector3[]>();
+        private static IDictionary<float, Vector3[]> _icosahedronVerticesLookup = new Dictionary<float, Vector3[]>(FloatEqualityComparer.Default);
 
         /// <summary>
         /// Calculates the vertices of an Icosahedron with the designated edgeLength around the origin.

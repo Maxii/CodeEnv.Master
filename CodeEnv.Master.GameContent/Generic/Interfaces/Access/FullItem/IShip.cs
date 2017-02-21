@@ -24,11 +24,17 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IShip : IUnitElement {
 
+        new IFleetCmd Command { get; }
+
         Vector3 CurrentHeading { get; }
+
+        bool IsTurning { get; }
 
         float ActualSpeedValue { get; }
 
         float CollisionDetectionZoneRadius { get; }
+
+        IFleetFormationStation FormationStation { get; }
 
         void HandlePendingCollisionWith(IObstacle obstacle);
 

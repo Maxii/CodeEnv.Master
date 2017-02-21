@@ -529,7 +529,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
 
     protected override void Despawn() { // OPTIMIZE 5.19.16 not really necessary
         //D.Log(ShowDebugLog, "{0} is about to despawn and re-parent to OrdnanceSpawnPool.", DebugName);
-        MyPoolManager.Instance.DespawnOrdnance(transform, MyPoolManager.Instance.OrdnanceSpawnPool);
+        GamePoolManager.Instance.DespawnOrdnance(transform, GamePoolManager.Instance.OrdnanceSpawnPool);
     }
 
     private void KillAnimateOperatingEffectJob() {

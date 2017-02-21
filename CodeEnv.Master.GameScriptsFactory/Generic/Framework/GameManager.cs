@@ -879,6 +879,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         D.Assert(!GameSettings.IsSavedGame);
         OnNewGameBuilding();
         PrepareGameTimeForNewGame();    // Done here as this state is unique to new or simulated games
+        GamePoolManager.Instance.Initialize(GameSettings);
 
         InitializePlayers();
         UniverseCreator.InitializeUniverseCenter(); // can't be earlier as Players are checked when Data is assigned

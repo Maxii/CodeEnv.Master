@@ -97,12 +97,13 @@ namespace CodeEnv.Master.GameContent {
             var hullGo = elementItemGo.GetSingleInterfaceInChildren<IHull>().transform.gameObject;
             _secondaryMeshRenderers = hullGo.GetComponentsInChildren<MeshRenderer>().Except(_primaryMeshRenderer);
             if (_secondaryMeshRenderers.Any()) {
-                //D.Log("{0} is initializing Mount Renderers.", DebugName);
-                _secondaryMeshRenderers.ForAll(r => {
-                    __ValidateAndCorrectMeshLayer(r.gameObject);
-                    r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
-                    r.receiveShadows = true;
-                    r.enabled = false;
+                //string rNames = _secondaryMeshRenderers.Select(r => r.gameObject.name).Concatenate();
+                //D.Log("{0} is initializing Mount Renderers: {1}.", DebugName, rNames);
+                _secondaryMeshRenderers.ForAll(smr => {
+                    __ValidateAndCorrectMeshLayer(smr.gameObject);
+                    smr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+                    smr.receiveShadows = true;
+                    smr.enabled = false;
                 });
             }
         }
@@ -164,6 +165,16 @@ namespace CodeEnv.Master.GameContent {
                 // change the renderer's color using the updated _primaryMeshMPB
                 ShowPrimaryMesh();
             }
+        }
+
+        #endregion
+
+        #region Debug
+
+        protected override List<MeshRenderer> __GetMeshRenderers() {
+            List<MeshRenderer> result = base.__GetMeshRenderers();
+            result.AddRange(_secondaryMeshRenderers);
+            return result;
         }
 
         #endregion

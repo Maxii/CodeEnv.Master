@@ -66,6 +66,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="ThirdParty\GamePoolManager.cs" />
     <Compile Include="Game\_Debug\DebugSystemCreator.cs" />
     <Compile Include="Generic\Framework\NewGameSystemConfigurator.cs" />
     <Compile Include="Game\Framework\SystemCreator.cs" />

@@ -53,6 +53,8 @@ namespace CodeEnv.Master.GameContent {
 
         public bool IsMobile { get { return true; } }
 
+        public bool IsOperational { get { return true; } }
+
         #endregion
 
         #region IShipNavigable Members

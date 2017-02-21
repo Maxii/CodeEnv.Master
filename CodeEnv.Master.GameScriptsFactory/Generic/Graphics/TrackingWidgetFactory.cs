@@ -93,7 +93,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     /// <param name="iconInfo">The info needed to build the sprite.</param>
     /// <returns></returns>
     public IInteractiveWorldTrackingSprite MakeInteractiveWorldTrackingSprite(IWidgetTrackable trackedTgt, IconInfo iconInfo) {
-        if (DebugControls.Instance.UseIndependentUIPanelWidgets) {
+        if (DebugControls.Instance.UseOneUIPanelPerWidget) {
             return MakeInteractiveWorldTrackingSprite_Independent(trackedTgt, iconInfo);
         }
         else {
@@ -154,7 +154,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     /// <param name="iconInfo">The info needed to build the sprite.</param>
     /// <returns></returns>
     public IWorldTrackingSprite MakeWorldTrackingSprite(IWidgetTrackable trackedTgt, IconInfo iconInfo) {
-        if (DebugControls.Instance.UseIndependentUIPanelWidgets) {
+        if (DebugControls.Instance.UseOneUIPanelPerWidget) {
             return MakeWorldTrackingSprite_Independent(trackedTgt, iconInfo);
         }
         else {
@@ -215,7 +215,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     /// <param name="iconInfo">The info needed to build the sprite.</param>
     /// <returns></returns>
     public ITrackingWidget MakeWorldTrackingLabel(IWidgetTrackable trackedTgt, WidgetPlacement placement = WidgetPlacement.Above) {
-        if (DebugControls.Instance.UseIndependentUIPanelWidgets) {
+        if (DebugControls.Instance.UseOneUIPanelPerWidget) {
             return MakeWorldTrackingLabel_Independent(trackedTgt, placement);
         }
         else {

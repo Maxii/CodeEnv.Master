@@ -23,11 +23,11 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class PassiveCountermeasure : AEquipment, ICountermeasure {
 
-        private static string _nameFormat = "{0}_{1:0.#}";
+        private const string NameFormat = "{0}_{1:0.#}";
 
         public override string Name {
             get {
-                return _nameFormat.Inject(base.Name, DamageMitigation.Total);
+                return NameFormat.Inject(base.Name, DamageMitigation.Total);
             }
         }
 

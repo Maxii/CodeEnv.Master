@@ -24,9 +24,13 @@ namespace CodeEnv.Master.Common {
 
     /// <summary>
     /// Interruptible Coroutine container that is executed on IJobRunner.
-    /// 12.8.16 Jobs are now re-usable after they complete by using Restart(). JobManager handles Job recycling.
+    /// <remarks>12.8.16 Jobs are now re-usable after they complete by using Restart(). JobManager handles Job recycling.</remarks>
+    /// <remarks>2.16.17 Added IEquatable and _uniqueID to allow recycled instances to be used in Dictionary and HashSet.
+    /// Without it, a reused instance appears to be equal to another reused instance if from the same instance. Probably doesn't matter
+    /// as only 1 reused instance from an instance can exist at the same time, but...</remarks>
+    /// <remarks>IMPROVE _uniqueID could be added to the Job name to distinguish between them, ala AOrdnance.</remarks>
     /// </summary>
-    public class Job : IDisposable {
+    public class Job : IDisposable, IEquatable<Job> {
 
         /**************************************************************************************************************
          * Note 1: jobCompleted delegate execution delay
@@ -45,6 +49,8 @@ namespace CodeEnv.Master.Common {
          **************************************************************************************************************/
 
         public static IJobRunner JobRunner { private get; set; }
+
+        private static int _UniqueIDCount = Constants.One;
 
         /// <summary>
         /// Action delegate executed when the job is completed. Contains a
@@ -81,6 +87,7 @@ namespace CodeEnv.Master.Common {
         private IEnumerator _coroutine;
         private bool _jobWasKilled;
         private Stack<Job> _childJobStack;
+        private int _uniqueID;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Job"/> class.
@@ -294,6 +301,17 @@ namespace CodeEnv.Master.Common {
         //    }, null, delay, System.Threading.Timeout.Infinite);
         //}
 
+        /// <summary>
+        /// Called by JobManager after the Job has been recycled into cache in preparation for another use.
+        /// <remarks>_uniqueID cannot be set to zero during ResetOnCompletion as JobManager has not yet removed it from
+        /// the containers that are keeping track of it. Resetting _uniqueID to zero there will result in the container not
+        /// finding the stored, completed Job as GetHashCode and Equals incorporate the value of _uniqueID.</remarks>
+        /// </summary>
+        public void OnRecycled() {
+            D.AssertNotEqual(Constants.Zero, _uniqueID);
+            _uniqueID = Constants.Zero;
+        }
+
         #endregion
 
         #region Event and Property Change Handlers
@@ -311,7 +329,10 @@ namespace CodeEnv.Master.Common {
         #endregion
 
         private void Start() {  // 12.6.16 replaced public API Start()
-            //D.Log("{0}.Start called.", JobName);
+                                //D.Log("{0}.Start called.", JobName);
+            D.AssertEqual(Constants.Zero, _uniqueID);
+            _uniqueID = _UniqueIDCount;
+            _UniqueIDCount++;
             IsRunning = true;
             JobRunner.StartCoroutine(Run());
             IsCompleted = false;
@@ -348,13 +369,50 @@ namespace CodeEnv.Master.Common {
             }
         }
 
+        #region Cleanup
+
         private void Cleanup() {
             Kill();
         }
 
+        #endregion
+
+        #region Object.Equals and GetHashCode Override
+
+        public override bool Equals(object obj) {
+            if (!(obj is Job)) { return false; }
+            return Equals((Job)obj);
+        }
+
+        /// <summary>
+        /// Returns a hash code for this instance.
+        /// See "Page 254, C# 4.0 in a Nutshell."
+        /// </summary>
+        /// <returns>
+        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
+        /// </returns>
+        public override int GetHashCode() {
+            unchecked { // http://dobrzanski.net/2010/09/13/csharp-gethashcode-cause-overflowexception/
+                int hash = base.GetHashCode();
+                hash = hash * 31 + _uniqueID.GetHashCode(); // 31 = another prime number
+                return hash;
+            }
+        }
+
+        #endregion
+
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
+
+        #region IEquatable<Job> Members
+
+        public bool Equals(Job other) {
+            // if the same instance and _uniqueID are equal, then its the same
+            return base.Equals(other) && _uniqueID == other._uniqueID;  // need instance comparison as _uniqueID is 0 in Cache
+        }
+
+        #endregion
 
         #region IDisposable
 

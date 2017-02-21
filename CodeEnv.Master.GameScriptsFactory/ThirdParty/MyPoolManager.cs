@@ -17,7 +17,9 @@
 // default namespace
 
 using System;
+using System.Collections.Generic;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using PathologicalGames;
 using UnityEngine;
@@ -25,6 +27,7 @@ using UnityEngine;
 /// <summary>
 /// My pooling manager singleton using Enums to interface with PathologicalGames.PoolManager.
 /// </summary>
+[System.Obsolete]
 public class MyPoolManager : AMonoSingleton<MyPoolManager>, IMyPoolManager {
 
     private const string OrdnancePoolName = "Ordnance";
@@ -52,7 +55,6 @@ public class MyPoolManager : AMonoSingleton<MyPoolManager>, IMyPoolManager {
     /// </summary>
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        // TODO
     }
 
     #endregion
@@ -163,6 +165,7 @@ public class MyPoolManager : AMonoSingleton<MyPoolManager>, IMyPoolManager {
     }
 
     #endregion
+
 
     protected override void ExecutePriorToDestroy() {
         base.ExecutePriorToDestroy();

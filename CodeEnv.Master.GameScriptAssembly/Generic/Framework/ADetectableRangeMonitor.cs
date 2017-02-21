@@ -46,9 +46,12 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     /// </summary>
     protected HashSet<IDetectableType> _objectsDetected;
 
+    protected GameTime __gameTime;
+
     protected override void InitializeValuesAndReferences() {
         base.InitializeValuesAndReferences();
         _objectsDetected = new HashSet<IDetectableType>();
+        __gameTime = GameTime.Instance;
     }
 
     #region Event and Property Change Handlers
@@ -375,15 +378,7 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     /// </summary>
     protected virtual void __ValidateRangeDistance() { }
 
-    private void __WarnOnErroneousTriggerExit(IDetectableType lostDetectionObject) {
-        float lostDetectionObjectDistance;
-        float maxAcceptableThreshold = Mathf.Min(RangeDistance * 0.95F, RangeDistance - 0.5F);
-        if (lostDetectionObject.IsOperational &&
-            (lostDetectionObjectDistance = Vector3.Distance(lostDetectionObject.Position, transform.position)) < maxAcceptableThreshold) {
-            D.Warn("{0}.OnTriggerExit() called. Distance to {1} {2:0.##} not within MaxAcceptableThreshold {3:0.##}.",
-                DebugName, lostDetectionObject.DebugName, lostDetectionObjectDistance, maxAcceptableThreshold);
-        }
-    }
+    protected abstract void __WarnOnErroneousTriggerExit(IDetectableType lostDetectionObject);
 
     #endregion
 

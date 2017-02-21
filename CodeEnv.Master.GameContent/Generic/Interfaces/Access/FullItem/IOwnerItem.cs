@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IItem.cs
-// Interface for easy access to MonoBehaviours that are AItems.
+// File: IOwnerItem.cs
+// Interface for easy access to Items that support having an Owner.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,18 +21,18 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Interface for easy access to MonoBehaviours that are AItems.
+    /// Interface for easy access to Items that support having an Owner, including Sectors.
     /// </summary>
-    public interface IItem : IDebugable {
+    public interface IOwnerItem : IDebugable {
 
         /// <summary>
-        /// Occurs when the owner of this <c>IItem</c> is about to change.
+        /// Occurs when the owner of this <c>IOwnerItem</c> is about to change.
         /// The new incoming owner is the <c>Player</c> provided in the EventArgs.
         /// </summary>
         event EventHandler<OwnerChangingEventArgs> ownerChanging;
 
         /// <summary>
-        /// Occurs when the owner of this <c>IItem</c> has changed.
+        /// Occurs when the owner of this <c>IOwnerItem</c> has changed.
         /// </summary>
         event EventHandler ownerChanged;
 
@@ -47,8 +47,6 @@ namespace CodeEnv.Master.GameContent {
         string Name { get; }
 
         Topography Topography { get; }
-
-        bool ShowDebugLog { get; }
 
     }
 }

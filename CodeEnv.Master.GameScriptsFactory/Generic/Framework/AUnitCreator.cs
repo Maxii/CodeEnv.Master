@@ -46,7 +46,7 @@ public abstract class AUnitCreator : AMonoBase {
         private set { transform.name = value; }
     }
 
-    public IntVector3 SectorID { get { return SectorGrid.Instance.GetSectorIdThatContains(transform.position); } }
+    public IntVector3 SectorID { get { return SectorGrid.Instance.GetSectorIDThatContains(transform.position); } }
 
     private UnitCreatorConfiguration _configuration;
     public UnitCreatorConfiguration Configuration {
@@ -186,7 +186,7 @@ public abstract class AUnitCreator : AMonoBase {
         CompleteUnitInitialization();   // 10.19.16 Moved up from last as Knowledge organizes Cmds by their sectorID which this initializes
         AddUnitToGameKnowledge();
         ////AddUnitToOwnerAndAllysKnowledge();
-        RegisterCommandForOrders();
+        ////RegisterCommandForOrders();
     }
 
     protected abstract void CompleteUnitInitialization();
@@ -199,8 +199,8 @@ public abstract class AUnitCreator : AMonoBase {
     /// <summary>
     /// Registers the command with the Owner's AIMgr so it can receive orders.
     /// </summary>
+    [Obsolete("2.15.17 Handled by Cmd.CommenceOperations")]
     protected abstract void RegisterCommandForOrders();
-
 
     protected void BeginUnitOperations() {
         LogEvent();

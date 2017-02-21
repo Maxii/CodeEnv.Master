@@ -14,7 +14,10 @@
 ////#define DEBUG_WARN
 ////#define DEBUG_ERROR
 
+
 namespace CodeEnv.Master.GameContent {
+
+    using CodeEnv.Master.Common;
 
     /// <summary>
     /// Interface for targets that can be attacked by ships.
@@ -23,13 +26,13 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Returns the proxy for this target for use by a Ship's Pilot when attacking this target.
-        /// The distances provided allow the proxy to help the ship stay within its desired range envelope of the target.
+        /// The values provided allow the proxy to help the ship stay within its desired weapons range envelope relative to the target's surface.
         /// <remarks>There is no target offset as ships don't attack in formation.</remarks>
         /// </summary>
-        /// <param name="minDesiredDistanceToTgtSurface">The minimum desired distance of this ship from the target's surface.</param>
-        /// <param name="maxDesiredDistanceToTgtSurface">The maximum desired distance of this ship from the target's surface.</param>
+        /// <param name="desiredWeaponsRangeEnvelope">The ship's desired weapons range envelope relative to the target's surface.</param>
+        /// <param name="shipCollisionDetectionRadius">The attacking ship's collision detection radius.</param>
         /// <returns></returns>
-        AutoPilotDestinationProxy GetApAttackTgtProxy(float minDesiredDistanceToTgtSurface, float maxDesiredDistanceToTgtSurface);
+        AutoPilotDestinationProxy GetApAttackTgtProxy(ValueRange<float> desiredWeaponsRangeEnvelope, float shipCollisionDetectionRadius);
 
     }
 }

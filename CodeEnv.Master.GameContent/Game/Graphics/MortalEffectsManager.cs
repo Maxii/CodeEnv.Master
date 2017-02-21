@@ -38,7 +38,7 @@ namespace CodeEnv.Master.GameContent {
                 GameObject explosionSFXGo = _generalFactory.MakeAutoDestruct3DAudioSFXInstance("ExplosionSFX", _effectsClient.Position);
                 References.SFXManager.PlaySFX(explosionSFXGo, SfxGroupID.Explosions);
 
-                _explosionEffect = _myPoolMgr.Spawn(EffectID.Explosion, _effectsClient.Position);
+                _explosionEffect = _gamePoolMgr.Spawn(EffectID.Explosion, _effectsClient.Position);
                 _explosionEffect.effectFinishedOneShot += (source, args) => {
                     _effectsClient.HandleEffectSequenceFinished(effectSeqID);
                 };

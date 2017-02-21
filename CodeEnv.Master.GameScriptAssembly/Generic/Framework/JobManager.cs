@@ -222,6 +222,8 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
         _killableJobs.Remove(job);
         _pausableJobs.Remove(job);
         _reusableJobCache.Push(job);
+
+        job.OnRecycled();
         //D.Log("{0} has recycled a Job for future reuse.", GetType().Name);
         //D.Log("Remaining Jobs in _allExecutingJobs after recycle = {0}.", _allExecutingJobs.Select(j => j.JobName).Concatenate());
     }
