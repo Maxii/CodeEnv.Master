@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AApTask.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// Abstract base class for AutoPilot tasks.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,15 +17,10 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
-    using CodeEnv.Master.GameContent;
-    using UnityEngine;
 
     /// <summary>
-    /// 
+    /// Abstract base class for AutoPilot tasks.
     /// </summary>
     public abstract class AApTask : IDisposable {
 
@@ -33,12 +28,9 @@ namespace CodeEnv.Master.GameContent {
 
         public abstract bool IsEngaged { get; }
 
-
-
         protected string DebugName { get { return DebugNameFormat.Inject(_autoPilot.DebugName, GetType().Name); } }
 
         protected bool ShowDebugLog { get { return _autoPilot.ShowDebugLog; } }
-
 
         protected MoveAutoPilot _autoPilot;
         protected IJobManager _jobMgr;
@@ -60,12 +52,13 @@ namespace CodeEnv.Master.GameContent {
 
         protected abstract void KillJob();
 
-        protected abstract void Cleanup();
+        protected virtual void Cleanup() {
+            KillJob();
+        }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
-
 
         #region IDisposable
 

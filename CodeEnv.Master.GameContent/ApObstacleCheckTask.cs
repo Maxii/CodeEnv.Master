@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ApObstacleCheckTask.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// AutoPilot task that checks for IAvoidableObstacles while moving to a destination firing an event if an obstacle is found.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,11 +21,11 @@ namespace CodeEnv.Master.GameContent {
     using System.Linq;
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
-    using CodeEnv.Master.GameContent;
     using UnityEngine;
 
     /// <summary>
-    /// 
+    /// AutoPilot task that checks for IAvoidableObstacles while moving to a destination
+    /// firing an event if an obstacle is found.
     /// </summary>
     public class ApObstacleCheckTask : AApTask {
 
@@ -40,31 +40,23 @@ namespace CodeEnv.Master.GameContent {
 
         public event EventHandler<ObstacleFoundEventArgs> obstacleFound;
 
-        private void OnObstacleFound(AutoPilotDestinationProxy detourProxy) {
-            if (obstacleFound != null) {
-                obstacleFound(this, new ObstacleFoundEventArgs(detourProxy));
-            }
-        }
+        public override bool IsEngaged { get { return _obstacleCheckJob != null; } }
 
-        private bool _doesApObstacleCheckPeriodNeedRefresh;
-        internal bool DoesApObstacleCheckPeriodNeedRefresh {
-            get { return _doesApObstacleCheckPeriodNeedRefresh; }
+        private bool _doesObstacleCheckPeriodNeedRefresh;
+        internal bool DoesObstacleCheckPeriodNeedRefresh {
+            get { return _doesObstacleCheckPeriodNeedRefresh; }
             set {
-                if (IsEngaged) {
-                    _doesApObstacleCheckPeriodNeedRefresh = value;
-                }
+                D.Assert(IsEngaged);
+                _doesObstacleCheckPeriodNeedRefresh = value;
             }
         }
 
         private Vector3 Position { get { return _autoPilot.Position; } }
 
-        public override bool IsEngaged { get { return _obstacleCheckJob != null; } }
-
-        private GameTimeDuration _apObstacleCheckPeriod;
-
+        private GameTimeDuration _obstacleCheckJobPeriod;
         private Job _obstacleCheckJob;
 
-        public ApObstacleCheckTask(MoveAutoPilot autoPilot) : base(autoPilot) {        }
+        public ApObstacleCheckTask(MoveAutoPilot autoPilot) : base(autoPilot) { }
 
         protected override void InitializeValuesAndReferences() {
             base.InitializeValuesAndReferences();
@@ -77,27 +69,25 @@ namespace CodeEnv.Master.GameContent {
 
         private void InitiateObstacleCheckingEnrouteTo(AutoPilotDestinationProxy destProxy) {
             D.AssertNull(_obstacleCheckJob, DebugName);
-            _apObstacleCheckPeriod = __GenerateObstacleCheckPeriod();
+            _obstacleCheckJobPeriod = __GenerateObstacleCheckJobPeriod();
             AutoPilotDestinationProxy detourProxy;
             string jobName = "{0}.ApObstacleCheckJob".Inject(DebugName);
-            _obstacleCheckJob = _jobMgr.RecurringWaitForHours(new Reference<GameTimeDuration>(() => _apObstacleCheckPeriod), jobName, waitMilestone: () => {
+            _obstacleCheckJob = _jobMgr.RecurringWaitForHours(new Reference<GameTimeDuration>(() => _obstacleCheckJobPeriod), jobName, waitMilestone: () => {
 
                 if (TryCheckForObstacleEnrouteTo(destProxy, out detourProxy)) {
                     KillJob();
                     OnObstacleFound(detourProxy);
-                    //_autoPilot.RefreshCourse(courseRefreshMode, detourProxy);
-                    //_autoPilot.ContinueCourseToTargetVia(detourProxy);
                     return;
                 }
-                if (DoesApObstacleCheckPeriodNeedRefresh) {
-                    _apObstacleCheckPeriod = __GenerateObstacleCheckPeriod();
-                    DoesApObstacleCheckPeriodNeedRefresh = false;
+                if (DoesObstacleCheckPeriodNeedRefresh) {
+                    _obstacleCheckJobPeriod = __GenerateObstacleCheckJobPeriod();
+                    DoesObstacleCheckPeriodNeedRefresh = false;
                 }
 
             });
         }
 
-        private GameTimeDuration __GenerateObstacleCheckPeriod() {
+        private GameTimeDuration __GenerateObstacleCheckJobPeriod() {
             float relativeObstacleFreq;  // IMPROVE OK for now as obstacleDensity is related but not same as Topography.GetRelativeDensity()
             float defaultHours;
             ValueRange<float> hoursRange;
@@ -225,7 +215,7 @@ namespace CodeEnv.Master.GameContent {
                 if (reqdTurnAngleToDetour < DetourTurnAngleThreshold) {
                     useDetour = false;
                     // angle is still shallow but short remaining distance might require use of a detour
-                    float maxDistanceTraveledBeforeNextObstacleCheck = _autoPilot.IntendedCurrentSpeedValue * _apObstacleCheckPeriod.TotalInHours;
+                    float maxDistanceTraveledBeforeNextObstacleCheck = _autoPilot.IntendedCurrentSpeedValue * _obstacleCheckJobPeriod.TotalInHours;
                     float obstacleDistanceThresholdRequiringDetour = maxDistanceTraveledBeforeNextObstacleCheck * 2F;   // HACK
                     float distanceToObstacleZone = zoneHitInfo.distance;
                     if (distanceToObstacleZone <= obstacleDistanceThresholdRequiringDetour) {
@@ -277,7 +267,6 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-
         /// <summary>
         /// Calculates and returns the world space offset to the provided detour that when combined with the
         /// detour's position, represents the actual location in world space this ship is trying to reach, 
@@ -299,6 +288,15 @@ namespace CodeEnv.Master.GameContent {
             return Vector3.zero;
         }
 
+        #region Event and Property Change Handlers
+
+        private void OnObstacleFound(AutoPilotDestinationProxy detourProxy) {
+            if (obstacleFound != null) {
+                obstacleFound(this, new ObstacleFoundEventArgs(detourProxy));
+            }
+        }
+
+        #endregion
 
         protected override void KillJob() {
             if (_obstacleCheckJob != null) {
@@ -312,10 +310,13 @@ namespace CodeEnv.Master.GameContent {
             // obstacleFound is subscribed too only once when this task is created. 
             // This Assert makes sure that hasn't changed.
             D.AssertEqual(1, obstacleFound.GetInvocationList().Count());
+            _obstacleCheckJobPeriod = default(GameTimeDuration);
+            _doesObstacleCheckPeriodNeedRefresh = false;
         }
 
         protected override void Cleanup() {
-            throw new NotImplementedException();
+            base.Cleanup();
+            obstacleFound = null;
         }
 
         public override string ToString() {

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ApMoveTask.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// AutoPilot task that moves the AutoPilot's client to a destination firing an event when it arrives.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,15 +17,13 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
-    using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
-    using CodeEnv.Master.GameContent;
     using UnityEngine;
 
     /// <summary>
-    /// 
+    /// AutoPilot task that moves the AutoPilot's client to a destination
+    /// firing an event when it arrives.
     /// </summary>
     public class ApMoveTask : AApTask {
 
@@ -55,46 +53,31 @@ namespace CodeEnv.Master.GameContent {
         private static float __MinExpectedTurnratePerFrameAtSlowestFPS
             = (GameTime.HoursPerSecond * TempGameValues.MinimumTurnRate) / TempGameValues.MinimumFramerate;
 
-        public event EventHandler hasArrived;
-
-        private void OnHasArrived() {
-            if (hasArrived != null) {
-                hasArrived(this, EventArgs.Empty);
-            }
-        }
+        public event EventHandler hasArrivedOneShot;
 
         public override bool IsEngaged { get { return _moveJob != null; } }
 
         private Job _moveJob;
-        //private IShip _ship;
 
-        public ApMoveTask(MoveAutoPilot autoPilot/*, IShip ship*/) : base(autoPilot) {
-            //_ship = ship;
-        }
+        public ApMoveTask(MoveAutoPilot autoPilot) : base(autoPilot) { }
 
         public override void Execute(AutoPilotDestinationProxy destProxy) {
-
             D.AssertNotNull(destProxy, "{0}.AutoPilotDestProxy is null. Frame = {1}.".Inject(DebugName, Time.frameCount));
-
             InitiateNavigationTo(destProxy);
         }
 
         private void InitiateNavigationTo(AutoPilotDestinationProxy destProxy) {
-
-            GameTimeDuration progressCheckPeriod = default(GameTimeDuration);
-            Speed correctedSpeed;
-
             float distanceToArrival;
             Vector3 directionToArrival;
-
             bool isArrived = !destProxy.TryGetArrivalDistanceAndDirection(_autoPilot.Position, out directionToArrival, out distanceToArrival);
             D.Assert(!isArrived);
 
-            //D.Log(ShowDebugLog, "{0} powering up. Distance to arrival at {1} = {2:0.0}.", DebugName, destination.DebugName, distanceToArrival);
-            progressCheckPeriod = GenerateProgressCheckPeriod(distanceToArrival, out correctedSpeed);
+            //D.Log(ShowDebugLog, "{0} powering up. Distance to arrival at {1} = {2:0.0}.", DebugName, destProxy.DebugName, distanceToArrival);
+            Speed correctedSpeed;
+            GameTimeDuration progressCheckPeriod = GenerateProgressCheckPeriod(distanceToArrival, out correctedSpeed);
             if (correctedSpeed != default(Speed)) {
                 //D.Log(ShowDebugLog, "{0} is correcting its speed to {1} to get a minimum of 5 progress checks.", DebugName, correctedSpeed.GetValueName());
-                _autoPilot.ChangeSpeed(correctedSpeed, _autoPilot.IsCurrentSpeedFleetwide);
+                //_autoPilot.ChangeSpeed(correctedSpeed, _autoPilot.IsCurrentSpeedFleetwide);
             }
             //D.Log(ShowDebugLog, "{0} initial progress check period set to {1}.", DebugName, progressCheckPeriod);
 
@@ -103,9 +86,9 @@ namespace CodeEnv.Master.GameContent {
 
             float halfArrivalWindowDepth = destProxy.ArrivalWindowDepth / 2F;
 
-            string jobName = "{0}.ApNavJob".Inject(DebugName);
+            string jobName = "{0}.ApMoveJob".Inject(DebugName);
             _moveJob = _jobMgr.RecurringWaitForHours(new Reference<GameTimeDuration>(() => progressCheckPeriod), jobName, waitMilestone: () => {
-                //D.Log(ShowDebugLog, "{0} making ApNav progress check on Date: {1}, Frame: {2}. CheckPeriod = {3}.", DebugName, _gameTime.CurrentDate, Time.frameCount, progressCheckPeriod);
+                //D.Log(ShowDebugLog, "{0} making ApNav progress check on Frame: {1}. CheckPeriod = {2}.", DebugName, Time.frameCount, progressCheckPeriod);
 
                 if (isArrived = !destProxy.TryGetArrivalDistanceAndDirection(_autoPilot.Position, out directionToArrival, out distanceToArrival)) {
                     KillJob();
@@ -113,10 +96,10 @@ namespace CodeEnv.Master.GameContent {
                     return; // ends execution of waitMilestone
                 }
 
-                //D.Log(ShowDebugLog, "{0} beginning progress check on Date: {1}.", DebugName, _gameTime.CurrentDate);
+                //D.Log(ShowDebugLog, "{0} beginning progress check.", DebugName);
                 if (CheckForCourseCorrection(directionToArrival, ref previousFrameCourseWasCorrected, ref minFrameWaitBetweenAttemptedCourseCorrectionChecks)) {
                     //D.Log(ShowDebugLog, "{0} is making a mid course correction of {1:0.00} degrees. Frame = {2}.",
-                    //DebugName, Vector3.Angle(directionToArrival, _shipData.IntendedHeading), Time.frameCount);
+                    //DebugName, Vector3.Angle(directionToArrival, _autoPilot.IntendedHeading), Time.frameCount);
                     _autoPilot.ChangeHeading(directionToArrival);
                     _autoPilot.HandleCourseChanged();  // 5.7.16 added to keep plots current with moving targets
                 }
@@ -126,17 +109,17 @@ namespace CodeEnv.Master.GameContent {
                     if (correctedPeriod != default(GameTimeDuration)) {
                         D.AssertDefault((int)correctedSpeed);
                         //D.Log(ShowDebugLog, "{0} is correcting progress check period from {1} to {2} en-route to {3}, Distance to arrival = {4:0.0}.",
-                        //Name, progressCheckPeriod, correctedPeriod, destination.DebugName, distanceToArrival);
+                        //DebugName, progressCheckPeriod, correctedPeriod, destProxy.DebugName, distanceToArrival);
                         progressCheckPeriod = correctedPeriod;
                     }
                     else {
                         D.AssertNotDefault((int)correctedSpeed);
                         //D.Log(ShowDebugLog, "{0} is correcting speed from {1} to {2} en-route to {3}, Distance to arrival = {4:0.0}.",
-                        //Name, CurrentSpeed.GetValueName(), correctedSpeed.GetValueName(), destination.DebugName, distanceToArrival);
+                        //DebugName, _autoPilot.CurrentSpeedSetting.GetValueName(), correctedSpeed.GetValueName(), destProxy.DebugName, distanceToArrival);
                         _autoPilot.ChangeSpeed(correctedSpeed, _autoPilot.IsCurrentSpeedFleetwide);
                     }
                 }
-                //D.Log(ShowDebugLog, "{0} completed progress check on Date: {1}, NextProgressCheckPeriod: {2}.", DebugName, _gameTime.CurrentDate, progressCheckPeriod);
+                //D.Log(ShowDebugLog, "{0} completed progress check, NextProgressCheckPeriod: {2}.", DebugName, progressCheckPeriod);
                 //D.Log(ShowDebugLog, "{0} not yet arrived. DistanceToArrival = {1:0.0}.", DebugName, distanceToArrival);
             });
 
@@ -168,7 +151,7 @@ namespace CodeEnv.Master.GameContent {
                 while (hoursPerCheckPeriod < MinHoursPerProgressCheckPeriodAllowed) {
                     Speed slowerSpeed;
                     if (speed.TryDecreaseSpeed(out slowerSpeed)) {
-                        float slowerSpeedValue = _autoPilot.IsCurrentSpeedFleetwide ? slowerSpeed.GetUnitsPerHour(_autoPilot.UnitFullSpeedValue) : slowerSpeed.GetUnitsPerHour(_autoPilot.FullSpeedValue);
+                        float slowerSpeedValue = _autoPilot.GetSpeedValue(slowerSpeed);
                         minHoursToArrival = distanceToArrival / slowerSpeedValue;
                         hoursPerCheckPeriod = minHoursToArrival / MinNumberOfProgressChecksToBeginNavigation;
                         speed = slowerSpeed;
@@ -246,12 +229,12 @@ namespace CodeEnv.Master.GameContent {
             //D.Log(ShowDebugLog, "{0} called TryCheckForPeriodOrSpeedCorrection().", DebugName);
             correctedSpeed = default(Speed);
             correctedPeriod = default(GameTimeDuration);
-            if (_autoPilot.DoesApProgressCheckPeriodNeedRefresh) {
+            if (_autoPilot.DoesMoveTaskProgressCheckPeriodNeedRefresh) {
 
                 correctedPeriod = __RefreshProgressCheckPeriod(currentPeriod);
 
                 //D.Log(ShowDebugLog, "{0} is refreshing progress check period from {1} to {2}.", DebugName, currentPeriod, correctedPeriod);
-                _autoPilot.DoesApProgressCheckPeriodNeedRefresh = false;
+                _autoPilot.DoesMoveTaskProgressCheckPeriodNeedRefresh = false;
                 return true;
             }
 
@@ -281,7 +264,7 @@ namespace CodeEnv.Master.GameContent {
                 if (isDistanceCoveredPerCheckTooHigh) {
                     // at this speed I could miss the arrival window
                     //D.Log(ShowDebugLog, "{0} will arrive in as little as {1:0.0} checks and will miss front half depth {2:0.00} of arrival window.",
-                    //Name, checksRemainingBeforeArrival, halfArrivalCaptureDepth);
+                    //DebugName, checksRemainingBeforeArrival, halfArrivalCaptureDepth);
                     if (_autoPilot.CurrentSpeedSetting.TryDecreaseSpeed(out correctedSpeed)) {
                         //D.Log(ShowDebugLog, "{0} is reducing speed to {1}.", DebugName, correctedSpeed.GetValueName());
                         return true;
@@ -333,23 +316,23 @@ namespace CodeEnv.Master.GameContent {
             return new GameTimeDuration(refreshedProgressCheckPeriodHours);
         }
 
-        ///// <summary>
-        ///// Varies the check period by plus or minus 10% to spread out recurring event firing.
-        ///// </summary>
-        ///// <param name="hoursPerCheckPeriod">The hours per check period.</param>
-        ///// <returns></returns>
-        //private float VaryCheckPeriod(float hoursPerCheckPeriod) {
-        //    return UnityEngine.Random.Range(hoursPerCheckPeriod * 0.9F, hoursPerCheckPeriod * 1.1F);
-        //}
+        #region Event and Property Change Handlers
+
+        private void OnHasArrived() {
+            if (hasArrivedOneShot != null) {
+                hasArrivedOneShot(this, EventArgs.Empty);
+                hasArrivedOneShot = null;
+            }
+        }
+
+        #endregion
 
         public override void ResetForReuse() {
             base.ResetForReuse();
-            // hasArrived is subscribed too every time Execute is called. This Assert
-            // makes sure ResetForReuse is called before every reuse of Execute.
-            D.AssertEqual(1, hasArrived.GetInvocationList().Count());
-            hasArrived = null;
-            //_doesApProgressCheckPeriodNeedRefresh = false;
-            //IsIncreaseAboveApSpeedAllowed = false;
+            // hasArrivedOneShot is subscribed too every time Execute is called. 
+            // This Assert confirms there are never multiple subscriptions.
+            D.Assert(hasArrivedOneShot.GetInvocationList().Count() < 2);
+            hasArrivedOneShot = null;
         }
 
         protected override void KillJob() {
@@ -360,7 +343,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override void Cleanup() {
-            throw new NotImplementedException();
+            base.Cleanup();
+            hasArrivedOneShot = null;
         }
 
         public override string ToString() {

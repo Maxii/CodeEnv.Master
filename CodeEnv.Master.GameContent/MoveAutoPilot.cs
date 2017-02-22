@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// 
     /// </summary>
-    public class MoveAutoPilot {
+    public class MoveAutoPilot : IDisposable {
 
         private const string DebugNameFormat = "{0}.{1}";
 
@@ -37,33 +37,19 @@ namespace CodeEnv.Master.GameContent {
                                                             Speed.Stop
                                                         };
 
-        internal string DebugName { get { return DebugNameFormat.Inject(_helm.DebugName, GetType().Name); } }
-
-        internal bool ShowDebugLog { get { return _helm.ShowDebugLog; } }
-
-        internal bool IsEngaged {
+        public bool IsEngaged {
             get {
-                bool isEngaged = _apMoveTask != null && _apMoveTask.IsEngaged;
-                D.AssertEqual(isEngaged, _apObstacleCheckTask != null && _apObstacleCheckTask.IsEngaged);
+                bool isEngaged = _moveTask != null && _moveTask.IsEngaged;
+                D.AssertEqual(isEngaged, _obstacleCheckTask != null && _obstacleCheckTask.IsEngaged);
                 return isEngaged;
             }
         }
 
+        internal string DebugName { get { return DebugNameFormat.Inject(_helm.DebugName, GetType().Name); } }
+
+        internal bool ShowDebugLog { get { return _helm.ShowDebugLog; } }
+
         internal Topography __Topography { get { return _ship.Topography; } }
-
-        /// <summary>
-        /// The current target (proxy) this Pilot is engaged to reach.
-        /// </summary>
-        private AutoPilotDestinationProxy ApTargetProxy { get; set; }
-
-        private string ApTargetFullName {
-            get { return ApTargetProxy != null ? ApTargetProxy.Destination.DebugName : "No ApTargetProxy"; }
-        }
-
-        /// <summary>
-        /// Distance from this AutoPilot's client to the TargetPoint.
-        /// </summary>
-        private float ApTargetDistance { get { return Vector3.Distance(Position, ApTargetProxy.Position); } }
 
         /// <summary>
         /// The initial speed the autopilot should travel at. 
@@ -83,23 +69,21 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         internal bool IsFleetwideMove { get; private set; }
 
-        public Vector3 Position { get { return _helm.Position; } }
+        internal Vector3 Position { get { return _helm.Position; } }
 
-        private bool _doesApProgressCheckPeriodNeedRefresh;
-        internal bool DoesApProgressCheckPeriodNeedRefresh {
-            get { return _doesApProgressCheckPeriodNeedRefresh; }
+        private bool _doesMoveTaskProgressCheckPeriodNeedRefresh;
+        internal bool DoesMoveTaskProgressCheckPeriodNeedRefresh {
+            get { return _doesMoveTaskProgressCheckPeriodNeedRefresh; }
             set {
-                if (IsEngaged) {
-                    _doesApProgressCheckPeriodNeedRefresh = value;
-                }
+                D.Assert(IsEngaged);
+                _doesMoveTaskProgressCheckPeriodNeedRefresh = value;
             }
         }
 
-        internal bool DoesObstacleCheckPeriodNeedRefresh {
+        internal bool DoesObstacleCheckTaskPeriodNeedRefresh {
             set {
-                if(IsEngaged) {
-                    _apObstacleCheckTask.DoesApObstacleCheckPeriodNeedRefresh = value;
-                }
+                D.Assert(IsEngaged);
+                _obstacleCheckTask.DoesObstacleCheckPeriodNeedRefresh = value;
             }
         }
 
@@ -125,9 +109,19 @@ namespace CodeEnv.Master.GameContent {
 
         internal float __PreviousIntendedCurrentSpeedValue { get { return _engineRoom.__PreviousIntendedCurrentSpeedValue; } }
 
-        // IMPROVE Replace with float GetSpeedValue(Speed)
-        internal float UnitFullSpeedValue { get { return _ship.Command.UnitFullSpeedValue; } }
-        internal float FullSpeedValue { get { return _helm.FullSpeedValue; } }
+        /// <summary>
+        /// The current target (proxy) this Pilot is engaged to reach.
+        /// </summary>
+        private AutoPilotDestinationProxy TargetProxy { get; set; }
+
+        private string TargetFullName {
+            get { return TargetProxy != null ? TargetProxy.Destination.DebugName : "No ApTargetProxy"; }
+        }
+
+        /// <summary>
+        /// Distance from this AutoPilot's client to the TargetPoint.
+        /// </summary>
+        private float TargetDistance { get { return Vector3.Distance(Position, TargetProxy.Position); } }
 
         /// <summary>
         /// Delegate pointing to an anonymous method handling work after the fleet has aligned for departure.
@@ -135,11 +129,11 @@ namespace CodeEnv.Master.GameContent {
         /// in cases where the AutoPilot is disengaged while waiting for the fleet to align. Delegate.Target.Type = ShipHelm.
         /// </remarks>
         /// </summary>
-        private Action _apActionToExecuteWhenFleetIsAligned;
+        private Action _actionToExecuteWhenFleetIsAligned;
         private CourseRefreshMode _obstacleFoundCourseRefreshMode;
 
-        private ApObstacleCheckTask _apObstacleCheckTask;
-        private ApMoveTask _apMoveTask;
+        private ApObstacleCheckTask _obstacleCheckTask;
+        private ApMoveTask _moveTask;
 
         private EngineRoom _engineRoom;
         private ShipHelm2 _helm;
@@ -157,13 +151,13 @@ namespace CodeEnv.Master.GameContent {
         /// Engages the pilot to move to the target using the provided proxy. It will notify the ship
         /// when it arrives via Ship.HandleTargetReached.
         /// </summary>
-        /// <param name="apTgtProxy">The proxy for the target this Pilot is being engaged to reach.</param>
+        /// <param name="tgtProxy">The proxy for the target this Pilot is being engaged to reach.</param>
         /// <param name="speed">The initial speed the pilot should travel at.</param>
         /// <param name="isFleetwideMove">if set to <c>true</c> [is fleetwide move].</param>
-        internal void Engage(AutoPilotDestinationProxy apTgtProxy, Speed speed, bool isFleetwideMove) {
-            Utility.ValidateNotNull(apTgtProxy);
+        internal void Engage(AutoPilotDestinationProxy tgtProxy, Speed speed, bool isFleetwideMove) {
+            Utility.ValidateNotNull(tgtProxy);
             D.Assert(!InvalidApSpeeds.Contains(speed), speed.GetValueName());
-            ApTargetProxy = apTgtProxy;
+            TargetProxy = tgtProxy;
             ApSpeed = speed;
             IsFleetwideMove = isFleetwideMove;
             IsCurrentSpeedFleetwide = isFleetwideMove;
@@ -176,35 +170,34 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         private void EngagePilot() {
             D.Assert(!IsEngaged);
-            ////D.Assert(ApCourse.Count != Constants.Zero, DebugName);
+            D.AssertNull(_actionToExecuteWhenFleetIsAligned);
             // Note: A heading job launched by the captain should be overridden when the pilot becomes engaged
-            ResetTasks();
+            ////ResetTasks();
             //D.Log(ShowDebugLog, "{0} Pilot engaging.", DebugName);
-            ////IsEngaged = true;
 
             // Note: Now OK to test for arrival here as WaitForFleetToAlign only waits for ship's that have registered their delegate.
             // There is no longer any reason for WaitForFleetToAlign to warn if delegate count < Element count.
-            if (ApTargetProxy.HasArrived(Position)) {
-                D.Log(ShowDebugLog, "{0} has already arrived! It is engaging Pilot from within {1}.", DebugName, ApTargetProxy.DebugName);
+            if (TargetProxy.HasArrived(Position)) {
+                D.Log(ShowDebugLog, "{0} has already arrived! It is engaging Pilot from within {1}.", DebugName, TargetProxy.DebugName);
                 _helm.HandleTargetReached();
                 return;
             }
-            if (ShowDebugLog && ApTargetDistance < ApTargetProxy.InnerRadius) {
-                D.LogBold("{0} is inside {1}.InnerRadius!", DebugName, ApTargetProxy.DebugName);
+            if (ShowDebugLog && TargetDistance < TargetProxy.InnerRadius) {
+                D.LogBold("{0} is inside {1}.InnerRadius!", DebugName, TargetProxy.DebugName);
             }
 
-            if (_apMoveTask == null) {
-                _apMoveTask = new ApMoveTask(this);
-                // _apMoveTask.hasArrived event subscribed to in InitiateNavigationTo
+            if (_moveTask == null) {
+                _moveTask = new ApMoveTask(this);
+                // _apMoveTask.hasArrivedOneShot event subscribed to in InitiateNavigationTo
             }
 
-            if (_apObstacleCheckTask == null) {
-                _apObstacleCheckTask = new ApObstacleCheckTask(this);    // made here so can be used below
-                _apObstacleCheckTask.obstacleFound += ObstacleFoundEventHandler;
+            if (_obstacleCheckTask == null) {
+                _obstacleCheckTask = new ApObstacleCheckTask(this);    // made here so can be used below
+                _obstacleCheckTask.obstacleFound += ObstacleFoundEventHandler;
             }
 
             AutoPilotDestinationProxy detour;
-            if (_apObstacleCheckTask.TryCheckForObstacleEnrouteTo(ApTargetProxy, out detour)) {
+            if (_obstacleCheckTask.TryCheckForObstacleEnrouteTo(TargetProxy, out detour)) {
                 RefreshCourse(CourseRefreshMode.AddWaypoint, detour);
                 InitiateCourseToTargetVia(detour);
             }
@@ -218,41 +211,41 @@ namespace CodeEnv.Master.GameContent {
         /// 1) It waits for the fleet to align before departure, and 2) engages the engines.
         /// </summary>
         private void InitiateDirectCourseToTarget() {
-            ////D.AssertNull(_obstacleCheckJob);
-            D.AssertNull(_apActionToExecuteWhenFleetIsAligned);
+            D.Assert(!IsEngaged);
+            D.AssertNull(_actionToExecuteWhenFleetIsAligned);
             //D.Log(ShowDebugLog, "{0} beginning prep to initiate direct course to {1} at {2}. \nDistance to target = {3:0.0}.",
             //Name, TargetFullName, ApTargetProxy.Position, ApTargetDistance);
 
-            Vector3 targetBearing = (ApTargetProxy.Position - Position).normalized;
+            Vector3 targetBearing = (TargetProxy.Position - Position).normalized;
             if (targetBearing.IsSameAs(Vector3.zero)) {
-                D.Error("{0} ordered to move to target {1} at same location. This should be filtered out by EngagePilot().", DebugName, ApTargetFullName);
+                D.Error("{0} ordered to move to target {1} at same location. This should be filtered out by EngagePilot().", DebugName, TargetFullName);
             }
             if (IsFleetwideMove) {
                 ChangeHeading(targetBearing);
 
-                _apActionToExecuteWhenFleetIsAligned = () => {
+                _actionToExecuteWhenFleetIsAligned = () => {
                     //D.Log(ShowDebugLog, "{0} reports fleet {1} is aligned. Initiating departure for target {2}.", DebugName, _ship.Command.Name, ApTargetFullName);
-                    _apActionToExecuteWhenFleetIsAligned = null;
+                    _actionToExecuteWhenFleetIsAligned = null;
                     EngageEnginesAtApSpeed(isFleetSpeed: true);
-                    bool isNavInitiated = InitiateNavigationTo(ApTargetProxy, hasArrived: () => {
+                    bool isNavInitiated = InitiateNavigationTo(TargetProxy, hasArrived: () => {
                         _helm.HandleTargetReached();
                     });
                     if (isNavInitiated) {
-                        InitiateObstacleCheckingEnrouteTo(ApTargetProxy, CourseRefreshMode.AddWaypoint);
+                        InitiateObstacleCheckingEnrouteTo(TargetProxy, CourseRefreshMode.AddWaypoint);
                     }
                 };
                 //D.Log(ShowDebugLog, "{0} starting wait for fleet to align, actual speed = {1:0.##}.", DebugName, ActualSpeedValue);
-                (_ship.Command as IFleetCmd).WaitForFleetToAlign(_apActionToExecuteWhenFleetIsAligned, _ship);
+                _ship.Command.WaitForFleetToAlign(_actionToExecuteWhenFleetIsAligned, _ship);
             }
             else {
                 ChangeHeading(targetBearing, headingConfirmed: () => {
                     //D.Log(ShowDebugLog, "{0} is initiating direct course to {1} in Frame {2}.", DebugName, ApTargetFullName, Time.frameCount);
                     EngageEnginesAtApSpeed(isFleetSpeed: false);
-                    bool isNavInitiated = InitiateNavigationTo(ApTargetProxy, hasArrived: () => {
+                    bool isNavInitiated = InitiateNavigationTo(TargetProxy, hasArrived: () => {
                         _helm.HandleTargetReached();
                     });
                     if (isNavInitiated) {
-                        InitiateObstacleCheckingEnrouteTo(ApTargetProxy, CourseRefreshMode.AddWaypoint);
+                        InitiateObstacleCheckingEnrouteTo(TargetProxy, CourseRefreshMode.AddWaypoint);
                     }
                 });
             }
@@ -264,8 +257,8 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="obstacleDetour">The proxy for the obstacle detour.</param>
         private void InitiateCourseToTargetVia(AutoPilotDestinationProxy obstacleDetour) {
-            ////D.AssertNull(_apObstacleCheckJob);
-            D.AssertNull(_apActionToExecuteWhenFleetIsAligned);
+            D.Assert(!IsEngaged);
+            D.AssertNull(_actionToExecuteWhenFleetIsAligned);
             //D.Log(ShowDebugLog, "{0} initiating course to target {1} at {2} via obstacle detour {3}. Distance to detour = {4:0.0}.",
             //Name, TargetFullName, ApTargetProxy.Position, obstacleDetour.DebugName, Vector3.Distance(Position, obstacleDetour.Position));
 
@@ -276,10 +269,10 @@ namespace CodeEnv.Master.GameContent {
             if (IsFleetwideMove) {
                 ChangeHeading(newHeading);
 
-                _apActionToExecuteWhenFleetIsAligned = () => {
+                _actionToExecuteWhenFleetIsAligned = () => {
                     //D.Log(ShowDebugLog, "{0} reports fleet {1} is aligned. Initiating departure for detour {2}.",
                     //Name, _ship.Command.DisplayName, obstacleDetour.DebugName);
-                    _apActionToExecuteWhenFleetIsAligned = null;
+                    _actionToExecuteWhenFleetIsAligned = null;
                     EngageEnginesAtApSpeed(isFleetSpeed: false);   // this is a detour so catch up
                                                                    // even if this is an obstacle that has appeared on the way to another obstacle detour, go around it, then try direct to target
 
@@ -292,7 +285,7 @@ namespace CodeEnv.Master.GameContent {
                     }
                 };
                 //D.Log(ShowDebugLog, "{0} starting wait for fleet to align, actual speed = {1:0.##}.", DebugName, ActualSpeedValue);
-                (_ship.Command as IFleetCmd).WaitForFleetToAlign(_apActionToExecuteWhenFleetIsAligned, _ship);
+                _ship.Command.WaitForFleetToAlign(_actionToExecuteWhenFleetIsAligned, _ship);
             }
             else {
                 ChangeHeading(newHeading, headingConfirmed: () => {
@@ -319,14 +312,14 @@ namespace CodeEnv.Master.GameContent {
                             //Name, TargetFullName, ApTargetProxy.Position, ApTargetDistance);
 
             ResumeApSpeed();    // CurrentSpeed can be slow coming out of a detour, also uses ShipSpeed to catchup
-            Vector3 targetBearing = (ApTargetProxy.Position - Position).normalized;
+            Vector3 targetBearing = (TargetProxy.Position - Position).normalized;
             ChangeHeading(targetBearing, headingConfirmed: () => {
                 //D.Log(ShowDebugLog, "{0} is now on heading toward {1}.", DebugName, TargetFullName);
-                bool isNavInitiated = InitiateNavigationTo(ApTargetProxy, hasArrived: () => {
+                bool isNavInitiated = InitiateNavigationTo(TargetProxy, hasArrived: () => {
                     _helm.HandleTargetReached();
                 });
                 if (isNavInitiated) {
-                    InitiateObstacleCheckingEnrouteTo(ApTargetProxy, CourseRefreshMode.AddWaypoint);
+                    InitiateObstacleCheckingEnrouteTo(TargetProxy, CourseRefreshMode.AddWaypoint);
                 }
             });
         }
@@ -381,13 +374,12 @@ namespace CodeEnv.Master.GameContent {
                 return false;   // already arrived so nav not initiated
             }
             else {
-
-                bool isDestinationADetour = destProxy != ApTargetProxy;
+                bool isDestinationADetour = destProxy != TargetProxy;
                 bool isDestFastMover = destProxy.IsFastMover;
                 IsIncreaseAboveApSpeedAllowed = isDestinationADetour || isDestFastMover;
 
-                _apMoveTask.hasArrived += (sender, EventArgs) => hasArrived();
-                _apMoveTask.Execute(destProxy);
+                _moveTask.hasArrivedOneShot += (sender, EventArgs) => hasArrived();
+                _moveTask.Execute(destProxy);
                 return true;
             }
         }
@@ -396,7 +388,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void InitiateObstacleCheckingEnrouteTo(AutoPilotDestinationProxy destProxy, CourseRefreshMode courseRefreshMode) {
             _obstacleFoundCourseRefreshMode = courseRefreshMode;
-            _apObstacleCheckTask.Execute(destProxy);
+            _obstacleCheckTask.Execute(destProxy);
         }
 
         private void ObstacleFoundEventHandler(object sender, ApObstacleCheckTask.ObstacleFoundEventArgs e) {
@@ -414,7 +406,7 @@ namespace CodeEnv.Master.GameContent {
                 // should never happen as HQ approach is always direct            
                 D.Warn("HQ {0} encountered obstacle {1} which is target.", DebugName, obstacle.DebugName);
             }
-            ApTargetProxy.ResetOffset();   // go directly to target
+            TargetProxy.ResetOffset();   // go directly to target
 
             if (IsEngaged) {
                 ResumeDirectCourseToTarget();
@@ -426,24 +418,6 @@ namespace CodeEnv.Master.GameContent {
 
         internal void HandleCourseChanged() {
             _helm.HandleCourseChanged();
-        }
-
-        public void Disengage() {
-            ResetTasks();
-        }
-
-        private void ResetTasks() {
-            if (_apMoveTask != null) {
-                _apMoveTask.ResetForReuse();
-            }
-            if (_apObstacleCheckTask != null) {
-                _apObstacleCheckTask.ResetForReuse();
-            }
-            if (_apActionToExecuteWhenFleetIsAligned != null) {
-                _ship.Command.RemoveFleetIsAlignedCallback(_apActionToExecuteWhenFleetIsAligned, _ship);
-                _apActionToExecuteWhenFleetIsAligned = null;
-            }
-
         }
 
         /// <summary>
@@ -473,6 +447,10 @@ namespace CodeEnv.Master.GameContent {
             _helm.ChangeSpeed_Internal(speed, isFleetSpeed);
         }
 
+        internal float GetSpeedValue(Speed speed) {
+            return IsCurrentSpeedFleetwide ? speed.GetUnitsPerHour(_ship.Command.UnitFullSpeedValue) : speed.GetUnitsPerHour(_helm.FullSpeedValue);
+        }
+
         /// <summary>
         /// Used by the Pilot to initially engage the engines at ApSpeed.
         /// </summary>
@@ -492,9 +470,96 @@ namespace CodeEnv.Master.GameContent {
             ChangeSpeed(ApSpeed, isFleetSpeed: false);
         }
 
+        public void Disengage() {
+            ResetTasks();
+            RefreshCourse(CourseRefreshMode.ClearCourse);
+            ApSpeed = Speed.None;
+            TargetProxy = null;
+            IsFleetwideMove = false;
+            IsCurrentSpeedFleetwide = false;
+            IsIncreaseAboveApSpeedAllowed = false;
+            _doesMoveTaskProgressCheckPeriodNeedRefresh = false;
+            // DoesObstacleCheckPeriodNeedRefresh handled by _obstacleCheckTask.ResetForReuse
+            _obstacleFoundCourseRefreshMode = default(CourseRefreshMode);
+        }
+
+        private void ResetTasks() {
+            if (_moveTask != null) {
+                _moveTask.ResetForReuse();
+            }
+            if (_obstacleCheckTask != null) {
+                _obstacleCheckTask.ResetForReuse();
+            }
+            if (_actionToExecuteWhenFleetIsAligned != null) {
+                _ship.Command.RemoveFleetIsAlignedCallback(_actionToExecuteWhenFleetIsAligned, _ship);
+                _actionToExecuteWhenFleetIsAligned = null;
+            }
+        }
+
+        private void Cleanup() {
+            Unsubscribe();
+            if (_moveTask != null) {
+                _moveTask.Dispose();
+            }
+            if (_obstacleCheckTask != null) {
+                _obstacleCheckTask.Dispose();
+            }
+        }
+
+        private void Unsubscribe() {
+            // unsubscribing to _apMoveTask.hasArrivedOneShot handled by _apMoveTask.Cleanup
+            if (_obstacleCheckTask != null) {  // OPTIMIZE redundant as _apObstacleCheckTask.Cleanup handles?
+                _obstacleCheckTask.obstacleFound -= ObstacleFoundEventHandler;
+            }
+            if (_actionToExecuteWhenFleetIsAligned != null) {
+                _ship.Command.RemoveFleetIsAlignedCallback(_actionToExecuteWhenFleetIsAligned, _ship);
+                _actionToExecuteWhenFleetIsAligned = null;
+            }
+        }
+
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
+
+        #region IDisposable
+
+        private bool _alreadyDisposed = false;
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose() {
+
+            Dispose(true);
+
+            // This object is being cleaned up by you explicitly calling Dispose() so take this object off
+            // the finalization queue and prevent finalization code from 'disposing' a second time
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Releases unmanaged and - optionally - managed resources.
+        /// </summary>
+        /// <param name="isExplicitlyDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+        protected virtual void Dispose(bool isExplicitlyDisposing) {
+            if (_alreadyDisposed) { // Allows Dispose(isExplicitlyDisposing) to mistakenly be called more than once
+                D.Warn("{0} has already been disposed.", GetType().Name);
+                return; //throw new ObjectDisposedException(ErrorMessages.ObjectDisposed);
+            }
+
+            if (isExplicitlyDisposing) {
+                // Dispose of managed resources here as you have called Dispose() explicitly
+                Cleanup();
+            }
+
+            // Dispose of unmanaged resources here as either 1) you have called Dispose() explicitly so
+            // may as well clean up both managed and unmanaged at the same time, or 2) the Finalizer has
+            // called Dispose(false) to cleanup unmanaged resources
+
+            _alreadyDisposed = true;
+        }
+
+        #endregion
 
     }
 }

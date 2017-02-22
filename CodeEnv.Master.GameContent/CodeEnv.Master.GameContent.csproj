@@ -65,6 +65,7 @@
     </Compile>
     <Compile Include="AApTask.cs" />
     <Compile Include="AAutoPilotTask.cs" />
+    <Compile Include="ApMaintainPositionTask.cs" />
     <Compile Include="ApMoveTask.cs" />
     <Compile Include="ApObstacleCheckTask.cs" />
     <Compile Include="Game\Gameplay\EngineRoom.cs" />
