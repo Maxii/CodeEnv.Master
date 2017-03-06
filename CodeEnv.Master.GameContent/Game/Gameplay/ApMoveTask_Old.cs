@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ApMoveTask.cs
-// AutoPilot task that moves the AutoPilot's client to a destination firing an event when it arrives.
+// AutoPilot task that navigates to a target.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,10 +22,10 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// AutoPilot task that moves the AutoPilot's client to a destination
-    /// firing an event when it arrives.
+    /// AutoPilot task that navigates to a target.
     /// </summary>
-    public class ApMoveTask : AApTask {
+    [Obsolete]
+    public class ApMoveTask_Old : AApTask_Old {
 
         /// <summary>
         /// The minimum number of progress checks required to begin navigation to a destination.
@@ -33,15 +33,21 @@ namespace CodeEnv.Master.GameContent {
         private const float MinNumberOfProgressChecksToBeginNavigation = 5F;
 
         /// <summary>
-        /// The maximum number of remaining progress checks allowed 
+        /// Threshold for the number of remaining progress checks allowed 
         /// before speed and progress check period reductions begin.
+        /// <remarks>Once the expected number of remaining progress checks drops below this
+        /// threshold, speed and progress check period reductions are allowed to push the expected
+        /// number of remaining progress checks back above the threshold.</remarks>
         /// </summary>
-        private const float MaxNumberOfProgressChecksBeforeSpeedAndCheckPeriodReductionsBegin = 5F;
+        private const float RemainingProgressCheckThreshold_SpeedAndPeriodReductions = 5F;
 
         /// <summary>
-        /// The minimum number of remaining progress checks allowed before speed increases can begin.
+        /// Threshold for the number of remaining progress checks allowed before speed increases begin.
+        /// <remarks>Once the expected number of remaining progress checks climbs above this
+        /// threshold, speed increases are allowed to push the expected
+        /// number of remaining progress checks back below the threshold.</remarks>
         /// </summary>
-        private const float MinNumberOfProgressChecksBeforeSpeedIncreasesCanBegin = 20F;
+        private const float RemainingProgressCheckThreshold_SpeedIncreases = 20F;
 
         private const float MinHoursPerProgressCheckPeriodAllowed = GameTime.HoursPrecision;
 
@@ -59,17 +65,21 @@ namespace CodeEnv.Master.GameContent {
 
         private Job _moveJob;
 
-        public ApMoveTask(MoveAutoPilot autoPilot) : base(autoPilot) { }
+        public ApMoveTask_Old(AutoPilot_Old autoPilot) : base(autoPilot) { }
 
-        public override void Execute(AutoPilotDestinationProxy destProxy) {
+        public void Execute(ApMoveDestinationProxy destProxy) {
             D.AssertNotNull(destProxy, "{0}.AutoPilotDestProxy is null. Frame = {1}.".Inject(DebugName, Time.frameCount));
             InitiateNavigationTo(destProxy);
         }
+        //public override void Execute(AutoPilotDestinationProxy destProxy) {
+        //    D.AssertNotNull(destProxy, "{0}.AutoPilotDestProxy is null. Frame = {1}.".Inject(DebugName, Time.frameCount));
+        //    InitiateNavigationTo(destProxy);
+        //}
 
-        private void InitiateNavigationTo(AutoPilotDestinationProxy destProxy) {
+        private void InitiateNavigationTo(ApMoveDestinationProxy destProxy) {
             float distanceToArrival;
             Vector3 directionToArrival;
-            bool isArrived = !destProxy.TryGetArrivalDistanceAndDirection(_autoPilot.Position, out directionToArrival, out distanceToArrival);
+            bool isArrived = !destProxy.TryGetArrivalDistanceAndDirection(out directionToArrival, out distanceToArrival);
             D.Assert(!isArrived);
 
             //D.Log(ShowDebugLog, "{0} powering up. Distance to arrival at {1} = {2:0.0}.", DebugName, destProxy.DebugName, distanceToArrival);
@@ -84,28 +94,37 @@ namespace CodeEnv.Master.GameContent {
             int minFrameWaitBetweenAttemptedCourseCorrectionChecks = 0;
             int previousFrameCourseWasCorrected = 0;
 
-            float halfArrivalWindowDepth = destProxy.ArrivalWindowDepth / 2F;
+            float arrivalWindowDepthSafetyFactor = _autoPilot.IsStrafeAttacking ? 0.75F : 0.5F;   // lower is safer but avg speed is slower
+            float safeArrivalWindowCaptureDepth = destProxy.ArrivalWindowDepth * arrivalWindowDepthSafetyFactor;
+
+            bool isAttackingAndTgtPotentiallyUncatchable = _autoPilot.IsAttacking && destProxy.IsFastMover;
 
             string jobName = "{0}.ApMoveJob".Inject(DebugName);
             _moveJob = _jobMgr.RecurringWaitForHours(new Reference<GameTimeDuration>(() => progressCheckPeriod), jobName, waitMilestone: () => {
                 //D.Log(ShowDebugLog, "{0} making ApNav progress check on Frame: {1}. CheckPeriod = {2}.", DebugName, Time.frameCount, progressCheckPeriod);
 
-                if (isArrived = !destProxy.TryGetArrivalDistanceAndDirection(_autoPilot.Position, out directionToArrival, out distanceToArrival)) {
+                if (isArrived = !destProxy.TryGetArrivalDistanceAndDirection(out directionToArrival, out distanceToArrival)) {
                     KillJob();
                     OnHasArrived();
                     return; // ends execution of waitMilestone
+                }
+
+                if (isAttackingAndTgtPotentiallyUncatchable) {
+                    if (!_autoPilot.IsCmdWithinRangeToSupportAttackOnTarget) {
+                        _autoPilot.HandleTgtUncatchable();
+                    }
                 }
 
                 //D.Log(ShowDebugLog, "{0} beginning progress check.", DebugName);
                 if (CheckForCourseCorrection(directionToArrival, ref previousFrameCourseWasCorrected, ref minFrameWaitBetweenAttemptedCourseCorrectionChecks)) {
                     //D.Log(ShowDebugLog, "{0} is making a mid course correction of {1:0.00} degrees. Frame = {2}.",
                     //DebugName, Vector3.Angle(directionToArrival, _autoPilot.IntendedHeading), Time.frameCount);
-                    _autoPilot.ChangeHeading(directionToArrival);
+                    _autoPilot.ChangeHeading(directionToArrival, eliminateDrift: true);
                     _autoPilot.HandleCourseChanged();  // 5.7.16 added to keep plots current with moving targets
                 }
 
                 GameTimeDuration correctedPeriod;
-                if (TryCheckForPeriodOrSpeedCorrection(distanceToArrival, _autoPilot.IsIncreaseAboveApSpeedAllowed, halfArrivalWindowDepth, progressCheckPeriod, out correctedPeriod, out correctedSpeed)) {
+                if (TryCheckForPeriodOrSpeedCorrection(distanceToArrival, safeArrivalWindowCaptureDepth, progressCheckPeriod, out correctedPeriod, out correctedSpeed)) {
                     if (correctedPeriod != default(GameTimeDuration)) {
                         D.AssertDefault((int)correctedSpeed);
                         //D.Log(ShowDebugLog, "{0} is correcting progress check period from {1} to {2} en-route to {3}, Distance to arrival = {4:0.0}.",
@@ -122,8 +141,73 @@ namespace CodeEnv.Master.GameContent {
                 //D.Log(ShowDebugLog, "{0} completed progress check, NextProgressCheckPeriod: {2}.", DebugName, progressCheckPeriod);
                 //D.Log(ShowDebugLog, "{0} not yet arrived. DistanceToArrival = {1:0.0}.", DebugName, distanceToArrival);
             });
-
         }
+        //private void InitiateNavigationTo(AutoPilotDestinationProxy destProxy) {
+        //    float distanceToArrival;
+        //    Vector3 directionToArrival;
+        //    bool isArrived = !destProxy.TryGetArrivalDistanceAndDirection(_autoPilot.Position, out directionToArrival, out distanceToArrival);
+        //    D.Assert(!isArrived);
+
+        //    //D.Log(ShowDebugLog, "{0} powering up. Distance to arrival at {1} = {2:0.0}.", DebugName, destProxy.DebugName, distanceToArrival);
+        //    Speed correctedSpeed;
+        //    GameTimeDuration progressCheckPeriod = GenerateProgressCheckPeriod(distanceToArrival, out correctedSpeed);
+        //    if (correctedSpeed != default(Speed)) {
+        //        //D.Log(ShowDebugLog, "{0} is correcting its speed to {1} to get a minimum of 5 progress checks.", DebugName, correctedSpeed.GetValueName());
+        //        //_autoPilot.ChangeSpeed(correctedSpeed, _autoPilot.IsCurrentSpeedFleetwide);
+        //    }
+        //    //D.Log(ShowDebugLog, "{0} initial progress check period set to {1}.", DebugName, progressCheckPeriod);
+
+        //    int minFrameWaitBetweenAttemptedCourseCorrectionChecks = 0;
+        //    int previousFrameCourseWasCorrected = 0;
+
+        //    float arrivalWindowDepthSafetyFactor = _autoPilot.IsStrafeAttacking ? 0.75F : 0.5F;   // lower is safer but avg speed is slower
+        //    float safeArrivalWindowCaptureDepth = destProxy.ArrivalWindowDepth * arrivalWindowDepthSafetyFactor;
+
+        //    bool isAttackingAndTgtPotentiallyUncatchable = _autoPilot.IsAttacking && destProxy.IsFastMover;
+
+        //    string jobName = "{0}.ApMoveJob".Inject(DebugName);
+        //    _moveJob = _jobMgr.RecurringWaitForHours(new Reference<GameTimeDuration>(() => progressCheckPeriod), jobName, waitMilestone: () => {
+        //        //D.Log(ShowDebugLog, "{0} making ApNav progress check on Frame: {1}. CheckPeriod = {2}.", DebugName, Time.frameCount, progressCheckPeriod);
+
+        //        if (isArrived = !destProxy.TryGetArrivalDistanceAndDirection(_autoPilot.Position, out directionToArrival, out distanceToArrival)) {
+        //            KillJob();
+        //            OnHasArrived();
+        //            return; // ends execution of waitMilestone
+        //        }
+
+        //        if (isAttackingAndTgtPotentiallyUncatchable) {
+        //            if (!_autoPilot.IsCmdWithinRangeToSupportAttackOnTarget) {
+        //                _autoPilot.HandleTgtUncatchable();
+        //            }
+        //        }
+
+        //        //D.Log(ShowDebugLog, "{0} beginning progress check.", DebugName);
+        //        if (CheckForCourseCorrection(directionToArrival, ref previousFrameCourseWasCorrected, ref minFrameWaitBetweenAttemptedCourseCorrectionChecks)) {
+        //            //D.Log(ShowDebugLog, "{0} is making a mid course correction of {1:0.00} degrees. Frame = {2}.",
+        //            //DebugName, Vector3.Angle(directionToArrival, _autoPilot.IntendedHeading), Time.frameCount);
+        //            _autoPilot.ChangeHeading(directionToArrival, eliminateDrift: true);
+        //            _autoPilot.HandleCourseChanged();  // 5.7.16 added to keep plots current with moving targets
+        //        }
+
+        //        GameTimeDuration correctedPeriod;
+        //        if (TryCheckForPeriodOrSpeedCorrection(distanceToArrival, safeArrivalWindowCaptureDepth, progressCheckPeriod, out correctedPeriod, out correctedSpeed)) {
+        //            if (correctedPeriod != default(GameTimeDuration)) {
+        //                D.AssertDefault((int)correctedSpeed);
+        //                //D.Log(ShowDebugLog, "{0} is correcting progress check period from {1} to {2} en-route to {3}, Distance to arrival = {4:0.0}.",
+        //                //DebugName, progressCheckPeriod, correctedPeriod, destProxy.DebugName, distanceToArrival);
+        //                progressCheckPeriod = correctedPeriod;
+        //            }
+        //            else {
+        //                D.AssertNotDefault((int)correctedSpeed);
+        //                //D.Log(ShowDebugLog, "{0} is correcting speed from {1} to {2} en-route to {3}, Distance to arrival = {4:0.0}.",
+        //                //DebugName, _autoPilot.CurrentSpeedSetting.GetValueName(), correctedSpeed.GetValueName(), destProxy.DebugName, distanceToArrival);
+        //                _autoPilot.ChangeSpeed(correctedSpeed, _autoPilot.IsCurrentSpeedFleetwide);
+        //            }
+        //        }
+        //        //D.Log(ShowDebugLog, "{0} completed progress check, NextProgressCheckPeriod: {2}.", DebugName, progressCheckPeriod);
+        //        //D.Log(ShowDebugLog, "{0} not yet arrived. DistanceToArrival = {1:0.0}.", DebugName, distanceToArrival);
+        //    });
+        //}
 
         /// <summary>
         /// Generates a progress check period that allows <c>MinNumberOfProgressChecksToDestination</c> and
@@ -218,14 +302,13 @@ namespace CodeEnv.Master.GameContent {
         /// it must be tested against its default value to know which one it is.
         /// </summary>
         /// <param name="distanceToArrival">The distance to arrival.</param>
-        /// <param name="isIncreaseAboveApSpeedAllowed">if set to <c>true</c> [is increase above automatic pilot speed allowed].</param>
-        /// <param name="halfArrivalCaptureDepth">The half arrival capture depth.</param>
+        /// <param name="safeArrivalWindowCaptureDepth">The arrival window capture depth to use to reliably arrive.</param>
         /// <param name="currentPeriod">The current period.</param>
-        /// <param name="correctedPeriod">The corrected period.</param>
-        /// <param name="correctedSpeed">The corrected speed.</param>
+        /// <param name="correctedPeriod">The resulting corrected period.</param>
+        /// <param name="correctedSpeed">The resulting corrected speed.</param>
         /// <returns></returns>
-        private bool TryCheckForPeriodOrSpeedCorrection(float distanceToArrival, bool isIncreaseAboveApSpeedAllowed, float halfArrivalCaptureDepth,
-            GameTimeDuration currentPeriod, out GameTimeDuration correctedPeriod, out Speed correctedSpeed) {
+        private bool TryCheckForPeriodOrSpeedCorrection(float distanceToArrival, float safeArrivalWindowCaptureDepth, GameTimeDuration currentPeriod,
+            out GameTimeDuration correctedPeriod, out Speed correctedSpeed) {
             //D.Log(ShowDebugLog, "{0} called TryCheckForPeriodOrSpeedCorrection().", DebugName);
             correctedSpeed = default(Speed);
             correctedPeriod = default(GameTimeDuration);
@@ -240,31 +323,32 @@ namespace CodeEnv.Master.GameContent {
 
             float maxDistanceCoveredDuringNextProgressCheck = currentPeriod.TotalInHours * _autoPilot.IntendedCurrentSpeedValue;
             float checksRemainingBeforeArrival = distanceToArrival / maxDistanceCoveredDuringNextProgressCheck;
-            float checksRemainingThreshold = MaxNumberOfProgressChecksBeforeSpeedAndCheckPeriodReductionsBegin;
+            float desiredHoursPerCheckPeriod = MinHoursPerProgressCheckPeriodAllowed * 2F;
 
-            if (checksRemainingBeforeArrival < checksRemainingThreshold) {
+            if (checksRemainingBeforeArrival < RemainingProgressCheckThreshold_SpeedAndPeriodReductions) {
                 // limit how far down progress check period reductions can go 
-                float minDesiredHoursPerCheckPeriod = MinHoursPerProgressCheckPeriodAllowed * 2F;
-                bool isMinDesiredCheckPeriod = currentPeriod.TotalInHours <= minDesiredHoursPerCheckPeriod;
-                bool isDistanceCoveredPerCheckTooHigh = maxDistanceCoveredDuringNextProgressCheck > halfArrivalCaptureDepth;
+                bool isCheckPeriodAcceptable = currentPeriod.TotalInHours <= desiredHoursPerCheckPeriod;
+                bool isDistanceCoveredPerCheckTooHigh = maxDistanceCoveredDuringNextProgressCheck > safeArrivalWindowCaptureDepth;
 
-                if (!isMinDesiredCheckPeriod && isDistanceCoveredPerCheckTooHigh) {
+                if (!isCheckPeriodAcceptable && isDistanceCoveredPerCheckTooHigh) {
                     // reduce progress check period to the desired minimum before considering speed reductions
                     float correctedPeriodHours = currentPeriod.TotalInHours / 2F;
-                    if (correctedPeriodHours < minDesiredHoursPerCheckPeriod) {
-                        correctedPeriodHours = minDesiredHoursPerCheckPeriod;
-                        //D.Log(ShowDebugLog, "{0} has set progress check period hours to desired min {1:0.00}.", DebugName, minDesiredHoursPerCheckPeriod);
+                    if (correctedPeriodHours < desiredHoursPerCheckPeriod) {
+                        correctedPeriodHours = desiredHoursPerCheckPeriod;
+                        //D.Log(ShowDebugLog, "{0} has set progress check period hours to desired min {1:0.00}.", DebugName, desiredHoursPerCheckPeriod);
                     }
                     correctedPeriod = new GameTimeDuration(correctedPeriodHours);
-                    //D.Log(ShowDebugLog, "{0} is reducing progress check period to {1} to find halfArrivalCaptureDepth {2:0.00}.", DebugName, correctedPeriod, halfArrivalCaptureDepth);
+                    //D.Log(ShowDebugLog, "{0} is reducing progress check period to {1} to find safeArrivalWindowCaptureDepth {2:0.00}.", 
+                    //    DebugName, correctedPeriod, safeArrivalWindowCaptureDepth);
                     return true;
                 }
 
-                //D.Log(ShowDebugLog, "{0} distanceCovered during next progress check = {1:0.00}, halfArrivalCaptureDepth = {2:0.00}.", DebugName, maxDistanceCoveredDuringNextProgressCheck, halfArrivalCaptureDepth);
+                //D.Log(ShowDebugLog, "{0} distanceCovered during next progress check = {1:0.00}, safeArrivalWindowCaptureDepth = {2:0.00}.", 
+                //    DebugName, maxDistanceCoveredDuringNextProgressCheck, safeArrivalWindowCaptureDepth);
                 if (isDistanceCoveredPerCheckTooHigh) {
                     // at this speed I could miss the arrival window
-                    //D.Log(ShowDebugLog, "{0} will arrive in as little as {1:0.0} checks and will miss front half depth {2:0.00} of arrival window.",
-                    //DebugName, checksRemainingBeforeArrival, halfArrivalCaptureDepth);
+                    //D.Log(ShowDebugLog, "{0} will arrive in as little as {1:0.0} checks and will miss safe depth {2:0.00} of arrival window.",
+                    //    DebugName, checksRemainingBeforeArrival, safeArrivalWindowCaptureDepth);
                     if (_autoPilot.CurrentSpeedSetting.TryDecreaseSpeed(out correctedSpeed)) {
                         //D.Log(ShowDebugLog, "{0} is reducing speed to {1}.", DebugName, correctedSpeed.GetValueName());
                         return true;
@@ -273,20 +357,22 @@ namespace CodeEnv.Master.GameContent {
                     // Can't reduce speed further yet still covering too much ground per check so reduce check period to minimum
                     correctedPeriod = new GameTimeDuration(MinHoursPerProgressCheckPeriodAllowed);
                     maxDistanceCoveredDuringNextProgressCheck = correctedPeriod.TotalInHours * _autoPilot.IntendedCurrentSpeedValue;
-                    isDistanceCoveredPerCheckTooHigh = maxDistanceCoveredDuringNextProgressCheck > halfArrivalCaptureDepth;
+                    isDistanceCoveredPerCheckTooHigh = maxDistanceCoveredDuringNextProgressCheck > safeArrivalWindowCaptureDepth;
                     if (isDistanceCoveredPerCheckTooHigh) {
-                        D.Warn("{0} cannot cover less distance per check so could miss arrival window. DistanceCoveredBetweenChecks {1:0.00} > HalfArrivalCaptureDepth {2:0.00}.",
-                            DebugName, maxDistanceCoveredDuringNextProgressCheck, halfArrivalCaptureDepth);
+                        D.Warn(@"{0} cannot cover less distance per check so could miss arrival window. 
+                            DistanceCoveredBetweenChecks {1:0.00} > SafeArrivalCaptureDepth {2:0.00}.",
+                            DebugName, maxDistanceCoveredDuringNextProgressCheck, safeArrivalWindowCaptureDepth);
                     }
                     return true;
                 }
             }
             else {
-                //D.Log(ShowDebugLog, "{0} ChecksRemainingBeforeArrival {1:0.0} > Threshold {2:0.0}.", DebugName, checksRemainingBeforeArrival, checksRemainingThreshold);
-                if (checksRemainingBeforeArrival > MinNumberOfProgressChecksBeforeSpeedIncreasesCanBegin) {
-                    if (isIncreaseAboveApSpeedAllowed || _autoPilot.CurrentSpeedSetting < _autoPilot.ApSpeed) {
+                //D.Log(ShowDebugLog, "{0} ChecksRemainingBeforeArrival {1:0.0} > Threshold {2:0.0}.", 
+                //    DebugName, checksRemainingBeforeArrival, RemainingProgressCheckThreshold_SpeedAndPeriodReductions);
+                if (checksRemainingBeforeArrival > RemainingProgressCheckThreshold_SpeedIncreases) {
+                    if (_autoPilot.IsIncreaseAboveApSpeedSettingAllowed || _autoPilot.CurrentSpeedSetting < _autoPilot.ApSpeedSetting) {
                         if (_autoPilot.CurrentSpeedSetting.TryIncreaseSpeed(out correctedSpeed)) {
-                            //D.Log(ShowDebugLog, "{0} is increasing speed to {1}.", DebugName, correctedSpeed.GetValueName());
+                            D.Log(ShowDebugLog, "{0} is increasing speed to {1}.", DebugName, correctedSpeed.GetValueName());
                             return true;
                         }
                     }
@@ -331,8 +417,11 @@ namespace CodeEnv.Master.GameContent {
             base.ResetForReuse();
             // hasArrivedOneShot is subscribed too every time Execute is called. 
             // This Assert confirms there are never multiple subscriptions.
-            D.Assert(hasArrivedOneShot.GetInvocationList().Count() < 2);
-            hasArrivedOneShot = null;
+            if (hasArrivedOneShot != null) {
+                // if it has already fired, a oneShot will be null
+                D.Assert(hasArrivedOneShot.GetInvocationList().Count() < 2);
+                hasArrivedOneShot = null;
+            }
         }
 
         protected override void KillJob() {

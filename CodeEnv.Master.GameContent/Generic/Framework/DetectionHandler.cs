@@ -297,29 +297,6 @@ namespace CodeEnv.Master.GameContent {
 
         #region Archive
 
-        [Obsolete]
-        private void UpdatePlayerKnowledge(Player player) {
-            D.Assert(!_item.Owner.IsRelationshipWith(player, DiplomaticRelationship.Alliance));
-
-            // Notes: 
-            // 1)   AllIntelCoverageComprehensive does not pre-populate all player's knowledge so this can still be called 
-            //      when player first detects this item
-            // 2)   Player can be self when the current owner is losing ownership and needs to reassess their coverage
-            //      and knowledge of their (about to be former) item
-
-            var playerAiMgr = _gameMgr.GetAIManagerFor(player);
-
-            IDictionary<RangeCategory, IList<IUnitCmd_Ltd>> rangeLookup;
-            if (!_detectionLookup.TryGetValue(player, out rangeLookup)) {
-                playerAiMgr.HandleItemDetectionLost(_item as ISensorDetectable);
-            }
-            else {
-                // there are one or more DistanceRange keys so some Cmd of player has this item in sensor range
-                D.Assert(rangeLookup.Keys.Count > Constants.Zero);
-                playerAiMgr.HandleItemDetection(_item as ISensorDetectable);
-            }
-        }
-
         #endregion
 
     }

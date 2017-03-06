@@ -30,7 +30,7 @@ using UnityEngine.Profiling;
 /// <summary>
 /// AUnitElementItems that are Ships.
 /// </summary>
-public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeListener, IObstacle {
+public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeListener, IObstacle, IPropellable {
 
     private static float __maxDistanceTraveledPerFrame;
     /// <summary>
@@ -68,6 +68,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 && Data.WeaponsRange.Max > Constants.ZeroF;
         }
     }
+
+    public ShipCombatStance CombatStance { get { return Data.CombatStance; } }
 
     private ShipOrder _currentOrder;
     /// <summary>
@@ -145,8 +147,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
     }
 
-    //private ShipHelm _helm;
-    private ShipHelm2 _helm;
+    private ShipHelm _helm;
     private EngineRoom _engineRoom;
 
     private FixedJoint _orbitingJoint;
@@ -173,7 +174,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     private void InitializeNavigation() {
         _engineRoom = new EngineRoom(this, Data, transform, Rigidbody);
-        _helm = new ShipHelm2(this, Data, transform, _engineRoom);
+        //_helm = new ShipHelm2(this, Data, transform, _engineRoom);
+        _helm = new ShipHelm(this, Data, transform, _engineRoom);
         _helm.apCourseChanged += ApCourseChangedEventHandler;
         _helm.apTargetReached += ApTargetReachedEventHandler;
         _helm.apTargetUncatchable += ApTargetUncatchableEventHandler;
@@ -221,18 +223,20 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     public void HandleFleetFullSpeedChanged() { _helm.HandleFleetFullSpeedValueChanged(); }
 
-    protected override void PrepareForDeathNotification() { }
-
     protected override void InitiateDeadState() {
         UponDeath();
         CurrentState = ShipState.Dead;
     }
 
+    protected override void PrepareForDeathNotification() {
+        base.PrepareForDeathNotification();
+        _helm.DisengageAutoPilot();
+        _engineRoom.HandleDeath();
+    }
+
     protected override void HandleDeathBeforeBeginningDeathEffect() {
         base.HandleDeathBeforeBeginningDeathEffect();
         TryBreakOrbit();
-        _helm.HandleDeath();
-        _engineRoom.HandleDeath();
         // Keep the collisionDetection Collider enabled to keep other ships from flying through this exploding ship
     }
 
@@ -325,6 +329,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     public void HandlePendingCollisionAverted(IObstacle obstacle) {
         if (IsOperational) {
+            if (!obstacle.IsOperational) {   // 3.4.17 EngineRoom will detect death of obstacle and remove it
+                return;
+            }
             if (_obstaclesCollidedWithWhileInOrbit != null && _obstaclesCollidedWithWhileInOrbit.Contains(obstacle)) {
                 _obstaclesCollidedWithWhileInOrbit.Remove(obstacle);
                 return;
@@ -486,6 +493,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             }
         }
         if (!OwnerAIMgr.HasKnowledgeOf(target as IItem_Ltd)) {
+            // 3.5.17 Typically occurs when receiving an order to explore a planet that is not yet in sensor range
             D.Warn("{0} received {1} order with Target {2} that Owner {3} has no knowledge of.", DebugName, directive.GetValueName(), target.DebugName, Owner.LeaderName);
         }
     }
@@ -715,8 +723,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             apTgtStandoffDistance = Mathf.Max(moveOrder.TargetStandoffDistance, CollisionDetectionZoneRadius);
         }
         IShipNavigable apTgt = _fsmTgt;
-        AutoPilotDestinationProxy apMoveTgtProxy = apTgt.GetApMoveTgtProxy(apTgtOffset, apTgtStandoffDistance, Position);
-        _helm.EngagePilotToMoveTo(apMoveTgtProxy, _apMoveSpeed, isFleetwideMove);
+        ApMoveDestinationProxy apMoveTgtProxy = apTgt.GetApMoveTgtProxy(apTgtOffset, apTgtStandoffDistance, this);
+        _helm.EngageAutoPilot(apMoveTgtProxy, _apMoveSpeed, isFleetwideMove);
     }
 
     void Moving_UponApTargetReached() {
@@ -1453,29 +1461,39 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
         Vector3 apTgtOffset = Vector3.zero;
         float apTgtStandoffDistance = CollisionDetectionZoneRadius;
-        AutoPilotDestinationProxy closeOrbitApTgtProxy = closeOrbitApTgt.GetApMoveTgtProxy(apTgtOffset, apTgtStandoffDistance, Position);
-        _helm.EngagePilotToMoveTo(closeOrbitApTgtProxy, Speed.Slow, isFleetwideMove: false);
+        ApMoveDestinationProxy closeOrbitApTgtProxy = closeOrbitApTgt.GetApMoveTgtProxy(apTgtOffset, apTgtStandoffDistance, this);
+        _helm.EngageAutoPilot(closeOrbitApTgtProxy, Speed.Slow, isFleetwideMove: false);
         // 2.8.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
         // I think it is because there is a rare scenario where no yield return is encountered below this. 
         // See http://answers.unity3d.com/questions/158917/error-quotmcoroutineenumeratorgchandle-0quot.html
         yield return null;
 
         GameDate currentDate;
-        GameDate warnDate = new GameDate(GameTimeDuration.OneDay);    // HACK
+        GameDate logDate = new GameDate(GameTimeDuration.FiveDays);
+        GameDate warnDate = default(GameDate);
         GameDate errorDate = default(GameDate);
-        bool isWarned = false;
+        bool isInformedOfLogging = false;
+        bool isInformedOfWarning = false;
 
         // Wait here until we arrive. When we arrive, AssumingCloseOrbit_UponApTargetReached() will disengage APilot
         while (_helm.IsPilotEngaged) {  // even if collision avoidance becomes engaged, pilot will remain engaged
-            if ((currentDate = _gameTime.CurrentDate) > warnDate) {
-                if (!isWarned) {
-                    D.Warn("{0}: CurrentDate {1} > WarnDate {2} while moving to close orbit around {3}.", DebugName, currentDate, warnDate, closeOrbitTgt.DebugName);
-                    isWarned = true;
+            if ((currentDate = _gameTime.CurrentDate) > logDate) {
+                if (!isInformedOfLogging) {
+                    D.Log(/*ShowDebugLog, */"{0}: CurrentDate {1} > LogDate {2} while moving to close orbit around {3}.", DebugName, currentDate, logDate, closeOrbitTgt.DebugName);
+                    isInformedOfLogging = true;
                 }
-                if (errorDate == default(GameDate)) {
-                    errorDate = new GameDate(warnDate, GameTimeDuration.OneDay);
+
+                if (warnDate == default(GameDate)) {
+                    warnDate = new GameDate(logDate, GameTimeDuration.TwoDays);   // HACK 3.4.17 Warning at 4 + 2 days with FtlDamped
                 }
-                else {
+                if (currentDate > warnDate) {
+                    if (!isInformedOfWarning) {
+                        D.Warn("{0}: CurrentDate {1} > WarnDate {2} while moving to close orbit around {3}. IsFtlDamped = {4}.", DebugName, currentDate, warnDate, closeOrbitTgt.DebugName, Data.IsFtlDampedByField);
+                        isInformedOfWarning = true;
+                    }
+                    if (errorDate == default(GameDate)) {
+                        errorDate = new GameDate(warnDate, GameTimeDuration.FiveDays);
+                    }
                     if (currentDate > errorDate) {
                         D.Error("{0} wait while moving to close orbit slot has timed out.", DebugName);
                     }
@@ -1485,20 +1503,30 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
 
         // Assume Orbit
-        warnDate = new GameDate(new GameTimeDuration(5F));    // HACK   // 2.8.17 Warning at 3F
+        isInformedOfLogging = false;
+        isInformedOfWarning = false;
+        logDate = new GameDate(new GameTimeDuration(8f));
+        warnDate = default(GameDate);    // HACK   // 3.2.17 Warning at 5F after FtlDampener introduced
         errorDate = default(GameDate);
-        isWarned = false;
         while (!AttemptCloseOrbitAround(closeOrbitTgt)) {
             // wait here until close orbit is attained
-            if ((currentDate = _gameTime.CurrentDate) > warnDate) {
-                if (!isWarned) {
-                    D.Warn("{0}: CurrentDate {1} > WarnDate {2} while assuming close orbit around {3}.", DebugName, currentDate, warnDate, closeOrbitTgt.DebugName);
-                    isWarned = true;
+            if ((currentDate = _gameTime.CurrentDate) > logDate) {
+                if (!isInformedOfLogging) {
+                    D.Log(/*ShowDebugLog, */"{0}: CurrentDate {1} > LogDate {2} while assuming close orbit around {3}.", DebugName, currentDate, logDate, closeOrbitTgt.DebugName);
+                    isInformedOfLogging = true;
                 }
-                if (errorDate == default(GameDate)) {
-                    errorDate = new GameDate(warnDate, GameTimeDuration.OneDay);
+                if (warnDate == default(GameDate)) {
+                    warnDate = new GameDate(logDate, GameTimeDuration.OneDay);
                 }
-                else {
+                if (currentDate > warnDate) {
+                    if (!isInformedOfWarning) {
+                        D.Warn("{0}: CurrentDate {1} > WarnDate {2} while assuming close orbit around {3}. IsFtlDamped = {4}.", DebugName, currentDate, warnDate, closeOrbitTgt.DebugName, Data.IsFtlDampedByField);
+                        isInformedOfWarning = true;
+                    }
+
+                    if (errorDate == default(GameDate)) {
+                        errorDate = new GameDate(warnDate, GameTimeDuration.TwoDays);    // HACK // 3.2.17 Error at OneDay after FtlDampener introduced
+                    }
                     if (currentDate > errorDate) {
                         D.Error("{0} wait while assuming close orbit has timed out.", DebugName);
                     }
@@ -1508,6 +1536,90 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
         Return();
     }
+    //IEnumerator AssumingCloseOrbit_EnterState() {
+    //    LogEvent();
+
+    //    IShipCloseOrbitable closeOrbitTgt = _fsmTgt as IShipCloseOrbitable;
+    //    // use autopilot to move into close orbit whether inside or outside slot
+    //    IShipNavigable closeOrbitApTgt = closeOrbitTgt.CloseOrbitSimulator as IShipNavigable;
+
+    //    Vector3 apTgtOffset = Vector3.zero;
+    //    float apTgtStandoffDistance = CollisionDetectionZoneRadius;
+    //    AutoPilotDestinationProxy closeOrbitApTgtProxy = closeOrbitApTgt.GetApMoveTgtProxy(apTgtOffset, apTgtStandoffDistance, Position);
+    //    _helm.EngageAutoPilot(AutoPilot.ApDirective.MoveTo, closeOrbitApTgtProxy, Speed.Slow);
+    //    // 2.8.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
+    //    // I think it is because there is a rare scenario where no yield return is encountered below this. 
+    //    // See http://answers.unity3d.com/questions/158917/error-quotmcoroutineenumeratorgchandle-0quot.html
+    //    yield return null;
+
+    //    GameDate currentDate;
+    //    GameDate logDate = new GameDate(GameTimeDuration.FiveDays);
+    //    GameDate warnDate = default(GameDate);
+    //    GameDate errorDate = default(GameDate);
+    //    bool isInformedOfLogging = false;
+    //    bool isInformedOfWarning = false;
+
+    //    // Wait here until we arrive. When we arrive, AssumingCloseOrbit_UponApTargetReached() will disengage APilot
+    //    while (_helm.IsPilotEngaged) {  // even if collision avoidance becomes engaged, pilot will remain engaged
+    //        if ((currentDate = _gameTime.CurrentDate) > logDate) {
+    //            if (!isInformedOfLogging) {
+    //                D.Log(/*ShowDebugLog, */"{0}: CurrentDate {1} > LogDate {2} while moving to close orbit around {3}.", DebugName, currentDate, logDate, closeOrbitTgt.DebugName);
+    //                isInformedOfLogging = true;
+    //            }
+
+    //            if (warnDate == default(GameDate)) {
+    //                warnDate = new GameDate(logDate, GameTimeDuration.TwoDays);   // HACK 3.4.17 Warning at 4 + 2 days with FtlDamped
+    //            }
+    //            if (currentDate > warnDate) {
+    //                if (!isInformedOfWarning) {
+    //                    D.Warn("{0}: CurrentDate {1} > WarnDate {2} while moving to close orbit around {3}. IsFtlDamped = {4}.", DebugName, currentDate, warnDate, closeOrbitTgt.DebugName, Data.IsFtlDampedByField);
+    //                    isInformedOfWarning = true;
+    //                }
+    //                if (errorDate == default(GameDate)) {
+    //                    errorDate = new GameDate(warnDate, GameTimeDuration.FiveDays);
+    //                }
+    //                if (currentDate > errorDate) {
+    //                    D.Error("{0} wait while moving to close orbit slot has timed out.", DebugName);
+    //                }
+    //            }
+    //        }
+    //        yield return null;
+    //    }
+
+    //    // Assume Orbit
+    //    isInformedOfLogging = false;
+    //    isInformedOfWarning = false;
+    //    logDate = new GameDate(new GameTimeDuration(8f));
+    //    warnDate = default(GameDate);    // HACK   // 3.2.17 Warning at 5F after FtlDampener introduced
+    //    errorDate = default(GameDate);
+    //    while (!AttemptCloseOrbitAround(closeOrbitTgt)) {
+    //        // wait here until close orbit is attained
+    //        if ((currentDate = _gameTime.CurrentDate) > logDate) {
+    //            if (!isInformedOfLogging) {
+    //                D.Log(/*ShowDebugLog, */"{0}: CurrentDate {1} > LogDate {2} while assuming close orbit around {3}.", DebugName, currentDate, logDate, closeOrbitTgt.DebugName);
+    //                isInformedOfLogging = true;
+    //            }
+    //            if (warnDate == default(GameDate)) {
+    //                warnDate = new GameDate(logDate, GameTimeDuration.OneDay);
+    //            }
+    //            if (currentDate > warnDate) {
+    //                if (!isInformedOfWarning) {
+    //                    D.Warn("{0}: CurrentDate {1} > WarnDate {2} while assuming close orbit around {3}. IsFtlDamped = {4}.", DebugName, currentDate, warnDate, closeOrbitTgt.DebugName, Data.IsFtlDampedByField);
+    //                    isInformedOfWarning = true;
+    //                }
+
+    //                if (errorDate == default(GameDate)) {
+    //                    errorDate = new GameDate(warnDate, GameTimeDuration.TwoDays);    // HACK // 3.2.17 Error at OneDay after FtlDampener introduced
+    //                }
+    //                if (currentDate > errorDate) {
+    //                    D.Error("{0} wait while assuming close orbit has timed out.", DebugName);
+    //                }
+    //            }
+    //        }
+    //        yield return null;
+    //    }
+    //    Return();
+    //}
 
     // TODO if a DiplomaticRelationship change with the orbited object owner invalidates the right to orbit
     // then the orbit must be immediately broken
@@ -1633,19 +1745,17 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             return false;
         }
 
-        var uniqueEnemyTargetsInSensorRange = Enumerable.Empty<IShipAttackable>();
-        Command.SensorRangeMonitors.ForAll(srm => {
-            var attackableEnemyTgtsDetected = srm.EnemyTargetsDetected.Cast<IShipAttackable>();
-            uniqueEnemyTargetsInSensorRange = uniqueEnemyTargetsInSensorRange.Union(attackableEnemyTgtsDetected);
-        });
+        ISensorRangeMonitor srSensorMonitor = Command.SensorRangeMonitors.Single(srm => srm.RangeCategory == RangeCategory.Short);
+        var uniqueEnemyTargetsInSRSensorRange = srSensorMonitor.EnemyTargetsDetected.Cast<IShipAttackable>();
+
 
         IShipAttackable primaryTgt = null;
         var cmdTarget = unitAttackTgt as AUnitCmdItem;
         if (cmdTarget != null) {
             var primaryTargets = cmdTarget.Elements.Cast<IShipAttackable>();
-            var primaryTargetsInSensorRange = primaryTargets.Intersect(uniqueEnemyTargetsInSensorRange);
-            if (primaryTargetsInSensorRange.Any()) {
-                primaryTgt = __SelectHighestPriorityAttackTgt(primaryTargetsInSensorRange);
+            var primaryTargetsInSRSensorRange = primaryTargets.Intersect(uniqueEnemyTargetsInSRSensorRange);
+            if (primaryTargetsInSRSensorRange.Any()) {
+                primaryTgt = __SelectHighestPriorityAttackTgt(primaryTargetsInSRSensorRange);
             }
         }
         else {
@@ -1653,13 +1763,14 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             var planetoidTarget = unitAttackTgt as APlanetoidItem;
             D.AssertNotNull(planetoidTarget);
 
-            if (uniqueEnemyTargetsInSensorRange.Contains(planetoidTarget)) {
+            if (uniqueEnemyTargetsInSRSensorRange.Contains(planetoidTarget)) {
                 primaryTgt = planetoidTarget;
             }
         }
         if (primaryTgt == null) {
             if (allowLogging) {
-                D.Warn("{0} found no target within sensor range to attack!", DebugName); // UNCLEAR how this could happen. Sensors damaged?
+                // UNCLEAR how this happens. Fleet not close enough when issues attack order to ships? Just wiped out?
+                D.Warn("{0} found no target within SR sensor range to attack!", DebugName);
             }
             shipPrimaryAttackTgt = null;
             return false;
@@ -1759,7 +1870,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                     Command.HandleOrderOutcome(CurrentOrder.Directive, this, isSuccess: false, target: primaryAttackTgt, failCause: _orderFailureCause);
                     switch (_orderFailureCause) {
                         case UnitItemOrderFailureCause.TgtUncatchable:
-                            continue;   // pick another primary attack target by cycling thru while again
+                            break;   // pick another primary attack target by cycling thru while again
                         case UnitItemOrderFailureCause.UnitItemNeedsRepair:
                             InitiateRepair(retainSuperiorsOrderOnRepairCompletion: false);
                             break;
@@ -1781,6 +1892,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 }
 
                 _fsmTgt = null;
+                _orderFailureCause = UnitItemOrderFailureCause.None;
                 allowLogging = true;
             }
             else {
@@ -1856,7 +1968,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     #region Attacking Support Members
 
-    private AutoPilotDestinationProxy MakePilotAttackTgtProxy(IShipAttackable attackTgt) {
+    private ApMoveDestinationProxy MakeApAttackTgtProxy(IShipAttackable attackTgt) {
         RangeDistance weapRange = Data.WeaponsRange;
         D.Assert(weapRange.Max > Constants.ZeroF);
         ShipCombatStance combatStance = Data.CombatStance;
@@ -1875,6 +1987,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         bool hasOperatingMRWeapons = weapRange.Medium > Constants.ZeroF;
         bool hasOperatingSRWeapons = weapRange.Short > Constants.ZeroF;
         float weapRangeMultiplier = Owner.WeaponRangeMultiplier;
+
+        bool toBombard = true;
         switch (combatStance) {
             case ShipCombatStance.Standoff:
                 if (hasOperatingLRWeapons) {
@@ -1891,7 +2005,23 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                     minDesiredDistanceToTgtSurface = Constants.ZeroF;
                 }
                 break;
-            case ShipCombatStance.Balanced:
+            case ShipCombatStance.BalancedStrafe:
+                if (hasOperatingMRWeapons) {
+                    maxDesiredDistanceToTgtSurface = weapRange.Medium;
+                    minDesiredDistanceToTgtSurface = RangeCategory.Short.GetBaselineWeaponRange() * weapRangeMultiplier;
+                }
+                else if (hasOperatingLRWeapons) {
+                    maxDesiredDistanceToTgtSurface = weapRange.Long;
+                    minDesiredDistanceToTgtSurface = RangeCategory.Medium.GetBaselineWeaponRange() * weapRangeMultiplier;
+                }
+                else {
+                    D.Assert(hasOperatingSRWeapons);
+                    maxDesiredDistanceToTgtSurface = weapRange.Short;
+                    minDesiredDistanceToTgtSurface = Constants.ZeroF;
+                }
+                toBombard = false;
+                break;
+            case ShipCombatStance.BalancedBombard:
                 if (hasOperatingMRWeapons) {
                     maxDesiredDistanceToTgtSurface = weapRange.Medium;
                     minDesiredDistanceToTgtSurface = RangeCategory.Short.GetBaselineWeaponRange() * weapRangeMultiplier;
@@ -1930,7 +2060,11 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
         D.Assert(maxDesiredDistanceToTgtSurface > minDesiredDistanceToTgtSurface);
         ValueRange<float> desiredWeaponsRangeEnvelope = new ValueRange<float>(minDesiredDistanceToTgtSurface, maxDesiredDistanceToTgtSurface);
-        return attackTgt.GetApAttackTgtProxy(desiredWeaponsRangeEnvelope, CollisionDetectionZoneRadius);
+
+        if (toBombard) {
+            return attackTgt.GetApBombardTgtProxy(desiredWeaponsRangeEnvelope, this);
+        }
+        return attackTgt.GetApStrafeTgtProxy(desiredWeaponsRangeEnvelope, this);
     }
 
     #endregion
@@ -1957,8 +2091,13 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         LogEvent();
 
         IShipAttackable primaryAttackTgt = _fsmTgt as IShipAttackable;
-        AutoPilotDestinationProxy apAttackTgtProxy = MakePilotAttackTgtProxy(primaryAttackTgt);
-        _helm.EngagePilotToPursue(apAttackTgtProxy, Speed.Full);
+        ApMoveDestinationProxy apAttackTgtProxy = MakeApAttackTgtProxy(primaryAttackTgt);
+        if (apAttackTgtProxy is ApBombardDestinationProxy) {
+            _helm.EngageAutoPilot(apAttackTgtProxy as ApBombardDestinationProxy, Speed.Full);
+        }
+        else {
+            _helm.EngageAutoPilot(apAttackTgtProxy as ApStrafeDestinationProxy, Speed.Full);
+        }
     }
 
     void Attacking_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
@@ -2031,7 +2170,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         isUnsubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.OwnerChg, _fsmTgt, toSubscribe: false);
         D.Assert(isUnsubscribed);
 
-        _helm.DisengagePilot();  // maintains speed unless already Stopped
+        _helm.DisengageAutoPilot();  // maintains speed unless already Stopped
     }
 
     #endregion
@@ -3324,28 +3463,20 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     #region IShipNavigable Members
 
-    public override AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition) {
+    public override ApMoveDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, IShip ship) {
         float innerShellRadius = CollisionDetectionZoneRadius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of CDZone
         float outerShellRadius = innerShellRadius + 1F;   // HACK depth of arrival shell is 1
-        return new AutoPilotDestinationProxy(this, tgtOffset, innerShellRadius, outerShellRadius);
+        return new ApMoveDestinationProxy(this, ship, tgtOffset, innerShellRadius, outerShellRadius);
     }
 
     #endregion
 
     #region IShipAttackable Members
 
-    /// <summary>
-    /// Returns the proxy for this target for use by a Ship's Pilot when attacking this target.
-    /// The values provided allow the proxy to help the ship stay within its desired weapons range envelope relative to the target's surface.
-    /// <remarks>There is no target offset as ships don't attack in formation.</remarks>
-    /// </summary>
-    /// <param name="desiredWeaponsRangeEnvelope">The ship's desired weapons range envelope relative to the target's surface.</param>
-    /// <param name="shipCollisionDetectionRadius">The attacking ship's collision detection radius.</param>
-    /// <returns></returns>
-    public override AutoPilotDestinationProxy GetApAttackTgtProxy(ValueRange<float> desiredWeaponsRangeEnvelope, float shipCollisionDetectionRadius) {
+    public override ApStrafeDestinationProxy GetApStrafeTgtProxy(ValueRange<float> desiredWeaponsRangeEnvelope, IShip ship) {
         float shortestDistanceFromTgtToTgtSurface = GetDistanceToClosestWeaponImpactSurface();
         float innerProxyRadius = desiredWeaponsRangeEnvelope.Minimum + shortestDistanceFromTgtToTgtSurface;
-        float minInnerProxyRadiusToAvoidCollision = CollisionDetectionZoneRadius + shipCollisionDetectionRadius;
+        float minInnerProxyRadiusToAvoidCollision = CollisionDetectionZoneRadius + ship.CollisionDetectionZoneRadius;
         if (innerProxyRadius < minInnerProxyRadiusToAvoidCollision) {
             innerProxyRadius = minInnerProxyRadiusToAvoidCollision;
         }
@@ -3353,7 +3484,23 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         float outerProxyRadius = desiredWeaponsRangeEnvelope.Maximum + shortestDistanceFromTgtToTgtSurface;
         D.Assert(outerProxyRadius > innerProxyRadius);
 
-        var attackProxy = new AutoPilotDestinationProxy(this, Vector3.zero, innerProxyRadius, outerProxyRadius);    // 2.14.17 ArrivalWindowDepth typ 4.4-8.8 units
+        ApStrafeDestinationProxy attackProxy = new ApStrafeDestinationProxy(this, ship, innerProxyRadius, outerProxyRadius);
+        D.Log(ShowDebugLog, "{0} has constructed an AttackProxy with an ArrivalWindowDepth of {1:0.#} units.", DebugName, attackProxy.ArrivalWindowDepth);
+        return attackProxy;
+    }
+
+    public override ApBombardDestinationProxy GetApBombardTgtProxy(ValueRange<float> desiredWeaponsRangeEnvelope, IShip ship) {
+        float shortestDistanceFromTgtToTgtSurface = GetDistanceToClosestWeaponImpactSurface();
+        float innerProxyRadius = desiredWeaponsRangeEnvelope.Minimum + shortestDistanceFromTgtToTgtSurface;
+        float minInnerProxyRadiusToAvoidCollision = CollisionDetectionZoneRadius + ship.CollisionDetectionZoneRadius;
+        if (innerProxyRadius < minInnerProxyRadiusToAvoidCollision) {
+            innerProxyRadius = minInnerProxyRadiusToAvoidCollision;
+        }
+
+        float outerProxyRadius = desiredWeaponsRangeEnvelope.Maximum + shortestDistanceFromTgtToTgtSurface;
+        D.Assert(outerProxyRadius > innerProxyRadius);
+
+        ApBombardDestinationProxy attackProxy = new ApBombardDestinationProxy(this, ship, innerProxyRadius, outerProxyRadius);
         D.Log(ShowDebugLog, "{0} has constructed an AttackProxy with an ArrivalWindowDepth of {1:0.#} units.", DebugName, attackProxy.ArrivalWindowDepth);
         return attackProxy;
     }
@@ -3382,6 +3529,34 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     IFleetCmd IShip.Command { get { return Command; } }
 
     IFleetFormationStation IShip.FormationStation { get { return FormationStation; } }
+
+
+    #endregion
+
+    #region IPropellable Members
+
+    public bool IsFtlCapable { get { return Data.IsFtlCapable; } }
+
+    private IList<IUnitCmd_Ltd> _dampeningSources;
+
+    public void HandleFtlDampenerActivated(IUnitCmd_Ltd source, RangeCategory rangeCat) {
+        D.Assert(Data.IsFtlCapable);
+        _dampeningSources = _dampeningSources ?? new List<IUnitCmd_Ltd>(3);
+        D.Assert(!_dampeningSources.Contains(source));
+        _dampeningSources.Add(source);
+        if (!Data.IsFtlDampedByField) {
+            Data.IsFtlDampedByField = true;
+        }
+    }
+
+    public void HandleFtlDampenerDeactivated(IUnitCmd_Ltd source, RangeCategory rangeCat) {
+        D.Assert(Data.IsFtlCapable);
+        bool isRemoved = _dampeningSources.Remove(source);
+        D.Assert(isRemoved);
+        if (_dampeningSources.Count == Constants.Zero) {
+            Data.IsFtlDampedByField = false;
+        }
+    }
 
     #endregion
 }

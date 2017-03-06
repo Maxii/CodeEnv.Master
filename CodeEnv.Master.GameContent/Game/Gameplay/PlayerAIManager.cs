@@ -67,7 +67,6 @@ namespace CodeEnv.Master.GameContent {
             Owner = owner;
             Knowledge = knowledge;
             InitializeValuesAndReferences();
-            Subscribe();
         }
 
         private void InitializeValuesAndReferences() {
@@ -75,14 +74,6 @@ namespace CodeEnv.Master.GameContent {
             _gameMgr = References.GameManager;
             _availableCmds = new List<IUnitCmd>();
             _unavailableCmds = new List<IUnitCmd>();
-        }
-
-        private void Subscribe() {
-            SubscribeToPlayerRelationsChange(Owner);
-        }
-
-        private void SubscribeToPlayerRelationsChange(Player player) {
-            player.relationsChanged += RelationsChangedEventHandler;
         }
 
         /// <summary>
@@ -266,7 +257,7 @@ namespace CodeEnv.Master.GameContent {
                         }
                         // Don't filter for Cmd to be newly aware as most newly discovered Cmds will be at LongRange with no access to Owner
                         if (!_areAllPlayersDiscovered) {
-                            CheckForDiscoveryOfNewPlayer(cmd);
+                            CheckForUnknownPlayer(cmd);
                         }
                     }
                     else {
@@ -289,7 +280,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private void CheckForDiscoveryOfNewPlayer(IUnitCmd_Ltd cmd) {
+        private void CheckForUnknownPlayer(IUnitCmd_Ltd cmd) {
             D.Assert(!_areAllPlayersDiscovered);
             Player newlyDiscoveredPlayerCandidate;
             if (cmd.TryGetOwner(Owner, out newlyDiscoveredPlayerCandidate)) {
@@ -300,9 +291,6 @@ namespace CodeEnv.Master.GameContent {
                 bool isAlreadyKnown = Owner.IsKnown(newlyDiscoveredPlayerCandidate);
                 if (!isAlreadyKnown) {
                     Player newlyDiscoveredPlayer = newlyDiscoveredPlayerCandidate;
-                    D.LogBold("{0} discovered new {1}.", DebugName, newlyDiscoveredPlayer);
-                    SubscribeToPlayerRelationsChange(newlyDiscoveredPlayer);
-
                     Owner.HandleMetNewPlayer(newlyDiscoveredPlayer);
                     _areAllPlayersDiscovered = Owner.OtherKnownPlayers.Count() == _gameMgr.AllPlayers.Count - 1;
                 }
@@ -397,32 +385,23 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private void RelationsChangedEventHandler(object sender, RelationsChangedEventArgs e) {
-            Player sendingPlayer = sender as Player;
-            // Only send one of the (always) two events to our Cmds
-            if (sendingPlayer == Owner) {
-                HandleOwnerRelationsChanged(e.ChgdRelationsPlayer);
-            }
-            // TODO what about relations changes between other players that don't involve Owner?
-        }
+        #endregion
 
-        private void HandleOwnerRelationsChanged(Player chgdRelationsPlayer) {
-            D.AssertNotEqual(Owner, chgdRelationsPlayer);
-            var priorRelationship = Owner.GetPriorRelations(chgdRelationsPlayer);
-            var newRelationship = Owner.GetCurrentRelations(chgdRelationsPlayer);
+        public void HandleOwnerRelationsChangedWith(Player player) {
+            D.AssertNotEqual(Owner, player);
+            var priorRelationship = Owner.GetPriorRelations(player);
+            var newRelationship = Owner.GetCurrentRelations(player);
             D.AssertNotEqual(priorRelationship, newRelationship);
-            //D.Log("Relations have changed from {0} to {1} between {2} and {3}.", priorRelationship.GetValueName(), newRelationship.GetValueName(), Owner.LeaderName, chgdRelationsPlayer.LeaderName);
+            //D.Log("Relations have changed from {0} to {1} between {2} and {3}.", priorRelationship.GetValueName(), newRelationship.GetValueName(), Owner, player);
             if (priorRelationship == DiplomaticRelationship.Alliance) {
-                HandleLostAllianceWith(chgdRelationsPlayer);
+                HandleLostAllianceWith(player);
             }
             else if (newRelationship == DiplomaticRelationship.Alliance) {
-                HandleGainedAllianceWith(chgdRelationsPlayer);
+                HandleGainedAllianceWith(player);
             }
-            Knowledge.OwnerCommands.ForAll(myCmd => myCmd.HandleRelationsChanged(chgdRelationsPlayer));
+            Knowledge.OwnerCommands.ForAll(myCmd => myCmd.HandleRelationsChangedWith(player));
             // Note: 7.15.16 Cmds currently propagate this to Elements and RangeMonitors
         }
-
-        #endregion
 
         private void HandleGainedAllianceWith(Player ally) {
             D.Assert(Owner.IsRelationshipWith(ally, DiplomaticRelationship.Alliance));
@@ -475,29 +454,11 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Cleanup() {
-            Unsubscribe();
             Knowledge.Dispose();
-        }
-
-        private void Unsubscribe() {
-            Owner.relationsChanged -= RelationsChangedEventHandler;
-            OtherKnownPlayers.ForAll(player => player.relationsChanged -= RelationsChangedEventHandler);
         }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
-        }
-
-        #region Debug
-
-        /// <summary>
-        /// Debug. Returns the items that Owner knows about that are owned by player.
-        /// No owner access restrictions.
-        /// </summary>
-        /// <param name="player">The player.</param>
-        /// <returns></returns>
-        public IEnumerable<IOwnerItem> __GetItemsOwnedBy(Player player) {
-            return Knowledge.__GetItemsOwnedBy(player);
         }
 
         #region Debug Issue Fleet Orders
@@ -521,7 +482,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private int __myActiveFleetCount;
+        ////private int __myActiveFleetCount;
         private IList<IFleetCmd> __myAttackingFleets;
 
         private void __MyAttackingFleetDeathEventHandler(object sender, EventArgs e) {
@@ -542,9 +503,9 @@ namespace CodeEnv.Master.GameContent {
                     __myAttackingFleets = new List<IFleetCmd>();
                 }
 
-                __myActiveFleetCount = Knowledge.OwnerFleets.Count();
+                ////__myActiveFleetCount = Knowledge.OwnerFleets.Count();
 
-                if (__myAttackingFleets.Count < Mathf.CeilToInt(__myActiveFleetCount / 2F)) {
+                if (__myAttackingFleets.Count < _debugControls.MaxAttackingFleetsPerPlayer) {
                     // room to assign another fleet to attack
                     if (__IssueFleetAttackOrder(fleetCmd, findFarthestTgt: false)) {
                         if (!__myAttackingFleets.Contains(fleetCmd)) {
@@ -566,7 +527,7 @@ namespace CodeEnv.Master.GameContent {
                             __areAllTargetsAttacked = true;
                         }
                         else {
-                            D.Log("{0}: Fleet {1} can't find an attack target so will explore another part of universe.", DebugName, fleetCmd.DebugName);
+                            //D.Log("{0}: Fleet {1} can't find an attack target so will explore another part of universe.", DebugName, fleetCmd.DebugName);
                         }
                     }
                 }
@@ -583,7 +544,7 @@ namespace CodeEnv.Master.GameContent {
                         __areAllTargetsAttacked = true;
                     }
                     else {
-                        D.Log("{0}: Fleet {1} is not allowed to attack so will explore another part of universe.", DebugName, fleetCmd.DebugName);
+                        //D.Log("{0}: Fleet {1} is not allowed to attack so will explore another part of universe.", DebugName, fleetCmd.DebugName);
                     }
                 }
 
@@ -631,71 +592,6 @@ namespace CodeEnv.Master.GameContent {
                 }
             }
         }
-        //private void __IssueFleetOrder(IFleetCmd fleetCmd) {
-        //    if (References.DebugControls.FleetsAutoAttackAsDefault) {
-        //        if (__areAllTargetsAttacked && __isUniverseFullyExplored) {
-        //            return;
-        //        }
-
-        //        if (__IssueFleetAttackOrder(fleetCmd, findFarthestTgt: false)) {
-        //            return;
-        //        }
-        //        else {
-        //            // no target detected to attack
-        //            __isUniverseFullyExplored = !__IssueFleetExploreOrder(fleetCmd);
-        //            if (__isUniverseFullyExplored) {
-        //                // couldn't find target to attack and universe is fully explored so all targets have been destroyed
-        //                __areAllTargetsAttacked = true;
-        //            }
-        //            else {
-        //                //D.Log("{0}: Fleet {1} can't find an attack target so will explore another part of universe.", DebugName, fleetCmd.DebugName);
-        //            }
-        //        }
-        //        if (__areAllTargetsAttacked && __isUniverseFullyExplored) {
-        //            D.LogBold("{0}: Fleet {1} has run out of attack targets and unexplored explorable destinations in universe.", DebugName, fleetCmd.DebugName);
-        //        }
-        //    }
-        //    else {  // FleetsAutoAttackAsDefault precludes all other orders
-        //        var debugFleetCreator = fleetCmd.transform.GetComponentInParent<IDebugFleetCreator>();
-        //        if (debugFleetCreator != null) {
-        //            FleetCreatorEditorSettings editorSettings = debugFleetCreator.EditorSettings as FleetCreatorEditorSettings;
-        //            if (__IssueFleetOrderSpecifiedByCreator(fleetCmd, editorSettings)) {
-        //                return;
-        //            }
-        //        }
-
-        //        if (References.DebugControls.FleetsAutoExploreAsDefault) {
-        //            if (__isUniverseFullyExplored && __areAllBasesVisited) {
-        //                return;
-        //            }
-
-        //            if (!__isUniverseFullyExplored) {
-        //                bool tryExplore = RandomExtended.Chance(0.75F);
-        //                if (tryExplore) {
-        //                    __isUniverseFullyExplored = !__IssueFleetExploreOrder(fleetCmd);
-        //                    if (__isUniverseFullyExplored && !__areAllBasesVisited) {
-        //                        __areAllBasesVisited = !__IssueFleetBaseMoveOrder(fleetCmd);
-        //                    };
-        //                }
-        //                else {
-        //                    __areAllBasesVisited = !__IssueFleetBaseMoveOrder(fleetCmd);
-        //                    if (__areAllBasesVisited) {
-        //                        __isUniverseFullyExplored = !__IssueFleetExploreOrder(fleetCmd);
-        //                    }
-        //                }
-        //            }
-        //            else {
-        //                if (!__areAllBasesVisited) {
-        //                    __areAllBasesVisited = !__IssueFleetBaseMoveOrder(fleetCmd);
-        //                }
-        //            }
-        //            if (__isUniverseFullyExplored && __areAllBasesVisited) {
-        //                D.LogBold("{0}: Fleet {1} has run out of unexplored explorable or unvisited visitable destinations in universe.", DebugName, fleetCmd.DebugName);
-        //            }
-        //        }
-        //    }
-        //}
-
 
         /// <summary>
         /// Tries to issue the fleet order specified by the DebugUnitCreator. Returns
@@ -825,170 +721,22 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        #region Debug
+
+        /// <summary>
+        /// Debug. Returns the items that Owner knows about that are owned by player.
+        /// No owner access restrictions.
+        /// </summary>
+        /// <param name="player">The player.</param>
+        /// <returns></returns>
+        public IEnumerable<IOwnerItem> __GetItemsOwnedBy(Player player) {
+            return Knowledge.__GetItemsOwnedBy(player);
+        }
+
+
         #endregion
 
         #region Obsolete Archive
-
-        /// <summary>
-        /// Handles the change of an item's owner to an ally of this AIMgr's owner. This can be called in 2 scenarios:
-        /// 1) An existing ally of the owner of this AIMgr just created a new item, and 
-        /// 2) an existing item had its owner changed to one of this AIMgr's allies.
-        /// </summary>
-        /// <param name="allyOwnedItem">The ally owned item.</param>
-        [Obsolete]
-        public void HandleChgdItemOwnerIsAlly(IOwnerItem allyOwnedItem) {
-            D.Assert(Owner.IsRelationshipWith(allyOwnedItem.Owner, DiplomaticRelationship.Alliance));
-            D.Assert(!(allyOwnedItem is IUniverseCenter));
-
-            ChangeIntelCoverageToComprehensiveAndPopulateKnowledge(allyOwnedItem);
-        }
-
-        /// <summary>
-        /// Handles the change of an item's owner to this AIMgr's owner. This can be called in 2 scenarios:
-        /// 1) The owner of this AIMgr just created a new item, and 
-        /// 2) an existing item had its owner changed to the owner of this AIMgr.
-        /// </summary>
-        /// <param name="myOwnedItem">My owned item.</param>
-        [Obsolete]
-        public void HandleGainedItemOwnership(IOwnerItem myOwnedItem) {
-            //D.Log("{0}.HandleGainedItemOwnership({1}) called.", DebugName, myOwnedItem.DebugName);
-            D.AssertEqual(Owner, myOwnedItem.Owner);
-            D.Assert(!(myOwnedItem is IUniverseCenter));
-
-            ChangeIntelCoverageToComprehensiveAndPopulateKnowledge(myOwnedItem);
-        }
-
-        /// <summary>
-        /// Handles the changing of an item's owner from this AIMgr's owner. This is called in 1 scenario:
-        /// 1) An existing item is in the process of having its owner changed from the owner of this AIMgr.
-        /// Warning: Called prior to the actual change of the owner.
-        /// </summary>
-        /// <param name="losingOwnedItem">The losing owned item.</param>
-        [Obsolete]
-        public void HandleLosingItemOwnership(IOwnerItem losingOwnedItem) {
-            D.AssertEqual(Owner, losingOwnedItem.Owner);
-            D.Assert(!(losingOwnedItem is IUniverseCenter));
-
-            // Items that are losing their owner call Item.DetectionHandler.ResetBasedOnCurrentDetection() to re-determine the
-            // (soon to be) former owner's intel coverage (and if appropriate, depopulate knowledge)
-        }
-
-        [Obsolete]
-        private void ChangeIntelCoverageToComprehensiveAndPopulateKnowledge(IOwnerItem item) {
-            if (item is ISystem || item is IUnitCmd) {
-                // These will auto change to Comprehensive when their members do 
-                // and they auto populate knowledge based on their members populating it
-                return;
-            }
-
-            D.Assert(!(item is ISector));  // UNCLEAR how sectors interact with knowledge not yet determined
-
-            var element = item as IUnitElement;
-            if (element != null) {
-                element.SetIntelCoverage(Owner, IntelCoverage.Comprehensive);
-                bool isAdded = Knowledge.AddElement(element as IUnitElement_Ltd);
-                //D.Log(!isAdded, "{0} tried to add {1} it already has.", DebugName, element.DebugName);
-            }
-            else {
-                var planetoid = item as IPlanetoid;
-                if (planetoid != null) {
-                    planetoid.SetIntelCoverage(Owner, IntelCoverage.Comprehensive);
-                    bool isAdded = Knowledge.AddPlanetoid(planetoid as IPlanetoid_Ltd);
-                    //D.Log(!isAdded, "{0} tried to add {1} it already has.", DebugName, planetoid.DebugName);
-                }
-                else {
-                    var star = item as IStar;
-                    D.AssertNotNull(star);
-                    star.SetIntelCoverage(Owner, IntelCoverage.Comprehensive);
-                    // don't need to add to knowledge as all stars are already known
-                }
-            }
-        }
-
-        /// <summary>
-        /// Called whenever an operational ISensorDetectable Item is detected by <c>Owner</c>, no matter how
-        /// many times the item has been detected previously. Ignores items that Owner already has knowledge of.
-        /// <remarks>The only ISensorDetectables that really get handled here are Elements and Planetoids as
-        /// Stars and the UniverseCenter are already known to all players.</remarks>
-        /// </summary>
-        /// <param name="detectedItem">The detected item.</param>
-        [Obsolete]
-        public void HandleItemDetection(ISensorDetectable detectedItem) {
-            if (detectedItem is IStar_Ltd || detectedItem is IUniverseCenter_Ltd) {
-                return; // these are added at startup and never removed so no need to add again
-            }
-            D.Assert(detectedItem.IsOperational, detectedItem.DebugName);
-
-            var element = detectedItem as IUnitElement_Ltd;
-            if (element != null) {
-                Knowledge.AddElement(element);
-                if (element.IsHQ) {
-                    // 7.14.16 Eliminated rqmt to be newly discovered element as most newly discovered elements will be at LongRange with no access to Owner
-                    CheckForDiscoveryOfNewPlayer(element);
-                }
-            }
-            else {
-                var planetoid = detectedItem as IPlanetoid_Ltd;
-                if (planetoid == null) {
-                    D.Error("{0}: Unanticipated Type {1} attempting to add {2}.", DebugName, detectedItem.GetType().Name, detectedItem.DebugName);
-                }
-                if (_debugControls.IsAllIntelCoverageComprehensive) {
-                    // all planetoids are already known as each Knowledge was fully populated with them before game start
-                    if (!Knowledge.HasKnowledgeOf(planetoid)) {
-                        D.Error("{0} has no knowledge of {1}.", DebugName, planetoid.DebugName);
-                    }
-                    return;
-                }
-                Knowledge.AddPlanetoid(planetoid);
-            }
-        }
-
-        /// <summary>
-        /// Called when an item that was detected by <c>Player</c> is no longer detected by <c>Player</c> at all. 
-        /// <remarks>7.20.16 Items no longer informed of loss of detection when they die. 
-        /// Cleanup of Knowledge on item death now handled by Knowledge.</remarks>
-        /// </summary>
-        /// <param name="detectedItem">The detected item.</param>
-        [Obsolete]
-        public void HandleItemDetectionLost(ISensorDetectable detectedItem) {
-            if (detectedItem is IStar_Ltd || detectedItem is IUniverseCenter_Ltd) {
-                return; // these are added at startup and never removed so no need to evaluate
-            }
-
-            var element = detectedItem as IUnitElement_Ltd;
-            if (element != null) {
-                D.Assert(element.IsOperational);
-                Knowledge.RemoveElement(element);
-            }
-            else {
-                var planetoid = detectedItem as IPlanetoid_Ltd;
-                if (planetoid == null) {
-                    D.Error("{0}: Unanticipated Type {1} attempting to remove {2}.", DebugName, detectedItem.GetType().Name, detectedItem.DebugName);
-                }
-                // planetoids are not removed when they lose detection as they can't regress IntelCoverage
-                D.Assert(planetoid.IsOperational);
-            }
-        }
-
-        [Obsolete]
-        private void CheckForDiscoveryOfNewPlayer(IUnitElement_Ltd element) {
-            Player newlyDiscoveredPlayerCandidate;
-            if (element.TryGetOwner(Owner, out newlyDiscoveredPlayerCandidate)) {
-                if (newlyDiscoveredPlayerCandidate == Owner) {
-                    // Note: The new HQ element just detected that generated this check is one of our own. 
-                    // This typically occurs during the initial process of detecting what is in range of sensors when the game first starts.
-                    return;
-                }
-                bool isAlreadyKnown = Owner.IsKnown(newlyDiscoveredPlayerCandidate);
-                if (!isAlreadyKnown) {
-                    Player newlyDiscoveredPlayer = newlyDiscoveredPlayerCandidate;
-                    D.LogBold("{0} discovered new {1}.", DebugName, newlyDiscoveredPlayer);
-                    SubscribeToPlayerRelationsChange(newlyDiscoveredPlayer);
-
-                    Owner.HandleMetNewPlayer(newlyDiscoveredPlayer);
-                }
-            }
-        }
 
         #endregion
 

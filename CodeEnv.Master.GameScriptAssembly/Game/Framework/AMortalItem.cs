@@ -77,7 +77,9 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
     /// The normal death shutdown process is handled by HandleDeathXXX() which is called by the 
     /// Item's Dead_EnterState method up to a frame later.
     /// </summary>
-    protected abstract void PrepareForDeathNotification();
+    protected virtual void PrepareForDeathNotification() {
+        Data.PassiveCountermeasures.ForAll(cm => cm.IsActivated = false);
+    }
 
     /// <summary>
     /// Hook for derived classes to initiate transition to their DeadState.
@@ -89,7 +91,6 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
     /// death effect. Called by the item's Dead state.
     /// </summary>
     protected virtual void HandleDeathBeforeBeginningDeathEffect() {
-        Data.PassiveCountermeasures.ForAll(cm => cm.IsActivated = false);
         if (IsFocus) {
             References.MainCameraControl.CurrentFocus = null;
             AssignAlternativeFocusOnDeath();
@@ -100,7 +101,6 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
         if (IsHudShowing) {
             ShowHud(false);
         }
-
         HandleDeathForHighlights();
     }
 

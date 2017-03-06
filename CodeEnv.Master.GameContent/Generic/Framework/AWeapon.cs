@@ -260,7 +260,11 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(!_isLoaded);
             //D.Log(ShowDebugLog, "{0}.HandleFiringComplete({1}) called.", DebugName, ordnanceFired.Name);
             IsFiringSequenceUnderway = false;
-            InitiateReloadCycle();
+
+            if (IsOperational) {
+                // Beams call this when they terminate due to this Weapon's loss of operations
+                InitiateReloadCycle();
+            }
         }
 
         #region Event and Property Change Handlers
@@ -348,7 +352,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void InitiateReloadCycle() {
-            D.AssertNull(_reloadJob);
+            D.AssertNull(_reloadJob, DebugName);
             //D.Log(ShowDebugLog, "{0} is initiating its reload cycle. Duration: {1:0.#} hours.", DebugName, ReloadPeriod);
 
             string jobName = "{0}.ReloadJob".Inject(DebugName);

@@ -26,6 +26,8 @@ namespace CodeEnv.Master.GameContent {
 
         Vector3 Position { get; }
 
+        bool IsOperational { get; }
+
         bool IsMobile { get; }
 
     }

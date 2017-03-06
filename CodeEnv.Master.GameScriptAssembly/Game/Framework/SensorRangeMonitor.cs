@@ -465,6 +465,10 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
             if ((lostDetectionItemDistanceSqrd = Vector3.SqrMagnitude(lostDetectionItem.Position - transform.position)) < acceptableThresholdSqrd) {
                 D.Warn("{0}.OnTriggerExit() called. Exit Distance for {1} {2:0.##} is < AcceptableThreshold {3:0.##}.",
                     DebugName, lostDetectionItem.DebugName, Mathf.Sqrt(lostDetectionItemDistanceSqrd), acceptableThreshold);
+                if (lostDetectionItemDistanceSqrd == Constants.ZeroF) {
+                    D.Error("{0}.OnTriggerExit({1}) called at distance zero. LostItem.position = {2}, {0}.position = {3}.",
+                        DebugName, lostDetectionItem.DebugName, lostDetectionItem.Position, transform.position);
+                }
             }
         }
     }

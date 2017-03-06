@@ -59,8 +59,8 @@ namespace CodeEnv.Master.GameContent {
 
         #region IShipNavigable Members
 
-        public AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition) {
-            return new AutoPilotDestinationProxy(this, tgtOffset, Constants.ZeroF, TempGameValues.WaypointCloseEnoughDistance);
+        public ApMoveDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, IShip ship) {
+            return new ApMoveDestinationProxy(this, ship, tgtOffset, Constants.ZeroF, TempGameValues.WaypointCloseEnoughDistance);
         }
 
         #endregion

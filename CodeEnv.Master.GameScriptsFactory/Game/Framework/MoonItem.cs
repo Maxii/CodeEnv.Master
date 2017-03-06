@@ -124,14 +124,13 @@ public class MoonItem : APlanetoidItem, IMoon, IMoon_Ltd {
 
     #region IShipNavigable Members
 
-    public override AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition) {
+    public override ApMoveDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, IShip ship) {
         float innerShellRadius = _obstacleZoneCollider.radius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of obstacle zone
         float outerShellRadius = innerShellRadius + 1F;   // HACK depth of arrival shell is 1
-        return new AutoPilotDestinationProxy(this, tgtOffset, innerShellRadius, outerShellRadius);
+        return new ApMoveDestinationProxy(this, ship, tgtOffset, innerShellRadius, outerShellRadius);
     }
 
     #endregion
-
 
 }
 

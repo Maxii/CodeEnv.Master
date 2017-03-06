@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class Engine : AEquipment {
 
-        private const string NameFormat = "{0}_{1:0.#}";
+        private const string NameFormat = "{0}_Power[{1:0.}]";
 
         public override string Name {
             get {

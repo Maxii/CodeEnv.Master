@@ -28,8 +28,8 @@ public class FpsReadout : AGuiLabelReadout, IFpsReadout {
 
     private const string FormattedFpsText = "{0:F1} FPS";
 
-    private static float _redFramerate = TempGameValues.MinimumFramerate;
-    private static float _yellowFramerate = TempGameValues.MinimumFramerate + 5F;
+    private static float _redFramerate = TempGameValues.MinimumFramerate - 5F;
+    private static float _yellowFramerate = TempGameValues.MinimumFramerate;
     private static float _lastFpsValue = 500F;
 
     public static float FramesPerSecond { get { return _lastFpsValue; } }

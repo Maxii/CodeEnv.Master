@@ -40,22 +40,38 @@ namespace CodeEnv.Master.GameContent {
         Defensive,
 
         /// <summary>
-        /// The ship will aggressively pursue and engage its target at a distance where all 
+        /// The ship will aggressively pursue and Bombard its target from a distance where all 
         /// of its weapons can be brought to bear.
+        /// <remarks>Bombard behaviour involves finding a location relative to the target 
+        /// where it can continuously fire and staying there until the target either moves out
+        /// of range, is destroyed or the attacker decides to withdraw, typically for repair.</remarks>
         /// </summary>
         PointBlank,
 
         /// <summary>
-        /// The ship will pursue and engage its target at a distance where its 
+        /// The ship will pursue and Bombard its target from a distance where its 
         /// long and medium range weapons can be brought to bear.
-        /// IMPROVE should pick distance based on what its primary weapons are
-        /// along with other factors.
+        /// <remarks>Bombard behaviour involves finding a location relative to the target 
+        /// where it can continuously fire and staying there until the target either moves out
+        /// of range, is destroyed or the attacker decides to withdraw, typically for repair.</remarks>
+        /// IMPROVE should pick distance based on what its primary weapons are along with other factors.
         /// </summary>
-        Balanced,
+        BalancedBombard,
 
         /// <summary>
-        /// The ship will pursue and engage its target at a distance where only 
+        /// The ship will pursue and Strafe its target with its long and medium range weapons.
+        /// <remarks>Strafe behaviour involves approaching a target at speed, firing, then
+        /// withdrawing to a location out of range before repeating the behaviour.</remarks>
+        /// IMPROVE should pick distance based on what its primary weapons are along with other factors.
+        /// </summary>
+        BalancedStrafe,
+
+        /// <summary>
+        /// The ship will pursue and Bombard its target from a distance where only 
         /// its longest range weapons can be brought to bear.
+        /// <remarks>Bombard behaviour involves finding a location relative to the target 
+        /// where it can continuously fire and staying there until the target either moves out
+        /// of range, is destroyed or the attacker decides to withdraw, typically for repair.</remarks>
         /// </summary>
         Standoff
 

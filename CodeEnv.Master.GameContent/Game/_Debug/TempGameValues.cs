@@ -44,11 +44,6 @@ namespace CodeEnv.Master.GameContent {
             + LargestShipCollisionDetectionZoneRadius;
 
         /// <summary>
-        /// The minimum expected turn rate in degrees per frame at the game's slowest allowed FPS rate.
-        /// </summary>
-        ////public static float __MinExpectedTurnratePerFrameAtSlowestFPS = (GameTime.HoursPerSecond * MinimumTurnRate) / MinimumFramerate;
-
-        /// <summary>
         /// The Game's minimum allowed turn rate of a ship in degrees per hour.
         /// <remarks>Used to calculate the lowest turn rate in degrees per frame 
         /// that a ship can have. Prevents a ship from correcting its heading too often

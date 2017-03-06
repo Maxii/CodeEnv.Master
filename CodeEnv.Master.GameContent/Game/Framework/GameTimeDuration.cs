@@ -32,7 +32,14 @@ namespace CodeEnv.Master.GameContent {
         public const string NoYearsFormat = "{0} days, {1:0.0} hours";  //= "{0:D3} days, {1:D2} hours";
         public const string HoursOnlyFormat = "{0:0.0} hours"; //= "{0:D2} hours";
 
+        public static readonly GameTimeDuration TenHours = new GameTimeDuration(hours: 10F, days: 0, years: 0);
         public static readonly GameTimeDuration OneDay = new GameTimeDuration(hours: 0F, days: 1, years: 0);
+        public static readonly GameTimeDuration TwoDays = new GameTimeDuration(hours: 0F, days: 2, years: 0);
+        public static readonly GameTimeDuration ThreeDays = new GameTimeDuration(hours: 0F, days: 3, years: 0);
+        public static readonly GameTimeDuration FourDays = new GameTimeDuration(hours: 0F, days: 4, years: 0);
+        public static readonly GameTimeDuration FiveDays = new GameTimeDuration(hours: 0F, days: 5, years: 0);
+        public static readonly GameTimeDuration SevenDays = new GameTimeDuration(hours: 0F, days: 7, years: 0);
+        public static readonly GameTimeDuration TenDays = new GameTimeDuration(hours: 0F, days: 10, years: 0);
         public static readonly GameTimeDuration OneYear = new GameTimeDuration(hours: 0F, days: 0, years: 1);
 
         // Bug: use of static constructor with struct causes intellisense for constructors to fail

@@ -76,12 +76,6 @@ public class StarbaseCreator : AAutoUnitCreator {
         _gameMgr.GameKnowledge.AddUnit(_command, _elements.Cast<IUnitElement>());
     }
 
-    [Obsolete]
-    protected override void RegisterCommandForOrders() {
-        var ownerAIMgr = _gameMgr.GetAIManagerFor(Owner);
-        ownerAIMgr.RegisterForOrders(_command);
-    }
-
     protected override void BeginElementsOperations() {
         LogEvent();
         _elements.ForAll(e => e.CommenceOperations());
@@ -132,31 +126,6 @@ public class StarbaseCreator : AAutoUnitCreator {
     }
 
     #region Archive
-
-    [Obsolete]
-    protected override void AddUnitToOwnerAndAllysKnowledge() {
-        LogEvent();
-        //D.Log(ShowDebugLog, "{0} is adding Unit {1} to {2}'s Knowledge.", DebugName, UnitName, Owner);
-        var ownerAIMgr = _gameMgr.GetAIManagerFor(Owner);
-        _elements.ForAll(e => ownerAIMgr.HandleGainedItemOwnership(e));
-        ownerAIMgr.HandleGainedItemOwnership(_command);    // OPTIMIZE not really needed as this happens automatically when elements handled
-
-        var alliedPlayers = Owner.GetOtherPlayersWithRelationship(DiplomaticRelationship.Alliance);
-        if (alliedPlayers.Any()) {
-            alliedPlayers.ForAll(ally => {
-                //D.Log(ShowDebugLog, "{0} is adding Unit {1} to {2}'s Knowledge as Ally.", DebugName, UnitName, ally);
-                var allyAIMgr = _gameMgr.GetAIManagerFor(ally);
-                _elements.ForAll(e => allyAIMgr.HandleChgdItemOwnerIsAlly(e));
-                allyAIMgr.HandleChgdItemOwnerIsAlly(_command);  // OPTIMIZE not really needed as this happens automatically when elements handled
-            });
-        }
-    }
-
-    [Obsolete]
-    protected override void __IssueFirstUnitOrder(Action onCompleted) {
-        LogEvent();
-        onCompleted();
-    }
 
     #endregion
 

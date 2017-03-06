@@ -175,7 +175,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="newSpeed">The new speed.</param>
         /// <param name="intendedNewSpeedValue">The new speed value in units per hour.</param>
         /// <returns></returns>
-        public void ChangeSpeed(Speed newSpeed, float intendedNewSpeedValue) {
+        internal void ChangeSpeed(Speed newSpeed, float intendedNewSpeedValue) {
             //D.Log(ShowDebugLog, "{0}'s actual speed = {1:0.##} at EngineRoom.ChangeSpeed({2}, {3:0.##}).",
             //Name, ActualSpeedValue, newSpeed.GetValueName(), intendedNewSpeedValue);
 
@@ -211,22 +211,12 @@ namespace CodeEnv.Master.GameContent {
             EngageOrContinuePropulsion();
         }
 
-        public void HandleTurnBeginning() {
+        internal void HandleTurnBeginning() {
             // DriftCorrection defines drift as any velocity not in localspace forward direction.
             // Turning changes local space forward so stop correcting while turning. As soon as 
             // the turn ends, HandleTurnCompleted() will be called to correct any drift.
             //D.Log(ShowDebugLog && IsDriftCorrectionEngaged, "{0} is disengaging DriftCorrection as turn is beginning.", DebugName);
             DisengageDriftCorrection();
-        }
-
-        public void HandleTurnCompleted() {
-            D.Assert(!_gameMgr.IsPaused, DebugName); // turn job should be paused if game is paused
-            if (IsCollisionAvoidanceEngaged || ActualSpeedValue == Constants.Zero) {
-                // Ignore if currently avoiding collision. After CA completes, any drift will be corrected
-                // Ignore if no speed => no drift to correct
-                return;
-            }
-            EngageDriftCorrection();
         }
 
         public void HandleDeath() {
@@ -499,7 +489,13 @@ namespace CodeEnv.Master.GameContent {
 
         #region Drift Correction
 
-        private void EngageDriftCorrection() {
+        internal void EngageDriftCorrection() {
+            D.Assert(!_gameMgr.IsPaused, DebugName); // turn job should be paused if game is paused
+            if (IsCollisionAvoidanceEngaged || ActualSpeedValue == Constants.Zero) {
+                // Ignore if currently avoiding collision. After CA completes, any drift will be corrected
+                // Ignore if no speed => no drift to correct
+                return;
+            }
             _driftCorrector.Engage();
         }
 
@@ -560,8 +556,10 @@ namespace CodeEnv.Master.GameContent {
                 Profiler.EndSample();
             }
             else {
-                string caObstacles = _caPropulsionJobs.Keys.Select(obs => obs.DebugName).Concatenate();
-                D.Log(ShowDebugLog, "{0} cannot yet resume propulsion as collision avoidance remains engaged avoiding {1}.", DebugName, caObstacles);
+                if (ShowDebugLog) {
+                    string caObstacles = _caPropulsionJobs.Keys.Select(obs => obs.DebugName).Concatenate();
+                    D.Log("{0} cannot yet resume propulsion as collision avoidance remains engaged avoiding {1}.", DebugName, caObstacles);
+                }
             }
         }
 
@@ -578,23 +576,38 @@ namespace CodeEnv.Master.GameContent {
 
         private IEnumerator OperateCollisionAvoidancePropulsionIn(Vector3 worldSpaceDirectionToAvoidCollision) {
             worldSpaceDirectionToAvoidCollision.ValidateNormalized();
-            GameDate warnDate = new GameDate(new GameTimeDuration(5F));    // HACK  // 2.8.17 Warning at 3F
+
+            bool isInformedOfLogging = false;
+            bool isInformedOfWarning = false;
+            GameDate logDate = new GameDate(GameTimeDuration.TenHours);   // HACK  // 3.5.17 Logging at 9F with FtlDampener
+            GameDate warnDate = default(GameDate);
             GameDate errorDate = default(GameDate);
             GameDate currentDate;
-            bool hasBeenWarned = false;
             while (true) {
                 ApplyCollisionAvoidancePropulsionIn(worldSpaceDirectionToAvoidCollision);
-                currentDate = _gameTime.CurrentDate;
-                if (currentDate > warnDate) {
-                    if (!hasBeenWarned) {
-                        D.Warn("{0}: CurrentDate {1} > WarnDate {2} while avoiding collision.", DebugName, currentDate, warnDate);
-                        hasBeenWarned = true;
+                if ((currentDate = _gameTime.CurrentDate) > logDate) {
+                    if (!isInformedOfLogging) {
+                        D.Log(/*ShowDebugLog,*/ "{0}: CurrentDate {1} > LogDate {2} while avoiding collision. IsFtlDamped = {3}.",
+                            DebugName, currentDate, logDate, _shipData.IsFtlDampedByField);
+                        isInformedOfLogging = true;
                     }
-                    if (errorDate == default(GameDate)) {
-                        errorDate = new GameDate(warnDate, GameTimeDuration.OneDay);
+
+                    if (warnDate == default(GameDate)) {
+                        warnDate = new GameDate(logDate, GameTimeDuration.OneDay);
                     }
-                    if (currentDate > errorDate) {
-                        D.Error("{0}.OperateCollisionAvoidancePropulsion has timed out.", DebugName);
+                    if (currentDate > warnDate) {
+                        if (!isInformedOfWarning) {
+                            D.Warn("{0}: CurrentDate {1} > WarnDate {2} while avoiding collision. IsFtlDamped = {3}.",
+                                DebugName, currentDate, warnDate, _shipData.IsFtlDampedByField);
+                            isInformedOfWarning = true;
+                        }
+
+                        if (errorDate == default(GameDate)) {
+                            errorDate = new GameDate(warnDate, GameTimeDuration.TwoDays);
+                        }
+                        if (currentDate > errorDate) {
+                            D.Error("{0}.OperateCollisionAvoidancePropulsion has timed out.", DebugName);
+                        }
                     }
                 }
                 yield return Yielders.WaitForFixedUpdate;
@@ -615,7 +628,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void DisengageCollisionAvoidancePropulsionFor(IObstacle obstacle) {
-            D.Assert(_caPropulsionJobs.ContainsKey(obstacle), obstacle.DebugName);
+            // 3.4.17 EngineRoom removes obstacle on obstacle death. Ship won't call HandlePendingCollisionAverted if obstacle is dead
+            D.Assert(_caPropulsionJobs.ContainsKey(obstacle), DebugName);
             _caPropulsionJobs[obstacle].Kill();
             _caPropulsionJobs.Remove(obstacle);
         }
@@ -645,10 +659,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="sender">The sender.</param>
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         private void CollidingObstacleDeathEventHandler(object sender, EventArgs e) {
-            // Note: no reason to design HandlePendingCollisionAverted() to deal with a second call
+            // 3.4.17 no reason to design HandlePendingCollisionAverted() to deal with a second call
             // from a now destroyed obstacle as Ship filters out the call if the obstacle is already dead
             IObstacle deadCollidingObstacle = sender as IObstacle;
-            D.LogBold("{0} reporting obstacle {1} has died during collision avoidance.", DebugName, deadCollidingObstacle.DebugName);
+            D.Log(ShowDebugLog, "{0} reporting obstacle {1} has died during collision avoidance.", DebugName, deadCollidingObstacle.DebugName);
             HandlePendingCollisionAverted(deadCollidingObstacle);
         }
 

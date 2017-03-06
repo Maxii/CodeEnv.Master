@@ -245,6 +245,8 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
 
         D.AssertDefault(__allowedTurns.Count);
         D.AssertDefault(__actualTurns.Count);
+        D.AssertDefault(__turnTimeWarnDate);
+        D.AssertDefault(__turnTimeErrorDate);
         D.AssertNull(__allowedAndActualTurnSteps);
     }
 
@@ -346,8 +348,11 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         D.Assert(!_driftCorrector.IsCorrectionUnderway);
 
         Profiler.BeginSample("Missile ChangeHeading Job Setup", this);
+
+        bool isInformedOfDateLogging = false;
         bool isInformedOfDateWarning = false;
         __ResetTurnTimeWarningFields();
+        GameDate warnDate = DebugUtility.CalcWarningDateForRotation(TurnRate, MaxReqdHeadingChange);
 
         //int startingFrame = Time.frameCount;
         Quaternion startingRotation = transform.rotation;
@@ -359,8 +364,8 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
 
         float deltaTime;
         float deviationInDegrees;
-        GameDate warnDate = DebugUtility.CalcWarningDateForRotation(TurnRate, MaxReqdHeadingChange);
         bool isRqstdHeadingReached = CurrentHeading.IsSameDirection(requestedHeading, out deviationInDegrees, SteeringInaccuracy);
+
         Profiler.EndSample();
 
         while (!isRqstdHeadingReached) {
@@ -385,7 +390,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
             if (!isRqstdHeadingReached && (currentDate = _gameTime.CurrentDate) > warnDate) {
                 float desiredTurn = Quaternion.Angle(startingRotation, intendedHeadingRotation);
                 float resultingTurn = Quaternion.Angle(startingRotation, inprocessRotation);
-                __ReportTurnTimeWarning(warnDate, currentDate, desiredTurn, resultingTurn, __allowedTurns, __actualTurns, ref isInformedOfDateWarning);
+                __ReportTurnTimeWarning(warnDate, currentDate, desiredTurn, resultingTurn, __allowedTurns, __actualTurns, ref isInformedOfDateLogging, ref isInformedOfDateWarning);
             }
             Profiler.EndSample();
 
@@ -442,8 +447,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         DisengageDriftCorrection();
         Target.deathOneShot -= TargetDeathEventHandler;
 
-        __allowedTurns.Clear();
-        __actualTurns.Clear();
+        __ResetTurnTimeWarningFields();
         __allowedAndActualTurnSteps = null;
         // FIXME what about audio?
     }
@@ -530,21 +534,32 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     private IList<float> __actualTurns = new List<float>();
     private IList<string> __allowedAndActualTurnSteps;
     private GameDate __turnTimeErrorDate;
+    private GameDate __turnTimeWarnDate;
 
-    private void __ReportTurnTimeWarning(GameDate warnDate, GameDate currentDate, float desiredTurn, float resultingTurn,
-        IList<float> allowedTurns, IList<float> actualTurns, ref bool isInformedOfDateWarning) {
-        if (!isInformedOfDateWarning) {
-            D.Log("{0}.ChangeHeading of {1:0.##} degrees. CurrentDate {2} > WarnDate {3}. Turn accomplished: {4:0.##} degrees.",
-                DebugName, desiredTurn, currentDate, warnDate, resultingTurn);
-            isInformedOfDateWarning = true;
+    private void __ReportTurnTimeWarning(GameDate logDate, GameDate currentDate, float desiredTurn, float resultingTurn,
+        IList<float> allowedTurns, IList<float> actualTurns, ref bool isInformedOfDateLogging, ref bool isInformedOfDateWarning) {
+        if (!isInformedOfDateLogging) {
+            D.Log(ShowDebugLog, "{0}.ChangeHeading of {1:0.##} degrees. CurrentDate {2} > LogDate {3}. Turn accomplished: {4:0.##} degrees.",
+                DebugName, desiredTurn, currentDate, logDate, resultingTurn);
+            isInformedOfDateLogging = true;
         }
 
-        if (__turnTimeErrorDate == default(GameDate)) {
-            __turnTimeErrorDate = new GameDate(warnDate, GameTimeDuration.OneDay);
+        if (__turnTimeWarnDate == default(GameDate)) {
+            __turnTimeWarnDate = new GameDate(logDate, new GameTimeDuration(4F));
         }
+        if (currentDate > __turnTimeWarnDate) {
+            if (!isInformedOfDateWarning) {
+                D.Warn("{0}.ChangeHeading of {1:0.##} degrees. CurrentDate {2} > WarnDate {3}. Turn accomplished: {4:0.##} degrees.",
+                    DebugName, desiredTurn, currentDate, __turnTimeWarnDate, resultingTurn);
+                isInformedOfDateWarning = true;
+            }
 
-        if (currentDate > __turnTimeErrorDate) {
-            D.Error("{0}.ChangeHeading timed out.", DebugName);
+            if (__turnTimeErrorDate == default(GameDate)) {
+                __turnTimeErrorDate = new GameDate(logDate, GameTimeDuration.OneDay);
+            }
+            if (currentDate > __turnTimeErrorDate) {
+                D.Error("{0}.ChangeHeading timed out.", DebugName);
+            }
         }
 
         if (ShowDebugLog) {
@@ -564,8 +579,8 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         __allowedTurns.Clear();
         __actualTurns.Clear();
         __turnTimeErrorDate = default(GameDate);
+        __turnTimeWarnDate = default(GameDate);
     }
-
 
     #endregion
 

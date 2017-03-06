@@ -204,8 +204,11 @@ namespace CodeEnv.Master.GameContent {
 
         public IEnumerable<AUnitElementData> ElementsData { get { return _elementsData; } }
 
+        public FtlDampener FtlDampener { get; private set; }
+
         protected IList<AUnitElementData> _elementsData;
         protected IDictionary<AUnitElementData, IList<IDisposable>> _subscriptions;
+
 
         #region Initialization 
 
@@ -215,9 +218,11 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="cmd">The command.</param>
         /// <param name="owner">The owner.</param>
         /// <param name="passiveCMs">The passive countermeasures protecting the command staff.</param>
+        /// <param name="ftlDampener">The FTL dampener.</param>
         /// <param name="cmdStat">The command stat.</param>
-        public AUnitCmdData(IUnitCmd cmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, UnitCmdStat cmdStat)
+        public AUnitCmdData(IUnitCmd cmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, FtlDampener ftlDampener, UnitCmdStat cmdStat)
             : base(cmd, owner, cmdStat.MaxHitPoints, passiveCMs) {
+            FtlDampener = ftlDampener;
             ParentName = cmdStat.UnitName;
             UnitFormation = cmdStat.UnitFormation;
             MaxCmdEffectiveness = cmdStat.MaxCmdEffectiveness;
@@ -256,6 +261,20 @@ namespace CodeEnv.Master.GameContent {
         private void HandleAlertStatusChanged() {
             D.LogBold(ShowDebugLog, "{0} AlertStatus changed to {1}. Notifying Elements.", DebugName, AlertStatus.GetValueName());
             ElementsData.ForAll(eData => eData.AlertStatus = AlertStatus);
+            switch (AlertStatus) {
+                case AlertStatus.Normal:
+                    FtlDampener.IsActivated = false;
+                    break;
+                case AlertStatus.Yellow:
+                    FtlDampener.IsActivated = false;
+                    break;
+                case AlertStatus.Red:
+                    FtlDampener.IsActivated = true;
+                    break;
+                case AlertStatus.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(AlertStatus));
+            }
         }
 
         protected override void HandleOwnerChanged() {

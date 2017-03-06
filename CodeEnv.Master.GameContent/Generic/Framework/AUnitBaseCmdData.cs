@@ -52,8 +52,8 @@ namespace CodeEnv.Master.GameContent {
 
         #region Initialization 
 
-        public AUnitBaseCmdData(IUnitCmd cmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, UnitCmdStat cmdStat)
-            : base(cmd, owner, passiveCMs, cmdStat) { }
+        public AUnitBaseCmdData(IUnitCmd cmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, FtlDampener ftlDampener, UnitCmdStat cmdStat)
+            : base(cmd, owner, passiveCMs, ftlDampener, cmdStat) { }
 
         protected override AIntel MakeIntelInstance() {
             return new RegressibleIntel(lowestRegressedCoverage: IntelCoverage.Basic);

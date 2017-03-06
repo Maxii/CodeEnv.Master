@@ -497,6 +497,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DeadCode", "DeadCode", "{F1
 		DeadCode\ShipFSM.cs = DeadCode\ShipFSM.cs
 		DeadCode\ShipGraphics.cs = DeadCode\ShipGraphics.cs
 		DeadCode\ShipGuiHudTextFactory.cs = DeadCode\ShipGuiHudTextFactory.cs
+		DeadCode\ShipHelm.cs = DeadCode\ShipHelm.cs
 		DeadCode\ShipHelm2.cs = DeadCode\ShipHelm2.cs
 		DeadCode\ShipIdleTask.cs = DeadCode\ShipIdleTask.cs
 		DeadCode\ShipItem.cs = DeadCode\ShipItem.cs

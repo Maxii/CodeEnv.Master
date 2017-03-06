@@ -46,6 +46,7 @@ namespace CodeEnv.Master.GameContent {
         #region Event and Property Change Handlers
 
         private void IsDampedByFieldPropChangedHandler() {
+            //D.Log("{0} has been {1}.", Name, IsDampedByField ? "damped" : "undamped");
             AssessIsOperational();
         }
 

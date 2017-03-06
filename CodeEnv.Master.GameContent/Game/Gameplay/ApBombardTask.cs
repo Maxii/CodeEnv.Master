@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ApMaintainPositionTask.cs
-// AutoPilot task that monitors whether its position has changed relative to a target firing an event if its relative position has changed.
+// File: ApBombardTask.cs
+// AutoPilot task that moves to and tracks a target while bombarding it.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -18,35 +18,34 @@ namespace CodeEnv.Master.GameContent {
 
     using System;
     using System.Collections;
-    using System.Linq;
     using CodeEnv.Master.Common;
-    using UnityEngine;
 
     /// <summary>
-    /// AutoPilot task that monitors whether its position has changed relative to a target
-    /// firing an event if its relative position has changed.
+    /// AutoPilot task that moves to and tracks a target while bombarding it.
     /// </summary>
-    public class ApMaintainPositionTask : AApTask {
+    public class ApBombardTask : ApMoveTask {
 
-        public event EventHandler positionChanged;
+        protected new ApBombardDestinationProxy TargetProxy { get { return base.TargetProxy as ApBombardDestinationProxy; } }
 
-        public override bool IsEngaged { get { return _maintainPositionJob != null; } }
+        protected internal override bool IsFleetwideMove {
+            protected get { return false; }
+            set { throw new NotSupportedException(); }
+        }
 
         private Job _maintainPositionJob;
 
-        public ApMaintainPositionTask(MoveAutoPilot autoPilot) : base(autoPilot) { }
+        public ApBombardTask(AutoPilot autoPilot) : base(autoPilot) { }
 
-        public override void Execute(AutoPilotDestinationProxy targetProxy) {
-            D.AssertNotNull(targetProxy, "{0}.AutoPilotDestProxy is null. Frame = {1}.".Inject(DebugName, Time.frameCount));
-            InitiateMaintainPositonFrom(targetProxy);
+        public override void Execute(ApMoveDestinationProxy attackTgtProxy, Speed speed) {
+            base.Execute(attackTgtProxy, speed);
         }
 
-        private void InitiateMaintainPositonFrom(AutoPilotDestinationProxy targetProxy) {
-            //D.Log(ShowDebugLog, "{0} is launching ApMaintainPositionWhilePursuingJob from {1}.", DebugName, targetProxy.DebugName);
+        private void InitiateMaintainPosition() {
+            //D.Log(ShowDebugLog, "{0} is launching ApMaintainPositionJob wrt {1}.", DebugName, TargetFullName);
 
             D.AssertNull(_maintainPositionJob);
-            string jobName = "ApMaintainPositionWhilePursuingJob";
-            _maintainPositionJob = _jobMgr.StartGameplayJob(WaitWhileArrived(targetProxy), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
+            string jobName = "ApMaintainPositionJob";
+            _maintainPositionJob = _jobMgr.StartGameplayJob(WaitWhileArrived(TargetProxy), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
                 if (jobWasKilled) {    // killed only by CleanupAnyRemainingAutoPilotJobs
                                        // 12.12.16 An AssertNull(_jobRef) here can fail as the reference can refer to a new Job, created 
                                        // right after the old one was killed due to the 1 frame delay in execution of jobCompleted(). My attempts at allowing
@@ -57,18 +56,17 @@ namespace CodeEnv.Master.GameContent {
                 else {
                     // Out of position as target has moved.
                     _maintainPositionJob = null;
-                    D.Assert(targetProxy.Destination.IsOperational);    // if target (and proxy) destroyed, Job would be killed
-                    D.Log(ShowDebugLog, "{0} has naturally finished ApMaintainPositionWhilePursuingJob and is resuming pursuit of {1}.",
-                        DebugName, targetProxy.DebugName);     // pursued enemy moved out of my pursuit window
-                    OnPositionChanged();
-                    ////_taskClient.RefreshCourse(CourseRefreshMode.NewCourse);
-                    ////_taskClient.ResumeDirectCourseToTarget();
+                    D.Assert(TargetProxy.Destination.IsOperational);    // if target (and proxy) destroyed, Job would be killed
+                    D.Log(ShowDebugLog, "{0} has naturally finished ApMaintainPositionJob and is resuming pursuit of {1}.",
+                        DebugName, TargetProxy.DebugName);     // pursued enemy moved out of my pursuit window
+                    _autoPilot.RefreshCourse(CourseRefreshMode.NewCourse);
+                    ResumeDirectCourseToTarget();
                 }
             });
         }
 
-        private IEnumerator WaitWhileArrived(AutoPilotDestinationProxy targetProxy) {
-            while (targetProxy.HasArrived(_autoPilot.Position)) {
+        private IEnumerator WaitWhileArrived(ApBombardDestinationProxy targetProxy) {
+            while (targetProxy.HasArrived) {
                 // Warning: Don't use the WaitWhile YieldInstruction here as we rely on the ability to 
                 // Kill the ApMaintainPositionWhilePursuingJob when the target represented by ApTargetProxy dies. Killing 
                 // the Job is key as shortly thereafter, ApTargetProxy is nulled. See: Learnings VS/CS Linq.
@@ -76,17 +74,26 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        #region Event and Property Change Handlers
-
-        private void OnPositionChanged() {
-            if (positionChanged != null) {
-                positionChanged(this, EventArgs.Empty);
-            }
+        protected override bool CheckForUncatchable(ApMoveDestinationProxy destProxy) {
+            return destProxy.IsFastMover && !_autoPilot.IsCmdWithinRangeToSupportAttackOnTarget;
         }
+
+        protected override void HandleTargetReached() {
+            D.Log(ShowDebugLog, "{0} at {1} has reached {2} \nat {3}. Actual proximity: {4:0.0000} units.", DebugName, Position, TargetFullName, TargetProxy.Position, TargetDistance);
+            if (!_autoPilot.IsCmdWithinRangeToSupportAttackOnTarget) {
+                _autoPilot.HandleTgtUncatchable();
+                return;
+            }
+            _autoPilot.RefreshCourse(CourseRefreshMode.ClearCourse);
+            InitiateMaintainPosition();
+        }
+
+        #region Event and Property Change Handlers
 
         #endregion
 
-        protected override void KillJob() {
+        protected override void KillJobs() {
+            base.KillJobs();
             if (_maintainPositionJob != null) {
                 _maintainPositionJob.Kill();
                 _maintainPositionJob = null;
@@ -95,21 +102,15 @@ namespace CodeEnv.Master.GameContent {
 
         public override void ResetForReuse() {
             base.ResetForReuse();
-            // positionChanged is subscribed too only once when this task is created. 
-            // This Assert makes sure that hasn't changed.
-            D.AssertEqual(1, positionChanged.GetInvocationList().Count());
-            positionChanged = null;
         }
 
         protected override void Cleanup() {
             base.Cleanup();
-            positionChanged = null;
         }
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
-
 
     }
 }

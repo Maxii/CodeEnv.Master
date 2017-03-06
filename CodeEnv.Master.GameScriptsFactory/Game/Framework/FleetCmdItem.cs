@@ -201,10 +201,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         CurrentState = FleetState.Dead;
     }
 
-    protected override void HandleDeathBeforeBeginningDeathEffect() {
-        base.HandleDeathBeforeBeginningDeathEffect();
-    }
-
     /// <summary>
     /// Kills all remaining elements of the Unit along with this Command. All Elements are ordered 
     /// to Scuttle (assume Dead state) which results in the Command assuming its own Dead state.
@@ -426,7 +422,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         LogEvent();
     }
 
-    void FinalInitialize_UponRelationsChanged(Player chgdRelationsPlayer) {
+    void FinalInitialize_UponRelationsChangedWith(Player player) {
         LogEvent();
         // can be received when activation of sensors immediately finds another player
     }
@@ -463,7 +459,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         yield return null;
     }
 
-    void Idling_UponRelationsChanged(Player chgdRelationsPlayer) {
+    void Idling_UponRelationsChangedWith(Player player) {
         LogEvent();
         // Do nothing as no effect
     }
@@ -526,6 +522,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     /// <exception cref="System.NotImplementedException"></exception>
     /// <exception cref="NotImplementedException"></exception>
     private bool ShouldMovingBeReassessed(out UnitItemOrderFailureCause failCause, bool __isFsmInfoAccessChgd) {
+        D.AssertNotNull(_fsmTgt);
         bool toReassessMoving = false;
         UnitItemOrderFailureCause failureCause = UnitItemOrderFailureCause.None;
         switch (LastState) {
@@ -660,6 +657,12 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         D.Assert(_fsmTgt.IsOperational, _fsmTgt.DebugName);
         D.AssertNotDefault((int)_apMoveSpeed);
         D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
+
+        if (LastState == FleetState.ExecuteExploreOrder) {
+            if (!(_fsmTgt as IFleetExplorable).IsExploringAllowedBy(Owner)) {
+                D.Warn("{0} entering Moving state with ExploreTgt {1} not explorable.", DebugName, _fsmTgt.DebugName);
+            }
+        }
     }
 
     void Moving_EnterState() {
@@ -688,6 +691,12 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void Moving_UponApTargetReached() {
         LogEvent();
+        Return();
+    }
+
+    void Moving_UponApTargetUncatchable() {
+        LogEvent();
+        _orderFailureCause = UnitItemOrderFailureCause.TgtUncatchable;
         Return();
     }
 
@@ -734,7 +743,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         }
     }
 
-    void Moving_UponRelationsChanged(Player chgdRelationsPlayer) {
+    void Moving_UponRelationsChangedWith(Player player) {
         LogEvent();
         IItem_Ltd fsmItemTgt = _fsmTgt as IItem_Ltd;
         if (fsmItemTgt != null) {
@@ -742,7 +751,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             Player fsmItemTgtOwner;
             if (fsmItemTgt.TryGetOwner(Owner, out fsmItemTgtOwner)) {
                 // we have access to the owner
-                if (fsmItemTgtOwner == chgdRelationsPlayer) {
+                if (fsmItemTgtOwner == player) {
                     // evaluate reassessing move as target's owner has a relations change with us
                     UnitItemOrderFailureCause failCause;
                     if (ShouldMovingBeReassessed(out failCause, __isFsmInfoAccessChgd: false)) {
@@ -793,6 +802,21 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         _apMoveSpeed = Speed.None;
         _apMoveTgtStandoffDistance = Constants.ZeroF;
         _navigator.DisengagePilot();
+
+        if (LastState == FleetState.ExecuteExploreOrder) {
+            if (!(_fsmTgt as IFleetExplorable).IsExploringAllowedBy(Owner)) {
+                D.Assert((_fsmTgt as IFleetExplorable).IsOwnerAccessibleTo(Owner), "No longer allowed to explore but owner not accessible???");
+                if (_orderFailureCause == UnitItemOrderFailureCause.None) {
+                    // I know that failure causes like TgtRelationship will be handled properly by ExecuteExploreOrder so no need to warn
+                    ////if (__movingFsmTgtInfoAccessChgFrames.Count == Constants.Zero || !__movingFsmTgtInfoAccessChgFrames.Contains(Time.frameCount)) {
+                    D.Warn(@"{0} exiting Moving state with ExploreTgt {1} no longer explorable without a failure cause. CurrentFrame = {2}, 
+                        Frames where Moving received an FsmTgtInfoAccess event = {3}.",
+                        DebugName, _fsmTgt.DebugName, Time.frameCount, __movingFsmTgtInfoAccessChgFrames.Concatenate());
+                    ////}
+                    //// otherwise Moving just received an FsmTgtInfoAccessChg this frame which is why it is Return()ing
+                }
+            }
+        }
     }
 
     #endregion
@@ -896,7 +920,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         // TODO
     }
 
-    void ExecuteAssumeFormationOrder_UponRelationsChanged(Player chgdRelationsPlayer) {
+    void ExecuteAssumeFormationOrder_UponRelationsChangedWith(Player player) {
         LogEvent();
         // Do nothing as no effect
     }
@@ -1003,7 +1027,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         LogEvent();
     }
 
-    void AssumingFormation_UponRelationsChanged(Player chgdRelationsPlayer) {
+    void AssumingFormation_UponRelationsChangedWith(Player player) {
         LogEvent();
         // Do nothing as no effect
     }
@@ -1269,7 +1293,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         // TODO
     }
 
-    void ExecuteMoveOrder_UponRelationsChanged(Player chgdRelationsPlayer) {
+    void ExecuteMoveOrder_UponRelationsChangedWith(Player player) {
         LogEvent();
         // TODO
     }
@@ -1534,9 +1558,18 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         //// if the change affects the right to explore the fleetExploreTgt.
         // 2.18.17 Attempt to assign ship to explore planet in system that is no longer explorable
         if (!fleetExploreTgt.IsExploringAllowedBy(Owner)) {
-            D.Error(@"{0} is no longer allowed to explore {1}. CurrentFrame = {2}, Frames where Moving received an FsmTgtInfoAccess event = {3}.
-                Frames where ExecuteExploreOrder received an FsmTgtInfoAccess event = {4}.",
-                DebugName, fleetExploreTgt.DebugName, Time.frameCount, __movingFsmTgtInfoAccessChgFrames.Concatenate(), __exploringFsmTgtInfoAccessChgFrames.Concatenate());
+            string exploreTgtOwnerName = "Unknown";
+            Player exploreTgtOwner;
+            if (fleetExploreTgt.TryGetOwner(Owner, out exploreTgtOwner)) {
+                exploreTgtOwnerName = exploreTgtOwner.DebugName;
+            }
+            else {
+                D.Error("Not allowed to explore and owner not accessible!");
+            }
+
+            D.Error(@"{0}'s {1} is no longer allowed to explore {2}'s {3}. CurrentFrame = {4}, Frames where Moving received an FsmTgtInfoAccess event = {5}.
+                Frames where ExecuteExploreOrder received an FsmTgtInfoAccess event = {6}.",
+                Owner, DebugName, exploreTgtOwnerName, fleetExploreTgt.DebugName, Time.frameCount, __movingFsmTgtInfoAccessChgFrames.Concatenate(), __exploringFsmTgtInfoAccessChgFrames.Concatenate());
         }
 
         ISystem_Ltd systemExploreTgt = fleetExploreTgt as ISystem_Ltd;
@@ -1712,12 +1745,12 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         // TODO
     }
 
-    void ExecuteExploreOrder_UponRelationsChanged(Player chgdRelationsPlayer) {
+    void ExecuteExploreOrder_UponRelationsChangedWith(Player player) {
         LogEvent();
 
         IFleetExplorable fleetExploreTgt = _fsmTgt as IFleetExplorable;
         if (!fleetExploreTgt.IsExploringAllowedBy(Owner) || fleetExploreTgt.IsFullyExploredBy(Owner)) {
-            // existing known owner either became an ally or they/we declared war
+            // newly discovered or known owner either became an ally or they/we declared war
             Player fsmTgtOwner;
             bool isFsmTgtOwnerKnown = fleetExploreTgt.TryGetOwner(Owner, out fsmTgtOwner);
             D.Assert(isFsmTgtOwnerKnown);
@@ -1734,7 +1767,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     // Must be cleared by ExitState of ExecuteExploreOrder. Currently being used to 
     // determine how a explore order can no longer be explorable without an InfoAccess event being received.
     private IList<int> __exploringFsmTgtInfoAccessChgFrames = new List<int>(3);
-
 
     void ExecuteExploreOrder_UponFsmTgtInfoAccessChgd(IItem_Ltd fsmTgt) {
         LogEvent();
@@ -1908,7 +1940,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         // TODO go intercept or wait to be fired on?
     }
 
-    void ExecutePatrolOrder_UponRelationsChanged(Player chgdRelationsPlayer) {
+    void ExecutePatrolOrder_UponRelationsChangedWith(Player player) {
         LogEvent();
         IPatrollable patrollableTgt = _fsmTgt as IPatrollable;
         if (!patrollableTgt.IsPatrollingAllowedBy(Owner)) {
@@ -2071,7 +2103,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         LogEvent();
     }
 
-    void Patrolling_UponRelationsChanged(Player chgdRelationsPlayer) {
+    void Patrolling_UponRelationsChangedWith(Player player) {
         LogEvent();
         IPatrollable patrolledTgt = _fsmTgt as IPatrollable;
         if (!patrolledTgt.IsPatrollingAllowedBy(Owner)) {
@@ -2235,7 +2267,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         // TODO go intercept or wait to be fired on?
     }
 
-    void ExecuteGuardOrder_UponRelationsChanged(Player chgdRelationsPlayer) {
+    void ExecuteGuardOrder_UponRelationsChangedWith(Player player) {
         LogEvent();
         IGuardable guardableTgt = _fsmTgt as IGuardable;
         if (!guardableTgt.IsGuardingAllowedBy(Owner)) {
@@ -2388,7 +2420,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         LogEvent();
     }
 
-    void Guarding_UponRelationsChanged(Player chgdRelationsPlayer) {
+    void Guarding_UponRelationsChangedWith(Player player) {
         LogEvent();
         IGuardable guardedTgt = _fsmTgt as IGuardable;
         if (!guardedTgt.IsGuardingAllowedBy(Owner)) {
@@ -2501,6 +2533,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                 case UnitItemOrderFailureCause.TgtUncatchable:
                     // TODO Communicate failure to boss?
                     // 2.8.17 No longer aware of the target (aka no longer detected) so AssumeFormation and await new orders
+                    // 3.1.17 ApTarget (a Fleet) has progressively gotten further away so AssumeFormation and await new orders
                     IssueAssumeFormationOrderFromCmdStaff();
                     break;
                 case UnitItemOrderFailureCause.TgtDeath:
@@ -2532,15 +2565,15 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         // IShipAttackable attackedTgt = target as IShipAttackable;    // target can be null if ship failed and didn't have a target: Disengaged...
     }
 
-    void ExecuteAttackOrder_UponRelationsChanged(Player chgdRelationsPlayer) {
+    void ExecuteAttackOrder_UponRelationsChangedWith(Player player) {
         LogEvent();
         IUnitAttackable attackedTgt = _fsmTgt as IUnitAttackable;
         Player attackedTgtOwner;
         bool isAttackedTgtOwnerKnown = attackedTgt.TryGetOwner(Owner, out attackedTgtOwner);
         D.Assert(isAttackedTgtOwnerKnown);
 
-        if (chgdRelationsPlayer == attackedTgtOwner) {
-            D.Assert(Owner.IsPreviouslyEnemyOf(chgdRelationsPlayer));
+        if (player == attackedTgtOwner) {
+            D.Assert(Owner.IsPreviouslyEnemyOf(player));
             if (attackedTgt.IsWarAttackByAllowed(Owner)) {
                 // This attack must have started during ColdWar, so the only scenario it should continue is if now at War
                 return;
@@ -2685,6 +2718,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                     break;
                 case UnitItemOrderFailureCause.TgtUncatchable:
                 // 2.8.17 Can't lose awareness of our own target fleet
+                // 3.1.17 Our own fleet target can't be uncatchable
                 case UnitItemOrderFailureCause.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_orderFailureCause));
@@ -2709,7 +2743,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         // TODO
     }
 
-    void ExecuteJoinFleetOrder_UponRelationsChanged(Player chgdRelationsPlayer) {
+    void ExecuteJoinFleetOrder_UponRelationsChangedWith(Player player) {
         LogEvent();
         // Do nothing as no effect
     }
@@ -3156,6 +3190,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     private void UponApTargetUnreachable() { RelayToCurrentState(); }
 
+    private void UponApTargetUncatchable() { RelayToCurrentState(); }
+
     private void UponOrderOutcome(ShipDirective directive, ShipItem ship, bool isSuccess, IShipNavigable target = null, UnitItemOrderFailureCause failCause = UnitItemOrderFailureCause.None) {
         RelayToCurrentState(directive, ship, isSuccess, target, failCause);
     }
@@ -3270,9 +3306,14 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     #endregion
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+    #region Debug
+
+    protected override void __CleanupOnApplicationQuit() {
+        base.__CleanupOnApplicationQuit();
+        _navigator.__ReportLongestWaypointTransitDuration();
     }
+
+    #endregion
 
     #region Debug Show Course Plot
 
@@ -3388,6 +3429,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     #endregion
+
+    public override string ToString() {
+        return new ObjectAnalyzer().ToString(this);
+    }
 
     #region Nested Classes
 
@@ -3527,6 +3572,14 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
         internal string DebugName { get { return DebugNameFormat.Inject(_fleet.DebugName, typeof(FleetNavigator).Name); } }
 
+        /// <summary>
+        /// Indicates whether the Target could be uncatchable.
+        /// <remarks>A target that is potentially uncatchable is another fleet, owned by another player.
+        /// StationaryLocations, Celestial Objects and all things owned by the owner of this fleet
+        /// are by definition catchable.</remarks>
+        /// </summary>
+        private bool IsTargetPotentiallyUncatchable { get; set; }
+
         private Vector3 Position { get { return _fleet.Position; } }
 
         private float ApTgtDistance { get { return Vector3.Distance(ApTarget.Position, Position); } }
@@ -3566,30 +3619,43 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             set { _fleetData.CurrentSpeedSetting = value; }
         }
 
-        /// <summary>
-        /// Indicates whether the course being followed is from an A* path.
-        /// If <c>false</c> the course is a direct course to the target.
-        /// </summary>
-        private bool _isApCourseFromPath;
-        private float _apTgtStandoffDistance;
-        private Action _fleetIsAlignedCallbacks;
-        private Job _apNavJob;
-        private Job _waitForFleetToAlignJob;
-
         private float ApTgtReplotThresholdDistanceSqrd {
             get {
                 return ApTarget is IFleetCmd_Ltd ? 90000F : 10000F; // Fleet: 300, Planetoid: 100 units
             }
         }
+
+        /// <summary>
+        /// The last recorded square distance to an ApTarget that is a fleet.
+        /// Used to determine whether an ApTarget fleet is uncatchable.
+        /// </summary>
+        private float __previousSqrDistanceToApTgtFleet;
+
+        /// <summary>
+        /// Indicates whether the course being followed is from an A* path.
+        /// If <c>false</c> the course is a direct course to the target.
+        /// </summary>
+        private bool _isApCourseFromPath;
+
         /// <summary>
         /// If <c>true </c> the flagship has reached its current destination. In most cases, this
         /// "destination" is an interim waypoint provided by this fleet navigator, but it can also be the
         /// 'final' destination, aka ApTarget.
         /// </summary>
-        private bool _hasFlagshipReachedDestination;
-        private bool _isPathReplotting;
+        private bool _hasFlagshipReachedApDestination;
+        private bool _isAStarPathReplotting;
         private Vector3 _apTgtPositionAtLastPathPlot;
+        private float _apTgtStandoffDistance;
         private int _currentApCourseIndex;
+        private Job _apNavJob;
+
+        /******************************************************************************************************/
+        // These two fields support the fleet's ships use of WaitForFleetToAlign.
+        // They should NOT be reset when the Fleet's AutoPilot is disengaged as ships may still be turning.
+        private Action _fleetIsAlignedCallbacks;
+        private Job _waitForFleetToAlignJob;
+        /******************************************************************************************************/
+
         private Seeker _seeker;
         private GameTime _gameTime;
         private GameManager _gameMgr;
@@ -3647,6 +3713,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             ApSpeedSetting = apSpeed;
             _apTgtStandoffDistance = apTgtStandoffDistance;
 
+            IsTargetPotentiallyUncatchable = InitializePotentiallyUncatchable();
+
             IList<Vector3> directCourse;
             if (TryDirectCourse(out directCourse)) {
                 // use this direct course
@@ -3657,9 +3725,33 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             }
             else {
                 _isApCourseFromPath = true;
-                ResetPathReplotValues();
+                ResetAStarPathReplotValues();
                 PlotPath();
             }
+        }
+
+        /// <summary>
+        /// Returns <c>true</c> if the current target is potentially uncatchable, <c>false</c> otherwise.
+        /// </summary>
+        /// <returns></returns>
+        private bool InitializePotentiallyUncatchable() {
+            bool couldBeUncatchable = false;
+            IFleetCmd_Ltd tgtFleet = ApTarget as IFleetCmd_Ltd;
+            if (tgtFleet != null) {
+                // ApTarget is a fleet
+                if (tgtFleet.IsOwnerAccessibleTo(_fleet.Owner)) {
+                    Player tgtFleetOwner;
+                    bool isTgtFleetOwnerKnown = tgtFleet.TryGetOwner(_fleet.Owner, out tgtFleetOwner);
+                    D.Assert(isTgtFleetOwnerKnown);
+                    if (_fleet.Owner != tgtFleetOwner) {
+                        couldBeUncatchable = true;
+                    }
+                }
+                else {
+                    couldBeUncatchable = true;
+                }
+            }
+            return couldBeUncatchable;
         }
 
         private bool TryDirectCourse(out IList<Vector3> directCourse) {
@@ -3727,16 +3819,23 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             CleanupAnyRemainingApJobs();
             RefreshApCourse(CourseRefreshMode.ClearCourse);
             ApSpeedSetting = Speed.Stop;        // Speed.None;
+            _hasFlagshipReachedApDestination = false;
             _fleetData.CurrentHeading = default(Vector3);
             _apTgtStandoffDistance = Constants.ZeroF;
+            _isAStarPathReplotting = false;
+            _apTgtPositionAtLastPathPlot = default(Vector3);
+            _isApCourseFromPath = false;
+            _currentApCourseIndex = Constants.Zero;
             ApTarget = null;
+            IsTargetPotentiallyUncatchable = false;
+            __previousSqrDistanceToApTgtFleet = Constants.ZeroF;
         }
 
         #region Course Execution
 
         private void InitiateApCourseToTarget() {
             D.AssertNull(_apNavJob);
-            D.Assert(!_hasFlagshipReachedDestination);
+            D.Assert(!_hasFlagshipReachedApDestination);
             if (ShowDebugLog) {
                 //string courseText = _isApCourseFromPath ? "multiple waypoint" : "direct";
                 //D.Log("{0} initiating a {1} course to target {2}. Distance: {3:0.#}, Speed: {4}({5:0.##}).",
@@ -3785,8 +3884,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             int apTgtCourseIndex = ApCourse.Count - 1;
             D.AssertEqual(Constants.One, _currentApCourseIndex);  // already set prior to the start of the Job
             IFleetNavigable currentWaypoint = ApCourse[_currentApCourseIndex];
-            D.Log(ShowDebugLog, "{0}: first waypoint is {1}, {2:0.#} units away, in course with {3} waypoints reqd before final approach to Target {4}.",
-            DebugName, currentWaypoint.Position, Vector3.Distance(Position, currentWaypoint.Position), apTgtCourseIndex - 1, ApTarget.DebugName);
+            float waypointTransitDistanceSqrd = Vector3.SqrMagnitude(currentWaypoint.Position - Position);
+            //D.Log(ShowDebugLog, "{0}: first waypoint is {1}, {2:0.#} units away, in course with {3} waypoints reqd before final approach to Target {4}.",
+            //DebugName, currentWaypoint.Position, Mathf.Sqrt(waypointTransitDistanceSqrd), apTgtCourseIndex - 1, ApTarget.DebugName);
 
             float waypointStandoffDistance = Constants.ZeroF;
             if (_currentApCourseIndex == apTgtCourseIndex) {
@@ -3794,10 +3894,16 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             }
             IssueMoveOrderToAllShips(currentWaypoint, waypointStandoffDistance);
 
+            int fleetTgtRecedingWaypointCount = Constants.Zero;
+            __RecordWaypointTransitStart(toCalcLastTransitDuration: false, lastTransitDistanceSqrd: waypointTransitDistanceSqrd);
+
             IFleetNavigable detour;
             while (_currentApCourseIndex <= apTgtCourseIndex) {
-                if (_hasFlagshipReachedDestination) {
-                    _hasFlagshipReachedDestination = false;
+                if (_hasFlagshipReachedApDestination) {
+                    _hasFlagshipReachedApDestination = false;
+
+                    __RecordWaypointTransitStart(toCalcLastTransitDuration: true, lastTransitDistanceSqrd: waypointTransitDistanceSqrd);
+
                     _currentApCourseIndex++;
                     if (_currentApCourseIndex == apTgtCourseIndex) {
                         waypointStandoffDistance = _apTgtStandoffDistance;
@@ -3808,6 +3914,13 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                     //D.Log(ShowDebugLog, "{0} has reached Waypoint_{1} {2}. Current destination is now Waypoint_{3} {4}.", Name,
                     //_currentApCourseIndex - 1, currentWaypoint.DebugName, _currentApCourseIndex, ApCourse[_currentApCourseIndex].DebugName);
 
+                    if (IsTargetPotentiallyUncatchable) {
+                        bool isUncatchable = __IsFleetTgtUncatchable(ref fleetTgtRecedingWaypointCount);
+                        if (isUncatchable) {
+                            HandleApTgtUncatchable();
+                        }
+                    }
+
                     currentWaypoint = ApCourse[_currentApCourseIndex];
                     if (TryCheckForObstacleEnrouteTo(currentWaypoint, out detour)) {
                         // there is an obstacle en-route to the next waypoint, so use the detour provided instead
@@ -3815,6 +3928,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                         currentWaypoint = detour;
                         apTgtCourseIndex = ApCourse.Count - 1;
                     }
+                    waypointTransitDistanceSqrd = Vector3.SqrMagnitude(currentWaypoint.Position - Position);
+
                     if (IsPathReplotNeeded) {
                         ReplotPath();
                     }
@@ -3826,6 +3941,30 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                                     // IMPROVE use ProgressCheckDistance to derive
             }
             // we've reached the target
+        }
+
+        /// <summary>
+        /// Determines whether the current target (a Fleet) is uncatchable.
+        /// <remarks>HACK The fleet target is uncatchable if it gets further away over 3 consecutive waypoints.</remarks>
+        /// </summary>
+        /// <param name="recedingWayptCount">The number of consecutive waypoints where the target is found further away.</param>
+        /// <returns>
+        /// </returns>
+        private bool __IsFleetTgtUncatchable(ref int recedingWayptCount) {
+            D.Assert(ApTarget is IFleetCmd_Ltd);
+            if (recedingWayptCount > 3) {
+                return true;
+            }
+
+            float currentSqrDistance;
+            if ((currentSqrDistance = Vector3.SqrMagnitude(ApTarget.Position - Position)) > __previousSqrDistanceToApTgtFleet) {
+                recedingWayptCount++;
+            }
+            else {
+                recedingWayptCount = Constants.Zero;
+            }
+            __previousSqrDistanceToApTgtFleet = currentSqrDistance;
+            return false;
         }
 
         #endregion
@@ -4009,26 +4148,45 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         /// <returns></returns>
         private IEnumerator WaitWhileShipsAlignToRequestedHeading() {
             __waitForFleetToAlignJobIsExecuting = true;
+
+            bool isInformedOfDateLogging = false;
             bool isInformedOfDateWarning = false;
+            bool isInformedOfDateError = false;
             float lowestShipTurnrate = _fleet.Elements.Select(e => e.Data).Cast<ShipData>().Min(sd => sd.MaxTurnRate);
-            GameDate warnDate = CodeEnv.Master.GameContent.DebugUtility.CalcWarningDateForRotation(lowestShipTurnrate);
+            GameDate logDate = CodeEnv.Master.GameContent.DebugUtility.CalcWarningDateForRotation(lowestShipTurnrate);
+            GameDate warnDate = default(GameDate);
             GameDate errorDate = default(GameDate);
+            GameDate currentDate;
+
 #pragma warning disable 0219
             bool oneOrMoreShipsAreTurning;
 #pragma warning restore 0219
             while (oneOrMoreShipsAreTurning = !_shipsWaitingForFleetAlignment.All(ship => !ship.IsTurning)) {
                 // wait here until the fleet is aligned
-                GameDate currentDate;
-                if ((currentDate = _gameTime.CurrentDate) > warnDate) {
-                    if (!isInformedOfDateWarning) {
-                        D.Log(ShowDebugLog, "{0}.WaitWhileShipsAlignToRequestedHeading CurrentDate {1} > WarnDate {2}.", DebugName, currentDate, warnDate);
-                        isInformedOfDateWarning = true;
+                if ((currentDate = _gameTime.CurrentDate) > logDate) {
+                    if (!isInformedOfDateLogging) {
+                        D.Log(ShowDebugLog, "{0}.WaitWhileShipsAlignToRequestedHeading CurrentDate {1} > LogDate {2}.", DebugName, currentDate, logDate);
+                        isInformedOfDateLogging = true;
                     }
-                    if (errorDate == default(GameDate)) {
-                        errorDate = new GameDate(warnDate, GameTimeDuration.OneDay);
+
+                    if (warnDate == default(GameDate)) {
+                        warnDate = new GameDate(logDate, GameTimeDuration.TenHours);
                     }
-                    if (currentDate > errorDate) {
-                        D.Error("{0}.WaitWhileShipsAlignToRequestedHeading timed out.", DebugName);
+                    if (currentDate > warnDate) {
+                        if (!isInformedOfDateWarning) {
+                            D.Warn("{0}.WaitWhileShipsAlignToRequestedHeading CurrentDate {1} > WarnDate {2}.", DebugName, currentDate, warnDate);
+                            isInformedOfDateWarning = true;
+                        }
+
+                        if (errorDate == default(GameDate)) {
+                            errorDate = new GameDate(logDate, GameTimeDuration.OneDay);
+                        }
+                        if (currentDate > errorDate) {
+                            if (!isInformedOfDateError) {
+                                D.Error("{0}.WaitWhileShipsAlignToRequestedHeading timed out.", DebugName);
+                                isInformedOfDateError = true;
+                            }
+                        }
                     }
                 }
                 yield return null;
@@ -4069,15 +4227,15 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
         private int __lastFrameReachedDestination;
 
-        private void FlagshipReachedDestinationEventHandler(object sender, EventArgs e) {
+        private void FlagshipReachedDestinationEventHandler(object sender, EventArgs e) {   // OPTIMIZE
             /*************** 1.26.17 Debug Obstacle Checking where Detour generated is on same location as Fleet ************/
             int frame = Time.frameCount;
-            if (__lastFrameReachedDestination == frame || __lastFrameReachedDestination + 1 == frame) {  // 
+            if (__lastFrameReachedDestination == frame || __lastFrameReachedDestination + 1 == frame) {
                 D.Warn("{0} reporting that Flagship {1} immediately reached destination on Frame {2}.", DebugName, _fleet.HQElement.DebugName, frame);
             }
             __lastFrameReachedDestination = frame;
             /****************************************************************************************************************/
-            _hasFlagshipReachedDestination = true;
+            _hasFlagshipReachedApDestination = true;
         }
 
         /// <summary>
@@ -4104,15 +4262,25 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                 HandleApCoursePlotFailure();
                 return;
             }
-            ConstructApCourse(path.vectorPath);
-            path.Release(this);
 
-            if (_isPathReplotting) {
-                ResetPathReplotValues();
-                EngagePilot_Internal();
+            if (_isApCourseFromPath) {
+                // 3.5.17 Seeker raises its finished event asynchronously. Pilot could have been disengaged by
+                // exiting Moving before Seeker is finished in which case no path is needed. By definition, _isApCourseFromPath 
+                // will be true when this event handler is called unless it has been reset by DisengagePilot.
+                ConstructApCourse(path.vectorPath);
+                path.Release(this);
+
+                if (_isAStarPathReplotting) {
+                    ResetAStarPathReplotValues();
+                    EngagePilot_Internal();
+                }
+                else {
+                    HandleApCoursePlotSuccess();
+                }
             }
             else {
-                HandleApCoursePlotSuccess();
+                D.LogBold("{0} received a successfully plotted path when no longer needed.", DebugName);   // 3.5.17 rare
+                path.Release(this);
             }
         }
 
@@ -4194,8 +4362,14 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             _fleet.UponApTargetUnreachable();
         }
 
+        private void HandleApTgtUncatchable() {
+            D.LogBold(/*ShowDebugLog,*/ "{0} is continuing to fall behind {1} and is now deemed uncatchable.", DebugName, ApTarget.DebugName);
+            RefreshApCourse(CourseRefreshMode.ClearCourse);
+            _fleet.UponApTargetUncatchable();
+        }
+
         private void HandleApCoursePlotFailure() {
-            if (_isPathReplotting) {
+            if (_isAStarPathReplotting) {
                 D.Warn("{0}'s course to {1} couldn't be replotted.", DebugName, ApTarget.DebugName);
             }
             _fleet.UponApCoursePlotFailure();
@@ -4277,8 +4451,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         private void PlotPath() {
             Vector3 start = Position;
             if (ShowDebugLog) {
-                string replot = _isPathReplotting ? "RE-plotting" : "plotting";
-                D.Log("{0} is {1} path to {2}. Start = {3}, Destination = {4}.", DebugName, replot, ApTarget.DebugName, start, ApTarget.Position);
+                //string replot = _isAStarPathReplotting ? "RE-plotting" : "plotting";
+                //D.Log("{0} is {1} path to {2}. Start = {3}, Destination = {4}.", DebugName, replot, ApTarget.DebugName, start, ApTarget.Position);
             }
             //Debug.DrawLine(start, Destination, Color.yellow, 20F, false);
             //Path p = new Path(startPosition, targetPosition, null);    // Path is now abstract
@@ -4301,7 +4475,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         }
 
         private void ReplotPath() {
-            _isPathReplotting = true;
+            _isAStarPathReplotting = true;
             PlotPath();
         }
 
@@ -4311,9 +4485,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         /// <summary>
         /// Resets the values used when re-plotting a path.
         /// </summary>
-        private void ResetPathReplotValues() {
+        private void ResetAStarPathReplotValues() {
             _apTgtPositionAtLastPathPlot = ApTarget.Position;
-            _isPathReplotting = false;
+            _isAStarPathReplotting = false;
         }
 
         #endregion
@@ -4354,6 +4528,39 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         }
 
         #region Debug
+
+        private GameDate __lastStartDate;
+        private GameTimeDuration __longestWaypointTransitDuration;
+        private float __longestWaypointTransitDurationDistanceSqrd;
+
+        private void __RecordWaypointTransitStart(bool toCalcLastTransitDuration, float lastTransitDistanceSqrd) {
+            var currentDate = _gameTime.CurrentDate;
+            if (toCalcLastTransitDuration) {
+                D.AssertNotDefault(__lastStartDate);
+                var waypointTransitDuration = currentDate - __lastStartDate;
+                if (waypointTransitDuration > __longestWaypointTransitDuration) {
+                    __longestWaypointTransitDuration = waypointTransitDuration;
+                    __longestWaypointTransitDurationDistanceSqrd = lastTransitDistanceSqrd;
+                }
+            }
+            __lastStartDate = currentDate;
+        }
+
+        internal void __ReportLongestWaypointTransitDuration() {
+            if (IsPilotEngaged) {
+                float transitDistanceTraveledSqrd = Vector3.SqrMagnitude(ApCourse[_currentApCourseIndex - 1].Position - Position);
+                __RecordWaypointTransitStart(toCalcLastTransitDuration: true, lastTransitDistanceSqrd: transitDistanceTraveledSqrd);
+            }
+            if (__longestWaypointTransitDuration != default(GameTimeDuration)) {
+                D.Log(ShowDebugLog, "{0}'s longest waypoint transition was {1:0.#} units taking {2}.", DebugName, Mathf.Sqrt(__longestWaypointTransitDurationDistanceSqrd), __longestWaypointTransitDuration);
+                if (__longestWaypointTransitDuration > GameTimeDuration.TenDays) {
+                    D.Warn("{0}'s longest waypoint transition was {1:0.#} units taking {2}!", DebugName, Mathf.Sqrt(__longestWaypointTransitDurationDistanceSqrd), __longestWaypointTransitDuration);
+                }
+                if (__longestWaypointTransitDuration > GameTimeDuration.OneYear) {
+                    D.Error("{0}'s longest waypoint transition was {1:0.#} units taking {2}!", DebugName, Mathf.Sqrt(__longestWaypointTransitDurationDistanceSqrd), __longestWaypointTransitDuration);
+                }
+            }
+        }
 
         private void __ValidateItemWithinSystem(SystemItem system, INavigable item) {
             float systemRadiusSqrd = system.Radius * system.Radius;
@@ -5268,10 +5475,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     #region IShipNavigable Members
 
-    public override AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition) {
+    public override ApMoveDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, IShip ship) {
         float innerShellRadius = UnitMaxFormationRadius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of formation
         float outerShellRadius = innerShellRadius + 1F;   // HACK depth of arrival shell is 1
-        return new AutoPilotDestinationProxy(this, tgtOffset, innerShellRadius, outerShellRadius);
+        return new ApMoveDestinationProxy(this, ship, tgtOffset, innerShellRadius, outerShellRadius);
     }
 
     #endregion
@@ -5329,6 +5536,18 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             return;
         }
         sectorViewHighlightMgr.Show(toShow);
+    }
+
+    #endregion
+
+    #region IFleetCmd Members
+
+    private ISensorRangeMonitor _srSensorRangeMonitor;
+    public float SRSensorRangeDistance {
+        get {
+            _srSensorRangeMonitor = _srSensorRangeMonitor ?? SensorRangeMonitors.Single(srm => srm.RangeCategory == RangeCategory.Short);
+            return _srSensorRangeMonitor.RangeDistance;
+        }
     }
 
     #endregion

@@ -366,36 +366,36 @@ public abstract class AItem : AMonoBase, IOwnerItem, IItem_Ltd, IShipNavigable {
     /// completely handled by the Item's OwnerChanging/Changed handlers and this exception that requires the UnitCreator to handle it 
     /// would be eliminated.</remarks>
     /// </summary>
-    [Obsolete]
-    protected virtual void HandleAIMgrGainedOwnership() {
-        D.AssertEqual(OwnerAIMgr.Owner, Owner);
-        OwnerAIMgr.HandleGainedItemOwnership(this);
+    //[Obsolete]
+    //protected virtual void HandleAIMgrGainedOwnership() {
+    //    D.AssertEqual(OwnerAIMgr.Owner, Owner);
+    //    OwnerAIMgr.HandleGainedItemOwnership(this);
 
-        IEnumerable<Player> allies;
-        if (TryGetAllies(out allies)) {
-            allies.ForAll(ally => {
-                var allyAIMgr = _gameMgr.GetAIManagerFor(ally);
-                allyAIMgr.HandleChgdItemOwnerIsAlly(this);
-            });
-        }
-    }
+    //    IEnumerable<Player> allies;
+    //    if (TryGetAllies(out allies)) {
+    //        allies.ForAll(ally => {
+    //            var allyAIMgr = _gameMgr.GetAIManagerFor(ally);
+    //            allyAIMgr.HandleChgdItemOwnerIsAlly(this);
+    //        });
+    //    }
+    //}
 
     /// <summary>
     /// Handles the condition where the current Owner of this item is about to be replaced by another owner.
     /// </summary>
-    [Obsolete]
-    protected virtual void HandleAIMgrLosingOwnership() {
-        D.AssertEqual(OwnerAIMgr.Owner, Owner);
-        D.AssertNotEqual(TempGameValues.NoPlayer, Owner);
-        OwnerAIMgr.HandleLosingItemOwnership(this);
-    }
+    //[Obsolete]
+    //protected virtual void HandleAIMgrLosingOwnership() {
+    //    D.AssertEqual(OwnerAIMgr.Owner, Owner);
+    //    D.AssertNotEqual(TempGameValues.NoPlayer, Owner);
+    //    OwnerAIMgr.HandleLosingItemOwnership(this);
+    //}
 
-    [Obsolete]
-    private bool TryGetAllies(out IEnumerable<Player> alliedPlayers) {
-        D.AssertNotEqual(TempGameValues.NoPlayer, Owner);
-        alliedPlayers = Owner.GetOtherPlayersWithRelationship(DiplomaticRelationship.Alliance);
-        return alliedPlayers.Any();
-    }
+    //[Obsolete]
+    //private bool TryGetAllies(out IEnumerable<Player> alliedPlayers) {
+    //    D.AssertNotEqual(TempGameValues.NoPlayer, Owner);
+    //    alliedPlayers = Owner.GetOtherPlayersWithRelationship(DiplomaticRelationship.Alliance);
+    //    return alliedPlayers.Any();
+    //}
 
     #endregion
 
@@ -407,7 +407,7 @@ public abstract class AItem : AMonoBase, IOwnerItem, IItem_Ltd, IShipNavigable {
 
     #region IShipNavigable Members
 
-    public abstract AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition);
+    public abstract ApMoveDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, IShip ship);
 
     #endregion
 

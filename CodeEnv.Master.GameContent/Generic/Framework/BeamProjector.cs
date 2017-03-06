@@ -67,7 +67,7 @@ namespace CodeEnv.Master.GameContent {
 
         public override void HandleFiringComplete(IOrdnance ordnanceFired) {
             base.HandleFiringComplete(ordnanceFired);
-            // IMPROVE Stop tracking target with turret
+            // IMPROVE Stop tracking target with turret?? 3.4.17 Turrets don't continuously track targets
         }
 
         protected override void RemoveFiredOrdnanceFromRecord(IOrdnance terminatedOrdnance) {

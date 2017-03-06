@@ -115,7 +115,7 @@ public class GamePoolManager : AMonoSingleton<GamePoolManager>, IGamePoolManager
     /// <param name="gameSettings">The game settings.</param>
     public void Initialize(GameSettings gameSettings) {
         var debugCntls = DebugControls.Instance;
-        int preloadAmt = debugCntls.FleetsAutoAttackAsDefault ? 10 : 3;
+        int preloadAmt = debugCntls.FleetsAutoAttackAsDefault ? 3 : 2;
         CreatePrefabPool(EffectsPoolName, _explosionPrefab, preloadAmt);    // preload instances are created before delegate assigned
         PoolManager.Pools[EffectsPoolName].instantiateDelegates += InstantiateNewInstanceEventHandler;
 
@@ -124,24 +124,43 @@ public class GamePoolManager : AMonoSingleton<GamePoolManager>, IGamePoolManager
         PoolManager.Pools[HighlightsPoolName].instantiateDelegates += InstantiateNewInstanceEventHandler;
 
         // FleetFormationStations
-        preloadAmt = TempGameValues.MaxShipsPerFleet * GetFleetQty(gameSettings);
+        int fleetQty = GetFleetQty(gameSettings);
+        preloadAmt = TempGameValues.MaxShipsPerFleet * fleetQty;
         CreatePrefabPool(FormationStationPoolName, _formationStationPrefab, preloadAmt);
         PoolManager.Pools[FormationStationPoolName].instantiateDelegates += InstantiateNewInstanceEventHandler;
 
         // Ordnance
-        int maxShips = preloadAmt;
+        int maxShips = TempGameValues.MaxShipsPerFleet * fleetQty;
         int maxFacilities = TempGameValues.MaxFacilitiesPerBase * GetBaseQty(gameSettings);
         int maxElements = maxShips + maxFacilities;
 
-        float avgBeamsOperatingPerElement = debugCntls.FleetsAutoAttackAsDefault ? 0.06F : 0.005F;
+        float avgBeamsOperatingPerElement = .01F;
+        if (gameSettings.__UseDebugCreatorsOnly) {
+            avgBeamsOperatingPerElement = 0.1F;
+        }
+        else if (debugCntls.FleetsAutoAttackAsDefault) {
+            avgBeamsOperatingPerElement = 0.03F * debugCntls.MaxAttackingFleetsPerPlayer;
+        }
         preloadAmt = Mathf.RoundToInt(avgBeamsOperatingPerElement * maxElements);
         CreatePrefabPool(OrdnancePoolName, _beamPrefab, preloadAmt);
 
-        float avgProjectilesInFlightPerElement = debugCntls.FleetsAutoAttackAsDefault ? 0.20F : 0.01F;
+        float avgProjectilesInFlightPerElement = 0.03F;
+        if (gameSettings.__UseDebugCreatorsOnly) {
+            avgProjectilesInFlightPerElement = 0.1F;
+        }
+        else if (debugCntls.FleetsAutoAttackAsDefault) {
+            avgProjectilesInFlightPerElement = 0.06F * debugCntls.MaxAttackingFleetsPerPlayer;
+        }
         preloadAmt = Mathf.RoundToInt(avgProjectilesInFlightPerElement * maxElements);
         CreatePrefabPool(OrdnancePoolName, _projectilePrefab, preloadAmt);
 
-        float avgMissilesInFlightPerElement = debugCntls.FleetsAutoAttackAsDefault ? 0.20F : 0.01F;
+        float avgMissilesInFlightPerElement = 0.03F;
+        if (gameSettings.__UseDebugCreatorsOnly) {
+            avgMissilesInFlightPerElement = 0.1F;
+        }
+        else if (debugCntls.FleetsAutoAttackAsDefault) {
+            avgMissilesInFlightPerElement = 0.10F * debugCntls.MaxAttackingFleetsPerPlayer;
+        }
         preloadAmt = Mathf.RoundToInt(avgMissilesInFlightPerElement * maxElements);
         CreatePrefabPool(OrdnancePoolName, _missilePrefab, preloadAmt);
         PoolManager.Pools[OrdnancePoolName].instantiateDelegates += InstantiateNewInstanceEventHandler;
@@ -270,6 +289,9 @@ public class GamePoolManager : AMonoSingleton<GamePoolManager>, IGamePoolManager
     }
 
     private int GetFleetQty(GameSettings gameSettings) {
+        if (gameSettings.__UseDebugCreatorsOnly) {
+            return 3;   // HACK
+        }
         int userFleetQty = gameSettings.UserStartLevel.FleetStartQty();
         int aiFleetQty = 0;
         var aiStartLevels = gameSettings.AIPlayersStartLevels;
@@ -284,6 +306,9 @@ public class GamePoolManager : AMonoSingleton<GamePoolManager>, IGamePoolManager
     }
 
     private int GetBaseQty(GameSettings gameSettings) {
+        if (gameSettings.__UseDebugCreatorsOnly) {
+            return 4;   // HACK
+        }
         int userBaseQty = gameSettings.UserStartLevel.StarbaseStartQty() + gameSettings.UserStartLevel.SettlementStartQty();
         int aiBaseQty = 0;
         var aiStartLevels = gameSettings.AIPlayersStartLevels;
@@ -340,9 +365,13 @@ public class GamePoolManager : AMonoSingleton<GamePoolManager>, IGamePoolManager
 
     #region Cleanup
 
+    protected override void __CleanupOnApplicationQuit() {
+        base.__CleanupOnApplicationQuit();
+        __ReportAdditionalInstancesCreated();
+    }
+
     protected override void Cleanup() {
         Unsubscribe();
-        __ReportAdditionalInstancesCreated();
         References.GamePoolManager = null;
     }
 
@@ -362,9 +391,11 @@ public class GamePoolManager : AMonoSingleton<GamePoolManager>, IGamePoolManager
     #region Debug
 
     private IDictionary<string, int> __additionalInstancesCreatedLookup;
+    private IDictionary<string, int> __preloadedInstanceQtyLookup;
 
     private void __IncrementAdditionalInstancesCreatedCount(GameObject prefab) {
         __additionalInstancesCreatedLookup = __additionalInstancesCreatedLookup ?? new Dictionary<string, int>(6);
+        __preloadedInstanceQtyLookup = __preloadedInstanceQtyLookup ?? __InitializePreloadedInstanceQtyLookup();
         string prefabName = prefab.name;
         if (!__additionalInstancesCreatedLookup.ContainsKey(prefabName)) {
             __additionalInstancesCreatedLookup.Add(prefabName, 0);
@@ -375,13 +406,32 @@ public class GamePoolManager : AMonoSingleton<GamePoolManager>, IGamePoolManager
     private void __ReportAdditionalInstancesCreated() {
         if (__additionalInstancesCreatedLookup != null) {
             foreach (var prefabNameKey in __additionalInstancesCreatedLookup.Keys) {
-                D.Warn("{0} had to create {1} new instances of {2} over the preload amount during runtime.",
-                    DebugName, __additionalInstancesCreatedLookup[prefabNameKey], prefabNameKey);
+                int newInstanceCount = __additionalInstancesCreatedLookup[prefabNameKey];
+                if (newInstanceCount > 3) {
+                    D.Warn("{0} had to create {1} new instances of {2} over the preload amount {3} during runtime.",
+                        DebugName, newInstanceCount, prefabNameKey, __preloadedInstanceQtyLookup[prefabNameKey]);
+                }
             }
         }
         else {
             D.Log(ShowDebugLog, "{0} didn't have to create any additional pooled instances.", DebugName);
         }
+    }
+
+    private IDictionary<string, int> __InitializePreloadedInstanceQtyLookup() {
+        return new Dictionary<string, int>(6) {
+            { _explosionPrefab.name, __GetPreloadedInstanceQty(EffectsPoolName, _explosionPrefab) },
+            { _sphericalHighlightPrefab.name, __GetPreloadedInstanceQty(HighlightsPoolName, _sphericalHighlightPrefab) },
+            { _formationStationPrefab.name, __GetPreloadedInstanceQty(FormationStationPoolName, _formationStationPrefab) },
+            { _beamPrefab.name, __GetPreloadedInstanceQty(OrdnancePoolName, _beamPrefab) },
+            { _missilePrefab.name, __GetPreloadedInstanceQty(OrdnancePoolName, _missilePrefab) },
+            { _projectilePrefab.name, __GetPreloadedInstanceQty(OrdnancePoolName, _projectilePrefab) }
+        };
+    }
+
+    private int __GetPreloadedInstanceQty(string spawnPoolName, Transform prefab) {
+        SpawnPool spawnPool = PoolManager.Pools[spawnPoolName];
+        return spawnPool.GetPrefabPool(prefab).preloadAmount;
     }
 
     private void __ValidatePrefabs() {

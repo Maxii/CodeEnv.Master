@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ApObstacleCheckTask.cs
-// AutoPilot task that checks for IAvoidableObstacles while moving to a destination firing an event if an obstacle is found.
+// AutoPilot task that checks for obstacles while moving to a target.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,13 +21,14 @@ namespace CodeEnv.Master.GameContent {
     using System.Linq;
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
+    using CodeEnv.Master.GameContent;
     using UnityEngine;
 
     /// <summary>
-    /// AutoPilot task that checks for IAvoidableObstacles while moving to a destination
-    /// firing an event if an obstacle is found.
+    /// AutoPilot task that checks for obstacles while moving to a target.
     /// </summary>
-    public class ApObstacleCheckTask : AApTask {
+    [Obsolete]
+    public class ApObstacleCheckTask_Old : AApTask_Old {
 
         /// <summary>
         /// The turn angle threshold (in degrees) used to determine when a detour around an obstacle
@@ -56,24 +57,27 @@ namespace CodeEnv.Master.GameContent {
         private GameTimeDuration _obstacleCheckJobPeriod;
         private Job _obstacleCheckJob;
 
-        public ApObstacleCheckTask(MoveAutoPilot autoPilot) : base(autoPilot) { }
+        public ApObstacleCheckTask_Old(AutoPilot_Old autoPilot) : base(autoPilot) { }
 
         protected override void InitializeValuesAndReferences() {
             base.InitializeValuesAndReferences();
         }
 
-        public override void Execute(AutoPilotDestinationProxy destProxy) {
+        public void Execute(ApMoveDestinationProxy destProxy) {
             D.AssertNotNull(destProxy, "{0}.AutoPilotDestProxy is null. Frame = {1}.".Inject(DebugName, Time.frameCount));
             InitiateObstacleCheckingEnrouteTo(destProxy);
         }
+        //public override void Execute(AutoPilotDestinationProxy destProxy) {
+        //    D.AssertNotNull(destProxy, "{0}.AutoPilotDestProxy is null. Frame = {1}.".Inject(DebugName, Time.frameCount));
+        //    InitiateObstacleCheckingEnrouteTo(destProxy);
+        //}
 
-        private void InitiateObstacleCheckingEnrouteTo(AutoPilotDestinationProxy destProxy) {
+        private void InitiateObstacleCheckingEnrouteTo(ApMoveDestinationProxy destProxy) {
             D.AssertNull(_obstacleCheckJob, DebugName);
             _obstacleCheckJobPeriod = __GenerateObstacleCheckJobPeriod();
-            AutoPilotDestinationProxy detourProxy;
             string jobName = "{0}.ApObstacleCheckJob".Inject(DebugName);
             _obstacleCheckJob = _jobMgr.RecurringWaitForHours(new Reference<GameTimeDuration>(() => _obstacleCheckJobPeriod), jobName, waitMilestone: () => {
-
+                ApMoveDestinationProxy detourProxy;
                 if (TryCheckForObstacleEnrouteTo(destProxy, out detourProxy)) {
                     KillJob();
                     OnObstacleFound(detourProxy);
@@ -83,9 +87,25 @@ namespace CodeEnv.Master.GameContent {
                     _obstacleCheckJobPeriod = __GenerateObstacleCheckJobPeriod();
                     DoesObstacleCheckPeriodNeedRefresh = false;
                 }
-
             });
         }
+        //private void InitiateObstacleCheckingEnrouteTo(AutoPilotDestinationProxy destProxy) {
+        //    D.AssertNull(_obstacleCheckJob, DebugName);
+        //    _obstacleCheckJobPeriod = __GenerateObstacleCheckJobPeriod();
+        //    string jobName = "{0}.ApObstacleCheckJob".Inject(DebugName);
+        //    _obstacleCheckJob = _jobMgr.RecurringWaitForHours(new Reference<GameTimeDuration>(() => _obstacleCheckJobPeriod), jobName, waitMilestone: () => {
+        //        AutoPilotDestinationProxy detourProxy;
+        //        if (TryCheckForObstacleEnrouteTo(destProxy, out detourProxy)) {
+        //            KillJob();
+        //            OnObstacleFound(detourProxy);
+        //            return;
+        //        }
+        //        if (DoesObstacleCheckPeriodNeedRefresh) {
+        //            _obstacleCheckJobPeriod = __GenerateObstacleCheckJobPeriod();
+        //            DoesObstacleCheckPeriodNeedRefresh = false;
+        //        }
+        //    });
+        //}
 
         private GameTimeDuration __GenerateObstacleCheckJobPeriod() {
             float relativeObstacleFreq;  // IMPROVE OK for now as obstacleDensity is related but not same as Topography.GetRelativeDensity()
@@ -131,21 +151,28 @@ namespace CodeEnv.Master.GameContent {
         /// <returns>
         ///   <c>true</c> if an obstacle was found and a detour generated, false if the way is effectively clear.
         /// </returns>
-        internal bool TryCheckForObstacleEnrouteTo(AutoPilotDestinationProxy destProxy, out AutoPilotDestinationProxy detourProxy) {
+        internal bool TryCheckForObstacleEnrouteTo(ApMoveDestinationProxy destProxy, out ApMoveDestinationProxy detourProxy) {
             D.AssertNotNull(destProxy, "{0}.AutoPilotDestProxy is null. Frame = {1}.".Inject(DebugName, Time.frameCount));
             int iterationCount = Constants.Zero;
             IAvoidableObstacle unusedObstacleFound;
             bool hasDetour = TryCheckForObstacleEnrouteTo(destProxy, out detourProxy, out unusedObstacleFound, ref iterationCount);
             return hasDetour;
         }
+        //internal bool TryCheckForObstacleEnrouteTo(AutoPilotDestinationProxy destProxy, out AutoPilotDestinationProxy detourProxy) {
+        //    D.AssertNotNull(destProxy, "{0}.AutoPilotDestProxy is null. Frame = {1}.".Inject(DebugName, Time.frameCount));
+        //    int iterationCount = Constants.Zero;
+        //    IAvoidableObstacle unusedObstacleFound;
+        //    bool hasDetour = TryCheckForObstacleEnrouteTo(destProxy, out detourProxy, out unusedObstacleFound, ref iterationCount);
+        //    return hasDetour;
+        //}
 
-        private bool TryCheckForObstacleEnrouteTo(AutoPilotDestinationProxy destProxy, out AutoPilotDestinationProxy detourProxy, out IAvoidableObstacle obstacle, ref int iterationCount) {
+        private bool TryCheckForObstacleEnrouteTo(ApMoveDestinationProxy destProxy, out ApMoveDestinationProxy detourProxy, out IAvoidableObstacle obstacle, ref int iterationCount) {
             __ValidateIterationCount(iterationCount, destProxy, allowedIterations: 10);
             iterationCount++;
             detourProxy = null;
             obstacle = null;
             Vector3 destBearing = (destProxy.Position - Position).normalized;
-            float rayLength = destProxy.GetObstacleCheckRayLength(Position);
+            float rayLength = destProxy.ObstacleCheckRayLength;
             Ray ray = new Ray(Position, destBearing);
 
             bool isDetourGenerated = false;
@@ -166,7 +193,7 @@ namespace CodeEnv.Master.GameContent {
                     D.Log(ShowDebugLog, "{0} encountered obstacle {1} at {2} when checking approach to {3}. \nRay length = {4:0.#}, DistanceToHit = {5:0.#}.",
                         DebugName, obstacle.DebugName, obstacle.Position, destProxy.DebugName, rayLength, obstacleZoneHitDistance);
                     if (TryGenerateDetourAroundObstacle(obstacle, hitInfo, out detourProxy)) {
-                        AutoPilotDestinationProxy newDetourProxy;
+                        ApMoveDestinationProxy newDetourProxy;
                         IAvoidableObstacle newObstacle;
                         if (TryCheckForObstacleEnrouteTo(detourProxy, out newDetourProxy, out newObstacle, ref iterationCount)) {
                             if (obstacle == newObstacle) {
@@ -185,6 +212,52 @@ namespace CodeEnv.Master.GameContent {
             }
             return isDetourGenerated;
         }
+        //private bool TryCheckForObstacleEnrouteTo(AutoPilotDestinationProxy destProxy, out AutoPilotDestinationProxy detourProxy, out IAvoidableObstacle obstacle, ref int iterationCount) {
+        //    __ValidateIterationCount(iterationCount, destProxy, allowedIterations: 10);
+        //    iterationCount++;
+        //    detourProxy = null;
+        //    obstacle = null;
+        //    Vector3 destBearing = (destProxy.Position - Position).normalized;
+        //    float rayLength = destProxy.GetObstacleCheckRayLength(Position);
+        //    Ray ray = new Ray(Position, destBearing);
+
+        //    bool isDetourGenerated = false;
+        //    RaycastHit hitInfo;
+        //    if (Physics.Raycast(ray, out hitInfo, rayLength, AvoidableObstacleZoneOnlyLayerMask.value)) {
+        //        // there is an AvoidableObstacleZone in the way. Warning: hitInfo.transform returns the rigidbody parent since 
+        //        // the obstacleZone trigger collider is static. UNCLEAR if this means it forms a compound collider as this is a raycast
+        //        var obstacleZoneGo = hitInfo.collider.gameObject;
+        //        var obstacleZoneHitDistance = hitInfo.distance;
+        //        obstacle = obstacleZoneGo.GetSafeFirstInterfaceInParents<IAvoidableObstacle>(excludeSelf: true);
+
+        //        if (obstacle == destProxy.Destination) {
+        //            D.LogBold(ShowDebugLog, "{0} encountered obstacle {1} which is the destination. \nRay length = {2:0.00}, DistanceToHit = {3:0.00}.",
+        //                DebugName, obstacle.DebugName, rayLength, obstacleZoneHitDistance);
+        //            _autoPilot.HandleObstacleFoundIsTarget(obstacle);
+        //        }
+        //        else {
+        //            D.Log(ShowDebugLog, "{0} encountered obstacle {1} at {2} when checking approach to {3}. \nRay length = {4:0.#}, DistanceToHit = {5:0.#}.",
+        //                DebugName, obstacle.DebugName, obstacle.Position, destProxy.DebugName, rayLength, obstacleZoneHitDistance);
+        //            if (TryGenerateDetourAroundObstacle(obstacle, hitInfo, out detourProxy)) {
+        //                AutoPilotDestinationProxy newDetourProxy;
+        //                IAvoidableObstacle newObstacle;
+        //                if (TryCheckForObstacleEnrouteTo(detourProxy, out newDetourProxy, out newObstacle, ref iterationCount)) {
+        //                    if (obstacle == newObstacle) {
+        //                        // 2.7.17 UNCLEAR redundant? IAvoidableObstacle.GetDetour() should fail if can't get to detour, although check uses math rather than a ray
+        //                        D.Error("{0} generated detour {1} that does not get around obstacle {2}.", DebugName, newDetourProxy.DebugName, obstacle.DebugName);
+        //                    }
+        //                    else {
+        //                        D.Log(ShowDebugLog, "{0} found another obstacle {1} on the way to detour {2} around obstacle {3}.", DebugName, newObstacle.DebugName, detourProxy.DebugName, obstacle.DebugName);
+        //                    }
+        //                    detourProxy = newDetourProxy;
+        //                    obstacle = newObstacle; // UNCLEAR whether useful. 2.7.17 Only use is to compare whether obstacle is the same
+        //                }
+        //                isDetourGenerated = true;
+        //            }
+        //        }
+        //    }
+        //    return isDetourGenerated;
+        //}
 
         /// <summary>
         /// Tries to generate a detour around the provided obstacle. Returns <c>true</c> if a detour
@@ -198,7 +271,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="zoneHitInfo">The zone hit information.</param>
         /// <param name="detourProxy">The resulting detour including any reqd offset for the ship when traveling as a fleet.</param>
         /// <returns></returns>
-        private bool TryGenerateDetourAroundObstacle(IAvoidableObstacle obstacle, RaycastHit zoneHitInfo, out AutoPilotDestinationProxy detourProxy) {
+        private bool TryGenerateDetourAroundObstacle(IAvoidableObstacle obstacle, RaycastHit zoneHitInfo, out ApMoveDestinationProxy detourProxy) {
             detourProxy = GenerateDetourAroundObstacle(obstacle, zoneHitInfo);
             if (MyMath.DoesLineSegmentIntersectSphere(Position, detourProxy.Position, obstacle.Position, obstacle.__ObstacleZoneRadius)) {
                 // 1.26.17 This can marginally fail when traveling as a fleet when the ship's FleetFormationStation is at the closest edge of the
@@ -231,6 +304,39 @@ namespace CodeEnv.Master.GameContent {
             }
             return useDetour;
         }
+        //private bool TryGenerateDetourAroundObstacle(IAvoidableObstacle obstacle, RaycastHit zoneHitInfo, out AutoPilotDestinationProxy detourProxy) {
+        //    detourProxy = GenerateDetourAroundObstacle(obstacle, zoneHitInfo);
+        //    if (MyMath.DoesLineSegmentIntersectSphere(Position, detourProxy.Position, obstacle.Position, obstacle.__ObstacleZoneRadius)) {
+        //        // 1.26.17 This can marginally fail when traveling as a fleet when the ship's FleetFormationStation is at the closest edge of the
+        //        // formation to the obstacle. As the proxy incorporates this station offset into its "Position" to keep ships from bunching
+        //        // up when detouring as a fleet, the resulting detour destination can be very close to the edge of the obstacle's Zone.
+        //        // If/when this does occur, I expect the offset to be large.
+        //        D.Warn("{0} generated detour {1} that {2} can't get too because {0} is in the way! Offset = {3:0.00}.", obstacle.DebugName, detourProxy.DebugName, DebugName, detourProxy.__DestinationOffset);
+        //    }
+
+        //    bool useDetour = true;
+        //    Vector3 detourBearing = (detourProxy.Position - Position).normalized;
+        //    float reqdTurnAngleToDetour = Vector3.Angle(_autoPilot.CurrentHeading, detourBearing);
+        //    if (obstacle.IsMobile) {
+        //        if (reqdTurnAngleToDetour < DetourTurnAngleThreshold) {
+        //            useDetour = false;
+        //            // angle is still shallow but short remaining distance might require use of a detour
+        //            float maxDistanceTraveledBeforeNextObstacleCheck = _autoPilot.IntendedCurrentSpeedValue * _obstacleCheckJobPeriod.TotalInHours;
+        //            float obstacleDistanceThresholdRequiringDetour = maxDistanceTraveledBeforeNextObstacleCheck * 2F;   // HACK
+        //            float distanceToObstacleZone = zoneHitInfo.distance;
+        //            if (distanceToObstacleZone <= obstacleDistanceThresholdRequiringDetour) {
+        //                useDetour = true;
+        //            }
+        //        }
+        //    }
+        //    if (useDetour) {
+        //        D.Log(ShowDebugLog, "{0} has generated detour {1} to get by obstacle {2} in Frame {3}. Reqd Turn = {4:0.#} degrees.", DebugName, detourProxy.DebugName, obstacle.DebugName, Time.frameCount, reqdTurnAngleToDetour);
+        //    }
+        //    else {
+        //        D.Log(ShowDebugLog, "{0} has declined to use detour {1} to get by mobile obstacle {2}. Reqd Turn = {3:0.#} degrees.", DebugName, detourProxy.DebugName, obstacle.DebugName, reqdTurnAngleToDetour);
+        //    }
+        //    return useDetour;
+        //}
 
         /// <summary>
         /// Generates a detour around the provided obstacle. Includes any reqd offset for the
@@ -239,25 +345,33 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="obstacle">The obstacle.</param>
         /// <param name="hitInfo">The hit information.</param>
         /// <returns></returns>
-        private AutoPilotDestinationProxy GenerateDetourAroundObstacle(IAvoidableObstacle obstacle, RaycastHit hitInfo) {
+        private ApMoveDestinationProxy GenerateDetourAroundObstacle(IAvoidableObstacle obstacle, RaycastHit hitInfo) {
             float reqdClearanceRadius = _autoPilot.ReqdObstacleClearanceDistance;
             Vector3 detourPosition = obstacle.GetDetour(Position, hitInfo, reqdClearanceRadius);
             StationaryLocation detour = new StationaryLocation(detourPosition);
             Vector3 detourOffset = CalcDetourOffset(detour);
             float tgtStandoffDistance = _autoPilot.ShipCollisionDetectionZoneRadius;
-            return detour.GetApMoveTgtProxy(detourOffset, tgtStandoffDistance, Position);
+            return detour.GetApMoveTgtProxy(detourOffset, tgtStandoffDistance, _autoPilot.Ship);
         }
+        //private AutoPilotDestinationProxy GenerateDetourAroundObstacle(IAvoidableObstacle obstacle, RaycastHit hitInfo) {
+        //    float reqdClearanceRadius = _autoPilot.ReqdObstacleClearanceDistance;
+        //    Vector3 detourPosition = obstacle.GetDetour(Position, hitInfo, reqdClearanceRadius);
+        //    StationaryLocation detour = new StationaryLocation(detourPosition);
+        //    Vector3 detourOffset = CalcDetourOffset(detour);
+        //    float tgtStandoffDistance = _autoPilot.ShipCollisionDetectionZoneRadius;
+        //    return detour.GetApMoveTgtProxy(detourOffset, tgtStandoffDistance, Position);
+        //}
 
-        private AutoPilotDestinationProxy __initialDestination;
-        private IList<AutoPilotDestinationProxy> __destinationRecord;
+        private ApMoveDestinationProxy __initialDestination;
+        private IList<ApMoveDestinationProxy> __destinationRecord;
 
-        private void __ValidateIterationCount(int iterationCount, AutoPilotDestinationProxy destProxy, int allowedIterations) {
+        private void __ValidateIterationCount(int iterationCount, ApMoveDestinationProxy destProxy, int allowedIterations) {
             if (iterationCount == Constants.Zero) {
                 __initialDestination = destProxy;
             }
             if (iterationCount > Constants.Zero) {
                 if (iterationCount == Constants.One) {
-                    __destinationRecord = __destinationRecord ?? new List<AutoPilotDestinationProxy>(allowedIterations + 1);
+                    __destinationRecord = __destinationRecord ?? new List<ApMoveDestinationProxy>(allowedIterations + 1);
                     __destinationRecord.Clear();
                     __destinationRecord.Add(__initialDestination);
                 }
@@ -266,6 +380,24 @@ namespace CodeEnv.Master.GameContent {
                     .Inject(DebugName, __destinationRecord.Select(det => det.DebugName).Concatenate()));
             }
         }
+        //private AutoPilotDestinationProxy __initialDestination;
+        //private IList<AutoPilotDestinationProxy> __destinationRecord;
+
+        //private void __ValidateIterationCount(int iterationCount, AutoPilotDestinationProxy destProxy, int allowedIterations) {
+        //    if (iterationCount == Constants.Zero) {
+        //        __initialDestination = destProxy;
+        //    }
+        //    if (iterationCount > Constants.Zero) {
+        //        if (iterationCount == Constants.One) {
+        //            __destinationRecord = __destinationRecord ?? new List<AutoPilotDestinationProxy>(allowedIterations + 1);
+        //            __destinationRecord.Clear();
+        //            __destinationRecord.Add(__initialDestination);
+        //        }
+        //        __destinationRecord.Add(destProxy);
+        //        D.AssertException(iterationCount <= allowedIterations, "{0}.ObstacleDetourCheck Iteration Error. Destination & Detours: {1}."
+        //            .Inject(DebugName, __destinationRecord.Select(det => det.DebugName).Concatenate()));
+        //    }
+        //}
 
         /// <summary>
         /// Calculates and returns the world space offset to the provided detour that when combined with the
@@ -290,11 +422,16 @@ namespace CodeEnv.Master.GameContent {
 
         #region Event and Property Change Handlers
 
-        private void OnObstacleFound(AutoPilotDestinationProxy detourProxy) {
+        private void OnObstacleFound(ApMoveDestinationProxy detourProxy) {
             if (obstacleFound != null) {
                 obstacleFound(this, new ObstacleFoundEventArgs(detourProxy));
             }
         }
+        //private void OnObstacleFound(AutoPilotDestinationProxy detourProxy) {
+        //    if (obstacleFound != null) {
+        //        obstacleFound(this, new ObstacleFoundEventArgs(detourProxy));
+        //    }
+        //}
 
         #endregion
 
@@ -327,11 +464,16 @@ namespace CodeEnv.Master.GameContent {
 
         public class ObstacleFoundEventArgs : EventArgs {
 
-            public AutoPilotDestinationProxy DetourProxy { get; private set; }
+            public ApMoveDestinationProxy DetourProxy { get; private set; }
 
-            public ObstacleFoundEventArgs(AutoPilotDestinationProxy detourProxy) {
+            public ObstacleFoundEventArgs(ApMoveDestinationProxy detourProxy) {
                 DetourProxy = detourProxy;
             }
+            //public AutoPilotDestinationProxy DetourProxy { get; private set; }
+
+            //public ObstacleFoundEventArgs(AutoPilotDestinationProxy detourProxy) {
+            //    DetourProxy = detourProxy;
+            //}
 
         }
 

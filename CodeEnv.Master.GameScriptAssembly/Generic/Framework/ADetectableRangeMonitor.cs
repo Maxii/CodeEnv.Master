@@ -41,6 +41,8 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
 
     protected override bool IsTriggerCollider { get { return true; } }
 
+    protected override int MaxEquipmentCount { get { return 10; } }
+
     /// <summary>
     /// All the detectable Items in range of this Monitor.
     /// </summary>

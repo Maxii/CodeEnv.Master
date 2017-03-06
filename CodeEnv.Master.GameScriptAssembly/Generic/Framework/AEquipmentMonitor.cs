@@ -46,6 +46,8 @@ public abstract class AEquipmentMonitor<EquipmentType> : AColliderMonitor where 
         private set { SetProperty<RangeCategory>(ref _rangeCategory, value, "RangeCategory"); }
     }
 
+    protected abstract int MaxEquipmentCount { get; }
+
     /// <summary>
     /// The ranged equipment associated with this monitor.
     /// </summary>
@@ -53,7 +55,7 @@ public abstract class AEquipmentMonitor<EquipmentType> : AColliderMonitor where 
 
     protected override void InitializeValuesAndReferences() {
         base.InitializeValuesAndReferences();
-        _equipmentList = new List<EquipmentType>();
+        _equipmentList = new List<EquipmentType>(MaxEquipmentCount);
     }
 
     /// <summary>

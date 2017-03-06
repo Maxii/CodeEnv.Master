@@ -119,9 +119,10 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     /// <summary>
     /// Called when the Application is quiting, followed by OnDisable() and then OnDestroy().
     /// </summary>
-    protected virtual void OnApplicationQuit() {
+    protected void OnApplicationQuit() {
         //LogEvent();
         IsApplicationQuiting = true;
+        __CleanupOnApplicationQuit();
     }
 
     /// <summary>
@@ -132,6 +133,12 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
         //LogEvent();
         Cleanup();
     }
+
+    /// <summary>
+    /// Hook method that provides the opportunity to do any cleanup or reporting before the application
+    /// quits, aka starting with OnDisable() and then OnDestroy().
+    /// </summary>
+    protected virtual void __CleanupOnApplicationQuit() { }
 
     protected abstract void Cleanup();
 

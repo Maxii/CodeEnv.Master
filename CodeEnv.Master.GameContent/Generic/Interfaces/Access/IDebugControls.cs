@@ -42,6 +42,11 @@ namespace CodeEnv.Master.GameContent {
         bool FleetsAutoAttackAsDefault { get; }
 
         /// <summary>
+        /// The maximum number of concurrently attacking fleets allowed per player.
+        /// </summary>
+        int MaxAttackingFleetsPerPlayer { get; }
+
+        /// <summary>
         /// If <c>true</c> every player knows everything about every item they detect. 
         /// It DOES NOT MEAN that they have detected everything or that players have met yet.
         /// Players meet when they first detect a HQ Element owned by another player.

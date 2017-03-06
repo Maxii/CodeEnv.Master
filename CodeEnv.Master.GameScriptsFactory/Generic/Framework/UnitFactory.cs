@@ -52,6 +52,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     private GameObject _shieldPrefab;
     private GameObject _weaponRangeMonitorPrefab;
     private GameObject _sensorRangeMonitorPrefab;
+    private GameObject _ftlDampenerRangeMonitorPrefab;
 
     #region Initialization
 
@@ -74,6 +75,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         _shieldPrefab = reqdPrefabs.shield.gameObject;
         _weaponRangeMonitorPrefab = reqdPrefabs.weaponRangeMonitor.gameObject;
         _sensorRangeMonitorPrefab = reqdPrefabs.sensorRangeMonitor.gameObject;
+        _ftlDampenerRangeMonitorPrefab = reqdPrefabs.ftlDampenerRangeMonitor.gameObject;
 
         _shipItemPrefab = reqdPrefabs.shipItem;
         _shipHullPrefabs = reqdPrefabs.shipHulls;
@@ -161,8 +163,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             D.Error("{0} should already have a parent.", cmd.DebugName);
         }
         var passiveCMs = MakeCountermeasures(design.PassiveCmStats);
+        var ftlDampener = MakeFtlDampener(design.FtlDampenerStat);
         cmd.Name = CommonTerms.Command;
-        FleetCmdData data = new FleetCmdData(cmd, owner, passiveCMs, design.CmdStat);
+        FleetCmdData data = new FleetCmdData(cmd, owner, passiveCMs, ftlDampener, design.CmdStat);
         cmd.CameraStat = cameraStat;
         cmd.Data = data;
     }
@@ -178,9 +181,10 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         float minViewDistance = TempGameValues.ShipMaxRadius + 1F;  // HACK
         FleetCmdCameraStat cameraStat = new FleetCmdCameraStat(minViewDistance, optViewDistanceAdder: 1F, fov: 60F);
 
-        UnitCmdStat cmdStat = new UnitCmdStat(fleetName, 10F, 100, Formation.Globe);
         var countermeasureStats = new PassiveCountermeasureStat[] { new PassiveCountermeasureStat() };
-        FleetCmdDesign design = new FleetCmdDesign(element.Owner, "FleetCmdDesignHack", countermeasureStats, cmdStat);
+        var ftlDampenerStat = new FtlDampenerStat();
+        UnitCmdStat cmdStat = new UnitCmdStat(fleetName, 10F, 100, Formation.Globe);
+        FleetCmdDesign design = new FleetCmdDesign(element.Owner, "FleetCmdDesignHack", countermeasureStats, ftlDampenerStat, cmdStat);
 
         GameObject unitContainer = new GameObject(fleetName);
         UnityUtility.AttachChildToParent(unitContainer, FleetsFolder.Instance.gameObject);
@@ -349,8 +353,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             D.Error("{0} should already have a parent.", cmd.DebugName);
         }
         var passiveCMs = MakeCountermeasures(design.PassiveCmStats);
+        var ftlDampener = MakeFtlDampener(design.FtlDampenerStat);
         cmd.Name = CommonTerms.Command;
-        StarbaseCmdData data = new StarbaseCmdData(cmd, owner, passiveCMs, design.CmdStat);
+        StarbaseCmdData data = new StarbaseCmdData(cmd, owner, passiveCMs, ftlDampener, design.CmdStat);
         cmd.CameraStat = cameraStat;
         cmd.Data = data;
     }
@@ -431,8 +436,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             D.Error("{0} should already have a parent.", cmd.DebugName);
         }
         var passiveCMs = MakeCountermeasures(design.PassiveCmStats);
+        var ftlDampener = MakeFtlDampener(design.FtlDampenerStat);
         cmd.Name = CommonTerms.Command;
-        SettlementCmdData data = new SettlementCmdData(cmd, owner, passiveCMs, design.CmdStat);
+        SettlementCmdData data = new SettlementCmdData(cmd, owner, passiveCMs, ftlDampener, design.CmdStat);
         cmd.CameraStat = cameraStat;
         cmd.Data = data;
     }
@@ -605,6 +611,16 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             return new FtlEngine(engineStat, name);
         }
         return new Engine(engineStat, name);
+    }
+
+    /// <summary>
+    /// Makes an FTL dampener.
+    /// </summary>
+    /// <param name="stat">The stat.</param>
+    /// <param name="name">The name.</param>
+    /// <returns></returns>
+    private FtlDampener MakeFtlDampener(FtlDampenerStat stat, string name = null) {
+        return new FtlDampener(stat, name);
     }
 
     /// <summary>
@@ -862,6 +878,27 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             //D.Log("{0}: {1} has had a {2} chosen for {3}.", DebugName, command.DebugName, typeof(SensorRangeMonitor).Name, sensor.Name);
         }
         monitor.Add(sensor);
+        return monitor;
+    }
+
+    /// <summary>
+    /// Makes or acquires an existing FtlDampenerRangeMonitor and pairs it with this ftlDampener.
+    /// </summary>
+    /// <param name="ftlDampener">The command's FtlDampener.</param>
+    /// <param name="command">The command that has an FtlDampener monitor as a child.</param>
+    /// <returns></returns>
+    public IFtlDampenerRangeMonitor AttachFtlDampenerToCmdsMonitor(FtlDampener ftlDampener, AUnitCmdItem command) {
+        var monitor = command.gameObject.GetComponentInChildren<FtlDampenerRangeMonitor>();
+        if (monitor == null) {
+            D.AssertEqual(Layers.Collide_DefaultOnly, (Layers)_ftlDampenerRangeMonitorPrefab.layer);
+            GameObject monitorGo = UnityUtility.AddChild(command.gameObject, _ftlDampenerRangeMonitorPrefab);
+            monitorGo.layer = (int)Layers.Collide_DefaultOnly;  // AddChild resets prefab layer to elementGo's layer
+            monitor = monitorGo.GetComponent<FtlDampenerRangeMonitor>();
+
+        }
+        D.AssertDefault((int)monitor.RangeCategory);
+        monitor.ParentItem = command;
+        monitor.Add(ftlDampener);
         return monitor;
     }
 

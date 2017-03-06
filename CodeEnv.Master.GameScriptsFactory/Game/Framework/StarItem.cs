@@ -555,10 +555,10 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
 
     #region IShipNavigable Members
 
-    public override AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition) {
+    public override ApMoveDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, IShip ship) {
         float innerShellRadius = Data.CloseOrbitOuterRadius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of close orbit
         float outerShellRadius = innerShellRadius + 1F;   // HACK depth of arrival shell is 1
-        return new AutoPilotDestinationProxy(this, tgtOffset, innerShellRadius, outerShellRadius);
+        return new ApMoveDestinationProxy(this, ship, tgtOffset, innerShellRadius, outerShellRadius);
     }
 
     #endregion

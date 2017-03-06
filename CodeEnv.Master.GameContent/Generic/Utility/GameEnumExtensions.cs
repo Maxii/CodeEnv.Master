@@ -1348,6 +1348,21 @@ namespace CodeEnv.Master.GameContent {
 
         #region Range Category
 
+        public static float __GetBaselineFtlDampenerRange(this RangeCategory rangeCategory) {
+            float value = Constants.ZeroF;
+            switch (rangeCategory) {
+                case RangeCategory.Short:
+                    value = GetBaselineSensorRange(rangeCategory);
+                    break;
+                case RangeCategory.Medium:
+                case RangeCategory.Long:
+                case RangeCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(rangeCategory));
+            }
+            return value;
+        }
+
         /// <summary>
         /// Gets the baseline weapon range distance (prior to any owner modifiers being applied) for this RangeCategory.
         /// </summary>
@@ -1401,17 +1416,22 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="rangeCategory">The sensor range category.</param>
         /// <returns></returns>
         public static float GetBaselineSensorRange(this RangeCategory rangeCategory) {
+            float value = Constants.ZeroF;
             switch (rangeCategory) {
                 case RangeCategory.Short:
-                    return 150F;
+                    value = 150F;
+                    break;
                 case RangeCategory.Medium:
-                    return 750F;
+                    value = 750F;
+                    break;
                 case RangeCategory.Long:
-                    return 2500F;
+                    value = 2500F;
+                    break;
                 case RangeCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(rangeCategory));
             }
+            return value;
         }
 
         /// <summary>
@@ -1481,35 +1501,35 @@ namespace CodeEnv.Master.GameContent {
                 case Speed.Stop:
                     return Constants.ZeroF;
                 case Speed.ThrustersOnly:
-                    // 4.13.16 InSystem, STL = 0.05 but clamped at ~0.2 below, OpenSpace, FTL = 1.2
+                    // 4.13.16 InSystem, STL = 0.05 but clamped at ~0.2 below, OpenSpace: STL = 0.24, FTL = 1.2
                     fullSpeedFactor = 0.03F;
                     break;
                 case Speed.Docking:
-                    // 4.9.16 InSystem, STL = 0.08 but clamped at ~0.2 below, OpenSpace, FTL = 2
+                    // 4.9.16 InSystem, STL = 0.08 but clamped at ~0.2 below, OpenSpace: STL = 0.4, FTL = 2
                     fullSpeedFactor = 0.05F;
                     break;
                 case Speed.DeadSlow:
-                    // 4.9.16 InSystem, STL = 0.13 but clamped at ~0.2 below, OpenSpace, FTL = 3.2
+                    // 4.9.16 InSystem, STL = 0.13 but clamped at ~0.2 below, OpenSpace: STL = 0.64, FTL = 3.2
                     fullSpeedFactor = 0.08F;
                     break;
                 case Speed.Slow:
-                    // 4.9.16 InSystem, STL = 0.24, OpenSpace, FTL = 6
+                    // 4.9.16 InSystem, STL = 0.24, OpenSpace: STL = 1.2, FTL = 6
                     fullSpeedFactor = 0.15F;
                     break;
                 case Speed.OneThird:
-                    // 11.24.15 InSystem, STL = 0.4, OpenSpace, FTL = 10
+                    // 11.24.15 InSystem, STL = 0.4, OpenSpace: STL = 2, FTL = 10
                     fullSpeedFactor = 0.25F;
                     break;
                 case Speed.TwoThirds:
-                    // 11.24.15 InSystem, STL = 0.8, OpenSpace, FTL = 20
+                    // 11.24.15 InSystem, STL = 0.8, OpenSpace: STL = 4, FTL = 20
                     fullSpeedFactor = 0.50F;
                     break;
                 case Speed.Standard:
-                    // 11.24.15 InSystem, STL = 1.2, OpenSpace, FTL = 30
+                    // 11.24.15 InSystem, STL = 1.2, OpenSpace: STL = 6, FTL = 30
                     fullSpeedFactor = 0.75F;
                     break;
                 case Speed.Full:
-                    // 11.24.15 InSystem, STL = 1.6, OpenSpace, FTL = 40
+                    // 11.24.15 InSystem, STL = 1.6, OpenSpace: STL = 8, FTL = 40
                     fullSpeedFactor = 1.0F;
                     break;
                 case Speed.None:

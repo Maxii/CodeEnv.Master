@@ -191,10 +191,11 @@ public abstract class AOrdnance : AMonoBase, IOrdnance, IEquatable<AOrdnance> {
         Target = null;
         Weapon = null;
         D.AssertNotEqual(Constants.Zero, _uniqueID);
+        D.Assert(!enabled); // should be disabled when Terminated
         _uniqueID = Constants.Zero;
         _range = Constants.ZeroF;
         // RootName is restored after returning to pool so that it doesn't show in Unity with its most recent _uniqueID name
-        //RestoreRootName();    // Remove when debugging a problem where despawning is occurring before you expect it and you need its uniqueID
+        RestoreRootName();    // Remove when debugging a problem where despawning is occurring before you expect it and you need its uniqueID
     }
 
     #endregion

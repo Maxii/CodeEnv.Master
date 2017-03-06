@@ -38,7 +38,7 @@ namespace CodeEnv.Master.GameContent {
 
         IList<ISensorRangeMonitor> SensorRangeMonitors { get; }
 
-        void HandleRelationsChanged(Player chgdRelationsPlayer);
+        void HandleRelationsChangedWith(Player chgdRelationsPlayer);
 
     }
 }

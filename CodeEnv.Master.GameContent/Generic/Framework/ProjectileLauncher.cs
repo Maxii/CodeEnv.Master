@@ -59,6 +59,12 @@ namespace CodeEnv.Master.GameContent {
 
         public override void CheckActiveOrdnanceTargeting() { } // Projectile ordnance cannot be remotely terminated
 
+        public override void HandleFiringComplete(IOrdnance ordnanceFired) {
+            base.HandleFiringComplete(ordnanceFired);
+            // Projectiles complete firing immediately after initiating it. No chance for weapon to lose operations
+            D.Assert(IsOperational);
+        }
+
         #region Event and Property Change Handlers
 
         #endregion

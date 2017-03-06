@@ -22,7 +22,8 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Proxy used by a Ship Helm's pilot to navigate to an IShipNavigable destination.
     /// </summary>
-    public class AutoPilotDestinationProxy {
+    [System.Obsolete]
+    public class AutoPilotDestinationProxy_Old {
 
         private const string DebugNameFormat = "{0}.{1}";
 
@@ -30,7 +31,7 @@ namespace CodeEnv.Master.GameContent {
         public string DebugName {
             get {
                 if (_debugName == null) {
-                    _debugName = DebugNameFormat.Inject(Destination.DebugName, typeof(AutoPilotDestinationProxy).Name);
+                    _debugName = DebugNameFormat.Inject(Destination.DebugName, typeof(AutoPilotDestinationProxy_Old).Name);
                 }
                 return _debugName;
             }
@@ -42,6 +43,9 @@ namespace CodeEnv.Master.GameContent {
 
         public float ArrivalWindowDepth { get; private set; }
 
+        /// <summary>
+        /// Destination represented by this proxy is either a ship or a fleet.
+        /// </summary>
         public bool IsFastMover { get { return Destination is IShip || Destination is IFleetCmd; } }
 
         public float InnerRadius { get; private set; }
@@ -57,7 +61,7 @@ namespace CodeEnv.Master.GameContent {
         private float _innerRadiusSqrd;
         private float _outerRadiusSqrd;
 
-        public AutoPilotDestinationProxy(IShipNavigable destination, Vector3 destOffset, float innerRadius, float outerRadius) {
+        public AutoPilotDestinationProxy_Old(IShipNavigable destination, Vector3 destOffset, float innerRadius, float outerRadius) {
             Utility.ValidateNotNull(destination);
             Utility.ValidateNotNegative(innerRadius);
             Utility.ValidateForRange(outerRadius, innerRadius, Mathf.Infinity); // HACK

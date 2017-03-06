@@ -64,6 +64,10 @@ public class TopographyMonitor : AColliderMonitor {
             if (__ValidateTopographyChange(listener)) {
                 listener.ChangeTopographyTo(ParentItem.Topography);
             }
+            else {
+                D.Warn("{0} was unable to validate {1} when entering {2} at distance {3:0.#}.",
+                    DebugName, listener.DebugName, ParentItem.Topography.GetValueName(), Vector3.Distance(ParentItem.Position, listener.Position));
+            }
         }
     }
 
@@ -83,6 +87,10 @@ public class TopographyMonitor : AColliderMonitor {
         if (listener != null) {
             if (__ValidateTopographyChange(listener)) {
                 listener.ChangeTopographyTo(SurroundingTopography);
+            }
+            else {
+                D.Warn("{0} was unable to validate {1} when exiting {2} at distance {3:0.#}.",
+                    DebugName, listener.DebugName, ParentItem.Topography.GetValueName(), Vector3.Distance(ParentItem.Position, listener.Position));
             }
         }
     }
@@ -104,8 +112,8 @@ public class TopographyMonitor : AColliderMonitor {
 
     #region Debug
 
-    private const float __ValidThresholdBase = 4F;
-    private const float __WarnThresholdBase = 6F;
+    private const float __ValidThresholdBase = 5F;
+    private const float __WarnThresholdBase = 7F;
 
     /// <summary>
     /// Checks the validity of this trigger event as showing an actual topography change.
@@ -116,17 +124,22 @@ public class TopographyMonitor : AColliderMonitor {
     /// <param name="listener">The listener.</param>
     /// <returns></returns>
     private bool __ValidateTopographyChange(ITopographyChangeListener listener) {
+        if (listener is IInterceptableOrdnance) {
+            return true;    // 3.4.17 Ordnance naturally enters and exits this collider anywhere as it is pooled
+        }
         float gameSpeedMultiplier = __gameTime.GameSpeedMultiplier;  // 0.25 - 4.0
-        float fastMoverMultiplier = listener is IInterceptableOrdnance ? 2F : 1F;
-        float validAdder = 1F * gameSpeedMultiplier * fastMoverMultiplier;    // 0.25 - 8
+        float fastMoverAdder = listener is IShip_Ltd ? 1F : 0F;
+        float validAdder = (1F + fastMoverAdder) * gameSpeedMultiplier;    // 0.25 - 8
 
         ISystem parentSystem = ParentItem as ISystem;
         float distanceToListener = Vector3.Distance(parentSystem.Position, listener.Position);
-        bool isValid = Mathfx.Approx(distanceToListener, parentSystem.Radius, __ValidThresholdBase + validAdder); // 4.25 - 12
+        float allowedDeviation = __ValidThresholdBase + validAdder; // 5.25 - 13
+        bool isValid = Mathfx.Approx(distanceToListener, parentSystem.Radius, allowedDeviation);
         if (!isValid) {
-            if (Mathfx.Approx(distanceToListener, parentSystem.Radius, __WarnThresholdBase * gameSpeedMultiplier)) { // 6.5 - 14
-                D.Warn("{0} has detected a marginally invalid Topography change for {1} at distance {2:0.0} vs expected {3:0.0}. Validating.",
-                    DebugName, listener.DebugName, distanceToListener, parentSystem.Radius);
+            float warnDeviation = __WarnThresholdBase + validAdder; // 7.25 - 15
+            if (Mathfx.Approx(distanceToListener, parentSystem.Radius, warnDeviation)) {
+                D.Warn("{0} has detected a marginally invalid Topography change for {1} at distance {2:0.0} vs allowed distance {3:0.0}. Validating.",
+                    DebugName, listener.DebugName, distanceToListener, parentSystem.Radius - allowedDeviation);
                 isValid = true;
             }
         }

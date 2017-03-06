@@ -193,8 +193,8 @@ public abstract class AHudWindow<T> : AGuiWindow where T : AHudWindow<T> {
         EventDelegate.Remove(onHideComplete, WindowHideCompleteEventHandler);
     }
 
-    protected override void OnApplicationQuit() {
-        base.OnApplicationQuit();
+    protected override void __CleanupOnApplicationQuit() {
+        base.__CleanupOnApplicationQuit();
         _instance = null;
     }
 

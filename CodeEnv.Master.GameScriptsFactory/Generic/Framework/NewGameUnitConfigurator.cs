@@ -453,7 +453,7 @@ public class NewGameUnitConfigurator {
             WDVStrength deliveryVehicleStrength = new WDVStrength(deliveryVehicleCategory, deliveryStrengthValue);
             bool isDamageable = true;
 
-            float ordMaxSpeed = UnityEngine.Random.Range(6F, 8F);
+            float ordMaxSpeed = UnityEngine.Random.Range(6F, 8F);   // Ship STL MaxSpeed System = 1.6, OpenSpace = 8
             float ordMass = 1F;
             float ordDrag = 0.02F;
             weapStat = new ProjectileWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F, rangeCat,
@@ -799,8 +799,9 @@ public class NewGameUnitConfigurator {
     private string MakeAndRecordFleetCmdDesign(Player owner, string unitName, int cmsPerCmd, Formation formation) {
         string designName = GetUniqueCmdDesignName();
         var passiveCmStats = _availablePassiveCountermeasureStats.Shuffle().Take(cmsPerCmd);
+        var ftlDampenerStat = __MakeFtlDampenerStat();
         UnitCmdStat cmdStat = MakeFleetCmdStat(unitName, formation);
-        FleetCmdDesign design = new FleetCmdDesign(owner, designName, passiveCmStats, cmdStat);
+        FleetCmdDesign design = new FleetCmdDesign(owner, designName, passiveCmStats, ftlDampenerStat, cmdStat);
         _gameMgr.PlayersDesigns.Add(design);
         return designName;
     }
@@ -808,8 +809,9 @@ public class NewGameUnitConfigurator {
     private string MakeAndRecordStarbaseCmdDesign(Player owner, string unitName, int cmsPerCmd, Formation formation) {
         string designName = GetUniqueCmdDesignName();
         var passiveCmStats = _availablePassiveCountermeasureStats.Shuffle().Take(cmsPerCmd);
+        var ftlDampenerStat = __MakeFtlDampenerStat();
         UnitCmdStat cmdStat = MakeStarbaseCmdStat(unitName, formation);
-        StarbaseCmdDesign design = new StarbaseCmdDesign(owner, designName, passiveCmStats, cmdStat);
+        StarbaseCmdDesign design = new StarbaseCmdDesign(owner, designName, passiveCmStats, ftlDampenerStat, cmdStat);
         _gameMgr.PlayersDesigns.Add(design);
         return designName;
     }
@@ -817,8 +819,9 @@ public class NewGameUnitConfigurator {
     private string MakeAndRecordSettlementCmdDesign(Player owner, string unitName, int cmsPerCmd, Formation formation) {
         string designName = GetUniqueCmdDesignName();
         var passiveCmStats = _availablePassiveCountermeasureStats.Shuffle().Take(cmsPerCmd);
+        var ftlDampenerStat = __MakeFtlDampenerStat();
         SettlementCmdStat cmdStat = MakeSettlementCmdStat(unitName, formation);
-        SettlementCmdDesign design = new SettlementCmdDesign(owner, designName, passiveCmStats, cmdStat);
+        SettlementCmdDesign design = new SettlementCmdDesign(owner, designName, passiveCmStats, ftlDampenerStat, cmdStat);
         _gameMgr.PlayersDesigns.Add(design);
         return designName;
     }
@@ -840,6 +843,10 @@ public class NewGameUnitConfigurator {
         float maxCmdEffect = 1.0F;
         int population = 100;
         return new SettlementCmdStat(unitName, maxHitPts, maxCmdEffect, formation, population);
+    }
+
+    private FtlDampenerStat __MakeFtlDampenerStat() {
+        return new FtlDampenerStat();
     }
 
     #endregion
@@ -948,8 +955,11 @@ public class NewGameUnitConfigurator {
     }
 
     private IEnumerable<ShipCombatStance> SelectCombatStances(DebugShipCombatStanceExclusions stanceExclusions) {
-        if (stanceExclusions == DebugShipCombatStanceExclusions.AllExceptBalanced) {
-            return new ShipCombatStance[] { ShipCombatStance.Balanced };
+        if (stanceExclusions == DebugShipCombatStanceExclusions.AllExceptBalancedBombard) {
+            return new ShipCombatStance[] { ShipCombatStance.BalancedBombard };
+        }
+        if (stanceExclusions == DebugShipCombatStanceExclusions.AllExceptBalancedStrafe) {
+            return new ShipCombatStance[] { ShipCombatStance.BalancedStrafe };
         }
         if (stanceExclusions == DebugShipCombatStanceExclusions.AllExceptPointBlank) {
             return new ShipCombatStance[] { ShipCombatStance.PointBlank };

@@ -109,6 +109,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     protected new UnitCmdDisplayManager DisplayMgr { get { return base.DisplayMgr as UnitCmdDisplayManager; } }
     protected AFormationManager FormationMgr { get; private set; }
 
+    private IFtlDampenerRangeMonitor _ftlDampenerRangeMonitor;
     private ITrackingWidget _trackingLabel;
     private FixedJoint _hqJoint;
 
@@ -128,6 +129,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         D.AssertNotNull(transform.parent);
         UnitContainer = transform.parent;
         // the only collider is for player interaction with the item's CmdIcon
+        _ftlDampenerRangeMonitor = InitializeFtlDampenerMonitor(Data.FtlDampener);
     }
 
     protected override void SubscribeToDataValueChanges() {
@@ -200,6 +202,10 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         return true;
     }
 
+    private IFtlDampenerRangeMonitor InitializeFtlDampenerMonitor(FtlDampener ftlDampener) {
+        return UnitFactory.Instance.AttachFtlDampenerToCmdsMonitor(ftlDampener, this);
+    }
+
     public override void FinalInitialize() {
         base.FinalInitialize();
         InitializeMonitorRanges();
@@ -208,6 +214,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     private void InitializeMonitorRanges() {
         SensorRangeMonitors.ForAll(srm => srm.InitializeRangeDistance());
+        _ftlDampenerRangeMonitor.InitializeRangeDistance();
     }
 
     #endregion  
@@ -405,6 +412,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     protected override void PrepareForDeathNotification() {
+        base.PrepareForDeathNotification();
+        Data.FtlDampener.IsActivated = false;
         // 2.15.17 Moved here from Dead State in case Dead_EnterState becomes IEnumerator
         UnregisterForOrders();
     }
@@ -438,7 +447,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
                 // Works as we would never become aware of a fleet when it was already dead
                 return;
             }
-            D.Log(ShowDebugLog, "{0} has just {1} of {2}.", DebugName, isAware ? "become aware" : "lost awareness", fleet.DebugName);
+            //D.Log(ShowDebugLog, "{0} has just {1} of {2}.", DebugName, isAware ? "become aware" : "lost awareness", fleet.DebugName);
             HandleAwarenessOfFleetChanged(fleet, isAware);
         }
     }
@@ -467,11 +476,11 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     /// Upshot: Elements FSMs can ignore Relations changes.
     /// </remarks>
     /// </summary>
-    /// <param name="chgdRelationsPlayer">The other player.</param>
-    public void HandleRelationsChanged(Player chgdRelationsPlayer) {
-        SensorRangeMonitors.ForAll(srm => srm.HandleRelationsChanged(chgdRelationsPlayer));
-        Elements.ForAll(e => e.HandleRelationsChanged(chgdRelationsPlayer));
-        UponRelationsChanged(chgdRelationsPlayer);
+    /// <param name="player">The player whose relationship with our owner has changed.</param>
+    public void HandleRelationsChangedWith(Player player) {
+        SensorRangeMonitors.ForAll(srm => srm.HandleRelationsChanged(player));
+        Elements.ForAll(e => e.HandleRelationsChanged(player));
+        UponRelationsChangedWith(player);
     }
 
     private void IsAvailablePropChangedHandler() {
@@ -537,7 +546,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     private void HandleFsmTgtInfoAccessChgd(Player playerWhoseInfoAccessChgd, IItem_Ltd fsmTgt) {
         if (playerWhoseInfoAccessChgd == Owner) {
-            D.Log(/*ShowDebugLog,*/ "{0}'s access to info about Target {1} has changed.", DebugName, fsmTgt.DebugName);
+            D.Log(ShowDebugLog, "{0}'s access to info about FsmTgt {1} has changed.", DebugName, fsmTgt.DebugName);
             UponFsmTgtInfoAccessChgd(fsmTgt);
         }
     }
@@ -629,7 +638,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     /// </summary>
     private void UponPreconfigureState() { RelayToCurrentState(); }
 
-    private void UponRelationsChanged(Player chgdRelationsPlayer) { RelayToCurrentState(chgdRelationsPlayer); }
+    private void UponRelationsChangedWith(Player player) { RelayToCurrentState(player); }
 
     // 2.15.17 No need for state-specific handling as existing orders are canceled and state returned to Idling
     ////private void UponOwnerChanged() { RelayToCurrentState(); }

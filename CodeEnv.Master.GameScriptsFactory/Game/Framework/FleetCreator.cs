@@ -77,31 +77,6 @@ public class FleetCreator : AAutoUnitCreator {
         _gameMgr.GameKnowledge.AddUnit(_command, _elements.Cast<IUnitElement>());
     }
 
-    [Obsolete]
-    protected override void AddUnitToOwnerAndAllysKnowledge() {
-        LogEvent();
-        //D.Log(ShowDebugLog, "{0} is adding Unit {1} to {2}'s Knowledge.", DebugName, UnitName, Owner);
-        var ownerAIMgr = _gameMgr.GetAIManagerFor(Owner);
-        _elements.ForAll(e => ownerAIMgr.HandleGainedItemOwnership(e));
-        ownerAIMgr.HandleGainedItemOwnership(_command);    // OPTIMIZE not really needed as this happens automatically when elements handled
-
-        var alliedPlayers = Owner.GetOtherPlayersWithRelationship(DiplomaticRelationship.Alliance);
-        if (alliedPlayers.Any()) {
-            alliedPlayers.ForAll(ally => {
-                //D.Log(ShowDebugLog, "{0} is adding Unit {1} to {2}'s Knowledge as Ally.", DebugName, UnitName, ally);
-                var allyAIMgr = _gameMgr.GetAIManagerFor(ally);
-                _elements.ForAll(e => allyAIMgr.HandleChgdItemOwnerIsAlly(e));
-                allyAIMgr.HandleChgdItemOwnerIsAlly(_command);  // OPTIMIZE not really needed as this happens automatically when elements handled
-            });
-        }
-    }
-
-    [Obsolete]
-    protected override void RegisterCommandForOrders() {
-        var ownerAIMgr = _gameMgr.GetAIManagerFor(Owner);
-        ownerAIMgr.RegisterForOrders(_command);
-    }
-
     protected override void BeginElementsOperations() {
         LogEvent();
         _elements.ForAll(e => e.CommenceOperations());
@@ -110,42 +85,6 @@ public class FleetCreator : AAutoUnitCreator {
     protected override void BeginCommandOperations() {
         LogEvent();
         _command.CommenceOperations();
-    }
-
-    [Obsolete]
-    protected override void __IssueFirstUnitOrder(Action onCompleted) {
-        LogEvent();
-        //D.Log(ShowDebugLog, "{0} launching 1 hour wait on {1}. Frame {2}, UnityTime {3:0.0}, SystemTimeStamp {4}.", DebugName, GameTime.Instance.CurrentDate, Time.frameCount, Time.time, Utility.TimeStamp);
-
-        // The following delay avoids script execution order issue when this creator receives IsRunning before other creators
-        string jobName = "{0}.WaitToIssueFirstOrderJob".Inject(DebugName);
-        _jobMgr.WaitForHours(1F, jobName, waitFinished: delegate {    // makes sure Owner's knowledge of universe has been constructed before selecting its target
-            __GetFleetUnderway();
-            onCompleted();
-        });
-    }
-
-    [Obsolete]
-    private void __GetFleetUnderway() { // 7.12.16 Removed 'not enemy' criteria for move
-        LogEvent();
-        var fleetOwnerKnowledge = _gameMgr.GetAIManagerFor(Owner).Knowledge;
-        List<IFleetNavigable> moveTgts = fleetOwnerKnowledge.Starbases.Cast<IFleetNavigable>().ToList();
-        moveTgts.AddRange(fleetOwnerKnowledge.Settlements.Cast<IFleetNavigable>());
-        moveTgts.AddRange(fleetOwnerKnowledge.Planets.Cast<IFleetNavigable>());
-        //moveTgts.AddRange(fleetOwnerKnowledge.Systems.Cast<IFleetNavigable>());   // UNCLEAR or Stars?
-        moveTgts.AddRange(fleetOwnerKnowledge.Stars.Cast<IFleetNavigable>());
-        if (fleetOwnerKnowledge.UniverseCenter != null) {
-            moveTgts.Add(fleetOwnerKnowledge.UniverseCenter as IFleetNavigable);
-        }
-
-        if (!moveTgts.Any()) {
-            D.Log("{0} can find no MoveTargets that meet the selection criteria. Picking an unowned Sector.", DebugName);
-            moveTgts.AddRange(SectorGrid.Instance.Sectors.Where(s => s.Owner == TempGameValues.NoPlayer).Cast<IFleetNavigable>());
-        }
-        IFleetNavigable destination;
-        destination = moveTgts.MaxBy(mt => Vector3.SqrMagnitude(mt.Position - transform.position));
-        //D.Log(ShowDebugLog, "{0} destination is {1}.", UnitName, destination.DebugName);
-        _command.CurrentOrder = new FleetOrder(FleetDirective.Move, OrderSource.CmdStaff, destination);
     }
 
     private FleetCmdCameraStat MakeCmdCameraStat(float maxElementRadius) {

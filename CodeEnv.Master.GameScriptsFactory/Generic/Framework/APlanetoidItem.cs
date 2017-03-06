@@ -195,8 +195,6 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         IsOperational = false;
     }
 
-    protected override void PrepareForDeathNotification() { }
-
     protected sealed override void InitiateDeadState() {
         D.Log(ShowDebugLog, "{0} is setting Dead state.", DebugName);
         CurrentState = PlanetoidState.Dead;
@@ -223,12 +221,6 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
     /// <param name="shipOrbitJoint">The ship orbit joint.</param>
     protected virtual void ConnectHighOrbitRigidbodyToShipOrbitJoint(FixedJoint shipOrbitJoint) {
         shipOrbitJoint.connectedBody = CelestialOrbitSimulator.OrbitRigidbody;
-    }
-
-    [Obsolete]
-    protected sealed override void HandleAIMgrLosingOwnership() {
-        base.HandleAIMgrLosingOwnership();
-        ResetBasedOnCurrentDetection(Owner);
     }
 
     #region Event and Property Change Handlers
@@ -434,27 +426,33 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
 
     #region IShipAttackable Members
 
-    /// <summary>
-    /// Returns the proxy for this target for use by a Ship's Pilot when attacking this target.
-    /// The values provided allow the proxy to help the ship stay within its desired weapons range envelope relative to the target's surface.
-    /// <remarks>There is no target offset as ships don't attack in formation.</remarks>
-    /// </summary>
-    /// <param name="desiredWeaponsRangeEnvelope">The ship's desired weapons range envelope relative to the target's surface.</param>
-    /// <param name="shipCollisionDetectionRadius">The attacking ship's collision detection radius.</param>
-    /// <returns></returns>
-    public AutoPilotDestinationProxy GetApAttackTgtProxy(ValueRange<float> desiredWeaponsRangeEnvelope, float shipCollisionDetectionRadius) {
+    public ApStrafeDestinationProxy GetApStrafeTgtProxy(ValueRange<float> desiredWeaponsRangeEnvelope, IShip ship) {
         float shortestDistanceFromTgtToTgtSurface = Radius;
         float innerProxyRadius = desiredWeaponsRangeEnvelope.Minimum + shortestDistanceFromTgtToTgtSurface;
-        float minInnerProxyRadiusToAvoidCollision = _obstacleZoneCollider.radius + shipCollisionDetectionRadius;
+        float minInnerProxyRadiusToAvoidCollision = _obstacleZoneCollider.radius + ship.CollisionDetectionZoneRadius;
         if (innerProxyRadius < minInnerProxyRadiusToAvoidCollision) {
             innerProxyRadius = minInnerProxyRadiusToAvoidCollision;
         }
-
         float outerProxyRadius = desiredWeaponsRangeEnvelope.Maximum + shortestDistanceFromTgtToTgtSurface;
         D.Assert(outerProxyRadius > innerProxyRadius);
 
-        var attackProxy = new AutoPilotDestinationProxy(this, Vector3.zero, innerProxyRadius, outerProxyRadius);
-        D.LogBold(ShowDebugLog, "{0} has constructed an AttackProxy with an ArrivalWindowDepth of {1:0.#} units.", DebugName, attackProxy.ArrivalWindowDepth);
+        ApStrafeDestinationProxy attackProxy = new ApStrafeDestinationProxy(this, ship, innerProxyRadius, outerProxyRadius);
+        D.Log(ShowDebugLog, "{0} has constructed an AttackProxy with an ArrivalWindowDepth of {1:0.#} units.", DebugName, attackProxy.ArrivalWindowDepth);
+        return attackProxy;
+    }
+
+    public ApBombardDestinationProxy GetApBombardTgtProxy(ValueRange<float> desiredWeaponsRangeEnvelope, IShip ship) {
+        float shortestDistanceFromTgtToTgtSurface = Radius;
+        float innerProxyRadius = desiredWeaponsRangeEnvelope.Minimum + shortestDistanceFromTgtToTgtSurface;
+        float minInnerProxyRadiusToAvoidCollision = _obstacleZoneCollider.radius + ship.CollisionDetectionZoneRadius;
+        if (innerProxyRadius < minInnerProxyRadiusToAvoidCollision) {
+            innerProxyRadius = minInnerProxyRadiusToAvoidCollision;
+        }
+        float outerProxyRadius = desiredWeaponsRangeEnvelope.Maximum + shortestDistanceFromTgtToTgtSurface;
+        D.Assert(outerProxyRadius > innerProxyRadius);
+
+        ApBombardDestinationProxy attackProxy = new ApBombardDestinationProxy(this, ship, innerProxyRadius, outerProxyRadius);
+        D.Log(ShowDebugLog, "{0} has constructed an AttackProxy with an ArrivalWindowDepth of {1:0.#} units.", DebugName, attackProxy.ArrivalWindowDepth);
         return attackProxy;
     }
 

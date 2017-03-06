@@ -204,10 +204,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// </summary>
     public abstract void __HandleLocalPositionManuallyChanged();
 
-    protected override void HandleDeathBeforeBeginningDeathEffect() {
-        base.HandleDeathBeforeBeginningDeathEffect();
-        // Note: Keep the primaryCollider enabled until destroyed or returned to the pool as this allows 
-        // in-route ordnance to show its impact effect while the item is showing its death.
+    protected override void PrepareForDeathNotification() {
+        base.PrepareForDeathNotification();
         Data.Weapons.ForAll(w => {
             w.readytoFire -= WeaponReadyToFireEventHandler;
             w.IsActivated = false;
@@ -215,7 +213,12 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         Data.ActiveCountermeasures.ForAll(cm => cm.IsActivated = false);
         Data.Sensors.ForAll(s => s.IsActivated = false);
         Data.ShieldGenerators.ForAll(gen => gen.IsActivated = false);
+    }
 
+    protected override void HandleDeathBeforeBeginningDeathEffect() {
+        base.HandleDeathBeforeBeginningDeathEffect();
+        // Note: Keep the primaryCollider enabled until destroyed or returned to the pool as this allows 
+        // in-route ordnance to show its impact effect while the item is showing its death.
         Command.HandleSubordinateElementDeath(this);
     }
 
@@ -1059,7 +1062,9 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #region IShipAttackable Members
 
-    public abstract AutoPilotDestinationProxy GetApAttackTgtProxy(ValueRange<float> desiredWeaponsRangeEnvelope, float shipCollisionDetectionRadius);
+    public abstract ApBombardDestinationProxy GetApBombardTgtProxy(ValueRange<float> desiredWeaponsRangeEnvelope, IShip ship);
+
+    public abstract ApStrafeDestinationProxy GetApStrafeTgtProxy(ValueRange<float> desiredWeaponsRangeEnvelope, IShip ship);
 
     /// <summary>
     /// Returns the shortest distance between the element's center (position)

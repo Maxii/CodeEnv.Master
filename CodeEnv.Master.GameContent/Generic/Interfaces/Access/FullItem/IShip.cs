@@ -28,6 +28,8 @@ namespace CodeEnv.Master.GameContent {
 
         Vector3 CurrentHeading { get; }
 
+        ShipCombatStance CombatStance { get; }
+
         bool IsTurning { get; }
 
         float ActualSpeedValue { get; }

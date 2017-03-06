@@ -404,8 +404,12 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackable, AW
 
             float itemDistanceSqrd;
             if ((itemDistanceSqrd = Vector3.SqrMagnitude(exitingAttackableItem.Position - transform.position)) < acceptableThresholdSqrd) {
-                D.Warn("{0}.OnTriggerExit() called. Exit Distance for {1} {2:0.##} is < AcceptableThreshold {3:0.##}.",
-                    DebugName, exitingAttackableItem.DebugName, Mathf.Sqrt(itemDistanceSqrd), acceptableThreshold);
+                D.Warn("{0}.OnTriggerExit() called. Exit Distance for {1} {2:0.##} is < AcceptableThreshold {3:0.##}. GameSpeedMultiplier = {4:0.##}.",
+                    DebugName, exitingAttackableItem.DebugName, Mathf.Sqrt(itemDistanceSqrd), acceptableThreshold, gameSpeedMultiplier);
+                if (itemDistanceSqrd == Constants.ZeroF) {
+                    D.Error("{0}.OnTriggerExit({1}) called at distance zero. LostItem.position = {2}, {0}.position = {3}.",
+                        DebugName, exitingAttackableItem.DebugName, exitingAttackableItem.Position, transform.position);
+                }
             }
         }
     }
@@ -415,19 +419,19 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementAttackable, AW
         // 2.13.17 At least 1 SR sensor is mandatory, and they are no longer damageable
         D.Assert(operatingShortRangeCmdSensorMonitors.Any(), "{0}: There are no operating short range sensors!".Inject(DebugName));
 
-        float rangeToUnknownTgt = Vector3.Distance(ParentItem.Position, unknownTgt.Position);
-        float rangeToSensorRangeMonitors = Vector3.Distance(ParentItem.Position, ParentItem.Command.Position);
-        float sensorRange = operatingShortRangeCmdSensorMonitors.First().RangeDistance;
-        D.Warn(@"{0} should not categorize {1} as unknown with SR Sensors online. Distance = {2:0.#}, range to Cmd's 
-            SensorRangeMonitors = {3:0.#}, SensorRange = {4:0.#}.", DebugName, unknownTgt.DebugName, rangeToUnknownTgt, rangeToSensorRangeMonitors, sensorRange);
+        float distanceToUnknownTgt = Vector3.Distance(ParentItem.Position, unknownTgt.Position);
+        float distanceToCmdsSensorRangeMonitors = Vector3.Distance(ParentItem.Position, ParentItem.Command.Position);
+        float srSensorRange = operatingShortRangeCmdSensorMonitors.First().RangeDistance;
+        D.Warn(@"{0} should not categorize {1} as unknown with SR Sensors online. Distance to unknown = {2:0.#}, distance to Cmd's 
+            SensorRangeMonitors = {3:0.#}, SRSensorRange = {4:0.#}.", DebugName, unknownTgt.DebugName, distanceToUnknownTgt, distanceToCmdsSensorRangeMonitors, srSensorRange);
 
         var operatingMediumRangeCmdSensorMonitors = ParentItem.Command.SensorRangeMonitors.Where(srm => srm.RangeCategory == RangeCategory.Medium && srm.IsOperational);
         if (operatingMediumRangeCmdSensorMonitors.Any()) {
-            rangeToUnknownTgt = Vector3.Distance(ParentItem.Position, unknownTgt.Position);
-            rangeToSensorRangeMonitors = Vector3.Distance(ParentItem.Position, ParentItem.Command.Position);
-            sensorRange = operatingMediumRangeCmdSensorMonitors.First().RangeDistance;
-            D.Warn(@"{0} should not categorize {1}  as unknown with MR Sensors online. Distance = {2:0.#}, range to Cmd's 
-                SensorRangeMonitors = {3:0.#}, SensorRange = {4:0.#}.", DebugName, unknownTgt.DebugName, rangeToUnknownTgt, rangeToSensorRangeMonitors, sensorRange);
+            distanceToUnknownTgt = Vector3.Distance(ParentItem.Position, unknownTgt.Position);
+            distanceToCmdsSensorRangeMonitors = Vector3.Distance(ParentItem.Position, ParentItem.Command.Position);
+            float mrSensorRange = operatingMediumRangeCmdSensorMonitors.First().RangeDistance;
+            D.Warn(@"{0} should not categorize {1} as unknown with MR Sensors online. Distance to unknown = {2:0.#}, distance to Cmd's 
+                SensorRangeMonitors = {3:0.#}, MRSensorRange = {4:0.#}.", DebugName, unknownTgt.DebugName, distanceToUnknownTgt, distanceToCmdsSensorRangeMonitors, mrSensorRange);
         }
         // 7.20.16 currently operating LR sensors would not provide access to unknownTgt.Owner, but short/medium would
     }

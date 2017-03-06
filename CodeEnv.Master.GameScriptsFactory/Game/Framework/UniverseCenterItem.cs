@@ -402,10 +402,10 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
 
     #region IShipNavigable Members
 
-    public override AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition) {
+    public override ApMoveDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, IShip ship) {
         float innerShellRadius = Data.CloseOrbitOuterRadius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of close orbit
         float outerShellRadius = innerShellRadius + 3F;   // HACK depth of arrival shell is 3 as speeds are higher
-        return new AutoPilotDestinationProxy(this, tgtOffset, innerShellRadius, outerShellRadius);
+        return new ApMoveDestinationProxy(this, ship, tgtOffset, innerShellRadius, outerShellRadius);
     }
 
     #endregion

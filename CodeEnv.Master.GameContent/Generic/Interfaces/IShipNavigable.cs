@@ -30,9 +30,9 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="tgtOffset">The offset from the target that this ship is actually trying to reach.</param>
         /// <param name="tgtStandoffDistance">The standoff distance from the target.</param>
-        /// <param name="shipPosition">The ship position.</param>
+        /// <param name="ship">The ship.</param>
         /// <returns></returns>
-        AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition);
+        ApMoveDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, IShip ship);
 
     }
 }

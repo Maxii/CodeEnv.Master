@@ -101,11 +101,11 @@ public class ShipCloseOrbitSimulator : OrbitSimulator, IShipCloseOrbitSimulator,
 
     #region IShipNavigable Members
 
-    public AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition) {
+    public ApMoveDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, IShip ship) {
         // makes sure the entire shipCollisionDetectionZone is inside the OrbitSlot
         float outerShellRadius = OrbitData.OuterRadius - tgtStandoffDistance;
         float innerShellRadius = OrbitData.InnerRadius + tgtStandoffDistance;
-        return new AutoPilotDestinationProxy(this, tgtOffset, innerShellRadius, outerShellRadius);
+        return new ApMoveDestinationProxy(this, ship, tgtOffset, innerShellRadius, outerShellRadius);
     }
 
     #endregion

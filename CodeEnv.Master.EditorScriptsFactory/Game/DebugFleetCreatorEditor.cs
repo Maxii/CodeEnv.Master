@@ -36,13 +36,9 @@ public class DebugFleetCreatorEditor : ADebugUnitCreatorEditor {
             SerializedProperty moveSP = NGUIEditorTools.DrawProperty("Get Fleet Underway", serializedObject, "_move");
             EditorGUI.BeginDisabledGroup(!moveSP.boolValue);
             {
-                GUILayout.BeginHorizontal();
-                {
-                    NGUIEditorTools.SetLabelWidth(120F);
-                    NGUIEditorTools.DrawProperty("Find farthest target", serializedObject, "_findFarthest");
-                    NGUIEditorTools.DrawProperty("Attack target", serializedObject, "_attack");
-                }
-                GUILayout.EndHorizontal();
+                NGUIEditorTools.SetLabelWidth(120F);
+                NGUIEditorTools.DrawProperty("Find farthest target", serializedObject, "_findFarthest");
+                NGUIEditorTools.DrawProperty("Attack target", serializedObject, "_attack");
             }
             EditorGUI.EndDisabledGroup();
 

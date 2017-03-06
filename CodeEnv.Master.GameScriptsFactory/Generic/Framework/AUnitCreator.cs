@@ -196,12 +196,6 @@ public abstract class AUnitCreator : AMonoBase {
     /// </summary>
     protected abstract void AddUnitToGameKnowledge();
 
-    /// <summary>
-    /// Registers the command with the Owner's AIMgr so it can receive orders.
-    /// </summary>
-    [Obsolete("2.15.17 Handled by Cmd.CommenceOperations")]
-    protected abstract void RegisterCommandForOrders();
-
     protected void BeginUnitOperations() {
         LogEvent();
         BeginElementsOperations();
@@ -244,26 +238,9 @@ public abstract class AUnitCreator : AMonoBase {
         unitDebugCntl.Initialize();
     }
 
-    [Obsolete]
-    protected abstract void __IssueFirstUnitOrder(Action onCompleted);
-
-    [Obsolete]  // 8.7.16 destroying script replaced by disabling it so settings visible while playing
-    private void RemoveCreatorScript() {
-        Destroy(this);
-    }
-
     #endregion
 
     #region Archive
-
-    /// <summary>
-    /// Adds the unit to its owner's knowledge as well as any of the owner's allies. 
-    /// <remarks>OPTIMIZE 8.2.16 Currently required as can't rely on Owner changed events to handle all this 
-    /// since owner is set in data before owner changed events are wired.</remarks>
-    /// </summary>
-    [Obsolete]
-    protected abstract void AddUnitToOwnerAndAllysKnowledge();
-
 
     #region Static Member Management in non-persistent MonoBehaviours Archive
 

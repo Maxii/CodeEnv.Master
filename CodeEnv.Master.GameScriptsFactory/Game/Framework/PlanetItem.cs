@@ -350,20 +350,20 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
 
     #region IShipNavigable Members
 
-    public override AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition) {
+    public override ApMoveDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, IShip ship) {
         float innerShellRadius;
         float outerShellRadius;
         if (ChildMoons.Any()) {
             MoonItem outerMoon = ChildMoons.MaxBy(moon => Vector3.SqrMagnitude(moon.Position - Position));
             float distanceToOuterMoon = Vector3.Distance(outerMoon.Position, Position);
-            innerShellRadius = distanceToOuterMoon + outerMoon.GetApMoveTgtProxy(tgtOffset, tgtStandoffDistance, shipPosition).InnerRadius;
+            innerShellRadius = distanceToOuterMoon + outerMoon.GetApMoveTgtProxy(tgtOffset, tgtStandoffDistance, ship).InnerRadius;
             outerShellRadius = innerShellRadius + 1F;   // HACK depth of arrival shell is 1
         }
         else {
             innerShellRadius = Data.CloseOrbitOuterRadius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of close orbit
             outerShellRadius = innerShellRadius + 1F;   // HACK depth of arrival shell is 1
         }
-        return new AutoPilotDestinationProxy(this, tgtOffset, innerShellRadius, outerShellRadius);
+        return new ApMoveDestinationProxy(this, ship, tgtOffset, innerShellRadius, outerShellRadius);
     }
 
     #endregion

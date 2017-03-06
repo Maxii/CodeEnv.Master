@@ -117,9 +117,10 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="fleetCmd">The fleet command.</param>
         /// <param name="owner">The owner.</param>
+        /// <param name="ftlDampener">The FTL dampener.</param>
         /// <param name="cmdStat">The stat.</param>
-        public FleetCmdData(IFleetCmd fleetCmd, Player owner, UnitCmdStat cmdStat)
-            : this(fleetCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), cmdStat) {
+        public FleetCmdData(IFleetCmd fleetCmd, Player owner, FtlDampener ftlDampener, UnitCmdStat cmdStat)
+            : this(fleetCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), ftlDampener, cmdStat) {
         }
 
         /// <summary>
@@ -128,9 +129,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="fleetCmd">The fleet command.</param>
         /// <param name="owner">The owner.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
+        /// <param name="ftlDampener">The FTL dampener.</param>
         /// <param name="cmdStat">The stat.</param>
-        public FleetCmdData(IFleetCmd fleetCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, UnitCmdStat cmdStat)
-            : base(fleetCmd, owner, passiveCMs, cmdStat) { }
+        public FleetCmdData(IFleetCmd fleetCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, FtlDampener ftlDampener, UnitCmdStat cmdStat)
+            : base(fleetCmd, owner, passiveCMs, ftlDampener, cmdStat) { }
 
         protected override AIntel MakeIntelInstance() {
             return new RegressibleIntel(lowestRegressedCoverage: IntelCoverage.None);
@@ -218,7 +220,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void HandleHQElementDataChanging(AUnitElementData newHQElementData) {
             base.HandleHQElementDataChanging(newHQElementData);
-            D.Log(ShowDebugLog, "{0}: new HQ {1} is being assigned a CombatStance of {2}.", DebugName, newHQElementData.Name, ShipCombatStance.Defensive.GetValueName());
+            //D.Log(ShowDebugLog, "{0}: new HQ {1} is being assigned a CombatStance of {2}.", DebugName, newHQElementData.Name, ShipCombatStance.Defensive.GetValueName());
             (newHQElementData as ShipData).CombatStance = ShipCombatStance.Defensive;
         }
 

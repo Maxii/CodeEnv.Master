@@ -23,8 +23,11 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class ACommandDesign : AUnitDesign {
 
-        public ACommandDesign(Player player, string designName, IEnumerable<PassiveCountermeasureStat> passiveCmStats)
+        public FtlDampenerStat FtlDampenerStat { get; private set; }
+
+        public ACommandDesign(Player player, string designName, IEnumerable<PassiveCountermeasureStat> passiveCmStats, FtlDampenerStat ftlDampenerStat)
             : base(player, designName, passiveCmStats) {
+            FtlDampenerStat = ftlDampenerStat;
         }
 
     }

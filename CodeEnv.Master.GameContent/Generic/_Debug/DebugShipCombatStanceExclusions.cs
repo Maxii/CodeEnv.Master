@@ -38,7 +38,9 @@ namespace CodeEnv.Master.GameContent {
 
         AllExceptStandoff,
 
-        AllExceptBalanced,
+        AllExceptBalancedBombard,
+
+        AllExceptBalancedStrafe,
 
         AllExceptPointBlank
 

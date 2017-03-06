@@ -183,10 +183,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         CurrentState = BaseState.Dead;
     }
 
-    protected override void HandleDeathBeforeBeginningDeathEffect() {
-        base.HandleDeathBeforeBeginningDeathEffect();
-    }
-
     /// <summary>
     /// Kills all remaining elements of the Unit along with this Command. All Elements are ordered 
     /// to Scuttle (assume Dead state) which results in the Command assuming its own Dead state.
@@ -289,7 +285,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         LogEvent();
     }
 
-    protected void FinalInitialize_UponRelationsChanged(Player chgdRelationsPlayer) {
+    protected void FinalInitialize_UponRelationsChangedWith(Player player) {
         LogEvent();
         // can be received when activation of sensors immediately finds another player
     }
@@ -320,7 +316,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         yield return null;
     }
 
-    protected void Idling_UponRelationsChanged(Player chgdRelationsPlayer) {
+    protected void Idling_UponRelationsChangedWith(Player player) {
         LogEvent();
         // TODO
     }
@@ -390,7 +386,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         // TODO What? It will be common for an attack by a facility to fail for cause unreachable as its target moves out of range...
     }
 
-    protected void ExecuteAttackOrder_UponRelationsChanged(Player chgdRelationsPlayer) {
+    protected void ExecuteAttackOrder_UponRelationsChangedWith(Player player) {
         LogEvent();
         // TODO
     }
@@ -714,10 +710,10 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     #region IShipNavigable Members
 
-    public override AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition) {
+    public override ApMoveDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, IShip ship) {
         float innerShellRadius = CloseOrbitOuterRadius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of close orbit
         float outerShellRadius = innerShellRadius + 1F;   // HACK depth of arrival shell is 1
-        return new AutoPilotDestinationProxy(this, tgtOffset, innerShellRadius, outerShellRadius);
+        return new ApMoveDestinationProxy(this, ship, tgtOffset, innerShellRadius, outerShellRadius);
     }
 
     #endregion

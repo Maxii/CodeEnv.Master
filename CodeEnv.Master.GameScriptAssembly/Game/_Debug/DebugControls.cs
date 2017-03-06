@@ -140,6 +140,15 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     /// </summary>
     public bool FleetsAutoAttackAsDefault { get { return _fleetsAutoAttack; } }
 
+    [Tooltip("The maximum number of fleets that can be concurrently attacking per player")]
+    [Range(1, 3)]
+    [SerializeField]
+    private int _maxAttackingFleetsPerPlayer = 2;
+    /// <summary>
+    /// The maximum number of concurrently attacking fleets allowed per player.
+    /// </summary>
+    public int MaxAttackingFleetsPerPlayer { get { return _maxAttackingFleetsPerPlayer; } }
+
     [Tooltip("Check if all players know everything about all objects, even those that are outside detection range.")]
     [SerializeField]
     private bool _allIntelCoverageIsComprehensive = false;

@@ -169,8 +169,8 @@ public abstract class AMonoSingleton<T> : AMonoBaseSingleton, IInstanceCount whe
         }
     }
 
-    protected override void OnApplicationQuit() {
-        base.OnApplicationQuit();
+    protected override void __CleanupOnApplicationQuit() {
+        base.__CleanupOnApplicationQuit();
         _instance = null;
     }
 

@@ -195,12 +195,12 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
 
     #region Debug
 
-    private const float __acceptableThresholdSubtractorBase = 1.2F;
+    private const float __acceptableThresholdSubtractorBase = 1.3F;
 
     protected override void __WarnOnErroneousTriggerExit(IInterceptableOrdnance exitingOrdnance) {
         if (exitingOrdnance.IsOperational) {
             float gameSpeedMultiplier = __gameTime.GameSpeedMultiplier;  // 0.25 - 4.0
-            float rangeDistanceSubtractor = __acceptableThresholdSubtractorBase * gameSpeedMultiplier;  // 0.3 - 1.2 - 4.8
+            float rangeDistanceSubtractor = __acceptableThresholdSubtractorBase * gameSpeedMultiplier;  // 0.325 - 1.3 - 5.2
 
             float acceptableThreshold = Mathf.Clamp(RangeDistance - rangeDistanceSubtractor, 1F, Mathf.Infinity);
             float acceptableThresholdSqrd = acceptableThreshold * acceptableThreshold;

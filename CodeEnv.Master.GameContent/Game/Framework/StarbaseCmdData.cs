@@ -54,9 +54,10 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="starbaseCmd">The starbase command.</param>
         /// <param name="owner">The owner.</param>
+        /// <param name="ftlDampener">The FTL dampener.</param>
         /// <param name="cmdStat">The stat.</param>
-        public StarbaseCmdData(IStarbaseCmd starbaseCmd, Player owner, UnitCmdStat cmdStat)
-            : this(starbaseCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), cmdStat) {
+        public StarbaseCmdData(IStarbaseCmd starbaseCmd, Player owner, FtlDampener ftlDampener, UnitCmdStat cmdStat)
+            : this(starbaseCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), ftlDampener, cmdStat) {
         }
 
         /// <summary>
@@ -65,9 +66,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="starbaseCmd">The starbase command.</param>
         /// <param name="owner">The owner.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
+        /// <param name="ftlDampener">The FTL dampener.</param>
         /// <param name="cmdStat">The stat.</param>
-        public StarbaseCmdData(IStarbaseCmd starbaseCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, UnitCmdStat cmdStat)
-            : base(starbaseCmd, owner, passiveCMs, cmdStat) {
+        public StarbaseCmdData(IStarbaseCmd starbaseCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, FtlDampener ftlDampener, UnitCmdStat cmdStat)
+            : base(starbaseCmd, owner, passiveCMs, ftlDampener, cmdStat) {
             __PopulateResourcesFromSector();
         }
 

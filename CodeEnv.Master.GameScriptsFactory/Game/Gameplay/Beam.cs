@@ -370,6 +370,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         _impactedTarget.TakeHit(cumDamageToApply);
 
         if (_impactedTarget == Target) {
+            D.AssertNotNull(_impactedTarget, DebugName);    // 3.4.17 _impactedTarget in Log statement generated an NRE???
             D.Log(ShowDebugLog, "{0} has hit its intended target {1}.", DebugName, _impactedTarget.DebugName);
             _isIntendedTargetHit = true;
         }

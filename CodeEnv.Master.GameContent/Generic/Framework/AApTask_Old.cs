@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AApTask.cs
-// Abstract base class for AutoPilot tasks.
+// Abstract base class for AutoPilot Tasks.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,9 +20,10 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Abstract base class for AutoPilot tasks.
+    /// Abstract base class for AutoPilot Tasks.
     /// </summary>
-    public abstract class AApTask : IDisposable {
+    [Obsolete]
+    public abstract class AApTask_Old : IDisposable {
 
         private const string DebugNameFormat = "{0}.{1}";
 
@@ -32,10 +33,10 @@ namespace CodeEnv.Master.GameContent {
 
         protected bool ShowDebugLog { get { return _autoPilot.ShowDebugLog; } }
 
-        protected MoveAutoPilot _autoPilot;
+        protected AutoPilot_Old _autoPilot;
         protected IJobManager _jobMgr;
 
-        public AApTask(MoveAutoPilot autoPilot) {
+        public AApTask_Old(AutoPilot_Old autoPilot) {
             _autoPilot = autoPilot;
             InitializeValuesAndReferences();
         }
@@ -43,8 +44,6 @@ namespace CodeEnv.Master.GameContent {
         protected virtual void InitializeValuesAndReferences() {
             _jobMgr = References.JobManager;
         }
-
-        public abstract void Execute(AutoPilotDestinationProxy destProxy);
 
         public virtual void ResetForReuse() {
             KillJob();
@@ -54,10 +53,6 @@ namespace CodeEnv.Master.GameContent {
 
         protected virtual void Cleanup() {
             KillJob();
-        }
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
         }
 
         #region IDisposable

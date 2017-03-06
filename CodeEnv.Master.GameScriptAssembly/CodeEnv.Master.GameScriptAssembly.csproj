@@ -63,6 +63,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\Framework\FtlDampenerRangeMonitor.cs" />
     <Compile Include="Game\_Debug\CmdIconsFolder.cs" />
     <Compile Include="Game\_Debug\ElementIconsFolder.cs" />
     <Compile Include="Game\_Debug\GameSettingsDebugControl.cs" />

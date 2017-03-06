@@ -191,33 +191,35 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Adds the newly met player to this Player's known opponents,
         /// setting their DiplomaticRelationship to the value stored for such an occasion, then synchronizes
-        /// the newlyMetPlayer's DiploRelations state with this one, finally raising a
-        /// <c>relationsChanged</c> event after both states are synchronized.
+        /// the newlyMetPlayer's DiploRelations state with this one, finally communicating
+        /// the change after both states are synchronized.
         /// <remarks>Done this way to allow both newlyMetPlayer's DiploRelationship state to be
-        /// synchronized BEFORE either raises a relationsChanged event.</remarks>
+        /// synchronized BEFORE either communicates the change.</remarks>
         /// </summary>
         /// <param name="newlyMetPlayer">The newly met player.</param>
         public virtual void HandleMetNewPlayer(Player newlyMetPlayer) {
             D.AssertNotEqual(newlyMetPlayer, this, "Newly Met Player not allowed to be self.");
             D.Assert(!IsKnown(newlyMetPlayer));
             _currentRelationship[newlyMetPlayer] = _initialRelationship[newlyMetPlayer];
+            D.LogBold("{0} discovered new {1}. Initial Relationship: {2}.", DebugName, newlyMetPlayer, _currentRelationship[newlyMetPlayer].GetValueName());
             newlyMetPlayer.HandleMetNewPlayer_Internal(this);
-            OnRelationsChanged(newlyMetPlayer);
+            CommunicateChangedRelationsWith(newlyMetPlayer);
         }
 
         /// <summary>
         /// Adds the newly met player to this Player's known opponents,
-        /// setting their DiplomaticRelationship to the value stored for such an occasion
-        /// and raises a <c>relationsChanged</c> event. Internal version intended for Player to Player synchronization. 
+        /// setting their DiplomaticRelationship to the value stored for such an occasion,
+        /// finally communicating the change after both states are synchronized.
         /// <remarks>Done this way to allow both newlyMetPlayer's DiploRelationship state to be
-        /// synchronized BEFORE either raises a relationsChanged event.</remarks>
+        /// synchronized BEFORE either communicates the change.</remarks>
         /// </summary>
         /// <param name="newlyMetPlayer">The newly met player.</param>
         internal virtual void HandleMetNewPlayer_Internal(Player newlyMetPlayer) {
             D.AssertNotEqual(newlyMetPlayer, this, "Newly Met Player not allowed to be self.");
             D.Assert(!IsKnown(newlyMetPlayer));
             _currentRelationship[newlyMetPlayer] = _initialRelationship[newlyMetPlayer];
-            OnRelationsChanged(newlyMetPlayer);
+            //D.Log("{0} was discovered by {1}. Initial Relationship: {2}.", DebugName, newlyMetPlayer, _currentRelationship[newlyMetPlayer].GetValueName());
+            CommunicateChangedRelationsWith(newlyMetPlayer);
         }
 
         public virtual bool IsKnown(Player player) {
@@ -241,10 +243,10 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Sets the DiplomaticRelationship between this player and <c>otherPlayer</c> who have already met.
-        /// Then synchronizes <c>otherPlayer</c>'s DiploRelations state with this player, finally raising a
-        /// <c>relationsChanged</c> event after both states are synchronized.
+        /// Then synchronizes <c>otherPlayer</c>'s DiploRelations state with this player, finally 
+        /// communicating the change after both states are synchronized.
         /// <remarks>Done this way to allow both player's DiploRelationship state to be
-        /// synchronized BEFORE either raises a relationsChanged event.</remarks>
+        /// synchronized BEFORE either communicates the change.</remarks>
         /// </summary>
         /// <param name="otherPlayer">The otherPlayer.</param>
         /// <param name="newRelationship">The relationship.</param>
@@ -267,15 +269,15 @@ namespace CodeEnv.Master.GameContent {
             _priorRelationship[otherPlayer] = existingRelationship;
             _currentRelationship[otherPlayer] = newRelationship;
             otherPlayer.SetRelationsWith_Internal(this, newRelationship);
-            OnRelationsChanged(otherPlayer);
+            CommunicateChangedRelationsWith(otherPlayer);
         }
 
         /// <summary>
         /// Sets the DiplomaticRelationship between this player and <c>otherPlayer</c> who have already met.
-        /// Then synchronizes <c>otherPlayer</c>'s DiploRelations state with this player, finally raising a
-        /// <c>relationsChanged</c> event after both states are synchronized. Internal version intended for Player to Player coordination. 
+        /// Then synchronizes <c>otherPlayer</c>'s DiploRelations state with this player, finally communicating
+        /// the change after both states are synchronized. Internal version intended for Player to Player coordination. 
         /// <remarks>Done this way to allow both player's DiploRelationship state to be
-        /// synchronized BEFORE either raises a relationsChanged event.</remarks>
+        /// synchronized BEFORE either communicates the change.</remarks>
         /// </summary>
         /// <param name="otherPlayer">The otherPlayer.</param>
         /// <param name="newRelationship">The relationship.</param>
@@ -296,7 +298,7 @@ namespace CodeEnv.Master.GameContent {
 
             _priorRelationship[otherPlayer] = existingRelationship;
             _currentRelationship[otherPlayer] = newRelationship;
-            OnRelationsChanged(otherPlayer);
+            CommunicateChangedRelationsWith(otherPlayer);
         }
 
         public virtual IEnumerable<Player> GetOtherPlayersWithRelationship(DiplomaticRelationship relationship) {
@@ -308,6 +310,12 @@ namespace CodeEnv.Master.GameContent {
                 }
             }
             return playersWithRelations;
+        }
+
+        private void CommunicateChangedRelationsWith(Player player) {
+            PlayerAIManager ownerAIMgr = _gameMgr.GetAIManagerFor(this);
+            ownerAIMgr.HandleOwnerRelationsChangedWith(player);
+            OnRelationsChanged(player);
         }
 
         #region IsRelationshipWith

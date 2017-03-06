@@ -21,7 +21,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IMoon_Ltd : IPlanetoid_Ltd {
 
-
     }
 }
 

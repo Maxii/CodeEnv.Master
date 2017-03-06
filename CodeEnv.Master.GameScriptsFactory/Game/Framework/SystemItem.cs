@@ -424,18 +424,18 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
 
     #region IShipNavigable Members
 
-    public override AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition) {
-        float distanceToShip = Vector3.Distance(shipPosition, Position);
+    public override ApMoveDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, IShip ship) {
+        float distanceToShip = Vector3.Distance(ship.Position, Position);
         if (distanceToShip > Radius) {
             // outside of the system
             float innerShellRadius = Radius + tgtStandoffDistance;   // keeps ship outside of gravity well, aka Topography.System
             float outerShellRadius = innerShellRadius + 10F;   // HACK depth of arrival shell is 10
-            return new AutoPilotDestinationProxy(this, tgtOffset, innerShellRadius, outerShellRadius);
+            return new ApMoveDestinationProxy(this, ship, tgtOffset, innerShellRadius, outerShellRadius);
         }
         else {
             // inside of system
-            StationaryLocation closestAssyStation = GameUtility.GetClosest(shipPosition, LocalAssemblyStations);
-            return closestAssyStation.GetApMoveTgtProxy(tgtOffset, tgtStandoffDistance, shipPosition);
+            StationaryLocation closestAssyStation = GameUtility.GetClosest(ship.Position, LocalAssemblyStations);
+            return closestAssyStation.GetApMoveTgtProxy(tgtOffset, tgtStandoffDistance, ship);
         }
     }
 

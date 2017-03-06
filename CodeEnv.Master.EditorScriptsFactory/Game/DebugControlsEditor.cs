@@ -56,12 +56,22 @@ public class DebugControlsEditor : Editor {
             if (NGUIEditorTools.DrawHeader("AI Settings")) {
                 NGUIEditorTools.BeginContents();
                 {
-                    NGUIEditorTools.SetLabelWidth(100F);
+                    NGUIEditorTools.SetLabelWidth(80F);
                     var autoExploreSP = NGUIEditorTools.DrawProperty("AutoExplore", serializedObject, "_fleetsAutoExplore");
 
                     EditorGUI.BeginDisabledGroup(autoExploreSP.boolValue);
                     {
-                        NGUIEditorTools.DrawProperty("AutoAttack", serializedObject, "_fleetsAutoAttack");
+                        GUILayout.BeginHorizontal();
+                        {
+                            var autoAttackSP = NGUIEditorTools.DrawProperty("AutoAttack", serializedObject, "_fleetsAutoAttack", GUILayout.Width(100F));
+                            EditorGUI.BeginDisabledGroup(!autoAttackSP.boolValue);
+                            {
+                                NGUIEditorTools.SetLabelWidth(80F);
+                                NGUIEditorTools.DrawProperty("MaxFleets", serializedObject, "_maxAttackingFleetsPerPlayer", GUILayout.MinWidth(20F));
+                            }
+                            EditorGUI.EndDisabledGroup();
+                        }
+                        GUILayout.EndHorizontal();
                     }
                     EditorGUI.EndDisabledGroup();
                     NGUIEditorTools.SetLabelWidth(200F);

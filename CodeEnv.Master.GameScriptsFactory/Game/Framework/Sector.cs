@@ -596,18 +596,18 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
 
     #region IShipNavigable Members
 
-    public AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition) {
-        float distanceToShip = Vector3.Distance(shipPosition, Position);
+    public ApMoveDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, IShip ship) {
+        float distanceToShip = Vector3.Distance(ship.Position, Position);
         if (distanceToShip > Radius / 2F) {
             // outside of the outer half of sector
             float innerShellRadius = Radius / 2F;   // HACK 600
             float outerShellRadius = innerShellRadius + 20F;   // HACK depth of arrival shell is 20
-            return new AutoPilotDestinationProxy(this, tgtOffset, innerShellRadius, outerShellRadius);
+            return new ApMoveDestinationProxy(this, ship, tgtOffset, innerShellRadius, outerShellRadius);
         }
         else {
             // inside inner half of sector
-            StationaryLocation closestAssyStation = GameUtility.GetClosest(shipPosition, LocalAssemblyStations);
-            return closestAssyStation.GetApMoveTgtProxy(tgtOffset, tgtStandoffDistance, shipPosition);
+            StationaryLocation closestAssyStation = GameUtility.GetClosest(ship.Position, LocalAssemblyStations);
+            return closestAssyStation.GetApMoveTgtProxy(tgtOffset, tgtStandoffDistance, ship);
         }
     }
 

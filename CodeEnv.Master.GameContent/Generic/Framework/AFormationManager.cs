@@ -54,7 +54,7 @@ namespace CodeEnv.Master.GameContent {
                 float formationRadius;
                 _availableStationSlots = GenerateFormationSlotInfo(formation, _unitCmd.transform, out formationRadius);
                 __maxFormationStationSlots = _availableStationSlots.Count;
-                D.Log(ShowDebugLog, "{0} generated {1} {2}s for Formation {3} => {4}.", DebugName, _availableStationSlots.Count, typeof(FormationStationSlotInfo).Name, formation.GetValueName(), _availableStationSlots.Concatenate());
+                //D.Log(ShowDebugLog, "{0} generated {1} {2}s for Formation {3} => {4}.", DebugName, _availableStationSlots.Count, typeof(FormationStationSlotInfo).Name, formation.GetValueName(), _availableStationSlots.Concatenate());
                 _unitCmd.UnitMaxFormationRadius = formationRadius;
                 _currentFormation = formation;
             }
@@ -76,7 +76,7 @@ namespace CodeEnv.Master.GameContent {
             var occupiedStationSlots = _occupiedStationSlotLookup.Values;
             (_availableStationSlots as List<FormationStationSlotInfo>).AddRange(occupiedStationSlots);
             D.Assert(_availableStationSlots.Count <= __maxFormationStationSlots, "{0}: {1} > Max {2}.".Inject(DebugName, _availableStationSlots.Count, __maxFormationStationSlots));
-            D.Log(ShowDebugLog, "{0}: available {1} count = {2} after {3} occupied slots returned.", DebugName, typeof(FormationStationSlotInfo).Name, _availableStationSlots.Count, occupiedStationSlots.Count);
+            //D.Log(ShowDebugLog, "{0}: available {1} count = {2} after {3} occupied slots returned.", DebugName, typeof(FormationStationSlotInfo).Name, _availableStationSlots.Count, occupiedStationSlots.Count);
             _occupiedStationSlotLookup.Clear(); // clear AFTER occupiedStationSlots no longer needed!
         }
 
@@ -148,8 +148,8 @@ namespace CodeEnv.Master.GameContent {
 
             FormationStationSlotInfo slot = _availableStationSlots.Where(sInfo => !sInfo.IsHQSlot && sInfo.IsReserve == selectionConstraints.IsReserveReqd).FirstOrDefault();
             if (slot == default(FormationStationSlotInfo)) {
-                D.Log(ShowDebugLog, "{0}: Cannot find {1} meeting Constraint {2} in Formation {3} for {4}. Available Slot Qty = {5}. Occupied Slot Qty = {6}.",
-                    DebugName, typeof(FormationStationSlotInfo).Name, selectionConstraints, _currentFormation.GetValueName(), element.DebugName, _availableStationSlots.Count, _occupiedStationSlotLookup.Count);
+                //D.Log(ShowDebugLog, "{0}: Cannot find {1} meeting Constraint {2} in Formation {3} for {4}. Available Slot Qty = {5}. Occupied Slot Qty = {6}.",
+                //    DebugName, typeof(FormationStationSlotInfo).Name, selectionConstraints, _currentFormation.GetValueName(), element.DebugName, _availableStationSlots.Count, _occupiedStationSlotLookup.Count);
                 slot = _availableStationSlots.Where(sInfo => !sInfo.IsHQSlot).FirstOrDefault();
             }
             if (slot == default(FormationStationSlotInfo)) {

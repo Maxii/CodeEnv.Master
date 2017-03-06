@@ -412,7 +412,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
                 D.Error("UnreadyElements for {0} already has {1} registered!", maxGameStateUntilReady.GetValueName(), source.name);
             }
             unreadyElements.Add(source);
-            D.Log("{0} has registered as unready to progress beyond {1}. UnreadyElement Count = {2}.", source.name, maxGameStateUntilReady.GetValueName(), unreadyElements.Count);
+            //D.Log("{0} has registered as unready to progress beyond {1}. UnreadyElement Count = {2}.", source.name, maxGameStateUntilReady.GetValueName(), unreadyElements.Count);
         }
         else {
             bool isRemoved = unreadyElements.Remove(source);
@@ -584,11 +584,6 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         if (newGameBuilding != null) {
             newGameBuilding(this, EventArgs.Empty);
         }
-    }
-
-    protected override void OnApplicationQuit() {
-        base.OnApplicationQuit();
-        IsRunning = false;
     }
 
     #endregion

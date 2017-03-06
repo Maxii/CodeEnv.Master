@@ -33,6 +33,8 @@ public class Shield : AEquipmentMonitor<ShieldGenerator>, IShield {
 
     public float CurrentCharge { get { return _equipmentList.Where(gen => gen.IsOperational).Sum(opGen => opGen.CurrentCharge); } }
 
+    protected override int MaxEquipmentCount { get { return 10; } }
+
     protected override bool IsTriggerCollider { get { return false; } }
 
     protected override bool IsKinematicRigidbodyReqd { get { return true; } }   // avoids CompoundCollider

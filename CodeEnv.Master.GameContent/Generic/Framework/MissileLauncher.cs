@@ -86,6 +86,12 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(isRemoved);
         }
 
+        public override void HandleFiringComplete(IOrdnance ordnanceFired) {
+            base.HandleFiringComplete(ordnanceFired);
+            // Missiles complete firing immediately after initiating it. No chance for weapon to lose operations
+            D.Assert(IsOperational);
+        }
+
         #region Event and Property Change Handlers
 
         #endregion

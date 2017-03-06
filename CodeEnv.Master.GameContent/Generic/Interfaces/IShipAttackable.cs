@@ -25,14 +25,24 @@ namespace CodeEnv.Master.GameContent {
     public interface IShipAttackable : IElementAttackable {
 
         /// <summary>
-        /// Returns the proxy for this target for use by a Ship's Pilot when attacking this target.
+        /// Returns the proxy for this target for use by a Ship's Pilot when strafing this target.
         /// The values provided allow the proxy to help the ship stay within its desired weapons range envelope relative to the target's surface.
         /// <remarks>There is no target offset as ships don't attack in formation.</remarks>
         /// </summary>
         /// <param name="desiredWeaponsRangeEnvelope">The ship's desired weapons range envelope relative to the target's surface.</param>
-        /// <param name="shipCollisionDetectionRadius">The attacking ship's collision detection radius.</param>
+        /// <param name="ship">The ship.</param>
         /// <returns></returns>
-        AutoPilotDestinationProxy GetApAttackTgtProxy(ValueRange<float> desiredWeaponsRangeEnvelope, float shipCollisionDetectionRadius);
+        ApStrafeDestinationProxy GetApStrafeTgtProxy(ValueRange<float> desiredWeaponsRangeEnvelope, IShip ship);
+
+        /// <summary>
+        /// Returns the proxy for this target for use by a Ship's Pilot when bombarding this target.
+        /// The values provided allow the proxy to help the ship stay within its desired weapons range envelope relative to the target's surface.
+        /// <remarks>There is no target offset as ships don't attack in formation.</remarks>
+        /// </summary>
+        /// <param name="desiredWeaponsRangeEnvelope">The ship's desired weapons range envelope relative to the target's surface.</param>
+        /// <param name="ship">The ship.</param>
+        /// <returns></returns>
+        ApBombardDestinationProxy GetApBombardTgtProxy(ValueRange<float> desiredWeaponsRangeEnvelope, IShip ship);
 
     }
 }

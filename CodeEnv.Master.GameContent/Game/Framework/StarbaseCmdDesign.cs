@@ -26,8 +26,9 @@ namespace CodeEnv.Master.GameContent {
 
         public UnitCmdStat CmdStat { get; private set; }
 
-        public StarbaseCmdDesign(Player player, string designName, IEnumerable<PassiveCountermeasureStat> passiveCmStats, UnitCmdStat cmdStat)
-            : base(player, designName, passiveCmStats) {
+        public StarbaseCmdDesign(Player player, string designName, IEnumerable<PassiveCountermeasureStat> passiveCmStats,
+            FtlDampenerStat ftlDampenerStat, UnitCmdStat cmdStat)
+            : base(player, designName, passiveCmStats, ftlDampenerStat) {
             CmdStat = cmdStat;
         }
 
