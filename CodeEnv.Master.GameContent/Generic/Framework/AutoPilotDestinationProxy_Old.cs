@@ -83,7 +83,7 @@ namespace CodeEnv.Master.GameContent {
                     if (!__formationStation.IsOnStation) {
                         D.Warn(@"{0}: Inconsistent results between FormationStation.IsOnStation and its ApTgtProxy.HasArrived. 
                             /n_shipDistanceToDest = {1}, _innerRadius = {2}, _outerRadius = {3}, __DistanceFromStation = {4}.",
-                            DebugName, Mathf.Sqrt(shipSqrdDistanceToDest), InnerRadius, OuterRadius, __formationStation.__DistanceFromOnStation);
+                            DebugName, Mathf.Sqrt(shipSqrdDistanceToDest), InnerRadius, OuterRadius, __formationStation.__DistanceToOnStation);
                         return false;
                     }
                 }

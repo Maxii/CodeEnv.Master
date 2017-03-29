@@ -37,6 +37,8 @@ public class PathfindingManager : AMonoSingleton<PathfindingManager> {
     /// </summary>
     public event EventHandler graphUpdateCompleted;
 
+    private string DebugName { get { return GetType().Name; } }
+
     private MyPathfindingGraph _graph;
     public MyPathfindingGraph Graph {
         get { return _graph; }
@@ -96,12 +98,15 @@ public class PathfindingManager : AMonoSingleton<PathfindingManager> {
     private void GameStateChangedEventHandler(object sender, EventArgs e) {
         if (_gameMgr.CurrentState == GameState.GeneratingPathGraphs) {
             _gameMgr.RecordGameStateProgressionReadiness(this, GameState.GeneratingPathGraphs, isReady: false);
+            //D.Log("{0} calling AstarPath.Scan on Frame {1}.", DebugName, Time.frameCount);
             _astarPath.Scan();
         }
     }
 
     private void GraphScansCompletedEventHandler(AstarPath astarPath) {
         Graph = astarPath.graphs[0] as MyPathfindingGraph;  // as MyAStarPointGraph
+        //D.Log("{0} AstarPath.Scan has completed on Frame {1}.", DebugName, Time.frameCount);
+
         _gameMgr.RecordGameStateProgressionReadiness(this, GameState.GeneratingPathGraphs, isReady: true);
         // WARNING: I must not directly cause the game state to change as the other subscribers to GameStateChanged may not have been called yet. 
         // This GraphScansCompletedEvent occurs while we are still processing OnGameStateChanged.
@@ -118,7 +123,7 @@ public class PathfindingManager : AMonoSingleton<PathfindingManager> {
         OnGraphUpdateCompleted();
         //__ReportUpdateDuration();
         //__ReportNodeCountAndDuration();
-        D.Warn("{0}.GraphUpdateCompletedEventHandler() called.", GetType().Name);
+        D.Warn("{0}.GraphUpdateCompletedEventHandler() called. 3.7.17 Not using it.", DebugName);
     }
 
     private void OnGraphUpdateCompleted() {
@@ -147,7 +152,7 @@ public class PathfindingManager : AMonoSingleton<PathfindingManager> {
 
     //private void __ReportUpdateDuration() {
     //    D.LogBold("{0} took {1:0.##} secs updating graph for the addition/removal of one or more StarBases.",
-    //        GetType().Name, (Utility.SystemTime - Graph.__GraphUpdateStartTime).TotalSeconds);
+    //        DebugName, (Utility.SystemTime - Graph.__GraphUpdateStartTime).TotalSeconds);
     //    Graph.__GraphUpdateStartTime = default(System.DateTime);
     //}
 
@@ -165,7 +170,7 @@ public class PathfindingManager : AMonoSingleton<PathfindingManager> {
     //    });
 
     //    D.Log("{0}: Counting graph update nodes took {1:0.##} secs. WalkableNodeCount = {2}, ConnectionCount = {3}.",
-    //        GetType().Name, (Utility.SystemTime - nodeCountStartTime).TotalSeconds, walkableNodeCount, connectionCount);
+    //        DebugName, (Utility.SystemTime - nodeCountStartTime).TotalSeconds, walkableNodeCount, connectionCount);
     //}
 
     #endregion

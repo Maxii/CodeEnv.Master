@@ -25,10 +25,13 @@ namespace CodeEnv.Master.Common {
 
         public bool IsPaused { protected get; set; }
 
-        protected bool _toKill = false;
+        public bool IsKilled { get; private set; }
+
+        //protected bool _toKill = false;
 
         public void Kill() {
-            _toKill = true;
+            //_toKill = true;
+            IsKilled = true;
         }
 
     }

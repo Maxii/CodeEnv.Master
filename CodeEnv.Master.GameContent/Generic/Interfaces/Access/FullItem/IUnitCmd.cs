@@ -36,6 +36,8 @@ namespace CodeEnv.Master.GameContent {
 
         float ClearanceRadius { get; }
 
+        ISensorRangeMonitor SRSensorMonitor { get; }
+
         IList<ISensorRangeMonitor> SensorRangeMonitors { get; }
 
         void HandleRelationsChangedWith(Player chgdRelationsPlayer);

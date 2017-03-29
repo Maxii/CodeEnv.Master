@@ -46,7 +46,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void ValidateDeployDate() {
             GameDate earliestDate;
-            if (!References.GameManager.IsRunning) {
+            if (!GameReferences.GameManager.IsRunning) {
                 earliestDate = GameTime.GameStartDate;
             }
             else {

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IShipAttackable.cs
-// Interface for targets that can be attacked by ships.
+// Interface for Items that can be attacked by Ships using normal weapons (beams, projectiles, missiles).
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,9 +20,9 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Interface for targets that can be attacked by ships.
+    /// Interface for Items that can be attacked by Ships using normal weapons (beams, projectiles, missiles).
     /// </summary>
-    public interface IShipAttackable : IElementAttackable {
+    public interface IShipBlastable : IElementBlastable {
 
         /// <summary>
         /// Returns the proxy for this target for use by a Ship's Pilot when strafing this target.
@@ -35,14 +35,14 @@ namespace CodeEnv.Master.GameContent {
         ApStrafeDestinationProxy GetApStrafeTgtProxy(ValueRange<float> desiredWeaponsRangeEnvelope, IShip ship);
 
         /// <summary>
-        /// Returns the proxy for this target for use by a Ship's Pilot when bombarding this target.
+        /// Returns the proxy for this target for use by a Ship's Pilot when besieging this target.
         /// The values provided allow the proxy to help the ship stay within its desired weapons range envelope relative to the target's surface.
         /// <remarks>There is no target offset as ships don't attack in formation.</remarks>
         /// </summary>
         /// <param name="desiredWeaponsRangeEnvelope">The ship's desired weapons range envelope relative to the target's surface.</param>
         /// <param name="ship">The ship.</param>
         /// <returns></returns>
-        ApBombardDestinationProxy GetApBombardTgtProxy(ValueRange<float> desiredWeaponsRangeEnvelope, IShip ship);
+        ApBesiegeDestinationProxy GetApBesiegeTgtProxy(ValueRange<float> desiredWeaponsRangeEnvelope, IShip ship);
 
     }
 }

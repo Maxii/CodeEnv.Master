@@ -165,6 +165,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
         }
     }
 
+    private bool _hasInfoAccessToOwner;
     private IList<IDisposable> _subscriptions;
     private IInputManager _inputMgr;
     private ItemHudManager _hudManager;
@@ -181,8 +182,8 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     }
 
     private void Initialize() {
-        _inputMgr = References.InputManager;
-        _gameMgr = References.GameManager;
+        _inputMgr = GameReferences.InputManager;
+        _gameMgr = GameReferences.GameManager;
         _debugSettings = DebugSettings.Instance;
     }
 
@@ -290,6 +291,35 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     }
 
     /// <summary>
+    /// Assesses whether to fire its infoAccessChanged event.
+    /// <remarks>Implemented by some undetectable Items - System, SettlementCmd
+    /// and Sector. All three allow a change in access to Owner while in IntelCoverage.Basic
+    /// without requiring an increase in IntelCoverage. FleetCmd and StarbaseCmd are the other
+    /// two undetectable Items, but they only change access to Owner when IntelCoverage
+    /// exceeds Basic.</remarks>
+    /// <remarks>3.22.17 This is the fix to a gnarly BUG that allowed changes in access to
+    /// Owner without an event alerting subscribers that it had occurred. The subscribers
+    /// relied on the event to keep their state correct, then found later that they had 
+    /// access to Owner when they expected they didn't. Access to owner determines the
+    /// response in a number of Interfaces like IFleetExplorable.IsExplorationAllowedBy(player).</remarks>
+    /// </summary>
+    /// <param name="player">The player.</param>
+    internal void AssessWhetherToFireInfoAccessChangedEventFor(Player player) {
+        if (_hasInfoAccessToOwner) {
+            // A Sector provides access to its Owner under 2 circumstances. First, if IntelCoverage >= Essential,
+            // and second and more commonly, if a System provides access. A System provides access to its Owner
+            // when its Star or any of its Planetoids provides access. They in turn provide access if their IntelCoverage
+            // >= Essential. As IntelCoverage of Planetoids, Stars and Systems can't regress, once access is provided
+            // it can't be lost which means access to a Sector's Owner can't be lost either.
+            return;
+        }
+        if (InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
+            _hasInfoAccessToOwner = true;
+            OnInfoAccessChanged(player);
+        }
+    }
+
+    /// <summary>
     /// Returns a random position inside the sector that is clear of any interference.
     /// The point returned is guaranteed to be inside the radius of the universe.
     /// </summary>
@@ -315,7 +345,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
                 }
             }
         }
-        // 1.18.17 IMPROVE I'm guessing this can easily fail if a peripheral sector
+        // 1.18.17 FIXME I'm guessing this can easily fail if a peripheral sector. 3.27.17 Confirmed failed peripheral sector.
         D.AssertException(iterateCount < 100, "{0}: Iterate check error. IsOnPeriphery = {1}.".Inject(DebugName, IsOnPeriphery));
         iterateCount++;
         return GetClearRandomPointInsideSector(iterateCount);

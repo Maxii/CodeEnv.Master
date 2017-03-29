@@ -81,7 +81,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private IntVector3 InitializeSectorID() {
-            IntVector3 sectorID = References.SectorGrid.GetSectorIDThatContains(Position);
+            IntVector3 sectorID = GameReferences.SectorGrid.GetSectorIDThatContains(Position);
             D.AssertNotDefault(sectorID);
             MarkAsChanged();
             return sectorID;

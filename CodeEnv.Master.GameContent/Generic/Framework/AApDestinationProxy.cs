@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AApDestinationProxy.cs
-/// Abstract base Proxy used by a Ship's AutoPilot to navigate to and/or attack targets.
+// Abstract base Proxy used by a Ship's AutoPilot to navigate to and/or attack targets.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -36,7 +36,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public Vector3 Position { get; protected set; }
+        public Vector3 Position { get { return Destination.Position + _destOffset; } }
 
         public bool IsMobile { get { return Destination.IsMobile; } }
 
@@ -52,19 +52,23 @@ namespace CodeEnv.Master.GameContent {
 
         public IShipNavigable Destination { get; private set; }
 
-        public bool HasArrived {
+        public virtual float __ShipDistanceFromArrived {
+            get {
+                float shipDistanceToDest = Vector3.Distance(Position, _ship.Position);
+                if (shipDistanceToDest > OuterRadius) {
+                    return shipDistanceToDest - OuterRadius;
+                }
+                if (shipDistanceToDest < InnerRadius) {
+                    return InnerRadius - shipDistanceToDest;
+                }
+                return Constants.ZeroF;
+            }
+        }
+
+        public virtual bool HasArrived {
             get {
                 float shipSqrdDistanceToDest = Vector3.SqrMagnitude(Position - _ship.Position);
-                if (shipSqrdDistanceToDest >= _innerRadiusSqrd && shipSqrdDistanceToDest <= _outerRadiusSqrd) {
-                    if (__formationStation != null) {
-                        //D.Log("{0} is a {1} and is testing for IsOnStation.", DebugName, typeof(IFleetFormationStation).Name);
-                        if (!__formationStation.IsOnStation) {
-                            D.Warn(@"{0}: Inconsistent results between FormationStation.IsOnStation and its ApTgtProxy.HasArrived. 
-                            /n_shipDistanceToDest = {1}, _innerRadius = {2}, _outerRadius = {3}, __DistanceFromStation = {4}.",
-                                DebugName, Mathf.Sqrt(shipSqrdDistanceToDest), InnerRadius, OuterRadius, __formationStation.__DistanceFromOnStation);
-                            return false;
-                        }
-                    }
+                if (shipSqrdDistanceToDest.IsGreaterThan(_innerRadiusSqrd) && shipSqrdDistanceToDest.IsLessThan(_outerRadiusSqrd)) {
                     // ship has arrived
                     return true;
                 }
@@ -76,18 +80,19 @@ namespace CodeEnv.Master.GameContent {
         /// The ship employing the proxy.
         /// </summary>
         protected IShip _ship;
-        private IFleetFormationStation __formationStation;
+        protected Vector3 _destOffset;
+
         private float _innerRadiusSqrd;
         private float _outerRadiusSqrd;
 
-        public AApDestinationProxy(IShipNavigable destination, IShip ship, float innerRadius, float outerRadius) {
+        public AApDestinationProxy(IShipNavigable destination, IShip ship, Vector3 destOffset, float innerRadius, float outerRadius) {
             Utility.ValidateNotNull(destination);
             Utility.ValidateNotNegative(innerRadius);
             Utility.ValidateForRange(outerRadius, innerRadius, Mathf.Infinity); // HACK
             Destination = destination;
-            __formationStation = destination as IFleetFormationStation;
             IsFastMover = destination is IShip || destination is IFleetCmd;
             _ship = ship;
+            _destOffset = destOffset;
             InnerRadius = innerRadius;
             _innerRadiusSqrd = innerRadius * innerRadius;
             OuterRadius = outerRadius;
@@ -96,29 +101,44 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Returns <c>true</c> if direction and distance to arrival are valid, <c>false</c>
-        /// if the ship has already arrived.
+        /// Returns <c>true</c> if still making progress toward the destination, <c>false</c>
+        /// if progress is no longer being made as the ship has arrived. If still making
+        /// progress, direction and distance to the destination is valid.
         /// </summary>
-        /// <param name="shipPosition">The ship position.</param>
         /// <param name="direction">The direction to arrival.</param>
         /// <param name="distance">The distance to arrival.</param>
         /// <returns></returns>
-        public bool TryGetArrivalDistanceAndDirection(out Vector3 direction, out float distance) {
+        public virtual bool TryCheckProgress(out Vector3 direction, out float distance) {
             direction = Vector3.zero;
             distance = Constants.ZeroF;
             Vector3 vectorToDest = Position - _ship.Position;
-            float distanceToDest = vectorToDest.magnitude;
-            if (distanceToDest > InnerRadius && distanceToDest < OuterRadius) {
+            float sqrDistanceToDest = Vector3.SqrMagnitude(vectorToDest);
+            if (sqrDistanceToDest.IsGreaterThan(_innerRadiusSqrd) && sqrDistanceToDest.IsLessThan(_outerRadiusSqrd)) {
+                D.Assert(HasArrived, "{0} HasArrivedError: InnerSqrd {1}, SqrDistanceToDest {2}, OuterSqrd {3}.".Inject(DebugName, _innerRadiusSqrd, sqrDistanceToDest, _outerRadiusSqrd));
                 // ship has arrived
                 return false;
             }
             direction = vectorToDest.normalized;
+            float distanceToDest = Mathf.Sqrt(sqrDistanceToDest);
             distance = distanceToDest - OuterRadius;
-            if (distanceToDest < InnerRadius) {
+            if (distance.IsGreaterThan(Constants.ZeroF)) {
+                // Effectively means distance > 0.0001 FloatEqualityPrecision
+                return true;
+            }
+            if (distanceToDest.IsLessThan(InnerRadius)) {
+                // Effectively means distanceToDest < InnerRadius - 0.0001 FloatEqualityPrecision
                 direction = -direction;
                 distance = InnerRadius - distanceToDest;
+                return true;
             }
-            return true;
+            // ship has arrived
+            D.Assert(HasArrived, "{0} HasArrivedError: Inner {1}, DistanceToDest {2}, Outer {3}.".Inject(DebugName, InnerRadius, distanceToDest, OuterRadius));
+            return false;
+            ////if (distanceToDest < InnerRadius) {
+            ////    direction = -direction;
+            ////    distance = InnerRadius - distanceToDest;
+            ////}
+            ////return true;
         }
 
     }

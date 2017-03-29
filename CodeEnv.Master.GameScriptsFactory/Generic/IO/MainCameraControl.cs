@@ -43,9 +43,9 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     /// </summary>
     private const float CameraOuterBoundaryMultiplier = 2F;
 
-    private static readonly float DummyTargetOffsetInsideOuterBoundary = DummyTargetColliderRadius + 0.1F;
-
     private const float CameraMaxClippingPlaneRatio = 10000F;  // OPTIMIZE up to 30000? http://forum.unity3d.com/threads/how-to-avoid-z-fighting.56418/
+
+    private static readonly float DummyTargetOffsetInsideOuterBoundary = DummyTargetColliderRadius + 0.1F;
 
     /// <summary>
     /// The layers the main 3DCameras are allowed to render.
@@ -314,7 +314,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
-        References.MainCameraControl = Instance;
+        GameReferences.MainCameraControl = Instance;
     }
 
     protected override void InitializeOnAwake() {
@@ -1911,7 +1911,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     #endregion
 
     protected override void Cleanup() {
-        References.MainCameraControl = null;
+        GameReferences.MainCameraControl = null;
         Unsubscribe();
     }
 

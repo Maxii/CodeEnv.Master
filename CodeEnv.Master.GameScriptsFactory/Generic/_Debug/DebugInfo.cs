@@ -28,9 +28,12 @@ using UnityEngine;
 /// </summary>
 public class DebugInfo : AMonoSingleton<DebugInfo> {
 
+    private string DebugName { get { return GetType().Name; } }
+
     private StringBuilder _debugInfoContent;
     private IList<IDisposable> _subscriptions;
     private GameManager _gameMgr;
+    private MainCameraControl _mainCameraCntl;  // will be null in LobbyScene
 
     #region Initialization
 
@@ -40,7 +43,7 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
     /// </summary>
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
-        //D.Log("{0}.InitializeOnInstance", GetType().Name);
+        //D.Log("{0}.InitializeOnInstance", DebugName);
     }
 
     /// <summary>
@@ -49,34 +52,39 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
     /// </summary>
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        //D.Log("{0}.InitializeOnAwake", GetType().Name);
+        //D.Log("{0}.InitializeOnAwake", DebugName);
         InitializeValuesAndReferences();
-        // 12.12.16 Moved to Start as Awake suddenly started being called earlier than before. This caused subscription to 
-        // InputMode change before BuildContent is ready -> ConstructCameraSectorText() calls SectorGrid before it runs Awake().
-        ////Subscribe();
+        if (_gameMgr.IsSceneLoading) {
+            D.Log("{0} is deferring initialization until scene is finished loading.", DebugName);
+            _gameMgr.sceneLoaded += SceneLoadedEventHandler;
+        }
+        else {
+            FinishInitialization();
+        }
     }
-
-    protected override void Start() {
-        base.Start();
-        Subscribe();
-    }
-
-    #endregion
 
     private void InitializeValuesAndReferences() {
         _gameMgr = GameManager.Instance;
     }
+
+    private void FinishInitialization() {
+        if (_gameMgr.CurrentSceneID == SceneID.GameScene) {
+            _mainCameraCntl = MainCameraControl.Instance;
+        }
+        Subscribe();
+    }
+
+    #endregion
 
     private void Subscribe() {
         _subscriptions = new List<IDisposable>();
         _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, PauseState>(gm => gm.PauseState, PauseStatePropChangedHandler));
         _subscriptions.Add(PlayerPrefsManager.Instance.SubscribeToPropertyChanged<PlayerPrefsManager, string>(ppm => ppm.QualitySetting, QualitySettingPropChangedHandler));
         if (_gameMgr.CurrentSceneID == SceneID.GameScene) {
-            _subscriptions.Add(MainCameraControl.Instance.SubscribeToPropertyChanged<MainCameraControl, MainCameraControl.CameraState>(cc => cc.CurrentState, CameraStatePropChangedHandler));
+            _subscriptions.Add(_mainCameraCntl.SubscribeToPropertyChanged<MainCameraControl, MainCameraControl.CameraState>(cc => cc.CurrentState, CameraStatePropChangedHandler));
             _subscriptions.Add(PlayerViews.Instance.SubscribeToPropertyChanged<PlayerViews, PlayerViewMode>(pv => pv.ViewMode, PlayerViewModePropChangedHandler));
             _subscriptions.Add(InputManager.Instance.SubscribeToPropertyChanged<InputManager, GameInputMode>(im => im.InputMode, InputModePropChangedHandler));
-
-            MainCameraControl.Instance.sectorIDChanged += CameraSectorIDChangedEventHandler;
+            _mainCameraCntl.sectorIDChanged += CameraSectorIDChangedEventHandler;
         }
     }
 
@@ -86,7 +94,7 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
         _debugInfoContent.AppendLine("PauseState: " + _gameMgr.PauseState.GetValueName());
         _debugInfoContent.AppendLine(ConstructQualityText());
         if (_gameMgr.CurrentSceneID == SceneID.GameScene) {
-            _debugInfoContent.AppendLine("CameraState: " + MainCameraControl.Instance.CurrentState.GetValueName());
+            _debugInfoContent.AppendLine("CameraState: " + _mainCameraCntl.CurrentState.GetValueName());
             _debugInfoContent.AppendLine("ViewMode: " + PlayerViews.Instance.ViewMode.GetValueName());
             _debugInfoContent.AppendLine(ConstructCameraSectorText());
             _debugInfoContent.AppendLine("InputMode: " + InputManager.Instance.InputMode.GetValueName());
@@ -100,7 +108,7 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
 
     private string ConstructCameraSectorText() {
         IntVector3 cameraSectorID;
-        if (MainCameraControl.Instance.TryGetSectorID(out cameraSectorID)) {
+        if (_mainCameraCntl.TryGetSectorID(out cameraSectorID)) {
             // camera is inside radius of universe
             return "Camera Sector: " + cameraSectorID.ToString();
         }
@@ -108,6 +116,11 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
     }
 
     #region Event and Property Change Handlers
+
+    private void SceneLoadedEventHandler(object sender, EventArgs e) {
+        FinishInitialization();
+        _gameMgr.sceneLoaded -= SceneLoadedEventHandler;
+    }
 
     // pulling value changes rather than having them pushed here avoids null reference issues when changing scenes
 
@@ -150,9 +163,9 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
     private void Unsubscribe() {
         _subscriptions.ForAll<IDisposable>(d => d.Dispose());
         _subscriptions.Clear();
-
-        if (MainCameraControl.Instance != null) {    // can be null if destroyed before this GO is destroyed
-            MainCameraControl.Instance.sectorIDChanged -= CameraSectorIDChangedEventHandler;
+        _gameMgr.sceneLoaded -= SceneLoadedEventHandler;
+        if (_mainCameraCntl != null) {
+            _mainCameraCntl.sectorIDChanged -= CameraSectorIDChangedEventHandler;
         }
     }
 

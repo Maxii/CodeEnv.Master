@@ -38,27 +38,40 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
 
     private static int _UniqueIDCount = Constants.One;
 
-    /// <summary>
-    /// Indicates whether the assignedShip is completely on its formation station.
-    /// <remarks>The ship is OnStation if its entire CollisionDetectionZone is 
-    /// within the FormationStation 'sphere' defined by Radius.</remarks>
-    /// <remarks>Algorithm boils down to: shipPositionDistanceFromStationCenter &lt; StationRadius -  ShipCollisionDetectionZoneRadius</remarks>
-    /// </summary>
-    public bool IsOnStation { get { return (Position - AssignedShip.Position).sqrMagnitude < Mathf.Pow(Radius - AssignedShip.CollisionDetectionZoneRadius, 2F); } }
-
-    /// <summary>
-    /// The distance away from being completely OnStation.
-    /// <remarks>Used for OnStation debugging.</remarks>
-    /// </summary>
-    public float __DistanceFromOnStation {
+    public string DebugName {
         get {
-            if (IsOnStation) { return Constants.ZeroF; }
-            return Vector3.Distance(Position, AssignedShip.Position) + AssignedShip.CollisionDetectionZoneRadius - Radius;
+            string nameText = AssignedShip != null ? AssignedShip.DebugName : "NoAssignedShip";
+            return NameFormat.Inject(nameText, GetType().Name);
         }
     }
 
     /// <summary>
-    /// The offset of this station from FleetCmd in local space.
+    /// Indicates whether the assignedShip is completely on its formation station.
+    /// <remarks>The ship is OnStation if its entire CollisionDetectionZone is 
+    /// within the FormationStation 'sphere' defined by Radius.</remarks>
+    /// </summary>
+    public bool IsOnStation {
+        ////get { return Vector3.SqrMagnitude(Position - AssignedShip.Position) < _maxStationToOnStationDistanceSqrd; }
+        get { return Vector3.SqrMagnitude(Position - AssignedShip.Position).IsLessThan(_maxStationToOnStationDistanceSqrd); }
+    }
+
+    /// <summary>
+    /// The distance to being completely OnStation.
+    /// <remarks>Used for OnStation debugging.</remarks>
+    /// </summary>
+    public float __DistanceToOnStation {
+        get {
+            float distanceFromOnStation = Vector3.Distance(Position, AssignedShip.Position) - _maxStationToOnStationDistance;
+            if (distanceFromOnStation < Constants.ZeroF) {
+                // ship is completely contained within the sphere with radius _maxStationToOnStationDistance
+                distanceFromOnStation = Constants.ZeroF;
+            }
+            return distanceFromOnStation;
+        }
+    }
+
+    /// <summary>
+    /// The offset of this station from FleetCmd in (FleetCmds?) local space.
     /// </summary>
     public Vector3 LocalOffset { get { return StationInfo.LocalOffset; } }
 
@@ -71,19 +84,34 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
     private IShip _assignedShip;
     public IShip AssignedShip {
         get { return _assignedShip; }
-        set { SetProperty<IShip>(ref _assignedShip, value, "AssignedShip", AssignedShipPropChangedHandler); }
+        set { SetProperty<IShip>(ref _assignedShip, value, "AssignedShip", AssignedShipPropChangedHandler, __AssignedShipPropChangingHandler); }
     }
 
     public float Radius { get { return TempGameValues.FleetFormationStationRadius; } }
 
+    private bool ShowDebugLog { get { return AssignedShip != null ? AssignedShip.ShowDebugLog : false; } }
+
     // Note: FormationStation's facing, as a child of FleetCmd, is always the same as FleetCmd's and Flagship's facing
 
+    private float _maxStationToOnStationDistanceSqrd;
+    /// <summary>
+    /// The maximum distance from the station's center to a point within the station's radius that qualifies
+    /// the ship as being 'OnStation'. Effectively the StationRadius - the ship's CollisionDetectionZoneRadius.
+    /// </summary>
+    private float _maxStationToOnStationDistance;
     private int _uniqueID;
 
     #region Event and Prop Change Handlers
 
+    private void __AssignedShipPropChangingHandler(IShip incomingShip) {
+        if (incomingShip == null) {
+            D.Log(ShowDebugLog, "{0}.AssignedShip is changing to null in Frame {1}.", DebugName, Time.frameCount);
+        }
+    }
+
     private void AssignedShipPropChangedHandler() {
         ValidateShipSize();
+        CalcMaxStationToOnStationDistanceValues();
     }
 
     private void StationInfoPropChangedHandler() {
@@ -91,23 +119,65 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
     }
 
     private void OnSpawned() {
-        //D.Log("{0}.OnSpawned() called.", DebugName);
+        //D.Log(ShowDebugLog, "{0}.OnSpawned() called.", DebugName);
         D.AssertEqual(Constants.Zero, _uniqueID);
+        D.AssertEqual(Constants.Zero, _maxStationToOnStationDistance);
+        D.AssertEqual(Constants.Zero, _maxStationToOnStationDistanceSqrd);
         InitializeDebugShowFleetFormationStation();
         _uniqueID = _UniqueIDCount;
         _UniqueIDCount++;
     }
 
     private void OnDespawned() {
-        //D.Log("{0}.OnDespawned() called.", DebugName);
+        //D.Log(ShowDebugLog, "{0}.OnDespawned() called.", DebugName);
         StationInfo = default(FormationStationSlotInfo);
         D.AssertNull(AssignedShip);
         CleanupDebugShowFleetFormationStation();
         D.AssertNotEqual(Constants.Zero, _uniqueID);
         _uniqueID = Constants.Zero;
+        _maxStationToOnStationDistance = Constants.ZeroF;
+        _maxStationToOnStationDistanceSqrd = Constants.ZeroF;
     }
 
     #endregion
+
+    /// <summary>
+    /// Returns <c>true</c> if AssignedShip is still making progress toward this station, <c>false</c>
+    /// if progress is no longer being made as the ship has arrived OnStation. If still making
+    /// progress, direction and distance to the station are valid.
+    /// </summary>
+    /// <param name="onStationDirection">The direction to being OnStation.</param>
+    /// <param name="onStationDistance">The distance to being OnStation.</param>
+    /// <returns></returns>
+    public bool TryCheckProgressTowardStation(out Vector3 onStationDirection, out float onStationDistance) {
+        D.AssertNotNull(AssignedShip, "{0}: AssignedShip is null. Frame {1}.".Inject(DebugName, Time.frameCount));
+        onStationDirection = Vector3.zero;
+        onStationDistance = Constants.ZeroF;
+        var vectorToOnStation = Position - AssignedShip.Position;
+        float distanceToStationSqrd = Vector3.SqrMagnitude(vectorToOnStation);
+        if (distanceToStationSqrd.IsLessThan(_maxStationToOnStationDistanceSqrd)) {
+            D.Assert(IsOnStation);
+            // ship has arrived
+            return false;
+        }
+
+        onStationDirection = vectorToOnStation.normalized;
+        onStationDistance = Mathf.Sqrt(distanceToStationSqrd) - _maxStationToOnStationDistance;
+        if (onStationDistance.IsGreaterThan(Constants.ZeroF)) {
+            // Effectively means onStationDistance > 0.0001 FloatEqualityPrecision
+            // 3.28.17 saw onStationDistance = -5E-05, aka -0.00005 which failed D.Assert(onStationDistance > Constants.ZeroF);
+            return true;
+        }
+        // ship has arrived
+        return false;
+    }
+
+    private void CalcMaxStationToOnStationDistanceValues() {
+        if (AssignedShip != null) {
+            _maxStationToOnStationDistance = Radius - AssignedShip.CollisionDetectionZoneRadius;
+            _maxStationToOnStationDistanceSqrd = _maxStationToOnStationDistance * _maxStationToOnStationDistance;
+        }
+    }
 
     private void ValidateShipSize() {
         if (AssignedShip != null) {
@@ -196,19 +266,11 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
         }
     }
 
-    public string DebugName {
-        get {
-            string nameText = AssignedShip != null ? AssignedShip.DebugName : "NoAssignedShip";
-            return NameFormat.Inject(nameText, GetType().Name);
-        }
-    }
-
     public bool IsMobile { get { return true; } }
 
     public Vector3 Position { get { return transform.position; } }
 
     public bool IsOperational { get { return AssignedShip != null; } }
-
 
     #endregion
 
@@ -216,9 +278,10 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
 
     public ApMoveDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, IShip ship) {
         D.Assert(AssignedShip.CollisionDetectionZoneRadius.ApproxEquals(tgtStandoffDistance));   // its the same ship
+        D.AssertApproxEqual(tgtStandoffDistance, ship.CollisionDetectionZoneRadius);
         float outerShellRadius = Radius - tgtStandoffDistance;   // entire shipCollisionDetectionZone is within the FormationStation 'sphere'
         float innerShellRadius = Constants.ZeroF;
-        return new ApMoveDestinationProxy(this, ship, tgtOffset, innerShellRadius, outerShellRadius);
+        return new ApMoveFormationStationProxy(this, ship, innerShellRadius, outerShellRadius);
     }
 
     #endregion

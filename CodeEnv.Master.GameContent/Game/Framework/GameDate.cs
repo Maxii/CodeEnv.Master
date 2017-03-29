@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
     /// Immutable, data container structure that holds the game date.
     /// <remarks>5.7.16: Now suitable for a dictionary key.</remarks>
     /// </summary>
-    public struct GameDate : IEquatable<GameDate> {
+    public struct GameDate : IEquatable<GameDate>, IComparable<GameDate> {
 
         public const string CalenderDateFormat = "{0}.{1:D3}.{2:00.}";  //= "{0}.{1:D3}.{2:D2}";
         public const string FullDateFormat = "{0}.{1:D3}.{2:00.0}";  //= "{0}.{1:D3}.{2:D2}";
@@ -213,6 +213,16 @@ namespace CodeEnv.Master.GameContent {
 
         public bool Equals(GameDate other) {
             return TotalHoursSinceGameStart == other.TotalHoursSinceGameStart;  // Can't use Approx if comply with "If equal, HashCode must return same value"
+        }
+
+        #endregion
+
+        #region IComparable<GameDate> Members
+
+        public int CompareTo(GameDate other) {
+            if (this < other) { return -1; }
+            if (this > other) { return 1; }
+            return 0;
         }
 
         #endregion

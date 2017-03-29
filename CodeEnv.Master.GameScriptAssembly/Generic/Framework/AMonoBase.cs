@@ -131,7 +131,9 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     /// </summary>
     protected virtual void OnDestroy() {
         //LogEvent();
-        Cleanup();
+        if (!IsApplicationQuiting) {
+            Cleanup();
+        }
     }
 
     /// <summary>

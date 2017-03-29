@@ -99,6 +99,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     public IList<AUnitElementItem> Elements { get; private set; }
 
+    public ISensorRangeMonitor SRSensorMonitor { get; private set; }
+
     public IList<ISensorRangeMonitor> SensorRangeMonitors { get; private set; }
 
     public new CmdCameraStat CameraStat {
@@ -111,6 +113,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     private IFtlDampenerRangeMonitor _ftlDampenerRangeMonitor;
     private ITrackingWidget _trackingLabel;
+    private Job _deferRedAlertStanddownAssessmentJob;
     private FixedJoint _hqJoint;
 
     #region Initialization
@@ -135,6 +138,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
         _subscriptions.Add(Data.SubscribeToPropertyChanged<AUnitCmdData, Formation>(d => d.UnitFormation, UnitFormationPropChangedHandler));
+        _subscriptions.Add(Data.SubscribeToPropertyChanged<AUnitCmdData, AlertStatus>(d => d.AlertStatus, AlertStatusPropChangedHandler));
     }
 
     // formations are now generated when an element is added and/or when a HQ element is assigned
@@ -257,6 +261,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         }
         if (!IsOperational) {
             // avoid the following extra work if adding during Cmd construction
+            D.Assert(!IsDead);
             D.AssertNull(HQElement);    // During Cmd construction, HQElement will be designated AFTER all Elements are
             return;                         // added resulting in _formationMgr adding all elements into the formation at once
         }
@@ -277,7 +282,11 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
             if (!SensorRangeMonitors.Contains(monitor)) {
                 // only need to record and setup range monitors once. The same monitor can have more than 1 sensor
                 SensorRangeMonitors.Add(monitor);
-                monitor.enemyTargetsInRange += EnemyTargetsInSensorRangeChangedEventHandler;
+                monitor.enemyCmdsInRange += EnemyCmdsInSensorRangeChangedEventHandler;
+                monitor.warEnemyElementsInRange += WarEnemyElementsInSensorRangeChangedEventHandler;
+                if (monitor.RangeCategory == RangeCategory.Short) {
+                    SRSensorMonitor = monitor;
+                }
             }
         });
     }
@@ -295,7 +304,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
             bool isRangeMonitorStillInUse = monitor.Remove(sensor);
 
             if (!isRangeMonitorStillInUse) {
-                monitor.enemyTargetsInRange -= EnemyTargetsInSensorRangeChangedEventHandler;
+                monitor.enemyCmdsInRange -= EnemyCmdsInSensorRangeChangedEventHandler;
+                monitor.warEnemyElementsInRange -= WarEnemyElementsInSensorRangeChangedEventHandler;
                 monitor.Reset();    // OPTIMIZE either reset or destroy, not both
                 SensorRangeMonitors.Remove(monitor);
                 //D.Log(ShowDebugLog, "{0} is destroying unused {1} as a result of removing {2}.", DebugName, typeof(SensorRangeMonitor).Name, sensor.Name);
@@ -311,17 +321,22 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
         DetachSensorsFromMonitors(element.Data.Sensors);
         if (!IsOperational) {
-            return; // avoid the following work if removing during startup
+            // avoid the following work if removing during startup
+            D.Assert(!IsDead);
+            return;
         }
         if (Elements.Count == Constants.Zero) {
             if (Data.UnitHealth > Constants.ZeroF) {
-                D.Error("{0} has UnitHealth of {1:0.0000} remaining.", DebugName, Data.UnitHealth);
+                D.Error("{0} has UnitHealth of {1} remaining.", DebugName, Data.UnitHealth);
             }
             IsOperational = false;  // tell Cmd its dead
+            D.Assert(IsDead);
             return;
         }
         AssessIcon();
-        FormationMgr.HandleElementRemoval(element);
+        if (!element.IsHQ) { // if IsHQ, restoring slot will be handled when HQElement changes
+            FormationMgr.RestoreSlotToAvailable(element);
+        }
     }
 
     /// <summary>
@@ -340,15 +355,42 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         return false;
     }
 
-    public void HandleSubordinateElementDeath(IUnitElement deadSubordinateElement) {
+    /// <summary>
+    /// Indicates whether this Unit is in the process of attacking <c>unit</c>.
+    /// </summary>
+    /// <param name="unitCmd">The unit command potentially under attack by this Unit.</param>
+    /// <returns></returns>
+    public abstract bool IsAttacking(IUnitCmd_Ltd unitCmd);
+
+    internal void HandleSubordinateElementDeath(IUnitElement deadSubordinateElement) {
         // No ShowDebugLog as I always want this to report except when it doesn't compile
-        D.LogBold("{0} acknowledging {1} has been lost.", DebugName, deadSubordinateElement.DebugName);
+        if (deadSubordinateElement.IsHQ) {
+            D.LogBold("{0} acknowledging {1} has been lost.", DebugName, deadSubordinateElement.DebugName);
+        }
+        else {
+            D.Log("{0} acknowledging {1} has been lost.", DebugName, deadSubordinateElement.DebugName);
+        }
         RemoveElement(deadSubordinateElement as AUnitElementItem);
         // state machine notification is after removal so attempts to acquire a replacement don't come up with same element
-        if (IsOperational) {    // no point in notifying Cmd's Dead state of the subordinate element's death that killed it
-            UponSubordinateElementDeath(deadSubordinateElement as AUnitElementItem);
+        if (IsDead) {
+            return;    // no point in notifying Cmd's Dead state of the subordinate element's death that killed it
         }
+        UponSubordinateElementDeath(deadSubordinateElement as AUnitElementItem);
     }
+    //public void HandleSubordinateElementDeath(IUnitElement deadSubordinateElement) {
+    //    // No ShowDebugLog as I always want this to report except when it doesn't compile
+    //    if (deadSubordinateElement.IsHQ) {
+    //        D.LogBold("{0} acknowledging {1} has been lost.", DebugName, deadSubordinateElement.DebugName);
+    //    }
+    //    else {
+    //        D.Log("{0} acknowledging {1} has been lost.", DebugName, deadSubordinateElement.DebugName);
+    //    }
+    //    RemoveElement(deadSubordinateElement as AUnitElementItem);
+    //    // state machine notification is after removal so attempts to acquire a replacement don't come up with same element
+    //    if (IsOperational) {    // no point in notifying Cmd's Dead state of the subordinate element's death that killed it
+    //        UponSubordinateElementDeath(deadSubordinateElement as AUnitElementItem);
+    //    }
+    //}
 
     private void AttachCmdToHQElement() {
         if (_hqJoint == null) {
@@ -387,21 +429,68 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     /// <summary>
     /// Assesses the alert status based on the proximity of enemy elements detected by sensors.
     /// </summary>
-    protected void AssessAlertStatus() {
+    /// <param name="wasAssessmentDeferred">if <c>true</c> this is a deferred assessment of standing down from RedAlert.</param>
+    protected void AssessAlertStatus(bool wasAssessmentDeferred = false) {
+        if (!wasAssessmentDeferred) {
+            // normal assessment
+            if (Data.AlertStatus == AlertStatus.Red) {
 
-        Profiler.BeginSample("AssessAlertStatus LINQ IEnumerables", gameObject);
-        var sensorRangeCatsDetectingEnemy = SensorRangeMonitors.Where(srm => srm.AreEnemyTargetsInRange).Select(srm => srm.RangeCategory);
-        var sensorRangeCatsDetectingWarEnemy = SensorRangeMonitors.Where(srm => srm.AreEnemyWarTargetsInRange).Select(srm => srm.RangeCategory);
-        Profiler.EndSample();
+                if (_deferRedAlertStanddownAssessmentJob != null) {
+                    // deferred assessment is already queued 
+                    if (SRSensorMonitor.AreWarEnemyCmdsInRange || SRSensorMonitor.AreWarEnemyElementsInRange) {
+                        // A deferred assessment is queued but more RedAlert criteria was detected so kill 
+                        // the deferred assessment in case another loss of RedAlert criteria wants to start another deferred assessment. 
+                        KillDeferRedAlertStanddownAssessmentJob();
+                        // No reason to reassess as we already know we should be at RedAlert
+                    }
+                    // ...else already have assessment queued so wait for it
+                    return;
+                }
 
-        if (sensorRangeCatsDetectingWarEnemy.Contains(RangeCategory.Short)) {
+                D.AssertNull(_deferRedAlertStanddownAssessmentJob);
+                // Already at RedAlert and no deferred assessment is underway, so consider deferring
+                if (!SRSensorMonitor.AreWarEnemyCmdsInRange) {
+                    // We would normally stand down RedAlert so be cautious and defer assessment
+                    D.Log(ShowDebugLog, "{0} is considering stand down of {1} from {2}.",
+                        DebugName, typeof(AlertStatus).Name, Data.AlertStatus.GetValueName());
+                    string jobName = "DelayStandDownRedAlertJob";
+                    _deferRedAlertStanddownAssessmentJob = _jobMgr.WaitForHours(5F, jobName, (jobWasKilled) => {    // HACK
+                        if (jobWasKilled) {
+                            // Killed because more WarEnemy elements were detected at Short Range
+                        }
+                        else {
+                            _deferRedAlertStanddownAssessmentJob = null;
+                            AssessAlertStatus(wasAssessmentDeferred: true);
+                        }
+                    });
+                }
+                // ...else at RedAlert AND conditions don't allow a stand down so no point in assessing
+
+                return; // The only way to stand down from RedAlert is thru deferred assessment
+            }
+            // not at RedAlert so continue with normal assessment
+        }
+        else {
+            // this assessment was deferred so we must be at RedAlert
+            D.AssertEqual(AlertStatus.Red, Data.AlertStatus);
+            D.Log(ShowDebugLog, "{0} is standing down {1} from {2}.", DebugName, typeof(AlertStatus).Name, Data.AlertStatus.GetValueName());
+        }
+
+        // Do the assessment
+        if (SRSensorMonitor.AreWarEnemyCmdsInRange || SRSensorMonitor.AreWarEnemyElementsInRange) {
             Data.AlertStatus = AlertStatus.Red;
         }
-        else if (sensorRangeCatsDetectingWarEnemy.Contains(RangeCategory.Medium) || sensorRangeCatsDetectingEnemy.Contains(RangeCategory.Short)) {
+        else if (SRSensorMonitor.AreEnemyCmdsInRange) {
             Data.AlertStatus = AlertStatus.Yellow;
         }
         else {
-            Data.AlertStatus = AlertStatus.Normal;
+            var mrSensorMonitor = SensorRangeMonitors.SingleOrDefault(srm => srm.RangeCategory == RangeCategory.Medium);
+            if (mrSensorMonitor != null && mrSensorMonitor.AreWarEnemyCmdsInRange) {
+                Data.AlertStatus = AlertStatus.Yellow;
+            }
+            else {
+                Data.AlertStatus = AlertStatus.Normal;
+            }
         }
     }
 
@@ -459,11 +548,18 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         UponAwarenessOfFleetChanged(fleet, isAware);
     }
 
-    private void EnemyTargetsInSensorRangeChangedEventHandler(object sender, EventArgs e) {
-        HandleEnemyTargetsInSensorRangeChanged();
+    private void EnemyCmdsInSensorRangeChangedEventHandler(object sender, EventArgs e) {
+        HandleEnemyCmdsInSensorRangeChanged();
     }
 
-    protected abstract void HandleEnemyTargetsInSensorRangeChanged();
+    protected abstract void HandleEnemyCmdsInSensorRangeChanged();
+
+    private void WarEnemyElementsInSensorRangeChangedEventHandler(object sender, EventArgs e) {
+        HandleWarEnemyElementsInSensorRangeChanged();
+    }
+
+    protected abstract void HandleWarEnemyElementsInSensorRangeChanged();
+
 
     /// <summary>
     /// Handles a change in relations between players.
@@ -499,23 +595,31 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     protected virtual void HandleHQElementChanging(AUnitElementItem newHQElement) {
         Utility.ValidateNotNull(newHQElement);
-        var previousHQElement = HQElement;
-        if (previousHQElement != null) {
+        if (!Elements.Contains(newHQElement)) {
+            // the player will typically select/change the HQ element of a Unit from the elements already present in the unit
+            D.Error("{0} assigned HQElement {1} that is not already present in Unit.", DebugName, newHQElement.DebugName);
+        }
+
+        if (IsOperational) {
+            // runtime assignment of HQ
+            var previousHQElement = HQElement;
+            D.AssertNotNull(previousHQElement);
+            FormationMgr.RestoreSlotToAvailable(previousHQElement); // FormationMgr needs to know IsHQ to restore right slot
             previousHQElement.IsHQ = false;
-            // don't remove previousHQElement.ShowDebugLog if ShowHQDebugLog as its probably dieing
+            if (!previousHQElement.IsOperational) {
+                return; // no reason to proceed further if previousHQElement is dead
+            }
+            FormationMgr.AddAndPositionNonHQElement(previousHQElement);
+            previousHQElement.HandleChangeOfHQStatusCompleted();
         }
         else {
             // first assignment of HQ
-            D.Assert(!IsOperational);
+            D.Assert(!IsDead);
+            D.AssertNull(HQElement);
             // OPTIMIZE Just a FYI warning as formations currently assume this
             if (newHQElement.transform.rotation != Quaternion.identity) {
                 D.Warn("{0} first HQ Element rotation = {1}.", DebugName, newHQElement.transform.rotation);
             }
-        }
-        if (!Elements.Contains(newHQElement)) {
-            // the player will typically select/change the HQ element of a Unit from the elements already present in the unit
-            D.Warn("{0} assigned HQElement {1} that is not already present in Unit.", DebugName, newHQElement.DebugName);
-            AddElement(newHQElement);
         }
     }
 
@@ -528,9 +632,19 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         Data.HQElementData = HQElement.Data;    // CmdData.Radius now returns Radius of new HQElement
         //D.Log(ShowDebugLog, "{0}'s HQElement is now {1}. Radius = {2:0.##}.", Data.ParentName, HQElement.Data.Name, Data.Radius);
         AttachCmdToHQElement(); // needs to occur before formation changed
-        FormationMgr.RepositionAllElementsInFormation(Elements.Cast<IUnitElement>().ToList());
+
         if (DisplayMgr != null) {
             DisplayMgr.ResizePrimaryMesh(Radius);
+        }
+
+        if (IsOperational) {
+            // runtime so previous HQ has had its formation slot already restored to available
+            FormationMgr.AddAndPositionHQElement(HQElement);
+            HQElement.HandleChangeOfHQStatusCompleted();
+            UponHQElementChanged();
+        }
+        else {
+            FormationMgr.RepositionAllElementsInFormation(Elements.Cast<IUnitElement>().ToList());
         }
     }
 
@@ -584,6 +698,10 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         FormationMgr.RepositionAllElementsInFormation(Elements.Cast<IUnitElement>().ToList());
     }
 
+    private void AlertStatusPropChangedHandler() {
+        UponAlertStatusChanged();
+    }
+
     protected override void HandleIsDiscernibleToUserChanged() {
         base.HandleIsDiscernibleToUserChanged();
         AssessShowTrackingLabel();
@@ -607,6 +725,50 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         base.PreconfigureCurrentState();
         UponPreconfigureState();
     }
+
+    /// <summary>
+    /// Tries to get the UnitCmds found within the range of SRSensors.
+    /// <remarks>Not currently used. A candidate for determining which direction to flee or which Cmd to attack.</remarks>
+    /// </summary>
+    /// <param name="enemyUnitCmds">The enemy unit Commands.</param>
+    /// <param name="includeColdWarEnemies">if set to <c>true</c> [include cold war enemies].</param>
+    /// <returns></returns>
+    protected bool TryGetEnemyUnitCmds(out HashSet<IUnitCmd_Ltd> enemyUnitCmds, bool includeColdWarEnemies = false) {
+        bool areEnemyCmdsDetectedBySRSensors = includeColdWarEnemies ? SRSensorMonitor.AreEnemyCmdsInRange : SRSensorMonitor.AreWarEnemyCmdsInRange;
+        // RedAlert can continue after warTgts leave SRSensor range
+        if (areEnemyCmdsDetectedBySRSensors) {
+            enemyUnitCmds = includeColdWarEnemies ? SRSensorMonitor.EnemyCmdsDetected : SRSensorMonitor.WarEnemyCmdsDetected;
+            return true;
+        }
+        enemyUnitCmds = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Tries to determine the predominant direction that enemy elements within SRSensor range can be found.
+    /// <remarks>If true, the direction returned is the mean of all the directions where enemy elements can be found.</remarks>
+    /// <remarks>IMPROVE use a weighting that reflects the firepower of each element.</remarks>
+    /// <remarks>Not currently used. A candidate for determining which direction to flee.</remarks>
+    /// </summary>
+    /// <param name="enemyDirection">The enemy direction.</param>
+    /// <param name="includeColdWarEnemies">if set to <c>true</c> [include cold war enemies].</param>
+    /// <returns></returns>
+    protected bool TryGetPredominantEnemyDirection(out Vector3 enemyDirection, bool includeColdWarEnemies = false) {
+        bool areEnemyElementsDetectedBySRSensors = includeColdWarEnemies ? SRSensorMonitor.AreEnemyElementsInRange : SRSensorMonitor.AreWarEnemyElementsInRange;
+        // RedAlert can continue after warTgts leave SRSensor range
+        if (areEnemyElementsDetectedBySRSensors) {
+            var srEnemyElements = includeColdWarEnemies ? SRSensorMonitor.EnemyElementsDetected : SRSensorMonitor.WarEnemyElementsDetected;
+            D.Assert(srEnemyElements.Any());
+
+            var srEnemyElementLocations = srEnemyElements.Select(e => e.Position);
+            enemyDirection = Position.FindMeanDirectionTo(srEnemyElementLocations);
+            return true;
+        }
+        enemyDirection = Vector3.zero;
+        return false;
+    }
+
+
 
     protected void Dead_ExitState() {
         LogEventWarning();
@@ -649,11 +811,11 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     private void UponFsmTgtOwnerChgd(IItem_Ltd fsmTgt) { RelayToCurrentState(fsmTgt); }
 
-    private void UponAwarenessOfFleetChanged(IFleetCmd_Ltd fleet, bool isAware) {
-        RelayToCurrentState(fleet, isAware);
-    }
+    private void UponAwarenessOfFleetChanged(IFleetCmd_Ltd fleet, bool isAware) { RelayToCurrentState(fleet, isAware); }
 
+    private void UponHQElementChanged() { RelayToCurrentState(); }  // Called after Elements have been notified of HQChangeCompletion
 
+    private void UponAlertStatusChanged() { RelayToCurrentState(); }
 
     #endregion
 
@@ -778,11 +940,19 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     #endregion
 
+    private void KillDeferRedAlertStanddownAssessmentJob() {
+        if (_deferRedAlertStanddownAssessmentJob != null) {
+            _deferRedAlertStanddownAssessmentJob.Kill();
+            _deferRedAlertStanddownAssessmentJob = null;
+        }
+    }
+
     #region Cleanup
 
     protected override void Cleanup() {
         base.Cleanup();
         CleanupTrackingLabel();
+        KillDeferRedAlertStanddownAssessmentJob();
     }
 
     protected override void Unsubscribe() {

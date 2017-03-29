@@ -36,7 +36,7 @@ public class SFXManager : AMonoSingleton<SFXManager>, ISFXManager {
     /// </summary>
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
-        References.SFXManager = Instance;
+        GameReferences.SFXManager = Instance;
     }
 
     /// <summary>

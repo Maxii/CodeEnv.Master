@@ -27,7 +27,17 @@ namespace CodeEnv.Master.GameContent {
 
         Vector3 LocalOffset { get; }
 
-        float __DistanceFromOnStation { get; }
+        float __DistanceToOnStation { get; }
+
+        /// <summary>
+        /// Returns <c>true</c> if AssignedShip is still making progress toward this station, <c>false</c>
+        /// if progress is no longer being made as the ship has arrived OnStation. If still making
+        /// progress, direction and distance to the station are valid.
+        /// </summary>
+        /// <param name="onStationDirection">The direction to being OnStation.</param>
+        /// <param name="onStationDistance">The distance to being OnStation.</param>
+        /// <returns></returns>
+        bool TryCheckProgressTowardStation(out Vector3 onStationDirection, out float onStationDistance);
 
 
     }

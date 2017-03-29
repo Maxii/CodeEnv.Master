@@ -65,6 +65,7 @@ public abstract class AGuiEnumSlider<E> : ATextTooltip where E : struct {
             _slider.value = _orderedSliderStepValues[_orderedSliderStepValues.Length - 1];
             D.Warn("No PlayerPrefsManager property found for {0}, so initializing slider to : {1}.".Inject(typeof(E), _slider.value));
         }
+        _slider.ForceUpdate();  // 3.23.17 Added to fix GameSpeed slider thumb not initializing to center position
     }
 
     private void Subscribe() {

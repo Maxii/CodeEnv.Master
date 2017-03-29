@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
 
         bool IsCloseOrbitAllowedBy(Player player);
 
-        void AssumeCloseOrbit(IShip_Ltd ship, FixedJoint shipOrbitJoint);
+        void AssumeCloseOrbit(IShip_Ltd ship, FixedJoint shipOrbitJoint, float __distanceUponInitialArrival);
 
         bool IsInCloseOrbit(IShip_Ltd ship);
 

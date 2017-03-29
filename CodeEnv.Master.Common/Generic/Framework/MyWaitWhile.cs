@@ -33,7 +33,7 @@ namespace CodeEnv.Master.Common {
 
         public override bool keepWaiting {
             get {
-                if (_toKill) {
+                if (IsKilled) {
                     return false;
                 }
                 if (IsPaused) {

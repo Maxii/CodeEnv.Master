@@ -16,12 +16,6 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
-    using CodeEnv.Master.GameContent;
     using UnityEngine;
 
     /// <summary>
@@ -53,6 +47,39 @@ namespace CodeEnv.Master.GameContent {
             return new GameDate(maxDurationFromCurrentDate);
         }
 
+        public static int __GetApproxFleetQty(GameSettings gameSettings) {
+            if (gameSettings.__UseDebugCreatorsOnly) {
+                return 3;   // HACK
+            }
+            int userFleetQty = gameSettings.UserStartLevel.FleetStartQty();
+            int aiFleetQty = 0;
+            var aiStartLevels = gameSettings.AIPlayersStartLevels;
+            foreach (var aiStartLevel in aiStartLevels) {
+                aiFleetQty += aiStartLevel.FleetStartQty();
+            }
+            if (gameSettings.__DeployAdditionalAICreators) {
+                int aiPlayerQty = aiStartLevels.Length;
+                aiFleetQty += aiPlayerQty * gameSettings.__AdditionalFleetCreatorQty;
+            }
+            return userFleetQty + aiFleetQty;
+        }
+
+        public static int __GetApproxBaseQty(GameSettings gameSettings) {
+            if (gameSettings.__UseDebugCreatorsOnly) {
+                return 4;   // HACK
+            }
+            int userBaseQty = gameSettings.UserStartLevel.StarbaseStartQty() + gameSettings.UserStartLevel.SettlementStartQty();
+            int aiBaseQty = 0;
+            var aiStartLevels = gameSettings.AIPlayersStartLevels;
+            foreach (var aiStartLevel in aiStartLevels) {
+                aiBaseQty += aiStartLevel.StarbaseStartQty() + aiStartLevel.SettlementStartQty();
+            }
+            if (gameSettings.__DeployAdditionalAICreators) {
+                int aiPlayerQty = aiStartLevels.Length;
+                aiBaseQty += aiPlayerQty * gameSettings.__AdditionalStarbaseCreatorQty + aiPlayerQty * gameSettings.__AdditionalSettlementCreatorQty;
+            }
+            return userBaseQty + aiBaseQty;
+        }
 
     }
 }

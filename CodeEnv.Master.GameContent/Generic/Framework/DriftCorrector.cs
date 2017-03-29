@@ -75,8 +75,8 @@ namespace CodeEnv.Master.GameContent {
             ClientName = optionalClientName;
             _transform = transform;
             _rigidbody = rigidbody;
-            _gameMgr = References.GameManager;
-            _jobMgr = References.JobManager;
+            _gameMgr = GameReferences.GameManager;
+            _jobMgr = GameReferences.JobManager;
         }
 
         public void Engage() {

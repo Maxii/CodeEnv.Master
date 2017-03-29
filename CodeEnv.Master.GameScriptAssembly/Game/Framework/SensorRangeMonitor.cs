@@ -43,36 +43,155 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
     /// </summary>
     public event EventHandler enemyTargetsInRange;
 
-    private bool _areEnemyTargetsInRange;
+    /// <summary>
+    /// Occurs when AreEnemyCmdsInRange changes. Only fires on a change
+    /// in the property state, not when the qty of enemy cmds in range changes.
+    /// </summary>
+    public event EventHandler enemyCmdsInRange;
+
+    /// <summary>
+    /// Occurs when AreWarEnemyElementsInRange changes. Only fires on a change
+    /// in the property state, not when the qty of war enemy elements in range changes.
+    /// </summary>
+    public event EventHandler warEnemyElementsInRange;
+
     /// <summary>
     /// Indicates whether there are any enemy targets in range.
+    /// <remarks>Not subscribable.</remarks>
     /// </summary>
-    public bool AreEnemyTargetsInRange {
-        get { return _areEnemyTargetsInRange; }
-        private set { SetProperty<bool>(ref _areEnemyTargetsInRange, value, "AreEnemyTargetsInRange", AreEnemyTargetsInRangePropChangedHandler); }
-    }
+    public bool AreEnemyTargetsInRange { get; private set; }
+
+    /// <summary>
+    /// Indicates whether there are any enemy UnitElements in range.
+    /// <remarks>Not subscribable.</remarks>
+    /// </summary>
+    public bool AreEnemyElementsInRange { get; private set; }
+
+    /// <summary>
+    /// Indicates whether there are any enemy UnitCmds in range.
+    /// <remarks>Not subscribable.</remarks>
+    /// </summary>
+    public bool AreEnemyCmdsInRange { get; private set; }
+
+    /// <summary>
+    /// Indicates whether there are any enemy 'Bombardable' Planetoids in range.
+    /// <remarks>Not subscribable.</remarks>
+    /// </summary>
+    public bool AreEnemyPlanetoidsInRange { get; private set; }
 
     /// <summary>
     /// Indicates whether there are any enemy targets in range where DiplomaticRelationship.War exists.
-    /// <remarks>Not subscribable as AreEnemyTargetsInRange could be incorrect when it fires.</remarks>
+    /// <remarks>Not subscribable.</remarks>
     /// </summary>
-    public bool AreEnemyWarTargetsInRange { get; private set; }
+    public bool AreWarEnemyTargetsInRange { get; private set; }
+
+    /// <summary>
+    /// Indicates whether there are any enemy UnitElements in range where DiplomaticRelationship.War exists.
+    /// <remarks>Not subscribable.</remarks>
+    /// </summary>
+    public bool AreWarEnemyElementsInRange { get; private set; }
+
+    /// <summary>
+    /// Indicates whether there are any enemy UnitCmds in range where DiplomaticRelationship.War exists.
+    /// <remarks>Not subscribable.</remarks>
+    /// </summary>
+    public bool AreWarEnemyCmdsInRange { get; private set; }
+
+    /// <summary>
+    /// Indicates whether there are any enemy 'Bombardable' Planetoids in range where DiplomaticRelationship.War exists.
+    /// <remarks>Not subscribable.</remarks>
+    /// </summary>
+    public bool AreWarEnemyPlanetoidsInRange { get; private set; }
 
     public new IUnitCmd ParentItem {
         get { return base.ParentItem as IUnitCmd; }
         set { base.ParentItem = value as IUnitCmd; }
     }
 
+    private HashSet<IElementAttackable> _enemyTargetsDetected = new HashSet<IElementAttackable>();
     /// <summary>
-    /// All the detected enemy targets that are in range of the sensors of this monitor.
+    /// A copy of all the detected enemy targets that are in range of the sensors of this monitor.
+    /// <remarks>Can contain both ColdWar and War enemies.</remarks>
+    /// <remarks>TODO 3.27.17 Not currently used as planetoids no longer IElementAttackable, aka Targets
+    /// and Elements sets always the same. Will be used again once other enemy owned Items besides elements can 
+    /// be fired on by 'normal' (not Bombard type) weapons.</remarks>
+    /// </summary>
+    public HashSet<IElementAttackable> EnemyTargetsDetected {
+        get { return new HashSet<IElementAttackable>(_enemyTargetsDetected); }
+    }
+
+    private HashSet<IUnitElement_Ltd> _enemyElementsDetected = new HashSet<IUnitElement_Ltd>();
+    /// <summary>
+    /// A copy of all the detected enemy UnitElements that are in range of the sensors of this monitor.
     /// <remarks>Can contain both ColdWar and War enemies.</remarks>
     /// </summary>
-    public HashSet<IElementAttackable> EnemyTargetsDetected { get; private set; }
+    public HashSet<IUnitElement_Ltd> EnemyElementsDetected {
+        get { return new HashSet<IUnitElement_Ltd>(_enemyElementsDetected); }
+    }
 
+    private HashSet<IUnitCmd_Ltd> _enemyCmdsDetected = new HashSet<IUnitCmd_Ltd>();
     /// <summary>
-    /// All the detected but unknown relationship targets that are in range of the sensors of this monitor.
+    /// A copy of all the detected enemy UnitCmds that are in range of the sensors of this monitor.
+    /// <remarks>Can contain both ColdWar and War enemies.</remarks>
+    /// <remarks>While a UnitCmd is not itself detectable, its HQElement is.</remarks>
     /// </summary>
-    public HashSet<IElementAttackable> UnknownTargetsDetected { get; private set; }
+    public HashSet<IUnitCmd_Ltd> EnemyCmdsDetected {
+        get { return new HashSet<IUnitCmd_Ltd>(_enemyCmdsDetected); }
+    }
+
+    private HashSet<IPlanetoid_Ltd> _enemyPlanetoidsDetected = new HashSet<IPlanetoid_Ltd>();
+    /// <summary>
+    /// A copy of all the detected enemy 'Bombardable' Planetoids that are in range of the sensors of this monitor.
+    /// </summary>
+    public HashSet<IPlanetoid_Ltd> EnemyPlanetoidsDetected {
+        get { return new HashSet<IPlanetoid_Ltd>(_enemyPlanetoidsDetected); }
+    }
+
+
+    private HashSet<IElementAttackable> _warEnemyTargetsDetected = new HashSet<IElementAttackable>();
+    /// <summary>
+    /// A copy of all the detected war enemy targets that are in range of the sensors of this monitor.
+    /// <remarks>TODO 3.27.17 Not currently used as planetoids no longer IElementAttackable, aka Targets
+    /// and Elements sets always the same. Will be used again once other enemy owned Items besides elements can 
+    /// be fired on by 'normal' (not Bombard type) weapons.</remarks>
+    /// </summary>
+    public HashSet<IElementAttackable> WarEnemyTargetsDetected {
+        get { return new HashSet<IElementAttackable>(_warEnemyTargetsDetected); }
+    }
+
+    private HashSet<IUnitElement_Ltd> _warEnemyElementsDetected = new HashSet<IUnitElement_Ltd>();
+    /// <summary>
+    /// A copy of all the detected war enemy UnitElements that are in range of the sensors of this monitor.
+    /// </summary>
+    public HashSet<IUnitElement_Ltd> WarEnemyElementsDetected {
+        get { return new HashSet<IUnitElement_Ltd>(_warEnemyElementsDetected); }
+    }
+
+    private HashSet<IUnitCmd_Ltd> _warEnemyCmdsDetected = new HashSet<IUnitCmd_Ltd>();
+    /// <summary>
+    /// A copy of all the detected war enemy UnitCmds that are in range of the sensors of this monitor.
+    /// <remarks>While a UnitCmd is not itself detectable, its HQElement is.</remarks>
+    /// </summary>
+    public HashSet<IUnitCmd_Ltd> WarEnemyCmdsDetected {
+        get { return new HashSet<IUnitCmd_Ltd>(_warEnemyCmdsDetected); }
+    }
+
+    private HashSet<IPlanetoid_Ltd> _warEnemyPlanetoidsDetected = new HashSet<IPlanetoid_Ltd>();
+    /// <summary>
+    /// A copy of all the detected war enemy 'Bombardable' Planetoids that are in range of the sensors of this monitor.
+    /// </summary>
+    public HashSet<IPlanetoid_Ltd> WarEnemyPlanetoidsDetected {
+        get { return new HashSet<IPlanetoid_Ltd>(_warEnemyPlanetoidsDetected); }
+    }
+
+
+    private HashSet<IElementAttackable> _unknownTargetsDetected = new HashSet<IElementAttackable>();
+    /// <summary>
+    /// A copy of all the detected but unknown relationship targets that are in range of the sensors of this monitor.
+    /// </summary>
+    public HashSet<IElementAttackable> UnknownTargetsDetected {
+        get { return new HashSet<IElementAttackable>(_unknownTargetsDetected); }
+    }
 
     protected override LayerMask BulkDetectionLayerMask { get { return DetectableObjectLayerMask; } }
 
@@ -80,7 +199,6 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
 
     protected override void InitializeValuesAndReferences() {
         base.InitializeValuesAndReferences();
-        EnemyTargetsDetected = new HashSet<IElementAttackable>();
         // UnknownTargetsDetected is lazy instantiated as unlikely to be needed for short/medium range sensors
         InitializeDebugShowSensor();
     }
@@ -124,12 +242,25 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
             attackableDetectedItem.ownerChanged += DetectedItemOwnerChangedEventHandler;
             attackableDetectedItem.deathOneShot += DetectedItemDeathEventHandler;
             attackableDetectedItem.infoAccessChgd += DetectedItemInfoAccessChangedEventHandler;
+
+            // Can't subscribe/unsubscribe just enemyElements as they can change enemy status
+            var element = attackableDetectedItem as IUnitElement_Ltd;
+            if (element != null) {
+                bool isSubscribed = __AttemptElementIsHqChgdSubscription(element, toSubscribe: true);
+                D.Assert(isSubscribed);
+                // OPTIMIZE element.isHQChanged += ElementIsHQChangedHandler;
+            }
             Profiler.EndSample();
 
             AssessKnowledgeOfItemAndAdjustRecord(attackableDetectedItem);
         }
     }
 
+    /// <summary>
+    /// Handles the detected object removed.
+    /// <remarks>Only called when lostDetectionItem has died or has moved outside of monitor range.</remarks>
+    /// </summary>
+    /// <param name="lostDetectionItem">The lost detection item.</param>
     protected override void HandleDetectedObjectRemoved(ISensorDetectable lostDetectionItem) {
         var attackableLostDetectionItem = lostDetectionItem as IElementAttackable;
         if (attackableLostDetectionItem != null) {
@@ -138,6 +269,14 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
             attackableLostDetectionItem.ownerChanged -= DetectedItemOwnerChangedEventHandler;
             attackableLostDetectionItem.deathOneShot -= DetectedItemDeathEventHandler;
             attackableLostDetectionItem.infoAccessChgd -= DetectedItemInfoAccessChangedEventHandler;
+
+            // Can't subscribe/unsubscribe just enemyElements as they can change enemy status
+            var element = lostDetectionItem as IUnitElement_Ltd;
+            if (element != null) {
+                bool isUnsubscribed = __AttemptElementIsHqChgdSubscription(element, toSubscribe: false);
+                D.Assert(isUnsubscribed);
+                // OPTIMIZE element.isHQChanged -= ElementIsHQChangedHandler;
+            }
             Profiler.EndSample();
 
             RemoveRecord(attackableLostDetectionItem);
@@ -151,13 +290,21 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
 
     #region Event and Property Change Handlers
 
-    private void AreEnemyTargetsInRangePropChangedHandler() {
-        OnEnemyTargetsInRange();
-    }
-
     private void OnEnemyTargetsInRange() {
         if (enemyTargetsInRange != null) {
             enemyTargetsInRange(this, EventArgs.Empty);
+        }
+    }
+
+    private void OnEnemyCmdsInRange() {
+        if (enemyCmdsInRange != null) {
+            enemyCmdsInRange(this, EventArgs.Empty);
+        }
+    }
+
+    private void OnWarEnemyElementsInRange() {
+        if (warEnemyElementsInRange != null) {
+            warEnemyElementsInRange(this, EventArgs.Empty);
         }
     }
 
@@ -200,6 +347,7 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
 
     private void HandleDetectedItemDeath(ISensorDetectable deadDetectedItem) {
         D.Assert(!deadDetectedItem.IsOperational);
+        //D.Log(ShowDebugLog, "{0} initiating removal of {1} because of death.", DebugName, deadDetectedItem.DebugName);
         RemoveDetectedObject(deadDetectedItem);    // handles subscription changes
     }
 
@@ -232,6 +380,45 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
         AssessIsOperational();
     }
 
+    private void ElementIsHQChangedHandler(object sender, EventArgs e) {
+        IUnitElement_Ltd element = sender as IUnitElement_Ltd;
+        HandleElementIsHQChanged(element);
+    }
+
+    private void HandleElementIsHQChanged(IUnitElement_Ltd element) {
+        // When a HQElement dies, its deathEvent fires before IsHQ is changed to false.
+        // The deathEvent results in the HQElement being removed along with the Cmd since its still the HQ. 
+        // In addition, when a dead HQElement is removed this monitor is unsubscribed from the hqChanged event 
+        // before it is fired. Accordingly, this method will never be called as the result of an element death.
+        D.Assert(element.IsOperational);
+
+        if (!element.IsHQ) {
+            // An operational Element we have detected just lost HQ status so remove the Cmd if its there
+            bool isRemoved = _enemyCmdsDetected.Remove(element.Command);
+            isRemoved = _warEnemyCmdsDetected.Remove(element.Command);
+            // No Asserts as don't necessarily know owner much less whether an enemy
+        }
+        else {
+            Player elementOwner;
+            // An operational Element we have already detected just gained HQ status
+            bool isOwnerKnown = element.TryGetOwner(Owner, out elementOwner);
+            if (isOwnerKnown) {
+                if (Owner.IsEnemyOf(elementOwner)) {
+                    // The owner is an enemy so add the Cmd
+                    IUnitElement_Ltd enemyElement = element;
+                    Player enemyElementOwner = elementOwner;
+                    bool isAdded = _enemyCmdsDetected.Add(enemyElement.Command);
+                    D.Assert(isAdded, "{0}: {1} is already present so can't be added.".Inject(DebugName, enemyElement.Command.DebugName));
+
+                    if (Owner.IsAtWarWith(enemyElementOwner)) {
+                        isAdded = _warEnemyCmdsDetected.Add(enemyElement.Command);
+                        D.Assert(isAdded, "{0}: {1} is already present so can't be added.".Inject(DebugName, enemyElement.Command.DebugName));
+                    }
+                }
+            }
+        }
+    }
+
     #endregion
 
     /// <summary>
@@ -242,10 +429,17 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
     /// detected them which hasn't changed.</remarks>
     /// </summary>
     protected override void ReviewKnowledgeOfAllDetectedObjects() {
-        EnemyTargetsDetected.Clear();
-        if (UnknownTargetsDetected != null) {
-            UnknownTargetsDetected.Clear();
-        }
+        _enemyTargetsDetected.Clear();
+        _enemyElementsDetected.Clear();
+        _enemyCmdsDetected.Clear();
+        _enemyPlanetoidsDetected.Clear();
+        _warEnemyTargetsDetected.Clear();
+        _warEnemyElementsDetected.Clear();
+        _warEnemyCmdsDetected.Clear();
+        _warEnemyPlanetoidsDetected.Clear();
+
+        _unknownTargetsDetected.Clear();
+
         foreach (var objectDetected in _objectsDetected) {
             IElementAttackable detectedItem = objectDetected as IElementAttackable;
             if (detectedItem != null) {
@@ -269,21 +463,21 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
             // Item owner known
             if (Owner.IsEnemyOf(detectedItemOwner)) {
                 // belongs in Enemy bucket
-                if (!EnemyTargetsDetected.Contains(detectedItem)) {
-                    AddEnemyTarget(detectedItem);
+                if (!_enemyTargetsDetected.Contains(detectedItem)) {
+                    AddEnemyTarget(detectedItem, detectedItemOwner);
                 }
             }
             // since owner is known, it definitely doesn't belong in Unknown
-            if (IsRecordedAsUnknown(detectedItem)) {
+            if (_unknownTargetsDetected.Contains(detectedItem)) {
                 RemoveUnknownTarget(detectedItem);
             }
         }
         else {
             // Item owner is unknown
-            if (EnemyTargetsDetected.Contains(detectedItem)) {
+            if (_enemyTargetsDetected.Contains(detectedItem)) {
                 RemoveEnemyTarget(detectedItem);
             }
-            if (!IsRecordedAsUnknown(detectedItem)) {
+            if (!_unknownTargetsDetected.Contains(detectedItem)) {
                 AddUnknownTarget(detectedItem);
             }
         }
@@ -298,7 +492,7 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
                 RemoveEnemyTarget(lostDetectionItem);
             }
             // since owner is known, it definitely doesn't belong in Unknown
-            D.Assert(!IsRecordedAsUnknown(lostDetectionItem));
+            D.Assert(!_unknownTargetsDetected.Contains(lostDetectionItem));
         }
         else {
             // Item owner is unknown so should find it in Unknown bucket as this is only called when item is dead or leaving monitor range
@@ -306,40 +500,132 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
         }
     }
 
-    private void AddEnemyTarget(IElementAttackable enemyTgt) {
-        D.Assert(!EnemyTargetsDetected.Contains(enemyTgt));
-        EnemyTargetsDetected.Add(enemyTgt);
+    /// <summary>
+    /// Adds the enemy target to the enemy collections.
+    /// <remarks>Warning: Do not deal with anything else except adding to the proper collection
+    /// as this method is used for that purpose when re-assessing where enemyTgts should reside.</remarks>
+    /// </summary>
+    /// <param name="enemyTgt">The enemy target.</param>
+    /// <param name="enemyOwner">The enemy owner.</param>
+    private void AddEnemyTarget(IElementAttackable enemyTgt, Player enemyOwner) {
+        bool isAdded = _enemyTargetsDetected.Add(enemyTgt);
+        D.Assert(isAdded);
+
+        bool isWarEnemy = Owner.IsAtWarWith(enemyOwner);
+        if (isWarEnemy) {
+            isAdded = _warEnemyTargetsDetected.Add(enemyTgt);
+            D.Assert(isAdded);
+        }
         //D.Log(ShowDebugLog, "{0} added {1} to EnemyTarget tracking.", DebugName, enemyTgt.DebugName);
+        IUnitElement_Ltd enemyElement = enemyTgt as IUnitElement_Ltd;
+        if (enemyElement != null) {
+            isAdded = _enemyElementsDetected.Add(enemyElement);
+            D.Assert(isAdded);
+
+            if (enemyElement.IsHQ) {
+                isAdded = _enemyCmdsDetected.Add(enemyElement.Command);
+                D.Assert(isAdded);
+            }
+
+            if (isWarEnemy) {
+                isAdded = _warEnemyElementsDetected.Add(enemyElement);
+                D.Assert(isAdded);
+                if (enemyElement.IsHQ) {
+                    isAdded = _warEnemyCmdsDetected.Add(enemyElement.Command);
+                    D.Assert(isAdded);
+                }
+            }
+        }
+        else {
+            var enemyPlanetoid = enemyTgt as IPlanetoid_Ltd;
+            if (enemyPlanetoid != null) {
+                isAdded = _enemyPlanetoidsDetected.Add(enemyPlanetoid);
+                D.Assert(isAdded);
+                if (isWarEnemy) {
+                    isAdded = _warEnemyPlanetoidsDetected.Add(enemyPlanetoid);
+                    D.Assert(isAdded);
+                }
+            }
+        }
+        // else ... can also be an enemy-owned Star
         AssessAreEnemyTargetsInRange();
     }
 
-    private void RemoveEnemyTarget(IElementAttackable enemyTgt) {
-        var isRemoved = EnemyTargetsDetected.Remove(enemyTgt);
-        if (!isRemoved) {
-            D.Error("{0} attempted to remove missing {1} from Enemy list. IsPresentInUnknownList = {2}.", DebugName, enemyTgt.DebugName, IsRecordedAsUnknown(enemyTgt));
-        }
+    /// <summary>
+    /// Removes the enemy target.
+    /// <remarks>Warning: Do not deal with anything else except removing from the proper collection
+    /// as this method is used for that purpose when re-assessing where enemyTgts should reside.</remarks>
+    /// </summary>
+    /// <param name="target">The target which may no longer be an enemy.</param>
+    private void RemoveEnemyTarget(IElementAttackable target) {
+        // Could be removing because now unknown, out of range, no longer enemy, etc.
+        var isRemoved = _enemyTargetsDetected.Remove(target);
+        D.Assert(isRemoved, "{0} attempted to remove missing {1} from EnemyTargets. IsPresentInUnknownList = {2}."
+            .Inject(DebugName, target.DebugName, _unknownTargetsDetected.Contains(target)));
         //D.Log(ShowDebugLog && isRemoved, "{0} removed {1} from EnemyTarget tracking.", DebugName, enemyTgt.DebugName);
+
+        bool wasWarEnemy = _warEnemyTargetsDetected.Remove(target);
+
+        var element = target as IUnitElement_Ltd;
+        if (element != null) {
+            isRemoved = _enemyElementsDetected.Remove(element);
+            D.Assert(isRemoved, "{0} attempted to remove missing {1} from EnemyElements.".Inject(DebugName, element.DebugName));
+
+            if (element.IsHQ) {
+                // If still HQ remove. If not but just was, removal will be handled by IsHQChangedHandler
+                isRemoved = _enemyCmdsDetected.Remove(element.Command);
+                D.Assert(isRemoved);
+            }
+
+            if (wasWarEnemy) {
+                isRemoved = _warEnemyElementsDetected.Remove(element);
+                D.Assert(isRemoved);
+                if (element.IsHQ) {
+                    // If still HQ remove. If not but just was, removal will be handled by IsHQChangedHandler
+                    isRemoved = _warEnemyCmdsDetected.Remove(element.Command);
+                    D.Assert(isRemoved);
+                }
+            }
+        }
+        else {
+            var planetoid = target as IPlanetoid_Ltd;
+            if (planetoid != null) {
+                isRemoved = _enemyPlanetoidsDetected.Remove(planetoid);
+                D.Assert(isRemoved);
+
+                if (wasWarEnemy) {
+                    isRemoved = _warEnemyPlanetoidsDetected.Remove(planetoid);
+                    D.Assert(isRemoved);
+                }
+            }
+        }
+
         AssessAreEnemyTargetsInRange();
     }
 
     private void AssessAreEnemyTargetsInRange() {
-        // This approach makes sure AreEnemyWarTargetsInRange is set properly before event fires
-        bool areEnemyTargetsInRange = EnemyTargetsDetected.Any();
-        if (areEnemyTargetsInRange) {
-            EnemyTargetsDetected.ForAll(eTgt => {
-                if ((eTgt as IMortalItem).Owner.IsAtWarWith(Owner)) {
-                    AreEnemyWarTargetsInRange = true;
-                    return; // returns from anonymous method only
-                }
-                AreEnemyWarTargetsInRange = false;
-            });
-        }
-        else {
-            AreEnemyWarTargetsInRange = false;
-        }
+        bool previousAreEnemyTargetsInRange = AreEnemyTargetsInRange;
+        bool previousAreEnemyCmdsInRange = AreEnemyCmdsInRange;
+        bool previousAreWarEnemyElementsInRange = AreWarEnemyElementsInRange;
 
-        if (areEnemyTargetsInRange != AreEnemyTargetsInRange) {
-            AreEnemyTargetsInRange = areEnemyTargetsInRange;
+        AreEnemyTargetsInRange = _enemyTargetsDetected.Any();
+        AreEnemyElementsInRange = _enemyElementsDetected.Any();
+        AreEnemyCmdsInRange = _enemyCmdsDetected.Any();
+        AreEnemyPlanetoidsInRange = _enemyPlanetoidsDetected.Any();
+        AreWarEnemyTargetsInRange = _warEnemyTargetsDetected.Any();
+        AreWarEnemyElementsInRange = _warEnemyElementsDetected.Any();
+        AreWarEnemyCmdsInRange = _warEnemyCmdsDetected.Any();
+        AreWarEnemyPlanetoidsInRange = _warEnemyPlanetoidsDetected.Any();
+
+        // This approach makes sure all values are set properly before an event fires
+        if (AreEnemyTargetsInRange != previousAreEnemyTargetsInRange) {
+            OnEnemyTargetsInRange();
+        }
+        if (AreEnemyCmdsInRange != previousAreEnemyCmdsInRange) {
+            OnEnemyCmdsInRange();
+        }
+        if (AreWarEnemyElementsInRange != previousAreWarEnemyElementsInRange) {
+            OnWarEnemyElementsInRange();
         }
     }
 
@@ -348,17 +634,14 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
     /// </summary>
     /// <param name="unknownTgt">The unknown TGT.</param>
     private void AddUnknownTarget(IElementAttackable unknownTgt) {
-        if (UnknownTargetsDetected == null) {
-            UnknownTargetsDetected = new HashSet<IElementAttackable>();
-            if (RangeCategory == RangeCategory.Short) {
-                D.Warn("{0} adding unknown target {1}?", DebugName, unknownTgt.DebugName);
-            }
-            if (RangeCategory == RangeCategory.Medium) {
-                D.Warn("{0} adding unknown target {1}?", DebugName, unknownTgt.DebugName);
-            }
+        if (RangeCategory == RangeCategory.Short) {
+            D.Warn("{0} adding unknown target {1}?", DebugName, unknownTgt.DebugName);
         }
-        D.Assert(!UnknownTargetsDetected.Contains(unknownTgt));
-        UnknownTargetsDetected.Add(unknownTgt);
+        if (RangeCategory == RangeCategory.Medium) {
+            D.Warn("{0} adding unknown target {1}?", DebugName, unknownTgt.DebugName);
+        }
+        D.Assert(!_unknownTargetsDetected.Contains(unknownTgt));
+        _unknownTargetsDetected.Add(unknownTgt);
         //D.Log(ShowDebugLog, "{0} added {1} to UnknownTarget tracking.", DebugName, unknownTgt.DebugName);
     }
 
@@ -367,23 +650,11 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
     /// </summary>
     /// <param name="unknownTgt">The unknown TGT.</param>
     private void RemoveUnknownTarget(IElementAttackable unknownTgt) {
-        var isRemoved = UnknownTargetsDetected.Remove(unknownTgt);
+        var isRemoved = _unknownTargetsDetected.Remove(unknownTgt);
         if (!isRemoved) {
-            D.Error("{0} attempted to remove missing {1} from Unknown list. IsPresentInEnemyList = {2}.", DebugName, unknownTgt.DebugName, EnemyTargetsDetected.Contains(unknownTgt));
+            D.Error("{0} attempted to remove missing {1} from Unknown list. IsPresentInEnemyList = {2}.", DebugName, unknownTgt.DebugName, _enemyTargetsDetected.Contains(unknownTgt));
         }
         //D.Log(ShowDebugLog && isRemoved, "{0} removed {1} from UnknownTarget tracking.", DebugName, unknownTgt.DebugName);
-    }
-
-    /// <summary>
-    /// Determines whether [is recorded as unknown] [the specified target].
-    /// <remarks>Allows lazy instantiation of AttackableUnknownTargetDetected.</remarks>
-    /// </summary>
-    /// <param name="target">The target.</param>
-    /// <returns>
-    ///   <c>true</c> if [is recorded as unknown] [the specified target]; otherwise, <c>false</c>.
-    /// </returns>
-    private bool IsRecordedAsUnknown(IElementAttackable target) {
-        return UnknownTargetsDetected != null && UnknownTargetsDetected.Contains(target);
     }
 
     protected override float RefreshRangeDistance() {
@@ -429,9 +700,41 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
 
     protected override void CompleteResetForReuse() {
         base.CompleteResetForReuse();
-        D.AssertEqual(Constants.Zero, EnemyTargetsDetected.Count);
-        D.Assert(UnknownTargetsDetected == null || UnknownTargetsDetected.Count == Constants.Zero);
+        // 3.18.17 Untested. If any fail it means I haven't implemented a reset on them yet.
+        D.AssertEqual(Constants.Zero, _enemyTargetsDetected.Count);
+        D.AssertEqual(Constants.Zero, _enemyElementsDetected.Count);
+        D.AssertEqual(Constants.Zero, _enemyCmdsDetected.Count);
+        D.AssertEqual(Constants.Zero, _enemyPlanetoidsDetected.Count);
+
+        D.AssertEqual(Constants.Zero, _warEnemyTargetsDetected.Count);
+        D.AssertEqual(Constants.Zero, _warEnemyElementsDetected.Count);
+        D.AssertEqual(Constants.Zero, _warEnemyCmdsDetected.Count);
+        D.AssertEqual(Constants.Zero, _warEnemyPlanetoidsDetected.Count);
+
+        D.AssertEqual(Constants.Zero, _unknownTargetsDetected.Count);
+        D.Assert(!AreEnemyTargetsInRange);
+        D.Assert(!AreEnemyElementsInRange);
+        D.Assert(!AreEnemyCmdsInRange);
+        D.Assert(!AreEnemyPlanetoidsInRange);
+
+        D.Assert(!AreWarEnemyTargetsInRange);
+        D.Assert(!AreWarEnemyElementsInRange);
+        D.Assert(!AreWarEnemyCmdsInRange);
+        D.Assert(!AreWarEnemyPlanetoidsInRange);
+
+        D.AssertNull(enemyTargetsInRange);
     }
+
+    protected override void Cleanup() {
+        base.Cleanup();
+        CleanupDebugShowSensor();
+    }
+
+    public override string ToString() {
+        return DebugName;
+    }
+
+    #region Debug
 
     protected override void __ValidateRangeDistance() {
         base.__ValidateRangeDistance();
@@ -441,19 +744,7 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
         }
     }
 
-    protected override void Cleanup() {
-        base.Cleanup();
-        CleanupDebugShowSensor();
-    }
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
-    #region Debug
-
     private const float __acceptableThresholdMultiplierBase = 0.01F;
-
 
     protected override void __WarnOnErroneousTriggerExit(ISensorDetectable lostDetectionItem) {
         if (lostDetectionItem.IsOperational) {
@@ -471,6 +762,49 @@ public class SensorRangeMonitor : ADetectableRangeMonitor<ISensorDetectable, Sen
                 }
             }
         }
+    }
+
+    private HashSet<IUnitElement_Ltd> __subscribedElements = new HashSet<IUnitElement_Ltd>();
+
+    /// <summary>
+    /// Attempts subscribing or unsubscribing to <c>element</c>'s isHqChanged event.
+    /// Returns <c>true</c> if the indicated subscribe action was taken, <c>false</c> if not.
+    /// <remarks>Issues a warning if attempting to create a duplicate subscription.</remarks>
+    /// </summary>
+    /// <param name="element">The element.</param>
+    /// <param name="toSubscribe">if set to <c>true</c> subscribe, otherwise unsubscribe.</param>
+    /// <returns></returns>
+    protected bool __AttemptElementIsHqChgdSubscription(IUnitElement_Ltd element, bool toSubscribe) {
+        Utility.ValidateNotNull(element);
+        bool isSubscribeActionTaken = false;
+        bool isDuplicateSubscriptionAttempted = false;
+        bool isSubscribed = __subscribedElements.Contains(element);
+
+        if (!toSubscribe) {
+            element.isHQChanged -= ElementIsHQChangedHandler;
+            isSubscribeActionTaken = true;
+        }
+        else if (!isSubscribed) {
+            element.isHQChanged += ElementIsHQChangedHandler;
+            isSubscribeActionTaken = true;
+        }
+        else {
+            isDuplicateSubscriptionAttempted = true;
+        }
+        if (isDuplicateSubscriptionAttempted) {
+            D.Warn("{0}: Attempting to subscribe to {1}'s isHQChanged when already subscribed.", DebugName, element.DebugName);
+        }
+        if (isSubscribeActionTaken) {
+            if (toSubscribe) {
+                bool isAdded = __subscribedElements.Add(element);
+                D.Assert(isAdded);
+            }
+            else {
+                bool isRemoved = __subscribedElements.Remove(element);
+                D.Assert(isRemoved);
+            }
+        }
+        return isSubscribeActionTaken;
     }
 
     #region Debug Show Sensors

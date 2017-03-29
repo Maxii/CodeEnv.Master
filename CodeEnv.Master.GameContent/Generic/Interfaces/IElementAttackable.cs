@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IElementAttackable.cs
-// Interface for targets that can be attacked by unit elements.
+// Interface for Items that can be attacked by unit elements.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,7 +20,7 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Interface for targets that can be attacked by unit elements.
+    /// Interface for Items that can be attacked by unit elements.
     /// </summary>
     public interface IElementAttackable : IShipNavigable, ISensorDetectable, IAttackable {
 

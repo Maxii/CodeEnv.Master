@@ -156,6 +156,12 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// <returns></returns>
     public override bool TryGetFiringSolution(IElementAttackable enemyTarget, out WeaponFiringSolution firingSolution) {
         D.Assert(enemyTarget.IsOperational);
+        if (!enemyTarget.IsAttackByAllowed(Weapon.Owner)) {
+            bool hasAccessToAttackTgtOwner = enemyTarget.IsOwnerAccessibleTo(Weapon.Owner);
+            D.Error("{0} can no longer attack {1}. Has access to attackTgt owner = {2}.", DebugName, enemyTarget.DebugName, hasAccessToAttackTgtOwner);
+            // 3.17.17 BUG: occurred while everyone is war enemy so presumably we lost access to the attackTgt owner. If so, why wasn't
+            // the enemyTgt removed from AWeapon._attackableEnemyTgts when Monitor received InfoAccessChg event?
+        }
         D.Assert(enemyTarget.IsAttackByAllowed(Weapon.Owner));
 
         firingSolution = null;

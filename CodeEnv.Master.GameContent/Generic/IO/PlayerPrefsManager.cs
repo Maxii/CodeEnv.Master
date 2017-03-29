@@ -257,7 +257,7 @@ namespace CodeEnv.Master.GameContent {
         protected sealed override void Initialize() {
             IncrementInstanceCounter();
             _generalSettings = GeneralSettings.Instance;
-            _gameMgr = References.GameManager;
+            _gameMgr = GameReferences.GameManager;
             Retrieve();
         }
 

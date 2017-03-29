@@ -55,7 +55,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="userRqstdCmdReport">The Command Report that was requested by the user.</param>
         /// <returns></returns>
         public IconInfo MakeInstance(ReportType userRqstdCmdReport) {
-            D.AssertEqual(References.GameManager.UserPlayer, userRqstdCmdReport.Player);
+            D.AssertEqual(GameReferences.GameManager.UserPlayer, userRqstdCmdReport.Player);
             IconSection section = GetIconSection();
             IconSelectionCriteria[] criteria = GetSelectionCriteria(userRqstdCmdReport);
             GameColor color = userRqstdCmdReport.Owner != null ? userRqstdCmdReport.Owner.Color : GameColor.White;

@@ -23,11 +23,10 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IUnitElement : IMortalItem {
 
-        event EventHandler isHQChanged;
+        bool IsHQ { get; }
 
         IUnitCmd Command { get; }
 
-        bool IsHQ { get; }
 
     }
 }

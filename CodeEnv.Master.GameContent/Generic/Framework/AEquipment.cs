@@ -80,6 +80,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected IJobManager _jobMgr;
         protected IGameManager _gameMgr;
+        private bool _isInitialActivation = true;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AEquipment"/> class.
@@ -89,16 +90,22 @@ namespace CodeEnv.Master.GameContent {
         public AEquipment(AEquipmentStat stat, string name = null) {
             Stat = stat;
             Name = name != null ? name : stat.Name;
-            _jobMgr = References.JobManager;
-            _gameMgr = References.GameManager;
+            _jobMgr = GameReferences.JobManager;
+            _gameMgr = GameReferences.GameManager;
         }
 
         #region Event and Property Change Handlers
 
         private void IsActivatedPropChangedHandler() {
             //D.Log("{0}.IsActivated changed to {1}.", DebugName, IsActivated);
+            if (_isInitialActivation) {
+                _isInitialActivation = false;
+                HandleInitialActivation();
+            }
             AssessIsOperational();
         }
+
+        protected virtual void HandleInitialActivation() { }
 
         private void IsDamagedPropChangedHandler() {
             //D.Log("{0}.IsDamaged changed to {1}.", DebugName, IsDamaged);

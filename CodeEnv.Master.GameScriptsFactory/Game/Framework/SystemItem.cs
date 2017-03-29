@@ -104,6 +104,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         get { return _publisher = _publisher ?? new SystemPublisher(Data, this); }
     }
 
+    private bool _hasInfoAccessToOwner;
     private IList<APlanetoidItem> _planetoids;
     private IList<MoonItem> _moons;
     private IList<PlanetItem> _planets;
@@ -265,6 +266,35 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
             settlementCmd.CelestialOrbitSimulator.IsActivated = true;
         }
         D.Log(ShowDebugLog, "{0} has been deployed to {1}.", settlementCmd.DebugName, DebugName);
+    }
+
+    /// <summary>
+    /// Assesses whether to fire its infoAccessChanged event.
+    /// <remarks>Implemented by some undetectable Items - System, SettlementCmd
+    /// and Sector. All three allow a change in access to Owner while in IntelCoverage.Basic
+    /// without requiring an increase in IntelCoverage. FleetCmd and StarbaseCmd are the other
+    /// two undetectable Items, but they only change access to Owner when IntelCoverage
+    /// exceeds Basic.</remarks>
+    /// <remarks>3.22.17 This is the fix to a gnarly BUG that allowed changes in access to
+    /// Owner without an event alerting subscribers that it had occurred. The subscribers
+    /// relied on the event to keep their state correct, then found later that they had 
+    /// access to Owner when they expected they didn't. Access to owner determines the
+    /// response in a number of Interfaces like IFleetExplorable.IsExplorationAllowedBy(player).</remarks>
+    /// </summary>
+    /// <param name="player">The player.</param>
+    internal void AssessWhetherToFireInfoAccessChangedEventFor(Player player) {
+        if (Settlement != null) {
+            // Settlements come and go so they must always be checked if present
+            Settlement.AssessWhetherToFireInfoAccessChangedEventFor(player);
+        }
+        SectorGrid.Instance.GetSector(SectorID).AssessWhetherToFireInfoAccessChangedEventFor(player);
+
+        if (!_hasInfoAccessToOwner) {
+            if (InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
+                _hasInfoAccessToOwner = true;
+                OnInfoAccessChanged(player);
+            }
+        }
     }
 
     protected override void ShowSelectedItemHud() {

@@ -56,7 +56,7 @@ public class DestroyEffectOnCompletion : AMonoBase {
 
     protected override void Awake() {
         base.Awake();
-        _gameMgr = References.GameManager;
+        _gameMgr = GameReferences.GameManager;
         _gameTime = GameTime.Instance;
         Subscribe();
     }

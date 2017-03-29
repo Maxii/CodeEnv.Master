@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
         public new UserPlayerKnowledge Knowledge { get { return base.Knowledge as UserPlayerKnowledge; } }
 
         public UserPlayerAIManager(UserPlayerKnowledge knowledge)
-            : base(References.GameManager.UserPlayer, knowledge) { }    // Warning: _gameMgr in base not yet initialized
+            : base(GameReferences.GameManager.UserPlayer, knowledge) { }    // Warning: _gameMgr in base not yet initialized
 
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);

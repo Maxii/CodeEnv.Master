@@ -117,7 +117,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected virtual IWorldTrackingSprite MakeIconInstance() {
-            return References.TrackingWidgetFactory.MakeInteractiveWorldTrackingSprite(_trackedItem, IconInfo);
+            return GameReferences.TrackingWidgetFactory.MakeInteractiveWorldTrackingSprite(_trackedItem, IconInfo);
         }
 
         protected override void AssessInMainCameraLOS() {

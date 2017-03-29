@@ -75,6 +75,8 @@ namespace CodeEnv.Master.GameContent {
         public static readonly GameDate GameStartDate = new GameDate(Constants.ZeroF, Constants.Zero, GameStartYear);    // 2700.000.00.0
         public static readonly GameDate GameEndDate = new GameDate(HoursPerDay - HoursPrecision, DaysPerYear - 1, GameEndYear);    // 8999.099.19.9
 
+        private static GameTimeDuration DurationPrecision = new GameTimeDuration(HoursPrecision);
+
         #endregion
 
         #region Static Methods
@@ -235,6 +237,10 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        public DateMinder DateMinder { get; private set; }
+
+        public RecurringDateMinder RecurringDateMinder { get; private set; }
+
         private GameDate _currentDate;
         /// <summary>
         /// The current GameDate in this game instance. Takes into account both game speed changes and pauses.
@@ -282,6 +288,7 @@ namespace CodeEnv.Master.GameContent {
         ///A marker indicating the GameInstancePlayTime value when the last CurrentDateTimeRefresh was executed.
         /// </summary>
         private float _gameInstancePlayTimeAtLastCurrentDateTimeRefresh;
+
         private PlayerPrefsManager _playerPrefsMgr;
         private IGameManager _gameMgr;
         private IList<IDisposable> _subscriptions;
@@ -301,8 +308,10 @@ namespace CodeEnv.Master.GameContent {
             if (!FixedTimestep.ApproxEquals(Time.fixedDeltaTime)) {
                 D.Warn("{0}: Time.fixedDeltaTime of {1} unexpected.", typeof(GameTime).Name, Time.fixedDeltaTime);
             }
-            _gameMgr = References.GameManager;
+            _gameMgr = GameReferences.GameManager;
             _playerPrefsMgr = PlayerPrefsManager.Instance;
+            DateMinder = new DateMinder();
+            RecurringDateMinder = new RecurringDateMinder();
             Subscribe();
             ////PrepareToBeginNewGame();
         }
@@ -310,7 +319,6 @@ namespace CodeEnv.Master.GameContent {
         private void Subscribe() {
             _subscriptions = new List<IDisposable>();
             _subscriptions.Add(_gameMgr.SubscribeToPropertyChanging<IGameManager, bool>(gm => gm.IsPaused, IsPausedPropChangingHandler));
-            _gameMgr.isReadyForPlayOneShot += IsReadyForPlayEventHandler;
         }
 
         public void PrepareToBeginNewGame() {
@@ -324,10 +332,12 @@ namespace CodeEnv.Master.GameContent {
             // don't wait for the Gui to set GameSpeed. Use the backing field as the Property calls GameSpeedPropChangedHandler()
             _gameSpeed = _playerPrefsMgr.GameSpeedOnLoad;
             GameSpeedMultiplier = _gameSpeed.SpeedMultiplier();
-            //// no need to assign a new CurrentDate as the change to _currentDateTime results in a new, synced CurrentDate instance once Date is requested
-            //// onDateChanged = null;   // new subscribers tend to subscribe on Awake, but nulling the list here clears it. All previous subscribers need to unsubscribe!
             _currentDate = GameStartDate;   // 8.13.16 added as otherwise at the mercy of GameMgr calling CheckForDateChange() once IsRunning
             //D.Log("{0}.PrepareToBeginNewGame() finished. Frame {1}, UnityTime {2:0.0}, SystemTimeStamp {3}.", DebugName, Time.frameCount, Time.time, Utility.TimeStamp);
+            D.Assert(calenderDateChanged.GetInvocationList().Count() < 2);
+
+            DateMinder.Clear();
+            RecurringDateMinder.Clear();
         }
 
         public void PrepareToSaveGame() {
@@ -361,6 +371,17 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
+        /// Called whenever the clock is about to be enabled, aka CheckForDateChange() is about to start being called every Update.
+        /// </summary>
+        public void PrepareForClockEnabled() {
+            D.Assert(_gameMgr.IsRunning);
+            D.Assert(!_gameMgr.IsPaused);   // my practice - set IsRunning to true, fire isReadyForPlay, THEN pause when isPauseOnLoad option enabled
+            _currentUnitySessionTimeWhenGameInstanceBegan = CurrentUnitySessionTime;
+            _gameInstancePlayTimeAtLastCurrentDateTimeRefresh = GameInstancePlayTime;
+            // no reason to call RefreshCurrentDateTime here as it will get called as soon as CurrentDate is requested
+        }
+
+        /// <summary>
         /// Checks for a change to the current date. Called by GameManager's Update
         /// method to keep the date accurate. Does nothing if the game is paused.
         /// </summary>
@@ -374,6 +395,7 @@ namespace CodeEnv.Master.GameContent {
             bool toFireCalenderDateChangedEvent = false;
             bool toUpdateCurrentDate = false;
 
+            //D.Log("{0}._currentDateTime = {1:0.0000}.", DebugName, _currentDateTime);
             var updatedDate = new GameDate(_currentDateTime);
             if (updatedDate > _currentDate) {
                 // they are not within equivalence tolerance so update
@@ -391,22 +413,23 @@ namespace CodeEnv.Master.GameContent {
             }
             if (toUpdateCurrentDate) {
                 //D.Log("{0}: Changing CurrentDate to {1}.", DebugName, updatedDate);
-                CurrentDate = updatedDate;  // must be done before event fired
+                bool areDatesSkipped = updatedDate - _currentDate > DurationPrecision;
+
+                _currentDate = updatedDate;  // must be done before event fired
+
+                CheckDateMinder(areDatesSkipped);
             }
             if (toFireCalenderDateChangedEvent) {
                 OnCalenderDateChanged();    // 11.15.16 Appropriately causes 1K memory allocation
             }
         }
 
-        #region Event and Property Change Handlers
-
-        private void IsReadyForPlayEventHandler(object sender, EventArgs e) {
-            D.Assert(_gameMgr.IsRunning);
-            D.Assert(!_gameMgr.IsPaused);   // my practice - set IsRunning to true, fire isReadyForPlay, THEN pause when isPauseOnLoad option enabled
-            _currentUnitySessionTimeWhenGameInstanceBegan = CurrentUnitySessionTime;
-            _gameInstancePlayTimeAtLastCurrentDateTimeRefresh = GameInstancePlayTime;
-            // no reason to call RefreshCurrentDateTime here as it will get called as soon as CurrentDate is requested
+        private void CheckDateMinder(bool datesSkipped) {
+            DateMinder.CheckForClients(_currentDate, datesSkipped);
+            RecurringDateMinder.CheckForClients(_currentDate, datesSkipped);
         }
+
+        #region Event and Property Change Handlers
 
         private void IsPausedPropChangingHandler(bool isPausing) {
             if (_gameMgr.IsRunning) {

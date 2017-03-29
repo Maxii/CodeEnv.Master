@@ -112,7 +112,7 @@ namespace CodeEnv.Master.GameContent {
             ApCourse = new List<IShipNavigable>();
             //_gameMgr = GameManager.Instance;
             _gameTime = GameTime.Instance;
-            _jobMgr = References.JobManager;
+            _jobMgr = GameReferences.JobManager;
 
             _autoPilot = new AutoPilot(this, engineRoom, ship, shipTransform);
             _ship = ship;
@@ -145,21 +145,21 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Engages the AutoPilot to move to and bombard the target using the provided proxy.
         /// </summary>
-        /// <param name="apTgtProxy">The proxy for the target this Pilot is being engaged to reach.</param>
+        /// <param name="apBesiegeTgtProxy">The proxy for the target this Pilot is being engaged to besiege.</param>
         /// <param name="speed">The initial speed the pilot should travel at.</param>
-        public void EngageAutoPilot(ApBombardDestinationProxy apTgtProxy, Speed speed) {
-            D.AssertNotNull(apTgtProxy);
-            _autoPilot.Engage(apTgtProxy, speed);
+        public void EngageAutoPilot(ApBesiegeDestinationProxy apBesiegeTgtProxy, Speed speed) {
+            D.AssertNotNull(apBesiegeTgtProxy);
+            _autoPilot.Engage(apBesiegeTgtProxy, speed);
         }
 
         /// <summary>
         /// Engages the AutoPilot to move to and strafe the target using the provided proxy.
         /// </summary>
-        /// <param name="apTgtProxy">The proxy for the target this Pilot is being engaged to reach.</param>
+        /// <param name="apStrafeTgtProxy">The proxy for the target this Pilot is being engaged to strafe.</param>
         /// <param name="speed">The initial speed the pilot should travel at.</param>
-        public void EngageAutoPilot(ApStrafeDestinationProxy apTgtProxy, Speed speed) {
-            D.AssertNotNull(apTgtProxy);
-            _autoPilot.Engage(apTgtProxy, speed);
+        public void EngageAutoPilot(ApStrafeDestinationProxy apStrafeTgtProxy, Speed speed) {
+            D.AssertNotNull(apStrafeTgtProxy);
+            _autoPilot.Engage(apStrafeTgtProxy, speed);
         }
 
         /// <summary>
@@ -184,13 +184,15 @@ namespace CodeEnv.Master.GameContent {
         /// For use when managing the heading of the ship without using the Autopilot.
         /// </summary>
         /// <param name="newHeading">The new direction in world coordinates, normalized.</param>
-        /// <param name="headingConfirmed">Delegate that fires when the ship reaches the new heading.</param>
-        public void ChangeHeading(Vector3 newHeading, Action headingConfirmed = null) {
+        /// <param name="turnCompleted">Delegate that executes when the turn is completed. Contains a
+        /// boolean indicating whether the turn completed normally, reaching newHeading or was interrupted before
+        /// newHeading was reached. Usage: (reachedDesignatedHeading) => {};</param>
+        public void ChangeHeading(Vector3 newHeading, Action<bool> turnCompleted = null) {
             DisengageAutoPilot(); // kills ChangeHeading job if pilot running
             if (IsTurnUnderway) {
                 D.Warn("{0} received sequential ChangeHeading calls from Captain.", DebugName);
             }
-            ChangeHeading(newHeading, eliminateDrift: true, headingConfirmed: headingConfirmed);
+            ChangeHeading(newHeading, eliminateDrift: true, turnCompleted: turnCompleted);
         }
 
         /// <summary>
@@ -198,8 +200,10 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="newHeading">The new direction in world coordinates, normalized.</param>
         /// <param name="eliminateDrift">if set to <c>true</c> any drift will be eliminated once the ship reaches the new heading.</param>
-        /// <param name="headingConfirmed">Delegate that fires when the ship reaches the new heading.</param>
-        internal void ChangeHeading(Vector3 newHeading, bool eliminateDrift, Action headingConfirmed = null) {
+        /// <param name="turnCompleted">Delegate that executes when the turn is completed. Contains a
+        /// boolean indicating whether the turn completed normally, reaching newHeading or was interrupted before
+        /// newHeading was reached. Usage: (reachedDesignatedHeading) => {};</param>
+        internal void ChangeHeading(Vector3 newHeading, bool eliminateDrift, Action<bool> turnCompleted = null) {
             newHeading.ValidateNormalized();
             //D.Log(ShowDebugLog, "{0} received ChangeHeading to (local){1}.", DebugName, _shipTransform.InverseTransformDirection(newHeading));
 
@@ -212,7 +216,11 @@ namespace CodeEnv.Master.GameContent {
 
             if (IsTurnUnderway) {
                 // 5.8.16 allowing heading changes to kill existing heading jobs so course corrections don't get skipped if job running
-                //D.Log(ShowDebugLog, "{0} is killing existing change heading job and starting another. Frame: {1}.", DebugName, Time.frameCount);
+                if (turnCompleted != null) {
+                    // 3.28.17 Doesn't occur very often. Primary source is ApBesiegeTask and ApStrafeTask
+                    D.Log(ShowDebugLog, "{0} is killing a change heading job that has a turnCompleted client. Frame: {1}.", DebugName, Time.frameCount);
+                }
+                //D.Log(ShowDebugLog, "{0} is killing a change heading job and starting another. Frame: {1}.", DebugName, Time.frameCount);
                 KillChgHeadingJob();
             }
 
@@ -255,9 +263,10 @@ namespace CodeEnv.Master.GameContent {
                     if (eliminateDrift) {
                         _engineRoom.EngageDriftCorrection();
                     }
-                    if (headingConfirmed != null) {
-                        headingConfirmed();
-                    }
+                }
+                bool reachedDesignatedHeading = !jobWasKilled;
+                if (turnCompleted != null) {
+                    turnCompleted(reachedDesignatedHeading);
                 }
             });
         }
@@ -462,6 +471,23 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+
+        #region Debug
+
+        public bool __IsWithinSRSensorRange(Vector3 position) {
+            float sqrDifference;
+            return __IsWithinSRSensorRange(position, out sqrDifference);
+        }
+
+        public bool __IsWithinSRSensorRange(Vector3 position, out float sqrDifference) {
+            sqrDifference = _ship.Command.SRSensorRangeDistance * _ship.Command.SRSensorRangeDistance - Vector3.SqrMagnitude(position - _ship.Command.Position);
+            if (sqrDifference < 0F) {
+                sqrDifference = -sqrDifference;
+                return false;
+            }
+            return sqrDifference > UnityConstants.FloatEqualityPrecision;
+        }
+
         #region Debug Turn Error Reporting
 
         private const string __TurnTimeLineFormat = "Allowed: {0:0.00}, Actual: {1:0.00}";
@@ -516,6 +542,74 @@ namespace CodeEnv.Master.GameContent {
             __turnTimeErrorDate = default(GameDate);
             __turnTimeWarnDate = default(GameDate);
         }
+
+        #endregion
+
+        #region Debug Slowing Speed Progression Reporting Archive
+
+        //        // Reports how fast speed bleeds off when Slow, Stop, etc are used 
+
+        //        private static Speed[] __constantValueSpeeds = new Speed[] {    Speed.Stop,
+        //                                                                        Speed.Docking,
+        //                                                                        Speed.StationaryOrbit,
+        //                                                                        Speed.MovingOrbit,
+        //                                                                        Speed.Slow
+        //                                                                    };
+
+        //        private Job __speedProgressionReportingJob;
+        //        private Vector3 __positionWhenReportingBegun;
+
+        //        private void __TryReportSlowingSpeedProgression(Speed newSpeed) {
+        //            //D.Log(ShowDebugLog, "{0}.TryReportSlowingSpeedProgression({1}) called.", DebugName, newSpeed.GetValueName());
+        //            if (__constantValueSpeeds.Contains(newSpeed)) {
+        //                __ReportSlowingSpeedProgression(newSpeed);
+        //            }
+        //            else {
+        //                __TryKillSpeedProgressionReportingJob();
+        //            }
+        //        }
+
+        //        private void __ReportSlowingSpeedProgression(Speed constantValueSpeed) {
+        //            D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
+        //            D.Assert(__constantValueSpeeds.Contains(constantValueSpeed), "{0} speed {1} is not a constant value.", _ship.DebugName, constantValueSpeed.GetValueName());
+        //            if (__TryKillSpeedProgressionReportingJob()) {
+        //                __ReportDistanceTraveled();
+        //            }
+        //            if (constantValueSpeed == Speed.Stop && ActualSpeedValue == Constants.ZeroF) {
+        //                return; // don't bother reporting if not moving and Speed setting is Stop
+        //            }
+        //            __positionWhenReportingBegun = Position;
+        //            __speedProgressionReportingJob = new Job(__ContinuouslyReportSlowingSpeedProgression(constantValueSpeed), toStart: true);
+        //        }
+
+        //        private IEnumerator __ContinuouslyReportSlowingSpeedProgression(Speed constantSpeed) {
+        //#pragma warning disable 0219    // OPTIMIZE
+        //            string desiredSpeedText = "{0}'s Speed setting = {1}({2:0.###})".Inject(_ship.DebugName, constantSpeed.GetValueName(), constantSpeed.GetUnitsPerHour(ShipMoveMode.None, null, null));
+        //            float currentSpeed;
+        //#pragma warning restore 0219
+        //            int fixedUpdateCount = 0;
+        //            while ((currentSpeed = ActualSpeedValue) > Constants.ZeroF) {
+        //                //D.Log(ShowDebugLog, desiredSpeedText + " ActualSpeed = {0:0.###}, FixedUpdateCount = {1}.", currentSpeed, fixedUpdateCount);
+        //                fixedUpdateCount++;
+        //                yield return new WaitForFixedUpdate();
+        //            }
+        //            __ReportDistanceTraveled();
+        //        }
+
+        //        private bool __TryKillSpeedProgressionReportingJob() {
+        //            if (__speedProgressionReportingJob != null && __speedProgressionReportingJob.IsRunning) {
+        //                __speedProgressionReportingJob.Kill();
+        //                return true;
+        //            }
+        //            return false;
+        //        }
+
+        //        private void __ReportDistanceTraveled() {
+        //            Vector3 distanceTraveledVector = _ship.transform.InverseTransformDirection(Position - __positionWhenReportingBegun);
+        //            D.Log(ShowDebugLog, "{0} changed local position by {1} while reporting slowing speed.", _ship.DebugName, distanceTraveledVector);
+        //        }
+
+        #endregion
 
         #endregion
 
@@ -606,71 +700,6 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        #region Debug Slowing Speed Progression Reporting Archive
-
-        //        // Reports how fast speed bleeds off when Slow, Stop, etc are used 
-
-        //        private static Speed[] __constantValueSpeeds = new Speed[] {    Speed.Stop,
-        //                                                                        Speed.Docking,
-        //                                                                        Speed.StationaryOrbit,
-        //                                                                        Speed.MovingOrbit,
-        //                                                                        Speed.Slow
-        //                                                                    };
-
-        //        private Job __speedProgressionReportingJob;
-        //        private Vector3 __positionWhenReportingBegun;
-
-        //        private void __TryReportSlowingSpeedProgression(Speed newSpeed) {
-        //            //D.Log(ShowDebugLog, "{0}.TryReportSlowingSpeedProgression({1}) called.", DebugName, newSpeed.GetValueName());
-        //            if (__constantValueSpeeds.Contains(newSpeed)) {
-        //                __ReportSlowingSpeedProgression(newSpeed);
-        //            }
-        //            else {
-        //                __TryKillSpeedProgressionReportingJob();
-        //            }
-        //        }
-
-        //        private void __ReportSlowingSpeedProgression(Speed constantValueSpeed) {
-        //            D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
-        //            D.Assert(__constantValueSpeeds.Contains(constantValueSpeed), "{0} speed {1} is not a constant value.", _ship.DebugName, constantValueSpeed.GetValueName());
-        //            if (__TryKillSpeedProgressionReportingJob()) {
-        //                __ReportDistanceTraveled();
-        //            }
-        //            if (constantValueSpeed == Speed.Stop && ActualSpeedValue == Constants.ZeroF) {
-        //                return; // don't bother reporting if not moving and Speed setting is Stop
-        //            }
-        //            __positionWhenReportingBegun = Position;
-        //            __speedProgressionReportingJob = new Job(__ContinuouslyReportSlowingSpeedProgression(constantValueSpeed), toStart: true);
-        //        }
-
-        //        private IEnumerator __ContinuouslyReportSlowingSpeedProgression(Speed constantSpeed) {
-        //#pragma warning disable 0219    // OPTIMIZE
-        //            string desiredSpeedText = "{0}'s Speed setting = {1}({2:0.###})".Inject(_ship.DebugName, constantSpeed.GetValueName(), constantSpeed.GetUnitsPerHour(ShipMoveMode.None, null, null));
-        //            float currentSpeed;
-        //#pragma warning restore 0219
-        //            int fixedUpdateCount = 0;
-        //            while ((currentSpeed = ActualSpeedValue) > Constants.ZeroF) {
-        //                //D.Log(ShowDebugLog, desiredSpeedText + " ActualSpeed = {0:0.###}, FixedUpdateCount = {1}.", currentSpeed, fixedUpdateCount);
-        //                fixedUpdateCount++;
-        //                yield return new WaitForFixedUpdate();
-        //            }
-        //            __ReportDistanceTraveled();
-        //        }
-
-        //        private bool __TryKillSpeedProgressionReportingJob() {
-        //            if (__speedProgressionReportingJob != null && __speedProgressionReportingJob.IsRunning) {
-        //                __speedProgressionReportingJob.Kill();
-        //                return true;
-        //            }
-        //            return false;
-        //        }
-
-        //        private void __ReportDistanceTraveled() {
-        //            Vector3 distanceTraveledVector = _ship.transform.InverseTransformDirection(Position - __positionWhenReportingBegun);
-        //            D.Log(ShowDebugLog, "{0} changed local position by {1} while reporting slowing speed.", _ship.DebugName, distanceTraveledVector);
-        //        }
-
-        #endregion
 
         #region IDisposable
 

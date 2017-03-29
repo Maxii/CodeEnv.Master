@@ -19,7 +19,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;UNITY_EDITOR; DEBUG_ERROR; DEBUG_WARN; DEBUG_LOG; DEBUG_VALIDATE_PROPERTY</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;UNITY_EDITOR; DEBUG_LOGBOLD; DEBUG_ERROR; DEBUG_WARN; DEBUG_LOG; DEBUG_VALIDATE_PROPERTY</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
@@ -35,7 +35,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'ProfilerDebug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <OutputPath>bin\ProfilerDebug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;UNITY_EDITOR; ENABLE_PROFILER; DEBUG_ERROR; DEBUG_WARN</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;UNITY_EDITOR; ENABLE_PROFILER; DEBUG_LOGBOLD; DEBUG_ERROR; DEBUG_WARN</DefineConstants>
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
     <DebugType>full</DebugType>
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -63,9 +63,12 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Framework\DateMinder.cs" />
+    <Compile Include="Generic\Framework\DateMinderDuration.cs" />
+    <Compile Include="Game\Gameplay\ApMoveFormationStationProxy.cs" />
     <Compile Include="Generic\Framework\AApDestinationProxy.cs" />
-    <Compile Include="Game\Gameplay\ApBombardDestinationProxy.cs" />
-    <Compile Include="Game\Gameplay\ApBombardTask.cs" />
+    <Compile Include="Game\Gameplay\ApBesiegeDestinationProxy.cs" />
+    <Compile Include="Game\Gameplay\ApBesiegeTask.cs" />
     <Compile Include="Game\Gameplay\ApMoveDestinationProxy.cs" />
     <Compile Include="Game\Gameplay\ApMoveTask.cs" />
     <Compile Include="Game\Gameplay\ApStrafeDestinationProxy.cs" />
@@ -73,15 +76,12 @@
     <Compile Include="Game\Framework\AutoPilot.cs" />
     <Compile Include="Game\Framework\FtlDampener.cs" />
     <Compile Include="Generic\IO\FtlDampenerStat.cs" />
-    <Compile Include="Generic\Framework\AApTask_Old.cs" />
-    <Compile Include="Game\Gameplay\ApMaintainPositionTask_Old.cs" />
-    <Compile Include="Game\Framework\AutoPilot_Old.cs" />
     <Compile Include="Game\Gameplay\EngineRoom.cs" />
     <Compile Include="Game\Framework\Engine.cs" />
     <Compile Include="Generic\IO\EngineStat.cs" />
     <Compile Include="Game\Framework\FtlEngine.cs" />
     <Compile Include="Generic\Framework\FacilityDetourGenerator.cs" />
-    <Compile Include="Generic\Utility\DebugUtility.cs" />
+    <Compile Include="Game\_Debug\DebugUtility.cs" />
     <Compile Include="Generic\_Debug\DebugLosWeaponLoadout.cs" />
     <Compile Include="Generic\Math\FormationStationSlotIDEqualityComparer.cs" />
     <Compile Include="Generic\Math\DiplomaticRelationshipEqualityComparer.cs" />
@@ -276,7 +276,7 @@
     <Compile Include="Game\Gameplay\NonRegressibleIntel.cs" />
     <Compile Include="Generic\Interfaces\Access\IDynamicObjectsFolder.cs" />
     <Compile Include="Generic\Interfaces\Access\IGameManager.cs" />
-    <Compile Include="Generic\_Debug\References.cs" />
+    <Compile Include="Generic\_Debug\GameReferences.cs" />
     <Compile Include="Generic\Interfaces\INavigable.cs" />
     <Compile Include="Generic\Framework\Speed.cs" />
     <Compile Include="Generic\Framework\OrderSource.cs" />
@@ -395,7 +395,7 @@
     <Compile Include="Generic\Interfaces\IShipOrbitable.cs" />
     <Compile Include="Generic\Framework\OrbitData.cs" />
     <Compile Include="Generic\Interfaces\IShipNavigable.cs" />
-    <Compile Include="Generic\Interfaces\IShipAttackable.cs" />
+    <Compile Include="Generic\Interfaces\IShipBlastable.cs" />
     <Compile Include="Generic\Interfaces\Access\IWorldTrackingSprite.cs" />
     <Compile Include="Game\Graphics\MissileDisplayManager.cs" />
     <Compile Include="Generic\Interfaces\Access\IEffect.cs" />
@@ -472,11 +472,16 @@
     <Compile Include="Generic\Interfaces\Access\IInteractiveWorldTrackingSprite_Independent.cs" />
     <Compile Include="Generic\Interfaces\Access\IGamePoolManager.cs" />
     <Compile Include="Generic\Interfaces\Access\IFpsReadout.cs" />
-    <Compile Include="Game\Gameplay\ApMoveTask_Old.cs" />
-    <Compile Include="Game\Gameplay\ApObstacleCheckTask_Old.cs" />
     <Compile Include="Game\Framework\ShipHelm.cs" />
     <Compile Include="Generic\Interfaces\IPropellable.cs" />
     <Compile Include="Generic\Interfaces\Access\IFtlDampenerRangeMonitor.cs" />
+    <Compile Include="Generic\Interfaces\Client\IDateMinderClient.cs" />
+    <Compile Include="Generic\Interfaces\Client\IRecurringDateMinderClient.cs" />
+    <Compile Include="Generic\_Debug\RecurringDateMinder_Debug.cs" />
+    <Compile Include="Generic\Framework\RecurringDateMinder.cs" />
+    <Compile Include="Generic\Interfaces\IElementBlastable.cs" />
+    <Compile Include="Generic\Interfaces\IElementBombardable.cs" />
+    <Compile Include="Generic\Interfaces\IShipBombardable.cs" />
     <Compile Include="ThirdParty\ParticleScaler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\GUI\PlayerViewMode.cs" />

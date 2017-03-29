@@ -24,11 +24,13 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// For error detection.
         /// </summary>
-        None,
+        None = 0,
 
-        Normal,
-        Yellow,
-        Red
+        Normal = 1,
+
+        Yellow = 2,
+
+        Red = 3
 
     }
 }

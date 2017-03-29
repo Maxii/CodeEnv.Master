@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ApBombardTask.cs
-// AutoPilot task that moves to and tracks a target while bombarding it.
+// File: ApBesiegeTask.cs
+// AutoPilot task that moves to and stays in relative position to besiege a target.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,11 +21,11 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// AutoPilot task that moves to and tracks a target while bombarding it.
+    /// AutoPilot task that moves to and stays in relative position to besiege a target.
     /// </summary>
-    public class ApBombardTask : ApMoveTask {
+    public class ApBesiegeTask : ApMoveTask {
 
-        protected new ApBombardDestinationProxy TargetProxy { get { return base.TargetProxy as ApBombardDestinationProxy; } }
+        protected new ApBesiegeDestinationProxy TargetProxy { get { return base.TargetProxy as ApBesiegeDestinationProxy; } }
 
         protected internal override bool IsFleetwideMove {
             protected get { return false; }
@@ -34,7 +34,7 @@ namespace CodeEnv.Master.GameContent {
 
         private Job _maintainPositionJob;
 
-        public ApBombardTask(AutoPilot autoPilot) : base(autoPilot) { }
+        public ApBesiegeTask(AutoPilot autoPilot) : base(autoPilot) { }
 
         public override void Execute(ApMoveDestinationProxy attackTgtProxy, Speed speed) {
             base.Execute(attackTgtProxy, speed);
@@ -46,7 +46,7 @@ namespace CodeEnv.Master.GameContent {
             D.AssertNull(_maintainPositionJob);
             string jobName = "ApMaintainPositionJob";
             _maintainPositionJob = _jobMgr.StartGameplayJob(WaitWhileArrived(TargetProxy), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
-                if (jobWasKilled) {    // killed only by CleanupAnyRemainingAutoPilotJobs
+                if (jobWasKilled) {    // killed only by KillJobs
                                        // 12.12.16 An AssertNull(_jobRef) here can fail as the reference can refer to a new Job, created 
                                        // right after the old one was killed due to the 1 frame delay in execution of jobCompleted(). My attempts at allowing
                                        // the AssertNull to occur failed. I believe this is OK as _jobRef is nulled from KillXXXJob() and, if 
@@ -65,7 +65,7 @@ namespace CodeEnv.Master.GameContent {
             });
         }
 
-        private IEnumerator WaitWhileArrived(ApBombardDestinationProxy targetProxy) {
+        private IEnumerator WaitWhileArrived(ApBesiegeDestinationProxy targetProxy) {
             while (targetProxy.HasArrived) {
                 // Warning: Don't use the WaitWhile YieldInstruction here as we rely on the ability to 
                 // Kill the ApMaintainPositionWhilePursuingJob when the target represented by ApTargetProxy dies. Killing 
@@ -74,6 +74,12 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        /// <summary>
+        /// Checks whether the destination represented by destProxy cannot be caught.
+        /// Returns <c>true</c> if destination is uncatchable, <c>false</c> if it can be caught.
+        /// </summary>
+        /// <param name="destProxy">The destination proxy.</param>
+        /// <returns></returns>
         protected override bool CheckForUncatchable(ApMoveDestinationProxy destProxy) {
             return destProxy.IsFastMover && !_autoPilot.IsCmdWithinRangeToSupportAttackOnTarget;
         }
@@ -92,8 +98,8 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        protected override void KillJobs() {
-            base.KillJobs();
+        protected override void KillProcesses() {
+            base.KillProcesses();
             if (_maintainPositionJob != null) {
                 _maintainPositionJob.Kill();
                 _maintainPositionJob = null;

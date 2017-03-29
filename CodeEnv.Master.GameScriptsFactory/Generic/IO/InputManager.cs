@@ -89,7 +89,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
         //D.Log("{0}.InitializeOnInstance", GetType().Name);
-        References.InputManager = Instance;
+        GameReferences.InputManager = Instance;
     }
 
     protected override void InitializeOnAwake() {
@@ -612,7 +612,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     #region Cleanup
 
     protected override void Cleanup() {
-        References.InputManager = null;
+        GameReferences.InputManager = null;
         InvalidateNonpersistentReferences();
         Unsubscribe();
     }

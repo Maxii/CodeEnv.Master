@@ -89,6 +89,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="element">The element.</param>
         /// <param name="selectionConstraint">The selection constraint.</param>
         public void AddAndPositionNonHQElement(IUnitElement element, FormationStationSelectionCriteria selectionConstraint) {
+            D.Assert(element.IsOperational, element.DebugName);
             D.Assert(!element.IsHQ);
             AddAndPositionElement(element, selectionConstraint);
         }
@@ -99,8 +100,21 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="element">The element.</param>
         public void AddAndPositionNonHQElement(IUnitElement element) {
+            D.Assert(element.IsOperational, element.DebugName);
             D.Assert(!element.IsHQ);
             AddAndPositionElement(element);
+        }
+
+        /// <summary>
+        /// Selects the already returned HQ FormationStation slot for the provided new hqElement,
+        /// and then calls Command.PositionElementInFormation() using the slot selected.
+        /// <remarks>The returned HQ slot was returned by RestoreSlotToAvailable().</remarks>
+        /// </summary>
+        /// <param name="hqElement">The HQElement.</param>
+        public void AddAndPositionHQElement(IUnitElement hqElement) {
+            D.Assert(hqElement.IsOperational, hqElement.DebugName);
+            D.Assert(hqElement.IsHQ);
+            AddAndPositionElement(hqElement);
         }
 
         /// <summary>
@@ -171,12 +185,12 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Handles changes the FormationManager needs to make when an element is removed from the Unit.
+        /// Restores the formation slot associated with this element (including the HQ Element) to available status.
         /// WARNING: This does not include removing the FormationStation from the ship and the ship
         /// from the FormationStation, nor does it deal with returning the Station to the pool.
         /// </summary>
         /// <param name="element">The element.</param>
-        public void HandleElementRemoval(IUnitElement element) {
+        public void RestoreSlotToAvailable(IUnitElement element) {
             FormationStationSlotInfo elementStationInfo;
             bool isStationSlotFound = _occupiedStationSlotLookup.TryGetValue(element, out elementStationInfo);
             D.Assert(isStationSlotFound, element.DebugName);

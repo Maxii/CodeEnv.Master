@@ -33,9 +33,9 @@ namespace CodeEnv.Master.GameContent {
 
         public EffectsManager(IEffectsMgrClient effectsClient) {
             _effectsClient = effectsClient;
-            _generalFactory = References.GeneralFactory;
-            _gameMgr = References.GameManager;
-            _gamePoolMgr = References.GamePoolManager;
+            _generalFactory = GameReferences.GeneralFactory;
+            _gameMgr = GameReferences.GameManager;
+            _gamePoolMgr = GameReferences.GamePoolManager;
             Subscribe();
         }
 

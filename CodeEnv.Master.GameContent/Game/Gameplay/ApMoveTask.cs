@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ApMoveTask.cs
-// AutoPilot task that navigates to a target.
+// AutoPilot task that navigates to a target while checking for obstacles.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -24,9 +24,10 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// AutoPilot task that navigates to a target.
+    /// AutoPilot task that navigates to a target while checking for obstacles. Also operates as the base class
+    /// for the Bombard and Strafe attack tasks.
     /// </summary>
-    public class ApMoveTask : IDisposable {
+    public class ApMoveTask : IRecurringDateMinderClient, IDisposable {
 
         /// <summary>
         /// The turn angle threshold (in degrees) used to determine when a detour around an obstacle
@@ -71,6 +72,8 @@ namespace CodeEnv.Master.GameContent {
 
         private static readonly LayerMask AvoidableObstacleZoneOnlyLayerMask = LayerMaskUtility.CreateInclusiveMask(Layers.AvoidableObstacleZone);
 
+        public string DebugName { get { return DebugNameFormat.Inject(_autoPilot.DebugName, GetType().Name); } }
+
         private bool _isFleetwideMove;
         internal protected virtual bool IsFleetwideMove {
             protected get { return _isFleetwideMove; }
@@ -100,6 +103,12 @@ namespace CodeEnv.Master.GameContent {
 
         protected IShip Ship { get { return _autoPilot.Ship; } }
 
+        protected virtual bool ToEliminateDrift { get { return true; } }
+
+        protected bool ShowDebugLog { get { return _autoPilot.ShowDebugLog; } }
+
+        private bool IsObstacleCheckProcessRunning { get { return _obstacleCheckRecurringDuration != null; } }
+
         /// <summary>
         /// The speed at which the autopilot has been instructed to travel.
         /// <remark>This value does not change while an AutoPilot is engaged.</remark>
@@ -108,14 +117,9 @@ namespace CodeEnv.Master.GameContent {
 
         private bool IsIncreaseAboveApSpeedSettingAllowed { get; set; }
 
-        protected virtual bool ToEliminateDrift { get { return true; } }
-
-        protected string DebugName { get { return DebugNameFormat.Inject(_autoPilot.DebugName, GetType().Name); } }
-
-        protected bool ShowDebugLog { get { return _autoPilot.ShowDebugLog; } }
-
         protected AutoPilot _autoPilot;
         protected IJobManager _jobMgr;
+        protected GameTime _gameTime;
 
         /// <summary>
         /// Delegate pointing to an anonymous method handling work after the fleet has aligned for departure.
@@ -124,9 +128,22 @@ namespace CodeEnv.Master.GameContent {
         /// </remarks>
         /// </summary>
         private Action _actionToExecuteWhenFleetIsAligned;
-        private GameTimeDuration _obstacleCheckJobPeriod;
-        private Job _obstacleCheckJob;
-        private Job _moveJob;
+
+        /// <summary>
+        /// Proxy used by the Obstacle Checking process for the enroute destination that is currently getting checked for obstacles.
+        /// <remarks>This field is reqd as a result of changing from using a Job (with an embedded Action) to using RecurringDateMinder
+        /// which uses a client interface. It allows communication between the interface's callback and the methods it needs to call.</remarks>
+        /// </summary>
+        private ApMoveDestinationProxy _obstacleCheckDestProxy;
+
+        /// <summary>
+        /// The CourseRefreshMode currently being used by the Obstacle Checking process.
+        /// <remarks>This field is reqd as a result of changing from using a Job (with an embedded Action) to using RecurringDateMinder
+        /// which uses a client interface. It allows communication between the interface's callback and the methods it needs to call.</remarks>
+        /// </summary>
+        private CourseRefreshMode _obstacleCheckMode;
+        private DateMinderDuration _obstacleCheckRecurringDuration;
+        private Job _navJob;
 
         public ApMoveTask(AutoPilot autoPilot) {
             _autoPilot = autoPilot;
@@ -134,7 +151,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected virtual void InitializeValuesAndReferences() {
-            _jobMgr = References.JobManager;
+            _jobMgr = GameReferences.JobManager;
+            _gameTime = GameTime.Instance;
         }
 
         public virtual void Execute(ApMoveDestinationProxy tgtProxy, Speed speed) {
@@ -154,10 +172,16 @@ namespace CodeEnv.Master.GameContent {
             }
 
             _autoPilot.RefreshCourse(CourseRefreshMode.NewCourse);
-            ApMoveDestinationProxy detour;
-            if (TryCheckForObstacleEnrouteTo(tgtProxy, out detour)) {
-                _autoPilot.RefreshCourse(CourseRefreshMode.AddWaypoint, detour);
-                InitiateCourseToTargetVia(detour);
+            ApMoveDestinationProxy detourProxy;
+            IAvoidableObstacle obstacle;
+            if (TryCheckForObstacleEnrouteTo(tgtProxy, out detourProxy, out obstacle)) {
+                if (obstacle == TargetProxy.Destination) {
+                    HandleObstacleFoundIsTarget(obstacle);
+                }
+                else {
+                    _autoPilot.RefreshCourse(CourseRefreshMode.AddWaypoint, detourProxy);
+                    InitiateCourseToTargetVia(detourProxy);
+                }
             }
             else {
                 InitiateDirectCourseToTarget();
@@ -197,14 +221,16 @@ namespace CodeEnv.Master.GameContent {
                 _autoPilot.WaitForFleetToAlign(_actionToExecuteWhenFleetIsAligned);
             }
             else {
-                _autoPilot.ChangeHeading(targetBearing, ToEliminateDrift, headingConfirmed: () => {
-                    //D.Log(ShowDebugLog, "{0} is initiating direct course to {1} in Frame {2}.", DebugName, ApTargetFullName, Time.frameCount);
-                    EngageEnginesAtApSpeed(isFleetSpeed: false);
-                    bool isNavInitiated = InitiateNavigationTo(TargetProxy, hasArrived: () => {
-                        HandleTargetReached();
-                    });
-                    if (isNavInitiated) {
-                        InitiateObstacleCheckingEnrouteTo(TargetProxy, CourseRefreshMode.AddWaypoint);
+                _autoPilot.ChangeHeading(targetBearing, ToEliminateDrift, turnCompleted: (reachedTgtBearing) => {
+                    if (reachedTgtBearing) {
+                        //D.Log(ShowDebugLog, "{0} is initiating direct course to {1} in Frame {2}.", DebugName, ApTargetFullName, Time.frameCount);
+                        EngageEnginesAtApSpeed(isFleetSpeed: false);
+                        bool isNavInitiated = InitiateNavigationTo(TargetProxy, hasArrived: () => {
+                            HandleTargetReached();
+                        });
+                        if (isNavInitiated) {
+                            InitiateObstacleCheckingEnrouteTo(TargetProxy, CourseRefreshMode.AddWaypoint);
+                        }
                     }
                 });
             }
@@ -246,15 +272,17 @@ namespace CodeEnv.Master.GameContent {
                 _autoPilot.WaitForFleetToAlign(_actionToExecuteWhenFleetIsAligned);
             }
             else {
-                _autoPilot.ChangeHeading(newHeading, ToEliminateDrift, headingConfirmed: () => {
-                    EngageEnginesAtApSpeed(isFleetSpeed: false);   // this is a detour so catch up
-                                                                   // even if this is an obstacle that has appeared on the way to another obstacle detour, go around it, then try direct to target
-                    bool isNavInitiated = InitiateNavigationTo(obstacleDetour, hasArrived: () => {
-                        _autoPilot.RefreshCourse(CourseRefreshMode.RemoveWaypoint, obstacleDetour);
-                        ResumeDirectCourseToTarget();
-                    });
-                    if (isNavInitiated) {
-                        InitiateObstacleCheckingEnrouteTo(obstacleDetour, CourseRefreshMode.ReplaceObstacleDetour);
+                _autoPilot.ChangeHeading(newHeading, ToEliminateDrift, turnCompleted: (reachedNewHeading) => {
+                    if (reachedNewHeading) {
+                        EngageEnginesAtApSpeed(isFleetSpeed: false);   // this is a detour so catch up
+                                                                       // even if this is an obstacle that has appeared on the way to another obstacle detour, go around it, then try direct to target
+                        bool isNavInitiated = InitiateNavigationTo(obstacleDetour, hasArrived: () => {
+                            _autoPilot.RefreshCourse(CourseRefreshMode.RemoveWaypoint, obstacleDetour);
+                            ResumeDirectCourseToTarget();
+                        });
+                        if (isNavInitiated) {
+                            InitiateObstacleCheckingEnrouteTo(obstacleDetour, CourseRefreshMode.ReplaceObstacleDetour);
+                        }
                     }
                 });
             }
@@ -266,19 +294,21 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         protected virtual void ResumeDirectCourseToTarget() {
             D.Assert(IsEngaged);
-            KillJobs();
+            KillProcesses();
             //D.Log(ShowDebugLog, "{0} beginning prep to resume direct course to {1} at {2}. \nDistance to target = {3:0.#}.",
             //    DebugName, TargetFullName, TargetProxy.Position, TargetDistance);
 
             ResumeApSpeed();    // CurrentSpeed can be slow coming out of a detour, also uses ShipSpeed to catchup
             Vector3 targetBearing = (TargetProxy.Position - Position).normalized;
-            _autoPilot.ChangeHeading(targetBearing, ToEliminateDrift, headingConfirmed: () => {
-                //D.Log(ShowDebugLog, "{0} is now on heading toward {1}.", DebugName, TargetFullName);
-                bool isNavInitiated = InitiateNavigationTo(TargetProxy, hasArrived: () => {
-                    HandleTargetReached();
-                });
-                if (isNavInitiated) {
-                    InitiateObstacleCheckingEnrouteTo(TargetProxy, CourseRefreshMode.AddWaypoint);
+            _autoPilot.ChangeHeading(targetBearing, ToEliminateDrift, turnCompleted: (reachedTgtBearing) => {
+                if (reachedTgtBearing) {
+                    //D.Log(ShowDebugLog, "{0} is now on heading toward {1}.", DebugName, TargetFullName);
+                    bool isNavInitiated = InitiateNavigationTo(TargetProxy, hasArrived: () => {
+                        HandleTargetReached();
+                    });
+                    if (isNavInitiated) {
+                        InitiateObstacleCheckingEnrouteTo(TargetProxy, CourseRefreshMode.AddWaypoint);
+                    }
                 }
             });
         }
@@ -290,28 +320,30 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="wayPtProxy">The proxy for the Waypoint.</param>
         protected void ContinueCourseToTargetVia(ApMoveDestinationProxy wayPtProxy) {
             D.Assert(IsEngaged);
-            KillJobs();
+            KillProcesses();
             //D.Log(ShowDebugLog, "{0} continuing course to target {1} via Waypoint {2}. Distance to Waypoint = {3:0.0}.",
             //    DebugName, TargetFullName, wayPtProxy.DebugName, Vector3.Distance(Position, wayPtProxy.Position));
 
             ResumeApSpeed(); // Uses ShipSpeed to catchup as we must go through this wayPt to get to target
             Vector3 newHeading = (wayPtProxy.Position - Position).normalized;
-            _autoPilot.ChangeHeading(newHeading, ToEliminateDrift, headingConfirmed: () => {
-                //D.Log(ShowDebugLog, "{0} is now on heading to reach waypoint {1}.", DebugName, wayPtProxy.DebugName);
-                bool isNavInitiated = InitiateNavigationTo(wayPtProxy, hasArrived: () => {
-                    // even if this is an obstacle that has appeared on the way to another obstacle detour, go around it, then direct to target
-                    _autoPilot.RefreshCourse(CourseRefreshMode.RemoveWaypoint, wayPtProxy);
-                    ResumeDirectCourseToTarget();
-                });
-                if (isNavInitiated) {
-                    InitiateObstacleCheckingEnrouteTo(wayPtProxy, CourseRefreshMode.ReplaceObstacleDetour);
+            _autoPilot.ChangeHeading(newHeading, ToEliminateDrift, turnCompleted: (reachedNewHeading) => {
+                if (reachedNewHeading) {
+                    //D.Log(ShowDebugLog, "{0} is now on heading to reach waypoint {1}.", DebugName, wayPtProxy.DebugName);
+                    bool isNavInitiated = InitiateNavigationTo(wayPtProxy, hasArrived: () => {
+                        // even if this is an obstacle that has appeared on the way to another obstacle detour, go around it, then direct to target
+                        _autoPilot.RefreshCourse(CourseRefreshMode.RemoveWaypoint, wayPtProxy);
+                        ResumeDirectCourseToTarget();
+                    });
+                    if (isNavInitiated) {
+                        InitiateObstacleCheckingEnrouteTo(wayPtProxy, CourseRefreshMode.ReplaceObstacleDetour);
+                    }
                 }
             });
         }
 
         #endregion
 
-        #region Move Navigation
+        #region Navigation
 
         /// <summary>
         /// Initiates navigation to the destination indicated by destProxy, returning <c>true</c> if navigation was initiated,
@@ -326,7 +358,7 @@ namespace CodeEnv.Master.GameContent {
 #pragma warning disable 0219
             bool isArrived = false;
 #pragma warning restore 0219
-            if (isArrived = !destProxy.TryGetArrivalDistanceAndDirection(out directionToArrival, out distanceToArrival)) {
+            if (isArrived = !destProxy.TryCheckProgress(out directionToArrival, out distanceToArrival)) {
                 // arrived
                 hasArrived();
                 return false;   // already arrived so nav not initiated
@@ -348,12 +380,12 @@ namespace CodeEnv.Master.GameContent {
             int minFrameWaitBetweenAttemptedCourseCorrectionChecks = 0;
             int previousFrameCourseWasCorrected = 0;
 
-            string jobName = "{0}.ApMoveJob".Inject(DebugName);
-            _moveJob = _jobMgr.RecurringWaitForHours(new Reference<GameTimeDuration>(() => progressCheckPeriod), jobName, waitMilestone: () => {
+            string jobName = "{0}.ApNavJob".Inject(DebugName);
+            _navJob = _jobMgr.RecurringWaitForHours(new Reference<GameTimeDuration>(() => progressCheckPeriod), jobName, waitMilestone: () => {
                 //D.Log(ShowDebugLog, "{0} making ApNav progress check on Frame: {1}. CheckPeriod = {2}.", DebugName, Time.frameCount, progressCheckPeriod);
 
-                if (isArrived = !destProxy.TryGetArrivalDistanceAndDirection(out directionToArrival, out distanceToArrival)) {
-                    KillJobs();
+                if (isArrived = !destProxy.TryCheckProgress(out directionToArrival, out distanceToArrival)) {
+                    KillProcesses();
                     hasArrived();
                     return; // ends execution of waitMilestone
                 }
@@ -392,6 +424,12 @@ namespace CodeEnv.Master.GameContent {
             return true;
         }
 
+        /// <summary>
+        /// Checks whether the destination represented by destProxy cannot be caught.
+        /// Returns <c>true</c> if destination is uncatchable, <c>false</c> if it can be caught.
+        /// </summary>
+        /// <param name="destProxy">The destination proxy.</param>
+        /// <returns></returns>
         protected virtual bool CheckForUncatchable(ApMoveDestinationProxy destProxy) {
             return false;
         }
@@ -440,7 +478,7 @@ namespace CodeEnv.Master.GameContent {
                     DebugName, maxHoursPerCheckPeriodAllowed, minHoursToArrival / maxHoursPerCheckPeriodAllowed);
                 hoursPerCheckPeriod = maxHoursPerCheckPeriodAllowed;
             }
-            hoursPerCheckPeriod = _autoPilot.VaryCheckPeriod(hoursPerCheckPeriod);
+            hoursPerCheckPeriod = _autoPilot.__VaryCheckPeriod(hoursPerCheckPeriod);
             correctedSpeed = speed;
             return new GameTimeDuration(hoursPerCheckPeriod);
         }
@@ -578,11 +616,11 @@ namespace CodeEnv.Master.GameContent {
             float refreshedProgressCheckPeriodHours = currentProgressCheckPeriodHours / intendedSpeedValueChangeRatio;
             if (refreshedProgressCheckPeriodHours < MinHoursPerProgressCheckPeriodAllowed) {
                 // 5.9.16 eliminated warning as this can occur when currentPeriod is at or close to minimum. This is a HACK after all
-                D.Log(ShowDebugLog, "{0}.__RefreshProgressCheckPeriod() generated period hours {1:0.0000} < MinAllowed {2:0.00}. Correcting.",
+                D.Log(ShowDebugLog, "{0}.__GenerateMoveProgressCheckPeriod() generated period hours {1:0.0000} < MinAllowed {2:0.00}. Correcting.",
                     DebugName, refreshedProgressCheckPeriodHours, MinHoursPerProgressCheckPeriodAllowed);
                 refreshedProgressCheckPeriodHours = MinHoursPerProgressCheckPeriodAllowed;
             }
-            refreshedProgressCheckPeriodHours = _autoPilot.VaryCheckPeriod(refreshedProgressCheckPeriodHours);
+            refreshedProgressCheckPeriodHours = _autoPilot.__VaryCheckPeriod(refreshedProgressCheckPeriodHours);
             DoesMoveProgressCheckPeriodNeedRefresh = false;
             return new GameTimeDuration(refreshedProgressCheckPeriodHours);
         }
@@ -592,23 +630,39 @@ namespace CodeEnv.Master.GameContent {
         #region Obstacle Checking
 
         private void InitiateObstacleCheckingEnrouteTo(ApMoveDestinationProxy destProxy, CourseRefreshMode mode) {
-            D.AssertNull(_obstacleCheckJob, DebugName);
-            _obstacleCheckJobPeriod = __GenerateObstacleCheckJobPeriod();
-            string jobName = "{0}.ApObstacleCheckJob".Inject(DebugName);
-            _obstacleCheckJob = _jobMgr.RecurringWaitForHours(new Reference<GameTimeDuration>(() => _obstacleCheckJobPeriod), jobName, waitMilestone: () => {
-                ApMoveDestinationProxy detourProxy;
-                if (TryCheckForObstacleEnrouteTo(destProxy, out detourProxy)) {
-                    KillJobs();
-                    HandleObstacleFound(detourProxy, mode);
-                    return;
-                }
-                if (DoesObstacleCheckPeriodNeedRefresh) {
-                    _obstacleCheckJobPeriod = __GenerateObstacleCheckJobPeriod();
-                }
-            });
+            if (_obstacleCheckRecurringDuration != null) {
+                D.Error("MoveTask's {0} != null, Frame: {1}.", _obstacleCheckRecurringDuration, Time.frameCount);
+            }
+            D.AssertNotNull(_navJob, "ObstacleChecking without a NavJob underway?");
+
+            _obstacleCheckDestProxy = destProxy;
+            _obstacleCheckMode = mode;
+            _obstacleCheckRecurringDuration = __GenerateObstacleCheckRecurringDuration();
+            //D.Log(ShowDebugLog, "MoveTask's _obstacleCheckDuration being set to {0} and added to Minder in Frame {1}.", _obstacleCheckRecurringDuration, Time.frameCount);
+            _gameTime.RecurringDateMinder.Add(_obstacleCheckRecurringDuration);
         }
 
-        private GameTimeDuration __GenerateObstacleCheckJobPeriod() {
+        private void HandleObstacleCheckDateReached() {
+            ApMoveDestinationProxy detourProxy;
+            IAvoidableObstacle obstacle;
+            if (TryCheckForObstacleEnrouteTo(_obstacleCheckDestProxy, out detourProxy, out obstacle)) {
+                // KillProcesses handled by HandleObstacleXXX()
+                if (obstacle == TargetProxy.Destination) {
+                    HandleObstacleFoundIsTarget(obstacle);
+                }
+                else {
+                    HandleObstacleFound(detourProxy, _obstacleCheckMode);
+                }
+            }
+            else {
+                if (DoesObstacleCheckPeriodNeedRefresh) {
+                    KillObstacleCheckProcess();
+                    InitiateObstacleCheckingEnrouteTo(_obstacleCheckDestProxy, _obstacleCheckMode);
+                }
+            }
+        }
+
+        private DateMinderDuration __GenerateObstacleCheckRecurringDuration() {
             float relativeObstacleFreq;  // IMPROVE OK for now as obstacleDensity is related but not same as Topography.GetRelativeDensity()
             float defaultHours;
             ValueRange<float> hoursRange;
@@ -632,16 +686,16 @@ namespace CodeEnv.Master.GameContent {
             float speedValue = _autoPilot.IntendedCurrentSpeedValue;
             float hoursBetweenChecks = speedValue > Constants.ZeroF ? relativeObstacleFreq / speedValue : defaultHours;
             hoursBetweenChecks = hoursRange.Clamp(hoursBetweenChecks);
-            hoursBetweenChecks = _autoPilot.VaryCheckPeriod(hoursBetweenChecks);
+            hoursBetweenChecks = _autoPilot.__VaryCheckPeriod(hoursBetweenChecks);
 
             float checksPerHour = 1F / hoursBetweenChecks;
-            if (checksPerHour * GameTime.Instance.GameSpeedAdjustedHoursPerSecond > References.FpsReadout.FramesPerSecond) {
+            if (checksPerHour * GameTime.Instance.GameSpeedAdjustedHoursPerSecond > GameReferences.FpsReadout.FramesPerSecond) {
                 // check frequency is higher than the game engine can run
                 D.Warn("{0} obstacleChecksPerSec {1:0.#} > FPS {2:0.#}.",
-                    DebugName, checksPerHour * GameTime.Instance.GameSpeedAdjustedHoursPerSecond, References.FpsReadout.FramesPerSecond);
+                    DebugName, checksPerHour * GameTime.Instance.GameSpeedAdjustedHoursPerSecond, GameReferences.FpsReadout.FramesPerSecond);
             }
             DoesObstacleCheckPeriodNeedRefresh = false;
-            return new GameTimeDuration(hoursBetweenChecks);
+            return new DateMinderDuration(new GameTimeDuration(hoursBetweenChecks), this);
         }
 
         /// <summary>
@@ -650,14 +704,14 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="destProxy">The destination proxy. May be the AutoPilotTarget or an obstacle detour.</param>
         /// <param name="detourProxy">The resulting obstacle detour proxy.</param>
+        /// <param name="obstacle">The resulting obstacle.</param>
         /// <returns>
         ///   <c>true</c> if an obstacle was found and a detour generated, false if the way is effectively clear.
         /// </returns>
-        internal bool TryCheckForObstacleEnrouteTo(ApMoveDestinationProxy destProxy, out ApMoveDestinationProxy detourProxy) {
+        private bool TryCheckForObstacleEnrouteTo(ApMoveDestinationProxy destProxy, out ApMoveDestinationProxy detourProxy, out IAvoidableObstacle obstacle) {
             D.AssertNotNull(destProxy, "{0}.AutoPilotDestProxy is null. Frame = {1}.".Inject(DebugName, Time.frameCount));
             int iterationCount = Constants.Zero;
-            IAvoidableObstacle unusedObstacleFound;
-            bool hasDetour = TryCheckForObstacleEnrouteTo(destProxy, out detourProxy, out unusedObstacleFound, ref iterationCount);
+            bool hasDetour = TryCheckForObstacleEnrouteTo(destProxy, out detourProxy, out obstacle, ref iterationCount);
             return hasDetour;
         }
 
@@ -679,30 +733,23 @@ namespace CodeEnv.Master.GameContent {
                 var obstacleZoneHitDistance = hitInfo.distance;
                 obstacle = obstacleZoneGo.GetSafeFirstInterfaceInParents<IAvoidableObstacle>(excludeSelf: true);
 
-                if (obstacle == destProxy.Destination) {
-                    D.LogBold(ShowDebugLog, "{0} encountered obstacle {1} which is the destination. \nRay length = {2:0.00}, DistanceToHit = {3:0.00}.",
-                        DebugName, obstacle.DebugName, rayLength, obstacleZoneHitDistance);
-                    HandleObstacleFoundIsTarget(obstacle);
-                }
-                else {
-                    D.Log(ShowDebugLog, "{0} encountered obstacle {1} at {2} when checking approach to {3}. \nRay length = {4:0.#}, DistanceToHit = {5:0.#}.",
-                        DebugName, obstacle.DebugName, obstacle.Position, destProxy.DebugName, rayLength, obstacleZoneHitDistance);
-                    if (TryGenerateDetourAroundObstacle(obstacle, hitInfo, out detourProxy)) {
-                        ApMoveDestinationProxy newDetourProxy;
-                        IAvoidableObstacle newObstacle;
-                        if (TryCheckForObstacleEnrouteTo(detourProxy, out newDetourProxy, out newObstacle, ref iterationCount)) {
-                            if (obstacle == newObstacle) {
-                                // 2.7.17 UNCLEAR redundant? IAvoidableObstacle.GetDetour() should fail if can't get to detour, although check uses math rather than a ray
-                                D.Error("{0} generated detour {1} that does not get around obstacle {2}.", DebugName, newDetourProxy.DebugName, obstacle.DebugName);
-                            }
-                            else {
-                                D.Log(ShowDebugLog, "{0} found another obstacle {1} on the way to detour {2} around obstacle {3}.", DebugName, newObstacle.DebugName, detourProxy.DebugName, obstacle.DebugName);
-                            }
-                            detourProxy = newDetourProxy;
-                            obstacle = newObstacle; // UNCLEAR whether useful. 2.7.17 Only use is to compare whether obstacle is the same
+                D.Log(ShowDebugLog, "{0} encountered obstacle {1} at {2} when checking approach to {3}. \nRay length = {4:0.#}, DistanceToHit = {5:0.#}.",
+                    DebugName, obstacle.DebugName, obstacle.Position, destProxy.DebugName, rayLength, obstacleZoneHitDistance);
+                if (TryGenerateDetourAroundObstacle(obstacle, hitInfo, out detourProxy)) {
+                    ApMoveDestinationProxy newDetourProxy;
+                    IAvoidableObstacle newObstacle;
+                    if (TryCheckForObstacleEnrouteTo(detourProxy, out newDetourProxy, out newObstacle, ref iterationCount)) {
+                        if (obstacle == newObstacle) {
+                            // 2.7.17 UNCLEAR redundant? IAvoidableObstacle.GetDetour() should fail if can't get to detour, although check uses math rather than a ray
+                            D.Error("{0} generated detour {1} that does not get around obstacle {2}.", DebugName, newDetourProxy.DebugName, obstacle.DebugName);
                         }
-                        isDetourGenerated = true;
+                        else {
+                            D.Log(ShowDebugLog, "{0} found another obstacle {1} on the way to detour {2} around obstacle {3}.", DebugName, newObstacle.DebugName, detourProxy.DebugName, obstacle.DebugName);
+                        }
+                        detourProxy = newDetourProxy;
+                        obstacle = newObstacle; //// UNCLEAR whether useful. 2.7.17 Only use is to compare whether obstacle is the same
                     }
+                    isDetourGenerated = true;
                 }
             }
             return isDetourGenerated;
@@ -737,8 +784,14 @@ namespace CodeEnv.Master.GameContent {
                 if (reqdTurnAngleToDetour < DetourTurnAngleThreshold) {
                     useDetour = false;
                     // angle is still shallow but short remaining distance might require use of a detour
-                    float maxDistanceTraveledBeforeNextObstacleCheck = _autoPilot.IntendedCurrentSpeedValue * _obstacleCheckJobPeriod.TotalInHours;
+
+                    // This can be called without being underway -> no ObstacleCheckingProcess will be running
+                    float maxDistanceTraveledBeforeNextObstacleCheck = 0F;
+                    if (IsObstacleCheckProcessRunning) {
+                        maxDistanceTraveledBeforeNextObstacleCheck = _autoPilot.IntendedCurrentSpeedValue * _obstacleCheckRecurringDuration.Duration.TotalInHours;
+                    }
                     float obstacleDistanceThresholdRequiringDetour = maxDistanceTraveledBeforeNextObstacleCheck * 2F;   // HACK
+
                     float distanceToObstacleZone = zoneHitInfo.distance;
                     if (distanceToObstacleZone <= obstacleDistanceThresholdRequiringDetour) {
                         useDetour = true;
@@ -815,10 +868,21 @@ namespace CodeEnv.Master.GameContent {
             ContinueCourseToTargetVia(detourProxy);
         }
 
+        /// <summary>
+        /// Handles the circumstance where the obstacle that was found is the Target.
+        /// <remarks>Occurs rarely when the target itself is actually in the way of getting to the 'real destination' being used
+        /// by the ship. That 'real destination' is offset from the target to reflect the ship's formation station offset from
+        /// the FleetCmd so that ship's traveling as a fleet don't bunch up at the same arrival point, aka the 'real destination'.
+        /// This method fixes that interference by resetting the TargetProxy's offset to zero, making the 'real destination' 
+        /// the Target itself.</remarks>
+        /// </summary>
+        /// <param name="obstacle">The obstacle.</param>
         private void HandleObstacleFoundIsTarget(IAvoidableObstacle obstacle) {
-            TargetProxy.ResetOffset();   // go directly to target
-
             D.Assert(IsEngaged);
+            D.AssertEqual(TargetProxy.Destination, obstacle as IShipNavigable);
+
+            D.Log(ShowDebugLog, "{0} encountered obstacle {1} which is the target! Resuming direct course to target.", DebugName, obstacle.DebugName);
+            TargetProxy.ResetOffset();
             ResumeDirectCourseToTarget();
         }
 
@@ -852,8 +916,11 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         public virtual void ResetForReuse() {
-            KillJobs();
-            _obstacleCheckJobPeriod = default(GameTimeDuration);
+            KillProcesses();
+            //_obstacleCheckRecurringDuration = null handled by KillProcesses
+            _obstacleCheckDestProxy = null;
+            _obstacleCheckMode = default(CourseRefreshMode);
+
             DoesObstacleCheckPeriodNeedRefresh = false;
             DoesMoveProgressCheckPeriodNeedRefresh = false;
             IsEngaged = false;
@@ -863,23 +930,37 @@ namespace CodeEnv.Master.GameContent {
             _isFleetwideMove = false;
         }
 
-        protected virtual void KillJobs() {
-            if (_moveJob != null) {
-                _moveJob.Kill();
-                _moveJob = null;
+        protected virtual void KillProcesses() {
+            KillNavJob();
+            KillObstacleCheckProcess();
+            KillCheckForFleetIsAlignedProcess();
+        }
+
+        private void KillObstacleCheckProcess() {
+            if (_obstacleCheckRecurringDuration != null) {
+                //D.Log(ShowDebugLog, "MoveTask's _obstacleCheckDuration {0} being removed from Minder and nulled in Frame {1}.", 
+                //    _obstacleCheckRecurringDuration, Time.frameCount);
+                _gameTime.RecurringDateMinder.Remove(_obstacleCheckRecurringDuration);
+                _obstacleCheckRecurringDuration = null;
             }
-            if (_obstacleCheckJob != null) {
-                _obstacleCheckJob.Kill();
-                _obstacleCheckJob = null;
-            }
+        }
+
+        private void KillCheckForFleetIsAlignedProcess() {
             if (_actionToExecuteWhenFleetIsAligned != null) {
                 _autoPilot.RemoveFleetIsAlignedCallback(_actionToExecuteWhenFleetIsAligned);
                 _actionToExecuteWhenFleetIsAligned = null;
             }
         }
 
+        private void KillNavJob() {
+            if (_navJob != null) {
+                _navJob.Kill();
+                _navJob = null;
+            }
+        }
+
         protected virtual void Cleanup() {
-            KillJobs();
+            KillProcesses();
         }
 
         public override string ToString() {
@@ -922,6 +1003,17 @@ namespace CodeEnv.Master.GameContent {
             // called Dispose(false) to cleanup unmanaged resources
 
             _alreadyDisposed = true;
+        }
+
+        #endregion
+
+        #region IRecurringDateMinderClient Members
+
+        void IRecurringDateMinderClient.HandleDateReached(DateMinderDuration recurringDuration) {
+            D.AssertNotNull(_obstacleCheckRecurringDuration, "{0}: _obstacleCheckDuration is null. Frame: {1}.".Inject(DebugName, Time.frameCount));
+            D.AssertEqual(_obstacleCheckRecurringDuration, recurringDuration, Time.frameCount.ToString());
+            //D.Log(ShowDebugLog, "MoveTask received HandleDateReached({0}) in Frame {1}.", recurringDuration, Time.frameCount);
+            HandleObstacleCheckDateReached();
         }
 
         #endregion

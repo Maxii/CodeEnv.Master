@@ -41,7 +41,7 @@ public class TooltipHudWindow : AHudWindow<TooltipHudWindow>, ITooltipHudWindow 
     /// </summary>
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
-        References.TooltipHudWindow = Instance;
+        GameReferences.TooltipHudWindow = Instance;
     }
 
     protected override void InitializeValuesAndReferences() {
@@ -176,7 +176,7 @@ public class TooltipHudWindow : AHudWindow<TooltipHudWindow>, ITooltipHudWindow 
 
     protected override void Cleanup() {
         base.Cleanup();
-        References.TooltipHudWindow = null;
+        GameReferences.TooltipHudWindow = null;
     }
 
     #endregion

@@ -19,6 +19,7 @@ namespace CodeEnv.Master.GameContent {
 
     using System.Collections.Generic;
     using CodeEnv.Master.Common;
+    using UnityEngine;
 
     /// <summary>
     /// limited InfoAccess Interface for easy access to MonoBehaviours that are SectorItems.
@@ -33,6 +34,14 @@ namespace CodeEnv.Master.GameContent {
         /// A collection of assembly stations that are local to the item.
         /// </summary>
         IList<StationaryLocation> LocalAssemblyStations { get; }
+
+        /// <summary>
+        /// Returns a random position inside the sector that is clear of any interference.
+        /// The point returned is guaranteed to be inside the radius of the universe.
+        /// </summary>
+        /// <returns></returns>
+        Vector3 GetClearRandomPointInsideSector();
+
 
     }
 }

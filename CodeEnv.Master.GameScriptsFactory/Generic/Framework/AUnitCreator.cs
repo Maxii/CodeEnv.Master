@@ -23,7 +23,7 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// Abstract base class for Unit Creators.
 /// </summary>
-public abstract class AUnitCreator : AMonoBase {
+public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
 
     private const string DebugNameFormat = "{0}.{1}";
 
@@ -64,7 +64,7 @@ public abstract class AUnitCreator : AMonoBase {
     protected JobManager _jobMgr;
     protected GameManager _gameMgr;
     protected UnitFactory _factory;
-    protected bool _isUnitDeployed;
+    protected bool _isUnitPositioned;
 
     protected override void Awake() {
         base.Awake();
@@ -81,6 +81,7 @@ public abstract class AUnitCreator : AMonoBase {
     protected override void Start() {
         base.Start();
         if (_gameMgr.IsRunning) {
+            BuildAndPositionUnit();
             AuthorizeDeployment();
         }
     }
@@ -94,16 +95,30 @@ public abstract class AUnitCreator : AMonoBase {
     #endregion
 
     /// <summary>
-    /// Authorizes the creator to deploy and commence operations of the Unit
-    /// on the DeployDate specified by the Configuration.
-    /// <remarks>If this creator is present in the scene before the game IsRunning
-    /// then UniverseCreator will call AuthorizeDeployment() when the game begins running
-    /// but after all CelestialObjects have commenced operations. This way, celestial objects
-    /// are operational before they can be detected by units. If this creator is placed in
-    /// the scene during runtime, then it will wake, detect the game is already running 
-    /// and call AuthorizeDeployment() itself.</remarks>
+    /// Builds and positions the Unit in preparation for deployment and operations.
+    /// </summary>
+    public void BuildAndPositionUnit() {
+        D.AssertNotNull(Configuration);    // would only be called with a Configuration
+        D.Log(ShowDebugLog, "{0} is building and positioning {1}. Targeted DeployDate = {2}.", DebugName, Configuration.UnitName, Configuration.DeployDate);
+        MakeUnitAndPrepareForPositioning();
+        _isUnitPositioned = PositionUnit();
+    }
+
+    /// <summary>
+    /// Authorizes the creator to deploy and commence operations of the Unit on the DeployDate specified by the Configuration.
+    /// If the unit was not able to be pre-positioned when built, it will be destroyed by this method.
+    /// <remarks>If this creator is present in the scene before the game IsRunning then UniverseCreator will call 
+    /// BuildAndPosition(). It will be followed by AuthorizeDeployment() when the game begins running but after all 
+    /// CelestialObjects have commenced operations. This way, celestial objects are operational before they can be 
+    /// detected by units. If this creator is placed in the scene during runtime, then it will wake, detect the game 
+    /// is already running and call BuildAndPosition() followed by AuthorizeDeployment() itself.</remarks>
     /// </summary>
     public void AuthorizeDeployment() {
+        if (!_isUnitPositioned) {
+            Destroy(gameObject);
+            return;
+        }
+
         D.AssertNotNull(Configuration);    // would only be called with a Configuration
         D.Log(ShowDebugLog, "{0} is authorizing deployment of {1}. Targeted DeployDate = {2}.", DebugName, Configuration.UnitName, Configuration.DeployDate);
         var currentDate = GameTime.Instance.CurrentDate;
@@ -112,48 +127,46 @@ public abstract class AUnitCreator : AMonoBase {
             HandleDeployDateReached();
         }
         else {
-            BuildDeployAndBeginUnitOpsOnDeployDate();
+            DeployOnDeployDate();
         }
     }
 
-    protected void BuildDeployAndBeginUnitOpsOnDeployDate() {
+    private void DeployOnDeployDate() {
         D.Assert(_gameMgr.IsRunning);
-        string jobName = "{0}.WaitForDeployDate({1})".Inject(DebugName, Configuration.DeployDate);
-        _jobMgr.WaitForDate(Configuration.DeployDate, jobName, waitFinished: (jobWasKilled) => {
-            if (jobWasKilled) {
-                // Job without a local reference is only Kill()ed by JobManager during scene transitions
-            }
-            else {
-                HandleDeployDateReached();
-            }
-        });
+        GameTime.Instance.DateMinder.Add(Configuration.DeployDate, this);
     }
+    ////private void DeployOnDeployDate() { // OPTIMIZE 3.10.17 Not replacing with DateMinder for now as no Job reference is used
+    ////    D.Assert(_gameMgr.IsRunning);
+    ////    string jobName = "{0}.WaitForDeployDate({1})".Inject(DebugName, Configuration.DeployDate);
+    ////    _jobMgr.WaitForDate(Configuration.DeployDate, jobName, waitFinished: (jobWasKilled) => {
+    ////        if (jobWasKilled) {
+    ////            // Job without a local reference is only Kill()ed by JobManager during scene transitions
+    ////        }
+    ////        else {
+    ////            HandleDeployDateReached();
+    ////        }
+    ////    });
+    ////}
 
-    protected void HandleDeployDateReached() { // 3.25.16 wait approach changed from dateChanged event handler to WaitForDate utility method
+    private void HandleDeployDateReached() { // 3.25.16 wait approach changed from dateChanged event handler to WaitForDate utility method
         GameDate currentDate = GameTime.Instance.CurrentDate;
         GameDate dateToDeploy = Configuration.DeployDate;
         if (currentDate < dateToDeploy) {
             D.Error("{0}: {1} should not be < {2}.", DebugName, currentDate, dateToDeploy);
         }
-        //D.Log(ShowDebugLog, "{0} is about to build, deploy and begin ops of {1}'s {2} on {3}.", DebugName, Owner, Configuration.UnitName, currentDate);
+        //D.Log(ShowDebugLog, "{0} is about to begin ops of {1}'s {2} on {3}.", DebugName, Owner, Configuration.UnitName, currentDate);
 
-        MakeUnitAndPrepareForDeployment();
-        _isUnitDeployed = DeployUnit();
-        if (!_isUnitDeployed) {
-            Destroy(gameObject);
-            return;
-        }
         if (currentDate > dateToDeploy) {
             D.Log(ShowDebugLog, "{0} exceeded DeployDate {1}, so actually deployed on {2}.", DebugName, dateToDeploy, currentDate);
         }
         else {
-            D.Log(ShowDebugLog, "{0} was deployed on {1}.", DebugName, currentDate);
+            D.Log(ShowDebugLog, "{0} was deployed on intended date {1}.", DebugName, currentDate);
         }
         PrepareForUnitOperations();
         BeginUnitOperations();
     }
 
-    protected void MakeUnitAndPrepareForDeployment() {
+    private void MakeUnitAndPrepareForPositioning() {
         LogEvent();
         MakeElements();
         MakeCommand(Configuration.Owner);
@@ -176,12 +189,12 @@ public abstract class AUnitCreator : AMonoBase {
 
     /// <summary>
     /// Deploys the unit. Returns true if successfully deployed, false
-    /// if not and therefore destroyed.
+    /// if not. If not deployed the unit should be destroyed.
     /// </summary>
     /// <returns></returns>
-    protected abstract bool DeployUnit();
+    protected abstract bool PositionUnit();
 
-    protected void PrepareForUnitOperations() {
+    private void PrepareForUnitOperations() {
         LogEvent();
         CompleteUnitInitialization();   // 10.19.16 Moved up from last as Knowledge organizes Cmds by their sectorID which this initializes
         AddUnitToGameKnowledge();
@@ -196,7 +209,7 @@ public abstract class AUnitCreator : AMonoBase {
     /// </summary>
     protected abstract void AddUnitToGameKnowledge();
 
-    protected void BeginUnitOperations() {
+    private void BeginUnitOperations() {
         LogEvent();
         BeginElementsOperations();
         BeginCommandOperations();
@@ -329,6 +342,16 @@ public abstract class AUnitCreator : AMonoBase {
     #endregion
 
     #endregion
+
+    #region IDateMinderClient Members
+
+    void IDateMinderClient.HandleDateReached(GameDate date) {
+        D.AssertEqual(Configuration.DeployDate, date);
+        HandleDeployDateReached();
+    }
+
+    #endregion
+
 }
 
 

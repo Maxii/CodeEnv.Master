@@ -40,7 +40,9 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
                                                                                             FleetDirective.Refit,
                                                                                             FleetDirective.Withdraw,
                                                                                             FleetDirective.Retreat,
-                                                                                            FleetDirective.Scuttle };
+                                                                                            FleetDirective.Scuttle,
+                                                                                            FleetDirective.ChangeHQ
+                                                                                        };
 
     private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] {     FleetDirective.Join,
                                                                                             FleetDirective.Move,
@@ -67,7 +69,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
     private FleetCmdItem _fleetMenuOperator;
 
     public FleetCtxControl_User(FleetCmdItem fleetCmd)
-        : base(fleetCmd.gameObject, uniqueSubmenusReqd: 10, menuPosition: MenuPositionMode.Over) {
+        : base(fleetCmd.gameObject, uniqueSubmenusReqd: 11, menuPosition: MenuPositionMode.Over) {
         _fleetMenuOperator = fleetCmd;
         __ValidateUniqueSubmenuQtyReqd();
     }
@@ -99,6 +101,8 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
             case FleetDirective.AssumeFormation:
             case FleetDirective.Scuttle:
                 return _fleetMenuOperator.IsCurrentOrderDirectiveAnyOf(directive);
+            case FleetDirective.ChangeHQ:
+                return _fleetMenuOperator.Elements.Count == Constants.One;
             case FleetDirective.Disband:
             case FleetDirective.Join:
             case FleetDirective.Patrol:
@@ -149,6 +153,9 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
             case FleetDirective.Withdraw:   // TODO away from enemy
             case FleetDirective.Retreat:    // TODO away from enemy
                 targets = _userKnowledge.OwnerBases.Cast<INavigable>();
+                return true;
+            case FleetDirective.ChangeHQ:
+                targets = _fleetMenuOperator.Elements.Except(_fleetMenuOperator.HQElement).Cast<INavigable>();
                 return true;
             case FleetDirective.Scuttle:
             case FleetDirective.AssumeFormation:    // Note: In-place only, not going to offer LocalAssyStations as targets
@@ -205,7 +212,12 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
         bool isTarget = _unitTargetLookup.TryGetValue(itemID, out target);
         string msg = isTarget ? target.DebugName : "[none]";
         D.Log("{0} selected directive {1} and target {2} from context menu.", _fleetMenuOperator.DebugName, directive.GetValueName(), msg);
-        _fleetMenuOperator.CurrentOrder = new FleetOrder(directive, OrderSource.User, target as IFleetNavigable);
+        if (directive == FleetDirective.ChangeHQ) {
+            _fleetMenuOperator.HQElement = target as ShipItem;
+        }
+        else {
+            _fleetMenuOperator.CurrentOrder = new FleetOrder(directive, OrderSource.User, target as IFleetNavigable);
+        }
     }
 
     private void IssueRemoteUserFleetOrder(int itemID) {

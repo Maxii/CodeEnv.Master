@@ -36,7 +36,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="name">The name.</param>
         /// <param name="course">The course.</param>
         public CoursePlotLine(string name, IList<INavigable> course)
-            : this(name, course, References.DynamicObjectsFolder.Folder, 1F) { }
+            : this(name, course, GameReferences.DynamicObjectsFolder.Folder, 1F) { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CoursePlotLine" /> class.

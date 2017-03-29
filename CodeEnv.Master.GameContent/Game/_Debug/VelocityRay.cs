@@ -44,7 +44,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="target">The transform that this VelocityRay emanates from in the scene.</param>
         /// <param name="speed">The potentially changing speed as a reference.</param>
         public VelocityRay(string name, Transform target, Reference<float> speed)
-            : this(name, target, speed, References.DynamicObjectsFolder.Folder) {
+            : this(name, target, speed, GameReferences.DynamicObjectsFolder.Folder) {
         }
 
         /// <summary>

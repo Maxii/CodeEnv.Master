@@ -259,16 +259,19 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void HandleAlertStatusChanged() {
-            D.LogBold(ShowDebugLog, "{0} AlertStatus changed to {1}. Notifying Elements.", DebugName, AlertStatus.GetValueName());
+            //D.Log(ShowDebugLog, "{0} {1} changed to {2}. Notifying Elements.", DebugName, typeof(AlertStatus).Name, AlertStatus.GetValueName());
             ElementsData.ForAll(eData => eData.AlertStatus = AlertStatus);
             switch (AlertStatus) {
                 case AlertStatus.Normal:
+                    D.Log(/*ShowDebugLog, */"{0} {1} changed to {2}.", DebugName, typeof(AlertStatus).Name, AlertStatus.GetValueName());
                     FtlDampener.IsActivated = false;
                     break;
                 case AlertStatus.Yellow:
+                    D.Log(/*ShowDebugLog, */"{0} {1} changed to {2}.", DebugName, typeof(AlertStatus).Name, AlertStatus.GetValueName());
                     FtlDampener.IsActivated = false;
                     break;
                 case AlertStatus.Red:
+                    D.LogBold(/*ShowDebugLog, */"{0} {1} changed to {2}.", DebugName, typeof(AlertStatus).Name, AlertStatus.GetValueName());
                     FtlDampener.IsActivated = true;
                     break;
                 case AlertStatus.None:

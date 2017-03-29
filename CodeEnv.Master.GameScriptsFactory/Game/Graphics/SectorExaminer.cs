@@ -81,12 +81,14 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
     private InputManager _inputMgr;
     private GameInputHelper _inputHelper;
     private IList<IDisposable> _subscriptions;
+    private MainCameraControl _mainCameraCntl;
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
         _sectorGrid = SectorGrid.Instance;
         _inputHelper = GameInputHelper.Instance;
         _inputMgr = InputManager.Instance;
+        _mainCameraCntl = MainCameraControl.Instance;
         _distanceToHighlightedSector = _distanceInSectorsFromCamera * TempGameValues.SectorSideLength;
         InitializeColliderHotspot();
         Subscribe();
@@ -110,11 +112,11 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
 
     private void DynamicallySubscribe(bool toSubscribe) {
         if (toSubscribe) {
-            MainCameraControl.Instance.sectorIDChanged += CameraSectorIDChangedEventHandler;
+            _mainCameraCntl.sectorIDChanged += CameraSectorIDChangedEventHandler;
             UICamera.onMouseMove += MouseMovedEventHandler;
         }
         else {
-            MainCameraControl.Instance.sectorIDChanged -= CameraSectorIDChangedEventHandler;
+            _mainCameraCntl.sectorIDChanged -= CameraSectorIDChangedEventHandler;
             UICamera.onMouseMove -= MouseMovedEventHandler;
         }
     }
@@ -310,9 +312,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
         _subscriptions.ForAll(s => s.Dispose());
         _subscriptions.Clear();
         UICamera.onMouseMove -= MouseMovedEventHandler;
-        if (MainCameraControl.Instance != null) {
-            MainCameraControl.Instance.sectorIDChanged -= CameraSectorIDChangedEventHandler;
-        }
+        _mainCameraCntl.sectorIDChanged -= CameraSectorIDChangedEventHandler;
     }
 
     public override string ToString() {

@@ -45,8 +45,8 @@ namespace CodeEnv.Master.GameContent {
 
         public DetectionHandler(IIntelItem item) {
             _item = item;
-            _gameMgr = References.GameManager;
-            _debugControls = References.DebugControls;
+            _gameMgr = GameReferences.GameManager;
+            _debugControls = GameReferences.DebugControls;
             _detectionLookup = new Dictionary<Player, IDictionary<RangeCategory, IList<IUnitCmd_Ltd>>>(_gameMgr.AllPlayers.Count);
         }
 

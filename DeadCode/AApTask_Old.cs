@@ -42,7 +42,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected virtual void InitializeValuesAndReferences() {
-            _jobMgr = References.JobManager;
+            _jobMgr = GameReferences.JobManager;
         }
 
         public virtual void ResetForReuse() {

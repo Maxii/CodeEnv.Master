@@ -441,6 +441,17 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
+        ///  Tests if <c>value</c> is &gt; <c>targetValue</c> within UnityConstants.FloatEqualityPrecision. 
+        ///  Useful in dealing with floating point imprecision.
+        /// </summary>
+        /// <param name="value">The value to test.</param>
+        /// <param name="targetValue">The targetValue.</param>
+        /// <returns></returns>
+        public static bool IsGreaterThan(this float value, float targetValue) {
+            return value - targetValue > UnityConstants.FloatEqualityPrecision;
+        }
+
+        /// <summary>
         ///  Tests if <c>value</c> is &lt;= <c>targetValue</c> with buffer added. 
         ///  Useful in dealing with floating point imprecision.
         /// </summary>
@@ -453,6 +464,17 @@ namespace CodeEnv.Master.Common {
         public static bool IsLessThanOrEqualTo(this float value, float targetValue, float equalsTolerance = UnityConstants.FloatEqualityPrecision) {
             Utility.ValidateNotNegative(equalsTolerance);
             return value <= targetValue + equalsTolerance;
+        }
+
+        /// <summary>
+        ///  Tests if <c>value</c> is &lt; <c>targetValue</c> within UnityConstants.FloatEqualityPrecision. 
+        ///  Useful in dealing with floating point imprecision.
+        /// </summary>
+        /// <param name="value">The value to test.</param>
+        /// <param name="targetValue">The targetValue.</param>
+        /// <returns></returns>
+        public static bool IsLessThan(this float value, float targetValue) {
+            return targetValue - value > UnityConstants.FloatEqualityPrecision;
         }
 
         /// <summary>

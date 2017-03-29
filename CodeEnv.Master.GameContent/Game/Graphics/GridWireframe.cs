@@ -35,7 +35,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="width">The width.</param>
         /// <param name="color">The color.</param>
         public GridWireframe(string name, List<Vector3> gridPoints, float width = 1F, GameColor color = GameColor.Gray)
-            : this(name, gridPoints, References.DynamicObjectsFolder.Folder, width, color) {
+            : this(name, gridPoints, GameReferences.DynamicObjectsFolder.Folder, width, color) {
         }
 
         /// <summary>

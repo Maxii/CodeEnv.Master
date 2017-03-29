@@ -22,13 +22,13 @@ namespace CodeEnv.Master.Common {
     /// <summary>
     /// Generic Class that simplifies the syntax associated with Enums. Useful when you know the enum type you are
     /// dealing with.  Allows syntax such as:
-    /// <code>var getValues = Enums&lt;MyEnumbers&gt;.GetValues();
-    ///var parse = Enums&lt;MyEnumbers&gt;.Parse("Seven");
-    ///var isDefined = Enums&lt;MyEnumbers&gt;.IsDefined(MyEnumbers.Eight);
-    ///var getName = Enums&lt;MyEnumbers&gt;;.GetName(MyEnumbers.Eight);
+    /// <code>var getValues = Enums&lt;MyEnumType&gt;.GetValues();
+    ///var parse = Enums&lt;MyEnumType&gt;.Parse("Seven");
+    ///var isDefined = Enums&lt;MyEnumType&gt;.IsDefined(MyEnumType.Eight);
+    ///var getName = Enums&lt;MyEnumTyoe&gt;;.GetName(MyEnumType.Eight);
     ///
     ///MyEnumbers tryParse;
-    ///Enums&lt;MyEnumbers&gt;.TryParse("Zero", out tryParse);
+    ///Enums&lt;MyEnumType&gt;.TryParse("Zero", out tryParse);
     /// </code>
     /// </summary>
     /// <remarks>Courtesy of Damien Guard. http://damieng.com/blog/category/development/net </remarks>

@@ -36,7 +36,7 @@ namespace CodeEnv.Master.GameContent {
 
         public ApMaintainPositionTask_Old(AutoPilot_Old autoPilot) : base(autoPilot) { }
 
-        public void Execute(ApBombardDestinationProxy targetProxy) {
+        public void Execute(ApBesiegeDestinationProxy targetProxy) {
             D.AssertNotNull(targetProxy, "{0}.AutoPilotDestProxy is null. Frame = {1}.".Inject(DebugName, Time.frameCount));
             D.Assert(_autoPilot.IsEngaged);
             InitiateMaintainPositionFrom(targetProxy);
@@ -47,7 +47,7 @@ namespace CodeEnv.Master.GameContent {
         //    InitiateMaintainPositionFrom(targetProxy);
         //}
 
-        private void InitiateMaintainPositionFrom(ApBombardDestinationProxy targetProxy) {
+        private void InitiateMaintainPositionFrom(ApBesiegeDestinationProxy targetProxy) {
             //D.Log(ShowDebugLog, "{0} is launching ApMaintainPositionWhilePursuingJob from {1}.", DebugName, targetProxy.DebugName);
 
             D.AssertNull(_maintainPositionJob);
@@ -94,7 +94,7 @@ namespace CodeEnv.Master.GameContent {
         //    });
         //}
 
-        private IEnumerator WaitWhileArrived(ApBombardDestinationProxy targetProxy) {
+        private IEnumerator WaitWhileArrived(ApBesiegeDestinationProxy targetProxy) {
             while (targetProxy.HasArrived) {
                 // Warning: Don't use the WaitWhile YieldInstruction here as we rely on the ability to 
                 // Kill the ApMaintainPositionWhilePursuingJob when the target represented by ApTargetProxy dies. Killing 

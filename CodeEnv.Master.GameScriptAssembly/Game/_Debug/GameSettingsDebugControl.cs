@@ -109,7 +109,7 @@ public class GameSettingsDebugControl : AMonoSingleton<GameSettingsDebugControl>
     /// </summary>
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
-        References.GameSettingsDebugControl = Instance;
+        GameReferences.GameSettingsDebugControl = Instance;
     }
 
     /// <summary>
@@ -122,7 +122,7 @@ public class GameSettingsDebugControl : AMonoSingleton<GameSettingsDebugControl>
     }
 
     private void InitializeValuesAndReferences() {
-        _gameMgr = References.GameManager;
+        _gameMgr = GameReferences.GameManager;
         _playerPrefsMgr = PlayerPrefsManager.Instance;
     }
 
@@ -269,7 +269,7 @@ public class GameSettingsDebugControl : AMonoSingleton<GameSettingsDebugControl>
     #region Cleanup
 
     protected override void Cleanup() {
-        References.GameSettingsDebugControl = null;
+        GameReferences.GameSettingsDebugControl = null;
     }
 
     #endregion

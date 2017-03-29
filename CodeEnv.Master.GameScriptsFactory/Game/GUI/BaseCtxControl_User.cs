@@ -33,7 +33,9 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
                                                                                         BaseDirective.Repair,
                                                                                         BaseDirective.Attack,
                                                                                         BaseDirective.Disband,
-                                                                                        BaseDirective.Scuttle};
+                                                                                        BaseDirective.Scuttle,
+                                                                                        BaseDirective.ChangeHQ
+                                                                                     };
 
     private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] { FleetDirective.Disband,
                                                                                         FleetDirective.Refit,
@@ -65,7 +67,7 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
     private AUnitBaseCmdItem _baseMenuOperator;
 
     public BaseCtxControl_User(AUnitBaseCmdItem baseCmd)
-        : base(baseCmd.gameObject, uniqueSubmenusReqd: 1, menuPosition: MenuPositionMode.Over) {
+        : base(baseCmd.gameObject, uniqueSubmenusReqd: 2, menuPosition: MenuPositionMode.Over) {
         _baseMenuOperator = baseCmd;
         __ValidateUniqueSubmenuQtyReqd();
     }
@@ -97,6 +99,8 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
                 return _baseMenuOperator.IsCurrentOrderDirectiveAnyOf(directive);
             case BaseDirective.Repair:
                 return _baseMenuOperator.Data.Health == Constants.OneHundredPercent && _baseMenuOperator.Data.UnitHealth == Constants.OneHundredPercent;
+            case BaseDirective.ChangeHQ:
+                return _baseMenuOperator.Elements.Count == Constants.One;
             case BaseDirective.Refit:
                 return false;
             default:
@@ -117,6 +121,9 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
             case BaseDirective.Attack:
                 targets = _userKnowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsWarAttackByAllowed(_user)).Cast<INavigable>();
                 // TODO InRange?
+                return true;
+            case BaseDirective.ChangeHQ:
+                targets = _baseMenuOperator.Elements.Except(_baseMenuOperator.HQElement).Cast<INavigable>();
                 return true;
             case BaseDirective.Repair:
             case BaseDirective.Refit:
@@ -182,7 +189,12 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
         bool isTarget = _unitTargetLookup.TryGetValue(itemID, out target);
         string tgtMsg = isTarget ? target.DebugName : "[none]";
         D.Log("{0} selected directive {1} and target {2} from context menu.", _baseMenuOperator.DebugName, directive.GetValueName(), tgtMsg);
-        _baseMenuOperator.CurrentOrder = new BaseOrder(directive, OrderSource.User, target as IUnitAttackable);
+        if (directive == BaseDirective.ChangeHQ) {
+            _baseMenuOperator.HQElement = target as AUnitElementItem;
+        }
+        else {
+            _baseMenuOperator.CurrentOrder = new BaseOrder(directive, OrderSource.User, target as IUnitAttackable);
+        }
     }
 
     private void IssueRemoteUserFleetOrder(int itemID) {

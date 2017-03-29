@@ -179,7 +179,7 @@ public class SphericalHighlight : AMonoBase, ISphericalHighlight {
     }
 
     protected override void Cleanup() {
-        References.HoverHighlight = null;
+        GameReferences.HoverHighlight = null;
         DestroyTrackingLabel();
     }
 

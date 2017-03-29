@@ -156,6 +156,10 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         IsOperational = true;
     }
 
+    protected override void __InitializeFinalRigidbodySettings() {
+        Rigidbody.isKinematic = true;   // 3.7.17 TEMP stops facility from taking on velocity from collisions
+    }
+
     #endregion
 
     public override void CommenceOperations() {
@@ -240,9 +244,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     }
 
     /// <summary>
-    /// The Captain uses this method to issue orders.
+    /// The Captain uses this method to override orders already issued.
     /// </summary>
-    /// <param name="captainsOverrideOrder">The captains override order.</param>
+    /// <param name="captainsOverrideOrder">The Captain's override order.</param>
     /// <param name="retainSuperiorsOrder">if set to <c>true</c> [retain superiors order].</param>
     private void OverrideCurrentOrder(FacilityOrder captainsOverrideOrder, bool retainSuperiorsOrder) {
         D.AssertEqual(OrderSource.Captain, captainsOverrideOrder.Source, captainsOverrideOrder.ToString());
@@ -251,7 +255,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         // if the captain says to, and the current existing order is from his superior, then record it as a standing order
         FacilityOrder standingOrder = null;
         if (retainSuperiorsOrder && CurrentOrder != null) {
-            if (CurrentOrder.Source != OrderSource.Captain) {
+            if (CurrentOrder.Source > OrderSource.Captain) {
                 // the current order is from the Captain's superior so retain it
                 standingOrder = CurrentOrder;
             }
@@ -266,10 +270,10 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     private void HandleNewOrder() {
         // Pattern that handles Call()ed states that goes more than one layer deep
-        while (CurrentState == FacilityState.Repairing) {
+        while (IsCurrentStateCalled) {
             UponNewOrderReceived();
         }
-        D.AssertNotEqual(FacilityState.Repairing, CurrentState);
+        D.Assert(!IsCurrentStateCalled);
 
         if (CurrentOrder != null) {
             D.Log(ShowDebugLog, "{0} received new order {1}.", DebugName, CurrentOrder.Directive.GetValueName());
@@ -280,21 +284,16 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
                 case FacilityDirective.Attack:
                     CurrentState = FacilityState.ExecuteAttackOrder;
                     break;
-                case FacilityDirective.StopAttack:
-                    // issued when peace declared while attacking
-                    CurrentState = FacilityState.Idling;
-                    break;
                 case FacilityDirective.Repair:
                     CurrentState = FacilityState.ExecuteRepairOrder;
                     break;
-                case FacilityDirective.Refit:
-                    CurrentState = FacilityState.Refitting;
-                    break;
-                case FacilityDirective.Disband:
-                    CurrentState = FacilityState.Disbanding;
-                    break;
                 case FacilityDirective.Scuttle:
                     IsOperational = false;
+                    break;
+                case FacilityDirective.StopAttack:
+                case FacilityDirective.Refit:
+                case FacilityDirective.Disband:
+                    D.Warn("{0}.{1} is not currently implemented.", typeof(FacilityDirective).Name, directive.GetValueName());
                     break;
                 case FacilityDirective.None:
                 default:
@@ -331,16 +330,24 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     protected new FacilityState CurrentState {
         get { return (FacilityState)base.CurrentState; }
-        set {
-            if (base.CurrentState != null && CurrentState == value) {
-                D.Warn("{0} duplicate state {1} set attempt.", DebugName, value.GetValueName());
-            }
-            base.CurrentState = value;
-        }
+        set { base.CurrentState = value; }
     }
 
     protected new FacilityState LastState {
         get { return base.LastState != null ? (FacilityState)base.LastState : default(FacilityState); }
+    }
+
+    private bool IsCurrentStateCalled { get { return CurrentState == FacilityState.Repairing; } }
+
+    /// <summary>
+    /// Restarts execution of the CurrentState. If the CurrentState is a Call()ed state, Return()s first, then restarts
+    /// execution of the state Return()ed too, aka the new CurrentState.
+    /// </summary>
+    private void RestartState() {
+        while (IsCurrentStateCalled) {
+            Return();
+        }
+        CurrentState = CurrentState;
     }
 
     #region FinalInitialize
@@ -376,13 +383,29 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     IEnumerator Idling_EnterState() {
         LogEvent();
 
+        // 3.19.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
+        // I think it is because there is a rare scenario where no yield return is encountered below this. 
+        // See http://answers.unity3d.com/questions/158917/error-quotmcoroutineenumeratorgchandle-0quot.html
+        yield return null;
+
         if (CurrentOrder != null) {
-            // check for a standing order to execute
+            // FollowonOrders should always be executed before any StandingOrder is considered
+            if (CurrentOrder.FollowonOrder != null) {
+                D.Log(ShowDebugLog, "{0} is executing follow-on order {1}.", DebugName, CurrentOrder.FollowonOrder);
+
+                OrderSource followonOrderSource = CurrentOrder.FollowonOrder.Source;
+                D.AssertEqual(OrderSource.Captain, followonOrderSource, CurrentOrder.ToString());
+
+                CurrentOrder = CurrentOrder.FollowonOrder;
+                yield return null;
+                D.Error("{0} should never get here as CurrentOrder was changed to {1}.", DebugName, CurrentOrder);
+            }
+            // If we got here, there is no FollowonOrder, so now check for any StandingOrder
             if (CurrentOrder.StandingOrder != null) {
                 D.LogBold(ShowDebugLog, "{0} returning to execution of standing order {1}.", DebugName, CurrentOrder.StandingOrder);
 
                 OrderSource standingOrderSource = CurrentOrder.StandingOrder.Source;
-                if (standingOrderSource != OrderSource.CmdStaff && standingOrderSource != OrderSource.User) {
+                if (standingOrderSource < OrderSource.CmdStaff) {
                     D.Error("{0} StandingOrder {1} source can't be {2}.", DebugName, CurrentOrder.StandingOrder, standingOrderSource.GetValueName());
                 }
 
@@ -390,9 +413,28 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
                 yield return null;
                 D.Error("{0} should never get here as CurrentOrder was changed to {1}.", DebugName, CurrentOrder);
             }
-            //D.Log(ShowDebugLog, "{0} has completed {1} with no standing order queued.", DebugName, CurrentOrder);
+            //D.Log(ShowDebugLog, "{0} has completed {1} with no follow-on or standing order queued.", DebugName, CurrentOrder);
             CurrentOrder = null;
         }
+
+
+        //if (CurrentOrder != null) {
+        //    // check for a standing order to execute
+        //    if (CurrentOrder.StandingOrder != null) {
+        //        D.LogBold(ShowDebugLog, "{0} returning to execution of standing order {1}.", DebugName, CurrentOrder.StandingOrder);
+
+        //        OrderSource standingOrderSource = CurrentOrder.StandingOrder.Source;
+        //        if (standingOrderSource < OrderSource.CmdStaff) {
+        //            D.Error("{0} StandingOrder {1} source can't be {2}.", DebugName, CurrentOrder.StandingOrder, standingOrderSource.GetValueName());
+        //        }
+
+        //        CurrentOrder = CurrentOrder.StandingOrder;
+        //        yield return null;
+        //        D.Error("{0} should never get here as CurrentOrder was changed to {1}.", DebugName, CurrentOrder);
+        //    }
+        //    //D.Log(ShowDebugLog, "{0} has completed {1} with no standing order queued.", DebugName, CurrentOrder);
+        //    CurrentOrder = null;
+        //}
         IsAvailable = true; // 10.3.16 this can instantly generate a new Order (and thus a state change). Accordingly,  this EnterState
                             // cannot return void as that causes the FSM to fail its 'no state change from void EnterState' test.
     }
@@ -412,6 +454,11 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         if (AssessNeedForRepair(Constants.OneHundredPercent)) {
             InitiateRepair(retainSuperiorsOrderOnRepairCompletion: false);
         }
+    }
+
+    void Idling_UponHQStatusChangeCompleted() {
+        LogEvent();
+        // TODO
     }
 
     void Idling_UponRelationsChanged(Player chgdRelationsPlayer) {
@@ -448,8 +495,12 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     IEnumerator ExecuteAttackOrder_EnterState() {
         LogEvent();
 
-        IUnitAttackable attackTgtFromOrder = CurrentOrder.Target;
+        // 3.19.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
+        // I think it is because there is a rare scenario where no yield return is encountered below this. 
+        // See http://answers.unity3d.com/questions/158917/error-quotmcoroutineenumeratorgchandle-0quot.html
+        yield return null;
 
+        IUnitAttackable attackTgtFromOrder = CurrentOrder.Target;
         while (attackTgtFromOrder.IsOperational) {
             //TODO Primary target needs to be picked, and if it dies, its death handled ala ShipItem
             // if a primaryTarget is inRange, primary target is not null so OnWeaponReady will attack it
@@ -461,7 +512,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             //D.Assert(isSubscribed);   // all IElementAttackable are Items
 
             //TODO Implement communication of results to BaseCmd ala Ship -> FleetCmd
-            // Command.HandleFacilityAttackAttemptFinished(this, _fsmPrimaryAttackTgt, isSuccessful, failureCause);
+            // Command.HandleOrderOutcom(this, _fsmPrimaryAttackTgt, isSuccessful, failureCause);
             yield return null;
         }
         CurrentState = FacilityState.Idling;
@@ -480,8 +531,19 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     void ExecuteAttackOrder_UponDamageIncurred() {
         LogEvent();
         if (AssessNeedForRepair(GeneralSettings.Instance.HealthThreshold_BadlyDamaged)) {
+            if (CurrentOrder.ToNotifyCmd) {
+                Command.HandleOrderOutcome(BaseDirective.Attack, this, isSuccess: false, failCause: UnitItemOrderFailureCause.UnitItemNeedsRepair);
+                if (CurrentState != FacilityState.ExecuteAttackOrder) {
+                    D.Warn("{0}: Informing Cmd of OrderOutcome has resulted in an immediate state change to {1}.", DebugName, CurrentState.GetValueName());
+                }
+            }
             InitiateRepair(retainSuperiorsOrderOnRepairCompletion: false);
         }
+    }
+
+    void ExecuteAttackOrder_UponHQStatusChangeCompleted() {
+        LogEvent();
+        // TODO
     }
 
     void ExecuteAttackOrder_UponRelationsChanged(Player chgdRelationsPlayer) {
@@ -572,6 +634,11 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         // No need to AssessNeedForRepair() as already Repairing
     }
 
+    void ExecuteRepairOrder_UponHQStatusChangeCompleted() {
+        LogEvent();
+        // TODO
+    }
+
     void ExecuteRepairOrder_UponRelationsChanged(Player chgdRelationsPlayer) {
         LogEvent();
         // TODO
@@ -601,6 +668,11 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     IEnumerator Repairing_EnterState() {
         LogEvent();
+
+        // 3.19.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
+        // I think it is because there is a rare scenario where no yield return is encountered below this. 
+        // See http://answers.unity3d.com/questions/158917/error-quotmcoroutineenumeratorgchandle-0quot.html
+        yield return null;
 
         StartEffectSequence(EffectSequenceID.Repairing);
 
@@ -651,6 +723,11 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     void Repairing_UponDamageIncurred() {
         LogEvent();
         // No need to AssessNeedForRepair() as already Repairing
+    }
+
+    void Repairing_UponHQStatusChangeCompleted() {
+        LogEvent();
+        // TODO
     }
 
     void Repairing_UponRelationsChanged(Player chgdRelationsPlayer) {
@@ -815,6 +892,34 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         return new ObjectAnalyzer().ToString(this);
     }
 
+    #region Debug
+
+    private void __ReportCollision(Collision collision) {
+        if (ShowDebugLog) {
+            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+            var ordnance = collision.transform.GetComponent<AProjectileOrdnance>();
+            Profiler.EndSample();
+
+            if (ordnance == null) {
+                // its not ordnance
+                D.Log("While {0}, {1} registered a collision by {2}. Resulting speed/hr after impact = {3:0.000}.",
+                    CurrentState.ToString(), DebugName, collision.collider.name, __ActualSpeedValue);
+                //SphereCollider sphereCollider = collision.collider as SphereCollider;
+                //BoxCollider boxCollider = collision.collider as BoxCollider;
+                //string colliderSizeMsg = (sphereCollider != null) ? "radius = " + sphereCollider.radius : ((boxCollider != null) ? "size = " + boxCollider.size.ToPreciseString() : "size unknown");
+                //D.Log("{0}: Detail on collision - Distance between collider centers = {1:0.##}, {2}'s {3}.", 
+                //    DebugName, Vector3.Distance(Position, collision.collider.transform.position), collision.transform.name, colliderSizeMsg);
+                // AngularVelocity no longer reported as element's rigidbody.freezeRotation = true
+            }
+            else {
+                // ordnance impact
+                D.Log("{0} registered a collision by {1}. Resulting speed/hr after impact = {2:0.000}.", DebugName, ordnance.DebugName, __ActualSpeedValue);
+            }
+        }
+    }
+
+    #endregion
+
     #region Debug Show Obstacle Zones
 
     private void InitializeDebugShowObstacleZone() {
@@ -969,11 +1074,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         }
     }
 
-    //public override AutoPilotDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, Vector3 shipPosition) {
-    //    float innerShellRadius = _obstacleZoneCollider.radius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of obstacle zone
-    //    float outerShellRadius = innerShellRadius + 1F;   // HACK depth of arrival shell is 1
-    //    return new AutoPilotDestinationProxy(this, tgtOffset, innerShellRadius, outerShellRadius);
-    //}
     public override ApMoveDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, IShip ship) {
         float innerShellRadius = _obstacleZoneCollider.radius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of obstacle zone
         float outerShellRadius = innerShellRadius + 1F;   // HACK depth of arrival shell is 1
@@ -1032,7 +1132,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #endregion
 
-    #region IShipAttackable Members
+    #region IShipBlastable Members
 
     public override ApStrafeDestinationProxy GetApStrafeTgtProxy(ValueRange<float> desiredWeaponsRangeEnvelope, IShip ship) {
         float shortestDistanceFromTgtToTgtSurface = GetDistanceToClosestWeaponImpactSurface();
@@ -1050,7 +1150,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         return attackProxy;
     }
 
-    public override ApBombardDestinationProxy GetApBombardTgtProxy(ValueRange<float> desiredWeaponsRangeEnvelope, IShip ship) {
+    public override ApBesiegeDestinationProxy GetApBesiegeTgtProxy(ValueRange<float> desiredWeaponsRangeEnvelope, IShip ship) {
         float shortestDistanceFromTgtToTgtSurface = GetDistanceToClosestWeaponImpactSurface();
         float innerProxyRadius = desiredWeaponsRangeEnvelope.Minimum + shortestDistanceFromTgtToTgtSurface;
         float minInnerProxyRadiusToAvoidCollision = _obstacleZoneCollider.radius + ship.CollisionDetectionZoneRadius;
@@ -1061,7 +1161,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         float outerProxyRadius = desiredWeaponsRangeEnvelope.Maximum + shortestDistanceFromTgtToTgtSurface;
         D.Assert(outerProxyRadius > innerProxyRadius);
 
-        ApBombardDestinationProxy attackProxy = new ApBombardDestinationProxy(this, ship, innerProxyRadius, outerProxyRadius);
+        ApBesiegeDestinationProxy attackProxy = new ApBesiegeDestinationProxy(this, ship, innerProxyRadius, outerProxyRadius);
         D.Log(ShowDebugLog, "{0} has constructed an AttackProxy with an ArrivalWindowDepth of {1:0.#} units.", DebugName, attackProxy.ArrivalWindowDepth);
         return attackProxy;
     }

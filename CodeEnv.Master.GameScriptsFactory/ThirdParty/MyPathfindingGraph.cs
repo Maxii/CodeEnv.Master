@@ -812,7 +812,7 @@ namespace Pathfinding {
         /// <param name="sectorID">The sector ID where the Starbase is located. Note that the StarbaseCmdItem
         /// itself does not know its sectorID until FinalInitialize.</param>
         public void AddToGraph(StarbaseCmdItem baseCmd, IntVector3 sectorID) {
-            //D.Log("{0}.AddToGraph({1}) called.", DebugName, baseCmd.DebugName);
+            //D.Log("{0}.AddToGraph({1}) called. Frame = {2}.", DebugName, baseCmd.DebugName, Time.frameCount);
             // Note: active.IsAnyGraphUpdatesQueued is never true except when using UpdateGraphs(). I've replaced UpdateGraphs(GUO) with WorkItems
 
             // forceCompletion is set by AstarPath internally 
@@ -904,7 +904,7 @@ namespace Pathfinding {
             float universeRadiusSqrd = GameManager.Instance.GameSettings.UniverseSize.Radius() * GameManager.Instance.GameSettings.UniverseSize.Radius();
             foreach (var waypoint in approachWaypoints) {
                 if (!IsInsideUniverseBoundaries(waypoint, universeRadiusSqrd)) {
-                    D.Warn("{0} is excluding {1}'s proposed approach waypoint that is outside the universe.", DebugName, starbaseCmd.DebugName);
+                    D.Log("{0} is excluding {1}'s proposed approach waypoint that is outside the universe.", DebugName, starbaseCmd.DebugName);
                     approachWaypointsToRemove.Add(waypoint);
                 }
             }

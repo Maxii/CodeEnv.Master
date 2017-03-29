@@ -131,6 +131,11 @@ public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IPropellable, Ftl
         return RangeCategory.__GetBaselineFtlDampenerRange();
     }
 
+    protected override void CompleteResetForReuse() {
+        base.CompleteResetForReuse();
+        D.Warn("{0} is being reset for future reuse. Check implementation for completeness before relying on it.", DebugName);
+    }
+
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);
     }
@@ -147,14 +152,18 @@ public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IPropellable, Ftl
             float acceptableThresholdSqrd = acceptableThreshold * acceptableThreshold;
             float lostDetectionItemDistanceSqrd;
             if ((lostDetectionItemDistanceSqrd = Vector3.SqrMagnitude(lostDetectionItem.Position - transform.position)) < acceptableThresholdSqrd) {
+                if (lostDetectionItemDistanceSqrd == Constants.ZeroF) {
+                    // 3.15.17 This appears to happen when a HQ is lost and then replaced. The former HQ is destroyed, but being destroyed
+                    // does not trigger colliders. Its the new HQ that is instantly at the center of the monitor (distance is zero) that 
+                    // creates the exit. UNCLEAR why an exit occurs. Anyhow, no reason to warn under this circumstance.
+                    // If this Assert fails, it could be because IsHQ may not yet be assigned HQ designation as DebugName is not showing [HQ].
+                    D.Assert((lostDetectionItem as IUnitElement_Ltd).IsHQ, lostDetectionItem.DebugName);
+                    //D.Warn("{0}.OnTriggerExit({1}) called at distance zero. LostItem.position = {2}, {0}.position = {3}. IsHQ = {4}.",
+                    //    DebugName, lostDetectionItem.DebugName, lostDetectionItem.Position, transform.position, (lostDetectionItem as IUnitElement_Ltd).IsHQ);
+                    return;
+                }
                 D.Warn("{0}.OnTriggerExit() called. Exit Distance for {1} {2:0.##} is < AcceptableThreshold {3:0.##}.",
                     DebugName, lostDetectionItem.DebugName, Mathf.Sqrt(lostDetectionItemDistanceSqrd), acceptableThreshold);
-                if (lostDetectionItemDistanceSqrd == Constants.ZeroF) {
-                    D.Error("{0}.OnTriggerExit({1}) called at distance zero. LostItem.position = {2}, {0}.position = {3}. IsHQ = {4}",
-                        DebugName, lostDetectionItem.DebugName, lostDetectionItem.Position, transform.position, (lostDetectionItem as IShip_Ltd).IsHQ);
-                    // 3.5.17 IsHQ may return false if not yet assigned HQ designation as DebugName does not have [HQ]
-                    // UNCLEAR Why the new HQ exits the dampening field. Reset and reacquire on HQ change?
-                }
             }
         }
     }

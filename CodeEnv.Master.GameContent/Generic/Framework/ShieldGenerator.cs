@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// An Element's ShieldGenerator. Can be Short, Medium or Long range.
     /// </summary>
-    public class ShieldGenerator : ARangedEquipment, ICountermeasure, IDisposable {
+    public class ShieldGenerator : ARangedEquipment, ICountermeasure, IDateMinderClient, IDisposable {
 
         /// <summary>
         /// Occurs when this ShieldGenerator changes from having any charge to having
@@ -44,17 +44,18 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<IShield>(ref _shield, value, "Shield"); }
         }
 
-        public float ReloadPeriod {
-            get {
-                float reloadPeriodMultiplier = Shield != null ? Shield.Owner.CountermeasureReloadPeriodMultiplier : Constants.OneF;
-                return Stat.ReloadPeriod * reloadPeriodMultiplier;
-            }
+        private GameTimeDuration _reloadPeriod;
+        public GameTimeDuration ReloadPeriod {
+            get { return _reloadPeriod; }
+            private set { SetProperty<GameTimeDuration>(ref _reloadPeriod, value, "ReloadPeriod"); }
         }
 
         /// <summary>
         /// The maximum absorption capacity of this generator.
         /// </summary>
         public float MaximumCharge { get { return Stat.MaximumCharge; } }
+
+        public Player Owner { get { return Shield.Owner; } }
 
         private float _currentCharge;
         /// <summary>
@@ -90,13 +91,17 @@ namespace CodeEnv.Master.GameContent {
 
         protected new ShieldGeneratorStat Stat { get { return base.Stat as ShieldGeneratorStat; } }
 
-        private bool IsReloading { get { return _reloadJob != null; } }
+        private bool IsReloading { get { return _reloadedDate != default(GameDate); } }
 
         private bool IsRecharging { get { return _rechargeJob != null; } }
 
-        private GameTime _gameTime;
-        private Job _reloadJob;
+        /// <summary>
+        /// The date this ShieldGenerator will be reloaded.
+        /// Once reloaded, this date will be default(GameDate) until the ShieldGenerator initiates reloading again.
+        /// </summary>
+        private GameDate _reloadedDate;
         private Job _rechargeJob;
+        private GameTime _gameTime;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ShieldGenerator"/> class.
@@ -148,10 +153,15 @@ namespace CodeEnv.Master.GameContent {
 
         #region Event and Property Change Handlers
 
+        protected override void HandleInitialActivation() {
+            base.HandleInitialActivation();
+            ReloadPeriod = new GameTimeDuration(Stat.ReloadPeriod * Owner.CountermeasureReloadPeriodMultiplier);
+        }
+
         protected override void IsOperationalPropChangedHandler() {
             base.IsOperationalPropChangedHandler();
             if (IsOperational) {
-                InitiateReloadCycle();
+                InitiateReloadProcess();
             }
             else {
                 HasCharge = false;
@@ -184,7 +194,7 @@ namespace CodeEnv.Master.GameContent {
         private void AssessRechargeState() {
             if (IsRecharging) {
                 if (!HasCharge || CurrentCharge == MaximumCharge) {
-                    KillRechargeJob();
+                    KillRechargeProcess();
                 }
             }
             else {
@@ -222,7 +232,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private void KillRechargeJob() {
+        private void KillRechargeProcess() {
             if (_rechargeJob != null) {
                 _rechargeJob.Kill();
                 _rechargeJob = null;
@@ -236,42 +246,29 @@ namespace CodeEnv.Master.GameContent {
         private void AssessReloadState() {
             if (IsReloading) {
                 if (!IsOperational || HasCharge) {
-                    KillReloadJob();
+                    KillReloadProcess();
                 }
             }
             else {
                 if (IsOperational && !HasCharge) {
-                    InitiateReloadCycle();
+                    InitiateReloadProcess();
                 }
             }
         }
 
-        private void InitiateReloadCycle() {
+        private void InitiateReloadProcess() {
             D.Assert(!HasCharge);
-            D.AssertNull(_reloadJob);
-            //D.Log(ShowDebugLog, "{0}.{1} is initiating its reload cycle. Duration: {2:0.} hours.", Shield.DebugName, Name, ReloadPeriod);
+            D.AssertDefault(_reloadedDate);
+            //D.Log(ShowDebugLog, "{0} is initiating its reload cycle. Duration: {1}.", DebugName, ReloadPeriod);
 
-            string jobName = "{0}.ReloadJob".Inject(DebugName);
-            _reloadJob = _jobMgr.WaitForHours(ReloadPeriod, jobName, waitFinished: (jobWasKilled) => {
-                if (jobWasKilled) {
-                    // 12.12.16 An AssertNull(_jobRef) here can fail as the reference can refer to a new Job, created 
-                    // right after the old one was killed due to the 1 frame delay in execution of jobCompleted(). My attempts at allowing
-                    // the AssertNull to occur failed. I believe this is OK as _jobRef is nulled from KillXXXJob() and, if 
-                    // the reference is replaced by a new Job, then the old Job is no longer referenced which is the objective. Jobs Kill()ed
-                    // centrally by JobManager won't null the reference, but this only occurs during scene transitions.
-                }
-                else {
-                    _reloadJob = null;
-                    //D.Log(ShowDebugLog, "{0}.{1} completed reload.", Shield.DebugName, Name);
-                    HandleReloaded();
-                }
-            });
+            _reloadedDate = new GameDate(ReloadPeriod);
+            _gameTime.DateMinder.Add(_reloadedDate, this);
         }
 
-        private void KillReloadJob() {
-            if (_reloadJob != null) {
-                _reloadJob.Kill();
-                _reloadJob = null;
+        private void KillReloadProcess() {
+            if (_reloadedDate != default(GameDate)) {
+                _gameTime.DateMinder.Remove(_reloadedDate, this);
+                _reloadedDate = default(GameDate);
             }
         }
 
@@ -281,8 +278,8 @@ namespace CodeEnv.Master.GameContent {
 
         private void Cleanup() {
             // 12.8.16 Job Disposal centralized in JobManager
-            KillReloadJob();
-            KillRechargeJob();
+            KillReloadProcess();
+            KillRechargeProcess();
         }
 
         public override string ToString() {
@@ -329,6 +326,15 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        #region IDateMinderClient Members
+
+        void IDateMinderClient.HandleDateReached(GameDate date) {
+            D.AssertEqual(_reloadedDate, date);
+            _reloadedDate = default(GameDate);
+            HandleReloaded();
+        }
+
+        #endregion
 
     }
 }

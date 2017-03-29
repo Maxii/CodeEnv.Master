@@ -363,7 +363,7 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
 
     protected override void Cleanup() {
         base.Cleanup();
-        if (!IsApplicationQuiting && !References.GameManager.IsSceneLoading) {
+        if (!IsApplicationQuiting && !GameReferences.GameManager.IsSceneLoading) {
             // It is important to cleanup the subscriptions and detected state for each item detected when this Monitor is dying of 
             // natural causes. However, doing so when the App is quiting or loading a new scene results in a cascade of NREs.
             IsOperational = false;

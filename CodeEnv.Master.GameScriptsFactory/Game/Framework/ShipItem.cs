@@ -211,6 +211,10 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         IsOperational = true;
     }
 
+    protected override void __InitializeFinalRigidbodySettings() {
+        Rigidbody.isKinematic = false;
+    }
+
     #endregion
 
     public override void CommenceOperations() {
@@ -230,6 +234,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     protected override void PrepareForDeathNotification() {
         base.PrepareForDeathNotification();
+        D.Log(ShowDebugLog, "{0} is disengaging AutoPilot on death. Frame {1}.", DebugName, Time.frameCount);
         _helm.DisengageAutoPilot();
         _engineRoom.HandleDeath();
     }
@@ -278,6 +283,16 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     protected override void HandleIsHQChanged() {
         base.HandleIsHQChanged();
         AssessDebugShowVelocityRay();
+
+        if (IsOperational) {
+            if (IsHQ) {
+                // The assignment to the previous Flagship's station has not taken place yet
+                Data.CombatStance = ShipCombatStance.Defensive;
+            }
+            else {
+                Data.CombatStance = RandomExtended.Choice(Enums<ShipCombatStance>.GetValues(excludeDefault: true)); // TEMP
+            }
+        }
     }
 
     private void CurrentOrderPropChangedHandler() {
@@ -299,32 +314,34 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     #endregion
 
     public void HandlePendingCollisionWith(IObstacle obstacle) {
-        if (IsOperational) {    // avoid initiating collision avoidance if dead but not yet destroyed
-            // Note: no need to filter out other colliders as the CollisionDetection layer 
-            // can only interact with itself or the AvoidableObstacle layer. Both use SphereColliders
-
-            if (IsInOrbit) {
-                // FixedJoint already attached so can't move
-                D.AssertNotNull(_orbitingJoint);
-                if (_obstaclesCollidedWithWhileInOrbit == null) {
-                    _obstaclesCollidedWithWhileInOrbit = new List<IObstacle>(2);
-                }
-                D.Assert(!_obstaclesCollidedWithWhileInOrbit.Contains(obstacle));
-                _obstaclesCollidedWithWhileInOrbit.Add(obstacle);
-
-                if (ShowDebugLog) {
-                    string orbitStateMsg = IsInCloseOrbit ? "in close " : "in high ";
-                    D.Log("{0} has recorded a pending collision with {1} while {2} orbit of {3}.", DebugName, obstacle.DebugName, orbitStateMsg, _itemBeingOrbited.DebugName);
-                }
-                return;
-            }
-
-            // If in process of AssumingCloseOrbit, AssumingCloseOrbit_EnterState will wait until no longer colliding
-            // (aka Helm.IsActivelyUnderway == false) before completing orbit assumption.
-            // If in process of AssumingHighOrbit after executing a move, ExecuteMoveOrder_EnterState will wait until no longer colliding
-            // (aka Helm.IsActivelyUnderway == false) before completing orbit assumption.
-            _engineRoom.HandlePendingCollisionWith(obstacle);
+        if (IsDead) {
+            return;   // avoid initiating collision avoidance if dead but not yet destroyed
         }
+
+        // Note: no need to filter out other colliders as the CollisionDetection layer 
+        // can only interact with itself or the AvoidableObstacle layer. Both use SphereColliders
+
+        if (IsInOrbit) {
+            // FixedJoint already attached so can't move
+            D.AssertNotNull(_orbitingJoint);
+            if (_obstaclesCollidedWithWhileInOrbit == null) {
+                _obstaclesCollidedWithWhileInOrbit = new List<IObstacle>(2);
+            }
+            D.Assert(!_obstaclesCollidedWithWhileInOrbit.Contains(obstacle));
+            _obstaclesCollidedWithWhileInOrbit.Add(obstacle);
+
+            if (ShowDebugLog) {
+                string orbitStateMsg = IsInCloseOrbit ? "in close " : "in high ";
+                D.Log("{0} has recorded a pending collision with {1} while {2} orbit of {3}.", DebugName, obstacle.DebugName, orbitStateMsg, _itemBeingOrbited.DebugName);
+            }
+            return;
+        }
+
+        // If in process of AssumingCloseOrbit, AssumingCloseOrbit_EnterState will wait until no longer colliding
+        // (aka Helm.IsActivelyUnderway == false) before completing orbit assumption.
+        // If in process of AssumingHighOrbit after executing a move, ExecuteMoveOrder_EnterState will wait until no longer colliding
+        // (aka Helm.IsActivelyUnderway == false) before completing orbit assumption.
+        _engineRoom.HandlePendingCollisionWith(obstacle);
     }
 
     public void HandlePendingCollisionAverted(IObstacle obstacle) {
@@ -366,14 +383,14 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     /// Convenience method that has the Captain issue an AssumeStation order.
     /// </summary>
     /// <param name="retainSuperiorsOrder">if set to <c>true</c> [retain superiors order].</param>
-    private void IssueAssumeStationOrderFromCaptain(bool retainSuperiorsOrder = false) {
+    private void IssueAssumeStationOrder(bool retainSuperiorsOrder = false) {
         OverrideCurrentOrder(new ShipOrder(ShipDirective.AssumeStation, OrderSource.Captain), retainSuperiorsOrder);
     }
 
     /// <summary>
-    /// The Captain uses this method to issue orders.
+    /// The Captain uses this method to override orders already issued.
     /// </summary>
-    /// <param name="captainsOverrideOrder">The captains override order.</param>
+    /// <param name="captainsOverrideOrder">The Captain's override order.</param>
     /// <param name="retainSuperiorsOrder">if set to <c>true</c> [retain superiors order].</param>
     private void OverrideCurrentOrder(ShipOrder captainsOverrideOrder, bool retainSuperiorsOrder) {
         D.AssertEqual(OrderSource.Captain, captainsOverrideOrder.Source, captainsOverrideOrder.ToString());
@@ -382,7 +399,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
         ShipOrder standingOrder = null;
         if (retainSuperiorsOrder && CurrentOrder != null) {
-            if (CurrentOrder.Source != OrderSource.Captain) {
+            if (CurrentOrder.Source > OrderSource.Captain) {
                 D.AssertNull(CurrentOrder.FollowonOrder, CurrentOrder.ToString());
                 // the current order is from the Captain's superior so retain it
                 standingOrder = CurrentOrder;
@@ -402,21 +419,24 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         CurrentOrder = captainsOverrideOrder;
     }
 
+    private int __lastFrameNewOrderReceived;
+
     private void HandleNewOrder() {
         // Pattern that handles Call()ed states that goes more than one layer deep
-        while (CurrentState == ShipState.Moving || CurrentState == ShipState.Repairing || CurrentState == ShipState.AssumingCloseOrbit || CurrentState == ShipState.Attacking) {
+        while (IsCurrentStateCalled) {
+            //D.Log(ShowDebugLog, "{0} about to call UponNewOrderReceived in State {1}. Frame {2}.", DebugName, CurrentState.GetValueName(), Time.frameCount);
+            D.AssertNotNull(CurrentOrder);
             UponNewOrderReceived();
         }
-        D.AssertNotEqual(ShipState.Moving, CurrentState);
-        D.AssertNotEqual(ShipState.Repairing, CurrentState);
-        D.AssertNotEqual(ShipState.AssumingCloseOrbit, CurrentState);
-        D.AssertNotEqual(ShipState.Attacking, CurrentState);
+        D.Assert(!IsCurrentStateCalled);
 
         if (CurrentOrder != null) {
-            D.Log(ShowDebugLog, "{0} received new order {1}. CurrentState {2}.", DebugName, CurrentOrder, CurrentState.GetValueName());
+            D.Log(ShowDebugLog, "{0} received new order {1}. CurrentState {2}, Frame {3}.", DebugName, CurrentOrder, CurrentState.GetValueName(), Time.frameCount);
             if (Data.Target == null || !Data.Target.Equals(CurrentOrder.Target)) {   // OPTIMIZE     avoids Property equal warning
                 Data.Target = CurrentOrder.Target;  // can be null
             }
+
+            __lastFrameNewOrderReceived = Time.frameCount;
 
             ShipDirective directive = CurrentOrder.Directive;
             __ValidateKnowledgeOfOrderTarget(CurrentOrder.Target, directive);
@@ -469,35 +489,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
     }
 
-    private void __ValidateKnowledgeOfOrderTarget(IShipNavigable target, ShipDirective directive) {
-        if (directive == ShipDirective.Retreat || directive == ShipDirective.Disband || directive == ShipDirective.Refit
-            || directive == ShipDirective.StopAttack) {
-            // directives aren't yet implemented
-            return;
-        }
-        if (target is StarItem || target is SystemItem || target is UniverseCenterItem) {
-            // unnecessary check as all players have knowledge of these targets
-            return;
-        }
-        if (directive == ShipDirective.AssumeStation || directive == ShipDirective.Scuttle
-            || directive == ShipDirective.Repair || directive == ShipDirective.Entrench || directive == ShipDirective.Disengage) {
-            D.AssertNull(target);
-            return;
-        }
-        if (directive == ShipDirective.Move) {
-            if (target is StationaryLocation || target is MobileLocation) {
-                return;
-            }
-            if (target is ISector) {
-                return; // IMPROVE currently PlayerKnowledge does not keep track of Sectors
-            }
-        }
-        if (!OwnerAIMgr.HasKnowledgeOf(target as IItem_Ltd)) {
-            // 3.5.17 Typically occurs when receiving an order to explore a planet that is not yet in sensor range
-            D.Warn("{0} received {1} order with Target {2} that Owner {3} has no knowledge of.", DebugName, directive.GetValueName(), target.DebugName, Owner.LeaderName);
-        }
-    }
-
     #endregion
 
     #region StateMachine
@@ -510,13 +501,43 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     // in place, sometimes in combination. A Relations change here should not affect any of these orders...so far.
     // Upshot: Elements can ignore Relations changes
 
+    /// <summary>
+    /// The CurrentState of this Ship's StateMachine.
+    /// <remarks>Setting this CurrentState will always cause a change of state in the StateMachine, even if
+    /// the same ShipState is set. There is no criteria for the state set to be different than the CurrentState
+    /// in order to restart execution of the state machine in CurrentState.</remarks>
+    /// </summary>
     protected new ShipState CurrentState {
         get { return (ShipState)base.CurrentState; }
-        set { base.CurrentState = value; }   // No duplicate warning desired
+        set { base.CurrentState = value; }
     }
 
+    /// <summary>
+    /// The State previous to CurrentState.
+    /// </summary>
     protected new ShipState LastState {
         get { return base.LastState != null ? (ShipState)base.LastState : default(ShipState); }
+    }
+
+    private bool IsCurrentStateCalled {
+        get {
+            return CurrentState == ShipState.Moving || CurrentState == ShipState.Attacking
+                || CurrentState == ShipState.AssumingCloseOrbit || CurrentState == ShipState.Repairing;
+        }
+    }
+
+    /// <summary>
+    /// Restarts execution of the CurrentState. If the CurrentState is a Call()ed state, Return()s first, then restarts
+    /// execution of the state Return()ed too, aka the new CurrentState.
+    /// </summary>
+    private void RestartState() {
+        var stateWhenCalled = CurrentState;
+        while (IsCurrentStateCalled) {
+            Return();
+        }
+        D.LogBold(/*ShowDebugLog, */"{0}.RestartState called from {1}.{2}. RestartedState = {3}.",
+            DebugName, typeof(ShipState).Name, stateWhenCalled.GetValueName(), CurrentState.GetValueName());
+        CurrentState = CurrentState;
     }
 
     /// <summary>
@@ -582,7 +603,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 D.LogBold(ShowDebugLog, "{0} returning to execution of standing order {1}.", DebugName, CurrentOrder.StandingOrder);
 
                 OrderSource standingOrderSource = CurrentOrder.StandingOrder.Source;
-                if (standingOrderSource != OrderSource.CmdStaff && standingOrderSource != OrderSource.User) {
+                if (standingOrderSource < OrderSource.CmdStaff) {
                     D.Error("{0} StandingOrder {1} source can't be {2}.", DebugName, CurrentOrder.StandingOrder, standingOrderSource.GetValueName());
                 }
 
@@ -594,9 +615,11 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             CurrentOrder = null;
         }
         _helm.ChangeSpeed(Speed.Stop);
+        yield return null;
 
         if (AssessNeedForRepair(healthThreshold: Constants.OneHundredPercent)) {
             InitiateRepair(retainSuperiorsOrderOnRepairCompletion: false);
+            yield return null;
         }
         IsAvailable = true; // 10.3.16 this can instantly generate a new Order (and thus a state change). Accordingly,  this EnterState
                             // cannot return void as that causes the FSM to fail its 'no state change from void EnterState' test.
@@ -617,6 +640,25 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         if (AssessNeedForRepair(healthThreshold: Constants.OneHundredPercent)) {
             InitiateRepair(retainSuperiorsOrderOnRepairCompletion: false);
         }
+    }
+
+    void Idling_UponHQStatusChangeCompleted() {
+        LogEvent();
+        // 3.21.17 Upon receiving this event, this ship either just became the Flagship during runtime or is the 
+        // old Flagship going back to its normal duty. One (if the old Flagship died) or both ships have just been 
+        // assigned new formation stations. That means this ship's previous FormationStation has been despawned or 
+        // reassigned to someone else. Thats OK, unless we are in the Moving or ExecuteAssumeStationOrder state. 
+        // If ExecuteAssumeStationOrder state or Moving because of ExecuteAssumeStationOrder, the station will 
+        // throw an error when the ApFormationStationProxy being used tries to talk to the despawned or reassigned station. 
+        // So if we are 'assuming station', we need to immediately generate a new proxy with the correct destination, 
+        // aka the newly assigned FleetFormationStation. If in Moving state for another purpose, and its a Fleetwide move, 
+        // then the current proxy will have the wrong offset and need a new proxy with the corrected offset.
+        // In either state its most expedient to simply RestartState to regenerate a corrected proxy.
+        //
+        // Note: If this event occurs in other states, nothing needs to be done as all other adjustments will be
+        // handled by the UnitCmd issuing new orders. The two scenarios described above require an immediate
+        // response as we cannot rely on an order from UnitCmd arriving this frame. The error (or erroneous values
+        // in the case of the offset) can affect play as early as the next frame.
     }
 
     void Idling_UponRelationsChanged(Player chgdRelationsPlayer) {
@@ -762,6 +804,26 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
     }
 
+    void Moving_UponHQStatusChangeCompleted() {
+        LogEvent();
+        // 3.21.17 Upon receiving this event, this ship either just became the Flagship during runtime or is the 
+        // old Flagship going back to its normal duty. One (if the old Flagship died) or both ships have just been 
+        // assigned new formation stations. That means this ship's previous FormationStation has been despawned or 
+        // reassigned to someone else. Thats OK, unless we are in the Moving or ExecuteAssumeStationOrder state. 
+        // If ExecuteAssumeStationOrder state or Moving because of ExecuteAssumeStationOrder, the station will 
+        // throw an error when the ApFormationStationProxy being used tries to talk to the despawned or reassigned station. 
+        // So if we are 'assuming station', we need to immediately generate a new proxy with the correct destination, 
+        // aka the newly assigned FleetFormationStation. If in Moving state for another purpose, and its a Fleetwide move, 
+        // then the current proxy will have the wrong offset and need a new proxy with the corrected offset.
+        // In either state its most expedient to simply RestartState to regenerate a corrected proxy.
+        //
+        // Note: If this event occurs in other states, nothing needs to be done as all other adjustments will be
+        // handled by the UnitCmd issuing new orders. The two scenarios described above require an immediate
+        // response as we cannot rely on an order from UnitCmd arriving this frame. The error (or erroneous values
+        // in the case of the offset) can affect play as early as the next frame.
+        RestartState();
+    }
+
     void Moving_UponRelationsChanged(Player chgdRelationsPlayer) {
         LogEvent();
         // ExecuteExploreOrder: FleetCmd handles loss of explore rights AND fully explored because of change to Ally
@@ -868,7 +930,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             switch (_orderFailureCause) {
                 case UnitItemOrderFailureCause.TgtUncatchable:
                 case UnitItemOrderFailureCause.TgtDeath:
-                    IssueAssumeStationOrderFromCaptain();
+                    IssueAssumeStationOrder();
                     break;
                 case UnitItemOrderFailureCause.UnitItemNeedsRepair:
                     InitiateRepair(retainSuperiorsOrderOnRepairCompletion: false);
@@ -923,6 +985,25 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         InitiateFiringSequence(selectedFiringSolution);
     }
 
+    void ExecuteMoveOrder_UponHQStatusChangeCompleted() {
+        LogEvent();
+        // 3.21.17 Upon receiving this event, this ship either just became the Flagship during runtime or is the 
+        // old Flagship going back to its normal duty. One (if the old Flagship died) or both ships have just been 
+        // assigned new formation stations. That means this ship's previous FormationStation has been despawned or 
+        // reassigned to someone else. Thats OK, unless we are in the Moving or ExecuteAssumeStationOrder state. 
+        // If ExecuteAssumeStationOrder state or Moving because of ExecuteAssumeStationOrder, the station will 
+        // throw an error when the ApFormationStationProxy being used tries to talk to the despawned or reassigned station. 
+        // So if we are 'assuming station', we need to immediately generate a new proxy with the correct destination, 
+        // aka the newly assigned FleetFormationStation. If in Moving state for another purpose, and its a Fleetwide move, 
+        // then the current proxy will have the wrong offset and need a new proxy with the corrected offset.
+        // In either state its most expedient to simply RestartState to regenerate a corrected proxy.
+        //
+        // Note: If this event occurs in other states, nothing needs to be done as all other adjustments will be
+        // handled by the UnitCmd issuing new orders. The two scenarios described above require an immediate
+        // response as we cannot rely on an order from UnitCmd arriving this frame. The error (or erroneous values
+        // in the case of the offset) can affect play as early as the next frame.
+    }
+
     void ExecuteMoveOrder_UponRelationsChanged(Player chgdRelationsPlayer) {
         LogEvent();
         // TODO
@@ -950,7 +1031,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         if (_fsmTgt != deadFsmTgt) {
             D.Error("{0}.target {1} is not dead target {2}.", DebugName, _fsmTgt.DebugName, deadFsmTgt.DebugName);
         }
-        IssueAssumeStationOrderFromCaptain();
+        IssueAssumeStationOrder();
     }
 
     void ExecuteMoveOrder_UponDeath() {
@@ -992,9 +1073,12 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         _helm.ChangeSpeed(Speed.Stop);
 
         if (IsHQ) {
-            D.Assert(FormationStation.IsOnStation, "{0} distance from OnStation = {1}".Inject(DebugName, FormationStation.__DistanceFromOnStation));
+            D.Assert(FormationStation.IsOnStation, "{0} distance from OnStation = {1}".Inject(DebugName, FormationStation.__DistanceToOnStation));
             if (CurrentOrder.ToNotifyCmd) {
-                Command.HandleOrderOutcome(CurrentOrder.Directive, this, isSuccess: true);
+                Command.HandleOrderOutcome(FleetDirective.AssumeFormation, this, isSuccess: true);
+                if (CurrentState != ShipState.ExecuteAssumeStationOrder) {
+                    D.Warn("{0}: Informing Cmd of OrderOutcome has resulted in an immediate state change to {1}.", DebugName, CurrentState.GetValueName());
+                }
             }
             CurrentState = ShipState.Idling;
             yield return null;
@@ -1005,7 +1089,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         if (ShowDebugLog) {
             string speedMsg = "{0}({1:0.##}) units/hr".Inject(_apMoveSpeed.GetValueName(), _apMoveSpeed.GetUnitsPerHour(Data.FullSpeedValue));
             D.Log("{0} is initiating repositioning to FormationStation at speed {1}. Distance from OnStation: {2:0.##}.",
-                DebugName, speedMsg, FormationStation.__DistanceFromOnStation);
+                DebugName, speedMsg, FormationStation.__DistanceToOnStation);
         }
 
         Call(ShipState.Moving);
@@ -1013,7 +1097,10 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
         if (_orderFailureCause != UnitItemOrderFailureCause.None) {
             if (CurrentOrder.ToNotifyCmd) {
-                Command.HandleOrderOutcome(CurrentOrder.Directive, this, isSuccess: false, failCause: _orderFailureCause);
+                Command.HandleOrderOutcome(FleetDirective.AssumeFormation, this, isSuccess: false, failCause: _orderFailureCause);
+                if (CurrentState != ShipState.ExecuteAssumeStationOrder) {
+                    D.Warn("{0}: Informing Cmd of OrderOutcome has resulted in an immediate state change to {1}.", DebugName, CurrentState.GetValueName());
+                }
             }
             switch (_orderFailureCause) {
                 case UnitItemOrderFailureCause.UnitItemNeedsRepair:
@@ -1038,25 +1125,46 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             D.Log(ShowDebugLog, "{0} has reached its formation station. Frame = {1}.", DebugName, Time.frameCount);
         }
         else {
-            if (FormationStation.__DistanceFromOnStation > __MaxDistanceTraveledPerFrame) {
+            // 3.10.17 OPTIMIZE I think I've solved this problem using ApMoveFormationStationProxy : ApMoveDestinationProxy which allows
+            // me to utilize the methods in IFleetFormationStation to determine Proxy's HasArrived and TryCheckProgress results
+            float distanceFromOnStation;
+            if ((distanceFromOnStation = FormationStation.__DistanceToOnStation) > __MaxDistanceTraveledPerFrame) {
                 // TEMP This approach minimizes the warnings as this check occurs 1 frame after Moving 'arrives' at the FormationStation.
                 // I know it arrives as I have a warning in the FormationStation's Moving proxy when the Station and Proxy don't agree
                 // that it has arrived. This should only warn at FPS < 25 and then only rarely.
-                D.Warn("{0} has exited 'Moving' to its formation station without being OnStation. Distance from OnStation = {1:0.00}. FPS = {2}.",
-                    DebugName, FormationStation.__DistanceFromOnStation, FpsReadout.FramesPerSecond);
+                D.Warn(@"{0} has exited 'Moving' to its formation station without being OnStation. Distance from OnStation: {1:0.00} > Allowed {2:0.00}. 
+                    FPS: {3:0.#} should be < 25. CurrentOrder: {4}. Frame: {5}, LastNewOrderReceived on Frame {6}.",
+                    DebugName, distanceFromOnStation, __MaxDistanceTraveledPerFrame, FpsReadout.Instance.FramesPerSecond, CurrentOrder, Time.frameCount, __lastFrameNewOrderReceived);
             }
         }
 
         // No need to wait for HQ to stop turning as we are aligning with its intended facing
         Vector3 hqIntendedHeading = Command.HQElement.Data.IntendedHeading;
-        _helm.ChangeHeading(hqIntendedHeading, headingConfirmed: () => {
-            Speed hqSpeed = Command.HQElement.CurrentSpeedSetting;
-            _helm.ChangeSpeed(hqSpeed);  // UNCLEAR always align speed with HQ?
-                                         //D.Log(ShowDebugLog, "{0} has aligned heading and speed {1} with HQ {2}.", DebugName, hqSpeed.GetValueName(), Command.HQElement.DebugName);
-            if (CurrentOrder.ToNotifyCmd) {
-                Command.HandleOrderOutcome(CurrentOrder.Directive, this, isSuccess: true);
+        _helm.ChangeHeading(hqIntendedHeading, turnCompleted: (headingReached) => {
+            if (headingReached) {
+                Speed hqSpeed = Command.HQElement.CurrentSpeedSetting;
+                _helm.ChangeSpeed(hqSpeed);  // UNCLEAR always align speed with HQ?
+                                             //D.Log(ShowDebugLog, "{0} has aligned heading and speed {1} with HQ {2}.", DebugName, hqSpeed.GetValueName(), Command.HQElement.DebugName);
+                if (CurrentOrder.ToNotifyCmd) {
+                    Command.HandleOrderOutcome(FleetDirective.AssumeFormation, this, isSuccess: true);
+                    if (CurrentState != ShipState.ExecuteAssumeStationOrder) {
+                        D.Warn("{0}: Informing Cmd of OrderOutcome has resulted in an immediate state change to {1}.", DebugName, CurrentState.GetValueName());
+                    }
+                }
+                CurrentState = ShipState.Idling;
             }
-            CurrentState = ShipState.Idling;
+            else {
+                // TODO need to inform Cmd of OrderSuperceded as only way this doesn't complete in this state is 
+                // thru ExitState disengaging AutoPilot. That only happens on a state change which, in this state,
+                // can only be caused by a new external order or an event occurring like damage incurred and captain
+                // initiates repair...
+                if (CurrentOrder.ToNotifyCmd) { // TEMP Use of None should throw an exception
+                    Command.HandleOrderOutcome(FleetDirective.AssumeFormation, this, isSuccess: false, failCause: UnitItemOrderFailureCause.None);
+                    if (CurrentState != ShipState.ExecuteAssumeStationOrder) {
+                        D.Warn("{0}: Informing Cmd of OrderOutcome has resulted in an immediate state change to {1}.", DebugName, CurrentState.GetValueName());
+                    }
+                }
+            }
         });
     }
 
@@ -1073,8 +1181,34 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     void ExecuteAssumeStationOrder_UponDamageIncurred() {
         LogEvent();
         if (AssessNeedForRepair(healthThreshold: Constants.OneHundredPercent)) {
+            if (CurrentOrder.ToNotifyCmd) {
+                Command.HandleOrderOutcome(FleetDirective.AssumeFormation, this, isSuccess: false, failCause: UnitItemOrderFailureCause.UnitItemNeedsRepair);
+                if (CurrentState != ShipState.ExecuteAssumeStationOrder) {
+                    D.Warn("{0}: Informing Cmd of OrderOutcome has resulted in an immediate state change to {1}.", DebugName, CurrentState.GetValueName());
+                }
+            }
             InitiateRepair(retainSuperiorsOrderOnRepairCompletion: false);
         }
+    }
+
+    void ExecuteAssumeStationOrder_UponHQStatusChangeCompleted() {
+        LogEvent();
+        // 3.21.17 Upon receiving this event, this ship either just became the Flagship during runtime or is the 
+        // old Flagship going back to its normal duty. One (if the old Flagship died) or both ships have just been 
+        // assigned new formation stations. That means this ship's previous FormationStation has been despawned or 
+        // reassigned to someone else. Thats OK, unless we are in the Moving or ExecuteAssumeStationOrder state. 
+        // If ExecuteAssumeStationOrder state or Moving because of ExecuteAssumeStationOrder, the station will 
+        // throw an error when the ApFormationStationProxy being used tries to talk to the despawned or reassigned station. 
+        // So if we are 'assuming station', we need to immediately generate a new proxy with the correct destination, 
+        // aka the newly assigned FleetFormationStation. If in Moving state for another purpose, and its a Fleetwide move, 
+        // then the current proxy will have the wrong offset and need a new proxy with the corrected offset.
+        // In either state its most expedient to simply RestartState to regenerate a corrected proxy.
+        //
+        // Note: If this event occurs in other states, nothing needs to be done as all other adjustments will be
+        // handled by the UnitCmd issuing new orders. The two scenarios described above require an immediate
+        // response as we cannot rely on an order from UnitCmd arriving this frame. The error (or erroneous values
+        // in the case of the offset) can affect play as early as the next frame.
+        RestartState();
     }
 
     void ExecuteAssumeStationOrder_UponRelationsChanged(Player chgdRelationsPlayer) {
@@ -1092,6 +1226,13 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         LogEvent();
         _orderFailureCause = UnitItemOrderFailureCause.None;
         _fsmTgt = null;
+        // 3.28.17 Added DisengageAutoPilot. ExitState could execute (from a new Order for instance) before alignment turn at 
+        // end of EnterState is complete.  That turn has an anonymous method that is executed on completion, including 
+        // Cmd.HandleOrderOutcome and CurrentState = Idling which WILL execute even with a state change without this Disengage. 
+        // Without disengage, HandleOrderOutcome could generate a new order and therefore a state change which would immediately 
+        // follow the one that just caused ExitState to execute, and if it doesn't, setting state to Idling certainly will. 
+        // DisengageAutoPilot will terminate the turn and keep the anonymous method from executing.
+        _helm.DisengageAutoPilot();
     }
 
     #endregion
@@ -1106,7 +1247,13 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     private void HandleExplorationSuccess(IShipExplorable exploreTgt) {
         D.Log(ShowDebugLog, "{0} successfully completed exploration of {1}.", DebugName, exploreTgt.DebugName);
         exploreTgt.RecordExplorationCompletedBy(Owner);
-        Command.HandleOrderOutcome(CurrentOrder.Directive, this, isSuccess: true, target: exploreTgt);
+        if (CurrentOrder.ToNotifyCmd) {
+            Command.HandleOrderOutcome(FleetDirective.Explore, this, isSuccess: true, target: exploreTgt);
+            if (CurrentState != ShipState.ExecuteExploreOrder) {
+                // 3.28.17 This almost always results in an immediate follow-up order, either ExecuteMove or AssumeStation
+                D.Log(ShowDebugLog, "{0}: Informing Cmd of OrderOutcome has resulted in an immediate state change to {1}.", DebugName, CurrentState.GetValueName());
+            }
+        }
     }
 
     #endregion
@@ -1146,7 +1293,12 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
         if (_orderFailureCause != UnitItemOrderFailureCause.None) {
-            Command.HandleOrderOutcome(CurrentOrder.Directive, this, isSuccess: false, target: exploreTgt, failCause: _orderFailureCause);
+            if (CurrentOrder.ToNotifyCmd) {
+                Command.HandleOrderOutcome(FleetDirective.Explore, this, isSuccess: false, target: exploreTgt, failCause: _orderFailureCause);
+                if (CurrentState != ShipState.ExecuteExploreOrder) {
+                    D.Warn("{0}: Informing Cmd of OrderOutcome has resulted in an immediate state change to {1}.", DebugName, CurrentState.GetValueName());
+                }
+            }
             switch (_orderFailureCause) {
                 case UnitItemOrderFailureCause.UnitItemNeedsRepair:
                     // When reported to Cmd, Cmd will remove the ship from the list of available exploration ships
@@ -1184,8 +1336,13 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
             if (_orderFailureCause != UnitItemOrderFailureCause.None) {
-                D.Log(ShowDebugLog, "{0} was unsuccessful exploring {1}.", DebugName, exploreTgt.DebugName);
-                Command.HandleOrderOutcome(CurrentOrder.Directive, this, isSuccess: false, target: exploreTgt, failCause: _orderFailureCause);
+                D.Log(ShowDebugLog, "{0} was unsuccessful exploring {1}. Cause = {2}.", DebugName, exploreTgt.DebugName, _orderFailureCause.GetValueName());
+                if (CurrentOrder.ToNotifyCmd) {
+                    Command.HandleOrderOutcome(FleetDirective.Explore, this, isSuccess: false, target: exploreTgt, failCause: _orderFailureCause);
+                    if (CurrentState != ShipState.ExecuteExploreOrder) {
+                        D.Warn("{0}: Informing Cmd of OrderOutcome has resulted in an immediate state change to {1}.", DebugName, CurrentState.GetValueName());
+                    }
+                }
                 switch (_orderFailureCause) {
                     case UnitItemOrderFailureCause.TgtRelationship:
                         // When reported to Cmd, Cmd will recall all ships as exploration has failed
@@ -1236,9 +1393,33 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         LogEvent();
         if (AssessNeedForRepair(healthThreshold: GeneralSettings.Instance.HealthThreshold_Damaged)) {
             D.LogBold(ShowDebugLog, "{0} is abandoning exploration of {1} as it has incurred damage that needs repair.", DebugName, _fsmTgt.DebugName);
-            Command.HandleOrderOutcome(CurrentOrder.Directive, this, isSuccess: false, target: _fsmTgt, failCause: UnitItemOrderFailureCause.UnitItemNeedsRepair);
+            if (CurrentOrder.ToNotifyCmd) {
+                Command.HandleOrderOutcome(FleetDirective.Explore, this, isSuccess: false, target: _fsmTgt, failCause: UnitItemOrderFailureCause.UnitItemNeedsRepair);
+                if (CurrentState != ShipState.ExecuteExploreOrder) {
+                    D.Warn("{0}: Informing Cmd of OrderOutcome has resulted in an immediate state change to {1}.", DebugName, CurrentState.GetValueName());
+                }
+            }
             InitiateRepair(retainSuperiorsOrderOnRepairCompletion: false);
         }
+    }
+
+    void ExecuteExploreOrder_UponHQStatusChangeCompleted() {
+        LogEvent();
+        // 3.21.17 Upon receiving this event, this ship either just became the Flagship during runtime or is the 
+        // old Flagship going back to its normal duty. One (if the old Flagship died) or both ships have just been 
+        // assigned new formation stations. That means this ship's previous FormationStation has been despawned or 
+        // reassigned to someone else. Thats OK, unless we are in the Moving or ExecuteAssumeStationOrder state. 
+        // If ExecuteAssumeStationOrder state or Moving because of ExecuteAssumeStationOrder, the station will 
+        // throw an error when the ApFormationStationProxy being used tries to talk to the despawned or reassigned station. 
+        // So if we are 'assuming station', we need to immediately generate a new proxy with the correct destination, 
+        // aka the newly assigned FleetFormationStation. If in Moving state for another purpose, and its a Fleetwide move, 
+        // then the current proxy will have the wrong offset and need a new proxy with the corrected offset.
+        // In either state its most expedient to simply RestartState to regenerate a corrected proxy.
+        //
+        // Note: If this event occurs in other states, nothing needs to be done as all other adjustments will be
+        // handled by the UnitCmd issuing new orders. The two scenarios described above require an immediate
+        // response as we cannot rely on an order from UnitCmd arriving this frame. The error (or erroneous values
+        // in the case of the offset) can affect play as early as the next frame.
     }
 
     void ExecuteExploreOrder_UponRelationsChanged(Player chgdRelationsPlayer) {
@@ -1261,12 +1442,22 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         if (_fsmTgt != deadFsmTgt) {
             D.Error("{0}.target {1} is not dead target {2}.", DebugName, _fsmTgt.DebugName, deadFsmTgt.DebugName);
         }
-        Command.HandleOrderOutcome(CurrentOrder.Directive, this, isSuccess: false, target: _fsmTgt, failCause: UnitItemOrderFailureCause.TgtDeath);
+        if (CurrentOrder.ToNotifyCmd) {
+            Command.HandleOrderOutcome(FleetDirective.Explore, this, isSuccess: false, target: _fsmTgt, failCause: UnitItemOrderFailureCause.TgtDeath);
+            if (CurrentState != ShipState.ExecuteExploreOrder) {
+                D.Warn("{0}: Informing Cmd of OrderOutcome has resulted in an immediate state change to {1}.", DebugName, CurrentState.GetValueName());
+            }
+        }
     }
 
     void ExecuteExploreOrder_UponDeath() {
         LogEvent();
-        Command.HandleOrderOutcome(CurrentOrder.Directive, this, isSuccess: false, target: _fsmTgt, failCause: UnitItemOrderFailureCause.UnitItemDeath);
+        if (CurrentOrder.ToNotifyCmd) {
+            Command.HandleOrderOutcome(FleetDirective.Explore, this, isSuccess: false, target: _fsmTgt, failCause: UnitItemOrderFailureCause.UnitItemDeath);
+            if (CurrentState != ShipState.ExecuteExploreOrder) {
+                D.Warn("{0}: Informing Cmd of OrderOutcome has resulted in an immediate state change to {1}.", DebugName, CurrentState.GetValueName());
+            }
+        }
     }
 
     void ExecuteExploreOrder_ExitState() {
@@ -1322,7 +1513,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         if (_orderFailureCause != UnitItemOrderFailureCause.None) {
             switch (_orderFailureCause) {
                 case UnitItemOrderFailureCause.TgtDeath:
-                    IssueAssumeStationOrderFromCaptain();
+                    IssueAssumeStationOrder();
                     break;
                 case UnitItemOrderFailureCause.UnitItemNeedsRepair:
                     InitiateRepair(retainSuperiorsOrderOnRepairCompletion: false);
@@ -1350,7 +1541,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             switch (_orderFailureCause) {
                 case UnitItemOrderFailureCause.TgtRelationship:
                 case UnitItemOrderFailureCause.TgtDeath:
-                    IssueAssumeStationOrderFromCaptain();
+                    IssueAssumeStationOrder();
                     break;
                 case UnitItemOrderFailureCause.UnitItemNeedsRepair:
                     D.Assert(Data.Health < Constants.OneHundredPercent);
@@ -1389,6 +1580,25 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
     }
 
+    void ExecuteAssumeCloseOrbitOrder_UponHQStatusChangeCompleted() {
+        LogEvent();
+        // 3.21.17 Upon receiving this event, this ship either just became the Flagship during runtime or is the 
+        // old Flagship going back to its normal duty. One (if the old Flagship died) or both ships have just been 
+        // assigned new formation stations. That means this ship's previous FormationStation has been despawned or 
+        // reassigned to someone else. Thats OK, unless we are in the Moving or ExecuteAssumeStationOrder state. 
+        // If ExecuteAssumeStationOrder state or Moving because of ExecuteAssumeStationOrder, the station will 
+        // throw an error when the ApFormationStationProxy being used tries to talk to the despawned or reassigned station. 
+        // So if we are 'assuming station', we need to immediately generate a new proxy with the correct destination, 
+        // aka the newly assigned FleetFormationStation. If in Moving state for another purpose, and its a Fleetwide move, 
+        // then the current proxy will have the wrong offset and need a new proxy with the corrected offset.
+        // In either state its most expedient to simply RestartState to regenerate a corrected proxy.
+        //
+        // Note: If this event occurs in other states, nothing needs to be done as all other adjustments will be
+        // handled by the UnitCmd issuing new orders. The two scenarios described above require an immediate
+        // response as we cannot rely on an order from UnitCmd arriving this frame. The error (or erroneous values
+        // in the case of the offset) can affect play as early as the next frame.
+    }
+
     void ExecuteAssumeCloseOrbitOrder_UponRelationsChanged(Player chgdRelationsPlayer) {
         LogEvent();
         // TODO
@@ -1409,7 +1619,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         if (_fsmTgt != deadFsmTgt) {
             D.Error("{0}.target {1} is not dead target {2}.", DebugName, _fsmTgt.DebugName, deadFsmTgt.DebugName);
         }
-        IssueAssumeStationOrderFromCaptain();
+        IssueAssumeStationOrder();
     }
 
     void ExecuteAssumeCloseOrbitOrder_UponDeath() {
@@ -1501,18 +1711,23 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             }
             yield return null;
         }
+        if (!closeOrbitApTgtProxy.HasArrived) {
+            D.Warn("{0} has finished moving into position for close orbit of {1} but is {2:0.00} away from 'arrived'.",
+                DebugName, closeOrbitApTgt.DebugName, closeOrbitApTgtProxy.__ShipDistanceFromArrived);
+        }
 
         // Assume Orbit
+        float tgtDistanceUponInitialArrival = Vector3.Distance(closeOrbitTgt.Position, Position);
         isInformedOfLogging = false;
         isInformedOfWarning = false;
-        logDate = new GameDate(new GameTimeDuration(8f));
-        warnDate = default(GameDate);    // HACK   // 3.2.17 Warning at 5F after FtlDampener introduced
+        logDate = new GameDate(new GameTimeDuration(8f));    // HACK   // 3.2.17 Logging at 5F after FtlDampener introduced
+        warnDate = default(GameDate);
         errorDate = default(GameDate);
-        while (!AttemptCloseOrbitAround(closeOrbitTgt)) {
+        while (!AttemptCloseOrbitAround(closeOrbitTgt, tgtDistanceUponInitialArrival)) {
             // wait here until close orbit is attained
             if ((currentDate = _gameTime.CurrentDate) > logDate) {
                 if (!isInformedOfLogging) {
-                    D.Log(/*ShowDebugLog, */"{0}: CurrentDate {1} > LogDate {2} while assuming close orbit around {3}.", DebugName, currentDate, logDate, closeOrbitTgt.DebugName);
+                    D.Log(ShowDebugLog, "{0}: CurrentDate {1} > LogDate {2} while assuming close orbit around {3}.", DebugName, currentDate, logDate, closeOrbitTgt.DebugName);
                     isInformedOfLogging = true;
                 }
                 if (warnDate == default(GameDate)) {
@@ -1534,92 +1749,17 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             }
             yield return null;
         }
+        if (!closeOrbitApTgtProxy.HasArrived) {
+            D.Log(ShowDebugLog, "{0} has attained close orbit of {1} but is {2:0.00} away from 'arrived'.",
+                DebugName, closeOrbitApTgt.DebugName, closeOrbitApTgtProxy.__ShipDistanceFromArrived);
+            if (closeOrbitApTgtProxy.__ShipDistanceFromArrived > CollisionDetectionZoneRadius / 4F) {
+                D.Warn("{0} has attained close orbit of {1} but is {2:0.00} away from 'arrived'.",
+                    DebugName, closeOrbitApTgt.DebugName, closeOrbitApTgtProxy.__ShipDistanceFromArrived);
+            }
+        }
+
         Return();
     }
-    //IEnumerator AssumingCloseOrbit_EnterState() {
-    //    LogEvent();
-
-    //    IShipCloseOrbitable closeOrbitTgt = _fsmTgt as IShipCloseOrbitable;
-    //    // use autopilot to move into close orbit whether inside or outside slot
-    //    IShipNavigable closeOrbitApTgt = closeOrbitTgt.CloseOrbitSimulator as IShipNavigable;
-
-    //    Vector3 apTgtOffset = Vector3.zero;
-    //    float apTgtStandoffDistance = CollisionDetectionZoneRadius;
-    //    AutoPilotDestinationProxy closeOrbitApTgtProxy = closeOrbitApTgt.GetApMoveTgtProxy(apTgtOffset, apTgtStandoffDistance, Position);
-    //    _helm.EngageAutoPilot(AutoPilot.ApDirective.MoveTo, closeOrbitApTgtProxy, Speed.Slow);
-    //    // 2.8.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
-    //    // I think it is because there is a rare scenario where no yield return is encountered below this. 
-    //    // See http://answers.unity3d.com/questions/158917/error-quotmcoroutineenumeratorgchandle-0quot.html
-    //    yield return null;
-
-    //    GameDate currentDate;
-    //    GameDate logDate = new GameDate(GameTimeDuration.FiveDays);
-    //    GameDate warnDate = default(GameDate);
-    //    GameDate errorDate = default(GameDate);
-    //    bool isInformedOfLogging = false;
-    //    bool isInformedOfWarning = false;
-
-    //    // Wait here until we arrive. When we arrive, AssumingCloseOrbit_UponApTargetReached() will disengage APilot
-    //    while (_helm.IsPilotEngaged) {  // even if collision avoidance becomes engaged, pilot will remain engaged
-    //        if ((currentDate = _gameTime.CurrentDate) > logDate) {
-    //            if (!isInformedOfLogging) {
-    //                D.Log(/*ShowDebugLog, */"{0}: CurrentDate {1} > LogDate {2} while moving to close orbit around {3}.", DebugName, currentDate, logDate, closeOrbitTgt.DebugName);
-    //                isInformedOfLogging = true;
-    //            }
-
-    //            if (warnDate == default(GameDate)) {
-    //                warnDate = new GameDate(logDate, GameTimeDuration.TwoDays);   // HACK 3.4.17 Warning at 4 + 2 days with FtlDamped
-    //            }
-    //            if (currentDate > warnDate) {
-    //                if (!isInformedOfWarning) {
-    //                    D.Warn("{0}: CurrentDate {1} > WarnDate {2} while moving to close orbit around {3}. IsFtlDamped = {4}.", DebugName, currentDate, warnDate, closeOrbitTgt.DebugName, Data.IsFtlDampedByField);
-    //                    isInformedOfWarning = true;
-    //                }
-    //                if (errorDate == default(GameDate)) {
-    //                    errorDate = new GameDate(warnDate, GameTimeDuration.FiveDays);
-    //                }
-    //                if (currentDate > errorDate) {
-    //                    D.Error("{0} wait while moving to close orbit slot has timed out.", DebugName);
-    //                }
-    //            }
-    //        }
-    //        yield return null;
-    //    }
-
-    //    // Assume Orbit
-    //    isInformedOfLogging = false;
-    //    isInformedOfWarning = false;
-    //    logDate = new GameDate(new GameTimeDuration(8f));
-    //    warnDate = default(GameDate);    // HACK   // 3.2.17 Warning at 5F after FtlDampener introduced
-    //    errorDate = default(GameDate);
-    //    while (!AttemptCloseOrbitAround(closeOrbitTgt)) {
-    //        // wait here until close orbit is attained
-    //        if ((currentDate = _gameTime.CurrentDate) > logDate) {
-    //            if (!isInformedOfLogging) {
-    //                D.Log(/*ShowDebugLog, */"{0}: CurrentDate {1} > LogDate {2} while assuming close orbit around {3}.", DebugName, currentDate, logDate, closeOrbitTgt.DebugName);
-    //                isInformedOfLogging = true;
-    //            }
-    //            if (warnDate == default(GameDate)) {
-    //                warnDate = new GameDate(logDate, GameTimeDuration.OneDay);
-    //            }
-    //            if (currentDate > warnDate) {
-    //                if (!isInformedOfWarning) {
-    //                    D.Warn("{0}: CurrentDate {1} > WarnDate {2} while assuming close orbit around {3}. IsFtlDamped = {4}.", DebugName, currentDate, warnDate, closeOrbitTgt.DebugName, Data.IsFtlDampedByField);
-    //                    isInformedOfWarning = true;
-    //                }
-
-    //                if (errorDate == default(GameDate)) {
-    //                    errorDate = new GameDate(warnDate, GameTimeDuration.TwoDays);    // HACK // 3.2.17 Error at OneDay after FtlDampener introduced
-    //                }
-    //                if (currentDate > errorDate) {
-    //                    D.Error("{0} wait while assuming close orbit has timed out.", DebugName);
-    //                }
-    //            }
-    //        }
-    //        yield return null;
-    //    }
-    //    Return();
-    //}
 
     // TODO if a DiplomaticRelationship change with the orbited object owner invalidates the right to orbit
     // then the orbit must be immediately broken
@@ -1657,6 +1797,25 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             _orderFailureCause = UnitItemOrderFailureCause.UnitItemNeedsRepair;
             Return();
         }
+    }
+
+    void AssumingCloseOrbit_UponHQStatusChangeCompleted() {
+        LogEvent();
+        // 3.21.17 Upon receiving this event, this ship either just became the Flagship during runtime or is the 
+        // old Flagship going back to its normal duty. One (if the old Flagship died) or both ships have just been 
+        // assigned new formation stations. That means this ship's previous FormationStation has been despawned or 
+        // reassigned to someone else. Thats OK, unless we are in the Moving or ExecuteAssumeStationOrder state. 
+        // If ExecuteAssumeStationOrder state or Moving because of ExecuteAssumeStationOrder, the station will 
+        // throw an error when the ApFormationStationProxy being used tries to talk to the despawned or reassigned station. 
+        // So if we are 'assuming station', we need to immediately generate a new proxy with the correct destination, 
+        // aka the newly assigned FleetFormationStation. If in Moving state for another purpose, and its a Fleetwide move, 
+        // then the current proxy will have the wrong offset and need a new proxy with the corrected offset.
+        // In either state its most expedient to simply RestartState to regenerate a corrected proxy.
+        //
+        // Note: If this event occurs in other states, nothing needs to be done as all other adjustments will be
+        // handled by the UnitCmd issuing new orders. The two scenarios described above require an immediate
+        // response as we cannot rely on an order from UnitCmd arriving this frame. The error (or erroneous values
+        // in the case of the offset) can affect play as early as the next frame.
     }
 
     void AssumingCloseOrbit_UponRelationsChanged(Player chgdRelationsPlayer) {
@@ -1729,7 +1888,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     /// <param name="allowLogging">if set to <c>true</c> [allow logging].</param>
     /// <param name="shipPrimaryAttackTgt">The ship's primary attack target. Will be null when returning false.</param>
     /// <returns></returns>
-    private bool TryPickPrimaryAttackTgt(IUnitAttackable unitAttackTgt, bool allowLogging, out IShipAttackable shipPrimaryAttackTgt) {
+    private bool TryPickPrimaryAttackTgt(IUnitAttackable unitAttackTgt, bool allowLogging, out IShipBlastable shipPrimaryAttackTgt) {
         D.AssertNotNull(unitAttackTgt);
         if (!unitAttackTgt.IsOperational) {
             D.Error("{0}'s unit attack target {1} is dead.", DebugName, unitAttackTgt.DebugName);
@@ -1745,31 +1904,49 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             return false;
         }
 
-        ISensorRangeMonitor srSensorMonitor = Command.SensorRangeMonitors.Single(srm => srm.RangeCategory == RangeCategory.Short);
-        var uniqueEnemyTargetsInSRSensorRange = srSensorMonitor.EnemyTargetsDetected.Cast<IShipAttackable>();
+        // 3.26.17 Planetoids eliminated as IShipBlastable. Now IShipBombardable
+        var uniqueEnemyTgtsInSRSensorRange = Command.SRSensorMonitor.EnemyElementsDetected.Cast<IShipBlastable>();
+        uniqueEnemyTgtsInSRSensorRange.ForAll(tgt => {
+            float sqrDifference;
+            bool isWithinSRSensorRange = __CheckWithinSRSensorRange(tgt.Position, out sqrDifference);
+            if (!isWithinSRSensorRange) {
+                D.Warn("{0} candidate attack target {1} is not within SRSensor range {2:0.#}. Difference = {3:0.#}.",
+                    DebugName, tgt.DebugName, Command.SRSensorMonitor.RangeDistance, Mathf.Sqrt(sqrDifference));
+            }
+        });
 
 
-        IShipAttackable primaryTgt = null;
+        IShipBlastable primaryTgt = null;
         var cmdTarget = unitAttackTgt as AUnitCmdItem;
-        if (cmdTarget != null) {
-            var primaryTargets = cmdTarget.Elements.Cast<IShipAttackable>();
-            var primaryTargetsInSRSensorRange = primaryTargets.Intersect(uniqueEnemyTargetsInSRSensorRange);
-            if (primaryTargetsInSRSensorRange.Any()) {
-                primaryTgt = __SelectHighestPriorityAttackTgt(primaryTargetsInSRSensorRange);
-            }
-        }
-        else {
-            // Planetoid
-            var planetoidTarget = unitAttackTgt as APlanetoidItem;
-            D.AssertNotNull(planetoidTarget);
+        D.AssertNotNull(cmdTarget); // 3.26.17 TEMP Planetoids temporarily eliminated as IUnitAttackable
 
-            if (uniqueEnemyTargetsInSRSensorRange.Contains(planetoidTarget)) {
-                primaryTgt = planetoidTarget;
-            }
+        var primaryElementTgts = cmdTarget.Elements.Cast<IShipBlastable>();
+        var primaryTargetsInSRSensorRange = primaryElementTgts.Intersect(uniqueEnemyTgtsInSRSensorRange);
+        if (primaryTargetsInSRSensorRange.Any()) {
+            primaryTgt = __SelectHighestPriorityAttackTgt(primaryTargetsInSRSensorRange);
         }
+        /*********************** TEMP as Planetoids aren't currently IUnitAttackable **************/
+        //if (cmdTarget != null) {
+        //    var primaryElementTgts = cmdTarget.Elements.Cast<IShipAttackable>();
+        //    var primaryTargetsInSRSensorRange = primaryElementTgts.Intersect(uniqueEnemyTgtsInSRSensorRange);
+        //    if (primaryTargetsInSRSensorRange.Any()) {
+        //        primaryTgt = __SelectHighestPriorityAttackTgt(primaryTargetsInSRSensorRange);
+        //    }
+        //}
+        //else {
+        //    // Planetoid
+        //    var planetoidTarget = unitAttackTgt as APlanetoidItem;
+        //    D.AssertNotNull(planetoidTarget);
+
+        //    if (uniqueEnemyElementsInSRSensorRange.Contains(planetoidTarget)) {
+        //        primaryTgt = planetoidTarget;
+        //    }
+        //}
+        /******************************************************************************************/
         if (primaryTgt == null) {
             if (allowLogging) {
                 // UNCLEAR how this happens. Fleet not close enough when issues attack order to ships? Just wiped out?
+                // 3.18.17 One scenario is clear - Change of HQ while attacking relocates SRSensor range envelope
                 D.Warn("{0} found no target within SR sensor range to attack!", DebugName);
             }
             shipPrimaryAttackTgt = null;
@@ -1780,7 +1957,11 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         return true;
     }
 
-    private IShipAttackable __SelectHighestPriorityAttackTgt(IEnumerable<IShipAttackable> availableAttackTgts) {
+    private bool __CheckWithinSRSensorRange(Vector3 position, out float sqrDifference) {
+        return _helm.__IsWithinSRSensorRange(position, out sqrDifference);
+    }
+
+    private IShipBlastable __SelectHighestPriorityAttackTgt(IEnumerable<IShipBlastable> availableAttackTgts) {
         return availableAttackTgts.MinBy(target => Vector3.SqrMagnitude(target.Position - Position));
     }
 
@@ -1856,7 +2037,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
 
         bool allowLogging = true;
-        IShipAttackable primaryAttackTgt;
+        IShipBlastable primaryAttackTgt;
         while (unitAttackTgt.IsOperational) {
             if (TryPickPrimaryAttackTgt(unitAttackTgt, allowLogging, out primaryAttackTgt)) {
                 D.Log(ShowDebugLog, "{0} picked {1} as primary attack target.", DebugName, primaryAttackTgt.DebugName);
@@ -1867,7 +2048,12 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
                 if (_orderFailureCause != UnitItemOrderFailureCause.None) {
-                    Command.HandleOrderOutcome(CurrentOrder.Directive, this, isSuccess: false, target: primaryAttackTgt, failCause: _orderFailureCause);
+                    if (CurrentOrder.ToNotifyCmd) {
+                        Command.HandleOrderOutcome(FleetDirective.Attack, this, isSuccess: false, target: primaryAttackTgt, failCause: _orderFailureCause);
+                        if (CurrentState != ShipState.ExecuteAttackOrder) {
+                            D.Warn("{0}: Informing Cmd of OrderOutcome has resulted in an immediate state change to {1}.", DebugName, CurrentState.GetValueName());
+                        }
+                    }
                     switch (_orderFailureCause) {
                         case UnitItemOrderFailureCause.TgtUncatchable:
                             break;   // pick another primary attack target by cycling thru while again
@@ -1888,7 +2074,13 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 }
                 else {
                     D.Assert(!primaryAttackTgt.IsOperational);
-                    Command.HandleOrderOutcome(CurrentOrder.Directive, this, isSuccess: true, target: primaryAttackTgt);
+                    if (CurrentOrder.ToNotifyCmd) {
+                        Command.HandleOrderOutcome(FleetDirective.Attack, this, isSuccess: true, target: primaryAttackTgt);
+                        if (CurrentState != ShipState.ExecuteAttackOrder) {
+                            D.Warn("{0}: Informing Cmd of OrderOutcome has resulted in an immediate state change to {1}.", DebugName, CurrentState.GetValueName());
+                        }
+                    }
+                    yield return null;
                 }
 
                 _fsmTgt = null;
@@ -1908,6 +2100,12 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         if (IsInOrbit) {
             D.Error("{0} is in orbit around {1} after killing {2}.", DebugName, _itemBeingOrbited.DebugName, unitAttackTgtName);
         }
+
+        // 3.19.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
+        // I think it is because there is a rare scenario where no yield return is encountered. 
+        // See http://answers.unity3d.com/questions/158917/error-quotmcoroutineenumeratorgchandle-0quot.html
+        yield return null;
+
         CurrentState = ShipState.Idling;
     }
 
@@ -1934,9 +2132,34 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         LogEvent();
         if (AssessNeedForRepair(healthThreshold: GeneralSettings.Instance.HealthThreshold_BadlyDamaged)) {
             if (Command.RequestPermissionToWithdraw(this, WithdrawPurpose.Repair)) {
+                if (CurrentOrder.ToNotifyCmd) {
+                    Command.HandleOrderOutcome(FleetDirective.Attack, this, isSuccess: false, failCause: UnitItemOrderFailureCause.UnitItemNeedsRepair);
+                    if (CurrentState != ShipState.ExecuteAttackOrder) {
+                        D.Warn("{0}: Informing Cmd of OrderOutcome has resulted in an immediate state change to {1}.", DebugName, CurrentState.GetValueName());
+                    }
+                }
                 InitiateRepair(retainSuperiorsOrderOnRepairCompletion: true);
             }
         }
+    }
+
+    void ExecuteAttackOrder_UponHQStatusChangeCompleted() {
+        LogEvent();
+        // 3.21.17 Upon receiving this event, this ship either just became the Flagship during runtime or is the 
+        // old Flagship going back to its normal duty. One (if the old Flagship died) or both ships have just been 
+        // assigned new formation stations. That means this ship's previous FormationStation has been despawned or 
+        // reassigned to someone else. Thats OK, unless we are in the Moving or ExecuteAssumeStationOrder state. 
+        // If ExecuteAssumeStationOrder state or Moving because of ExecuteAssumeStationOrder, the station will 
+        // throw an error when the ApFormationStationProxy being used tries to talk to the despawned or reassigned station. 
+        // So if we are 'assuming station', we need to immediately generate a new proxy with the correct destination, 
+        // aka the newly assigned FleetFormationStation. If in Moving state for another purpose, and its a Fleetwide move, 
+        // then the current proxy will have the wrong offset and need a new proxy with the corrected offset.
+        // In either state its most expedient to simply RestartState to regenerate a corrected proxy.
+        //
+        // Note: If this event occurs in other states, nothing needs to be done as all other adjustments will be
+        // handled by the UnitCmd issuing new orders. The two scenarios described above require an immediate
+        // response as we cannot rely on an order from UnitCmd arriving this frame. The error (or erroneous values
+        // in the case of the offset) can affect play as early as the next frame.
     }
 
     void ExecuteAttackOrder_UponRelationsChanged(Player chgdRelationsPlayer) {
@@ -1950,7 +2173,12 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void ExecuteAttackOrder_UponDeath() {
         LogEvent();
-        Command.HandleOrderOutcome(CurrentOrder.Directive, this, isSuccess: false, failCause: UnitItemOrderFailureCause.UnitItemDeath);
+        if (CurrentOrder.ToNotifyCmd) {
+            Command.HandleOrderOutcome(FleetDirective.Attack, this, isSuccess: false, failCause: UnitItemOrderFailureCause.UnitItemDeath);
+            if (CurrentState != ShipState.ExecuteAttackOrder) {
+                D.Warn("{0}: Informing Cmd of OrderOutcome has resulted in an immediate state change to {1}.", DebugName, CurrentState.GetValueName());
+            }
+        }
     }
 
     void ExecuteAttackOrder_ExitState() {
@@ -1968,12 +2196,12 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     #region Attacking Support Members
 
-    private ApMoveDestinationProxy MakeApAttackTgtProxy(IShipAttackable attackTgt) {
+    private ApMoveDestinationProxy MakeApAttackTgtProxy(IShipBlastable attackTgt) {
         RangeDistance weapRange = Data.WeaponsRange;
         D.Assert(weapRange.Max > Constants.ZeroF);
         ShipCombatStance combatStance = Data.CombatStance;
-        D.AssertNotEqual(ShipCombatStance.Disengage, combatStance);
-        D.AssertNotEqual(ShipCombatStance.Defensive, combatStance);
+        D.AssertNotEqual(ShipCombatStance.Disengage, combatStance, DebugName);
+        D.AssertNotEqual(ShipCombatStance.Defensive, combatStance, DebugName);
 
         // Min and Max desired distances to the target's surface, derived from CombatStance and the range of available weapons.
         // All weapon ranges already exceed the maximum possible reqd separation to avoid collisions between a ship and its target
@@ -2062,7 +2290,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         ValueRange<float> desiredWeaponsRangeEnvelope = new ValueRange<float>(minDesiredDistanceToTgtSurface, maxDesiredDistanceToTgtSurface);
 
         if (toBombard) {
-            return attackTgt.GetApBombardTgtProxy(desiredWeaponsRangeEnvelope, this);
+            return attackTgt.GetApBesiegeTgtProxy(desiredWeaponsRangeEnvelope, this);
         }
         return attackTgt.GetApStrafeTgtProxy(desiredWeaponsRangeEnvelope, this);
     }
@@ -2083,17 +2311,17 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         isSubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.OwnerChg, _fsmTgt, toSubscribe: true);
         D.Assert(isSubscribed);
 
-        IShipAttackable primaryAttackTgt = _fsmTgt as IShipAttackable;
+        IShipBlastable primaryAttackTgt = _fsmTgt as IShipBlastable;
         D.AssertNotNull(primaryAttackTgt);
     }
 
     void Attacking_EnterState() {
         LogEvent();
 
-        IShipAttackable primaryAttackTgt = _fsmTgt as IShipAttackable;
+        IShipBlastable primaryAttackTgt = _fsmTgt as IShipBlastable;
         ApMoveDestinationProxy apAttackTgtProxy = MakeApAttackTgtProxy(primaryAttackTgt);
-        if (apAttackTgtProxy is ApBombardDestinationProxy) {
-            _helm.EngageAutoPilot(apAttackTgtProxy as ApBombardDestinationProxy, Speed.Full);
+        if (apAttackTgtProxy is ApBesiegeDestinationProxy) {
+            _helm.EngageAutoPilot(apAttackTgtProxy as ApBesiegeDestinationProxy, Speed.Full);
         }
         else {
             _helm.EngageAutoPilot(apAttackTgtProxy as ApStrafeDestinationProxy, Speed.Full);
@@ -2102,7 +2330,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void Attacking_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         LogEvent();
-        IShipAttackable primaryAttackTgt = _fsmTgt as IShipAttackable;
+        IShipBlastable primaryAttackTgt = _fsmTgt as IShipBlastable;
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions, tgtHint: primaryAttackTgt);
         InitiateFiringSequence(selectedFiringSolution);
     }
@@ -2130,6 +2358,25 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 Return();
             }
         }
+    }
+
+    void Attacking_UponHQStatusChangeCompleted() {
+        LogEvent();
+        // 3.21.17 Upon receiving this event, this ship either just became the Flagship during runtime or is the 
+        // old Flagship going back to its normal duty. One (if the old Flagship died) or both ships have just been 
+        // assigned new formation stations. That means this ship's previous FormationStation has been despawned or 
+        // reassigned to someone else. Thats OK, unless we are in the Moving or ExecuteAssumeStationOrder state. 
+        // If ExecuteAssumeStationOrder state or Moving because of ExecuteAssumeStationOrder, the station will 
+        // throw an error when the ApFormationStationProxy being used tries to talk to the despawned or reassigned station. 
+        // So if we are 'assuming station', we need to immediately generate a new proxy with the correct destination, 
+        // aka the newly assigned FleetFormationStation. If in Moving state for another purpose, and its a Fleetwide move, 
+        // then the current proxy will have the wrong offset and need a new proxy with the corrected offset.
+        // In either state its most expedient to simply RestartState to regenerate a corrected proxy.
+        //
+        // Note: If this event occurs in other states, nothing needs to be done as all other adjustments will be
+        // handled by the UnitCmd issuing new orders. The two scenarios described above require an immediate
+        // response as we cannot rely on an order from UnitCmd arriving this frame. The error (or erroneous values
+        // in the case of the offset) can affect play as early as the next frame.
     }
 
     void Attacking_UponRelationsChanged(Player chgdRelationsPlayer) {
@@ -2260,6 +2507,26 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
     }
 
+    void ExecuteEntrenchOrder_UponHQStatusChangeCompleted() {
+        LogEvent();
+        // 3.21.17 Upon receiving this event, this ship either just became the Flagship during runtime or is the 
+        // old Flagship going back to its normal duty. One (if the old Flagship died) or both ships have just been 
+        // assigned new formation stations. That means this ship's previous FormationStation has been despawned or 
+        // reassigned to someone else. Thats OK, unless we are in the Moving or ExecuteAssumeStationOrder state. 
+        // If ExecuteAssumeStationOrder state or Moving because of ExecuteAssumeStationOrder, the station will 
+        // throw an error when the ApFormationStationProxy being used tries to talk to the despawned or reassigned station. 
+        // So if we are 'assuming station', we need to immediately generate a new proxy with the correct destination, 
+        // aka the newly assigned FleetFormationStation. If in Moving state for another purpose, and its a Fleetwide move, 
+        // then the current proxy will have the wrong offset and need a new proxy with the corrected offset.
+        // In either state its most expedient to simply RestartState to regenerate a corrected proxy.
+        //
+        // Note: If this event occurs in other states, nothing needs to be done as all other adjustments will be
+        // handled by the UnitCmd issuing new orders. The two scenarios described above require an immediate
+        // response as we cannot rely on an order from UnitCmd arriving this frame. The error (or erroneous values
+        // in the case of the offset) can affect play as early as the next frame.
+        ////IssueAssumeStationOrderFromCaptain(retainSuperiorsOrder: true);
+    }
+
     void ExecuteEntrenchOrder_UponRelationsChanged(Player chgdRelationsPlayer) {
         LogEvent();
         // TODO
@@ -2321,7 +2588,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         // If there was a failure generated by Repairing, resulting new Orders or Dead state should keep this point from being reached
         D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
 
-        IssueAssumeStationOrderFromCaptain();
+        IssueAssumeStationOrder(retainSuperiorsOrder: true);
     }
 
     void ExecuteRepairOrder_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
@@ -2338,6 +2605,25 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     void ExecuteRepairOrder_UponDamageIncurred() {
         LogEvent();
         // No need to AssessNeedForRepair() as already Repairing
+    }
+
+    void ExecuteRepairOrder_UponHQStatusChangeCompleted() {
+        LogEvent();
+        // 3.21.17 Upon receiving this event, this ship either just became the Flagship during runtime or is the 
+        // old Flagship going back to its normal duty. One (if the old Flagship died) or both ships have just been 
+        // assigned new formation stations. That means this ship's previous FormationStation has been despawned or 
+        // reassigned to someone else. Thats OK, unless we are in the Moving or ExecuteAssumeStationOrder state. 
+        // If ExecuteAssumeStationOrder state or Moving because of ExecuteAssumeStationOrder, the station will 
+        // throw an error when the ApFormationStationProxy being used tries to talk to the despawned or reassigned station. 
+        // So if we are 'assuming station', we need to immediately generate a new proxy with the correct destination, 
+        // aka the newly assigned FleetFormationStation. If in Moving state for another purpose, and its a Fleetwide move, 
+        // then the current proxy will have the wrong offset and need a new proxy with the corrected offset.
+        // In either state its most expedient to simply RestartState to regenerate a corrected proxy.
+        //
+        // Note: If this event occurs in other states, nothing needs to be done as all other adjustments will be
+        // handled by the UnitCmd issuing new orders. The two scenarios described above require an immediate
+        // response as we cannot rely on an order from UnitCmd arriving this frame. The error (or erroneous values
+        // in the case of the offset) can affect play as early as the next frame.
     }
 
     void ExecuteRepairOrder_UponRelationsChanged(Player chgdRelationsPlayer) {
@@ -2371,6 +2657,11 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     IEnumerator Repairing_EnterState() {
         LogEvent();
+
+        // 3.19.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
+        // I think it is because there is a rare scenario where no yield return is encountered below this. 
+        // See http://answers.unity3d.com/questions/158917/error-quotmcoroutineenumeratorgchandle-0quot.html
+        yield return null;
 
         StartEffectSequence(EffectSequenceID.Repairing);
 
@@ -2426,9 +2717,28 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         // No need to AssessNeedForRepair() as already Repairing
     }
 
+    void Repairing_UponHQStatusChangeCompleted() {
+        LogEvent();
+        // 3.21.17 Upon receiving this event, this ship either just became the Flagship during runtime or is the 
+        // old Flagship going back to its normal duty. One (if the old Flagship died) or both ships have just been 
+        // assigned new formation stations. That means this ship's previous FormationStation has been despawned or 
+        // reassigned to someone else. Thats OK, unless we are in the Moving or ExecuteAssumeStationOrder state. 
+        // If ExecuteAssumeStationOrder state or Moving because of ExecuteAssumeStationOrder, the station will 
+        // throw an error when the ApFormationStationProxy being used tries to talk to the despawned or reassigned station. 
+        // So if we are 'assuming station', we need to immediately generate a new proxy with the correct destination, 
+        // aka the newly assigned FleetFormationStation. If in Moving state for another purpose, and its a Fleetwide move, 
+        // then the current proxy will have the wrong offset and need a new proxy with the corrected offset.
+        // In either state its most expedient to simply RestartState to regenerate a corrected proxy.
+        //
+        // Note: If this event occurs in other states, nothing needs to be done as all other adjustments will be
+        // handled by the UnitCmd issuing new orders. The two scenarios described above require an immediate
+        // response as we cannot rely on an order from UnitCmd arriving this frame. The error (or erroneous values
+        // in the case of the offset) can affect play as early as the next frame.
+    }
+
     void Repairing_UponRelationsChanged(Player chgdRelationsPlayer) {
         LogEvent();
-        // TODO
+        // Continue
     }
 
     // No need for _fsmTgt-related event handlers as there is no _fsmTgt
@@ -2490,7 +2800,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             D.Log("{0} {1} {2} to {3}.", DebugName, msg, typeof(FleetFormationStation).Name, ShipDirective.Disengage.GetValueName());
         }
 
-        IssueAssumeStationOrderFromCaptain();
+        IssueAssumeStationOrder();
         yield return null;  // IEnumerable to avoid void EnterState state change problem
     }
 
@@ -2512,9 +2822,28 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
     }
 
+    void ExecuteDisengageOrder_UponHQStatusChangeCompleted() {
+        LogEvent();
+        // 3.21.17 Upon receiving this event, this ship either just became the Flagship during runtime or is the 
+        // old Flagship going back to its normal duty. One (if the old Flagship died) or both ships have just been 
+        // assigned new formation stations. That means this ship's previous FormationStation has been despawned or 
+        // reassigned to someone else. Thats OK, unless we are in the Moving or ExecuteAssumeStationOrder state. 
+        // If ExecuteAssumeStationOrder state or Moving because of ExecuteAssumeStationOrder, the station will 
+        // throw an error when the ApFormationStationProxy being used tries to talk to the despawned or reassigned station. 
+        // So if we are 'assuming station', we need to immediately generate a new proxy with the correct destination, 
+        // aka the newly assigned FleetFormationStation. If in Moving state for another purpose, and its a Fleetwide move, 
+        // then the current proxy will have the wrong offset and need a new proxy with the corrected offset.
+        // In either state its most expedient to simply RestartState to regenerate a corrected proxy.
+        //
+        // Note: If this event occurs in other states, nothing needs to be done as all other adjustments will be
+        // handled by the UnitCmd issuing new orders. The two scenarios described above require an immediate
+        // response as we cannot rely on an order from UnitCmd arriving this frame. The error (or erroneous values
+        // in the case of the offset) can affect play as early as the next frame.
+    }
+
     void ExecuteDisengageOrder_UponRelationsChanged(Player chgdRelationsPlayer) {
         LogEvent();
-        // TODO
+        // Continue
     }
 
     // No need for _fsmTgt-related event handlers as there is no _fsmTgt
@@ -2639,13 +2968,14 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     }
 
     /// <summary>
-    /// Tries to assume close orbit around the provided, already confirmed closeOrbitTarget. 
-    /// Returns <c>true</c> once the ship is no longer actively underway (including collision avoidance) 
+    /// Tries to assume close orbit around the provided, already confirmed closeOrbitTarget.
+    /// Returns <c>true</c> once the ship is no longer actively underway (including collision avoidance)
     /// and close orbit has been assumed, <c>false</c> otherwise.
     /// </summary>
     /// <param name="closeOrbitTgt">The close orbit target.</param>
+    /// <param name="__tgtDistanceUponInitialArrival">The target's distance when the ship first 'arrives'.</param>
     /// <returns></returns>
-    private bool AttemptCloseOrbitAround(IShipCloseOrbitable closeOrbitTgt) {
+    private bool AttemptCloseOrbitAround(IShipCloseOrbitable closeOrbitTgt, float __tgtDistanceUponInitialArrival) {
         D.Assert(!IsInOrbit);
         D.AssertNull(_orbitingJoint);
         if (!_helm.IsActivelyUnderway) {
@@ -2654,7 +2984,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             _orbitingJoint = gameObject.AddComponent<FixedJoint>();
             Profiler.EndSample();
 
-            closeOrbitTgt.AssumeCloseOrbit(this, _orbitingJoint);
+            closeOrbitTgt.AssumeCloseOrbit(this, _orbitingJoint, __tgtDistanceUponInitialArrival);
             IMortalItem mortalCloseOrbitTgt = closeOrbitTgt as IMortalItem;
             if (mortalCloseOrbitTgt != null) {
                 mortalCloseOrbitTgt.deathOneShot += OrbitedObjectDeathEventHandler;
@@ -3343,6 +3673,39 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     #endregion
 
+    private void __ValidateKnowledgeOfOrderTarget(IShipNavigable target, ShipDirective directive) {
+        if (directive == ShipDirective.Retreat || directive == ShipDirective.Disband || directive == ShipDirective.Refit
+            || directive == ShipDirective.StopAttack) {
+            // directives aren't yet implemented
+            return;
+        }
+        if (target is StarItem || target is SystemItem || target is UniverseCenterItem) {
+            // unnecessary check as all players have knowledge of these targets
+            return;
+        }
+        if (directive == ShipDirective.AssumeStation || directive == ShipDirective.Scuttle
+            || directive == ShipDirective.Repair || directive == ShipDirective.Entrench || directive == ShipDirective.Disengage) {
+            D.AssertNull(target);
+            return;
+        }
+        if (directive == ShipDirective.Move) {
+            if (target is StationaryLocation || target is MobileLocation) {
+                return;
+            }
+            if (target is ISector) {
+                return; // IMPROVE currently PlayerKnowledge does not keep track of Sectors
+            }
+        }
+        IItem_Ltd tgtLtd = target as IItem_Ltd;
+        if (tgtLtd == null) {
+            D.Error("{0}: {1} is not a {2}.", DebugName, target.DebugName, typeof(IItem_Ltd).Name);
+        }
+        if (!OwnerAIMgr.HasKnowledgeOf(tgtLtd)) {
+            // 3.5.17 Typically occurs when receiving an order to explore a planet that is not yet in sensor range
+            D.Warn("{0} received {1} order with Target {2} that Owner {3} has no knowledge of.", DebugName, directive.GetValueName(), target.DebugName, Owner.LeaderName);
+        }
+    }
+
     protected override void __ValidateRadius(float radius) {
         if (radius > TempGameValues.ShipMaxRadius) {
             D.Error("{0} Radius {1:0.00} > Max {2:0.00}.", DebugName, radius, TempGameValues.ShipMaxRadius);
@@ -3404,6 +3767,30 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         float radius = dimensions.magnitude / 2F;
         D.Warn(radius > TempGameValues.ShipMaxRadius, "Ship {0}.Radius {1:0.####} > MaxRadius {2:0.##}.", hullCat.GetValueName(), radius, TempGameValues.ShipMaxRadius);
         return dimensions;
+    }
+
+    private void __ReportCollision(Collision collision) {
+        if (ShowDebugLog) {
+
+            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
+            var ordnance = collision.transform.GetComponent<AProjectileOrdnance>();
+            Profiler.EndSample();
+
+            if (ordnance == null) { // 3.7.17 removed resulting speeds as can't discern impact effect from ship's intended speed
+                // its not ordnance
+                D.Log("While {0}, {1} registered a collision by {2}.", CurrentState.ToString(), DebugName, collision.collider.name);
+                //SphereCollider sphereCollider = collision.collider as SphereCollider;
+                //BoxCollider boxCollider = collision.collider as BoxCollider;
+                //string colliderSizeMsg = (sphereCollider != null) ? "radius = " + sphereCollider.radius : ((boxCollider != null) ? "size = " + boxCollider.size.ToPreciseString() : "size unknown");
+                //D.Log("{0}: Detail on collision - Distance between collider centers = {1:0.##}, {2}'s {3}.", 
+                //    DebugName, Vector3.Distance(Position, collision.collider.transform.position), collision.transform.name, colliderSizeMsg);
+                // AngularVelocity no longer reported as element's rigidbody.freezeRotation = true
+            }
+            else {
+                // ordnance impact
+                //D.Log("{0} registered a collision by {1}.", DebugName, ordnance.DebugName);
+            }
+        }
     }
 
     #endregion
@@ -3471,7 +3858,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     #endregion
 
-    #region IShipAttackable Members
+    #region IShipBlastable Members
 
     public override ApStrafeDestinationProxy GetApStrafeTgtProxy(ValueRange<float> desiredWeaponsRangeEnvelope, IShip ship) {
         float shortestDistanceFromTgtToTgtSurface = GetDistanceToClosestWeaponImpactSurface();
@@ -3489,7 +3876,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         return attackProxy;
     }
 
-    public override ApBombardDestinationProxy GetApBombardTgtProxy(ValueRange<float> desiredWeaponsRangeEnvelope, IShip ship) {
+    public override ApBesiegeDestinationProxy GetApBesiegeTgtProxy(ValueRange<float> desiredWeaponsRangeEnvelope, IShip ship) {
         float shortestDistanceFromTgtToTgtSurface = GetDistanceToClosestWeaponImpactSurface();
         float innerProxyRadius = desiredWeaponsRangeEnvelope.Minimum + shortestDistanceFromTgtToTgtSurface;
         float minInnerProxyRadiusToAvoidCollision = CollisionDetectionZoneRadius + ship.CollisionDetectionZoneRadius;
@@ -3500,7 +3887,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         float outerProxyRadius = desiredWeaponsRangeEnvelope.Maximum + shortestDistanceFromTgtToTgtSurface;
         D.Assert(outerProxyRadius > innerProxyRadius);
 
-        ApBombardDestinationProxy attackProxy = new ApBombardDestinationProxy(this, ship, innerProxyRadius, outerProxyRadius);
+        ApBesiegeDestinationProxy attackProxy = new ApBesiegeDestinationProxy(this, ship, innerProxyRadius, outerProxyRadius);
         D.Log(ShowDebugLog, "{0} has constructed an AttackProxy with an ArrivalWindowDepth of {1:0.#} units.", DebugName, attackProxy.ArrivalWindowDepth);
         return attackProxy;
     }
@@ -3559,5 +3946,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     }
 
     #endregion
+
 }
 

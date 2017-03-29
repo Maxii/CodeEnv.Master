@@ -361,9 +361,9 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         public bool TryGetSettlement(IntVector3 sectorID, out ISettlementCmd_Ltd settlementInSector) {
             D.AssertNotDefault(sectorID);
-            ISettlementCmd_Ltd settlements;
-            if (_settlementLookupBySectorID.TryGetValue(sectorID, out settlements)) {
-                settlementInSector = settlements;
+            ISettlementCmd_Ltd settlement;
+            if (_settlementLookupBySectorID.TryGetValue(sectorID, out settlement)) {
+                settlementInSector = settlement;
                 return true;
             }
             settlementInSector = null;
@@ -675,7 +675,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void __InitializeValidatePlayerKnowledge() {
-            References.DebugControls.validatePlayerKnowledgeNow += __ValidatePlayerKnowledgeNowEventHandler;
+            GameReferences.DebugControls.validatePlayerKnowledgeNow += __ValidatePlayerKnowledgeNowEventHandler;
         }
 
         private void __ValidatePlayerKnowledgeNowEventHandler(object sender, EventArgs e) {
@@ -698,7 +698,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void __CleanupValidatePlayerKnowledge() {
-            References.DebugControls.validatePlayerKnowledgeNow -= __ValidatePlayerKnowledgeNowEventHandler;
+            GameReferences.DebugControls.validatePlayerKnowledgeNow -= __ValidatePlayerKnowledgeNowEventHandler;
         }
 
         #endregion

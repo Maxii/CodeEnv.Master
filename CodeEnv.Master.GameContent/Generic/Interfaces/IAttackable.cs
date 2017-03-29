@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IAttackable.cs
-// Interface for targets that can be attacked, aka MortalItems.
+// Interface for Items that can be attacked, aka MortalItems.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,7 +19,7 @@ namespace CodeEnv.Master.GameContent {
     using System;
 
     /// <summary>
-    /// Interface for targets that can be attacked, aka MortalItems.
+    /// Interface for Items that can be attacked, aka MortalItems.
     /// </summary>
     public interface IAttackable {
 

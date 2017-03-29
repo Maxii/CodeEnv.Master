@@ -79,7 +79,7 @@ namespace CodeEnv.Master.GameContent {
         private void InitiateNavigationTo(ApMoveDestinationProxy destProxy) {
             float distanceToArrival;
             Vector3 directionToArrival;
-            bool isArrived = !destProxy.TryGetArrivalDistanceAndDirection(out directionToArrival, out distanceToArrival);
+            bool isArrived = !destProxy.TryCheckProgress(out directionToArrival, out distanceToArrival);
             D.Assert(!isArrived);
 
             //D.Log(ShowDebugLog, "{0} powering up. Distance to arrival at {1} = {2:0.0}.", DebugName, destProxy.DebugName, distanceToArrival);
@@ -103,7 +103,7 @@ namespace CodeEnv.Master.GameContent {
             _moveJob = _jobMgr.RecurringWaitForHours(new Reference<GameTimeDuration>(() => progressCheckPeriod), jobName, waitMilestone: () => {
                 //D.Log(ShowDebugLog, "{0} making ApNav progress check on Frame: {1}. CheckPeriod = {2}.", DebugName, Time.frameCount, progressCheckPeriod);
 
-                if (isArrived = !destProxy.TryGetArrivalDistanceAndDirection(out directionToArrival, out distanceToArrival)) {
+                if (isArrived = !destProxy.TryCheckProgress(out directionToArrival, out distanceToArrival)) {
                     KillJob();
                     OnHasArrived();
                     return; // ends execution of waitMilestone

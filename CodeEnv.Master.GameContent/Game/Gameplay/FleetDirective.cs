@@ -107,6 +107,8 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         AssumeFormation,
 
+        Regroup,
+
         /// <summary>
         /// Fleets can join other fleets owned by the Fleet owner.
         /// </summary>
@@ -129,7 +131,13 @@ namespace CodeEnv.Master.GameContent {
         /// Fleets can be scuttled anywhere. No resources are retained by the owner. Scuttle orders are only 
         /// issuable by the User???
         /// </summary>
-        Scuttle
+        Scuttle,
+
+        /// <summary>
+        /// Fleet's can be instructed to assign a new ship as the HQElement.
+        /// <remarks>Implemented directly by changing the Cmd's HQElement.</remarks>
+        /// </summary>
+        ChangeHQ
 
         /************************************ Possible Directives *****************************************/
         /***************************************************************************************************

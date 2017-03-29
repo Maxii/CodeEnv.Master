@@ -286,7 +286,7 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     /// </summary>
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
-        References.DebugControls = Instance;
+        GameReferences.DebugControls = Instance;
     }
 
     /// <summary>
@@ -295,7 +295,7 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     /// </summary>
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        _gameMgr = References.GameManager;
+        _gameMgr = GameReferences.GameManager;
     }
 
     #endregion
@@ -550,7 +550,7 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     #region Cleanup
 
     protected override void Cleanup() {
-        References.DebugControls = null;
+        GameReferences.DebugControls = null;
     }
 
     #endregion

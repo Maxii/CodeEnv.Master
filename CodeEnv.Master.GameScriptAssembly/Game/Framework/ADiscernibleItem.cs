@@ -80,7 +80,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        _inputHelper = References.InputHelper;
+        _inputHelper = GameReferences.InputHelper;
     }
 
     /// <summary>
@@ -259,7 +259,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
 
     protected virtual void HandleIsFocusChanged() {
         if (IsFocus) {
-            References.MainCameraControl.CurrentFocus = this;
+            GameReferences.MainCameraControl.CurrentFocus = this;
         }
         AssessCircleHighlighting();
     }

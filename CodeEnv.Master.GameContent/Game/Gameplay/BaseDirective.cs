@@ -56,7 +56,14 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         Scuttle,
 
-        StopAttack,
+        /// <summary>
+        /// Bases can be instructed to assign a new facility as the HQElement.
+        /// <remarks>Implemented directly by changing the Cmd's HQElement.</remarks>
+        /// </summary>
+        ChangeHQ,
+
+
+        StopAttack
 
 
     }

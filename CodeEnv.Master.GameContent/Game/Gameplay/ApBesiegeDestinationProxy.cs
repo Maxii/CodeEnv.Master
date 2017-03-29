@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ApBombardDestinationProxy.cs
-// Proxy used by a Ship's AutoPilot to navigate to and bombard an IShipAttackable target.
+// File: ApBesiegeDestinationProxy.cs
+// Proxy used by a Ship's AutoPilot to navigate to and besiege an IShipAttackable target.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,11 +19,11 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Proxy used by a Ship's AutoPilot to navigate to and bombard an IShipAttackable target.
+    /// Proxy used by a Ship's AutoPilot to navigate to and besiege an IShipAttackable target.
     /// </summary>
-    public class ApBombardDestinationProxy : ApMoveDestinationProxy {
+    public class ApBesiegeDestinationProxy : ApMoveDestinationProxy {
 
-        public ApBombardDestinationProxy(IShipNavigable destination, IShip ship, float innerRadius, float outerRadius)
+        public ApBesiegeDestinationProxy(IShipNavigable destination, IShip ship, float innerRadius, float outerRadius)
             : base(destination, ship, innerRadius, outerRadius) {
         }
 

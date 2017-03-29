@@ -23,7 +23,11 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class BaseOrder {
 
-        private const string ToStringFormat = "{0}[Directive: {1}, Source: {2}, Target: {3}]";
+        private const string ToStringFormat = "[{0}: Directive = {1}, Source = {2}, Target = {3}, FollowonOrder = {4}, StandingOrder = {5}]";
+
+        public BaseOrder StandingOrder { get; set; }
+
+        public BaseOrder FollowonOrder { get; set; }
 
         public IUnitAttackable Target { get; private set; }
 
@@ -48,9 +52,12 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public override string ToString() {
-            string targetText = Target != null ? Target.DebugName : "null";
-            return ToStringFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), targetText);
+            string targetText = Target != null ? Target.DebugName : "none";
+            string followonOrderText = FollowonOrder != null ? FollowonOrder.ToString() : "none";
+            string standingOrderText = StandingOrder != null ? StandingOrder.ToString() : "none";
+            return ToStringFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), targetText, followonOrderText, standingOrderText);
         }
+
 
     }
 }

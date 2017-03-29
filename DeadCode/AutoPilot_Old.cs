@@ -201,7 +201,7 @@ namespace CodeEnv.Master.GameContent {
             }
 
             if (directive == ApDirective.Bombard) {
-                D.Assert(tgtProxy is ApBombardDestinationProxy);
+                D.Assert(tgtProxy is ApBesiegeDestinationProxy);
             }
 
 
@@ -527,7 +527,7 @@ namespace CodeEnv.Master.GameContent {
 #pragma warning disable 0219
             bool isArrived = false;
 #pragma warning restore 0219
-            if (isArrived = !destProxy.TryGetArrivalDistanceAndDirection(out directionToArrival, out distanceToArrival)) {
+            if (isArrived = !destProxy.TryCheckProgress(out directionToArrival, out distanceToArrival)) {
                 // arrived
                 hasArrived();
                 return false;   // already arrived so nav not initiated
@@ -639,7 +639,7 @@ namespace CodeEnv.Master.GameContent {
                 _maintainPositionTask.lostPosition += BombardPositionLostEventHandler;
             }
             ResetTasks();
-            _maintainPositionTask.Execute(TargetProxy as ApBombardDestinationProxy);
+            _maintainPositionTask.Execute(TargetProxy as ApBesiegeDestinationProxy);
         }
         //private void MaintainBombardPosition() {
         //    if (_maintainPositionTask == null) {

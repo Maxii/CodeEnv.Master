@@ -171,6 +171,11 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
         SelectedItemHudWindow.Instance.Show(FormID.SelectedStar, UserReport);
     }
 
+    protected override void HandleInfoAccessChangedFor(Player player) {
+        base.HandleInfoAccessChangedFor(player);
+        ParentSystem.AssessWhetherToFireInfoAccessChangedEventFor(player);
+    }
+
     #region Event and Property Change Handlers
 
     protected override void HandleOwnerChanging(Player newOwner) {
@@ -420,12 +425,14 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
         }
     }
 
-    public void AssumeCloseOrbit(IShip_Ltd ship, FixedJoint shipOrbitJoint) {
+    public void AssumeCloseOrbit(IShip_Ltd ship, FixedJoint shipOrbitJoint, float __distanceUponInitialArrival) {
         if (_shipsInCloseOrbit == null) {
             _shipsInCloseOrbit = new List<IShip_Ltd>();
         }
         _shipsInCloseOrbit.Add(ship);
         shipOrbitJoint.connectedBody = CloseOrbitSimulator.OrbitRigidbody;
+
+        __ReportCloseOrbitDetails(ship, true, __distanceUponInitialArrival);
     }
 
     public bool IsInCloseOrbit(IShip_Ltd ship) {
@@ -500,16 +507,9 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
             var isRemoved = _shipsInCloseOrbit.Remove(ship);
             D.Assert(isRemoved);
             D.Log(ShowDebugLog, "{0} has left close orbit around {1}.", ship.DebugName, DebugName);
-            float shipDistance = Vector3.Distance(ship.Position, Position);
-            float insideOrbitSlotThreshold = Data.CloseOrbitOuterRadius - ship.CollisionDetectionZoneRadius_Debug;
-            if (shipDistance > insideOrbitSlotThreshold) {
-                D.Log(ShowDebugLog, "{0} is leaving orbit of {1} but collision detection zone is poking outside of orbit slot by {2:0.0000} units.",
-                    ship.DebugName, DebugName, shipDistance - insideOrbitSlotThreshold);
-                float halfOutsideOrbitSlotThreshold = Data.CloseOrbitOuterRadius;
-                if (shipDistance > halfOutsideOrbitSlotThreshold) {
-                    D.Warn("{0} is leaving orbit of {1} but collision detection zone is half outside of orbit slot.", ship.DebugName, DebugName);
-                }
-            }
+
+            __ReportCloseOrbitDetails(ship, isArriving: false);
+
             if (_shipsInCloseOrbit.Count == Constants.Zero) {
                 // Choose either to deactivate the OrbitSimulator or destroy it, but not both
                 CloseOrbitSimulator.IsActivated = false;
@@ -518,6 +518,25 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
             return;
         }
         D.Error("{0}.HandleBrokeOrbit() called, but {1} not in orbit.", DebugName, ship.DebugName);
+    }
+
+    private void __ReportCloseOrbitDetails(IShip_Ltd ship, bool isArriving, float __distanceUponInitialArrival = 0F) {
+        float shipDistance = Vector3.Distance(ship.Position, Position);
+        float insideOrbitSlotThreshold = Data.CloseOrbitOuterRadius - ship.CollisionDetectionZoneRadius_Debug;
+        if (shipDistance > insideOrbitSlotThreshold) {
+            string arrivingLeavingMsg = isArriving ? "arriving in" : "leaving";
+            D.Log(ShowDebugLog, "{0} is {1} orbit of {2} but collision detection zone is poking outside of orbit slot by {3:0.0000} units.",
+                ship.DebugName, arrivingLeavingMsg, DebugName, shipDistance - insideOrbitSlotThreshold);
+            float halfOutsideOrbitSlotThreshold = Data.CloseOrbitOuterRadius;
+            if (shipDistance > halfOutsideOrbitSlotThreshold) {
+                D.Warn("{0} is {1} orbit of {2} but collision detection zone is half or more outside of orbit slot.", ship.DebugName, arrivingLeavingMsg, DebugName);
+                if (isArriving) {
+                    float distanceMovedWhileWaitingForArrival = shipDistance - __distanceUponInitialArrival;
+                    string distanceMsg = distanceMovedWhileWaitingForArrival < 0F ? "closer in toward" : "further out from";
+                    D.Log("{0} moved {1:0.##} {2} {3}'s orbit slot while waiting for arrival.", ship.DebugName, Mathf.Abs(distanceMovedWhileWaitingForArrival), distanceMsg, DebugName);
+                }
+            }
+        }
     }
 
     #endregion

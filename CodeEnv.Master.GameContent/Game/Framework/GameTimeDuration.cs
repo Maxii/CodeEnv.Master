@@ -40,6 +40,7 @@ namespace CodeEnv.Master.GameContent {
         public static readonly GameTimeDuration FiveDays = new GameTimeDuration(hours: 0F, days: 5, years: 0);
         public static readonly GameTimeDuration SevenDays = new GameTimeDuration(hours: 0F, days: 7, years: 0);
         public static readonly GameTimeDuration TenDays = new GameTimeDuration(hours: 0F, days: 10, years: 0);
+        public static readonly GameTimeDuration TwentyDays = new GameTimeDuration(hours: 0F, days: 20, years: 0);
         public static readonly GameTimeDuration OneYear = new GameTimeDuration(hours: 0F, days: 0, years: 1);
 
         // Bug: use of static constructor with struct causes intellisense for constructors to fail

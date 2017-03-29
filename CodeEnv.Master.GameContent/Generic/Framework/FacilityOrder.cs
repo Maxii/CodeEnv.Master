@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FacilityOrder {
 
-        private const string ToStringFormat = "[{0}: Directive = {1}, Source = {2}, Notify = {3}, Target = {4}, StandingOrder = {5}]";
+        private const string ToStringFormat = "[{0}: Directive = {1}, Source = {2}, ToNotify = {3}, Target = {4}, FollowonOrder = {5}, StandingOrder = {6}]";
 
         private static readonly FacilityDirective[] DirectivesWithNullTarget = new FacilityDirective[] {
                                                                                                     FacilityDirective.Refit,
@@ -32,9 +32,9 @@ namespace CodeEnv.Master.GameContent {
                                                                                                     FacilityDirective.Scuttle,
                                                                                                     FacilityDirective.StopAttack,
                                                                                                 };
-        // No need for FollowonOrder until facilities can move, albeit slowly
-
         public FacilityOrder StandingOrder { get; set; }
+
+        public FacilityOrder FollowonOrder { get; set; }
 
         public IUnitAttackable Target { get; private set; }
 
@@ -66,8 +66,9 @@ namespace CodeEnv.Master.GameContent {
 
         public override string ToString() {
             string targetText = Target != null ? Target.DebugName : "none";
+            string followonOrderText = FollowonOrder != null ? FollowonOrder.ToString() : "none";
             string standingOrderText = StandingOrder != null ? StandingOrder.ToString() : "none";
-            return ToStringFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), ToNotifyCmd, targetText, standingOrderText);
+            return ToStringFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), ToNotifyCmd, targetText, followonOrderText, standingOrderText);
         }
 
     }

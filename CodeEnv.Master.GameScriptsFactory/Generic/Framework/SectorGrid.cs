@@ -136,11 +136,13 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     private Parallelepiped _gridRenderer;
     private GridWireframe _gridWireframe;
     private IList<IDisposable> _subscriptions;
+    private MainCameraControl _mainCameraCntl;
+    private PlayerViews _playerViews;
     private GameManager _gameMgr;
 
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
-        References.SectorGrid = Instance;
+        GameReferences.SectorGrid = Instance;
     }
 
     protected override void InitializeOnAwake() {
@@ -152,6 +154,8 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
 
     private void InitializeLocalReferencesAndValues() {
         _gameMgr = GameManager.Instance;
+        _mainCameraCntl = MainCameraControl.Instance;
+        _playerViews = PlayerViews.Instance;
     }
 
     private void InitializeGrid() {
@@ -165,18 +169,10 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     private void Subscribe() {
         _subscriptions = new List<IDisposable>();
         _subscriptions.Add(PlayerViews.Instance.SubscribeToPropertyChanged<PlayerViews, PlayerViewMode>(pv => pv.ViewMode, PlayerViewModePropChangedHandler));
+        _mainCameraCntl.sectorIDChanged += CameraSectorIDChangedEventHandler;
     }
 
     // 8.16.16 Control of GameState progression when sectors are built now handled by UniverseBuilder
-
-    private void DynamicallySubscribe(bool toSubscribe) {
-        if (toSubscribe) {
-            MainCameraControl.Instance.sectorIDChanged += CameraSectorIDChangedEventHandler;
-        }
-        else {
-            MainCameraControl.Instance.sectorIDChanged -= CameraSectorIDChangedEventHandler;
-        }
-    }
 
     public void BuildSectors() {
         InitializeGridSize();
@@ -207,14 +203,12 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     #region Event and Property Change Handlers
 
     private void PlayerViewModePropChangedHandler() {
-        PlayerViewMode viewMode = PlayerViews.Instance.ViewMode;
+        PlayerViewMode viewMode = _playerViews.ViewMode;
         switch (viewMode) {
             case PlayerViewMode.SectorView:
                 ShowSectorGrid(true);
-                DynamicallySubscribe(true);
                 break;
             case PlayerViewMode.NormalView:
-                DynamicallySubscribe(false);
                 ShowSectorGrid(false);
                 break;
             case PlayerViewMode.None:
@@ -224,14 +218,15 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     }
 
     private void CameraSectorIDChangedEventHandler(object sender, EventArgs e) {
-        D.AssertEqual(PlayerViewMode.SectorView, PlayerViews.Instance.ViewMode);   // not subscribed unless in SectorViewMode
-        D.Assert(IsGridWireframeShowing);
-        HandleCameraSectorIDChanged();
+        if (_playerViews.ViewMode == PlayerViewMode.SectorView) {
+            D.Assert(IsGridWireframeShowing);
+            HandleCameraSectorIDChanged();
+        }
     }
 
     private void HandleCameraSectorIDChanged() {
         IntVector3 cameraSectorID;
-        bool isCameraInsideUniverse = MainCameraControl.Instance.TryGetSectorID(out cameraSectorID);
+        bool isCameraInsideUniverse = _mainCameraCntl.TryGetSectorID(out cameraSectorID);
         //D.Log("{0}: CameraSectorID has changed to {1}. Generating new grid points.", DebugName, cameraSectorID);
         if (!isCameraInsideUniverse || _sectorVisibilityDepth == Constants.Zero) {
             // Camera has just moved outside the universe or its moved within the universe but we are supposed to show all 
@@ -767,7 +762,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
         if (toShow) {
             D.Assert(!IsGridWireframeShowing);
             IntVector3 cameraSectorID;
-            bool isCameraInsideUniverse = MainCameraControl.Instance.TryGetSectorID(out cameraSectorID);
+            bool isCameraInsideUniverse = _mainCameraCntl.TryGetSectorID(out cameraSectorID);
 
             List<Vector3> gridPoints;
             if (!isCameraInsideUniverse || _sectorVisibilityDepth == Constants.Zero) {
@@ -958,7 +953,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     }
 
     protected override void Cleanup() {
-        References.SectorGrid = null;
+        GameReferences.SectorGrid = null;
         if (_gridWireframe != null) {
             _gridWireframe.Dispose();
         }
@@ -971,9 +966,7 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     private void Unsubscribe() {
         _subscriptions.ForAll(s => s.Dispose());
         _subscriptions.Clear();
-        if (MainCameraControl.Instance != null) {
-            MainCameraControl.Instance.sectorIDChanged -= CameraSectorIDChangedEventHandler;
-        }
+        _mainCameraCntl.sectorIDChanged -= CameraSectorIDChangedEventHandler;
     }
 
     public override string ToString() {

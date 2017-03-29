@@ -38,7 +38,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="allStars">All stars.</param>
         /// <param name="allPlanetoids">All planetoids.</param>
         public UserPlayerKnowledge(IUniverseCenter_Ltd uCenter, IEnumerable<IStar_Ltd> allStars, IEnumerable<IPlanetoid_Ltd> allPlanetoids)
-            : base(References.GameManager.UserPlayer, uCenter, allStars, allPlanetoids) {
+            : base(GameReferences.GameManager.UserPlayer, uCenter, allStars, allPlanetoids) {
         }
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="uCenter">The UniverseCenter.</param>
         /// <param name="allStars">All stars.</param>
         public UserPlayerKnowledge(IUniverseCenter_Ltd uCenter, IEnumerable<IStar_Ltd> allStars)
-            : base(References.GameManager.UserPlayer, uCenter, allStars) {
+            : base(GameReferences.GameManager.UserPlayer, uCenter, allStars) {
         }
 
         /// <summary>

@@ -95,7 +95,7 @@ public class GamePoolManager : AMonoSingleton<GamePoolManager>, IGamePoolManager
     /// </summary>
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
-        References.GamePoolManager = Instance;
+        GameReferences.GamePoolManager = Instance;
     }
 
     /// <summary>
@@ -124,14 +124,14 @@ public class GamePoolManager : AMonoSingleton<GamePoolManager>, IGamePoolManager
         PoolManager.Pools[HighlightsPoolName].instantiateDelegates += InstantiateNewInstanceEventHandler;
 
         // FleetFormationStations
-        int fleetQty = GetFleetQty(gameSettings);
+        int fleetQty = DebugUtility.__GetApproxFleetQty(gameSettings);
         preloadAmt = TempGameValues.MaxShipsPerFleet * fleetQty;
         CreatePrefabPool(FormationStationPoolName, _formationStationPrefab, preloadAmt);
         PoolManager.Pools[FormationStationPoolName].instantiateDelegates += InstantiateNewInstanceEventHandler;
 
         // Ordnance
         int maxShips = TempGameValues.MaxShipsPerFleet * fleetQty;
-        int maxFacilities = TempGameValues.MaxFacilitiesPerBase * GetBaseQty(gameSettings);
+        int maxFacilities = TempGameValues.MaxFacilitiesPerBase * DebugUtility.__GetApproxBaseQty(gameSettings);
         int maxElements = maxShips + maxFacilities;
 
         float avgBeamsOperatingPerElement = .01F;
@@ -288,6 +288,7 @@ public class GamePoolManager : AMonoSingleton<GamePoolManager>, IGamePoolManager
         D.Log(ShowDebugLog, "{0} has created {1} instances of {2}.", DebugName, prefabPool.totalCount, prefab.name);
     }
 
+    [Obsolete("Use DebugUtility")]
     private int GetFleetQty(GameSettings gameSettings) {
         if (gameSettings.__UseDebugCreatorsOnly) {
             return 3;   // HACK
@@ -305,6 +306,7 @@ public class GamePoolManager : AMonoSingleton<GamePoolManager>, IGamePoolManager
         return userFleetQty + aiFleetQty;
     }
 
+    [Obsolete("Use DebugUtility")]
     private int GetBaseQty(GameSettings gameSettings) {
         if (gameSettings.__UseDebugCreatorsOnly) {
             return 4;   // HACK
@@ -372,7 +374,7 @@ public class GamePoolManager : AMonoSingleton<GamePoolManager>, IGamePoolManager
 
     protected override void Cleanup() {
         Unsubscribe();
-        References.GamePoolManager = null;
+        GameReferences.GamePoolManager = null;
     }
 
     private void Unsubscribe() {
@@ -408,7 +410,7 @@ public class GamePoolManager : AMonoSingleton<GamePoolManager>, IGamePoolManager
             foreach (var prefabNameKey in __additionalInstancesCreatedLookup.Keys) {
                 int newInstanceCount = __additionalInstancesCreatedLookup[prefabNameKey];
                 if (newInstanceCount > 3) {
-                    D.Warn("{0} had to create {1} new instances of {2} over the preload amount {3} during runtime.",
+                    Debug.LogFormat("{0} had to create {1} new instances of {2} over the preload amount {3} during runtime.",
                         DebugName, newInstanceCount, prefabNameKey, __preloadedInstanceQtyLookup[prefabNameKey]);
                 }
             }

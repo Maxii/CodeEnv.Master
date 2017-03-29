@@ -21,22 +21,27 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public enum OrderSource {
 
-        None,
+        None = 0,
 
         /// <summary>
         /// The Captain of a Unit Element.
         /// </summary>
-        Captain,
+        Captain = 1,
 
         /// <summary>
         /// The Command Staff of a Unit.
         /// </summary>
-        CmdStaff,
+        CmdStaff = 2,
+
+        /// <summary>
+        /// The AI of the player.
+        /// </summary>
+        PlayerAI = 3,
 
         /// <summary>
         /// The User.
         /// </summary>
-        User
+        User = 4
 
     }
 }

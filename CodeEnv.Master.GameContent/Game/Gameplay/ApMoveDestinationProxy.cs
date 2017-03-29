@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ApMoveDestinationProxy : AApDestinationProxy {
 
-        public Vector3 __DestinationOffset { get; private set; }
+        public Vector3 __DestinationOffset { get { return _destOffset; } }
 
         public float ObstacleCheckRayLength {
             get {
@@ -44,16 +44,12 @@ namespace CodeEnv.Master.GameContent {
             : this(dest, ship, Vector3.zero, innerRadius, outerRadius) {
         }
 
-
         public ApMoveDestinationProxy(IShipNavigable dest, IShip ship, Vector3 destOffset, float innerRadius, float outerRadius)
-            : base(dest, ship, innerRadius, outerRadius) {
-            __DestinationOffset = destOffset;
-            Position = Destination.Position + destOffset;
+            : base(dest, ship, destOffset, innerRadius, outerRadius) {
         }
 
         public void ResetOffset() {
-            __DestinationOffset = Vector3.zero;
-            Position = Destination.Position;
+            _destOffset = Vector3.zero;
         }
 
         public override string ToString() {

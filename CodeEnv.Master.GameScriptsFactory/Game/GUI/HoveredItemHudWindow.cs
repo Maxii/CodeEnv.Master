@@ -35,7 +35,7 @@ public class HoveredItemHudWindow : AHudWindow<HoveredItemHudWindow>, IHoveredHu
 
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
-        References.HoveredItemHudWindow = Instance;
+        GameReferences.HoveredItemHudWindow = Instance;
     }
 
     protected override void InitializeOnAwake() {
@@ -107,7 +107,7 @@ public class HoveredItemHudWindow : AHudWindow<HoveredItemHudWindow>, IHoveredHu
 
     protected override void Cleanup() {
         base.Cleanup();
-        References.HoveredItemHudWindow = null;
+        GameReferences.HoveredItemHudWindow = null;
         Unsubscribe();
     }
 

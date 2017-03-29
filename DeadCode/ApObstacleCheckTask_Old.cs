@@ -134,10 +134,10 @@ namespace CodeEnv.Master.GameContent {
             hoursBetweenChecks = _autoPilot.VaryCheckPeriod(hoursBetweenChecks);
 
             float checksPerHour = 1F / hoursBetweenChecks;
-            if (checksPerHour * GameTime.Instance.GameSpeedAdjustedHoursPerSecond > References.FpsReadout.FramesPerSecond) {
+            if (checksPerHour * GameTime.Instance.GameSpeedAdjustedHoursPerSecond > GameReferences.FpsReadout.FramesPerSecond) {
                 // check frequency is higher than the game engine can run
                 D.Warn("{0} obstacleChecksPerSec {1:0.#} > FPS {2:0.#}.",
-                    DebugName, checksPerHour * GameTime.Instance.GameSpeedAdjustedHoursPerSecond, References.FpsReadout.FramesPerSecond);
+                    DebugName, checksPerHour * GameTime.Instance.GameSpeedAdjustedHoursPerSecond, GameReferences.FpsReadout.FramesPerSecond);
             }
             return new GameTimeDuration(hoursBetweenChecks);
         }

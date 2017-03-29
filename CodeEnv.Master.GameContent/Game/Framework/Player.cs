@@ -140,7 +140,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void InitializeValuesAndReferences() {
-            _gameMgr = References.GameManager;
+            _gameMgr = GameReferences.GameManager;
             int maxPlayers = TempGameValues.MaxPlayers;
             // Note: Each Player is instantiated by NewGameMenuLaunchButton before GameSettings is created and sent to GameManager
             _initialRelationship = new Dictionary<Player, DiplomaticRelationship>(maxPlayers);

@@ -104,7 +104,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void AssessIntelCoverage() {
-            if (References.DebugControls.IsAllIntelCoverageComprehensive) {
+            if (GameReferences.DebugControls.IsAllIntelCoverageComprehensive) {
                 return;
             }
             foreach (Player player in _gameMgr.AllPlayers) {

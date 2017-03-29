@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using CodeEnv.Master.Common;
@@ -107,7 +108,7 @@ public abstract class AGuiWindow : AMonoBase {
         }
     }
 
-    protected override void Start() {
+    protected sealed override void Start() {
         base.Start();
         ExecuteStartingState();
     }

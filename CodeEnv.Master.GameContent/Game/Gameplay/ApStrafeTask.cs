@@ -46,6 +46,12 @@ namespace CodeEnv.Master.GameContent {
             base.ResumeDirectCourseToTarget();
         }
 
+        /// <summary>
+        /// Checks whether the destination represented by destProxy cannot be caught.
+        /// Returns <c>true</c> if destination is uncatchable, <c>false</c> if it can be caught.
+        /// </summary>
+        /// <param name="destProxy">The destination proxy.</param>
+        /// <returns></returns>
         protected override bool CheckForUncatchable(ApMoveDestinationProxy destProxy) {
             return destProxy.IsFastMover && !_autoPilot.IsCmdWithinRangeToSupportAttackOnTarget;
         }

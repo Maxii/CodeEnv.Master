@@ -49,6 +49,8 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        public bool IsOperational { get; private set; }
+
         public PlayerKnowledge Knowledge { get; private set; }
 
         public Player Owner { get; private set; }
@@ -60,6 +62,7 @@ namespace CodeEnv.Master.GameContent {
         private IList<IUnitCmd> _unavailableCmds;
         private bool _areAllPlayersDiscovered;
 
+        private IFpsReadout _fpsReadout;
         private IGameManager _gameMgr;
         private IDebugControls _debugControls;
 
@@ -70,10 +73,22 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void InitializeValuesAndReferences() {
-            _debugControls = References.DebugControls;
-            _gameMgr = References.GameManager;
+            _debugControls = GameReferences.DebugControls;
+            _gameMgr = GameReferences.GameManager;
+            _fpsReadout = GameReferences.FpsReadout;
             _availableCmds = new List<IUnitCmd>();
             _unavailableCmds = new List<IUnitCmd>();
+        }
+
+        public void CommenceOperations() {
+            IsOperational = true;
+
+            var myAvailableFleetCmds = _availableCmds.Where(cmd => cmd is IFleetCmd).Cast<IFleetCmd>();
+            if (!myAvailableFleetCmds.Any()) {
+                D.Warn("{0} had no fleets available to issue initial orders.", DebugName);
+                return;
+            }
+            __SpreadInitialFleetOrders(myAvailableFleetCmds);
         }
 
         /// <summary>
@@ -305,14 +320,12 @@ namespace CodeEnv.Master.GameContent {
         public void RegisterForOrders(IUnitCmd myUnitCmd) {
             D.AssertEqual(Owner, myUnitCmd.Owner);
             //D.Log("{0} is registering {1} as {2} for orders.", DebugName, myUnitCmd.DebugName, myUnitCmd.IsAvailable ? "available" : "unavailable");
+            D.Assert(!_unavailableCmds.Contains(myUnitCmd));
+            D.Assert(!_availableCmds.Contains(myUnitCmd));
             if (myUnitCmd.IsAvailable) {
-                D.Assert(!_unavailableCmds.Contains(myUnitCmd));
-                D.Assert(!_availableCmds.Contains(myUnitCmd));
                 _availableCmds.Add(myUnitCmd);
             }
             else {
-                D.Assert(!_availableCmds.Contains(myUnitCmd));
-                D.Assert(!_unavailableCmds.Contains(myUnitCmd));
                 _unavailableCmds.Add(myUnitCmd);
             }
             myUnitCmd.isAvailableChanged += MyCmdIsAvailableChgdEventHandler;
@@ -349,34 +362,25 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void HandleMyCmdIsAvailableChanged(IUnitCmd myCmd) {
+            UpdateCmdAvailability(myCmd);
+
+            if (IsOperational && myCmd.IsAvailable) {
+                IFleetCmd fleetCmd = myCmd as IFleetCmd;
+                if (fleetCmd != null) {
+                    __AssessAndRecordUnitBaseVisit(fleetCmd);
+                    //D.Log("{0} is issuing order to {1} with no delay.", DebugName, fleetCmd.DebugName);
+                    __IssueFleetOrder(fleetCmd);
+                }
+            }
+        }
+
+        #endregion
+
+        private void UpdateCmdAvailability(IUnitCmd myCmd) {
             if (myCmd.IsAvailable) {
                 bool isRemoved = _unavailableCmds.Remove(myCmd);
                 D.Assert(isRemoved);
                 _availableCmds.Add(myCmd);
-
-                IFleetCmd fleetCmd = myCmd as IFleetCmd;
-                if (fleetCmd != null) {
-                    if (GameTime.Instance.CurrentDate == GameTime.GameStartDate) {
-                        float hoursDelay = 1F;
-                        //D.Log("{0} is issuing order to {1} with a {2} hour delay.", DebugName, fleetCmd.DebugName, hoursDelay);
-
-                        // makes sure Owner's knowledge of universe has been constructed before selecting its target
-                        string jobName = "{0}.WaitToIssueFirstOrderJob".Inject(DebugName);
-                        References.JobManager.WaitForHours(hoursDelay, jobName, waitFinished: (jobWasKilled) => {
-                            if (jobWasKilled) {
-                                // No local reference to kill so JobManager is only source of kills (during scene transition)
-                            }
-                            else {
-                                __IssueFleetOrder(fleetCmd);
-                            }
-                        });
-                    }
-                    else {
-                        __AssessAndRecordUnitBaseVisit(fleetCmd);
-                        //D.Log("{0} is issuing order to {1} with no delay.", DebugName, fleetCmd.DebugName);
-                        __IssueFleetOrder(fleetCmd);
-                    }
-                }
             }
             else {
                 bool isRemoved = _availableCmds.Remove(myCmd);
@@ -384,8 +388,6 @@ namespace CodeEnv.Master.GameContent {
                 _unavailableCmds.Add(myCmd);
             }
         }
-
-        #endregion
 
         public void HandleOwnerRelationsChangedWith(Player player) {
             D.AssertNotEqual(Owner, player);
@@ -467,13 +469,28 @@ namespace CodeEnv.Master.GameContent {
         private bool __isUniverseFullyExplored = false; // avoids duplicate logging
         private bool __areAllBasesVisited = false;      // avoids duplicate logging
         private bool __areAllTargetsAttacked = false;
+        private Job __spreadInitialFleetOrdersJob;
+
+        private void __SpreadInitialFleetOrders(IEnumerable<IFleetCmd> myAvailableFleetCmds) {
+            Stack<IFleetCmd> myAvailableFleetCmdsStack = new Stack<IFleetCmd>(myAvailableFleetCmds);
+            int randomInitialWait = RandomExtended.Range(1, 3);
+            __spreadInitialFleetOrdersJob = GameReferences.JobManager.RecurringWaitForGameplaySeconds(randomInitialWait, recurringWait: 1F,
+                jobName: "InitialOrderSpreadJob", waitMilestone: () => {
+                    if (myAvailableFleetCmdsStack.Count == Constants.Zero) {
+                        __spreadInitialFleetOrdersJob.Kill();
+                        return;
+                    }
+                    __IssueFleetOrder(myAvailableFleetCmdsStack.Pop());
+                });
+        }
 
         private void __AssessAndRecordUnitBaseVisit(IFleetCmd fleetCmd) {
             if (fleetCmd.IsCurrentOrderDirectiveAnyOf(FleetDirective.Move, FleetDirective.FullSpeedMove)) {
                 var unitBaseTgt = fleetCmd.CurrentOrder.Target as IUnitBaseCmd;
                 if (unitBaseTgt != null) {
                     if (__basesVisited.Contains(unitBaseTgt)) {
-                        D.Log("{0}: {1} just completed visiting {2} which was previously visited.", DebugName, fleetCmd.DebugName, unitBaseTgt.DebugName);
+                        D.Log("{0}: {1} just completed visiting {2} which was previously visited.",
+                            DebugName, fleetCmd.DebugName, unitBaseTgt.DebugName);
                     }
                     else {
                         __basesVisited.Add(unitBaseTgt);
@@ -494,7 +511,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="fleetCmd">The fleet command.</param>
         private void __IssueFleetOrder(IFleetCmd fleetCmd) {
-            if (References.DebugControls.FleetsAutoAttackAsDefault) {
+            if (GameReferences.DebugControls.FleetsAutoAttackAsDefault) {
                 if (__areAllTargetsAttacked && __isUniverseFullyExplored) {
                     return;
                 }
@@ -527,7 +544,8 @@ namespace CodeEnv.Master.GameContent {
                             __areAllTargetsAttacked = true;
                         }
                         else {
-                            //D.Log("{0}: Fleet {1} can't find an attack target so will explore another part of universe.", DebugName, fleetCmd.DebugName);
+                            //D.Log("{0}: Fleet {1} can't find an attack target so will explore another part of universe.", 
+                            //DebugName, fleetCmd.DebugName);
                         }
                     }
                 }
@@ -549,7 +567,8 @@ namespace CodeEnv.Master.GameContent {
                 }
 
                 if (__areAllTargetsAttacked && __isUniverseFullyExplored) {
-                    D.LogBold("{0}: Fleet {1} has run out of attack targets and unexplored explorable destinations in universe.", DebugName, fleetCmd.DebugName);
+                    D.LogBold("{0}: Fleet {1} has run out of attack targets and unexplored explorable destinations in universe.",
+                        DebugName, fleetCmd.DebugName);
                 }
             }
             else {  // FleetsAutoAttackAsDefault precludes all other orders
@@ -561,7 +580,7 @@ namespace CodeEnv.Master.GameContent {
                     }
                 }
 
-                if (References.DebugControls.FleetsAutoExploreAsDefault) {
+                if (GameReferences.DebugControls.FleetsAutoExploreAsDefault) {
                     if (__isUniverseFullyExplored && __areAllBasesVisited) {
                         return;
                     }
@@ -587,7 +606,8 @@ namespace CodeEnv.Master.GameContent {
                         }
                     }
                     if (__isUniverseFullyExplored && __areAllBasesVisited) {
-                        D.LogBold("{0}: Fleet {1} has run out of unexplored explorable or unvisited visitable destinations in universe.", DebugName, fleetCmd.DebugName);
+                        D.LogBold("{0}: Fleet {1} has run out of unexplored explorable or unvisited visitable destinations in universe.",
+                            DebugName, fleetCmd.DebugName);
                     }
                 }
             }
@@ -605,11 +625,12 @@ namespace CodeEnv.Master.GameContent {
             if (editorSettings.Move) {
                 if (editorSettings.Attack) {
                     isOrderIssued = __IssueFleetAttackOrder(fleetCmd, editorSettings.FindFarthest);
-                    D.LogBold(!isOrderIssued, "{0}: {1} can find no WarAttackTargets of any sort.", DebugName, fleetCmd.DebugName);
+                    D.Log(!isOrderIssued, "{0}: {1} can find no WarAttackTargets of any sort.", DebugName, fleetCmd.DebugName);
                 }
                 else {
                     isOrderIssued = __IssueFleetMoveOrder(fleetCmd, editorSettings.FindFarthest);
-                    D.LogBold(!isOrderIssued, "{0}: {1} can find no MoveTargets that meet the selection criteria.", DebugName, fleetCmd.DebugName);
+                    D.Log(!isOrderIssued, "{0}: {1} can find no MoveTargets that meet the selection criteria.",
+                        DebugName, fleetCmd.DebugName);
                 }
             }
             return isOrderIssued;
@@ -637,8 +658,9 @@ namespace CodeEnv.Master.GameContent {
             else {
                 attackTgt = attackTgts.MinBy(t => Vector3.SqrMagnitude(t.Position - fleetCmd.Position));
             }
-            D.Log("{0} is issuing an attack order against {1}.", fleetCmd.DebugName, attackTgt.DebugName);
-            fleetCmd.CurrentOrder = new FleetOrder(FleetDirective.Attack, OrderSource.CmdStaff, attackTgt);
+            D.LogBold("{0} is issuing {1} an ATTACK order against {2} in Frame {3}. FPS = {4:0.#}.",
+                DebugName, fleetCmd.DebugName, attackTgt.DebugName, Time.frameCount, _fpsReadout.FramesPerSecond);
+            fleetCmd.CurrentOrder = new FleetOrder(FleetDirective.Attack, OrderSource.PlayerAI, attackTgt);
             return true;
         }
 
@@ -669,8 +691,9 @@ namespace CodeEnv.Master.GameContent {
             else {
                 destination = moveTgts.MinBy(mt => Vector3.SqrMagnitude(mt.Position - fleetCmd.Position));
             }
-            D.Log("{0} is issuing {1} a move order to {2}.", DebugName, fleetCmd.DebugName, destination.DebugName);
-            fleetCmd.CurrentOrder = new FleetOrder(FleetDirective.Move, OrderSource.CmdStaff, destination);
+            D.Log("{0} is issuing {1} a MOVE order to {2} in Frame {3}. FPS = {4:0.#}.",
+                DebugName, fleetCmd.DebugName, destination.DebugName, Time.frameCount, _fpsReadout.FramesPerSecond);
+            fleetCmd.CurrentOrder = new FleetOrder(FleetDirective.Move, OrderSource.PlayerAI, destination);
             return true;
         }
 
@@ -683,16 +706,18 @@ namespace CodeEnv.Master.GameContent {
                 select eSys;
             if (explorableUnexploredSystems.Any()) {
                 var closestUnexploredSystem = explorableUnexploredSystems.MinBy(sys => Vector3.SqrMagnitude(fleetCmd.Position - sys.Position));
-                D.Log("{0} is issuing {1} an explore order to {2}.", DebugName, fleetCmd.DebugName, closestUnexploredSystem.DebugName);
-                fleetCmd.CurrentOrder = new FleetOrder(FleetDirective.Explore, OrderSource.CmdStaff, closestUnexploredSystem);
+                D.Log("{0} is issuing {1} an EXPLORE order to {2} in Frame {3}. FPS = {4:0.#}. IsOwnerAccessible = {5}.",
+                    DebugName, fleetCmd.DebugName, closestUnexploredSystem.DebugName, Time.frameCount, _fpsReadout.FramesPerSecond, closestUnexploredSystem.IsOwnerAccessibleTo(Owner));
+                fleetCmd.CurrentOrder = new FleetOrder(FleetDirective.Explore, OrderSource.PlayerAI, closestUnexploredSystem);
             }
             else {
                 IFleetExplorable uCenter = Knowledge.UniverseCenter as IFleetExplorable;
                 if (!uCenter.IsFullyExploredBy(Owner)) {
-                    fleetCmd.CurrentOrder = new FleetOrder(FleetDirective.Explore, OrderSource.CmdStaff, uCenter);
+                    fleetCmd.CurrentOrder = new FleetOrder(FleetDirective.Explore, OrderSource.PlayerAI, uCenter);
                 }
                 else {
-                    D.Log("{0}: Fleet {1} has completed {2}'s exploration of explorable universe.", DebugName, fleetCmd.DebugName, Owner.DebugName);
+                    D.LogBold("{0}: Fleet {1} has completed {2}'s exploration of explorable universe.",
+                        DebugName, fleetCmd.DebugName, Owner.DebugName);
                     isExploreOrderIssued = false;
                 }
             }
@@ -709,11 +734,13 @@ namespace CodeEnv.Master.GameContent {
                 select ownerAssessibleUnitBase;
             if (visitableUnvisitedBases.Any()) {
                 var closestVisitableBase = visitableUnvisitedBases.MinBy(vBase => Vector3.SqrMagnitude(fleetCmd.Position - vBase.Position));
-                D.Log("{0} is issuing {1} a move order to {2}.", DebugName, fleetCmd.DebugName, closestVisitableBase.DebugName);
-                fleetCmd.CurrentOrder = new FleetOrder(FleetDirective.Move, OrderSource.CmdStaff, closestVisitableBase as IFleetNavigable);
+                D.Log("{0} is issuing {1} a MOVE order to {2} in Frame {3}. FPS = {4:0.#}.",
+                    DebugName, fleetCmd.DebugName, closestVisitableBase.DebugName, Time.frameCount, _fpsReadout.FramesPerSecond);
+                fleetCmd.CurrentOrder = new FleetOrder(FleetDirective.Move, OrderSource.PlayerAI, closestVisitableBase as IFleetNavigable);
             }
             else {
-                D.Log("{0}: Fleet {1} has completed {2}'s visits to all visitable unvisited bases in known universe.", DebugName, fleetCmd.DebugName, Owner.DebugName);
+                D.LogBold("{0}: Fleet {1} has completed {2}'s visits to all visitable unvisited bases in known universe.",
+                    DebugName, fleetCmd.DebugName, Owner.DebugName);
                 isMoveOrderIssued = false;
             }
             return isMoveOrderIssued;

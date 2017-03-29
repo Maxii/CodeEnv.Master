@@ -24,12 +24,16 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FleetOrder {
 
-        private const string ToStringFormat = "{0}[Directive: {1}, Source: {2}, Target: {3}]";
+        private const string ToStringFormat = "[{0}: Directive = {1}, Source = {2}, Target = {3}, FollowonOrder = {4}, StandingOrder = {5}]";
+
+        public FleetOrder StandingOrder { get; set; }
+
+        public FleetOrder FollowonOrder { get; set; }
 
         public IFleetNavigable Target { get; private set; }
 
         /// <summary>
-        /// The source of this order.
+        /// The source of this order. 
         /// </summary>
         public OrderSource Source { get; private set; }
 
@@ -42,15 +46,16 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="source">The source of this order.</param>
         /// <param name="target">The target of this order. Default is null.</param>
         public FleetOrder(FleetDirective directive, OrderSource source, IFleetNavigable target = null) {
-            D.AssertNotEqual(OrderSource.Captain, source);
             Directive = directive;
             Source = source;
             Target = target;
         }
 
         public override string ToString() {
-            string targetText = Target != null ? Target.DebugName : "null";
-            return ToStringFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), targetText);
+            string targetText = Target != null ? Target.DebugName : "none";
+            string followonOrderText = FollowonOrder != null ? FollowonOrder.ToString() : "none";
+            string standingOrderText = StandingOrder != null ? StandingOrder.ToString() : "none";
+            return ToStringFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), targetText, followonOrderText, standingOrderText);
         }
 
     }

@@ -37,6 +37,13 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
 
     public IntVector3 SectorID { get { return Data.SectorID; } }
 
+    /// <summary>
+    /// Indicates this Item is dieing and about to be dead.
+    /// <remarks>Used to internally differentiate between !IsOperational before CommenceOperations()
+    /// and !IsOperational when dead.</remarks>
+    /// </summary>
+    protected bool IsDead { get; private set; }
+
     #region Initialization
 
     protected override void InitializeOnData() {
@@ -92,7 +99,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
     /// </summary>
     protected virtual void HandleDeathBeforeBeginningDeathEffect() {
         if (IsFocus) {
-            References.MainCameraControl.CurrentFocus = null;
+            GameReferences.MainCameraControl.CurrentFocus = null;
             AssignAlternativeFocusOnDeath();
         }
         if (IsSelected) {
@@ -150,6 +157,8 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
     protected sealed override void HandleIsOperationalChanged() {
         base.HandleIsOperationalChanged();
         if (!IsOperational) {
+            // IsOperational only changes to false when this Item has been killed
+            IsDead = true;
             //D.Log(ShowDebugLog, "{0} is initiating death sequence.", DebugName);
             PrepareForDeathNotification();
             OnDeath();
@@ -231,7 +240,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
     /// <param name="delayInHours">The delay in hours.</param>
     /// <param name="onCompletion">Optional delegate that fires onCompletion.</param>
     protected virtual void DestroyMe(float delayInHours = Constants.ZeroF, Action onCompletion = null) {
-        D.Log("{0} is being destroyed.", DebugName);
+        D.Log(ShowDebugLog, "{0} is being destroyed.", DebugName);
         GameUtility.Destroy(gameObject, delayInHours, onCompletion);
     }
 

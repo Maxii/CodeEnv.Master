@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common;
 
@@ -23,6 +24,8 @@ namespace CodeEnv.Master.GameContent {
     /// Controls access to System info.
     /// </summary>
     public class SystemInfoAccessController : AIntelInfoAccessController {
+
+        private IDictionary<Player, bool> _hasBasicAccessToOwnerLookup = new Dictionary<Player, bool>();
 
         public SystemInfoAccessController(SystemData data) : base(data) { }
 
@@ -60,19 +63,52 @@ namespace CodeEnv.Master.GameContent {
                     return true;
                 case ItemInfoID.Owner:
                     // If gets here, System IntelCoverage is Basic, but a member could be allowing access
-                    SystemData sysData = _data as SystemData;
-                    bool starHasAccess = sysData.StarData.InfoAccessCntlr.HasAccessToInfo(player, infoID);
-                    if (starHasAccess) {
+
+                    // Note: Once a System grants access to Owner it can't be rescinded as Stars and Planetoids use NonRegressibleIntel.
+                    // However, a 'defacto' rescind could theoretically take place if 1) one or more planetoid(s) was the source of the grant 
+                    // of access, 2) all those planetoids were destroyed, and 3) the HasAccessToInfo approach below was used without 
+                    // the memory of the dictionary. That is why the memory of the dictionary is used, to remedy that corner case.
+                    bool hasBasicAccessToOwner;
+                    if (!_hasBasicAccessToOwnerLookup.TryGetValue(player, out hasBasicAccessToOwner)) {
+                        hasBasicAccessToOwner = false;
+                        _hasBasicAccessToOwnerLookup.Add(player, hasBasicAccessToOwner);
+                    }
+
+                    if (hasBasicAccessToOwner) {
                         return true;
                     }
-                    else {
-                        bool anyPlanetoidHasAccess = sysData.AllPlanetoidData.Select(pData => pData.InfoAccessCntlr).Any(iac => iac.HasAccessToInfo(player, infoID));
-                        if (anyPlanetoidHasAccess) {
-                            return true;
-                        }
-                        // WARNING: Do not inquire about Settlement Owner as Settlement inquires about System Owner creating a circular loop
+
+                    SystemData sysData = _data as SystemData;
+                    hasBasicAccessToOwner = sysData.StarData.InfoAccessCntlr.HasAccessToInfo(player, infoID);
+                    if (!hasBasicAccessToOwner) {
+                        hasBasicAccessToOwner = sysData.AllPlanetoidData.Select(pData => pData.InfoAccessCntlr).Any(iac => iac.HasAccessToInfo(player, infoID));
                     }
-                    return false;
+                    // Reqd when the out is a ValueType
+                    _hasBasicAccessToOwnerLookup[player] = hasBasicAccessToOwner;
+
+                    // Confirmation that setting hasBasicAccessToOwner also sets the value inside the dictionary
+                    ////bool hasBasicAccessToOwnerTest;
+                    ////bool hasKey = _hasBasicAccessToOwnerLookup.TryGetValue(player, out hasBasicAccessToOwnerTest);
+                    ////D.Assert(hasKey);
+                    ////D.AssertEqual(hasBasicAccessToOwner, hasBasicAccessToOwnerTest);
+
+                    return hasBasicAccessToOwner;
+                // WARNING: Do not inquire about Settlement Owner as Settlement inquires about System Owner creating a circular loop
+
+
+                //SystemData sysData = _data as SystemData;
+                //bool starHasAccess = sysData.StarData.InfoAccessCntlr.HasAccessToInfo(player, infoID);
+                //if (starHasAccess) {
+                //    return true;
+                //}
+                //else {
+                //    bool anyPlanetoidHasAccess = sysData.AllPlanetoidData.Select(pData => pData.InfoAccessCntlr).Any(iac => iac.HasAccessToInfo(player, infoID));
+                //    if (anyPlanetoidHasAccess) {
+                //        return true;
+                //    }
+                //    // WARNING: Do not inquire about Settlement Owner as Settlement inquires about System Owner creating a circular loop
+                //}
+                //return false;
 
                 default:
                     return false;

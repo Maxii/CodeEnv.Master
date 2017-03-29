@@ -88,7 +88,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override IWorldTrackingSprite MakeIconInstance() {
-            return References.TrackingWidgetFactory.MakeWorldTrackingSprite(_trackedItem, IconInfo);
+            return GameReferences.TrackingWidgetFactory.MakeWorldTrackingSprite(_trackedItem, IconInfo);
         }
 
         #region Hide Primary Mesh Archive

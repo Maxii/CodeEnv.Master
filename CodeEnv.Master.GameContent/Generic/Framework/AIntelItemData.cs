@@ -44,7 +44,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="owner">The owner.</param>
         public AIntelItemData(IIntelItem item, Player owner)
             : base(item, owner) {
-            _gameMgr = References.GameManager;
+            _gameMgr = GameReferences.GameManager;
         }
 
         public override void Initialize() {

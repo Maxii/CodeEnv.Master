@@ -55,10 +55,11 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="drag">The drag.</param>
         /// <returns></returns>
         public static float CalculateReqdPropulsionPower(float desiredSpeed, float mass, float drag) {
-            if (drag * Time.fixedDeltaTime > 0.1F) {
+            float dragDeltaTimeFactor = drag * Time.fixedDeltaTime;
+            if (dragDeltaTimeFactor > 0.1F) {
                 D.Warn("Values getting very high!");
             }
-            return (desiredSpeed * mass * drag) / (1F - (drag * Time.fixedDeltaTime));
+            return (desiredSpeed * mass * drag) / (1F - dragDeltaTimeFactor);
         }
 
         /// <summary>
@@ -122,9 +123,25 @@ namespace CodeEnv.Master.GameContent {
 
         // 12.16.16 CalcWarningDateForRotation() moved to DebugUtility.
 
-        public static StationaryLocation GetClosest(Vector3 myPosition, IList<StationaryLocation> locations) {
+        #region GetClosest
+
+        public static StationaryLocation GetClosest(Vector3 myPosition, IEnumerable<StationaryLocation> locations) {
             return locations.MinBy(loc => Vector3.SqrMagnitude(loc.Position - myPosition));
         }
+
+        public static IFleetNavigable GetClosest(Vector3 myPosition, IEnumerable<IFleetNavigable> navigables) {
+            return navigables.MinBy(loc => Vector3.SqrMagnitude(loc.Position - myPosition));
+        }
+
+        public static IShipNavigable GetClosest(Vector3 myPosition, IEnumerable<IShipNavigable> navigables) {
+            return navigables.MinBy(loc => Vector3.SqrMagnitude(loc.Position - myPosition));
+        }
+
+        public static ISystem_Ltd GetClosest(Vector3 myPosition, IEnumerable<ISystem_Ltd> systems) {
+            return systems.MinBy(loc => Vector3.SqrMagnitude(loc.Position - myPosition));
+        }
+
+        #endregion
 
         /// <summary>
         /// Checks whether the MonoBehaviour Interface provided is not null or already destroyed.
@@ -190,7 +207,7 @@ namespace CodeEnv.Master.GameContent {
                 return;
             }
             string jobName = "{0}.Destroy".Inject(typeof(GameUtility).Name);
-            References.JobManager.WaitForHours(delayInHours, jobName, waitFinished: (jobWasKilled) => {
+            GameReferences.JobManager.WaitForHours(delayInHours, jobName, waitFinished: (jobWasKilled) => {
                 if (gameObject == null) {
                     D.Warn("Trying to destroy GameObject {0} that has already been destroyed.", goName);
                 }

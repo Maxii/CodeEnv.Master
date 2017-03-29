@@ -89,9 +89,26 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem, IIntelItem_Ltd 
             }
 
             Player playerWhosInfoAccessChgd = playerWhosCoverageChgd;
+            HandleInfoAccessChangedFor(playerWhosInfoAccessChgd);
             OnInfoAccessChanged(playerWhosInfoAccessChgd);
         }
     }
+
+    /// <summary>
+    /// Hook for derived classes that have work to do when InfoAccess to this
+    /// Item for <c>player</c> changes. Default does nothing.
+    /// <remarks>Used by detectable Items to cause an undetectable Item to assess
+    /// whether they should fire their own InfoAccessChanged event.</remarks>
+    /// <remarks>3.22.17 Currently, SystemItem, SettlementCmdItem and Sector are
+    /// undetectable Items that CAN choose to make their Owner accessible at 
+    /// IntelCoverage.Basic. In SettlementCmd's and Sector's case, they will 
+    /// make their Owner accessible if their System does. In System's case
+    /// it makes its Owner accessible if its Star or any of its Planetoids
+    /// make theirs accessible, which in their case means their IntelCoverage
+    /// is &gt; Basic.</remarks>
+    /// </summary>
+    /// <param name="player">The player whose InfoAccess to this Item changed.</param>
+    protected virtual void HandleInfoAccessChangedFor(Player player) { }
 
     /// <summary>
     /// Handles a change in the User's IntelCoverage of this item.

@@ -21,6 +21,12 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IUnitCmd_Ltd : IMortalItem_Ltd {
 
+        /// <summary>
+        /// Indicates whether this Unit is in the process of attacking <c>unitCmd</c>.
+        /// </summary>
+        /// <param name="unitCmd">The UnitCommand potentially under attack by this Unit.</param>
+        /// <returns></returns>
+        bool IsAttacking(IUnitCmd_Ltd unitCmd);
 
     }
 }

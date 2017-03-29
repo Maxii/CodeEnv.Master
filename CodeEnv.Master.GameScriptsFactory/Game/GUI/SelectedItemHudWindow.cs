@@ -35,7 +35,7 @@ public class SelectedItemHudWindow : AHudWindow<SelectedItemHudWindow>, ISelecte
 
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
-        References.SelectedItemHudWindow = Instance;
+        GameReferences.SelectedItemHudWindow = Instance;
     }
 
     protected override void InitializeValuesAndReferences() {
@@ -55,7 +55,7 @@ public class SelectedItemHudWindow : AHudWindow<SelectedItemHudWindow>, ISelecte
 
     protected override void Cleanup() {
         base.Cleanup();
-        References.SelectedItemHudWindow = null;
+        GameReferences.SelectedItemHudWindow = null;
     }
 
     public override string ToString() {

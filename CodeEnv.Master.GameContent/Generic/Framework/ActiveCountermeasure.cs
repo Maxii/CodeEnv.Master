@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Countermeasure that has a PassiveCountermeasure's DamageMitigation capability combined with the ability to intercept a weapon delivery vehicle.
     /// </summary>
-    public class ActiveCountermeasure : ARangedEquipment, ICountermeasure, IDisposable {
+    public class ActiveCountermeasure : ARangedEquipment, ICountermeasure, IDateMinderClient, IDisposable {
 
         private bool _isReady;
         private bool IsReady {
@@ -56,11 +56,10 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public float ReloadPeriod {
-            get {
-                float reloadPeriodMultiplier = RangeMonitor != null ? RangeMonitor.Owner.CountermeasureReloadPeriodMultiplier : Constants.OneF;
-                return Stat.ReloadPeriod * reloadPeriodMultiplier;
-            }
+        private GameTimeDuration _reloadPeriod;
+        public GameTimeDuration ReloadPeriod {
+            get { return _reloadPeriod; }
+            private set { SetProperty<GameTimeDuration>(ref _reloadPeriod, value, "ReloadPeriod"); }
         }
 
         public WDVStrength[] InterceptStrengths { get { return Stat.InterceptStrengths; } }
@@ -69,6 +68,8 @@ namespace CodeEnv.Master.GameContent {
 
         public float InterceptAccuracy { get { return Stat.InterceptAccuracy; } }
 
+        public Player Owner { get { return RangeMonitor.Owner; } }
+
         protected bool ShowDebugLog { get { return RangeMonitor != null ? RangeMonitor.ShowDebugLog : true; } }
 
         protected new ActiveCountermeasureStat Stat { get { return base.Stat as ActiveCountermeasureStat; } }
@@ -76,9 +77,14 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The list of IInterceptableOrdnance threats in range that qualify as targets of this countermeasure.
         /// </summary>
-        private IList<IInterceptableOrdnance> _qualifiedThreats;
+        private HashSet<IInterceptableOrdnance> _qualifiedThreats;
+
+        /// <summary>
+        /// The date this CM will be reloaded.
+        /// Once reloaded, this date will be default(GameDate) until the CM initiates reloading again.
+        /// </summary>
+        private GameDate _reloadedDate;
         private bool _isLoaded;
-        private Job _reloadJob;
         private GameTime _gameTime;
 
         /// <summary>
@@ -89,7 +95,7 @@ namespace CodeEnv.Master.GameContent {
         public ActiveCountermeasure(ActiveCountermeasureStat stat, string name = null)
             : base(stat, name) {
             _gameTime = GameTime.Instance;
-            _qualifiedThreats = new List<IInterceptableOrdnance>();
+            _qualifiedThreats = new HashSet<IInterceptableOrdnance>();
         }
 
         // Copy Constructor makes no sense when a RangeMonitor must be attached
@@ -143,8 +149,10 @@ namespace CodeEnv.Master.GameContent {
             //D.Log(ShowDebugLog, "{0} received HandleThreatInRangeChanged. Threat: {1}, InRange: {2}.", DebugName, threat.DebugName, isInRange);
             if (isInRange) {
                 if (CheckIfQualified(threat)) {
-                    D.Assert(!_qualifiedThreats.Contains(threat));
-                    _qualifiedThreats.Add(threat);
+                    bool isAdded = _qualifiedThreats.Add(threat);
+                    D.Assert(isAdded);
+
+                    __TryAddToPeakThreatsInRange();
                 }
             }
             else {
@@ -152,9 +160,7 @@ namespace CodeEnv.Master.GameContent {
                 // Also, a qualified threat can be destroyed (goes out of range) by other CMs before it is ever added
                 // to this one, so if it is not present, it was never added to this CM because it was immediately destroyed
                 // by other CMs as it was being added to them.
-                if (_qualifiedThreats.Contains(threat)) {
-                    _qualifiedThreats.Remove(threat);
-                }
+                _qualifiedThreats.Remove(threat);
             }
             IsAnyThreatInRange = _qualifiedThreats.Any();
         }
@@ -188,10 +194,16 @@ namespace CodeEnv.Master.GameContent {
         /// some ordnance (beams) didn't complete firing until the beam was terminated.</remarks>
         private void HandleFiringComplete() {
             D.Assert(!_isLoaded);
-            InitiateReloadCycle();
+            InitiateReloadProcess();
         }
 
         #region Event and Property Change Handlers
+
+        protected override void HandleInitialActivation() {
+            base.HandleInitialActivation();
+            // IMPROVE If/when Owner's ReloadPeriodMultiplier can change, ReloadPeriod will need to change with it
+            ReloadPeriod = new GameTimeDuration(Stat.ReloadPeriod * Owner.CountermeasureReloadPeriodMultiplier);
+        }
 
         private void IsReadyPropChangedHandler() {
             AssessReadinessToFire();
@@ -206,12 +218,12 @@ namespace CodeEnv.Master.GameContent {
             if (IsOperational) {
                 // just became operational so if not already loaded, reload
                 if (!_isLoaded) {
-                    InitiateReloadCycle();
+                    InitiateReloadProcess();
                 }
             }
             else {
                 // just lost operational status so kill any reload in process
-                KillReloadJob();
+                KillReloadProcess();
             }
             AssessReadiness();
             OnIsOperationalChanged();
@@ -232,24 +244,11 @@ namespace CodeEnv.Master.GameContent {
             return isQualified;
         }
 
-        private void InitiateReloadCycle() {
-            //D.Log(ShowDebugLog, "{0} is initiating its reload cycle. Duration: {1} hours.", DebugName, ReloadPeriod);
-            D.AssertNull(_reloadJob);
-
-            string jobName = "{0}.ReloadJob".Inject(Name);
-            _reloadJob = _jobMgr.WaitForHours(ReloadPeriod, jobName, waitFinished: (jobWasKilled) => {
-                if (jobWasKilled) {
-                    // 12.12.16 An AssertNull(_jobRef) here can fail as the reference can refer to a new Job, created 
-                    // right after the old one was killed due to the 1 frame delay in execution of jobCompleted(). My attempts at allowing
-                    // the AssertNull to occur failed. I believe this is OK as _jobRef is nulled from KillXXXJob() and, if 
-                    // the reference is replaced by a new Job, then the old Job is no longer referenced which is the objective. Jobs Kill()ed
-                    // centrally by JobManager won't null the reference, but this only occurs during scene transitions.
-                }
-                else {
-                    _reloadJob = null;
-                    HandleReloaded();
-                }
-            });
+        private void InitiateReloadProcess() {
+            //D.Log(ShowDebugLog, "{0} is initiating its reload process. Duration: {1}.", DebugName, ReloadPeriod);
+            D.AssertDefault(_reloadedDate);
+            _reloadedDate = new GameDate(ReloadPeriod);
+            _gameTime.DateMinder.Add(_reloadedDate, this);
         }
 
         private CountermeasureFiringSolution PickBestFiringSolution(IList<CountermeasureFiringSolution> firingSolutions) {
@@ -294,19 +293,36 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private void KillReloadJob() {
-            if (_reloadJob != null) {
-                _reloadJob.Kill();
-                _reloadJob = null;
+        private void KillReloadProcess() {
+            if (_reloadedDate != default(GameDate)) {
+                _gameTime.DateMinder.Remove(_reloadedDate, this);
+                _reloadedDate = default(GameDate);
             }
         }
 
         private void Cleanup() {
             // 12.8.16 Job Disposal centralized in JobManager
-            KillReloadJob();
+            KillReloadProcess();
         }
 
+        #region Debug
+
+        private static int __peakThreatsInRangeCount;
+
+        private void __TryAddToPeakThreatsInRange() {
+            if (_qualifiedThreats.Count > __peakThreatsInRangeCount) {
+                __peakThreatsInRangeCount = _qualifiedThreats.Count;
+            }
+        }
+
+        public static void __ReportPeakThreatsInRange() {
+            Debug.LogFormat("ActiveCountermeasures report PeakThreatsInRange = {0}.", __peakThreatsInRangeCount);
+        }
+
+        #endregion
+
         public sealed override string ToString() { return Stat.ToString(); }
+
 
         #region IDisposable
 
@@ -462,6 +478,16 @@ namespace CodeEnv.Master.GameContent {
         //}
 
 
+
+        #endregion
+
+        #region IDateMinderClient Members
+
+        void IDateMinderClient.HandleDateReached(GameDate date) {
+            D.AssertEqual(_reloadedDate, date);
+            _reloadedDate = default(GameDate);
+            HandleReloaded();
+        }
 
         #endregion
 

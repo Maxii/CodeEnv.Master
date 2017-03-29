@@ -52,7 +52,7 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
     private ShipItem _shipMenuOperator;
 
     public ShipCtxControl_User(ShipItem ship)
-        : base(ship.gameObject, uniqueSubmenusReqd: 3, menuPosition: MenuPositionMode.Offset) {
+        : base(ship.gameObject, uniqueSubmenusReqd: 2, menuPosition: MenuPositionMode.Offset) {
         _shipMenuOperator = ship;
         __ValidateUniqueSubmenuQtyReqd();
     }

@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
         protected IGameManager _gameMgr;
 
         public APublisher() {
-            _gameMgr = References.GameManager;
+            _gameMgr = GameReferences.GameManager;
         }
 
     }

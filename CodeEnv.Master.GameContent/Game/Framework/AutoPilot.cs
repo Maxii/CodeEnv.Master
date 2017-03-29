@@ -47,7 +47,7 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         internal bool IsCmdWithinRangeToSupportAttackOnTarget {
             get {
-                return Vector3.SqrMagnitude(TargetProxy.Position - _ship.Command.Position) < _ship.Command.SRSensorRangeDistance * _ship.Command.SRSensorRangeDistance;
+                return _helm.__IsWithinSRSensorRange(TargetProxy.Position);
             }
         }
 
@@ -81,7 +81,7 @@ namespace CodeEnv.Master.GameContent {
 
         private bool IsMoveTaskEngaged { get { return _moveTask != null && _moveTask.IsEngaged; } }
 
-        private bool IsBombardTaskEngaged { get { return _bombardTask != null && _bombardTask.IsEngaged; } }
+        private bool IsBombardTaskEngaged { get { return _besiegeTask != null && _besiegeTask.IsEngaged; } }
 
         private bool IsStrafeTaskEngaged { get { return _strafeTask != null && _strafeTask.IsEngaged; } }
 
@@ -100,7 +100,7 @@ namespace CodeEnv.Master.GameContent {
         private float TargetDistance { get { return Vector3.Distance(Position, TargetProxy.Position); } }
 
         private ApMoveTask _moveTask;
-        private ApBombardTask _bombardTask;
+        private ApBesiegeTask _besiegeTask;
         private ApStrafeTask _strafeTask;
 
         private EngineRoom _engineRoom;
@@ -119,33 +119,33 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Engages the pilot to move to and strafe the target using the provided proxy. 
         /// </summary>
-        /// <param name="tgtProxy">The proxy for the target this Pilot is being engaged to strafe.</param>
+        /// <param name="strafeProxy">The proxy for the target this Pilot is being engaged to strafe.</param>
         /// <param name="speed">The initial speed the AutoPilot should travel at.</param>
-        internal void Engage(ApStrafeDestinationProxy tgtProxy, Speed speed) {
-            Engage_Internal(tgtProxy, speed, isMoveFleetwide: false);
+        internal void Engage(ApStrafeDestinationProxy strafeProxy, Speed speed) {
+            Engage_Internal(strafeProxy, speed, isMoveFleetwide: false);
 
             D.Assert(IsCmdWithinRangeToSupportAttackOnTarget, DebugName); // primary target picked should qualify
 
             if (_strafeTask == null) {
                 _strafeTask = new ApStrafeTask(this);
             }
-            _strafeTask.Execute(tgtProxy, speed);
+            _strafeTask.Execute(strafeProxy, speed);
         }
 
         /// <summary>
         /// Engages the pilot to move to and bombard the target using the provided proxy.
         /// </summary>
-        /// <param name="tgtProxy">The proxy for the target this Pilot is being engaged to bombard.</param>
+        /// <param name="besiegeProxy">The proxy for the target this Pilot is being engaged to besiege.</param>
         /// <param name="speed">The initial speed the AutoPilot should travel at.</param>
-        internal void Engage(ApBombardDestinationProxy tgtProxy, Speed speed) {
-            Engage_Internal(tgtProxy, speed, isMoveFleetwide: false);
+        internal void Engage(ApBesiegeDestinationProxy besiegeProxy, Speed speed) {
+            Engage_Internal(besiegeProxy, speed, isMoveFleetwide: false);
 
             D.Assert(IsCmdWithinRangeToSupportAttackOnTarget, DebugName); // primary target picked should qualify
 
-            if (_bombardTask == null) {
-                _bombardTask = new ApBombardTask(this);
+            if (_besiegeTask == null) {
+                _besiegeTask = new ApBesiegeTask(this);
             }
-            _bombardTask.Execute(tgtProxy, speed);
+            _besiegeTask.Execute(besiegeProxy, speed);
         }
 
         /// <summary>
@@ -205,7 +205,7 @@ namespace CodeEnv.Master.GameContent {
                 task = _moveTask;
             }
             else if (IsBombardTaskEngaged) {
-                task = _bombardTask;
+                task = _besiegeTask;
             }
             else {
                 D.Assert(IsStrafeTaskEngaged);
@@ -237,12 +237,20 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="hoursPerCheckPeriod">The hours per check period.</param>
         /// <returns></returns>
-        internal float VaryCheckPeriod(float hoursPerCheckPeriod) {
+        internal float __VaryCheckPeriod(float hoursPerCheckPeriod) {
             return UnityEngine.Random.Range(hoursPerCheckPeriod * 0.9F, hoursPerCheckPeriod * 1.1F);
         }
 
-        internal void ChangeHeading(Vector3 newHeading, bool eliminateDrift, Action headingConfirmed = null) {
-            _helm.ChangeHeading(newHeading, eliminateDrift, headingConfirmed);
+        /// <summary>
+        /// Changes the direction the ship is headed.
+        /// </summary>
+        /// <param name="newHeading">The new direction in world coordinates, normalized.</param>
+        /// <param name="eliminateDrift">if set to <c>true</c> any drift will be eliminated once the ship reaches the new heading.</param>
+        /// <param name="turnCompleted">Delegate that executes when the turn is completed. Contains a
+        /// boolean indicating whether the turn completed normally, reaching newHeading or was interrupted before
+        /// newHeading was reached. Usage: (reachedDesignatedHeading) => {};</param>
+        internal void ChangeHeading(Vector3 newHeading, bool eliminateDrift, Action<bool> turnCompleted = null) {
+            _helm.ChangeHeading(newHeading, eliminateDrift, turnCompleted);
         }
 
         internal void ChangeSpeed(Speed speed, bool isFleetSpeed) {
@@ -312,15 +320,22 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void ResetTasks() {
+            //bool isATaskActive = false;
             if (_moveTask != null) {
+                //isATaskActive = true;
                 _moveTask.ResetForReuse();
             }
-            if (_bombardTask != null) {
-                _bombardTask.ResetForReuse();
+            if (_besiegeTask != null) {
+                //isATaskActive = true;
+                _besiegeTask.ResetForReuse();
             }
             if (_strafeTask != null) {
+                //isATaskActive = true;
                 _strafeTask.ResetForReuse();
             }
+            //if (isATaskActive) {
+            //D.Log(ShowDebugLog, "{0} has reset one or more active tasks. Frame: {1}.", DebugName, Time.frameCount);
+            //}
         }
 
         #region Cleanup
@@ -329,8 +344,8 @@ namespace CodeEnv.Master.GameContent {
             if (_moveTask != null) {
                 _moveTask.Dispose();
             }
-            if (_bombardTask != null) {
-                _bombardTask.Dispose();
+            if (_besiegeTask != null) {
+                _besiegeTask.Dispose();
             }
             if (_strafeTask != null) {
                 _strafeTask.Dispose();

@@ -92,20 +92,21 @@ public abstract class AOrdnance : AMonoBase, IOrdnance, IEquatable<AOrdnance> {
     }
 
     protected float _range;
-    protected GameManager _gameMgr;
+    protected IGameManager _gameMgr;
     protected GameTime _gameTime;
-    protected JobManager _jobMgr;
+    protected IJobManager _jobMgr;
     protected IList<IDisposable> _subscriptions;
 
     private int _uniqueID;
     private string _rootName;
     private bool _isNameInitialized;
+    private bool _toDespawn;
 
     protected override void Awake() {
         base.Awake();
-        _gameMgr = GameManager.Instance;
+        _gameMgr = GameReferences.GameManager;
         _gameTime = GameTime.Instance;
-        _jobMgr = JobManager.Instance;
+        _jobMgr = GameReferences.JobManager;
         _subscriptions = new List<IDisposable>(3);
         ValidateLayer();
         enabled = false;
@@ -140,12 +141,14 @@ public abstract class AOrdnance : AMonoBase, IOrdnance, IEquatable<AOrdnance> {
 
         _range = weapon.RangeDistance;
         IsOperational = true;
+
+        enabled = true;
     }
 
     protected virtual void Subscribe() {
         D.AssertNotNull(_subscriptions);
         D.Assert(_subscriptions.Count == Constants.Zero);
-        _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsPaused, IsPausedPropChangedHandler));
+        _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<IGameManager, bool>(gs => gs.IsPaused, IsPausedPropChangedHandler));
         _subscriptions.Add(Weapon.SubscribeToPropertyChanged<AWeapon, bool>(weap => weap.IsWeaponDiscernibleToUser, IsWeaponDiscernibleToUserPropChangedHandler));
     }
 
@@ -157,6 +160,18 @@ public abstract class AOrdnance : AMonoBase, IOrdnance, IEquatable<AOrdnance> {
 
     #region Event and Property Change Handlers
 
+    void Update() {
+        if (_toDespawn) {
+            enabled = false;
+            Despawn();
+        }
+        else {
+            ProcessUpdate();
+        }
+    }
+
+    protected virtual void ProcessUpdate() { }
+
     protected virtual void OnSpawned() {
         if (!_isNameInitialized) {
             InitializeName();
@@ -166,6 +181,8 @@ public abstract class AOrdnance : AMonoBase, IOrdnance, IEquatable<AOrdnance> {
         D.AssertDefault(_uniqueID);
         D.AssertDefault(_range);
         D.Assert(!IsOperational);
+        D.Assert(!_toDespawn);
+
         _uniqueID = _UniqueIDCount;
         _UniqueIDCount++;
     }
@@ -191,9 +208,12 @@ public abstract class AOrdnance : AMonoBase, IOrdnance, IEquatable<AOrdnance> {
         Target = null;
         Weapon = null;
         D.AssertNotEqual(Constants.Zero, _uniqueID);
-        D.Assert(!enabled); // should be disabled when Terminated
+        D.Assert(!enabled); // should be disabled just before Despawn is called
         _uniqueID = Constants.Zero;
         _range = Constants.ZeroF;
+
+        D.Assert(_toDespawn);
+        _toDespawn = false;
         // RootName is restored after returning to pool so that it doesn't show in Unity with its most recent _uniqueID name
         RestoreRootName();    // Remove when debugging a problem where despawning is occurring before you expect it and you need its uniqueID
     }
@@ -240,18 +260,17 @@ public abstract class AOrdnance : AMonoBase, IOrdnance, IEquatable<AOrdnance> {
         }
         //D.Log(ShowDebugLog, "{0} is terminating.", DebugName); 
         IsOperational = false;
-        enabled = false;
 
         PrepareForTermination();
         ResetEffectsForReuse();
 
         OnTermination();
-        Despawn();
+        _toDespawn = true;
     }
 
     protected virtual void Despawn() {
         //D.Log(ShowDebugLog, "{0} is about to despawn.", DebugName);
-        GamePoolManager.Instance.DespawnOrdnance(transform);
+        GameReferences.GamePoolManager.DespawnOrdnance(transform);
     }
 
     /// <summary>

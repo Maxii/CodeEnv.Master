@@ -70,7 +70,8 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     /// <summary>
     /// Occurs just after a scene finishes loading, aka immediately after the SceneManager.sceneLoaded event is received.
-    /// Prior to Unity 5.3 was after OnLevelWasLoaded() was received.
+    /// <remarks>3.8.17 This event can fire in the same frame as sceneLoading but will never precede it.</remarks>
+    /// <remarks>Prior to Unity 5.3 was after OnLevelWasLoaded() was received.</remarks>
     /// <remarks>12.2.16 Event is not fired when the first scene is loaded as a result of the Application starting.</remarks>
     /// <remarks>GameSettings is valid.</remarks>
     /// </summary>
@@ -112,6 +113,10 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     }
 
     private bool _isSceneLoading;
+    /// <summary>
+    /// Indicates whether a scene is in the process of loading. 
+    /// <remarks>12.2.16 Value will be false when the first scene is loading as a result of the Application starting.</remarks>
+    /// </summary>
     public bool IsSceneLoading {
         get { return _isSceneLoading; }
         private set { SetProperty<bool>(ref _isSceneLoading, value, "IsSceneLoading"); }
@@ -225,7 +230,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         base.InitializeOnInstance();
         // Note: Dummy InstanceCount as it does not get incremented until after InitializeOnInstance()
         //D.Log("{0}.{1}() called.", DebugNameFormat.Inject(GetType().Name, InstanceCount + 1), GetMethodName());
-        References.GameManager = Instance;
+        GameReferences.GameManager = Instance;
         RefreshCurrentSceneID();
         RefreshLastSceneID();
         RefreshStaticReferences(isBeingInitialized: true);
@@ -271,24 +276,24 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         if (!isBeingInitialized && LastSceneID != SceneID.LobbyScene) {
             // Note: These References will be null if being initialized or if LastScene was Lobby
             // Filter was needed to allow addition of Assert not null protection on References value gets
-            (References.InputHelper as IDisposable).Dispose();
-            (References.GeneralFactory as IDisposable).Dispose();
-            (References.TrackingWidgetFactory as IDisposable).Dispose();
-            (References.FormationGenerator as IDisposable).Dispose();
+            (GameReferences.InputHelper as IDisposable).Dispose();
+            (GameReferences.GeneralFactory as IDisposable).Dispose();
+            (GameReferences.TrackingWidgetFactory as IDisposable).Dispose();
+            (GameReferences.FormationGenerator as IDisposable).Dispose();
         }
 
-        References.InputHelper = GameInputHelper.Instance;
+        GameReferences.InputHelper = GameInputHelper.Instance;
         if (CurrentSceneID == SceneID.GameScene) {
             // not used in LobbyScene
-            References.GeneralFactory = GeneralFactory.Instance;
-            References.TrackingWidgetFactory = TrackingWidgetFactory.Instance;
-            References.FormationGenerator = FormationGenerator.Instance;
+            GameReferences.GeneralFactory = GeneralFactory.Instance;
+            GameReferences.TrackingWidgetFactory = TrackingWidgetFactory.Instance;
+            GameReferences.FormationGenerator = FormationGenerator.Instance;
         }
 
         // Non-persistent (by definition) non-Singleton MonoBehaviours need to be newly instantiated to refresh their References field
         if (CurrentSceneID == SceneID.GameScene) {
             // not used in LobbyScene
-            References.HoverHighlight = EffectsFolder.Instance.Folder.gameObject.GetSingleComponentInChildren<SphericalHighlight>();
+            GameReferences.HoverHighlight = EffectsFolder.Instance.Folder.gameObject.GetSingleComponentInChildren<SphericalHighlight>();
         }
     }
 
@@ -595,6 +600,10 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     }
 
     private void EnableGameTimeClock(bool toEnable) {
+        //D.Log(toEnable, "{0} is starting the game clock. Frame = {1}.", DebugName, Time.frameCount);
+        if (toEnable) {
+            _gameTime.PrepareForClockEnabled();
+        }
         enabled = toEnable; // controls Update() which calls _gameTime.CheckForDateChange()
     }
 
@@ -611,7 +620,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         //D.Log("{0}.InitiateNewGame() called.", DebugName);
         GameSettings = gameSettings;
 
-        ResetConditionsForGameStartup();    // 1.17.17 moved here to catch all NewGame starts except from Lobby
+        ResetConditionsToBeginLoadingNewGame();    // 1.17.17 moved here to catch all NewGame starts except from Lobby
 
         StartGameStateProgressionReadinessChecks(); // Begins progression from either Lobby or Running
 
@@ -682,7 +691,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     /// current state of PauseState given the numerous ways one can initiate the startup
     /// of a game instance.
     /// </summary>
-    private void ResetConditionsForGameStartup() {
+    private void ResetConditionsToBeginLoadingNewGame() {
         if (IsPaused) {
             RequestPauseStateChange(toPause: false, toOverride: true);
         }
@@ -783,6 +792,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     void Lobby_EnterState() {
         LogEvent();
         RecordGameStateProgressionReadiness(Instance, GameState.Lobby, isReady: false);
+        FpsReadout.Instance.IsReadoutToShow = true;
         RecordGameStateProgressionReadiness(Instance, GameState.Lobby, isReady: true);
     }
 
@@ -794,6 +804,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     void Lobby_ExitState() {
         LogEvent();
         // Transitioning to Loading (the level) whether a new or saved game
+        FpsReadout.Instance.IsReadoutToShow = false;
         D.AssertEqual(GameState.Loading, CurrentState);
     }
 
@@ -803,24 +814,29 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     #region Loading
 
-    void Loading_EnterState() {
+    // 3.8.17 WARNING: The KEY to a graceful shutdown of an existing scene when transitioning to a new scene is to
+    // rely on Unity to disable then destroy (and thus Cleanup()) existing scene gameObjects. That graceful
+    // transition is started by SceneManager.LoadScene(). Any delay between Running_ExitState() and 
+    // Loading_EnterState() creates opportunities for asynchronous events (Trigger events, Job completions) 
+    // to occur during the delay. Making Loading_EnterState an IEnumerable creates such a delay.
+
+    void Loading_EnterState() {  // 3.8.17 IEnumerator to create 1 frame delay to separate SceneUnloading from SceneLoading events
         LogEvent();
         __RecordDurationStartTime();
         RecordGameStateProgressionReadiness(Instance, GameState.Loading, isReady: false);
 
         if (GameSettings.__IsStartup) {
-            // no need to reload the scene that has just been loaded
             RecordGameStateProgressionReadiness(Instance, GameState.Loading, isReady: true);
-            return;
+            // no need to reload the scene that has just been loaded
         }
+        else {
+            //D.Log("SceneManager.LoadScene({0}) being called.", SceneID.GameScene.GetValueName());
+            SceneManager.LoadScene(SceneID.GameScene.GetValueName(), LoadSceneMode.Single); //Application.LoadLevel(index) deprecated by Unity 5.3
 
-        //D.Log("SceneManager.LoadScene({0}) being called.", SceneID.GameScene.GetValueName());
-        SceneManager.LoadScene(SceneID.GameScene.GetValueName(), LoadSceneMode.Single); //Application.LoadLevel(index) deprecated by Unity 5.3
-
-
-        // tell ManagementObjects to drop its children (including SaveGameManager!) before the scene gets reloaded
-        IsSceneLoading = true;
-        OnSceneLoading();
+            // tell ManagementObjects to drop its children (including SaveGameManager!) before the scene gets reloaded
+            IsSceneLoading = true;
+            OnSceneLoading();
+        }
     }
 
     [Obsolete]
@@ -838,7 +854,6 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     void Loading_UponSceneLoaded(Scene scene) {
         LogEvent();
         D.Assert(!GameSettings.__IsStartup);
-
         D.AssertEqual(CurrentScene, scene);
         D.AssertEqual(SceneID.GameScene, CurrentSceneID, CurrentSceneID.GetValueName());
         IsSceneLoading = false;
@@ -872,6 +887,9 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
         // Building is only for new (or startup) games
         D.Assert(!GameSettings.IsSavedGame);
+
+        _jobMgr.PreloadJobsDeterminedBy(GameSettings);
+
         OnNewGameBuilding();
         PrepareGameTimeForNewGame();    // Done here as this state is unique to new or simulated games
         GamePoolManager.Instance.Initialize(GameSettings);
@@ -1029,6 +1047,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         __RecordDurationStartTime();
         RecordGameStateProgressionReadiness(Instance, GameState.BuildingAndDeployingInitialUnits, isReady: false);
         UniverseCreator.DeployAndConfigureInitialUnitCreators();
+        UniverseCreator.BuildAndPositionUnits();
         RecordGameStateProgressionReadiness(Instance, GameState.BuildingAndDeployingInitialUnits, isReady: true);
     }
 
@@ -1088,18 +1107,29 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
         RunGarbageCollector();
 
-        MainCameraControl.Instance.Activate();
+        /************************************** TEMP Job *******************************************************************/
+        __RecordDurationStartTime();
+        var fpsReadout = FpsReadout.Instance;
+        _jobMgr.WaitWhile(() => fpsReadout.FramesPerSecond < TempGameValues.MinimumFramerate, "WaitToLaunchGameplay", isPausable: false, waitFinished: (jobWasKilled) => {
+            __LogDuration("{0}.WaitForMinimumFramerate".Inject(DebugName));
+            MainCameraControl.Instance.Activate();
+            EnableGameTimeClock(true);
 
-        EnableGameTimeClock(true);
-        OnIsReadyForPlay();
-        D.LogBold("{0}: Game is now ready for play.", DebugName);
+            _playerAiMgrLookup.Values.ForAll(aiMgr => aiMgr.CommenceOperations());
 
-        if (_playerPrefsMgr.IsPauseOnLoadEnabled) { // Note: My practice - IsRunning THEN pause changes
-            RequestPauseStateChange(toPause: true, toOverride: true);
-        }
+            FpsReadout.Instance.IsReadoutToShow = true;
+
+            OnIsReadyForPlay();
+            Debug.LogFormat("{0}: Game is now ready for play. Frame = {1}. FPS = {2:0.#}.", DebugName, Time.frameCount, fpsReadout.FramesPerSecond);
+
+            if (_playerPrefsMgr.IsPauseOnLoadEnabled) { // Note: My practice - IsRunning THEN pause changes
+                RequestPauseStateChange(toPause: true, toOverride: true);
+            }
+            RecordGameStateProgressionReadiness(Instance, GameState.Running, isReady: true);
+        });
+        /*******************************************************************************************************************/
+
         UniverseCreator.AttemptFocusOnPrimaryUserUnit();
-
-        RecordGameStateProgressionReadiness(Instance, GameState.Running, isReady: true);
     }
 
     void Running_UponProgressState() {
@@ -1110,6 +1140,8 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     void Running_ExitState() {
         LogEvent();
         D.AssertEqual(GameState.Loading, CurrentState); //D.Assert(CurrentState == GameState.Lobby || CurrentState == GameState.Loading);
+        FpsReadout.Instance.IsReadoutToShow = false;
+
         EnableGameTimeClock(false);
         IsRunning = false;
     }
@@ -1140,6 +1172,14 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     #region Cleanup
 
+    protected override void __CleanupOnApplicationQuit() {
+        base.__CleanupOnApplicationQuit();
+        _gameTime.DateMinder.__ReportUsage();
+        _gameTime.RecurringDateMinder.__ReportUsage();
+        AWeapon.__ReportPeakEnemiesInRange();
+        ActiveCountermeasure.__ReportPeakThreatsInRange();
+    }
+
     private void RunGarbageCollector() {
         __RecordDurationStartTime();
         GC.Collect(0);  // http://gamedev.stackexchange.com/questions/25394/how-should-i-account-for-the-gc-when-building-games-with-unity
@@ -1156,7 +1196,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         Unsubscribe();
 
         DisposeOfGlobals();
-        References.GameManager = null;  // last, as Globals may use it when disposing
+        GameReferences.GameManager = null;  // last, as Globals may use it when disposing
     }
 
     /// <summary>

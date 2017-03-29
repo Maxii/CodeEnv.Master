@@ -99,7 +99,7 @@ public abstract class AColliderMonitor : AMonoBase, IColliderMonitor {
     }
 
     protected virtual void InitializeValuesAndReferences() {
-        _gameMgr = References.GameManager;
+        _gameMgr = GameReferences.GameManager;
         if (IsKinematicRigidbodyReqd) {
             var rigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(gameObject);
             rigidbody.useGravity = false;
@@ -174,16 +174,15 @@ public abstract class AColliderMonitor : AMonoBase, IColliderMonitor {
 
     /// <summary>
     /// Resets this Monitor in preparation for reuse by the same Parent.
+    /// <remarks>_isResetting will be true while reseting.</remarks>
     /// </summary>
     protected void ResetForReuse() {
         _isResetting = true;
-        D.Log(ShowDebugLog, "{0} is being reset for future reuse.", DebugName);
         IsOperational = false;
         RangeDistance = Constants.ZeroF;
         D.AssertNotNull(ParentItem);
         CompleteResetForReuse();
         _isResetting = false;
-
     }
 
     /// <summary>

@@ -117,7 +117,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     public override void RemoveElement(AUnitElementItem element) {
         base.RemoveElement(element);
 
-        if (!IsOperational) {
+        if (IsDead) {
             // BaseCmd has died
             return;
         }
@@ -149,7 +149,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     /// <remarks>TEMP public to allow creator use.</remarks>
     /// </summary>
     /// <returns></returns>
-    public FacilityItem SelectHQElement() {
+    internal FacilityItem SelectHQElement() {
         AUnitElementItem bestElement = null;
         float bestElementScore = Constants.ZeroF;
         var descendingHQPriority = Enums<Priority>.GetValues(excludeDefault: true).OrderByDescending(p => p);
@@ -172,6 +172,15 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         return bestElement as FacilityItem;
     }
 
+    /// <summary>
+    /// Indicates whether this Unit is in the process of attacking <c>unitCmd</c>.
+    /// </summary>
+    /// <param name="unitCmd">The unit command potentially under attack by this Unit.</param>
+    /// <returns></returns>
+    public override bool IsAttacking(IUnitCmd_Ltd unitCmd) {
+        return IsCurrentStateAnyOf(BaseState.ExecuteAttackOrder) && _fsmTgt == unitCmd;
+    }
+
     protected override void ResetOrdersAndStateOnNewOwner() {
         CurrentOrder = null;
         RegisterForOrders();    // must occur prior to Idling
@@ -184,11 +193,12 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     }
 
     /// <summary>
-    /// Kills all remaining elements of the Unit along with this Command. All Elements are ordered 
+    /// Kills all remaining elements of the Unit along with this Command. All Elements are ordered
     /// to Scuttle (assume Dead state) which results in the Command assuming its own Dead state.
     /// </summary>
-    private void ScuttleUnit() {
-        var elementScuttleOrder = new FacilityOrder(FacilityDirective.Scuttle, OrderSource.CmdStaff);
+    /// <param name="orderSource">The order source.</param>
+    private void ScuttleUnit(OrderSource orderSource) {
+        var elementScuttleOrder = new FacilityOrder(FacilityDirective.Scuttle, orderSource);
         Elements.ForAll(e => (e as FacilityItem).CurrentOrder = elementScuttleOrder);
     }
 
@@ -198,7 +208,14 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     #region Event and Property Change Handlers
 
-    protected sealed override void HandleEnemyTargetsInSensorRangeChanged() {
+    protected sealed override void HandleEnemyCmdsInSensorRangeChanged() {
+        if (CurrentState == BaseState.FinalInitialize) {
+            return;
+        }
+        AssessAlertStatus();
+    }
+
+    protected sealed override void HandleWarEnemyElementsInSensorRangeChanged() {
         if (CurrentState == BaseState.FinalInitialize) {
             return;
         }
@@ -226,15 +243,47 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         return CurrentOrder != null && CurrentOrder.Directive.EqualsAnyOf(directives);
     }
 
+    /// <summary>
+    /// The CmdStaff uses this method to override orders already issued.
+    /// </summary>
+    /// <param name="overrideOrder">The CmdStaff's override order.</param>
+    /// <param name="retainSuperiorsOrder">if set to <c>true</c> [retain superiors order].</param>
+    private void OverrideCurrentOrder(BaseOrder overrideOrder, bool retainSuperiorsOrder) {
+        D.AssertEqual(OrderSource.CmdStaff, overrideOrder.Source);
+        D.AssertNull(overrideOrder.StandingOrder);
+
+        BaseOrder standingOrder = null;
+        if (retainSuperiorsOrder && CurrentOrder != null) {
+            if (CurrentOrder.Source > OrderSource.CmdStaff) {
+                D.AssertNull(CurrentOrder.FollowonOrder, CurrentOrder.ToString());
+                // the current order is from the CmdStaff's superior so retain it
+                standingOrder = CurrentOrder;
+            }
+            else {
+                // the current order is from the CmdStaff, so it or its FollowonOrder's standing order, if any, should be retained
+                standingOrder = CurrentOrder.FollowonOrder != null ? CurrentOrder.FollowonOrder.StandingOrder : CurrentOrder.StandingOrder;
+            }
+        }
+        // assign the standingOrder, if any, to the last order to be executed in the overrideOrder
+        if (overrideOrder.FollowonOrder != null) {
+            overrideOrder.FollowonOrder.StandingOrder = standingOrder;
+        }
+        else {
+            overrideOrder.StandingOrder = standingOrder;
+        }
+        CurrentOrder = overrideOrder;
+    }
+
     private void HandleNewOrder() {
         // TODO no Call()ed states currently
         // Pattern that handles Call()ed states that goes more than one layer deep
-        //while (CurrentState == BaseState.Attacking || ...) { 
+        //while (IsCurrentStateCalled) { 
         //    UponNewOrderReceived();
         //}
-        //D.Assert(CurrentState != BaseState.Attacking);
+        //D.Assert(!IsCurrentStateCalled);
 
         if (CurrentOrder != null) {
+            D.Assert(CurrentOrder.Source > OrderSource.Captain);
             D.Log(ShowDebugLog, "{0} received new {1}.", DebugName, CurrentOrder);
             BaseDirective directive = CurrentOrder.Directive;
             switch (directive) {
@@ -242,7 +291,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
                     CurrentState = BaseState.ExecuteAttackOrder;
                     break;
                 case BaseDirective.Scuttle:
-                    ScuttleUnit();
+                    ScuttleUnit(CurrentOrder.Source);
                     break;
                 case BaseDirective.StopAttack:
                 case BaseDirective.Repair:
@@ -250,6 +299,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
                 case BaseDirective.Disband:
                     D.Warn("{0}.{1} is not currently implemented.", typeof(BaseDirective).Name, directive.GetValueName());
                     break;
+                case BaseDirective.ChangeHQ:   // 3.16.17 implemented by assigning HQElement, not as an order
                 case BaseDirective.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
@@ -273,6 +323,28 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected new BaseState LastState {
         get { return base.LastState != null ? (BaseState)base.LastState : default(BaseState); }
+    }
+
+    // 3.16.17 No Call()ed states currently
+    private bool IsCurrentStateCalled { get { return false; } }
+
+    private bool IsCurrentStateAnyOf(BaseState state) {
+        return CurrentState == state;
+    }
+
+    private bool IsCurrentStateAnyOf(BaseState stateA, BaseState stateB) {
+        return CurrentState == stateA || CurrentState == stateB;
+    }
+
+    /// <summary>
+    /// Restarts execution of the CurrentState. If the CurrentState is a Call()ed state, Return()s first, then restarts
+    /// execution of the state Return()ed too, aka the new CurrentState.
+    /// </summary>
+    private void RestartState() {
+        while (IsCurrentStateCalled) {
+            Return();
+        }
+        CurrentState = CurrentState;
     }
 
     #region FinalInitialize
@@ -311,6 +383,36 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected IEnumerator Idling_EnterState() {
         LogEvent();
 
+        if (CurrentOrder != null) {
+            // FollowonOrders should always be executed before any StandingOrder is considered
+            if (CurrentOrder.FollowonOrder != null) {
+                D.Log(ShowDebugLog, "{0} is executing follow-on order {1}.", DebugName, CurrentOrder.FollowonOrder);
+
+                OrderSource followonOrderSource = CurrentOrder.FollowonOrder.Source;
+                D.AssertEqual(OrderSource.CmdStaff, followonOrderSource, CurrentOrder.ToString());
+
+                CurrentOrder = CurrentOrder.FollowonOrder;
+                yield return null;
+                D.Error("{0} should never get here as CurrentOrder was changed to {1}.", DebugName, CurrentOrder);
+            }
+            // If we got here, there is no FollowonOrder, so now check for any StandingOrder
+            if (CurrentOrder.StandingOrder != null) {
+                D.LogBold(ShowDebugLog, "{0} returning to execution of standing order {1}.", DebugName, CurrentOrder.StandingOrder);
+
+                OrderSource standingOrderSource = CurrentOrder.StandingOrder.Source;
+                if (standingOrderSource < OrderSource.CmdStaff) {
+                    D.Error("{0} StandingOrder {1} source can't be {2}.", DebugName, CurrentOrder.StandingOrder, standingOrderSource.GetValueName());
+                }
+
+                CurrentOrder = CurrentOrder.StandingOrder;
+                yield return null;
+                D.Error("{0} should never get here as CurrentOrder was changed to {1}.", DebugName, CurrentOrder);
+            }
+            //D.Log(ShowDebugLog, "{0} has completed {1} with no follow-on or standing order queued.", DebugName, CurrentOrder);
+            CurrentOrder = null;
+        }
+
+
         IsAvailable = true; // 10.3.16 this can instantly generate a new Order (and thus a state change). Accordingly, this EnterState
                             // cannot return void as that causes the FSM to fail its 'no state change from void EnterState' test.
         yield return null;
@@ -322,6 +424,15 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     }
 
     // No need for _fsmTgt-related event handlers as there is no _fsmTgt
+
+    protected void Idling_UponAlertStatusChanged() {
+        LogEvent();
+    }
+
+    protected void Idling_UponHQElementChanged() {
+        LogEvent();
+        // TODO
+    }
 
     protected void Idling_UponEnemyDetected() {
         LogEvent();
@@ -377,12 +488,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         Elements.ForAll(e => (e as FacilityItem).CurrentOrder = elementAttackOrder);
     }
 
-    protected void ExecuteAttackOrder_UponOrderOutcome(FacilityDirective directive, FacilityItem facility, bool isSuccess, IElementAttackable target, UnitItemOrderFailureCause failCause) {
+    protected void ExecuteAttackOrder_UponOrderOutcome(FacilityItem facility, bool isSuccess, IElementAttackable target, UnitItemOrderFailureCause failCause) {
         LogEvent();
-        if (directive != FacilityDirective.Attack) {
-            D.Warn("{0} State {1} erroneously received OrderOutcome callback with {2} {3}.", DebugName, CurrentState.GetValueName(), typeof(FacilityDirective).Name, directive.GetValueName());
-            return;
-        }
         // TODO What? It will be common for an attack by a facility to fail for cause unreachable as its target moves out of range...
     }
 
@@ -397,6 +504,15 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     }
 
     protected void ExecuteAttackOrder_UponFsmTgtOwnerChgd(IItem_Ltd fsmTgt) {
+        LogEvent();
+        // TODO
+    }
+
+    protected void ExecuteAttackOrder_UponAlertStatusChanged() {
+        LogEvent();
+    }
+
+    protected void ExecuteAttackOrder_UponHQElementChanged() {
         LogEvent();
         // TODO
     }
@@ -536,19 +652,21 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     /// <summary>
     /// Handles the results of the facility's attempt to execute the provided directive.
     /// </summary>
-    /// <param name="directive">The directive.</param>
+    /// <param name="intendedBaseDirective">The intended base directive.</param>
     /// <param name="facility">The facility.</param>
     /// <param name="isSuccess">if set to <c>true</c> the directive was successfully completed. May still be ongoing.</param>
     /// <param name="target">The target. Can be null.</param>
     /// <param name="failCause">The failure cause if not successful.</param>
-    internal void HandleOrderOutcome(FacilityDirective directive, FacilityItem facility, bool isSuccess, IElementAttackable target = null, UnitItemOrderFailureCause failCause = UnitItemOrderFailureCause.None) {
-        UponOrderOutcome(directive, facility, isSuccess, target, failCause);
+    internal void HandleOrderOutcome(BaseDirective intendedBaseDirective, FacilityItem facility, bool isSuccess, IElementAttackable target = null, UnitItemOrderFailureCause failCause = UnitItemOrderFailureCause.None) {
+        if (IsCurrentOrderDirectiveAnyOf(intendedBaseDirective)) {
+            UponOrderOutcome(facility, isSuccess, target, failCause);
+        }
     }
 
     #region Relays
 
-    private void UponOrderOutcome(FacilityDirective directive, FacilityItem facility, bool isSuccess, IElementAttackable target, UnitItemOrderFailureCause failCause) {
-        RelayToCurrentState(directive, facility, isSuccess, target, failCause);
+    private void UponOrderOutcome(FacilityItem facility, bool isSuccess, IElementAttackable target, UnitItemOrderFailureCause failCause) {
+        RelayToCurrentState(facility, isSuccess, target, failCause);
     }
 
     #endregion
@@ -603,12 +721,14 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         }
     }
 
-    public void AssumeCloseOrbit(IShip_Ltd ship, FixedJoint shipOrbitJoint) {
+    public void AssumeCloseOrbit(IShip_Ltd ship, FixedJoint shipOrbitJoint, float __distanceUponInitialArrival) {
         if (_shipsInCloseOrbit == null) {
             _shipsInCloseOrbit = new List<IShip_Ltd>();
         }
         _shipsInCloseOrbit.Add(ship);
         shipOrbitJoint.connectedBody = CloseOrbitSimulator.OrbitRigidbody;
+
+        __ReportCloseOrbitDetails(ship, true, __distanceUponInitialArrival);
     }
 
     public bool IsInCloseOrbit(IShip_Ltd ship) {
@@ -661,16 +781,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
             var isRemoved = _shipsInCloseOrbit.Remove(ship);
             D.Assert(isRemoved);
             D.Log(ShowDebugLog, "{0} has left close orbit around {1}.", ship.DebugName, DebugName);
-            float shipDistance = Vector3.Distance(ship.Position, Position);
-            float insideOrbitSlotThreshold = CloseOrbitOuterRadius - ship.CollisionDetectionZoneRadius_Debug;
-            if (shipDistance > insideOrbitSlotThreshold) {
-                D.Log(ShowDebugLog, "{0} is leaving orbit of {1} but collision detection zone is poking outside of orbit slot by {2:0.0000} units.",
-                    ship.DebugName, DebugName, shipDistance - insideOrbitSlotThreshold);
-                float halfOutsideOrbitSlotThreshold = CloseOrbitOuterRadius;
-                if (shipDistance > halfOutsideOrbitSlotThreshold) {
-                    D.Warn("{0} is leaving orbit of {1} but collision detection zone is half outside of orbit slot.", ship.DebugName, DebugName);
-                }
-            }
+
+            __ReportCloseOrbitDetails(ship, isArriving: false);
+
             if (_shipsInCloseOrbit.Count == Constants.Zero) {
                 // Choose either to deactivate the OrbitSimulator or destroy it, but not both
                 CloseOrbitSimulator.IsActivated = false;
@@ -679,6 +792,25 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
             return;
         }
         D.Error("{0}.HandleBrokeOrbit() called, but {1} not in orbit.", DebugName, ship.DebugName);
+    }
+
+    private void __ReportCloseOrbitDetails(IShip_Ltd ship, bool isArriving, float __distanceUponInitialArrival = 0F) {
+        float shipDistance = Vector3.Distance(ship.Position, Position);
+        float insideOrbitSlotThreshold = CloseOrbitOuterRadius - ship.CollisionDetectionZoneRadius_Debug;
+        if (shipDistance > insideOrbitSlotThreshold) {
+            string arrivingLeavingMsg = isArriving ? "arriving in" : "leaving";
+            D.Log(ShowDebugLog, "{0} is {1} orbit of {2} but collision detection zone is poking outside of orbit slot by {3:0.0000} units.",
+                ship.DebugName, arrivingLeavingMsg, DebugName, shipDistance - insideOrbitSlotThreshold);
+            float halfOutsideOrbitSlotThreshold = CloseOrbitOuterRadius;
+            if (shipDistance > halfOutsideOrbitSlotThreshold) {
+                D.Warn("{0} is {1} orbit of {2} but collision detection zone is half or more outside of orbit slot.", ship.DebugName, arrivingLeavingMsg, DebugName);
+                if (isArriving) {
+                    float distanceMovedWhileWaitingForArrival = shipDistance - __distanceUponInitialArrival;
+                    string distanceMsg = distanceMovedWhileWaitingForArrival < 0F ? "closer in toward" : "further out from";
+                    D.Log("{0} moved {1:0.##} {2} {3}'s orbit slot while waiting for arrival.", ship.DebugName, Mathf.Abs(distanceMovedWhileWaitingForArrival), distanceMsg, DebugName);
+                }
+            }
+        }
     }
 
     public IList<StationaryLocation> LocalAssemblyStations { get { return GuardStations; } }

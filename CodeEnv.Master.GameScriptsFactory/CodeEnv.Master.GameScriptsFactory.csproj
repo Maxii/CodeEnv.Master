@@ -20,7 +20,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;UNITY_EDITOR; DEBUG_ERROR; DEBUG_WARN; DEBUG_LOG; DEBUG_VALIDATE_PROPERTY</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;UNITY_EDITOR; DEBUG_LOGBOLD; DEBUG_ERROR; DEBUG_WARN; DEBUG_LOG; DEBUG_VALIDATE_PROPERTY</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
@@ -36,7 +36,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'ProfilerDebug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <OutputPath>bin\ProfilerDebug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;UNITY_EDITOR; ENABLE_PROFILER; DEBUG_ERROR; DEBUG_WARN</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;UNITY_EDITOR; ENABLE_PROFILER; DEBUG_LOGBOLD; DEBUG_ERROR; DEBUG_WARN</DefineConstants>
     <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
     <DebugType>full</DebugType>
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -66,6 +66,8 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\Framework\FleetNavigator.cs" />
+    <Compile Include="Generic\Framework\AOrdnance.cs" />
     <Compile Include="ThirdParty\GamePoolManager.cs" />
     <Compile Include="Game\_Debug\DebugSystemCreator.cs" />
     <Compile Include="Generic\Framework\NewGameSystemConfigurator.cs" />
@@ -78,7 +80,6 @@
     <Compile Include="Game\Framework\StarbaseCreator.cs" />
     <Compile Include="Generic\Framework\FormationGenerator.cs" />
     <Compile Include="Game\_Debug\FormationGridOrganizer.cs" />
-    <Compile Include="Generic\Framework\AOrdnance.cs" />
     <Compile Include="Generic\Framework\AProjectileOrdnance.cs" />
     <Compile Include="Game\Gameplay\Beam.cs" />
     <Compile Include="Game\Gameplay\Projectile.cs" />

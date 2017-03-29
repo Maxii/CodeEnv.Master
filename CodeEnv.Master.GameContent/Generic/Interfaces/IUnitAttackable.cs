@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IUnitAttackable.cs
-// Interface for targets that can be attacked by unit commands.
+// Interface for Items that UnitCmds are allowed to designate as a target to be attacked.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,7 +19,7 @@ namespace CodeEnv.Master.GameContent {
     using System;
 
     /// <summary>
-    /// Interface for targets that can be attacked by unit commands.
+    /// Interface for Items that UnitCmds are allowed to designate as a target to be attacked.
     /// </summary>
     public interface IUnitAttackable : IFleetNavigable, IAttackable {
 

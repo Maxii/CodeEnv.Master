@@ -55,8 +55,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="name">The name of the VectorLine.</param>
         public AVectrosityBase(string name) {
             _lineName = name;
-            _gameMgr = References.GameManager;
-            _jobMgr = References.JobManager;
+            _gameMgr = GameReferences.GameManager;
+            _jobMgr = GameReferences.JobManager;
         }
 
         #region Event and Property Change Handlers

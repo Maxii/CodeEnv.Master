@@ -30,9 +30,9 @@ using UnityEngine;
 public class PlanetoidCtxControl : ACtxControl {
 
     // No Explore available as Fleets only explore Systems, Sectors and UniverseCenter
-    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] { FleetDirective.FullSpeedMove,
-                                                                                        FleetDirective.Move,
-                                                                                        FleetDirective.Attack };
+    protected static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] { FleetDirective.FullSpeedMove,
+                                                                                        FleetDirective.Move };
+    // 3.27.17 TEMP removed until planetoids become IUnitAttackable again           //FleetDirective.Attack };
 
     protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
         get { return _userRemoteFleetDirectives; }
@@ -77,8 +77,10 @@ public class PlanetoidCtxControl : ACtxControl {
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Attack:
-                return !(_planetoidMenuOperator as IUnitAttackable).IsAttackByAllowed(_user)
-                    || !(_remoteUserOwnedSelectedItem as AUnitCmdItem).IsAttackCapable;
+                // 3.27.17 TEMP modified until planetoids become IUnitAttackable again
+                //return !(_planetoidMenuOperator as IUnitAttackable).IsAttackByAllowed(_user)
+                //    || !(_remoteUserOwnedSelectedItem as AUnitCmdItem).IsAttackCapable;
+                return true;
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
                 return false;

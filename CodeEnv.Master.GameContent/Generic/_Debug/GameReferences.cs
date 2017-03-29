@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: References.cs
+// File: GameReferences.cs
 // Simple source of useful static references to important Unity-compiled MonoBehaviour scripts.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -49,7 +49,7 @@ namespace CodeEnv.Master.GameContent {
     /// but on the class that has the dependency, rather than this intermediate class. This third
     /// alternative continues to have the restriction of not using the reference during Awake().
     /// </summary>
-    public static class References {
+    public static class GameReferences {
 
         // Note: to add more references, see pattern notes above
 

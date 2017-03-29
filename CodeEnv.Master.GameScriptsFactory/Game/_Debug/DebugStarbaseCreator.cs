@@ -127,7 +127,7 @@ public class DebugStarbaseCreator : ADebugUnitCreator {
         _command.HQElement = _command.SelectHQElement();
     }
 
-    protected override bool DeployUnit() {
+    protected override bool PositionUnit() {
         LogEvent();
         // Starbases don't need to be deployed. They are already on location
         PathfindingManager.Instance.Graph.AddToGraph(_command, SectorID);

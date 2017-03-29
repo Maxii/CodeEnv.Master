@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
         public SettlementFormationManager(IFormationMgrClient settlementCmd) : base(settlementCmd) { }
 
         protected override IList<FormationStationSlotInfo> GenerateFormationSlotInfo(Formation formation, Transform cmdTransform, out float formationRadius) {
-            return References.FormationGenerator.GenerateBaseFormation(formation, cmdTransform, out formationRadius);
+            return GameReferences.FormationGenerator.GenerateBaseFormation(formation, cmdTransform, out formationRadius);
         }
 
         public override string ToString() {

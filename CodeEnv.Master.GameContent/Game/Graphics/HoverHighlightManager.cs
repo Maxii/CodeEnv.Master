@@ -35,8 +35,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public override void Show(bool toShow) {
-            if (References.HoverHighlight != null) {  // allows deactivation of the SphericalHighlight gameObject
-                _hoverHighlight = References.HoverHighlight;
+            if (GameReferences.HoverHighlight != null) {  // allows deactivation of the SphericalHighlight gameObject
+                _hoverHighlight = GameReferences.HoverHighlight;
                 if (toShow) {
                     if (IsHighlightShowing) {
                         D.Warn("{0} shouldn't still be showing over {1}. Fixing.", DebugName, _hoverHighlight.TargetName);

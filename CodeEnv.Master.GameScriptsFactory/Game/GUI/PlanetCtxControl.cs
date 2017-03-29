@@ -25,30 +25,11 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// Context Menu Control for <see cref="PlanetItem"/>s. 
 /// No distinction between AI and User owned. 
+/// <remarks>OPTIMIZE Currently here in anticipation of different context order capability between planets and moons.</remarks>
 /// </summary>
 public class PlanetCtxControl : PlanetoidCtxControl {
 
-    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] { FleetDirective.FullSpeedMove,
-                                                                                        FleetDirective.Move,
-                                                                                        FleetDirective.Attack
-                                                                                      };
-
-    protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives { get { return _userRemoteFleetDirectives; } }
-
     public PlanetCtxControl(PlanetItem planet) : base(planet) { }
-
-    protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
-        switch (directive) {
-            case FleetDirective.Attack:
-                return !(_planetoidMenuOperator as IUnitAttackable).IsAttackByAllowed(_user)
-                    || !(_remoteUserOwnedSelectedItem as AUnitCmdItem).IsAttackCapable;
-            case FleetDirective.Move:
-            case FleetDirective.FullSpeedMove:
-                return false;
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
-        }
-    }
 
     public override string ToString() {
         return new ObjectAnalyzer().ToString(this);

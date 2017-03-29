@@ -59,7 +59,7 @@ public class FleetCreator : AAutoUnitCreator {
         _command.HQElement = _command.SelectHQElement();
     }
 
-    protected override bool DeployUnit() {
+    protected override bool PositionUnit() {
         LogEvent();
         // Fleets don't need to be deployed. They are already on location.
         return true;

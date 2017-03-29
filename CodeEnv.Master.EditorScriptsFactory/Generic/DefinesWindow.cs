@@ -27,6 +27,7 @@ using CodeEnv.Master.Common;
 public class DefinesWindow : EditorWindow {
 
     private const string Define_DebugLog = "DEBUG_LOG";
+    private const string Define_DebugLogBold = "DEBUG_LOGBOLD";
     private const string Define_DebugWarn = "DEBUG_WARN";
     private const string Define_DebugError = "DEBUG_ERROR";
 
@@ -44,6 +45,9 @@ public class DefinesWindow : EditorWindow {
     /// </summary>
     private const string Define_DebugValidatePropertyChange = "DEBUG_VALIDATE_PROPERTY";
 
+    [Obsolete("Unity does not allow removal of Defines installed by Unity")]
+    private const string Define_EnableProfiler = "ENABLE_PROFILER";
+
     [MenuItem("My Tools/DEFINEs to Include")]
     public static void ShowDefinesWindow() {
         var window = GetWindow<DefinesWindow>();
@@ -56,10 +60,12 @@ public class DefinesWindow : EditorWindow {
     [SerializeField]
     private bool _isDebugPropChangeEnabled;
 
-    // UNCLEAR 2.10.17 Thought this was reqd to 'remember' but seems to work right 
-    ////[SerializeField]   
+    ////[SerializeField]
+    ////private bool _isProfilerEnabled;
+
     private bool _previousDebugLogEnabledValue = true;  // most of the time I have it enabled
     private bool _previousDebugPropChangeEnabledValue = true;
+    ////private bool _previousProfilerEnabledValue = true;
     private bool _isGuiEnabled = true;
 
     #region Event and Property Change Handlers
@@ -75,8 +81,10 @@ public class DefinesWindow : EditorWindow {
     void OnGUI() {
         CheckForRecompile();
         GUI.enabled = _isGuiEnabled;
-        _isDebugLogEnabled = GUILayout.Toggle(_isDebugLogEnabled, new GUIContent("Scripts Debug Log", "Check to compile D.Logs for all my loose scripts."));
-        _isDebugPropChangeEnabled = GUILayout.Toggle(_isDebugPropChangeEnabled, new GUIContent("Scripts Prop Validation", "Check to compile Property change name checks and equals warnings for all my loose scripts."));
+        _isDebugLogEnabled = GUILayout.Toggle(_isDebugLogEnabled, new GUIContent("Scripts Debug Log Enabled", "Check to compile D.Logs for all my loose scripts."));
+        _isDebugPropChangeEnabled = GUILayout.Toggle(_isDebugPropChangeEnabled, new GUIContent("Scripts Property Validation Enabled", "Check to compile Property change name checks and equals warnings for all my loose scripts."));
+        ////_isProfilerEnabled = GUILayout.Toggle(_isProfilerEnabled, new GUIContent("Scripts Profiler Enabled", "Check to compile Profiler code for all my loose scripts."));
+
         GUI.enabled = true;
         if (_isGuiEnabled && _isDebugLogEnabled != _previousDebugLogEnabledValue) {
             _previousDebugLogEnabledValue = _isDebugLogEnabled;
@@ -86,6 +94,10 @@ public class DefinesWindow : EditorWindow {
             _previousDebugPropChangeEnabledValue = _isDebugPropChangeEnabled;
             DebugPropEnabledChangedHandler();
         }
+        ////if (_isGuiEnabled && _isProfilerEnabled != _previousProfilerEnabledValue) {
+        ////    _previousProfilerEnabledValue = _isProfilerEnabled;
+        ////    DebugProfilerEnabledChangedHandler();
+        ////}
     }
 
     private void PlayModeStateChangedEventHandler() {
@@ -99,6 +111,11 @@ public class DefinesWindow : EditorWindow {
     }
 
     private void DebugPropEnabledChangedHandler() {
+        CheckConditionalCompilationSettings();
+    }
+
+    [Obsolete("Unity does not allow removal of Defines installed by Unity")]
+    private void DebugProfilerEnabledChangedHandler() {
         CheckConditionalCompilationSettings();
     }
 
@@ -127,13 +144,16 @@ public class DefinesWindow : EditorWindow {
 
     private void CheckConditionalCompilationSettings() {
         BuildTargetGroup[] platformTargets = new BuildTargetGroup[1] { BuildTargetGroup.Standalone };
-        IList<string> definesToInclude = new List<string>() { Define_DebugError, Define_DebugWarn, Define_GridFramework };
+        IList<string> definesToInclude = new List<string>() { Define_DebugError, Define_DebugWarn, Define_DebugLogBold, Define_GridFramework };
         if (_isDebugLogEnabled) {
             definesToInclude.Add(Define_DebugLog);
         }
         if (_isDebugPropChangeEnabled) {
             definesToInclude.Add(Define_DebugValidatePropertyChange);
         }
+        ////if (_isProfilerEnabled) {
+        ////    definesToInclude.Add(Define_EnableProfiler);
+        ////}
         UnityEditorUtility.ResetConditionalCompilation(platformTargets, definesToInclude.ToArray<string>());
     }
 
@@ -158,6 +178,14 @@ public class DefinesWindow : EditorWindow {
                 return -1;
             }
             if (_baseComparer.Compare(y, DefinesWindow.Define_DebugLog) == 0) {
+                return 1;
+            }
+
+            // DEBUG_LOGBOLD comes next
+            if (_baseComparer.Compare(x, DefinesWindow.Define_DebugLogBold) == 0) {
+                return -1;
+            }
+            if (_baseComparer.Compare(y, DefinesWindow.Define_DebugLogBold) == 0) {
                 return 1;
             }
 

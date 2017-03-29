@@ -28,8 +28,8 @@ using UnityEngine.Profiling;
 /// <summary>
 /// Abstract class for AMortalItems that are Planetoid (Planet and Moon) Items.
 /// </summary>
-public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, ICameraFollowable, IFleetNavigable, IUnitAttackable, IShipAttackable,
-    ISensorDetectable, IAvoidableObstacle, IShipOrbitable {
+public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, ICameraFollowable, IFleetNavigable, /*IUnitAttackable,*/
+    IShipBombardable, ISensorDetectable, IAvoidableObstacle, IShipOrbitable {
 
     // 8.21.16 Removed static, unused MaxOrbitalSpeed as not worthwhile maintaining once SystemCreator static values were removed
 
@@ -186,6 +186,11 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
 
     protected override void ShowSelectedItemHud() {
         SelectedItemHudWindow.Instance.Show(FormID.SelectedPlanetoid, UserReport);
+    }
+
+    protected sealed override void HandleInfoAccessChangedFor(Player player) {
+        base.HandleInfoAccessChangedFor(player);
+        ParentSystem.AssessWhetherToFireInfoAccessChangedEventFor(player);
     }
 
     /// <summary>
@@ -424,9 +429,9 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
 
     #endregion
 
-    #region IShipAttackable Members
+    #region IShipBombardable Members
 
-    public ApStrafeDestinationProxy GetApStrafeTgtProxy(ValueRange<float> desiredWeaponsRangeEnvelope, IShip ship) {
+    public ApBesiegeDestinationProxy GetApBesiegeTgtProxy(ValueRange<float> desiredWeaponsRangeEnvelope, IShip ship) {
         float shortestDistanceFromTgtToTgtSurface = Radius;
         float innerProxyRadius = desiredWeaponsRangeEnvelope.Minimum + shortestDistanceFromTgtToTgtSurface;
         float minInnerProxyRadiusToAvoidCollision = _obstacleZoneCollider.radius + ship.CollisionDetectionZoneRadius;
@@ -436,22 +441,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         float outerProxyRadius = desiredWeaponsRangeEnvelope.Maximum + shortestDistanceFromTgtToTgtSurface;
         D.Assert(outerProxyRadius > innerProxyRadius);
 
-        ApStrafeDestinationProxy attackProxy = new ApStrafeDestinationProxy(this, ship, innerProxyRadius, outerProxyRadius);
-        D.Log(ShowDebugLog, "{0} has constructed an AttackProxy with an ArrivalWindowDepth of {1:0.#} units.", DebugName, attackProxy.ArrivalWindowDepth);
-        return attackProxy;
-    }
-
-    public ApBombardDestinationProxy GetApBombardTgtProxy(ValueRange<float> desiredWeaponsRangeEnvelope, IShip ship) {
-        float shortestDistanceFromTgtToTgtSurface = Radius;
-        float innerProxyRadius = desiredWeaponsRangeEnvelope.Minimum + shortestDistanceFromTgtToTgtSurface;
-        float minInnerProxyRadiusToAvoidCollision = _obstacleZoneCollider.radius + ship.CollisionDetectionZoneRadius;
-        if (innerProxyRadius < minInnerProxyRadiusToAvoidCollision) {
-            innerProxyRadius = minInnerProxyRadiusToAvoidCollision;
-        }
-        float outerProxyRadius = desiredWeaponsRangeEnvelope.Maximum + shortestDistanceFromTgtToTgtSurface;
-        D.Assert(outerProxyRadius > innerProxyRadius);
-
-        ApBombardDestinationProxy attackProxy = new ApBombardDestinationProxy(this, ship, innerProxyRadius, outerProxyRadius);
+        ApBesiegeDestinationProxy attackProxy = new ApBesiegeDestinationProxy(this, ship, innerProxyRadius, outerProxyRadius);
         D.Log(ShowDebugLog, "{0} has constructed an AttackProxy with an ArrivalWindowDepth of {1:0.#} units.", DebugName, attackProxy.ArrivalWindowDepth);
         return attackProxy;
     }

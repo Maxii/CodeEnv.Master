@@ -57,7 +57,7 @@ public class SettlementCreator : AAutoUnitCreator {
         _command.HQElement = _command.SelectHQElement();
     }
 
-    protected override bool DeployUnit() {
+    protected override bool PositionUnit() {
         LogEvent(); // 10.6.16 Selection of system to deploy to moved to UniverseCreator
         var system = gameObject.GetSingleComponentInParents<SystemItem>();
         system.Settlement = _command;

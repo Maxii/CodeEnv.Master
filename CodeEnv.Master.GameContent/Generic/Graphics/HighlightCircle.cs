@@ -97,7 +97,7 @@ namespace CodeEnv.Master.GameContent {
         private void InitializeCamera() {
             if (VectorLine.canvas == null) {
                 //D.Log("Initializing HighlightCircle Camera and RenderMode.");
-                VectorLine.SetCanvasCamera(References.GuiCameraControl.GuiCamera);  // sets up the canvas
+                VectorLine.SetCanvasCamera(GameReferences.GuiCameraControl.GuiCamera);  // sets up the canvas
                 //D.Log("{0}: Canvas RenderMode is now {1}.", LineName, VectorLine.canvas.renderMode.GetValueName());
                 //VectorLine.canvas.renderMode = RenderMode.ScreenSpaceCamera;    // SetCanvasCamera() sets mode to ScreenSpaceCamera
                 VectorLine.canvas.planeDistance = 1;

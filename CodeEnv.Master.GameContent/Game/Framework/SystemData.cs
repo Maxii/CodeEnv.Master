@@ -86,7 +86,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="owner">The owner.</param>
         public SystemData(ISystem system, Player owner)
             : base(system, owner) {
-            SectorID = References.SectorGrid.GetSectorIDThatContains(Position);
+            SectorID = GameReferences.SectorGrid.GetSectorIDThatContains(Position);
             Topography = Topography.System;
             Subscribe();
         }

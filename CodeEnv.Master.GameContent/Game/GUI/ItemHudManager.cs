@@ -40,7 +40,7 @@ namespace CodeEnv.Master.GameContent {
 
         public ItemHudManager(APublisher publisher) {
             _publisher = publisher;
-            _jobMgr = References.JobManager;
+            _jobMgr = GameReferences.JobManager;
         }
 
         public void ShowHud() {
@@ -54,7 +54,7 @@ namespace CodeEnv.Master.GameContent {
         private void Show(bool toShow) {
             if (toShow) {
                 if (_hudRefreshJob == null) {
-                    var itemHud = References.HoveredItemHudWindow;
+                    var itemHud = GameReferences.HoveredItemHudWindow;
                     string jobName = "{0}.HudRefreshJob".Inject(GetType().Name);
                     // Note: This job refreshes the values in the HUD as item values can change when the game is not paused.
                     // When the game is paused, this refresh is unneeded. OPTIMIZE The job is not required to make
@@ -68,7 +68,7 @@ namespace CodeEnv.Master.GameContent {
             }
             else {
                 KillHudRefreshJob();
-                References.HoveredItemHudWindow.Hide();
+                GameReferences.HoveredItemHudWindow.Hide();
             }
         }
 

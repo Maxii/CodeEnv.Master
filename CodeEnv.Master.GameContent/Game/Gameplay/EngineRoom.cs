@@ -52,19 +52,6 @@ namespace CodeEnv.Master.GameContent {
         private static Vector3 _localSpaceForward = Vector3.forward;
 
         /// <summary>
-        /// Indicates whether forward, reverse or collision avoidance propulsion is engaged.
-        /// </summary>
-        public bool IsPropulsionEngaged {
-            get {
-                //D.Log(ShowDebugLog, "{0}.IsPropulsionEngaged called. Forward = {1}, Reverse = {2}, CA = {3}.",
-                //    DebugName, IsForwardPropulsionEngaged, IsReversePropulsionEngaged, IsCollisionAvoidanceEngaged);
-                return IsForwardPropulsionEngaged || IsReversePropulsionEngaged || IsCollisionAvoidanceEngaged;
-            }
-        }
-
-        public bool IsDriftCorrectionUnderway { get { return _driftCorrector.IsCorrectionUnderway; } }
-
-        /// <summary>
         /// The current speed of the ship in Units per hour including any current drift velocity. 
         /// Whether paused or at a GameSpeed other than Normal (x1), this property always returns the proper reportable value.
         /// <remarks>Cheaper than ActualForwardSpeedValue.</remarks>
@@ -82,11 +69,24 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
+        /// Indicates whether forward, reverse or collision avoidance propulsion is engaged.
+        /// </summary>
+        internal bool IsPropulsionEngaged {
+            get {
+                //D.Log(ShowDebugLog, "{0}.IsPropulsionEngaged called. Forward = {1}, Reverse = {2}, CA = {3}.",
+                //    DebugName, IsForwardPropulsionEngaged, IsReversePropulsionEngaged, IsCollisionAvoidanceEngaged);
+                return IsForwardPropulsionEngaged || IsReversePropulsionEngaged || IsCollisionAvoidanceEngaged;
+            }
+        }
+
+        internal bool IsDriftCorrectionUnderway { get { return _driftCorrector.IsCorrectionUnderway; } }
+
+        /// <summary>
         /// The CurrentSpeed value in UnitsPerHour the ship is intending to achieve.
         /// </summary>
-        public float IntendedCurrentSpeedValue { get; private set; }
+        internal float IntendedCurrentSpeedValue { get; private set; }
 
-        public float __PreviousIntendedCurrentSpeedValue { get; private set; }    // HACK
+        internal float __PreviousIntendedCurrentSpeedValue { get; private set; }    // HACK
 
         /// <summary>
         /// The Speed the ship has been ordered to execute.
@@ -153,9 +153,9 @@ namespace CodeEnv.Master.GameContent {
             _shipData = shipData;
             _shipTransform = shipTransform;
             _shipRigidbody = shipRigidbody;
-            _gameMgr = References.GameManager;
+            _gameMgr = GameReferences.GameManager;
             _gameTime = GameTime.Instance;
-            _jobMgr = References.JobManager;
+            _jobMgr = GameReferences.JobManager;
             _driftCorrector = new DriftCorrector(shipTransform, shipRigidbody, DebugName);
             Subscribe();
         }
@@ -587,7 +587,7 @@ namespace CodeEnv.Master.GameContent {
                 ApplyCollisionAvoidancePropulsionIn(worldSpaceDirectionToAvoidCollision);
                 if ((currentDate = _gameTime.CurrentDate) > logDate) {
                     if (!isInformedOfLogging) {
-                        D.Log(/*ShowDebugLog,*/ "{0}: CurrentDate {1} > LogDate {2} while avoiding collision. IsFtlDamped = {3}.",
+                        D.Log(ShowDebugLog, "{0}: CurrentDate {1} > LogDate {2} while avoiding collision. IsFtlDamped = {3}.",
                             DebugName, currentDate, logDate, _shipData.IsFtlDampedByField);
                         isInformedOfLogging = true;
                     }

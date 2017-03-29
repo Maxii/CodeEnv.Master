@@ -90,6 +90,14 @@ namespace CodeEnv.Master.Common {
         private int _uniqueID;
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="Job"/> class for use when pre-building Jobs for later use
+        /// utilizing Job.Restart().
+        /// </summary>
+        public Job() {
+            IsCompleted = true;
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Job"/> class.
         /// <remarks>Warning: See Note 1 above on the time delay that comes from using the optional delegate jobCompleted.</remarks>
         /// </summary>

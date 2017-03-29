@@ -32,7 +32,7 @@ public class GuiCameraControl : AMonoSingleton<GuiCameraControl>, IGuiCameraCont
 
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
-        References.GuiCameraControl = _instance;
+        GameReferences.GuiCameraControl = _instance;
     }
 
     protected override void InitializeOnAwake() {
@@ -55,7 +55,7 @@ public class GuiCameraControl : AMonoSingleton<GuiCameraControl>, IGuiCameraCont
     }
 
     protected override void Cleanup() {
-        References.GuiCameraControl = null;
+        GameReferences.GuiCameraControl = null;
     }
 
     public override string ToString() {

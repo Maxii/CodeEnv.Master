@@ -60,6 +60,8 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmd, ISettlementCm
         get { return _publisher = _publisher ?? new SettlementPublisher(Data, this); }
     }
 
+    private bool _hasInfoAccessToOwner;
+
     #region Initialization
 
     protected override AFormationManager InitializeFormationMgr() {
@@ -81,6 +83,35 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmd, ISettlementCm
 
     public FacilityReport[] GetElementReports(Player player) {
         return Elements.Cast<FacilityItem>().Select(e => e.GetReport(player)).ToArray();
+    }
+
+    /// <summary>
+    /// Assesses whether to fire its infoAccessChanged event.
+    /// <remarks>Implemented by some undetectable Items - System, SettlementCmd
+    /// and Sector. All three allow a change in access to Owner while in IntelCoverage.Basic
+    /// without requiring an increase in IntelCoverage. FleetCmd and StarbaseCmd are the other
+    /// two undetectable Items, but they only change access to Owner when IntelCoverage
+    /// exceeds Basic.</remarks>
+    /// <remarks>3.22.17 This is the fix to a gnarly BUG that allowed changes in access to
+    /// Owner without an event alerting subscribers that it had occurred. The subscribers
+    /// relied on the event to keep their state correct, then found later that they had 
+    /// access to Owner when they expected they didn't. Access to owner determines the
+    /// response in a number of Interfaces like IFleetExplorable.IsExplorationAllowedBy(player).</remarks>
+    /// </summary>
+    /// <param name="player">The player.</param>
+    internal void AssessWhetherToFireInfoAccessChangedEventFor(Player player) {
+        if (_hasInfoAccessToOwner) {
+            // A Settlement provides access to its Owner under 2 circumstances. First, if IntelCoverage >= Essential,
+            // and second and more commonly, if its System provides access. A System provides access to its Owner
+            // when its Star or any of its Planetoids provides access. They in turn provide access if their IntelCoverage
+            // >= Essential. As IntelCoverage of Planetoids, Stars and Systems can't regress, once access is provided
+            // it can't be lost which means access to a Settlement's Owner can't be lost either.
+            return;
+        }
+        if (InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
+            _hasInfoAccessToOwner = true;
+            OnInfoAccessChanged(player);
+        }
     }
 
     /// <summary>

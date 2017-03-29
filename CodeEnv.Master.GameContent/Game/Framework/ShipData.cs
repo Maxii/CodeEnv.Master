@@ -167,7 +167,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float MaxTurnRate { get { return IsFtlOperational ? _ftlEngine.MaxTurnRate : _stlEngine.MaxTurnRate; } }
 
-        public override IntVector3 SectorID { get { return References.SectorGrid.GetSectorIDThatContains(Position); } }
+        public override IntVector3 SectorID { get { return GameReferences.SectorGrid.GetSectorIDThatContains(Position); } }
 
         public new ShipInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as ShipInfoAccessController; } }
 

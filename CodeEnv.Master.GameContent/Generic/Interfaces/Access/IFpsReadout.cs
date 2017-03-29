@@ -23,6 +23,11 @@ namespace CodeEnv.Master.GameContent {
 
         float FramesPerSecond { get; }
 
+        /// <summary>
+        /// Indicates whether this FPS Readout should display its value.
+        /// </summary>
+        bool IsReadoutToShow { get; set; }
+
     }
 }
 

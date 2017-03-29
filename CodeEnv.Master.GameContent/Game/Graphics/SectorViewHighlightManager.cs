@@ -38,7 +38,7 @@ namespace CodeEnv.Master.GameContent {
             //D.Log("{0}.Show({1}) called.", DebugName, toShow);
             if (toShow) {
                 D.Assert(!IsHighlightShowing, DebugName);
-                _sectorViewHighlight = References.GamePoolManager.SpawnHighlight(_trackedClientTransform.position);
+                _sectorViewHighlight = GameReferences.GamePoolManager.SpawnHighlight(_trackedClientTransform.position);
                 _sectorViewHighlight.SetTarget(_trackedClientItem);
                 _sectorViewHighlight.Color = TempGameValues.SectorHighlightColor;
                 _sectorViewHighlight.Alpha = 0.4F;  // Should follow color as color comes with its own alpha, typically 1.0
@@ -48,7 +48,7 @@ namespace CodeEnv.Master.GameContent {
             else {
                 D.Assert(IsHighlightShowing, DebugName);
                 _sectorViewHighlight.Show(false);
-                References.GamePoolManager.DespawnHighlight(_sectorViewHighlight.transform);
+                GameReferences.GamePoolManager.DespawnHighlight(_sectorViewHighlight.transform);
                 _sectorViewHighlight = null;
             }
         }

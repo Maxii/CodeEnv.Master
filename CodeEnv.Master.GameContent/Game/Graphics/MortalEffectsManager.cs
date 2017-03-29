@@ -36,7 +36,7 @@ namespace CodeEnv.Master.GameContent {
             if (effectSeqID == EffectSequenceID.Dying) {
                 // separate explosionSFXGo from ItemGo so destruction of ItemGo does not destroy explosionSFX before it is completed
                 GameObject explosionSFXGo = _generalFactory.MakeAutoDestruct3DAudioSFXInstance("ExplosionSFX", _effectsClient.Position);
-                References.SFXManager.PlaySFX(explosionSFXGo, SfxGroupID.Explosions);
+                GameReferences.SFXManager.PlaySFX(explosionSFXGo, SfxGroupID.Explosions);
 
                 _explosionEffect = _gamePoolMgr.Spawn(EffectID.Explosion, _effectsClient.Position);
                 _explosionEffect.effectFinishedOneShot += (source, args) => {

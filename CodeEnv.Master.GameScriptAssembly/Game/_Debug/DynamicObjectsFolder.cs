@@ -29,11 +29,11 @@ public class DynamicObjectsFolder : AFolderAccess<DynamicObjectsFolder>, IDynami
 
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
-        References.DynamicObjectsFolder = Instance;
+        GameReferences.DynamicObjectsFolder = Instance;
     }
 
     protected override void Cleanup() {
-        References.DynamicObjectsFolder = null;
+        GameReferences.DynamicObjectsFolder = null;
     }
 
     public override string ToString() {

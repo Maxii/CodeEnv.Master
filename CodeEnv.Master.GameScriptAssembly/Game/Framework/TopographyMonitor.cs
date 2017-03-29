@@ -60,14 +60,9 @@ public class TopographyMonitor : AColliderMonitor {
         Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
         var listener = other.GetComponent<ITopographyChangeListener>();
         Profiler.EndSample();
+
         if (listener != null) {
-            if (__ValidateTopographyChange(listener)) {
-                listener.ChangeTopographyTo(ParentItem.Topography);
-            }
-            else {
-                D.Warn("{0} was unable to validate {1} when entering {2} at distance {3:0.#}.",
-                    DebugName, listener.DebugName, ParentItem.Topography.GetValueName(), Vector3.Distance(ParentItem.Position, listener.Position));
-            }
+            listener.ChangeTopographyTo(ParentItem.Topography);
         }
     }
 
@@ -85,13 +80,7 @@ public class TopographyMonitor : AColliderMonitor {
         Profiler.EndSample();
 
         if (listener != null) {
-            if (__ValidateTopographyChange(listener)) {
-                listener.ChangeTopographyTo(SurroundingTopography);
-            }
-            else {
-                D.Warn("{0} was unable to validate {1} when exiting {2} at distance {3:0.#}.",
-                    DebugName, listener.DebugName, ParentItem.Topography.GetValueName(), Vector3.Distance(ParentItem.Position, listener.Position));
-            }
+            listener.ChangeTopographyTo(SurroundingTopography);
         }
     }
 
@@ -103,12 +92,12 @@ public class TopographyMonitor : AColliderMonitor {
 
     protected override void HandleIsOperationalChanged() { }
 
+    #endregion
+
     protected override void CompleteResetForReuse() {
         base.CompleteResetForReuse();
         D.Error("{0} does not support reuse.", DebugName);
     }
-
-    #endregion
 
     #region Debug
 
@@ -123,6 +112,7 @@ public class TopographyMonitor : AColliderMonitor {
     /// </summary>
     /// <param name="listener">The listener.</param>
     /// <returns></returns>
+    [Obsolete("3.19.17 No longer in use as Unity BUG fixed. Also generates unnecessary warnings when units first appear on startup.")]
     private bool __ValidateTopographyChange(ITopographyChangeListener listener) {
         if (listener is IInterceptableOrdnance) {
             return true;    // 3.4.17 Ordnance naturally enters and exits this collider anywhere as it is pooled

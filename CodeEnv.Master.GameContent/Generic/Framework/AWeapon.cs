@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Abstract base class for an Element's offensive weapon.
     /// </summary>
-    public abstract class AWeapon : ARangedEquipment, IDebugable, IDisposable {
+    public abstract class AWeapon : ARangedEquipment, IDebugable, IDisposable, IDateMinderClient, IRecurringDateMinderClient {
 
         private static readonly GameTimeDuration FiringSolutionCheckPeriod = new GameTimeDuration(TempGameValues.HoursBetweenFiringSolutionChecks);
 
@@ -72,11 +72,10 @@ namespace CodeEnv.Master.GameContent {
 
         public IUnitElement Element { get { return RangeMonitor.ParentItem; } }
 
-        public float ReloadPeriod {
-            get {
-                float reloadPeriodMultiplier = RangeMonitor != null ? Owner.WeaponReloadPeriodMultiplier : Constants.OneF;
-                return Stat.ReloadPeriod * reloadPeriodMultiplier;
-            }
+        private GameTimeDuration _reloadPeriod;
+        public GameTimeDuration ReloadPeriod {
+            get { return _reloadPeriod; }
+            private set { SetProperty<GameTimeDuration>(ref _reloadPeriod, value, "ReloadPeriod"); }
         }
 
         public Player Owner { get { return RangeMonitor.Owner; } }
@@ -129,9 +128,22 @@ namespace CodeEnv.Master.GameContent {
         /// the key is removed before the target is destroyed.</remarks>
         /// </summary>
         private IDictionary<IElementAttackable, CombatResult> _combatResults;
+
+        /// <summary>
+        /// The date this weapon will be reloaded.
+        /// Once reloaded, this date will be default(GameDate) until the Weapon initiates reloading again.
+        /// </summary>
+        private GameDate _reloadedDate;
         private bool _isLoaded;
-        private Job _reloadJob;
-        private Job _checkForFiringSolutionsJob;
+
+        /// <summary>
+        /// The DateMinderDuration used to continuously check for firing solutions when none are initially found.
+        /// <remarks>Warning: RecurringDateMinder requires UNIQUE instances of DateMinderDuration. Accordingly,
+        /// this reference must be nulled and re-instantiated each time a checkForFiringSolutions process is ended/begun.
+        /// Use of the same instance when Removing followed by Adding can result in the added instance 
+        /// being removed before it is ever checked against a date.</remarks>
+        /// </summary>
+        private DateMinderDuration _firingSolutionsCheckProcessRecurringDuration;
         private GameTime _gameTime;
 
         /// <summary>
@@ -176,22 +188,24 @@ namespace CodeEnv.Master.GameContent {
             //D.Log(ShowDebugLog, "{0} received HandleEnemyTargetInRangeChanged. EnemyTarget: {1}, InRange: {2}.", DebugName, enemyTarget.DebugName, isInRange);
             if (isInRange) {
                 if (IsQualifiedEnemyTarget(enemyTarget)) {
-                    if (_qualifiedEnemyTargets.Contains(enemyTarget)) {
-                        D.Error("{0} found {1} already being tracked as enemy.", DebugName, enemyTarget.DebugName);
-                    }
-                    _qualifiedEnemyTargets.Add(enemyTarget);
+                    bool isAdded = _qualifiedEnemyTargets.Add(enemyTarget);
+                    D.Assert(isAdded, "{0} found {1} already being tracked as enemy.".Inject(DebugName, enemyTarget.DebugName));
+
+                    __TryAddToPeakEnemiesInRange();
                 }
             }
             else {
-                // Note: Some targets going out of range may not have been qualified as targets for this Weapon.
-                // Also, a qualified target can die (goes out of range) from other Weapons fire before it is ever added
-                // to this one, so if it is not present, it was never added to this Weapon because it was immediately killed
-                // by other Weapons as it was being added to them.
-                if (_qualifiedEnemyTargets.Contains(enemyTarget)) {
-                    _qualifiedEnemyTargets.Remove(enemyTarget);
-                    ReportCombatResults(enemyTarget);   // IMPROVE report at later time (combat over?) as not all results are
-                }                                       // available when the target moves out of the Monitor's range, aka missile
-            }                                           // range can be larger or smaller than monitor range
+                bool isPresent = _qualifiedEnemyTargets.Remove(enemyTarget);
+                if (isPresent) {
+                    // Note: Some targets going out of range may not have been qualified as targets for this Weapon so they won't be present
+                    // Also, a qualified target can die (goes out of range) from other Weapons fire before it is ever added
+                    // to this one, so if it is not present, it was never added to this Weapon because it was immediately killed
+                    // by other Weapons as it was being added to them.
+                    ReportCombatResults(enemyTarget);
+                    // IMPROVE report at later time (combat over?) as not all results are available when the target moves out of the 
+                    // Monitor's range, aka missile range can be larger or smaller than monitor range
+                }
+            }
             IsAnyEnemyInRange = _qualifiedEnemyTargets.Any();
         }
 
@@ -220,10 +234,9 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public void HandleElementDeclinedToFire() {
             IsFiringSequenceUnderway = false;
-            AssessReadiness();
             // 3.27.16 AssessReadiness should make IsReady = true, and call AssessReadinessToFire(). This re-assessment
-            // will look for targets again, and if it can't find any firing solutions, will call LaunchFiringSolutionsCheckJob
-            //// LaunchFiringSolutionsCheckJob();
+            // will look for targets again, and if it can't find any firing solutions, will call InitiateFiringSolutionsCheckProcess
+            AssessReadiness();
         }
 
         /// <summary>
@@ -263,11 +276,17 @@ namespace CodeEnv.Master.GameContent {
 
             if (IsOperational) {
                 // Beams call this when they terminate due to this Weapon's loss of operations
-                InitiateReloadCycle();
+                InitiateReloadProcess();
             }
         }
 
         #region Event and Property Change Handlers
+
+        protected override void HandleInitialActivation() {
+            base.HandleInitialActivation();
+            // IMPROVE If/when Owner's ReloadPeriodMultiplier can change, ReloadPeriod will need to change with it
+            ReloadPeriod = new GameTimeDuration(Stat.ReloadPeriod * Owner.WeaponReloadPeriodMultiplier);
+        }
 
         protected override void HandleRangeDistanceChanged() {
             base.HandleRangeDistanceChanged();
@@ -282,7 +301,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void IsAnyEnemyInRangePropChangedHandler() {
             if (!IsAnyEnemyInRange) {
-                KillFiringSolutionsCheckJob();
+                KillFiringSolutionsCheckProcess();
             }
             AssessReadinessToFire();
         }
@@ -302,12 +321,12 @@ namespace CodeEnv.Master.GameContent {
             if (IsOperational) {
                 // just became operational so if not already loaded, reload
                 if (!_isLoaded) {
-                    InitiateReloadCycle();
+                    InitiateReloadProcess();
                 }
             }
             else {
                 // just lost operational status so kill any reload in process
-                KillReloadJob();
+                KillReloadProcess();
             }
             AssessReadiness();
             OnIsOperationalChanged();
@@ -315,7 +334,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void IsReadyPropChangedHandler() {
             if (!IsReady) {
-                KillFiringSolutionsCheckJob();
+                KillFiringSolutionsCheckProcess();
             }
             AssessReadinessToFire();
         }
@@ -351,30 +370,17 @@ namespace CodeEnv.Master.GameContent {
             return true;    // UNDONE
         }
 
-        private void InitiateReloadCycle() {
-            D.AssertNull(_reloadJob, DebugName);
-            //D.Log(ShowDebugLog, "{0} is initiating its reload cycle. Duration: {1:0.#} hours.", DebugName, ReloadPeriod);
-
-            string jobName = "{0}.ReloadJob".Inject(DebugName);
-            _reloadJob = _jobMgr.WaitForHours(ReloadPeriod, jobName, waitFinished: (jobWasKilled) => {
-                if (jobWasKilled) {
-                    // 12.12.16 An AssertNull(_jobRef) here can fail as the reference can refer to a new Job, created 
-                    // right after the old one was killed due to the 1 frame delay in execution of jobCompleted(). My attempts at allowing
-                    // the AssertNull to occur failed. I believe this is OK as _jobRef is nulled from KillXXXJob() and, if 
-                    // the reference is replaced by a new Job, then the old Job is no longer referenced which is the objective. Jobs Kill()ed
-                    // centrally by JobManager won't null the reference, but this only occurs during scene transitions.
-                }
-                else {
-                    _reloadJob = null;
-                    HandleReloaded();
-                }
-            });
+        private void InitiateReloadProcess() {
+            //D.Log(ShowDebugLog, "{0} is initiating its reload process. Duration: {1}.", DebugName, ReloadPeriod);
+            D.AssertDefault(_reloadedDate);
+            _reloadedDate = new GameDate(ReloadPeriod);
+            _gameTime.DateMinder.Add(_reloadedDate, this);
         }
 
-        private void KillReloadJob() {
-            if (_reloadJob != null) {
-                _reloadJob.Kill();
-                _reloadJob = null;
+        private void KillReloadProcess() {
+            if (_reloadedDate != default(GameDate)) {
+                _gameTime.DateMinder.Remove(_reloadedDate, this);
+                _reloadedDate = default(GameDate);
             }
         }
 
@@ -393,7 +399,7 @@ namespace CodeEnv.Master.GameContent {
                 OnReadyToFire(firingSolutions);
             }
             else {
-                LaunchFiringSolutionsCheckJob();
+                InitiateFiringSolutionsCheckProcess();
             }
         }
 
@@ -410,28 +416,19 @@ namespace CodeEnv.Master.GameContent {
         /// expected, given movement and attitude changes of both the firing element and
         /// the targets.</remarks>
         /// </summary>
-        private void LaunchFiringSolutionsCheckJob() {
-            KillFiringSolutionsCheckJob();
+        private void InitiateFiringSolutionsCheckProcess() {
+            KillFiringSolutionsCheckProcess();
             D.Assert(IsReady);
             D.Assert(IsAnyEnemyInRange);
-            //D.Log(ShowDebugLog, "{0}: Launching FiringSolutionsCheckJob.", DebugName);
-            IList<WeaponFiringSolution> firingSolutions;
-            string jobName = "{0}.CheckForFiringSolutionsJob".Inject(DebugName);
-            _checkForFiringSolutionsJob = _jobMgr.RecurringWaitForHours(FiringSolutionCheckPeriod, jobName, waitMilestone: () => {
-                if (TryGetFiringSolutions(out firingSolutions)) {
-                    //D.Log(ShowDebugLog, "{0}.CheckForFiringSolutions() Job has uncovered one or more firing solutions.", DebugName);
-                    IsFiringSequenceUnderway = true;
-                    OnReadyToFire(firingSolutions);
-                    KillFiringSolutionsCheckJob();
-                }
-            });
+            //D.Log(ShowDebugLog, "{0}: Initiating FiringSolutionsCheckProcess.", DebugName);
+            _firingSolutionsCheckProcessRecurringDuration = new DateMinderDuration(FiringSolutionCheckPeriod, this);
+            _gameTime.RecurringDateMinder.Add(_firingSolutionsCheckProcessRecurringDuration);
         }
 
-        private void KillFiringSolutionsCheckJob() {
-            if (_checkForFiringSolutionsJob != null) {
-                //D.Log(ShowDebugLog, "{0} FiringSolutionsCheckJob is being killed.", DebugName);
-                _checkForFiringSolutionsJob.Kill();
-                _checkForFiringSolutionsJob = null;
+        private void KillFiringSolutionsCheckProcess() {
+            if (_firingSolutionsCheckProcessRecurringDuration != null) {
+                _gameTime.RecurringDateMinder.Remove(_firingSolutionsCheckProcessRecurringDuration);
+                _firingSolutionsCheckProcessRecurringDuration = null;
             }
         }
 
@@ -508,9 +505,25 @@ namespace CodeEnv.Master.GameContent {
 
         private void Cleanup() {
             // 12.8.16 Job Disposal centralized in JobManager
-            KillReloadJob();
-            KillFiringSolutionsCheckJob();
+            KillReloadProcess();
+            KillFiringSolutionsCheckProcess();
         }
+
+        #region Debug
+
+        private static int __peakEnemiesInRangeCount;
+
+        private void __TryAddToPeakEnemiesInRange() {
+            if (_qualifiedEnemyTargets.Count > __peakEnemiesInRangeCount) {
+                __peakEnemiesInRangeCount = _qualifiedEnemyTargets.Count;
+            }
+        }
+
+        public static void __ReportPeakEnemiesInRange() {
+            Debug.LogFormat("Weapons report PeakEnemiesInRange = {0}.", __peakEnemiesInRangeCount);
+        }
+
+        #endregion
 
         public sealed override string ToString() { return Stat.ToString(); }
 
@@ -632,6 +645,30 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        #region IDateMinderClient Members
+
+        void IDateMinderClient.HandleDateReached(GameDate date) {
+            D.AssertEqual(_reloadedDate, date);
+            _reloadedDate = default(GameDate);
+            HandleReloaded();
+        }
+
+        #endregion
+
+        #region IRecurringDateMinderClient Members
+
+        void IRecurringDateMinderClient.HandleDateReached(DateMinderDuration recurringDuration) {
+            D.AssertEqual(_firingSolutionsCheckProcessRecurringDuration, recurringDuration);
+            IList<WeaponFiringSolution> firingSolutions;
+            if (TryGetFiringSolutions(out firingSolutions)) {
+                //D.Log(ShowDebugLog, "{0}'s FiringSolutionsCheckProcess has uncovered one or more firing solutions.", DebugName);
+                IsFiringSequenceUnderway = true;
+                OnReadyToFire(firingSolutions);
+                KillFiringSolutionsCheckProcess();
+            }
+        }
+
+        #endregion
 
     }
 }

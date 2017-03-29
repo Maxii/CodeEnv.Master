@@ -46,7 +46,7 @@ public class MyPoolManager : AMonoSingleton<MyPoolManager>, IMyPoolManager {
     /// </summary>
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
-        References.MyPoolManager = Instance;
+        GameReferences.MyPoolManager = Instance;
     }
 
     /// <summary>
@@ -175,7 +175,7 @@ public class MyPoolManager : AMonoSingleton<MyPoolManager>, IMyPoolManager {
     #region Cleanup
 
     protected override void Cleanup() {
-        References.MyPoolManager = null;
+        GameReferences.MyPoolManager = null;
     }
 
     #endregion

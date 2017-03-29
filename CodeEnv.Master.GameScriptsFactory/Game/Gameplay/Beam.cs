@@ -183,7 +183,8 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
         transform.rotation = finalRotation;
     }
 
-    void Update() {
+    protected override void ProcessUpdate() {
+        base.ProcessUpdate();
         var deltaTimeInHours = _gameTime.DeltaTime * _gameTime.GameSpeedAdjustedHoursPerSecond;
         OperateBeam(deltaTimeInHours);
         _cumHoursOperating += deltaTimeInHours;
@@ -256,19 +257,8 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
             }
             _impactedTarget = impactedTarget;
 
-            float percentOfBeamDuration = deltaTimeInHours / Weapon.Duration;    // the percentage of the beam's duration that deltaTime represents
+            TryApplyImpactForce(impactedGo, impactInfo.point, deltaTimeInHours);
 
-            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
-            var impactedTargetRigidbody = impactedGo.GetComponent<Rigidbody>();
-            Profiler.EndSample();
-
-            if (impactedTargetRigidbody != null && !impactedTargetRigidbody.isKinematic) {
-                // target has a normal rigidbody so apply impact force
-                float forceMagnitude = DamagePotential.Total * percentOfBeamDuration;
-                Vector3 force = transform.forward * forceMagnitude;
-                //D.Log(ShowDebugLog, "{0} applying impact force of {1} to {2}.", DebugName, force, impactedTarget.DisplayName);
-                impactedTargetRigidbody.AddForceAtPosition(force, impactInfo.point, ForceMode.Impulse);
-            }
             // accumulate total impact time on _impactedTarget
             _cumHoursOfImpactOnImpactedTarget += deltaTimeInHours;
         }
@@ -276,6 +266,34 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
             // hit something else that can't take damage so apply cumDamage to previous valid target, if any
             AssessApplyDamage();
         }
+    }
+
+    /// <summary>
+    /// Tries to apply the impact force to the impacted target.
+    /// Returns <c>true</c> if applied, false otherwise.
+    /// <remarks>The application of impact force for a Beam is not handled by the physics
+    /// engine as a Beam has no Rigidbody.</remarks>
+    /// </summary>
+    /// <param name="impactedGo">The impacted go.</param>
+    /// <param name="impactPoint">The impact point.</param>
+    /// <param name="deltaTimeInHours">The delta time in hours.</param>
+    /// <returns></returns>
+    private bool TryApplyImpactForce(GameObject impactedGo, Vector3 impactPoint, float deltaTimeInHours) {
+
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
+        var impactedTargetRigidbody = impactedGo.GetComponent<Rigidbody>();
+        Profiler.EndSample();
+
+        if (impactedTargetRigidbody != null && !impactedTargetRigidbody.isKinematic) {
+            // target has a normal rigidbody so apply impact force
+            float percentOfBeamDuration = deltaTimeInHours / Weapon.Duration;    // the percentage of the beam's duration that deltaTime represents
+            float forceMagnitude = DamagePotential.Total * percentOfBeamDuration;
+            Vector3 force = transform.forward * forceMagnitude;
+            //D.Log(ShowDebugLog, "{0} applying impact force of {1} to {2}.", DebugName, force, impactedTarget.DisplayName);
+            impactedTargetRigidbody.AddForceAtPosition(force, impactPoint, ForceMode.Impulse);
+            return true;
+        }
+        return false;
     }
 
     private void HandleShieldImpact(Shield shield, float deltaTimeInHours) {
@@ -349,7 +367,10 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
     }
 
     /// <summary>
-    /// Applies accumulated damage to the _impactedTarget, if any.
+    /// Applies accumulated damage to the _impactedTarget, if any. 
+    /// <remarks>Warning: Execution of this method can result in death of the target getting
+    /// the damage and in some cases, the immediate termination and despawn of this beam. Users
+    /// should test IsOperatoinal after use to determine whether to continue execution.</remarks>
     /// </summary>
     private void AssessApplyDamage() {
         //D.Log(ShowDebugLog, "{0}.AssessApplyDamage() called.", DebugName);
@@ -365,18 +386,26 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
             return;
         }
 
-        DamageStrength cumDamageToApply = DamagePotential * (_cumHoursOfImpactOnImpactedTarget / Weapon.Duration);
-        //D.Log(ShowDebugLog, "{0} is applying hit of strength {1} to {2}.", DebugName, cumDamageToApply, _impactedTarget.DisplayName);
-        _impactedTarget.TakeHit(cumDamageToApply);
-
         if (_impactedTarget == Target) {
-            D.AssertNotNull(_impactedTarget, DebugName);    // 3.4.17 _impactedTarget in Log statement generated an NRE???
             D.Log(ShowDebugLog, "{0} has hit its intended target {1}.", DebugName, _impactedTarget.DebugName);
             _isIntendedTargetHit = true;
         }
         else {
             _isInterdicted = true;
         }
+
+        DamageStrength cumDamageToApply = DamagePotential * (_cumHoursOfImpactOnImpactedTarget / Weapon.Duration);
+        //D.Log(ShowDebugLog, "{0} is applying hit of strength {1} to {2}.", DebugName, cumDamageToApply, _impactedTarget.DisplayName);
+
+        // 3.20.17 There was a problem here where TakeHit resulted in death of _impactedTgt. When it was last warEnemy within
+        // SRSensor range, AlertStatus was immediately taken down from Red which deactivated all weapons including this Beam's
+        // weapon. When a Beam's weapon loses IsOperational status, the Beam immediately terminates which despawns it, resetting
+        // all fields to their default values. I solved this problem by deferring the assessment to stand down from RedAlert 
+        // which is what a real captain's behaviour would be like - aka only stand down when no more threats, including left over ordnance.
+        // 3.29.17 Still can terminate immediately after TakeHit, but won't Despawn until following frame.
+        // 3.29.17 Record the combat results, THEN use TakeHit. Allows accurate combat results when reported during Termination.
+        _impactedTarget.TakeHit(cumDamageToApply);
+
         _cumHoursOfImpactOnImpactedTarget = Constants.ZeroF;
         _impactedTarget = null;
     }

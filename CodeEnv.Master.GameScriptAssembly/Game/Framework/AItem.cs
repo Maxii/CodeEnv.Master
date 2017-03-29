@@ -121,7 +121,7 @@ public abstract class AItem : AMonoBase, IOwnerItem, IItem_Ltd, IShipNavigable {
     /// The PlayerAIManager for the owner of this item. 
     /// <remarks>Will be null if Owner is NoPlayer.</remarks>
     /// </summary>
-    protected PlayerAIManager OwnerAIMgr { get; private set; }
+    public PlayerAIManager OwnerAIMgr { get; private set; }
 
     protected AInfoAccessController InfoAccessCntlr { get { return Data.InfoAccessCntlr; } }
 
@@ -142,9 +142,9 @@ public abstract class AItem : AMonoBase, IOwnerItem, IItem_Ltd, IShipNavigable {
     }
 
     protected virtual void InitializeOnAwake() {
-        _inputMgr = References.InputManager;
-        _gameMgr = References.GameManager;
-        _jobMgr = References.JobManager;
+        _inputMgr = GameReferences.InputManager;
+        _gameMgr = GameReferences.GameManager;
+        _jobMgr = GameReferences.JobManager;
     }
 
     protected abstract bool InitializeDebugLog();

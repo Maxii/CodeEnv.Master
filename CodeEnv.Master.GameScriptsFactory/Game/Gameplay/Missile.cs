@@ -27,7 +27,7 @@ using UnityEngine.Profiling;
 /// <summary>
 /// Guided AProjectileOrdnance containing effects for muzzle flash, inFlight operation and impact.  
 /// </summary>
-public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
+public class Missile : AProjectileOrdnance, ITerminatableOrdnance, IRecurringDateMinderClient {
 
     /// <summary>
     /// The maximum heading change a Missile may be required to make in degrees.
@@ -98,12 +98,18 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
 
     protected new MissileLauncher Weapon { get { return base.Weapon as MissileLauncher; } }
 
+    /// <summary>
+    /// The fixed propulsion power reqd to propel this Missile at its MaxSpeed in OpenSpace.
+    /// <remarks>The physics engine will automatically degrade the speed this
+    /// propulsion can terminally achieve when in higher drag than found in OpenSpace.</remarks>
+    /// </summary>
+    private float _propulsionPower;
     private Job _muzzleEffectCompletionJob;
     private Job _impactEffectCompletionJob;
     private float _cumDistanceTraveled;
     private Vector3 _positionLastRangeCheck;
-    private Job _courseUpdateJob;
     private Job _chgHeadingJob;
+    private DateMinderDuration _courseUpdateRecurringDuration;
     private GameTimeDuration _courseUpdatePeriod;
     private bool _hasPushedOver;
     private DriftCorrector _driftCorrector;
@@ -119,6 +125,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         _rigidbody.velocity = ElementVelocityAtLaunch;
         _courseUpdatePeriod = new GameTimeDuration(1F / CourseUpdateFrequency);
         SteeringInaccuracy = CalcSteeringInaccuracy();
+        _propulsionPower = CalcPropulsionPower();
         target.deathOneShot += TargetDeathEventHandler;
         _driftCorrector.ClientName = DebugName;
         enabled = true;
@@ -202,7 +209,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
 
     protected override void HandleImpactEffectsBegun() {
         base.HandleImpactEffectsBegun();
-        KillCourseUpdateJob();
+        KillCourseUpdateProcess();
         KillChangeHeadingJob();
     }
 
@@ -226,7 +233,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
 
     private void HandlePushover() {
         //D.Log(ShowDebugLog, "{0} has reached pushover. Starting course updates to {1}.", DebugName, Target.DebugName);
-        LaunchCourseUpdateJob();
+        InitiateCourseUpdateProcess();
     }
 
     #region Event and Property Change Handlers
@@ -234,8 +241,8 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     protected override void OnSpawned() {
         base.OnSpawned();
         D.AssertDefault(_cumDistanceTraveled);
-        D.Assert(_positionLastRangeCheck == default(Vector3));  //D.AssertDefault(_positionLastRangeCheck);
-        D.AssertNull(_courseUpdateJob);
+        D.Assert(_positionLastRangeCheck == default(Vector3));
+        D.AssertNull(_courseUpdateRecurringDuration);
         D.AssertNull(_chgHeadingJob);
         D.AssertNull(_impactEffectCompletionJob);
         D.AssertNull(_muzzleEffectCompletionJob);
@@ -251,7 +258,12 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     }
 
     void FixedUpdate() {
-        ApplyThrust();
+        if (IsOperational) {
+            // 3.29.17 Added filter as was getting velocity after setting velocity to zero, but this didn't fix it.
+            // I fixed it by making the rigidbody kinematic when not IsOperational, removing it from physics.
+            // UNCLEAR what would happen without this filter now with a kinematic rigidbody.
+            ApplyThrust();
+        }
     }
 
     /// <summary>
@@ -274,7 +286,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         base.OnDespawned();
         _cumDistanceTraveled = Constants.ZeroF;
         _positionLastRangeCheck = Vector3.zero;
-        _courseUpdateJob = null;
+        _courseUpdateRecurringDuration = null;
         _chgHeadingJob = null;
         _impactEffectCompletionJob = null;
         _muzzleEffectCompletionJob = null;
@@ -287,19 +299,16 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     private void ApplyThrust() {
         // Note: Rigidbody.drag already adjusted for any Topography changes
         Vector3 headingBeforeThrust = CurrentHeading;
-        float propulsionPower = GameUtility.CalculateReqdPropulsionPower(MaxSpeed, Mass, _rigidbody.drag);
-        var gameSpeedAdjustedThrust = LocalSpaceForward * propulsionPower * _gameTime.GameSpeedAdjustedHoursPerSecond;
+        var gameSpeedAdjustedThrust = LocalSpaceForward * _propulsionPower * _gameTime.GameSpeedAdjustedHoursPerSecond;
         _rigidbody.AddRelativeForce(gameSpeedAdjustedThrust, ForceMode.Force);
         //D.Log(ShowDebugLog, "{0} applying thrust of {1}. Velocity is now {2}.", DebugName, gameSpeedAdjustedThrust.ToPreciseString(), _rigidbody.velocity.ToPreciseString());
     }
 
-    private void LaunchCourseUpdateJob() {
-        D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
-        D.AssertNull(_courseUpdateJob);
-        string jobName = "{0}.CourseUpdateJob".Inject(DebugName);
-        _courseUpdateJob = _jobMgr.RecurringWaitForHours(_courseUpdatePeriod, jobName, waitMilestone: () => {
-            CheckCourse();
-        });
+    private void InitiateCourseUpdateProcess() {
+        D.Assert(!_gameMgr.IsPaused);
+        D.AssertNull(_courseUpdateRecurringDuration);
+        _courseUpdateRecurringDuration = new DateMinderDuration(_courseUpdatePeriod, this);
+        _gameTime.RecurringDateMinder.Add(_courseUpdateRecurringDuration);
     }
 
     private void CheckCourse() {
@@ -314,7 +323,8 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         //D.Log(ShowDebugLog, "{0}.LaunchChangeHeadingJob() called.", DebugName);
         D.Assert(!_gameMgr.IsPaused, "Not allowed to create a Job while paused.");
         if (_chgHeadingJob != null) {
-            D.Warn("{0}.LaunchChangeHeadingJob() called while another already running.", DebugName);
+            D.Warn("{0}.LaunchChangeHeadingJob() called while another already running. FPS = {1:0.#}.",
+                DebugName, FpsReadout.Instance.FramesPerSecond);
             // -> course update freq is too high or turnRate too low as missile should be able to complete a turn between course updates
             KillChangeHeadingJob();
         }
@@ -423,6 +433,17 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         return UnityEngine.Random.Range(UnityConstants.AngleEqualityPrecision, Weapon.MaxSteeringInaccuracy);
     }
 
+    /// <summary>
+    /// Calculates the propulsion power reqd to propel this Missile at its
+    /// MaxSpeed in OpenSpace.
+    /// <remarks>The physics engine will automatically degrade the speed this
+    /// propulsion can terminally achieve when in higher drag than found in OpenSpace.</remarks>
+    /// </summary>
+    /// <returns></returns>
+    private float CalcPropulsionPower() {
+        return GameUtility.CalculateReqdPropulsionPower(MaxSpeed, Mass, OpenSpaceDrag);
+    }
+
     protected override float GetDistanceTraveled() {
         _cumDistanceTraveled += Vector3.Distance(Position, _positionLastRangeCheck);
         _positionLastRangeCheck = Position;
@@ -443,7 +464,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         KillImpactEffectCompletionJob();
         KillMuzzleEffectCompletionJob();
         KillChangeHeadingJob();
-        KillCourseUpdateJob();
+        KillCourseUpdateProcess();
         DisengageDriftCorrection();
         Target.deathOneShot -= TargetDeathEventHandler;
 
@@ -466,10 +487,10 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
         }
     }
 
-    private void KillCourseUpdateJob() {
-        if (_courseUpdateJob != null) {
-            _courseUpdateJob.Kill();
-            _courseUpdateJob = null;
+    private void KillCourseUpdateProcess() {
+        if (_courseUpdateRecurringDuration != null) {
+            _gameTime.RecurringDateMinder.Remove(_courseUpdateRecurringDuration);
+            _courseUpdateRecurringDuration = null;
         }
     }
 
@@ -505,7 +526,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     protected override void Cleanup() {
         base.Cleanup();
         // 12.8.16 Job Disposal centralized in JobManager
-        KillCourseUpdateJob();
+        KillCourseUpdateProcess();
         KillChangeHeadingJob();
         KillImpactEffectCompletionJob();
         KillMuzzleEffectCompletionJob();
@@ -590,6 +611,15 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance {
     #region ITerminatableOrdnance Members
 
     public void Terminate() { TerminateNow(); }
+
+    #endregion
+
+    #region IRecurringDateMinderClient Members
+
+    void IRecurringDateMinderClient.HandleDateReached(DateMinderDuration recurringDuration) {
+        D.AssertEqual(_courseUpdateRecurringDuration, recurringDuration);
+        CheckCourse();
+    }
 
     #endregion
 

@@ -846,6 +846,17 @@ public class UniverseCreator {
         _systemCreators.ForAll(sc => sc.CommenceSystemOperations());
     }
 
+    /// <summary>
+    /// Builds the Commands and Elements of each Unit from their Creator and positions the Unit to its deployment location.
+    /// <remarks>The Unit will not be operational until CommenceUnitOperationsOnDeployDate() is called.</remarks>
+    /// </summary>
+    public void BuildAndPositionUnits() {
+        _unitCreators.ForAll(uc => uc.BuildAndPositionUnit());
+    }
+
+    /// <summary>
+    /// Commences operations of the previously built and positioned Unit on its deploy date.
+    /// </summary>
     public void CommenceUnitOperationsOnDeployDate() {
         // 10.15.16 Initiate deployment of Settlements first so system ownership can be established before fleet orders are issued.
         // TODO Currently it doesn't matter as all Creators have either 'editor set' or 'random' DeployDates assigned. For release,

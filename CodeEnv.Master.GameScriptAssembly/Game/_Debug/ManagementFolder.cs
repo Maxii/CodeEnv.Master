@@ -39,7 +39,7 @@ public class ManagementFolder : AFolderAccess<ManagementFolder> {
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        _gameMgr = References.GameManager;
+        _gameMgr = GameReferences.GameManager;
         Subscribe();
     }
 

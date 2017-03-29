@@ -41,8 +41,8 @@ namespace CodeEnv.Master.GameContent {
 
         protected sealed override void Initialize() {
             //D.Log("{0}.Initialize() called.", DebugName);
-            _inputMgr = References.InputManager;
-            _sfxMgr = References.SFXManager;
+            _inputMgr = GameReferences.InputManager;
+            _sfxMgr = GameReferences.SFXManager;
             Subscribe();
         }
 
@@ -53,7 +53,7 @@ namespace CodeEnv.Master.GameContent {
         #region Events and Property Change Handlers
 
         private void UnconsumedPressEventHandler(object sender, EventArgs e) {
-            if (References.InputHelper.IsLeftMouseButton) {
+            if (GameReferences.InputHelper.IsLeftMouseButton) {
                 CurrentSelection = null;
             }
         }
@@ -71,7 +71,7 @@ namespace CodeEnv.Master.GameContent {
             else {
                 _sfxMgr.PlaySFX(SfxClipID.Select);  //TODO play a different sound indicating selection cleared
                 // Note: Hide() handled centrally here as ISelectable's don't know whether another item has been selected
-                References.SelectedItemHudWindow.Hide();
+                GameReferences.SelectedItemHudWindow.Hide();
             }
         }
 

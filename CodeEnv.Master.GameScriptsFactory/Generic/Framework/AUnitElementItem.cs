@@ -29,7 +29,8 @@ using UnityEngine.Profiling;
 /// <summary>
 /// Abstract class for AMortalItem's that are Unit Elements.
 /// </summary>
-public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, IUnitElement_Ltd, ICameraFollowable, IShipAttackable, ISensorDetectable {
+public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, IUnitElement_Ltd, ICameraFollowable, IShipBlastable,
+    ISensorDetectable {
 
     private const string __HQNameAddendum = "[HQ]";
 
@@ -166,8 +167,11 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     public override void FinalInitialize() {
         base.FinalInitialize();
         InitializeMonitorRanges();
-        Rigidbody.isKinematic = false;
+        __InitializeFinalRigidbodySettings();
+        ////Rigidbody.isKinematic = false;
     }
+
+    protected abstract void __InitializeFinalRigidbodySettings();
 
     private void InitializeMonitorRanges() {
         CountermeasureRangeMonitors.ForAll(crm => crm.InitializeRangeDistance());
@@ -193,6 +197,18 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
             // this change is reqd include a ship 'joins' another fleet, a facility 'joins?' a base
             transform.parent = unitContainer;
         }
+    }
+
+    /// <summary>
+    /// Called by this Element's UnitCmd when a change of the Cmd's HQElement has been completed.
+    /// <remarks>All the Cmd's Elements are notified of this completed change. Allows each element
+    /// to potentially take compensating action based on the CurrentState of the element.</remarks>
+    /// </summary>
+    public void HandleChangeOfHQStatusCompleted() {
+        D.Assert(!IsDead);
+        ////if (IsOperational) {
+        UponHQStatusChangeCompleted();
+        ////}
     }
 
     /// <summary>
@@ -717,6 +733,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     private void UponDamageIncurred() { RelayToCurrentState(); }
 
+    private void UponHQStatusChangeCompleted() { RelayToCurrentState(); }
+
     #endregion
 
     #region Combat Support
@@ -899,23 +917,16 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #endregion
 
-    #region Cleanup
-
-    protected override void Cleanup() {
-        base.Cleanup();
-        if (_detectionHandler != null) {
-            _detectionHandler.Dispose();
-        }
-    }
-
-    protected override void Unsubscribe() {
-        base.Unsubscribe();
-        CleanupIconSubscriptions();
-    }
-
-    #endregion
-
     #region Debug
+
+    public bool __TryGetIsHQChangedEventSubscribers(out string targetNames) {
+        if (isHQChanged != null) {
+            targetNames = isHQChanged.GetInvocationList().Select(d => d.Target.ToString()).Concatenate();
+            return true;
+        }
+        targetNames = null;
+        return false;
+    }
 
     protected abstract void __ValidateRadius(float radius);
 
@@ -1004,24 +1015,35 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         return isSubscribeActionTaken;
     }
 
-    protected void __ReportCollision(Collision collision) {
-        if (ShowDebugLog) {
+    // 3.7.17 Moved __ReportCollision(Collision collision) to Facility and Ship as needs differ
 
-            Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
-            var ordnance = collision.transform.GetComponent<AOrdnance>();
-            Profiler.EndSample();
-
-            if (ordnance == null) {
-                // its not ordnance we collided with so report it
-                SphereCollider sphereCollider = collision.collider as SphereCollider;
-                BoxCollider boxCollider = collision.collider as BoxCollider;
-                string colliderSizeMsg = (sphereCollider != null) ? "radius = " + sphereCollider.radius : ((boxCollider != null) ? "size = " + boxCollider.size.ToPreciseString() : "size unknown");
-                D.Log("While {0}, {1} collided with {2} whose {3}. Velocity after impact = {4}.",
-                    CurrentState.ToString(), DebugName, collision.collider.name, colliderSizeMsg, Rigidbody.velocity.ToPreciseString());
-                //D.Log("{0}: Detail on collision - Distance between collider centers = {1:0.##}", DebugName, Vector3.Distance(Position, collision.collider.transform.position));
-                // AngularVelocity no longer reported as element's rigidbody.freezeRotation = true
-            }
+    /// <summary>
+    /// The current speed of the element in Units per hour including any current drift velocity. 
+    /// <remarks>For debug. Uses Rigidbody.velocity. Not valid while paused.</remarks>
+    /// </summary>
+    protected float __ActualSpeedValue {
+        get {
+            Vector3 velocityPerSec = Rigidbody.velocity;
+            float value = velocityPerSec.magnitude / GameTime.Instance.GameSpeedAdjustedHoursPerSecond;
+            //D.Log(ShowDebugLog, "{0}.ActualSpeedValue = {1:0.00}.", DebugName, value);
+            return value;
         }
+    }
+
+    #endregion
+
+    #region Cleanup
+
+    protected override void Cleanup() {
+        base.Cleanup();
+        if (_detectionHandler != null) {
+            _detectionHandler.Dispose();
+        }
+    }
+
+    protected override void Unsubscribe() {
+        base.Unsubscribe();
+        CleanupIconSubscriptions();
     }
 
     #endregion
@@ -1036,7 +1058,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         D.Assert(IsOperational);
         DamageStrength damage = damagePotential - Data.DamageMitigation;
         if (damage.Total == Constants.ZeroF) {
-            //D.Log("{0} has been hit but incurred no damage.", DebugName);
+            //D.Log(ShowDebugLog, "{0} has been hit but incurred no damage.", DebugName);
             return;
         }
         D.Log(ShowDebugLog, "{0} has been hit. Taking {1:0.#} damage.", DebugName, damage.Total);
@@ -1060,9 +1082,9 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #endregion
 
-    #region IShipAttackable Members
+    #region IShipBlastable Members
 
-    public abstract ApBombardDestinationProxy GetApBombardTgtProxy(ValueRange<float> desiredWeaponsRangeEnvelope, IShip ship);
+    public abstract ApBesiegeDestinationProxy GetApBesiegeTgtProxy(ValueRange<float> desiredWeaponsRangeEnvelope, IShip ship);
 
     public abstract ApStrafeDestinationProxy GetApStrafeTgtProxy(ValueRange<float> desiredWeaponsRangeEnvelope, IShip ship);
 

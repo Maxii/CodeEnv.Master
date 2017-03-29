@@ -41,7 +41,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     /// <summary>
     /// The maximum speed of this projectile in units per hour when in Topography.OpenSpace.
     /// </summary>
-    [Range(0F, 5F)]
+    [Range(0F, 20F)]
     [Tooltip("MaxSpeed in Units/Hour. If Zero, MaxSpeed from WeaponStat will be used.")]
     [SerializeField]
     protected float _maxSpeed = Constants.ZeroF;
@@ -81,7 +81,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     protected override void Awake() {
         base.Awake();
         _rigidbody = UnityUtility.ValidateComponentPresence<Rigidbody>(gameObject);
-        _rigidbody.isKinematic = false;
+        _rigidbody.isKinematic = true;  // 3.29.17 When not active in scene, keep out of physics engine
         _rigidbody.useGravity = false;
         // rigidbody drag and mass now set from Launch
         _collider = UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
@@ -109,6 +109,8 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         D.AssertEqual(Layers.Projectiles, (Layers)gameObject.layer, ((Layers)gameObject.layer).GetValueName());
         _launchPosition = transform.position;
 
+        // 3.29.17 addition. Could being kinematic prior to this interfere with element's use of Physics.IgnoreCollision?
+        _rigidbody.isKinematic = false;
         _rigidbody.drag = OpenSpaceDrag * topography.GetRelativeDensity();
         _rigidbody.mass = Mass;
         AssessShowMuzzleEffects();
@@ -124,7 +126,8 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
 
     protected abstract AProjectileDisplayManager MakeDisplayMgr();
 
-    void Update() {   // OPTIMIZE a call to all projectiles to check progress could be done centrally
+    protected override void ProcessUpdate() {
+        base.ProcessUpdate();
         if (_checkProgressCounter >= CheckProgressCounterThreshold) {
             CheckProgress();
             _checkProgressCounter = Constants.Zero;
@@ -178,7 +181,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
             //D.Log(ShowDebugLog, "{0} collided with {1}.", DebugName, impactedTarget.DebugName);
             ContactPoint contactPoint = collision.contacts[0];
             // The application of impact force is already handled by the physics engine when regular rigidbodies collide
-            TryApplyImpactForce(impactedGo, contactPoint);
+            ////TryApplyImpactForce(impactedGo, contactPoint);
             if (impactedTarget.IsOperational) {
                 if (impactedTarget == Target) {
                     ReportTargetHit();
@@ -226,6 +229,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     /// <param name="impactedGo">The impacted go.</param>
     /// <param name="contactPoint">The contact point.</param>
     /// <returns></returns>
+    [Obsolete]
     private bool TryApplyImpactForce(GameObject impactedGo, ContactPoint contactPoint) {
 
         Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
@@ -272,9 +276,9 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     /// Virtual to allow override if I come up with a better equation.
     /// </summary>
     /// <returns></returns>
+    [Obsolete]
     protected virtual Vector3 GetForceOfImpact() {
-        Vector3 normalGameSpeedVelocityPerSec = _rigidbody.velocity / _gameTime.GameSpeedMultiplier;
-        return normalGameSpeedVelocityPerSec * _rigidbody.mass;
+        return _rigidbody.velocity * _rigidbody.mass;
     }
 
     protected abstract float GetDistanceTraveled();
@@ -291,12 +295,14 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         D.AssertNotNull(_collider);
         D.Assert(!_collider.enabled, DebugName);
         __ValidateColliderSize();
-        D.Assert(_launchPosition == default(Vector3));  //D.AssertDefault(_launchPosition);
+        D.Assert(_launchPosition == default(Vector3));
         D.Assert(!_hasWeaponFired);
         D.AssertDefault(_checkProgressCounter);
         D.Assert(!__isVelocityToRestoreAfterPauseRecorded);
         D.Assert(_velocityToRestoreAfterPause == default(Vector3));
         D.Assert(!__doesImpactEffectScaleNeedToBeRestored);
+        D.Assert(_rigidbody.velocity == default(Vector3), _rigidbody.velocity.ToPreciseString());
+        D.Assert(_rigidbody.isKinematic);
         // 12.15.16 Moved collider.enabled to Launch as enabling here caused collisions before Launch called
     }
 
@@ -323,9 +329,10 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         _checkProgressCounter = Constants.Zero;
         __isVelocityToRestoreAfterPauseRecorded = false;
         _velocityToRestoreAfterPause = default(Vector3);
+        D.Assert(_rigidbody.velocity == default(Vector3), _rigidbody.velocity.ToPreciseString());
+        D.Assert(_rigidbody.isKinematic);
         D.Assert(!_collider.enabled);
         D.Assert(!_displayMgr.IsDisplayEnabled);
-        D.Assert(_rigidbody.velocity == default(Vector3));
         D.Assert(!__doesImpactEffectScaleNeedToBeRestored);
     }
 
@@ -364,6 +371,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         _displayMgr.IsDisplayEnabled = false;
         // 12.15.16 Moved the following here to avoid any issue with Despawn changing parent
         _rigidbody.velocity = Vector3.zero;
+        _rigidbody.isKinematic = true;  // 3.29.17 Keeps projectiles from somehow regaining velocity between now and Despawn()
         _collider.enabled = false;  // UNCLEAR disabling the collider removes Physics.IgnoreCollision? 12.16.16 Probably not
         if (Weapon.Element.IsOperational) {  // avoids trying to access Destroyed gameObject
             Physics.IgnoreCollision(_collider, (Weapon.Element as Component).gameObject.GetSafeComponent<BoxCollider>(), ignore: false);   // HACK

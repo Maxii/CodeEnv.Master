@@ -49,7 +49,7 @@ namespace CodeEnv.Master.GameContent {
         public override bool keepWaiting {
             get {
                 bool continueWaiting = base.keepWaiting;
-                if (!continueWaiting && !_toKill) {
+                if (!continueWaiting && !IsKilled) {
                     RefreshValues();
                 }
                 return continueWaiting;

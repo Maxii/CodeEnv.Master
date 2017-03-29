@@ -230,7 +230,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="worldLocation">The world location.</param>
         /// <returns></returns>
         public Topography GetSpaceTopography(Vector3 worldLocation) {
-            IntVector3 sectorID = References.SectorGrid.GetSectorIDThatContains(worldLocation);
+            IntVector3 sectorID = GameReferences.SectorGrid.GetSectorIDThatContains(worldLocation);
             ISystem system;
             if (_systemLookupBySectorID.TryGetValue(sectorID, out system)) {
                 // the sector containing worldLocation has a system
@@ -400,7 +400,7 @@ namespace CodeEnv.Master.GameContent {
         #region Debug 
 
         private void __InitializeValidateKnowledge() {
-            References.DebugControls.validatePlayerKnowledgeNow += __ValidateKnowledgeNowEventHandler;
+            GameReferences.DebugControls.validatePlayerKnowledgeNow += __ValidateKnowledgeNowEventHandler;
         }
 
         private void __ValidateKnowledgeNowEventHandler(object sender, EventArgs e) {
@@ -417,7 +417,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void __CleanupValidateKnowledge() {
-            References.DebugControls.validatePlayerKnowledgeNow -= __ValidateKnowledgeNowEventHandler;
+            GameReferences.DebugControls.validatePlayerKnowledgeNow -= __ValidateKnowledgeNowEventHandler;
         }
 
         #endregion

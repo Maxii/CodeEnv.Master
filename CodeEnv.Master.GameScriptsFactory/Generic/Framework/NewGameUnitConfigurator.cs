@@ -397,14 +397,15 @@ public class NewGameUnitConfigurator {
             float deliveryStrengthValue = UnityEngine.Random.Range(6F, 8F);
             var damageCategory = Enums<DamageCategory>.GetRandom(excludeDefault: true);
             float damageValue = UnityEngine.Random.Range(6F, 16F);  // 3-8
-            float ordMaxSpeed = UnityEngine.Random.Range(4F, 6F);
-            float ordMass = 5F;
-            float ordDrag = 0.01F;
             float ordTurnRate = 700F;   // degrees per hour
-            float ordCourseUpdateFreq = 0.5F; // course updates per hour
+            float ordCourseUpdateFreq = 0.4F; // course updates per hour    // 3.18.17 0.5 got turn not complete warnings
             DamageStrength damagePotential = new DamageStrength(damageCategory, damageValue);
             WDVStrength deliveryVehicleStrength = new WDVStrength(deliveryVehicleCategory, deliveryStrengthValue);
             bool isDamageable = true;
+
+            float ordMaxSpeed = UnityEngine.Random.Range(8F, 12F);   // Ship STL MaxSpeed System = 1.6, OpenSpace = 8
+            float ordMass = 5F;
+            float ordDrag = 0.01F;
 
             var weapStat = new MissileWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F,
                 rangeCat, deliveryVehicleStrength, reloadPeriod, damagePotential, ordMaxSpeed, ordMass, ordDrag,
@@ -453,7 +454,7 @@ public class NewGameUnitConfigurator {
             WDVStrength deliveryVehicleStrength = new WDVStrength(deliveryVehicleCategory, deliveryStrengthValue);
             bool isDamageable = true;
 
-            float ordMaxSpeed = UnityEngine.Random.Range(6F, 8F);   // Ship STL MaxSpeed System = 1.6, OpenSpace = 8
+            float ordMaxSpeed = UnityEngine.Random.Range(15F, 18F);   // Ship STL MaxSpeed System = 1.6, OpenSpace = 8
             float ordMass = 1F;
             float ordDrag = 0.02F;
             weapStat = new ProjectileWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F, rangeCat,

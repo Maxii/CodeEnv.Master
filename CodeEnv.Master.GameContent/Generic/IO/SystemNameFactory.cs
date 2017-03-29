@@ -56,7 +56,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Subscribe() {
-            References.GameManager.newGameBuilding += NewGameBuildingEventHandler;
+            GameReferences.GameManager.newGameBuilding += NewGameBuildingEventHandler;
         }
 
         private void InitializeProperNamesFromXml() {
@@ -144,7 +144,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Unsubscribe() {
-            References.GameManager.newGameBuilding -= NewGameBuildingEventHandler;
+            GameReferences.GameManager.newGameBuilding -= NewGameBuildingEventHandler;
         }
 
         public override string ToString() {

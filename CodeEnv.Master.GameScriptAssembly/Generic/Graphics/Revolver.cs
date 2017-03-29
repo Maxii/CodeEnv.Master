@@ -73,7 +73,7 @@ public class Revolver : AMonoBase, IRevolver {
     protected override void Awake() {
         base.Awake();
         _gameTime = GameTime.Instance;
-        _gameMgr = References.GameManager;
+        _gameMgr = GameReferences.GameManager;
         _rotationPeriod = GameTimeDuration.OneDay;
         _rotationRate = _relativeRotationRate * Constants.DegreesPerRotation / (float)_rotationPeriod.TotalInHours;
         Subscribe();

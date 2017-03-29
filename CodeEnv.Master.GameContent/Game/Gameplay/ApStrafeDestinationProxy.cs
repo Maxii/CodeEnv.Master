@@ -24,13 +24,16 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ApStrafeDestinationProxy : ApMoveDestinationProxy {
 
-        public new IShipAttackable Destination { get { return base.Destination as IShipAttackable; } }
+        public new IShipBlastable Destination { get { return base.Destination as IShipBlastable; } }
 
         public ApStrafeDestinationProxy(IShipNavigable destination, IShip ship, float innerRadius, float outerRadius)
             : base(destination, ship, innerRadius, outerRadius) {
             RefreshStrafePosition();
         }
 
+        /// <summary>
+        /// Refreshes the position of this proxy for use in the next strafe attack.
+        /// </summary>
         public void RefreshStrafePosition() {
             Vector3 destToShipVector = _ship.Position - Position;
             Vector3 planeNormal = destToShipVector.normalized;
@@ -39,9 +42,13 @@ namespace CodeEnv.Master.GameContent {
             Vector3 closestPtOnPlaneToPtAlongShipFacing = Math3D.ProjectPointOnPlane(planeNormal, Position, ptAlongShipFacing);
             Vector3 destToStrafeTgtDirection = (closestPtOnPlaneToPtAlongShipFacing - Position).normalized;
             float destToStrafeTgtDistance = (Destination as IMortalItem).Radius;
-            Position = Destination.Position + destToStrafeTgtDirection * destToStrafeTgtDistance;
+            _destOffset = destToStrafeTgtDirection * destToStrafeTgtDistance;
         }
 
+        /// <summary>
+        /// Generates a waypoint where the ship can move to begin its strafe attack run.
+        /// </summary>
+        /// <returns></returns>
         public ApMoveDestinationProxy GenerateBeginRunWaypoint() {
             var directionToShipFromTgt = (_ship.Position - Position).normalized;
             var waypointVector = _ship.CurrentHeading + directionToShipFromTgt;   // HACK

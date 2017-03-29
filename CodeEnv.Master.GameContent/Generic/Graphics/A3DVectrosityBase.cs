@@ -95,7 +95,7 @@ namespace CodeEnv.Master.GameContent {
             _lineType = lineType;
             _lineWidth = width;
             _color = color;
-            VectorLine.SetCamera3D(References.MainCameraControl.MainCamera_Far);    // eliminates most jitter using MainCamera_Far
+            VectorLine.SetCamera3D(GameReferences.MainCameraControl.MainCamera_Far);    // eliminates most jitter using MainCamera_Far
         }
 
         protected virtual void Initialize() {
