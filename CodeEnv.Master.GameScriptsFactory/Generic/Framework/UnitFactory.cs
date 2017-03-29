@@ -851,12 +851,64 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     /// <summary>
+    /// Makes or acquires an existing SensorRangeMonitor and attaches it to this sensor.
+    /// Note: The monitor will be added and its events hooked up to the element when the element's data is attached.
+    /// </summary>
+    /// <param name="sensor">The countermeasure.</param>
+    /// <param name="element">The element.</param>
+    private void AttachMonitor(ElementSensor sensor, AUnitElementItem element) {
+        D.AssertNull(sensor.RangeMonitor);
+        D.AssertEqual(RangeCategory.Short, sensor.RangeCategory);
+        var srMonitor = element.gameObject.GetComponentInChildren<ElementSensorRangeMonitor>();
+
+        // check monitors for range fit, if find it, assign monitor, if not assign unused or create a new monitor and assign it to the weapon
+        if (srMonitor == null) {
+            D.AssertEqual(Layers.Collide_DefaultOnly, (Layers)_elementSensorRangeMonitorPrefab.layer);
+            GameObject monitorGo = UnityUtility.AddChild(element.gameObject, _elementSensorRangeMonitorPrefab);
+            monitorGo.layer = (int)Layers.Collide_DefaultOnly;   // AddChild resets prefab layer to elementGo's layer
+            srMonitor = monitorGo.GetComponent<ElementSensorRangeMonitor>();
+            srMonitor.ParentItem = element;
+            D.Log("{0}: {1} has had a {2} chosen for {3}.", DebugName, element.DebugName, typeof(ElementSensorRangeMonitor).Name, sensor.Name);
+        }
+        srMonitor.Add(sensor);
+    }
+
+    public ICmdSensorRangeMonitor AttachMonitor(CmdSensor sensor, AUnitCmdItem command) {
+        D.AssertNotEqual(RangeCategory.Short, sensor.RangeCategory);
+        var allSensorMonitors = command.gameObject.GetComponentsInChildren<CmdSensorRangeMonitor>();
+        // TODO validate no SR RangeCategory
+        var sensorMonitorsInUse = allSensorMonitors.Where(m => m.RangeCategory != RangeCategory.None);
+
+        // check monitors for range fit, if find it, assign monitor, if not assign unused or create a new monitor and assign it to the weapon
+        var monitor = sensorMonitorsInUse.FirstOrDefault(m => m.RangeCategory == sensor.RangeCategory);
+        if (monitor == null) {
+            var unusedSensorMonitors = allSensorMonitors.Except(sensorMonitorsInUse);
+            if (unusedSensorMonitors.Any()) {
+                monitor = unusedSensorMonitors.First();
+            }
+            else {
+                D.AssertEqual(Layers.Collide_DefaultOnly, (Layers)_cmdSensorRangeMonitorPrefab.layer);
+                GameObject monitorGo = UnityUtility.AddChild(command.gameObject, _cmdSensorRangeMonitorPrefab);
+                monitorGo.layer = (int)Layers.Collide_DefaultOnly;  // AddChild resets prefab layer to elementGo's layer
+                monitor = monitorGo.GetComponent<CmdSensorRangeMonitor>();
+            }
+            monitor.ParentItem = command;
+            //D.Log("{0}: {1} has had a {2} chosen for {3}.", DebugName, command.DebugName, typeof(CmdSensorRangeMonitor).Name, sensor.Name);
+        }
+        monitor.Add(sensor);
+        return monitor;
+    }
+
+
+
+    /// <summary>
     /// Makes or acquires an existing SensorRangeMonitor and pairs it with this sensor.
     /// <remarks>This method is public as it is used by the command when an element is attached to it.</remarks>
     /// </summary>
     /// <param name="sensor">The sensor from one of the command's elements.</param>
     /// <param name="command">The command that has sensor monitors as children.</param>
     /// <returns></returns>
+    [Obsolete]
     public ISensorRangeMonitor AttachSensorToCmdsMonitor(Sensor sensor, AUnitCmdItem command) {
         var allSensorMonitors = command.gameObject.GetComponentsInChildren<SensorRangeMonitor>();
         var sensorMonitorsInUse = allSensorMonitors.Where(m => m.RangeCategory != RangeCategory.None);

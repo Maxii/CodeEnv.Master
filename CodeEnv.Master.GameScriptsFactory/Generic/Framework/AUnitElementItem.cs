@@ -206,9 +206,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// </summary>
     public void HandleChangeOfHQStatusCompleted() {
         D.Assert(!IsDead);
-        ////if (IsOperational) {
         UponHQStatusChangeCompleted();
-        ////}
     }
 
     /// <summary>
