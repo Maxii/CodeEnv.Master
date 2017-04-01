@@ -38,7 +38,6 @@ namespace CodeEnv.Master.GameContent {
         private IDictionary<GameDate, HashSet<DateMinderDuration>> _durationsToRemoveLookup = new Dictionary<GameDate, HashSet<DateMinderDuration>>();
         private IDictionary<DateMinderDuration, GameDate> _durationToDateLookup = new Dictionary<DateMinderDuration, GameDate>();
 
-        private Stack<HashSet<DateMinderDuration>> _reusableDurationSets = new Stack<HashSet<DateMinderDuration>>(100);
         // OPTIMIZE 3.17.17 remove and use _durationToDateLookup if Warnings in IsScheduledForRemoval never occur
         private HashSet<DateMinderDuration> _durationsScheduledForRemoval = new HashSet<DateMinderDuration>();
         private List<GameDate> _allDates = new List<GameDate>();
@@ -341,6 +340,22 @@ namespace CodeEnv.Master.GameContent {
             _allDates.Clear();
         }
 
+        private void RecycleAllSets() {
+            foreach (var set in _activeDurationsLookup.Values) {
+                RecycleSet(set);
+            }
+            foreach (var set in _durationsToAddLookup.Values) {
+                RecycleSet(set);
+            }
+            foreach (var set in _durationsToRemoveLookup.Values) {
+                RecycleSet(set);
+            }
+        }
+
+        #region Recycle Sets System
+
+        private Stack<HashSet<DateMinderDuration>> _reusableDurationSets = new Stack<HashSet<DateMinderDuration>>(100);
+
         private HashSet<DateMinderDuration> GetEmptySet() {
             if (_reusableDurationSets.Count == Constants.Zero) {
                 __newSetsCreated++;
@@ -358,22 +373,12 @@ namespace CodeEnv.Master.GameContent {
             return copy;
         }
 
-        private void RecycleAllSets() {
-            foreach (var set in _activeDurationsLookup.Values) {
-                RecycleSet(set);
-            }
-            foreach (var set in _durationsToAddLookup.Values) {
-                RecycleSet(set);
-            }
-            foreach (var set in _durationsToRemoveLookup.Values) {
-                RecycleSet(set);
-            }
-        }
-
         private void RecycleSet(HashSet<DateMinderDuration> set) {
             set.Clear();
             _reusableDurationSets.Push(set);
         }
+
+        #endregion
 
         #region Debug
 

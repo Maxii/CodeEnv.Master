@@ -41,16 +41,6 @@ namespace CodeEnv.Master.GameContent {
 
         internal bool ShowDebugLog { get { return _helm.ShowDebugLog; } }
 
-        /// <summary>
-        /// Returns <c>true</c> if this Cmd is close enough to support an attack on Target with its SR sensors, <c>false</c> otherwise.
-        /// </summary>
-        /// <returns></returns>
-        internal bool IsCmdWithinRangeToSupportAttackOnTarget {
-            get {
-                return _helm.__IsWithinSRSensorRange(TargetProxy.Position);
-            }
-        }
-
         internal Vector3 Position { get { return _ship.Position; } }
 
         /// <summary>
@@ -124,7 +114,7 @@ namespace CodeEnv.Master.GameContent {
         internal void Engage(ApStrafeDestinationProxy strafeProxy, Speed speed) {
             Engage_Internal(strafeProxy, speed, isMoveFleetwide: false);
 
-            D.Assert(IsCmdWithinRangeToSupportAttackOnTarget, DebugName); // primary target picked should qualify
+            D.Assert(IsCmdWithinRangeToSupportMoveTo(strafeProxy.Position)); // primary target picked should qualify
 
             if (_strafeTask == null) {
                 _strafeTask = new ApStrafeTask(this);
@@ -140,7 +130,7 @@ namespace CodeEnv.Master.GameContent {
         internal void Engage(ApBesiegeDestinationProxy besiegeProxy, Speed speed) {
             Engage_Internal(besiegeProxy, speed, isMoveFleetwide: false);
 
-            D.Assert(IsCmdWithinRangeToSupportAttackOnTarget, DebugName); // primary target picked should qualify
+            D.Assert(IsCmdWithinRangeToSupportMoveTo(besiegeProxy.Position)); // primary target picked should qualify
 
             if (_besiegeTask == null) {
                 _besiegeTask = new ApBesiegeTask(this);
@@ -188,6 +178,17 @@ namespace CodeEnv.Master.GameContent {
             if (ShowDebugLog && TargetDistance < tgtProxy.InnerRadius) {
                 D.LogBold("{0} is inside {1}.InnerRadius!", DebugName, tgtProxy.DebugName);
             }
+        }
+
+        /// <summary>
+        /// Returns <c>true</c> if this Cmd is close enough to support a move to location, <c>false</c> otherwise.
+        /// <remarks>3.31.17 HACK Arbitrary distance from Cmd used for now as max to support a move. Used to keep ships from scattering, 
+        /// usually when attacking.</remarks>
+        /// <remarks>Previously focused on attacking based on Cmd's SRSensor range, but all elements now have SRSensors.</remarks>
+        /// </summary>
+        /// <returns></returns>
+        internal bool IsCmdWithinRangeToSupportMoveTo(Vector3 location) {
+            return _helm.IsCmdWithinRangeToSupportMoveTo(location);
         }
 
         internal void WaitForFleetToAlign(Action callback) {
@@ -320,22 +321,15 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void ResetTasks() {
-            //bool isATaskActive = false;
             if (_moveTask != null) {
-                //isATaskActive = true;
                 _moveTask.ResetForReuse();
             }
             if (_besiegeTask != null) {
-                //isATaskActive = true;
                 _besiegeTask.ResetForReuse();
             }
             if (_strafeTask != null) {
-                //isATaskActive = true;
                 _strafeTask.ResetForReuse();
             }
-            //if (isATaskActive) {
-            //D.Log(ShowDebugLog, "{0} has reset one or more active tasks. Frame: {1}.", DebugName, Time.frameCount);
-            //}
         }
 
         #region Cleanup

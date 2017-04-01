@@ -66,6 +66,8 @@ namespace CodeEnv.Master.GameContent {
 
         event EventHandler newGameBuilding;
 
+        bool IsApplicationQuiting { get; }
+
         bool IsSceneLoading { get; }
 
         bool IsPaused { get; }

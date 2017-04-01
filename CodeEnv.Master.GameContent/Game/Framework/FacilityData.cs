@@ -53,12 +53,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="passiveCMs">The passive countermeasures.</param>
         /// <param name="hullEquipment">The hull equipment.</param>
         /// <param name="activeCMs">The active countermeasures.</param>
-        /// <param name="sensors">The sensors.</param>
+        /// <param name="sensors">SR sensors.</param>
         /// <param name="shieldGenerators">The shield generators.</param>
         /// <param name="hqPriority">The HQ priority.</param>
         /// <param name="topography">The topography.</param>
         public FacilityData(IFacility facility, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, FacilityHullEquipment hullEquipment,
-            IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<Sensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators,
+            IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<ElementSensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators,
             Priority hqPriority, Topography topography)
             : base(facility, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, hqPriority) {
             Topography = topography;

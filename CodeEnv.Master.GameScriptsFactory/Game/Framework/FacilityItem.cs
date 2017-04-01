@@ -311,7 +311,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             D.AssertNull(target);
             return;
         }
-        if (!OwnerAIMgr.HasKnowledgeOf(target as IItem_Ltd)) {
+        if (!OwnerAIMgr.HasKnowledgeOf(target as IOwnerItem_Ltd)) {
             D.Warn("{0} received {1} order with Target {2} that {3} has no knowledge of.", DebugName, directive.GetValueName(), target.DebugName, Owner.LeaderName);
         }
     }
@@ -551,12 +551,12 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         // TODO
     }
 
-    void ExecuteAttackOrder_UponFsmTgtInfoAccessChgd(IItem_Ltd fsmTgt) {
+    void ExecuteAttackOrder_UponFsmTgtInfoAccessChgd(IOwnerItem_Ltd fsmTgt) {
         LogEvent();
         // TODO
     }
 
-    void ExecuteAttackOrder_UponFsmTgtOwnerChgd(IItem_Ltd fsmTgt) {
+    void ExecuteAttackOrder_UponFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) {
         LogEvent();
         // TODO
     }

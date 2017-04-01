@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2016 
+// Copyright © 2012 - 2017 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IIntelItem_Ltd.cs
-// limited InfoAccess Interface for easy access to MonoBehaviours that are AIntelItems.
+// File: ISensorDetector.cs
+// Interface for Items that have the ability to detect ISensorDetectable Items.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,13 +16,14 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
-
     /// <summary>
-    /// limited InfoAccess Interface for easy access to MonoBehaviours that are AIntelItems.
+    /// Interface for Items that have the ability to detect ISensorDetectable Items.
     /// </summary>
-    public interface IIntelItem_Ltd : IOwnerItem_Ltd {
+    public interface ISensorDetector {
 
+        string DebugName { get; }
+
+        Player Owner { get; }
     }
 }
 

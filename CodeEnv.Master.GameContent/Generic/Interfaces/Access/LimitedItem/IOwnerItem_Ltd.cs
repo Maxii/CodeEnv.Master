@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IItem_Ltd.cs
-// limited InfoAccess Interface for easy access to MonoBehaviours that are AItems.
+// File: IOwnerItem_Ltd.cs
+// Limited access Interface for easy access to Items that support having an Owner, including Sectors.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,9 +20,9 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// limited InfoAccess Interface for easy access to MonoBehaviours that are AItems.
+    /// Limited access Interface for easy access to Items that support having an Owner, including Sectors.
     /// </summary>
-    public interface IItem_Ltd : IDebugable {
+    public interface IOwnerItem_Ltd : IDebugable {
 
         /// <summary>
         /// Occurs when the owner of this item has changed.

@@ -51,7 +51,6 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
     /// within the FormationStation 'sphere' defined by Radius.</remarks>
     /// </summary>
     public bool IsOnStation {
-        ////get { return Vector3.SqrMagnitude(Position - AssignedShip.Position) < _maxStationToOnStationDistanceSqrd; }
         get { return Vector3.SqrMagnitude(Position - AssignedShip.Position).IsLessThan(_maxStationToOnStationDistanceSqrd); }
     }
 

@@ -27,8 +27,8 @@ namespace CodeEnv.Master.GameContent {
         public SettlementCmdStat CmdStat { get; private set; }
 
         public SettlementCmdDesign(Player player, string designName, IEnumerable<PassiveCountermeasureStat> passiveCmStats,
-            FtlDampenerStat ftlDampenerStat, SettlementCmdStat cmdStat)
-            : base(player, designName, passiveCmStats, ftlDampenerStat) {
+            IEnumerable<SensorStat> sensorStats, FtlDampenerStat ftlDampenerStat, SettlementCmdStat cmdStat)
+            : base(player, designName, passiveCmStats, sensorStats, ftlDampenerStat) {
             CmdStat = cmdStat;
         }
 

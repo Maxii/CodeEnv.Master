@@ -54,10 +54,11 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="starbaseCmd">The starbase command.</param>
         /// <param name="owner">The owner.</param>
+        /// <param name="sensors">The MR and LR sensors for this UnitCmd.</param>
         /// <param name="ftlDampener">The FTL dampener.</param>
         /// <param name="cmdStat">The stat.</param>
-        public StarbaseCmdData(IStarbaseCmd starbaseCmd, Player owner, FtlDampener ftlDampener, UnitCmdStat cmdStat)
-            : this(starbaseCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), ftlDampener, cmdStat) {
+        public StarbaseCmdData(IStarbaseCmd starbaseCmd, Player owner, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, UnitCmdStat cmdStat)
+            : this(starbaseCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), sensors, ftlDampener, cmdStat) {
         }
 
         /// <summary>
@@ -66,10 +67,11 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="starbaseCmd">The starbase command.</param>
         /// <param name="owner">The owner.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
+        /// <param name="sensors">The MR and LR sensors for this UnitCmd.</param>
         /// <param name="ftlDampener">The FTL dampener.</param>
         /// <param name="cmdStat">The stat.</param>
-        public StarbaseCmdData(IStarbaseCmd starbaseCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, FtlDampener ftlDampener, UnitCmdStat cmdStat)
-            : base(starbaseCmd, owner, passiveCMs, ftlDampener, cmdStat) {
+        public StarbaseCmdData(IStarbaseCmd starbaseCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, UnitCmdStat cmdStat)
+            : base(starbaseCmd, owner, passiveCMs, sensors, ftlDampener, cmdStat) {
             __PopulateResourcesFromSector();
         }
 

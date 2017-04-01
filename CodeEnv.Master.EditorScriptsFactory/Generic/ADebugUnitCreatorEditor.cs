@@ -118,8 +118,9 @@ public abstract class ADebugUnitCreatorEditor : Editor {
                     NGUIEditorTools.DrawProperty("ActiveCMs/Element", serializedObject, "_activeCMsPerElement");
                     NGUIEditorTools.DrawProperty("ShieldGens/Element", serializedObject, "_shieldGeneratorsPerElement");
                     NGUIEditorTools.DrawProperty("PassiveCMs/Element", serializedObject, "_passiveCMsPerElement");
-                    NGUIEditorTools.DrawProperty("Sensors/Element", serializedObject, "_sensorsPerElement");
+                    NGUIEditorTools.DrawProperty("SRSensors/Element", serializedObject, "_srSensorsPerElement");
                     NGUIEditorTools.DrawProperty("PassiveCMs/Cmd", serializedObject, "_countermeasuresPerCmd");
+                    NGUIEditorTools.DrawProperty("MR_LRSensors/Cmd", serializedObject, "_sensorsPerCmd");
                 }
                 NGUIEditorTools.EndContents();
             }

@@ -99,7 +99,7 @@ namespace CodeEnv.Master.GameContent {
         private ShipData _shipData;
         private EngineRoom _engineRoom;
         private Transform _shipTransform;
-        //private GameManager _gameMgr;
+        private IGameManager _gameMgr;
 
         #region Initialization
 
@@ -110,7 +110,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="shipRigidbody">The ship rigidbody.</param>
         public ShipHelm(IShip ship, ShipData shipData, Transform shipTransform, EngineRoom engineRoom) {
             ApCourse = new List<IShipNavigable>();
-            //_gameMgr = GameManager.Instance;
+            _gameMgr = GameReferences.GameManager;
             _gameTime = GameTime.Instance;
             _jobMgr = GameReferences.JobManager;
 
@@ -254,6 +254,15 @@ namespace CodeEnv.Master.GameContent {
                     // the AssertNull to occur failed. I believe this is OK as _jobRef is nulled from KillXXXJob() and, if 
                     // the reference is replaced by a new Job, then the old Job is no longer referenced which is the objective. Jobs Kill()ed
                     // centrally by JobManager won't null the reference, but this only occurs during scene transitions.
+
+                    if (_gameMgr.IsSceneLoading) {
+                        // all killable Jobs are killed when loading a new scene
+                        return;
+                    }
+                    if (turnCompleted != null) {
+                        bool reachedDesignatedHeading = false;
+                        turnCompleted(reachedDesignatedHeading);
+                    }
                 }
                 else {
                     D.AssertNotNull(_chgHeadingJob, DebugName);
@@ -263,10 +272,10 @@ namespace CodeEnv.Master.GameContent {
                     if (eliminateDrift) {
                         _engineRoom.EngageDriftCorrection();
                     }
-                }
-                bool reachedDesignatedHeading = !jobWasKilled;
-                if (turnCompleted != null) {
-                    turnCompleted(reachedDesignatedHeading);
+                    if (turnCompleted != null) {
+                        bool reachedDesignatedHeading = true;
+                        turnCompleted(reachedDesignatedHeading);
+                    }
                 }
             });
         }
@@ -455,6 +464,17 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        /// <summary>
+        /// Returns <c>true</c> if this Cmd is close enough to support a move to location, <c>false</c> otherwise.
+        /// <remarks>3.31.17 HACK Arbitrary distance from Cmd used for now as max to support a move. Used to keep ships from scattering, 
+        /// usually when attacking.</remarks>
+        /// <remarks>Previously focused on attacking based on Cmd's SRSensor range, but all elements now have SRSensors.</remarks>
+        /// </summary>
+        /// <returns></returns>
+        public bool IsCmdWithinRangeToSupportMoveTo(Vector3 location) {
+            return Vector3.SqrMagnitude(location - _ship.Command.Position).IsLessThan(TempGameValues.__MaxShipMoveDistanceFromFleetCmdSqrd);
+        }
+
         #region Cleanup
 
         private void Cleanup() {
@@ -473,20 +493,6 @@ namespace CodeEnv.Master.GameContent {
 
 
         #region Debug
-
-        public bool __IsWithinSRSensorRange(Vector3 position) {
-            float sqrDifference;
-            return __IsWithinSRSensorRange(position, out sqrDifference);
-        }
-
-        public bool __IsWithinSRSensorRange(Vector3 position, out float sqrDifference) {
-            sqrDifference = _ship.Command.SRSensorRangeDistance * _ship.Command.SRSensorRangeDistance - Vector3.SqrMagnitude(position - _ship.Command.Position);
-            if (sqrDifference < 0F) {
-                sqrDifference = -sqrDifference;
-                return false;
-            }
-            return sqrDifference > UnityConstants.FloatEqualityPrecision;
-        }
 
         #region Debug Turn Error Reporting
 

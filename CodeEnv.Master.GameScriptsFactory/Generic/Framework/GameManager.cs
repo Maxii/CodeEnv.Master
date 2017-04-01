@@ -93,6 +93,8 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     /// </summary>
     public event EventHandler newGameBuilding;
 
+    public new bool IsApplicationQuiting { get { return AMonoBase.IsApplicationQuiting; } }
+
     private string _debugName;
     public string DebugName {
         get {
@@ -1178,6 +1180,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         _gameTime.RecurringDateMinder.__ReportUsage();
         AWeapon.__ReportPeakEnemiesInRange();
         ActiveCountermeasure.__ReportPeakThreatsInRange();
+        UnifiedSRSensorMonitor.__ReportUsage();
     }
 
     private void RunGarbageCollector() {

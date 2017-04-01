@@ -430,8 +430,8 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="destProxy">The destination proxy.</param>
         /// <returns></returns>
-        protected virtual bool CheckForUncatchable(ApMoveDestinationProxy destProxy) {
-            return false;
+        protected bool CheckForUncatchable(ApMoveDestinationProxy destProxy) {
+            return !_autoPilot.IsCmdWithinRangeToSupportMoveTo(destProxy.Position);
         }
 
         /// <summary>

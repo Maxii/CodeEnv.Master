@@ -35,7 +35,7 @@ namespace CodeEnv.Master.GameContent {
         public Priority HQPriority { get; private set; }
 
         public IList<AWeapon> Weapons { get { return HullEquipment.Weapons; } }
-        public IList<Sensor> Sensors { get; private set; }
+        public IList<ElementSensor> Sensors { get; private set; }
         public IList<ActiveCountermeasure> ActiveCountermeasures { get; private set; }
         public IList<ShieldGenerator> ShieldGenerators { get; private set; }
 
@@ -146,7 +146,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="shieldGenerators">The shield generators.</param>
         /// <param name="hqPriority">The HQ priority.</param>
         public AUnitElementData(IUnitElement element, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, AHullEquipment hullEquipment,
-            IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<Sensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators, Priority hqPriority)
+            IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<ElementSensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators, Priority hqPriority)
             : base(element, owner, hullEquipment.MaxHitPoints, passiveCMs) {
             HullEquipment = hullEquipment;
             Mass = hullEquipment.Mass + hullEquipment.Weapons.Sum(w => w.Mass) + activeCMs.Sum(cm => cm.Mass) + sensors.Sum(s => s.Mass) + passiveCMs.Sum(cm => cm.Mass) + shieldGenerators.Sum(gen => gen.Mass);
@@ -178,12 +178,10 @@ namespace CodeEnv.Master.GameContent {
             });
         }
 
-        private void Initialize(IEnumerable<Sensor> sensors) {
+        private void Initialize(IEnumerable<ElementSensor> sensors) {
             Sensors = sensors.ToList();
             Sensors.ForAll(s => {
-                D.AssertNull(s.RangeMonitor);  // Note: Unlike Weapons and ActiveCountermeasures, Sensors are added to elements 
-                // without a RangeMonitor attached. This is because the element adding the sensor does not yet have a Command attached 
-                // and SensorRangeMonitors get attached to Cmds, not elements.
+                D.AssertNotNull(s.RangeMonitor);  // 3.31.17 Sensors now have their monitor attached when built in UnitFactory
                 D.Assert(!s.IsActivated);    // items control sensor activation when commencing operations
                 s.isDamagedChanged += SensorIsDamagedChangedEventHandler;
             });
@@ -202,7 +200,7 @@ namespace CodeEnv.Master.GameContent {
 
         public override void CommenceOperations() {
             base.CommenceOperations();
-            Sensors.OrderBy(s => s.RangeCategory).ForAll(s => s.IsActivated = true);    // short, medium, long order
+            Sensors.ForAll(s => s.IsActivated = true);
             // 11.3.16 Activation of ActiveCMs, ShieldGens and Weapons handled by HandleAlertStatusChanged
 
             RecalcSensorRange();
@@ -243,10 +241,10 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void SensorIsDamagedChangedEventHandler(object sender, EventArgs e) {
-            HandleSensorIsDamagedChanged(sender as Sensor);
+            HandleSensorIsDamagedChanged(sender as ElementSensor);
         }
 
-        private void HandleSensorIsDamagedChanged(Sensor sensor) {
+        private void HandleSensorIsDamagedChanged(ElementSensor sensor) {
             D.Log(ShowDebugLog, "{0}'s {1} is {2}.", DebugName, sensor.Name, sensor.IsDamaged ? "damaged" : "repaired");
             RecalcSensorRange();
         }
@@ -285,14 +283,9 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         private void RecalcSensorRange() {
-            var undamagedSensors = Sensors.Where(s => s.IsOperational);
-            var shortRangeSensors = undamagedSensors.Where(s => s.RangeCategory == RangeCategory.Short);
-            var mediumRangeSensors = undamagedSensors.Where(s => s.RangeCategory == RangeCategory.Medium);
-            var longRangeSensors = undamagedSensors.Where(s => s.RangeCategory == RangeCategory.Long);
-            float shortRangeDistance = shortRangeSensors.Any() ? shortRangeSensors.First().RangeDistance : Constants.ZeroF;
-            float mediumRangeDistance = mediumRangeSensors.Any() ? mediumRangeSensors.First().RangeDistance : Constants.ZeroF;
-            float longRangeDistance = longRangeSensors.Any() ? longRangeSensors.First().RangeDistance : Constants.ZeroF;
-            SensorRange = new RangeDistance(shortRangeDistance, mediumRangeDistance, longRangeDistance);
+            var undamagedSRSensors = Sensors.Where(s => s.IsOperational);
+            float shortRangeDistance = undamagedSRSensors.First().RangeDistance;
+            SensorRange = new RangeDistance(shortRangeDistance, Constants.ZeroF, Constants.ZeroF);
             //D.Log(ShowDebugLog, "{0} recalculated SensorRange: {1}.", DebugName, SensorRange);
         }
 

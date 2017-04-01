@@ -25,6 +25,15 @@ namespace CodeEnv.Master.GameContent {
 
         private const string DebugNameFormat = "{0}(Range[{1}]).";
 
+        public override string DebugName {
+            get {
+                if (_debugName == null) {
+                    _debugName = DebugNameFormat.Inject(base.DebugName, RangeCategory.GetValueName());
+                }
+                return _debugName;
+            }
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="SensorStat" /> struct.
         /// </summary>
@@ -42,13 +51,11 @@ namespace CodeEnv.Master.GameContent {
             float expense, RangeCategory rangeCat, bool isDamageable)
             : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, isDamageable) { }
 
-        public override string DebugName {
-            get {
-                if (_debugName == null) {
-                    _debugName = DebugNameFormat.Inject(base.DebugName, RangeCategory.GetValueName());
-                }
-                return _debugName;
-            }
+        /// <summary>
+        /// Initializes a new instance of the most basic <see cref="SensorStat"/> class.
+        /// </summary>
+        public SensorStat(RangeCategory rangeCat)
+            : this("BasicSensorStat", AtlasID.MyGui, TempGameValues.AnImageFilename, "BasicDescription..", 0F, 0F, 0F, 0F, rangeCat, true) {
         }
 
     }

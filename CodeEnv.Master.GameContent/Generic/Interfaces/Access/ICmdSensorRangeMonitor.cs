@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ICmdSensorRangeMonitor.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// Interface allowing access to CmdSensorRangeMonitor MonoBehaviours.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,19 +17,16 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
-    using CodeEnv.Master.GameContent;
-    using UnityEngine;
 
     /// <summary>
-    /// 
+    /// Interface allowing access to CmdSensorRangeMonitor MonoBehaviours.
     /// </summary>
-    public interface ICmdSensorRangeMonitor : IASensorRangeMonitor {
+    public interface ICmdSensorRangeMonitor : ISensorRangeMonitor {
+
+        event EventHandler isOperationalChanged;
 
         IUnitCmd ParentItem { get; }
+
 
     }
 }

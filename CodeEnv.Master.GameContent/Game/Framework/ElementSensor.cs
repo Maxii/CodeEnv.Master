@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IElementSensorRangeMonitor.cs
-// COMMENT - one line to give a brief idea of what the file does.
+// File: ElementSensor.cs
+// SR Sensor for a UnitElement.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,20 +16,21 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
-    using CodeEnv.Master.GameContent;
-    using UnityEngine;
 
     /// <summary>
-    /// 
+    /// SR Sensor for a UnitElement.
     /// </summary>
-    public interface IElementSensorRangeMonitor : IASensorRangeMonitor {
+    public class ElementSensor : ASensor {
 
-        IUnitElement ParentItem { get; }
+        public new IElementSensorRangeMonitor RangeMonitor {
+            get { return base.RangeMonitor as IElementSensorRangeMonitor; }
+            set { base.RangeMonitor = value; }
+        }
+
+        public ElementSensor(SensorStat stat, string name = null) : base(stat, name) {
+            D.AssertEqual(RangeCategory.Short, stat.RangeCategory);
+        }
 
     }
 }

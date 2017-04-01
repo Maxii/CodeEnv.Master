@@ -204,11 +204,13 @@ namespace CodeEnv.Master.GameContent {
 
         public IEnumerable<AUnitElementData> ElementsData { get { return _elementsData; } }
 
+        public IEnumerable<CmdSensor> Sensors { get; private set; }
+
         public FtlDampener FtlDampener { get; private set; }
 
         protected IList<AUnitElementData> _elementsData;
-        protected IDictionary<AUnitElementData, IList<IDisposable>> _subscriptions;
-
+        protected IDictionary<AUnitElementData, IList<IDisposable>> _elementSubscriptionsLookup;
+        private IList<IDisposable> _subscriptions;
 
         #region Initialization 
 
@@ -220,26 +222,42 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="passiveCMs">The passive countermeasures protecting the command staff.</param>
         /// <param name="ftlDampener">The FTL dampener.</param>
         /// <param name="cmdStat">The command stat.</param>
-        public AUnitCmdData(IUnitCmd cmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, FtlDampener ftlDampener, UnitCmdStat cmdStat)
+        public AUnitCmdData(IUnitCmd cmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, UnitCmdStat cmdStat)
             : base(cmd, owner, cmdStat.MaxHitPoints, passiveCMs) {
             FtlDampener = ftlDampener;
+            Sensors = sensors;
             ParentName = cmdStat.UnitName;
             UnitFormation = cmdStat.UnitFormation;
             MaxCmdEffectiveness = cmdStat.MaxCmdEffectiveness;
             // A command's UnitMaxHitPoints are constructed from the sum of the elements
             InitializeCollections();
+            Subscribe();
         }
 
         private void InitializeCollections() {
             _elementsData = new List<AUnitElementData>();
-            _subscriptions = new Dictionary<AUnitElementData, IList<IDisposable>>();
+            _elementSubscriptionsLookup = new Dictionary<AUnitElementData, IList<IDisposable>>();
+        }
+
+        private void Subscribe() {
+            _subscriptions = new List<IDisposable>();
+            foreach (var sensor in Sensors) {
+                _subscriptions.Add(sensor.SubscribeToPropertyChanged<CmdSensor, float>(s => s.RangeDistance, CmdSensorRangeDistancePropChangedHandler));
+            }
         }
 
         #endregion
 
+        public override void CommenceOperations() {
+            base.CommenceOperations();
+            Sensors.OrderBy(s => s.RangeCategory).ForAll(s => s.IsActivated = true);    // medium, long order
+                                                                                        // 3.30.17 Activation of FtlDampener handled by HandleAlertStatusChanged
+            RecalcPropertiesDerivedFromCombinedElements();
+        }
+
         protected virtual void Subscribe(AUnitElementData elementData) {
-            _subscriptions.Add(elementData, new List<IDisposable>());
-            IList<IDisposable> anElementsSubscriptions = _subscriptions[elementData];
+            _elementSubscriptionsLookup.Add(elementData, new List<IDisposable>());
+            IList<IDisposable> anElementsSubscriptions = _elementSubscriptionsLookup[elementData];
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementData, float>(ed => ed.CurrentHitPoints, ElementCurrentHitPtsPropChangedHandler));
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementData, float>(ed => ed.MaxHitPoints, ElementMaxHitPtsPropChangedHandler));
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementData, CombatStrength>(ed => ed.DefensiveStrength, ElementDefensiveStrengthPropChangedHandler));
@@ -259,7 +277,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void HandleAlertStatusChanged() {
-            //D.Log(ShowDebugLog, "{0} {1} changed to {2}. Notifying Elements.", DebugName, typeof(AlertStatus).Name, AlertStatus.GetValueName());
             ElementsData.ForAll(eData => eData.AlertStatus = AlertStatus);
             switch (AlertStatus) {
                 case AlertStatus.Normal:
@@ -401,6 +418,14 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        private void CmdSensorRangeDistancePropChangedHandler() {
+            HandleCmdSensorRangeChanged();
+        }
+
+        private void HandleCmdSensorRangeChanged() {
+            RecalcUnitSensorRange();
+        }
+
         private void ElementOffensiveStrengthPropChangedHandler() {
             RecalcUnitOffensiveStrength();
         }
@@ -458,10 +483,12 @@ namespace CodeEnv.Master.GameContent {
             __ValidateOwner(elementData);
             UpdateElementParentName(elementData);
             _elementsData.Add(elementData);
-
-            RefreshComposition();
             Subscribe(elementData);
-            RecalcPropertiesDerivedFromCombinedElements();
+            RefreshComposition();
+
+            if (IsOperational) {
+                RecalcPropertiesDerivedFromCombinedElements();
+            }
         }
 
         private void __ValidateOwner(AUnitElementData elementData) {
@@ -507,6 +534,7 @@ namespace CodeEnv.Master.GameContent {
         /// Recalculates any Command properties that are dependent upon the total element population.
         /// </summary>
         protected virtual void RecalcPropertiesDerivedFromCombinedElements() {
+            D.Assert(IsOperational);
             RecalcUnitDefensiveStrength();
             RecalcUnitOffensiveStrength();
             RecalcUnitMaxHitPoints();   // must precede current as current uses max as a clamp
@@ -550,14 +578,12 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void RecalcUnitSensorRange() {
-            var allUnitSensors = _elementsData.SelectMany(ed => ed.Sensors);
-            var undamagedSensors = allUnitSensors.Where(s => s.IsOperational);
-            var shortRangeSensors = undamagedSensors.Where(s => s.RangeCategory == RangeCategory.Short);
-            var mediumRangeSensors = undamagedSensors.Where(s => s.RangeCategory == RangeCategory.Medium);
-            var longRangeSensors = undamagedSensors.Where(s => s.RangeCategory == RangeCategory.Long);
-            float shortRangeDistance = shortRangeSensors.Any() ? shortRangeSensors.First().RangeDistance : Constants.ZeroF; //shortRangeSensors.CalcSensorRangeDistance();
-            float mediumRangeDistance = mediumRangeSensors.Any() ? mediumRangeSensors.First().RangeDistance : Constants.ZeroF;    //mediumRangeSensors.CalcSensorRangeDistance();
-            float longRangeDistance = longRangeSensors.Any() ? longRangeSensors.First().RangeDistance : Constants.ZeroF;  //longRangeSensors.CalcSensorRangeDistance();
+            var shortRangeSensors = _elementsData.SelectMany(ed => ed.Sensors).Where(s => s.IsOperational);
+            var mediumRangeSensors = Sensors.Where(s => s.RangeCategory == RangeCategory.Medium && s.IsOperational);
+            var longRangeSensors = Sensors.Where(s => s.RangeCategory == RangeCategory.Long && s.IsOperational);
+            float shortRangeDistance = shortRangeSensors.First().RangeDistance;
+            float mediumRangeDistance = mediumRangeSensors.Any() ? mediumRangeSensors.First().RangeDistance : Constants.ZeroF;
+            float longRangeDistance = longRangeSensors.Any() ? longRangeSensors.First().RangeDistance : Constants.ZeroF;
             UnitSensorRange = new RangeDistance(shortRangeDistance, mediumRangeDistance, longRangeDistance);
         }
 
@@ -578,8 +604,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Unsubscribe(AUnitElementData elementData) {
-            _subscriptions[elementData].ForAll(d => d.Dispose());
-            _subscriptions.Remove(elementData);
+            _elementSubscriptionsLookup[elementData].ForAll(d => d.Dispose());
+            _elementSubscriptionsLookup.Remove(elementData);
 
             D.AssertNotNull(HQElementData);    // UNCLEAR when HQElementData gets nulled when elementData == HQElementData
             if (elementData == HQElementData) {
@@ -589,11 +615,14 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void Unsubscribe() {
             base.Unsubscribe();
-            IList<AUnitElementData> subscriberKeys = new List<AUnitElementData>(_subscriptions.Keys);
+            IList<AUnitElementData> subscriberKeys = new List<AUnitElementData>(_elementSubscriptionsLookup.Keys);
             // copy of key list as you can't remove keys from a list while you are iterating over the list
             foreach (AUnitElementData eData in subscriberKeys) {
                 Unsubscribe(eData);
             }
+            _elementSubscriptionsLookup.Clear();
+
+            _subscriptions.ForAll(d => d.Dispose());
             _subscriptions.Clear();
         }
 

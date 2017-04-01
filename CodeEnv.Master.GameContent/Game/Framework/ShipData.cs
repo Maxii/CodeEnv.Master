@@ -195,13 +195,13 @@ namespace CodeEnv.Master.GameContent {
         #region Initialization 
 
         public ShipData(IShip ship, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, ShipHullEquipment hullEquipment,
-            IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<Sensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators,
+            IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<ElementSensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators,
             Priority hqPriority, Engine stlEngine, ShipCombatStance combatStance)
             : this(ship, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, hqPriority, stlEngine, null, combatStance) {
         }
 
         public ShipData(IShip ship, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, ShipHullEquipment hullEquipment,
-            IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<Sensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators,
+            IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<ElementSensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators,
             Priority hqPriority, Engine stlEngine, FtlEngine ftlEngine, ShipCombatStance combatStance)
             : base(ship, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, hqPriority) {
             Science = hullEquipment.Science;

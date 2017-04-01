@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2014 Strategic Forge
+// Copyright © 2012 - 2017 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
 // File: ISensorRangeMonitor.cs
-//  Interface for access to SensorRangeMonitor.
+// Interface allowing access to SensorRangeMonitor MonoBehaviours.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,7 +20,7 @@ namespace CodeEnv.Master.GameContent {
     using System.Collections.Generic;
 
     /// <summary>
-    /// Interface for access to SensorRangeMonitor.
+    /// Interface allowing access to SensorRangeMonitor MonoBehaviours.
     /// </summary>
     public interface ISensorRangeMonitor : IRangedEquipmentMonitor {
 
@@ -28,19 +28,19 @@ namespace CodeEnv.Master.GameContent {
         /// Occurs when AreEnemyTargetsInRange changes. Only fires on a change
         /// in the property state, not when the qty of enemy targets in range changes.
         /// </summary>
-        event EventHandler enemyTargetsInRange;
+        event EventHandler enemyTargetsInRangeChgd;
 
         /// <summary>
         /// Occurs when AreEnemyCmdsInRange changes. Only fires on a change
         /// in the property state, not when the qty of enemy cmds in range changes.
         /// </summary>
-        event EventHandler enemyCmdsInRange;
+        event EventHandler enemyCmdsInRangeChgd;
 
         /// <summary>
         /// Occurs when AreWarEnemyElementsInRange changes. Only fires on a change
         /// in the property state, not when the qty of war enemy elements in range changes.
         /// </summary>
-        event EventHandler warEnemyElementsInRange;
+        event EventHandler warEnemyElementsInRangeChgd;
 
         /// <summary>
         /// Indicates whether there are any enemy targets in range.
@@ -88,8 +88,6 @@ namespace CodeEnv.Master.GameContent {
         /// <remarks>Not subscribable as AreEnemyTargetsInRange could be incorrect when it fired.</remarks>
         /// </summary>
         bool AreWarEnemyPlanetoidsInRange { get; }
-
-        IUnitCmd ParentItem { get; set; }
 
         /// <summary>
         /// A copy of all the detected enemy targets that are in range of the sensors of this monitor.
@@ -143,8 +141,9 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         HashSet<IPlanetoid_Ltd> WarEnemyPlanetoidsDetected { get; }
 
+        HashSet<IElementAttackable> UnknownTargetsDetected { get; }
 
-        void Add(Sensor sensor);
+        void Add(ASensor sensor);
 
         /// <summary>
         /// Removes the specified sensor. Returns <c>true</c> if this monitor
@@ -152,7 +151,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="sensor">The sensor.</param>
         /// <returns></returns>
-        bool Remove(Sensor sensor);
+        bool Remove(ASensor sensor);
 
         /// <summary>
         /// Resets this Monitor for reuse by the parent item.

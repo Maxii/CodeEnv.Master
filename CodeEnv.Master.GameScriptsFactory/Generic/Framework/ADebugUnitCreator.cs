@@ -72,13 +72,17 @@ public abstract class ADebugUnitCreator : AUnitCreator {
     [SerializeField]
     protected int _passiveCMsPerElement = 2;
 
-    [Range(1, 5)]
+    [Range(1, 3)]
     [SerializeField]
-    protected int _sensorsPerElement = 2;
+    protected int _srSensorsPerElement = 1;
 
     [Range(0, 3)]
     [SerializeField]
     protected int _countermeasuresPerCmd = 2;
+
+    [Range(1, 6)]
+    [SerializeField]
+    protected int _sensorsPerCmd = 3;
 
     #endregion
 

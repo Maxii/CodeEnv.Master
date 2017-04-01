@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ISensorDetectable.cs
-// Interface for Items that are detectable by SensorRangeMonitors.
+// Interface for Items that are detectable by ISensorDetectors using SensorRangeMonitors.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,7 +20,7 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Interface for Items that are detectable by SensorRangeMonitors.
+    /// Interface for Items that are detectable by ISensorDetectors using SensorRangeMonitors.
     /// </summary>
     public interface ISensorDetectable : IDetectable {
 
@@ -31,9 +31,9 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         event EventHandler ownerChanged;
 
-        void HandleDetectionBy(Player detectingPlayer, IUnitCmd_Ltd cmdItem, RangeCategory sensorRangeCat);
+        void HandleDetectionBy(ISensorDetector detector, RangeCategory sensorRangeCat);
 
-        void HandleDetectionLostBy(Player detectingPlayer, IUnitCmd_Ltd cmdItem, RangeCategory sensorRangeCat);
+        void HandleDetectionLostBy(ISensorDetector detector, RangeCategory sensorRangeCat);
 
         /// <summary>
         /// Resets the ISensorDetectable item based on current detection levels of the provided player.

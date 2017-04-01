@@ -20,6 +20,7 @@ namespace CodeEnv.Master.GameContent {
     using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common;
+    using Common.LocalResources;
     using UnityEngine;
 
     /// <summary>
@@ -117,10 +118,11 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="fleetCmd">The fleet command.</param>
         /// <param name="owner">The owner.</param>
+        /// <param name="sensors">The MR and LR sensors for this UnitCmd.</param>
         /// <param name="ftlDampener">The FTL dampener.</param>
         /// <param name="cmdStat">The stat.</param>
-        public FleetCmdData(IFleetCmd fleetCmd, Player owner, FtlDampener ftlDampener, UnitCmdStat cmdStat)
-            : this(fleetCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), ftlDampener, cmdStat) {
+        public FleetCmdData(IFleetCmd fleetCmd, Player owner, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, UnitCmdStat cmdStat)
+            : this(fleetCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), sensors, ftlDampener, cmdStat) {
         }
 
         /// <summary>
@@ -129,10 +131,11 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="fleetCmd">The fleet command.</param>
         /// <param name="owner">The owner.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
+        /// <param name="sensors">The MR and LR sensors for this UnitCmd.</param>
         /// <param name="ftlDampener">The FTL dampener.</param>
         /// <param name="cmdStat">The stat.</param>
-        public FleetCmdData(IFleetCmd fleetCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, FtlDampener ftlDampener, UnitCmdStat cmdStat)
-            : base(fleetCmd, owner, passiveCMs, ftlDampener, cmdStat) { }
+        public FleetCmdData(IFleetCmd fleetCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, UnitCmdStat cmdStat)
+            : base(fleetCmd, owner, passiveCMs, sensors, ftlDampener, cmdStat) { }
 
         protected override AIntel MakeIntelInstance() {
             return new RegressibleIntel(lowestRegressedCoverage: IntelCoverage.None);
@@ -180,7 +183,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void Subscribe(AUnitElementData elementData) {
             base.Subscribe(elementData);
-            IList<IDisposable> anElementsSubscriptions = _subscriptions[elementData];
+            IList<IDisposable> anElementsSubscriptions = _elementSubscriptionsLookup[elementData];
             ShipData shipData = elementData as ShipData;
             anElementsSubscriptions.Add(shipData.SubscribeToPropertyChanged<ShipData, float>(ed => ed.FullSpeedValue, ShipFullSpeedPropChangedHandler));
         }
@@ -205,6 +208,35 @@ namespace CodeEnv.Master.GameContent {
             }
             return FleetCategory.None;
         }
+
+        /// <summary>
+        /// Returns the capacity for repair available to this ship in the RepairMode provided.
+        /// UOM is hitPts per day. IMPROVE Acquire value from data fields.
+        /// </summary>
+        /// <param name="mode">The RepairMode.</param>
+        /// <returns></returns>
+        public float GetRepairCapacity(RepairMode mode) {
+            switch (mode) {
+                case RepairMode.Self:
+                    return 2F;    // HACK
+                case RepairMode.PlanetHighOrbit:
+                    return 4F;    // HACK
+                case RepairMode.PlanetCloseOrbit:
+                    return 6F;    // HACK
+                case RepairMode.AlliedPlanetHighOrbit:
+                    return 8F;    // HACK
+                case RepairMode.AlliedPlanetCloseOrbit:
+                    return 10F;    // HACK
+                case RepairMode.BaseHighOrbit:
+                case RepairMode.BaseCloseOrbit:
+                case RepairMode.AlliedBaseHighOrbit:
+                case RepairMode.AlliedBaseCloseOrbit:
+                case RepairMode.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(mode));
+            }
+        }
+
 
         #region Event and Property Change Handlers
 
@@ -242,6 +274,79 @@ namespace CodeEnv.Master.GameContent {
         public override string ToString() {
             return new ObjectAnalyzer().ToString(this);
         }
+
+        #region Nested Classes
+
+        public enum RepairMode {
+
+            None,
+
+            /// <summary>
+            /// Repairing executed in a slot of the Formation
+            /// using facilities and materials available on the ship.
+            /// </summary>
+            Self,
+
+            /// <summary>
+            /// Repairing executed in high orbit around a non-allied planet
+            /// using facilities available on the ship and materials that can
+            /// be acquired (LR) from the planet.
+            /// </summary>
+            PlanetHighOrbit,
+
+            /// <summary>
+            /// Repairing executed in high orbit around an allied planet
+            /// using facilities available on the planet and ship, and materials that can
+            /// be delivered (LR) by the inhabitants of the planet.
+            /// </summary>
+            AlliedPlanetHighOrbit,
+
+            /// <summary>
+            /// Repairing executed in close orbit around a non-allied planet
+            /// using facilities available on the ship and materials that can
+            /// be acquired (SR) from the planet.
+            /// </summary>
+            PlanetCloseOrbit,
+
+            /// <summary>
+            /// Repairing executed in close orbit around an allied planet
+            /// using facilities available on the planet and ship, and materials that can
+            /// be delivered (SR) by the inhabitants of the planet.
+            /// </summary>
+            AlliedPlanetCloseOrbit,
+
+            /// <summary>
+            /// Repairing executed in high orbit around a non-allied Settlement or Starbase
+            /// using facilities available on the base and ship and materials that can
+            /// be delivered (LR) by the inhabitants of the base.
+            /// </summary>
+            BaseHighOrbit,
+
+            /// <summary>
+            /// Repairing executed in close orbit around a non-allied Settlement or Starbase
+            /// using facilities available on the base and ship and materials that can
+            /// be delivered (SR) by the inhabitants of the base.
+            /// </summary>
+            BaseCloseOrbit,
+
+            /// <summary>
+            /// Repairing executed in high orbit around an allied Settlement or Starbase
+            /// using facilities available on the base and ship and materials that can
+            /// be delivered (LR) by the inhabitants of the base.
+            /// </summary>
+            AlliedBaseHighOrbit,
+
+            /// <summary>
+            /// Repairing executed in close orbit around an allied Settlement or Starbase
+            /// using facilities available on the base and ship and materials that can
+            /// be delivered (SR) by the inhabitants of the base.
+            /// </summary>
+            AlliedBaseCloseOrbit
+
+        }
+
+
+        #endregion
 
     }
 }

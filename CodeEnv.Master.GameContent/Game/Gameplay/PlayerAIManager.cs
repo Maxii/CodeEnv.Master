@@ -96,7 +96,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="item">The item.</param>
         /// <returns></returns>
-        public bool HasKnowledgeOf(IItem_Ltd item) {
+        public bool HasKnowledgeOf(IOwnerItem_Ltd item) {
             return Knowledge.HasKnowledgeOf(item);
         }
 
@@ -163,7 +163,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="closestItem">The returned closest item. Null if returns <c>false</c>.</param>
         /// <param name="excludedItems">The items to exclude, if any.</param>
         /// <returns></returns>
-        public bool TryFindClosestKnownItem<T>(Vector3 worldPosition, out T closestItem, params T[] excludedItems) where T : IItem_Ltd {
+        public bool TryFindClosestKnownItem<T>(Vector3 worldPosition, out T closestItem, params T[] excludedItems) where T : IOwnerItem_Ltd {
             Type tType = typeof(T);
             IEnumerable<T> itemCandidates = null;
             if (tType == typeof(IStarbaseCmd_Ltd)) {
@@ -220,7 +220,7 @@ namespace CodeEnv.Master.GameContent {
         /// the item without losing that awareness.</remarks>
         /// </summary>
         /// <param name = "item" > The item whose IntelCoverage by [Owner] has changed.</param>
-        public void AssessAwarenessOf(IItem_Ltd item) {
+        public void AssessAwarenessOf(IOwnerItem_Ltd item) {
             // TEMP
             IIntelItem intelItem = item as IIntelItem;
             IntelCoverage intelCoverage = intelItem.GetIntelCoverage(Owner);

@@ -546,7 +546,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     private void Cleanup() {
         Unsubscribe();
         _ctxObject.contextMenu = null;
-        if (GameManager.IsApplicationQuiting) {
+        if (_gameMgr.IsApplicationQuiting) {
             CleanupStaticMembers();
             UnsubscribeStaticallyOnceOnQuit();
         }

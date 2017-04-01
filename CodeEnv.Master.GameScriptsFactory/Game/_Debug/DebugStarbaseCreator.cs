@@ -46,14 +46,14 @@ public class DebugStarbaseCreator : ADebugUnitCreator {
             if (_editorSettings == null) {
                 if (IsCompositionPreset) {
                     var presetHullCats = gameObject.GetSafeComponentsInChildren<FacilityHull>().Select(hull => hull.HullCategory).ToList();
-                    _editorSettings = new BaseCreatorEditorSettings(UnitName, _isOwnerUser, _ownerRelationshipWithUser, _countermeasuresPerCmd, _activeCMsPerElement, DateToDeploy,
-                        _losWeaponsPerElement, _missileWeaponsPerElement, _passiveCMsPerElement, _shieldGeneratorsPerElement, _sensorsPerElement,
-                        _formation, presetHullCats);
+                    _editorSettings = new BaseCreatorEditorSettings(UnitName, _isOwnerUser, _ownerRelationshipWithUser, _countermeasuresPerCmd,
+                        _sensorsPerCmd, _activeCMsPerElement, DateToDeploy, _losWeaponsPerElement, _missileWeaponsPerElement,
+                        _passiveCMsPerElement, _shieldGeneratorsPerElement, _srSensorsPerElement, _formation, presetHullCats);
                 }
                 else {
-                    _editorSettings = new BaseCreatorEditorSettings(UnitName, _isOwnerUser, _elementQty, _ownerRelationshipWithUser, _countermeasuresPerCmd, _activeCMsPerElement,
-                        DateToDeploy, _losWeaponsPerElement, _missileWeaponsPerElement, _passiveCMsPerElement, _shieldGeneratorsPerElement, _sensorsPerElement,
-                        _formation);
+                    _editorSettings = new BaseCreatorEditorSettings(UnitName, _isOwnerUser, _elementQty, _ownerRelationshipWithUser,
+                        _countermeasuresPerCmd, _sensorsPerCmd, _activeCMsPerElement, DateToDeploy, _losWeaponsPerElement,
+                        _missileWeaponsPerElement, _passiveCMsPerElement, _shieldGeneratorsPerElement, _srSensorsPerElement, _formation);
                 }
             }
             return _editorSettings;

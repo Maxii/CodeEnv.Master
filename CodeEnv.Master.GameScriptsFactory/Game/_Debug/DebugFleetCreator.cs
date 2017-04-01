@@ -79,13 +79,15 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
             if (_editorSettings == null) {
                 if (IsCompositionPreset) {
                     var presetHullCats = gameObject.GetSafeComponentsInChildren<ShipHull>().Select(hull => hull.HullCategory).ToList();
-                    _editorSettings = new FleetCreatorEditorSettings(UnitName, _isOwnerUser, _ownerRelationshipWithUser, _countermeasuresPerCmd, _activeCMsPerElement, DateToDeploy,
-                        _losWeaponsPerElement, _missileWeaponsPerElement, _passiveCMsPerElement, _shieldGeneratorsPerElement, _sensorsPerElement,
-                        _formation, _move, _findFarthest, _attack, _stanceExclusions, presetHullCats);
+                    _editorSettings = new FleetCreatorEditorSettings(UnitName, _isOwnerUser, _ownerRelationshipWithUser, _countermeasuresPerCmd,
+                        _sensorsPerCmd, _activeCMsPerElement, DateToDeploy, _losWeaponsPerElement, _missileWeaponsPerElement,
+                        _passiveCMsPerElement, _shieldGeneratorsPerElement, _srSensorsPerElement, _formation, _move, _findFarthest,
+                        _attack, _stanceExclusions, presetHullCats);
                 }
                 else {
-                    _editorSettings = new FleetCreatorEditorSettings(UnitName, _isOwnerUser, _elementQty, _ownerRelationshipWithUser, _countermeasuresPerCmd, _activeCMsPerElement,
-                        DateToDeploy, _losWeaponsPerElement, _missileWeaponsPerElement, _passiveCMsPerElement, _shieldGeneratorsPerElement, _sensorsPerElement,
+                    _editorSettings = new FleetCreatorEditorSettings(UnitName, _isOwnerUser, _elementQty, _ownerRelationshipWithUser,
+                        _countermeasuresPerCmd, _sensorsPerCmd, _activeCMsPerElement, DateToDeploy, _losWeaponsPerElement,
+                        _missileWeaponsPerElement, _passiveCMsPerElement, _shieldGeneratorsPerElement, _srSensorsPerElement,
                         _formation, _move, _findFarthest, _attack, _stanceExclusions);
                 }
             }

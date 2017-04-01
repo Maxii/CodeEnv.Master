@@ -25,6 +25,8 @@ namespace CodeEnv.Master.GameContent {
 
         public const bool DoSettlementsActivelyOrbit = false;
 
+        public const float __MaxShipMoveDistanceFromFleetCmdSqrd = 160000F;   // 400
+
         /// <summary>
         /// The maximum range of any weapon in a base.
         /// </summary>

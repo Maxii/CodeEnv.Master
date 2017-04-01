@@ -27,6 +27,7 @@ namespace CodeEnv.Master.GameContent {
 
         IUnitCmd Command { get; }
 
+        IElementSensorRangeMonitor SRSensorMonitor { get; }
 
     }
 }

@@ -63,9 +63,9 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="ASensorRangeMonitor.cs" />
-    <Compile Include="CmdSensorRangeMonitor.cs" />
-    <Compile Include="ElementSensorRangeMonitor.cs" />
+    <Compile Include="Generic\Framework\ASensorRangeMonitor.cs" />
+    <Compile Include="Game\Framework\CmdSensorRangeMonitor.cs" />
+    <Compile Include="Game\Framework\ElementSensorRangeMonitor.cs" />
     <Compile Include="Game\Framework\FtlDampenerRangeMonitor.cs" />
     <Compile Include="Game\_Debug\CmdIconsFolder.cs" />
     <Compile Include="Game\_Debug\ElementIconsFolder.cs" />
@@ -80,7 +80,6 @@
     <Compile Include="Game\_Debug\DebugControls.cs" />
     <Compile Include="Game\Framework\FleetFormationStation.cs" />
     <Compile Include="Generic\Framework\AMonoBaseSingleton.cs" />
-    <Compile Include="Game\Framework\SensorRangeMonitor.cs" />
     <Compile Include="Generic\Framework\ADetectableRangeMonitor.cs" />
     <Compile Include="Generic\Framework\AEquipmentMonitor.cs" />
     <Compile Include="Generic\Framework\AColliderMonitor.cs" />

@@ -48,14 +48,14 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The item the report is about.
         /// </summary>
-        public IItem_Ltd Item { get; private set; }
+        public IOwnerItem_Ltd Item { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AItemReport" /> class.
         /// </summary>
         /// <param name="player">The player requesting the report.</param>
         /// <param name="item">The item the report is about.</param>
-        public AItemReport(AItemData data, Player player, IItem_Ltd item) {
+        public AItemReport(AItemData data, Player player, IOwnerItem_Ltd item) {
             Player = player;
             Item = item;
             __PositionForCameraDistance = new Reference<Vector3>(() => item.Position);

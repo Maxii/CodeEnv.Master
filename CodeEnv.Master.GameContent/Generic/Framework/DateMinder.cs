@@ -38,7 +38,6 @@ namespace CodeEnv.Master.GameContent {
         private IDictionary<GameDate, HashSet<IDateMinderClient>> _clientsToAddLookup = new Dictionary<GameDate, HashSet<IDateMinderClient>>();
         private IDictionary<GameDate, HashSet<IDateMinderClient>> _clientsToRemoveLookup = new Dictionary<GameDate, HashSet<IDateMinderClient>>();
 
-        private Stack<HashSet<IDateMinderClient>> _reusableClientSets = new Stack<HashSet<IDateMinderClient>>(100);
         private HashSet<IDateMinderClient> _clientsScheduledForRemoval = new HashSet<IDateMinderClient>();
         private List<GameDate> _allDates = new List<GameDate>(50);
 
@@ -253,6 +252,22 @@ namespace CodeEnv.Master.GameContent {
             _allDates.Clear();
         }
 
+        private void RecycleAllSets() {
+            foreach (var set in _clientsLookup.Values) {
+                RecycleSet(set);
+            }
+            foreach (var set in _clientsToAddLookup.Values) {
+                RecycleSet(set);
+            }
+            foreach (var set in _clientsToRemoveLookup.Values) {
+                RecycleSet(set);
+            }
+        }
+
+        #region Recycle Sets System
+
+        private Stack<HashSet<IDateMinderClient>> _reusableClientSets = new Stack<HashSet<IDateMinderClient>>(100);
+
         private HashSet<IDateMinderClient> GetEmptySet() {
             if (_reusableClientSets.Count == Constants.Zero) {
                 __newSetsCreated++;
@@ -267,17 +282,7 @@ namespace CodeEnv.Master.GameContent {
             _reusableClientSets.Push(set);
         }
 
-        private void RecycleAllSets() {
-            foreach (var set in _clientsLookup.Values) {
-                RecycleSet(set);
-            }
-            foreach (var set in _clientsToAddLookup.Values) {
-                RecycleSet(set);
-            }
-            foreach (var set in _clientsToRemoveLookup.Values) {
-                RecycleSet(set);
-            }
-        }
+        #endregion
 
         #region Debug
 

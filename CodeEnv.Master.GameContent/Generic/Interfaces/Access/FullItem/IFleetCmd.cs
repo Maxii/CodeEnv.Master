@@ -28,8 +28,6 @@ namespace CodeEnv.Master.GameContent {
 
         float UnitFullSpeedValue { get; }
 
-        float SRSensorRangeDistance { get; }
-
         FleetOrder CurrentOrder { get; set; }
 
         bool IsCurrentOrderDirectiveAnyOf(params FleetDirective[] directives);

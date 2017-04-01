@@ -830,7 +830,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         // TODO
     }
 
-    void Moving_UponFsmTgtInfoAccessChgd(IItem_Ltd fsmTgt) {
+    void Moving_UponFsmTgtInfoAccessChgd(IOwnerItem_Ltd fsmTgt) {
         LogEvent();
         D.AssertEqual(_fsmTgt, fsmTgt as IShipNavigable);
         if (LastState == ShipState.ExecuteExploreOrder) {
@@ -843,7 +843,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
     }
 
-    void Moving_UponFsmTgtOwnerChgd(IItem_Ltd fsmTgt) {
+    void Moving_UponFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) {
         LogEvent();
         D.AssertEqual(_fsmTgt, fsmTgt as IShipNavigable);
         if (LastState == ShipState.ExecuteExploreOrder) {
@@ -1009,12 +1009,12 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         // TODO
     }
 
-    void ExecuteMoveOrder_UponFsmTgtInfoAccessChgd(IItem_Ltd fsmTgt) {
+    void ExecuteMoveOrder_UponFsmTgtInfoAccessChgd(IOwnerItem_Ltd fsmTgt) {
         LogEvent();
         // TODO
     }
 
-    void ExecuteMoveOrder_UponFsmTgtOwnerChgd(IItem_Ltd fsmTgt) {
+    void ExecuteMoveOrder_UponFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) {
         LogEvent();
         // TODO
     }
@@ -1427,12 +1427,12 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         // TODO
     }
 
-    void ExecuteExploreOrder_UponFsmTgtInfoAccessChgd(IItem_Ltd fsmTgt) {
+    void ExecuteExploreOrder_UponFsmTgtInfoAccessChgd(IOwnerItem_Ltd fsmTgt) {
         LogEvent();
         // TODO
     }
 
-    void ExecuteExploreOrder_UponFsmTgtOwnerChgd(IItem_Ltd fsmTgt) {
+    void ExecuteExploreOrder_UponFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) {
         LogEvent();
         // TODO
     }
@@ -1604,12 +1604,12 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         // TODO
     }
 
-    void ExecuteAssumeCloseOrbitOrder_UponFsmTgtInfoAccessChgd(IItem_Ltd fsmTgt) {
+    void ExecuteAssumeCloseOrbitOrder_UponFsmTgtInfoAccessChgd(IOwnerItem_Ltd fsmTgt) {
         LogEvent();
         // TODO
     }
 
-    void ExecuteAssumeCloseOrbitOrder_UponFsmTgtOwnerChgd(IItem_Ltd fsmTgt) {
+    void ExecuteAssumeCloseOrbitOrder_UponFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) {
         LogEvent();
         // TODO
     }
@@ -1824,7 +1824,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         // TODO
     }
 
-    void AssumingCloseOrbit_UponFsmTgtInfoAccessChgd(IItem_Ltd fsmTgt) {
+    void AssumingCloseOrbit_UponFsmTgtInfoAccessChgd(IOwnerItem_Ltd fsmTgt) {
         LogEvent();
         D.AssertEqual(_fsmTgt, fsmTgt as IShipNavigable);
         if (LastState == ShipState.ExecuteExploreOrder) {
@@ -1836,7 +1836,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
     }
 
-    void AssumingCloseOrbit_UponFsmTgtOwnerChgd(IItem_Ltd fsmTgt) {
+    void AssumingCloseOrbit_UponFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) {
         LogEvent();
         D.AssertEqual(_fsmTgt, fsmTgt as IShipNavigable);
         if (LastState == ShipState.ExecuteExploreOrder) {
@@ -1904,27 +1904,30 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             return false;
         }
 
-        // 3.26.17 Planetoids eliminated as IShipBlastable. Now IShipBombardable
-        var uniqueEnemyTgtsInSRSensorRange = Command.SRSensorMonitor.EnemyElementsDetected.Cast<IShipBlastable>();
-        uniqueEnemyTgtsInSRSensorRange.ForAll(tgt => {
-            float sqrDifference;
-            bool isWithinSRSensorRange = __CheckWithinSRSensorRange(tgt.Position, out sqrDifference);
-            if (!isWithinSRSensorRange) {
-                D.Warn("{0} candidate attack target {1} is not within SRSensor range {2:0.#}. Difference = {3:0.#}.",
-                    DebugName, tgt.DebugName, Command.SRSensorMonitor.RangeDistance, Mathf.Sqrt(sqrDifference));
+        IEnumerable<IShipBlastable> warEnemyElementsWithinAttackRange = Enumerable.Empty<IShipBlastable>();
+        var mrSensorMonitor = Command.MRSensorMonitor;
+        if (mrSensorMonitor.IsOperational && mrSensorMonitor.AreWarEnemyElementsInRange) {
+            warEnemyElementsWithinAttackRange = mrSensorMonitor.WarEnemyElementsDetected.Where(wee => _helm.IsCmdWithinRangeToSupportMoveTo(wee.Position)).Cast<IShipBlastable>();
+        }
+        else {
+            var cmdSRSensorMgr = Command.UnifiedSRSensorMonitor;
+            if (cmdSRSensorMgr.AreWarEnemyElementsInRange) {
+                warEnemyElementsWithinAttackRange = cmdSRSensorMgr.WarEnemyElementsDetected.Where(wee => _helm.IsCmdWithinRangeToSupportMoveTo(wee.Position)).Cast<IShipBlastable>();
             }
-        });
-
+        }
 
         IShipBlastable primaryTgt = null;
-        var cmdTarget = unitAttackTgt as AUnitCmdItem;
-        D.AssertNotNull(cmdTarget); // 3.26.17 TEMP Planetoids temporarily eliminated as IUnitAttackable
-
-        var primaryElementTgts = cmdTarget.Elements.Cast<IShipBlastable>();
-        var primaryTargetsInSRSensorRange = primaryElementTgts.Intersect(uniqueEnemyTgtsInSRSensorRange);
-        if (primaryTargetsInSRSensorRange.Any()) {
-            primaryTgt = __SelectHighestPriorityAttackTgt(primaryTargetsInSRSensorRange);
+        if (warEnemyElementsWithinAttackRange.Any()) {
+            var cmdAttackTgt = unitAttackTgt as AUnitCmdItem;
+            D.AssertNotNull(cmdAttackTgt); // 3.26.17 TEMP Planetoids temporarily eliminated as IUnitAttackable
+            var primaryAttackTgtElements = cmdAttackTgt.Elements.Cast<IShipBlastable>();
+            var primaryAttackTgtElementsInAttackRange = primaryAttackTgtElements.Intersect(warEnemyElementsWithinAttackRange);
+            if (primaryAttackTgtElementsInAttackRange.Any()) {
+                primaryTgt = __SelectHighestPriorityAttackTgt(primaryAttackTgtElementsInAttackRange);
+            }
         }
+
+        // 3.26.17 Planetoids eliminated as IShipBlastable. Now IShipBombardable
         /*********************** TEMP as Planetoids aren't currently IUnitAttackable **************/
         //if (cmdTarget != null) {
         //    var primaryElementTgts = cmdTarget.Elements.Cast<IShipAttackable>();
@@ -1946,8 +1949,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         if (primaryTgt == null) {
             if (allowLogging) {
                 // UNCLEAR how this happens. Fleet not close enough when issues attack order to ships? Just wiped out?
-                // 3.18.17 One scenario is clear - Change of HQ while attacking relocates SRSensor range envelope
-                D.Warn("{0} found no target within SR sensor range to attack!", DebugName);
+                D.Warn("{0} couldn't find an element of {1} within range to attack!", DebugName, unitAttackTgt.DebugName);
             }
             shipPrimaryAttackTgt = null;
             return false;
@@ -1957,12 +1959,14 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         return true;
     }
 
-    private bool __CheckWithinSRSensorRange(Vector3 position, out float sqrDifference) {
-        return _helm.__IsWithinSRSensorRange(position, out sqrDifference);
-    }
-
     private IShipBlastable __SelectHighestPriorityAttackTgt(IEnumerable<IShipBlastable> availableAttackTgts) {
-        return availableAttackTgts.MinBy(target => Vector3.SqrMagnitude(target.Position - Position));
+        var closestTgt = availableAttackTgts.MinBy(target => Vector3.SqrMagnitude(target.Position - Position));
+
+        if (!SRSensorMonitor.AreWarEnemyElementsInRange || !SRSensorMonitor.WarEnemyElementsDetected.Contains(closestTgt as IUnitElement_Ltd)) {
+            D.Log(ShowDebugLog, "{0}: {1} is closest target to attack but not within our own SRSensor range. TargetDistance = {2:0.}.",
+                DebugName, closestTgt.DebugName, Vector3.Distance(closestTgt.Position, Position));
+        }
+        return closestTgt;
     }
 
     #endregion
@@ -2384,12 +2388,12 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         // TODO
     }
 
-    void Attacking_UponFsmTgtInfoAccessChgd(IItem_Ltd fsmTgt) {
+    void Attacking_UponFsmTgtInfoAccessChgd(IOwnerItem_Ltd fsmTgt) {
         LogEvent();
         // TODO
     }
 
-    void Attacking_UponFsmTgtOwnerChgd(IItem_Ltd fsmTgt) {
+    void Attacking_UponFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) {
         LogEvent();
         // TODO
     }
@@ -2688,9 +2692,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         if (Data.IsFtlCapable) {
             Data.IsFtlDamaged = false;
         }
-        if (IsHQ) {
-            Command.Data.CurrentHitPoints = Command.Data.MaxHitPoints;  // HACK
-        }
+        ////if (IsHQ) {
+        ////    Command.Data.CurrentHitPoints = Command.Data.MaxHitPoints;  // HACK
+        ////}
         D.Log(ShowDebugLog, "{0}'s repair is complete. Health = {1:P01}.", DebugName, Data.Health);
 
         StopEffectSequence(EffectSequenceID.Repairing);
@@ -2957,7 +2961,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         if (closeOrbitableTarget != null) {
             if (!(closeOrbitableTarget is StarItem) && !(closeOrbitableTarget is SystemItem) && !(closeOrbitableTarget is UniverseCenterItem)) {
                 // filter out objectToOrbit items that generate unnecessary knowledge check warnings    // OPTIMIZE
-                D.Assert(OwnerAIMgr.HasKnowledgeOf(closeOrbitableTarget as IItem_Ltd));  // ship very close so should know. UNCLEAR Dead sensors?, sensors w/FleetCmd
+                D.Assert(OwnerAIMgr.HasKnowledgeOf(closeOrbitableTarget as IOwnerItem_Ltd));  // ship very close so should know. UNCLEAR Dead sensors?, sensors w/FleetCmd
             }
 
             if (closeOrbitableTarget.IsCloseOrbitAllowedBy(Owner)) {
@@ -3696,9 +3700,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 return; // IMPROVE currently PlayerKnowledge does not keep track of Sectors
             }
         }
-        IItem_Ltd tgtLtd = target as IItem_Ltd;
+        IOwnerItem_Ltd tgtLtd = target as IOwnerItem_Ltd;
         if (tgtLtd == null) {
-            D.Error("{0}: {1} is not a {2}.", DebugName, target.DebugName, typeof(IItem_Ltd).Name);
+            D.Error("{0}: {1} is not a {2}.", DebugName, target.DebugName, typeof(IOwnerItem_Ltd).Name);
         }
         if (!OwnerAIMgr.HasKnowledgeOf(tgtLtd)) {
             // 3.5.17 Typically occurs when receiving an order to explore a planet that is not yet in sensor range

@@ -74,22 +74,8 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        /// <summary>
-        /// Checks whether the destination represented by destProxy cannot be caught.
-        /// Returns <c>true</c> if destination is uncatchable, <c>false</c> if it can be caught.
-        /// </summary>
-        /// <param name="destProxy">The destination proxy.</param>
-        /// <returns></returns>
-        protected override bool CheckForUncatchable(ApMoveDestinationProxy destProxy) {
-            return destProxy.IsFastMover && !_autoPilot.IsCmdWithinRangeToSupportAttackOnTarget;
-        }
-
         protected override void HandleTargetReached() {
             D.Log(ShowDebugLog, "{0} at {1} has reached {2} \nat {3}. Actual proximity: {4:0.0000} units.", DebugName, Position, TargetFullName, TargetProxy.Position, TargetDistance);
-            if (!_autoPilot.IsCmdWithinRangeToSupportAttackOnTarget) {
-                _autoPilot.HandleTgtUncatchable();
-                return;
-            }
             _autoPilot.RefreshCourse(CourseRefreshMode.ClearCourse);
             InitiateMaintainPosition();
         }

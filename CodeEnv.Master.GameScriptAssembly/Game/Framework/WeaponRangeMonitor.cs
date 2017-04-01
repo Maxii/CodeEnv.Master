@@ -418,17 +418,15 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementBlastable, AWe
     }
 
     private void __WarnAsShouldntBeUnknown(IElementBlastable unknownTgt) {
-        var srSensorMonitor = ParentItem.Command.SRSensorMonitor;
-        // 2.13.17 At least 1 SR sensor is mandatory, and they are no longer damageable
-
         float distanceToUnknownTgt = Vector3.Distance(ParentItem.Position, unknownTgt.Position);
-        float distanceToCmdsSensorRangeMonitors = Vector3.Distance(ParentItem.Position, ParentItem.Command.Position);
-        float srSensorRange = srSensorMonitor.RangeDistance;
-        D.Warn(@"{0} should not categorize {1} as unknown with SR Sensors online. Distance to unknown = {2:0.#}, distance to Cmd's 
-            SensorRangeMonitors = {3:0.#}, SRSensorRange = {4:0.#}.", DebugName, unknownTgt.DebugName, distanceToUnknownTgt, distanceToCmdsSensorRangeMonitors, srSensorRange);
+        float srSensorRange = ParentItem.SRSensorMonitor.RangeDistance; // 2.13.17 At least 1 SR sensor is mandatory, and the first is not damageable
 
-        var mrSensorMonitor = ParentItem.Command.SensorRangeMonitors.SingleOrDefault(srm => srm.RangeCategory == RangeCategory.Medium);
-        if (mrSensorMonitor != null && mrSensorMonitor.IsOperational) {
+        D.Warn("{0} should not categorize {1} as unknown with SR Sensors online. Distance to unknown = {2:0.#}, SRSensorRange = {3:0.#}.",
+            DebugName, unknownTgt.DebugName, distanceToUnknownTgt, srSensorRange);
+
+        var mrSensorMonitor = ParentItem.Command.MRSensorMonitor;   // 3.31.17 At least 1 MR Sensor is mandatory although it can be damaged
+        if (mrSensorMonitor.IsOperational) {
+            float distanceToCmdsSensorRangeMonitors = Vector3.Distance(ParentItem.Position, ParentItem.Command.Position);
             distanceToUnknownTgt = Vector3.Distance(ParentItem.Position, unknownTgt.Position);
             float mrSensorRange = mrSensorMonitor.RangeDistance;
             D.Warn(@"{0} should not categorize {1} as unknown with MR Sensors online. Distance to unknown = {2:0.#}, distance to Cmd's 

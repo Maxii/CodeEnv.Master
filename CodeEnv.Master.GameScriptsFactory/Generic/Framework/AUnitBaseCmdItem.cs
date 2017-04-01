@@ -208,15 +208,22 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     #region Event and Property Change Handlers
 
+    protected sealed override void HandleMRSensorMonitorIsOperationalChanged() {
+        if (CurrentState == BaseState.FinalInitialize) {  // HACK IsOperational becomes true as last step in FinalInitialize
+            return;
+        }
+        AssessAlertStatus();
+    }
+
     protected sealed override void HandleEnemyCmdsInSensorRangeChanged() {
-        if (CurrentState == BaseState.FinalInitialize) {
+        if (CurrentState == BaseState.FinalInitialize) {  // HACK IsOperational becomes true as last step in FinalInitialize
             return;
         }
         AssessAlertStatus();
     }
 
     protected sealed override void HandleWarEnemyElementsInSensorRangeChanged() {
-        if (CurrentState == BaseState.FinalInitialize) {
+        if (CurrentState == BaseState.FinalInitialize) {   // HACK IsOperational becomes true as last step in FinalInitialize
             return;
         }
         AssessAlertStatus();
@@ -498,12 +505,12 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         // TODO
     }
 
-    protected void ExecuteAttackOrder_UponFsmTgtInfoAccessChgd(IItem_Ltd fsmTgt) {
+    protected void ExecuteAttackOrder_UponFsmTgtInfoAccessChgd(IOwnerItem_Ltd fsmTgt) {
         LogEvent();
         // TODO
     }
 
-    protected void ExecuteAttackOrder_UponFsmTgtOwnerChgd(IItem_Ltd fsmTgt) {
+    protected void ExecuteAttackOrder_UponFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) {
         LogEvent();
         // TODO
     }

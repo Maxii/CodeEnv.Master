@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: CmdSensorRangeMonitor.cs
-// COMMENT - one line to give a brief idea of what this file does.
+// SensorRangeMonitor for MR and LR Sensors located with the UnitCmd.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -25,14 +25,30 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// COMMENT 
+/// SensorRangeMonitor for MR and LR Sensors located with the UnitCmd.
 /// </summary>
 public class CmdSensorRangeMonitor : ASensorRangeMonitor, ICmdSensorRangeMonitor {
+
+    public event EventHandler isOperationalChanged;
 
     public new IUnitCmd ParentItem {
         get { return base.ParentItem as IUnitCmd; }
         set { base.ParentItem = value; }
     }
 
+    #region Event and Property Change Handlers
+
+    protected override void HandleIsOperationalChanged() {
+        base.HandleIsOperationalChanged();
+        OnIsOperationalChanged();
+    }
+
+    private void OnIsOperationalChanged() {
+        if (isOperationalChanged != null) {
+            isOperationalChanged(this, EventArgs.Empty);
+        }
+    }
+
+    #endregion
 }
 

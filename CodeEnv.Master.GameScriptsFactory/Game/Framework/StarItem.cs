@@ -543,12 +543,12 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
 
     #region ISensorDetectable Members
 
-    public void HandleDetectionBy(Player detectingPlayer, IUnitCmd_Ltd cmdItem, RangeCategory sensorRangeCat) {
-        _detectionHandler.HandleDetectionBy(detectingPlayer, cmdItem, sensorRangeCat);
+    public void HandleDetectionBy(ISensorDetector detector, RangeCategory sensorRangeCat) {
+        _detectionHandler.HandleDetectionBy(detector, sensorRangeCat);
     }
 
-    public void HandleDetectionLostBy(Player detectingPlayer, IUnitCmd_Ltd cmdItem, RangeCategory sensorRangeCat) {
-        _detectionHandler.HandleDetectionLostBy(detectingPlayer, cmdItem, sensorRangeCat);
+    public void HandleDetectionLostBy(ISensorDetector detector, RangeCategory sensorRangeCat) {
+        _detectionHandler.HandleDetectionLostBy(detector, sensorRangeCat);
     }
 
     /// <summary>

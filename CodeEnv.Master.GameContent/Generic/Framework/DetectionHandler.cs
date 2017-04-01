@@ -38,7 +38,7 @@ namespace CodeEnv.Master.GameContent {
         /// Lookup that holds a list of the Cmds that have detected this Item, organized by the range
         /// of the sensor used and the owner of the Cmd.
         /// </summary>
-        private IDictionary<Player, IDictionary<RangeCategory, IList<IUnitCmd_Ltd>>> _detectionLookup;
+        private IDictionary<Player, IDictionary<RangeCategory, IList<ISensorDetector>>> _detectionLookup;
         private IIntelItem _item;
         private IGameManager _gameMgr;
         private IDebugControls _debugControls;
@@ -47,43 +47,42 @@ namespace CodeEnv.Master.GameContent {
             _item = item;
             _gameMgr = GameReferences.GameManager;
             _debugControls = GameReferences.DebugControls;
-            _detectionLookup = new Dictionary<Player, IDictionary<RangeCategory, IList<IUnitCmd_Ltd>>>(_gameMgr.AllPlayers.Count);
+            _detectionLookup = new Dictionary<Player, IDictionary<RangeCategory, IList<ISensorDetector>>>(_gameMgr.AllPlayers.Count);
         }
 
         /// <summary>
-        /// Handles detection by <c>detectingPlayer</c>'s <c>cmdItem</c>.
+        /// Handles detection by a ISensorDetector.
         /// <remarks>2.6.17 Removed use of obsolete UpdatePlayerKnowledge(). Knowledge now updated as a result of IntelCoverage changes.</remarks>
         /// </summary>
-        /// <param name="detectingPlayer">The detecting player.</param>
-        /// <param name="cmdItem">The command item.</param>
+        /// <param name="detector">The command item.</param>
         /// <param name="sensorRange">The sensor range.</param>
-        public void HandleDetectionBy(Player detectingPlayer, IUnitCmd_Ltd cmdItem, RangeCategory sensorRange) {
+        public void HandleDetectionBy(ISensorDetector detector, RangeCategory sensorRange) {
             if (!_item.IsOperational) {
-                D.Error("{0} should not be detected by {1} when dead!", _item.DebugName, cmdItem.DebugName);
+                D.Error("{0} should not be detected by {1} when dead!", _item.DebugName, detector.DebugName);
             }
-            //D.Log(ShowDebugLog, "{0}.HandleDetectionBy called. Detecting Cmd: {1}, SensorRange: {2}.", DebugName, cmdItem.DebugName, sensorRange.GetValueName());
-
-            IDictionary<RangeCategory, IList<IUnitCmd_Ltd>> rangeLookup;
+            //D.Log(ShowDebugLog, "{0}.HandleDetectionBy called. Detector: {1}, SensorRange: {2}.", DebugName, detector.DebugName, sensorRange.GetValueName());
+            Player detectingPlayer = detector.Owner;
+            IDictionary<RangeCategory, IList<ISensorDetector>> rangeLookup;
             if (!_detectionLookup.TryGetValue(detectingPlayer, out rangeLookup)) {
 
                 Profiler.BeginSample("Proper Dictionary allocation", (_item as Component).gameObject);
-                rangeLookup = new Dictionary<RangeCategory, IList<IUnitCmd_Ltd>>(3, RangeCategoryEqualityComparer.Default); // OPTIMIZE check size
+                rangeLookup = new Dictionary<RangeCategory, IList<ISensorDetector>>(3, RangeCategoryEqualityComparer.Default); // OPTIMIZE check size
                 Profiler.EndSample();
 
                 _detectionLookup.Add(detectingPlayer, rangeLookup);
             }
 
-            IList<IUnitCmd_Ltd> cmds;
-            if (!rangeLookup.TryGetValue(sensorRange, out cmds)) {
+            IList<ISensorDetector> detectors;
+            if (!rangeLookup.TryGetValue(sensorRange, out detectors)) {
 
                 Profiler.BeginSample("Proper List allocation", (_item as Component).gameObject);
-                cmds = new List<IUnitCmd_Ltd>();
+                detectors = new List<ISensorDetector>();
                 Profiler.EndSample();
 
-                rangeLookup.Add(sensorRange, cmds);
+                rangeLookup.Add(sensorRange, detectors);
             }
-            D.Assert(!cmds.Contains(cmdItem), cmdItem.DebugName);
-            cmds.Add(cmdItem);
+            D.Assert(!detectors.Contains(detector), detector.DebugName);
+            detectors.Add(detector);
 
             // The following returns can not move earlier in method as _detectionLookup must be kept current to support Reset
             if (_debugControls.IsAllIntelCoverageComprehensive) {
@@ -106,34 +105,34 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Handles detection lost by <c>detectingPlayer</c>'s <c>cmdItem</c>.
+        /// Handles detection lost by a ISensorDetector.
         /// <remarks>2.6.17 Removed use of obsolete UpdatePlayerKnowledge(). Knowledge now updated as a result of IntelCoverage changes.</remarks>
         /// </summary>
         /// <param name="detectingPlayer">The detecting player.</param>
-        /// <param name="cmdItem">The command item.</param>
+        /// <param name="detector">The detector item.</param>
         /// <param name="sensorRange">The sensor range.</param>
-        public void HandleDetectionLostBy(Player detectingPlayer, IUnitCmd_Ltd cmdItem, RangeCategory sensorRange) {
+        public void HandleDetectionLostBy(ISensorDetector detector, RangeCategory sensorRange) {
             D.AssertNotDefault((int)sensorRange);
             if (!_item.IsOperational) {    // 7.20.16 detected items no longer notified of lost detection when they die
-                D.Error("{0} should not be notified by {1} of detection lost when dead!", DebugName, cmdItem.DebugName);
+                D.Error("{0} should not be notified by {1} of detection lost when dead!", DebugName, detector.DebugName);
             }
-            //D.Log(ShowDebugLog, "{0}.HandleDetectionLostBy called. Detecting Cmd: {1}, SensorRange: {2}.", DebugName, cmdItem.DebugName, sensorRange.GetValueName());
-
-            IDictionary<RangeCategory, IList<IUnitCmd_Ltd>> rangeLookup;
+            //D.Log(ShowDebugLog, "{0}.HandleDetectionLostBy called. Detector: {1}, SensorRange: {2}.", DebugName, detector.DebugName, sensorRange.GetValueName());
+            Player detectingPlayer = detector.Owner;
+            IDictionary<RangeCategory, IList<ISensorDetector>> rangeLookup;
             if (!_detectionLookup.TryGetValue(detectingPlayer, out rangeLookup)) {
-                D.Error("{0} found no Sensor Range lookup. Detecting Cmd: {1}.", DebugName, cmdItem.DebugName);
+                D.Error("{0} found no Sensor Range lookup. Detecting Cmd: {1}.", DebugName, detector.DebugName);
                 return;
             }
 
-            IList<IUnitCmd_Ltd> cmds;
-            if (!rangeLookup.TryGetValue(sensorRange, out cmds)) {
-                D.Error("{0} found no List of Commands. Detecting Cmd: {1}, SensorRange: {2}.", DebugName, cmdItem.DebugName, sensorRange.GetValueName());
+            IList<ISensorDetector> detectors;
+            if (!rangeLookup.TryGetValue(sensorRange, out detectors)) {
+                D.Error("{0} found no List of Commands. Detector: {1}, SensorRange: {2}.", DebugName, detector.DebugName, sensorRange.GetValueName());
                 return;
             }
 
-            bool isRemoved = cmds.Remove(cmdItem);
-            D.Assert(isRemoved, cmdItem.DebugName);
-            if (cmds.Count == Constants.Zero) {
+            bool isRemoved = detectors.Remove(detector);
+            D.Assert(isRemoved, detector.DebugName);
+            if (detectors.Count == Constants.Zero) {
                 rangeLookup.Remove(sensorRange);
                 if (rangeLookup.Count == Constants.Zero) {
                     _detectionLookup.Remove(detectingPlayer);
@@ -181,7 +180,7 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(!_item.Owner.IsRelationshipWith(player, DiplomaticRelationship.Alliance));
 
             IntelCoverage newCoverage;
-            IDictionary<RangeCategory, IList<IUnitCmd_Ltd>> rangeLookup;
+            IDictionary<RangeCategory, IList<ISensorDetector>> rangeLookup;
             if (!_detectionLookup.TryGetValue(player, out rangeLookup)) {
                 newCoverage = IntelCoverage.None;
             }
@@ -199,7 +198,7 @@ namespace CodeEnv.Master.GameContent {
             }
 
             if (_item.SetIntelCoverage(player, newCoverage)) {
-                //D.Log(ShowDebugLog, "{0} successfully set {1}'s IntelCoverage to {2}.", DebugName, player, newCoverage.GetValueName());
+                D.Log(ShowDebugLog, "{0} successfully set {1}'s IntelCoverage to {2}.", DebugName, player, newCoverage.GetValueName());
             }
         }
 

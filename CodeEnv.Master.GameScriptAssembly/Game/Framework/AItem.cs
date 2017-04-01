@@ -27,7 +27,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for all Items.
 /// </summary>
-public abstract class AItem : AMonoBase, IOwnerItem, IItem_Ltd, IShipNavigable {
+public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNavigable {
 
     /// <summary>
     /// Occurs when the owner of this <c>AItem</c> is about to change.

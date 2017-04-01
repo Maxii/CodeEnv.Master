@@ -96,7 +96,8 @@ public class NewGameUnitConfigurator {
     private IList<PassiveCountermeasureStat> _availablePassiveCountermeasureStats;
     private IList<ActiveCountermeasureStat> _availableActiveCountermeasureStats;
     private IList<ShieldGeneratorStat> _availableShieldGeneratorStats;
-    private IList<SensorStat> _availableSensorStats;
+    private IList<SensorStat> _availableCmdSensorStats;
+    private IList<SensorStat> _availableElementSensorStats;
     private IList<AWeaponStat> _availableBeamWeaponStats;
     private IList<AWeaponStat> _availableProjectileWeaponStats;
     private IList<AWeaponStat> _availableMissileWeaponStats;
@@ -130,11 +131,12 @@ public class NewGameUnitConfigurator {
         ValidateOwner(owner, editorSettings);
 
         string unitName = editorSettings.UnitName;
-        string cmdDesignName = MakeAndRecordStarbaseCmdDesign(owner, editorSettings.UnitName, editorSettings.CMsPerCommand, editorSettings.Formation.Convert());
+        string cmdDesignName = MakeAndRecordStarbaseCmdDesign(owner, editorSettings.UnitName, editorSettings.CMsPerCommand,
+            editorSettings.SensorsPerCommand, editorSettings.Formation.Convert());
         var hullStats = CreateFacilityHullStats(editorSettings, isSettlement: false);
         IList<string> elementDesignNames = MakeAndRecordFacilityDesigns(owner, hullStats, editorSettings.LosTurretsPerElement,
             editorSettings.MissileLaunchersPerElement, editorSettings.PassiveCMsPerElement, editorSettings.ActiveCMsPerElement,
-            editorSettings.SensorsPerElement, editorSettings.ShieldGeneratorsPerElement);
+            editorSettings.SRSensorsPerElement, editorSettings.ShieldGeneratorsPerElement);
         UnitCreatorConfiguration config = new UnitCreatorConfiguration(unitName, owner, deployDate, cmdDesignName, elementDesignNames);
         creator.Configuration = config;
         creator.transform.position = location;
@@ -166,11 +168,12 @@ public class NewGameUnitConfigurator {
         ValidateOwner(owner, editorSettings);
 
         string unitName = editorSettings.UnitName;
-        string cmdDesignName = MakeAndRecordSettlementCmdDesign(owner, editorSettings.UnitName, editorSettings.CMsPerCommand, editorSettings.Formation.Convert());
+        string cmdDesignName = MakeAndRecordSettlementCmdDesign(owner, editorSettings.UnitName, editorSettings.CMsPerCommand, editorSettings.SensorsPerCommand,
+            editorSettings.Formation.Convert());
         var hullStats = CreateFacilityHullStats(editorSettings, isSettlement: true);
         IList<string> elementDesignNames = MakeAndRecordFacilityDesigns(owner, hullStats, editorSettings.LosTurretsPerElement,
             editorSettings.MissileLaunchersPerElement, editorSettings.PassiveCMsPerElement, editorSettings.ActiveCMsPerElement,
-            editorSettings.SensorsPerElement, editorSettings.ShieldGeneratorsPerElement);
+            editorSettings.SRSensorsPerElement, editorSettings.ShieldGeneratorsPerElement);
         UnitCreatorConfiguration config = new UnitCreatorConfiguration(unitName, owner, deployDate, cmdDesignName, elementDesignNames);
         creator.Configuration = config;
         SystemFactory.Instance.InstallCelestialItemInOrbit(creator.gameObject, system.SettlementOrbitData);
@@ -202,12 +205,13 @@ public class NewGameUnitConfigurator {
         ValidateOwner(owner, editorSettings);
 
         string unitName = editorSettings.UnitName;
-        string cmdDesignName = MakeAndRecordFleetCmdDesign(owner, editorSettings.UnitName, editorSettings.CMsPerCommand, editorSettings.Formation.Convert());
+        string cmdDesignName = MakeAndRecordFleetCmdDesign(owner, editorSettings.UnitName, editorSettings.CMsPerCommand,
+            editorSettings.SensorsPerCommand, editorSettings.Formation.Convert());
         var hullStats = CreateShipHullStats(editorSettings);
         IEnumerable<ShipCombatStance> stances = SelectCombatStances(editorSettings.StanceExclusions);
         IList<string> elementDesignNames = MakeAndRecordShipDesigns(owner, hullStats, editorSettings.LosTurretsPerElement,
             editorSettings.MissileLaunchersPerElement, editorSettings.PassiveCMsPerElement, editorSettings.ActiveCMsPerElement,
-            editorSettings.SensorsPerElement, editorSettings.ShieldGeneratorsPerElement, stances);
+            editorSettings.SRSensorsPerElement, editorSettings.ShieldGeneratorsPerElement, stances);
         UnitCreatorConfiguration config = new UnitCreatorConfiguration(unitName, owner, deployDate, cmdDesignName, elementDesignNames);
         creator.Configuration = config;
         creator.transform.position = location;
@@ -248,8 +252,9 @@ public class NewGameUnitConfigurator {
     public FleetCreator GenerateRandomAutoFleetCreator(Player owner, Vector3 location, GameDate deployDate) {
         string unitName = GetUniqueUnitName("AutoFleet");
         int cmsPerCmd = RandomExtended.Range(0, 3);
+        int sensorsPerCmd = RandomExtended.Range(1, 6);
         Formation formation = Enums<Formation>.GetRandom(excludeDefault: true);    //= Formation.Diamond; 
-        string cmdDesignName = MakeAndRecordFleetCmdDesign(owner, unitName, cmsPerCmd, formation);
+        string cmdDesignName = MakeAndRecordFleetCmdDesign(owner, unitName, cmsPerCmd, sensorsPerCmd, formation);
 
         int elementQty = RandomExtended.Range(1, TempGameValues.MaxShipsPerFleet);
         var hullStats = CreateShipHullStats(elementQty);
@@ -291,8 +296,9 @@ public class NewGameUnitConfigurator {
     public StarbaseCreator GenerateRandomAutoStarbaseCreator(Player owner, Vector3 location, GameDate deployDate) {
         string unitName = GetUniqueUnitName("AutoStarbase");
         int cmsPerCmd = RandomExtended.Range(0, 3);
+        int sensorsPerCmd = RandomExtended.Range(1, 6);
         Formation formation = Enums<Formation>.GetRandomExcept(Formation.Wedge, default(Formation));   // = Formation.Diamond;    
-        string cmdDesignName = MakeAndRecordStarbaseCmdDesign(owner, unitName, cmsPerCmd, formation);
+        string cmdDesignName = MakeAndRecordStarbaseCmdDesign(owner, unitName, cmsPerCmd, sensorsPerCmd, formation);
 
         int elementQty = RandomExtended.Range(1, TempGameValues.MaxFacilitiesPerBase);
         var hullStats = CreateFacilityHullStats(elementQty, isSettlement: false);
@@ -333,8 +339,9 @@ public class NewGameUnitConfigurator {
     public SettlementCreator GenerateRandomAutoSettlementCreator(Player owner, SystemItem system, GameDate deployDate) {
         string unitName = GetUniqueUnitName("AutoSettlement");
         int cmsPerCmd = RandomExtended.Range(0, 3);
+        int sensorsPerCmd = RandomExtended.Range(1, 6);
         Formation formation = Enums<Formation>.GetRandomExcept(Formation.Wedge, default(Formation));
-        string cmdDesignName = MakeAndRecordSettlementCmdDesign(owner, unitName, cmsPerCmd, formation);
+        string cmdDesignName = MakeAndRecordSettlementCmdDesign(owner, unitName, cmsPerCmd, sensorsPerCmd, formation);
 
         int elementQty = RandomExtended.Range(1, TempGameValues.MaxFacilitiesPerBase);
         var hullStats = CreateFacilityHullStats(elementQty, isSettlement: true);
@@ -381,7 +388,8 @@ public class NewGameUnitConfigurator {
         _availableMissileWeaponStats = __CreateAvailableMissileWeaponStats(TempGameValues.MaxMissileWeaponsForAnyElement);
         _availablePassiveCountermeasureStats = __CreateAvailablePassiveCountermeasureStats(9);
         _availableActiveCountermeasureStats = __CreateAvailableActiveCountermeasureStats(9);
-        _availableSensorStats = __CreateAvailableSensorStats(9);
+        _availableCmdSensorStats = __CreateAvailableCmdSensorStats(9);
+        _availableElementSensorStats = __CreateAvailableElementSensorStats(9);
         _availableShieldGeneratorStats = __CreateAvailableShieldGeneratorStats(9);
     }
 
@@ -550,24 +558,26 @@ public class NewGameUnitConfigurator {
         return new SensorStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F, RangeCategory.Short, isDamageable: false);
     }
 
-    private IList<SensorStat> __CreateAvailableSensorStats(int quantity) {
+    private SensorStat CreateReqdMediumRangeSensorStat() {
+        string name = "PulseSensor";
+        return new SensorStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F, RangeCategory.Medium, isDamageable: true);
+    }
+
+    private IList<SensorStat> __CreateAvailableCmdSensorStats(int quantity) {
         IList<SensorStat> statsList = new List<SensorStat>(quantity);
         for (int i = 0; i < quantity; i++) {
             string name = string.Empty;
             bool isDamageable = true;
-            RangeCategory rangeCat = Enums<RangeCategory>.GetRandom(excludeDefault: true);
+            RangeCategory rangeCat = Enums<RangeCategory>.GetRandomExcept(RangeCategory.None, RangeCategory.Short);
             //RangeCategory rangeCat = RangeCategory.Long;
             switch (rangeCat) {
-                case RangeCategory.Short:
-                    name = "ProximityDetector";
-                    isDamageable = false;
-                    break;
                 case RangeCategory.Medium:
                     name = "PulseSensor";
                     break;
                 case RangeCategory.Long:
                     name = "DeepScanArray";
                     break;
+                case RangeCategory.Short:
                 case RangeCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(rangeCat));
@@ -578,6 +588,19 @@ public class NewGameUnitConfigurator {
         }
         return statsList;
     }
+
+    private IList<SensorStat> __CreateAvailableElementSensorStats(int quantity) {
+        IList<SensorStat> statsList = new List<SensorStat>(quantity);
+        for (int i = 0; i < quantity; i++) {
+            string name = "ProximityDetector";
+            bool isDamageable = true;
+            var sensorStat = new SensorStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F,
+                RangeCategory.Short, isDamageable);
+            statsList.Add(sensorStat);
+        }
+        return statsList;
+    }
+
 
     private IList<ShieldGeneratorStat> __CreateAvailableShieldGeneratorStats(int quantity) {
         IList<ShieldGeneratorStat> statsList = new List<ShieldGeneratorStat>(quantity);
@@ -694,9 +717,9 @@ public class NewGameUnitConfigurator {
     #region Element Designs
 
     private IList<string> MakeAndRecordFacilityDesigns(Player owner, IEnumerable<FacilityHullStat> hullStats, DebugLosWeaponLoadout turretLoadout,
-    DebugWeaponLoadout missileLoadout, int passiveCMsPerElement, int activeCMsPerElement, int sensorsPerElement, int shieldGensPerElement) {
+    DebugWeaponLoadout missileLoadout, int passiveCMsPerElement, int activeCMsPerElement, int srSensorsPerElement, int shieldGensPerElement) {
 
-        D.Assert(sensorsPerElement >= Constants.One, "A minimum of 1 sensor is reqd per element.");
+        D.Assert(srSensorsPerElement >= Constants.One, "A minimum of 1 ShortRange sensor is reqd per element.");
 
         IList<string> designNames = new List<string>();
         foreach (var hullStat in hullStats) {
@@ -716,8 +739,8 @@ public class NewGameUnitConfigurator {
 
             List<SensorStat> sensorStats = new List<SensorStat>();
             sensorStats.Add(CreateReqdShortRangeSensorStat());
-            if (sensorsPerElement > 1) {
-                sensorStats.AddRange(_availableSensorStats.Shuffle().Take(sensorsPerElement - 1));
+            if (srSensorsPerElement > 1) {
+                sensorStats.AddRange(_availableElementSensorStats.Shuffle().Take(srSensorsPerElement - 1));
             }
 
             var shieldGenStats = _availableShieldGeneratorStats.Shuffle().Take(shieldGensPerElement);
@@ -732,10 +755,10 @@ public class NewGameUnitConfigurator {
     }
 
     private IList<string> MakeAndRecordShipDesigns(Player owner, IEnumerable<ShipHullStat> hullStats, DebugLosWeaponLoadout turretLoadout,
-    DebugWeaponLoadout missileLoadout, int passiveCMsPerElement, int activeCMsPerElement, int sensorsPerElement,
+    DebugWeaponLoadout missileLoadout, int passiveCMsPerElement, int activeCMsPerElement, int srSensorsPerElement,
     int shieldGensPerElement, IEnumerable<ShipCombatStance> stances) {
 
-        D.Assert(sensorsPerElement >= Constants.One, "A minimum of 1 sensor is reqd per element.");
+        D.Assert(srSensorsPerElement >= Constants.One, "A minimum of 1 ShortRange sensor is reqd per element.");
 
         IList<string> designNames = new List<string>();
         foreach (var hullStat in hullStats) {
@@ -755,8 +778,8 @@ public class NewGameUnitConfigurator {
 
             List<SensorStat> sensorStats = new List<SensorStat>();
             sensorStats.Add(CreateReqdShortRangeSensorStat());
-            if (sensorsPerElement > 1) {
-                sensorStats.AddRange(_availableSensorStats.Shuffle().Take(sensorsPerElement - 1));
+            if (srSensorsPerElement > 1) {
+                sensorStats.AddRange(_availableElementSensorStats.Shuffle().Take(srSensorsPerElement - 1));
             }
 
             var shieldGenStats = _availableShieldGeneratorStats.Shuffle().Take(shieldGensPerElement);
@@ -797,32 +820,53 @@ public class NewGameUnitConfigurator {
 
     #region Command Designs
 
-    private string MakeAndRecordFleetCmdDesign(Player owner, string unitName, int cmsPerCmd, Formation formation) {
+    private string MakeAndRecordFleetCmdDesign(Player owner, string unitName, int cmsPerCmd, int sensorsPerCmd, Formation formation) {
         string designName = GetUniqueCmdDesignName();
         var passiveCmStats = _availablePassiveCountermeasureStats.Shuffle().Take(cmsPerCmd);
+
+        List<SensorStat> cmdSensorStats = new List<SensorStat>();
+        cmdSensorStats.Add(CreateReqdMediumRangeSensorStat());
+        if (sensorsPerCmd > 1) {
+            cmdSensorStats.AddRange(_availableCmdSensorStats.Shuffle().Take(sensorsPerCmd - 1));
+        }
+
         var ftlDampenerStat = __MakeFtlDampenerStat();
         UnitCmdStat cmdStat = MakeFleetCmdStat(unitName, formation);
-        FleetCmdDesign design = new FleetCmdDesign(owner, designName, passiveCmStats, ftlDampenerStat, cmdStat);
+        FleetCmdDesign design = new FleetCmdDesign(owner, designName, passiveCmStats, cmdSensorStats, ftlDampenerStat, cmdStat);
         _gameMgr.PlayersDesigns.Add(design);
         return designName;
     }
 
-    private string MakeAndRecordStarbaseCmdDesign(Player owner, string unitName, int cmsPerCmd, Formation formation) {
+    private string MakeAndRecordStarbaseCmdDesign(Player owner, string unitName, int cmsPerCmd, int sensorsPerCmd, Formation formation) {
         string designName = GetUniqueCmdDesignName();
         var passiveCmStats = _availablePassiveCountermeasureStats.Shuffle().Take(cmsPerCmd);
+
+        List<SensorStat> cmdSensorStats = new List<SensorStat>();
+        cmdSensorStats.Add(CreateReqdMediumRangeSensorStat());
+        if (sensorsPerCmd > 1) {
+            cmdSensorStats.AddRange(_availableCmdSensorStats.Shuffle().Take(sensorsPerCmd - 1));
+        }
+
         var ftlDampenerStat = __MakeFtlDampenerStat();
         UnitCmdStat cmdStat = MakeStarbaseCmdStat(unitName, formation);
-        StarbaseCmdDesign design = new StarbaseCmdDesign(owner, designName, passiveCmStats, ftlDampenerStat, cmdStat);
+        StarbaseCmdDesign design = new StarbaseCmdDesign(owner, designName, passiveCmStats, cmdSensorStats, ftlDampenerStat, cmdStat);
         _gameMgr.PlayersDesigns.Add(design);
         return designName;
     }
 
-    private string MakeAndRecordSettlementCmdDesign(Player owner, string unitName, int cmsPerCmd, Formation formation) {
+    private string MakeAndRecordSettlementCmdDesign(Player owner, string unitName, int cmsPerCmd, int sensorsPerCmd, Formation formation) {
         string designName = GetUniqueCmdDesignName();
         var passiveCmStats = _availablePassiveCountermeasureStats.Shuffle().Take(cmsPerCmd);
+
+        List<SensorStat> cmdSensorStats = new List<SensorStat>();
+        cmdSensorStats.Add(CreateReqdMediumRangeSensorStat());
+        if (sensorsPerCmd > 1) {
+            cmdSensorStats.AddRange(_availableCmdSensorStats.Shuffle().Take(sensorsPerCmd - 1));
+        }
+
         var ftlDampenerStat = __MakeFtlDampenerStat();
         SettlementCmdStat cmdStat = MakeSettlementCmdStat(unitName, formation);
-        SettlementCmdDesign design = new SettlementCmdDesign(owner, designName, passiveCmStats, ftlDampenerStat, cmdStat);
+        SettlementCmdDesign design = new SettlementCmdDesign(owner, designName, passiveCmStats, cmdSensorStats, ftlDampenerStat, cmdStat);
         _gameMgr.PlayersDesigns.Add(design);
         return designName;
     }

@@ -55,7 +55,7 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
         //D.Log("{0}.InitializeOnAwake", DebugName);
         InitializeValuesAndReferences();
         if (_gameMgr.IsSceneLoading) {
-            D.Log("{0} is deferring initialization until scene is finished loading.", DebugName);
+            //D.Log("{0} is deferring initialization until scene is finished loading.", DebugName);
             _gameMgr.sceneLoaded += SceneLoadedEventHandler;
         }
         else {

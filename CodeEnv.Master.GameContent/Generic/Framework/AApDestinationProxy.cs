@@ -132,13 +132,11 @@ namespace CodeEnv.Master.GameContent {
                 return true;
             }
             // ship has arrived
-            D.Assert(HasArrived, "{0} HasArrivedError: Inner {1}, DistanceToDest {2}, Outer {3}.".Inject(DebugName, InnerRadius, distanceToDest, OuterRadius));
+            if (!HasArrived) {
+                // 3.30.17 Received Inner = 0, Outer = 2, DistanceToDest = 2.000099. Warns because HasArrived uses squared values
+                D.Warn("{0} HasArrivedError: Inner {1}, DistanceToDest {2}, Outer {3}.", DebugName, InnerRadius, distanceToDest, OuterRadius);
+            }
             return false;
-            ////if (distanceToDest < InnerRadius) {
-            ////    direction = -direction;
-            ////    distance = InnerRadius - distanceToDest;
-            ////}
-            ////return true;
         }
 
     }

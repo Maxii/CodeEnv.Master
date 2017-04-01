@@ -35,6 +35,8 @@ namespace CodeEnv.Master.GameContent {
 
         public int CMsPerCommand { get; private set; }
 
+        public int SensorsPerCommand { get; private set; }
+
         public int ActiveCMsPerElement { get; private set; }
 
         public GameDate DateToDeploy { get; private set; }
@@ -47,7 +49,7 @@ namespace CodeEnv.Master.GameContent {
 
         public int ShieldGeneratorsPerElement { get; private set; }
 
-        public int SensorsPerElement { get; private set; }
+        public int SRSensorsPerElement { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AUnitCreatorEditorSettings" /> struct
@@ -58,29 +60,31 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="elementQty">The element qty.</param>
         /// <param name="userRelations">The user relations.</param>
         /// <param name="cmsPerCmd">The CMS per command.</param>
+        /// <param name="sensorsPerCmd">MR and LR sensor qty per command.</param>
         /// <param name="activeCMs">The active c ms.</param>
         /// <param name="deployDate">The deploy date.</param>
         /// <param name="losTurrets">The LOS turrets.</param>
         /// <param name="missileLaunchers">The missile launchers.</param>
         /// <param name="passiveCMs">The passive c ms.</param>
         /// <param name="shieldGens">The shield gens.</param>
-        /// <param name="sensors">The sensors.</param>
-        public AUnitCreatorEditorSettings(string unitName, bool isOwnerUser, int elementQty, DebugDiploUserRelations userRelations, int cmsPerCmd,
-            int activeCMs, GameDate deployDate, DebugLosWeaponLoadout losTurrets, DebugWeaponLoadout missileLaunchers, int passiveCMs, int shieldGens,
-            int sensors) {
+        /// <param name="srSensors">SR sensor qty per element.</param>
+        public AUnitCreatorEditorSettings(string unitName, bool isOwnerUser, int elementQty, DebugDiploUserRelations userRelations,
+            int cmsPerCmd, int sensorsPerCmd, int activeCMs, GameDate deployDate, DebugLosWeaponLoadout losTurrets,
+            DebugWeaponLoadout missileLaunchers, int passiveCMs, int shieldGens, int srSensors) {
             UnitName = unitName;
             IsOwnerUser = isOwnerUser;
             IsCompositionPreset = false;
             NonPresetElementQty = elementQty;
             DesiredRelationshipWithUser = userRelations;
             CMsPerCommand = cmsPerCmd;
+            SensorsPerCommand = sensorsPerCmd;
             ActiveCMsPerElement = activeCMs;
             DateToDeploy = deployDate;
             LosTurretsPerElement = losTurrets;
             MissileLaunchersPerElement = missileLaunchers;
             PassiveCMsPerElement = passiveCMs;
             ShieldGeneratorsPerElement = shieldGens;
-            SensorsPerElement = sensors;
+            SRSensorsPerElement = srSensors;
         }
 
         /// <summary>
@@ -91,15 +95,17 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="isOwnerUser">if set to <c>true</c> [is owner user].</param>
         /// <param name="userRelations">The user relations.</param>
         /// <param name="cmsPerCmd">The CMS per command.</param>
+        /// <param name="sensorsPerCmd">MR and LR sensor qty per command.</param>
         /// <param name="activeCMs">The active c ms.</param>
         /// <param name="deployDate">The deploy date.</param>
         /// <param name="losTurrets">The LOS turrets.</param>
         /// <param name="missileLaunchers">The missile launchers.</param>
         /// <param name="passiveCMs">The passive c ms.</param>
         /// <param name="shieldGens">The shield gens.</param>
-        /// <param name="sensors">The sensors.</param>
-        public AUnitCreatorEditorSettings(string unitName, bool isOwnerUser, DebugDiploUserRelations userRelations, int cmsPerCmd, int activeCMs,
-            GameDate deployDate, DebugLosWeaponLoadout losTurrets, DebugWeaponLoadout missileLaunchers, int passiveCMs, int shieldGens, int sensors) {
+        /// <param name="srSensors">SR sensor qty per element.</param>
+        public AUnitCreatorEditorSettings(string unitName, bool isOwnerUser, DebugDiploUserRelations userRelations, int cmsPerCmd, int sensorsPerCmd,
+            int activeCMs, GameDate deployDate, DebugLosWeaponLoadout losTurrets, DebugWeaponLoadout missileLaunchers, int passiveCMs,
+            int shieldGens, int srSensors) {
             UnitName = unitName;
             IsOwnerUser = isOwnerUser;
             IsCompositionPreset = true;
@@ -112,7 +118,7 @@ namespace CodeEnv.Master.GameContent {
             MissileLaunchersPerElement = missileLaunchers;
             PassiveCMsPerElement = passiveCMs;
             ShieldGeneratorsPerElement = shieldGens;
-            SensorsPerElement = sensors;
+            SRSensorsPerElement = srSensors;
         }
 
     }

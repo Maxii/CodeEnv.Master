@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2014 Strategic Forge
+// Copyright © 2012 - 2017 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: Sensor.cs
-// An Element's Sensor. Can be Short, Medium or Long range.
+// File: ASensor.cs
+// Abstract base class for Sensors.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,14 +16,12 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
-    using System.Collections.Generic;
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// An Element's Sensor. Can be Short, Medium or Long range.
+    /// Abstract base class for Sensors.
     /// </summary>
-    public class Sensor : ARangedEquipment {
+    public abstract class ASensor : ARangedEquipment {
 
         private ISensorRangeMonitor _rangeMonitor;
         public ISensorRangeMonitor RangeMonitor {
@@ -44,7 +42,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="stat">The stat.</param>
         /// <param name="name">The optional unique name for this equipment. If not provided, the name embedded in the stat will be used.</param>
-        public Sensor(SensorStat stat, string name = null)
+        public ASensor(SensorStat stat, string name = null)
             : base(stat, name) {
         }
 
@@ -61,7 +59,7 @@ namespace CodeEnv.Master.GameContent {
         * changes as a result of its ownership change.
         * *****************************************************************************************************************************/
 
-        public override string ToString() { return Stat.ToString(); }
+        public sealed override string ToString() { return Stat.ToString(); }
 
     }
 }

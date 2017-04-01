@@ -75,10 +75,11 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="settlementCmd">The settlement command.</param>
         /// <param name="owner">The owner.</param>
+        /// <param name="sensors">The MR and LR sensors for this UnitCmd.</param>
         /// <param name="ftlDampener">The FTL dampener.</param>
         /// <param name="cmdStat">The stat.</param>
-        public SettlementCmdData(ISettlementCmd settlementCmd, Player owner, FtlDampener ftlDampener, SettlementCmdStat cmdStat)
-            : this(settlementCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), ftlDampener, cmdStat) {
+        public SettlementCmdData(ISettlementCmd settlementCmd, Player owner, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, SettlementCmdStat cmdStat)
+            : this(settlementCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), sensors, ftlDampener, cmdStat) {
         }
 
         /// <summary>
@@ -87,10 +88,11 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="settlementCmd">The settlement command.</param>
         /// <param name="owner">The owner.</param>
         /// <param name="passiveCMs">The passive countermeasures.</param>
+        /// <param name="sensors">The MR and LR sensors for this UnitCmd.</param>
         /// <param name="ftlDampener">The FTL dampener.</param>
         /// <param name="cmdStat">The stat.</param>
-        public SettlementCmdData(ISettlementCmd settlementCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, FtlDampener ftlDampener, SettlementCmdStat cmdStat)
-            : base(settlementCmd, owner, passiveCMs, ftlDampener, cmdStat) {
+        public SettlementCmdData(ISettlementCmd settlementCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, SettlementCmdStat cmdStat)
+            : base(settlementCmd, owner, passiveCMs, sensors, ftlDampener, cmdStat) {
             Population = cmdStat.Population;
         }
 

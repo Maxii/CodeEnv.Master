@@ -30,7 +30,7 @@ using UnityEngine.Profiling;
 /// Abstract class for AMortalItem's that are Unit Elements.
 /// </summary>
 public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, IUnitElement_Ltd, ICameraFollowable, IShipBlastable,
-    ISensorDetectable {
+    ISensorDetectable, ISensorDetector {
 
     private const string __HQNameAddendum = "[HQ]";
 
@@ -87,6 +87,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         protected get { return base.CameraStat as FollowableItemCameraStat; }
         set { base.CameraStat = value; }
     }
+
+    public IElementSensorRangeMonitor SRSensorMonitor { get; private set; }
 
     protected new AElementDisplayManager DisplayMgr { get { return base.DisplayMgr as AElementDisplayManager; } }
     protected IList<IWeaponRangeMonitor> WeaponRangeMonitors { get; private set; }
@@ -177,6 +179,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         CountermeasureRangeMonitors.ForAll(crm => crm.InitializeRangeDistance());
         WeaponRangeMonitors.ForAll(wrm => wrm.InitializeRangeDistance());
         Shields.ForAll(srm => srm.InitializeRangeDistance());
+        SRSensorMonitor.InitializeRangeDistance();
     }
 
     #endregion
@@ -515,8 +518,13 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #region Sensors
 
-    private void Attach(Sensor sensor) {
-        D.AssertNull(Command);  // OPTIMIZE Sensors are only attached to elements when an element is being created so there is no Command yet
+    private void Attach(ElementSensor sensor) {
+        ////D.AssertNull(Command);  // OPTIMIZE Sensors are only attached to elements when an element is being created so there is no Command yet
+        D.AssertNotNull(sensor.RangeMonitor);
+        if (SRSensorMonitor == null) {
+            // only need to record and setup range monitor once as there is only one. The monitor can have more than 1 weapon
+            SRSensorMonitor = sensor.RangeMonitor;
+        }
     }
 
     #endregion
@@ -566,6 +574,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// </summary>
     /// <param name="chgdRelationsPlayer">The other player.</param>
     public void HandleRelationsChanged(Player chgdRelationsPlayer) {
+        SRSensorMonitor.HandleRelationsChanged(chgdRelationsPlayer);
         WeaponRangeMonitors.ForAll(wrm => wrm.HandleRelationsChanged(chgdRelationsPlayer));
         CountermeasureRangeMonitors.ForAll(crm => crm.HandleRelationsChanged(chgdRelationsPlayer));
         UponRelationsChanged(chgdRelationsPlayer);
@@ -649,22 +658,22 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     }
 
     private void FsmTgtInfoAccessChgdEventHandler(object sender, InfoAccessChangedEventArgs e) {
-        IItem_Ltd fsmTgt = sender as IItem_Ltd;
+        IOwnerItem_Ltd fsmTgt = sender as IOwnerItem_Ltd;
         HandleFsmTgtInfoAccessChgd(e.Player, fsmTgt);
     }
 
-    private void HandleFsmTgtInfoAccessChgd(Player playerWhoseInfoAccessChgd, IItem_Ltd fsmTgt) {
+    private void HandleFsmTgtInfoAccessChgd(Player playerWhoseInfoAccessChgd, IOwnerItem_Ltd fsmTgt) {
         if (playerWhoseInfoAccessChgd == Owner) {
             UponFsmTgtInfoAccessChgd(fsmTgt);
         }
     }
 
     private void FsmTgtOwnerChgdEventHandler(object sender, EventArgs e) {
-        IItem_Ltd fsmTgt = sender as IItem_Ltd;
+        IOwnerItem_Ltd fsmTgt = sender as IOwnerItem_Ltd;
         HandleFsmTgtOwnerChgd(fsmTgt);
     }
 
-    private void HandleFsmTgtOwnerChgd(IItem_Ltd fsmTgt) {
+    private void HandleFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) {
         UponFsmTgtOwnerChgd(fsmTgt);
     }
 
@@ -723,9 +732,9 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// <param name="deadFsmTgt">The dead target.</param>
     private void UponFsmTgtDeath(IMortalItem_Ltd deadFsmTgt) { RelayToCurrentState(deadFsmTgt); }
 
-    private void UponFsmTgtInfoAccessChgd(IItem_Ltd fsmTgt) { RelayToCurrentState(fsmTgt); }
+    private void UponFsmTgtInfoAccessChgd(IOwnerItem_Ltd fsmTgt) { RelayToCurrentState(fsmTgt); }
 
-    private void UponFsmTgtOwnerChgd(IItem_Ltd fsmTgt) { RelayToCurrentState(fsmTgt); }
+    private void UponFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) { RelayToCurrentState(fsmTgt); }
 
     private bool UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) { return RelayToCurrentState(firingSolutions); }
 
@@ -949,7 +958,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         Utility.ValidateNotNull(fsmTgt);
         bool isSubscribeActionTaken = false;
         bool isDuplicateSubscriptionAttempted = false;
-        IItem_Ltd itemFsmTgt = null;
+        IOwnerItem_Ltd itemFsmTgt = null;
         bool isSubscribed = __subscriptionStatusLookup[subscriptionMode];
         switch (subscriptionMode) {
             case FsmTgtEventSubscriptionMode.TargetDeath:
@@ -969,7 +978,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
                 }
                 break;
             case FsmTgtEventSubscriptionMode.InfoAccessChg:
-                itemFsmTgt = fsmTgt as IItem_Ltd;
+                itemFsmTgt = fsmTgt as IOwnerItem_Ltd;
                 if (itemFsmTgt != null) {    // fsmTgt can be a StationaryLocation
                     if (!toSubscribe) {
                         itemFsmTgt.infoAccessChgd -= FsmTgtInfoAccessChgdEventHandler;
@@ -985,7 +994,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
                 }
                 break;
             case FsmTgtEventSubscriptionMode.OwnerChg:
-                itemFsmTgt = fsmTgt as IItem_Ltd;
+                itemFsmTgt = fsmTgt as IOwnerItem_Ltd;
                 if (itemFsmTgt != null) {    // fsmTgt can be a StationaryLocation
                     if (!toSubscribe) {
                         itemFsmTgt.ownerChanged -= FsmTgtOwnerChgdEventHandler;
@@ -1117,12 +1126,12 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #region ISensorDetectable Members
 
-    public void HandleDetectionBy(Player detectingPlayer, IUnitCmd_Ltd cmdItem, RangeCategory sensorRangeCat) {
-        _detectionHandler.HandleDetectionBy(detectingPlayer, cmdItem, sensorRangeCat);
+    public void HandleDetectionBy(ISensorDetector detector, RangeCategory sensorRangeCat) {
+        _detectionHandler.HandleDetectionBy(detector, sensorRangeCat);
     }
 
-    public void HandleDetectionLostBy(Player detectingPlayer, IUnitCmd_Ltd cmdItem, RangeCategory sensorRangeCat) {
-        _detectionHandler.HandleDetectionLostBy(detectingPlayer, cmdItem, sensorRangeCat);
+    public void HandleDetectionLostBy(ISensorDetector detector, RangeCategory sensorRangeCat) {
+        _detectionHandler.HandleDetectionLostBy(detector, sensorRangeCat);
     }
 
     /// <summary>

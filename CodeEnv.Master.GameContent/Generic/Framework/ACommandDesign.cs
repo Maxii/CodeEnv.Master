@@ -25,8 +25,11 @@ namespace CodeEnv.Master.GameContent {
 
         public FtlDampenerStat FtlDampenerStat { get; private set; }
 
-        public ACommandDesign(Player player, string designName, IEnumerable<PassiveCountermeasureStat> passiveCmStats, FtlDampenerStat ftlDampenerStat)
+        public IEnumerable<SensorStat> SensorStats { get; private set; }
+
+        public ACommandDesign(Player player, string designName, IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<SensorStat> sensorStats, FtlDampenerStat ftlDampenerStat)
             : base(player, designName, passiveCmStats) {
+            SensorStats = sensorStats;
             FtlDampenerStat = ftlDampenerStat;
         }
 

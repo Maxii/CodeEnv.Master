@@ -147,39 +147,6 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        /// <summary>
-        /// Calculates the combined sensor range (distance) from the provided sensors. The sensors do not have
-        /// to be activated to have their range calculated, but they do have to have the same RangeCategory and RangeDistance values. 
-        /// The algorithm takes the range distance of the first undamaged sensor and adds the sqrt 
-        /// of the range distance of each of the remaining undamaged sensors. If there are no sensors, then 0 is returned. 
-        /// <remarks>The old algorithm took the sensor with the longest range and added the Sqrt of the range of each of the remaining sensors.
-        /// This was to allow for different range distances from sensors with the same RangeCategory, ostensibly to allow only partial
-        /// upgrading of sensors in an element.</remarks>
-        /// </summary>
-        /// <param name="sensors">The sensors.</param>
-        /// <returns></returns>
-        [Obsolete]
-        public static float CalcSensorRangeDistance(this IEnumerable<Sensor> sensors) {
-            if (!sensors.Any()) {
-                return Constants.ZeroF;
-            }
-
-            D.Assert(sensors.Select(s => s.RangeCategory).Distinct().Count() <= Constants.One); // validate all the same RangeCategory
-            D.Assert(sensors.Select(s => s.RangeDistance).Distinct(FloatEqualityComparer.Default).Count() <= Constants.One); // validate all the same RangeDistance -> no mixing of tech
-            //D.Log(sensors.Select(s => s.RangeDistance).Concatenate());
-            var undamagedSensors = sensors.Where(s => !s.IsDamaged);
-            if (!undamagedSensors.Any()) {
-                return sensors.First().RangeDistance; // little value in changing range to 0 when no undamaged sensors
-            }
-
-            var firstSensor = undamagedSensors.First();
-            var remainingSensors = undamagedSensors.Except(firstSensor);
-            return firstSensor.RangeDistance + remainingSensors.Sum(s => Mathf.Sqrt(s.RangeDistance));
-            //Sensor longestRangeSensor = operationalSensors.MaxBy(s => s.RangeDistance);
-            //var remainingSensors = operationalSensors.Except(longestRangeSensor);
-            //return longestRangeSensor.RangeDistance + remainingSensors.Sum(s => Mathf.Sqrt(s.RangeDistance));
-        }
-
         private static Color32 _magenta = Color.magenta;    // Hex #FF00FFFF
         private static Color32 _yellow = Color.yellow;      // Hex #FFFF00FF
         private static Color32 _aqua = Color.cyan;          // Hex #00FFFFFF

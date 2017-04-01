@@ -51,8 +51,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     private GameObject _countermeasureRangeMonitorPrefab;
     private GameObject _shieldPrefab;
     private GameObject _weaponRangeMonitorPrefab;
-    private GameObject _sensorRangeMonitorPrefab;
     private GameObject _ftlDampenerRangeMonitorPrefab;
+    private GameObject _cmdSensorRangeMonitorPrefab;
+    private GameObject _elementSensorRangeMonitorPrefab;
 
     #region Initialization
 
@@ -74,7 +75,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         _countermeasureRangeMonitorPrefab = reqdPrefabs.countermeasureRangeMonitor.gameObject;
         _shieldPrefab = reqdPrefabs.shield.gameObject;
         _weaponRangeMonitorPrefab = reqdPrefabs.weaponRangeMonitor.gameObject;
-        _sensorRangeMonitorPrefab = reqdPrefabs.sensorRangeMonitor.gameObject;
+        _cmdSensorRangeMonitorPrefab = reqdPrefabs.cmdSensorRangeMonitor.gameObject;
+        _elementSensorRangeMonitorPrefab = reqdPrefabs.elementSensorRangeMonitor.gameObject;
         _ftlDampenerRangeMonitorPrefab = reqdPrefabs.ftlDampenerRangeMonitor.gameObject;
 
         _shipItemPrefab = reqdPrefabs.shipItem;
@@ -163,9 +165,10 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             D.Error("{0} should already have a parent.", cmd.DebugName);
         }
         var passiveCMs = MakeCountermeasures(design.PassiveCmStats);
-        var ftlDampener = MakeFtlDampener(design.FtlDampenerStat);
+        var sensors = MakeSensors(design.SensorStats, cmd);
+        var ftlDampener = MakeFtlDampener(design.FtlDampenerStat, cmd);
         cmd.Name = CommonTerms.Command;
-        FleetCmdData data = new FleetCmdData(cmd, owner, passiveCMs, ftlDampener, design.CmdStat);
+        FleetCmdData data = new FleetCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, design.CmdStat);
         cmd.CameraStat = cameraStat;
         cmd.Data = data;
     }
@@ -182,9 +185,10 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         FleetCmdCameraStat cameraStat = new FleetCmdCameraStat(minViewDistance, optViewDistanceAdder: 1F, fov: 60F);
 
         var countermeasureStats = new PassiveCountermeasureStat[] { new PassiveCountermeasureStat() };
+        var sensorStats = new SensorStat[] { new SensorStat(RangeCategory.Medium), new SensorStat(RangeCategory.Long) };
         var ftlDampenerStat = new FtlDampenerStat();
         UnitCmdStat cmdStat = new UnitCmdStat(fleetName, 10F, 100, Formation.Globe);
-        FleetCmdDesign design = new FleetCmdDesign(element.Owner, "FleetCmdDesignHack", countermeasureStats, ftlDampenerStat, cmdStat);
+        FleetCmdDesign design = new FleetCmdDesign(element.Owner, "FleetCmdDesignHack", countermeasureStats, sensorStats, ftlDampenerStat, cmdStat);
 
         GameObject unitContainer = new GameObject(fleetName);
         UnityUtility.AttachChildToParent(unitContainer, FleetsFolder.Instance.gameObject);
@@ -258,7 +262,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
         var passiveCMs = MakeCountermeasures(design.PassiveCmStats);
         var activeCMs = MakeCountermeasures(design.ActiveCmStats, element);
-        var sensors = MakeSensors(design.SensorStats);
+        var sensors = MakeSensors(design.SensorStats, element);
         var shieldGenerators = MakeShieldGenerators(design.ShieldGeneratorStats, element);
         Priority hqPriority = design.HQPriority;
 
@@ -353,9 +357,10 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             D.Error("{0} should already have a parent.", cmd.DebugName);
         }
         var passiveCMs = MakeCountermeasures(design.PassiveCmStats);
-        var ftlDampener = MakeFtlDampener(design.FtlDampenerStat);
+        var sensors = MakeSensors(design.SensorStats, cmd);
+        var ftlDampener = MakeFtlDampener(design.FtlDampenerStat, cmd);
         cmd.Name = CommonTerms.Command;
-        StarbaseCmdData data = new StarbaseCmdData(cmd, owner, passiveCMs, ftlDampener, design.CmdStat);
+        StarbaseCmdData data = new StarbaseCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, design.CmdStat);
         cmd.CameraStat = cameraStat;
         cmd.Data = data;
     }
@@ -436,9 +441,10 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             D.Error("{0} should already have a parent.", cmd.DebugName);
         }
         var passiveCMs = MakeCountermeasures(design.PassiveCmStats);
-        var ftlDampener = MakeFtlDampener(design.FtlDampenerStat);
+        var sensors = MakeSensors(design.SensorStats, cmd);
+        var ftlDampener = MakeFtlDampener(design.FtlDampenerStat, cmd);
         cmd.Name = CommonTerms.Command;
-        SettlementCmdData data = new SettlementCmdData(cmd, owner, passiveCMs, ftlDampener, design.CmdStat);
+        SettlementCmdData data = new SettlementCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, design.CmdStat);
         cmd.CameraStat = cameraStat;
         cmd.Data = data;
     }
@@ -511,7 +517,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
         var passiveCMs = MakeCountermeasures(design.PassiveCmStats);
         var activeCMs = MakeCountermeasures(design.ActiveCmStats, element);
-        var sensors = MakeSensors(design.SensorStats);
+        var sensors = MakeSensors(design.SensorStats, element);
         var shieldGenerators = MakeShieldGenerators(design.ShieldGeneratorStats, element);
         Priority hqPriority = design.HQPriority;
 
@@ -619,8 +625,10 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="stat">The stat.</param>
     /// <param name="name">The name.</param>
     /// <returns></returns>
-    private FtlDampener MakeFtlDampener(FtlDampenerStat stat, string name = null) {
-        return new FtlDampener(stat, name);
+    private FtlDampener MakeFtlDampener(FtlDampenerStat stat, AUnitCmdItem cmd, string name = null) {
+        var dampener = new FtlDampener(stat, name);
+        AttachMonitor(dampener, cmd);
+        return dampener;
     }
 
     /// <summary>
@@ -660,9 +668,33 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// </summary>
     /// <param name="sensorStats">The sensor stats.</param>
     /// <returns></returns>
-    private IEnumerable<Sensor> MakeSensors(IEnumerable<SensorStat> sensorStats) {
-        var sensors = new List<Sensor>(sensorStats.Count());
-        sensorStats.ForAll(stat => sensors.Add(new Sensor(stat)));
+    private IEnumerable<ElementSensor> MakeSensors(IEnumerable<SensorStat> sensorStats, AUnitElementItem element) {
+        int nameCounter = Constants.One;
+
+        var sensors = new List<ElementSensor>(sensorStats.Count());
+        sensorStats.ForAll(stat => {
+            string sName = stat.Name + nameCounter;
+            nameCounter++;
+
+            var sensor = new ElementSensor(stat, sName);
+            sensors.Add(sensor);
+            AttachMonitor(sensor, element);
+        });
+        return sensors;
+    }
+
+    private IEnumerable<CmdSensor> MakeSensors(IEnumerable<SensorStat> sensorStats, AUnitCmdItem cmd) {
+        int nameCounter = Constants.One;
+
+        var sensors = new List<CmdSensor>(sensorStats.Count());
+        sensorStats.ForAll(stat => {
+            string sName = stat.Name + nameCounter;
+            nameCounter++;
+
+            var sensor = new CmdSensor(stat, sName);
+            sensors.Add(sensor);
+            AttachMonitor(sensor, cmd);
+        });
         return sensors;
     }
 
@@ -868,17 +900,22 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             monitorGo.layer = (int)Layers.Collide_DefaultOnly;   // AddChild resets prefab layer to elementGo's layer
             srMonitor = monitorGo.GetComponent<ElementSensorRangeMonitor>();
             srMonitor.ParentItem = element;
-            D.Log("{0}: {1} has had a {2} chosen for {3}.", DebugName, element.DebugName, typeof(ElementSensorRangeMonitor).Name, sensor.Name);
+            //D.Log("{0}: {1} has had a {2} made for {3}.", DebugName, element.DebugName, typeof(ElementSensorRangeMonitor).Name, sensor.Name);
         }
         srMonitor.Add(sensor);
     }
 
-    public ICmdSensorRangeMonitor AttachMonitor(CmdSensor sensor, AUnitCmdItem command) {
+    /// <summary>
+    /// Makes or acquires an existing CmdSensorRangeMonitor and pairs it with this CmdSensor.
+    /// </summary>
+    /// <param name="sensor">The sensor from the command.</param>
+    /// <param name="command">The command that has sensor monitors as children.</param>
+    private void AttachMonitor(CmdSensor sensor, AUnitCmdItem command) {
         D.AssertNotEqual(RangeCategory.Short, sensor.RangeCategory);
         var allSensorMonitors = command.gameObject.GetComponentsInChildren<CmdSensorRangeMonitor>();
-        // TODO validate no SR RangeCategory
-        var sensorMonitorsInUse = allSensorMonitors.Where(m => m.RangeCategory != RangeCategory.None);
+        allSensorMonitors.ForAll(srm => D.AssertNotEqual(RangeCategory.Short, srm.RangeCategory));        // OPTIMIZE
 
+        var sensorMonitorsInUse = allSensorMonitors.Where(m => m.RangeCategory != RangeCategory.None);
         // check monitors for range fit, if find it, assign monitor, if not assign unused or create a new monitor and assign it to the weapon
         var monitor = sensorMonitorsInUse.FirstOrDefault(m => m.RangeCategory == sensor.RangeCategory);
         if (monitor == null) {
@@ -891,46 +928,11 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
                 GameObject monitorGo = UnityUtility.AddChild(command.gameObject, _cmdSensorRangeMonitorPrefab);
                 monitorGo.layer = (int)Layers.Collide_DefaultOnly;  // AddChild resets prefab layer to elementGo's layer
                 monitor = monitorGo.GetComponent<CmdSensorRangeMonitor>();
+                //D.Log("{0}: {1} has had a {2} made for {3}.", DebugName, command.DebugName, typeof(CmdSensorRangeMonitor).Name, sensor.Name);
             }
             monitor.ParentItem = command;
-            //D.Log("{0}: {1} has had a {2} chosen for {3}.", DebugName, command.DebugName, typeof(CmdSensorRangeMonitor).Name, sensor.Name);
         }
         monitor.Add(sensor);
-        return monitor;
-    }
-
-
-
-    /// <summary>
-    /// Makes or acquires an existing SensorRangeMonitor and pairs it with this sensor.
-    /// <remarks>This method is public as it is used by the command when an element is attached to it.</remarks>
-    /// </summary>
-    /// <param name="sensor">The sensor from one of the command's elements.</param>
-    /// <param name="command">The command that has sensor monitors as children.</param>
-    /// <returns></returns>
-    [Obsolete]
-    public ISensorRangeMonitor AttachSensorToCmdsMonitor(Sensor sensor, AUnitCmdItem command) {
-        var allSensorMonitors = command.gameObject.GetComponentsInChildren<SensorRangeMonitor>();
-        var sensorMonitorsInUse = allSensorMonitors.Where(m => m.RangeCategory != RangeCategory.None);
-
-        // check monitors for range fit, if find it, assign monitor, if not assign unused or create a new monitor and assign it to the weapon
-        var monitor = sensorMonitorsInUse.FirstOrDefault(m => m.RangeCategory == sensor.RangeCategory);
-        if (monitor == null) {
-            var unusedSensorMonitors = allSensorMonitors.Except(sensorMonitorsInUse);
-            if (unusedSensorMonitors.Any()) {
-                monitor = unusedSensorMonitors.First();
-            }
-            else {
-                D.AssertEqual(Layers.Collide_DefaultOnly, (Layers)_sensorRangeMonitorPrefab.layer);
-                GameObject monitorGo = UnityUtility.AddChild(command.gameObject, _sensorRangeMonitorPrefab);
-                monitorGo.layer = (int)Layers.Collide_DefaultOnly;  // AddChild resets prefab layer to elementGo's layer
-                monitor = monitorGo.GetComponent<SensorRangeMonitor>();
-            }
-            monitor.ParentItem = command;
-            //D.Log("{0}: {1} has had a {2} chosen for {3}.", DebugName, command.DebugName, typeof(SensorRangeMonitor).Name, sensor.Name);
-        }
-        monitor.Add(sensor);
-        return monitor;
     }
 
     /// <summary>
@@ -938,20 +940,17 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// </summary>
     /// <param name="ftlDampener">The command's FtlDampener.</param>
     /// <param name="command">The command that has an FtlDampener monitor as a child.</param>
-    /// <returns></returns>
-    public IFtlDampenerRangeMonitor AttachFtlDampenerToCmdsMonitor(FtlDampener ftlDampener, AUnitCmdItem command) {
+    private void AttachMonitor(FtlDampener ftlDampener, AUnitCmdItem command) {
         var monitor = command.gameObject.GetComponentInChildren<FtlDampenerRangeMonitor>();
         if (monitor == null) {
             D.AssertEqual(Layers.Collide_DefaultOnly, (Layers)_ftlDampenerRangeMonitorPrefab.layer);
             GameObject monitorGo = UnityUtility.AddChild(command.gameObject, _ftlDampenerRangeMonitorPrefab);
             monitorGo.layer = (int)Layers.Collide_DefaultOnly;  // AddChild resets prefab layer to elementGo's layer
             monitor = monitorGo.GetComponent<FtlDampenerRangeMonitor>();
-
         }
         D.AssertDefault((int)monitor.RangeCategory);
         monitor.ParentItem = command;
         monitor.Add(ftlDampener);
-        return monitor;
     }
 
     #endregion

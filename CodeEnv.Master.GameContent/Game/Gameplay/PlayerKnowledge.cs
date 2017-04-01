@@ -305,7 +305,7 @@ namespace CodeEnv.Master.GameContent {
         private HashSet<IStar_Ltd> _stars = new HashSet<IStar_Ltd>();
         private HashSet<IUnitElement_Ltd> _elements = new HashSet<IUnitElement_Ltd>();
         private HashSet<IUnitCmd_Ltd> _commands = new HashSet<IUnitCmd_Ltd>();
-        private HashSet<IItem_Ltd> _items = new HashSet<IItem_Ltd>();
+        private HashSet<IOwnerItem_Ltd> _items = new HashSet<IOwnerItem_Ltd>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PlayerKnowledge" /> class.
@@ -407,7 +407,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="item">The item.</param>
         /// <returns></returns>
-        public bool HasKnowledgeOf(IItem_Ltd item) {
+        public bool HasKnowledgeOf(IOwnerItem_Ltd item) {
             Utility.ValidateNotNull(item);
             if (item is IPlanetoid_Ltd) {
                 return _planetoids.Contains(item as IPlanetoid_Ltd);
@@ -442,8 +442,8 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="player">The player.</param>
         /// <returns></returns>
-        public IEnumerable<IItem_Ltd> GetItemsOwnedBy(Player player) {
-            var playerOwnedItems = new List<IItem_Ltd>();
+        public IEnumerable<IOwnerItem_Ltd> GetItemsOwnedBy(Player player) {
+            var playerOwnedItems = new List<IOwnerItem_Ltd>();
             _items.ForAll(item => {
                 Player itemOwner;
                 if (item.TryGetOwner(Owner, out itemOwner) && itemOwner == player) {
