@@ -511,6 +511,29 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="fleetCmd">The fleet command.</param>
         private void __IssueFleetOrder(IFleetCmd fleetCmd) {
+            D.Assert(_availableCmds.Contains(fleetCmd));
+            D.Assert(!_unavailableCmds.Contains(fleetCmd));
+
+            if (fleetCmd.IsFerryFleet) {
+                IFleetNavigable closestFleet = null;
+                var fleets = _availableCmds.Where(cmd => cmd is IFleetCmd).Where(cmd => !(cmd as IFleetCmd).IsFerryFleet).Cast<IFleetNavigable>();
+                if (fleets.Any()) {
+                    closestFleet = GameUtility.GetClosest(fleetCmd.Position, fleets);
+                }
+                else {
+                    fleets = _unavailableCmds.Where(cmd => cmd is IFleetCmd).Where(cmd => !(cmd as IFleetCmd).IsFerryFleet).Cast<IFleetNavigable>();
+                    if (fleets.Any()) {
+                        closestFleet = GameUtility.GetClosest(fleetCmd.Position, fleets);
+                    }
+                }
+                if (closestFleet != null) {
+                    D.Log("{0} is issuing an order to {1} to Join {2}.", DebugName, fleetCmd.DebugName, closestFleet.DebugName);
+                    FleetOrder joinFleetOrder = new FleetOrder(FleetDirective.Join, OrderSource.PlayerAI, closestFleet);
+                    fleetCmd.CurrentOrder = joinFleetOrder;
+                    return;
+                }
+            }
+
             if (GameReferences.DebugControls.FleetsAutoAttackAsDefault) {
                 if (__areAllTargetsAttacked && __isUniverseFullyExplored) {
                     return;

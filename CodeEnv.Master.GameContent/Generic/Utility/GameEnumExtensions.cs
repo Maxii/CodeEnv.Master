@@ -1688,6 +1688,24 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        public static float RepairCapacityFactor(this DiplomaticRelationship relation) {
+            switch (relation) {
+                case DiplomaticRelationship.None:
+                case DiplomaticRelationship.Neutral:
+                    return 0.5F;
+                case DiplomaticRelationship.Friendly:
+                    return 1.0F;
+                case DiplomaticRelationship.Alliance:
+                case DiplomaticRelationship.Self:
+                    return 2.0F;
+                case DiplomaticRelationship.War:
+                case DiplomaticRelationship.ColdWar:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(relation));
+            }
+        }
+
+
         #endregion
 
 

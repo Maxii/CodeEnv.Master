@@ -119,10 +119,11 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="cameraStat">The camera stat.</param>
     /// <param name="designName">Name of the design.</param>
     /// <param name="unitContainer">The unit container.</param>
+    /// <param name="unitName">Optional unitName if you wish to override the unitName embedded in the design.</param>
     /// <returns></returns>
-    public FleetCmdItem MakeFleetCmdInstance(Player owner, FleetCmdCameraStat cameraStat, string designName, GameObject unitContainer) {
+    public FleetCmdItem MakeFleetCmdInstance(Player owner, FleetCmdCameraStat cameraStat, string designName, GameObject unitContainer, string unitName = null) {
         FleetCmdDesign design = GameManager.Instance.PlayersDesigns.GetFleetCmdDesign(owner, designName);
-        return MakeFleetCmdInstance(owner, cameraStat, design, unitContainer);
+        return MakeFleetCmdInstance(owner, cameraStat, design, unitContainer, unitName);
     }
 
     /// <summary>
@@ -132,11 +133,13 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="cameraStat">The camera stat.</param>
     /// <param name="design">The design.</param>
     /// <param name="unitContainer">The unit container.</param>
+    /// <param name="unitName">Optional unitName if you wish to override the unitName embedded in the design.</param>
     /// <returns></returns>
-    public FleetCmdItem MakeFleetCmdInstance(Player owner, FleetCmdCameraStat cameraStat, FleetCmdDesign design, GameObject unitContainer) {
+    public FleetCmdItem MakeFleetCmdInstance(Player owner, FleetCmdCameraStat cameraStat, FleetCmdDesign design, GameObject unitContainer, string unitName = null) {
         GameObject cmdGo = UnityUtility.AddChild(unitContainer, _fleetCmdPrefab);
+        D.AssertEqual((Layers)_fleetCmdPrefab.layer, (Layers)cmdGo.layer);
         FleetCmdItem cmd = cmdGo.GetSafeComponent<FleetCmdItem>();
-        PopulateInstance(owner, cameraStat, design, ref cmd);
+        PopulateInstance(owner, cameraStat, design, ref cmd, unitName);
         return cmd;
     }
 
@@ -147,9 +150,10 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="cameraStat">The camera stat.</param>
     /// <param name="designName">Name of the design.</param>
     /// <param name="cmd">The item.</param>
-    public void PopulateInstance(Player owner, FleetCmdCameraStat cameraStat, string designName, ref FleetCmdItem cmd) {
+    /// <param name="unitName">Optional unitName if you wish to override the unitName embedded in the design.</param>
+    public void PopulateInstance(Player owner, FleetCmdCameraStat cameraStat, string designName, ref FleetCmdItem cmd, string unitName = null) {
         FleetCmdDesign design = GameManager.Instance.PlayersDesigns.GetFleetCmdDesign(owner, designName);
-        PopulateInstance(owner, cameraStat, design, ref cmd);
+        PopulateInstance(owner, cameraStat, design, ref cmd, unitName);
     }
 
     /// <summary>
@@ -159,7 +163,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="cameraStat">The camera stat.</param>
     /// <param name="design">The design.</param>
     /// <param name="cmd">The item.</param>
-    public void PopulateInstance(Player owner, FleetCmdCameraStat cameraStat, FleetCmdDesign design, ref FleetCmdItem cmd) {
+    /// <param name="unitName">Optional unitName if you wish to override the unitName embedded in the design.</param>
+    public void PopulateInstance(Player owner, FleetCmdCameraStat cameraStat, FleetCmdDesign design, ref FleetCmdItem cmd, string unitName = null) {
         D.Assert(!cmd.IsOperational, cmd.DebugName);
         if (cmd.transform.parent == null) {
             D.Error("{0} should already have a parent.", cmd.DebugName);
@@ -169,33 +174,55 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var ftlDampener = MakeFtlDampener(design.FtlDampenerStat, cmd);
         cmd.Name = CommonTerms.Command;
         FleetCmdData data = new FleetCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, design.CmdStat);
+        if (unitName != null) {
+            if (data.ParentName != unitName) {   // avoids property equals warning
+                data.ParentName = unitName;
+            }
+        }
         cmd.CameraStat = cameraStat;
         cmd.Data = data;
     }
 
     /// <summary>
-    /// Makes a standalone fleet instance from a single ship using a basic default FleetCmdDesign.
+    /// Makes a standalone 'ferry' FleetCmd instance from a single ship using a basic FleetCmdDesign.
     /// The FleetCommand returned, along with the provided ship is parented to an empty GameObject "fleetName" which itself is parented to
     /// the Scene's Fleets folder. The fleetCommand and ship (if not already enabled) are all enabled when returned.
+    /// <remarks>Warning: fleetName</remarks>
+    /// <remarks>Be sure to CommenceOperations before issuing an order.</remarks>
     /// </summary>
-    /// <param name="fleetName">Name of the fleet.</param>
+    /// <param name="unitName">Name of the Unit.</param>
     /// <param name="element">The ship which is designated the HQ Element.</param>
-    public FleetCmdItem MakeFleetInstance(string fleetName, ShipItem element) {
-        float minViewDistance = TempGameValues.ShipMaxRadius + 1F;  // HACK
-        FleetCmdCameraStat cameraStat = new FleetCmdCameraStat(minViewDistance, optViewDistanceAdder: 1F, fov: 60F);
+    public FleetCmdItem MakeFerryFleetCmdInstance(string unitName, ShipItem element) {
+        D.Assert(element.IsOperational);
 
-        var countermeasureStats = new PassiveCountermeasureStat[] { new PassiveCountermeasureStat() };
-        var sensorStats = new SensorStat[] { new SensorStat(RangeCategory.Medium), new SensorStat(RangeCategory.Long) };
-        var ftlDampenerStat = new FtlDampenerStat();
-        UnitCmdStat cmdStat = new UnitCmdStat(fleetName, 10F, 100, Formation.Globe);
-        FleetCmdDesign design = new FleetCmdDesign(element.Owner, "FleetCmdDesignHack", countermeasureStats, sensorStats, ftlDampenerStat, cmdStat);
+        string ferryFleetDesignName = "FerryFleetCmdDesign";
+        FleetCmdDesign ferryCmdDesign;
+        var playersDesigns = GameManager.Instance.PlayersDesigns;
+        if (!playersDesigns.TryGetFleetCmdDesign(element.Owner, ferryFleetDesignName, out ferryCmdDesign)) {
+            D.Log("{0} is using a previously designed {1} to make FerryFleetCmd {2} for {3}.", DebugName, ferryFleetDesignName, unitName, element.Owner);
+            var countermeasureStats = new PassiveCountermeasureStat[] { new PassiveCountermeasureStat() };
+            var sensorStats = new SensorStat[] { new SensorStat(RangeCategory.Medium), new SensorStat(RangeCategory.Long) };
+            var ftlDampenerStat = new FtlDampenerStat();
+            UnitCmdStat cmdStat = new UnitCmdStat(unitName, 10F, 100, Formation.Globe);
+            ferryCmdDesign = new FleetCmdDesign(element.Owner, ferryFleetDesignName, countermeasureStats, sensorStats, ftlDampenerStat, cmdStat);
+            playersDesigns.Add(ferryCmdDesign);
+        }
 
-        GameObject unitContainer = new GameObject(fleetName);
+        GameObject unitContainer = new GameObject(unitName);
+        UnitDebugControl unitDebugCntl = unitContainer.AddMissingComponent<UnitDebugControl>(); // UNCLEAR Is this of use during runtime?
         UnityUtility.AttachChildToParent(unitContainer, FleetsFolder.Instance.gameObject);
 
-        FleetCmdItem cmd = MakeFleetCmdInstance(element.Owner, cameraStat, design, unitContainer);
+        float minViewDistance = TempGameValues.ShipMaxRadius + 1F;  // HACK
+        FleetCmdCameraStat cameraStat = new FleetCmdCameraStat(minViewDistance, optViewDistanceAdder: 1F, fov: 60F);
+        FleetCmdItem cmd = MakeFleetCmdInstance(element.Owner, cameraStat, ferryCmdDesign, unitContainer, unitName);
+        cmd.transform.rotation = element.transform.rotation;
+        cmd.IsFerryFleet = true;
+
         cmd.AddElement(element);    // resets the element's Command property and parents element to Cmd's parent, aka unitContainer
         cmd.HQElement = element;
+        cmd.FinalInitialize();
+        GameManager.Instance.GameKnowledge.AddUnit(cmd, Enumerable.Empty<IUnitElement>()); // element already present
+        unitDebugCntl.Initialize();
         return cmd;
     }
 
@@ -311,8 +338,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="cameraStat">The camera stat.</param>
     /// <param name="designName">Name of the design.</param>
     /// <param name="unitContainer">The unit container.</param>
+    /// <param name="unitName">Optional unitName if you wish to override the unitName embedded in the design.</param>
     /// <returns></returns>
-    public StarbaseCmdItem MakeStarbaseCmdInstance(Player owner, CmdCameraStat cameraStat, string designName, GameObject unitContainer) {
+    public StarbaseCmdItem MakeStarbaseCmdInstance(Player owner, CmdCameraStat cameraStat, string designName, GameObject unitContainer, string unitName = null) {
         StarbaseCmdDesign design = GameManager.Instance.PlayersDesigns.GetStarbaseCmdDesign(owner, designName);
         return MakeStarbaseCmdInstance(owner, cameraStat, design, unitContainer);
     }
@@ -324,8 +352,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="cameraStat">The camera stat.</param>
     /// <param name="design">The design.</param>
     /// <param name="unitContainer">The unit container.</param>
+    /// <param name="unitName">Optional unitName if you wish to override the unitName embedded in the design.</param>
     /// <returns></returns>
-    public StarbaseCmdItem MakeStarbaseCmdInstance(Player owner, CmdCameraStat cameraStat, StarbaseCmdDesign design, GameObject unitContainer) {
+    public StarbaseCmdItem MakeStarbaseCmdInstance(Player owner, CmdCameraStat cameraStat, StarbaseCmdDesign design, GameObject unitContainer, string unitName = null) {
         GameObject cmdGo = UnityUtility.AddChild(unitContainer, _starbaseCmdPrefab);
         StarbaseCmdItem cmd = cmdGo.GetSafeComponent<StarbaseCmdItem>();
         PopulateInstance(owner, cameraStat, design, ref cmd);
@@ -339,7 +368,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="cameraStat">The camera stat.</param>
     /// <param name="designName">Name of the design.</param>
     /// <param name="cmd">The item.</param>
-    public void PopulateInstance(Player owner, CmdCameraStat cameraStat, string designName, ref StarbaseCmdItem cmd) {
+    /// <param name="unitName">Optional unitName if you wish to override the unitName embedded in the design.</param>
+    public void PopulateInstance(Player owner, CmdCameraStat cameraStat, string designName, ref StarbaseCmdItem cmd, string unitName = null) {
         StarbaseCmdDesign design = GameManager.Instance.PlayersDesigns.GetStarbaseCmdDesign(owner, designName);
         PopulateInstance(owner, cameraStat, design, ref cmd);
     }
@@ -351,7 +381,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="cameraStat">The camera stat.</param>
     /// <param name="design">The design.</param>
     /// <param name="cmd">The item.</param>
-    public void PopulateInstance(Player owner, CmdCameraStat cameraStat, StarbaseCmdDesign design, ref StarbaseCmdItem cmd) {
+    /// <param name="unitName">Optional unitName if you wish to override the unitName embedded in the design.</param>
+    public void PopulateInstance(Player owner, CmdCameraStat cameraStat, StarbaseCmdDesign design, ref StarbaseCmdItem cmd, string unitName = null) {
         D.Assert(!cmd.IsOperational, cmd.DebugName);
         if (cmd.transform.parent == null) {
             D.Error("{0} should already have a parent.", cmd.DebugName);
@@ -361,6 +392,11 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var ftlDampener = MakeFtlDampener(design.FtlDampenerStat, cmd);
         cmd.Name = CommonTerms.Command;
         StarbaseCmdData data = new StarbaseCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, design.CmdStat);
+        if (unitName != null) {
+            if (data.ParentName != unitName) {   // avoids property equals warning
+                data.ParentName = unitName;
+            }
+        }
         cmd.CameraStat = cameraStat;
         cmd.Data = data;
     }
@@ -394,8 +430,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="cameraStat">The camera stat.</param>
     /// <param name="designName">Name of the design.</param>
     /// <param name="unitContainer">The unit container.</param>
+    /// <param name="unitName">Optional unitName if you wish to override the unitName embedded in the design.</param>
     /// <returns></returns>
-    public SettlementCmdItem MakeSettlementCmdInstance(Player owner, CmdCameraStat cameraStat, string designName, GameObject unitContainer) {
+    public SettlementCmdItem MakeSettlementCmdInstance(Player owner, CmdCameraStat cameraStat, string designName, GameObject unitContainer, string unitName = null) {
         SettlementCmdDesign design = GameManager.Instance.PlayersDesigns.GetSettlementCmdDesign(owner, designName);
         return MakeSettlementCmdInstance(owner, cameraStat, design, unitContainer);
     }
@@ -407,8 +444,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="cameraStat">The camera stat.</param>
     /// <param name="design">The design.</param>
     /// <param name="unitContainer">The unit container.</param>
+    /// <param name="unitName">Optional unitName if you wish to override the unitName embedded in the design.</param>
     /// <returns></returns>
-    public SettlementCmdItem MakeSettlementCmdInstance(Player owner, CmdCameraStat cameraStat, SettlementCmdDesign design, GameObject unitContainer) {
+    public SettlementCmdItem MakeSettlementCmdInstance(Player owner, CmdCameraStat cameraStat, SettlementCmdDesign design, GameObject unitContainer, string unitName = null) {
         GameObject cmdGo = UnityUtility.AddChild(unitContainer, _settlementCmdPrefab);
         //D.Log("{0}: {1}.localPosition = {2} after creation.", DebugName, design.CmdStat.UnitName, cmdGo.transform.localPosition);
         SettlementCmdItem cmd = cmdGo.GetSafeComponent<SettlementCmdItem>();
@@ -423,7 +461,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="cameraStat">The camera stat.</param>
     /// <param name="designName">Name of the design.</param>
     /// <param name="cmd">The item.</param>
-    public void PopulateInstance(Player owner, CmdCameraStat cameraStat, string designName, ref SettlementCmdItem cmd) {
+    /// <param name="unitName">Optional unitName if you wish to override the unitName embedded in the design.</param>
+    public void PopulateInstance(Player owner, CmdCameraStat cameraStat, string designName, ref SettlementCmdItem cmd, string unitName = null) {
         SettlementCmdDesign design = GameManager.Instance.PlayersDesigns.GetSettlementCmdDesign(owner, designName);
         PopulateInstance(owner, cameraStat, design, ref cmd);
     }
@@ -435,7 +474,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="cameraStat">The camera stat.</param>
     /// <param name="design">The design.</param>
     /// <param name="cmd">The item.</param>
-    public void PopulateInstance(Player owner, CmdCameraStat cameraStat, SettlementCmdDesign design, ref SettlementCmdItem cmd) {
+    /// <param name="unitName">Optional unitName if you wish to override the unitName embedded in the design.</param>
+    public void PopulateInstance(Player owner, CmdCameraStat cameraStat, SettlementCmdDesign design, ref SettlementCmdItem cmd, string unitName = null) {
         D.Assert(!cmd.IsOperational, cmd.DebugName);
         if (cmd.transform.parent == null) {
             D.Error("{0} should already have a parent.", cmd.DebugName);
@@ -445,6 +485,11 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var ftlDampener = MakeFtlDampener(design.FtlDampenerStat, cmd);
         cmd.Name = CommonTerms.Command;
         SettlementCmdData data = new SettlementCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, design.CmdStat);
+        if (unitName != null) {
+            if (data.ParentName != unitName) {   // avoids property equals warning
+                data.ParentName = unitName;
+            }
+        }
         cmd.CameraStat = cameraStat;
         cmd.Data = data;
     }

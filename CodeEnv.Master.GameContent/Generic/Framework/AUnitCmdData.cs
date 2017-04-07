@@ -280,7 +280,7 @@ namespace CodeEnv.Master.GameContent {
             ElementsData.ForAll(eData => eData.AlertStatus = AlertStatus);
             switch (AlertStatus) {
                 case AlertStatus.Normal:
-                    D.Log(/*ShowDebugLog, */"{0} {1} changed to {2}.", DebugName, typeof(AlertStatus).Name, AlertStatus.GetValueName());
+                    D.Log(ShowDebugLog, "{0} {1} changed to {2}.", DebugName, typeof(AlertStatus).Name, AlertStatus.GetValueName());
                     FtlDampener.IsActivated = false;
                     break;
                 case AlertStatus.Yellow:
@@ -504,7 +504,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void UpdateElementParentName(AUnitElementData elementData) {
-            //TODO something more than just assigning a parent name?
             //D.Log(ShowDebugLog, "{0}.ParentName changing to {1}.", elementData.Name, ParentName);
             elementData.ParentName = ParentName;    // the name of the fleet, not the command
         }

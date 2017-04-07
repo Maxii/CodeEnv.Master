@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IShipNavigable.cs
-// INavigable destination that can be navigated to by Ships.
+// IElementNavigable destination that can be navigated to by Ships.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,11 +19,11 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// INavigable destination that can be navigated to by Ships.
-    /// <remarks>All INavigable destinations are also IShipNavigable.</remarks>
+    /// IElementNavigable destination that can be navigated to by Ships.
+    /// <remarks>All IElementNavigable destinations are also IShipNavigable.</remarks>
     /// <remarks>Used only by Ship FSM to engage the Ship's AutoPilot.</remarks>
     /// </summary>
-    public interface IShipNavigable : INavigable {
+    public interface IShipNavigable : IElementNavigable {
 
         /// <summary>
         /// Returns the AutoPilotTarget for use by a Ship's AutoPilot when moving to this IShipNavigable destination.

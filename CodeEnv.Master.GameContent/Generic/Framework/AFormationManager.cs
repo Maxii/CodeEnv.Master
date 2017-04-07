@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common;
@@ -219,19 +220,67 @@ namespace CodeEnv.Master.GameContent {
         /// Mutable struct that holds the criteria used for the selection of FormationStations.
         /// WARNING: Not suitable for dictionary keys.
         /// </summary>
-        public struct FormationStationSelectionCriteria {
+        public struct FormationStationSelectionCriteria : IEquatable<FormationStationSelectionCriteria> {
 
             private const string ToStringFormat = "{0}: isReserveReqd = {1}";
 
+            #region Comparison Operators Override
+
+            // see C# 4.0 In a Nutshell, page 254
+
+            public static bool operator ==(FormationStationSelectionCriteria left, FormationStationSelectionCriteria right) {
+                return left.Equals(right);
+            }
+
+            public static bool operator !=(FormationStationSelectionCriteria left, FormationStationSelectionCriteria right) {
+                return !left.Equals(right);
+            }
+
+            #endregion
+
             public bool IsReserveReqd { get; set; }
+
+            #region Object.Equals and GetHashCode Override
+
+            public override bool Equals(object obj) {
+                if (!(obj is FormationStationSelectionCriteria)) { return false; }
+                return Equals((FormationStationSelectionCriteria)obj);
+            }
+
+            /// <summary>
+            /// Returns a hash code for this instance.
+            /// See "Page 254, C# 4.0 in a Nutshell."
+            /// </summary>
+            /// <returns>
+            /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
+            /// </returns>
+            public override int GetHashCode() {
+                unchecked { // http://dobrzanski.net/2010/09/13/csharp-gethashcode-cause-overflowexception/
+                    int hash = 17;  // 17 = some prime number
+                    hash = hash * 31 + IsReserveReqd.GetHashCode(); // 31 = another prime number
+                    return hash;
+                }
+            }
+
+            #endregion
+
 
             public override string ToString() {
                 return ToStringFormat.Inject(typeof(FormationStationSelectionCriteria).Name, IsReserveReqd);
             }
+
+            #region IEquatable<FormationStationSelectionCriteria> Members
+
+            public bool Equals(FormationStationSelectionCriteria other) {
+                return IsReserveReqd == other.IsReserveReqd;
+            }
+
+            #endregion
+
         }
 
         #endregion
-
     }
 }
+
 

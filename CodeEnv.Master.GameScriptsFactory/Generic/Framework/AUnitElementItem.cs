@@ -170,7 +170,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         base.FinalInitialize();
         InitializeMonitorRanges();
         __InitializeFinalRigidbodySettings();
-        ////Rigidbody.isKinematic = false;
     }
 
     protected abstract void __InitializeFinalRigidbodySettings();
@@ -519,10 +518,9 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     #region Sensors
 
     private void Attach(ElementSensor sensor) {
-        ////D.AssertNull(Command);  // OPTIMIZE Sensors are only attached to elements when an element is being created so there is no Command yet
         D.AssertNotNull(sensor.RangeMonitor);
         if (SRSensorMonitor == null) {
-            // only need to record and setup range monitor once as there is only one. The monitor can have more than 1 weapon
+            // only need to record and setup range monitor once as there is only one. The monitor can have more than 1 sensor
             SRSensorMonitor = sensor.RangeMonitor;
         }
     }
@@ -572,12 +570,12 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// Upshot: Elements FSMs can ignore Relations changes.
     /// </remarks>
     /// </summary>
-    /// <param name="chgdRelationsPlayer">The other player.</param>
-    public void HandleRelationsChanged(Player chgdRelationsPlayer) {
-        SRSensorMonitor.HandleRelationsChanged(chgdRelationsPlayer);
-        WeaponRangeMonitors.ForAll(wrm => wrm.HandleRelationsChanged(chgdRelationsPlayer));
-        CountermeasureRangeMonitors.ForAll(crm => crm.HandleRelationsChanged(chgdRelationsPlayer));
-        UponRelationsChanged(chgdRelationsPlayer);
+    /// <param name="player">The other player.</param>
+    public void HandleRelationsChangedWith(Player player) {
+        SRSensorMonitor.HandleRelationsChangedWith(player);
+        WeaponRangeMonitors.ForAll(wrm => wrm.HandleRelationsChangedWith(player));
+        CountermeasureRangeMonitors.ForAll(crm => crm.HandleRelationsChangedWith(player));
+        UponRelationsChangedWith(player);
     }
 
     private void IsAvailablePropChangedHandler() {
@@ -724,7 +722,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// </summary>
     private void UponPreconfigureState() { RelayToCurrentState(); }
 
-    private void UponRelationsChanged(Player chgdRelationsPlayer) { RelayToCurrentState(chgdRelationsPlayer); }
+    private void UponRelationsChangedWith(Player player) { RelayToCurrentState(player); }
 
     /// <summary>
     /// Called when the current target being used by the State Machine dies.
@@ -741,6 +739,18 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     private void UponDamageIncurred() { RelayToCurrentState(); }
 
     private void UponHQStatusChangeCompleted() { RelayToCurrentState(); }
+
+    #endregion
+
+    #region Repair Support
+
+    /// <summary>
+    /// Assesses this element's need for repair, returning <c>true</c> if immediate repairs are needed, <c>false</c> otherwise.
+    /// <remarks>Abstract to simply remind of need for functionality.</remarks>
+    /// </summary>
+    /// <param name="healthThreshold">The health threshold.</param>
+    /// <returns></returns>
+    protected abstract bool AssessNeedForRepair(float healthThreshold);
 
     #endregion
 
@@ -1079,6 +1089,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         if (IsHQ && Command.IsOperational) {
             isCmdHit = Command.__CheckForDamage(isElementAlive, damage, damageSeverity);
         }
+
+        Command.HandleDamageIncurredBy(this);
 
         if (isElementAlive) {
             var hitAnimation = isCmdHit ? EffectSequenceID.CmdHit : EffectSequenceID.Hit;

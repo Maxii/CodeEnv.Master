@@ -206,7 +206,9 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
     /// Called when the Item should begin operations.
     /// </summary>
     public virtual void CommenceOperations() {
-        D.Assert(IsOperational);
+        if (!IsOperational) {
+            D.Error("{0} should be operational before calling CommenceOperations. Did you forget to call FinalInitialize first?", DebugName);
+        }
         D.Assert(_gameMgr.IsRunning);
         Data.CommenceOperations();
     }

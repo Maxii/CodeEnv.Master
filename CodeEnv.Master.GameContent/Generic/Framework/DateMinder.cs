@@ -41,7 +41,11 @@ namespace CodeEnv.Master.GameContent {
         private HashSet<IDateMinderClient> _clientsScheduledForRemoval = new HashSet<IDateMinderClient>();
         private List<GameDate> _allDates = new List<GameDate>(50);
 
-        public DateMinder() { }
+        private GameTime _gameTime;
+
+        public DateMinder(GameTime gameTime) {
+            _gameTime = gameTime;
+        }
 
         /// <summary>
         /// Check for IDateMinderClients of currentDate and inform them if currentDate
@@ -176,7 +180,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="date">The date.</param>
         /// <param name="client">The client.</param>
         public void Add(GameDate date, IDateMinderClient client) {
-            D.Assert(date > GameTime.Instance.CurrentDate, "{0}: {1} <= CurrentDate {2}.".Inject(DebugName, date, GameTime.Instance.CurrentDate));
+            D.Assert(date > _gameTime.CurrentDate, "{0}: DateToAdd {1} <= CurrentDate {2}. Client: {3}.".Inject(DebugName, date, _gameTime.CurrentDate, client.DebugName));
 
             HashSet<IDateMinderClient> clients;
             if (!_clientsToAddLookup.TryGetValue(date, out clients)) {
@@ -209,7 +213,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="date">The date.</param>
         /// <param name="client">The client that provided the date.</param>
         public void Remove(GameDate date, IDateMinderClient client) {
-            D.Assert(date > GameTime.Instance.CurrentDate, "{0}: {1} <= CurrentDate {2}.".Inject(DebugName, date, GameTime.Instance.CurrentDate));
+            D.Assert(date > _gameTime.CurrentDate, "{0}: DateToRemove {1} <= CurrentDate {2}. Client: {3}.".Inject(DebugName, date, _gameTime.CurrentDate, client.DebugName));
             HashSet<IDateMinderClient> clients;
             if (!_clientsToRemoveLookup.TryGetValue(date, out clients)) {
                 clients = GetEmptySet();

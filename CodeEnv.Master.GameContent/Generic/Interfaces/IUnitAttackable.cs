@@ -20,6 +20,8 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Interface for Items that UnitCmds are allowed to designate as a target to be attacked.
+    /// <remarks>4.3.17 Currently FleetCmds, BaseCmds. TODO: Planets (not Moons) will be included when
+    /// Bombard Weapons appear.</remarks>
     /// </summary>
     public interface IUnitAttackable : IFleetNavigable, IAttackable {
 

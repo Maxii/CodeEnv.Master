@@ -546,7 +546,7 @@ namespace CodeEnv.Master.GameContent {
                 //D.Log("{0} tried to add Command {1} it already has.", DebugName, command.DebugName);
                 return false;
             }
-            //D.Log("{0} is adding {1} to its knowledge base.", DebugName, command.DebugName);
+            //D.Log("{0} has added {1} to its knowledge base.", DebugName, command.DebugName);
 
             IStarbaseCmd_Ltd sbCmd = command as IStarbaseCmd_Ltd;
             if (sbCmd != null) {
@@ -581,7 +581,7 @@ namespace CodeEnv.Master.GameContent {
             var isRemoved = _commands.Remove(command);
             isRemoved = isRemoved & _items.Remove(command);
             D.Assert(isRemoved);
-            //D.Log("{0} has removed Command {1}.", DebugName, command.DebugName);
+            //D.Log("{0} has removed {1} from its knowledge base.", DebugName, command.DebugName);
 
             IStarbaseCmd_Ltd sbCmd = command as IStarbaseCmd_Ltd;
             if (sbCmd != null) {

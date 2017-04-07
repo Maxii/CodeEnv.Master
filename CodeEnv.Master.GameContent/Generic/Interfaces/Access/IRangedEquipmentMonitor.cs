@@ -48,7 +48,7 @@ namespace CodeEnv.Master.GameContent {
         /// DiplomaticRelationship between ParentItem.Owner and <c>otherPlayer</c> changes.
         /// </summary>
         /// <param name="otherPlayer">The other player.</param>
-        void HandleRelationsChanged(Player otherPlayer);
+        void HandleRelationsChangedWith(Player otherPlayer);
 
 
     }

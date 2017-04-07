@@ -102,8 +102,8 @@ namespace CodeEnv.Master.GameContent {
         /// Fleets can assume their chosen formation at any time and any location although they must be stationary??? to
         /// do so. When this order is given, the ships of the fleet attempt to move to their stations within the formation. 
         /// When ships have idle time, they automatically move to their formation station if the FleetCmd is stationary
-        /// and the ship is not in orbit. If this order is received 
-        /// by a ship in orbit, it will immediately break orbit and move to their formation station.
+        /// and the ship is not in orbit. If this order is received by a ship in orbit, it will immediately break orbit 
+        /// and move to their formation station.
         /// </summary>
         AssumeFormation,
 

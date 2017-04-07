@@ -150,7 +150,7 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     /// </summary>
     /// <param name="detectedObject">The detected object.</param>
     protected void AddDetectedObject(IDetectableType detectedObject) {
-        D.Assert(detectedObject.IsOperational);
+        D.Assert(detectedObject.IsOperational, detectedObject.DebugName);   // 4.6.17 Failed after resuming from pause. Added debug
         if (_objectsDetected.Add(detectedObject)) {
             //D.Log(ShowDebugLog, "{0} now tracking {1} {2}.", DebugName, typeof(IDetectableType).Name, detectedObject.DebugName);
 
@@ -195,7 +195,7 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     /// DiplomaticRelationship between ParentItem.Owner and <c>otherPlayer</c> changes.
     /// </summary>
     /// <param name="otherPlayer">The other player.</param>
-    public void HandleRelationsChanged(Player otherPlayer) {
+    public void HandleRelationsChangedWith(Player otherPlayer) {
         //D.Log(ShowDebugLog, @"{0} received a relationship change event. Initiating review of relationship with all detected objects. 
         //{1} & {2}'s NewRelationship = {3}.", DebugName, Owner.Name, otherPlayer.Name, Owner.GetCurrentRelations(otherPlayer).GetValueName());
         ReviewKnowledgeOfAllDetectedObjects();

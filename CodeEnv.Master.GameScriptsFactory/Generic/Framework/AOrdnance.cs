@@ -204,7 +204,6 @@ public abstract class AOrdnance : AMonoBase, IOrdnance, IEquatable<AOrdnance> {
 
     protected virtual void OnDespawned() {
         //D.Log(ShowDebugLog, "{0}.OnDespawned called.", DebugName);
-        Unsubscribe();
         Target = null;
         Weapon = null;
         D.AssertNotEqual(Constants.Zero, _uniqueID);
@@ -260,6 +259,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance, IEquatable<AOrdnance> {
         }
         //D.Log(ShowDebugLog, "{0} is terminating.", DebugName); 
         IsOperational = false;
+        Unsubscribe();  // 4.6.17 Moved here from OnDespawned as events (pause...) could still arrive in 1 frame gap
 
         PrepareForTermination();
         ResetEffectsForReuse();

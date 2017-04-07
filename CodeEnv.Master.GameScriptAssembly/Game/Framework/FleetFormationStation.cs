@@ -32,7 +32,7 @@ using UnityEngine.Profiling;
 /// Without it, a reused instance appears to be equal to another reused instance if from the same instance. Probably doesn't matter
 /// as only 1 reused instance from an instance can exist at the same time, but...</remarks>
 /// </summary>
-public class FleetFormationStation : AFormationStation, IFleetFormationStation, IShipNavigable, IEquatable<FleetFormationStation> {
+public class FleetFormationStation : AFormationStation, IFleetFormationStation, IShipNavigable, IFacilityRepairCapable, IEquatable<FleetFormationStation> {
 
     private const string NameFormat = "{0}.{1}";
 
@@ -85,6 +85,8 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
         get { return _assignedShip; }
         set { SetProperty<IShip>(ref _assignedShip, value, "AssignedShip", AssignedShipPropChangedHandler, __AssignedShipPropChangingHandler); }
     }
+
+    private Player Owner { get { return AssignedShip != null ? AssignedShip.Owner : TempGameValues.NoPlayer; } }
 
     public float Radius { get { return TempGameValues.FleetFormationStationRadius; } }
 
@@ -191,34 +193,6 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
         CleanupDebugShowFleetFormationStation();
     }
 
-    #region Object.Equals and GetHashCode Override
-
-    public override bool Equals(object obj) {
-        if (!(obj is FleetFormationStation)) { return false; }
-        return Equals((FleetFormationStation)obj);
-    }
-
-    /// <summary>
-    /// Returns a hash code for this instance.
-    /// See "Page 254, C# 4.0 in a Nutshell."
-    /// </summary>
-    /// <returns>
-    /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
-    /// </returns>
-    public override int GetHashCode() {
-        unchecked { // http://dobrzanski.net/2010/09/13/csharp-gethashcode-cause-overflowexception/
-            int hash = base.GetHashCode();
-            hash = hash * 31 + _uniqueID.GetHashCode(); // 31 = another prime number
-            return hash;
-        }
-    }
-
-    #endregion
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
     #region Debug Show Formation Station
 
     private void InitializeDebugShowFleetFormationStation() {
@@ -256,6 +230,44 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
 
     #endregion
 
+    #region Object.Equals and GetHashCode Override
+
+    public override bool Equals(object obj) {
+        if (!(obj is FleetFormationStation)) { return false; }
+        return Equals((FleetFormationStation)obj);
+    }
+
+    /// <summary>
+    /// Returns a hash code for this instance.
+    /// See "Page 254, C# 4.0 in a Nutshell."
+    /// </summary>
+    /// <returns>
+    /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
+    /// </returns>
+    public override int GetHashCode() {
+        unchecked { // http://dobrzanski.net/2010/09/13/csharp-gethashcode-cause-overflowexception/
+            int hash = base.GetHashCode();
+            hash = hash * 31 + _uniqueID.GetHashCode(); // 31 = another prime number
+            return hash;
+        }
+    }
+
+    #endregion
+
+    public override string ToString() {
+        return new ObjectAnalyzer().ToString(this);
+    }
+
+    #region IEquatable<FleetFormationStation> Members
+
+    public bool Equals(FleetFormationStation other) {
+        // if the same instance and _uniqueID are equal, then its the same
+        return base.Equals(other) && _uniqueID == other._uniqueID;  // need instance comparison as _uniqueID is 0 in PoolMgr
+    }
+
+    #endregion
+
+
     #region INavigable Members
 
     public string Name {
@@ -285,11 +297,38 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
 
     #endregion
 
-    #region IEquatable<FleetFormationStation> Members
+    #region IRepairCapable Members
 
-    public bool Equals(FleetFormationStation other) {
-        // if the same instance and _uniqueID are equal, then its the same
-        return base.Equals(other) && _uniqueID == other._uniqueID;  // need instance comparison as _uniqueID is 0 in PoolMgr
+    /// <summary>
+    /// Indicates whether the player is currently allowed to repair at this item.
+    /// A player is always allowed to repair items if the player doesn't know who, if anyone, is the owner.
+    /// A player is not allowed to repair at the item if the player knows who owns the item and they are enemies.
+    /// <remarks>This implementation simply tests whether the player is the Owner of this FormationStation.</remarks>
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <returns></returns>
+    public bool IsRepairingAllowedBy(Player player) {
+        return Owner == player;
+    }
+
+    #endregion
+
+    #region IShipRepairCapable Members
+
+    public float GetAvailableRepairCapacityFor(IShip_Ltd ship, Player elementOwner) {
+        D.AssertEqual(Owner, elementOwner);
+        float basicValue = TempGameValues.RepairCapacityBasic_FormationStation;
+        return basicValue;
+    }
+
+    #endregion
+
+    #region IFacilityRepairCapable Members
+
+    public float GetAvailableRepairCapacityFor(IFacility_Ltd facility, Player elementOwner) {
+        D.AssertEqual(Owner, elementOwner);
+        float basicValue = TempGameValues.RepairCapacityBasic_FormationStation;
+        return basicValue;
     }
 
     #endregion

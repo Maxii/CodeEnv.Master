@@ -32,7 +32,7 @@ namespace CodeEnv.Master.GameContent {
         event EventHandler ownerChanged;
 
         /// <summary>
-        /// Occurs when InfoAccess rights change for a player on an item, directly attributable to
+        /// Occurs when InfoAccess rights change for a player on an item, largely attributable to
         /// a change in the player's IntelCoverage of the item.
         /// <remarks>Made accessible to trigger other players to re-evaluate what they know about opponents.</remarks>
         /// </summary>

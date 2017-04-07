@@ -134,7 +134,10 @@ namespace CodeEnv.Master.GameContent {
             // ship has arrived
             if (!HasArrived) {
                 // 3.30.17 Received Inner = 0, Outer = 2, DistanceToDest = 2.000099. Warns because HasArrived uses squared values
-                D.Warn("{0} HasArrivedError: Inner {1}, DistanceToDest {2}, Outer {3}.", DebugName, InnerRadius, distanceToDest, OuterRadius);
+                // 4.3.17 Received Inner = 12.8, Outer = 17, DistanceToDest = 12.79998. Warns because HasArrived uses squared values
+                if (distanceToDest < InnerRadius - 0.001F || distanceToDest > OuterRadius + 0.001F) {    // 4.6.17 Makes meaningful warnings
+                    D.Warn("{0} HasArrivedError: Inner {1}, DistanceToDest {2}, Outer {3}.", DebugName, InnerRadius, distanceToDest, OuterRadius);
+                }
             }
             return false;
         }

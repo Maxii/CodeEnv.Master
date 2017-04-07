@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FacilityOrder {
 
-        private const string ToStringFormat = "[{0}: Directive = {1}, Source = {2}, ToNotify = {3}, Target = {4}, FollowonOrder = {5}, StandingOrder = {6}]";
+        private const string DebugNameFormat = "[{0}: Directive = {1}, Source = {2}, ToNotify = {3}, Target = {4}, FollowonOrder = {5}, StandingOrder = {6}]";
 
         private static readonly FacilityDirective[] DirectivesWithNullTarget = new FacilityDirective[] {
                                                                                                     FacilityDirective.Refit,
@@ -32,11 +32,20 @@ namespace CodeEnv.Master.GameContent {
                                                                                                     FacilityDirective.Scuttle,
                                                                                                     FacilityDirective.StopAttack,
                                                                                                 };
+        public string DebugName {
+            get {
+                string targetText = Target != null ? Target.DebugName : "none";
+                string followonOrderText = FollowonOrder != null ? FollowonOrder.ToString() : "none";
+                string standingOrderText = StandingOrder != null ? StandingOrder.ToString() : "none";
+                return DebugNameFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), ToNotifyCmd, targetText, followonOrderText, standingOrderText);
+            }
+        }
+
         public FacilityOrder StandingOrder { get; set; }
 
         public FacilityOrder FollowonOrder { get; set; }
 
-        public IUnitAttackable Target { get; private set; }
+        public IElementNavigable Target { get; private set; }
 
         public bool ToNotifyCmd { get; private set; }
 
@@ -54,21 +63,18 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="source">The source of this order.</param>
         /// <param name="toNotifyCmd">if set to <c>true</c> the facility will notify its Cmd of the outcome.</param>
         /// <param name="target">The target of this order. Default is null.</param>
-        public FacilityOrder(FacilityDirective directive, OrderSource source, bool toNotifyCmd = false, IUnitAttackable target = null) {
-            if (DirectivesWithNullTarget.Contains(directive)) {
-                D.AssertNull(target, ToString());
-            }
+        public FacilityOrder(FacilityDirective directive, OrderSource source, bool toNotifyCmd = false, IElementNavigable target = null) {
             Directive = directive;
             Source = source;
             ToNotifyCmd = toNotifyCmd;
             Target = target;
+            if (DirectivesWithNullTarget.Contains(directive)) {
+                D.AssertNull(target, DebugName);
+            }
         }
 
         public override string ToString() {
-            string targetText = Target != null ? Target.DebugName : "none";
-            string followonOrderText = FollowonOrder != null ? FollowonOrder.ToString() : "none";
-            string standingOrderText = StandingOrder != null ? StandingOrder.ToString() : "none";
-            return ToStringFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), ToNotifyCmd, targetText, followonOrderText, standingOrderText);
+            return DebugName;
         }
 
     }

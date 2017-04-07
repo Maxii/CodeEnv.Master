@@ -491,7 +491,6 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-
         #region Debug
 
         #region Debug Turn Error Reporting

@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Ships can attempt to assume their station in the fleet formation at any time and any location. When this order is given, 
         /// the ship attempts to move to its station within the formation. Only Fleet Cmd or the Ship's Captain may order a ship to assume
-        /// its station. Ships in orbit donot pay attention to formations. If this order is received 
+        /// its station. Ships in orbit do not pay attention to formations. If this order is received 
         /// by a ship in orbit, the ship will immediately break orbit and move to their formation station.
         /// </summary>
         AssumeStation,
@@ -35,8 +35,10 @@ namespace CodeEnv.Master.GameContent {
         /// Ships can assume a close orbit around any IShipCloseOrbitable target including Bases, Planets, Stars and the UniverseCenter.
         /// To be allowed to go into close orbit, the owner of the orbit target cannot be at war with the ship's owner. For a Base, the
         /// base owner cannot be an enemy which includes being in a state of ColdWar with the ship's owner.
+        /// <remarks>4.5.17 Removed as not an issuable order by CmdStaff, AI or User as it makes no sense to close orbit something
+        /// en-masse as a fleet. The state AssumingCloseOrbit is used but as a Call()ed state.</remarks>
         /// </summary>
-        AssumeCloseOrbit,
+        ////AssumeCloseOrbit,
 
         /// <summary>
         /// Ships can move to all INavigableTargets including Units (fleets and bases), Planetoids, Stars, Systems,
@@ -65,7 +67,7 @@ namespace CodeEnv.Master.GameContent {
         Refit,
 
         /// <summary>
-        /// Ships can leave one fleet and join another owned by the ship's owner. A Join order is only issueable
+        /// Ships can leave one fleet and join another owned by the ship's owner. A Join order is only issuable
         /// by Fleet Cmd or the User.
         /// </summary>
         Join,

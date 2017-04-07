@@ -109,6 +109,17 @@ namespace CodeEnv.Master.GameContent {
             return GetShipDesign(_userPlayer, designName);
         }
 
+        public bool TryGetShipDesign(Player player, string designName, out ShipDesign design) {
+            design = null;
+            IDictionary<string, ShipDesign> designsByName;
+            if (_shipDesignsLookup.TryGetValue(player, out designsByName)) {
+                if (designsByName.TryGetValue(designName, out design)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public FacilityDesign GetFacilityDesign(Player player, string designName) {
             var designsByName = _facilityDesignsLookup[player];
             if (!designsByName.ContainsKey(designName)) {
@@ -119,6 +130,17 @@ namespace CodeEnv.Master.GameContent {
 
         public FacilityDesign GetUserFacilityDesign(string designName) {
             return GetFacilityDesign(_userPlayer, designName);
+        }
+
+        public bool TryGetFacilityDesign(Player player, string designName, out FacilityDesign design) {
+            design = null;
+            IDictionary<string, FacilityDesign> designsByName;
+            if (_facilityDesignsLookup.TryGetValue(player, out designsByName)) {
+                if (designsByName.TryGetValue(designName, out design)) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public StarbaseCmdDesign GetStarbaseCmdDesign(Player player, string designName) {
@@ -133,6 +155,17 @@ namespace CodeEnv.Master.GameContent {
             return GetStarbaseCmdDesign(_userPlayer, designName);
         }
 
+        public bool TryGetStarbaseCmdDesign(Player player, string designName, out StarbaseCmdDesign design) {
+            design = null;
+            IDictionary<string, StarbaseCmdDesign> designsByName;
+            if (_starbaseCmdDesignsLookup.TryGetValue(player, out designsByName)) {
+                if (designsByName.TryGetValue(designName, out design)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public FleetCmdDesign GetFleetCmdDesign(Player player, string designName) {
             var designsByName = _fleetCmdDesignsLookup[player];
             if (!designsByName.ContainsKey(designName)) {
@@ -145,6 +178,17 @@ namespace CodeEnv.Master.GameContent {
             return GetFleetCmdDesign(_userPlayer, designName);
         }
 
+        public bool TryGetFleetCmdDesign(Player player, string designName, out FleetCmdDesign design) {
+            design = null;
+            IDictionary<string, FleetCmdDesign> designsByName;
+            if (_fleetCmdDesignsLookup.TryGetValue(player, out designsByName)) {
+                if (designsByName.TryGetValue(designName, out design)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public SettlementCmdDesign GetSettlementCmdDesign(Player player, string designName) {
             var designsByName = _settlementCmdDesignsLookup[player];
             if (!designsByName.ContainsKey(designName)) {
@@ -155,6 +199,17 @@ namespace CodeEnv.Master.GameContent {
 
         public SettlementCmdDesign GetUserSettlementCmdDesign(string designName) {
             return GetSettlementCmdDesign(_userPlayer, designName);
+        }
+
+        public bool TryGetSettlementCmdDesign(Player player, string designName, out SettlementCmdDesign design) {
+            design = null;
+            IDictionary<string, SettlementCmdDesign> designsByName;
+            if (_settlementCmdDesignsLookup.TryGetValue(player, out designsByName)) {
+                if (designsByName.TryGetValue(designName, out design)) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public override string ToString() {

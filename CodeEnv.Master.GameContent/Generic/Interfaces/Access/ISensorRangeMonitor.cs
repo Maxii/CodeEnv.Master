@@ -43,24 +43,24 @@ namespace CodeEnv.Master.GameContent {
         event EventHandler warEnemyElementsInRangeChgd;
 
         /// <summary>
-        /// Indicates whether there are any enemy targets in range.
+        /// Indicates whether there are any enemy targets in range including WarEnemy targets.
         /// </summary>
         bool AreEnemyTargetsInRange { get; }
 
         /// <summary>
-        /// Indicates whether there are any enemy UnitElements in range.
+        /// Indicates whether there are any enemy UnitElements in range including WarEnemy UnitElements.
         /// <remarks>Not subscribable as AreEnemyTargetsInRange could be incorrect when it fired.</remarks>
         /// </summary>
         bool AreEnemyElementsInRange { get; }
 
         /// <summary>
-        /// Indicates whether there are any enemy UnitCmds in range.
+        /// Indicates whether there are any enemy UnitCmds in range including WarEnemy UnitCmds.
         /// <remarks>Not subscribable as AreEnemyTargetsInRange could be incorrect when it fired.</remarks>
         /// </summary>
         bool AreEnemyCmdsInRange { get; }
 
         /// <summary>
-        /// Indicates whether there are any enemy 'Bombardable' Planetoids in range.
+        /// Indicates whether there are any enemy 'Bombardable' Planetoids in range including WarEnemy Planetoids.
         /// <remarks>Not subscribable as AreEnemyTargetsInRange could be incorrect when it fired.</remarks>
         /// </summary>
         bool AreEnemyPlanetoidsInRange { get; }
@@ -91,7 +91,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// A copy of all the detected enemy targets that are in range of the sensors of this monitor.
-        /// <remarks>Can contain both ColdWar and War enemies.</remarks>
+        /// <remarks>Includes both ColdWar and War enemies.</remarks>
         /// <remarks>TODO 3.27.17 Not currently used as planetoids no longer IElementAttackable, aka Targets
         /// and Elements sets always the same. Will be used again once other enemy owned Items besides elements can 
         /// be fired on by 'normal' (not Bombard type) weapons.</remarks>
@@ -100,19 +100,20 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// A copy of all the detected enemy UnitElements that are in range of the sensors of this monitor.
-        /// <remarks>Can contain both ColdWar and War enemies.</remarks>
+        /// <remarks>Includes both ColdWar and War enemies.</remarks>
         /// </summary>
         HashSet<IUnitElement_Ltd> EnemyElementsDetected { get; }
 
         /// <summary>
         /// A copy of all the detected enemy UnitCmds that are in range of the sensors of this monitor.
-        /// <remarks>Can contain both ColdWar and War enemies.</remarks>
+        /// <remarks>Includes both ColdWar and War enemies.</remarks>
         /// <remarks>While a UnitCmd is not itself detectable, its HQElement is.</remarks>
         /// </summary>
         HashSet<IUnitCmd_Ltd> EnemyCmdsDetected { get; }
 
         /// <summary>
         /// A copy of all the detected enemy 'Bombardable' Planetoids that are in range of the sensors of this monitor.
+        /// <remarks>Includes both ColdWar and War enemies.</remarks>
         /// </summary>
         HashSet<IPlanetoid_Ltd> EnemyPlanetoidsDetected { get; }
 

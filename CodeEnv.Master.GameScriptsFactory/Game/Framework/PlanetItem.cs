@@ -28,7 +28,7 @@ using UnityEngine;
 /// <summary>
 /// APlanetoidItems that are Planets.
 /// </summary>
-public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable {
+public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable, IShipRepairCapable {
 
     private static readonly Vector2 IconSize = new Vector2(20F, 20F);
 
@@ -398,6 +398,39 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable 
     public void RecordExplorationCompletedBy(Player player) {
         SetIntelCoverage(player, IntelCoverage.Comprehensive);
         ChildMoons.ForAll(moon => moon.SetIntelCoverage(player, IntelCoverage.Comprehensive));
+    }
+
+    #endregion
+
+    #region IRepairCapable Members
+
+    /// <summary>
+    /// Indicates whether the player is currently allowed to repair at this item.
+    /// A player is always allowed to repair items if the player doesn't know who, if anyone, is the owner.
+    /// A player is not allowed to repair at the item if the player knows who owns the item and they are enemies.
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <returns></returns>
+    public bool IsRepairingAllowedBy(Player player) {
+        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
+            return true;
+        }
+        return !Owner.IsEnemyOf(player);
+    }
+
+    #endregion
+
+    #region IShipRepairCapable Members
+
+    public float GetAvailableRepairCapacityFor(IShip_Ltd ship, Player elementOwner) {
+        if (IsRepairingAllowedBy(elementOwner)) {
+            float basicValue = TempGameValues.RepairCapacityBasic_Planet;
+            float relationsFactor = Owner.GetCurrentRelations(elementOwner).RepairCapacityFactor(); // 0.5 - 2
+            float orbitFactor = IsInCloseOrbit(ship) ? TempGameValues.RepairCapacityFactor_CloseOrbit
+                : IsInHighOrbit(ship) ? TempGameValues.RepairCapacityFactor_HighOrbit : 1F; // 1 - 2
+            return basicValue * relationsFactor * orbitFactor;
+        }
+        return Constants.ZeroF;
     }
 
     #endregion

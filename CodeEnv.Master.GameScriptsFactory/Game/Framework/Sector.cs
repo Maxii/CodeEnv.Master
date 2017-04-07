@@ -345,7 +345,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
                 }
             }
         }
-        // 1.18.17 FIXME I'm guessing this can easily fail if a peripheral sector. 3.27.17 Confirmed failed peripheral sector.
+        // 1.18.17 FIXME I'm guessing this can easily fail if a peripheral sector. 3.27.17, 4.3.17 Confirmed failed peripheral sector.
         D.AssertException(iterateCount < 100, "{0}: Iterate check error. IsOnPeriphery = {1}.".Inject(DebugName, IsOnPeriphery));
         iterateCount++;
         return GetClearRandomPointInsideSector(iterateCount);

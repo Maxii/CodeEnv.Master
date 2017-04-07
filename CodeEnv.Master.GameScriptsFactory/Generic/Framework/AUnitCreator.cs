@@ -135,18 +135,6 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
         D.Assert(_gameMgr.IsRunning);
         GameTime.Instance.DateMinder.Add(Configuration.DeployDate, this);
     }
-    ////private void DeployOnDeployDate() { // OPTIMIZE 3.10.17 Not replacing with DateMinder for now as no Job reference is used
-    ////    D.Assert(_gameMgr.IsRunning);
-    ////    string jobName = "{0}.WaitForDeployDate({1})".Inject(DebugName, Configuration.DeployDate);
-    ////    _jobMgr.WaitForDate(Configuration.DeployDate, jobName, waitFinished: (jobWasKilled) => {
-    ////        if (jobWasKilled) {
-    ////            // Job without a local reference is only Kill()ed by JobManager during scene transitions
-    ////        }
-    ////        else {
-    ////            HandleDeployDateReached();
-    ////        }
-    ////    });
-    ////}
 
     private void HandleDeployDateReached() { // 3.25.16 wait approach changed from dateChanged event handler to WaitForDate utility method
         GameDate currentDate = GameTime.Instance.CurrentDate;

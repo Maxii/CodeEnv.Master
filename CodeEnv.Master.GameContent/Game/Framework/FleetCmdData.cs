@@ -209,35 +209,6 @@ namespace CodeEnv.Master.GameContent {
             return FleetCategory.None;
         }
 
-        /// <summary>
-        /// Returns the capacity for repair available to this ship in the RepairMode provided.
-        /// UOM is hitPts per day. IMPROVE Acquire value from data fields.
-        /// </summary>
-        /// <param name="mode">The RepairMode.</param>
-        /// <returns></returns>
-        public float GetRepairCapacity(RepairMode mode) {
-            switch (mode) {
-                case RepairMode.Self:
-                    return 2F;    // HACK
-                case RepairMode.PlanetHighOrbit:
-                    return 4F;    // HACK
-                case RepairMode.PlanetCloseOrbit:
-                    return 6F;    // HACK
-                case RepairMode.AlliedPlanetHighOrbit:
-                    return 8F;    // HACK
-                case RepairMode.AlliedPlanetCloseOrbit:
-                    return 10F;    // HACK
-                case RepairMode.BaseHighOrbit:
-                case RepairMode.BaseCloseOrbit:
-                case RepairMode.AlliedBaseHighOrbit:
-                case RepairMode.AlliedBaseCloseOrbit:
-                case RepairMode.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(mode));
-            }
-        }
-
-
         #region Event and Property Change Handlers
 
         protected override void HandleUnitWeaponsRangeChanged() {
@@ -276,75 +247,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #region Nested Classes
-
-        public enum RepairMode {
-
-            None,
-
-            /// <summary>
-            /// Repairing executed in a slot of the Formation
-            /// using facilities and materials available on the ship.
-            /// </summary>
-            Self,
-
-            /// <summary>
-            /// Repairing executed in high orbit around a non-allied planet
-            /// using facilities available on the ship and materials that can
-            /// be acquired (LR) from the planet.
-            /// </summary>
-            PlanetHighOrbit,
-
-            /// <summary>
-            /// Repairing executed in high orbit around an allied planet
-            /// using facilities available on the planet and ship, and materials that can
-            /// be delivered (LR) by the inhabitants of the planet.
-            /// </summary>
-            AlliedPlanetHighOrbit,
-
-            /// <summary>
-            /// Repairing executed in close orbit around a non-allied planet
-            /// using facilities available on the ship and materials that can
-            /// be acquired (SR) from the planet.
-            /// </summary>
-            PlanetCloseOrbit,
-
-            /// <summary>
-            /// Repairing executed in close orbit around an allied planet
-            /// using facilities available on the planet and ship, and materials that can
-            /// be delivered (SR) by the inhabitants of the planet.
-            /// </summary>
-            AlliedPlanetCloseOrbit,
-
-            /// <summary>
-            /// Repairing executed in high orbit around a non-allied Settlement or Starbase
-            /// using facilities available on the base and ship and materials that can
-            /// be delivered (LR) by the inhabitants of the base.
-            /// </summary>
-            BaseHighOrbit,
-
-            /// <summary>
-            /// Repairing executed in close orbit around a non-allied Settlement or Starbase
-            /// using facilities available on the base and ship and materials that can
-            /// be delivered (SR) by the inhabitants of the base.
-            /// </summary>
-            BaseCloseOrbit,
-
-            /// <summary>
-            /// Repairing executed in high orbit around an allied Settlement or Starbase
-            /// using facilities available on the base and ship and materials that can
-            /// be delivered (LR) by the inhabitants of the base.
-            /// </summary>
-            AlliedBaseHighOrbit,
-
-            /// <summary>
-            /// Repairing executed in close orbit around an allied Settlement or Starbase
-            /// using facilities available on the base and ship and materials that can
-            /// be delivered (SR) by the inhabitants of the base.
-            /// </summary>
-            AlliedBaseCloseOrbit
-
-        }
-
 
         #endregion
 

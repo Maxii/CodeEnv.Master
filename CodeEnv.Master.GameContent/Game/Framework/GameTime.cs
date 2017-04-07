@@ -310,7 +310,7 @@ namespace CodeEnv.Master.GameContent {
             }
             _gameMgr = GameReferences.GameManager;
             _playerPrefsMgr = PlayerPrefsManager.Instance;
-            DateMinder = new DateMinder();
+            DateMinder = new DateMinder(this);
             RecurringDateMinder = new RecurringDateMinder();
             Subscribe();
             ////PrepareToBeginNewGame();
@@ -482,7 +482,6 @@ namespace CodeEnv.Master.GameContent {
             float hoursDelayed = UnityEngine.Random.Range(Constants.ZeroF, maxHoursDelayed);
             return new GameDate(startDate, new GameTimeDuration(hoursDelayed));
         }
-
 
         /// <summary>
         /// Brings _currentDateTime up to date. While the Date only needs to be refreshed when it is about to be used,

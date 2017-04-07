@@ -47,16 +47,12 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<string>(ref _parentName, value, "ParentName"); }
         }
 
-        private string _debugName;
         public override string DebugName {
             get {
                 if (ParentName.IsNullOrEmpty()) {
                     return base.DebugName;
                 }
-                if (_debugName == null) {
-                    _debugName = DebugNameFormat.Inject(ParentName, Name);
-                }
-                return _debugName;
+                return DebugNameFormat.Inject(ParentName, Name);
             }
         }
 

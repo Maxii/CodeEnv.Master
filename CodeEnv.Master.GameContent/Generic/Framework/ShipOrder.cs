@@ -24,18 +24,26 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ShipOrder {
 
-        private const string ToStringFormat = "[{0}: Directive = {1}, Source = {2}, ToNotify = {3}, Target = {4}, FollowonOrder = {5}, StandingOrder = {6}]";
+        private const string DebugNameFormat = "[{0}: Directive = {1}, Source = {2}, ToNotify = {3}, Target = {4}, FollowonOrder = {5}, StandingOrder = {6}]";
 
         private static readonly ShipDirective[] DirectivesWithNullTarget = new ShipDirective[] {
                                                                                                     ShipDirective.AssumeStation,
                                                                                                     ShipDirective.Entrench,
                                                                                                     ShipDirective.Refit,
-                                                                                                    ShipDirective.Repair,
                                                                                                     ShipDirective.Retreat,
                                                                                                     ShipDirective.Scuttle,
                                                                                                     ShipDirective.StopAttack,
                                                                                                     ShipDirective.Disengage
                                                                                                 };
+
+        public string DebugName {
+            get {
+                string targetText = Target != null ? Target.DebugName : "none";
+                string followonOrderText = FollowonOrder != null ? FollowonOrder.ToString() : "none";
+                string standingOrderText = StandingOrder != null ? StandingOrder.ToString() : "none";
+                return DebugNameFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), ToNotifyCmd, targetText, followonOrderText, standingOrderText);
+            }
+        }
 
         public ShipOrder StandingOrder { get; set; }
 
@@ -64,20 +72,17 @@ namespace CodeEnv.Master.GameContent {
                 D.AssertEqual(typeof(ShipMoveOrder), GetType());
                 D.Assert(!toNotifyCmd);
             }
-            if (DirectivesWithNullTarget.Contains(directive)) {
-                D.AssertNull(target, ToString());
-            }
             Directive = directive;
             Source = source;
             ToNotifyCmd = toNotifyCmd;
             Target = target;
+            if (DirectivesWithNullTarget.Contains(directive)) {
+                D.AssertNull(target, DebugName);
+            }
         }
 
         public override string ToString() {
-            string targetText = Target != null ? Target.DebugName : "none";
-            string followonOrderText = FollowonOrder != null ? FollowonOrder.ToString() : "none";
-            string standingOrderText = StandingOrder != null ? StandingOrder.ToString() : "none";
-            return ToStringFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), ToNotifyCmd, targetText, followonOrderText, standingOrderText);
+            return DebugName;
         }
 
     }
