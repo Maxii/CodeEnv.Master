@@ -148,9 +148,9 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
             if (!threat.IsOperational) {
                 D.Error("{0}: Dead Threat {1} should have already been removed when death was detected.", DebugName, threat.DebugName);
                 D.Error("{0}: Subscribed to {1} ThreatDeaths: {2}.", DebugName, __threatDeathSubscriptionsAdded.Count, __threatDeathSubscriptionsAdded.Concatenate());
-                D.Error("{0}: Unsubscribed to {1} ThreatDeaths excluding {1}: {2}.", DebugName, __threatDeathSubscriptionsRemoved.Count, threat.DebugName, __threatDeathSubscriptionsRemoved.Concatenate());
+                D.Error("{0}: Unsubscribed to {1} ThreatDeaths excluding {2}: {3}.", DebugName, __threatDeathSubscriptionsRemoved.Count, threat.DebugName, __threatDeathSubscriptionsRemoved.Concatenate());
             }
-            // if its already dead, its probably been despawned which means all its values will be null
+            // if its already dead, it could already be despawned which means all its values will be null
 
             __threatDeathSubscriptionsRemoved.Add(threat.DebugName);
 

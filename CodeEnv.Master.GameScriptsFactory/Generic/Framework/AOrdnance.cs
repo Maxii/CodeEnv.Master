@@ -214,7 +214,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance, IEquatable<AOrdnance> {
         D.Assert(_toDespawn);
         _toDespawn = false;
         // RootName is restored after returning to pool so that it doesn't show in Unity with its most recent _uniqueID name
-        RestoreRootName();    // Remove when debugging a problem where despawning is occurring before you expect it and you need its uniqueID
+        //RestoreRootName();    // Remove when debugging a problem where despawning is occurring before you expect it and you need its uniqueID
     }
 
     #endregion
