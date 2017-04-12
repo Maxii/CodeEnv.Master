@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using CodeEnv.Master.Common;
 
     /// <summary>
@@ -49,7 +50,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="targetStandoffDistance">When the ship arrives at the target, this is the distance
         /// from the target it should strive to achieve.</param>
         public ShipMoveOrder(OrderSource source, IShipNavigable target, Speed speed, bool isFleetwide, float targetStandoffDistance)
-            : base(ShipDirective.Move, source, false, target) {
+            : base(ShipDirective.Move, source, default(Guid), target) {
             Utility.ValidateNotNull(target);
             D.AssertNotDefault((int)speed);
             Utility.ValidateNotNegative(targetStandoffDistance);

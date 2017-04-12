@@ -230,10 +230,8 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
     private void IssueRemoteUserShipOrder(int itemID) {
         var directive = (ShipDirective)_directiveLookup[itemID];
         D.AssertEqual(ShipDirective.Join, directive);  // HACK
-        IShipNavigable target = _fleetMenuOperator;
         var remoteShip = _remoteUserOwnedSelectedItem as ShipItem;
-        bool toNotifyCmd = false;
-        remoteShip.CurrentOrder = new ShipOrder(directive, OrderSource.User, toNotifyCmd, target);
+        remoteShip.CurrentOrder = new ShipOrder(directive, OrderSource.User, target: _fleetMenuOperator);
     }
 
     public override string ToString() {

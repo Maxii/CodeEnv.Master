@@ -135,11 +135,8 @@ public abstract class AMortalItemStateMachine : AMortalItem {
             return true; // my addition
         }
         else {
-            string parameters = string.Empty;
-            if (!param.IsNullOrEmpty()) {
-                parameters = param.Select(arg => arg.ToString()).Concatenate();
-            }
-            D.Warn("{0} did not find Method with signature {1}({2}). Is it a private method in a base class?", DebugName, message, parameters);  // my addition
+            int paramCount = param.IsNullOrEmpty() ? Constants.Zero : param.Length;
+            D.Warn("{0} did not find Method with signature {1}(paramCount: {2}). Is it a private method in a base class?", DebugName, message, paramCount);  // my addition
             return false;   // my addition
         }
     }
@@ -276,7 +273,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
             __ValidateNoNewStateSetDuringVoidEnterState(value);
             ChangingState();
             //string lastStateMsg = LastState != null ? LastState.ToString() : "null";
-            //D.Log(ShowDebugLog, "{0} changing CurrentState from {1} to {2}.", DebugName, lastStateMsg, value.ToString());
+            //D.Log(ShowDebugLog, "{0} changing CurrentState from {1} to {2}. Frame: {3}.", DebugName, lastStateMsg, value.ToString(), Time.frameCount);
             state.currentState = value;
             ConfigureCurrentState();
             __ResetStateChangeValidationTest();
@@ -465,6 +462,9 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     /// state condition really exists as nothing has been set. This method allows the derived class to 
     /// configure the state for operation IMMEDIATELY (read: atomically) after the state becomes the 'CurrentState'.
     /// </remarks>
+    /// <remarks>4.8.17 Now know that an IEnumerator EnterState is processed during the same frame as 
+    /// PreconfigureCurrentState, albeit later in the frame during Coroutine processing after most code
+    /// to be executed during the frame has already executed, including that in PreconfigureCurrentState.</remarks>
     /// </summary>
     protected virtual void PreconfigureCurrentState() { }
 

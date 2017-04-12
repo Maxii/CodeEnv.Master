@@ -730,10 +730,80 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     #region StateMachine Support Members
 
+    protected abstract bool IsCurrentStateCalled { get; }
+
+    #region FsmReturnHandler and Callback System
+
     /// <summary>
-    /// The reported cause of a failure to complete execution of an Order.
+    /// Stack of FsmReturnHandlers that are currently in use. 
+    /// <remarks>Allows use of nested Call()ed states.</remarks>
     /// </summary>
-    protected UnitItemOrderFailureCause _orderFailureCause;
+    protected Stack<FsmReturnHandler> _activeFsmReturnHandlers = new Stack<FsmReturnHandler>();
+
+    /// <summary>
+    /// Removes the FsmReturnHandler from the top of _activeFsmReturnHandlers. 
+    /// Throws an error if not on top.
+    /// </summary>
+    /// <param name="handlerToRemove">The handler to remove.</param>
+    protected void RemoveReturnHandlerFromTopOfStack(FsmReturnHandler handlerToRemove) {
+        var topHandler = _activeFsmReturnHandlers.Pop();
+        D.AssertEqual(topHandler, handlerToRemove);
+    }
+
+    /// <summary>
+    /// Gets the FsmReturnHandler for the current Call()ed state.
+    /// Throws an error if the CurrentState is not a Call()ed state or if not found.
+    /// </summary>
+    /// <returns></returns>
+    protected FsmReturnHandler GetCurrentCalledStateReturnHandler() {
+        D.Assert(IsCurrentStateCalled);
+        D.AssertException(_activeFsmReturnHandlers.Count != Constants.Zero);
+        string currentStateName = CurrentState.ToString();
+        var peekHandler = _activeFsmReturnHandlers.Peek();
+        if (peekHandler.CalledStateName != currentStateName) {
+            // 4.11.17 This can occur in the 1 frame delay between Call()ing a state and processing the results
+            D.Warn("{0}: {1} is not correct for state {2}. Replacing.", DebugName, peekHandler.DebugName, currentStateName);
+            RemoveReturnHandlerFromTopOfStack(peekHandler);
+            return GetCurrentCalledStateReturnHandler();
+        }
+        return peekHandler;
+    }
+
+    /// <summary>
+    /// Gets the FsmReturnHandler for the Call()ed state named <c>calledStateName</c>.
+    /// Throws an error if not found.
+    /// <remarks>TEMP version that allows use in CalledState_ExitState methods where CurrentState has already changed.</remarks>
+    /// </summary>
+    /// <param name="calledStateName">Name of the Call()ed state.</param>
+    /// <returns></returns>
+    protected FsmReturnHandler __GetCalledStateReturnHandlerFor(string calledStateName) {
+        D.AssertException(_activeFsmReturnHandlers.Count != Constants.Zero);
+        var peekHandler = _activeFsmReturnHandlers.Peek();
+        if (peekHandler.CalledStateName != calledStateName) {
+            // 4.11.17 When an event occurs in the 1 frame delay between Call()ing a state and processing the results
+            D.Warn("{0}: {1} is not correct for state {2}. Replacing.", DebugName, peekHandler.DebugName, calledStateName);
+            RemoveReturnHandlerFromTopOfStack(peekHandler);
+            return __GetCalledStateReturnHandlerFor(calledStateName);
+        }
+        return peekHandler;
+    }
+
+    #endregion
+
+    /// <summary>
+    /// Validates the common starting values of a State that is Call()able.
+    /// </summary>
+    protected virtual void ValidateCommonCallableStateValues(string calledStateName) {
+        D.AssertNotEqual(Constants.Zero, _activeFsmReturnHandlers.Count);
+        _activeFsmReturnHandlers.Peek().__Validate(calledStateName);
+    }
+
+    /// <summary>
+    /// Validates the common starting values of a State that is not Call()able.
+    /// </summary>
+    protected virtual void ValidateCommonNotCallableStateValues() {
+        D.AssertEqual(Constants.Zero, _activeFsmReturnHandlers.Count);
+    }
 
     protected void KillRepairJob() {
         if (_repairJob != null) {

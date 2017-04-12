@@ -15,7 +15,7 @@
 ////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
-
+    using System;
     using System.Linq;
     using CodeEnv.Master.Common;
 
@@ -41,9 +41,20 @@ namespace CodeEnv.Master.GameContent {
                 string targetText = Target != null ? Target.DebugName : "none";
                 string followonOrderText = FollowonOrder != null ? FollowonOrder.ToString() : "none";
                 string standingOrderText = StandingOrder != null ? StandingOrder.ToString() : "none";
-                return DebugNameFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), ToNotifyCmd, targetText, followonOrderText, standingOrderText);
+                return DebugNameFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), ToCallback, targetText, followonOrderText, standingOrderText);
             }
         }
+
+        /// <summary>
+        /// The Unique OrderID of the CmdOrder that originated this ElementOrder. If default value this element order
+        /// does not require an order outcome callback from this element to the Cmd, either because the order isn't 
+        /// from Cmd, or the CmdOrder does not require a callback.
+        /// <remarks>Used to determine whether the element receiving this order should respond to Cmd with the outcome 
+        /// of the order's execution. If the element calls back with the outcome, the Cmd uses the ID to determine whether the
+        /// callback it received is still relevant, aka the current CmdOrder has the same ID as the ID returned from the element.
+        /// </remarks>
+        /// </summary>
+        public Guid CmdOrderID { get; private set; }
 
         public ShipOrder StandingOrder { get; set; }
 
@@ -51,7 +62,7 @@ namespace CodeEnv.Master.GameContent {
 
         public IShipNavigable Target { get; private set; }
 
-        public bool ToNotifyCmd { get; private set; }
+        public bool ToCallback { get { return CmdOrderID != default(Guid); } }
 
         /// <summary>
         /// The source of this order. 
@@ -65,16 +76,17 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="directive">The order directive.</param>
         /// <param name="source">The source of this order.</param>
-        /// <param name="toNotifyCmd">if set to <c>true</c> the ship will notify its Command of the outcome.</param>
+        /// <param name="cmdOrderID">The unique ID of the CmdOrder that caused this element order to be generated. If assigned
+        /// it indicates that the element receiving this order should callback to Cmd with the outcome of the order's execution.</param>
         /// <param name="target">The target of this order. No need for FormationStation. Default is null.</param>
-        public ShipOrder(ShipDirective directive, OrderSource source, bool toNotifyCmd = false, IShipNavigable target = null) {
+        public ShipOrder(ShipDirective directive, OrderSource source, Guid cmdOrderID = default(Guid), IShipNavigable target = null) {
             if (directive == ShipDirective.Move) {
                 D.AssertEqual(typeof(ShipMoveOrder), GetType());
-                D.Assert(!toNotifyCmd);
+                D.AssertDefault(cmdOrderID);
             }
             Directive = directive;
             Source = source;
-            ToNotifyCmd = toNotifyCmd;
+            CmdOrderID = cmdOrderID;
             Target = target;
             if (DirectivesWithNullTarget.Contains(directive)) {
                 D.AssertNull(target, DebugName);

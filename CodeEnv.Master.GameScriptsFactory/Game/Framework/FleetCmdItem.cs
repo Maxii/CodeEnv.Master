@@ -341,15 +341,19 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     private void HandleNewOrder() {
-        // Pattern that handles Call()ed states that goes more than one layer deep
-        while (IsCurrentStateCalled) {
-            UponNewOrderReceived();
-        }
-        D.Assert(!IsCurrentStateCalled, CurrentState.GetValueName());
-
         if (CurrentOrder != null) {
+            // Pattern that handles Call()ed states that goes more than one layer deep
+            while (IsCurrentStateCalled) {
+                // 4.9.17 Removed UponNewOrderReceived for Call()ed states as any ReturnCause they provide will never
+                // be processed as the new order will change the state before the yield return null allows the processing
+                Return();
+            }
+            D.Assert(!IsCurrentStateCalled);
             D.Assert(CurrentOrder.Source > OrderSource.Captain);
-            D.LogBold(ShowDebugLog, "{0} received new {1}. CurrentState = {2}, Frame = {3}.", DebugName, CurrentOrder, CurrentState.GetValueName(), Time.frameCount);
+
+            UponNewOrderReceived();
+
+            D.Log(ShowDebugLog, "{0} received new {1}. CurrentState = {2}, Frame = {3}.", DebugName, CurrentOrder, CurrentState.GetValueName(), Time.frameCount);
             Data.Target = CurrentOrder.Target;  // can be null
 
             FleetDirective directive = CurrentOrder.Directive;
@@ -419,11 +423,11 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         get { return base.LastState != null ? (FleetState)base.LastState : default(FleetState); }
     }
 
-    private bool IsCurrentStateCalled {
-        get {
-            return CurrentState == FleetState.Moving || CurrentState == FleetState.Patrolling || CurrentState == FleetState.AssumingFormation
-                || CurrentState == FleetState.Guarding || CurrentState == FleetState.Repairing;
-        }
+    protected override bool IsCurrentStateCalled { get { return IsStateCalled(CurrentState); } }
+
+    private bool IsStateCalled(FleetState state) {
+        return state == FleetState.Moving || state == FleetState.Patrolling || state == FleetState.AssumingFormation
+            || state == FleetState.Guarding || state == FleetState.Repairing;
     }
 
     private bool IsCurrentStateAnyOf(FleetState state) {
@@ -482,10 +486,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void Idling_UponPreconfigureState() {
         LogEvent();
-        if (_fsmTgt != null) {
-            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", DebugName, _fsmTgt.DebugName);
-        }
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
+        ValidateCommonNotCallableStateValues();
 
         Data.Target = null; // TEMP to remove target from data after order has been completed or failed
     }
@@ -527,6 +528,11 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         // cannot return void as that causes the FSM to fail its 'no state change from void EnterState' test.
         IsAvailable = true;
         yield return null;
+    }
+
+    void Idling_UponNewOrderReceived() {
+        LogEvent();
+        // TODO
     }
 
     void Idling_UponAlertStatusChanged() {
@@ -613,36 +619,36 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     /// <returns></returns>
     /// <exception cref="System.NotImplementedException"></exception>
     /// <exception cref="NotImplementedException"></exception>
-    private bool ShouldMovingBeReassessed(out UnitItemOrderFailureCause failCause, bool __isFsmInfoAccessChgd) {
+    private bool ShouldMovingBeReassessed(out FsmOrderFailureCause failCause, bool __isFsmInfoAccessChgd) {
         D.AssertNotNull(_fsmTgt);
         bool toReassessMoving = false;
-        UnitItemOrderFailureCause failureCause = UnitItemOrderFailureCause.None;
+        FsmOrderFailureCause failureCause = default(FsmOrderFailureCause);
         switch (LastState) {
             case FleetState.ExecuteExploreOrder:
                 IFleetExplorable fleetExploreTgt = _fsmTgt as IFleetExplorable;
                 if (!fleetExploreTgt.IsExploringAllowedBy(Owner)) {
                     // Owner exposure or relations change caused a loss of explore rights
-                    failureCause = UnitItemOrderFailureCause.TgtRelationship;
+                    failureCause = FsmOrderFailureCause.TgtRelationship;
                     toReassessMoving = true;
                 }
                 if (fleetExploreTgt.IsFullyExploredBy(Owner)) {
                     // last remaining ship explore target was explored by another fleet's ship owned by us
                     // OR a relations change to Ally instantly made target fully explored
-                    failureCause = UnitItemOrderFailureCause.TgtRelationship;
+                    failureCause = FsmOrderFailureCause.TgtRelationship;
                     toReassessMoving = true;
                 }
                 break;
             case FleetState.ExecutePatrolOrder:
                 IPatrollable patrolTgt = _fsmTgt as IPatrollable;
                 if (!patrolTgt.IsPatrollingAllowedBy(Owner)) {
-                    failureCause = UnitItemOrderFailureCause.TgtRelationship;
+                    failureCause = FsmOrderFailureCause.TgtRelationship;
                     toReassessMoving = true;
                 }
                 break;
             case FleetState.ExecuteGuardOrder:
                 IGuardable guardTgt = _fsmTgt as IGuardable;
                 if (!guardTgt.IsGuardingAllowedBy(Owner)) {
-                    failureCause = UnitItemOrderFailureCause.TgtRelationship;
+                    failureCause = FsmOrderFailureCause.TgtRelationship;
                     toReassessMoving = true;
                 }
                 break;
@@ -650,7 +656,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                 IUnitAttackable unitAttackTgt = _fsmTgt as IUnitAttackable;
                 if (__isFsmInfoAccessChgd) {
                     if (!unitAttackTgt.IsAttackByAllowed(Owner)) {
-                        failureCause = UnitItemOrderFailureCause.TgtRelationship;
+                        failureCause = FsmOrderFailureCause.TgtRelationship;
                         toReassessMoving = true;
                     }
                 }
@@ -659,7 +665,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                     // If fsmOwner relationship changed, then should not continue attack unless new relationship is War
                     // Attack currently underway could have been on a ColdWar opponent.
                     if (!unitAttackTgt.IsWarAttackByAllowed(Owner)) {
-                        failureCause = UnitItemOrderFailureCause.TgtRelationship;
+                        failureCause = FsmOrderFailureCause.TgtRelationship;
                         toReassessMoving = true;
                     }
                 }
@@ -677,7 +683,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                         // now known as an enemy
                         if (!Owner.IsPreviouslyEnemyOf(unitCmdMoveTgtOwner)) {
                             // definitely reassess as changed from non-enemy to enemy
-                            failureCause = UnitItemOrderFailureCause.TgtRelationship;
+                            failureCause = FsmOrderFailureCause.TgtRelationship;
                             toReassessMoving = true;
                         }
                         // else no need to reassess as no change in being an enemy
@@ -686,7 +692,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                         // now known as not an enemy
                         if (Owner.IsPreviouslyEnemyOf(unitCmdMoveTgtOwner)) {
                             // changed from enemy to non-enemy so reassess as StandoffDistance can be shortened
-                            failureCause = UnitItemOrderFailureCause.TgtRelationship;
+                            failureCause = FsmOrderFailureCause.TgtRelationship;
                             toReassessMoving = true;
                         }
                     }
@@ -708,7 +714,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                     }
                 }
                 // owner is no longer us
-                failureCause = UnitItemOrderFailureCause.TgtRelationship;
+                failureCause = FsmOrderFailureCause.TgtRelationship;
                 toReassessMoving = true;
                 break;
             case FleetState.ExecuteRegroupOrder:
@@ -722,7 +728,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                     // moving to base/system we just lost or system owned by friendly player whose relations with us have changed
                     if (Owner.IsEnemyOf(regroupDestOwner)) {
                         // now known as an enemy
-                        failureCause = UnitItemOrderFailureCause.TgtRelationship;
+                        failureCause = FsmOrderFailureCause.TgtRelationship;
                         toReassessMoving = true;
                     }
                 }
@@ -731,7 +737,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             case FleetState.ExecuteRepairOrder:
                 var repairDest = _fsmTgt as IUnitCmdRepairCapable;
                 if (!repairDest.IsRepairingAllowedBy(Owner)) {
-                    failureCause = UnitItemOrderFailureCause.TgtRelationship;
+                    failureCause = FsmOrderFailureCause.TgtRelationship;
                     toReassessMoving = true;
                 }
                 break;
@@ -768,10 +774,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void Moving_UponPreconfigureState() {
         LogEvent();
-        D.AssertNotNull(_fsmTgt);
-        D.Assert(_fsmTgt.IsOperational, _fsmTgt.DebugName);
+        ValidateCommonCallableStateValues(CurrentState.GetValueName());
         D.AssertNotDefault((int)_apMoveSpeed);
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
 
         if (LastState == FleetState.ExecuteExploreOrder) {
             if (!(_fsmTgt as IFleetExplorable).IsExploringAllowedBy(Owner)) {
@@ -794,13 +798,15 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void Moving_UponApCoursePlotFailure() {
         LogEvent();
-        _orderFailureCause = UnitItemOrderFailureCause.TgtUnreachable;
+        var returnHandler = GetCurrentCalledStateReturnHandler();
+        returnHandler.ReturnCause = FsmOrderFailureCause.TgtUnreachable;
         Return();
     }
 
     void Moving_UponApTargetUnreachable() {
         LogEvent();
-        _orderFailureCause = UnitItemOrderFailureCause.TgtUnreachable;
+        var returnHandler = GetCurrentCalledStateReturnHandler();
+        returnHandler.ReturnCause = FsmOrderFailureCause.TgtUnreachable;
         Return();
     }
 
@@ -811,7 +817,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void Moving_UponApTargetUncatchable() {
         LogEvent();
-        _orderFailureCause = UnitItemOrderFailureCause.TgtUncatchable;
+        var returnHandler = GetCurrentCalledStateReturnHandler();
+        returnHandler.ReturnCause = FsmOrderFailureCause.TgtUncatchable;
         Return();
     }
 
@@ -833,21 +840,16 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void Moving_UponUnitDamageIncurred() {
         LogEvent();
         if (AssessNeedForRepair(GeneralSettings.Instance.HealthThreshold_BadlyDamaged)) {
-            _orderFailureCause = UnitItemOrderFailureCause.UnitItemNeedsRepair;
+            var returnHandler = GetCurrentCalledStateReturnHandler();
+            returnHandler.ReturnCause = FsmOrderFailureCause.NeedsRepair;
             Return();
         }
     }
 
-
-    void Moving_UponNewOrderReceived() {
-        LogEvent();
-        Return();
-    }
-
-    //// 2.18.17 Debugging. The frame numbers where Moving received an FsmTgtInfoAccessChg event. 
-    //// Must be cleared by ExitState of any state that uses Call(Moving). Currently being used to 
-    //// determine how a explore order can no longer be explorable without an InfoAccess event being received by Moving.
-    ////private IList<int> __movingFsmTgtInfoAccessChgFrames = new List<int>(3);
+    // 2.18.17 Debugging. The frame numbers where Moving received an FsmTgtInfoAccessChg event. 
+    // Must be cleared by ExitState of any state that uses Call(Moving). Currently being used to 
+    // determine how a explore order can no longer be explorable without an InfoAccess event being received by Moving.
+    //private IList<int> __movingFsmTgtInfoAccessChgFrames = new List<int>(3);
 
     void Moving_UponFsmTgtInfoAccessChgd(IOwnerItem_Ltd fsmTgt) {
         LogEvent();
@@ -855,9 +857,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         ////__movingFsmTgtInfoAccessChgFrames.Add(Time.frameCount);
         if (fsmTgt.IsOwnerAccessibleTo(Owner)) {
             // evaluate reassessing move as target's owner is accessible to us
-            UnitItemOrderFailureCause failCause;
+            FsmOrderFailureCause failCause;
             if (ShouldMovingBeReassessed(out failCause, __isFsmInfoAccessChgd: true)) {
-                _orderFailureCause = failCause;
+                var returnHandler = GetCurrentCalledStateReturnHandler();
+                returnHandler.ReturnCause = failCause;
                 Return();
             }
         }
@@ -868,9 +871,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         D.AssertEqual(_fsmTgt, fsmTgt as IFleetNavigable);
         if (fsmTgt.IsOwnerAccessibleTo(Owner)) {
             // evaluate reassessing move as target's owner is accessible to us
-            UnitItemOrderFailureCause failCause;
+            FsmOrderFailureCause failCause;
             if (ShouldMovingBeReassessed(out failCause, __isFsmInfoAccessChgd: false)) {
-                _orderFailureCause = failCause;
+                var returnHandler = GetCurrentCalledStateReturnHandler();
+                returnHandler.ReturnCause = failCause;
                 Return();
             }
         }
@@ -886,9 +890,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                 // we have access to the owner
                 if (fsmItemTgtOwner == player) {
                     // evaluate reassessing move as target's owner has a relations change with us
-                    UnitItemOrderFailureCause failCause;
+                    FsmOrderFailureCause failCause;
                     if (ShouldMovingBeReassessed(out failCause, __isFsmInfoAccessChgd: false)) {
-                        _orderFailureCause = failCause;
+                        var returnHandler = GetCurrentCalledStateReturnHandler();
+                        returnHandler.ReturnCause = failCause;
                         Return();
                     }
                 }
@@ -901,7 +906,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         if (fleet == _fsmTgt) {
             D.Assert(!isAware); // can't become newly aware of a fleet we are moving too without first losing awareness
             // our move target is the fleet we've lost awareness of
-            _orderFailureCause = UnitItemOrderFailureCause.TgtUncatchable;
+            var returnHandler = GetCurrentCalledStateReturnHandler();
+            returnHandler.ReturnCause = FsmOrderFailureCause.TgtUncatchable;
             Return();
         }
     }
@@ -916,7 +922,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                 D.Error("{0}.target {1} is not dead target {2}.", DebugName, _fsmTgt.DebugName, deadFsmTgt.DebugName);
             }
         }
-        _orderFailureCause = UnitItemOrderFailureCause.TgtDeath;
+        ////_orderFailureCause = UnitItemOrderFailureCause.TgtDeath;
+        //_fsmCurrentReturnHandler.ReturnCause = FsmElementOrderFailureCause.TgtDeath;
+        var returnHandler = GetCurrentCalledStateReturnHandler();
+        returnHandler.ReturnCause = FsmOrderFailureCause.TgtDeath;
         Return();
     }
 
@@ -926,7 +935,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void Moving_UponDeath() {
         LogEvent();
-        _orderFailureCause = UnitItemOrderFailureCause.UnitItemDeath;
+        var returnHandler = GetCurrentCalledStateReturnHandler();
+        returnHandler.ReturnCause = FsmOrderFailureCause.Death;
         Return();
     }
 
@@ -937,38 +947,57 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         _navigator.DisengagePilot();
 
         if (LastState == FleetState.ExecuteExploreOrder) {
-            if (_orderFailureCause == UnitItemOrderFailureCause.None) {
+            if (__GetCalledStateReturnHandlerFor(FleetState.Moving.GetValueName()).ReturnCause == FsmOrderFailureCause.None) {
                 D.Assert((_fsmTgt as IFleetExplorable).IsExploringAllowedBy(Owner));
             }
         }
-        ////if (LastState == FleetState.ExecuteExploreOrder) {
-        ////    if (!(_fsmTgt as IFleetExplorable).IsExploringAllowedBy(Owner)) {
-        ////        D.Assert((_fsmTgt as IFleetExplorable).IsOwnerAccessibleTo(Owner), "No longer allowed to explore but owner not accessible???");
-        ////        // I know that failure causes like TgtRelationship will be handled properly by ExecuteExploreOrder so no need to warn
-        ////        if (_orderFailureCause == UnitItemOrderFailureCause.None) {
-        ////            var targetOwner = (_fsmTgt as IOwnerItem).Owner;
-        ////            D.Warn(@"{0} exiting Moving state with ExploreTgt {1} no longer explorable without a failure cause. CurrentFrame = {2}, 
-        ////                Frames where Moving received an FsmTgtInfoAccess event = {3}. DistanceToExploreTgt = {4:0.}, SRSensorRange = {5:0.},
-        ////                TargetOwner = {6}, Relationship = {7}.",
-        ////                DebugName, _fsmTgt.DebugName, Time.frameCount, __movingFsmTgtInfoAccessChgFrames.Concatenate(),
-        ////                Vector3.Distance(_fsmTgt.Position, Position), SRSensorRangeDistance, targetOwner,
-        ////                targetOwner.GetCurrentRelations(Owner).GetValueName());
-        ////        }
-        ////    }
-        ////}
+        //if (LastState == FleetState.ExecuteExploreOrder) {
+        //    if (!(_fsmTgt as IFleetExplorable).IsExploringAllowedBy(Owner)) {
+        //        D.Assert((_fsmTgt as IFleetExplorable).IsOwnerAccessibleTo(Owner), "No longer allowed to explore but owner not accessible???");
+        //        // I know that failure causes like TgtRelationship will be handled properly by ExecuteExploreOrder so no need to warn
+        //        if (_orderFailureCause == UnitItemOrderFailureCause.None) {
+        //            var targetOwner = (_fsmTgt as IOwnerItem).Owner;
+        //            D.Warn(@"{0} exiting Moving state with ExploreTgt {1} no longer explorable without a failure cause. CurrentFrame = {2}, 
+        //                Frames where Moving received an FsmTgtInfoAccess event = {3}. DistanceToExploreTgt = {4:0.}, SRSensorRange = {5:0.},
+        //                TargetOwner = {6}, Relationship = {7}.",
+        //                DebugName, _fsmTgt.DebugName, Time.frameCount, __movingFsmTgtInfoAccessChgFrames.Concatenate(),
+        //                Vector3.Distance(_fsmTgt.Position, Position), SRSensorRangeDistance, targetOwner,
+        //                targetOwner.GetCurrentRelations(Owner).GetValueName());
+        //        }
+        //    }
+        //}
     }
 
     #endregion
 
     #region ExecuteAssumeFormationOrder
 
+    #region ExecuteAssumeFormationOrder Support Members
+
+    private FsmReturnHandler CreateFsmReturnHandler_MovingToAssumeFormation() {
+        IDictionary<FsmOrderFailureCause, Action> taskLookup = new Dictionary<FsmOrderFailureCause, Action>() {
+
+            {FsmOrderFailureCause.Death, () =>               { }                                                 },
+            {FsmOrderFailureCause.NeedsRepair, () =>         {   InitiateRepair(retainSuperiorsOrders: false); } },
+        };
+        return new FsmReturnHandler(taskLookup, FleetState.Moving.GetValueName());
+    }
+
+    private FsmReturnHandler CreateFsmReturnHandler_AssumingFormationToAssumeFormation() {
+        IDictionary<FsmOrderFailureCause, Action> taskLookup = new Dictionary<FsmOrderFailureCause, Action>() {
+
+            {FsmOrderFailureCause.Death, () =>               { }                                                 },
+            {FsmOrderFailureCause.NeedsRepair, () =>         {   InitiateRepair(retainSuperiorsOrders: false); } },
+        };
+        return new FsmReturnHandler(taskLookup, FleetState.AssumingFormation.GetValueName());
+    }
+
+    #endregion
+
     void ExecuteAssumeFormationOrder_UponPreconfigureState() {
         LogEvent();
 
-        if (_fsmTgt != null) {
-            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", DebugName, _fsmTgt.DebugName);
-        }
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
+        ValidateCommonNotCallableStateValues();
 
         _fsmTgt = CurrentOrder.Target;
         // No reason to subscribe to _fsmTgt-related events as _fsmTgt is either StationaryLocation or null
@@ -977,6 +1006,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     IEnumerator ExecuteAssumeFormationOrder_EnterState() {
         LogEvent();
 
+        FsmReturnHandler returnHandler = null;
+
         if (_fsmTgt != null) {
             // a LocalAssyStation target was specified so move there together first
             D.Assert(_fsmTgt is StationaryLocation);
@@ -984,65 +1015,37 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             _apMoveSpeed = Speed.Standard;
             _apMoveTgtStandoffDistance = Constants.ZeroF;
 
+            returnHandler = GetInactiveReturnHandlerFor(FleetState.Moving, CurrentState);
             Call(FleetState.Moving);
             yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-            if (_orderFailureCause != UnitItemOrderFailureCause.None) {
-                switch (_orderFailureCause) {
-                    case UnitItemOrderFailureCause.UnitItemNeedsRepair:
-                        InitiateRepair(retainSuperiorsOrders: false);
-                        break;
-                    case UnitItemOrderFailureCause.UnitItemDeath:
-                        // Whole Unit has died. Dead state will follow
-                        // TODO Communicate failure to boss?
-                        break;
-                    case UnitItemOrderFailureCause.TgtDeath:
-                    case UnitItemOrderFailureCause.TgtUncatchable:
-                    case UnitItemOrderFailureCause.TgtRelationship:
-                    case UnitItemOrderFailureCause.TgtUnreachable:
-                    case UnitItemOrderFailureCause.None:
-                    default:
-                        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_orderFailureCause));
-                }
+            if (!returnHandler.IsCallSuccessful) {
                 yield return null;
+                D.Error("Shouldn't get here");
             }
 
-            // If there was a failure generated by Moving, resulting new Orders or Dead state should keep this point from being reached
-            D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
             _fsmTgt = null; // only used to Move to the target if any
         }
 
+        returnHandler = GetInactiveReturnHandlerFor(FleetState.AssumingFormation, CurrentState);
         Call(FleetState.AssumingFormation);
         yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-        if (_orderFailureCause != UnitItemOrderFailureCause.None) {
-            switch (_orderFailureCause) {
-                case UnitItemOrderFailureCause.UnitItemNeedsRepair:
-                    InitiateRepair(retainSuperiorsOrders: false);
-                    break;
-                case UnitItemOrderFailureCause.UnitItemDeath:
-                    // Whole Unit has died. Dead state will follow
-                    // TODO Communicate failure to boss?
-                    break;
-                case UnitItemOrderFailureCause.TgtDeath:
-                case UnitItemOrderFailureCause.TgtRelationship:
-                case UnitItemOrderFailureCause.TgtUncatchable:
-                case UnitItemOrderFailureCause.TgtUnreachable:
-                case UnitItemOrderFailureCause.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_orderFailureCause));
-            }
+        if (!returnHandler.IsCallSuccessful) {
             yield return null;
+            D.Error("Shouldn't get here");
         }
-
-        // If there was a failure generated by AssumingFormation, resulting new Orders or Dead state should keep this point from being reached
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
 
         CurrentState = FleetState.Idling;
     }
 
-    void ExecuteAssumeFormationOrder_UponOrderOutcome(ShipItem ship, bool isSuccess, IShipNavigable target, UnitItemOrderFailureCause failCause) {
+    void ExecuteAssumeFormationOrder_UponOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigable target, FsmOrderFailureCause failCause) {
         LogEventWarning();  // UNCLEAR there is a 1 frame gap where this can still be called?
+    }
+
+    void ExecuteAssumeFormationOrder_UponNewOrderReceived() {
+        LogEvent();
+        // TODO
     }
 
     void ExecuteAssumeFormationOrder_UponAlertStatusChanged() {
@@ -1091,8 +1094,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void ExecuteAssumeFormationOrder_ExitState() {
         LogEvent();
         _fsmTgt = null;
-        _orderFailureCause = UnitItemOrderFailureCause.None;
-        ////__movingFsmTgtInfoAccessChgFrames.Clear();
+        _activeFsmReturnHandlers.Clear();
+        //__movingFsmTgtInfoAccessChgFrames.Clear();
     }
 
     #endregion
@@ -1114,7 +1117,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         LogEvent();
         // 3.21.17 AssumingFormation doesn't care whether _fsmTgt is set or not. Eliminating this rqmt allows other
         // states to Call() it directly without issuing a AssumeFormation order
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
+        D.AssertNotEqual(Constants.Zero, _activeFsmReturnHandlers.Count);
+        _activeFsmReturnHandlers.Peek().__Validate(CurrentState.GetValueName());
         D.AssertEqual(Constants.Zero, _fsmShipWaitForOnStationCount);
 
         _fsmShipWaitForOnStationCount = Elements.Count;
@@ -1124,7 +1128,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         LogEvent();
 
         D.Log(ShowDebugLog, "{0} issuing {1} order to all ships.", DebugName, ShipDirective.AssumeStation.GetValueName());
-        var shipAssumeFormationOrder = new ShipOrder(ShipDirective.AssumeStation, CurrentOrder.Source, toNotifyCmd: true);
+        var shipAssumeFormationOrder = new ShipOrder(ShipDirective.AssumeStation, CurrentOrder.Source, CurrentOrder.OrderID);
         Elements.ForAll(e => {
             var ship = e as ShipItem;
             ship.CurrentOrder = shipAssumeFormationOrder;
@@ -1138,37 +1142,34 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         Return();
     }
 
-    void AssumingFormation_UponOrderOutcome(ShipItem ship, bool isSuccess, IShipNavigable target, UnitItemOrderFailureCause failCause) {
+    void AssumingFormation_UponOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigable target, FsmOrderFailureCause failCause) {
         LogEvent();
 
-        D.AssertNull(target);
         if (isSuccess) {
             _fsmShipWaitForOnStationCount--;
         }
         else {
             switch (failCause) {
-                case UnitItemOrderFailureCause.UnitItemNeedsRepair:
+                case FsmOrderFailureCause.NewOrderReceived:
+                    _fsmShipWaitForOnStationCount--;
+                    break;
+                case FsmOrderFailureCause.NeedsRepair:
                     // Ship will get repaired, but even if it goes to its formationStation to do so
                     // it won't communicate its success back to Cmd since Captain ordered it, not Cmd
                     _fsmShipWaitForOnStationCount--;
                     break;
-                case UnitItemOrderFailureCause.UnitItemDeath:
+                case FsmOrderFailureCause.Death:
                     _fsmShipWaitForOnStationCount--;
                     break;
-                case UnitItemOrderFailureCause.TgtDeath:
-                case UnitItemOrderFailureCause.TgtRelationship:
-                case UnitItemOrderFailureCause.TgtUncatchable:
-                case UnitItemOrderFailureCause.TgtUnreachable:
-                case UnitItemOrderFailureCause.None:
+                case FsmOrderFailureCause.TgtDeath:
+                case FsmOrderFailureCause.TgtRelationship:
+                case FsmOrderFailureCause.TgtUncatchable:
+                case FsmOrderFailureCause.TgtUnreachable:
+                case FsmOrderFailureCause.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(failCause));
             }
         }
-    }
-
-    void AssumingFormation_UponNewOrderReceived() {
-        LogEvent();
-        Return();
     }
 
     void AssumingFormation_UponAlertStatusChanged() {
@@ -1189,7 +1190,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void AssumingFormation_UponUnitDamageIncurred() {
         LogEvent();
         if (AssessNeedForRepair(GeneralSettings.Instance.HealthThreshold_BadlyDamaged)) {
-            _orderFailureCause = UnitItemOrderFailureCause.UnitItemNeedsRepair;
+            var returnHandler = GetCurrentCalledStateReturnHandler();
+            returnHandler.ReturnCause = FsmOrderFailureCause.NeedsRepair;
             Return();
         }
     }
@@ -1212,7 +1214,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void AssumingFormation_UponDeath() {
         LogEvent();
-        _orderFailureCause = UnitItemOrderFailureCause.UnitItemDeath;
+        var returnHandler = GetCurrentCalledStateReturnHandler();
+        returnHandler.ReturnCause = FsmOrderFailureCause.Death;
         Return();
     }
 
@@ -1316,15 +1319,27 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         return standoffDistance;
     }
 
+    private FsmReturnHandler CreateFsmReturnHandler_MovingToMove() {
+        IDictionary<FsmOrderFailureCause, Action> taskLookup = new Dictionary<FsmOrderFailureCause, Action>() {
+
+            {FsmOrderFailureCause.Death, () =>               { }                                                 },
+            {FsmOrderFailureCause.NeedsRepair, () =>         {   InitiateRepair(retainSuperiorsOrders: false); } },
+            // Standoff distance needs readjustment
+            {FsmOrderFailureCause.TgtRelationship, () =>     {   RestartState(); }                               },
+            {FsmOrderFailureCause.TgtDeath, () =>            {   IssueCmdStaffsAssumeFormationOrder(); }         },
+            {FsmOrderFailureCause.TgtUncatchable, () =>      {   IssueCmdStaffsAssumeFormationOrder(); }         },
+            // 2.8.17 No longer aware of the target (aka no longer detected) so AssumeFormation and await new orders                                                                        IssueCmdStaffsAssumeFormationOrder(); }         },
+            {FsmOrderFailureCause.TgtUnreachable, () =>     {    IssueCmdStaffsAssumeFormationOrder(); }         }
+        };
+        return new FsmReturnHandler(taskLookup, FleetState.Moving.GetValueName());
+    }
+
     #endregion
 
     void ExecuteMoveOrder_UponPreconfigureState() {
         LogEvent();
 
-        if (_fsmTgt != null) {
-            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", DebugName, _fsmTgt.DebugName);
-        }
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
+        ValidateCommonNotCallableStateValues();
         D.AssertNotNull(CurrentOrder.Target);
 
         _fsmTgt = DetermineApMoveTarget(CurrentOrder);
@@ -1340,47 +1355,25 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         _apMoveSpeed = CurrentOrder.Directive == FleetDirective.FullSpeedMove ? Speed.Full : Speed.Standard;
         _apMoveTgtStandoffDistance = CalcApMoveTgtStandoffDistance(_fsmTgt);
 
+        var returnHandler = GetInactiveReturnHandlerFor(FleetState.Moving, CurrentState);
         Call(FleetState.Moving);
         yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-        if (_orderFailureCause != UnitItemOrderFailureCause.None) {
-            switch (_orderFailureCause) {
-                case UnitItemOrderFailureCause.UnitItemNeedsRepair:
-                    InitiateRepair(retainSuperiorsOrders: false);
-                    break;
-                case UnitItemOrderFailureCause.UnitItemDeath:
-                    // Whole Unit has died. Dead state will follow
-                    // TODO Communicate failure to boss?
-                    break;
-                case UnitItemOrderFailureCause.TgtDeath:
-                case UnitItemOrderFailureCause.TgtUncatchable:
-                    // TODO Communicate failure to boss?
-                    // failure occurred while Moving so AssumeFormation where we are at
-                    IssueCmdStaffsAssumeFormationOrder();
-                    break;
-                case UnitItemOrderFailureCause.TgtRelationship:
-                    // Standoff distance needs to be adjusted so relaunch this state from the beginning
-                    RestartState();
-                    break;
-                case UnitItemOrderFailureCause.TgtUnreachable:
-                    // 2.8.17 No longer aware of the target (aka no longer detected) so AssumeFormation and await new orders
-                    IssueCmdStaffsAssumeFormationOrder();
-                    break;
-                case UnitItemOrderFailureCause.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_orderFailureCause));
-            }
+        if (!returnHandler.IsCallSuccessful) {
             yield return null;
+            D.Error("Shouldn't get here");
         }
-
-        // If there was a failure generated by Moving, resulting new Orders or Dead state should keep this point from being reached
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
 
         if (AssessWhetherToAssumeFormationAfterMove()) {
             Call(FleetState.AssumingFormation);
             yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
         }
         CurrentState = FleetState.Idling;
+    }
+
+    void ExecuteMoveOrder_UponNewOrderReceived() {
+        LogEvent();
+        // TODO
     }
 
     void ExecuteMoveOrder_UponAlertStatusChanged() {
@@ -1451,8 +1444,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.OwnerChg, _fsmTgt, toSubscribe: false);
 
         _fsmTgt = null;
-        _orderFailureCause = UnitItemOrderFailureCause.None;
-        ////__movingFsmTgtInfoAccessChgFrames.Clear();
+        _activeFsmReturnHandlers.Clear();
+        //__movingFsmTgtInfoAccessChgFrames.Clear();
     }
 
     #endregion
@@ -1594,8 +1587,19 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         if (item.IsFullyExploredBy(Owner)) {
             D.Error("{0} attempting to assign {1} to explore {2} which is already explored.", DebugName, ship.DebugName, item.DebugName);
         }
-        ShipOrder exploreOrder = new ShipOrder(ShipDirective.Explore, CurrentOrder.Source, toNotifyCmd: true, target: item);
+        ShipOrder exploreOrder = new ShipOrder(ShipDirective.Explore, CurrentOrder.Source, CurrentOrder.OrderID, item);
         ship.CurrentOrder = exploreOrder;
+    }
+
+    private FsmReturnHandler CreateFsmReturnHandler_MovingToExplore() {
+        IDictionary<FsmOrderFailureCause, Action> taskLookup = new Dictionary<FsmOrderFailureCause, Action>() {
+
+            {FsmOrderFailureCause.Death, () =>               { }                                                 },
+            {FsmOrderFailureCause.NeedsRepair, () =>         {   InitiateRepair(retainSuperiorsOrders: false); } },
+            // No longer allowed to explore target or fully explored
+            {FsmOrderFailureCause.TgtRelationship, () =>     {   IssueCmdStaffsAssumeFormationOrder(); }         },
+        };
+        return new FsmReturnHandler(taskLookup, FleetState.Moving.GetValueName());
     }
 
     #endregion
@@ -1603,15 +1607,13 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void ExecuteExploreOrder_UponPreconfigureState() {
         LogEvent();
 
-        if (_fsmTgt != null) {
-            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", DebugName, _fsmTgt.DebugName);
-        }
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
+        ValidateCommonNotCallableStateValues();
 
         IFleetExplorable fleetExploreTgt = CurrentOrder.Target as IFleetExplorable; // Fleet explorable targets are non-enemy owned sectors, systems and UCenter
         D.AssertNotNull(fleetExploreTgt);
         D.Assert(fleetExploreTgt.IsExploringAllowedBy(Owner));
         D.Assert(!fleetExploreTgt.IsFullyExploredBy(Owner));
+
         _fsmTgt = fleetExploreTgt;
 
         bool isSubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.TargetDeath, _fsmTgt, toSubscribe: true);
@@ -1628,65 +1630,44 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         IFleetExplorable fleetExploreTgt = _fsmTgt as IFleetExplorable;
 
         D.Assert(fleetExploreTgt.IsExploringAllowedBy(Owner));
-        ////if (!fleetExploreTgt.IsExploringAllowedBy(Owner)) {
-        ////    D.Warn(@"{0} is no longer allowed to explore {1}. CurrentFrame = {2}, Frames where Moving received an FsmTgtInfoAccess event = {3}.
-        ////        Frames where ExecuteExploreOrder received an FsmTgtInfoAccess event = {4}.",
-        ////        DebugName, fleetExploreTgt.DebugName, Time.frameCount, __movingFsmTgtInfoAccessChgFrames.Concatenate(), __exploringFsmTgtInfoAccessChgFrames.Concatenate());
-        ////}
+        //if (!fleetExploreTgt.IsExploringAllowedBy(Owner)) {
+        //    D.Warn(@"{0} is no longer allowed to explore {1}. CurrentFrame = {2}, Frames where Moving received an FsmTgtInfoAccess event = {3}.
+        //        Frames where ExecuteExploreOrder received an FsmTgtInfoAccess event = {4}.",
+        //        DebugName, fleetExploreTgt.DebugName, Time.frameCount, __movingFsmTgtInfoAccessChgFrames.Concatenate(), __exploringFsmTgtInfoAccessChgFrames.Concatenate());
+        //}
 
         _apMoveSpeed = Speed.Standard;
         _apMoveTgtStandoffDistance = Constants.ZeroF;    // can't explore a target owned by an enemy
 
+        var returnHandler = GetInactiveReturnHandlerFor(FleetState.Moving, CurrentState);
         Call(FleetState.Moving);
         yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-        if (_orderFailureCause != UnitItemOrderFailureCause.None) {
-            switch (_orderFailureCause) {
-                case UnitItemOrderFailureCause.UnitItemNeedsRepair:
-                    InitiateRepair(retainSuperiorsOrders: false);
-                    break;
-                case UnitItemOrderFailureCause.UnitItemDeath:
-                    // Whole Unit has died. Dead state will follow
-                    // TODO Communicate failure to boss?
-                    break;
-                case UnitItemOrderFailureCause.TgtRelationship:
-                    // TODO Communicate failure to boss?
-                    // No longer allowed to explore _fsmTgt, OR _fsmTgt is now fully explored
-                    IssueCmdStaffsAssumeFormationOrder();
-                    break;
-                case UnitItemOrderFailureCause.TgtDeath:
-                case UnitItemOrderFailureCause.TgtUncatchable:
-                case UnitItemOrderFailureCause.TgtUnreachable:
-                case UnitItemOrderFailureCause.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_orderFailureCause));
-            }
+        if (!returnHandler.IsCallSuccessful) {
             yield return null;
+            D.Error("Shouldn't get here");
         }
-
-        // If there was a failure generated by Moving, resulting new Orders or Dead state should keep this point from being reached
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
 
         // 3.23.17 No need to check for a change in being allowed to explore while Moving as Moving will detect a change in
         // FsmTgtInfoAccess, FsmTgtOwner or other player relations and will Return() with the fail code TgtRelationship
         // if the change affects the right to explore the fleetExploreTgt.
         // 3.28.17 Another so added asserts back to find source
         D.Assert(fleetExploreTgt.IsExploringAllowedBy(Owner));
-        //// 2.18.17 Attempt to assign ship to explore planet in system that is no longer explorable
-        ////if (!fleetExploreTgt.IsExploringAllowedBy(Owner)) {
-        ////    string exploreTgtOwnerName = "Unknown";
-        ////    Player exploreTgtOwner;
-        ////    if (fleetExploreTgt.TryGetOwner(Owner, out exploreTgtOwner)) {
-        ////        exploreTgtOwnerName = exploreTgtOwner.DebugName;
-        ////    }
-        ////    else {
-        ////        D.Error("Not allowed to explore and owner not accessible!");
-        ////    }
+        // 2.18.17 Attempt to assign ship to explore planet in system that is no longer explorable
+        //if (!fleetExploreTgt.IsExploringAllowedBy(Owner)) {
+        //    string exploreTgtOwnerName = "Unknown";
+        //    Player exploreTgtOwner;
+        //    if (fleetExploreTgt.TryGetOwner(Owner, out exploreTgtOwner)) {
+        //        exploreTgtOwnerName = exploreTgtOwner.DebugName;
+        //    }
+        //    else {
+        //        D.Error("Not allowed to explore and owner not accessible!");
+        //    }
 
-        ////    D.Error(@"{0}'s {1} is no longer allowed to explore {2}'s {3}. CurrentFrame = {4}, Frames where Moving received an FsmTgtInfoAccess event = {5}.
-        ////        Frames where ExecuteExploreOrder received an FsmTgtInfoAccess event = {6}.",
-        ////        Owner, DebugName, exploreTgtOwnerName, fleetExploreTgt.DebugName, Time.frameCount, __movingFsmTgtInfoAccessChgFrames.Concatenate(), __exploringFsmTgtInfoAccessChgFrames.Concatenate());
-        ////}
+        //    D.Error(@"{0}'s {1} is no longer allowed to explore {2}'s {3}. CurrentFrame = {4}, Frames where Moving received an FsmTgtInfoAccess event = {5}.
+        //        Frames where ExecuteExploreOrder received an FsmTgtInfoAccess event = {6}.",
+        //        Owner, DebugName, exploreTgtOwnerName, fleetExploreTgt.DebugName, Time.frameCount, __movingFsmTgtInfoAccessChgFrames.Concatenate(), __exploringFsmTgtInfoAccessChgFrames.Concatenate());
+        //}
 
         ISystem_Ltd systemExploreTgt = fleetExploreTgt as ISystem_Ltd;
         if (systemExploreTgt != null) {
@@ -1725,7 +1706,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         IssueCmdStaffsAssumeFormationOrder(target: closestLocalAssyStation);
     }
 
-    void ExecuteExploreOrder_UponOrderOutcome(ShipItem ship, bool isSuccess, IShipNavigable target, UnitItemOrderFailureCause failCause) {
+    void ExecuteExploreOrder_UponOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigable target, FsmOrderFailureCause failCause) {
         LogEvent();
 
         IShipExplorable shipExploreTgt = target as IShipExplorable;
@@ -1734,7 +1715,13 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         bool issueFleetRecall = false;
         if (IsShipExploreTargetPartOfSystem(shipExploreTgt)) {
             // exploreTgt is a planet or star
-            D.Assert(_shipSystemExploreTgtAssignments.ContainsKey(shipExploreTgt));
+            if (!_shipSystemExploreTgtAssignments.ContainsKey(shipExploreTgt)) {
+                string successMsg = isSuccess ? "successfully" : "unsuccessfully";
+                D.Error("{0}: {1} {2} completed its exploration of {3} with no record of it being assigned. AssignedTgts: {4}, AssignedShips: {5}.",
+                    DebugName, ship.DebugName, successMsg, shipExploreTgt.DebugName, _shipSystemExploreTgtAssignments.Keys.Select(tgt => tgt.DebugName).Concatenate(),
+                    _shipSystemExploreTgtAssignments.Values.Select(shp => shp.DebugName).Concatenate());
+                //D.Log("{0}: FailureCause = {1}.", DebugName, failCause.GetValueName());
+            }
             if (isSuccess) {
                 HandleSystemTargetExploredOrDead(ship, shipExploreTgt);
             }
@@ -1742,16 +1729,17 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                 bool isNewShipAssigned;
                 bool testForAdditionalExploringShips = false;
                 switch (failCause) {
-                    case UnitItemOrderFailureCause.TgtRelationship:
+                    case FsmOrderFailureCause.TgtRelationship:
                         // exploration failed so recall all ships
                         issueFleetRecall = true;
                         break;
-                    case UnitItemOrderFailureCause.TgtDeath:
+                    case FsmOrderFailureCause.TgtDeath:
                         HandleSystemTargetExploredOrDead(ship, shipExploreTgt);
                         // This is effectively counted as a success and will show up during the _EnterState's
                         // continuous test System.IsFullyExplored. As not really a failure, no reason to issue a fleet recall.
                         break;
-                    case UnitItemOrderFailureCause.UnitItemNeedsRepair:
+                    case FsmOrderFailureCause.NeedsRepair:
+                    case FsmOrderFailureCause.NewOrderReceived:
                         isNewShipAssigned = HandleShipNoLongerAvailableToExplore(ship, shipExploreTgt);
                         if (!isNewShipAssigned) {
                             if (Elements.Count > 1) {
@@ -1766,7 +1754,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                             }
                         }
                         break;
-                    case UnitItemOrderFailureCause.UnitItemDeath:
+                    case FsmOrderFailureCause.Death:
                         isNewShipAssigned = HandleShipNoLongerAvailableToExplore(ship, shipExploreTgt);
                         if (!isNewShipAssigned) {
                             if (Elements.Count > 1) {    // >1 as dead ship has not yet been removed from fleet
@@ -1780,9 +1768,12 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                             }
                         }
                         break;
-                    case UnitItemOrderFailureCause.TgtUncatchable:
-                    case UnitItemOrderFailureCause.TgtUnreachable:
-                    case UnitItemOrderFailureCause.None:
+                    case FsmOrderFailureCause.TgtUncatchable:
+                        // 4.9.17 Explore tgt is too far from Cmd for ship to reach UNCLEAR why
+                        issueFleetRecall = true;
+                        break;
+                    case FsmOrderFailureCause.TgtUnreachable:
+                    case FsmOrderFailureCause.None:
                     default:
                         throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(failCause));
                 }
@@ -1809,7 +1800,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             else {
                 bool isNewShipAssigned;
                 switch (failCause) {
-                    case UnitItemOrderFailureCause.UnitItemNeedsRepair:
+                    case FsmOrderFailureCause.NeedsRepair:
+                    case FsmOrderFailureCause.NewOrderReceived:
                         isNewShipAssigned = HandleShipNoLongerAvailableToExplore(ship, shipExploreTgt);
                         if (!isNewShipAssigned) {
                             // No more ships are available to finish UCenter explore. Since it only takes one ship
@@ -1818,7 +1810,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                             issueFleetRecall = true;
                         }
                         break;
-                    case UnitItemOrderFailureCause.UnitItemDeath:
+                    case FsmOrderFailureCause.Death:
                         isNewShipAssigned = HandleShipNoLongerAvailableToExplore(ship, shipExploreTgt);
                         if (!isNewShipAssigned) {
                             if (Elements.Count > 1) {    // >1 as dead ship has not yet been removed from fleet
@@ -1833,11 +1825,11 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                             }
                         }
                         break;
-                    case UnitItemOrderFailureCause.TgtDeath:
-                    case UnitItemOrderFailureCause.TgtRelationship:
-                    case UnitItemOrderFailureCause.TgtUncatchable:
-                    case UnitItemOrderFailureCause.TgtUnreachable:
-                    case UnitItemOrderFailureCause.None:
+                    case FsmOrderFailureCause.TgtDeath:
+                    case FsmOrderFailureCause.TgtRelationship:
+                    case FsmOrderFailureCause.TgtUncatchable:
+                    case FsmOrderFailureCause.TgtUnreachable:
+                    case FsmOrderFailureCause.None:
                     default:
                         throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(failCause));
                 }
@@ -1848,6 +1840,11 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             var closestLocalAssyStation = GameUtility.GetClosest(Position, fleetExploreTgt.LocalAssemblyStations);
             IssueCmdStaffsAssumeFormationOrder(target: closestLocalAssyStation);
         }
+    }
+
+    void ExecuteExploreOrder_UponNewOrderReceived() {
+        LogEvent();
+        // TODO
     }
 
     void ExecuteExploreOrder_UponAlertStatusChanged() {
@@ -1891,21 +1888,20 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
             D.Log(ShowDebugLog, "{0} {1} order for {2} is no longer valid as Relations with Owner {3} changed to {4}.",
                 DebugName, CurrentOrder.Directive.GetValueName(), fleetExploreTgt.DebugName, fsmTgtOwner, Owner.GetCurrentRelations(fsmTgtOwner).GetValueName());
-            // TODO Communicate failure/success to boss?
             var closestLocalAssyStation = GameUtility.GetClosest(Position, fleetExploreTgt.LocalAssemblyStations);
             IssueCmdStaffsAssumeFormationOrder(target: closestLocalAssyStation);
         }
     }
 
-    //// 2.18.17 Debugging. The frame numbers where ExecuteExploreOrder received an FsmTgtInfoAccessChg event. 
-    //// Must be cleared by ExitState of ExecuteExploreOrder. Currently being used to 
-    //// determine how a explore order can no longer be explorable without an InfoAccess event being received.
-    ////private IList<int> __exploringFsmTgtInfoAccessChgFrames = new List<int>(3);
+    // 2.18.17 Debugging. The frame numbers where ExecuteExploreOrder received an FsmTgtInfoAccessChg event. 
+    // Must be cleared by ExitState of ExecuteExploreOrder. Currently being used to 
+    // determine how a explore order can no longer be explorable without an InfoAccess event being received.
+    //private IList<int> __exploringFsmTgtInfoAccessChgFrames = new List<int>(3);
 
     void ExecuteExploreOrder_UponFsmTgtInfoAccessChgd(IOwnerItem_Ltd fsmTgt) {
         LogEvent();
         D.AssertEqual(_fsmTgt, fsmTgt as IFleetNavigable);
-        ////__exploringFsmTgtInfoAccessChgFrames.Add(Time.frameCount);
+        //__exploringFsmTgtInfoAccessChgFrames.Add(Time.frameCount);
         IFleetExplorable fleetExploreTgt = _fsmTgt as IFleetExplorable;
         if (!fleetExploreTgt.IsExploringAllowedBy(Owner)) {
             // intel coverage on the item increased to the point I now know the owner and they are at war with us
@@ -1915,7 +1911,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
             D.Log(ShowDebugLog, "{0} {1} order for {2} is no longer valid as Relations with newly accessed Owner {3} is {4}.",
                 DebugName, CurrentOrder.Directive.GetValueName(), fleetExploreTgt.DebugName, fsmTgtOwner, Owner.GetCurrentRelations(fsmTgtOwner).GetValueName());
-            // TODO Communicate failure to boss?
             var closestLocalAssyStation = GameUtility.GetClosest(Position, fleetExploreTgt.LocalAssemblyStations);
             IssueCmdStaffsAssumeFormationOrder(target: closestLocalAssyStation);
         }
@@ -1933,7 +1928,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
             D.Log(ShowDebugLog, "{0} {1} order for {2} is no longer valid as Relations with new Owner {3} is {4}.",
                 DebugName, CurrentOrder.Directive.GetValueName(), fleetExploreTgt.DebugName, fsmTgtOwner, Owner.GetCurrentRelations(fsmTgtOwner).GetValueName());
-            // TODO Communicate failure/success to boss?
             var closestLocalAssyStation = GameUtility.GetClosest(Position, fleetExploreTgt.LocalAssemblyStations);
             IssueCmdStaffsAssumeFormationOrder(target: closestLocalAssyStation);
         }
@@ -1952,7 +1946,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void ExecuteExploreOrder_UponDeath() {
         LogEvent();
-        // TODO Communicate failure to boss?
+        // TODO
     }
 
     void ExecuteExploreOrder_ExitState() {
@@ -1966,27 +1960,52 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         D.Assert(isUnsubscribed);
 
         _fsmTgt = null;
+        _activeFsmReturnHandlers.Clear();
         _shipSystemExploreTgtAssignments = null;
-        _orderFailureCause = UnitItemOrderFailureCause.None;
-        ////__movingFsmTgtInfoAccessChgFrames.Clear();
-        ////__exploringFsmTgtInfoAccessChgFrames.Clear();
+        //__movingFsmTgtInfoAccessChgFrames.Clear();
+        //__exploringFsmTgtInfoAccessChgFrames.Clear();
     }
 
     #endregion
 
     #region ExecutePatrolOrder
 
+    #region ExecutePatrolOrder Support Members
+
+    private FsmReturnHandler CreateFsmReturnHandler_MovingToPatrol() {
+        IDictionary<FsmOrderFailureCause, Action> taskLookup = new Dictionary<FsmOrderFailureCause, Action>() {
+
+            {FsmOrderFailureCause.Death, () =>               { }                                                 },
+            {FsmOrderFailureCause.NeedsRepair, () =>         {   InitiateRepair(retainSuperiorsOrders: false); } },
+            // No longer allowed to patrol target
+            {FsmOrderFailureCause.TgtRelationship, () =>     {   IssueCmdStaffsAssumeFormationOrder(); }         },
+            {FsmOrderFailureCause.TgtDeath, () =>            {   IssueCmdStaffsAssumeFormationOrder(); }         },
+        };
+        return new FsmReturnHandler(taskLookup, FleetState.Moving.GetValueName());
+    }
+
+    private FsmReturnHandler CreateFsmReturnHandler_PatrollingToPatrol() {
+        IDictionary<FsmOrderFailureCause, Action> taskLookup = new Dictionary<FsmOrderFailureCause, Action>() {
+
+            {FsmOrderFailureCause.Death, () =>               { }                                                 },
+            {FsmOrderFailureCause.NeedsRepair, () =>         {   InitiateRepair(retainSuperiorsOrders: true); }  },
+            // No longer allowed to patrol target
+            {FsmOrderFailureCause.TgtRelationship, () =>     {   IssueCmdStaffsAssumeFormationOrder(); }         },
+            {FsmOrderFailureCause.TgtDeath, () =>            {   IssueCmdStaffsAssumeFormationOrder(); }         },
+        };
+        return new FsmReturnHandler(taskLookup, FleetState.Patrolling.GetValueName());
+    }
+
+    #endregion
+
     void ExecutePatrolOrder_UponPreconfigureState() {
         LogEvent();
 
-        if (_fsmTgt != null) {
-            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", DebugName, _fsmTgt.DebugName);
-        }
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
-
+        ValidateCommonNotCallableStateValues();
         var patrollableTgt = CurrentOrder.Target as IPatrollable;  // Patrollable targets are non-enemy owned sectors, systems, bases and UCenter
         D.AssertNotNull(patrollableTgt, CurrentOrder.Target.DebugName);
         D.Assert(patrollableTgt.IsPatrollingAllowedBy(Owner));
+
         _fsmTgt = patrollableTgt as IFleetNavigable;
 
         __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.TargetDeath, _fsmTgt, toSubscribe: true);
@@ -2001,71 +2020,29 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
         _apMoveSpeed = Speed.Standard;
         _apMoveTgtStandoffDistance = Constants.ZeroF;    // can't patrol a target owned by an enemy
+
+        var returnHandler = GetInactiveReturnHandlerFor(FleetState.Moving, CurrentState);
         Call(FleetState.Moving);
         yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-        if (_orderFailureCause != UnitItemOrderFailureCause.None) {
-            switch (_orderFailureCause) {
-                case UnitItemOrderFailureCause.UnitItemNeedsRepair:
-                    InitiateRepair(retainSuperiorsOrders: false);
-                    break;
-                case UnitItemOrderFailureCause.UnitItemDeath:
-                    // Whole Unit has died. Dead state will follow
-                    // TODO Communicate failure to boss?
-                    break;
-                case UnitItemOrderFailureCause.TgtDeath:
-                    // TODO Communicate failure to boss?
-                    IssueCmdStaffsAssumeFormationOrder();
-                    break;
-                case UnitItemOrderFailureCause.TgtRelationship:
-                    // TODO Communicate failure to boss?
-                    // No longer allowed to patrol _fsmTgt
-                    IssueCmdStaffsAssumeFormationOrder();
-                    break;
-                case UnitItemOrderFailureCause.TgtUncatchable:
-                case UnitItemOrderFailureCause.TgtUnreachable:
-                case UnitItemOrderFailureCause.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_orderFailureCause));
-            }
+        if (!returnHandler.IsCallSuccessful) {
             yield return null;
+            D.Error("Shouldn't get here");
         }
 
-        // If there was a failure generated by Moving, resulting new Orders or Dead state should keep this point from being reached
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
-
+        returnHandler = GetInactiveReturnHandlerFor(FleetState.Patrolling, CurrentState);
         Call(FleetState.Patrolling);
         yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-        if (_orderFailureCause != UnitItemOrderFailureCause.None) {
-            switch (_orderFailureCause) {
-                case UnitItemOrderFailureCause.UnitItemNeedsRepair:
-                    InitiateRepair(retainSuperiorsOrders: true);
-                    break;
-                case UnitItemOrderFailureCause.UnitItemDeath:
-                    // Whole Unit has died. Dead state will follow
-                    // TODO Communicate failure to boss?
-                    break;
-                case UnitItemOrderFailureCause.TgtDeath:
-                    // TODO Communicate failure to boss?
-                    IssueCmdStaffsAssumeFormationOrder();
-                    break;
-                case UnitItemOrderFailureCause.TgtRelationship:
-                    // TODO Communicate failure to boss?
-                    // No longer allowed to patrol _fsmTgt
-                    IssueCmdStaffsAssumeFormationOrder();
-                    break;
-                case UnitItemOrderFailureCause.TgtUncatchable:
-                case UnitItemOrderFailureCause.TgtUnreachable:
-                case UnitItemOrderFailureCause.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_orderFailureCause));
-            }
+        if (!returnHandler.IsCallSuccessful) {
             yield return null;
+            D.Error("Shouldn't get here");
         }
+    }
 
-        // If there was a failure generated by Patrolling, resulting new Orders or Dead state should keep this point from being reached
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
+    void ExecutePatrolOrder_UponNewOrderReceived() {
+        LogEvent();
+        // TODO
     }
 
     void ExecutePatrolOrder_UponAlertStatusChanged() {
@@ -2096,7 +2073,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         if (!patrollableTgt.IsPatrollingAllowedBy(Owner)) {
             D.Log(ShowDebugLog, "{0} {1} order for {2} is no longer valid as Relations with Owner {3} changed to {4}.",
                 DebugName, CurrentOrder.Directive.GetValueName(), patrollableTgt.DebugName, patrollableTgt.Owner_Debug, Owner.GetCurrentRelations(patrollableTgt.Owner_Debug).GetValueName());
-            // TODO Communicate failure to boss?
             StationaryLocation closestLocalAssyStation = GameUtility.GetClosest(Position, patrollableTgt.LocalAssemblyStations);
             IssueCmdStaffsAssumeFormationOrder(target: closestLocalAssyStation);
         }
@@ -2110,7 +2086,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         if (!patrollableTgt.IsPatrollingAllowedBy(Owner)) {
             D.Log(ShowDebugLog, "{0} {1} order for {2} is no longer valid as Relations with newly accessed Owner {3} is {4}.",
                DebugName, CurrentOrder.Directive.GetValueName(), patrollableTgt.DebugName, patrollableTgt.Owner_Debug, Owner.GetCurrentRelations(patrollableTgt.Owner_Debug).GetValueName());
-            // TODO Communicate failure to boss?
             StationaryLocation closestLocalAssyStation = GameUtility.GetClosest(Position, patrollableTgt.LocalAssemblyStations);
             IssueCmdStaffsAssumeFormationOrder(target: closestLocalAssyStation);
         }
@@ -2124,7 +2099,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         if (!patrollableTgt.IsPatrollingAllowedBy(Owner)) {
             D.Log(ShowDebugLog, "{0} {1} order for {2} is no longer valid as Relations with new Owner {3} is {4}.",
                 DebugName, CurrentOrder.Directive.GetValueName(), patrollableTgt.DebugName, patrollableTgt.Owner_Debug, Owner.GetCurrentRelations(patrollableTgt.Owner_Debug).GetValueName());
-            // TODO Communicate failure to boss?
             StationaryLocation closestLocalAssyStation = GameUtility.GetClosest(Position, patrollableTgt.LocalAssemblyStations);
             IssueCmdStaffsAssumeFormationOrder(target: closestLocalAssyStation);
         }
@@ -2140,7 +2114,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         if (_fsmTgt != deadFsmTgt) {
             D.Error("{0}.target {1} is not dead target {2}.", DebugName, _fsmTgt.DebugName, deadFsmTgt.DebugName);
         }
-        // TODO Communicate failure to boss?
         IPatrollable patrollableTgt = _fsmTgt as IPatrollable;
         StationaryLocation closestLocalAssyStation = GameUtility.GetClosest(Position, patrollableTgt.LocalAssemblyStations);
         IssueCmdStaffsAssumeFormationOrder(target: closestLocalAssyStation);
@@ -2148,7 +2121,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void ExecutePatrolOrder_UponDeath() {
         LogEvent();
-        // TODO Communicate failure to boss?
+        // TODO
     }
 
     void ExecutePatrolOrder_ExitState() {
@@ -2161,8 +2134,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         D.Assert(isUnsubscribed);
 
         _fsmTgt = null;
-        _orderFailureCause = UnitItemOrderFailureCause.None;
-        ////__movingFsmTgtInfoAccessChgFrames.Clear();
+        _activeFsmReturnHandlers.Clear();
+        //__movingFsmTgtInfoAccessChgFrames.Clear();
     }
 
     #endregion
@@ -2181,12 +2154,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void Patrolling_UponPreconfigureState() {
         LogEvent();
 
-        D.AssertNotNull(_fsmTgt);
-        D.Assert(_fsmTgt.IsOperational, _fsmTgt.DebugName);
+
         IPatrollable patrolledTgt = _fsmTgt as IPatrollable;
         D.AssertNotNull(patrolledTgt);    // the _fsmTgt starts out as IPatrollable
         D.Assert(patrolledTgt.IsPatrollingAllowedBy(Owner));
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
     }
 
     IEnumerator Patrolling_EnterState() {
@@ -2230,24 +2201,21 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void Patrolling_UponApCoursePlotFailure() {
         LogEvent();
-        _orderFailureCause = UnitItemOrderFailureCause.TgtUnreachable;
+        var returnHandler = GetCurrentCalledStateReturnHandler();
+        returnHandler.ReturnCause = FsmOrderFailureCause.TgtUnreachable;
         Return();
     }
 
     void Patrolling_UponApTargetUnreachable() {
         LogEvent();
-        _orderFailureCause = UnitItemOrderFailureCause.TgtUnreachable;
+        var returnHandler = GetCurrentCalledStateReturnHandler();
+        returnHandler.ReturnCause = FsmOrderFailureCause.TgtUnreachable;
         Return();
     }
 
     void Patrolling_UponApTargetReached() {
         LogEvent();
         _navigator.DisengagePilot();
-    }
-
-    void Patrolling_UponNewOrderReceived() {
-        LogEvent();
-        Return();
     }
 
     void Patrolling_UponAlertStatusChanged() {
@@ -2267,7 +2235,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void Patrolling_UponUnitDamageIncurred() {
         LogEvent();
         if (AssessNeedForRepair(GeneralSettings.Instance.HealthThreshold_BadlyDamaged)) {
-            _orderFailureCause = UnitItemOrderFailureCause.UnitItemNeedsRepair;
+            var returnHandler = GetCurrentCalledStateReturnHandler();
+            returnHandler.ReturnCause = FsmOrderFailureCause.NeedsRepair;
             Return();
         }
     }
@@ -2278,7 +2247,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         if (!patrolledTgt.IsPatrollingAllowedBy(Owner)) {
             D.Log(ShowDebugLog, "{0} {1} order for {2} is no longer valid as Relations with Owner {3} changed to {4}.",
                 DebugName, CurrentOrder.Directive.GetValueName(), patrolledTgt.DebugName, patrolledTgt.Owner_Debug, Owner.GetCurrentRelations(patrolledTgt.Owner_Debug).GetValueName());
-            _orderFailureCause = UnitItemOrderFailureCause.TgtRelationship;
+            var returnHandler = GetCurrentCalledStateReturnHandler();
+            returnHandler.ReturnCause = FsmOrderFailureCause.TgtRelationship;
             Return();
         }
     }
@@ -2290,7 +2260,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         if (!patrolledTgt.IsPatrollingAllowedBy(Owner)) {
             D.Log(ShowDebugLog, "{0} {1} order for {2} is no longer valid as Relations with newly accessed Owner {3} is {4}.",
                 DebugName, CurrentOrder.Directive.GetValueName(), patrolledTgt.DebugName, patrolledTgt.Owner_Debug, Owner.GetCurrentRelations(patrolledTgt.Owner_Debug).GetValueName());
-            _orderFailureCause = UnitItemOrderFailureCause.TgtRelationship;
+            var returnHandler = GetCurrentCalledStateReturnHandler();
+            returnHandler.ReturnCause = FsmOrderFailureCause.TgtRelationship;
             Return();
         }
     }
@@ -2302,7 +2273,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         if (!patrolledTgt.IsPatrollingAllowedBy(Owner)) {
             D.Log(ShowDebugLog, "{0} {1} order for {2} is no longer valid as Relations with new Owner {3} is {4}.",
                 DebugName, CurrentOrder.Directive.GetValueName(), patrolledTgt.DebugName, patrolledTgt.Owner_Debug, Owner.GetCurrentRelations(patrolledTgt.Owner_Debug).GetValueName());
-            _orderFailureCause = UnitItemOrderFailureCause.TgtRelationship;
+            var returnHandler = GetCurrentCalledStateReturnHandler();
+            returnHandler.ReturnCause = FsmOrderFailureCause.TgtRelationship;
             Return();
         }
     }
@@ -2317,13 +2289,15 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         if (_fsmTgt != deadFsmTgt) {
             D.Error("{0}.target {1} is not dead target {2}.", DebugName, _fsmTgt.DebugName, deadFsmTgt.DebugName);
         }
-        _orderFailureCause = UnitItemOrderFailureCause.TgtDeath;
+        var returnHandler = GetCurrentCalledStateReturnHandler();
+        returnHandler.ReturnCause = FsmOrderFailureCause.TgtDeath;
         Return();
     }
 
     void Patrolling_UponDeath() {
         LogEvent();
-        _orderFailureCause = UnitItemOrderFailureCause.UnitItemDeath;
+        var returnHandler = GetCurrentCalledStateReturnHandler();
+        returnHandler.ReturnCause = FsmOrderFailureCause.Death;
         Return();
     }
 
@@ -2336,17 +2310,40 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     #region ExecuteGuardOrder
 
+    #region ExecuteGuardOrder Support Members
+
+    private FsmReturnHandler CreateFsmReturnHandler_MovingToGuard() {
+        IDictionary<FsmOrderFailureCause, Action> taskLookup = new Dictionary<FsmOrderFailureCause, Action>() {
+
+            {FsmOrderFailureCause.Death, () =>               { }                                                 },
+            {FsmOrderFailureCause.NeedsRepair, () =>         {   InitiateRepair(retainSuperiorsOrders: true); }  },
+            {FsmOrderFailureCause.TgtRelationship, () =>     {   IssueCmdStaffsAssumeFormationOrder(); }         },
+            {FsmOrderFailureCause.TgtDeath, () =>            {   IssueCmdStaffsAssumeFormationOrder(); }         },
+        };
+        return new FsmReturnHandler(taskLookup, FleetState.Moving.GetValueName());
+    }
+
+    private FsmReturnHandler CreateFsmReturnHandler_GuardingToGuard() {
+        IDictionary<FsmOrderFailureCause, Action> taskLookup = new Dictionary<FsmOrderFailureCause, Action>() {
+
+            {FsmOrderFailureCause.Death, () =>               { }                                                 },
+            {FsmOrderFailureCause.NeedsRepair, () =>         {   InitiateRepair(retainSuperiorsOrders: true); }  },
+            {FsmOrderFailureCause.TgtRelationship, () =>     {   IssueCmdStaffsAssumeFormationOrder(); }         },
+            {FsmOrderFailureCause.TgtDeath, () =>            {   IssueCmdStaffsAssumeFormationOrder(); }         },
+        };
+        return new FsmReturnHandler(taskLookup, FleetState.Guarding.GetValueName());
+    }
+
+    #endregion
+
     void ExecuteGuardOrder_UponPreconfigureState() {
         LogEvent();
 
-        if (_fsmTgt != null) {
-            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", DebugName, _fsmTgt.DebugName);
-        }
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
-
+        ValidateCommonNotCallableStateValues();
         IGuardable guardableTgt = CurrentOrder.Target as IGuardable;
         D.AssertNotNull(guardableTgt); // Guardable targets are non-enemy owned Sectors, Systems, Planets, Bases and UCenter
         D.Assert(guardableTgt.IsGuardingAllowedBy(Owner));
+
         _fsmTgt = guardableTgt as IFleetNavigable;
 
         __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.TargetDeath, _fsmTgt, toSubscribe: true);
@@ -2359,75 +2356,31 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     IEnumerator ExecuteGuardOrder_EnterState() {
         LogEvent();
 
+        // move to the target to guard first
         _apMoveSpeed = Speed.Standard;
         _apMoveTgtStandoffDistance = Constants.ZeroF;    // can't guard a target owned by an enemy
-
-        // move to the target to guard first
+        var returnHandler = GetInactiveReturnHandlerFor(FleetState.Moving, CurrentState);
         Call(FleetState.Moving);
         yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-        if (_orderFailureCause != UnitItemOrderFailureCause.None) {
-            switch (_orderFailureCause) {
-                case UnitItemOrderFailureCause.UnitItemNeedsRepair:
-                    InitiateRepair(retainSuperiorsOrders: true);
-                    break;
-                case UnitItemOrderFailureCause.UnitItemDeath:
-                    // Whole Unit has died. Dead state will follow
-                    // TODO Communicate failure to boss?
-                    break;
-                case UnitItemOrderFailureCause.TgtDeath:
-                    // TODO Communicate failure to boss?
-                    IssueCmdStaffsAssumeFormationOrder();
-                    break;
-                case UnitItemOrderFailureCause.TgtRelationship:
-                    // TODO Communicate failure to boss?
-                    // No longer allowed to guard _fsmTgt
-                    IssueCmdStaffsAssumeFormationOrder();
-                    break;
-                case UnitItemOrderFailureCause.TgtUncatchable:
-                case UnitItemOrderFailureCause.TgtUnreachable:
-                case UnitItemOrderFailureCause.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_orderFailureCause));
-            }
+        if (!returnHandler.IsCallSuccessful) {
             yield return null;
+            D.Error("Shouldn't get here");
         }
 
-        // If there was a failure generated by Moving, resulting new Orders or Dead state should keep this point from being reached
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
-
+        returnHandler = GetInactiveReturnHandlerFor(FleetState.Guarding, CurrentState);
         Call(FleetState.Guarding);
         yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-        if (_orderFailureCause != UnitItemOrderFailureCause.None) {
-            switch (_orderFailureCause) {
-                case UnitItemOrderFailureCause.UnitItemNeedsRepair:
-                    InitiateRepair(retainSuperiorsOrders: true);
-                    break;
-                case UnitItemOrderFailureCause.UnitItemDeath:
-                    // Whole Unit has died. Dead state will follow
-                    // TODO Communicate failure to boss?
-                    break;
-                case UnitItemOrderFailureCause.TgtDeath:
-                    // TODO Communicate failure to boss?
-                    IssueCmdStaffsAssumeFormationOrder();
-                    break;
-                case UnitItemOrderFailureCause.TgtRelationship:
-                    // TODO Communicate failure to boss?
-                    // No longer allowed to guard _fsmTgt
-                    IssueCmdStaffsAssumeFormationOrder();
-                    break;
-                case UnitItemOrderFailureCause.TgtUncatchable:
-                case UnitItemOrderFailureCause.TgtUnreachable:
-                case UnitItemOrderFailureCause.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_orderFailureCause));
-            }
+        if (!returnHandler.IsCallSuccessful) {
             yield return null;
+            D.Error("Shouldn't get here");
         }
+    }
 
-        // If there was a failure generated by Guarding, resulting new Orders or Dead state should keep this point from being reached
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
+    void ExecuteGuardOrder_UponNewOrderReceived() {
+        LogEvent();
+        // TODO
     }
 
     void ExecuteGuardOrder_UponAlertStatusChanged() {
@@ -2458,8 +2411,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         if (!guardableTgt.IsGuardingAllowedBy(Owner)) {
             D.Log(ShowDebugLog, "{0} {1} order for {2} is no longer valid as Relations with Owner {3} changed to {4}.",
                 DebugName, CurrentOrder.Directive.GetValueName(), guardableTgt.DebugName, guardableTgt.Owner_Debug, Owner.GetCurrentRelations(guardableTgt.Owner_Debug).GetValueName());
-
-            // TODO Communicate failure to boss?
             StationaryLocation closestLocalAssyStation = GameUtility.GetClosest(Position, guardableTgt.LocalAssemblyStations);
             IssueCmdStaffsAssumeFormationOrder(target: closestLocalAssyStation);
         }
@@ -2472,7 +2423,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         if (!guardableTgt.IsGuardingAllowedBy(Owner)) {
             D.Log(ShowDebugLog, "{0} {1} order for {2} is no longer valid as Relations with newly accessed Owner {3} is {4}.",
                 DebugName, CurrentOrder.Directive.GetValueName(), guardableTgt.DebugName, guardableTgt.Owner_Debug, Owner.GetCurrentRelations(guardableTgt.Owner_Debug).GetValueName());
-            // TODO Communicate failure to boss?
             StationaryLocation closestLocalAssyStation = GameUtility.GetClosest(Position, guardableTgt.LocalAssemblyStations);
             IssueCmdStaffsAssumeFormationOrder(target: closestLocalAssyStation);
         }
@@ -2485,7 +2435,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         if (!guardableTgt.IsGuardingAllowedBy(Owner)) {
             D.Log(ShowDebugLog, "{0} {1} order for {2} is no longer valid as Relations with new Owner {3} is {4}.",
                 DebugName, CurrentOrder.Directive.GetValueName(), guardableTgt.DebugName, guardableTgt.Owner_Debug, Owner.GetCurrentRelations(guardableTgt.Owner_Debug).GetValueName());
-            // TODO Communicate failure to boss?
             StationaryLocation closestLocalAssyStation = GameUtility.GetClosest(Position, guardableTgt.LocalAssemblyStations);
             IssueCmdStaffsAssumeFormationOrder(target: closestLocalAssyStation);
         }
@@ -2501,7 +2450,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         if (_fsmTgt != deadFsmTgt) {
             D.Error("{0}.target {1} is not dead target {2}.", DebugName, _fsmTgt.DebugName, deadFsmTgt.DebugName);
         }
-        // TODO Communicate failure to boss?
         IGuardable guardableTgt = _fsmTgt as IGuardable;
         StationaryLocation closestLocalAssyStation = GameUtility.GetClosest(Position, guardableTgt.LocalAssemblyStations);
         IssueCmdStaffsAssumeFormationOrder(target: closestLocalAssyStation);
@@ -2509,7 +2457,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void ExecuteGuardOrder_UponDeath() {
         LogEvent();
-        // TODO Communicate failure to boss?
+        // TODO
     }
 
     void ExecuteGuardOrder_ExitState() {
@@ -2522,8 +2470,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         D.Assert(isUnsubscribed);
 
         _fsmTgt = null;
-        _orderFailureCause = UnitItemOrderFailureCause.None;
-        ////__movingFsmTgtInfoAccessChgFrames.Clear();
+        _activeFsmReturnHandlers.Clear();
+        //__movingFsmTgtInfoAccessChgFrames.Clear();
     }
 
     #endregion
@@ -2539,14 +2487,26 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     // _fsmTgt to be the guarded object, not the GuardStation. This also has the added benefit of not requiring
     // Moving to determine the action to take (using LastState) when an enemy is detected.
 
+    #region Guarding Support Members
+
+    private FsmReturnHandler CreateFsmReturnHandler_AssumingFormationToGuarding() {
+        IDictionary<FsmOrderFailureCause, Action> taskLookup = new Dictionary<FsmOrderFailureCause, Action>() {
+
+            {FsmOrderFailureCause.Death, () =>               { }                                                 },
+            {FsmOrderFailureCause.NeedsRepair, () =>         {   InitiateRepair(retainSuperiorsOrders: true); }  },
+        };
+        return new FsmReturnHandler(taskLookup, FleetState.AssumingFormation.GetValueName());
+    }
+
+    #endregion
+
     void Guarding_UponPreconfigureState() {
         LogEvent();
-        D.AssertNotNull(_fsmTgt);
-        D.Assert(_fsmTgt.IsOperational, _fsmTgt.DebugName);
+
+        ValidateCommonCallableStateValues(CurrentState.GetValueName());
         IGuardable guardedTgt = _fsmTgt as IGuardable;
         D.AssertNotNull(guardedTgt);    // the _fsmTgt starts out as IGuardable
         D.Assert(guardedTgt.IsGuardingAllowedBy(Owner));
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
     }
 
     IEnumerator Guarding_EnterState() {
@@ -2554,8 +2514,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
         D.Assert(!_navigator.IsPilotEngaged, _navigator.DebugName);
 
-        IGuardable guardedTgt = _fsmTgt as IGuardable;
         // now move to the GuardStation
+        IGuardable guardedTgt = _fsmTgt as IGuardable;
         IFleetNavigable apTgt = GameUtility.GetClosest(Position, guardedTgt.GuardStations);
         _navigator.PlotPilotCourse(apTgt, Speed.Standard, apTgtStandoffDistance: Constants.ZeroF);
 
@@ -2570,31 +2530,17 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         }
         // fleet has arrived at GuardStation
 
+        var returnHandler = GetInactiveReturnHandlerFor(FleetState.AssumingFormation, CurrentState);
         Call(FleetState.AssumingFormation); // avoids permanently leaving Guarding state
         yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-        if (_orderFailureCause != UnitItemOrderFailureCause.None) {
-            switch (_orderFailureCause) {
-                case UnitItemOrderFailureCause.UnitItemNeedsRepair:
-                    InitiateRepair(retainSuperiorsOrders: true);
-                    break;
-                case UnitItemOrderFailureCause.UnitItemDeath:
-                    // Whole Unit has died. Dead state will follow
-                    // TODO Communicate failure to boss?
-                    break;
-                case UnitItemOrderFailureCause.TgtDeath:
-                case UnitItemOrderFailureCause.TgtRelationship:
-                case UnitItemOrderFailureCause.TgtUncatchable:
-                case UnitItemOrderFailureCause.TgtUnreachable:
-                case UnitItemOrderFailureCause.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_orderFailureCause));
-            }
+        if (!returnHandler.IsCallSuccessful) {
             yield return null;
+            D.Error("Shouldn't get here");
         }
 
-        // If there was a failure generated by AssumingFormation, resulting new Orders or Dead state should keep this point from being reached
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
+        // 4.12.17 Desired when a Call()ed state Call()s another state - avoids warning in GetCurrentReturnHandler
+        RemoveReturnHandlerFromTopOfStack(returnHandler);
 
         // Fleet stays in Guarding state, waiting to respond to UponEnemyDetected(), Ship is simply Idling
     }
@@ -2606,24 +2552,21 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void Guarding_UponApCoursePlotFailure() {
         LogEvent();
-        _orderFailureCause = UnitItemOrderFailureCause.TgtUnreachable;
+        var returnHandler = GetCurrentCalledStateReturnHandler();
+        returnHandler.ReturnCause = FsmOrderFailureCause.TgtUnreachable;
         Return();
     }
 
     void Guarding_UponApTargetUnreachable() {
         LogEvent();
-        _orderFailureCause = UnitItemOrderFailureCause.TgtUnreachable;
+        var returnHandler = GetCurrentCalledStateReturnHandler();
+        returnHandler.ReturnCause = FsmOrderFailureCause.TgtUnreachable;
         Return();
     }
 
     void Guarding_UponApTargetReached() {
         LogEvent();
         _navigator.DisengagePilot();
-    }
-
-    void Guarding_UponNewOrderReceived() {
-        LogEvent();
-        Return();
     }
 
     void Guarding_UponAlertStatusChanged() {
@@ -2643,7 +2586,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void Guarding_UponUnitDamageIncurred() {
         LogEvent();
         if (AssessNeedForRepair(GeneralSettings.Instance.HealthThreshold_BadlyDamaged)) {
-            _orderFailureCause = UnitItemOrderFailureCause.UnitItemNeedsRepair;
+            var returnHandler = GetCurrentCalledStateReturnHandler();
+            returnHandler.ReturnCause = FsmOrderFailureCause.NeedsRepair;
             Return();
         }
     }
@@ -2654,7 +2598,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         if (!guardedTgt.IsGuardingAllowedBy(Owner)) {
             D.Log(ShowDebugLog, "{0} {1} order for {2} is no longer valid as Relations with Owner {3} changed to {4}.",
                 DebugName, CurrentOrder.Directive.GetValueName(), guardedTgt.DebugName, guardedTgt.Owner_Debug, Owner.GetCurrentRelations(guardedTgt.Owner_Debug).GetValueName());
-            _orderFailureCause = UnitItemOrderFailureCause.TgtRelationship;
+            var returnHandler = GetCurrentCalledStateReturnHandler();
+            returnHandler.ReturnCause = FsmOrderFailureCause.TgtRelationship;
             Return();
         }
     }
@@ -2666,7 +2611,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         if (!guardedTgt.IsGuardingAllowedBy(Owner)) {
             D.Log(ShowDebugLog, "{0} {1} order for {2} is no longer valid as Relations with newly accessed Owner {3} is {4}.",
                 DebugName, CurrentOrder.Directive.GetValueName(), guardedTgt.DebugName, guardedTgt.Owner_Debug, Owner.GetCurrentRelations(guardedTgt.Owner_Debug).GetValueName());
-            _orderFailureCause = UnitItemOrderFailureCause.TgtRelationship;
+            var returnHandler = GetCurrentCalledStateReturnHandler();
+            returnHandler.ReturnCause = FsmOrderFailureCause.TgtRelationship;
             Return();
         }
     }
@@ -2678,7 +2624,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         if (!guardedTgt.IsGuardingAllowedBy(Owner)) {
             D.Log(ShowDebugLog, "{0} {1} order for {2} is no longer valid as Relations with new Owner {3} is {4}.",
                 DebugName, CurrentOrder.Directive.GetValueName(), guardedTgt.DebugName, guardedTgt.Owner_Debug, Owner.GetCurrentRelations(guardedTgt.Owner_Debug).GetValueName());
-            _orderFailureCause = UnitItemOrderFailureCause.TgtRelationship;
+            var returnHandler = GetCurrentCalledStateReturnHandler();
+            returnHandler.ReturnCause = FsmOrderFailureCause.TgtRelationship;
             Return();
         }
     }
@@ -2693,13 +2640,15 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         if (_fsmTgt != deadFsmTgt) {
             D.Error("{0}.target {1} is not dead target {2}.", DebugName, _fsmTgt.DebugName, deadFsmTgt.DebugName);
         }
-        _orderFailureCause = UnitItemOrderFailureCause.TgtDeath;
+        var returnHandler = GetCurrentCalledStateReturnHandler();
+        returnHandler.ReturnCause = FsmOrderFailureCause.TgtDeath;
         Return();
     }
 
     void Guarding_UponDeath() {
         LogEvent();
-        _orderFailureCause = UnitItemOrderFailureCause.UnitItemDeath;
+        var returnHandler = GetCurrentCalledStateReturnHandler();
+        returnHandler.ReturnCause = FsmOrderFailureCause.Death;
         Return();
     }
 
@@ -2712,16 +2661,33 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     #region ExecuteAttackOrder
 
+    #region ExecuteAttackOrder Support Members
+
+    private FsmReturnHandler CreateFsmReturnHandler_MovingToAttack() {
+        IDictionary<FsmOrderFailureCause, Action> taskLookup = new Dictionary<FsmOrderFailureCause, Action>() {
+
+            {FsmOrderFailureCause.Death, () =>               { }                                                 },
+            {FsmOrderFailureCause.NeedsRepair, () =>         {   InitiateRepair(retainSuperiorsOrders: false); } },
+            // No longer allowed to attack target
+            {FsmOrderFailureCause.TgtRelationship, () =>     {   IssueCmdStaffsAssumeFormationOrder(); }         },
+            // No longer allowed to attack target
+            {FsmOrderFailureCause.TgtDeath, () =>            {   IssueCmdStaffsAssumeFormationOrder(); }         },
+            // 2.8.17 No longer aware of the target (aka no longer detected) 
+            // 3.1.17 ApTarget (a Fleet) has progressively gotten further away
+            {FsmOrderFailureCause.TgtUncatchable, () =>      {   IssueCmdStaffsAssumeFormationOrder(); }         }
+        };
+        return new FsmReturnHandler(taskLookup, FleetState.Moving.GetValueName());
+    }
+
+    #endregion
+
     void ExecuteAttackOrder_UponPreconfigureState() {
         LogEvent();
 
-        if (_fsmTgt != null) {
-            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", DebugName, _fsmTgt.DebugName);
-        }
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
-
+        ValidateCommonNotCallableStateValues();
         IUnitAttackable unitAttackTgt = CurrentOrder.Target as IUnitAttackable;
         D.AssertNotNull(unitAttackTgt);
+
         _fsmTgt = unitAttackTgt;
 
         bool isSubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.TargetDeath, _fsmTgt, toSubscribe: true);
@@ -2739,43 +2705,14 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
         _apMoveSpeed = Speed.Full;
         _apMoveTgtStandoffDistance = CalcApMoveTgtStandoffDistance(unitAttackTgt);
-
+        var returnHandler = GetInactiveReturnHandlerFor(FleetState.Moving, CurrentState);
         Call(FleetState.Moving);
         yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-        if (_orderFailureCause != UnitItemOrderFailureCause.None) {
-            switch (_orderFailureCause) {
-                case UnitItemOrderFailureCause.UnitItemNeedsRepair:
-                    InitiateRepair(retainSuperiorsOrders: false);
-                    break;
-                case UnitItemOrderFailureCause.UnitItemDeath:
-                    // Whole Unit has died. Dead state will follow
-                    // TODO Communicate failure to boss?
-                    break;
-                case UnitItemOrderFailureCause.TgtRelationship:
-                    // TODO Communicate failure to boss?
-                    // No longer allowed to attack _fsmTgt
-                    IssueCmdStaffsAssumeFormationOrder();
-                    break;
-                case UnitItemOrderFailureCause.TgtUncatchable:
-                    // TODO Communicate failure to boss?
-                    // 2.8.17 No longer aware of the target (aka no longer detected) so AssumeFormation and await new orders
-                    // 3.1.17 ApTarget (a Fleet) has progressively gotten further away so AssumeFormation and await new orders
-                    IssueCmdStaffsAssumeFormationOrder();
-                    break;
-                case UnitItemOrderFailureCause.TgtDeath:
-                    // order was to Move to _fsmTgt (unitAttackableTgt) so tgtDeath is an order failure
-                    IssueCmdStaffsAssumeFormationOrder();
-                    break;
-                case UnitItemOrderFailureCause.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_orderFailureCause));
-            }
+        if (!returnHandler.IsCallSuccessful) {
             yield return null;
+            D.Error("Shouldn't get here");
         }
-
-        // If there was a failure generated by Moving, resulting new Orders or Dead state should keep this point from being reached
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
 
         if (Data.AlertStatus < AlertStatus.Red) {
             var closestShip = GameUtility.GetClosest(unitAttackTgt.Position, Elements.Cast<IShipNavigable>());
@@ -2794,16 +2731,21 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         }
 
         // issue ship attack orders
-        var shipAttackOrder = new ShipOrder(ShipDirective.Attack, CurrentOrder.Source, toNotifyCmd: true, target: unitAttackTgt as IShipNavigable);
+        var shipAttackOrder = new ShipOrder(ShipDirective.Attack, CurrentOrder.Source, CurrentOrder.OrderID, unitAttackTgt as IShipNavigable);
         Elements.ForAll(e => (e as ShipItem).CurrentOrder = shipAttackOrder);
     }
 
-    void ExecuteAttackOrder_UponOrderOutcome(ShipItem ship, bool isSuccess, IShipNavigable target, UnitItemOrderFailureCause failCause) {
+    void ExecuteAttackOrder_UponOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigable target, FsmOrderFailureCause failCause) {
         LogEvent();
-        D.Log("{0}.ExecuteAttackOrder_UponOrderOutcome() not yet implemented.", DebugName);
+        D.Log("{0}.ExecuteAttackOrder_UponOrderOutcomeCallback() not yet implemented.", DebugName);
         // TODO if failCause is need for repair, assess fleet need for repair...
         // TODO keep track of results to make better resulting decisions about what to do as battle rages
         // IShipAttackable attackedTgt = target as IShipAttackable;    // target can be null if ship failed and didn't have a target: Disengaged...
+    }
+
+    void ExecuteAttackOrder_UponNewOrderReceived() {
+        LogEvent();
+        // TODO
     }
 
     void ExecuteAttackOrder_UponRelationsChangedWith(Player player) {
@@ -2821,7 +2763,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             }
             D.Log(ShowDebugLog, "{0} {1} order for {2} is no longer valid as Relations with Owner {3} changed to {4}.",
                 DebugName, CurrentOrder.Directive.GetValueName(), attackedTgt.DebugName, attackedTgt.Owner_Debug, Owner.GetCurrentRelations(attackedTgt.Owner_Debug).GetValueName());
-            // TODO Communicate failure to boss?
             IssueCmdStaffsAssumeFormationOrder();
         }
     }
@@ -2833,7 +2774,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         if (!attackedTgt.IsAttackByAllowed(Owner)) {
             D.Log(ShowDebugLog, "{0} {1} order for {2} is no longer valid as just lost access to Owner {3}.",
                 DebugName, CurrentOrder.Directive.GetValueName(), attackedTgt.DebugName, attackedTgt.Owner_Debug);
-            // TODO Communicate failure to boss?
             IssueCmdStaffsAssumeFormationOrder();
         }
     }
@@ -2848,7 +2788,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         }
         D.Log(ShowDebugLog, "{0} {1} order for {2} is no longer valid as Relations with new Owner {3} is {4}.",
             DebugName, CurrentOrder.Directive.GetValueName(), attackedTgt.DebugName, attackedTgt.Owner_Debug, Owner.GetCurrentRelations(attackedTgt.Owner_Debug).GetValueName());
-        // TODO Communicate failure to boss?
         IssueCmdStaffsAssumeFormationOrder();
     }
 
@@ -2863,7 +2802,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void ExecuteAttackOrder_UponHQElementChanged() {
         LogEvent();
-        // This will really disrupt an attack what with SensorMonitors location change
+        // 4.12.17 FIXME
+        //// This will really disrupt an attack what with SensorMonitors location change
         Vector3 unitAttackTgtDirection = (_fsmTgt.Position - Position).normalized;
         IFleetNavigable regroupDest = GetRegroupDestination(preferredDirection: -unitAttackTgtDirection);
         IssueCmdStaffsRegroupOrder(regroupDest, retainSuperiorsOrder: true);
@@ -2898,7 +2838,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         if (_fsmTgt != deadFsmTgt) {
             D.Error("{0}.target {1} is not dead target {2}.", DebugName, _fsmTgt.DebugName, deadFsmTgt.DebugName);
         }
-        // TODO Communicate success to boss?
         IssueCmdStaffsAssumeFormationOrder();
     }
 
@@ -2917,17 +2856,49 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         D.Assert(isUnsubscribed);
 
         _fsmTgt = null;
-        _orderFailureCause = UnitItemOrderFailureCause.None;
-        ////__movingFsmTgtInfoAccessChgFrames.Clear();
+        _activeFsmReturnHandlers.Clear();
+        //__movingFsmTgtInfoAccessChgFrames.Clear();
     }
 
     #endregion
 
     #region ExecuteRegroupOrder
 
-    // 3.20.17 NOT Call()ed State
-
     #region ExecuteRegroupOrder Support Members
+
+    private FsmReturnHandler CreateFsmReturnHandler_MovingToRegroup() {
+        IDictionary<FsmOrderFailureCause, Action> taskLookup = new Dictionary<FsmOrderFailureCause, Action>() {
+
+            {FsmOrderFailureCause.Death, () =>               { }                                                },
+            {FsmOrderFailureCause.NeedsRepair, () =>         {
+                if(AssessNeedForRepair(GeneralSettings.Instance.HealthThreshold_CriticallyDamaged)) {
+                    InitiateRepair(retainSuperiorsOrders: true);
+                }
+                else {
+                    RestartState();
+                }                                                   }                                           },
+            {FsmOrderFailureCause.TgtRelationship, () =>     {   IssueCmdStaffsAssumeFormationOrder(); }        },
+            {FsmOrderFailureCause.TgtDeath, () =>            {   IssueCmdStaffsAssumeFormationOrder(); }        },
+            {FsmOrderFailureCause.TgtUnreachable, () =>      {   IssueCmdStaffsAssumeFormationOrder(); }        },
+            // TgtUncatchable 2.8.17 Can't lose awareness of own fleet, 3.1.17 Own fleet can't be uncatchable
+        };
+        return new FsmReturnHandler(taskLookup, FleetState.Moving.GetValueName());
+    }
+
+    private FsmReturnHandler CreateFsmReturnHandler_AssumingFormationToRegroup() {
+        IDictionary<FsmOrderFailureCause, Action> taskLookup = new Dictionary<FsmOrderFailureCause, Action>() {
+
+            {FsmOrderFailureCause.Death, () =>               { }                                        },
+            {FsmOrderFailureCause.NeedsRepair, () =>         {
+                if(AssessNeedForRepair(GeneralSettings.Instance.HealthThreshold_CriticallyDamaged)) {
+                    InitiateRepair(retainSuperiorsOrders: true);
+                }
+            else {
+                    RestartState();
+                }                                                   }                                   },
+        };
+        return new FsmReturnHandler(taskLookup, FleetState.AssumingFormation.GetValueName());
+    }
 
     private IFleetNavigable GetRegroupDestination(Vector3 preferredDirection) {
         preferredDirection.ValidateNormalized();
@@ -3019,10 +2990,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void ExecuteRegroupOrder_UponPreconfigureState() {
         LogEvent();
 
-        if (_fsmTgt != null) {
-            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", DebugName, _fsmTgt.DebugName);
-        }
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
+        ValidateCommonNotCallableStateValues();
 
         _fsmTgt = CurrentOrder.Target;
 
@@ -3044,81 +3012,31 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
         _apMoveSpeed = Speed.Full;
         _apMoveTgtStandoffDistance = Constants.ZeroF;    // regrouping occurs only at friendly or neutral destinations
-
+        var returnHandler = GetInactiveReturnHandlerFor(FleetState.Moving, CurrentState);
         Call(FleetState.Moving);
         yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-        if (_orderFailureCause != UnitItemOrderFailureCause.None) {
-            IFleetNavigable regroupDest;
-            switch (_orderFailureCause) {
-                case UnitItemOrderFailureCause.UnitItemNeedsRepair:
-                    InitiateRepair(retainSuperiorsOrders: false);
-                    break;
-                case UnitItemOrderFailureCause.UnitItemDeath:
-                    // Whole Unit has died. Dead state will follow
-                    break;
-                case UnitItemOrderFailureCause.TgtRelationship:
-                    // Regroup destination owner or relationship with owner has changed
-                    regroupDest = GetRegroupDestination(Data.CurrentHeading);
-                    if (AssessNeedForRepair(GeneralSettings.Instance.HealthThreshold_CriticallyDamaged)) {
-                        InitiateRepair(retainSuperiorsOrders: true);
-                    }
-                    else {
-                        RestartState();
-                    }
-                    break;
-                case UnitItemOrderFailureCause.TgtDeath:
-                    // Our regroup destination has been destroyed
-                    regroupDest = GetRegroupDestination(Data.CurrentHeading);
-                    IssueCmdStaffsRegroupOrder(regroupDest, retainSuperiorsOrder: true);
-                    break;
-                case UnitItemOrderFailureCause.TgtUnreachable:
-                // Regroup destinations should all be reachable
-                case UnitItemOrderFailureCause.TgtUncatchable:
-                // Regroup destinations should all be catchable
-                case UnitItemOrderFailureCause.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_orderFailureCause));
-            }
+        if (!returnHandler.IsCallSuccessful) {
             yield return null;
+            D.Error("Shouldn't get here");
         }
 
-        // If there was a failure generated by Moving, resulting new Orders or Dead state should keep this point from being reached
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
-
         // we've arrived so assume formation
+        returnHandler = GetInactiveReturnHandlerFor(FleetState.AssumingFormation, CurrentState);
         Call(FleetState.AssumingFormation);
         yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-        if (_orderFailureCause != UnitItemOrderFailureCause.None) {
-            switch (_orderFailureCause) {
-                case UnitItemOrderFailureCause.UnitItemNeedsRepair:
-                    if (AssessNeedForRepair(GeneralSettings.Instance.HealthThreshold_CriticallyDamaged)) {
-                        InitiateRepair(retainSuperiorsOrders: true);
-                    }
-                    else {
-                        RestartState();
-                    }
-                    break;
-                case UnitItemOrderFailureCause.UnitItemDeath:
-                    // Whole Unit has died. Dead state will follow
-                    // TODO Communicate failure to boss?
-                    break;
-                case UnitItemOrderFailureCause.TgtDeath:
-                case UnitItemOrderFailureCause.TgtRelationship:
-                case UnitItemOrderFailureCause.TgtUncatchable:
-                case UnitItemOrderFailureCause.TgtUnreachable:
-                case UnitItemOrderFailureCause.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_orderFailureCause));
-            }
+        if (!returnHandler.IsCallSuccessful) {
             yield return null;
+            D.Error("Shouldn't get here");
         }
 
-        // If there was a failure generated by AssumingFormation, resulting new Orders or Dead state should keep this point from being reached
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
-
         CurrentState = FleetState.Idling;
+    }
+
+    void ExecuteRegroupOrder_UponNewOrderReceived() {
+        LogEvent();
+        // TODO
     }
 
     void ExecuteRegroupOrder_UponAlertStatusChanged() {
@@ -3195,25 +3113,45 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.OwnerChg, _fsmTgt, toSubscribe: false);
 
         _fsmTgt = null;
-        _orderFailureCause = UnitItemOrderFailureCause.None;
-        ////__movingFsmTgtInfoAccessChgFrames.Clear();
+        _activeFsmReturnHandlers.Clear();
+        //__movingFsmTgtInfoAccessChgFrames.Clear();
     }
 
     #endregion
 
     #region ExecuteJoinFleetOrder
 
+    #region ExecuteJoinFleetOrder Support Members
+
+    private FsmReturnHandler CreateFsmReturnHandler_MovingToJoinFleet() {
+        IDictionary<FsmOrderFailureCause, Action> taskLookup = new Dictionary<FsmOrderFailureCause, Action>() {
+
+            {FsmOrderFailureCause.Death, () =>               { }                                                },
+            {FsmOrderFailureCause.NeedsRepair, () =>         {
+                if (AssessNeedForRepair(GeneralSettings.Instance.HealthThreshold_CriticallyDamaged))    {
+                    InitiateRepair(retainSuperiorsOrders: true);
+                }
+                else {
+                    RestartState();
+                }                                                                                       }       },
+            {FsmOrderFailureCause.TgtRelationship, () =>     {   IssueCmdStaffsAssumeFormationOrder();  }       },
+            {FsmOrderFailureCause.TgtDeath, () =>            {   IssueCmdStaffsAssumeFormationOrder();  }       },
+            {FsmOrderFailureCause.TgtUnreachable, () =>      {   IssueCmdStaffsAssumeFormationOrder();  }       },
+            // TgtUncatchable 2.8.17 Can't lose awareness of our own fleet. 3.1.17 Our own fleet can't be uncatchable
+        };
+        return new FsmReturnHandler(taskLookup, FleetState.Moving.GetValueName());
+    }
+
+    #endregion
+
     void ExecuteJoinFleetOrder_UponPreconfigureState() {
         LogEvent();
 
-        if (_fsmTgt != null) {
-            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", DebugName, _fsmTgt.DebugName);
-        }
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
-
+        ValidateCommonNotCallableStateValues();
         var fleetToJoin = CurrentOrder.Target as FleetCmdItem;
         D.AssertNotNull(fleetToJoin);
         D.AssertNotEqual(this, fleetToJoin, DebugName);    // 4.6.17 Added as possibly joining same fleet?
+
         _fsmTgt = fleetToJoin;
 
         bool isSubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.TargetDeath, _fsmTgt, toSubscribe: true);
@@ -3231,51 +3169,14 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
         _apMoveSpeed = Speed.Standard;
         _apMoveTgtStandoffDistance = Constants.ZeroF;    // can't join an enemy fleet
-
+        var returnHandler = GetInactiveReturnHandlerFor(FleetState.Moving, CurrentState);
         Call(FleetState.Moving);
         yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-        if (_orderFailureCause != UnitItemOrderFailureCause.None) {
-            switch (_orderFailureCause) {
-                case UnitItemOrderFailureCause.UnitItemNeedsRepair:
-                    if (AssessNeedForRepair(GeneralSettings.Instance.HealthThreshold_CriticallyDamaged)) {
-                        InitiateRepair(retainSuperiorsOrders: true);
-                    }
-                    else {
-                        RestartState();
-                    }
-                    break;
-                case UnitItemOrderFailureCause.UnitItemDeath:
-                    // Whole Unit has died. Dead state will follow
-                    // TODO Communicate failure to boss?
-                    break;
-                case UnitItemOrderFailureCause.TgtRelationship:
-                    // TODO Communicate failure to boss?
-                    // No longer allowed to join the target fleet as its no longer owned by us
-                    IssueCmdStaffsAssumeFormationOrder();
-                    break;
-                case UnitItemOrderFailureCause.TgtDeath:
-                    // TODO Communicate failure to boss?
-                    // Our target fleet has been destroyed
-                    IssueCmdStaffsAssumeFormationOrder();
-                    break;
-                case UnitItemOrderFailureCause.TgtUnreachable:
-                    // TODO Communicate failure to boss?
-                    // failure occurred while Moving so AssumeFormation where we are at
-                    IssueCmdStaffsAssumeFormationOrder();
-                    break;
-                case UnitItemOrderFailureCause.TgtUncatchable:
-                // 2.8.17 Can't lose awareness of our own target fleet
-                // 3.1.17 Our own fleet target can't be uncatchable
-                case UnitItemOrderFailureCause.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_orderFailureCause));
-            }
+        if (!returnHandler.IsCallSuccessful) {
             yield return null;
+            D.Error("Shouldn't get here");
         }
-
-        // If there was a failure generated by Moving, resulting new Orders or Dead state should keep this point from being reached
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
 
         // we've arrived so transfer the ship to the fleet we are joining
         var ship = Elements[0] as ShipItem;   // HACK, IMPROVE more than one ship?
@@ -3284,6 +3185,11 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         if (!IsDead) {
             CurrentState = FleetState.Idling;
         }
+    }
+
+    void ExecuteJoinFleetOrder_UponNewOrderReceived() {
+        LogEvent();
+        // TODO
     }
 
     void ExecuteJoinFleetOrder_UponAlertStatusChanged() {
@@ -3371,21 +3277,50 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         D.Assert(isUnsubscribed);
 
         _fsmTgt = null;
-        _orderFailureCause = UnitItemOrderFailureCause.None;
-        ////__movingFsmTgtInfoAccessChgFrames.Clear();
+        _activeFsmReturnHandlers.Clear();
+        //__movingFsmTgtInfoAccessChgFrames.Clear();
     }
 
     #endregion
 
     #region ExecuteRepairOrder
 
+    #region ExecuteRepairOrder Support Members
+
+    private FsmReturnHandler CreateFsmReturnHandler_MovingToRepair() {
+        IDictionary<FsmOrderFailureCause, Action> taskLookup = new Dictionary<FsmOrderFailureCause, Action>() {
+
+            {FsmOrderFailureCause.Death, () =>              { }                                 },
+            // Already on the way to repair destination 
+            {FsmOrderFailureCause.NeedsRepair, () =>        {   RestartState(); }               },
+            {FsmOrderFailureCause.TgtDeath, () =>           {
+                D.Error("{0}.{1}: FIXME - FleetCmd needs to pick another repair destination.",
+                    DebugName, FsmOrderFailureCause.TgtDeath.GetValueName());
+                                                            }                                   },
+            {FsmOrderFailureCause.TgtRelationship, () =>    {
+                D.Error("{0}.{1}: FIXME - FleetCmd needs to pick another repair destination.",
+                    DebugName, FsmOrderFailureCause.TgtRelationship.GetValueName());
+                                                            }                                   },
+        };
+        return new FsmReturnHandler(taskLookup, FleetState.Moving.GetValueName());
+    }
+
+    private FsmReturnHandler CreateFsmReturnHandler_RepairingToRepair() {
+        IDictionary<FsmOrderFailureCause, Action> taskLookup = new Dictionary<FsmOrderFailureCause, Action>() {
+
+            {FsmOrderFailureCause.Death, () =>               { }                                },
+            // No NeedsRepair as Repairing won't signal need for repair while repairing
+            // No TgtDeath as not subscribed
+        };
+        return new FsmReturnHandler(taskLookup, FleetState.Repairing.GetValueName());
+    }
+
+    #endregion
+
     void ExecuteRepairOrder_UponPreconfigureState() {
         LogEvent();
 
-        if (_fsmTgt != null) {
-            D.Error("{0} _fsmTgt {1} should not already be assigned.", DebugName, _fsmTgt.DebugName);
-        }
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
+        ValidateCommonNotCallableStateValues();
         D.Assert(!_debugSettings.DisableRepair);
 
         IRepairCapable repairDest = CurrentOrder.Target as IRepairCapable;
@@ -3407,6 +3342,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     IEnumerator ExecuteRepairOrder_EnterState() {
         LogEvent();
+        FsmReturnHandler returnHandler;
 
         if (_fsmTgt != null) {  // can be null if repair in place
             D.Assert(_fsmTgt is IUnitCmdRepairCapable || _fsmTgt is IShipRepairCapable);
@@ -3417,67 +3353,35 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
             _apMoveSpeed = Speed.Standard;
             _apMoveTgtStandoffDistance = Constants.ZeroF;   // UNCLEAR
-
+            returnHandler = GetInactiveReturnHandlerFor(FleetState.Moving, CurrentState);
             Call(FleetState.Moving);
             yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-            if (_orderFailureCause != UnitItemOrderFailureCause.None) {
-                switch (_orderFailureCause) {
-                    case UnitItemOrderFailureCause.UnitItemNeedsRepair:
-                        // Already on way to repair so restart to continue getting there
-                        RestartState();
-                        break;
-                    case UnitItemOrderFailureCause.UnitItemDeath:
-                        // Whole Unit has died. Dead state will follow
-                        // TODO Communicate failure to boss?
-                        break;
-                    case UnitItemOrderFailureCause.TgtDeath:
-                        // FIXME Will fail Assert. Pick another repair destination
-                        break;
-                    case UnitItemOrderFailureCause.TgtRelationship:
-                        // FIXME Will fail Assert. Pick another repair destination
-                        break;
-                    case UnitItemOrderFailureCause.TgtUncatchable:
-                    case UnitItemOrderFailureCause.TgtUnreachable:
-                    case UnitItemOrderFailureCause.None:
-                    default:
-                        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_orderFailureCause));
-                }
+            if (!returnHandler.IsCallSuccessful) {
                 yield return null;
+                D.Error("Shouldn't get here");
             }
-
-            // If there was a failure generated by Moving, resulting new Orders or Dead state should keep this point from being reached
-            D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
         }
 
+        returnHandler = GetInactiveReturnHandlerFor(FleetState.Repairing, CurrentState);
         Call(FleetState.Repairing);
         yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-        if (_orderFailureCause != UnitItemOrderFailureCause.None) {
-            switch (_orderFailureCause) {
-                case UnitItemOrderFailureCause.UnitItemDeath:
-                    // No Cmd notification reqd in this state. Dead state will follow
-                    break;
-                case UnitItemOrderFailureCause.UnitItemNeedsRepair:
-                // Should not designate a failure cause when needing repair while repairing
-                case UnitItemOrderFailureCause.TgtDeath:
-                case UnitItemOrderFailureCause.TgtUncatchable:
-                case UnitItemOrderFailureCause.TgtRelationship:
-                case UnitItemOrderFailureCause.TgtUnreachable:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_orderFailureCause));
-            }
+        if (!returnHandler.IsCallSuccessful) {
             yield return null;
+            D.Error("Shouldn't get here");
         }
-
-        // If there was a failure generated by Repairing, resulting new Orders or Dead state should keep this point from being reached
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
 
         CurrentState = FleetState.Idling;
     }
 
-    void ExecuteRepairOrder_UponOrderOutcome(ShipItem ship, bool isSuccess, IShipNavigable target, UnitItemOrderFailureCause failCause) {
+    void ExecuteRepairOrder_UponOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigable target, FsmOrderFailureCause failCause) {
         LogEventWarning();  // UNCLEAR there is a 1 frame gap where this can still be called?
+    }
+
+    void ExecuteRepairOrder_UponNewOrderReceived() {
+        LogEvent();
+        // TODO
     }
 
     void ExecuteRepairOrder_UponAlertStatusChanged() {
@@ -3550,7 +3454,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void ExecuteRepairOrder_ExitState() {
         LogEvent();
-        _orderFailureCause = UnitItemOrderFailureCause.None;
+        _activeFsmReturnHandlers.Clear();
 
         if (_fsmTgt != null) {
             bool isUnsubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.TargetDeath, _fsmTgt, toSubscribe: false);
@@ -3581,10 +3485,11 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void Repairing_UponPreconfigureState() {
         LogEvent();
 
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
+        D.AssertNotEqual(Constants.Zero, _activeFsmReturnHandlers.Count);
+        _activeFsmReturnHandlers.Peek().__Validate(CurrentState.GetValueName());
         D.Assert(!_debugSettings.DisableRepair);
         D.AssertEqual(Constants.Zero, _fsmShipWaitForRepairCount);
-        if (_fsmTgt != null) {   // can be null
+        if (_fsmTgt != null) {  // _fsmTgt can be null if repair in place
             IRepairCapable repairDest = _fsmTgt as IRepairCapable;
             // RepairDest is either IUnitCmdRepairCapable and IShipRepairCapable (Base) or only IShipRepairCapable (Planet).
             // IShipRepairCapable only destinations are acceptable for a Cmd as the ships will repair faster there than inPlace.
@@ -3609,7 +3514,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         IShipRepairCapable shipRepairDest = _fsmTgt as IShipRepairCapable;
 
         // IMPROVE pick individual destination for each ship?
-        ShipOrder shipRepairOrder = new ShipOrder(ShipDirective.Repair, OrderSource.CmdStaff, toNotifyCmd: true, target: shipRepairDest);
+        ShipOrder shipRepairOrder = new ShipOrder(ShipDirective.Repair, OrderSource.CmdStaff, CurrentOrder.OrderID, shipRepairDest);
         Elements.ForAll(e => (e as ShipItem).CurrentOrder = shipRepairOrder);
 
         // 3.19.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
@@ -3620,7 +3525,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         StartEffectSequence(EffectSequenceID.Repairing);
 
         //  IMPROVE should be some max repair level if repairing in place
-
         float cmdRepairCapacityPerDay = cmdRepairDest != null ? cmdRepairDest.GetAvailableRepairCapacityFor(this, HQElement, Owner) : TempGameValues.RepairCapacityBasic_FleetCmd;
         string jobName = "{0}.RepairJob".Inject(DebugName);
         _repairJob = _jobMgr.RecurringWaitForHours(GameTime.HoursPerDay, jobName, waitMilestone: () => {
@@ -3650,7 +3554,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         Return();
     }
 
-    void Repairing_UponOrderOutcome(ShipItem ship, bool isSuccess, IShipNavigable target, UnitItemOrderFailureCause failCause) {
+    void Repairing_UponOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigable target, FsmOrderFailureCause failCause) {
         LogEvent();
 
         D.AssertNotNull(target);
@@ -3659,31 +3563,27 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         }
         else {
             switch (failCause) {
-                case UnitItemOrderFailureCause.UnitItemDeath:
+                case FsmOrderFailureCause.Death:
+                case FsmOrderFailureCause.NewOrderReceived:
                     _fsmShipWaitForRepairCount--;
                     break;
-                case UnitItemOrderFailureCause.TgtDeath:
-                case UnitItemOrderFailureCause.TgtRelationship:
+                case FsmOrderFailureCause.TgtDeath:
+                case FsmOrderFailureCause.TgtRelationship:
                     // TODO Pick another destination
                     break;
-                case UnitItemOrderFailureCause.UnitItemNeedsRepair:
+                case FsmOrderFailureCause.NeedsRepair:
                     // Ignore it as ship will RestartState if it encounters this from another Call()ed state
                     break;
-                case UnitItemOrderFailureCause.TgtUncatchable:
-                    D.Error("{0}.Repairing_UponOrderOutcome received uncatchable failure from {1}. ShipToCmd distance = {2:0.}.",
-                        DebugName, ship.DebugName, Vector3.Distance(Position, ship.Position));
+                case FsmOrderFailureCause.TgtUncatchable:
+                    D.Error("{0}.Repairing_UponOrderOutcome received uncatchable failure from {1}. RprTgtToCmd distance = {2:0.}.",
+                        DebugName, ship.DebugName, Vector3.Distance(Position, target.Position));
                     break;
-                case UnitItemOrderFailureCause.TgtUnreachable:
-                case UnitItemOrderFailureCause.None:
+                case FsmOrderFailureCause.TgtUnreachable:
+                case FsmOrderFailureCause.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(failCause));
             }
         }
-    }
-
-    void Repairing_UponNewOrderReceived() {
-        LogEvent();
-        Return();
     }
 
     void Repairing_UponAlertStatusChanged() {
@@ -3720,7 +3620,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             // not a repair in place
             IRepairCapable currentRepairLocation = _fsmTgt as IRepairCapable;
             if (!currentRepairLocation.IsRepairingAllowedBy(Owner)) {
-                _orderFailureCause = UnitItemOrderFailureCause.TgtRelationship;
+                var returnHandler = GetCurrentCalledStateReturnHandler();
+                returnHandler.ReturnCause = FsmOrderFailureCause.TgtRelationship;
                 Return();
             }
         }
@@ -3731,7 +3632,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         D.AssertEqual(_fsmTgt, fsmTgt as IFleetNavigable);
         IRepairCapable currentRepairLocation = _fsmTgt as IRepairCapable;
         if (!currentRepairLocation.IsRepairingAllowedBy(Owner)) {
-            _orderFailureCause = UnitItemOrderFailureCause.TgtRelationship;
+            var returnHandler = GetCurrentCalledStateReturnHandler();
+            returnHandler.ReturnCause = FsmOrderFailureCause.TgtRelationship;
             Return();
         }
     }
@@ -3741,7 +3643,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         D.AssertEqual(_fsmTgt, fsmTgt as IFleetNavigable);
         IRepairCapable currentRepairLocation = _fsmTgt as IRepairCapable;
         if (!currentRepairLocation.IsRepairingAllowedBy(Owner)) {
-            _orderFailureCause = UnitItemOrderFailureCause.TgtRelationship;
+            var returnHandler = GetCurrentCalledStateReturnHandler();
+            returnHandler.ReturnCause = FsmOrderFailureCause.TgtRelationship;
             Return();
         }
     }
@@ -3749,13 +3652,15 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void Repairing_UponFsmTgtDeath(IMortalItem_Ltd deadFsmTgt) {
         LogEvent();
         D.AssertEqual(_fsmTgt, deadFsmTgt as IFleetNavigable);
-        _orderFailureCause = UnitItemOrderFailureCause.TgtDeath;
+        var returnHandler = GetCurrentCalledStateReturnHandler();
+        returnHandler.ReturnCause = FsmOrderFailureCause.TgtDeath;
         Return();
     }
 
     void Repairing_UponDeath() {
         LogEvent();
-        _orderFailureCause = UnitItemOrderFailureCause.UnitItemDeath;
+        var returnHandler = GetCurrentCalledStateReturnHandler();
+        returnHandler.ReturnCause = FsmOrderFailureCause.Death;
         Return();
     }
 
@@ -4129,6 +4034,139 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         HQElement.CurrentOrder = new ShipOrder(ShipDirective.AssumeStation, OrderSource.CmdStaff);
     }
 
+    #region FsmReturnHandler and Callback System
+
+    /// <summary>
+    /// Lookup table for FsmReturnHandlers keyed by the state Call()ed and the state Return()ed too.
+    /// </summary>
+    private IDictionary<FleetState, IDictionary<FleetState, FsmReturnHandler>> _fsmReturnHandlerLookup
+        = new Dictionary<FleetState, IDictionary<FleetState, FsmReturnHandler>>();
+
+    /// <summary>
+    /// Returns the cleared FsmReturnHandler associated with the provided states, 
+    /// recording it onto the stack of _activeFsmReturnHandlers.
+    /// <remarks>This version is intended for initial use when about to Call() a CallableState.</remarks>
+    /// </summary>
+    /// <param name="calledState">The Call()ed state.</param>
+    /// <param name="returnedState">The state Return()ed too.</param>
+    /// <returns></returns>
+    private FsmReturnHandler GetInactiveReturnHandlerFor(FleetState calledState, FleetState returnedState) {
+        D.Assert(IsStateCalled(calledState));   // Can't validate returnedState as not Call()able due to nested Call()ed states
+        IDictionary<FleetState, FsmReturnHandler> returnedStateLookup;
+        if (!_fsmReturnHandlerLookup.TryGetValue(calledState, out returnedStateLookup)) {
+            returnedStateLookup = new Dictionary<FleetState, FsmReturnHandler>();
+            _fsmReturnHandlerLookup.Add(calledState, returnedStateLookup);
+        }
+
+        FsmReturnHandler handler;
+        if (!returnedStateLookup.TryGetValue(returnedState, out handler)) {
+            handler = CreateFsmReturnHandlerFor(calledState, returnedState);
+            returnedStateLookup.Add(returnedState, handler);
+        }
+        handler.Clear();
+        _activeFsmReturnHandlers.Push(handler);
+        return handler;
+    }
+
+    /// <summary>
+    /// Returns the uncleared and already recorded FsmReturnHandler associated with the provided states. 
+    /// <remarks>This version is intended for use in Return()ed states after the CallableState that it
+    /// was used to Call() has Return()ed to the state that Call()ed it.</remarks>
+    /// </summary>
+    /// <param name="calledState">The Call()ed state.</param>
+    /// <param name="returnedState">The state Return()ed too.</param>
+    /// <returns></returns>
+    private FsmReturnHandler GetActiveReturnHandlerFor(FleetState calledState, FleetState returnedState) {
+        D.Assert(IsStateCalled(calledState));   // Can't validate returnedState as not Call()able due to nested Call()ed states
+        IDictionary<FleetState, FsmReturnHandler> returnedStateLookup;
+        if (!_fsmReturnHandlerLookup.TryGetValue(calledState, out returnedStateLookup)) {
+            returnedStateLookup = new Dictionary<FleetState, FsmReturnHandler>();
+            _fsmReturnHandlerLookup.Add(calledState, returnedStateLookup);
+        }
+
+        FsmReturnHandler handler;
+        if (!returnedStateLookup.TryGetValue(returnedState, out handler)) {
+            handler = CreateFsmReturnHandlerFor(calledState, returnedState);
+            returnedStateLookup.Add(returnedState, handler);
+        }
+        return handler;
+    }
+
+
+    private FsmReturnHandler CreateFsmReturnHandlerFor(FleetState calledState, FleetState returnedState) {
+        D.Assert(IsStateCalled(calledState));
+        if (calledState == FleetState.Moving) {
+            if (returnedState == FleetState.ExecuteAssumeFormationOrder) {
+                return CreateFsmReturnHandler_MovingToAssumeFormation();
+            }
+            if (returnedState == FleetState.ExecuteMoveOrder) {
+                return CreateFsmReturnHandler_MovingToMove();
+            }
+            if (returnedState == FleetState.ExecuteExploreOrder) {
+                return CreateFsmReturnHandler_MovingToExplore();
+            }
+            if (returnedState == FleetState.ExecutePatrolOrder) {
+                return CreateFsmReturnHandler_MovingToPatrol();
+            }
+            if (returnedState == FleetState.ExecuteGuardOrder) {
+                return CreateFsmReturnHandler_MovingToGuard();
+            }
+            if (returnedState == FleetState.ExecuteAttackOrder) {
+                return CreateFsmReturnHandler_MovingToAttack();
+            }
+            if (returnedState == FleetState.ExecuteRegroupOrder) {
+                return CreateFsmReturnHandler_MovingToRegroup();
+            }
+            if (returnedState == FleetState.ExecuteJoinFleetOrder) {
+                return CreateFsmReturnHandler_MovingToJoinFleet();
+            }
+            if (returnedState == FleetState.ExecuteRepairOrder) {
+                return CreateFsmReturnHandler_MovingToRepair();
+            }
+        }
+
+        if (calledState == FleetState.AssumingFormation) {
+            if (returnedState == FleetState.ExecuteAssumeFormationOrder) {
+                return CreateFsmReturnHandler_AssumingFormationToAssumeFormation();
+            }
+            if (returnedState == FleetState.Guarding) {
+                return CreateFsmReturnHandler_AssumingFormationToGuarding();
+            }
+            if (returnedState == FleetState.ExecuteRegroupOrder) {
+                return CreateFsmReturnHandler_AssumingFormationToRegroup();
+            }
+        }
+
+        if (calledState == FleetState.Repairing && returnedState == FleetState.ExecuteRepairOrder) {
+            return CreateFsmReturnHandler_RepairingToRepair();
+        }
+        if (calledState == FleetState.Patrolling && returnedState == FleetState.ExecutePatrolOrder) {
+            return CreateFsmReturnHandler_PatrollingToPatrol();
+        }
+        if (calledState == FleetState.Guarding && returnedState == FleetState.ExecuteGuardOrder) {
+            return CreateFsmReturnHandler_GuardingToGuard();
+        }
+
+        D.Error("{0}: No {1} found for CalledState {2} and ReturnedState {3}.",
+            DebugName, typeof(FsmReturnHandler).Name, calledState.GetValueName(), returnedState.GetValueName());
+        return null;
+    }
+
+    #endregion
+
+    protected override void ValidateCommonCallableStateValues(string calledStateName) {
+        base.ValidateCommonCallableStateValues(calledStateName);
+        D.AssertNotNull(_fsmTgt);
+        D.Assert(_fsmTgt.IsOperational, _fsmTgt.DebugName);
+    }
+
+    protected override void ValidateCommonNotCallableStateValues() {
+        base.ValidateCommonNotCallableStateValues();
+        if (_fsmTgt != null) {
+            D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", DebugName, _fsmTgt.DebugName);
+        }
+    }
+
     public override void HandleEffectSequenceFinished(EffectSequenceID effectID) {
         base.HandleEffectSequenceFinished(effectID);
         if (CurrentState == FleetState.Dead) {   // TEMP avoids 'method not found' warning spam
@@ -4137,16 +4175,23 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     /// <summary>
-    /// Handles the results of the ship's attempt to execute the provided directive.
+    /// Handles the results of the ship's attempt to execute the CmdOrder identified by
+    /// the unique <c>orderID</c>.
     /// </summary>
-    /// <param name="intendedFleetDirective">The FleetDirective for which this callback is intended.</param>
+    /// <param name="orderID">The unique CmdOrder ID used to determine whether to relay this outcome.</param>
     /// <param name="ship">The ship.</param>
-    /// <param name="isSuccess">if set to <c>true</c> the directive was successfully completed. May still be ongoing.</param>
+    /// <param name="isSuccessful">if set to <c>true</c> [is successful].</param>
     /// <param name="target">The target. Can be null.</param>
     /// <param name="failCause">The failure cause if not successful.</param>
-    internal void HandleOrderOutcome(FleetDirective intendedFleetDirective, ShipItem ship, bool isSuccess, IShipNavigable target = null, UnitItemOrderFailureCause failCause = UnitItemOrderFailureCause.None) {
-        if (IsCurrentOrderDirectiveAnyOf(intendedFleetDirective)) {
-            UponOrderOutcome(ship, isSuccess, target, failCause);
+    internal void HandleOrderOutcomeCallback(Guid orderID, ShipItem ship, bool isSuccessful, IShipNavigable target, FsmOrderFailureCause failCause) {
+        D.AssertNotDefault(orderID);
+        if (CurrentOrder != null && CurrentOrder.OrderID == orderID) {
+            // outcome is relevant to CurrentOrder and State
+            UponOrderOutcomeCallback(ship, isSuccessful, target, failCause);
+        }
+        else {
+            // 4.9.17 Perfectly normal. CurrentOrder has been nulled or changed just before this arrived
+            D.Log(ShowDebugLog, "{0}.HandleOrderOutcomeCallback received without matching OrderID.", DebugName);
         }
     }
 
@@ -4162,7 +4207,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     internal void UponApTargetUncatchable() { RelayToCurrentState(); }
 
-    private void UponOrderOutcome(ShipItem ship, bool isSuccess, IShipNavigable target, UnitItemOrderFailureCause failCause) {
+    private void UponOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigable target, FsmOrderFailureCause failCause) {
         RelayToCurrentState(ship, isSuccess, target, failCause);
     }
 
@@ -4304,6 +4349,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     #endregion
 
+    #region Wait for Fleet to Align Access
+
     /// <summary>
     /// Waits for the ships in the fleet to align with the requested heading, then executes the provided callback.
     /// <remarks>
@@ -4328,6 +4375,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         D.AssertNotNull(shipCallbackDelegate);
         _navigator.RemoveFleetIsAlignedCallback(shipCallbackDelegate, ship);
     }
+
+    #endregion
 
     #endregion
 
@@ -4383,8 +4432,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             D.Error("{0} received {1} order with Target {2} that Owner {3} has no knowledge of.", DebugName, directive.GetValueName(), target.DebugName, Owner);
         }
     }
-
-
 
     protected override void __CleanupOnApplicationQuit() {
         base.__CleanupOnApplicationQuit();
@@ -4542,11 +4589,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         /// State that executes the FleetOrder Move at a speed chosen by FleetCmd, typically FleetStandard.
         /// </summary>
         ExecuteMoveOrder,
-
-        ////ExecuteFullSpeedMoveOrder,
-        ////ExecuteCloseOrbitOrder,
-        ////AssumingCloseOrbit,
-        ////Attacking,
 
         /// <summary>
         /// Call()ed state that exists while an entire fleet is moving from one position to another.

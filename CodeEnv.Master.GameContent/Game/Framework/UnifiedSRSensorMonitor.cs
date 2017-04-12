@@ -18,6 +18,7 @@ namespace CodeEnv.Master.GameContent {
 
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
@@ -122,7 +123,6 @@ namespace CodeEnv.Master.GameContent {
         private IDictionary<IElementSensorRangeMonitor, HashSet<IUnitCmd_Ltd>> _enemyCmdsByMonitorLookup = new Dictionary<IElementSensorRangeMonitor, HashSet<IUnitCmd_Ltd>>();
         private IDictionary<IElementSensorRangeMonitor, HashSet<IUnitCmd_Ltd>> _warEnemyCmdsByMonitorLookup = new Dictionary<IElementSensorRangeMonitor, HashSet<IUnitCmd_Ltd>>();
 
-
         private IUnitCmd _parentCmd;
 
         public UnifiedSRSensorMonitor(IUnitCmd parentCmd) {
@@ -135,7 +135,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public void AddEnemyElement(IUnitElement_Ltd element, IElementSensorRangeMonitor monitor) {
-            ////D.Assert(IsOperational, DebugName);
             HashSet<IUnitElement_Ltd> elements;
             if (!_enemyElementsByMonitorLookup.TryGetValue(monitor, out elements)) {
                 elements = GetEmptyElementSet();
@@ -160,7 +159,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public void AddWarEnemyElement(IUnitElement_Ltd element, IElementSensorRangeMonitor monitor) {
-            ////D.Assert(IsOperational, DebugName);
             HashSet<IUnitElement_Ltd> elements;
             if (!_warEnemyElementsByMonitorLookup.TryGetValue(monitor, out elements)) {
                 elements = GetEmptyElementSet();
@@ -186,10 +184,11 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public void AddEnemyCmd(IUnitCmd_Ltd cmd, IElementSensorRangeMonitor monitor) {
-            ////D.Assert(IsOperational, DebugName);
+            //D.Log(ShowDebugLog, "{0}.AddEnemyCmd. Monitor = {1}. Frame = {2}.", DebugName, monitor.DebugName, Time.frameCount);
             HashSet<IUnitCmd_Ltd> cmds;
             if (!_enemyCmdsByMonitorLookup.TryGetValue(monitor, out cmds)) {
                 cmds = GetEmptyCmdSet();
+                //D.Log(ShowDebugLog, "{0}.AddMonitor. Adding Monitor {1} to monitor lookup. Frame = {2}.", DebugName, monitor.DebugName, Time.frameCount);
                 _enemyCmdsByMonitorLookup.Add(monitor, cmds);
             }
             bool isAdded = cmds.Add(cmd);
@@ -212,7 +211,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public void AddWarEnemyCmd(IUnitCmd_Ltd cmd, IElementSensorRangeMonitor monitor) {
-            ////D.Assert(IsOperational, DebugName);
             HashSet<IUnitCmd_Ltd> cmds;
             if (!_warEnemyCmdsByMonitorLookup.TryGetValue(monitor, out cmds)) {
                 cmds = GetEmptyCmdSet();
@@ -310,10 +308,7 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(IsOperational, DebugName);
             HashSet<IUnitCmd_Ltd> cmds;
             bool isKeyPresent = _enemyCmdsByMonitorLookup.TryGetValue(monitor, out cmds);
-            //D.Assert(isKeyPresent); // 4.3.17, 4.5.17 Failures. Added IsOperational Asserts
-            if (!isKeyPresent) {
-                D.Error("{0}: {1} not present.", DebugName, monitor.DebugName);
-            }
+            D.Assert(isKeyPresent, "{0}: {1} not present. Frame = {2}.".Inject(DebugName, monitor.DebugName, Time.frameCount));
 
             bool isRemoved = cmds.Remove(cmd);
             D.Assert(isRemoved);
@@ -330,6 +325,7 @@ namespace CodeEnv.Master.GameContent {
 
             isRemoved = monitors.Remove(monitor);
             D.Assert(isRemoved);
+            //D.Log(ShowDebugLog, "{0}: Removing Monitor {1}. Frame = {2}", DebugName, monitor.DebugName, Time.frameCount);
 
             if (monitors.Count == Constants.Zero) {
                 _monitorsByEnemyCmdLookup.Remove(cmd);
@@ -390,9 +386,10 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="monitor">The monitor.</param>
         public void Add(IElementSensorRangeMonitor monitor) {
-            ////D.Assert(IsOperational, DebugName);
             D.Assert(!_enemyElementsByMonitorLookup.ContainsKey(monitor));
 
+            D.Assert(monitor.AreEnemyElementsInRange == monitor.EnemyElementsDetected.Any(), DebugName);
+            //D.Log(ShowDebugLog, "{0}.AddMonitor. Monitor = {1}. Frame = {2}.", DebugName, monitor.DebugName, Time.frameCount);
             if (monitor.AreEnemyElementsInRange) {
                 foreach (var element in monitor.EnemyElementsDetected) {
                     AddEnemyElement(element, monitor);
@@ -401,6 +398,7 @@ namespace CodeEnv.Master.GameContent {
                     AddWarEnemyElement(element, monitor);
                 }
             }
+            D.Assert(monitor.AreEnemyCmdsInRange == monitor.EnemyCmdsDetected.Any(), DebugName);
             if (monitor.AreEnemyCmdsInRange) {
                 foreach (var cmd in monitor.EnemyCmdsDetected) {
                     AddEnemyCmd(cmd, monitor);
@@ -420,6 +418,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="monitor">The monitor.</param>
         public void Remove(IElementSensorRangeMonitor monitor) {
             D.Assert(IsOperational, DebugName);
+            //D.Log(ShowDebugLog, "{0}.RemoveMonitor. Monitor = {1}. Frame = {2}.", DebugName, monitor.DebugName, Time.frameCount);
             HashSet<IUnitElement_Ltd> elements;
             bool isKeyPresent = _enemyElementsByMonitorLookup.TryGetValue(monitor, out elements);
             if (isKeyPresent) {

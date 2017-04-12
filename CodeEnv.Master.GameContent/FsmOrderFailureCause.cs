@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2016 
+// Copyright © 2012 - 2017 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: UnitItemOrderFailureCause.cs
-// The possible causes of a UnitItem's failure to execute an Order.
+// File: FsmOrderFailureCause.cs
+// Enum representing the cause of failure when a Unit member fails to successfully execute an order.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,11 +17,19 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// The possible causes of a UnitItem's failure to execute an Order.
+    /// Enum representing the cause of failure when a Unit member fails to successfully execute an order.
+    /// <remarks>Used to communicate the cause of an interrupted Call()ed state's Return to the
+    /// Call()ing state, working in conjunction with FsmReturnHandler. Also used as the cause of an element's 
+    /// failure to execute a Cmd's order when the Cmd requires an order outcome callback.</remarks>
     /// </summary>
-    public enum UnitItemOrderFailureCause {
+    public enum FsmOrderFailureCause {
 
-        None,
+        None = 0,
+
+        /// <summary>
+        /// A new order has just been received.
+        /// </summary>
+        NewOrderReceived,
 
         /// <summary>
         /// The target has been determined to be uncatchable. 
@@ -48,13 +56,14 @@ namespace CodeEnv.Master.GameContent {
         /// This Unit Cmd or Element needs repair.  
         /// UNCLEAR Cmd or whole Unit?
         /// </summary>
-        UnitItemNeedsRepair,
+        NeedsRepair,
 
         /// <summary>
         /// This Unit Cmd or Element has died.
         /// </summary>
-        UnitItemDeath
+        Death
 
     }
+
 }
 

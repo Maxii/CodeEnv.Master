@@ -418,6 +418,7 @@ public abstract class ASensorRangeMonitor : ADetectableRangeMonitor<ISensorDetec
                 }
             }
         }
+        AssessAreEnemyTargetsInRange();
     }
 
     #endregion
@@ -536,6 +537,7 @@ public abstract class ASensorRangeMonitor : ADetectableRangeMonitor<ISensorDetec
             if (enemyElement.IsHQ) {
                 isAdded = _enemyCmdsDetected.Add(enemyElement.Command);
                 D.Assert(isAdded);
+                //D.Log(ShowDebugLog, "{0} added EnemyCmd {1}. Frame: {2}.", DebugName, enemyElement.Command.DebugName, Time.frameCount);
                 HandleEnemyCmdAdded(enemyElement.Command);
             }
 
@@ -672,6 +674,8 @@ public abstract class ASensorRangeMonitor : ADetectableRangeMonitor<ISensorDetec
         AreEnemyTargetsInRange = _enemyTargetsDetected.Any();
         AreEnemyElementsInRange = _enemyElementsDetected.Any();
         AreEnemyCmdsInRange = _enemyCmdsDetected.Any();
+        //D.Log(ShowDebugLog, "{0} updated AreEnemyCmdsInRange to {1}. Frame: {2}.", DebugName, AreEnemyCmdsInRange, Time.frameCount);
+
         AreEnemyPlanetoidsInRange = _enemyPlanetoidsDetected.Any();
         AreWarEnemyTargetsInRange = _warEnemyTargetsDetected.Any();
         AreWarEnemyElementsInRange = _warEnemyElementsDetected.Any();

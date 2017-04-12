@@ -190,9 +190,18 @@ namespace CodeEnv.Master.GameContent {
             bool isAdded = clients.Add(client);
             if (!isAdded) {
                 // 3.17.17 So far, I am limited to 1 use per client due to the use of Sets. 
-                // HACK Using Sets, the same client is already waiting to be added on the same date so there must be a Remove scheduled for 
-                // this client and date, trying to remove the already existing client and date. For now, I can proceed by getting rid 
-                // of the scheduled Remove and ignoring this new Add.Scenario2: the same client gets an Add scheduled but for a different
+                // Scenario 1: Using Sets, the same client is already waiting to be added on the same date so there must be a Remove 
+                // scheduled for this client and date, trying to remove the already existing client and date. For now, I can proceed
+                // by getting rid of the scheduled Remove and ignoring this new Add. 
+                //
+                // 4.9.17 This occurred for a Unit's element's ActiveCMs reload process. CommenceOperations AssessedAlertStatus on startup
+                // and found it needed to set YellowAlert. That started the reload process which added reload dates to DateMinder. 
+                // During the same frame, the owner of the enemy that caused YellowAlert became known, firing OnRelationsChanged. 
+                // That caused the RangeMonitor to re-categorize all detected items en-masse. That re-categorization removed, 
+                // then re-added the reload dates all within the same frame, thus generating 65 warnings from here. I'm going to keep
+                // the warning for now to get a sense of frequency, but it is warning about acceptable behaviour.
+
+                // Scenario2: the same client gets an Add scheduled but for a different
                 // dates, creating no immediate conflict here. There must be another Remove scheduled for the first date to allow the second
                 // date to be added. This will work out when processed - the two adds will be included, then the remove will remove the first.
                 D.Assert(HasClientsScheduledForRemoval(date));

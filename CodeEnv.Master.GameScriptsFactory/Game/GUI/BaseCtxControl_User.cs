@@ -207,10 +207,8 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
     private void IssueRemoteUserShipOrder(int itemID) {
         var directive = (ShipDirective)_directiveLookup[itemID];
         D.AssertEqual(ShipDirective.Disband, directive);   // HACK
-        IShipNavigable target = _baseMenuOperator;
         var remoteShip = _remoteUserOwnedSelectedItem as ShipItem;
-        bool toNotifyCmd = false;
-        remoteShip.CurrentOrder = new ShipOrder(directive, OrderSource.User, toNotifyCmd, target);
+        remoteShip.CurrentOrder = new ShipOrder(directive, OrderSource.User, target: _baseMenuOperator);
     }
 
     public override string ToString() {

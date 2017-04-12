@@ -152,7 +152,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     public override void FinalInitialize() {
         base.FinalInitialize();
-        CurrentState = FacilityState.FinalInitialize;   //= FacilityState.Idling;
+        CurrentState = FacilityState.FinalInitialize;
         IsOperational = true;
     }
 
@@ -230,6 +230,14 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #region Orders
 
+    /// <summary>
+    /// The last CmdOrderID to be received. If default value the last order received does not require an order
+    /// outcome response from this element, either because the order wasn't from Cmd, or the CmdOrder does not
+    /// require a response.
+    /// <remarks>Used to determine whether this element should respond to Cmd with the outcome of the last order.</remarks>
+    /// </summary>
+    private Guid _lastCmdOrderID;
+
     public bool IsCurrentOrderDirectiveAnyOf(FacilityDirective directiveA) {
         return CurrentOrder != null && CurrentOrder.Directive == directiveA;
     }
@@ -246,7 +254,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     private void OverrideCurrentOrder(FacilityOrder captainsOverrideOrder, bool retainSuperiorsOrder) {
         D.AssertEqual(OrderSource.Captain, captainsOverrideOrder.Source, captainsOverrideOrder.ToString());
         D.AssertNull(captainsOverrideOrder.StandingOrder, captainsOverrideOrder.ToString());
-        D.Assert(!captainsOverrideOrder.ToNotifyCmd, captainsOverrideOrder.ToString());
+        D.Assert(!captainsOverrideOrder.ToCallback, captainsOverrideOrder.ToString());
         // if the captain says to, and the current existing order is from his superior, then record it as a standing order
         FacilityOrder standingOrder = null;
         if (retainSuperiorsOrder && CurrentOrder != null) {
@@ -264,14 +272,20 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     }
 
     private void HandleNewOrder() {
-        // Pattern that handles Call()ed states that goes more than one layer deep
-        while (IsCurrentStateCalled) {
-            UponNewOrderReceived();
-        }
-        D.Assert(!IsCurrentStateCalled);
-
         if (CurrentOrder != null) {
-            D.Log(ShowDebugLog, "{0} received new order {1}.", DebugName, CurrentOrder.Directive.GetValueName());
+            //D.Log(ShowDebugLog, "{0} received new order {1}. Frame {2}.", DebugName, CurrentOrder.Directive.GetValueName(), Time.frameCount);
+            // Pattern that handles Call()ed states that goes more than one layer deep
+            while (IsCurrentStateCalled) {
+                // 4.9.17 Removed UponNewOrderReceived for Call()ed states as any ReturnCause they provide will never
+                // be processed as the new order will change the state before the yield return null allows the processing
+                Return();
+            }
+            D.Assert(!IsCurrentStateCalled);
+            // 4.8.17 If a non-Call()ed state is to notify Cmd of OrderOutcome, this is when notification of receiving a new order will happen. 
+            // CalledStateReturnHandlers can't do it as the new order will change the state before the ReturnCause is processed.
+            UponNewOrderReceived();
+
+            //D.Log(ShowDebugLog, "{0} is about to change state for new order {1}. Frame {2}.", DebugName, CurrentOrder.Directive.GetValueName(), Time.frameCount);
             FacilityDirective directive = CurrentOrder.Directive;
             __ValidateKnowledgeOfOrderTarget(CurrentOrder.Target, directive);
 
@@ -294,6 +308,10 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
             }
+            _lastCmdOrderID = CurrentOrder.CmdOrderID;
+        }
+        else {
+            _lastCmdOrderID = default(Guid);
         }
     }
 
@@ -318,7 +336,11 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         get { return base.LastState != null ? (FacilityState)base.LastState : default(FacilityState); }
     }
 
-    private bool IsCurrentStateCalled { get { return CurrentState == FacilityState.Repairing; } }
+    protected override bool IsCurrentStateCalled { get { return IsStateCalled(CurrentState); } }
+
+    private bool IsStateCalled(FacilityState state) {
+        return state == FacilityState.Repairing;
+    }
 
     private bool IsCurrentStateAnyOf(FacilityState state) {
         return CurrentState == state;
@@ -366,7 +388,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void Idling_UponPreconfigureState() {
         LogEvent();
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
+        ValidateCommonNotCallableStateValues();
     }
 
     IEnumerator Idling_EnterState() {
@@ -405,25 +427,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             //D.Log(ShowDebugLog, "{0} has completed {1} with no follow-on or standing order queued.", DebugName, CurrentOrder);
             CurrentOrder = null;
         }
+        D.AssertDefault(_lastCmdOrderID);
 
-
-        //if (CurrentOrder != null) {
-        //    // check for a standing order to execute
-        //    if (CurrentOrder.StandingOrder != null) {
-        //        D.LogBold(ShowDebugLog, "{0} returning to execution of standing order {1}.", DebugName, CurrentOrder.StandingOrder);
-
-        //        OrderSource standingOrderSource = CurrentOrder.StandingOrder.Source;
-        //        if (standingOrderSource < OrderSource.CmdStaff) {
-        //            D.Error("{0} StandingOrder {1} source can't be {2}.", DebugName, CurrentOrder.StandingOrder, standingOrderSource.GetValueName());
-        //        }
-
-        //        CurrentOrder = CurrentOrder.StandingOrder;
-        //        yield return null;
-        //        D.Error("{0} should never get here as CurrentOrder was changed to {1}.", DebugName, CurrentOrder);
-        //    }
-        //    //D.Log(ShowDebugLog, "{0} has completed {1} with no standing order queued.", DebugName, CurrentOrder);
-        //    CurrentOrder = null;
-        //}
         IsAvailable = true; // 10.3.16 this can instantly generate a new Order (and thus a state change). Accordingly,  this EnterState
                             // cannot return void as that causes the FSM to fail its 'no state change from void EnterState' test.
     }
@@ -436,6 +441,10 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void Idling_OnCollisionEnter(Collision collision) {
         __ReportCollision(collision);
+    }
+
+    void Idling_UponNewOrderReceived() {
+        LogEvent();
     }
 
     void Idling_UponDamageIncurred() {
@@ -476,15 +485,13 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     void ExecuteAttackOrder_UponPreconfigureState() {
         LogEvent();
 
-        if (_fsmTgt != null) {
-            D.Error("{0} _fsmTgt {1} should not already be assigned.", DebugName, _fsmTgt.DebugName);
-        }
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
-        D.Assert(CurrentOrder.ToNotifyCmd);
+        ValidateCommonNotCallableStateValues();
+        D.Assert(CurrentOrder.ToCallback);
         // The attack target acquired from the order. Should always be a Fleet
         IUnitAttackable unitAttackTgt = CurrentOrder.Target as IUnitAttackable;
         D.Assert(unitAttackTgt.IsOperational);
         D.Assert(unitAttackTgt.IsAttackByAllowed(Owner));
+
         _fsmTgt = unitAttackTgt as IElementNavigable;
     }
 
@@ -511,6 +518,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             // Command.HandleOrderOutcom(this, _fsmPrimaryAttackTgt, isSuccessful, failureCause);
             yield return null;
         }
+        _allowOrderFailureCallback = false;
+        AttemptOrderOutcomeCallback(isSuccessful: true);
         CurrentState = FacilityState.Idling;
     }
 
@@ -524,15 +533,17 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         __ReportCollision(collision);
     }
 
+    void ExecuteAttackOrder_UponNewOrderReceived() {
+        LogEvent();
+        if (_allowOrderFailureCallback) {
+            AttemptOrderOutcomeCallback(isSuccessful: false, failCause: FsmOrderFailureCause.NewOrderReceived);
+        }
+    }
+
     void ExecuteAttackOrder_UponDamageIncurred() {
         LogEvent();
         if (AssessNeedForRepair(GeneralSettings.Instance.HealthThreshold_BadlyDamaged)) {
-            if (CurrentOrder.ToNotifyCmd) {
-                Command.HandleOrderOutcome(BaseDirective.Attack, this, isSuccess: false, failCause: UnitItemOrderFailureCause.UnitItemNeedsRepair);
-                if (CurrentState != FacilityState.ExecuteAttackOrder) {
-                    D.Warn("{0}: Informing Cmd of OrderOutcome has resulted in an immediate state change to {1}.", DebugName, CurrentState.GetValueName());
-                }
-            }
+            AttemptOrderOutcomeCallback(isSuccessful: false, failCause: FsmOrderFailureCause.NeedsRepair);
             IssueCaptainsRepairOrder(retainSuperiorsOrder: false);
         }
     }
@@ -575,6 +586,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         //D.Assert(isUnsubscribed);
         _fsmPrimaryAttackTgt = null;
         _fsmTgt = null;
+        _allowOrderFailureCallback = true;
     }
 
     #endregion
@@ -582,6 +594,16 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     #region ExecuteRepairOrder
 
     #region ExecuteRepairOrder Support Members
+
+    private FsmReturnHandler CreateFsmReturnHandler_RepairingToRepair() {
+        IDictionary<FsmOrderFailureCause, Action> taskLookup = new Dictionary<FsmOrderFailureCause, Action>() {
+
+            {FsmOrderFailureCause.Death, () =>   { AttemptOrderOutcomeCallback(false, FsmOrderFailureCause.Death); }                                                 },
+            // NeedsRepair: Repairing won't respond with NeedsRepair while repairing
+            // TgtDeath: not subscribed
+        };
+        return new FsmReturnHandler(taskLookup, FacilityState.Repairing.GetValueName());
+    }
 
     /// <summary>
     /// Returns the recommended Repair Destination.
@@ -599,7 +621,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         return Command;
     }
 
-
     #endregion
 
     // 4.2.17 Repair at IFacilityRepairCapable (a base or future FormationStation)
@@ -607,12 +628,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     void ExecuteRepairOrder_UponPreconfigureState() {
         LogEvent();
 
-        if (_fsmTgt != null) {
-            D.Error("{0} _fsmTgt {1} should not already be assigned.", DebugName, _fsmTgt.DebugName);
-        }
+        ValidateCommonNotCallableStateValues();
         D.Assert(!_debugSettings.DisableRepair);
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
-
         D.AssertNull(CurrentOrder.Target);  // 4.3.17 For now as only current choices are this Facility's Cmd or the
                                             // Facility's future FormationStation which can both be chosen here
         var repairDest = DetermineRepairDest();
@@ -627,58 +644,30 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     IEnumerator ExecuteRepairOrder_EnterState() {
         LogEvent();
+        //D.Log(ShowDebugLog, "{0} is beginning repair. Frame: {1}.", DebugName, Time.frameCount);
 
-        var repairDest = _fsmTgt as IFacilityRepairCapable;
+        // 3.19.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
+        // I think it is because there is a rare scenario where no yield return is encountered. 
+        // See http://answers.unity3d.com/questions/158917/error-quotmcoroutineenumeratorgchandle-0quot.html
+        yield return null;
 
-        if (Data.Health == Constants.OneHundredPercent) {
-            D.Log(ShowDebugLog, "{0} is completely healthy and not in need of repair.", DebugName);
-            if (CurrentOrder.ToNotifyCmd) {
-                Command.HandleOrderOutcome(BaseDirective.Repair, this, isSuccess: true, target: repairDest);
-                if (CurrentState != FacilityState.ExecuteRepairOrder) {
-                    D.Warn("{0}: Informing Cmd of OrderOutcome has resulted in an immediate state change to {1}.", DebugName, CurrentState.GetValueName());
-                }
+        if (Data.Health < Constants.OneHundredPercent) {
+
+            var returnHandler = GetInactiveReturnHandlerFor(FacilityState.Repairing, CurrentState);
+            Call(FacilityState.Repairing);
+            yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
+                                //D.Log(ShowDebugLog, "{0}.ExecuteRepairOrder got a Return() from Call(Repairing) during Frame {1}.", DebugName, Time.frameCount);
+
+            if (!returnHandler.IsCallSuccessful) {
+                yield return null;
+                D.Error("Should not get here.");
             }
-            CurrentState = FacilityState.Idling;
-            yield return null;
+
+            // IMPROVE Can't assert OneHundredPercent as more hits can occur after repairing completed
         }
 
-        Call(FacilityState.Repairing);
-        yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
-
-        if (_orderFailureCause != UnitItemOrderFailureCause.None) {
-            if (CurrentOrder.ToNotifyCmd) {
-                Command.HandleOrderOutcome(BaseDirective.Repair, this, isSuccess: false, target: repairDest, failCause: _orderFailureCause);
-                if (CurrentState != FacilityState.ExecuteRepairOrder) {
-                    D.Warn("{0}: Informing Cmd of OrderOutcome has resulted in an immediate state change to {1}.", DebugName, CurrentState.GetValueName());
-                }
-            }
-            switch (_orderFailureCause) {
-                case UnitItemOrderFailureCause.UnitItemDeath:
-                    // Dead state will follow
-                    break;
-                case UnitItemOrderFailureCause.TgtRelationship:
-                case UnitItemOrderFailureCause.UnitItemNeedsRepair:
-                // Won't occur as Repairing will ignore in favor of Cmd handling or RepairInPlace won't care
-                case UnitItemOrderFailureCause.TgtDeath:
-                // Not subscribed
-                case UnitItemOrderFailureCause.TgtUncatchable:
-                case UnitItemOrderFailureCause.TgtUnreachable:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_orderFailureCause));
-            }
-            yield return null;
-        }
-
-        // If there was a failure generated by Repairing, resulting new Orders or Dead state should keep this point from being reached
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
-
-        if (CurrentOrder.ToNotifyCmd) {
-            Command.HandleOrderOutcome(BaseDirective.Repair, this, isSuccess: true, target: repairDest);
-            if (CurrentState != FacilityState.ExecuteRepairOrder) {
-                D.Warn("{0}: Informing Cmd of OrderOutcome has resulted in an immediate state change to {1}.", DebugName, CurrentState.GetValueName());
-            }
-        }
-
+        _allowOrderFailureCallback = false;
+        AttemptOrderOutcomeCallback(isSuccessful: true);
         CurrentState = FacilityState.Idling;
     }
 
@@ -690,6 +679,14 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void ExecuteRepairOrder_OnCollisionEnter(Collision collision) {
         __ReportCollision(collision);
+    }
+
+    void ExecuteRepairOrder_UponNewOrderReceived() {
+        LogEvent();
+        //D.Log(ShowDebugLog, "{0}.ExecuteRepairOrder_UponNewOrderRcvd. Frame: {1}.", DebugName, Time.frameCount);
+        if (_allowOrderFailureCallback) {
+            AttemptOrderOutcomeCallback(isSuccessful: false, failCause: FsmOrderFailureCause.NewOrderReceived);
+        }
     }
 
     void ExecuteRepairOrder_UponDamageIncurred() {
@@ -714,13 +711,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void ExecuteRepairOrder_UponDeath() {
         LogEvent();
-        if (CurrentOrder.ToNotifyCmd) {
-            var repairDest = _fsmTgt as IFacilityRepairCapable;
-            Command.HandleOrderOutcome(BaseDirective.Repair, this, isSuccess: false, target: repairDest, failCause: UnitItemOrderFailureCause.UnitItemDeath);
-            if (CurrentState != FacilityState.ExecuteRepairOrder) {
-                D.Warn("{0}: Informing Cmd of OrderOutcome has resulted in an immediate state change to {1}.", DebugName, CurrentState.GetValueName());
-            }
-        }
+        AttemptOrderOutcomeCallback(isSuccessful: false, failCause: FsmOrderFailureCause.Death);
     }
 
     void ExecuteRepairOrder_ExitState() {
@@ -732,8 +723,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         bool isUnsubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.OwnerChg, repairDest, toSubscribe: false);
         D.Assert(isUnsubscribed);
 
-        _orderFailureCause = UnitItemOrderFailureCause.None;
+        _activeFsmReturnHandlers.Clear();
         _fsmTgt = null;
+        _allowOrderFailureCallback = true;
     }
 
     #endregion
@@ -745,8 +737,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     void Repairing_UponPreconfigureState() {
         LogEvent();
 
-        D.AssertNotNull(_fsmTgt);
-        D.AssertDefault((int)_orderFailureCause, _orderFailureCause.GetValueName());
+        ValidateCommonCallableStateValues(CurrentState.GetValueName());
         D.Assert(!_debugSettings.DisableRepair);
         D.Assert(Data.Health < Constants.OneHundredPercent);
         D.AssertNotEqual(Constants.ZeroPercent, Data.Health);
@@ -756,7 +747,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         LogEvent();
 
         var repairDest = _fsmTgt as IFacilityRepairCapable;
-        D.Log(/*ShowDebugLog,*/ "{0} has begun repairs using {1}.", DebugName, repairDest.DebugName);
+        D.Log(ShowDebugLog, "{0} has begun repairs using {1}.", DebugName, repairDest.DebugName);
 
 
         // 3.19.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
@@ -786,9 +777,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         Data.ShieldGenerators.Where(gen => gen.IsDamageable).ForAll(gen => gen.IsDamaged = false);
         Data.Weapons.Where(w => w.IsDamageable).ForAll(w => w.IsDamaged = false);
         Data.Sensors.Where(s => s.IsDamageable).ForAll(s => s.IsDamaged = false);
-        ////if (IsHQ) {
-        ////    Command.Data.CurrentHitPoints = Command.Data.MaxHitPoints;  // HACK
-        ////}
         D.Log(ShowDebugLog, "{0}'s repair is complete. Health = {1:P01}.", DebugName, Data.Health);
 
         StopEffectSequence(EffectSequenceID.Repairing);
@@ -803,11 +791,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void Repairing_OnCollisionEnter(Collision collision) {
         __ReportCollision(collision);
-    }
-
-    void Repairing_UponNewOrderReceived() {
-        LogEvent();
-        Return();
     }
 
     void Repairing_UponDamageIncurred() {
@@ -829,7 +812,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void Repairing_UponDeath() {
         LogEvent();
-        _orderFailureCause = UnitItemOrderFailureCause.UnitItemDeath;
+        var returnHandler = GetCurrentCalledStateReturnHandler();
+        returnHandler.ReturnCause = FsmOrderFailureCause.Death;
         Return();
     }
 
@@ -906,6 +890,104 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     #endregion
 
     #region StateMachine Support Members
+
+    #region FsmReturnHandler and Callback System
+
+    /// <summary>
+    /// Lookup table for FsmReturnHandlers keyed by the state Call()ed and the state Return()ed too.
+    /// </summary>
+    private IDictionary<FacilityState, IDictionary<FacilityState, FsmReturnHandler>> _fsmReturnHandlerLookup
+        = new Dictionary<FacilityState, IDictionary<FacilityState, FsmReturnHandler>>();
+
+    /// <summary>
+    /// Returns the cleared FsmReturnHandler associated with the provided states, 
+    /// recording it onto the stack of _activeFsmReturnHandlers.
+    /// <remarks>This version is intended for initial use when about to Call() a CallableState.</remarks>
+    /// </summary>
+    /// <param name="calledState">The Call()ed state.</param>
+    /// <param name="returnedState">The state Return()ed too.</param>
+    /// <returns></returns>
+    private FsmReturnHandler GetInactiveReturnHandlerFor(FacilityState calledState, FacilityState returnedState) {
+        D.Assert(IsStateCalled(calledState));   // Can't validate returnedState as not Call()able due to nested Call()ed states
+        IDictionary<FacilityState, FsmReturnHandler> returnedStateLookup;
+        if (!_fsmReturnHandlerLookup.TryGetValue(calledState, out returnedStateLookup)) {
+            returnedStateLookup = new Dictionary<FacilityState, FsmReturnHandler>();
+            _fsmReturnHandlerLookup.Add(calledState, returnedStateLookup);
+        }
+
+        FsmReturnHandler handler;
+        if (!returnedStateLookup.TryGetValue(returnedState, out handler)) {
+            handler = CreateFsmReturnHandlerFor(calledState, returnedState);
+            returnedStateLookup.Add(returnedState, handler);
+        }
+        handler.Clear();
+        _activeFsmReturnHandlers.Push(handler);
+        return handler;
+    }
+
+    /// <summary>
+    /// Returns the uncleared and already recorded FsmReturnHandler associated with the provided states. 
+    /// <remarks>This version is intended for use in Return()ed states after the CallableState that it
+    /// was used to Call() has Return()ed to the state that Call()ed it.</remarks>
+    /// </summary>
+    /// <param name="calledState">The Call()ed state.</param>
+    /// <param name="returnedState">The state Return()ed too.</param>
+    /// <returns></returns>
+    private FsmReturnHandler GetActiveReturnHandlerFor(FacilityState calledState, FacilityState returnedState) {
+        D.Assert(IsStateCalled(calledState));   // Can't validate returnedState as not Call()able due to nested Call()ed states
+        IDictionary<FacilityState, FsmReturnHandler> returnedStateLookup;
+        if (!_fsmReturnHandlerLookup.TryGetValue(calledState, out returnedStateLookup)) {
+            returnedStateLookup = new Dictionary<FacilityState, FsmReturnHandler>();
+            _fsmReturnHandlerLookup.Add(calledState, returnedStateLookup);
+        }
+
+        FsmReturnHandler handler;
+        if (!returnedStateLookup.TryGetValue(returnedState, out handler)) {
+            handler = CreateFsmReturnHandlerFor(calledState, returnedState);
+            returnedStateLookup.Add(returnedState, handler);
+        }
+        return handler;
+    }
+
+
+    private FsmReturnHandler CreateFsmReturnHandlerFor(FacilityState calledState, FacilityState returnedState) {
+        D.Assert(IsStateCalled(calledState));
+        if (calledState == FacilityState.Repairing && returnedState == FacilityState.ExecuteRepairOrder) {
+            return CreateFsmReturnHandler_RepairingToRepair();
+        }
+        D.Error("{0}: No {1} found for CalledState {2} and ReturnedState {3}.",
+            DebugName, typeof(FsmReturnHandler).Name, calledState.GetValueName(), returnedState.GetValueName());
+        return null;
+    }
+
+    private void AttemptOrderOutcomeCallback(bool isSuccessful, FsmOrderFailureCause failCause = default(FsmOrderFailureCause)) {
+        D.AssertNotEqual(_allowOrderFailureCallback, isSuccessful, isSuccessful.ToString());
+        //D.Log(ShowDebugLog, "{0}.HandleOrderOutcomeResponseToCmd called. FailCause: {1}, Frame {2}.", DebugName, failCause.GetValueName(), Time.frameCount);
+        bool toNotifyCmd = _lastCmdOrderID != default(Guid);
+        if (toNotifyCmd) {
+            FacilityState stateBeforeNotification = CurrentState;
+            Command.HandleOrderOutcomeCallback(_lastCmdOrderID, this, isSuccessful, _fsmTgt, failCause);
+            if (CurrentState != stateBeforeNotification) {
+                D.Warn("{0}: Informing Cmd of OrderOutcome has resulted in an immediate state change from {1} to {2}.",
+                    DebugName, stateBeforeNotification.GetValueName(), CurrentState.GetValueName());
+            }
+        }
+    }
+
+    #endregion
+
+    protected override void ValidateCommonNotCallableStateValues() {
+        base.ValidateCommonNotCallableStateValues();
+        if (_fsmTgt != null) {
+            D.Error("{0} _fsmTgt {1} should not already be assigned.", DebugName, _fsmTgt.DebugName);
+        }
+    }
+
+    protected override void ValidateCommonCallableStateValues(string calledStateName) {
+        base.ValidateCommonCallableStateValues(calledStateName);
+        D.AssertNotNull(_fsmTgt);
+        D.Assert(_fsmTgt.IsOperational, _fsmTgt.DebugName);
+    }
 
     public override void HandleEffectSequenceFinished(EffectSequenceID effectSeqID) {
         base.HandleEffectSequenceFinished(effectSeqID);

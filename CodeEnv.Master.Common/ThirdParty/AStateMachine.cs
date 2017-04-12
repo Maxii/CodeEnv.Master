@@ -313,11 +313,8 @@ namespace CodeEnv.Master.Common {
                     mtd.Invoke(this, param);
             }
             else {
-                string parameters = string.Empty;
-                if (!param.IsNullOrEmpty()) {
-                    parameters = param.Concatenate();
-                }
-                D.Warn("{0} did not find Method with signature {1}({2}). Is it a private method in a base class?", GetType().Name, message, parameters);  // my addition
+                int paramCount = param.IsNullOrEmpty() ? Constants.Zero : param.Length;
+                D.Warn("{0} did not find Method with signature {1}(paramCount: {2}). Is it a private method in a base class?", GetType().Name, message, paramCount);  // my addition
             }
 
         }

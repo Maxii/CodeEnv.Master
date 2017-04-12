@@ -608,7 +608,10 @@ public class FleetNavigator : IDisposable {
     internal void WaitForFleetToAlign(Action fleetIsAlignedCallback, IShip ship) {
         //D.Log(ShowDebugLog, "{0} adding ship {1} to list waiting for fleet to align.", DebugName, ship.Name);
         if (__waitForFleetToAlignJobIsExecuting) {
-            D.Error("{0}: Attempt to add {1} during WaitForFleetToAlign Job execution.", DebugName, ship.DebugName);
+            // 4.7.17 Occurred when ship in Moving state RestartedState. Should be able to add while Job is running since
+            // removing while Job is running clearly works. UNCLEAR what happens if Job completes after removal but before 
+            // re-addition? Seems like it would start another Job to align.
+            D.Warn("{0}: Attempt to add {1} during WaitForFleetToAlign Job execution. Adding, albeit late.", DebugName, ship.DebugName);
         }
         _fleetIsAlignedCallbacks += fleetIsAlignedCallback;
         bool isAdded = _shipsWaitingForFleetAlignment.Add(ship);
@@ -651,7 +654,12 @@ public class FleetNavigator : IDisposable {
         bool isInformedOfDateLogging = false;
         bool isInformedOfDateWarning = false;
         bool isInformedOfDateError = false;
-        float lowestShipTurnrate = _fleet.Elements.Select(e => e.Data).Cast<ShipData>().Min(sd => sd.MaxTurnRate);
+        // 4.7.17 Changed to use only ships waiting as those are the ships that are attempting to align. There is a case
+        // where a ship can miss out on the alignment (due to RestartState) then add itself back in after alignment is complete.
+        // In this case, the late ship will align, then depart, albeit a bit behind the rest of the fleet. In that case, the
+        // lowestShipTurnrate should be from only those ships attempting to align.
+        ////float lowestShipTurnrate = _fleet.Elements.Select(e => e.Data).Cast<ShipData>().Min(sd => sd.MaxTurnRate);
+        float lowestShipTurnrate = _shipsWaitingForFleetAlignment.Min(s => s.MaxTurnRate);
         GameDate logDate = CodeEnv.Master.GameContent.DebugUtility.CalcWarningDateForRotation(lowestShipTurnrate);
         GameDate warnDate = default(GameDate);
         GameDate errorDate = default(GameDate);

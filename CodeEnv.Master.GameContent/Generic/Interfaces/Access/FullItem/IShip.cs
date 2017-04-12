@@ -32,6 +32,8 @@ namespace CodeEnv.Master.GameContent {
 
         bool IsTurning { get; }
 
+        float MaxTurnRate { get; }
+
         float ActualSpeedValue { get; }
 
         float CollisionDetectionZoneRadius { get; }
