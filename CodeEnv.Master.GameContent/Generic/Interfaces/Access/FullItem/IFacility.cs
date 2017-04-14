@@ -21,6 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IFacility : IUnitElement {
 
+        FacilityOrder CurrentOrder { get; }
     }
 }
 

@@ -168,15 +168,18 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     public override void FinalInitialize() {
         base.FinalInitialize();
-        InitializeMonitorRanges();
+        InitializeRangeMonitors();
         __InitializeFinalRigidbodySettings();
     }
 
     protected abstract void __InitializeFinalRigidbodySettings();
 
-    private void InitializeMonitorRanges() {
+    private void InitializeRangeMonitors() {
         CountermeasureRangeMonitors.ForAll(crm => crm.InitializeRangeDistance());
-        WeaponRangeMonitors.ForAll(wrm => wrm.InitializeRangeDistance());
+        WeaponRangeMonitors.ForAll(wrm => {
+            wrm.InitializeRangeDistance();
+            wrm.ToEngageColdWarEnemies = OwnerAIMgr.IsPolicyToEngageColdWarEnemies;
+        });
         Shields.ForAll(srm => srm.InitializeRangeDistance());
         SRSensorMonitor.InitializeRangeDistance();
     }
@@ -219,6 +222,11 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// occurs even if operational which of course will have to be improved.</remarks>
     /// </summary>
     public abstract void __HandleLocalPositionManuallyChanged();
+
+    internal void HandleColdWarEnemyEngagementPolicyChanged() {
+        bool toEngageColdWarEnemies = OwnerAIMgr.IsPolicyToEngageColdWarEnemies;
+        WeaponRangeMonitors.ForAll(wrm => wrm.ToEngageColdWarEnemies = toEngageColdWarEnemies);
+    }
 
     protected override void PrepareForDeathNotification() {
         base.PrepareForDeathNotification();
@@ -370,7 +378,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         var target = firingSolution.EnemyTarget;
         var losWeapon = firingSolution.Weapon;
         D.Assert(losWeapon.IsOperational);  // weapon should not have completed aiming if it lost operation
-        if (target.IsOperational && target.IsAttackByAllowed(Owner) && losWeapon.ConfirmInRangeForLaunch(target)) {
+        if (target.IsOperational && target.IsAttackAllowedBy(Owner) && losWeapon.ConfirmInRangeForLaunch(target)) {
             LaunchOrdnance(losWeapon, target);
         }
         else {
@@ -674,6 +682,22 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     private void HandleFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) {
         UponFsmTgtOwnerChgd(fsmTgt);
     }
+
+    #endregion
+
+    #region Orders Support Members
+
+    /// <summary>
+    /// Cancels the CurrentOrder unless its an override order from the Captain. Returns <c>true</c>
+    /// if there was no CurrentOrder or the CurrentOrder was canceled, <c>false</c> if the CurrentOrder was not canceled
+    /// due to it being issued by the Captain.
+    /// <remarks>Sets CurrentOrder to null and initiates Idling state.</remarks>
+    /// <remarks>If CurrentOrder is from the Captain, then StandingOrder within the
+    /// Captain's Order is canceled (nulled) as it is, by definition, from the Captain's Superior.
+    /// </remarks>
+    /// </summary>
+    /// <returns></returns>
+    internal abstract bool CancelSuperiorsOrder();
 
     #endregion
 

@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// The AI Manager for each player.
     /// </summary>
-    public class PlayerAIManager : IDisposable {
+    public class PlayerAIManager : APropertyChangeTracking, IDisposable {
 
         private const string DebugNameFormat = "{0}'s {1}";
 
@@ -50,6 +50,16 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public bool IsOperational { get; private set; }
+
+        private bool _isPolicyToEngageColdWarEnemies = false;
+        /// <summary>
+        /// Indicates whether policy is to engage qualified ColdWarEnemy targets.
+        /// <remarks>A ColdWarEnemy target is qualified if it is located in our territory.</remarks>
+        /// </summary>
+        public bool IsPolicyToEngageColdWarEnemies {
+            get { return _isPolicyToEngageColdWarEnemies; }
+            set { SetProperty<bool>(ref _isPolicyToEngageColdWarEnemies, value, "IsPolicyToEngageColdWarEnemies", IsPolicyToEngageColdWarEnemiesChangedHandler); }
+        }
 
         public PlayerKnowledge Knowledge { get; private set; }
 
@@ -348,7 +358,11 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        #region Event and Property Change Event Handlers
+        #region Event and Property Change Handlers
+
+        private void IsPolicyToEngageColdWarEnemiesChangedHandler() {
+            Knowledge.OwnerCommands.ForAll(cmd => cmd.HandleColdWarEnemyEngagementPolicyChanged());
+        }
 
         private void OnAwarenessOfFleetChanged(IFleetCmd_Ltd fleet, bool isAware) {
             if (awarenessOfFleetChanged != null) {
@@ -528,8 +542,12 @@ namespace CodeEnv.Master.GameContent {
                 }
                 if (closestFleet != null) {
                     D.Log("{0} is issuing an order to {1} to Join {2}.", DebugName, fleetCmd.DebugName, closestFleet.DebugName);
-                    FleetOrder joinFleetOrder = new FleetOrder(FleetDirective.Join, OrderSource.PlayerAI, closestFleet);
-                    fleetCmd.CurrentOrder = joinFleetOrder;
+                    FleetOrder order = new FleetOrder(FleetDirective.Join, OrderSource.PlayerAI, closestFleet);
+                    bool isOrderInitiated = fleetCmd.InitiateNewOrder(order);
+                    if (!isOrderInitiated) {
+                        D.Warn("{0} was unable to immediately initiate {1} due to CmdStaff's Override order {2}.",
+                            DebugName, order.DebugName, fleetCmd.CurrentOrder.DebugName);
+                    }
                     return;
                 }
             }
@@ -667,9 +685,9 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="findFarthestTgt">if set to <c>true</c> [find farthest target].</param>
         /// <returns></returns>
         private bool __IssueFleetAttackOrder(IFleetCmd fleetCmd, bool findFarthestTgt) {
-            List<IUnitAttackable> attackTgts = Knowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsWarAttackByAllowed(Owner)).ToList();
-            attackTgts.AddRange(Knowledge.Starbases.Cast<IUnitAttackable>().Where(sb => sb.IsWarAttackByAllowed(Owner)));
-            attackTgts.AddRange(Knowledge.Settlements.Cast<IUnitAttackable>().Where(s => s.IsWarAttackByAllowed(Owner)));
+            List<IUnitAttackable> attackTgts = Knowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsWarAttackAllowedBy(Owner)).ToList();
+            attackTgts.AddRange(Knowledge.Starbases.Cast<IUnitAttackable>().Where(sb => sb.IsWarAttackAllowedBy(Owner)));
+            attackTgts.AddRange(Knowledge.Settlements.Cast<IUnitAttackable>().Where(s => s.IsWarAttackAllowedBy(Owner)));
             ////attackTgts.AddRange(Knowledge.Planets.Cast<IUnitAttackable>().Where(p => p.IsWarAttackByAllowed(Owner)));
             if (!attackTgts.Any()) {
                 return false;
@@ -683,7 +701,12 @@ namespace CodeEnv.Master.GameContent {
             }
             D.LogBold("{0} is issuing {1} an ATTACK order against {2} in Frame {3}. FPS = {4:0.#}.",
                 DebugName, fleetCmd.DebugName, attackTgt.DebugName, Time.frameCount, _fpsReadout.FramesPerSecond);
-            fleetCmd.CurrentOrder = new FleetOrder(FleetDirective.Attack, OrderSource.PlayerAI, attackTgt);
+            FleetOrder order = new FleetOrder(FleetDirective.Attack, OrderSource.PlayerAI, attackTgt);
+            bool isOrderInitiated = fleetCmd.InitiateNewOrder(order);
+            if (!isOrderInitiated) {
+                D.Warn("{0} was unable to immediately initiate {1} due to CmdStaff's Override order {2}.",
+                    DebugName, order.DebugName, fleetCmd.CurrentOrder.DebugName);
+            }
             return true;
         }
 
@@ -716,7 +739,12 @@ namespace CodeEnv.Master.GameContent {
             }
             D.Log("{0} is issuing {1} a MOVE order to {2} in Frame {3}. FPS = {4:0.#}.",
                 DebugName, fleetCmd.DebugName, destination.DebugName, Time.frameCount, _fpsReadout.FramesPerSecond);
-            fleetCmd.CurrentOrder = new FleetOrder(FleetDirective.Move, OrderSource.PlayerAI, destination);
+            var order = new FleetOrder(FleetDirective.Move, OrderSource.PlayerAI, destination);
+            bool isOrderInitiated = fleetCmd.InitiateNewOrder(order);
+            if (!isOrderInitiated) {
+                D.Warn("{0} was unable to immediately initiate {1} due to CmdStaff's Override order {2}.",
+                    DebugName, order.DebugName, fleetCmd.CurrentOrder.DebugName);
+            }
             return true;
         }
 
@@ -731,12 +759,22 @@ namespace CodeEnv.Master.GameContent {
                 var closestUnexploredSystem = explorableUnexploredSystems.MinBy(sys => Vector3.SqrMagnitude(fleetCmd.Position - sys.Position));
                 D.Log("{0} is issuing {1} an EXPLORE order to {2} in Frame {3}. FPS = {4:0.#}. IsOwnerAccessible = {5}.",
                     DebugName, fleetCmd.DebugName, closestUnexploredSystem.DebugName, Time.frameCount, _fpsReadout.FramesPerSecond, closestUnexploredSystem.IsOwnerAccessibleTo(Owner));
-                fleetCmd.CurrentOrder = new FleetOrder(FleetDirective.Explore, OrderSource.PlayerAI, closestUnexploredSystem);
+                var order = new FleetOrder(FleetDirective.Explore, OrderSource.PlayerAI, closestUnexploredSystem);
+                bool isOrderInitiated = fleetCmd.InitiateNewOrder(order);
+                if (!isOrderInitiated) {
+                    D.Warn("{0} was unable to immediately initiate {1} due to CmdStaff's Override order {2}.",
+                        DebugName, order.DebugName, fleetCmd.CurrentOrder.DebugName);
+                }
             }
             else {
                 IFleetExplorable uCenter = Knowledge.UniverseCenter as IFleetExplorable;
                 if (!uCenter.IsFullyExploredBy(Owner)) {
-                    fleetCmd.CurrentOrder = new FleetOrder(FleetDirective.Explore, OrderSource.PlayerAI, uCenter);
+                    var order = new FleetOrder(FleetDirective.Explore, OrderSource.PlayerAI, uCenter);
+                    bool isOrderInitiated = fleetCmd.InitiateNewOrder(order);
+                    if (!isOrderInitiated) {
+                        D.Warn("{0} was unable to immediately initiate {1} due to CmdStaff's Override order {2}.",
+                            DebugName, order.DebugName, fleetCmd.CurrentOrder.DebugName);
+                    }
                 }
                 else {
                     D.LogBold("{0}: Fleet {1} has completed {2}'s exploration of explorable universe.",
@@ -759,7 +797,12 @@ namespace CodeEnv.Master.GameContent {
                 var closestVisitableBase = visitableUnvisitedBases.MinBy(vBase => Vector3.SqrMagnitude(fleetCmd.Position - vBase.Position));
                 D.Log("{0} is issuing {1} a MOVE order to {2} in Frame {3}. FPS = {4:0.#}.",
                     DebugName, fleetCmd.DebugName, closestVisitableBase.DebugName, Time.frameCount, _fpsReadout.FramesPerSecond);
-                fleetCmd.CurrentOrder = new FleetOrder(FleetDirective.Move, OrderSource.PlayerAI, closestVisitableBase as IFleetNavigable);
+                var order = new FleetOrder(FleetDirective.Move, OrderSource.PlayerAI, closestVisitableBase as IFleetNavigable);
+                bool isOrderInitiated = fleetCmd.InitiateNewOrder(order);
+                if (!isOrderInitiated) {
+                    D.Warn("{0} was unable to immediately initiate {1} due to CmdStaff's Override order {2}.",
+                        DebugName, order.DebugName, fleetCmd.CurrentOrder.DebugName);
+                }
             }
             else {
                 D.LogBold("{0}: Fleet {1} has completed {2}'s visits to all visitable unvisited bases in known universe.",

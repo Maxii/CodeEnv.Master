@@ -71,7 +71,7 @@ namespace CodeEnv.Master.GameContent {
         /// a check to see if any active ordnance is currently targeted on a non-enemy.
         /// </summary>
         public override void CheckActiveOrdnanceTargeting() {
-            var ordnanceTargetingNonAttackableTgts = _activeFiredOrdnance.Where(ord => !ord.Target.IsAttackByAllowed(Owner));
+            var ordnanceTargetingNonAttackableTgts = _activeFiredOrdnance.Where(ord => !ord.Target.IsAttackAllowedBy(Owner));
             if (ordnanceTargetingNonAttackableTgts.Any()) {
                 ordnanceTargetingNonAttackableTgts.ForAll(ord => ord.Terminate());
             }

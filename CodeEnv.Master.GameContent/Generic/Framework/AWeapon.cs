@@ -184,8 +184,8 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="enemyTarget">The enemy target.</param>
         /// <param name="isInRange">if set to <c>true</c> [is in range].</param>
-        public void HandleEnemyTargetInRangeChanged(IElementAttackable enemyTarget, bool isInRange) {
-            //D.Log(ShowDebugLog, "{0} received HandleEnemyTargetInRangeChanged. EnemyTarget: {1}, InRange: {2}.", DebugName, enemyTarget.DebugName, isInRange);
+        public void HandleAttackableEnemyTargetInRangeChanged(IElementAttackable enemyTarget, bool isInRange) {
+            //D.Log(ShowDebugLog, "{0} received HandleAttackableEnemyTargetInRangeChanged. EnemyTarget: {1}, InRange: {2}.", DebugName, enemyTarget.DebugName, isInRange);
             if (isInRange) {
                 if (IsQualifiedEnemyTarget(enemyTarget)) {
                     bool isAdded = _qualifiedEnemyTargets.Add(enemyTarget);
@@ -367,7 +367,12 @@ namespace CodeEnv.Master.GameContent {
         protected abstract void RemoveFiredOrdnanceFromRecord(IOrdnance terminatedOrdnance);
 
         private bool IsQualifiedEnemyTarget(IElementAttackable enemyTarget) {
-            return true;    // UNDONE
+            // 4.12.17 Handles case where 'InRange' enemy targets provided by the WeaponRangeMonitor include ColdWarEnemies.
+            // ColdWarEnemy targets would only be included if policy is to allow engagement, and they are in range.
+            // However, ColdWarEnemy targets can only be attacked when they are located in Owner's territory. Policy can
+            // allow them to be engaged, and they can be in range, but that doesn't mean they are in our territory.
+            // WarEnemies can be attacked anywhere. IsAttackAllowedBy incorporates the location of the Item.
+            return enemyTarget.IsAttackAllowedBy(Owner);
         }
 
         private void InitiateReloadProcess() {

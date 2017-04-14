@@ -107,7 +107,9 @@ public class PlanetoidCtxControl : ACtxControl {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
         IFleetNavigable target = _planetoidMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
-        remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target);
+        var order = new FleetOrder(directive, OrderSource.User, target);
+        bool isOrderInitiated = remoteFleet.InitiateNewOrder(order);
+        D.Assert(isOrderInitiated);
     }
 
     private void __TellPlanetoidToDie() {

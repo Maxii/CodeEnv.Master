@@ -122,7 +122,8 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
         bool isTarget = _unitTargetLookup.TryGetValue(itemID, out target);
         string msg = isTarget ? target.DebugName : "[none]";
         D.Log("{0} selected directive {1} and target {2} from context menu.", _shipMenuOperator.DebugName, directive.GetValueName(), msg);
-        _shipMenuOperator.CurrentOrder = new ShipOrder(directive, OrderSource.User, target: target as IShipNavigable);
+        bool isOrderInitiated = _shipMenuOperator.InitiateNewOrder(new ShipOrder(directive, OrderSource.User, target: target as IShipNavigable));
+        D.Assert(isOrderInitiated);
     }
 
     public override string ToString() {

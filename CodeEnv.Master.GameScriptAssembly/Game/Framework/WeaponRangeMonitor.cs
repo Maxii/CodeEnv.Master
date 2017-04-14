@@ -38,10 +38,12 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementBlastable, AWe
     private bool _toEngageColdWarEnemies = false;
     /// <summary>
     /// Controls whether WeaponRangeMonitors will track and present ColdWar enemies to weapons as acceptable targets.
+    /// <remarks>This does not mean weapons will always fire on ColdWarEnemies, as they are only qualified targets
+    /// if they are located within our territory.</remarks>
     /// </summary>
     public bool ToEngageColdWarEnemies {
         get { return _toEngageColdWarEnemies; }
-        set { SetProperty<bool>(ref _toEngageColdWarEnemies, value, "ToEngageColdWarEnemies", ToEngageColdWarEnemiesPropChangedHandler); }
+        set { SetProperty<bool>(ref _toEngageColdWarEnemies, value, "ToEngageColdWarEnemies", ToEngageColdWarEnemiesChangedHandler); }
     }
 
     public new IUnitElement ParentItem {
@@ -83,7 +85,7 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementBlastable, AWe
         Profiler.EndSample();
 
         AssessKnowledgeOfItemAndAdjustRecord(newlyDetectedItem);
-        HandleWeaponsNotification(newlyDetectedItem, wasItemPreviouslyCategorizedAsEnemy: false);
+        HandleWeaponsNotification(newlyDetectedItem, wasItemPreviouslyCategorizedAsAttackableEnemy: false);
     }
 
     protected override void HandleDetectedObjectRemoved(IElementBlastable lostDetectionItem) {
@@ -95,31 +97,31 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementBlastable, AWe
         lostDetectionItem.infoAccessChgd -= DetectedItemInfoAccessChangedEventHandler;
         Profiler.EndSample();
 
-        bool wasItemPreviouslyCategorizedAsEnemy = _attackableEnemyTargetsDetected.Contains(lostDetectionItem);
+        bool wasItemPreviouslyCategorizedAsAttackableEnemy = _attackableEnemyTargetsDetected.Contains(lostDetectionItem);
         RemoveRecord(lostDetectionItem);
 
-        HandleWeaponsNotification(lostDetectionItem, wasItemPreviouslyCategorizedAsEnemy);
+        HandleWeaponsNotification(lostDetectionItem, wasItemPreviouslyCategorizedAsAttackableEnemy);
     }
 
     /// <summary>
     /// If needed, notifies all weapons of any change in the 'in range' status of the detectedItem.
     /// </summary>
     /// <param name="detectedItem">The detected item.</param>
-    /// <param name="wasItemPreviouslyCategorizedAsEnemy">if set to <c>true</c> [was item previously categorized as enemy].</param>
-    private void HandleWeaponsNotification(IElementBlastable detectedItem, bool wasItemPreviouslyCategorizedAsEnemy) {
-        if (wasItemPreviouslyCategorizedAsEnemy && !_attackableEnemyTargetsDetected.Contains(detectedItem)) {
+    /// <param name="wasItemPreviouslyCategorizedAsAttackableEnemy">if set to <c>true</c> [was item previously categorized as attackable enemy].</param>
+    private void HandleWeaponsNotification(IElementBlastable detectedItem, bool wasItemPreviouslyCategorizedAsAttackableEnemy) {
+        if (wasItemPreviouslyCategorizedAsAttackableEnemy && !_attackableEnemyTargetsDetected.Contains(detectedItem)) {
             // categorization changed from enemy to non-enemy (unknown or not enemy)
-            NotifyWeaponsOfEnemyTargetNotInRange(detectedItem);
+            NotifyWeaponsOfAttackableEnemyTargetNotInRange(detectedItem);
         }
-        else if (!wasItemPreviouslyCategorizedAsEnemy && _attackableEnemyTargetsDetected.Contains(detectedItem)) {
+        else if (!wasItemPreviouslyCategorizedAsAttackableEnemy && _attackableEnemyTargetsDetected.Contains(detectedItem)) {
             // categorization changed from non-enemy (or no categorization) to enemy
-            NotifyWeaponsOfEnemyTargetInRange(detectedItem);
+            NotifyWeaponsOfAttackableEnemyTargetInRange(detectedItem);
         }
     }
 
     #region Event and Property Change Handlers
 
-    private void ToEngageColdWarEnemiesPropChangedHandler() {
+    private void ToEngageColdWarEnemiesChangedHandler() {
         ReviewKnowledgeOfAllDetectedObjects();
     }
 
@@ -193,7 +195,7 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementBlastable, AWe
     #endregion
 
     /// <summary>
-    /// Notifies all weapons of an enemy target now in range.
+    /// Notifies all weapons of an attackable enemy target now in range.
     /// <remarks>Enemies become in range under 3 circumstances. 1) by movement of either the enemy or
     /// this item, 2) if the enemy is first created within range, and 3) when a non-enemy becomes the enemy. 
     /// Changing from being a non-enemy to being the enemy can happen a number of ways including 
@@ -202,13 +204,13 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementBlastable, AWe
     /// accessible thus potentially turning it into an enemy target.</remarks>
     /// </summary>
     /// <param name="enemyTgt">The enemy target that is now in range.</param>
-    private void NotifyWeaponsOfEnemyTargetInRange(IElementBlastable enemyTgt) {
+    private void NotifyWeaponsOfAttackableEnemyTargetInRange(IElementBlastable enemyTgt) {
         foreach (var weap in _equipmentList) {
             // GOTCHA!! As each Weapon receives this inRange notice, it can attack and destroy the target
             // before the next EnemyTargetInRange notice is sent to the next Weapon. 
             // As a result, IsOperational must be checked after each notice.
             if (enemyTgt.IsOperational) {
-                weap.HandleEnemyTargetInRangeChanged(enemyTgt, isInRange: true);
+                weap.HandleAttackableEnemyTargetInRangeChanged(enemyTgt, isInRange: true);
             }
         }
     }
@@ -223,9 +225,9 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementBlastable, AWe
     /// inaccessible thus turning it into an unknown target.</remarks>
     /// </summary>
     /// <param name="enemyTgt">The previous enemy target that was in range.</param>
-    private void NotifyWeaponsOfEnemyTargetNotInRange(IElementBlastable enemyTgt) {
+    private void NotifyWeaponsOfAttackableEnemyTargetNotInRange(IElementBlastable enemyTgt) {
         foreach (var weap in _equipmentList) {
-            weap.HandleEnemyTargetInRangeChanged(enemyTgt, isInRange: false);
+            weap.HandleAttackableEnemyTargetInRangeChanged(enemyTgt, isInRange: false);
         }
     }
 
@@ -234,7 +236,7 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementBlastable, AWe
     /// making sure each object is in the right container, if any.
     /// </summary>
     protected override void ReviewKnowledgeOfAllDetectedObjects() {
-        // record previous categorization state before clearing and re-categorizing
+        // record previous categorization state before clearing and re-categorizing      // OPTIMIZE new Dictionary
         IDictionary<IElementBlastable, bool> wasItemPreviouslyCategorizedAsEnemyLookup = new Dictionary<IElementBlastable, bool>(_objectsDetected.Count);
         foreach (var objectDetected in _objectsDetected) {
             IElementBlastable detectedItem = objectDetected as IElementBlastable;

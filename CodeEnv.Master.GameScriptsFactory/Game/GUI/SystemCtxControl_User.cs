@@ -121,7 +121,7 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
         switch (directive) {
             case BaseDirective.Attack:
                 // TODO: incorporate distance from settlement
-                targets = _userKnowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsWarAttackByAllowed(_user)).Cast<INavigable>();
+                targets = _userKnowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsWarAttackAllowedBy(_user)).Cast<INavigable>();
                 return true;
             case BaseDirective.Repair:
             case BaseDirective.Refit:
@@ -187,7 +187,9 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
         bool isTarget = _unitTargetLookup.TryGetValue(itemID, out target);
         string msg = isTarget ? target.DebugName : "[none]";
         D.Log("{0} selected directive {1} and target {2} from context menu.", _systemMenuOperator.DebugName, directive.GetValueName(), msg);
-        _settlement.CurrentOrder = new BaseOrder(directive, OrderSource.User, target as IUnitAttackable);
+        var order = new BaseOrder(directive, OrderSource.User, target as IUnitAttackable);
+        bool isOrderInitiated = _settlement.InitiateNewOrder(order);
+        D.Assert(isOrderInitiated);
     }
 
     private void IssueRemoteUserFleetOrder(int itemID) {
@@ -197,14 +199,17 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
             target = _settlement;
         }
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
-        remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target);
+        var order = new FleetOrder(directive, OrderSource.User, target);
+        bool isOrderInitiated = remoteFleet.InitiateNewOrder(order);
+        D.Assert(isOrderInitiated);
     }
 
     private void IssueRemoteUserShipOrder(int itemID) {
         var directive = (ShipDirective)_directiveLookup[itemID];
         D.AssertEqual(ShipDirective.Disband, directive);   // HACK
         var remoteShip = _remoteUserOwnedSelectedItem as ShipItem;
-        remoteShip.CurrentOrder = new ShipOrder(directive, OrderSource.User, target: _settlement);
+        bool isOrderInitiated = remoteShip.InitiateNewOrder(new ShipOrder(directive, OrderSource.User, target: _settlement));
+        D.Assert(isOrderInitiated);
     }
 
     public override string ToString() {

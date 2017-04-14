@@ -21,6 +21,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IUnitBaseCmd : IUnitCmd {
 
+        BaseOrder CurrentOrder { get; }
+
     }
 }
 

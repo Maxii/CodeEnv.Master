@@ -26,6 +26,8 @@ namespace CodeEnv.Master.GameContent {
 
         new IFleetCmd Command { get; }
 
+        ShipOrder CurrentOrder { get; }
+
         Vector3 CurrentHeading { get; }
 
         ShipCombatStance CombatStance { get; }

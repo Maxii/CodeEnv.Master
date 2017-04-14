@@ -107,13 +107,14 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new instance of the <see cref="ShipHelm" /> class.
         /// </summary>
         /// <param name="ship">The ship.</param>
-        /// <param name="shipRigidbody">The ship rigidbody.</param>
+        /// <param name="shipData">The ship data.</param>
+        /// <param name="shipTransform">The ship transform.</param>
+        /// <param name="engineRoom">The engine room.</param>
         public ShipHelm(IShip ship, ShipData shipData, Transform shipTransform, EngineRoom engineRoom) {
             ApCourse = new List<IShipNavigable>();
             _gameMgr = GameReferences.GameManager;
             _gameTime = GameTime.Instance;
             _jobMgr = GameReferences.JobManager;
-
             _autoPilot = new AutoPilot(this, engineRoom, ship, shipTransform);
             _ship = ship;
             _shipData = shipData;

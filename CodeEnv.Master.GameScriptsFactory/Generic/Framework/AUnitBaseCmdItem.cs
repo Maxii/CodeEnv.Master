@@ -46,8 +46,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     private BaseOrder _currentOrder;
     public BaseOrder CurrentOrder {
-        private get { return _currentOrder; }
-        set { SetProperty<BaseOrder>(ref _currentOrder, value, "CurrentOrder", CurrentOrderPropChangedHandler); }
+        get { return _currentOrder; }
+        private set { SetProperty<BaseOrder>(ref _currentOrder, value, "CurrentOrder", CurrentOrderPropChangedHandler); }
     }
 
     public new AUnitBaseCmdData Data {
@@ -198,7 +198,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     /// <param name="orderSource">The order source.</param>
     private void ScuttleUnit(OrderSource orderSource) {
         var elementScuttleOrder = new FacilityOrder(FacilityDirective.Scuttle, orderSource);
-        Elements.ForAll(e => (e as FacilityItem).CurrentOrder = elementScuttleOrder);
+        Elements.ForAll(e => (e as FacilityItem).InitiateNewOrder(elementScuttleOrder));
     }
 
     protected abstract void ConnectHighOrbitRigidbodyToShipOrbitJoint(FixedJoint shipOrbitJoint);
@@ -214,6 +214,28 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     #endregion
 
     #region Orders
+
+    /// <summary>
+    /// Attempts to initiate the immediate execution of the provided order, returning <c>true</c>
+    /// if its execution was initiated, <c>false</c> if its execution was deferred until all of the 
+    /// override orders issued by the CmdStaff have executed. 
+    /// <remarks>If order.Source is User, even the CmdStaff's orders will be overridden, returning <c>true</c>.</remarks>
+    /// </summary>
+    /// <param name="order">The order.</param>
+    /// <returns></returns>
+    public bool InitiateNewOrder(BaseOrder order) {
+        D.Assert(order.Source > OrderSource.CmdStaff);
+        if (CurrentOrder != null) {
+            if (order.Source != OrderSource.User) {
+                if (CurrentOrder.Source == OrderSource.CmdStaff) {
+                    CurrentOrder.StandingOrder = order;
+                    return false;
+                }
+            }
+        }
+        CurrentOrder = order;
+        return true;
+    }
 
     public bool IsCurrentOrderDirectiveAnyOf(BaseDirective directiveA) {
         return CurrentOrder != null && CurrentOrder.Directive == directiveA;
@@ -255,14 +277,16 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     }
 
     private void HandleNewOrder() {
+        // 4.13.17 Must get out of Call()ed states even if new order is null as only a non-Call()ed state's 
+        // ExitState method properly resets all the conditions for entering another state, aka Idling.
+        while (IsCurrentStateCalled) {
+            // 4.9.17 Removed UponNewOrderReceived for Call()ed states as any ReturnCause they provide will never
+            // be processed as the new order will change the state before the yield return null allows the processing
+            Return();
+        }
+        D.Assert(!IsCurrentStateCalled);
+
         if (CurrentOrder != null) {
-            // Pattern that handles Call()ed states that goes more than one layer deep
-            while (IsCurrentStateCalled) {
-                // 4.9.17 Removed UponNewOrderReceived for Call()ed states as any ReturnCause they provide will never
-                // be processed as the new order will change the state before the yield return null allows the processing
-                Return();
-            }
-            D.Assert(!IsCurrentStateCalled);
             D.Assert(CurrentOrder.Source > OrderSource.Captain);
 
             UponNewOrderReceived();
@@ -329,9 +353,12 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     /// execution of the state Return()ed too, aka the new CurrentState.
     /// </summary>
     private void RestartState() {
+        var stateWhenCalled = CurrentState;
         while (IsCurrentStateCalled) {
             Return();
         }
+        D.LogBold(/*ShowDebugLog, */"{0}.RestartState called from {1}.{2}. RestartedState = {3}.",
+            DebugName, typeof(BaseState).Name, stateWhenCalled.GetValueName(), CurrentState.GetValueName());
         CurrentState = CurrentState;
     }
 
@@ -482,7 +509,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
         IUnitAttackable unitAttackTgt = _fsmTgt;
         var elementAttackOrder = new FacilityOrder(FacilityDirective.Attack, CurrentOrder.Source, CurrentOrder.OrderID, target: unitAttackTgt as IElementNavigable);
-        Elements.ForAll(e => (e as FacilityItem).CurrentOrder = elementAttackOrder);
+        Elements.ForAll(e => (e as FacilityItem).InitiateNewOrder(elementAttackOrder));
     }
 
     protected void ExecuteAttackOrder_UponOrderOutcomeCallback(FacilityItem facility, bool isSuccess, IElementNavigable target, FsmOrderFailureCause failCause) {
@@ -563,6 +590,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         D.Assert(isUnsubscribed);
 
         _fsmTgt = null;
+        CancelElementOrders();
     }
 
     #endregion
@@ -573,8 +601,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     private FsmReturnHandler CreateFsmReturnHandler_RepairingToRepair() {
         IDictionary<FsmOrderFailureCause, Action> taskLookup = new Dictionary<FsmOrderFailureCause, Action>() {
-
-            {FsmOrderFailureCause.Death, () =>               { }                            },
+            // Death: Dead state becomes CurrentState before ReturnHandler can process the Return
             // NeedsRepair won't occur as Repairing won't signal need for repair while repairing
             // TgtDeath not subscribed
         };
@@ -672,6 +699,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
         _activeFsmReturnHandlers.Clear();
         _fsmTgt = null;
+        CancelElementOrders();
     }
 
     #endregion
@@ -709,7 +737,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         // 4.3.17 Facilities will choose their own repairDestination, either thisRepairCapableBase or their future FormationStation
         // 4.8.17 By assigning the CmdOrderID, this Cmd is indicating it expects a response containing the outcome of the order's execution.
         FacilityOrder facilityRepairOrder = new FacilityOrder(FacilityDirective.Repair, OrderSource.CmdStaff, CurrentOrder.OrderID);
-        Elements.ForAll(e => (e as FacilityItem).CurrentOrder = facilityRepairOrder);
+        Elements.ForAll(e => (e as FacilityItem).InitiateNewOrder(facilityRepairOrder));
 
         // 3.19.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
         // I think it is because there is a rare scenario where no yield return is encountered below this. 
@@ -820,6 +848,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void Repairing_UponDeath() {
         LogEvent();
+        // OPTIMIZE 4.14.17 No need for ReturnCause.Death as Dead state will become CurrentState before it can be processed
         var returnHandler = GetCurrentCalledStateReturnHandler();
         returnHandler.ReturnCause = FsmOrderFailureCause.Death;
         Return();

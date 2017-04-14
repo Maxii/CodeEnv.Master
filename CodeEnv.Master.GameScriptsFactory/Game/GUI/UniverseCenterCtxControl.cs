@@ -93,7 +93,9 @@ public class UniverseCenterCtxControl : ACtxControl {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
         IFleetNavigable target = _universeCenterMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
-        remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target);
+        var order = new FleetOrder(directive, OrderSource.User, target);
+        bool isOrderInitiated = remoteFleet.InitiateNewOrder(order);
+        D.Assert(isOrderInitiated);
     }
 
     public override string ToString() {

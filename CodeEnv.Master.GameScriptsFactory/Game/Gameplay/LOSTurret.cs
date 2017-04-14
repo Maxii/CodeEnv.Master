@@ -156,13 +156,13 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// <returns></returns>
     public override bool TryGetFiringSolution(IElementAttackable enemyTarget, out WeaponFiringSolution firingSolution) {
         D.Assert(enemyTarget.IsOperational);
-        if (!enemyTarget.IsAttackByAllowed(Weapon.Owner)) {
+        if (!enemyTarget.IsAttackAllowedBy(Weapon.Owner)) {
             bool hasAccessToAttackTgtOwner = enemyTarget.IsOwnerAccessibleTo(Weapon.Owner);
             D.Error("{0} can no longer attack {1}. Has access to attackTgt owner = {2}.", DebugName, enemyTarget.DebugName, hasAccessToAttackTgtOwner);
             // 3.17.17 BUG: occurred while everyone is war enemy so presumably we lost access to the attackTgt owner. If so, why wasn't
             // the enemyTgt removed from AWeapon._attackableEnemyTgts when Monitor received InfoAccessChg event?
         }
-        D.Assert(enemyTarget.IsAttackByAllowed(Weapon.Owner));
+        D.Assert(enemyTarget.IsAttackAllowedBy(Weapon.Owner));
 
         firingSolution = null;
         if (!ConfirmInRangeForLaunch(enemyTarget)) {
@@ -219,7 +219,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
                     //D.Log(ShowDebugLog, "{0}: CheckLineOfSight({1}) found its target.", DebugName, enemyTarget.DebugName);
                     return true;
                 }
-                if (attackableTgtEncountered.IsAttackByAllowed(Weapon.Owner)) {
+                if (attackableTgtEncountered.IsAttackAllowedBy(Weapon.Owner)) {
                     D.Log(ShowDebugLog, "{0}: CheckLineOfSight({1}) found interfering attackable target {2} on {3}.", DebugName, enemyTarget.DebugName, attackableTgtEncountered.DebugName, _gameTime.CurrentDate);
                     return false;
                 }

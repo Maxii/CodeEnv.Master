@@ -36,24 +36,24 @@ namespace CodeEnv.Master.GameContent {
         /// Indicates whether the attackingPlayer is allowed to attack this item.
         /// A player is only allowed to attack this item if the player knows who the owner is, and 
         /// 1) a state of War exists between the two, or 
-        /// 2) a state of ColdWar exists between the two and the item is not located within the item owner's territory.
+        /// 2) a state of ColdWar exists between the two and the item is located within the player's territory.
         /// </summary>
         /// <param name="attackingPlayer">The player who wishes to attack.</param>
         /// <returns>
-        ///   <c>true</c> if [is attack by allowed] [the specified attacking player]; otherwise, <c>false</c>.
+        ///   <c>true</c> if [is attack allowed] [the specified attacking player]; otherwise, <c>false</c>.
         /// </returns>
-        bool IsAttackByAllowed(Player attackingPlayer);
+        bool IsAttackAllowedBy(Player attackingPlayer);
 
         /// <summary>
         /// Indicates whether the attackingPlayer is allowed to attack this item.
-        /// A player is only allowed to attack this item if the player knows who the owner is, a state of ColdWar exists
-        /// between the two and the item is not located within the item owner's territory.
+        /// 4.12.17 An 'attackingPlayer' is only allowed to attack this item if the attackingPlayer knows who the owner is, 
+        /// a state of ColdWar exists between the two and the item is located within the attackingPlayer's territory.
         /// </summary>
         /// <param name="attackingPlayer">The player who wishes to attack.</param>
         /// <returns>
-        ///   <c>true</c> if [is cold war attack by allowed] [the specified attacking player]; otherwise, <c>false</c>.
+        ///   <c>true</c> if [is cold war attack allowed] [the specified attacking player]; otherwise, <c>false</c>.
         /// </returns>
-        bool IsColdWarAttackByAllowed(Player attackingPlayer);
+        bool IsColdWarAttackAllowedBy(Player attackingPlayer);
 
         /// <summary>
         /// Indicates whether the player is allowed to attack this item.
@@ -61,9 +61,9 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="attackingPlayer">The player who wishes to attack.</param>
         /// <returns>
-        ///   <c>true</c> if [is war attack by allowed] [the specified attacking player]; otherwise, <c>false</c>.
+        ///   <c>true</c> if [is war attack allowed] [the specified attacking player]; otherwise, <c>false</c>.
         /// </returns>
-        bool IsWarAttackByAllowed(Player attackingPlayer);
+        bool IsWarAttackAllowedBy(Player attackingPlayer);
 
         bool TryGetOwner(Player requestingPlayer, out Player owner);
 

@@ -197,7 +197,7 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         private void PropagateOwnerChange() {
-            // TODO nothing to propagate to yet as System.Owner is the source of the change
+            // UNDONE nothing to propagate to yet as System.Owner is the source of the change
         }
 
         private void RecalcAllProperties() {

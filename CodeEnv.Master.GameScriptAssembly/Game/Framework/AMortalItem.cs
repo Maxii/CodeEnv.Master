@@ -304,21 +304,30 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
 
     #region IAttackable Members
 
-    public bool IsAttackByAllowed(Player attackingPlayer) {
+    public bool IsAttackAllowedBy(Player attackingPlayer) {
         if (!InfoAccessCntlr.HasAccessToInfo(attackingPlayer, ItemInfoID.Owner)) {
             return false;
         }
-        return IsWarAttackByAllowed(attackingPlayer) || IsColdWarAttackByAllowed(attackingPlayer);
+        return IsWarAttackAllowedBy(attackingPlayer) || IsColdWarAttackAllowedBy(attackingPlayer);
     }
 
-    public bool IsColdWarAttackByAllowed(Player attackingPlayer) {
+    public bool IsColdWarAttackAllowedBy(Player attackingPlayer) {
         if (!InfoAccessCntlr.HasAccessToInfo(attackingPlayer, ItemInfoID.Owner)) {
             return false;
         }
-        return Owner.IsRelationshipWith(attackingPlayer, DiplomaticRelationship.ColdWar);   // TODO add test for owner's territory
+        if (Owner.IsRelationshipWith(attackingPlayer, DiplomaticRelationship.ColdWar)) {
+            ISector itemsCurrentSector = GameReferences.SectorGrid.GetSectorContaining(Position);
+            // 4.12.17 OK to use ISector for owner access as this method really answers the question of
+            // the attackingPlayer who would know if this item was in their territory // IMPROVE is there a better way?
+            if (itemsCurrentSector.Owner == attackingPlayer) {
+                // We are in ColdWar and this item is located in their territory so they can attack it
+                return true;
+            }
+        }
+        return false;
     }
 
-    public bool IsWarAttackByAllowed(Player attackingPlayer) {
+    public bool IsWarAttackAllowedBy(Player attackingPlayer) {
         if (!InfoAccessCntlr.HasAccessToInfo(attackingPlayer, ItemInfoID.Owner)) {
             return false;
         }

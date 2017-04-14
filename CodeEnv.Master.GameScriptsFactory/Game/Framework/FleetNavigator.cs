@@ -896,7 +896,7 @@ public class FleetNavigator : IDisposable {
             var ship = e as ShipItem;
             //D.Log(ShowDebugLog, "{0} issuing Move order to {1}. Target: {2}, Speed: {3}, StandoffDistance: {4:0.#}.", 
             //Name, ship.DebugName, fleetTgt.DebugName, _apMoveSpeed.GetValueName(), tgtStandoffDistance);
-            ship.CurrentOrder = shipMoveToOrder;
+            ship.InitiateNewOrder(shipMoveToOrder);
         });
         _fleetData.CurrentHeading = (fleetTgt.Position - Position).normalized;
     }

@@ -28,6 +28,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// A new order has just been received.
+        /// <remarks>FailureCause only.</remarks>
         /// </summary>
         NewOrderReceived,
 
@@ -35,31 +36,39 @@ namespace CodeEnv.Master.GameContent {
         /// The target has been determined to be uncatchable. 
         /// <remarks>Typically this means the target is moving faster than we can move,
         /// or we have lost awareness of the target, aka our sensors can no longer detect it.</remarks>
+        /// <remarks>FailureCause and ReturnCause.</remarks>
         /// </summary>
         TgtUncatchable,
 
         /// <summary>
         /// The target has been determined to be unreachable.
         /// <remarks>Typically this refers to the inability to plot a course to reach the target.</remarks>
+        /// <remarks>FailureCause and ReturnCause.</remarks>
         /// </summary>
         TgtUnreachable,
 
         /// <summary>
         /// Our relationship with the target has changed in a way that no longer
         /// allows execution of the current state.
+        /// <remarks>FailureCause and ReturnCause.</remarks>
         /// </summary>
         TgtRelationship,
 
+        /// <summary>
+        /// The target has died.
+        /// <remarks>FailureCause and ReturnCause.</remarks>
+        /// </summary>
         TgtDeath,
 
         /// <summary>
         /// This Unit Cmd or Element needs repair.  
-        /// UNCLEAR Cmd or whole Unit?
+        /// <remarks>FailureCause and ReturnCause.</remarks>
         /// </summary>
         NeedsRepair,
 
         /// <summary>
         /// This Unit Cmd or Element has died.
+        /// <remarks>FailureCause only.</remarks>
         /// </summary>
         Death
 

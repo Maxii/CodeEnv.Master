@@ -48,6 +48,17 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         bool TryGetSectorIDThatContains(Vector3 worldLocation, out IntVector3 sectorID);
 
+        /// <summary>
+        /// Gets the sector containing the provided worldLocation.
+        /// Throws an error if <c>worldLocation</c> is not within the universe.
+        /// <remarks>Provided as a convenience when the client knows the location provided is inside the universe.
+        /// If this is not certain, use TryGetSectorContaining(worldLocation) instead.</remarks>
+        /// </summary>
+        /// <param name="worldLocation">The world point.</param>
+        /// <returns></returns>
+        ISector GetSectorContaining(Vector3 worldLocation);
+
+
     }
 }
 

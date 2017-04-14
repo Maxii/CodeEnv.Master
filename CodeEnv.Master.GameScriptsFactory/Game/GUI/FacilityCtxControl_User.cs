@@ -74,7 +74,8 @@ public class FacilityCtxControl_User : ACtxControl_User<FacilityDirective> {
     private void IssueUserFacilityMenuOperatorOrder(int itemID) {
         FacilityDirective directive = (FacilityDirective)_directiveLookup[itemID];
         D.Log("{0} selected directive {1} from context menu.", _facilityMenuOperator.DebugName, directive.GetValueName());
-        _facilityMenuOperator.CurrentOrder = new FacilityOrder(directive, OrderSource.User);
+        bool isOrderInitiated = _facilityMenuOperator.InitiateNewOrder(new FacilityOrder(directive, OrderSource.User));
+        D.Assert(isOrderInitiated);
     }
 
     public override string ToString() {

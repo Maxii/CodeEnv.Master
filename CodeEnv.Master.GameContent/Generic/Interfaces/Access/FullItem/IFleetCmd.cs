@@ -35,7 +35,18 @@ namespace CodeEnv.Master.GameContent {
 
         float UnitFullSpeedValue { get; }
 
-        FleetOrder CurrentOrder { get; set; }
+        FleetOrder CurrentOrder { get; }
+
+        /// <summary>
+        /// Attempts to initiate the immediate execution of the provided order, returning <c>true</c>
+        /// if its execution was initiated, <c>false</c> if its execution was deferred until all of the 
+        /// override orders issued by the CmdStaff have executed. 
+        /// <remarks>If order.Source is User, even the CmdStaff's orders will be overridden, returning <c>true</c>.</remarks>
+        /// </summary>
+        /// <param name="order">The order.</param>
+        /// <returns></returns>
+        bool InitiateNewOrder(FleetOrder order);
+
 
         bool IsCurrentOrderDirectiveAnyOf(FleetDirective directiveA);
 

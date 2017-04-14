@@ -119,7 +119,7 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
     protected override bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(BaseDirective directive, out IEnumerable<INavigable> targets) {
         switch (directive) {
             case BaseDirective.Attack:
-                targets = _userKnowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsWarAttackByAllowed(_user)).Cast<INavigable>();
+                targets = _userKnowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsWarAttackAllowedBy(_user)).Cast<INavigable>();
                 // TODO InRange?
                 return true;
             case BaseDirective.ChangeHQ:
@@ -193,7 +193,9 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
             _baseMenuOperator.HQElement = target as AUnitElementItem;
         }
         else {
-            _baseMenuOperator.CurrentOrder = new BaseOrder(directive, OrderSource.User, target as IUnitAttackable);
+            var order = new BaseOrder(directive, OrderSource.User, target as IUnitAttackable);
+            bool isOrderInitiated = _baseMenuOperator.InitiateNewOrder(order);
+            D.Assert(isOrderInitiated);
         }
     }
 
@@ -201,14 +203,17 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
         var directive = (FleetDirective)_directiveLookup[itemID];
         IFleetNavigable target = _baseMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
-        remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target);
+        var order = new FleetOrder(directive, OrderSource.User, target);
+        bool isOrderInitiated = remoteFleet.InitiateNewOrder(order);
+        D.Assert(isOrderInitiated);
     }
 
     private void IssueRemoteUserShipOrder(int itemID) {
         var directive = (ShipDirective)_directiveLookup[itemID];
         D.AssertEqual(ShipDirective.Disband, directive);   // HACK
         var remoteShip = _remoteUserOwnedSelectedItem as ShipItem;
-        remoteShip.CurrentOrder = new ShipOrder(directive, OrderSource.User, target: _baseMenuOperator);
+        bool isOrderInitiated = remoteShip.InitiateNewOrder(new ShipOrder(directive, OrderSource.User, target: _baseMenuOperator));
+        D.Assert(isOrderInitiated);
     }
 
     public override string ToString() {

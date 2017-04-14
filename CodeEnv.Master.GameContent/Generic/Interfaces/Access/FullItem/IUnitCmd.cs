@@ -45,6 +45,8 @@ namespace CodeEnv.Master.GameContent {
 
         void HandleRelationsChangedWith(Player chgdRelationsPlayer);
 
+        void HandleColdWarEnemyEngagementPolicyChanged();
+
     }
 }
 

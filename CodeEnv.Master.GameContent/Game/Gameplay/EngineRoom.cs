@@ -51,6 +51,8 @@ namespace CodeEnv.Master.GameContent {
 
         private static Vector3 _localSpaceForward = Vector3.forward;
 
+        public string DebugName { get { return DebugNameFormat.Inject(_ship.DebugName, typeof(EngineRoom).Name); } }
+
         /// <summary>
         /// The current speed of the ship in Units per hour including any current drift velocity. 
         /// Whether paused or at a GameSpeed other than Normal (x1), this property always returns the proper reportable value.
@@ -95,8 +97,6 @@ namespace CodeEnv.Master.GameContent {
             get { return _shipData.CurrentSpeedSetting; }
             set { _shipData.CurrentSpeedSetting = value; }
         }
-
-        private string DebugName { get { return DebugNameFormat.Inject(_ship.DebugName, typeof(EngineRoom).Name); } }
 
         /// <summary>
         /// The signed speed (in units per hour) in the ship's 'forward' direction.

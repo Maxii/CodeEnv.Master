@@ -61,8 +61,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     /// the element may return to it after the Captain's order has been executed. 
     /// </summary>
     public FacilityOrder CurrentOrder {
-        private get { return _currentOrder; }
-        set { SetProperty<FacilityOrder>(ref _currentOrder, value, "CurrentOrder", CurrentOrderPropChangedHandler); }
+        get { return _currentOrder; }
+        private set { SetProperty<FacilityOrder>(ref _currentOrder, value, "CurrentOrder", CurrentOrderPropChangedHandler); }
     }
 
     public FacilityReport UserReport { get { return Publisher.GetUserReport(); } }
@@ -238,6 +238,28 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     /// </summary>
     private Guid _lastCmdOrderID;
 
+    /// <summary>
+    /// Attempts to initiate the immediate execution of the provided order, returning <c>true</c>
+    /// if its execution was initiated, <c>false</c> if its execution was deferred until all of the 
+    /// override orders issued by the Captain have executed. 
+    /// <remarks>If order.Source is User, even the Captain's orders will be overridden, returning <c>true</c>.</remarks>
+    /// </summary>
+    /// <param name="order">The order.</param>
+    /// <returns></returns>
+    public bool InitiateNewOrder(FacilityOrder order) {
+        D.Assert(order.Source > OrderSource.Captain);
+        if (CurrentOrder != null) {
+            if (order.Source != OrderSource.User) {
+                if (CurrentOrder.Source == OrderSource.Captain) {
+                    CurrentOrder.StandingOrder = order;
+                    return false;
+                }
+            }
+        }
+        CurrentOrder = order;
+        return true;
+    }
+
     public bool IsCurrentOrderDirectiveAnyOf(FacilityDirective directiveA) {
         return CurrentOrder != null && CurrentOrder.Directive == directiveA;
     }
@@ -272,15 +294,19 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     }
 
     private void HandleNewOrder() {
+        // 4.13.17 Must get out of Call()ed states even if new order is null as only a non-Call()ed state's 
+        // ExitState method properly resets all the conditions for entering another state, aka Idling.
+        while (IsCurrentStateCalled) {
+            // 4.9.17 Removed UponNewOrderReceived for Call()ed states as any ReturnCause they provide will never
+            // be processed as the new order will change the state before the yield return null allows the processing
+            Return();
+        }
+        D.Assert(!IsCurrentStateCalled);
+
         if (CurrentOrder != null) {
             //D.Log(ShowDebugLog, "{0} received new order {1}. Frame {2}.", DebugName, CurrentOrder.Directive.GetValueName(), Time.frameCount);
             // Pattern that handles Call()ed states that goes more than one layer deep
-            while (IsCurrentStateCalled) {
-                // 4.9.17 Removed UponNewOrderReceived for Call()ed states as any ReturnCause they provide will never
-                // be processed as the new order will change the state before the yield return null allows the processing
-                Return();
-            }
-            D.Assert(!IsCurrentStateCalled);
+
             // 4.8.17 If a non-Call()ed state is to notify Cmd of OrderOutcome, this is when notification of receiving a new order will happen. 
             // CalledStateReturnHandlers can't do it as the new order will change the state before the ReturnCause is processed.
             UponNewOrderReceived();
@@ -313,6 +339,22 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         else {
             _lastCmdOrderID = default(Guid);
         }
+    }
+
+    internal override bool CancelSuperiorsOrder() {
+        if (CurrentOrder != null) {
+            if (CurrentOrder.Source > OrderSource.Captain) {
+                CurrentOrder = null;
+                CurrentState = FacilityState.Idling;
+            }
+            else {
+                D.AssertEqual(OrderSource.Captain, CurrentOrder.Source);
+                CurrentOrder.StandingOrder = null;
+                D.LogBold(/*ShowDebugLog, */"{0} not able to cancel {1} as it was issued by the Captain.", DebugName, CurrentOrder.DebugName);
+                return false;
+            }
+        }
+        return true;
     }
 
     #endregion
@@ -355,9 +397,12 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     /// execution of the state Return()ed too, aka the new CurrentState.
     /// </summary>
     private void RestartState() {
+        var stateWhenCalled = CurrentState;
         while (IsCurrentStateCalled) {
             Return();
         }
+        D.LogBold(/*ShowDebugLog, */"{0}.RestartState called from {1}.{2}. RestartedState = {3}.",
+            DebugName, typeof(FacilityState).Name, stateWhenCalled.GetValueName(), CurrentState.GetValueName());
         CurrentState = CurrentState;
     }
 
@@ -413,7 +458,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             }
             // If we got here, there is no FollowonOrder, so now check for any StandingOrder
             if (CurrentOrder.StandingOrder != null) {
-                D.LogBold(ShowDebugLog, "{0} returning to execution of standing order {1}.", DebugName, CurrentOrder.StandingOrder);
+                D.LogBold(/*ShowDebugLog, */"{0} returning to execution of standing order {1}.", DebugName, CurrentOrder.StandingOrder);
 
                 OrderSource standingOrderSource = CurrentOrder.StandingOrder.Source;
                 if (standingOrderSource < OrderSource.CmdStaff) {
@@ -490,7 +535,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         // The attack target acquired from the order. Should always be a Fleet
         IUnitAttackable unitAttackTgt = CurrentOrder.Target as IUnitAttackable;
         D.Assert(unitAttackTgt.IsOperational);
-        D.Assert(unitAttackTgt.IsAttackByAllowed(Owner));
+        D.Assert(unitAttackTgt.IsAttackAllowedBy(Owner));
 
         _fsmTgt = unitAttackTgt as IElementNavigable;
     }
@@ -543,7 +588,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     void ExecuteAttackOrder_UponDamageIncurred() {
         LogEvent();
         if (AssessNeedForRepair(GeneralSettings.Instance.HealthThreshold_BadlyDamaged)) {
-            AttemptOrderOutcomeCallback(isSuccessful: false, failCause: FsmOrderFailureCause.NeedsRepair);
+            if (_allowOrderFailureCallback) {
+                AttemptOrderOutcomeCallback(isSuccessful: false, failCause: FsmOrderFailureCause.NeedsRepair);
+            }
             IssueCaptainsRepairOrder(retainSuperiorsOrder: false);
         }
     }
@@ -597,8 +644,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     private FsmReturnHandler CreateFsmReturnHandler_RepairingToRepair() {
         IDictionary<FsmOrderFailureCause, Action> taskLookup = new Dictionary<FsmOrderFailureCause, Action>() {
-
-            {FsmOrderFailureCause.Death, () =>   { AttemptOrderOutcomeCallback(false, FsmOrderFailureCause.Death); }                                                 },
+            // Death: Dead state becomes CurrentState before ReturnHandler can process the Return
             // NeedsRepair: Repairing won't respond with NeedsRepair while repairing
             // TgtDeath: not subscribed
         };
@@ -711,7 +757,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void ExecuteRepairOrder_UponDeath() {
         LogEvent();
-        AttemptOrderOutcomeCallback(isSuccessful: false, failCause: FsmOrderFailureCause.Death);
+        if (_allowOrderFailureCallback) {
+            AttemptOrderOutcomeCallback(isSuccessful: false, failCause: FsmOrderFailureCause.Death);
+        }
     }
 
     void ExecuteRepairOrder_ExitState() {
@@ -812,6 +860,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void Repairing_UponDeath() {
         LogEvent();
+        // OPTIMIZE 4.14.17 No need for ReturnCause.Death as Dead state will become CurrentState before it can be processed
         var returnHandler = GetCurrentCalledStateReturnHandler();
         returnHandler.ReturnCause = FsmOrderFailureCause.Death;
         Return();

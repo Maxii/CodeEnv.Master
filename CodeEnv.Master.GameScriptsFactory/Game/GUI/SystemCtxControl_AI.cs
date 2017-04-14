@@ -70,7 +70,7 @@ public class SystemCtxControl_AI : ACtxControl {
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Attack:
-                return !(_settlement as IUnitAttackable).IsAttackByAllowed(_user)
+                return !(_settlement as IUnitAttackable).IsAttackAllowedBy(_user)
                     || !(_remoteUserOwnedSelectedItem as AUnitCmdItem).IsAttackCapable;
             case FleetDirective.Explore:
                 var explorableSystem = _systemMenuOperator as IFleetExplorable;
@@ -100,7 +100,9 @@ public class SystemCtxControl_AI : ACtxControl {
         var directive = (FleetDirective)_directiveLookup[itemID];
         IFleetNavigable target = directive == FleetDirective.Attack ? _settlement as IFleetNavigable : _systemMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
-        remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target);
+        var order = new FleetOrder(directive, OrderSource.User, target);
+        bool isOrderInitiated = remoteFleet.InitiateNewOrder(order);
+        D.Assert(isOrderInitiated);
     }
 
     public override string ToString() {

@@ -51,7 +51,7 @@ public class MissileTube : AWeaponMount {
     /// <returns></returns>
     public override bool TryGetFiringSolution(IElementAttackable enemyTarget, out WeaponFiringSolution firingSolution) {
         D.Assert(enemyTarget.IsOperational);
-        D.Assert(enemyTarget.IsAttackByAllowed(Weapon.Owner));
+        D.Assert(enemyTarget.IsAttackAllowedBy(Weapon.Owner));
 
         if (!ConfirmInRangeForLaunch(enemyTarget)) {
             //D.Log("{0}.CheckFiringSolution({1}) has determined target is out of range.", DebugName, enemyTarget.DebugName);

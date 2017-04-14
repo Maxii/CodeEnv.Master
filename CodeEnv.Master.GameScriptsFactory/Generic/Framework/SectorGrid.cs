@@ -991,6 +991,10 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
 
     #region ISectorGrid Members
 
+    ISector ISectorGrid.GetSectorContaining(Vector3 worldLocation) {
+        return GetSectorContaining(worldLocation);
+    }
+
     IEnumerable<ISector> ISectorGrid.AllSectors { get { return Sectors.Cast<ISector>(); } }
 
     #endregion

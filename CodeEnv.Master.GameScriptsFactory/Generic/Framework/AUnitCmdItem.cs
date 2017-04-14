@@ -510,6 +510,10 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         OwnerAIMgr.DeregisterForOrders(this);
     }
 
+    public void HandleColdWarEnemyEngagementPolicyChanged() {
+        Elements.ForAll(e => e.HandleColdWarEnemyEngagementPolicyChanged());
+    }
+
     // 7.20.16 HandleUserIntelCoverageChanged not needed as Cmd is not detectable. The only way Cmd IntelCoverage changes is when HQELement
     // Coverage changes. Icon needs to be assessed when any of Cmd's elements has its coverage changed as that can change which icon to show
 
@@ -644,7 +648,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         }
         HQElement.IsHQ = true;
         Data.HQElementData = HQElement.Data;    // CmdData.Radius now returns Radius of new HQElement
-        D.Log(/*ShowDebugLog,*/ "{0}'s HQElement is now {1}. Radius = {2:0.00}.", Data.ParentName, HQElement.Data.Name, Data.Radius);
+        D.Log(ShowDebugLog, "{0}'s HQElement is now {1}. Radius = {2:0.00}.", Data.ParentName, HQElement.Data.Name, Data.Radius);
         AttachCmdToHQElement(); // needs to occur before formation changed
 
         if (DisplayMgr != null) {
@@ -724,6 +728,19 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     protected override void HandleIsSelectedChanged() {
         base.HandleIsSelectedChanged();
         Elements.ForAll(e => e.AssessCircleHighlighting());
+    }
+
+    #endregion
+
+    #region Orders Support Members
+
+    /// <summary>
+    /// Cancels each Element's CurrentOrder if not issued by the Element's Captain as an override order.
+    /// <remarks>Each element that has its CurrentOrder canceled will immediately Idle.</remarks>
+    /// </summary>
+    protected void CancelElementOrders() {
+        //D.Log(ShowDebugLog, "{0} is canceling any element orders it previously issued.", DebugName);
+        Elements.ForAll(e => e.CancelSuperiorsOrder());
     }
 
     #endregion

@@ -78,7 +78,7 @@ public class FleetCtxControl_AI : ACtxControl {
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Attack:
-                return !(_fleetMenuOperator as IUnitAttackable).IsAttackByAllowed(_user)
+                return !(_fleetMenuOperator as IUnitAttackable).IsAttackAllowedBy(_user)
                     || !(_remoteUserOwnedSelectedItem as AUnitCmdItem).IsAttackCapable;
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
@@ -91,7 +91,7 @@ public class FleetCtxControl_AI : ACtxControl {
     protected override bool IsUserRemoteBaseMenuItemDisabledFor(BaseDirective directive) {
         switch (directive) {
             case BaseDirective.Attack:
-                return !(_fleetMenuOperator as IUnitAttackable).IsAttackByAllowed(_user);
+                return !(_fleetMenuOperator as IUnitAttackable).IsAttackAllowedBy(_user);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
@@ -115,14 +115,18 @@ public class FleetCtxControl_AI : ACtxControl {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
         IFleetNavigable target = _fleetMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
-        remoteFleet.CurrentOrder = new FleetOrder(directive, OrderSource.User, target);
+        var order = new FleetOrder(directive, OrderSource.User, target);
+        bool isOrderInitiated = remoteFleet.InitiateNewOrder(order);
+        D.Assert(isOrderInitiated);
     }
 
     private void IssueRemoteUserBaseOrder(int itemID) {
         BaseDirective directive = (BaseDirective)_directiveLookup[itemID];
         IUnitAttackable target = _fleetMenuOperator;
         var remoteBase = _remoteUserOwnedSelectedItem as AUnitBaseCmdItem;
-        remoteBase.CurrentOrder = new BaseOrder(directive, OrderSource.User, target);
+        var order = new BaseOrder(directive, OrderSource.User, target);
+        bool isOrderInitiated = remoteBase.InitiateNewOrder(order);
+        D.Assert(isOrderInitiated);
     }
 
     public override string ToString() {

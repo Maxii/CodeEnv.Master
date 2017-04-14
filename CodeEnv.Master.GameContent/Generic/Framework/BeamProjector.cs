@@ -49,7 +49,7 @@ namespace CodeEnv.Master.GameContent {
 
         public override void CheckActiveOrdnanceTargeting() {
             if (_activeOrdnance != null) {
-                if (!_activeOrdnance.Target.IsAttackByAllowed(Owner)) {
+                if (!_activeOrdnance.Target.IsAttackAllowedBy(Owner)) {
                     _activeOrdnance.Terminate();
                 }
             }
