@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// <remarks>4.3.17 Currently FleetCmds, BaseCmds. TODO: Planets (not Moons) will be included when
     /// Bombard Weapons appear.</remarks>
     /// </summary>
-    public interface IUnitAttackable : IFleetNavigable, IAttackable {
+    public interface IUnitAttackable : IFleetNavigableDestination, IAttackable {
 
         Player Owner_Debug { get; }
 

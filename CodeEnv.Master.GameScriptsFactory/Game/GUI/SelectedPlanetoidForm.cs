@@ -26,9 +26,6 @@ public class SelectedPlanetoidForm : ASelectedItemForm {
 
     public override FormID FormID { get { return FormID.SelectedPlanetoid; } }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 }
 

@@ -23,6 +23,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AUnitCreatorEditorSettings {
 
+        public string DebugName { get { return GetType().Name; } }
+
         public string UnitName { get; private set; }
 
         public bool IsOwnerUser { get; private set; }
@@ -43,7 +45,7 @@ namespace CodeEnv.Master.GameContent {
 
         public DebugLosWeaponLoadout LosTurretsPerElement { get; private set; }
 
-        public DebugWeaponLoadout MissileLaunchersPerElement { get; private set; }
+        public DebugLaunchedWeaponLoadout LaunchersPerElement { get; private set; }
 
         public int PassiveCMsPerElement { get; private set; }
 
@@ -64,13 +66,13 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="activeCMs">The active c ms.</param>
         /// <param name="deployDate">The deploy date.</param>
         /// <param name="losTurrets">The LOS turrets.</param>
-        /// <param name="missileLaunchers">The missile launchers.</param>
+        /// <param name="launchers">The launchers.</param>
         /// <param name="passiveCMs">The passive c ms.</param>
         /// <param name="shieldGens">The shield gens.</param>
         /// <param name="srSensors">SR sensor qty per element.</param>
         public AUnitCreatorEditorSettings(string unitName, bool isOwnerUser, int elementQty, DebugDiploUserRelations userRelations,
             int cmsPerCmd, int sensorsPerCmd, int activeCMs, GameDate deployDate, DebugLosWeaponLoadout losTurrets,
-            DebugWeaponLoadout missileLaunchers, int passiveCMs, int shieldGens, int srSensors) {
+            DebugLaunchedWeaponLoadout launchers, int passiveCMs, int shieldGens, int srSensors) {
             UnitName = unitName;
             IsOwnerUser = isOwnerUser;
             IsCompositionPreset = false;
@@ -81,7 +83,7 @@ namespace CodeEnv.Master.GameContent {
             ActiveCMsPerElement = activeCMs;
             DateToDeploy = deployDate;
             LosTurretsPerElement = losTurrets;
-            MissileLaunchersPerElement = missileLaunchers;
+            LaunchersPerElement = launchers;
             PassiveCMsPerElement = passiveCMs;
             ShieldGeneratorsPerElement = shieldGens;
             SRSensorsPerElement = srSensors;
@@ -99,12 +101,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="activeCMs">The active c ms.</param>
         /// <param name="deployDate">The deploy date.</param>
         /// <param name="losTurrets">The LOS turrets.</param>
-        /// <param name="missileLaunchers">The missile launchers.</param>
+        /// <param name="launchers">The launchers.</param>
         /// <param name="passiveCMs">The passive c ms.</param>
         /// <param name="shieldGens">The shield gens.</param>
         /// <param name="srSensors">SR sensor qty per element.</param>
         public AUnitCreatorEditorSettings(string unitName, bool isOwnerUser, DebugDiploUserRelations userRelations, int cmsPerCmd, int sensorsPerCmd,
-            int activeCMs, GameDate deployDate, DebugLosWeaponLoadout losTurrets, DebugWeaponLoadout missileLaunchers, int passiveCMs,
+            int activeCMs, GameDate deployDate, DebugLosWeaponLoadout losTurrets, DebugLaunchedWeaponLoadout launchers, int passiveCMs,
             int shieldGens, int srSensors) {
             UnitName = unitName;
             IsOwnerUser = isOwnerUser;
@@ -115,10 +117,14 @@ namespace CodeEnv.Master.GameContent {
             ActiveCMsPerElement = activeCMs;
             DateToDeploy = deployDate;
             LosTurretsPerElement = losTurrets;
-            MissileLaunchersPerElement = missileLaunchers;
+            LaunchersPerElement = launchers;
             PassiveCMsPerElement = passiveCMs;
             ShieldGeneratorsPerElement = shieldGens;
             SRSensorsPerElement = srSensors;
+        }
+
+        public sealed override string ToString() {
+            return DebugName;
         }
 
     }

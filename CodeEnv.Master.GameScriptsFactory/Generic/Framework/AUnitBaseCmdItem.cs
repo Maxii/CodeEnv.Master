@@ -55,6 +55,16 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         set { base.Data = value; }
     }
 
+    public override bool IsJoinable {
+        get {
+            bool isJoinable = Elements.Count < TempGameValues.MaxFacilitiesPerBase;
+            if (isJoinable) {
+                D.Assert(FormationMgr.HasRoom);
+            }
+            return isJoinable;
+        }
+    }
+
     public override float ClearanceRadius { get { return CloseOrbitOuterRadius * 2F; } }
 
     public float CloseOrbitOuterRadius { get { return CloseOrbitInnerRadius + TempGameValues.ShipCloseOrbitSlotDepth; } }
@@ -111,8 +121,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     public override void CommenceOperations() {
         base.CommenceOperations();
         CurrentState = BaseState.Idling;
+        ActivateSensors();
+        RegisterForOrders();
         AssessAlertStatus();
         SubscribeToSensorEvents();
+        __IsActivelyOperating = true;
     }
 
     /// <summary>
@@ -137,12 +150,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         if (removedFacility == HQElement) {
             // HQ Element has been removed
             HQElement = SelectHQElement();
-            if (!removedFacility.IsOperational) {
-                D.Log(ShowDebugLog, "{0} selected {1} as HQFacility after death of {2}.", DebugName, HQElement.DebugName, removedFacility.DebugName);
-            }
+            D.Log(ShowDebugLog, "{0} selected {1} as HQFacility after removal of {2}.", DebugName, HQElement.DebugName, removedFacility.DebugName);
         }
     }
-
     /// <summary>
     /// Selects and returns a new HQElement.
     /// <remarks>TEMP public to allow creator use.</remarks>
@@ -180,14 +190,19 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         return IsCurrentStateAnyOf(BaseState.ExecuteAttackOrder) && _fsmTgt == unitCmd;
     }
 
-    protected override void ResetOrdersAndStateOnNewOwner() {
+    protected override void ResetOrderAndState() {
         CurrentOrder = null;
-        RegisterForOrders();    // must occur prior to Idling
-        CurrentState = BaseState.Idling;
+        CurrentState = BaseState.Idling;    // 4.20.17 Will unsubscribe from any FsmEvents when exiting the Current non-Call()ed state
+        // 4.20.17 Notifying elements of loss not needed as Cmd losing ownership is the result of last element losing ownership
+    }
+
+    protected override void PrepareForDeadState() {
+        base.PrepareForDeadState();
+        UponDeath();    // 4.19.17 Do any reqd Callback before exiting current non-Call()ed state
+        CurrentOrder = null;
     }
 
     protected override void InitiateDeadState() {
-        UponDeath();
         CurrentState = BaseState.Dead;
     }
 
@@ -211,22 +226,44 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         HandleNewOrder();
     }
 
+    private void NewOrderReceivedWhilePausedEventHandler(object sender, EventArgs e) {
+        _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedEventHandler;
+        ChangeOrderAfterPause();
+    }
+
     #endregion
 
     #region Orders
 
+    private BaseOrder _newOrderReceivedWhilePaused;
+
     /// <summary>
-    /// Attempts to initiate the immediate execution of the provided order, returning <c>true</c>
+    /// Attempts to initiate the execution of the provided order, returning <c>true</c>
     /// if its execution was initiated, <c>false</c> if its execution was deferred until all of the 
     /// override orders issued by the CmdStaff have executed. 
     /// <remarks>If order.Source is User, even the CmdStaff's orders will be overridden, returning <c>true</c>.</remarks>
+    /// <remarks>If called while paused, the order will be deferred until unpaused and return the same value it would
+    /// have returned if it hadn't been paused.</remarks>
+    /// <remarks>5.4.17 I've chosen to hold orders here when paused, allowing the AI to issue orders even when paused.</remarks>
     /// </summary>
     /// <param name="order">The order.</param>
     /// <returns></returns>
     public bool InitiateNewOrder(BaseOrder order) {
         D.Assert(order.Source > OrderSource.CmdStaff);
-        if (CurrentOrder != null) {
-            if (order.Source != OrderSource.User) {
+        if (IsPaused) {
+            _newOrderReceivedWhilePaused = order;
+            // deal with multiple changes all while paused
+            _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedEventHandler;
+            _gameMgr.isPausedChanged += NewOrderReceivedWhilePausedEventHandler;
+            bool willOrderExecutionImmediatelyFollowResume = order.Source == OrderSource.User || CurrentOrder == null || CurrentOrder.Source != OrderSource.CmdStaff;
+            return willOrderExecutionImmediatelyFollowResume;
+        }
+
+        D.Assert(!IsPaused);
+        D.AssertNull(_newOrderReceivedWhilePaused);
+
+        if (order.Source != OrderSource.User) {
+            if (CurrentOrder != null) {
                 if (CurrentOrder.Source == OrderSource.CmdStaff) {
                     CurrentOrder.StandingOrder = order;
                     return false;
@@ -235,6 +272,16 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         }
         CurrentOrder = order;
         return true;
+    }
+
+    private void ChangeOrderAfterPause() {
+        D.AssertNotNull(_newOrderReceivedWhilePaused);
+        D.Assert(!IsPaused);
+
+        BaseOrder newOrder = _newOrderReceivedWhilePaused;
+        _newOrderReceivedWhilePaused = null;
+        D.Log(/*ShowDebugLog,*/ "{0} is changing order to {1} after resuming from pause.", DebugName, newOrder.DebugName);
+        InitiateNewOrder(newOrder);
     }
 
     public bool IsCurrentOrderDirectiveAnyOf(BaseDirective directiveA) {
@@ -277,14 +324,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     }
 
     private void HandleNewOrder() {
+        // 4.9.17 Removed UponNewOrderReceived for Call()ed states as any ReturnCause they provide will never
+        // be processed as the new order will change the state before the yield return null allows the processing
         // 4.13.17 Must get out of Call()ed states even if new order is null as only a non-Call()ed state's 
         // ExitState method properly resets all the conditions for entering another state, aka Idling.
-        while (IsCurrentStateCalled) {
-            // 4.9.17 Removed UponNewOrderReceived for Call()ed states as any ReturnCause they provide will never
-            // be processed as the new order will change the state before the yield return null allows the processing
-            Return();
-        }
-        D.Assert(!IsCurrentStateCalled);
+        ReturnFromCalledStates();
 
         if (CurrentOrder != null) {
             D.Assert(CurrentOrder.Source > OrderSource.Captain);
@@ -322,12 +366,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected new BaseState CurrentState {
         get { return (BaseState)base.CurrentState; }
-        set {
-            if (base.CurrentState != null && CurrentState == value) {
-                D.Warn("{0} duplicate state {1} set attempt.", DebugName, value.GetValueName());
-            }
-            base.CurrentState = value;
-        }
+        set { base.CurrentState = value; }
     }
 
     protected new BaseState LastState {
@@ -354,9 +393,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     /// </summary>
     private void RestartState() {
         var stateWhenCalled = CurrentState;
-        while (IsCurrentStateCalled) {
-            Return();
-        }
+        ReturnFromCalledStates();
         D.LogBold(/*ShowDebugLog, */"{0}.RestartState called from {1}.{2}. RestartedState = {3}.",
             DebugName, typeof(BaseState).Name, stateWhenCalled.GetValueName(), CurrentState.GetValueName());
         CurrentState = CurrentState;
@@ -375,11 +412,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected void FinalInitialize_UponRelationsChangedWith(Player player) {
         LogEvent();
         // can be received when activation of sensors immediately finds another player
-    }
-
-    protected void FinalInitialize_UponAwarenessOfFleetChanged(IFleetCmd_Ltd fleet, bool isAware) {
-        LogEvent();
-        // Nothing to do
     }
 
     protected void FinalInitialize_ExitState() {
@@ -465,13 +497,13 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         }
     }
 
-    protected void Idling_UponAwarenessOfFleetChanged(IFleetCmd_Ltd fleet, bool isAware) {
-        LogEvent();
-        // Nothing to do
-    }
-
     protected void Idling_UponSubordinateElementDeath(AUnitElementItem deadSubordinateElement) {
         LogEvent();
+    }
+
+    protected void Idling_UponLosingOwnership() {
+        LogEvent();
+        // Do nothing as no callback to send
     }
 
     protected void Idling_UponDeath() {
@@ -496,11 +528,14 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         IUnitAttackable unitAttackTgt = CurrentOrder.Target;
         _fsmTgt = unitAttackTgt;
 
-        bool isSubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.TargetDeath, _fsmTgt, toSubscribe: true);
+        bool isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtDeath, _fsmTgt);
         D.Assert(isSubscribed);
-        isSubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.InfoAccessChg, _fsmTgt, toSubscribe: true);
+        isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtInfoAccessChg, _fsmTgt);
         D.Assert(isSubscribed);
-        isSubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.OwnerChg, _fsmTgt, toSubscribe: true);
+        isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, _fsmTgt);
+        D.Assert(isSubscribed);
+
+        isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.OwnerAwareChg_Fleet);
         D.Assert(isSubscribed);
     }
 
@@ -508,11 +543,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         LogEvent();
 
         IUnitAttackable unitAttackTgt = _fsmTgt;
-        var elementAttackOrder = new FacilityOrder(FacilityDirective.Attack, CurrentOrder.Source, CurrentOrder.OrderID, target: unitAttackTgt as IElementNavigable);
+        var elementAttackOrder = new FacilityOrder(FacilityDirective.Attack, CurrentOrder.Source, CurrentOrder.OrderID, target: unitAttackTgt as IElementNavigableDestination);
         Elements.ForAll(e => (e as FacilityItem).InitiateNewOrder(elementAttackOrder));
     }
 
-    protected void ExecuteAttackOrder_UponOrderOutcomeCallback(FacilityItem facility, bool isSuccess, IElementNavigable target, FsmOrderFailureCause failCause) {
+    protected void ExecuteAttackOrder_UponOrderOutcomeCallback(FacilityItem facility, bool isSuccess, IElementNavigableDestination target, FsmOrderFailureCause failCause) {
         LogEvent();
         D.Warn("{0}.ExecuteAttackOrder_UponOrderOutcomeCallback() not implemented.", DebugName);
     }
@@ -557,11 +592,13 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
             InitiateRepair(retainSuperiorsOrders: true);
         }
     }
-    protected void ExecuteAttackOrder_UponAwarenessOfFleetChanged(IFleetCmd_Ltd fleet, bool isAware) {
+
+    protected void ExecuteAttackOrder_UponAwarenessChgd(IOwnerItem_Ltd item) {
         LogEvent();
-        if (fleet == _fsmTgt) {
-            D.Assert(!isAware); // can't become newly aware of a fleet we are attacking without first losing awareness
-                                // our attack target is the fleet we've lost awareness of
+        D.Assert(item is IFleetCmd_Ltd);
+        if (item == _fsmTgt) {
+            D.Assert(!OwnerAIMgr.HasKnowledgeOf(item)); // can't become newly aware of a fleet we are attacking without first losing awareness
+                                                        // our attack target is the fleet we've lost awareness of
             CurrentState = BaseState.Idling;
         }
     }
@@ -574,6 +611,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         // TODO Notify Superiors of success - unit target death
     }
 
+    protected void ExecuteAttackOrder_UponLosingOwnership() {
+        LogEvent();
+        // TODO Notify superiors
+    }
+
     protected void ExecuteAttackOrder_UponDeath() {
         LogEvent();
         // TODO Notify superiors of our death
@@ -582,11 +624,14 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected void ExecuteAttackOrder_ExitState() {
         LogEvent();
 
-        bool isUnsubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.TargetDeath, _fsmTgt, toSubscribe: false);
+        bool isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtDeath, _fsmTgt);
         D.Assert(isUnsubscribed);
-        isUnsubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.InfoAccessChg, _fsmTgt, toSubscribe: false);
+        isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtInfoAccessChg, _fsmTgt);
         D.Assert(isUnsubscribed);
-        isUnsubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.OwnerChg, _fsmTgt, toSubscribe: false);
+        isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, _fsmTgt);
+        D.Assert(isUnsubscribed);
+
+        isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.OwnerAwareChg_Fleet);
         D.Assert(isUnsubscribed);
 
         _fsmTgt = null;
@@ -601,7 +646,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     private FsmReturnHandler CreateFsmReturnHandler_RepairingToRepair() {
         IDictionary<FsmOrderFailureCause, Action> taskLookup = new Dictionary<FsmOrderFailureCause, Action>() {
-            // Death: Dead state becomes CurrentState before ReturnHandler can process the Return
+            // Death: 4.14.17 No longer a ReturnCause as InitiateDeadState auto Return()s out of Call()ed states
             // NeedsRepair won't occur as Repairing won't signal need for repair while repairing
             // TgtDeath not subscribed
         };
@@ -616,10 +661,10 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         ValidateCommonNotCallableStateValues();
         D.Assert(!_debugSettings.DisableRepair);
         D.AssertNull(CurrentOrder.Target);  // 4.4.17 Currently no target as only repair destination for a base is itself
-
+        // TgtUncatchable
         _fsmTgt = this;
         // No FsmInfoAccessChgd or FsmTgtDeath EventHandlers needed for our own base
-        bool isSubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.OwnerChg, _fsmTgt, toSubscribe: true);
+        bool isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, _fsmTgt);
         D.Assert(isSubscribed);
     }
 
@@ -638,7 +683,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         CurrentState = BaseState.Idling;
     }
 
-    protected void ExecuteRepairOrder_UponOrderOutcomeCallback(FacilityItem facility, bool isSuccess, IElementNavigable target, FsmOrderFailureCause failCause) {
+    protected void ExecuteRepairOrder_UponOrderOutcomeCallback(FacilityItem facility, bool isSuccess, IElementNavigableDestination target, FsmOrderFailureCause failCause) {
         LogEventWarning();  // UNCLEAR there is a 1 frame gap where this can still be called?
     }
 
@@ -672,11 +717,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         // Can't be relevant as our Base is all we care about
     }
 
-    protected void ExecuteRepairOrder_UponAwarenessOfFleetChanged(IFleetCmd_Ltd fleet, bool isAware) {
-        LogEvent();
-        // Nothing to do
-    }
-
     protected void ExecuteRepairOrder_UponSubordinateElementDeath(AUnitElementItem deadSubordinateElement) {
         LogEvent();
     }
@@ -684,6 +724,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected void ExecuteRepairOrder_UponFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) {
         LogEvent();
         // UNCLEAR we are no longer the owner of this base
+    }
+
+    protected void ExecuteRepairOrder_UponLosingOwnership() {
+        LogEvent();
+        // TODO Notify superiors
     }
 
     protected void ExecuteRepairOrder_UponDeath() {
@@ -694,7 +739,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         LogEvent();
 
         // No FsmInfoAccessChgd or FsmTgtDeath EventHandlers needed for our own base
-        bool isUnsubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.OwnerChg, _fsmTgt, toSubscribe: false);
+        bool isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, _fsmTgt);
         D.Assert(isUnsubscribed);
 
         _activeFsmReturnHandlers.Clear();
@@ -775,7 +820,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         Return();
     }
 
-    protected void Repairing_UponOrderOutcomeCallback(FacilityItem ship, bool isSuccess, IElementNavigable target, FsmOrderFailureCause failCause) {
+    protected void Repairing_UponOrderOutcomeCallback(FacilityItem ship, bool isSuccess, IElementNavigableDestination target, FsmOrderFailureCause failCause) {
         LogEvent();
         D.Log(ShowDebugLog, "{0}.Repairing_UponOrderOutcomeCallback() called from {1}. FailCause = {2}. Frame: {3}.",
             DebugName, ship.DebugName, failCause.GetValueName(), Time.frameCount);
@@ -788,17 +833,21 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
             switch (failCause) {
                 case FsmOrderFailureCause.Death:
                 case FsmOrderFailureCause.NewOrderReceived:
+                case FsmOrderFailureCause.Ownership:
                     _fsmFacilityWaitForRepairCount--;
                     break;
                 case FsmOrderFailureCause.NeedsRepair:
                     // Ignore it as facility will RestartState if it encounters this from another Call()ed state
+                    break;
+                case FsmOrderFailureCause.TgtUnreachable:
+                    D.Error("{0}: {1}.{2} not currently handled.", DebugName, typeof(FsmOrderFailureCause).Name,
+                        FsmOrderFailureCause.TgtUnreachable.GetValueName());
                     break;
                 case FsmOrderFailureCause.TgtDeath:
                 // UNCLEAR this base is dead
                 case FsmOrderFailureCause.TgtRelationship:
                 // UNCLEAR this base's owner just changed
                 case FsmOrderFailureCause.TgtUncatchable:
-                case FsmOrderFailureCause.TgtUnreachable:
                 case FsmOrderFailureCause.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(failCause));
@@ -825,11 +874,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         // No need to AssessNeedForRepair() as already Repairing
     }
 
-    protected void Repairing_UponAwarenessOfFleetChanged(IFleetCmd_Ltd fleet, bool isAware) {
-        LogEvent();
-        // Nothing to do
-    }
-
     protected void Repairing_UponSubordinateElementDeath(AUnitElementItem deadSubordinateElement) {
         LogEvent();
     }
@@ -846,13 +890,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     // 4.7.17 No FsmInfoAccessChgd or FsmTgtDeath EventHandlers needed for our own base
 
-    protected void Repairing_UponDeath() {
-        LogEvent();
-        // OPTIMIZE 4.14.17 No need for ReturnCause.Death as Dead state will become CurrentState before it can be processed
-        var returnHandler = GetCurrentCalledStateReturnHandler();
-        returnHandler.ReturnCause = FsmOrderFailureCause.Death;
-        Return();
-    }
+    // 4.15.17 Call()ed state _UponDeath eliminated as InitiateDeadState now uses Call()ed state Return() pattern
 
     protected void Repairing_ExitState() {
         LogEvent();
@@ -904,7 +942,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void Dead_EnterState() {
         LogEvent();
-        HandleDeathBeforeBeginningDeathEffect();
+        PrepareForDeathEffect();
         StartEffectSequence(EffectSequenceID.Dying);    // currently no death effect for a BaseCmd, just its elements
         HandleDeathAfterBeginningDeathEffect();
     }
@@ -912,6 +950,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected void Dead_UponEffectSequenceFinished(EffectSequenceID effectSeqID) {
         LogEvent();
         D.AssertEqual(EffectSequenceID.Dying, effectSeqID);
+        HandleDeathAfterDeathEffectFinished();
         DestroyMe(onCompletion: () => DestroyApplicableParents(5F));  // HACK long wait so last element can play death effect
     }
 
@@ -996,7 +1035,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     /// <param name="isSuccessful">if set to <c>true</c> [is successful].</param>
     /// <param name="target">The target. Can be null.</param>
     /// <param name="failCause">The failure cause if not successful.</param>
-    internal void HandleOrderOutcomeCallback(Guid orderID, FacilityItem facility, bool isSuccessful, IElementNavigable target, FsmOrderFailureCause failCause) {
+    internal void HandleOrderOutcomeCallback(Guid orderID, FacilityItem facility, bool isSuccessful, IElementNavigableDestination target, FsmOrderFailureCause failCause) {
         D.AssertNotDefault(orderID);
         if (CurrentOrder != null && CurrentOrder.OrderID == orderID) {
             // outcome is relevant to CurrentOrder and State
@@ -1032,7 +1071,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     #region Relays
 
-    private void UponOrderOutcomeCallback(FacilityItem facility, bool isSuccess, IElementNavigable target, FsmOrderFailureCause failCause) {
+    private void UponOrderOutcomeCallback(FacilityItem facility, bool isSuccess, IElementNavigableDestination target, FsmOrderFailureCause failCause) {
         RelayToCurrentState(facility, isSuccess, target, failCause);
     }
 
@@ -1080,6 +1119,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     #region Cleanup
 
+    protected override void Unsubscribe() {
+        base.Unsubscribe();
+        _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedEventHandler;
+    }
+
     #endregion
 
     #region Nested Classes
@@ -1106,42 +1150,12 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     #endregion
 
-    #region IShipCloseOrbitable Members
+    #region IAssemblySupported Members
 
-    private IShipCloseOrbitSimulator _closeOrbitSimulator;
-    public IShipCloseOrbitSimulator CloseOrbitSimulator {
-        get {
-            if (_closeOrbitSimulator == null) {
-                OrbitData closeOrbitData = new OrbitData(gameObject, CloseOrbitInnerRadius, CloseOrbitOuterRadius, IsMobile);
-                _closeOrbitSimulator = GeneralFactory.Instance.MakeShipCloseOrbitSimulatorInstance(closeOrbitData);
-            }
-            return _closeOrbitSimulator;
-        }
-    }
-
-    public void AssumeCloseOrbit(IShip_Ltd ship, FixedJoint shipOrbitJoint, float __distanceUponInitialArrival) {
-        if (_shipsInCloseOrbit == null) {
-            _shipsInCloseOrbit = new List<IShip_Ltd>();
-        }
-        _shipsInCloseOrbit.Add(ship);
-        shipOrbitJoint.connectedBody = CloseOrbitSimulator.OrbitRigidbody;
-
-        __ReportCloseOrbitDetails(ship, true, __distanceUponInitialArrival);
-    }
-
-    public bool IsInCloseOrbit(IShip_Ltd ship) {
-        if (_shipsInCloseOrbit == null || !_shipsInCloseOrbit.Contains(ship)) {
-            return false;
-        }
-        return true;
-    }
-
-    public bool IsCloseOrbitAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
-            return true;
-        }
-        return !Owner.IsEnemyOf(player);
-    }
+    /// <summary>
+    /// A collection of assembly stations that are local to the item.
+    /// </summary>
+    public IList<StationaryLocation> LocalAssemblyStations { get { return GuardStations; } }
 
     #endregion
 
@@ -1197,21 +1211,58 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         float insideOrbitSlotThreshold = CloseOrbitOuterRadius - ship.CollisionDetectionZoneRadius_Debug;
         if (shipDistance > insideOrbitSlotThreshold) {
             string arrivingLeavingMsg = isArriving ? "arriving in" : "leaving";
-            D.Log(ShowDebugLog, "{0} is {1} orbit of {2} but collision detection zone is poking outside of orbit slot by {3:0.0000} units.",
+            D.Log(ShowDebugLog, "{0} is {1} close orbit of {2} but collision detection zone is poking outside of orbit slot by {3:0.0000} units.",
                 ship.DebugName, arrivingLeavingMsg, DebugName, shipDistance - insideOrbitSlotThreshold);
             float halfOutsideOrbitSlotThreshold = CloseOrbitOuterRadius;
             if (shipDistance > halfOutsideOrbitSlotThreshold) {
-                D.Warn("{0} is {1} orbit of {2} but collision detection zone is half or more outside of orbit slot.", ship.DebugName, arrivingLeavingMsg, DebugName);
+                D.Warn("{0} is {1} close orbit of {2} but collision detection zone is half or more outside of orbit slot.", ship.DebugName, arrivingLeavingMsg, DebugName);
                 if (isArriving) {
                     float distanceMovedWhileWaitingForArrival = shipDistance - __distanceUponInitialArrival;
                     string distanceMsg = distanceMovedWhileWaitingForArrival < 0F ? "closer in toward" : "further out from";
-                    D.Log("{0} moved {1:0.##} {2} {3}'s orbit slot while waiting for arrival.", ship.DebugName, Mathf.Abs(distanceMovedWhileWaitingForArrival), distanceMsg, DebugName);
+                    D.Log("{0} moved {1:0.##} {2} {3}'s close orbit slot while waiting for arrival.", ship.DebugName, Mathf.Abs(distanceMovedWhileWaitingForArrival), distanceMsg, DebugName);
                 }
             }
         }
     }
 
-    public IList<StationaryLocation> LocalAssemblyStations { get { return GuardStations; } }
+    #endregion
+
+    #region IShipCloseOrbitable Members
+
+    private IShipCloseOrbitSimulator _closeOrbitSimulator;
+    public IShipCloseOrbitSimulator CloseOrbitSimulator {
+        get {
+            if (_closeOrbitSimulator == null) {
+                OrbitData closeOrbitData = new OrbitData(gameObject, CloseOrbitInnerRadius, CloseOrbitOuterRadius, IsMobile);
+                _closeOrbitSimulator = GeneralFactory.Instance.MakeShipCloseOrbitSimulatorInstance(closeOrbitData);
+            }
+            return _closeOrbitSimulator;
+        }
+    }
+
+    public void AssumeCloseOrbit(IShip_Ltd ship, FixedJoint shipOrbitJoint, float __distanceUponInitialArrival) {
+        if (_shipsInCloseOrbit == null) {
+            _shipsInCloseOrbit = new List<IShip_Ltd>();
+        }
+        _shipsInCloseOrbit.Add(ship);
+        shipOrbitJoint.connectedBody = CloseOrbitSimulator.OrbitRigidbody;
+
+        __ReportCloseOrbitDetails(ship, true, __distanceUponInitialArrival);
+    }
+
+    public bool IsInCloseOrbit(IShip_Ltd ship) {
+        if (_shipsInCloseOrbit == null || !_shipsInCloseOrbit.Contains(ship)) {
+            return false;
+        }
+        return true;
+    }
+
+    public bool IsCloseOrbitAllowedBy(Player player) {
+        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
+            return true;
+        }
+        return !Owner.IsEnemyOf(player);
+    }
 
     #endregion
 
@@ -1230,7 +1281,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     #endregion
 
-    #region IFleetNavigable Members
+    #region IFleetNavigableDestination Members
 
     public override float GetObstacleCheckRayLength(Vector3 fleetPosition) {
         return Vector3.Distance(fleetPosition, Position) - UnitMaxFormationRadius;
@@ -1238,7 +1289,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     #endregion
 
-    #region IShipNavigable Members
+    #region IShipNavigableDestination Members
 
     public override ApMoveDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, IShip ship) {
         float innerShellRadius = CloseOrbitOuterRadius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of close orbit
@@ -1261,8 +1312,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     }
 
     public Speed PatrolSpeed { get { return Speed.Slow; } }
-
-    // LocalAssemblyStations - see IShipOrbitable
 
     public bool IsPatrollingAllowedBy(Player player) {
         if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {

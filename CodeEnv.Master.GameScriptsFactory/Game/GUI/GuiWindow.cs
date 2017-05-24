@@ -50,9 +50,5 @@ public class GuiWindow : AGuiWindow {
         HideWindow();
     }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
 }
 

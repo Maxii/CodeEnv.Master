@@ -32,15 +32,41 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Occurs when this player's awareness of a fleet has changed.
-        /// <remarks>Only fleets have an awareness change event as they are the only Cmd that can have their IntelCoverage regress to the point
-        /// where a player is no longer aware of their existence.</remarks>
         /// <remarks>This event will not fire when the player loses awareness because of the death 
-        /// of the fleet. Knowledge of a fleet's death should be handled by subscribing to its deathOneShot event.</remarks>
+        /// of a mortalItem. Knowledge of a mortalItem's death should be handled by subscribing to its deathOneShot event.</remarks>
         /// </summary>
-        public event EventHandler<AwarenessOfFleetChangedEventArgs> awarenessOfFleetChanged;
+        public event EventHandler<AwareChgdEventArgs> awareChgd_Fleet;
+
+        /// <summary>
+        /// Occurs when this player's awareness of a ship has changed.
+        /// <remarks>This event will not fire when the player loses awareness because of the death 
+        /// of a mortalItem. Knowledge of a mortalItem's death should be handled by subscribing to its deathOneShot event.</remarks>
+        /// </summary>
+        public event EventHandler<AwareChgdEventArgs> awareChgd_Ship;
+
+        /// <summary>
+        /// Occurs when this player's awareness of a base has changed.
+        /// <remarks>This event will not fire when the player loses awareness because of the death 
+        /// of a mortalItem. Knowledge of a mortalItem's death should be handled by subscribing to its deathOneShot event.</remarks>
+        /// </summary>
+        public event EventHandler<AwareChgdEventArgs> awareChgd_Base;
+
+        /// <summary>
+        /// Occurs when this player's awareness of a facility has changed.
+        /// <remarks>This event will not fire when the player loses awareness because of the death 
+        /// of a mortalItem. Knowledge of a mortalItem's death should be handled by subscribing to its deathOneShot event.</remarks>
+        /// </summary>
+        public event EventHandler<AwareChgdEventArgs> awareChgd_Facility;
+
+        /// <summary>
+        /// Occurs when this player's awareness of a planet has changed.
+        /// <remarks>This event will not fire when the player loses awareness because of the death 
+        /// of a mortalItem. Knowledge of a mortalItem's death should be handled by subscribing to its deathOneShot event.</remarks>
+        /// </summary>
+        public event EventHandler<AwareChgdEventArgs> awareChgd_Planet;
 
         private string _debugName;
-        public string DebugName {
+        public virtual string DebugName {
             get {
                 if (_debugName == null) {
                     _debugName = DebugNameFormat.Inject(Owner.DebugName, GetType().Name);
@@ -75,6 +101,7 @@ namespace CodeEnv.Master.GameContent {
         private IFpsReadout _fpsReadout;
         private IGameManager _gameMgr;
         private IDebugControls _debugControls;
+        private IJobManager _jobMgr;
 
         public PlayerAIManager(Player owner, PlayerKnowledge knowledge) {
             Owner = owner;
@@ -85,6 +112,7 @@ namespace CodeEnv.Master.GameContent {
         private void InitializeValuesAndReferences() {
             _debugControls = GameReferences.DebugControls;
             _gameMgr = GameReferences.GameManager;
+            _jobMgr = GameReferences.JobManager;
             _fpsReadout = GameReferences.FpsReadout;
             _availableCmds = new List<IUnitCmd>();
             _unavailableCmds = new List<IUnitCmd>();
@@ -93,9 +121,13 @@ namespace CodeEnv.Master.GameContent {
         public void CommenceOperations() {
             IsOperational = true;
 
+            if (_debugControls.IsAutoRelationsChangeEnabled) {
+                __InitializeAutoRelationsChgSystem();
+            }
+
             var myAvailableFleetCmds = _availableCmds.Where(cmd => cmd is IFleetCmd).Cast<IFleetCmd>();
             if (!myAvailableFleetCmds.Any()) {
-                D.Warn("{0} had no fleets available to issue initial orders.", DebugName);
+                D.Log("{0} had no fleets available to issue initial orders.", DebugName);
                 return;
             }
             __SpreadInitialFleetOrders(myAvailableFleetCmds);
@@ -221,17 +253,17 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Assesses whether the [Owner] of this PlayerAIMgr is aware of this Item's existence. If already aware and [Owner] should
         /// lose awareness (IntelCoverage has regressed to None), the [Owner]'s Knowledge of the item is removed.
-        /// If not already aware, the knowledge is added and [Owner] becomes aware. If aware of the item,
-        /// the item is a Command, and [Owner] has not yet met the Command's owner, then [Owner] has just discovered
-        /// a new player. If [Owner] has just gained or lost awareness of a FleetCmd due to an increase or reduction of 
-        /// [Owner]'s IntelCoverage, this AIMgr will fire an awarenessOfFleetChgd event. Obviously, if fleet awareness is lost
-        /// it won't be owned by [Owner].
+        /// If not already aware, the knowledge is added and [Owner] becomes aware. Each item has their ownership assessed
+        /// and if [Owner] has access to the Item's owner, and Item's owner is not known to [Owner], then the two owners 
+        /// 'discover' each other. If [Owner] has just gained (or lost in the case of FleetCmd and Ship) awareness of an Item
+        /// due to an increase or reduction of [Owner]'s IntelCoverage, this AIMgr will fire an awarenessChgd event. 
+        /// Obviously, if fleet awareness is lost it won't be owned by [Owner].
         /// <remarks>Called whenever an item has had its IntelCoverage by [Owner] changed. Does nothing if already aware of
         /// the item without losing that awareness.</remarks>
         /// </summary>
         /// <param name = "item" > The item whose IntelCoverage by [Owner] has changed.</param>
         public void AssessAwarenessOf(IOwnerItem_Ltd item) {
-            // TEMP
+            //D.Log("{0}.AssessAwarenessOf({1}) called. Frame: {2}.", DebugName, item.DebugName, Time.frameCount); 
             IIntelItem intelItem = item as IIntelItem;
             IntelCoverage intelCoverage = intelItem.GetIntelCoverage(Owner);
             if (_debugControls.IsAllIntelCoverageComprehensive) {
@@ -239,50 +271,81 @@ namespace CodeEnv.Master.GameContent {
                 D.AssertEqual(IntelCoverage.Comprehensive, intelCoverage, intelCoverage.GetValueName());
             }
 
-            if (item is IStar_Ltd || item is ISystem_Ltd || item is IUniverseCenter_Ltd) {
-                return; // these are added to knowledge at startup and never removed so no need to add again
+            if (item is IUniverseCenter_Ltd) {
+                // added to knowledge at startup and never removed so no need to attempt add again
+                return;
+            }
+
+            if (!_areAllPlayersDiscovered) {
+                CheckForUndiscoveredPlayer(item);
+            }
+
+            if (item is IStar_Ltd || item is ISystem_Ltd) {
+                // added to knowledge at startup and never removed so no need to attempt add again
+                return;
             }
 
             // Note: Cleanup of Knowledge on item death handled by Knowledge
 
             var element = item as IUnitElement_Ltd;
             if (element != null) {
-                var ship = element as IShip;
+                var ship = element as IShip_Ltd;
                 if (ship != null) {
-                    // Ships can regress IntelCoverage to None
                     // intelCoverage = ship.GetIntelCoverage(Owner);            // TEMP
                     if (intelCoverage == IntelCoverage.None) {
-                        Knowledge.RemoveElement(element);
+                        D.Assert(ship.IsOperational);   // 4.20.17 This is a revert to None so must be operational
+                        Knowledge.RemoveElement(ship);
+                        OnAwareChgd_Ship(ship);
                         return;
                     }
                 }
-                Knowledge.AddElement(element);
+                bool isNewlyAware = Knowledge.AddElement(element);
+                if (isNewlyAware && element.IsOperational) {
+                    // 4.20.17 awareChgd events only raised when item is operational
+                    if (ship != null) {
+                        OnAwareChgd_Ship(ship);
+                    }
+                    else {
+                        D.Assert(element is IFacility_Ltd);
+                        OnAwareChgd_Facility(element as IFacility_Ltd);
+                    }
+                }
             }
             else {
                 var planetoid = item as IPlanetoid_Ltd;
                 if (planetoid != null) {
-                    Knowledge.AddPlanetoid(planetoid);
+                    bool isNewlyAware = Knowledge.AddPlanetoid(planetoid);
+                    if (isNewlyAware && planetoid.IsOperational) {
+                        // 4.20.17 awareChgd events only raised when item is operational
+                        var planet = planetoid as IPlanet_Ltd;
+                        if (planet != null) {
+                            OnAwareChgd_Planet(planet);
+                        }
+                    }
                 }
                 else {
                     var cmd = item as IUnitCmd_Ltd;
                     if (cmd != null) {
                         var fleetCmd = cmd as IFleetCmd_Ltd;
                         if (fleetCmd != null) {
-                            // Fleets can regress IntelCoverage to None
                             // intelCoverage = fleetCmd.GetIntelCoverage(Owner);            // TEMP
                             if (intelCoverage == IntelCoverage.None) {
-                                Knowledge.RemoveCommand(cmd);
-                                OnAwarenessOfFleetChanged(fleetCmd, isAware: false);
+                                D.Assert(fleetCmd.IsOperational);   // 4.20.17 This is a revert to None so must be operational
+                                Knowledge.RemoveCommand(fleetCmd);
+                                OnAwareChgd_Fleet(fleetCmd);
                                 return;
                             }
                         }
                         bool isNewlyAware = Knowledge.AddCommand(cmd);
-                        if (fleetCmd != null && isNewlyAware) {
-                            OnAwarenessOfFleetChanged(fleetCmd, isAware: true);
-                        }
-                        // Don't filter for Cmd to be newly aware as most newly discovered Cmds will be at LongRange with no access to Owner
-                        if (!_areAllPlayersDiscovered) {
-                            CheckForUnknownPlayer(cmd);
+                        if (isNewlyAware && cmd.IsOperational) {
+                            // 4.20.17 awareChgd events only raised when item is operational
+                            if (fleetCmd != null) {
+                                OnAwareChgd_Fleet(fleetCmd);
+                            }
+                            else {
+                                D.Assert(cmd is IUnitBaseCmd_Ltd);
+                                OnAwareChgd_Base(cmd as IUnitBaseCmd_Ltd);
+                            }
                         }
                     }
                     else {
@@ -305,35 +368,61 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private void CheckForUnknownPlayer(IUnitCmd_Ltd cmd) {
+        private void CheckForUndiscoveredPlayer(IOwnerItem_Ltd item) {
             D.Assert(!_areAllPlayersDiscovered);
+            //D.Log("{0}.CheckForUndiscoveredPlayer({1}) called. Frame: {2}.", DebugName, item.DebugName, Time.frameCount);
+
             Player newlyDiscoveredPlayerCandidate;
-            if (cmd.TryGetOwner(Owner, out newlyDiscoveredPlayerCandidate)) {
-                if (newlyDiscoveredPlayerCandidate == Owner) {
-                    // Note: The Cmd that generated this check is one of our own. 
+            if (item.TryGetOwner_Debug(Owner, out newlyDiscoveredPlayerCandidate)) {
+                if (newlyDiscoveredPlayerCandidate == TempGameValues.NoPlayer || newlyDiscoveredPlayerCandidate == Owner) {
                     return;
                 }
+
                 bool isAlreadyKnown = Owner.IsKnown(newlyDiscoveredPlayerCandidate);
                 if (!isAlreadyKnown) {
                     Player newlyDiscoveredPlayer = newlyDiscoveredPlayerCandidate;
                     Owner.HandleMetNewPlayer(newlyDiscoveredPlayer);
                     _areAllPlayersDiscovered = Owner.OtherKnownPlayers.Count() == _gameMgr.AllPlayers.Count - 1;
+                    if (_areAllPlayersDiscovered) {
+                        //D.LogBold("{0}: {1} now knows all players!", DebugName, Owner.DebugName);
+                        //D.Log("{0}'s OtherKnownPlayers: {1}, AllPlayers: {2}.", Owner.DebugName,
+                        //    Owner.OtherKnownPlayers.Select(p => p.DebugName).Concatenate(), _gameMgr.AllPlayers.Select(p => p.DebugName).Concatenate());
+                    }
                 }
+                //else {
+                //    D.Log("{0}: {1} is already known to {2}.", DebugName, newlyDiscoveredPlayerCandidate.DebugName, Owner.DebugName);
+                //}
             }
         }
 
         /// <summary>
         /// Makes Owner's provided UnitCommand available for orders whenever isAvailableChanged fires.
-        /// Called in 2 scenarios: just before commencing operation and after gaining ownership.
+        /// <remarks>Called in 2 scenarios: when commencing operation and after gaining ownership.</remarks>
         /// </summary>
         /// <param name="myUnitCmd">My unit command.</param>
         public void RegisterForOrders(IUnitCmd myUnitCmd) {
             D.AssertEqual(Owner, myUnitCmd.Owner);
-            //D.Log("{0} is registering {1} as {2} for orders.", DebugName, myUnitCmd.DebugName, myUnitCmd.IsAvailable ? "available" : "unavailable");
+            D.Assert(IsOperational || !myUnitCmd.IsAvailable);
+            if (!HasKnowledgeOf(myUnitCmd as IUnitCmd_Ltd)) {
+                D.Warn("{0} is unaware of {1} when registering for orders in Frame {2}.", DebugName, myUnitCmd.DebugName, Time.frameCount);
+            }
+            //D.Log("{0} is registering {1} as {2} for orders in Frame {3}.",
+            //    DebugName, myUnitCmd.DebugName, myUnitCmd.IsAvailable ? "available" : "unavailable", Time.frameCount);
             D.Assert(!_unavailableCmds.Contains(myUnitCmd));
             D.Assert(!_availableCmds.Contains(myUnitCmd));
             if (myUnitCmd.IsAvailable) {
-                _availableCmds.Add(myUnitCmd);
+                var myFleetCmd = myUnitCmd as IFleetCmd;
+                if (myFleetCmd != null && IsOperational) {
+                    if (__IssueFleetOrder(myFleetCmd)) {
+                        _unavailableCmds.Add(myUnitCmd);
+                    }
+                    else {
+                        _availableCmds.Add(myUnitCmd);
+                    }
+                }
+                else {
+                    _availableCmds.Add(myUnitCmd);
+                }
             }
             else {
                 _unavailableCmds.Add(myUnitCmd);
@@ -343,7 +432,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Deregisters Owner's provided UnitCommand from receiving orders whenever isAvailableChanged fires.
-        /// Called in 2 scenarios: death and in process of losing ownership.
+        /// <remarks>Called in 2 scenarios: death and just before losing ownership.</remarks>
         /// </summary>
         /// <param name="myUnitCmd">My unit command.</param>
         public void DeregisterForOrders(IUnitCmd myUnitCmd) {
@@ -354,7 +443,11 @@ namespace CodeEnv.Master.GameContent {
             }
             else {
                 bool isRemoved = _unavailableCmds.Remove(myUnitCmd);
-                D.Assert(isRemoved);
+                if (!isRemoved) {
+                    // 5.16.17 LoneCmd hadn't commenced ops and registered yet. Should be solved now that
+                    // this is called from Cmd.HandleOwnerChanging rather than Changed
+                    D.Error("{0}: cannot find {1} to DeregisterForOrders.", DebugName, myUnitCmd.DebugName);
+                }
             }
         }
 
@@ -364,31 +457,73 @@ namespace CodeEnv.Master.GameContent {
             Knowledge.OwnerCommands.ForAll(cmd => cmd.HandleColdWarEnemyEngagementPolicyChanged());
         }
 
-        private void OnAwarenessOfFleetChanged(IFleetCmd_Ltd fleet, bool isAware) {
-            if (awarenessOfFleetChanged != null) {
-                awarenessOfFleetChanged(this, new AwarenessOfFleetChangedEventArgs(fleet, isAware));
+        private void OnAwareChgd_Fleet(IFleetCmd_Ltd fleet) {
+            if (awareChgd_Fleet != null) {
+                D.Assert(fleet.IsOperational, fleet.DebugName);
+                if (fleet.Owner_Debug == Owner) {
+                    // 5.10.17 ship taken over chgd Cmd owner. Intel got chgd to None due to Sensor IsOperational recycle.
+                    D.Error("{0}: Awareness Chg of {1} owned by us. IsLoneCmd = {2}. HQElementOwner = {3}.",
+                        DebugName, fleet.DebugName, fleet.IsLoneCmd, (fleet as IUnitCmd).HQElement.Owner);
+                }
+                awareChgd_Fleet(this, new AwareChgdEventArgs(fleet));
             }
         }
+
+        private void OnAwareChgd_Ship(IShip_Ltd ship) {
+            if (awareChgd_Ship != null) {
+                D.Assert(ship.IsOperational, ship.DebugName);
+                D.AssertNotEqual(ship.Owner_Debug, Owner);
+                awareChgd_Ship(this, new AwareChgdEventArgs(ship));
+            }
+        }
+
+        private void OnAwareChgd_Base(IUnitBaseCmd_Ltd baseCmd) {
+            if (awareChgd_Base != null) {
+                D.Assert(baseCmd.IsOperational, baseCmd.DebugName);
+                D.AssertNotEqual(baseCmd.Owner_Debug, Owner);
+                awareChgd_Base(this, new AwareChgdEventArgs(baseCmd));
+            }
+        }
+
+        private void OnAwareChgd_Facility(IFacility_Ltd facility) {
+            if (awareChgd_Facility != null) {
+                D.Assert(facility.IsOperational, facility.DebugName);
+                D.AssertNotEqual(facility.Owner_Debug, Owner);
+                awareChgd_Facility(this, new AwareChgdEventArgs(facility));
+            }
+        }
+
+        private void OnAwareChgd_Planet(IPlanet_Ltd planet) {
+            if (awareChgd_Planet != null) {
+                D.Assert(planet.IsOperational, planet.DebugName);
+                D.AssertNotEqual(planet.Owner_Debug, Owner);
+                awareChgd_Planet(this, new AwareChgdEventArgs(planet));
+            }
+        }
+
 
         private void MyCmdIsAvailableChgdEventHandler(object sender, EventArgs e) {
             IUnitCmd myCmd = sender as IUnitCmd;
             HandleMyCmdIsAvailableChanged(myCmd);
         }
 
+        #endregion
+
         private void HandleMyCmdIsAvailableChanged(IUnitCmd myCmd) {
             UpdateCmdAvailability(myCmd);
 
-            if (IsOperational && myCmd.IsAvailable) {
+            if (IsOperational) {
                 IFleetCmd fleetCmd = myCmd as IFleetCmd;
                 if (fleetCmd != null) {
-                    __AssessAndRecordUnitBaseVisit(fleetCmd);
-                    //D.Log("{0} is issuing order to {1} with no delay.", DebugName, fleetCmd.DebugName);
-                    __IssueFleetOrder(fleetCmd);
+                    if (fleetCmd.IsAvailable) {
+                        __IssueFleetOrder(fleetCmd);
+                    }
+                    else {
+                        __AssessAndRecordUpcomingBaseVisit(fleetCmd);
+                    }
                 }
             }
         }
-
-        #endregion
 
         private void UpdateCmdAvailability(IUnitCmd myCmd) {
             if (myCmd.IsAvailable) {
@@ -436,7 +571,10 @@ namespace CodeEnv.Master.GameContent {
 
             var formerAllyOwnedItems = Knowledge.GetItemsOwnedBy(formerAlly);
             var formerAllySensorDetectableOwnedItems = formerAllyOwnedItems.Where(item => item is ISensorDetectable).Cast<ISensorDetectable>();
-            formerAllySensorDetectableOwnedItems.ForAll(sdItem => sdItem.ResetBasedOnCurrentDetection(Owner));
+            formerAllySensorDetectableOwnedItems.ForAll(sdItem => {
+                //D.Log("{0} is about to call formerAlly {1}'s item {2}.ResetBasedOnCurrentDetection.", DebugName, formerAlly, sdItem.DebugName);
+                sdItem.ResetBasedOnCurrentDetection(Owner);
+            });
         }
 
         /// <summary>
@@ -473,9 +611,37 @@ namespace CodeEnv.Master.GameContent {
             Knowledge.Dispose();
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+        public sealed override string ToString() {
+            return DebugName;
         }
+
+        #region Debug Auto Relations Change System
+
+        private Job __autoRelationsChgJob;
+
+        private void __InitializeAutoRelationsChgSystem() {
+            GameDate startDate = new GameDate(new GameTimeDuration(0F, days: RandomExtended.Range(1, 3)));
+            GameTimeDuration durationBetweenChgs = new GameTimeDuration(hours: UnityEngine.Random.Range(0F, 10F), days: RandomExtended.Range(3, 10));
+            //D.Log("{0}: Initiating Auto Relations Changes beginning {1} with changes every {2}.", DebugName, startDate, durationBetweenChgs);
+            __autoRelationsChgJob = _jobMgr.WaitForDate(startDate, "AutoRelationsChgStartJob", waitFinished: (jobWasKilled) => {
+                if (jobWasKilled) {
+
+                }
+                else {
+                    __autoRelationsChgJob = _jobMgr.RecurringWaitForHours(durationBetweenChgs, "AutoRelationsChgRecurringJob", waitMilestone: () => {
+                        if (OtherKnownPlayers.Any()) {
+                            Player player = RandomExtended.Choice(OtherKnownPlayers);
+                            var currentRelations = Owner.GetCurrentRelations(player);
+                            DiplomaticRelationship newRelations = Enums<DiplomaticRelationship>.GetRandomExcept(default(DiplomaticRelationship),
+                                currentRelations, DiplomaticRelationship.Self);
+                            Owner.SetRelationsWith(player, newRelations);
+                        }
+                    });
+                }
+            });
+        }
+
+        #endregion
 
         #region Debug Issue Fleet Orders
 
@@ -489,7 +655,7 @@ namespace CodeEnv.Master.GameContent {
             Stack<IFleetCmd> myAvailableFleetCmdsStack = new Stack<IFleetCmd>(myAvailableFleetCmds);
             int randomInitialWait = RandomExtended.Range(1, 3);
             __spreadInitialFleetOrdersJob = GameReferences.JobManager.RecurringWaitForGameplaySeconds(randomInitialWait, recurringWait: 1F,
-                jobName: "InitialOrderSpreadJob", waitMilestone: () => {
+                jobName: "__InitialOrderSpreadJob", waitMilestone: () => {
                     if (myAvailableFleetCmdsStack.Count == Constants.Zero) {
                         __spreadInitialFleetOrdersJob.Kill();
                         return;
@@ -498,12 +664,12 @@ namespace CodeEnv.Master.GameContent {
                 });
         }
 
-        private void __AssessAndRecordUnitBaseVisit(IFleetCmd fleetCmd) {
+        private void __AssessAndRecordUpcomingBaseVisit(IFleetCmd fleetCmd) {
             if (fleetCmd.IsCurrentOrderDirectiveAnyOf(FleetDirective.Move, FleetDirective.FullSpeedMove)) {
                 var unitBaseTgt = fleetCmd.CurrentOrder.Target as IUnitBaseCmd;
                 if (unitBaseTgt != null) {
                     if (__basesVisited.Contains(unitBaseTgt)) {
-                        D.Log("{0}: {1} just completed visiting {2} which was previously visited.",
+                        D.Log("{0}: {1} intends to visit {2} which was previously visited.",
                             DebugName, fleetCmd.DebugName, unitBaseTgt.DebugName);
                     }
                     else {
@@ -521,40 +687,57 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Issues an order to the fleet.
+        /// Issues an order to the fleet, returning true if an order was issued.
+        /// <remarks>5.15.17 Not entirely sure it returns proper value all the time.</remarks>
         /// </summary>
         /// <param name="fleetCmd">The fleet command.</param>
-        private void __IssueFleetOrder(IFleetCmd fleetCmd) {
+        /// <returns></returns>
+        private bool __IssueFleetOrder(IFleetCmd fleetCmd) {
+            D.Assert(fleetCmd.IsAvailable);
             D.Assert(_availableCmds.Contains(fleetCmd));
             D.Assert(!_unavailableCmds.Contains(fleetCmd));
 
-            if (fleetCmd.IsFerryFleet) {
-                IFleetNavigable closestFleet = null;
-                var fleets = _availableCmds.Where(cmd => cmd is IFleetCmd).Where(cmd => !(cmd as IFleetCmd).IsFerryFleet).Cast<IFleetNavigable>();
-                if (fleets.Any()) {
-                    closestFleet = GameUtility.GetClosest(fleetCmd.Position, fleets);
+            if (fleetCmd.IsLoneCmd) {
+                IFleetNavigableDestination closestFleet = null;
+
+                IEnumerable<IFleetNavigableDestination> tgtFleets =
+                from cmd in _availableCmds
+                let fleet = cmd as IFleetCmd
+                where fleet != null && !fleet.IsLoneCmd && fleet.IsJoinable
+                let tgtFleet = fleet as IFleetNavigableDestination
+                select tgtFleet;
+
+                if (tgtFleets.Any()) {
+                    closestFleet = GameUtility.GetClosest(fleetCmd.Position, tgtFleets);
                 }
                 else {
-                    fleets = _unavailableCmds.Where(cmd => cmd is IFleetCmd).Where(cmd => !(cmd as IFleetCmd).IsFerryFleet).Cast<IFleetNavigable>();
-                    if (fleets.Any()) {
-                        closestFleet = GameUtility.GetClosest(fleetCmd.Position, fleets);
+                    tgtFleets =
+                        from cmd in _unavailableCmds
+                        let fleet = cmd as IFleetCmd
+                        where fleet != null && !fleet.IsLoneCmd && fleet.IsJoinable
+                        let tgtFleet = fleet as IFleetNavigableDestination
+                        select tgtFleet;
+                    if (tgtFleets.Any()) {
+                        closestFleet = GameUtility.GetClosest(fleetCmd.Position, tgtFleets);
                     }
                 }
                 if (closestFleet != null) {
-                    D.Log("{0} is issuing an order to {1} to Join {2}.", DebugName, fleetCmd.DebugName, closestFleet.DebugName);
+                    //D.Log("{0} is issuing an order to {1} to JOIN {2}.", DebugName, fleetCmd.DebugName, closestFleet.DebugName);
                     FleetOrder order = new FleetOrder(FleetDirective.Join, OrderSource.PlayerAI, closestFleet);
                     bool isOrderInitiated = fleetCmd.InitiateNewOrder(order);
                     if (!isOrderInitiated) {
                         D.Warn("{0} was unable to immediately initiate {1} due to CmdStaff's Override order {2}.",
                             DebugName, order.DebugName, fleetCmd.CurrentOrder.DebugName);
+                        return false;
                     }
-                    return;
+                    return true;
                 }
+                return false;
             }
 
             if (GameReferences.DebugControls.FleetsAutoAttackAsDefault) {
                 if (__areAllTargetsAttacked && __isUniverseFullyExplored) {
-                    return;
+                    return false;
                 }
 
                 if (__myAttackingFleets == null) {
@@ -570,7 +753,7 @@ namespace CodeEnv.Master.GameContent {
                             __myAttackingFleets.Add(fleetCmd);
                             fleetCmd.deathOneShot += __MyAttackingFleetDeathEventHandler;
                         }
-                        return;
+                        return true;
                     }
                     else {
                         // no target detected to attack
@@ -610,6 +793,7 @@ namespace CodeEnv.Master.GameContent {
                 if (__areAllTargetsAttacked && __isUniverseFullyExplored) {
                     D.LogBold("{0}: Fleet {1} has run out of attack targets and unexplored explorable destinations in universe.",
                         DebugName, fleetCmd.DebugName);
+                    return false;
                 }
             }
             else {  // FleetsAutoAttackAsDefault precludes all other orders
@@ -617,13 +801,13 @@ namespace CodeEnv.Master.GameContent {
                 if (debugFleetCreator != null) {
                     FleetCreatorEditorSettings editorSettings = debugFleetCreator.EditorSettings as FleetCreatorEditorSettings;
                     if (__IssueFleetOrderSpecifiedByCreator(fleetCmd, editorSettings)) {
-                        return;
+                        return true;
                     }
                 }
 
                 if (GameReferences.DebugControls.FleetsAutoExploreAsDefault) {
                     if (__isUniverseFullyExplored && __areAllBasesVisited) {
-                        return;
+                        return false;
                     }
 
                     if (!__isUniverseFullyExplored) {
@@ -649,9 +833,13 @@ namespace CodeEnv.Master.GameContent {
                     if (__isUniverseFullyExplored && __areAllBasesVisited) {
                         D.LogBold("{0}: Fleet {1} has run out of unexplored explorable or unvisited visitable destinations in universe.",
                             DebugName, fleetCmd.DebugName);
+                        return false;
                     }
+                    return true;
                 }
+                return true;
             }
+            return true;
         }
 
         /// <summary>
@@ -718,19 +906,19 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="findFarthestTgt">if set to <c>true</c> [find farthest target].</param>
         /// <returns></returns>
         private bool __IssueFleetMoveOrder(IFleetCmd fleetCmd, bool findFarthestTgt) {
-            List<IFleetNavigable> moveTgts = Knowledge.Starbases.Cast<IFleetNavigable>().ToList();
-            moveTgts.AddRange(Knowledge.Settlements.Cast<IFleetNavigable>());
-            moveTgts.AddRange(Knowledge.Planets.Cast<IFleetNavigable>());
-            ////moveTgts.AddRange(Knowledge.Systems.Cast<IFleetNavigable>());
-            moveTgts.AddRange(Knowledge.Stars.Cast<IFleetNavigable>());
+            List<IFleetNavigableDestination> moveTgts = Knowledge.Starbases.Cast<IFleetNavigableDestination>().ToList();
+            moveTgts.AddRange(Knowledge.Settlements.Cast<IFleetNavigableDestination>());
+            moveTgts.AddRange(Knowledge.Planets.Cast<IFleetNavigableDestination>());
+            ////moveTgts.AddRange(Knowledge.Systems.Cast<IFleetNavigableDestination>());
+            moveTgts.AddRange(Knowledge.Stars.Cast<IFleetNavigableDestination>());
             if (Knowledge.UniverseCenter != null) {
-                moveTgts.Add(Knowledge.UniverseCenter as IFleetNavigable);
+                moveTgts.Add(Knowledge.UniverseCenter as IFleetNavigableDestination);
             }
 
             if (!moveTgts.Any()) {
                 return false;
             }
-            IFleetNavigable destination;
+            IFleetNavigableDestination destination;
             if (findFarthestTgt) {
                 destination = moveTgts.MaxBy(mt => Vector3.SqrMagnitude(mt.Position - fleetCmd.Position));
             }
@@ -797,7 +985,7 @@ namespace CodeEnv.Master.GameContent {
                 var closestVisitableBase = visitableUnvisitedBases.MinBy(vBase => Vector3.SqrMagnitude(fleetCmd.Position - vBase.Position));
                 D.Log("{0} is issuing {1} a MOVE order to {2} in Frame {3}. FPS = {4:0.#}.",
                     DebugName, fleetCmd.DebugName, closestVisitableBase.DebugName, Time.frameCount, _fpsReadout.FramesPerSecond);
-                var order = new FleetOrder(FleetDirective.Move, OrderSource.PlayerAI, closestVisitableBase as IFleetNavigable);
+                var order = new FleetOrder(FleetDirective.Move, OrderSource.PlayerAI, closestVisitableBase as IFleetNavigableDestination);
                 bool isOrderInitiated = fleetCmd.InitiateNewOrder(order);
                 if (!isOrderInitiated) {
                     D.Warn("{0} was unable to immediately initiate {1} due to CmdStaff's Override order {2}.",
@@ -876,20 +1064,19 @@ namespace CodeEnv.Master.GameContent {
         #region Nested Classes
 
         /// <summary>
-        /// Event Args containing info on a change to a player's awareness of a fleet.
+        /// Event Args containing info on a change to a player's awareness of an item.
         /// <remarks>Used to describe a change in whether the player is or is not aware
-        /// of a fleet. It is not used to indicate a change in IntelCoverage level except for to/from None.</remarks>
+        /// of an item. It is not used to indicate a change in IntelCoverage level except for to/from None.</remarks>
+        /// <remarks>Most items cannot be lost from awareness once this player is aware of them. The exceptions
+        /// are Fleets and Ships which can be lost from awareness when they go out of sensor range.</remarks>
         /// </summary>
         /// <seealso cref="System.EventArgs" />
-        public class AwarenessOfFleetChangedEventArgs : EventArgs {
+        public class AwareChgdEventArgs : EventArgs {
 
-            public IFleetCmd_Ltd Fleet { get; private set; }
+            public IOwnerItem_Ltd Item { get; private set; }
 
-            public bool IsAware { get; private set; }
-
-            public AwarenessOfFleetChangedEventArgs(IFleetCmd_Ltd fleet, bool isAware) {
-                Fleet = fleet;
-                IsAware = isAware;
+            public AwareChgdEventArgs(IOwnerItem_Ltd item) {
+                Item = item;
             }
         }
 

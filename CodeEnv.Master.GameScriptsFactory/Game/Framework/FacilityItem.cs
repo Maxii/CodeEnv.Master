@@ -86,7 +86,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     #region Initialization
 
     protected override bool InitializeDebugLog() {
-        return DebugControls.Instance.ShowFacilityDebugLogs;
+        return _debugCntls.ShowFacilityDebugLogs;
     }
 
     protected override void InitializeOnData() {
@@ -160,12 +160,20 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         Rigidbody.isKinematic = true;   // 3.7.17 TEMP stops facility from taking on velocity from collisions
     }
 
+    protected override void SubscribeToSensorEvents() {
+        D.AssertNotEqual(FacilityState.None, CurrentState);
+        D.AssertNotEqual(FacilityState.FinalInitialize, CurrentState);
+        base.SubscribeToSensorEvents();
+    }
+
     #endregion
 
     public override void CommenceOperations() {
         base.CommenceOperations();
         _obstacleZoneCollider.enabled = true;
         CurrentState = FacilityState.Idling;
+        ActivateSensors();
+        SubscribeToSensorEvents();
     }
 
     public FacilityReport GetReport(Player player) { return Publisher.GetReport(player); }
@@ -174,21 +182,43 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         SelectedItemHudWindow.Instance.Show(FormID.SelectedFacility, UserReport);
     }
 
+    protected override bool ShouldCmdOwnerChange() {
+        return Command.Elements.Count == Constants.One;
+    }
+
+
+    protected override void HandleOwnerChanged() {
+        base.HandleOwnerChanged();
+        D.AssertEqual(Constants.One, Command.Elements.Count);
+        D.AssertEqual(Owner, Command.Owner);
+        D.Log(/*ShowDebugLog, */"{0} just seized its existing Cmd {1} in Frame {2}.", DebugName, Command.DebugName, Time.frameCount);
+    }
+
     #region Event and Property Change Handlers
 
     private void CurrentOrderPropChangedHandler() {
         HandleNewOrder();
     }
 
+    private void NewOrderReceivedWhilePausedEventHandler(object sender, EventArgs e) {
+        _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedEventHandler;
+        ChangeOrderAfterPause();
+    }
+
     #endregion
 
+    protected override void PrepareToInformCmdOfSubordinateDeath() {
+        base.PrepareToInformCmdOfSubordinateDeath();
+        UponDeath();    // 4.19.17 Do any reqd Callback before exiting current non-Call()ed state
+        CurrentOrder = null;
+    }
+
     protected override void InitiateDeadState() {
-        UponDeath();
         CurrentState = FacilityState.Dead;
     }
 
-    protected override void HandleDeathBeforeBeginningDeathEffect() {
-        base.HandleDeathBeforeBeginningDeathEffect();
+    protected override void PrepareForDeathEffect() {
+        base.PrepareForDeathEffect();
         // Keep the obstacleZoneCollider enabled to keep ships from flying through this exploding facility
     }
 
@@ -228,6 +258,11 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         }
     }
 
+    protected override void ResetOrderAndState() {
+        CurrentOrder = null;
+        CurrentState = FacilityState.Idling;    // 4.20.17 Will unsubscribe from any FsmEvents when exiting the Current non-Call()ed state
+    }
+
     #region Orders
 
     /// <summary>
@@ -238,18 +273,35 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     /// </summary>
     private Guid _lastCmdOrderID;
 
+    private FacilityOrder _newOrderReceivedWhilePaused;
+
     /// <summary>
-    /// Attempts to initiate the immediate execution of the provided order, returning <c>true</c>
+    /// Attempts to initiate the execution of the provided order, returning <c>true</c>
     /// if its execution was initiated, <c>false</c> if its execution was deferred until all of the 
     /// override orders issued by the Captain have executed. 
     /// <remarks>If order.Source is User, even the Captain's orders will be overridden, returning <c>true</c>.</remarks>
+    /// <remarks>If called while paused, the order will be deferred until unpaused and return the same value it would
+    /// have returned if it hadn't been paused.</remarks>
+    /// <remarks>5.4.17 I've chosen to hold orders here when paused, allowing the AI to issue orders even when paused.</remarks>
     /// </summary>
     /// <param name="order">The order.</param>
     /// <returns></returns>
     public bool InitiateNewOrder(FacilityOrder order) {
         D.Assert(order.Source > OrderSource.Captain);
-        if (CurrentOrder != null) {
-            if (order.Source != OrderSource.User) {
+        if (IsPaused) {
+            _newOrderReceivedWhilePaused = order;
+            // deal with multiple changes all while paused
+            _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedEventHandler;
+            _gameMgr.isPausedChanged += NewOrderReceivedWhilePausedEventHandler;
+            bool willOrderExecutionImmediatelyFollowResume = order.Source == OrderSource.User || CurrentOrder == null || CurrentOrder.Source != OrderSource.Captain;
+            return willOrderExecutionImmediatelyFollowResume;
+        }
+
+        D.Assert(!IsPaused);
+        D.AssertNull(_newOrderReceivedWhilePaused);
+
+        if (order.Source != OrderSource.User) {
+            if (CurrentOrder != null) {
                 if (CurrentOrder.Source == OrderSource.Captain) {
                     CurrentOrder.StandingOrder = order;
                     return false;
@@ -258,6 +310,16 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         }
         CurrentOrder = order;
         return true;
+    }
+
+    private void ChangeOrderAfterPause() {
+        D.AssertNotNull(_newOrderReceivedWhilePaused);
+        D.Assert(!IsPaused);
+
+        FacilityOrder newOrder = _newOrderReceivedWhilePaused;
+        _newOrderReceivedWhilePaused = null;
+        D.Log(/*ShowDebugLog,*/ "{0} is changing order to {1} after resuming from pause.", DebugName, newOrder.DebugName);
+        InitiateNewOrder(newOrder);
     }
 
     public bool IsCurrentOrderDirectiveAnyOf(FacilityDirective directiveA) {
@@ -294,14 +356,11 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     }
 
     private void HandleNewOrder() {
+        // 4.9.17 Removed UponNewOrderReceived for Call()ed states as any ReturnCause they provide will never
+        // be processed as the new order will change the state before the yield return null allows the processing
         // 4.13.17 Must get out of Call()ed states even if new order is null as only a non-Call()ed state's 
         // ExitState method properly resets all the conditions for entering another state, aka Idling.
-        while (IsCurrentStateCalled) {
-            // 4.9.17 Removed UponNewOrderReceived for Call()ed states as any ReturnCause they provide will never
-            // be processed as the new order will change the state before the yield return null allows the processing
-            Return();
-        }
-        D.Assert(!IsCurrentStateCalled);
+        ReturnFromCalledStates();
 
         if (CurrentOrder != null) {
             //D.Log(ShowDebugLog, "{0} received new order {1}. Frame {2}.", DebugName, CurrentOrder.Directive.GetValueName(), Time.frameCount);
@@ -345,12 +404,13 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         if (CurrentOrder != null) {
             if (CurrentOrder.Source > OrderSource.Captain) {
                 CurrentOrder = null;
+                __warnWhenIdlingReceivesFsmTgtEvents = false;
                 CurrentState = FacilityState.Idling;
             }
             else {
                 D.AssertEqual(OrderSource.Captain, CurrentOrder.Source);
                 CurrentOrder.StandingOrder = null;
-                D.LogBold(/*ShowDebugLog, */"{0} not able to cancel {1} as it was issued by the Captain.", DebugName, CurrentOrder.DebugName);
+                D.Log(ShowDebugLog, "{0} not able to cancel {1} as it was issued by the Captain.", DebugName, CurrentOrder.DebugName);
                 return false;
             }
         }
@@ -398,9 +458,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     /// </summary>
     private void RestartState() {
         var stateWhenCalled = CurrentState;
-        while (IsCurrentStateCalled) {
-            Return();
-        }
+        ReturnFromCalledStates();
         D.LogBold(/*ShowDebugLog, */"{0}.RestartState called from {1}.{2}. RestartedState = {3}.",
             DebugName, typeof(FacilityState).Name, stateWhenCalled.GetValueName(), CurrentState.GetValueName());
         CurrentState = CurrentState;
@@ -510,12 +568,18 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     // No need for _fsmTgt-related event handlers as there is no _fsmTgt
 
+    void Idling_UponLosingOwnership() {
+        LogEvent();
+        // Do nothing as no callback to send
+    }
+
     void Idling_UponDeath() {
         LogEvent();
     }
 
     void Idling_ExitState() {
         LogEvent();
+        __warnWhenIdlingReceivesFsmTgtEvents = true;
         IsAvailable = false;
     }
 
@@ -523,7 +587,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #region ExecuteAttackOrder
 
-    private IElementNavigable _fsmTgt;
+    private IElementNavigableDestination _fsmTgt;
 
     private IElementBlastable _fsmPrimaryAttackTgt;    // UNDONE
 
@@ -537,7 +601,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         D.Assert(unitAttackTgt.IsOperational);
         D.Assert(unitAttackTgt.IsAttackAllowedBy(Owner));
 
-        _fsmTgt = unitAttackTgt as IElementNavigable;
+        _fsmTgt = unitAttackTgt as IElementNavigableDestination;
     }
 
     IEnumerator ExecuteAttackOrder_EnterState() {
@@ -620,6 +684,13 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         // TODO
     }
 
+    void ExecuteAttackOrder_UponLosingOwnership() {
+        LogEvent();
+        if (_allowOrderFailureCallback) {
+            AttemptOrderOutcomeCallback(isSuccessful: false, failCause: FsmOrderFailureCause.Ownership);
+        }
+    }
+
     void ExecuteAttackOrder_UponDeath() {
         LogEvent();
         // TODO
@@ -644,7 +715,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     private FsmReturnHandler CreateFsmReturnHandler_RepairingToRepair() {
         IDictionary<FsmOrderFailureCause, Action> taskLookup = new Dictionary<FsmOrderFailureCause, Action>() {
-            // Death: Dead state becomes CurrentState before ReturnHandler can process the Return
+            // Death: 4.14.17 No longer a ReturnCause as InitiateDeadState auto Return()s out of Call()ed states
             // NeedsRepair: Repairing won't respond with NeedsRepair while repairing
             // TgtDeath: not subscribed
         };
@@ -675,6 +746,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         LogEvent();
 
         ValidateCommonNotCallableStateValues();
+        // 4.15.17 Can't Assert ToCallback as Captain can issue this order
         D.Assert(!_debugSettings.DisableRepair);
         D.AssertNull(CurrentOrder.Target);  // 4.3.17 For now as only current choices are this Facility's Cmd or the
                                             // Facility's future FormationStation which can both be chosen here
@@ -683,7 +755,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
         // No TargetDeathEventHandler needed for our own base
         // No infoAccessChgdEventHandlers needed for our own base
-        bool isSubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.OwnerChg, repairDest, toSubscribe: true);
+        bool isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, repairDest);
         D.Assert(isSubscribed);
         _fsmTgt = repairDest;
     }
@@ -752,7 +824,19 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void ExecuteRepairOrder_UponFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) {
         LogEvent();
-        // UNCLEAR fsmTgt is our own Cmd
+        // 5.22.17 Continue to repair. fstTgt is our own Cmd. If its owner changed it means that it was initiated
+        // by us as we are the last remaining element, although our Owner hasn't completed its change yet.
+        D.AssertEqual(Command, fsmTgt);
+        D.Assert(IsOwnerChangeUnderway);
+        D.AssertNotEqual(Command.Owner, Owner);
+        D.Assert(IsHQ);
+    }
+
+    void ExecuteRepairOrder_UponLosingOwnership() {
+        LogEvent();
+        if (_allowOrderFailureCallback) {
+            AttemptOrderOutcomeCallback(isSuccessful: false, failCause: FsmOrderFailureCause.Ownership);
+        }
     }
 
     void ExecuteRepairOrder_UponDeath() {
@@ -768,7 +852,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         var repairDest = _fsmTgt as IFacilityRepairCapable;
         // No TargetDeathEventHandler needed for our own base
         // No infoAccessChgdEventHandlers needed for our own base
-        bool isUnsubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.OwnerChg, repairDest, toSubscribe: false);
+        bool isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, repairDest);
         D.Assert(isUnsubscribed);
 
         _activeFsmReturnHandlers.Clear();
@@ -856,15 +940,17 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         // TODO
     }
 
-    // No need for FsmTgt-related event handlers as there is no _fsmTgt
-
-    void Repairing_UponDeath() {
+    void Repairing_UponFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) {
         LogEvent();
-        // OPTIMIZE 4.14.17 No need for ReturnCause.Death as Dead state will become CurrentState before it can be processed
-        var returnHandler = GetCurrentCalledStateReturnHandler();
-        returnHandler.ReturnCause = FsmOrderFailureCause.Death;
-        Return();
+        // 5.22.17 Continue to repair. fstTgt is our own Cmd. If its owner changed it means that it was initiated
+        // by us as we are the last remaining element, although our Owner hasn't completed its change yet.
+        D.AssertEqual(Command, fsmTgt);
+        D.Assert(IsOwnerChangeUnderway);
+        D.AssertNotEqual(Command.Owner, Owner);
+        D.Assert(IsHQ);
     }
+
+    // 4.15.17 Call()ed state _UponDeath methods eliminated as InitiateDeadState now uses Call()ed state Return() pattern
 
     void Repairing_ExitState() {
         LogEvent();
@@ -926,13 +1012,14 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     void Dead_EnterState() {
         LogEvent();
 
-        HandleDeathBeforeBeginningDeathEffect();
+        PrepareForDeathEffect();
         StartEffectSequence(EffectSequenceID.Dying);
         HandleDeathAfterBeginningDeathEffect();
     }
 
     void Dead_UponEffectSequenceFinished(EffectSequenceID effectSeqID) {
         LogEvent();
+        HandleDeathAfterDeathEffectFinished();
         DestroyMe();
     }
 
@@ -1098,15 +1185,16 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         CleanupDebugShowObstacleZone();
     }
 
-    #endregion
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+    protected override void Unsubscribe() {
+        base.Unsubscribe();
+        _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedEventHandler;
     }
+
+    #endregion
 
     #region Debug
 
-    private void __ValidateKnowledgeOfOrderTarget(IElementNavigable target, FacilityDirective directive) {
+    private void __ValidateKnowledgeOfOrderTarget(IElementNavigableDestination target, FacilityDirective directive) {
         if (directive == FacilityDirective.Disband || directive == FacilityDirective.Refit || directive == FacilityDirective.StopAttack) {
             // directives aren't yet implemented
             return;
@@ -1152,9 +1240,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     #region Debug Show Obstacle Zones
 
     private void InitializeDebugShowObstacleZone() {
-        DebugControls debugValues = DebugControls.Instance;
-        debugValues.showObstacleZones += ShowDebugObstacleZonesChangedEventHandler;
-        if (debugValues.ShowObstacleZones) {
+        _debugCntls.showObstacleZones += ShowDebugObstacleZonesChangedEventHandler;
+        if (_debugCntls.ShowObstacleZones) {
             EnableDebugShowObstacleZone(true);
         }
     }
@@ -1170,13 +1257,12 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     }
 
     private void ShowDebugObstacleZonesChangedEventHandler(object sender, EventArgs e) {
-        EnableDebugShowObstacleZone(DebugControls.Instance.ShowObstacleZones);
+        EnableDebugShowObstacleZone(_debugCntls.ShowObstacleZones);
     }
 
     private void CleanupDebugShowObstacleZone() {
-        var debugValues = DebugControls.Instance;
-        if (debugValues != null) {
-            debugValues.showObstacleZones -= ShowDebugObstacleZonesChangedEventHandler;
+        if (_debugCntls != null) {
+            _debugCntls.showObstacleZones -= ShowDebugObstacleZonesChangedEventHandler;
         }
         if (_obstacleZoneCollider != null) { // can be null if creator destroys facility 
 
@@ -1291,7 +1377,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #endregion
 
-    #region IShipNavigable Members
+    #region IShipNavigableDestination Members
 
     public override bool IsMobile {
         get {
@@ -1308,6 +1394,15 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         float outerShellRadius = innerShellRadius + 1F;   // HACK depth of arrival shell is 1
         return new ApMoveDestinationProxy(this, ship, tgtOffset, innerShellRadius, outerShellRadius);
     }
+
+    #endregion
+
+    #region IAssemblySupported Members
+
+    /// <summary>
+    /// A collection of assembly stations that are local to the item.
+    /// </summary>
+    public IList<StationaryLocation> LocalAssemblyStations { get { return Command.LocalAssemblyStations; } }
 
     #endregion
 
@@ -1355,7 +1450,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(approachPath));
         }
-        D.LogBold(ShowDebugLog, "{0} is providing a cleanly reachable {1} detour around Base {2} from ApproachPath {3}.", DebugName, detourRoute, Command.UnitName, approachPath.GetValueName());
+        D.Log(ShowDebugLog, "{0} is providing a cleanly reachable {1} detour around Base {2} from ApproachPath {3}.", DebugName, detourRoute, Command.UnitName, approachPath.GetValueName());
         return detour;
     }
 
@@ -1393,6 +1488,18 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         ApBesiegeDestinationProxy attackProxy = new ApBesiegeDestinationProxy(this, ship, innerProxyRadius, outerProxyRadius);
         D.Log(ShowDebugLog, "{0} has constructed an AttackProxy with an ArrivalWindowDepth of {1:0.#} units.", DebugName, attackProxy.ArrivalWindowDepth);
         return attackProxy;
+    }
+
+    #endregion
+
+    #region IAssaultable Members
+
+    public override bool IsAssaultAllowedBy(Player player) {
+        if (base.IsAssaultAllowedBy(player)) {
+            // 5.5.17 Facilities may only be assaulted if they are the only facility in the Cmd
+            return Command.Elements.Count == Constants.One;
+        }
+        return false;
     }
 
     #endregion

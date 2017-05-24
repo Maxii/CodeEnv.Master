@@ -28,10 +28,12 @@ namespace CodeEnv.Master.Common {
     /// <see cref="http://answers.unity3d.com/questions/1158276/how-do-i-properly-use-listcontains.html" />
     public class Vector3EqualityComparer : IEqualityComparer<Vector3> {
 
+        public string DebugName { get { return GetType().Name; } }
+
         public static readonly Vector3EqualityComparer Default = new Vector3EqualityComparer();
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
         #region IEqualityComparer<Vector3> Members

@@ -27,9 +27,6 @@ namespace CodeEnv.Master.GameContent {
         public ShipDisplayManager(IWidgetTrackable trackedShip, Layers meshLayer)
             : base(trackedShip, meshLayer) { }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
     }
 
 }

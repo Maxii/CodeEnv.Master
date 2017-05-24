@@ -38,10 +38,6 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float MaxSteeringInaccuracy { get; private set; }
 
-        /// <summary>
-        /// The steering accuracy of the missile. Range 0...1.0. Each 1% (0.01) of
-        /// inaccuracy introduces up to 1 degree of steering inaccuracy.
-        /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="imageAtlasID">The image atlas identifier.</param>
         /// <param name="imageFilename">The image filename.</param>

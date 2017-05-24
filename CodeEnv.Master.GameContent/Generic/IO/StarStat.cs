@@ -38,6 +38,8 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        public string DebugName { get { return GetType().Name; } }
+
         // a Star's name is assigned when its parent system becomes known
         public StarCategory Category { get; private set; }
         public float Radius { get; private set; }
@@ -91,7 +93,7 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
         #region IEquatable<StarStat> Members

@@ -38,6 +38,8 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        public string DebugName { get { return GetType().Name; } }
+
         public string Name { get; private set; }
 
         public AtlasID ImageAtlasID { get; private set; }
@@ -90,7 +92,7 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
         #region IEquatable<LeaderStat> Members

@@ -28,6 +28,8 @@ namespace Pathfinding {
 
         private static readonly Color NodeColor = new Color(0.161F, 0.341F, 1F, 0.5F);  // Light blue
 
+        public string DebugName { get { return GetType().Name; } }
+
         public override void OnInspectorGUI(NavGraph target) {
             var graph = target as MyPathfindingGraph;
             graph.maxDistance = EditorGUILayout.FloatField(new GUIContent("Max Distance", "The max distance in world space for a connection to be valid. A zero counts as infinity"), graph.maxDistance);
@@ -52,7 +54,7 @@ namespace Pathfinding {
         }
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
     }

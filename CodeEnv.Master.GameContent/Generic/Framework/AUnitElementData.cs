@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AUnitElementData : AMortalItemData {
 
-        private const string DebugNameFormat = "{0}_{1}";
+        private const string DebugNameFormat = "{0}'s {1}.{2}";
 
         public event EventHandler topographyChanged;
 
@@ -52,7 +52,7 @@ namespace CodeEnv.Master.GameContent {
                 if (ParentName.IsNullOrEmpty()) {
                     return base.DebugName;
                 }
-                return DebugNameFormat.Inject(ParentName, Name);
+                return DebugNameFormat.Inject(Owner.DebugName, ParentName, Name);
             }
         }
 
@@ -196,14 +196,18 @@ namespace CodeEnv.Master.GameContent {
 
         public override void CommenceOperations() {
             base.CommenceOperations();
-            Sensors.ForAll(s => s.IsActivated = true);
             // 11.3.16 Activation of ActiveCMs, ShieldGens and Weapons handled by HandleAlertStatusChanged
-
-            RecalcSensorRange();
             RecalcDefensiveValues();
             RecalcOffensiveStrength();
             RecalcShieldRange();
             RecalcWeaponsRange();
+        }
+
+        public void ActivateSensors() {
+            // 5.13.17 Moved from Data.CommenceOperations to allow Element.CommenceOperations to call when
+            // it is prepared to detect and be detected - aka after it enters Idling state.
+            Sensors.ForAll(s => s.IsActivated = true);
+            RecalcSensorRange();
         }
 
         #region Event and Property Change Handlers
@@ -322,6 +326,14 @@ namespace CodeEnv.Master.GameContent {
 
         private void RecalcOffensiveStrength() {
             OffensiveStrength = new CombatStrength(Weapons);
+        }
+
+        protected override void HandleDeath() {
+            base.HandleDeath();
+            Weapons.ForAll(weap => weap.IsActivated = false);
+            Sensors.ForAll(sens => sens.IsActivated = false);
+            ActiveCountermeasures.ForAll(acm => acm.IsActivated = false);
+            ShieldGenerators.ForAll(gen => gen.IsActivated = false);
         }
 
         protected override void Unsubscribe() {

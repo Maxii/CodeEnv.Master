@@ -103,10 +103,6 @@ namespace CodeEnv.Master.GameContent {
             // 12.8.16 Job Disposal centralized in JobManager
             KillRefreshSpeedValueJob();
         }
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
     }
 }
 

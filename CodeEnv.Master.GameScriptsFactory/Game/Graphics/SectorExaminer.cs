@@ -251,7 +251,7 @@ public class SectorExaminer : AMonoSingleton<SectorExaminer>, IWidgetTrackable {
             Vector3 mouseWorldPoint = Camera.main.ScreenToWorldPoint(mousePosition);
             // mouseWorldPoint can be outside where SectorIDs are assigned, aka outside universe
             IntVector3 sectorIdUnderMouse;
-            if (_sectorGrid.TryGetSectorIDThatContains(mouseWorldPoint, out sectorIdUnderMouse)) {
+            if (_sectorGrid.TryGetSectorIDContaining(mouseWorldPoint, out sectorIdUnderMouse)) {
                 if (CurrentSectorID != sectorIdUnderMouse) {    // avoid the SetProperty equivalent warnings
                     CurrentSectorID = sectorIdUnderMouse;
                 }

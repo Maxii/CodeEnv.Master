@@ -21,9 +21,9 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for Items that can provide accelerated repair of elements and cmds.
     /// <remarks>4.3.17 Currently Bases, Planets (not Moons) and FormationStations.</remarks>
-    /// <remarks>Yes, all IRepairCapable destinations are IShipNavigable, but why clutter it up?</remarks>
+    /// <remarks>Yes, all IRepairCapable destinations are IShipNavigableDestination, but why clutter it up?</remarks>
     /// </summary>
-    public interface IRepairCapable : IElementNavigable {
+    public interface IRepairCapable : IElementNavigableDestination {
 
         /// <summary>
         /// Indicates whether the player is currently allowed to repair at this item.

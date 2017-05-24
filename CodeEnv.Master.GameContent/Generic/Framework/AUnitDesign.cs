@@ -23,6 +23,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AUnitDesign {
 
+        public virtual string DebugName { get { return GetType().Name; } }
+
         public Player Player { get; private set; }
 
         public string DesignName { get; private set; }
@@ -35,6 +37,9 @@ namespace CodeEnv.Master.GameContent {
             PassiveCmStats = passiveCmStats;
         }
 
+        public sealed override string ToString() {
+            return DebugName;
+        }
     }
 }
 

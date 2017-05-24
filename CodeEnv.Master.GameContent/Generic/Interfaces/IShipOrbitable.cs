@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for Items where ships can assume a high orbit.
     /// </summary>
-    public interface IShipOrbitable : IShipNavigable {
+    public interface IShipOrbitable : IShipNavigableDestination, IAssemblySupported {
 
         void AssumeHighOrbit(IShip_Ltd ship, FixedJoint shipOrbitJoint);
 

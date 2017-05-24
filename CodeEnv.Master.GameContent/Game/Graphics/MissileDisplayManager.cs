@@ -36,10 +36,6 @@ namespace CodeEnv.Master.GameContent {
             return new IconInfo("Flat", AtlasID.MyGui, GameColor.White, IconSize, WidgetPlacement.Over, _meshLayer);
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
     }
 }
 

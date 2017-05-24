@@ -61,6 +61,8 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     /// </remarks>
     public event EventHandler isReadyForPlayOneShot;
 
+    public event EventHandler isPausedChanged;
+
     /// <summary>
     /// Occurs just before a scene starts loading.
     /// <remarks>12.2.16 Event is not fired when the first scene is about to start loading as a result of the Application starting.</remarks>
@@ -506,22 +508,6 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         HandleSceneLoaded(scene);
     }
 
-    /// <summary>
-    /// Handles the scene loaded.
-    /// <remarks>Replaces OnLevelWasLoaded() which Unity 5.4.1 deprecated.</remarks>
-    /// </summary>
-    /// <param name="scene">The scene.</param>
-    private void HandleSceneLoaded(Scene scene) {
-        D.Assert(!IsExtraCopy);
-        D.AssertEqual(CurrentScene, scene);
-        D.AssertNotDefault((int)CurrentState);   // if subscribed too early, can be called when GameState = None
-        //D.Log("{0}.HandleSceneLoaded({1}) called. Current State = {2}.", DebugName, scene.name, CurrentState.GetValueName());
-        RefreshCurrentSceneID();
-        RefreshStaticReferences();
-        UponSceneLoaded(scene);
-        RunGarbageCollector();
-    }
-
     // void OnLevelWasLoaded(level) deprecated by Unity 5.4.1. Replaced it with SceneLoadedEventHandler()
 
     private void PauseStatePropChangedHandler() {
@@ -541,8 +527,15 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     private void IsPausedPropChangedHandler() {
         D.Log("{0}.IsPaused changed to {1}.", DebugName, IsPaused);
+        OnIsPausedChanged();
         if (IsPaused) {
             RunGarbageCollector();
+        }
+    }
+
+    private void OnIsPausedChanged() {
+        if (isPausedChanged != null) {
+            isPausedChanged(this, EventArgs.Empty);
         }
     }
 
@@ -594,6 +587,22 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     }
 
     #endregion
+
+    /// <summary>
+    /// Handles the scene loaded.
+    /// <remarks>Replaces OnLevelWasLoaded() which Unity 5.4.1 deprecated.</remarks>
+    /// </summary>
+    /// <param name="scene">The scene.</param>
+    private void HandleSceneLoaded(Scene scene) {
+        D.Assert(!IsExtraCopy);
+        D.AssertEqual(CurrentScene, scene);
+        D.AssertNotDefault((int)CurrentState);   // if subscribed too early, can be called when GameState = None
+        //D.Log("{0}.HandleSceneLoaded({1}) called. Current State = {2}.", DebugName, scene.name, CurrentState.GetValueName());
+        RefreshCurrentSceneID();
+        RefreshStaticReferences();
+        UponSceneLoaded(scene);
+        RunGarbageCollector();
+    }
 
     #region Game Time Controls
 
@@ -1111,27 +1120,42 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
         /************************************** TEMP Job *******************************************************************/
         __RecordDurationStartTime();
-        var fpsReadout = FpsReadout.Instance;
-        _jobMgr.WaitWhile(() => fpsReadout.FramesPerSecond < TempGameValues.MinimumFramerate, "WaitToLaunchGameplay", isPausable: false, waitFinished: (jobWasKilled) => {
-            __LogDuration("{0}.WaitForMinimumFramerate".Inject(DebugName));
-            MainCameraControl.Instance.Activate();
-            EnableGameTimeClock(true);
+        _jobMgr.WaitWhile(() => FpsReadout.Instance.FramesPerSecond < TempGameValues.MinimumFramerate, "WaitToInitiateGameplayJob", isPausable: false, waitFinished: (jobWasKilled) => {
+            __LogDuration("{0}.WaitToInitiateGameplay".Inject(DebugName));
+            __InitiateGameplay();
 
-            _playerAiMgrLookup.Values.ForAll(aiMgr => aiMgr.CommenceOperations());
+            __ShowGameplay();
+
+            if (DebugControls.Instance.IsAutoPauseChangesEnabled) {
+                __InitializeAutoPauseChgSystem();
+            }
+        });
+        /*******************************************************************************************************************/
+    }
+
+    private void __InitiateGameplay() {
+        EnableGameTimeClock(true);
+        _playerAiMgrLookup.Values.ForAll(aiMgr => aiMgr.CommenceOperations());
+    }
+
+    private void __ShowGameplay() {
+        __RecordDurationStartTime();
+        _jobMgr.WaitWhile(() => FpsReadout.Instance.FramesPerSecond < TempGameValues.MinimumFramerate, "WaitToShowGameplayJob", isPausable: false, waitFinished: (jobWasKilled) => {
+            __LogDuration("{0}.WaitToShowGameplay".Inject(DebugName));
+            MainCameraControl.Instance.Activate();
 
             FpsReadout.Instance.IsReadoutToShow = true;
 
             OnIsReadyForPlay();
-            Debug.LogFormat("{0}: Game is now ready for play. Frame = {1}. FPS = {2:0.#}.", DebugName, Time.frameCount, fpsReadout.FramesPerSecond);
+            Debug.LogFormat("{0}: Game is now ready to show play. Frame = {1}. FPS = {2:0.#}.", DebugName, Time.frameCount, FpsReadout.Instance.FramesPerSecond);
 
             if (_playerPrefsMgr.IsPauseOnLoadEnabled) { // Note: My practice - IsRunning THEN pause changes
                 RequestPauseStateChange(toPause: true, toOverride: true);
             }
+
+            UniverseCreator.AttemptFocusOnPrimaryUserUnit();
             RecordGameStateProgressionReadiness(Instance, GameState.Running, isReady: true);
         });
-        /*******************************************************************************************************************/
-
-        UniverseCreator.AttemptFocusOnPrimaryUserUnit();
     }
 
     void Running_UponProgressState() {
@@ -1141,8 +1165,9 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     void Running_ExitState() {
         LogEvent();
-        D.AssertEqual(GameState.Loading, CurrentState); //D.Assert(CurrentState == GameState.Lobby || CurrentState == GameState.Loading);
+        D.AssertEqual(GameState.Loading, CurrentState);
         FpsReadout.Instance.IsReadoutToShow = false;
+        __KillAutoPauseChgJob();
 
         EnableGameTimeClock(false);
         IsRunning = false;
@@ -1230,10 +1255,48 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     #endregion
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
     #region Debug
+
+    #region Debug Auto Pause Change System
+
+    private Job __autoPauseChgJob;
+
+    private void __InitializeAutoPauseChgSystem() {
+        GameDate startDate = new GameDate(new GameTimeDuration(0F, days: RandomExtended.Range(1, 3)));
+        GameTimeDuration durationBetweenChgs = new GameTimeDuration(hours: UnityEngine.Random.Range(0F, 10F), days: RandomExtended.Range(3, 5));
+        D.LogBold("{0}: Initiating Auto Pause Changes beginning {1} with changes every {2}.", DebugName, startDate, durationBetweenChgs);
+        __autoPauseChgJob = _jobMgr.WaitForDate(startDate, "AutoPauseChgStartJob", waitFinished: (jobWasKilled) => {
+            if (jobWasKilled) {
+
+            }
+            else {
+                __CyclePaused();
+                __autoPauseChgJob = _jobMgr.RecurringWaitForHours(durationBetweenChgs, "AutoPauseChgRecurringJob", waitMilestone: () => {
+                    __CyclePaused();
+                });
+            }
+        });
+    }
+
+    private void __CyclePaused() {
+        if (!IsPaused) {
+            IsPaused = true;
+            IsPaused = false;
+        }
+    }
+
+    private void __KillAutoPauseChgJob() {
+        if (__autoPauseChgJob != null) {
+            __autoPauseChgJob.Kill();
+            __autoPauseChgJob = null;
+        }
+    }
+
+    #endregion
+
 
     protected override string __DurationLogIntroText { get { return "{0}.{1}".Inject(typeof(GameState).Name, LastState); } }
 

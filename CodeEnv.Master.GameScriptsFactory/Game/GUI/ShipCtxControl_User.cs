@@ -32,14 +32,16 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
     private static ShipDirective[] _userMenuOperatorDirectives = new ShipDirective[] {  ShipDirective.Join,
                                                                                         ShipDirective.Disengage,
                                                                                         ShipDirective.Disband,
-                                                                                        ShipDirective.Scuttle };
+                                                                                        ShipDirective.Scuttle,
+    };
+
     protected override IEnumerable<ShipDirective> UserMenuOperatorDirectives {
         get { return _userMenuOperatorDirectives; }
     }
 
     protected override Vector3 PositionForDistanceMeasurements { get { return _shipMenuOperator.Position; } }
 
-    protected override string OperatorName { get { return _shipMenuOperator.DebugName; } }
+    protected override string OperatorName { get { return _shipMenuOperator != null ? _shipMenuOperator.DebugName : "NotYetAssigned"; } }
 
     private bool IsShipDisengageOrderDisabled {
         get {
@@ -72,7 +74,7 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
             case ShipDirective.Disengage:
                 return IsShipDisengageOrderDisabled;
             case ShipDirective.Join:
-            //TODO
+                return !_userKnowledge.OwnerFleets.Where(fCmd => fCmd.IsJoinable && !fCmd.IsLoneCmd).Except(_shipMenuOperator.Command).Any();
             case ShipDirective.Disband:
                 return false;
             default:
@@ -88,17 +90,17 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
     /// <param name="targets">The targets for the submenu if any were found. Can be empty.</param>
     /// <returns></returns>
     /// <exception cref="System.NotImplementedException"></exception>
-    protected override bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(ShipDirective directive, out IEnumerable<INavigable> targets) {
+    protected override bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(ShipDirective directive, out IEnumerable<INavigableDestination> targets) {
         switch (directive) {
             case ShipDirective.Join:
-                targets = _userKnowledge.OwnerFleets.Except(_shipMenuOperator.Command).Cast<INavigable>();
+                targets = _userKnowledge.OwnerFleets.Where(fCmd => fCmd.IsJoinable && !fCmd.IsLoneCmd).Except(_shipMenuOperator.Command).Cast<INavigableDestination>();
                 return true;
             case ShipDirective.Disband:
-                targets = _userKnowledge.OwnerBases.Cast<INavigable>();
+                targets = _userKnowledge.OwnerBases.Cast<INavigableDestination>();
                 return true;
             case ShipDirective.Disengage:
             case ShipDirective.Scuttle:
-                targets = Enumerable.Empty<INavigable>();
+                targets = Enumerable.Empty<INavigableDestination>();
                 return false;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
@@ -109,8 +111,8 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
         _shipMenuOperator.OptimalCameraViewingDistance = _shipMenuOperator.Position.DistanceToCamera();
     }
 
-    protected override void HandleMenuPick_UserMenuOperatorIsSelected(int itemID) {
-        base.HandleMenuPick_UserMenuOperatorIsSelected(itemID);
+    protected override void HandleMenuPick_MenuOperatorIsSelected(int itemID) {
+        base.HandleMenuPick_MenuOperatorIsSelected(itemID);
         IssueUserShipMenuOperatorOrder(itemID);
     }
 
@@ -118,16 +120,13 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
         ShipDirective directive = (ShipDirective)_directiveLookup[itemID];
         D.Assert(directive == ShipDirective.Disband || directive == ShipDirective.Join || directive == ShipDirective.Disengage
             || directive == ShipDirective.Scuttle); // HACK
-        INavigable target;
+
+        INavigableDestination target;
         bool isTarget = _unitTargetLookup.TryGetValue(itemID, out target);
         string msg = isTarget ? target.DebugName : "[none]";
-        D.Log("{0} selected directive {1} and target {2} from context menu.", _shipMenuOperator.DebugName, directive.GetValueName(), msg);
-        bool isOrderInitiated = _shipMenuOperator.InitiateNewOrder(new ShipOrder(directive, OrderSource.User, target: target as IShipNavigable));
+        D.Log("{0} selected directive {1} and target {2} from context menu.", DebugName, directive.GetValueName(), msg);
+        bool isOrderInitiated = _shipMenuOperator.InitiateNewOrder(new ShipOrder(directive, OrderSource.User, target: target as IShipNavigableDestination));
         D.Assert(isOrderInitiated);
-    }
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
     }
 
 }

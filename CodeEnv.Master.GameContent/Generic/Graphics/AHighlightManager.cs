@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
         private const string DebugNameFormat = "{0}.{1}";
 
         private string _debugName;
-        public string DebugName {
+        public virtual string DebugName {
             get {
                 if (_debugName == null) {
                     _debugName = DebugNameFormat.Inject(_trackedClientTransform.name, GetType().Name);
@@ -54,6 +54,10 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected abstract void Cleanup();
+
+        public sealed override string ToString() {
+            return DebugName;
+        }
 
         #region IDisposable
 

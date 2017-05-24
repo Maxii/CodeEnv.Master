@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: Projectile.cs
-// Unguided AProjectileOrdnance containing effects for muzzle flash, inFlight operation and impact.
+// File: PhysicsProjectile.cs
+// Unguided APhysicsProjectileOrdnance containing effects for muzzle flash, inFlight operation and impact.  
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,11 +20,12 @@ using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
-/// Unguided AProjectileOrdnance containing effects for muzzle flash, inFlight operation and impact. 
+/// Unguided APhysicsProjectileOrdnance containing effects for muzzle flash, inFlight operation and impact.  
 /// </summary>
-public class Projectile : AProjectileOrdnance {
+public class PhysicsProjectile : APhysicsProjectileOrdnance {
 
     [SerializeField]
     private GameObject _muzzleEffect = null;
@@ -64,6 +65,7 @@ public class Projectile : AProjectileOrdnance {
         base.Launch(target, weapon, topography);
         AdjustHeadingForInaccuracy();
         InitializeVelocity();
+        D.Assert(!enabled);
         enabled = true;
         _collider.enabled = true;
     }
@@ -176,11 +178,77 @@ public class Projectile : AProjectileOrdnance {
         SFXManager.Instance.PlaySFX(impactSFXGo, SfxGroupID.ProjectileImpacts);  // auto destroyed on completion    // FIXME ??
     }
 
+    protected override void HandleCollision(GameObject impactedGo, ContactPoint contactPoint) {
+        if (!IsOperational) {
+            // 1.6.17 OnCollisionEnter is called even when both _collider and monoBehaviour are disabled according to OnCollisionEnter 
+            // docs: "Collision events will be sent to disabled MonoBehaviours, to allow enabling Behaviours in response to collisions." 
+            return;
+        }
+        //D.Log(ShowDebugLog, "{0} distance to intended target on collision: {1}.", DebugName, Vector3.Distance(transform.position, Target.Position));
+        bool isImpactEffectRunning = false;
+
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
+        var impactedTarget = impactedGo.GetComponent<IElementAttackable>();
+        Profiler.EndSample();
+
+        if (impactedTarget != null) {
+            // hit an attackableTarget
+            if (impactedTarget == Target) {
+                D.LogBold(/*ShowDebugLog,*/ "{0} collided with its Target {1}.", DebugName, Target.DebugName);
+            }
+            else {
+                if (Target.IsOperational) {
+                    D.Log(/*ShowDebugLog,*/ "{0} collided with {1} rather than its target. TgtDistance = {2:0.#}, TgtBearingError = {3:0.#}.",
+                        DebugName, impactedTarget.DebugName, Vector3.Distance(transform.position, Target.Position),
+                        Vector3.Angle(CurrentHeading, Target.Position - Position));
+                }
+                else {
+                    D.Log(/*ShowDebugLog,*/ "{0} collided with {1} rather than its dead target {2}.", DebugName, impactedTarget.DebugName, Target.DebugName);
+                }
+            }
+            // The application of impact force is already handled by the physics engine when regular rigidbodies collide
+            if (impactedTarget.IsOperational) {
+                if (impactedTarget == Target) {
+                    ReportTargetHit();
+                }
+                else {
+                    ReportInterdiction();   // Not from ActiveCM as they don't collide
+                }
+                impactedTarget.TakeHit(DamagePotential);
+                // if target is killed by this hit, TerminateNow will be immediately called by Weapon
+            }
+            if (impactedTarget.IsOperational) {
+                // target survived the hit
+                if (impactedTarget.IsVisualDetailDiscernibleToUser) {
+                    // target is being viewed by user so show impact effect
+                    //D.Log(ShowDebugLog, "{0} starting impact effect on {1}.", DebugName, impactedTarget.DisplayName);
+                    var impactEffectLocation = contactPoint.point + contactPoint.normal * 0.01F;    // HACK
+                    // IMPROVE = Quaternion.FromToRotation(Vector3.up, contact.normal); // see http://docs.unity3d.com/ScriptReference/Collider.OnCollisionEnter.html
+                    ShowImpactEffects(impactEffectLocation);
+                    isImpactEffectRunning = true;
+                }
+                if (impactedTarget.IsVisualDetailDiscernibleToUser || DebugControls.Instance.AlwaysHearWeaponImpacts) {
+                    HearImpactEffect(contactPoint.point);
+                }
+            }
+        }
+        else {
+            // if not an attackableTarget, then??   IMPROVE
+            var otherOrdnance = impactedGo.GetComponent<AOrdnance>();
+            D.AssertNull(otherOrdnance);  // should not be able to impact another piece of ordnance as both are on Ordnance layer
+        }
+
+        if (IsOperational && !isImpactEffectRunning) {
+            // ordnance has not already been terminated by other paths such as the death of the target and impact effect is not running
+            TerminateNow();
+        }
+    }
+
     #region Event and Property Change Handlers
 
     protected override void OnSpawned() {
         base.OnSpawned();
-        D.Assert(_rigidbody.velocity == default(Vector3));  //D.AssertDefault(_rigidbody.velocity);
+        D.AssertEqual(default(Vector3), _rigidbody.velocity);
         D.Assert(!enabled);
         D.AssertNull(_impactEffectCompletionJob);
         D.AssertNull(_muzzleEffectCompletionJob);
@@ -255,10 +323,6 @@ public class Projectile : AProjectileOrdnance {
         // 12.8.16 Job Disposal centralized in JobManager
         KillImpactEffectCompletionJob();
         KillMuzzleEffectCompletionJob();
-    }
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
     }
 
     #region Debug

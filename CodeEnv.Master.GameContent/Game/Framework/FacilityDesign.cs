@@ -34,10 +34,6 @@ namespace CodeEnv.Master.GameContent {
             HullStat = hullStat;
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
     }
 }
 

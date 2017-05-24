@@ -99,14 +99,6 @@ namespace CodeEnv.Master.GameContent {
             return new NonRegressibleIntel();
         }
 
-        #region Event and Property Change Handlers
-
-        #endregion
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
     }
 }
 

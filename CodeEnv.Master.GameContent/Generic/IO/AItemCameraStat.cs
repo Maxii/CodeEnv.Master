@@ -24,6 +24,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AItemCameraStat {
 
+        public string DebugName { get { return GetType().Name; } }
+
         public float MinimumViewingDistance { get; private set; }
 
         public float FieldOfView { get; private set; }
@@ -40,6 +42,9 @@ namespace CodeEnv.Master.GameContent {
             FieldOfView = fov;
         }
 
+        public sealed override string ToString() {
+            return DebugName;
+        }
     }
 }
 

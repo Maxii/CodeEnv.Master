@@ -74,9 +74,6 @@ public class SettlementsTableWindow : ACommandsTableWindow {
 
     #endregion
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 }
 

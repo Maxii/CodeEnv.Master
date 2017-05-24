@@ -28,7 +28,9 @@ using UnityEngine.Profiling;
 /// <summary>
 /// Abstract base class for Context Menu Controls.
 /// </summary>
-public abstract class ACtxControl : ICtxControl, IDisposable {
+public abstract class ACtxControl : ICtxControl {
+
+    private const string DebugNameFormat = "{0}.{1}";
 
     private const string SetOptimalFocusDistanceItemText = "Set Optimal Focus Distance";
 
@@ -67,6 +69,8 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     public event EventHandler showBegun;
 
     public event EventHandler hideComplete;
+
+    public string DebugName { get { return DebugNameFormat.Inject(OperatorName, GetType().Name); } }
 
     public bool IsShowing { get; private set; }
 
@@ -125,7 +129,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     protected int _uniqueSubmenuQtyReqd;
     protected Player _user;
     protected CtxObject _ctxObject;
-    private GameManager _gameMgr;
+    protected GameManager _gameMgr;
     private int _optimalFocusDistanceItemID;
     private CtxMenuOpenedMode _menuOpenedMode;
 
@@ -186,22 +190,29 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
             // another object is still showing the menu. One example: Use a context menu to scuttle a Settlement. The destruction of the settlement
             // immediately changes the system's owner which causes the system's context menu to reinitialize while the Settlement's context menu 
             // has yet to finish hiding. This reinitialization encounters the Settlement's items as they haven't been cleared yet which occurs
-            // when finished hiding. Accordingly, we test for this condition by seeing if the menu is still visible.
-            if (!_generalCtxMenu.IsVisible) {
-                // A hidden CtxMenu should not have any items in its list
-                D.Warn("{0}.{1}.CtxMenu.items = {2}.", ctxObjectGO.name, GetType().Name, _generalCtxMenu.items.Select<CtxMenu.Item, string>(i => i.text).Concatenate());
-            }
+            // when finished hiding. 4.22.17 Another example: ChgOwner of a User-owned element immediately changes the context menu to an
+            // AI version. Fixed this in Cleanup when the control is Disposed before the new control is initialized.
+            D.Warn("{0}.{1}: Unexpected CtxMenu.items = {2}.", ctxObjectGO.name, GetType().Name, _generalCtxMenu.items.Select<CtxMenu.Item, string>(i => i.text).Concatenate());
         }
         _ctxObject.contextMenu = _generalCtxMenu;
         // this empty, general purpose CtxMenu will be populated with all menu items held by CtxObject when Show is called
         if (!_ctxObject.menuItems.IsNullOrEmpty()) {
-            D.Warn("{0}.{1}.CtxObject.menuItems = {2}.", ctxObjectGO.name, GetType().Name, _ctxObject.menuItems.Select<CtxMenu.Item, string>(i => i.text).Concatenate());
+            D.Warn("{0}.{1}: Unexpected CtxObject.menuItems = {2}.", ctxObjectGO.name, GetType().Name, _ctxObject.menuItems.Select<CtxMenu.Item, string>(i => i.text).Concatenate());
         }
     }
 
     private void Subscribe() {
         EventDelegate.Add(_ctxObject.onShow, ShowCtxMenuEventHandler);
+
+        //string onSelectionSubscribers = _ctxObject.onSelection.Where(d => d.target != null).Select(d => d.target.name).Concatenate();
+        //D.Log("{0} is about to subscribe to {1}'s onSelection eventDelegate. Frame: {2}. SubscriberCount: {3}. CurrentSubscribers: {4}.",
+        //    DebugName, _ctxObject.name, Time.frameCount, _ctxObject.onSelection.Count, onSelectionSubscribers);
+
         EventDelegate.Add(_ctxObject.onSelection, CtxMenuSelectionEventHandler);
+        //onSelectionSubscribers = _ctxObject.onSelection.Where(d => d.target != null).Select(d => d.target.name).Concatenate();
+        //D.Log("{0} has just subscribed to {1}'s onSelection eventDelegate. Frame: {2}. SubscriberCount: {3}. CurrentSubscribers: {4}.",
+        //    DebugName, _ctxObject.name, Time.frameCount, _ctxObject.onSelection.Count, onSelectionSubscribers);
+
         EventDelegate.Add(_ctxObject.onHide, HideCtxMenuEventHandler);
         SubscribeStaticallyOnce();
     }
@@ -278,7 +289,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
                 }
             }
         }
-        //D.Log("{0}.{1}.TryShowContextMenu called. Resulting AccessSource = {2}.", OperatorName, GetType().Name, _accessSource.GetValueName());
+        //D.Log("{0}.TryShowContextMenu called. Resulting AccessSource = {1}.", DebugName, _accessSource.GetValueName());
         if (toShow) {
             _lastPressReleasePosition = UICamera.lastWorldPosition;
             Show(true);
@@ -334,13 +345,13 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
 
     #region Event and Property Change Handlers
 
-    protected void OnShowBegun() {
+    private void OnShowBegun() {
         if (showBegun != null) {
             showBegun(this, EventArgs.Empty);
         }
     }
 
-    protected void OnHideComplete() {
+    private void OnHideComplete() {
         if (hideComplete != null) {
             hideComplete(this, EventArgs.Empty);
         }
@@ -348,11 +359,12 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
 
     private void ShowCtxMenuEventHandler() {
         OnShowBegun();
-        //D.Log("{0}.{1}: Subscriber count to ShowCtxMenuEventHandler = {2}.", OperatorName, GetType().Name, _ctxObject.onShow.Count);
+        //D.Log("{0}: Subscriber count to ShowCtxMenuEventHandler = {1}.", DebugName, _ctxObject.onShow.Count);
         HandleShowCtxMenu();
     }
 
     private void CtxMenuSelectionEventHandler() {
+        //D.Log("{0}.CtxMenuSelectionEventHandler called.", DebugName);
         int menuItemID = _ctxObject.selectedItem;
         switch (_menuOpenedMode) {
             case CtxMenuOpenedMode.MenuOperatorIsSelected:
@@ -360,7 +372,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
                     HandleMenuPick_OptimalFocusDistance();
                 }
                 else {
-                    HandleMenuPick_UserMenuOperatorIsSelected(menuItemID);
+                    HandleMenuPick_MenuOperatorIsSelected(menuItemID);
                 }
                 break;
             case CtxMenuOpenedMode.UserRemoteFleetIsSelected:
@@ -379,7 +391,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     }
 
     private void HideCtxMenuEventHandler() {
-        //D.Log("{0}.{1}.HideCtxMenuEventHandler called.", OperatorName, GetType().Name);
+        //D.Log("{0}.HideCtxMenuEventHandler called.", DebugName);
         HandleHideCtxMenu();
         OnHideComplete();
     }
@@ -395,7 +407,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
         InputManager.Instance.InputMode = GameInputMode.PartialPopup;
         switch (_menuOpenedMode) {
             case CtxMenuOpenedMode.MenuOperatorIsSelected:
-                PopulateMenu_UserMenuOperatorIsSelected();
+                PopulateMenu_MenuOperatorIsSelected();
                 AddOptimalFocusDistanceItemToMenu();
                 break;
             case CtxMenuOpenedMode.UserRemoteShipIsSelected:
@@ -412,26 +424,30 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_menuOpenedMode));
         }
         IsShowing = true;
-        //InputManager.Instance.InputMode = GameInputMode.PartialPopup;
-        //_gameMgr.RequestPauseStateChange(toPause: true);
     }
 
     protected virtual void HandleHideCtxMenu() {
+        //D.Log("{0}.HandleHideCtxMenu called.", DebugName);
         IsShowing = false;
-        _gameMgr.RequestPauseStateChange(toPause: false);
-        InputManager.Instance.InputMode = GameInputMode.Normal;
 
         _directiveLookup.Clear();
 
-        CleanupMenuArrays();    // not really needed as all CtxMenu.Item arrays get assigned new arrays when used again
+        CleanupMenuArrays();
 
         _nextAvailableItemId = Constants.Zero;
         _optimalFocusDistanceItemID = Constants.Zero;
         _remoteUserOwnedSelectedItem = null;
         _menuOpenedMode = CtxMenuOpenedMode.None;
+
+        InputManager.Instance.InputMode = GameInputMode.Normal;
+        _gameMgr.RequestPauseStateChange(toPause: false);
     }
 
-    protected virtual void PopulateMenu_UserMenuOperatorIsSelected() { }
+    /// <summary>
+    /// Populates the menu when the menu operator is the item selected.
+    /// <remarks>5.5.17 Can be used by all context menus, not just ACtxControl_User.</remarks>
+    /// </summary>
+    protected virtual void PopulateMenu_MenuOperatorIsSelected() { }
 
     /// <summary>
     /// Adds the optimal focus distance item to the menu operator menu without regard
@@ -513,7 +529,12 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
 
     protected virtual bool IsUserRemoteBaseMenuItemDisabledFor(BaseDirective directive) { return false; }
 
-    protected virtual void HandleMenuPick_UserMenuOperatorIsSelected(int itemID) { }
+    /// <summary>
+    /// Handles a menu pick when the menu operator is the item selected.
+    /// <remarks>5.5.17 Can be used by all context menus, not just ACtxControl_User.</remarks>
+    /// </summary>
+    /// <param name="itemID">The item identifier.</param>
+    protected virtual void HandleMenuPick_MenuOperatorIsSelected(int itemID) { }
 
     protected virtual void HandleMenuPick_UserRemoteFleetIsSelected(int itemID) { }
 
@@ -523,7 +544,7 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
 
     protected abstract void HandleMenuPick_OptimalFocusDistance();
 
-    protected float GetDistanceTo(INavigable target) {
+    protected float GetDistanceTo(INavigableDestination target) {
         return Vector3.Distance(PositionForDistanceMeasurements, target.Position);
     }
 
@@ -544,6 +565,9 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     }
 
     private void Cleanup() {
+        // 4.25.17 Added Hide to fully cleanup. Cleanup called by Dispose which can be called in runtime when Item owner changes.
+        // 5.5.17 Solved the need for Hide when owner changing by deferring owner changes until unpaused
+        ////Hide(); 
         Unsubscribe();
         _ctxObject.contextMenu = null;
         if (_gameMgr.IsApplicationQuiting) {
@@ -555,6 +579,9 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     private void Unsubscribe() {
         EventDelegate.Remove(_ctxObject.onShow, ShowCtxMenuEventHandler);
         EventDelegate.Remove(_ctxObject.onSelection, CtxMenuSelectionEventHandler);
+        //string onSelectionSubscribers = _ctxObject.onSelection.Where(d => d.target != null).Select(d => d.target.name).Concatenate();
+        //D.Log("{0} has just unsubscribed to {1}'s onSelection eventDelegate. Frame: {2}. SubscriberCount: {3}. CurrentSubscribers: {4}.",
+        //    DebugName, _ctxObject.name, Time.frameCount, _ctxObject.onSelection.Count, onSelectionSubscribers);
         EventDelegate.Remove(_ctxObject.onHide, HideCtxMenuEventHandler);
     }
 
@@ -575,14 +602,14 @@ public abstract class ACtxControl : ICtxControl, IDisposable {
     /// </summary>
     private void UnsubscribeStaticallyOnceOnQuit() {
         if (_isStaticallySubscribed) {
-            //D.Log("{0} is unsubscribing statically to {1}.", GetType().Name, _gameMgr.GetType().Name);
+            //D.Log("{0} is unsubscribing statically to {1}.", DebugName, _gameMgr.GetType().Name);
             _gameMgr.sceneLoaded -= SceneLoadedEventHandler;
             _isStaticallySubscribed = false;
         }
     }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+    public sealed override string ToString() {
+        return DebugName;
     }
 
     #region IDisposable

@@ -17,6 +17,7 @@
 // default namespace
 
 using System;
+using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
@@ -83,8 +84,8 @@ public class MoonItem : APlanetoidItem, IMoon, IMoon_Ltd {
         IsOperational = false;
     }
 
-    protected override void HandleDeathBeforeBeginningDeathEffect() {
-        base.HandleDeathBeforeBeginningDeathEffect();
+    protected override void PrepareForDeathEffect() {
+        base.PrepareForDeathEffect();
         // removing moon here when 2 moons both die at roughly same time makes ChildMoons.Count == 0 
         // which causes planet to try to destroy itself twice
         ////ParentPlanet.RemoveMoon(this);    
@@ -118,16 +119,29 @@ public class MoonItem : APlanetoidItem, IMoon, IMoon_Ltd {
 
     #endregion
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
+    #region IAssemblySupported Members
 
-    #region IShipNavigable Members
+    /// <summary>
+    /// A collection of assembly stations that are local to the item.
+    /// </summary>
+    public override IList<StationaryLocation> LocalAssemblyStations { get { return _parentPlanet.LocalAssemblyStations; } }
+
+    #endregion
+
+    #region IShipNavigableDestination Members
 
     public override ApMoveDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, IShip ship) {
         float innerShellRadius = _obstacleZoneCollider.radius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of obstacle zone
         float outerShellRadius = innerShellRadius + 1F;   // HACK depth of arrival shell is 1
         return new ApMoveDestinationProxy(this, ship, tgtOffset, innerShellRadius, outerShellRadius);
+    }
+
+    #endregion
+
+    #region IMoon Members
+
+    bool IMoon.__IsParentPlanetFullyExploredBy(Player player) {
+        return _parentPlanet.IsFullyExploredBy(player);
     }
 
     #endregion

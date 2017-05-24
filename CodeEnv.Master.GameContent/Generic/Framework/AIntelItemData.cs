@@ -91,25 +91,16 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         protected abstract AIntel MakeIntelInstance();
 
-        /// <summary>
-        /// Sets the intel coverage for this player. Returns <c>true</c> if the <c>newCoverage</c>
-        /// was successfully accepted, <c>false</c> if it was rejected due to the inability of
-        /// the item to regress its IntelCoverage.
-        /// <remarks>If newCoverage == CurrentCoverage, this method will return true as the value
-        /// was 'successfully accepted', but will not initiate any related coverage changed activity
-        /// since coverage properly stayed the same.</remarks>
-        /// </summary>
-        /// <param name="player">The player.</param>
-        /// <param name="newCoverage">The new coverage.</param>
-        /// <returns></returns>
-        public bool SetIntelCoverage(Player player, IntelCoverage newCoverage) {
+        public bool TrySetIntelCoverage(Player player, IntelCoverage newCoverage, out IntelCoverage coverageSet) {
 
             Profiler.BeginSample("AIntelItemData.SetIntelCoverage");
             var playerIntel = GetIntel(player);
+            IntelCoverage currentCoverage = playerIntel.CurrentCoverage;
+            bool isCoverageChgAccepted = false;
             if (playerIntel.IsCoverageChangeAllowed(newCoverage)) {
-                if (playerIntel.CurrentCoverage != newCoverage) {
+                if (currentCoverage != newCoverage) {
                     //D.Log(ShowDebugLog, "{0} is changing {1}'s IntelCoverage from {2} to {3}.", 
-                    //    DebugName, player.DebugName, playerIntel.CurrentCoverage.GetValueName(), newCoverage.GetValueName());
+                    //    DebugName, player.DebugName, currentCoverage.GetValueName(), newCoverage.GetValueName());
                     playerIntel.CurrentCoverage = newCoverage;
                     HandleIntelCoverageChangedFor(player);
                     OnIntelCoverageChanged(player);
@@ -118,14 +109,44 @@ namespace CodeEnv.Master.GameContent {
                     //D.Log(ShowDebugLog, "{0} has declined to change {1}'s IntelCoverage to {2} because its the same value.", 
                     //    DebugName, player.DebugName, newCoverage.GetValueName());
                 }
-                Profiler.EndSample();
-                return true;
+                isCoverageChgAccepted = true;
             }
-            //D.Log(ShowDebugLog, "{0} properly ignored changing {1}'s IntelCoverage from {2} to {3}.",
-            //    DebugName, player, playerIntel.CurrentCoverage.GetValueName(), newCoverage.GetValueName());
+            else {
+                IntelCoverage lowestAllowedCoverage = playerIntel.LowestAllowedCoverageValue;
+                if (lowestAllowedCoverage <= currentCoverage) {
+                    if (lowestAllowedCoverage < currentCoverage) {
+                        //D.Log(ShowDebugLog, "{0} is changing {1}'s IntelCoverage from {2} to {3}, the lowest allowed value.",
+                        //    DebugName, player.DebugName, currentCoverage.GetValueName(), lowestAllowedCoverage.GetValueName());
+                        playerIntel.CurrentCoverage = lowestAllowedCoverage;
+                        HandleIntelCoverageChangedFor(player);
+                        OnIntelCoverageChanged(player);
+                    }
+                    else {
+                        D.AssertEqual(lowestAllowedCoverage, currentCoverage);
+                        //D.Log(ShowDebugLog, "{0} has declined to change {1}'s IntelCoverage to the lowest allowed value {2} because its the same value.",
+                        //    DebugName, player.DebugName, lowestAllowedCoverage.GetValueName());
+                    }
+                    isCoverageChgAccepted = true;
+                }
+            }
             Profiler.EndSample();
+            if (!isCoverageChgAccepted) {
+                //D.Log(ShowDebugLog, "{0} properly ignored changing {1}'s IntelCoverage from {2} to {3}.",
+                //    DebugName, player, currentCoverage.GetValueName(), newCoverage.GetValueName());
+            }
+            coverageSet = currentCoverage;
+            return isCoverageChgAccepted;
+        }
 
-            return false;
+        /// <summary>
+        /// Sets the Intel coverage for this player. 
+        /// <remarks>Convenience method for clients who don't care whether the value was accepted or not.</remarks>
+        /// </summary>
+        /// <param name="player">The player.</param>
+        /// <param name="newCoverage">The new coverage.</param>
+        public void SetIntelCoverage(Player player, IntelCoverage newCoverage) {
+            IntelCoverage unusedResultingCoverage;
+            TrySetIntelCoverage(player, newCoverage, out unusedResultingCoverage);
         }
 
         /// <summary>
@@ -160,6 +181,7 @@ namespace CodeEnv.Master.GameContent {
         /// changes since data, by definition, is where full knowledge about the item is kept, independent
         /// of info access restrictions. Reports and interfaces play the role of 'filtering' a player's
         /// access to this knowledge stored in data by using the item's InfoAccessController.</remarks>
+        /// <remarks>Not currently used.</remarks>
         /// </summary>
         /// <param name="player">The player.</param>
         protected virtual void HandleIntelCoverageChangedFor(Player player) {
@@ -176,6 +198,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
+
 
         #region Nested Classes
 

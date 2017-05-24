@@ -49,7 +49,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="activeCMs">The active c ms.</param>
         /// <param name="deployDate">The deploy date.</param>
         /// <param name="losTurrets">The LOS turrets.</param>
-        /// <param name="missileLaunchers">The missile launchers.</param>
+        /// <param name="launchers">The launchers.</param>
         /// <param name="passiveCMs">The passive c ms.</param>
         /// <param name="shieldGens">The shield gens.</param>
         /// <param name="srSensors">SR sensor qty per element.</param>
@@ -59,10 +59,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="toAttack">if set to <c>true</c> [to attack].</param>
         /// <param name="stanceExclusions">The stance exclusions.</param>
         public FleetCreatorEditorSettings(string unitName, bool isOwnerUser, int elementQty, DebugDiploUserRelations userRelations, int cmsPerCmd,
-            int sensorsPerCmd, int activeCMs, GameDate deployDate, DebugLosWeaponLoadout losTurrets, DebugWeaponLoadout missileLaunchers,
+            int sensorsPerCmd, int activeCMs, GameDate deployDate, DebugLosWeaponLoadout losTurrets, DebugLaunchedWeaponLoadout launchers,
             int passiveCMs, int shieldGens, int srSensors, DebugFleetFormation formation, bool toMove, bool findFarthest, bool toAttack, DebugShipCombatStanceExclusions stanceExclusions)
             : base(unitName, isOwnerUser, elementQty, userRelations, cmsPerCmd, sensorsPerCmd, activeCMs, deployDate, losTurrets,
-                  missileLaunchers, passiveCMs, shieldGens, srSensors) {
+                  launchers, passiveCMs, shieldGens, srSensors) {
             Formation = formation;
             Move = toMove;
             FindFarthest = findFarthest;
@@ -82,7 +82,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="activeCMs">The active c ms.</param>
         /// <param name="deployDate">The deploy date.</param>
         /// <param name="losTurrets">The LOS turrets.</param>
-        /// <param name="missileLaunchers">The missile launchers.</param>
+        /// <param name="launchers">The launchers.</param>
         /// <param name="passiveCMs">The passive c ms.</param>
         /// <param name="shieldGens">The shield gens.</param>
         /// <param name="srSensors">SR sensor qty per element.</param>
@@ -93,10 +93,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="stanceExclusions">The stance exclusions.</param>
         /// <param name="presetHullCats">The preset hull cats.</param>
         public FleetCreatorEditorSettings(string unitName, bool isOwnerUser, DebugDiploUserRelations userRelations, int cmsPerCmd, int sensorsPerCmd,
-            int activeCMs, GameDate deployDate, DebugLosWeaponLoadout losTurrets, DebugWeaponLoadout missileLaunchers, int passiveCMs,
+            int activeCMs, GameDate deployDate, DebugLosWeaponLoadout losTurrets, DebugLaunchedWeaponLoadout launchers, int passiveCMs,
             int shieldGens, int srSensors, DebugFleetFormation formation, bool toMove, bool findFarthest, bool toAttack,
             DebugShipCombatStanceExclusions stanceExclusions, IList<ShipHullCategory> presetHullCats)
-            : base(unitName, isOwnerUser, userRelations, cmsPerCmd, sensorsPerCmd, activeCMs, deployDate, losTurrets, missileLaunchers, passiveCMs,
+            : base(unitName, isOwnerUser, userRelations, cmsPerCmd, sensorsPerCmd, activeCMs, deployDate, losTurrets, launchers, passiveCMs,
                 shieldGens, srSensors) {
             Formation = formation;
             Move = toMove;
@@ -104,10 +104,6 @@ namespace CodeEnv.Master.GameContent {
             Attack = toAttack;
             StanceExclusions = stanceExclusions;
             PresetElementHullCategories = presetHullCats;
-        }
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
         }
 
     }

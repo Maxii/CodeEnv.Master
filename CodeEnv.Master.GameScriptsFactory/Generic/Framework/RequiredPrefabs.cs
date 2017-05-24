@@ -107,7 +107,7 @@ public class RequiredPrefabs : AMonoSingleton<RequiredPrefabs> {
     public FacilityHull[] facilityHulls;
 
     [Header("WeaponMounts")]
-    public MissileTube missileTube; // Up
+    public LaunchTube launchTube; // Up
     public LOSTurret losTurret; // Up
 
     [Header("System")]

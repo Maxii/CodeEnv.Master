@@ -442,7 +442,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         float zDistance = -_universeRadius * 0.75F;
         Position = new Vector3(0F, yElevation, zDistance);
 
-        if (!_sectorGrid.TryGetSectorIDThatContains(Position, out _sectorID)) {        ////_sectorID = _sectorGrid.GetSectorIdThatContains(Position);
+        if (!_sectorGrid.TryGetSectorIDContaining(Position, out _sectorID)) {        ////_sectorID = _sectorGrid.GetSectorIdThatContains(Position);
             // Position is outside the universeRadius
             _sectorID = default(IntVector3);    ////_sectorID = _sectorGrid.GetNearestSectorIDTo(Position);
         }
@@ -1595,7 +1595,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
         Position = proposedPosition;
 
         IntVector3 sectorID;
-        _sectorGrid.TryGetSectorIDThatContains(proposedPosition, out sectorID);
+        _sectorGrid.TryGetSectorIDContaining(proposedPosition, out sectorID);
         if (_sectorID != sectorID) {
             _sectorID = sectorID;
             OnSectorIDChanged();

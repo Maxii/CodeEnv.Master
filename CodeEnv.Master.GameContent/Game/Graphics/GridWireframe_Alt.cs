@@ -28,6 +28,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class GridWireframe_Alt : APropertyChangeTracking {
 
+        public string DebugName { get { return GetType().Name; } }
+
         private Transform _target;
 
         private GameColor _color;
@@ -74,7 +76,7 @@ namespace CodeEnv.Master.GameContent {
                 VectorManager.SetBrightnessParameters(5000F, 250F, 32, .2F, GameColor.Clear.ToUnityColor());
                 // NOTE: Using makeBounds: false means this CubeWireframe object does not automatically gain a renderer and invisible mesh. This renderer 
                 // and mesh enables OnBecameVisible/Invisible which overrides the line.active on/off commands I use to show/not show the line. There is another
-                // alternative to retain control: destroy this SectorWireframe gameobject each time I turn the line off (and then rebuild it of course). Destroying 
+                // alternative to retain control: destroy this SectorWireframe gameObject each time I turn the line off (and then rebuild it of course). Destroying 
                 // the VectorLine itself when using VectorManager.ObjectSetup will result in an error.
             }
             _line.active = toShow;
@@ -107,7 +109,7 @@ namespace CodeEnv.Master.GameContent {
         // is using. This is the proper way to destroy this type of VectorLine.
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
     }
 }

@@ -19,6 +19,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CodeEnv.Master.Common;
 using UnityEngine;
 using UnityEngine.Profiling;
@@ -1184,7 +1185,6 @@ public class CtxMenu : AMonoBase {
         }
         OnSelect(isSelected);
     }
-
 
     private void SubmenuItemKeyEventHandler(GameObject go, KeyCode key) {   // OnItemKey(go, key)
         // Normally we treat keyboard events the same whether the go directly to
@@ -2506,6 +2506,9 @@ public class CtxMenu : AMonoBase {
         if (onSelection != null) {
             current = this;
             selectedItem = id;
+            //string subscribersMsg = onSelection.Where(d => d.target != null).Select(d => d.target.name).Concatenate();
+            //D.Log("{0}.{1} is about to Execute selection event in Frame {2} to Subscribers: {3}.",
+            //    name, GetType().Name, Time.frameCount, subscribersMsg);
             EventDelegate.Execute(onSelection);
         }
         current = previous;

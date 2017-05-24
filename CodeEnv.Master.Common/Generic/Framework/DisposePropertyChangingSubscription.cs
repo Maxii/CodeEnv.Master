@@ -26,6 +26,8 @@ namespace CodeEnv.Master.Common {
     /// <typeparam name="TSource">The type of the source.</typeparam>
     public class DisposePropertyChangingSubscription<TSource> : IDisposable where TSource : INotifyPropertyChanging {
 
+        public string DebugName { get { return GetType().Name; } }
+
         public TSource Source { get; private set; }
         private PropertyChangingEventHandler _handlerToUnsubscribe;
 
@@ -42,7 +44,7 @@ namespace CodeEnv.Master.Common {
         }
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
 

@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AUnitCmdData : AMortalItemData {
 
-        private const string DebugNameFormat = "{0}_{1}";
+        private const string DebugNameFormat = "{0}'s {1}.{2}";
 
         private float _unitMaxFormationRadius;
         /// <summary>
@@ -56,16 +56,12 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<string>(ref _parentName, value, "ParentName", ParentNamePropChangedHandler); }
         }
 
-        private string _debugName;
         public override string DebugName {
             get {
                 if (ParentName.IsNullOrEmpty()) {
                     return base.DebugName;
                 }
-                if (_debugName == null) {
-                    _debugName = DebugNameFormat.Inject(ParentName, Name);
-                }
-                return _debugName;
+                return DebugNameFormat.Inject(Owner.DebugName, ParentName, Name);
             }
         }
 
@@ -250,9 +246,20 @@ namespace CodeEnv.Master.GameContent {
 
         public override void CommenceOperations() {
             base.CommenceOperations();
-            Sensors.OrderBy(s => s.RangeCategory).ForAll(s => s.IsActivated = true);    // medium, long order
-                                                                                        // 3.30.17 Activation of FtlDampener handled by HandleAlertStatusChanged
             RecalcPropertiesDerivedFromCombinedElements();
+            // 3.30.17 Activation of FtlDampener handled by HandleAlertStatusChanged
+        }
+
+        public void ActivateSensors() {
+            // 5.13.17 Moved from Data.CommenceOperations to allow Cmd.CommenceOperations to call when
+            // it is prepared to detect and be detected - aka after it enters Idling state.
+            if (!_debugCntls.DeactivateMRSensors) {
+                Sensors.Where(s => s.RangeCategory == RangeCategory.Medium).ForAll(s => s.IsActivated = true);
+            }
+            if (!_debugCntls.DeactivateLRSensors) {
+                Sensors.Where(s => s.RangeCategory == RangeCategory.Long).ForAll(s => s.IsActivated = true);
+            }
+            RecalcUnitSensorRange();
         }
 
         protected virtual void Subscribe(AUnitElementData elementData) {
@@ -276,67 +283,12 @@ namespace CodeEnv.Master.GameContent {
             HandleAlertStatusChanged();
         }
 
-        private void HandleAlertStatusChanged() {
-            ElementsData.ForAll(eData => eData.AlertStatus = AlertStatus);
-            switch (AlertStatus) {
-                case AlertStatus.Normal:
-                    D.Log(ShowDebugLog, "{0} {1} changed to {2}.", DebugName, typeof(AlertStatus).Name, AlertStatus.GetValueName());
-                    FtlDampener.IsActivated = false;
-                    break;
-                case AlertStatus.Yellow:
-                    D.Log(/*ShowDebugLog, */"{0} {1} changed to {2}.", DebugName, typeof(AlertStatus).Name, AlertStatus.GetValueName());
-                    FtlDampener.IsActivated = false;
-                    break;
-                case AlertStatus.Red:
-                    D.LogBold(/*ShowDebugLog, */"{0} {1} changed to {2}.", DebugName, typeof(AlertStatus).Name, AlertStatus.GetValueName());
-                    FtlDampener.IsActivated = true;
-                    break;
-                case AlertStatus.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(AlertStatus));
-            }
-        }
-
-        protected override void HandleOwnerChanged() {
-            base.HandleOwnerChanged();
-            // Only Cmds can be 'taken over'
-            PropagateOwnerChanged();
-        }
-
         private void HQElementDataPropChangingHandler(AUnitElementData newHQElementData) {
             HandleHQElementDataChanging(newHQElementData);
         }
 
-        protected virtual void HandleHQElementDataChanging(AUnitElementData newHQElementData) {
-            //D.Log(ShowDebugLog, "{0}.HQElementData is about to change.", DebugName);
-            var previousHQElementData = HQElementData;
-            if (previousHQElementData != null) {
-                previousHQElementData.intelCoverageChanged -= HQElementIntelCoverageChangedEventHandler;
-                previousHQElementData.topographyChanged -= HQElementTopographyChangedEventHandler;
-            }
-        }
-
         private void HQElementDataPropChangedHandler() {
             HandleHQElementDataChanged();
-        }
-
-        protected virtual void HandleHQElementDataChanged() {
-            D.Assert(_elementsData.Contains(HQElementData), HQElementData.DebugName);
-            // Align the IntelCoverage of this Cmd with that of its new HQ
-            var otherPlayers = _gameMgr.AllPlayers.Except(Owner);
-            foreach (var player in otherPlayers) {
-                IntelCoverage playerIntelCoverageOfNewHQ = HQElementData.GetIntelCoverage(player);
-                bool isPlayerIntelCoverageAccepted = SetIntelCoverage(player, playerIntelCoverageOfNewHQ);
-                // 2.6.17 FIXME It seems unlikely but possible that a new Facility HQ could have IntelCoverage.None when the
-                // previous HQ had > None, thereby attempting to illegally regress a BaseCmd's IntelCoverage to None from > None.
-                // Same thing could happen to FleetCmd except regress to None wouldn't be illegal. It WOULD result in the Fleet disappearing...
-                // Possible fixes: if illegal, force change of new HQ IntelCoverage to what old HQ was?
-                D.Assert(isPlayerIntelCoverageAccepted);
-            }
-            HQElementData.intelCoverageChanged += HQElementIntelCoverageChangedEventHandler;
-
-            Topography = GetTopography();
-            HQElementData.topographyChanged += HQElementTopographyChangedEventHandler;
         }
 
         private void HQElementTopographyChangedEventHandler(object sender, EventArgs e) {
@@ -347,24 +299,8 @@ namespace CodeEnv.Master.GameContent {
             HandleHQElementIntelCoverageChanged(e.Player);
         }
 
-        private void HandleHQElementIntelCoverageChanged(Player playerWhosCoverageChgd) {
-            var playerIntelCoverageOfHQElement = HQElementData.GetIntelCoverage(playerWhosCoverageChgd);
-            var isIntelCoverageAccepted = SetIntelCoverage(playerWhosCoverageChgd, playerIntelCoverageOfHQElement);
-            D.Assert(isIntelCoverageAccepted);
-            //D.Log(ShowDebugLog, "{0}.HQElement's IntelCoverage for {1} has changed to {2}. {0} has assumed the same value.", 
-            //    DebugName, playerWhosCoverageChgd.LeaderName, playerIntelCoverageOfHQElement.GetValueName());
-        }
-
         private void UnitMaxHitPtsPropChangingHandler(float newMaxHitPts) {
             HandleUnitMaxHitPtsChanging(newMaxHitPts);
-        }
-
-        private void HandleUnitMaxHitPtsChanging(float newMaxHitPts) {
-            if (newMaxHitPts < UnitMaxHitPoints) {
-                // reduction in max hit points so reduce current hit points to match
-                UnitCurrentHitPoints = Mathf.Clamp(UnitCurrentHitPoints, Constants.ZeroF, newMaxHitPts);
-                // FIXME changing CurrentHitPoints here sends out a temporary erroneous health change event. The accurate health change event follows shortly
-            }
         }
 
         private void UnitMaxHitPtsPropChangedHandler() {
@@ -379,29 +315,9 @@ namespace CodeEnv.Master.GameContent {
             HandleUnitHealthChanged();
         }
 
-        /// <summary>
-        /// Called when the Unit's health changes.
-        /// NOTE: This sets the UnitCommand's CurrentHitPoints (and Health) to 0 when UnitHealth reaches 0. 
-        /// This is not done to initiate the UnitCommand's death, but to keep the values of a UnitCommand's CurrentHitPoints 
-        /// and Health consistent with the way other Item's values are treated for any future subscribers to health changes.
-        /// </summary>
-        private void HandleUnitHealthChanged() {
-            //D.Log(ShowDebugLog, "{0}: UnitHealth {1}, UnitCurrentHitPoints {2}, UnitMaxHitPoints {3}.", DebugName, _unitHealth, UnitCurrentHitPoints, UnitMaxHitPoints);
-            if (UnitHealth <= Constants.ZeroF) {
-                CurrentHitPoints -= MaxHitPoints;
-            }
-        }
-
-        protected override void HandleHealthChanged() {
-            base.HandleHealthChanged();
-            RefreshCurrentCmdEffectiveness();
-        }
-
         private void UnitWeaponsRangePropChangedHandler() {
             HandleUnitWeaponsRangeChanged();
         }
-
-        protected abstract void HandleUnitWeaponsRangeChanged();
 
         private void MaxCmdEffectivenessPropChangedHandler() {
             RefreshCurrentCmdEffectiveness();
@@ -411,19 +327,8 @@ namespace CodeEnv.Master.GameContent {
             HandleParentNameChanged();
         }
 
-        private void HandleParentNameChanged() {
-            // the parent name of a command is the unit name
-            if (!_elementsData.IsNullOrEmpty()) {
-                _elementsData.ForAll(eData => eData.ParentName = ParentName);
-            }
-        }
-
         private void CmdSensorRangeDistancePropChangedHandler() {
             HandleCmdSensorRangeChanged();
-        }
-
-        private void HandleCmdSensorRangeChanged() {
-            RecalcUnitSensorRange();
         }
 
         private void ElementOffensiveStrengthPropChangedHandler() {
@@ -468,8 +373,113 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        private void PropagateOwnerChanged() {
-            _elementsData.ForAll(eData => eData.Owner = Owner);
+        private void HandleAlertStatusChanged() {
+            ElementsData.ForAll(eData => eData.AlertStatus = AlertStatus);
+            switch (AlertStatus) {
+                case AlertStatus.Normal:
+                    D.Log(ShowDebugLog, "{0} {1} changed to {2}.", DebugName, typeof(AlertStatus).Name, AlertStatus.GetValueName());
+                    FtlDampener.IsActivated = false;
+                    break;
+                case AlertStatus.Yellow:
+                    D.Log(ShowDebugLog, "{0} {1} changed to {2}.", DebugName, typeof(AlertStatus).Name, AlertStatus.GetValueName());
+                    FtlDampener.IsActivated = false;
+                    break;
+                case AlertStatus.Red:
+                    D.Log(/*ShowDebugLog, */"{0} {1} changed to {2}.", DebugName, typeof(AlertStatus).Name, AlertStatus.GetValueName());
+                    FtlDampener.IsActivated = true;
+                    break;
+                case AlertStatus.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(AlertStatus));
+            }
+        }
+
+        protected virtual void HandleHQElementDataChanging(AUnitElementData newHQElementData) {
+            //D.Log(ShowDebugLog, "{0}.HQElementData is about to change.", DebugName);
+            var previousHQElementData = HQElementData;
+            if (previousHQElementData != null) {
+                previousHQElementData.intelCoverageChanged -= HQElementIntelCoverageChangedEventHandler;
+                previousHQElementData.topographyChanged -= HQElementTopographyChangedEventHandler;
+            }
+        }
+
+        protected virtual void HandleHQElementDataChanged() {
+            D.Assert(_elementsData.Contains(HQElementData), HQElementData.DebugName);
+            // Align the IntelCoverage of this Cmd with that of its new HQ
+            var otherPlayers = _gameMgr.AllPlayers.Except(Owner);
+            foreach (var player in otherPlayers) {
+                IntelCoverage playerIntelCoverageOfNewHQ = HQElementData.GetIntelCoverage(player);
+                IntelCoverage resultingCoverage;
+                bool isPlayerIntelCoverageAccepted = TrySetIntelCoverage(player, playerIntelCoverageOfNewHQ, out resultingCoverage);
+                // 2.6.17 FIXME It seems unlikely but possible that a new Facility HQ could have IntelCoverage.None when the
+                // previous HQ had > None, thereby attempting to illegally regress a BaseCmd's IntelCoverage to None from > None.
+                // Same thing could happen to FleetCmd except regress to None wouldn't be illegal. It WOULD result in the Fleet disappearing...
+                // Possible fixes: if illegal, force change of new HQ IntelCoverage to what old HQ was?
+                D.Assert(isPlayerIntelCoverageAccepted);
+            }
+            HQElementData.intelCoverageChanged += HQElementIntelCoverageChangedEventHandler;
+
+            Topography = GetTopography();
+            HQElementData.topographyChanged += HQElementTopographyChangedEventHandler;
+        }
+
+        private void HandleHQElementIntelCoverageChanged(Player playerWhosCoverageChgd) {
+            if (HQElementData.IsOwnerChangeUnderway && _elementsData.Count > Constants.One) {
+                // 5.17.17 HQElement is changing owner and I'm not going to go with it to that owner
+                // so don't follow its IntelCoverage change. I'll pick up my IntelCoverage as soon as
+                // I get my newly assigned HQElement. Following its change when not going with it results
+                // in telling others of my very temp change which will throw errors when the chg doesn't make sense
+                // - e.g. tracking its change to IntelCoverage.None with an ally.
+                // 5.20.17 This combination of criteria can never occur for a BaseCmd as an element owner change
+                // is only possible when it is the only element.
+                return;
+            }
+
+            var playerIntelCoverageOfHQElement = HQElementData.GetIntelCoverage(playerWhosCoverageChgd);
+            IntelCoverage resultingCoverage;
+            var isIntelCoverageAccepted = TrySetIntelCoverage(playerWhosCoverageChgd, playerIntelCoverageOfHQElement, out resultingCoverage);
+            D.Assert(isIntelCoverageAccepted);
+            //D.Log(ShowDebugLog, "{0}.HQElement's IntelCoverage for {1} has changed to {2}. {0} has assumed the same value.", 
+            //    DebugName, playerWhosCoverageChgd.LeaderName, playerIntelCoverageOfHQElement.GetValueName());
+        }
+
+        private void HandleUnitMaxHitPtsChanging(float newMaxHitPts) {
+            if (newMaxHitPts < UnitMaxHitPoints) {
+                // reduction in max hit points so reduce current hit points to match
+                UnitCurrentHitPoints = Mathf.Clamp(UnitCurrentHitPoints, Constants.ZeroF, newMaxHitPts);
+                // FIXME changing CurrentHitPoints here sends out a temporary erroneous health change event. The accurate health change event follows shortly
+            }
+        }
+
+        /// <summary>
+        /// Called when the Unit's health changes.
+        /// NOTE: This sets the UnitCommand's CurrentHitPoints (and Health) to 0 when UnitHealth reaches 0. 
+        /// This is not done to initiate the UnitCommand's death, but to keep the values of a UnitCommand's CurrentHitPoints 
+        /// and Health consistent with the way other Item's values are treated for any future subscribers to health changes.
+        /// </summary>
+        private void HandleUnitHealthChanged() {
+            //D.Log(ShowDebugLog, "{0}: UnitHealth {1}, UnitCurrentHitPoints {2}, UnitMaxHitPoints {3}.", DebugName, _unitHealth, UnitCurrentHitPoints, UnitMaxHitPoints);
+            if (UnitHealth <= Constants.ZeroF) {
+                CurrentHitPoints -= MaxHitPoints;
+            }
+        }
+
+        protected override void HandleHealthChanged() {
+            base.HandleHealthChanged();
+            RefreshCurrentCmdEffectiveness();
+        }
+
+        protected abstract void HandleUnitWeaponsRangeChanged();
+
+        private void HandleParentNameChanged() {
+            // the parent name of a command is the unit name
+            if (!_elementsData.IsNullOrEmpty()) {
+                _elementsData.ForAll(eData => eData.ParentName = ParentName);
+            }
+        }
+
+        private void HandleCmdSensorRangeChanged() {
+            RecalcUnitSensorRange();
         }
 
         private void RefreshCurrentCmdEffectiveness() {
@@ -602,6 +612,12 @@ namespace CodeEnv.Master.GameContent {
             UnitExpense = _elementsData.Sum(ed => ed.Expense);
         }
 
+        protected override void HandleDeath() {
+            base.HandleDeath();
+            Sensors.ForAll(sens => sens.IsActivated = false);
+            FtlDampener.IsActivated = false;
+        }
+
         private void Unsubscribe(AUnitElementData elementData) {
             _elementSubscriptionsLookup[elementData].ForAll(d => d.Dispose());
             _elementSubscriptionsLookup.Remove(elementData);
@@ -624,6 +640,7 @@ namespace CodeEnv.Master.GameContent {
             _subscriptions.ForAll(d => d.Dispose());
             _subscriptions.Clear();
         }
+
 
     }
 }

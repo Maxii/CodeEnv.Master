@@ -87,10 +87,6 @@ namespace CodeEnv.Master.GameContent {
             GameReferences.GameManager.newGameBuilding -= NewGameBuildingEventHandler;
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
         #region IDisposable
 
         private bool _alreadyDisposed = false;
@@ -176,10 +172,6 @@ namespace CodeEnv.Master.GameContent {
                 }
                 D.Assert(!stats.IsNullOrEmpty());
                 return stats;
-            }
-
-            public override string ToString() {
-                return new ObjectAnalyzer().ToString(this);
             }
 
         }

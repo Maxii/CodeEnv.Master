@@ -250,10 +250,6 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
 
     private void Cleanup() { }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
     #region IDisposable
 
     private bool _alreadyDisposed = false;

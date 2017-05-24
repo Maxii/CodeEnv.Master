@@ -42,7 +42,7 @@ public class SectorCtxControl : ACtxControl {
 
     protected override Vector3 PositionForDistanceMeasurements { get { return _sector.Position; } }
 
-    protected override string OperatorName { get { return _sector.DebugName; } }
+    protected override string OperatorName { get { return _sector != null ? _sector.DebugName : "NotYetAssigned"; } }
 
     private SectorExaminer _sectorExaminerMenuOperator;
     private Sector _sector;
@@ -90,15 +90,11 @@ public class SectorCtxControl : ACtxControl {
 
     private void IssueRemoteUserFleetOrder(int itemID) {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
-        IFleetNavigable target = _sector;
+        IFleetNavigableDestination target = _sector;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         var order = new FleetOrder(directive, OrderSource.User, target);
         bool isOrderInitiated = remoteFleet.InitiateNewOrder(order);
         D.Assert(isOrderInitiated);
-    }
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
     }
 
 }

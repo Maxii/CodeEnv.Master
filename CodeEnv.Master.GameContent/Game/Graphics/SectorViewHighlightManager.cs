@@ -63,10 +63,6 @@ namespace CodeEnv.Master.GameContent {
             // Nothing to do as the highlight is a MonoBehaviour which will destroy itself
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
     }
 }
 

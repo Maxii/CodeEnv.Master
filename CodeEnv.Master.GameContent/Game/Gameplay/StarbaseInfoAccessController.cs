@@ -50,7 +50,7 @@ namespace CodeEnv.Master.GameContent {
                 case ItemInfoID.Composition:
                 case ItemInfoID.UnitOffense:
                 case ItemInfoID.UnitDefense:
-                    //D.Log(ShowDebugLog, "{0}.HasAccesstoInfo_Broad({1}, {2}) called.", GetType().Name, infoID.GetValueName(), player);
+                    //D.Log(ShowDebugLog, "{0}.HasAccesstoInfo_Broad({1}, {2}) called.", DebugName, infoID.GetValueName(), player);
                     return true;
                 default:
                     return false;
@@ -78,10 +78,6 @@ namespace CodeEnv.Master.GameContent {
                 default:
                     return false;
             }
-        }
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
         }
 
     }

@@ -40,7 +40,7 @@ public class PlanetoidCtxControl : ACtxControl {
 
     protected sealed override Vector3 PositionForDistanceMeasurements { get { return _planetoidMenuOperator.Position; } }
 
-    protected sealed override string OperatorName { get { return _planetoidMenuOperator.DebugName; } }
+    protected sealed override string OperatorName { get { return _planetoidMenuOperator != null ? _planetoidMenuOperator.DebugName : "NotYetAssigned"; } }
 
     protected APlanetoidItem _planetoidMenuOperator;
 
@@ -62,8 +62,8 @@ public class PlanetoidCtxControl : ACtxControl {
         return selectedFleet != null && selectedFleet.IsUserOwned;
     }
 
-    protected sealed override void PopulateMenu_UserMenuOperatorIsSelected() {
-        base.PopulateMenu_UserMenuOperatorIsSelected();
+    protected sealed override void PopulateMenu_MenuOperatorIsSelected() {
+        base.PopulateMenu_MenuOperatorIsSelected();
         __PopulateDieMenu();
     }
 
@@ -89,8 +89,8 @@ public class PlanetoidCtxControl : ACtxControl {
         }
     }
 
-    protected sealed override void HandleMenuPick_UserMenuOperatorIsSelected(int itemID) {
-        base.HandleMenuPick_UserMenuOperatorIsSelected(itemID);
+    protected sealed override void HandleMenuPick_MenuOperatorIsSelected(int itemID) {
+        base.HandleMenuPick_MenuOperatorIsSelected(itemID);
         __TellPlanetoidToDie();
     }
 
@@ -105,7 +105,7 @@ public class PlanetoidCtxControl : ACtxControl {
 
     private void IssueRemoteUserFleetOrder(int itemID) {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
-        IFleetNavigable target = _planetoidMenuOperator;
+        IFleetNavigableDestination target = _planetoidMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         var order = new FleetOrder(directive, OrderSource.User, target);
         bool isOrderInitiated = remoteFleet.InitiateNewOrder(order);
@@ -114,10 +114,6 @@ public class PlanetoidCtxControl : ACtxControl {
 
     private void __TellPlanetoidToDie() {
         _planetoidMenuOperator.__Die();
-    }
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
     }
 
 }

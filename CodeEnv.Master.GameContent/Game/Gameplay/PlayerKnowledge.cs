@@ -286,7 +286,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private string _debugName;
-        private string DebugName {
+        public virtual string DebugName {
             get {
                 if (_debugName == null) {
                     _debugName = DebugNameFormat.Inject(Owner.DebugName, typeof(PlayerKnowledge).Name);
@@ -603,8 +603,16 @@ namespace CodeEnv.Master.GameContent {
                 }
             }
 
-            if (command.IsOperational && command.Owner_Debug.IsRelationshipWith(Owner, DiplomaticRelationship.Alliance)) {
-                D.Error("{0}: {1} is alive and being removed while in Alliance!", DebugName, command.DebugName);
+            if (command.IsOperational) {
+                if (command.Owner_Debug.IsRelationshipWith(Owner, DiplomaticRelationship.Alliance)) {
+                    if (!command.IsOwnerChangeUnderway) {
+                        D.Error("{0}: {1} is alive and being removed while in Alliance!", DebugName, command.DebugName);
+                    }
+                    else {
+                        // 5.20.17 This path has not yet occurred
+                        D.Warn("FYI. {0} had to rely on testing {1}.IsOwnerChangeUnderway to accept it.", DebugName, command.DebugName);
+                    }
+                }
             }
             command.deathOneShot -= ItemDeathEventHandler;
         }
@@ -621,8 +629,15 @@ namespace CodeEnv.Master.GameContent {
             isRemoved = isRemoved & _items.Remove(element);
             D.Assert(isRemoved, element.DebugName);
 
-            if (element.IsOperational && (element as IUnitElement).Owner.IsRelationshipWith(Owner, DiplomaticRelationship.Alliance)) {
-                D.Error("{0}: {1} is alive and being removed while in Alliance!", DebugName, element.DebugName);
+            if (element.IsOperational) {
+                if (element.Owner_Debug.IsRelationshipWith(Owner, DiplomaticRelationship.Alliance)) {
+                    if (!element.IsOwnerChangeUnderway) {
+                        D.Error("{0}: {1} is alive and being removed while in Alliance!", DebugName, element.DebugName);
+                    }
+                    else {
+                        D.Log("{0} had to rely on testing {1}.IsOwnerChangeUnderway to accept it.", DebugName, element.DebugName);
+                    }
+                }
             }
             element.deathOneShot -= ItemDeathEventHandler;
         }
@@ -652,8 +667,8 @@ namespace CodeEnv.Master.GameContent {
             _planetoids.ForAll(p => p.deathOneShot -= ItemDeathEventHandler);
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+        public sealed override string ToString() {
+            return DebugName;
         }
 
         #region Debug 
@@ -682,18 +697,30 @@ namespace CodeEnv.Master.GameContent {
             __ValidatePlayerKnowledgeNow();
         }
 
-        private void __ValidatePlayerKnowledgeNow() {
-            D.Log("{0} is validating all Player Knowledge.", DebugName);
-            IList<IOwnerItem> myItems = OwnerItems.ToList();
+        public void __ValidatePlayerKnowledgeNow() {
+            //D.Log("{0} is validating its Knowledge.", DebugName);
+            foreach (var item in OwnerItems) {
+                D.AssertEqual(Owner, item.Owner);
+            }
+            //D.Log("{0}: All Unit Items owned: {1}.", DebugName, OwnerItems.Where(i => i is IUnitCmd || i is IUnitElement).Select(i => i.DebugName).Concatenate());
+
+            bool isAllIntelCoverageComprehensive = GameReferences.DebugControls.IsAllIntelCoverageComprehensive;
             foreach (var item in _items) {
                 D.Assert(item.IsOperational, item.DebugName);
-                IntelCoverage coverage = (item as IIntelItem).GetIntelCoverage(Owner);
-                if (myItems.Contains(item as IOwnerItem)) {
-                    // item is mine so should be comprehensive
-                    D.AssertEqual(IntelCoverage.Comprehensive, coverage, coverage.GetValueName());
-                    continue;
+
+                bool isIntelCoverageExpected = true;
+                var intelItem = item as IIntelItem;
+                IntelCoverage coverage = intelItem.GetIntelCoverage(Owner);
+                if (coverage == IntelCoverage.Comprehensive) {
+                    isIntelCoverageExpected = intelItem.__IsPlayerEntitledToComprehensiveRelationship(Owner);
                 }
-                D.AssertNotDefault((int)coverage, item.DebugName);
+                else if (coverage == IntelCoverage.None) {
+                    isIntelCoverageExpected = false;
+                }
+
+                if (!isIntelCoverageExpected) {
+                    D.Warn("{0} has found unexpected IntelCoverage.{1} on {2}.", DebugName, coverage.GetValueName(), item.DebugName);
+                }
             }
         }
 

@@ -49,7 +49,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="isFleetwide">if set to <c>true</c> the move should be coordinated as a fleet.</param>
         /// <param name="targetStandoffDistance">When the ship arrives at the target, this is the distance
         /// from the target it should strive to achieve.</param>
-        public ShipMoveOrder(OrderSource source, IShipNavigable target, Speed speed, bool isFleetwide, float targetStandoffDistance)
+        public ShipMoveOrder(OrderSource source, IShipNavigableDestination target, Speed speed, bool isFleetwide, float targetStandoffDistance)
             : base(ShipDirective.Move, source, default(Guid), target) {
             Utility.ValidateNotNull(target);
             D.AssertNotDefault((int)speed);

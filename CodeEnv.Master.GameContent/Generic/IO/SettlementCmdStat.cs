@@ -23,24 +23,26 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class SettlementCmdStat : UnitCmdStat {
 
-        public int Population { get; private set; }
+        public int StartingPopulation { get; private set; }
+
+        public float StartingApproval { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SettlementCmdStat"/> class.
+        /// Initializes a new instance of the <see cref="SettlementCmdStat" /> class.
         /// </summary>
         /// <param name="unitName">Name of the unit.</param>
         /// <param name="maxHitPts">The maximum hit PTS.</param>
         /// <param name="maxCmdEffect">The maximum command effectiveness.</param>
         /// <param name="formation">The formation.</param>
-        /// <param name="population">The population.</param>
-        public SettlementCmdStat(string unitName, float maxHitPts, float maxCmdEffect, Formation formation, int population)
+        /// <param name="startingPopulation">The starting population.</param>
+        /// <param name="startingApproval">The starting approval.</param>
+        public SettlementCmdStat(string unitName, float maxHitPts, float maxCmdEffect, Formation formation, int startingPopulation, float startingApproval)
             : base(unitName, maxHitPts, maxCmdEffect, formation) {
-            Population = population;
+            StartingPopulation = startingPopulation;
+            Utility.ValidateForRange(startingApproval, Constants.ZeroPercent, Constants.OneHundredPercent);
+            StartingApproval = startingApproval;
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
 
     }
 }

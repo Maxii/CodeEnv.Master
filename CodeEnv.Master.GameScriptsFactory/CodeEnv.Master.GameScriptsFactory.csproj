@@ -66,8 +66,13 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\Gameplay\AssaultVehicle.cs" />
+    <Compile Include="Generic\Framework\ALoneUnitCreator.cs" />
     <Compile Include="Game\Framework\FleetNavigator.cs" />
-    <Compile Include="Generic\Framework\AOrdnance.cs" />
+    <Compile Include="Game\Framework\LoneFleetCreator.cs" />
+    <Compile Include="Game\Framework\LoneSettlementCreator.cs" />
+    <Compile Include="Game\Framework\LoneStarbaseCreator.cs" />
+    <Compile Include="Game\Gameplay\KinematicProjectile.cs" />
     <Compile Include="ThirdParty\GamePoolManager.cs" />
     <Compile Include="Game\_Debug\DebugSystemCreator.cs" />
     <Compile Include="Generic\Framework\NewGameSystemConfigurator.cs" />
@@ -80,23 +85,20 @@
     <Compile Include="Game\Framework\StarbaseCreator.cs" />
     <Compile Include="Generic\Framework\FormationGenerator.cs" />
     <Compile Include="Game\_Debug\FormationGridOrganizer.cs" />
-    <Compile Include="Generic\Framework\AProjectileOrdnance.cs" />
     <Compile Include="Game\Gameplay\Beam.cs" />
-    <Compile Include="Game\Gameplay\Projectile.cs" />
+    <Compile Include="Game\Gameplay\PhysicsProjectile.cs" />
     <Compile Include="Game\Graphics\Explosion.cs" />
     <Compile Include="Game\GUI\FacilityCtxControl_User.cs" />
     <Compile Include="Game\GUI\FacilityCtxControl_AI.cs" />
     <Compile Include="Game\Framework\FacilityItem.cs" />
     <Compile Include="Game\Framework\ShipItem.cs" />
     <Compile Include="Game\Gameplay\LOSTurret.cs" />
-    <Compile Include="Game\Gameplay\MissileTube.cs" />
+    <Compile Include="Game\Gameplay\LaunchTube.cs" />
     <Compile Include="Generic\Framework\AHull.cs" />
     <Compile Include="Generic\Framework\AUnitCreator.cs" />
     <Compile Include="Generic\Framework\AUnitElementItem.cs" />
-    <Compile Include="Generic\Framework\AWeaponMount.cs" />
     <Compile Include="Game\_Debug\DebugFleetCreator.cs" />
     <Compile Include="Generic\Framework\UnitFactory.cs" />
-    <Compile Include="Generic\Graphics\AMountPlaceholder.cs" />
     <Compile Include="Game\Gameplay\FacilityHull.cs" />
     <Compile Include="Generic\Graphics\AImageGuiElement.cs" />
     <Compile Include="Generic\Graphics\AGuiElement.cs" />
@@ -233,7 +235,7 @@
     <Compile Include="Game\GUI\StrengthGuiElement.cs" />
     <Compile Include="Game\Gameplay\ShipHull.cs" />
     <Compile Include="Generic\Graphics\LOSMountPlaceholder.cs" />
-    <Compile Include="Generic\Graphics\MissileMountPlaceholder.cs" />
+    <Compile Include="Generic\Graphics\LauncherMountPlaceholder.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Game\GUI\SelectedFacilityForm.cs" />
     <Compile Include="Game\GUI\SelectedPlanetoidForm.cs" />

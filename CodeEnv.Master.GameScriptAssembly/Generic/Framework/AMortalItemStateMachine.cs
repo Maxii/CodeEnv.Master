@@ -136,7 +136,9 @@ public abstract class AMortalItemStateMachine : AMortalItem {
         }
         else {
             int paramCount = param.IsNullOrEmpty() ? Constants.Zero : param.Length;
-            D.Warn("{0} did not find Method with signature {1}(paramCount: {2}). Is it a private method in a base class?", DebugName, message, paramCount);  // my addition
+            string lastStateMsg = LastState != null ? LastState.ToString() : "null";
+            D.Warn("{0} did not find Method with signature {1}(paramCount: {2}). LastState: {3}. Is it a private method in a base class?",
+                DebugName, message, paramCount, lastStateMsg);  // my addition
             return false;   // my addition
         }
     }
@@ -159,6 +161,8 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     /// The time that the current state was entered
     /// </summary>
     private float _timeEnteredState;
+
+    protected virtual bool IsPaused { get { return false; } }
 
     /// <summary>
     /// Gets the seconds spent in the current state
@@ -696,6 +700,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
         private AMortalItemStateMachine _fsm;
         private string _coroutineName;
         private bool _isEnterStateCoroutine;
+        private bool __isPausedLogged;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="InterruptableCoroutine" /> class.
@@ -747,6 +752,16 @@ public abstract class AMortalItemStateMachine : AMortalItem {
                 //Check if we have a current coroutine
                 //D.Log(ShowDebugLog, "{0} beginning another while(true) pass during Frame {1}.", DebugName, Time.frameCount);
                 if (_enumerator != null) {
+
+                    while (_fsm.IsPaused) {  // 5.3.17 My addition to pause FSM while Game is paused
+                        if (!__isPausedLogged) {
+                            D.Log(ShowDebugLog, "{0} is waiting while game is paused.", DebugName);
+                            __isPausedLogged = true;
+                        }
+                        yield return null;
+                    }
+                    __isPausedLogged = false;
+
                     //D.Log(ShowDebugLog, "Updating {0}.Run() with non-null IEnumerator. State: {1}, Frame: {2}.", DebugName, ApplicableStateName, Time.frameCount);
                     //Make a copy of the enumerator in case it changes
                     var enm = _enumerator;

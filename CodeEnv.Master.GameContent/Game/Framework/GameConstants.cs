@@ -38,6 +38,8 @@ namespace CodeEnv.Master.GameContent {
 
         public const string IconMarker_Missile = "|missile|";
 
+        public const string IconMarker_AssaultVehicle = "|missile|";    // UNDONE
+
         public const string IconMarker_Projectile = "|projectile|";
 
         public const string IconMarker_Distance = "|distance|";

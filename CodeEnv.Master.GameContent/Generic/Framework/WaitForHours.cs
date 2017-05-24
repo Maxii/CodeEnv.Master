@@ -30,7 +30,7 @@ namespace CodeEnv.Master.GameContent {
         private const string DebugNameFormat = "{0} TargetDate: {1}";
 
         private string _debugName;
-        public string DebugName {
+        public override string DebugName {
             get {
                 if (_debugName == null) {
                     _debugName = DebugNameFormat.Inject(GetType().Name, _targetDate);
@@ -97,10 +97,6 @@ namespace CodeEnv.Master.GameContent {
                 _duration = _durationRef.Value;
                 _targetDate = new GameDate(_startDate, _duration);
             }
-        }
-
-        public sealed override string ToString() {
-            return DebugName;
         }
 
         #region Debug

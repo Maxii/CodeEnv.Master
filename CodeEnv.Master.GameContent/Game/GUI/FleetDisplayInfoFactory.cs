@@ -126,15 +126,11 @@ namespace CodeEnv.Master.GameContent {
             return null;
         }
 
-        private float? CalcTargetDistance(INavigable target, Vector3? fleetPosition) {
+        private float? CalcTargetDistance(INavigableDestination target, Vector3? fleetPosition) {
             if (target != null && fleetPosition.HasValue) {
                 return Vector3.Distance(target.Position, fleetPosition.Value);
             }
             return null;
-        }
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
         }
 
     }

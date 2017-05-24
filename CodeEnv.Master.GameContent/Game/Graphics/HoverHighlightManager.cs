@@ -44,7 +44,7 @@ namespace CodeEnv.Master.GameContent {
                     }
                     _hoverHighlight.SetTarget(_trackedClientItem);
                     _hoverHighlight.Color = TempGameValues.HoveredHighlightColor;
-                    _hoverHighlight.Alpha = 0.15F;  // Should follow color as color comes with its own alpha, typically 1.0
+                    _hoverHighlight.Alpha = 0.15F;  // HACK Should follow color as color comes with its own alpha, typically 1.0
                     _hoverHighlight.SetRadius(_highlightRadius);
                     _hoverHighlight.Show(true);
                 }
@@ -66,10 +66,6 @@ namespace CodeEnv.Master.GameContent {
 
         protected override void Cleanup() {
             // Nothing to do as the highlight is a MonoBehaviour which will destroy itself
-        }
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
         }
 
     }

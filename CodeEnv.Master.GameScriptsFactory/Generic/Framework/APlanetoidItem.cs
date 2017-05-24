@@ -28,7 +28,7 @@ using UnityEngine.Profiling;
 /// <summary>
 /// Abstract class for AMortalItems that are Planetoid (Planet and Moon) Items.
 /// </summary>
-public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, ICameraFollowable, IFleetNavigable, /*IUnitAttackable,*/
+public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, ICameraFollowable, IFleetNavigableDestination, /*IUnitAttackable,*/
     IShipBombardable, ISensorDetectable, IAvoidableObstacle, IShipOrbitable {
 
     // 8.21.16 Removed static, unused MaxOrbitalSpeed as not worthwhile maintaining once SystemCreator static values were removed
@@ -92,7 +92,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
     #region Initialization
 
     protected sealed override bool InitializeDebugLog() {
-        return DebugControls.Instance.ShowPlanetoidDebugLogs;
+        return _debugCntls.ShowPlanetoidDebugLogs;
     }
 
     protected override void InitializeOnData() {
@@ -205,8 +205,8 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         CurrentState = PlanetoidState.Dead;
     }
 
-    protected override void HandleDeathBeforeBeginningDeathEffect() {
-        base.HandleDeathBeforeBeginningDeathEffect();
+    protected override void PrepareForDeathEffect() {
+        base.PrepareForDeathEffect();
         // Note: Keep the primaryCollider enabled until destroyed or returned to the pool as this allows 
         // in-route ordnance to show its impact effect while the item is showing its death.
         // Also keep the ObstacleZoneCollider enabled to keep ships from flying through the exploding planetoid.
@@ -230,6 +230,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
 
     #region Event and Property Change Handlers
 
+
     protected override void HandleOwnerChanging(Player newOwner) {
         base.HandleOwnerChanging(newOwner);
         if (Owner != TempGameValues.NoPlayer) {
@@ -238,12 +239,17 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
 
             IEnumerable<Player> allies;
             if (TryGetAllies(out allies)) {
-                allies.ForAll(ally => ResetBasedOnCurrentDetection(ally));
+                allies.ForAll(ally => {
+                    if (ally != newOwner && !ally.IsRelationshipWith(newOwner, DiplomaticRelationship.Alliance)) {
+                        // 5.18.17 no point assessing current detection for newOwner or a newOwner ally
+                        // as HandleOwnerChgd will assign Comprehensive to them all. 
+                        ResetBasedOnCurrentDetection(ally);
+                    }
+                });
             }
         }
         // Note: A System will assess its IntelCoverage for a player anytime a member's IntelCoverage changes for that player
     }
-
 
     private void CurrentStatePropChangedHandler() {
         HandleStateChange();
@@ -265,7 +271,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
             case PlanetoidState.Idling:
                 break;
             case PlanetoidState.Dead:
-                HandleDeathBeforeBeginningDeathEffect();
+                PrepareForDeathEffect();
                 StartEffectSequence(EffectSequenceID.Dying);
                 HandleDeathAfterBeginningDeathEffect();
                 break;
@@ -307,22 +313,12 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
     #region Debug Show Obstacle Zones
 
     private void InitializeDebugShowObstacleZone() {
-        DebugControls debugValues = DebugControls.Instance;
-        debugValues.showObstacleZones += ShowDebugObstacleZonesChangedEventHandler;
-        if (debugValues.ShowObstacleZones) {
+        _debugCntls.showObstacleZones += ShowDebugObstacleZonesChangedEventHandler;
+        if (_debugCntls.ShowObstacleZones) {
             EnableDebugShowObstacleZone(true);
         }
     }
 
-    //private void EnableDebugShowObstacleZone(bool toEnable) {
-
-    //    Profiler.BeginSample("Proper AddComponent allocation", gameObject);
-    //    DrawColliderGizmo drawCntl = ObstacleZoneCollider.gameObject.AddMissingComponent<DrawColliderGizmo>();
-    //    Profiler.EndSample();
-
-    //    drawCntl.Color = Color.red;
-    //    drawCntl.enabled = toEnable;
-    //}
     private void EnableDebugShowObstacleZone(bool toEnable) {
 
         Profiler.BeginSample("Proper AddComponent allocation", gameObject);
@@ -334,29 +330,12 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
     }
 
     private void ShowDebugObstacleZonesChangedEventHandler(object sender, EventArgs e) {
-        EnableDebugShowObstacleZone(DebugControls.Instance.ShowObstacleZones);
+        EnableDebugShowObstacleZone(_debugCntls.ShowObstacleZones);
     }
 
-    //private void CleanupDebugShowObstacleZone() {
-    //    var debugValues = DebugControls.Instance;
-    //    if (debugValues != null) {
-    //        debugValues.showObstacleZones -= ShowDebugObstacleZonesChangedEventHandler;
-    //    }
-    //    if (ObstacleZoneCollider != null) {
-
-    //        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
-    //        DrawColliderGizmo drawCntl = ObstacleZoneCollider.gameObject.GetComponent<DrawColliderGizmo>();
-    //        Profiler.EndSample();
-
-    //        if (drawCntl != null) {
-    //            Destroy(drawCntl);
-    //        }
-    //    }
-    //}
     private void CleanupDebugShowObstacleZone() {
-        var debugValues = DebugControls.Instance;
-        if (debugValues != null) {
-            debugValues.showObstacleZones -= ShowDebugObstacleZonesChangedEventHandler;
+        if (_debugCntls != null) {
+            _debugCntls.showObstacleZones -= ShowDebugObstacleZonesChangedEventHandler;
         }
         if (_obstacleZoneCollider != null) {
 
@@ -369,6 +348,15 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
             }
         }
     }
+
+    #endregion
+
+    #region IAssemblySupported Members
+
+    /// <summary>
+    /// A collection of assembly stations that are local to the item.
+    /// </summary>
+    public abstract IList<StationaryLocation> LocalAssemblyStations { get; }
 
     #endregion
 
@@ -462,8 +450,8 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         _detectionHandler.HandleDetectionBy(detector, sensorRangeCat);
     }
 
-    public void HandleDetectionLostBy(ISensorDetector detector, RangeCategory sensorRangeCat) {
-        _detectionHandler.HandleDetectionLostBy(detector, sensorRangeCat);
+    public void HandleDetectionLostBy(ISensorDetector detector, Player detectorOwner, RangeCategory sensorRangeCat) {
+        _detectionHandler.HandleDetectionLostBy(detector, detectorOwner, sensorRangeCat);
     }
 
     /// <summary>
@@ -479,13 +467,13 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
 
     #endregion
 
-    #region INavigable Members
+    #region INavigableDestination Members
 
     public override bool IsMobile { get { return true; } }
 
     #endregion
 
-    #region IFleetNavigable Members
+    #region IFleetNavigableDestination Members
 
     public float GetObstacleCheckRayLength(Vector3 fleetPosition) {
         return Vector3.Distance(fleetPosition, Position) - _obstacleZoneCollider.radius - TempGameValues.ObstacleCheckRayLengthBuffer;

@@ -44,7 +44,7 @@ public class FleetCtxControl_AI : ACtxControl {
 
     protected override Vector3 PositionForDistanceMeasurements { get { return _fleetMenuOperator.Position; } }
 
-    protected override string OperatorName { get { return _fleetMenuOperator.DebugName; } }
+    protected override string OperatorName { get { return _fleetMenuOperator != null ? _fleetMenuOperator.DebugName : "NotYetAssigned"; } }
 
     private FleetCmdItem _fleetMenuOperator;
 
@@ -113,7 +113,7 @@ public class FleetCtxControl_AI : ACtxControl {
 
     private void IssueRemoteUserFleetOrder(int itemID) {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
-        IFleetNavigable target = _fleetMenuOperator;
+        IFleetNavigableDestination target = _fleetMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         var order = new FleetOrder(directive, OrderSource.User, target);
         bool isOrderInitiated = remoteFleet.InitiateNewOrder(order);
@@ -127,10 +127,6 @@ public class FleetCtxControl_AI : ACtxControl {
         var order = new BaseOrder(directive, OrderSource.User, target);
         bool isOrderInitiated = remoteBase.InitiateNewOrder(order);
         D.Assert(isOrderInitiated);
-    }
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
     }
 
 }

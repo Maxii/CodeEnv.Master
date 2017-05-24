@@ -40,7 +40,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public override DiplomaticRelationship GetPriorRelations(Player player) {
-            throw new NotImplementedException("GetPriorRelations() is not implemented in {0}.".Inject(DebugName));
+            return DiplomaticRelationship.None;
         }
 
         public override IEnumerable<Player> GetOtherPlayersWithRelationship(DiplomaticRelationship relations) {

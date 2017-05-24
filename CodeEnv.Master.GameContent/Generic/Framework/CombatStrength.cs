@@ -27,15 +27,16 @@ namespace CodeEnv.Master.GameContent {
     /// These values include damage infliction/mitigation and delivery vehicle survivability/interceptability.
     /// IMPROVE Still need to factor in reload time and accuracy. 
     /// IMPROVE need hull contribution to DamageMitigation.
+    /// UNDONE AssaultShuttle.
     /// </summary>
     public struct CombatStrength : IEquatable<CombatStrength>, IComparable<CombatStrength> {
 
-        private const string NoneToStringFormat = OffensiveToStringFormat + " : {8}";
-        private const string OffensiveToStringFormat = "{0}[{1}]: {2}{3}, {4}{5}, {6}{7}";
-        private const string DefensiveToStringFormat = "{0}[{1}]: {2}, {3}, {4} : {5}";
+        private const string NoneDebugNameFormat = OffensiveDebugNameFormat + " : {8}";
+        private const string OffensiveDebugNameFormat = "{0}[{1}]: {2}{3}, {4}{5}, {6}{7}, {8}{9}";
+        private const string DefensiveDebugNameFormat = "{0}[{1}]: {2}, {3}, {4}, {5} : {6}";
 
-        private const string OffensiveToTextHudFormat = "{0}{1}, {2}{3}, {4}{5}";
-        private const string DefensiveToTextHudFormat = "{0}, {1}, {2} : {3}";
+        private const string OffensiveToTextHudFormat = "{0}{1}, {2}{3}, {4}{5}, {6}{7}";
+        private const string DefensiveToTextHudFormat = "{0}, {1}, {2}, {3} : {4}";
 
         #region Operators Override
 
@@ -57,16 +58,19 @@ namespace CodeEnv.Master.GameContent {
             var beamDeliveryStrength = left.BeamDeliveryStrength + right.BeamDeliveryStrength;
             var projDeliveryStrength = left.ProjectileDeliveryStrength + right.ProjectileDeliveryStrength;
             var missileDeliveryStrength = left.MissileDeliveryStrength + right.MissileDeliveryStrength;
+            var assaultDeliveryStrength = left.AssaultDeliveryStrength + right.AssaultDeliveryStrength;
 
             switch (left.Mode) {
                 case CombatMode.Defensive:
                     var totalDamageMitigation = left.TotalDamageMitigation + right.TotalDamageMitigation;
-                    return new CombatStrength(beamDeliveryStrength, projDeliveryStrength, missileDeliveryStrength, totalDamageMitigation);
+                    return new CombatStrength(beamDeliveryStrength, projDeliveryStrength, missileDeliveryStrength, assaultDeliveryStrength, totalDamageMitigation);
                 case CombatMode.Offensive:
                     var beamDamagePotential = left.BeamDamagePotential + right.BeamDamagePotential;
                     var projDamagePotential = left.ProjectileDamagePotential + right.ProjectileDamagePotential;
                     var missileDamagePotential = left.MissileDamagePotential + right.MissileDamagePotential;
-                    return new CombatStrength(beamDeliveryStrength, projDeliveryStrength, missileDeliveryStrength, beamDamagePotential, projDamagePotential, missileDamagePotential);
+                    var assaultDamagePotential = left.AssaultDamagePotential + right.AssaultDamagePotential;
+                    return new CombatStrength(beamDeliveryStrength, projDeliveryStrength, missileDeliveryStrength, assaultDeliveryStrength,
+                        beamDamagePotential, projDamagePotential, missileDamagePotential, assaultDamagePotential);
                 case CombatMode.None:
                     return right;
                 default:
@@ -81,13 +85,29 @@ namespace CodeEnv.Master.GameContent {
                     **************************************************************************************************************/
         #endregion
 
+        public string DebugName {
+            get {
+                if (Mode == CombatMode.Defensive) {
+                    return DefensiveDebugNameFormat.Inject(GetType().Name, Mode.GetValueName(), BeamDeliveryStrength, ProjectileDeliveryStrength, MissileDeliveryStrength, AssaultDeliveryStrength, TotalDamageMitigation);
+                }
+                if (Mode == CombatMode.Offensive) {
+                    return OffensiveDebugNameFormat.Inject(GetType().Name, Mode.GetValueName(), BeamDeliveryStrength, BeamDamagePotential, ProjectileDeliveryStrength,
+                       ProjectileDamagePotential, MissileDeliveryStrength, MissileDamagePotential, AssaultDeliveryStrength, AssaultDamagePotential);
+                }
+                return NoneDebugNameFormat.Inject(GetType().Name, Mode.GetValueName(), BeamDeliveryStrength, BeamDamagePotential, ProjectileDeliveryStrength,
+                    ProjectileDamagePotential, MissileDeliveryStrength, MissileDamagePotential, AssaultDeliveryStrength, AssaultDamagePotential, TotalDamageMitigation);
+            }
+        }
+
         public CombatMode Mode { get; private set; }
 
         /// <summary>
         /// If Mode is Offensive, this value represents the ability of all the attacker's delivery vehicle(s) to survive interception.
         /// If Defensive, this value represents the ability of the defender's active countermeasure(s) to intercept and destroy all the attacker's delivery vehicle(s). 
         /// </summary>
-        public float TotalDeliveryStrength { get { return BeamDeliveryStrength.Value + ProjectileDeliveryStrength.Value + MissileDeliveryStrength.Value; } }
+        public float TotalDeliveryStrength {
+            get { return BeamDeliveryStrength.Value + ProjectileDeliveryStrength.Value + MissileDeliveryStrength.Value + AssaultDeliveryStrength.Value; }
+        }
 
         /// <summary>
         /// If Mode is Offensive, this value represents the ability of the attacker's beam delivery vehicle(s) to survive interdiction.
@@ -108,6 +128,13 @@ namespace CodeEnv.Master.GameContent {
         public WDVStrength MissileDeliveryStrength { get; private set; }
 
         /// <summary>
+        /// If Mode is Offensive, this value represents the ability of the attacker's assault delivery vehicle(s) to survive interdiction.
+        /// If Defensive, this value represents the ability of the defender's active countermeasure(s) to interdict and destroy the attacker's assault delivery vehicle(s). 
+        /// </summary>
+        public WDVStrength AssaultDeliveryStrength { get; private set; }
+
+
+        /// <summary>
         /// Only valid if the Mode is Offensive, this value represents the potential damage delivered to the defender by the attacker's beam delivery vehicles.
         /// </summary>
         public DamageStrength BeamDamagePotential { get; private set; }
@@ -123,9 +150,17 @@ namespace CodeEnv.Master.GameContent {
         public DamageStrength MissileDamagePotential { get; private set; }
 
         /// <summary>
+        /// Only valid if the Mode is Offensive, this value represents the potential damage delivered to the defender by the attacker's assault delivery vehicles.
+        /// </summary>
+        public DamageStrength AssaultDamagePotential { get; private set; }
+
+
+        /// <summary>
         /// Only valid if the Mode is Offensive, this value represents the potential damage delivered to the defender by all the attacker's delivery vehicles.
         /// </summary>
-        public DamageStrength TotalDamagePotential { get { return BeamDamagePotential + ProjectileDamagePotential + MissileDamagePotential; } }
+        public DamageStrength TotalDamagePotential {
+            get { return BeamDamagePotential + ProjectileDamagePotential + MissileDamagePotential + AssaultDamagePotential; }
+        }
 
         /// <summary>
         /// Only valid if the Mode is Defensive, this value represents the ability of the defender to mitigate the damage delivered by the attacker's delivery vehicles.
@@ -146,10 +181,12 @@ namespace CodeEnv.Master.GameContent {
             BeamDeliveryStrength = CalcDeliveryStrength(deliveryStrengths, WDVCategory.Beam);
             ProjectileDeliveryStrength = CalcDeliveryStrength(deliveryStrengths, WDVCategory.Projectile);
             MissileDeliveryStrength = CalcDeliveryStrength(deliveryStrengths, WDVCategory.Missile);
+            AssaultDeliveryStrength = CalcDeliveryStrength(deliveryStrengths, WDVCategory.AssaultVehicle);
 
             BeamDamagePotential = CalcDamagePotential(undamagedWeapons, WDVCategory.Beam);
             ProjectileDamagePotential = CalcDamagePotential(undamagedWeapons, WDVCategory.Projectile);
             MissileDamagePotential = CalcDamagePotential(undamagedWeapons, WDVCategory.Missile);
+            AssaultDamagePotential = CalcDamagePotential(undamagedWeapons, WDVCategory.AssaultVehicle);
         }
 
         /// <summary>
@@ -168,53 +205,62 @@ namespace CodeEnv.Master.GameContent {
             BeamDeliveryStrength = CalcDeliveryStrength(deliveryInterceptStrengths, WDVCategory.Beam);
             ProjectileDeliveryStrength = CalcDeliveryStrength(deliveryInterceptStrengths, WDVCategory.Projectile);
             MissileDeliveryStrength = CalcDeliveryStrength(deliveryInterceptStrengths, WDVCategory.Missile);
+            AssaultDeliveryStrength = CalcDeliveryStrength(deliveryInterceptStrengths, WDVCategory.AssaultVehicle);
 
             TotalDamageMitigation = undamagedCMs.Select(cm => cm.DamageMitigation).Aggregate(hullDamageMitigation, (accum, strength) => accum + strength);
         }
 
         /// <summary>
-        /// Initializes a new offensive instance of the <see cref="CombatStrength"/> struct.
+        /// Initializes a new offensive instance of the <see cref="CombatStrength" /> struct.
         /// </summary>
         /// <param name="beamDeliveryStrength">The beam delivery strength.</param>
         /// <param name="projDeliveryStrength">The projectile delivery strength.</param>
         /// <param name="missileDeliveryStrength">The missile delivery strength.</param>
+        /// <param name="assaultDeliveryStrength">The assault delivery strength.</param>
         /// <param name="beamDamagePotential">The beam damage potential.</param>
         /// <param name="projDamagePotential">The projectile damage potential.</param>
         /// <param name="missileDamagePotential">The missile damage potential.</param>
+        /// <param name="assaultDamagePotential">The assault damage potential.</param>
         private CombatStrength(WDVStrength beamDeliveryStrength, WDVStrength projDeliveryStrength, WDVStrength missileDeliveryStrength,
-            DamageStrength beamDamagePotential, DamageStrength projDamagePotential, DamageStrength missileDamagePotential)
-            : this() {
+            WDVStrength assaultDeliveryStrength, DamageStrength beamDamagePotential, DamageStrength projDamagePotential,
+            DamageStrength missileDamagePotential, DamageStrength assaultDamagePotential) : this() {
             D.AssertEqual(WDVCategory.Beam, beamDeliveryStrength.Category);
             D.AssertEqual(WDVCategory.Projectile, projDeliveryStrength.Category);
             D.AssertEqual(WDVCategory.Missile, missileDeliveryStrength.Category);
+            D.AssertEqual(WDVCategory.AssaultVehicle, assaultDeliveryStrength.Category);
 
             Mode = CombatMode.Offensive;
             BeamDeliveryStrength = beamDeliveryStrength;
             ProjectileDeliveryStrength = projDeliveryStrength;
             MissileDeliveryStrength = missileDeliveryStrength;
+            AssaultDeliveryStrength = assaultDeliveryStrength;
+
             BeamDamagePotential = beamDamagePotential;
             ProjectileDamagePotential = projDamagePotential;
             MissileDamagePotential = missileDamagePotential;
+            AssaultDamagePotential = assaultDamagePotential;
         }
 
         /// <summary>
-        /// Initializes a new defensive instance of the <see cref="CombatStrength"/> struct.
+        /// Initializes a new defensive instance of the <see cref="CombatStrength" /> struct.
         /// </summary>
         /// <param name="beamInterceptStrength">The beam intercept strength.</param>
         /// <param name="projInterceptStrength">The projectile intercept strength.</param>
         /// <param name="missileInterceptStrength">The missile intercept strength.</param>
+        /// <param name="assaultInterceptStrength">The assault intercept strength.</param>
         /// <param name="totalDamageMitigation">The total damage mitigation.</param>
         private CombatStrength(WDVStrength beamInterceptStrength, WDVStrength projInterceptStrength, WDVStrength missileInterceptStrength,
-            DamageStrength totalDamageMitigation)
-            : this() {
+            WDVStrength assaultInterceptStrength, DamageStrength totalDamageMitigation) : this() {
             D.AssertEqual(WDVCategory.Beam, beamInterceptStrength.Category);
             D.AssertEqual(WDVCategory.Projectile, projInterceptStrength.Category);
             D.AssertEqual(WDVCategory.Missile, missileInterceptStrength.Category);
+            D.AssertEqual(WDVCategory.AssaultVehicle, assaultInterceptStrength.Category);
 
             Mode = CombatMode.Defensive;
             BeamDeliveryStrength = beamInterceptStrength;
             ProjectileDeliveryStrength = projInterceptStrength;
             MissileDeliveryStrength = missileInterceptStrength;
+            AssaultDeliveryStrength = assaultInterceptStrength;
             TotalDamageMitigation = totalDamageMitigation;
         }
 
@@ -253,9 +299,11 @@ namespace CodeEnv.Master.GameContent {
                 hash = hash * 31 + BeamDeliveryStrength.GetHashCode();
                 hash = hash * 31 + ProjectileDeliveryStrength.GetHashCode();
                 hash = hash * 31 + MissileDeliveryStrength.GetHashCode();
+                hash = hash * 31 + AssaultDeliveryStrength.GetHashCode();
                 hash = hash * 31 + BeamDamagePotential.GetHashCode();
                 hash = hash * 31 + ProjectileDamagePotential.GetHashCode();
                 hash = hash * 31 + MissileDamagePotential.GetHashCode();
+                hash = hash * 31 + AssaultDamagePotential.GetHashCode();
                 hash = hash * 31 + TotalDamageMitigation.GetHashCode();
                 return hash;
             }
@@ -266,26 +314,18 @@ namespace CodeEnv.Master.GameContent {
         public string ToTextHud() {
             if (Mode == CombatMode.Defensive) {
                 return DefensiveToTextHudFormat.Inject(BeamDeliveryStrength.ToTextHud(), ProjectileDeliveryStrength.ToTextHud(),
-                    MissileDeliveryStrength.ToTextHud(), TotalDamageMitigation.ToTextHud());
+                    MissileDeliveryStrength.ToTextHud(), AssaultDeliveryStrength.ToTextHud(), TotalDamageMitigation.ToTextHud());
             }
             if (Mode == CombatMode.Offensive) {
                 return OffensiveToTextHudFormat.Inject(BeamDeliveryStrength.ToTextHud(), BeamDamagePotential.ToTextHud(),
                     ProjectileDeliveryStrength.ToTextHud(), ProjectileDamagePotential.ToTextHud(), MissileDeliveryStrength.ToTextHud(),
-                    MissileDamagePotential.ToTextHud());
+                    MissileDamagePotential.ToTextHud(), AssaultDeliveryStrength.ToTextHud(), AssaultDamagePotential.ToTextHud());
             }
             return Mode.GetValueName();
         }
 
         public override string ToString() {
-            if (Mode == CombatMode.Defensive) {
-                return DefensiveToStringFormat.Inject(GetType().Name, Mode.GetValueName(), BeamDeliveryStrength, ProjectileDeliveryStrength, MissileDeliveryStrength, TotalDamageMitigation);
-            }
-            if (Mode == CombatMode.Offensive) {
-                return OffensiveToStringFormat.Inject(GetType().Name, Mode.GetValueName(), BeamDeliveryStrength, BeamDamagePotential, ProjectileDeliveryStrength,
-                   ProjectileDamagePotential, MissileDeliveryStrength, MissileDamagePotential);
-            }
-            return NoneToStringFormat.Inject(GetType().Name, Mode.GetValueName(), BeamDeliveryStrength, BeamDamagePotential, ProjectileDeliveryStrength,
-                ProjectileDamagePotential, MissileDeliveryStrength, MissileDamagePotential, TotalDamageMitigation);
+            return DebugName;
         }
 
         #region IEquatable<CombatStrength> Members
@@ -293,8 +333,9 @@ namespace CodeEnv.Master.GameContent {
         public bool Equals(CombatStrength other) {
             return Mode == other.Mode && BeamDeliveryStrength == other.BeamDeliveryStrength
                 && ProjectileDeliveryStrength == other.ProjectileDeliveryStrength && MissileDeliveryStrength == other.MissileDeliveryStrength
-                && BeamDamagePotential == other.BeamDamagePotential && ProjectileDamagePotential == other.ProjectileDamagePotential
-                && MissileDamagePotential == other.MissileDamagePotential && TotalDamageMitigation == other.TotalDamageMitigation;
+                && AssaultDeliveryStrength == other.AssaultDeliveryStrength && BeamDamagePotential == other.BeamDamagePotential
+                && ProjectileDamagePotential == other.ProjectileDamagePotential && MissileDamagePotential == other.MissileDamagePotential
+                && AssaultDamagePotential == other.AssaultDamagePotential && TotalDamageMitigation == other.TotalDamageMitigation;
             ;
         }
 

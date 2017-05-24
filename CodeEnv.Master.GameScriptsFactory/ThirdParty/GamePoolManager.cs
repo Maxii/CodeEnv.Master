@@ -54,13 +54,22 @@ public class GamePoolManager : AMonoSingleton<GamePoolManager>, IGamePoolManager
     [SerializeField]
     private Transform _beamPrefab = null;
 
-    [Tooltip("The prefab for Ordnance Projectile.")]
+    [Tooltip("The prefab for Ordnance PhysicsProjectile.")]
     [SerializeField]
-    private Transform _projectilePrefab = null;
+    private Transform _physicsProjectilePrefab = null;
+
+    [Tooltip("The prefab for Ordnance KinematicProjectile.")]
+    [SerializeField]
+    private Transform _kinematicProjectilePrefab = null;
+
 
     [Tooltip("The prefab for Ordnance Missile.")]
     [SerializeField]
     private Transform _missilePrefab = null;
+
+    [Tooltip("The prefab for Ordnance AssaultVehicle.")]
+    [SerializeField]
+    private Transform _assaultVehiclePrefab = null;
 
 
     [Tooltip("Show GamePoolManager debug logging.")]
@@ -68,7 +77,6 @@ public class GamePoolManager : AMonoSingleton<GamePoolManager>, IGamePoolManager
     private bool _showDebugLog = false;
     public bool ShowDebugLog {
         get { return _showDebugLog; }
-        //set { _showDebugLog = value; }    // 2.17 17 UNCLEAR whether any value in dynamically changing ShowDebugLog during Runtime
     }
 
     [Tooltip("Show PoolManager's verbose debug logging.")]
@@ -87,6 +95,8 @@ public class GamePoolManager : AMonoSingleton<GamePoolManager>, IGamePoolManager
         }
     }
 
+    private DebugControls _debugCntls;
+
     #region Initialization
 
     /// <summary>
@@ -104,6 +114,7 @@ public class GamePoolManager : AMonoSingleton<GamePoolManager>, IGamePoolManager
     /// </summary>
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
+        _debugCntls = DebugControls.Instance;
         __ValidatePrefabs();
     }
 
@@ -114,8 +125,7 @@ public class GamePoolManager : AMonoSingleton<GamePoolManager>, IGamePoolManager
     /// </summary>
     /// <param name="gameSettings">The game settings.</param>
     public void Initialize(GameSettings gameSettings) {
-        var debugCntls = DebugControls.Instance;
-        int preloadAmt = debugCntls.FleetsAutoAttackAsDefault ? 3 : 2;
+        int preloadAmt = _debugCntls.FleetsAutoAttackAsDefault ? 3 : 2;
         CreatePrefabPool(EffectsPoolName, _explosionPrefab, preloadAmt);    // preload instances are created before delegate assigned
         PoolManager.Pools[EffectsPoolName].instantiateDelegates += InstantiateNewInstanceEventHandler;
 
@@ -138,8 +148,11 @@ public class GamePoolManager : AMonoSingleton<GamePoolManager>, IGamePoolManager
         if (gameSettings.__UseDebugCreatorsOnly) {
             avgBeamsOperatingPerElement = 0.1F;
         }
-        else if (debugCntls.FleetsAutoAttackAsDefault) {
-            avgBeamsOperatingPerElement = 0.03F * debugCntls.MaxAttackingFleetsPerPlayer;
+        else if (_debugCntls.FleetsAutoAttackAsDefault) {
+            avgBeamsOperatingPerElement = 0.04F * _debugCntls.MaxAttackingFleetsPerPlayer;
+        }
+        if (_debugCntls.IsAutoRelationsChangeEnabled) {
+            avgBeamsOperatingPerElement *= 0.5F;
         }
         preloadAmt = Mathf.RoundToInt(avgBeamsOperatingPerElement * maxElements);
         CreatePrefabPool(OrdnancePoolName, _beamPrefab, preloadAmt);
@@ -148,21 +161,48 @@ public class GamePoolManager : AMonoSingleton<GamePoolManager>, IGamePoolManager
         if (gameSettings.__UseDebugCreatorsOnly) {
             avgProjectilesInFlightPerElement = 0.1F;
         }
-        else if (debugCntls.FleetsAutoAttackAsDefault) {
-            avgProjectilesInFlightPerElement = 0.06F * debugCntls.MaxAttackingFleetsPerPlayer;
+        else if (_debugCntls.FleetsAutoAttackAsDefault) {
+            avgProjectilesInFlightPerElement = 0.06F * _debugCntls.MaxAttackingFleetsPerPlayer;
+        }
+        if (_debugCntls.IsAutoRelationsChangeEnabled) {
+            avgProjectilesInFlightPerElement *= 0.2F;
         }
         preloadAmt = Mathf.RoundToInt(avgProjectilesInFlightPerElement * maxElements);
-        CreatePrefabPool(OrdnancePoolName, _projectilePrefab, preloadAmt);
+        if (_debugCntls.MovementTech == DebugControls.UnityMoveTech.Kinematic) {
+            CreatePrefabPool(OrdnancePoolName, _kinematicProjectilePrefab, preloadAmt);
+            CreatePrefabPool(OrdnancePoolName, _physicsProjectilePrefab, 0);
+        }
+        else {
+            CreatePrefabPool(OrdnancePoolName, _physicsProjectilePrefab, preloadAmt);
+            CreatePrefabPool(OrdnancePoolName, _kinematicProjectilePrefab, 0);
+        }
 
         float avgMissilesInFlightPerElement = 0.03F;
         if (gameSettings.__UseDebugCreatorsOnly) {
             avgMissilesInFlightPerElement = 0.1F;
         }
-        else if (debugCntls.FleetsAutoAttackAsDefault) {
-            avgMissilesInFlightPerElement = 0.10F * debugCntls.MaxAttackingFleetsPerPlayer;
+        else if (_debugCntls.FleetsAutoAttackAsDefault) {
+            avgMissilesInFlightPerElement = 0.05F * _debugCntls.MaxAttackingFleetsPerPlayer;
+        }
+        if (_debugCntls.IsAutoRelationsChangeEnabled) {
+            avgMissilesInFlightPerElement *= 0.3F;
         }
         preloadAmt = Mathf.RoundToInt(avgMissilesInFlightPerElement * maxElements);
         CreatePrefabPool(OrdnancePoolName, _missilePrefab, preloadAmt);
+
+        float avgAssaultVehiclesInFlightPerElement = 0.03F;
+        if (gameSettings.__UseDebugCreatorsOnly) {
+            avgAssaultVehiclesInFlightPerElement = 0.1F;
+        }
+        else if (_debugCntls.FleetsAutoAttackAsDefault) {
+            avgAssaultVehiclesInFlightPerElement = 0.05F * _debugCntls.MaxAttackingFleetsPerPlayer;
+        }
+        if (_debugCntls.IsAutoRelationsChangeEnabled) {
+            avgAssaultVehiclesInFlightPerElement *= 0.3F;
+        }
+        preloadAmt = Mathf.RoundToInt(avgAssaultVehiclesInFlightPerElement * maxElements);
+        CreatePrefabPool(OrdnancePoolName, _assaultVehiclePrefab, preloadAmt);
+
         PoolManager.Pools[OrdnancePoolName].instantiateDelegates += InstantiateNewInstanceEventHandler;
     }
 
@@ -181,7 +221,12 @@ public class GamePoolManager : AMonoSingleton<GamePoolManager>, IGamePoolManager
     }
 
     public Transform Spawn(WDVCategory ordnanceID, Vector3 location, Quaternion rotation, Transform parent) {
-        return PoolManager.Pools[OrdnancePoolName].Spawn(ordnanceID.GetValueName(), location, rotation, parent);
+        string prefabName = ordnanceID.GetValueName();
+        if (ordnanceID == WDVCategory.Projectile) {
+            prefabName = _debugCntls.MovementTech == DebugControls.UnityMoveTech.Kinematic ?
+                "KinematicProjectile" : "PhysicsProjectile";
+        }
+        return PoolManager.Pools[OrdnancePoolName].Spawn(prefabName, location, rotation, parent);
     }
 
     public void DespawnOrdnance(Transform ordnanceTransform) {
@@ -285,7 +330,7 @@ public class GamePoolManager : AMonoSingleton<GamePoolManager>, IGamePoolManager
         SpawnPool spawnPool = PoolManager.Pools[spawnPoolName];
         spawnPool.logMessages = _showVerboseDebugLog;
         spawnPool.CreatePrefabPool(prefabPool);
-        D.Log(ShowDebugLog, "{0} has created {1} instances of {2}.", DebugName, prefabPool.totalCount, prefab.name);
+        D.Log(/*ShowDebugLog, */"{0} has created {1} instances of {2}.", DebugName, prefabPool.totalCount, prefab.name);
     }
 
     [Obsolete("Use DebugUtility")]
@@ -365,12 +410,12 @@ public class GamePoolManager : AMonoSingleton<GamePoolManager>, IGamePoolManager
         // UNDONE not clear whether any value in dynamically changing ShowDebugLog during Runtime
     }
 
-    #region Cleanup
-
     protected override void __CleanupOnApplicationQuit() {
         base.__CleanupOnApplicationQuit();
         __ReportAdditionalInstancesCreated();
     }
+
+    #region Cleanup
 
     protected override void Cleanup() {
         Unsubscribe();
@@ -387,7 +432,7 @@ public class GamePoolManager : AMonoSingleton<GamePoolManager>, IGamePoolManager
     #endregion
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
     #region Debug
@@ -396,7 +441,7 @@ public class GamePoolManager : AMonoSingleton<GamePoolManager>, IGamePoolManager
     private IDictionary<string, int> __preloadedInstanceQtyLookup;
 
     private void __IncrementAdditionalInstancesCreatedCount(GameObject prefab) {
-        __additionalInstancesCreatedLookup = __additionalInstancesCreatedLookup ?? new Dictionary<string, int>(6);
+        __additionalInstancesCreatedLookup = __additionalInstancesCreatedLookup ?? new Dictionary<string, int>(8);
         __preloadedInstanceQtyLookup = __preloadedInstanceQtyLookup ?? __InitializePreloadedInstanceQtyLookup();
         string prefabName = prefab.name;
         if (!__additionalInstancesCreatedLookup.ContainsKey(prefabName)) {
@@ -416,18 +461,20 @@ public class GamePoolManager : AMonoSingleton<GamePoolManager>, IGamePoolManager
             }
         }
         else {
-            D.Log(ShowDebugLog, "{0} didn't have to create any additional pooled instances.", DebugName);
+            D.Log(/*ShowDebugLog, */"{0} didn't have to create any additional pooled instances.", DebugName);
         }
     }
 
     private IDictionary<string, int> __InitializePreloadedInstanceQtyLookup() {
-        return new Dictionary<string, int>(6) {
+        return new Dictionary<string, int>(8) {
             { _explosionPrefab.name, __GetPreloadedInstanceQty(EffectsPoolName, _explosionPrefab) },
             { _sphericalHighlightPrefab.name, __GetPreloadedInstanceQty(HighlightsPoolName, _sphericalHighlightPrefab) },
             { _formationStationPrefab.name, __GetPreloadedInstanceQty(FormationStationPoolName, _formationStationPrefab) },
             { _beamPrefab.name, __GetPreloadedInstanceQty(OrdnancePoolName, _beamPrefab) },
             { _missilePrefab.name, __GetPreloadedInstanceQty(OrdnancePoolName, _missilePrefab) },
-            { _projectilePrefab.name, __GetPreloadedInstanceQty(OrdnancePoolName, _projectilePrefab) }
+            { _physicsProjectilePrefab.name, __GetPreloadedInstanceQty(OrdnancePoolName, _physicsProjectilePrefab) },
+            { _kinematicProjectilePrefab.name, __GetPreloadedInstanceQty(OrdnancePoolName, _kinematicProjectilePrefab) },
+            { _assaultVehiclePrefab.name, __GetPreloadedInstanceQty(OrdnancePoolName, _assaultVehiclePrefab) }
         };
     }
 
@@ -441,8 +488,10 @@ public class GamePoolManager : AMonoSingleton<GamePoolManager>, IGamePoolManager
         D.AssertNotNull(_sphericalHighlightPrefab);
         D.AssertNotNull(_explosionPrefab);
         D.AssertNotNull(_beamPrefab);
-        D.AssertNotNull(_projectilePrefab);
+        D.AssertNotNull(_physicsProjectilePrefab);
+        D.AssertNotNull(_kinematicProjectilePrefab);
         D.AssertNotNull(_missilePrefab);
+        D.AssertNotNull(_assaultVehiclePrefab);
     }
 
     #endregion

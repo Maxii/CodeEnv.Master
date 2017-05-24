@@ -23,6 +23,7 @@ namespace CodeEnv.Master.Common {
     /// <summary>
     /// Unit Tests for the ObjectAnalyzer Class.
     /// </summary>
+    [Obsolete]
     [TestClass]
     public class ObjectAnalyzerClassTests {
         // Naming convention = [NameOfClassUT]ClassTests

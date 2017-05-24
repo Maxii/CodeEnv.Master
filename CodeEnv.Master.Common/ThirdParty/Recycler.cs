@@ -47,6 +47,7 @@ namespace CodeEnv.Master.Common {
     ///                // Recycle the bullet which deactivates it
     ///                recycler.freeObject( bullet );
     /// </summary>
+    [System.Obsolete]
     public class Recycler {
 
         private GameObject[] _objectStore;

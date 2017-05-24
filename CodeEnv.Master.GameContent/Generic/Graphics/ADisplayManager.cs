@@ -32,15 +32,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected static readonly Color HiddenMeshColor = GameColor.Clear.ToUnityColor();
 
-        private string _debugName;
-        protected virtual string DebugName {
-            get {
-                if (_debugName == null) {
-                    _debugName = DebugNameFormat.Inject(_trackedItemGo.name, GetType().Name);
-                }
-                return _debugName;
-            }
-        }
+        protected virtual string DebugName { get { return DebugNameFormat.Inject(_trackedItemGo.name, GetType().Name); } }
 
         private bool _isInMainCameraLOS = true;
         /// <summary>
@@ -174,18 +166,6 @@ namespace CodeEnv.Master.GameContent {
             IsInMainCameraLOS = IsPrimaryMeshInMainCameraLOS;
         }
 
-        #region Cleanup
-
-        protected virtual void Cleanup() {
-            Unsubscribe();
-        }
-
-        protected virtual void Unsubscribe() {
-            _primaryMeshCameraLosChgdListener.inCameraLosChanged -= PrimaryMeshInCameraLosChangedEventHandler;
-        }
-
-        #endregion
-
         #region Debug
 
         protected void __ValidateAndCorrectMeshLayer(GameObject meshGo) {
@@ -224,6 +204,22 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
+
+        #region Cleanup
+
+        protected virtual void Cleanup() {
+            Unsubscribe();
+        }
+
+        protected virtual void Unsubscribe() {
+            _primaryMeshCameraLosChgdListener.inCameraLosChanged -= PrimaryMeshInCameraLosChangedEventHandler;
+        }
+
+        #endregion
+
+        public sealed override string ToString() {
+            return DebugName;
+        }
 
         #region IDisposable
 

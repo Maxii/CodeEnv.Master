@@ -282,10 +282,6 @@ namespace CodeEnv.Master.GameContent {
             KillRechargeProcess();
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
         #region IDisposable
 
         private bool _alreadyDisposed = false;

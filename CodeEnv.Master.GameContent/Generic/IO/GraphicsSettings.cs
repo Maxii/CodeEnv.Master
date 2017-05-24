@@ -79,9 +79,6 @@ namespace CodeEnv.Master.GameContent {
             Initialize();
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
     }
 }
 

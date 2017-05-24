@@ -130,10 +130,6 @@ namespace CodeEnv.Master.GameContent {
             Resources = new ResourceYield(resources);
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
     }
 }
 

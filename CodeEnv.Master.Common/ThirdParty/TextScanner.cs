@@ -23,7 +23,10 @@ namespace CodeEnv.Master.Common {
     /// then use TextScanner to analyze each line for content.
     /// </summary>
     public class TextScanner : StringReader {
-        string currentWord;
+
+        public string DebugName { get { return GetType().Name; } }
+
+        private string _currentWord;
 
         public TextScanner(string source)
             : base(source) {
@@ -54,24 +57,24 @@ namespace CodeEnv.Master.Common {
                 this.Read();
             }
             if (sb.Length > 0) {
-                currentWord = sb.ToString();
+                _currentWord = sb.ToString();
             }
             else {
-                currentWord = null;
+                _currentWord = null;
             }
         }
 
         public bool HasNextInt() {
-            if (currentWord == null) {
+            if (_currentWord == null) {
                 return false;
             }
             int dummy;
-            return int.TryParse(currentWord, out dummy);
+            return int.TryParse(_currentWord, out dummy);
         }
 
         public int NextInt() {
             try {
-                return int.Parse(currentWord);
+                return int.Parse(_currentWord);
             }
             finally {
                 ReadNextWord();
@@ -79,16 +82,16 @@ namespace CodeEnv.Master.Common {
         }
 
         public bool HasNextFloat() {
-            if (currentWord == null) {
+            if (_currentWord == null) {
                 return false;
             }
             double dummy;
-            return double.TryParse(currentWord, out dummy);
+            return double.TryParse(_currentWord, out dummy);
         }
 
         public float NextFloat() {
             try {
-                return float.Parse(currentWord);
+                return float.Parse(_currentWord);
             }
             finally {
                 ReadNextWord();
@@ -96,16 +99,16 @@ namespace CodeEnv.Master.Common {
         }
 
         public bool HasNextBoolean() {
-            if (currentWord == null) {
+            if (_currentWord == null) {
                 return false;
             }
             bool dummy;
-            return bool.TryParse(currentWord, out dummy);
+            return bool.TryParse(_currentWord, out dummy);
         }
 
         public bool NextBoolean() {
             try {
-                return bool.Parse(currentWord);
+                return bool.Parse(_currentWord);
             }
             finally {
                 ReadNextWord();
@@ -113,11 +116,11 @@ namespace CodeEnv.Master.Common {
         }
 
         public bool HasNext() {
-            return currentWord != null;
+            return _currentWord != null;
         }
 
         public string Next() {
-            return currentWord;
+            return _currentWord;
         }
 
         public sealed override int Read() {
@@ -129,7 +132,7 @@ namespace CodeEnv.Master.Common {
         }
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
     }

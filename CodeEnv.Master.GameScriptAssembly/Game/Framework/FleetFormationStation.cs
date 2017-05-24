@@ -32,7 +32,7 @@ using UnityEngine.Profiling;
 /// Without it, a reused instance appears to be equal to another reused instance if from the same instance. Probably doesn't matter
 /// as only 1 reused instance from an instance can exist at the same time, but...</remarks>
 /// </summary>
-public class FleetFormationStation : AFormationStation, IFleetFormationStation, IShipNavigable, IFacilityRepairCapable, IEquatable<FleetFormationStation> {
+public class FleetFormationStation : AFormationStation, IFleetFormationStation, IShipNavigableDestination, IFacilityRepairCapable, IEquatable<FleetFormationStation> {
 
     private const string NameFormat = "{0}.{1}";
 
@@ -268,7 +268,7 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
     #endregion
 
 
-    #region INavigable Members
+    #region INavigableDestination Members
 
     public string Name {
         get {
@@ -285,7 +285,7 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
 
     #endregion
 
-    #region IShipNavigable Members
+    #region IShipNavigableDestination Members
 
     public ApMoveDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, IShip ship) {
         D.Assert(AssignedShip.CollisionDetectionZoneRadius.ApproxEquals(tgtStandoffDistance));   // its the same ship

@@ -64,7 +64,7 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
     protected JobManager _jobMgr;
     protected GameManager _gameMgr;
     protected UnitFactory _factory;
-    protected bool _isUnitPositioned;
+    ////protected bool _isUnitPositioned;
 
     protected override void Awake() {
         base.Awake();
@@ -80,6 +80,10 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
 
     protected override void Start() {
         base.Start();
+        AttemptToAuthorizeDeploymentOnStart();
+    }
+
+    protected virtual void AttemptToAuthorizeDeploymentOnStart() {
         if (_gameMgr.IsRunning) {
             BuildAndPositionUnit();
             AuthorizeDeployment();
@@ -101,7 +105,8 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
         D.AssertNotNull(Configuration);    // would only be called with a Configuration
         D.Log(ShowDebugLog, "{0} is building and positioning {1}. Targeted DeployDate = {2}.", DebugName, Configuration.UnitName, Configuration.DeployDate);
         MakeUnitAndPrepareForPositioning();
-        _isUnitPositioned = PositionUnit();
+        ////_isUnitPositioned = PositionUnit();
+        PositionUnit();
     }
 
     /// <summary>
@@ -114,21 +119,34 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
     /// is already running and call BuildAndPosition() followed by AuthorizeDeployment() itself.</remarks>
     /// </summary>
     public void AuthorizeDeployment() {
-        if (!_isUnitPositioned) {
-            Destroy(gameObject);
-            return;
-        }
+        ////if (!_isUnitPositioned) {
+        ////    Destroy(gameObject);
+        ////    return;
+        ////}
 
         D.AssertNotNull(Configuration);    // would only be called with a Configuration
         D.Log(ShowDebugLog, "{0} is authorizing deployment of {1}. Targeted DeployDate = {2}.", DebugName, Configuration.UnitName, Configuration.DeployDate);
         var currentDate = GameTime.Instance.CurrentDate;
         D.Assert(currentDate >= GameTime.GameStartDate, currentDate.ToString());
         if (currentDate >= Configuration.DeployDate) {
-            HandleDeployDateReached();
+            if (_gameMgr.IsPaused) {
+                // defer deployment until unpaused
+                _gameMgr.isPausedChanged += DeployAfterPauseEventHandler;
+            }
+            else {
+                Deploy();
+            }
         }
         else {
             DeployOnDeployDate();
         }
+    }
+
+    private void DeployAfterPauseEventHandler(object sender, EventArgs e) {
+        D.Assert(!_gameMgr.IsPaused);
+        _gameMgr.isPausedChanged -= DeployAfterPauseEventHandler;
+        D.Log(ShowDebugLog, "{0} is deploying now after resuming from pause.", DebugName);
+        Deploy();
     }
 
     private void DeployOnDeployDate() {
@@ -136,7 +154,8 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
         GameTime.Instance.DateMinder.Add(Configuration.DeployDate, this);
     }
 
-    private void HandleDeployDateReached() { // 3.25.16 wait approach changed from dateChanged event handler to WaitForDate utility method
+    private void Deploy() { // 3.25.16 wait approach changed from dateChanged event handler to WaitForDate utility method
+        D.Assert(!_gameMgr.IsPaused);
         GameDate currentDate = GameTime.Instance.CurrentDate;
         GameDate dateToDeploy = Configuration.DeployDate;
         if (currentDate < dateToDeploy) {
@@ -151,7 +170,14 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
             D.Log(ShowDebugLog, "{0} was deployed on intended date {1}.", DebugName, currentDate);
         }
         PrepareForUnitOperations();
-        BeginUnitOperations();
+        ////BeginUnitOperations();
+
+        // 5.3.17 Added bool return to avoid clearing element ref if beginning CmdOperations was deferred
+        BeginElementsOperations();
+        var isCmdOperationsBegun = BeginCommandOperations();
+        if (isCmdOperationsBegun) {
+            ClearElementReferences();
+        }
     }
 
     private void MakeUnitAndPrepareForPositioning() {
@@ -176,11 +202,14 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
     protected abstract void AssignHQElement();
 
     /// <summary>
-    /// Deploys the unit. Returns true if successfully deployed, false
-    /// if not. If not deployed the unit should be destroyed.
+    /// Deploys the unit. Most creators deploy the unit they create where they are located.
+    /// The only exception is the SettlementCreator which deploys its unit into orbit around
+    /// its parent system.
+    /// <remarks>5.3.17 Removed isPositioned return value as it is no longer reqd since
+    /// DebugSettlementCreators are Destroy()ed in UniverseCreator if there is no System to deploy them too.</remarks>
     /// </summary>
     /// <returns></returns>
-    protected abstract bool PositionUnit();
+    protected abstract void PositionUnit();
 
     private void PrepareForUnitOperations() {
         LogEvent();
@@ -197,6 +226,7 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
     /// </summary>
     protected abstract void AddUnitToGameKnowledge();
 
+    [Obsolete]
     private void BeginUnitOperations() {
         LogEvent();
         BeginElementsOperations();
@@ -220,9 +250,21 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
     protected abstract void BeginElementsOperations();
 
     /// <summary>
-    /// Starts the state machine of this Unit's Command.
+    /// Starts the state machine of this Unit's Command. Returns <c>true</c> if CmdOperations was begun,
+    /// <c>false</c> if it was deferred because an owner change was still underway.
     /// </summary>
-    protected abstract void BeginCommandOperations();
+    /// <returns></returns>
+    protected abstract bool BeginCommandOperations();
+
+    protected abstract void ClearElementReferences();
+
+    protected override void Cleanup() {
+        Unsubscribe();
+    }
+
+    protected virtual void Unsubscribe() {
+        _gameMgr.isPausedChanged -= DeployAfterPauseEventHandler;
+    }
 
     #region Debug
 
@@ -234,12 +276,19 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
         }
     }
 
+    [Obsolete]
     private void InitializeUnitDebugControl() {
-        var unitDebugCntl = UnityUtility.ValidateComponentPresence<UnitDebugControl>(gameObject);
-        unitDebugCntl.Initialize();
+        var unitDebugCntl = gameObject.GetComponent<UnitDebugControl>();
+        if (unitDebugCntl != null) {    // 4.21.17 Getting ready to remove these from Cmds
+            unitDebugCntl.Initialize();
+        }
     }
 
     #endregion
+
+    public sealed override string ToString() {
+        return DebugName;
+    }
 
     #region Archive
 
@@ -335,7 +384,7 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
 
     void IDateMinderClient.HandleDateReached(GameDate date) {
         D.AssertEqual(Configuration.DeployDate, date);
-        HandleDeployDateReached();
+        Deploy();
     }
 
     #endregion

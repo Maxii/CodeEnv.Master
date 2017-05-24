@@ -189,10 +189,6 @@ namespace CodeEnv.Master.GameContent {
             return SettlementCategory.None;
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
         #region Archive
 
         //private void AssignValuesFromElementReports(SettlementCmdData cmdData) {

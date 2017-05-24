@@ -50,10 +50,6 @@ namespace CodeEnv.Master.GameContent {
             : base(name, gridPoints, null, lineParent, LineType.Discrete, width, color) {
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
     }
 }
 

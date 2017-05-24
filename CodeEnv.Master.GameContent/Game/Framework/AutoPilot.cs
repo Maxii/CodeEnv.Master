@@ -114,7 +114,12 @@ namespace CodeEnv.Master.GameContent {
         internal void Engage(ApStrafeDestinationProxy strafeProxy, Speed speed) {
             Engage_Internal(strafeProxy, speed, isMoveFleetwide: false);
 
-            D.Assert(IsCmdWithinRangeToSupportMoveTo(strafeProxy.Position)); // primary target picked should qualify
+            if (!IsCmdWithinRangeToSupportMoveTo(strafeProxy.Position)) { // primary target picked should qualify
+                D.Warn(@"{0} has been assigned to strafe {1} that is already uncatchable. ShipToTgtDistance: {2:0.##}, 
+                        CmdToTgtDistance: {3:0.##}, CmdToTgtThresholdDistance: {4:0.##}.", DebugName, strafeProxy.DebugName,
+                    strafeProxy.__ShipDistanceFromArrived, Vector3.Distance(_ship.Command.Position, strafeProxy.Position),
+                    Mathf.Sqrt(TempGameValues.__MaxShipMoveDistanceFromFleetCmdSqrd));
+            }
 
             if (_strafeTask == null) {
                 _strafeTask = new ApStrafeTask(this);
@@ -130,7 +135,12 @@ namespace CodeEnv.Master.GameContent {
         internal void Engage(ApBesiegeDestinationProxy besiegeProxy, Speed speed) {
             Engage_Internal(besiegeProxy, speed, isMoveFleetwide: false);
 
-            D.Assert(IsCmdWithinRangeToSupportMoveTo(besiegeProxy.Position)); // primary target picked should qualify
+            if (!IsCmdWithinRangeToSupportMoveTo(besiegeProxy.Position)) { // primary target picked should qualify
+                D.Warn(@"{0} has been assigned to besiege {1} that is already uncatchable. ShipToTgtDistance: {2:0.##}, 
+                        CmdToTgtDistance: {3:0.##}, CmdToTgtThresholdDistance: {4:0.##}.", DebugName, besiegeProxy.DebugName,
+                    besiegeProxy.__ShipDistanceFromArrived, Vector3.Distance(_ship.Command.Position, besiegeProxy.Position),
+                    Mathf.Sqrt(TempGameValues.__MaxShipMoveDistanceFromFleetCmdSqrd));
+            }
 
             if (_besiegeTask == null) {
                 _besiegeTask = new ApBesiegeTask(this);
@@ -271,13 +281,13 @@ namespace CodeEnv.Master.GameContent {
         /// <exception cref="System.NotImplementedException"></exception>
         internal void RefreshCourse(CourseRefreshMode mode, ApMoveDestinationProxy wayPtProxy = null) {
             //D.Log(ShowDebugLog, "{0}.RefreshCourse() called. Mode = {1}. CourseCountBefore = {2}.", DebugName, mode.GetValueName(), AutoPilotCourse.Count);
-            IList<IShipNavigable> apCourse = _helm.ApCourse;
+            IList<IShipNavigableDestination> apCourse = _helm.ApCourse;
             switch (mode) {
                 case CourseRefreshMode.NewCourse:
                     D.AssertNull(wayPtProxy);
                     apCourse.Clear();
-                    apCourse.Add(_ship as IShipNavigable);
-                    IShipNavigable courseTgt;
+                    apCourse.Add(_ship as IShipNavigableDestination);
+                    IShipNavigableDestination courseTgt;
                     if (TargetProxy.IsMobile) {
                         courseTgt = new MobileLocation(new Reference<Vector3>(() => TargetProxy.Position));
                     }
@@ -358,7 +368,7 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
         #region IDisposable

@@ -41,7 +41,7 @@ public class SystemCtxControl : ACtxControl {
 
     protected override Vector3 PositionForDistanceMeasurements { get { return _systemMenuOperator.Position; } }
 
-    protected override string OperatorName { get { return _systemMenuOperator.DebugName; } }
+    protected override string OperatorName { get { return _systemMenuOperator != null ? _systemMenuOperator.DebugName : "NotYetAssigned"; } }
 
     private SystemItem _systemMenuOperator;
 
@@ -91,15 +91,11 @@ public class SystemCtxControl : ACtxControl {
 
     private void IssueRemoteUserFleetOrder(int itemID) {
         var directive = (FleetDirective)_directiveLookup[itemID];
-        IFleetNavigable target = _systemMenuOperator;
+        IFleetNavigableDestination target = _systemMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         var order = new FleetOrder(directive, OrderSource.User, target);
         bool isOrderInitiated = remoteFleet.InitiateNewOrder(order);
         D.Assert(isOrderInitiated);
-    }
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
     }
 
     #region Targeting OrbitalPlane point Archive

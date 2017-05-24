@@ -27,7 +27,7 @@ using UnityEngine.Profiling;
 /// <summary>
 /// Class for the ADiscernibleItem that is the UniverseCenter.
 /// </summary>
-public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_Ltd, IFleetNavigable, ISensorDetectable, IAvoidableObstacle,
+public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_Ltd, IFleetNavigableDestination, ISensorDetectable, IAvoidableObstacle,
     IPatrollable, IFleetExplorable, IShipExplorable, IGuardable {
 
     /// <summary>
@@ -208,10 +208,6 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
 
     #endregion
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
     #region Debug
 
     [SerializeField]
@@ -220,9 +216,8 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
     #region Debug Show Obstacle Zones
 
     private void InitializeDebugShowObstacleZone() {
-        DebugControls debugValues = DebugControls.Instance;
-        debugValues.showObstacleZones += ShowDebugObstacleZonesChangedEventHandler;
-        if (debugValues.ShowObstacleZones) {
+        _debugCntls.showObstacleZones += ShowDebugObstacleZonesChangedEventHandler;
+        if (_debugCntls.ShowObstacleZones) {
             EnableDebugShowObstacleZone(true);
         }
     }
@@ -238,13 +233,12 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
     }
 
     private void ShowDebugObstacleZonesChangedEventHandler(object sender, EventArgs e) {
-        EnableDebugShowObstacleZone(DebugControls.Instance.ShowObstacleZones);
+        EnableDebugShowObstacleZone(_debugCntls.ShowObstacleZones);
     }
 
     private void CleanupDebugShowObstacleZone() {
-        var debugValues = DebugControls.Instance;
-        if (debugValues != null) {
-            debugValues.showObstacleZones -= ShowDebugObstacleZonesChangedEventHandler;
+        if (_debugCntls != null) {
+            _debugCntls.showObstacleZones -= ShowDebugObstacleZonesChangedEventHandler;
         }
         Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
         DrawColliderGizmo drawCntl = _obstacleZoneCollider.GetComponent<DrawColliderGizmo>();
@@ -256,6 +250,15 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
     }
 
     #endregion
+
+    #endregion
+
+    #region IAssemblySupported Members
+
+    /// <summary>
+    /// A collection of assembly stations that are local to the item.
+    /// </summary>
+    public IList<StationaryLocation> LocalAssemblyStations { get { return GuardStations; } }
 
     #endregion
 
@@ -319,15 +322,15 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
         float insideOrbitSlotThreshold = Data.CloseOrbitOuterRadius - ship.CollisionDetectionZoneRadius_Debug;
         if (shipDistance > insideOrbitSlotThreshold) {
             string arrivingLeavingMsg = isArriving ? "arriving in" : "leaving";
-            D.Log(ShowDebugLog, "{0} is {1} orbit of {2} but collision detection zone is poking outside of orbit slot by {3:0.0000} units.",
+            D.Log(ShowDebugLog, "{0} is {1} close orbit of {2} but collision detection zone is poking outside of orbit slot by {3:0.0000} units.",
                 ship.DebugName, arrivingLeavingMsg, DebugName, shipDistance - insideOrbitSlotThreshold);
             float halfOutsideOrbitSlotThreshold = Data.CloseOrbitOuterRadius;
             if (shipDistance > halfOutsideOrbitSlotThreshold) {
-                D.Warn("{0} is {1} orbit of {2} but collision detection zone is half or more outside of orbit slot.", ship.DebugName, arrivingLeavingMsg, DebugName);
+                D.Warn("{0} is {1} close orbit of {2} but collision detection zone is half or more outside of orbit slot.", ship.DebugName, arrivingLeavingMsg, DebugName);
                 if (isArriving) {
                     float distanceMovedWhileWaitingForArrival = shipDistance - __distanceUponInitialArrival;
                     string distanceMsg = distanceMovedWhileWaitingForArrival < 0F ? "closer in toward" : "further out from";
-                    D.Log("{0} moved {1:0.##} {2} {3}'s orbit slot while waiting for arrival.", ship.DebugName, Mathf.Abs(distanceMovedWhileWaitingForArrival), distanceMsg, DebugName);
+                    D.Log("{0} moved {1:0.##} {2} {3}'s close orbit slot while waiting for arrival.", ship.DebugName, Mathf.Abs(distanceMovedWhileWaitingForArrival), distanceMsg, DebugName);
                 }
             }
         }
@@ -372,8 +375,6 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
         return true;
     }
 
-    public IList<StationaryLocation> LocalAssemblyStations { get { return GuardStations; } }
-
     #endregion
 
     #region ICameraFocusable Members
@@ -388,8 +389,8 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
         _detectionHandler.HandleDetectionBy(detector, sensorRangeCat);
     }
 
-    public void HandleDetectionLostBy(ISensorDetector detector, RangeCategory sensorRangeCat) {
-        _detectionHandler.HandleDetectionLostBy(detector, sensorRangeCat);
+    public void HandleDetectionLostBy(ISensorDetector detector, Player detectorOwner, RangeCategory sensorRangeCat) {
+        _detectionHandler.HandleDetectionLostBy(detector, detectorOwner, sensorRangeCat);
     }
 
     /// <summary>
@@ -406,7 +407,7 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
 
     #endregion
 
-    #region IFleetNavigable Members
+    #region IFleetNavigableDestination Members
 
     public float GetObstacleCheckRayLength(Vector3 fleetPosition) {
         return Vector3.Distance(fleetPosition, Position) - _obstacleZoneCollider.radius - TempGameValues.ObstacleCheckRayLengthBuffer; ;
@@ -414,7 +415,7 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
 
     #endregion
 
-    #region IShipNavigable Members
+    #region IShipNavigableDestination Members
 
     public override ApMoveDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, IShip ship) {
         float innerShellRadius = Data.CloseOrbitOuterRadius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of close orbit
@@ -479,8 +480,6 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
         }
     }
 
-    // LocalAssemblyStations - see IShipOrbitable
-
     public Speed PatrolSpeed { get { return Speed.OneThird; } }
 
     public bool IsPatrollingAllowedBy(Player player) {
@@ -513,13 +512,11 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
 
     #endregion
 
-    #region IFleetExplorable, IShipExplorable Members
+    #region IExplorable Members
 
     public bool IsFullyExploredBy(Player player) {
         return GetIntelCoverage(player) == IntelCoverage.Comprehensive;
     }
-
-    // LocalAssemblyStations - see IShipOrbitable
 
     public bool IsExploringAllowedBy(Player player) {
         // OPTIMIZE currently owner can only be NoPlayer which by definition is not at war with anyone
@@ -528,6 +525,10 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
         }
         return !Owner.IsAtWarWith(player);
     }
+
+    #endregion
+
+    #region IShipExplorable Members
 
     public void RecordExplorationCompletedBy(Player player) {
         SetIntelCoverage(player, IntelCoverage.Comprehensive);

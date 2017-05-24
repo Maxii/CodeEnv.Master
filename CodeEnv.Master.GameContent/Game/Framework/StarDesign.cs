@@ -23,6 +23,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public struct StarDesign {
 
+        public string DebugName { get { return GetType().Name; } }
+
         public string DesignName { get; private set; }
 
         public StarStat StarStat { get; private set; }
@@ -33,7 +35,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
     }

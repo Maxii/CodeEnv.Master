@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// Interface for Items that are patrollable by Fleets.
     /// Includes Systems, Sectors, Bases and the UniverseCenter.    // IDEA: Coincident with IGuardable
     /// </summary>
-    public interface IPatrollable : INavigable {    // IDEA: Could : IFleetNavigable but why?
+    public interface IPatrollable : INavigableDestination, IAssemblySupported {    // IDEA: Could : IFleetNavigableDestination but why?
 
         /// <summary>
         /// Occurs when the owner of this IPatrollable has changed.
@@ -44,11 +44,6 @@ namespace CodeEnv.Master.GameContent {
         /// <remarks>A copy allows the list to be modified without affecting the original list.</remarks>
         /// </summary>
         IList<StationaryLocation> PatrolStations { get; }
-
-        /// <summary>
-        /// A collection of assembly stations that are local to the item.
-        /// </summary>
-        IList<StationaryLocation> LocalAssemblyStations { get; }
 
         Player Owner_Debug { get; }
 

@@ -46,7 +46,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="worldLocation">The world location.</param>
         /// <param name="sectorID">The resulting sectorID.</param>
         /// <returns></returns>
-        bool TryGetSectorIDThatContains(Vector3 worldLocation, out IntVector3 sectorID);
+        bool TryGetSectorIDContaining(Vector3 worldLocation, out IntVector3 sectorID);
 
         /// <summary>
         /// Gets the sector containing the provided worldLocation.

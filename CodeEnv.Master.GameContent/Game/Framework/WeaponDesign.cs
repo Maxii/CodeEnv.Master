@@ -25,6 +25,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class WeaponDesign {
 
+        public string DebugName { get { return GetType().Name; } }
+
         public AWeaponStat WeaponStat { get; private set; }
 
         public MountSlotID MountSlotID { get; private set; }
@@ -35,7 +37,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
     }

@@ -110,6 +110,10 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        public string DebugName {
+            get { return "{0}: {1}({2})".Inject(GetType().Name, Category.GetEnumAttributeText(), Value.FormatValue()); }
+        }
+
         /// <summary>
         /// This Strength's value. When representing the strength of the delivery vehicle of a weapon's ordnance, 
         /// this value refers to the survivability of the ordnance delivery vehicle if/when interdicted.
@@ -145,6 +149,9 @@ namespace CodeEnv.Master.GameContent {
                     break;
                 case WDVCategory.Projectile:
                     vehicleIcon = GameConstants.IconMarker_Projectile;
+                    break;
+                case WDVCategory.AssaultVehicle:
+                    vehicleIcon = GameConstants.IconMarker_AssaultVehicle;
                     break;
                 case WDVCategory.Missile:
                     vehicleIcon = GameConstants.IconMarker_Missile;
@@ -191,7 +198,7 @@ namespace CodeEnv.Master.GameContent {
             return "{0}({1})".Inject(Category.GetEnumAttributeText(), Value.FormatValue());
         }
 
-        public override string ToString() { return "{0}: {1}({2})".Inject(GetType().Name, Category.GetEnumAttributeText(), Value.FormatValue()); }
+        public override string ToString() { return DebugName; }
 
         #region IEquatable<DeliveryStrength> Members
 

@@ -24,6 +24,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class UnitCmdStat {
 
+        public string DebugName { get { return GetType().Name; } }
+
         public string UnitName { get; private set; }
         public float MaxHitPoints { get; private set; }
         public float MaxCmdEffectiveness { get; private set; }
@@ -43,8 +45,8 @@ namespace CodeEnv.Master.GameContent {
             UnitFormation = formation;
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+        public sealed override string ToString() {
+            return DebugName;
         }
 
     }

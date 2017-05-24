@@ -23,7 +23,11 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IUnitElement : IMortalItem {
 
+        event EventHandler commandChanged;
+
         bool IsHQ { get; }
+
+        bool IsOwnerChangeUnderway { get; }
 
         IUnitCmd Command { get; }
 

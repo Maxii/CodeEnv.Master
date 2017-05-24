@@ -25,9 +25,6 @@ using UnityEditor;
 [CustomEditor(typeof(SelectedItemHudWindow))]
 public class SelectedItemHudEditor : AGuiWindowEditor<SelectedItemHudWindow> {
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 }
 

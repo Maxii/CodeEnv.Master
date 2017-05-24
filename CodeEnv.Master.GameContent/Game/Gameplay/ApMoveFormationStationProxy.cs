@@ -33,15 +33,11 @@ namespace CodeEnv.Master.GameContent {
         public override float __ShipDistanceFromArrived { get { return Destination.__DistanceToOnStation; } }
 
         public ApMoveFormationStationProxy(IFleetFormationStation station, IShip ship, float innerRadius, float outerRadius)
-            : base(station as IShipNavigable, ship, innerRadius, outerRadius) {
+            : base(station as IShipNavigableDestination, ship, innerRadius, outerRadius) {
         }
 
         public override bool TryCheckProgress(out Vector3 direction, out float distance) {
             return Destination.TryCheckProgressTowardStation(out direction, out distance);
-        }
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
         }
 
     }

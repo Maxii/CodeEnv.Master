@@ -37,7 +37,7 @@ public class ShipHull : AHull, IShipHull {
 
     protected override int MaxAllowedLosWeapons { get { return _hullCategory.__MaxLOSWeapons(); } }
 
-    protected override int MaxAllowedMissileWeapons { get { return _hullCategory.__MaxMissileWeapons(); } }
+    protected override int MaxAllowedLaunchedWeapons { get { return _hullCategory.__MaxLaunchedWeapons(); } }
 
     protected override void Validate() {
         base.Validate();

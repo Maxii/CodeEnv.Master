@@ -50,9 +50,6 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="name">The optional unique name for this equipment. If not provided, the name embedded in the stat will be used.</param>
         public Engine(EngineStat stat, string name = null) : base(stat, name) { }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
 
     }
 }

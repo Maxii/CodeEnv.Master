@@ -22,9 +22,9 @@ using UnityEngine;
 
 /// <summary>
 /// Simulates orbiting around an immobile parent of any ships attached by a fixed joint.
-/// This is also an INavigableTarget which allows it to be used as a destination by a Ship's AutoPilot.
+/// This is also an INavigableDestination which allows it to be used as a destination by a Ship's AutoPilot.
 /// </summary>
-public class ShipCloseOrbitSimulator : OrbitSimulator, IShipCloseOrbitSimulator, IShipNavigable {
+public class ShipCloseOrbitSimulator : OrbitSimulator, IShipCloseOrbitSimulator, IShipNavigableDestination {
 
     /// <summary>
     /// Checks the ship's position to see whether the ship should simply be manually placed in close orbit.
@@ -80,7 +80,7 @@ public class ShipCloseOrbitSimulator : OrbitSimulator, IShipCloseOrbitSimulator,
 
     #endregion
 
-    #region INavigable Members
+    #region INavigableDestination Members
 
     public string Name { get { return DebugName; } }
 
@@ -99,7 +99,7 @@ public class ShipCloseOrbitSimulator : OrbitSimulator, IShipCloseOrbitSimulator,
 
     #endregion
 
-    #region IShipNavigable Members
+    #region IShipNavigableDestination Members
 
     public ApMoveDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, IShip ship) {
         // makes sure the entire shipCollisionDetectionZone is inside the OrbitSlot

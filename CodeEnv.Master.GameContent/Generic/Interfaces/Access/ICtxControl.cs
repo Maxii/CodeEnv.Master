@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for Context Menu Controls.
     /// </summary>
-    public interface ICtxControl {
+    public interface ICtxControl : IDisposable {
 
         event EventHandler showBegun;
 

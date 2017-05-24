@@ -26,6 +26,8 @@ namespace CodeEnv.Master.Common {
     [Serializable]
     public class KeyModifiers {
 
+        public string DebugName { get { return GetType().Name; } }
+
         public bool altKeyReqd;
         public bool ctrlKeyReqd;
         public bool shiftKeyReqd;
@@ -39,7 +41,7 @@ namespace CodeEnv.Master.Common {
         }
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
     }

@@ -32,6 +32,8 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         private static readonly float HudRefreshPeriod = GeneralSettings.Instance.HudRefreshPeriod;
 
+        public string DebugName { get { return GetType().Name; } }
+
         public bool IsHudShowing { get { return _hudRefreshJob != null; } }
 
         private APublisher _publisher;
@@ -89,7 +91,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
         #region IDisposable

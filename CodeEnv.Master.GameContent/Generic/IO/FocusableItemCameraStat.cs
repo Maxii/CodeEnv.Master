@@ -37,10 +37,6 @@ namespace CodeEnv.Master.GameContent {
             OptimalViewingDistance = optViewDistance;
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
     }
 }
 

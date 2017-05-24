@@ -15,7 +15,7 @@
 ////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
-
+    using System;
     using CodeEnv.Master.Common;
 
     /// <summary>
@@ -47,6 +47,8 @@ namespace CodeEnv.Master.GameContent {
         /// <remarks>Not subscribable.</remarks>
         /// </summary>
         public GameDate DateStamp { get; set; }
+
+        public override IntelCoverage LowestAllowedCoverageValue { get { return _lowestRegressedCoverage; } }
 
         /// <summary>
         /// The lowest IntelCoverage value this Intel is allowed to regress too.
@@ -112,9 +114,6 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
 
     }
 }

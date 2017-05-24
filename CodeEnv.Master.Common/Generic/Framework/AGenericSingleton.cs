@@ -60,6 +60,10 @@ namespace CodeEnv.Master.Common {
             _instance = null;
         }
 
+        public sealed override string ToString() {
+            return DebugName;
+        }
+
     }
 
 }

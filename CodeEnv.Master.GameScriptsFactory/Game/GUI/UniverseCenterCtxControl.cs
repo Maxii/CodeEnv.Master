@@ -40,7 +40,7 @@ public class UniverseCenterCtxControl : ACtxControl {
 
     protected override Vector3 PositionForDistanceMeasurements { get { return _universeCenterMenuOperator.Position; } }
 
-    protected override string OperatorName { get { return _universeCenterMenuOperator.DebugName; } }
+    protected override string OperatorName { get { return _universeCenterMenuOperator != null ? _universeCenterMenuOperator.DebugName : "NotYetAssigned"; } }
 
     private UniverseCenterItem _universeCenterMenuOperator;
 
@@ -91,15 +91,11 @@ public class UniverseCenterCtxControl : ACtxControl {
 
     private void IssueRemoteUserFleetOrder(int itemID) {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
-        IFleetNavigable target = _universeCenterMenuOperator;
+        IFleetNavigableDestination target = _universeCenterMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         var order = new FleetOrder(directive, OrderSource.User, target);
         bool isOrderInitiated = remoteFleet.InitiateNewOrder(order);
         D.Assert(isOrderInitiated);
-    }
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
     }
 
 }

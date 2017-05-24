@@ -883,7 +883,7 @@ namespace Pathfinding {
             }
             _sectorNavNodesMadeUnwalkableByStarbase.Add(starbaseCmd, nds);
             if (nds.Count > Constants.Zero) {
-                D.Log("{0} has completed making {1} sector nav nodes unwalkable as a result of {2}'s addition.", DebugName, nds.Count, starbaseCmd.DebugName);
+                //D.Log("{0} has completed making {1} sector nav nodes unwalkable as a result of {2}'s addition.", DebugName, nds.Count, starbaseCmd.DebugName);
             }
 
             // Note: There may be unwalkable approach nodes from a previously removed starbase at the same locations, but
@@ -904,7 +904,7 @@ namespace Pathfinding {
             float universeRadiusSqrd = GameManager.Instance.GameSettings.UniverseSize.Radius() * GameManager.Instance.GameSettings.UniverseSize.Radius();
             foreach (var waypoint in approachWaypoints) {
                 if (!IsInsideUniverseBoundaries(waypoint, universeRadiusSqrd)) {
-                    D.Log("{0} is excluding {1}'s proposed approach waypoint that is outside the universe.", DebugName, starbaseCmd.DebugName);
+                    //D.Log("{0} is excluding {1}'s proposed approach waypoint that is outside the universe.", DebugName, starbaseCmd.DebugName);
                     approachWaypointsToRemove.Add(waypoint);
                 }
             }
@@ -1005,7 +1005,7 @@ namespace Pathfinding {
                 approachNode.Walkable = false;
             }
             _starbaseApproachNodes.Remove(starbaseCmd);
-            D.Log("{0} has completed making {1} approach nodes unwalkable as a result of {2}'s removal.", DebugName, nds.Count, starbaseCmd.DebugName);
+            //D.Log("{0} has completed making {1} approach nodes unwalkable as a result of {2}'s removal.", DebugName, nds.Count, starbaseCmd.DebugName);
 
             // Now make Sector nav nodes previously made unwalkable, walkable again
             D.Assert(_sectorNavNodesMadeUnwalkableByStarbase.ContainsKey(starbaseCmd), DebugName);
@@ -1014,7 +1014,7 @@ namespace Pathfinding {
                 unwalkableSectorNavNode.Walkable = true;
             }
             _sectorNavNodesMadeUnwalkableByStarbase.Remove(starbaseCmd);
-            D.Log("{0} has completed making {1} sector nav nodes walkable again as a result of {2}'s removal.", DebugName, nds.Count, starbaseCmd.DebugName);
+            //D.Log("{0} has completed making {1} sector nav nodes walkable again as a result of {2}'s removal.", DebugName, nds.Count, starbaseCmd.DebugName);
         }
 
         private bool IsInsideUniverseBoundaries(Vector3 point, float universeRadiusSqrd) {

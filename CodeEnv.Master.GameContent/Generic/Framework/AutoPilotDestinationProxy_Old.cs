@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AutoPilotDestinationProxy.cs
-// Proxy used by a Ship Helm's pilot to navigate to an IShipNavigable destination.
+// Proxy used by a Ship Helm's pilot to navigate to an IShipNavigableDestination destination.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,7 +20,7 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Proxy used by a Ship Helm's pilot to navigate to an IShipNavigable destination.
+    /// Proxy used by a Ship Helm's pilot to navigate to an IShipNavigableDestination destination.
     /// </summary>
     [System.Obsolete]
     public class AutoPilotDestinationProxy_Old {
@@ -51,7 +51,7 @@ namespace CodeEnv.Master.GameContent {
         public float InnerRadius { get; private set; }
         public float OuterRadius { get; private set; }
 
-        public IShipNavigable Destination { get; private set; }
+        public IShipNavigableDestination Destination { get; private set; }
 
         public Vector3 __DestinationOffset { get { return _destOffset; } }
 
@@ -61,7 +61,7 @@ namespace CodeEnv.Master.GameContent {
         private float _innerRadiusSqrd;
         private float _outerRadiusSqrd;
 
-        public AutoPilotDestinationProxy_Old(IShipNavigable destination, Vector3 destOffset, float innerRadius, float outerRadius) {
+        public AutoPilotDestinationProxy_Old(IShipNavigableDestination destination, Vector3 destOffset, float innerRadius, float outerRadius) {
             Utility.ValidateNotNull(destination);
             Utility.ValidateNotNegative(innerRadius);
             Utility.ValidateForRange(outerRadius, innerRadius, Mathf.Infinity); // HACK

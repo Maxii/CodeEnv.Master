@@ -18,6 +18,7 @@
 // default namespace
 
 using System.Collections.Generic;
+using System.Linq;
 using CodeEnv.Master.Common;
 using UnityEngine;
 
@@ -175,12 +176,15 @@ public class CtxObject : AMonoBase {
         selectedItem = CtxMenu.current.selectedItem;
 
         current = this;
+        // 4.24.17 AHA! d.target can be null?
+        //var onSelectionSubscribers = onSelection.Where(d => d.target != null).Select(d => d.target.name);
+        //string subscribersMsg = onSelectionSubscribers.Concatenate();
+        //D.Log("{0}.{1} is about to Execute onSelection event in Frame {2} to Subscribers: {3}.", name, GetType().Name, Time.frameCount, subscribersMsg);
         EventDelegate.Execute(onSelection);
 
         // OPTIMIZE not needed as I subscribe to EventDelegates rather than implement OnMenuSelection() as an event handler
         gameObject.SendMessage("OnMenuSelection", selectedItem, SendMessageOptions.DontRequireReceiver);
     }
-
 
     private void HideMenuEventHandler() {   // OnHide()
         current = this;

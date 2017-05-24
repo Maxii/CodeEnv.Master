@@ -41,7 +41,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     private FacilityItem _facilityItemPrefab;
     private FacilityHull[] _facilityHullPrefabs;
 
-    private MissileTube _missileTubePrefab;
+    private LaunchTube _launchTubePrefab;
     private LOSTurret _losTurretPrefab;
 
     private GameObject _fleetCmdPrefab;
@@ -84,7 +84,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         _facilityItemPrefab = reqdPrefabs.facilityItem;
         _facilityHullPrefabs = reqdPrefabs.facilityHulls;
 
-        _missileTubePrefab = reqdPrefabs.missileTube;
+        _launchTubePrefab = reqdPrefabs.launchTube;
         _losTurretPrefab = reqdPrefabs.losTurret;
     }
 
@@ -108,6 +108,21 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         // UNCLEAR 1.17.17 what is the value of being static for this kind of object?
         ////creatorGo.isStatic = true;
         var creator = creatorGo.GetComponent<FleetCreator>();
+        creator.Configuration = config;
+        return creator;
+    }
+
+    /// <summary>
+    /// Makes an unnamed LoneFleetCreator instance at the provided location, parented to the FleetsFolder.
+    /// </summary>
+    /// <param name="location">The world space location.</param>
+    /// <param name="config">The configuration.</param>
+    /// <returns></returns>
+    private LoneFleetCreator MakeLoneFleetCreatorInstance(Vector3 location, UnitCreatorConfiguration config) {
+        GameObject creatorGo = new GameObject();
+        UnityUtility.AttachChildToParent(creatorGo, FleetsFolder.Instance.gameObject);
+        creatorGo.transform.position = location;
+        var creator = creatorGo.AddComponent<LoneFleetCreator>();
         creator.Configuration = config;
         return creator;
     }
@@ -185,13 +200,13 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
     /// <summary>
     /// Makes a standalone 'ferry' FleetCmd instance from a single ship using a basic FleetCmdDesign.
-    /// The FleetCommand returned, along with the provided ship is parented to an empty GameObject "fleetName" which itself is parented to
-    /// the Scene's Fleets folder. The fleetCommand and ship (if not already enabled) are all enabled when returned.
-    /// <remarks>Warning: fleetName</remarks>
+    /// The Cmd returned, along with the provided element is parented to an empty GameObject "unitName" which itself is parented to
+    /// the Scene's Fleets folder. The Cmd and element (if not already enabled) are all enabled when returned.
     /// <remarks>Be sure to CommenceOperations before issuing an order.</remarks>
     /// </summary>
     /// <param name="unitName">Name of the Unit.</param>
     /// <param name="element">The ship which is designated the HQ Element.</param>
+    [Obsolete]
     public FleetCmdItem MakeFerryFleetCmdInstance(string unitName, ShipItem element) {
         D.Assert(element.IsOperational);
 
@@ -199,7 +214,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         FleetCmdDesign ferryCmdDesign;
         var playersDesigns = GameManager.Instance.PlayersDesigns;
         if (!playersDesigns.TryGetFleetCmdDesign(element.Owner, ferryFleetDesignName, out ferryCmdDesign)) {
-            D.Log("{0} is using a previously designed {1} to make FerryFleetCmd {2} for {3}.", DebugName, ferryFleetDesignName, unitName, element.Owner);
+            D.Log("{0} is using a newly designed {1} to make FerryFleetCmd {2} for {3}.", DebugName, ferryFleetDesignName, unitName, element.Owner);
             var countermeasureStats = new PassiveCountermeasureStat[] { new PassiveCountermeasureStat() };
             var sensorStats = new SensorStat[] { new SensorStat(RangeCategory.Medium), new SensorStat(RangeCategory.Long) };
             var ftlDampenerStat = new FtlDampenerStat();
@@ -209,20 +224,55 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         }
 
         GameObject unitContainer = new GameObject(unitName);
-        UnitDebugControl unitDebugCntl = unitContainer.AddMissingComponent<UnitDebugControl>(); // UNCLEAR Is this of use during runtime?
+        UnitDebugControl unitDebugCntl = unitContainer.AddMissingComponent<UnitDebugControl>();
         UnityUtility.AttachChildToParent(unitContainer, FleetsFolder.Instance.gameObject);
+        unitContainer.transform.position = element.Position;    // UnitContainer at Vector3.zero when attached to FleetsFolder
 
         float minViewDistance = TempGameValues.ShipMaxRadius + 1F;  // HACK
         FleetCmdCameraStat cameraStat = new FleetCmdCameraStat(minViewDistance, optViewDistanceAdder: 1F, fov: 60F);
         FleetCmdItem cmd = MakeFleetCmdInstance(element.Owner, cameraStat, ferryCmdDesign, unitContainer, unitName);
         cmd.transform.rotation = element.transform.rotation;
-        cmd.IsFerryFleet = true;
+        cmd.IsLoneCmd = true;
 
         cmd.AddElement(element);    // resets the element's Command property and parents element to Cmd's parent, aka unitContainer
         cmd.HQElement = element;
         cmd.FinalInitialize();
         GameManager.Instance.GameKnowledge.AddUnit(cmd, Enumerable.Empty<IUnitElement>()); // element already present
         unitDebugCntl.Initialize();
+        return cmd;
+    }
+
+    /// <summary>
+    /// Makes a standalone 'Lone' FleetCmd instance from a single element using a basic FleetCmdDesign.
+    /// The Cmd returned, along with the provided element is parented to an empty GameObject "unitRootName" which itself is parented to
+    /// the Scene's Fleets folder. The Cmd and element are or shortly will be operating when returned.
+    /// </summary>
+    /// <param name="unitRootName">The root name of the Unit.</param>
+    /// <param name="element">The element which is designated the HQ Element.</param>
+    public FleetCmdItem MakeLoneFleetInstance(string unitRootName, ShipItem element) {
+        D.Assert(element.IsOperational);
+
+        string cmdDesignName = "LoneFleetCmdDesign";
+        FleetCmdDesign cmdDesign;
+        var playersDesigns = GameManager.Instance.PlayersDesigns;
+        if (!playersDesigns.TryGetFleetCmdDesign(element.Owner, cmdDesignName, out cmdDesign)) {
+            //D.Log("{0} is using a new design to make LoneFleetCmd {1} for {2}'s {3}.", DebugName, unitRootName, element.Owner, element.DebugName);
+            var countermeasureStats = new PassiveCountermeasureStat[] { new PassiveCountermeasureStat() };
+            var sensorStats = new SensorStat[] { new SensorStat(RangeCategory.Medium), new SensorStat(RangeCategory.Long) };
+            var ftlDampenerStat = new FtlDampenerStat();
+            UnitCmdStat cmdStat = new UnitCmdStat(unitRootName, 10F, 100, Formation.Globe);
+            cmdDesign = new FleetCmdDesign(element.Owner, cmdDesignName, countermeasureStats, sensorStats, ftlDampenerStat, cmdStat);
+            playersDesigns.Add(cmdDesign);
+        }
+
+        string uniqueUnitName = NewGameUnitConfigurator.GetUniqueUnitName(unitRootName);
+        GameDate currentDate = GameTime.Instance.CurrentDate;
+        UnitCreatorConfiguration config = new UnitCreatorConfiguration(uniqueUnitName, element.Owner, currentDate, cmdDesignName, Enumerable.Empty<string>());
+        var creator = MakeLoneFleetCreatorInstance(element.Position, config);
+        creator.LoneElement = element;
+        creator.BuildAndPositionUnit(); // 5.14.17 Makes LoneElement a child of UnitContainer (LoneFleetCreator.gameObject)
+        creator.AuthorizeDeployment();
+        FleetCmdItem cmd = creator.gameObject.GetSingleComponentInImmediateChildren<FleetCmdItem>();
         return cmd;
     }
 
@@ -332,6 +382,56 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     /// <summary>
+    /// Makes an unnamed LoneStarbaseCreator instance at the provided location, parented to the StarbasesFolder.
+    /// </summary>
+    /// <param name="location">The world space location.</param>
+    /// <param name="config">The configuration.</param>
+    /// <returns></returns>
+    [Obsolete]
+    private LoneStarbaseCreator MakeLoneStarbaseCreatorInstance(Vector3 location, UnitCreatorConfiguration config) {
+        GameObject creatorGo = new GameObject();
+        UnityUtility.AttachChildToParent(creatorGo, StarbasesFolder.Instance.gameObject);
+        creatorGo.transform.position = location;
+        var creator = creatorGo.AddComponent<LoneStarbaseCreator>();
+        creator.Configuration = config;
+        return creator;
+    }
+
+    /// <summary>
+    /// Makes a standalone 'Lone' StarbaseCmd instance from a single facility using a basic StarbaseCmdDesign.
+    /// The Cmd returned, along with the provided element is parented to an empty GameObject "unitName" which itself is parented to
+    /// the Scene's Starbases folder. The Cmd and element are all operating when returned.
+    /// </summary>
+    /// <param name="unitName">Name of the Unit.</param>
+    /// <param name="element">The element which is designated the HQ Element.</param>
+    [Obsolete]
+    public StarbaseCmdItem MakeLoneStarbaseInstance(string unitName, FacilityItem element) {
+        D.Assert(element.IsOperational);
+
+        string cmdDesignName = "LoneStarbaseCmdDesign";
+        StarbaseCmdDesign cmdDesign;
+        var playersDesigns = GameManager.Instance.PlayersDesigns;
+        if (!playersDesigns.TryGetStarbaseCmdDesign(element.Owner, cmdDesignName, out cmdDesign)) {
+            D.Log("{0} is using a newly designed {1} to make LoneStarbaseCmd {2} for {3}.", DebugName, cmdDesignName, unitName, element.Owner);
+            var countermeasureStats = new PassiveCountermeasureStat[] { new PassiveCountermeasureStat() };
+            var sensorStats = new SensorStat[] { new SensorStat(RangeCategory.Medium), new SensorStat(RangeCategory.Long) };
+            var ftlDampenerStat = new FtlDampenerStat();
+            UnitCmdStat cmdStat = new UnitCmdStat(unitName, 10F, 100, Formation.Globe);
+            cmdDesign = new StarbaseCmdDesign(element.Owner, cmdDesignName, countermeasureStats, sensorStats, ftlDampenerStat, cmdStat);
+            playersDesigns.Add(cmdDesign);
+        }
+
+        GameDate currentDate = GameTime.Instance.CurrentDate;
+        UnitCreatorConfiguration config = new UnitCreatorConfiguration(unitName, element.Owner, currentDate, cmdDesignName, Enumerable.Empty<string>());
+        var creator = MakeLoneStarbaseCreatorInstance(element.Position, config);
+        creator.LoneElement = element;
+        creator.BuildAndPositionUnit();
+        creator.AuthorizeDeployment();
+        StarbaseCmdItem cmd = creator.gameObject.GetSingleComponentInImmediateChildren<StarbaseCmdItem>();
+        return cmd;
+    }
+
+    /// <summary>
     /// Makes an unenabled StarbaseCmd instance for the owner parented to unitContainer.
     /// </summary>
     /// <param name="owner">The owner of the unit.</param>
@@ -421,6 +521,59 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var creator = creatorGo.GetComponent<SettlementCreator>();
         creator.Configuration = config;
         return creator;
+    }
+
+    /// <summary>
+    /// Makes an unnamed, unpositioned LoneSettlementCreator.
+    /// </summary>
+    /// <param name="config">The configuration.</param>
+    /// <returns></returns>
+    [Obsolete]
+    private LoneSettlementCreator MakeLoneSettlementCreatorInstance(UnitCreatorConfiguration config) {
+        GameObject creatorGo = new GameObject();
+        var creator = creatorGo.AddComponent<LoneSettlementCreator>();
+        creator.Configuration = config;
+        return creator;
+    }
+
+    /// <summary>
+    /// Makes a standalone 'Lone' StarbaseCmd instance from a single facility using a basic StarbaseCmdDesign.
+    /// The Cmd returned, along with the provided element is parented to an empty GameObject "unitName" which itself is parented to
+    /// the Scene's Starbases folder. The Cmd and element are all operating when returned.
+    /// </summary>
+    /// <param name="unitName">Name of the Unit.</param>
+    /// <param name="element">The element which is designated the HQ Element.</param>
+    /// <param name="settlementOrbitSlot">The settlement orbit slot data.</param>
+    /// <param name="localPosition">The local position of the element relative to the OrbitSimulator.</param>
+    /// <returns></returns>
+    [Obsolete]
+    public SettlementCmdItem MakeLoneSettlementInstance(string unitName, FacilityItem element, OrbitData settlementOrbitSlot, Vector3 localPosition) {
+        D.Assert(element.IsOperational);
+
+        string cmdDesignName = "LoneSettlementCmdDesign";
+        SettlementCmdDesign cmdDesign;
+        var playersDesigns = GameManager.Instance.PlayersDesigns;
+        if (!playersDesigns.TryGetSettlementCmdDesign(element.Owner, cmdDesignName, out cmdDesign)) {
+            D.Log("{0} is using a newly designed {1} to make LoneSettlementCmd {2} for {3}.", DebugName, cmdDesignName, unitName, element.Owner);
+            var countermeasureStats = new PassiveCountermeasureStat[] { new PassiveCountermeasureStat() };
+            var sensorStats = new SensorStat[] { new SensorStat(RangeCategory.Medium), new SensorStat(RangeCategory.Long) };
+            var ftlDampenerStat = new FtlDampenerStat();
+            SettlementCmdStat cmdStat = new SettlementCmdStat(unitName, 10F, 100, Formation.Globe, 10, Constants.OneHundredPercent);
+            cmdDesign = new SettlementCmdDesign(element.Owner, cmdDesignName, countermeasureStats, sensorStats, ftlDampenerStat, cmdStat);
+            playersDesigns.Add(cmdDesign);
+        }
+
+        GameDate currentDate = GameTime.Instance.CurrentDate;
+        UnitCreatorConfiguration config = new UnitCreatorConfiguration(unitName, element.Owner, currentDate, cmdDesignName, Enumerable.Empty<string>());
+        var creator = MakeLoneSettlementCreatorInstance(config);
+
+        SystemFactory.Instance.InstallCelestialItemInOrbit(creator.gameObject, settlementOrbitSlot, localPosition);
+
+        creator.LoneElement = element;
+        creator.BuildAndPositionUnit();
+        creator.AuthorizeDeployment();
+        SettlementCmdItem cmd = creator.gameObject.GetSingleComponentInImmediateChildren<SettlementCmdItem>();
+        return cmd;
     }
 
     /// <summary>
@@ -589,12 +742,17 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         ShipHull hullPrefab = _shipHullPrefabs.Single(h => h.HullCategory == hullCategory);
         // Make temp hull instance of the right category to get at its placeholders. Prefab references must be temporarily instantiated to use them
         GameObject tempHullGo = UnityUtility.AddChild(null, hullPrefab.gameObject);
-        var missileMountPlaceholders = tempHullGo.GetSafeComponentsInChildren<MissileMountPlaceholder>().ToList();
+        var missileMountPlaceholders = tempHullGo.GetSafeComponentsInChildren<LauncherMountPlaceholder>().ToList();
         var losMountPlaceholders = tempHullGo.gameObject.GetSafeComponentsInChildren<LOSMountPlaceholder>().ToList();
 
         MountSlotID placeholderSlotID;
         foreach (var stat in weapStats) {
             if (stat.DeliveryVehicleCategory == WDVCategory.Missile) {
+                var placeholder = RandomExtended.Choice(missileMountPlaceholders);
+                placeholderSlotID = placeholder.SlotID;
+                missileMountPlaceholders.Remove(placeholder);
+            }
+            else if (stat.DeliveryVehicleCategory == WDVCategory.AssaultVehicle) {
                 var placeholder = RandomExtended.Choice(missileMountPlaceholders);
                 placeholderSlotID = placeholder.SlotID;
                 missileMountPlaceholders.Remove(placeholder);
@@ -624,12 +782,17 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         FacilityHull hullPrefab = _facilityHullPrefabs.Single(h => h.HullCategory == hullCategory);
         // Make temp hull instance of the right category to get at its placeholders. Prefab references must be temporarily instantiated to use them
         GameObject tempHullGo = UnityUtility.AddChild(null, hullPrefab.gameObject);
-        var missileMountPlaceholders = tempHullGo.gameObject.GetSafeComponentsInChildren<MissileMountPlaceholder>().ToList();
+        var missileMountPlaceholders = tempHullGo.gameObject.GetSafeComponentsInChildren<LauncherMountPlaceholder>().ToList();
         var losMountPlaceholders = tempHullGo.gameObject.GetSafeComponentsInChildren<LOSMountPlaceholder>().ToList();
 
         MountSlotID placeholderSlotID;
         foreach (var stat in weapStats) {
             if (stat.DeliveryVehicleCategory == WDVCategory.Missile) {
+                var placeholder = RandomExtended.Choice(missileMountPlaceholders);
+                placeholderSlotID = placeholder.SlotID;
+                missileMountPlaceholders.Remove(placeholder);
+            }
+            else if (stat.DeliveryVehicleCategory == WDVCategory.AssaultVehicle) {
                 var placeholder = RandomExtended.Choice(missileMountPlaceholders);
                 placeholderSlotID = placeholder.SlotID;
                 missileMountPlaceholders.Remove(placeholder);
@@ -766,6 +929,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
                 case WDVCategory.Missile:
                     weapon = new MissileLauncher(stat as MissileWeaponStat, weaponName);
                     break;
+                case WDVCategory.AssaultVehicle:
+                    weapon = new AssaultLauncher(stat as AssaultWeaponStat, weaponName);
+                    break;
                 case WDVCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(weaponCategory));
@@ -869,8 +1035,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             weaponMountPrefab = _losTurretPrefab;
         }
         else {
-            mountPlaceholder = hull.gameObject.GetSafeComponentsInChildren<MissileMountPlaceholder>().Single(placeholder => placeholder.SlotID == mountSlotID);
-            weaponMountPrefab = _missileTubePrefab;
+            mountPlaceholder = hull.gameObject.GetSafeComponentsInChildren<LauncherMountPlaceholder>().Single(placeholder => placeholder.SlotID == mountSlotID);
+            weaponMountPrefab = _launchTubePrefab;
         }
         D.AssertDefault((int)weaponMountPrefab.SlotID); // mount prefabs won't yet have a slotID
 
@@ -1000,9 +1166,6 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
     #endregion
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
     #region Debug
 

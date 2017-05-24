@@ -50,10 +50,6 @@ namespace CodeEnv.Master.GameContent {
             CombatStance = combatStance;
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
     }
 }
 

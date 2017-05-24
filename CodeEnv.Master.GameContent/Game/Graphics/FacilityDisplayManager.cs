@@ -45,9 +45,6 @@ namespace CodeEnv.Master.GameContent {
             _revolver.IsActivated = IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS;
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
     }
 
 }

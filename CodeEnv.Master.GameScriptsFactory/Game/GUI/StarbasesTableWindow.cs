@@ -44,9 +44,6 @@ public class StarbasesTableWindow : ACommandsTableWindow {
 
     #endregion
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 }
 

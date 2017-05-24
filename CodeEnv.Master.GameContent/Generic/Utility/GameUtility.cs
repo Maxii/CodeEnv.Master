@@ -129,11 +129,15 @@ namespace CodeEnv.Master.GameContent {
             return locations.MinBy(loc => Vector3.SqrMagnitude(loc.Position - myPosition));
         }
 
-        public static IFleetNavigable GetClosest(Vector3 myPosition, IEnumerable<IFleetNavigable> navigables) {
+        public static IFleetNavigableDestination GetClosest(Vector3 myPosition, IEnumerable<IFleetNavigableDestination> navigables) {
             return navigables.MinBy(loc => Vector3.SqrMagnitude(loc.Position - myPosition));
         }
 
-        public static IShipNavigable GetClosest(Vector3 myPosition, IEnumerable<IShipNavigable> navigables) {
+        public static IShipNavigableDestination GetClosest(Vector3 myPosition, IEnumerable<IShipNavigableDestination> navigables) {
+            return navigables.MinBy(loc => Vector3.SqrMagnitude(loc.Position - myPosition));
+        }
+
+        public static INavigableDestination GetClosest(Vector3 myPosition, IEnumerable<INavigableDestination> navigables) {
             return navigables.MinBy(loc => Vector3.SqrMagnitude(loc.Position - myPosition));
         }
 

@@ -49,7 +49,6 @@ public class SystemCreator : AMonoBase {
 
     public IntVector3 SectorID { get { return SectorGrid.Instance.GetSectorIDThatContains(transform.position); } }
 
-
     private SystemCreatorConfiguration _configuration;
     public SystemCreatorConfiguration Configuration {
         get { return _configuration; }
@@ -312,7 +311,7 @@ public class SystemCreator : AMonoBase {
     protected override void Cleanup() { }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
 }

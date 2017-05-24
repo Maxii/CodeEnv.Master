@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IFleetNavigable.cs
-// INavigable destination that can be navigated to by Fleets.
+// File: IFleetNavigableDestination.cs
+// INavigableDestination that can be navigated to by Fleets.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,13 +20,13 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// INavigable destination that can be navigated to by Fleets.
-    /// <remarks>Elements, FormationStations and CloseOrbitSimulators are not IFleetNavigable.
-    /// Stationary and MobileLocations are IFleetNavigable as GuardStation, PatrolStation and 
+    /// INavigableDestination that can be navigated to by Fleets.
+    /// <remarks>Elements, FormationStations and CloseOrbitSimulators are not IFleetNavigableDestinations.
+    /// Stationary and MobileLocations are IFleetNavigableDestinations as GuardStation, PatrolStation and 
     /// AssemblyStation destinations are all StationaryLocations.</remarks>
     /// <remarks>Used only by FleetNavigator.</remarks>
     /// </summary>
-    public interface IFleetNavigable : INavigable {
+    public interface IFleetNavigableDestination : INavigableDestination {
 
         Topography Topography { get; }
 

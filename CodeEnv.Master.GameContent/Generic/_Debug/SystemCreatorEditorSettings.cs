@@ -25,6 +25,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class SystemCreatorEditorSettings {
 
+        public string DebugName { get { return GetType().Name; } }
+
         public StarCategory PresetStarCategory { get; private set; }
 
         public bool IsCompositionPreset { get; private set; }
@@ -76,7 +78,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
     }

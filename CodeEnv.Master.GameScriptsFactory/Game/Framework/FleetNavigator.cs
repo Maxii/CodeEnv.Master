@@ -67,7 +67,7 @@ public class FleetNavigator : IDisposable {
     /// <summary>
     /// The course this AutoPilot will follow when engaged. 
     /// </summary>
-    internal IList<IFleetNavigable> ApCourse { get; private set; }
+    internal IList<IFleetNavigableDestination> ApCourse { get; private set; }
 
     internal string DebugName { get { return DebugNameFormat.Inject(_fleet.DebugName, typeof(FleetNavigator).Name); } }
 
@@ -108,7 +108,7 @@ public class FleetNavigator : IDisposable {
     /// <remarks>Can be a StationaryLocation if moving to guard, patrol or assume formation or if
     /// a Move order to a System or Sector where the fleet is already located.</remarks>
     /// </summary>
-    private IFleetNavigable ApTarget { get; set; }
+    private IFleetNavigableDestination ApTarget { get; set; }
 
     /// <summary>
     /// The speed setting the autopilot should travel at. 
@@ -164,7 +164,7 @@ public class FleetNavigator : IDisposable {
     //private IList<IDisposable> _subscriptions;
 
     public FleetNavigator(FleetCmdItem fleet, Seeker seeker) {
-        ApCourse = new List<IFleetNavigable>();
+        ApCourse = new List<IFleetNavigableDestination>();
         _gameTime = GameTime.Instance;
         _gameMgr = GameManager.Instance;
         _jobMgr = JobManager.Instance;
@@ -205,7 +205,7 @@ public class FleetNavigator : IDisposable {
     /// <param name="apTgt">The target this AutoPilot is being engaged to reach.</param>
     /// <param name="apSpeed">The speed the autopilot should travel at.</param>
     /// <param name="apTgtStandoffDistance">The target standoff distance.</param>
-    internal void PlotPilotCourse(IFleetNavigable apTgt, Speed apSpeed, float apTgtStandoffDistance) {
+    internal void PlotPilotCourse(IFleetNavigableDestination apTgt, Speed apSpeed, float apTgtStandoffDistance) {
         Utility.ValidateNotNull(apTgt);
         D.Assert(!InvalidApSpeeds.Contains(apSpeed), apSpeed.GetValueName());
         ApTarget = apTgt;
@@ -231,6 +231,9 @@ public class FleetNavigator : IDisposable {
 
     /// <summary>
     /// Returns <c>true</c> if the current target is potentially uncatchable, <c>false</c> otherwise.
+    /// <remarks>4.15.17 While our own fleets are potentially uncatchable too if we progressively 
+    /// fall farther behind, I'm inclined to let them continue to pursue knowing they will eventually 
+    /// catch up since our fleet being pursued isn't trying to run away.</remarks>
     /// </summary>
     /// <returns></returns>
     private bool InitializePotentiallyUncatchable() {
@@ -343,7 +346,7 @@ public class FleetNavigator : IDisposable {
         }
 
         _currentApCourseIndex = 1;  // must be kept current to allow RefreshCourse to properly place any added detour in Course
-        IFleetNavigable currentWaypoint = ApCourse[_currentApCourseIndex];   // skip the course start position as the fleet is already there
+        IFleetNavigableDestination currentWaypoint = ApCourse[_currentApCourseIndex];   // skip the course start position as the fleet is already there
 
         // ***************************************************************************************************************************
         // The following initial Obstacle Check has been extracted from the PilotNavigationJob to accommodate a Fleet Move Cmd issued 
@@ -351,7 +354,7 @@ public class FleetNavigator : IDisposable {
         // starting allows the Course plot display to show the detour around the obstacle (if one is found) rather than show a 
         // course plot into an obstacle.
         // ***************************************************************************************************************************
-        IFleetNavigable detour;
+        IFleetNavigableDestination detour;
         if (TryCheckForObstacleEnrouteTo(currentWaypoint, out detour)) {
             // but there is an obstacle, so add a waypoint
             RefreshApCourse(CourseRefreshMode.AddWaypoint, detour);
@@ -382,7 +385,7 @@ public class FleetNavigator : IDisposable {
         //D.Log(ShowDebugLog, "{0}.EngageCourse() has begun.", _fleet.DebugName);
         int apTgtCourseIndex = ApCourse.Count - 1;
         D.AssertEqual(Constants.One, _currentApCourseIndex);  // already set prior to the start of the Job
-        IFleetNavigable currentWaypoint = ApCourse[_currentApCourseIndex];
+        IFleetNavigableDestination currentWaypoint = ApCourse[_currentApCourseIndex];
         float waypointTransitDistanceSqrd = Vector3.SqrMagnitude(currentWaypoint.Position - Position);
         //D.Log(ShowDebugLog, "{0}: first waypoint is {1}, {2:0.#} units away, in course with {3} waypoints reqd before final approach to Target {4}.",
         //DebugName, currentWaypoint.Position, Mathf.Sqrt(waypointTransitDistanceSqrd), apTgtCourseIndex - 1, ApTarget.DebugName);
@@ -396,7 +399,7 @@ public class FleetNavigator : IDisposable {
         int fleetTgtRecedingWaypointCount = Constants.Zero;
         __RecordWaypointTransitStart(toCalcLastTransitDuration: false, lastTransitDistanceSqrd: waypointTransitDistanceSqrd);
 
-        IFleetNavigable detour;
+        IFleetNavigableDestination detour;
         while (_currentApCourseIndex <= apTgtCourseIndex) {
             if (_hasFlagshipReachedApDestination) {
                 _hasFlagshipReachedApDestination = false;
@@ -479,13 +482,13 @@ public class FleetNavigator : IDisposable {
     /// <returns>
     ///   <c>true</c> if an obstacle was found and a detour generated, false if the way is effectively clear.
     /// </returns>
-    private bool TryCheckForObstacleEnrouteTo(IFleetNavigable destination, out IFleetNavigable detour) {
+    private bool TryCheckForObstacleEnrouteTo(IFleetNavigableDestination destination, out IFleetNavigableDestination detour) {
         int iterationCount = Constants.Zero;
         IAvoidableObstacle unusedObstacle;
         return TryCheckForObstacleEnrouteTo(destination, out detour, out unusedObstacle, ref iterationCount);
     }
 
-    private bool TryCheckForObstacleEnrouteTo(IFleetNavigable destination, out IFleetNavigable detour, out IAvoidableObstacle obstacle, ref int iterationCount) {
+    private bool TryCheckForObstacleEnrouteTo(IFleetNavigableDestination destination, out IFleetNavigableDestination detour, out IAvoidableObstacle obstacle, ref int iterationCount) {
         __ValidateIterationCount(iterationCount, destination, 10);
         detour = null;
         obstacle = null;
@@ -512,7 +515,7 @@ public class FleetNavigator : IDisposable {
                 return false;
             }
 
-            IFleetNavigable newDetour;
+            IFleetNavigableDestination newDetour;
             IAvoidableObstacle newObstacle;
             if (TryCheckForObstacleEnrouteTo(detour, out newDetour, out newObstacle, ref iterationCount)) {
                 if (obstacle == newObstacle) {
@@ -529,7 +532,7 @@ public class FleetNavigator : IDisposable {
         return false;
     }
 
-    private bool TryGenerateDetourAroundObstacle(IAvoidableObstacle obstacle, RaycastHit zoneHitInfo, out IFleetNavigable detour) {
+    private bool TryGenerateDetourAroundObstacle(IAvoidableObstacle obstacle, RaycastHit zoneHitInfo, out IFleetNavigableDestination detour) {
         detour = GenerateDetourAroundObstacle(obstacle, zoneHitInfo, _fleet.UnitMaxFormationRadius);
         D.Assert(obstacle.__ObstacleZoneRadius != 0F);
         if (MyMath.DoesLineSegmentIntersectSphere(Position, detour.Position, obstacle.Position, obstacle.__ObstacleZoneRadius)) {
@@ -560,21 +563,21 @@ public class FleetNavigator : IDisposable {
     /// <param name="hitInfo">The hit information.</param>
     /// <param name="fleetRadius">The fleet radius.</param>
     /// <returns></returns>
-    private IFleetNavigable GenerateDetourAroundObstacle(IAvoidableObstacle obstacle, RaycastHit hitInfo, float fleetRadius) {
+    private IFleetNavigableDestination GenerateDetourAroundObstacle(IAvoidableObstacle obstacle, RaycastHit hitInfo, float fleetRadius) {
         Vector3 detourPosition = obstacle.GetDetour(Position, hitInfo, fleetRadius);
         return new StationaryLocation(detourPosition);
     }
 
-    private IFleetNavigable __initialDestination;
-    private IList<IFleetNavigable> __destinationRecord;
+    private IFleetNavigableDestination __initialDestination;
+    private IList<IFleetNavigableDestination> __destinationRecord;
 
-    private void __ValidateIterationCount(int iterationCount, IFleetNavigable dest, int allowedIterations) {
+    private void __ValidateIterationCount(int iterationCount, IFleetNavigableDestination dest, int allowedIterations) {
         if (iterationCount == Constants.Zero) {
             __initialDestination = dest;
         }
         if (iterationCount > Constants.Zero) {
             if (iterationCount == Constants.One) {
-                __destinationRecord = __destinationRecord ?? new List<IFleetNavigable>(allowedIterations + 1);
+                __destinationRecord = __destinationRecord ?? new List<IFleetNavigableDestination>(allowedIterations + 1);
                 __destinationRecord.Clear();
                 __destinationRecord.Add(__initialDestination);
             }
@@ -626,9 +629,12 @@ public class FleetNavigator : IDisposable {
                     // the AssertNull to occur failed. I believe this is OK as _jobRef is nulled from KillXXXJob() and, if 
                     // the reference is replaced by a new Job, then the old Job is no longer referenced which is the objective. Jobs Kill()ed
                     // centrally by JobManager won't null the reference, but this only occurs during scene transitions.
-                    if (_gameMgr.IsRunning) {    // When launching new game from existing game JobManager kills most jobs
-                        D.AssertNull(_fleetIsAlignedCallbacks);  // only killed when all waiting delegates from ships removed
-                        D.AssertEqual(Constants.Zero, _shipsWaitingForFleetAlignment.Count);
+                    if (_gameMgr.IsRunning) {    // JobMgr is source of async Kill so ignore it
+                        if (_fleetIsAlignedCallbacks != null) {  // only killed when all waiting delegates from ships removed
+                            D.Warn("{0}._waitForFleetToAlignJob was unexpectedly killed. RemainingCallbacks = {1}.",
+                                DebugName, _fleetIsAlignedCallbacks.GetInvocationList().Select(cb => cb.Target.ToString()).Concatenate());
+                        }
+                        D.AssertEqual(Constants.Zero, _shipsWaitingForFleetAlignment.Count, DebugName);
                     }
                 }
                 else {
@@ -658,7 +664,6 @@ public class FleetNavigator : IDisposable {
         // where a ship can miss out on the alignment (due to RestartState) then add itself back in after alignment is complete.
         // In this case, the late ship will align, then depart, albeit a bit behind the rest of the fleet. In that case, the
         // lowestShipTurnrate should be from only those ships attempting to align.
-        ////float lowestShipTurnrate = _fleet.Elements.Select(e => e.Data).Cast<ShipData>().Min(sd => sd.MaxTurnRate);
         float lowestShipTurnrate = _shipsWaitingForFleetAlignment.Min(s => s.MaxTurnRate);
         GameDate logDate = CodeEnv.Master.GameContent.DebugUtility.CalcWarningDateForRotation(lowestShipTurnrate);
         GameDate warnDate = default(GameDate);
@@ -733,12 +738,13 @@ public class FleetNavigator : IDisposable {
     #region Event and Property Change Handlers
 
     private int __lastFrameReachedDestination;
-
-    private void FlagshipReachedDestinationEventHandler(object sender, EventArgs e) {   // OPTIMIZE
-                                                                                        /*************** 1.26.17 Debug Obstacle Checking where Detour generated is on same location as Fleet ************/
+    // OPTIMIZE
+    private void FlagshipReachedDestinationEventHandler(object sender, EventArgs e) {
+        /*************** 1.26.17 Debug Obstacle Checking where Detour generated is on same location as Fleet ************/
         int frame = Time.frameCount;
         if (__lastFrameReachedDestination == frame || __lastFrameReachedDestination + 1 == frame) {
-            D.Warn("{0} reporting that Flagship {1} immediately reached destination on Frame {2}. Used +1 = {3}.",
+            // 5.17.17 Confirming this did occur on _lastFrame + 1
+            D.Warn("FYI. {0} reporting that Flagship {1} immediately reached destination on Frame {2}. Used +1 = {3}.",
                 DebugName, _fleet.HQElement.DebugName, frame, frame == __lastFrameReachedDestination + 1);
         }
         __lastFrameReachedDestination = frame;
@@ -754,11 +760,24 @@ public class FleetNavigator : IDisposable {
     /// IMPROVE will need to accommodate Nebula and DeepNebula
     /// <param name="path">The path prior to StartEnd modification.</param>
     private void PathPostProcessingEventHandler(Path path) {
-        //__ReportPathNodes(path);
-        HandleModifiersPriorToPathPostProcessing(path);
+        if (_isApCourseFromPath) {
+            // 5.16.17 Seeker raises this event following its asynchronous pathCallback event. DisengagePilot could have been called
+            // by exiting Moving before Seeker is finished in which case there is no recorded path (ApCourse) and no post processing
+            // is needed. By definition, _isApCourseFromPath will be true when this event handler is called unless it has been reset 
+            // by DisengagePilot.
+
+            //__ReportPathNodes(path);
+            HandleModifiersPriorToPathPostProcessing(path);
+        }
     }
 
     private void PathPlotCompletedEventHandler(Path path) {
+        HandlePathPlotCompleted(path);
+    }
+
+    #endregion
+
+    private void HandlePathPlotCompleted(Path path) {
         if (path.error) {
             var sectorGrid = SectorGrid.Instance;
             IntVector3 fleetSectorID = sectorGrid.GetSectorIDThatContains(Position);
@@ -773,9 +792,9 @@ public class FleetNavigator : IDisposable {
 
         if (_isApCourseFromPath) {
             //D.Log(ShowDebugLog, "{0} received a successfully plotted path and will now use it.", DebugName);
-            // 3.5.17 Seeker raises its finished event asynchronously. Pilot could have been disengaged by
-            // exiting Moving before Seeker is finished in which case no path is needed. By definition, _isApCourseFromPath 
-            // will be true when this event handler is called unless it has been reset by DisengagePilot.
+            // 3.5.17 Seeker raises its finished event asynchronously. DisengagePilot could have been called (before
+            // EngagePilot is called) by exiting Moving before Seeker is finished in which case no path is needed. 
+            // By definition, _isApCourseFromPath will be true when this event handler is called unless it has been reset by DisengagePilot.
             ConstructApCourse(path.vectorPath);
             path.Release(this);
 
@@ -788,12 +807,10 @@ public class FleetNavigator : IDisposable {
             }
         }
         else {
-            D.LogBold("{0} received a successfully plotted path when no longer needed.", DebugName);   // 3.5.17 rare
+            D.Log(ShowDebugLog, "{0} received a successfully plotted path when no longer needed.", DebugName);   // 3.5.17 rare
             path.Release(this);
         }
     }
-
-    #endregion
 
     /// <summary>
     /// Refreshes which element will tell the navigator when a target is reached.
@@ -838,8 +855,8 @@ public class FleetNavigator : IDisposable {
             bool isFleetSystemFound = ownerKnowledge.TryGetSystem(_fleet.SectorID, out fleetSystem);
             if (!isFleetSystemFound) {
                 D.Error("{0} should find a System in its current Sector {1}. SectorCheck = {2}.", DebugName, _fleet.SectorID, SectorGrid.Instance.GetSectorIDThatContains(Position));
+                // 8.18.16 Failure of this assert has been caused in the past by a missed Topography change when leaving a System
             }
-            // 8.18.16 Failure of this assert has been caused in the past by a missed Topography change when leaving a System
 
             if (ApTarget.Topography == Topography.System) {
                 IntVector3 tgtSectorID = SectorGrid.Instance.GetSectorIDThatContains(ApTarget.Position);
@@ -871,6 +888,10 @@ public class FleetNavigator : IDisposable {
         _fleet.UponApTargetReached();
     }
 
+    /// <summary>
+    /// Handles the case when the ApTarget is not reachable.
+    /// <remarks>Not currently used.</remarks>
+    /// </summary>
     private void HandleApTgtUnreachable() {
         RefreshApCourse(CourseRefreshMode.ClearCourse);
         _fleet.UponApTargetUnreachable();
@@ -889,9 +910,9 @@ public class FleetNavigator : IDisposable {
         _fleet.UponApCoursePlotFailure();
     }
 
-    private void IssueMoveOrderToAllShips(IFleetNavigable fleetTgt, float tgtStandoffDistance) {
+    private void IssueMoveOrderToAllShips(IFleetNavigableDestination fleetTgt, float tgtStandoffDistance) {
         bool isFleetwideMove = true;
-        var shipMoveToOrder = new ShipMoveOrder(_fleet.CurrentOrder.Source, fleetTgt as IShipNavigable, ApSpeedSetting, isFleetwideMove, tgtStandoffDistance);
+        var shipMoveToOrder = new ShipMoveOrder(_fleet.CurrentOrder.Source, fleetTgt as IShipNavigableDestination, ApSpeedSetting, isFleetwideMove, tgtStandoffDistance);
         _fleet.Elements.ForAll(e => {
             var ship = e as ShipItem;
             //D.Log(ShowDebugLog, "{0} issuing Move order to {1}. Target: {2}, Speed: {3}, StandoffDistance: {4:0.#}.", 
@@ -927,7 +948,7 @@ public class FleetNavigator : IDisposable {
     /// <param name="mode">The mode.</param>
     /// <param name="waypoint">The optional waypoint. When not null, this is always a StationaryLocation detour to avoid an obstacle.</param>
     /// <exception cref="System.NotImplementedException"></exception>
-    private void RefreshApCourse(CourseRefreshMode mode, IFleetNavigable waypoint = null) {
+    private void RefreshApCourse(CourseRefreshMode mode, IFleetNavigableDestination waypoint = null) {
         //D.Log(ShowDebugLog, "{0}.RefreshCourse() called. Mode = {1}. CourseCountBefore = {2}.", DebugName, mode.GetValueName(), ApCourse.Count);
         switch (mode) {
             case CourseRefreshMode.NewCourse:
@@ -1038,7 +1059,7 @@ public class FleetNavigator : IDisposable {
     }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
     #region Debug
@@ -1050,11 +1071,12 @@ public class FleetNavigator : IDisposable {
     private void __RecordWaypointTransitStart(bool toCalcLastTransitDuration, float lastTransitDistanceSqrd) {
         var currentDate = _gameTime.CurrentDate;
         if (toCalcLastTransitDuration) {
-            D.AssertNotDefault(__lastStartDate);
-            var waypointTransitDuration = currentDate - __lastStartDate;
-            if (waypointTransitDuration > __longestWaypointTransitDuration) {
-                __longestWaypointTransitDuration = waypointTransitDuration;
-                __longestWaypointTransitDurationDistanceSqrd = lastTransitDistanceSqrd;
+            if (__lastStartDate != default(GameDate)) {  // 5.5.17 can be default if pilot just engaged but coroutine not yet started
+                var waypointTransitDuration = currentDate - __lastStartDate;
+                if (waypointTransitDuration > __longestWaypointTransitDuration) {
+                    __longestWaypointTransitDuration = waypointTransitDuration;
+                    __longestWaypointTransitDurationDistanceSqrd = lastTransitDistanceSqrd;
+                }
             }
         }
         __lastStartDate = currentDate;
@@ -1068,7 +1090,7 @@ public class FleetNavigator : IDisposable {
         if (__longestWaypointTransitDuration != default(GameTimeDuration)) {
             D.Log(ShowDebugLog, "{0}'s longest waypoint transition was {1:0.#} units taking {2}.", DebugName, Mathf.Sqrt(__longestWaypointTransitDurationDistanceSqrd), __longestWaypointTransitDuration);
             if (__longestWaypointTransitDuration > GameTimeDuration.TwentyDays) {
-                D.Warn("{0}'s longest waypoint transition was {1:0.#} units taking {2}!", DebugName, Mathf.Sqrt(__longestWaypointTransitDurationDistanceSqrd), __longestWaypointTransitDuration);
+                D.Log("{0}'s longest waypoint transition was {1:0.#} units taking {2}!", DebugName, Mathf.Sqrt(__longestWaypointTransitDurationDistanceSqrd), __longestWaypointTransitDuration);
             }
             if (__longestWaypointTransitDuration > GameTimeDuration.OneYear) {
                 D.Error("{0}'s longest waypoint transition was {1:0.#} units taking {2}!", DebugName, Mathf.Sqrt(__longestWaypointTransitDurationDistanceSqrd), __longestWaypointTransitDuration);
@@ -1076,7 +1098,7 @@ public class FleetNavigator : IDisposable {
         }
     }
 
-    private void __ValidateItemWithinSystem(SystemItem system, INavigable item) {
+    private void __ValidateItemWithinSystem(SystemItem system, INavigableDestination item) {
         float systemRadiusSqrd = system.Radius * system.Radius;
         float itemDistanceFromSystemCenterSqrd = Vector3.SqrMagnitude(item.Position - system.Position);
         if (itemDistanceFromSystemCenterSqrd > systemRadiusSqrd) {

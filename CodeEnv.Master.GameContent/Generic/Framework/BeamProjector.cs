@@ -47,11 +47,24 @@ namespace CodeEnv.Master.GameContent {
             : base(stat, name) {
         }
 
+        /// <summary>
+        /// Checks to see if any active ordnance is currently targeted on a non-enemy.
+        /// </summary>
         public override void CheckActiveOrdnanceTargeting() {
             if (_activeOrdnance != null) {
                 if (!_activeOrdnance.Target.IsAttackAllowedBy(Owner)) {
                     _activeOrdnance.Terminate();
                 }
+            }
+        }
+
+        protected override void HandleTargetOutOfRange(IElementAttackable target) {
+            // 5.21.17 Stop firing and start reloading as target is 'out of range'.
+            if (_activeOrdnance != null && _activeOrdnance.Target == target) {
+                if (!target.IsOperational || !target.IsAttackAllowedBy(Owner)) {
+                    return; // CheckActiveOrdnanceTargeting will handle
+                }
+                _activeOrdnance.Terminate();    // target is alive and still an enemy but out of range
             }
         }
 

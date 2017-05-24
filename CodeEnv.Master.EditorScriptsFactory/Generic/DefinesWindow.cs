@@ -54,6 +54,8 @@ public class DefinesWindow : EditorWindow {
         window.Show();
     }
 
+    public virtual string DebugName { get { return GetType().Name; } }
+
     [SerializeField]
     private bool _isDebugLogEnabled;
 
@@ -155,6 +157,10 @@ public class DefinesWindow : EditorWindow {
         ////    definesToInclude.Add(Define_EnableProfiler);
         ////}
         UnityEditorUtility.ResetConditionalCompilation(platformTargets, definesToInclude.ToArray<string>());
+    }
+
+    public override string ToString() {
+        return DebugName;
     }
 
     #region Nested Classes

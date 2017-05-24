@@ -21,6 +21,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class APublisher {
 
+        public virtual string DebugName { get { return GetType().Name; } }
+
         public abstract ColoredStringBuilder ItemHudText { get; }
 
         protected IGameManager _gameMgr;
@@ -29,6 +31,9 @@ namespace CodeEnv.Master.GameContent {
             _gameMgr = GameReferences.GameManager;
         }
 
+        public sealed override string ToString() {
+            return DebugName;
+        }
     }
 }
 

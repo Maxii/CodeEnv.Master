@@ -86,10 +86,6 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
     }
 }
 

@@ -33,7 +33,10 @@ namespace CodeEnv.Master.GameContent {
         Projectile,
 
         [EnumAttribute("M")]
-        Missile
+        Missile,
+
+        [EnumAttribute("AV")]
+        AssaultVehicle
 
 
         // Particle

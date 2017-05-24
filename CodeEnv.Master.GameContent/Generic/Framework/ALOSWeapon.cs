@@ -64,6 +64,14 @@ namespace CodeEnv.Master.GameContent {
             WeaponMount.TraverseTo(firingSolution);
         }
 
+        #region Debug
+
+        public bool __CheckLineOfSight(IElementAttackable enemyTgt) {
+            return WeaponMount.__CheckLineOfSight(enemyTgt);
+        }
+
+        #endregion
+
         #region Nested Classes
 
         public class LosWeaponFiringSolutionEventArgs : EventArgs {

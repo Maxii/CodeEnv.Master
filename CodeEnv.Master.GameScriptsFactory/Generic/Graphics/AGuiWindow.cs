@@ -66,7 +66,7 @@ public abstract class AGuiWindow : AMonoBase {
     protected abstract Transform ContentHolder { get; }
 
     private string _debugName;
-    protected string DebugName {
+    public string DebugName {
         get {
             if (_debugName == null) {
                 _debugName = DebugNameFormat.Inject(gameObject.name, GetType().Name);
@@ -327,6 +327,10 @@ public abstract class AGuiWindow : AMonoBase {
         // 12.8.16 Job Disposal centralized in JobManager
         KillFadeInJob();
         KillFadeOutJob();
+    }
+
+    public sealed override string ToString() {
+        return DebugName;
     }
 
     #region Nested Classes

@@ -41,15 +41,15 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="activeCMs">The active c ms.</param>
         /// <param name="deployDate">The deploy date.</param>
         /// <param name="losTurrets">The LOS turrets.</param>
-        /// <param name="missileLaunchers">The missile launchers.</param>
+        /// <param name="launchers">The launchers.</param>
         /// <param name="passiveCMs">The passive c ms.</param>
         /// <param name="shieldGens">The shield gens.</param>
         /// <param name="srSensors">SR sensor qty per element.</param>
         /// <param name="formation">The formation.</param>
         public BaseCreatorEditorSettings(string unitName, bool isOwnerUser, int elementQty, DebugDiploUserRelations userRelations, int cmsPerCmd,
-            int sensorsPerCmd, int activeCMs, GameDate deployDate, DebugLosWeaponLoadout losTurrets, DebugWeaponLoadout missileLaunchers,
+            int sensorsPerCmd, int activeCMs, GameDate deployDate, DebugLosWeaponLoadout losTurrets, DebugLaunchedWeaponLoadout launchers,
             int passiveCMs, int shieldGens, int srSensors, DebugBaseFormation formation)
-            : base(unitName, isOwnerUser, elementQty, userRelations, cmsPerCmd, sensorsPerCmd, activeCMs, deployDate, losTurrets, missileLaunchers, passiveCMs,
+            : base(unitName, isOwnerUser, elementQty, userRelations, cmsPerCmd, sensorsPerCmd, activeCMs, deployDate, losTurrets, launchers, passiveCMs,
                 shieldGens, srSensors) {
             Formation = formation;
         }
@@ -66,23 +66,19 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="activeCMs">The active c ms.</param>
         /// <param name="deployDate">The deploy date.</param>
         /// <param name="losTurrets">The LOS turrets.</param>
-        /// <param name="missileLaunchers">The missile launchers.</param>
+        /// <param name="launchers">The launchers.</param>
         /// <param name="passiveCMs">The passive c ms.</param>
         /// <param name="shieldGens">The shield gens.</param>
         /// <param name="srSensors">SR sensor qty per element.</param>
         /// <param name="formation">The formation.</param>
         /// <param name="presetHullCats">The preset hull cats.</param>
         public BaseCreatorEditorSettings(string unitName, bool isOwnerUser, DebugDiploUserRelations userRelations, int cmsPerCmd, int sensorsPerCmd,
-            int activeCMs, GameDate deployDate, DebugLosWeaponLoadout losTurrets, DebugWeaponLoadout missileLaunchers, int passiveCMs,
+            int activeCMs, GameDate deployDate, DebugLosWeaponLoadout losTurrets, DebugLaunchedWeaponLoadout launchers, int passiveCMs,
             int shieldGens, int srSensors, DebugBaseFormation formation, IList<FacilityHullCategory> presetHullCats)
-            : base(unitName, isOwnerUser, userRelations, cmsPerCmd, sensorsPerCmd, activeCMs, deployDate, losTurrets, missileLaunchers,
+            : base(unitName, isOwnerUser, userRelations, cmsPerCmd, sensorsPerCmd, activeCMs, deployDate, losTurrets, launchers,
                   passiveCMs, shieldGens, srSensors) {
             Formation = formation;
             PresetElementHullCategories = presetHullCats;
-        }
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
         }
 
     }

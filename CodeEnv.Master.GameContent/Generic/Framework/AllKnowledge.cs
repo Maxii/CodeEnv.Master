@@ -393,9 +393,6 @@ namespace CodeEnv.Master.GameContent {
             _planetoids.ForAll(p => p.deathOneShot -= ItemDeathEventHandler);
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
 
         #region Debug 
 

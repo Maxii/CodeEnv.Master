@@ -39,9 +39,6 @@ public class DebugStarbaseCreatorEditor : ADebugUnitCreatorEditor {
     //    serializedObject.ApplyModifiedProperties();
     //}
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 }
 

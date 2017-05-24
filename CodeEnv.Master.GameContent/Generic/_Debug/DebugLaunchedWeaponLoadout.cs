@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: DebugWeaponLoadout.cs
-// The desired weapons load of each element in the unit. Used for debug settings in the editor. 
+// File: DebugLaunchedWeaponLoadout.cs
+// The desired launched weapons load of each element in the unit. Used for debug settings in the editor. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,21 +17,25 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// The desired weapons load of each element in the unit. 
+    /// The desired launched weapons load of each element in the unit. 
     /// <remarks>Used for debug settings in the editor.</remarks> 
-    /// <remarks>12.15.16 Currently only used for Missiles as LosWeapons got DebugLosWeaponLoadout.</remarks>
+    /// <remarks>5.23.17 Currently used for Missiles and AssaultShuttles as LosWeapons got DebugLosWeaponLoadout.</remarks>
     /// </summary>
-    public enum DebugWeaponLoadout {
+    public enum DebugLaunchedWeaponLoadout {
 
         /// <summary>
-        /// No weapons will be carried by the element.
+        /// No launched weapons will be carried by the element.
         /// </summary>
         None,
 
         /// <summary>
-        /// One weapon will be carried by the element.
+        /// One missile will be carried by the element.
         /// </summary>
-        One,
+        OneMissile,
+
+        OneAssaultVehicle,
+
+        OneEach,
 
         /// <summary>
         /// The number of weapons carried by the element will 
@@ -40,10 +44,14 @@ namespace CodeEnv.Master.GameContent {
         Random,
 
         /// <summary>
-        /// The number of weapons carried by the element will 
+        /// The number of missiles carried by the element will 
         /// be the maximum allowed by the element category.
         /// </summary>
-        Max
+        MaxMissiles,
+
+        MaxAssaultVehicles,
+
+        MaxMix
 
     }
 }

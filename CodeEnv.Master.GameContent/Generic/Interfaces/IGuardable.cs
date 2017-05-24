@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// Interface for Items that can be guarded by Fleets at GuardStations.
     /// Includes Systems, Sectors, Bases and the UniverseCenter.    // IDEA: Coincident with IPatrollable
     /// </summary>
-    public interface IGuardable : INavigable {  // IDEA: Could : IFleetNavigable but why?
+    public interface IGuardable : INavigableDestination, IAssemblySupported {  // IDEA: Could : IFleetNavigableDestination but why?
 
         /// <summary>
         /// Occurs when the owner of this IGuardable has changed.
@@ -40,11 +40,6 @@ namespace CodeEnv.Master.GameContent {
         event EventHandler<InfoAccessChangedEventArgs> infoAccessChgd;
 
         IList<StationaryLocation> GuardStations { get; }
-
-        /// <summary>
-        /// A collection of assembly stations that are local to the item.
-        /// </summary>
-        IList<StationaryLocation> LocalAssemblyStations { get; }
 
         bool TryGetOwner(Player requestingPlayer, out Player owner);
 

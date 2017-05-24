@@ -179,11 +179,6 @@ namespace CodeEnv.Master.GameContent {
             return StarbaseCategory.None;
         }
 
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
         #region Archive
 
         //private void AssignValuesFromElementReports(StarbaseCmdData cmdData) {

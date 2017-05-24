@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: MissileTube.cs
-// A Weapon Mount for fire and forget Weapons like Missiles.
+// File: LaunchTube.cs
+// A Weapon Mount for fire and forget Weapons like Missiles and AssaultVehicles.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,9 +22,9 @@ using UnityEngine;
 using UnityEngine.Serialization;
 
 /// <summary>
-/// A Weapon Mount for fire and forget Weapons like Missiles.
+/// A Weapon Mount for fire and forget Weapons like Missiles and AssaultVehicles.
 /// </summary>
-public class MissileTube : AWeaponMount {
+public class LaunchTube : AWeaponMount {
 
     /// <summary>
     /// The visible mouth protrusion of the tube. 
@@ -68,7 +68,7 @@ public class MissileTube : AWeaponMount {
     /// <param name="enemyTarget">The target.</param>
     /// <returns></returns>
     public override bool ConfirmInRangeForLaunch(IElementAttackable enemyTarget) {
-        float distanceToPushover = TempGameValues.__ReqdMissileTravelDistanceBeforePushover;
+        float distanceToPushover = TempGameValues.__ReqdLaunchVehicleTravelDistanceBeforePushover;
         Vector3 launchDirection = MuzzleFacing;
         Vector3 vectorToPushover = launchDirection * distanceToPushover;
         Vector3 launchPosition = MuzzleLocation;
@@ -80,10 +80,6 @@ public class MissileTube : AWeaponMount {
     }
 
     protected override void Cleanup() { }
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 }
 

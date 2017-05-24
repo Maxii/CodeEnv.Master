@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public struct DamageStrength : IEquatable<DamageStrength>, IComparable<DamageStrength> {
 
-        private const string ToStringFormat = "{0}({1},{2},{3})";
+        private const string DebugNameFormat = "{0}({1},{2},{3})";
 
         private static readonly string LabelFormatWithTotal = "{0}" + Constants.NewLine
                                              + "T: {1}" + Constants.NewLine
@@ -107,6 +107,13 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
+
+
+        public string DebugName {
+            get {
+                return DebugNameFormat.Inject(GetType().Name, Thermal.FormatValue(), Atomic.FormatValue(), Kinetic.FormatValue());
+            }
+        }
 
         public float Total { get { return Thermal + Atomic + Kinetic; } }
 
@@ -214,11 +221,11 @@ namespace CodeEnv.Master.GameContent {
                 return string.Empty;
             }
             string totalText = includeTotal ? Total.FormatValue() : string.Empty;
-            return ToStringFormat.Inject(totalText, Thermal.FormatValue(), Atomic.FormatValue(), Kinetic.FormatValue());
+            return DebugNameFormat.Inject(totalText, Thermal.FormatValue(), Atomic.FormatValue(), Kinetic.FormatValue());
         }
 
         public override string ToString() {
-            return ToStringFormat.Inject(GetType().Name, Thermal.FormatValue(), Atomic.FormatValue(), Kinetic.FormatValue());
+            return DebugName;
         }
 
         #region IEquatable<DamageStrength> Members

@@ -117,10 +117,6 @@ namespace CodeEnv.Master.GameContent {
             return null;
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
         #region Archive
 
         //public SystemReport(SystemData data, Player player, ISystem item)

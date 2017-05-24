@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
 
         public Reference<float> __ActualSpeedValue { get; private set; }
 
-        public INavigable Target { get; private set; }
+        public INavigableDestination Target { get; private set; }
 
         public ShipCombatStance CombatStance { get; private set; }
 
@@ -117,10 +117,6 @@ namespace CodeEnv.Master.GameContent {
             }
 
             __ActualSpeedValue = (Item as IShip_Ltd).ActualSpeedValue_Debug;
-        }
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
         }
 
 

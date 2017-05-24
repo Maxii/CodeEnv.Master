@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ATableRowForm.cs
-//  Abstract base class for ReportForms that are TableRows. 
+// Abstract base class for ReportForms that are TableRows. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 

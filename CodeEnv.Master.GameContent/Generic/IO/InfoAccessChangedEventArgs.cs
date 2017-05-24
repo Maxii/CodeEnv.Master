@@ -24,6 +24,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class InfoAccessChangedEventArgs : EventArgs {
 
+        public string DebugName { get { return GetType().Name; } }
+
         /// <summary>
         /// The player whose Info access rights to this item changed.
         /// </summary>
@@ -34,7 +36,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
     }

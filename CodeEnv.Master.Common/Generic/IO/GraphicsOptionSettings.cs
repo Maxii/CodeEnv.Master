@@ -21,6 +21,8 @@ namespace CodeEnv.Master.Common {
     /// </summary>
     public class GraphicsOptionSettings {
 
+        public string DebugName { get { return GetType().Name; } }
+
         public string QualitySetting { get; set; }
 
         // 1.15.17 TEMP removed to allow addition of DebugControls.IsElementIconsEnabled
@@ -29,7 +31,7 @@ namespace CodeEnv.Master.Common {
         public GraphicsOptionSettings() { }
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
     }

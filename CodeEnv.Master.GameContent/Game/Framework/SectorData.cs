@@ -104,7 +104,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void AssessIntelCoverage() {
-            if (GameReferences.DebugControls.IsAllIntelCoverageComprehensive) {
+            if (_debugCntls.IsAllIntelCoverageComprehensive) {
                 return;
             }
             foreach (Player player in _gameMgr.AllPlayers) {
@@ -123,18 +123,20 @@ namespace CodeEnv.Master.GameContent {
 
             if (allMemberCoverages.IsNullOrEmpty()) {
                 // TEMP there are no members so give player Comprehensive
-                var isSet = SetIntelCoverage(player, IntelCoverage.Comprehensive);
-                D.Assert(isSet);
+                SetIntelCoverage(player, IntelCoverage.Comprehensive);
                 return;
             }
 
             IntelCoverage currentCoverage = GetIntelCoverage(player);
 
             IntelCoverage lowestCommonCoverage = GetLowestCommonCoverage(allMemberCoverages);
-            var isCoverageSet = SetIntelCoverage(player, lowestCommonCoverage);
+            IntelCoverage resultingCoverage;
+            var isCoverageSet = TrySetIntelCoverage(player, lowestCommonCoverage, out resultingCoverage);
             if (isCoverageSet) {
-                D.Log(ShowDebugLog, "{0} has assessed its IntelCoverage for {1} and changed it from {2} to the lowest common member value {3}.",
-                    DebugName, player.DebugName, currentCoverage.GetValueName(), lowestCommonCoverage.GetValueName());
+                if (resultingCoverage == lowestCommonCoverage) {
+                    D.Log(ShowDebugLog, "{0} has assessed its IntelCoverage for {1} and changed it from {2} to the lowest common member value {3}.",
+                        DebugName, player.DebugName, currentCoverage.GetValueName(), lowestCommonCoverage.GetValueName());
+                }
             }
             else {
                 D.Log(ShowDebugLog, "{0} has assessed its IntelCoverage for {1} and declined to change it from {2} to the lowest common member value {3}.",
@@ -237,10 +239,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
 
         #region IDisposable
 

@@ -31,10 +31,6 @@ namespace CodeEnv.Master.GameContent {
             CmdStat = cmdStat;
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
     }
 }
 

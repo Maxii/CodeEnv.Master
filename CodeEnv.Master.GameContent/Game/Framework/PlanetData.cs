@@ -64,13 +64,6 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        #region Event and Property Change Handlers
-
-        #endregion
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
 
     }
 }

@@ -31,6 +31,8 @@ namespace CodeEnv.Master.Common {
     /// <typeparam name="T"></typeparam>
     public sealed class Reference<T> {
 
+        public string DebugName { get { return typeof(T).Name; } }
+
         private readonly Func<T> _getter;
         private readonly Action<T> _setter;
 
@@ -55,7 +57,7 @@ namespace CodeEnv.Master.Common {
         }
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
     }

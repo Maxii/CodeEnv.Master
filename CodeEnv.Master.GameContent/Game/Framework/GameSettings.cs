@@ -19,6 +19,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class GameSettings {
 
+        public string DebugName { get { return GetType().Name; } }
+
         public bool __IsStartup { get; set; }
         public bool __UseDebugCreatorsOnly { get; set; }
 
@@ -66,7 +68,7 @@ namespace CodeEnv.Master.GameContent {
         public GameSettings() { }
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
     }

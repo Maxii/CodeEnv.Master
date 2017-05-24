@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
@@ -127,7 +128,6 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     /// </summary>
     public bool FleetsAutoExploreAsDefault { get { return _fleetsAutoExplore; } }
 
-
     [Tooltip("Check if fleets should automatically attack all other players.")]
     [SerializeField]
     private bool _fleetsAutoAttack = false;
@@ -160,6 +160,72 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     /// </summary>
     public bool IsAllIntelCoverageComprehensive { get { return _allIntelCoverageIsComprehensive; } }
 
+    [Tooltip("Check if some missiles may be replaced with simulated assault shuttles.")]
+    [SerializeField]
+    private bool _isAssaultEnabled = false;
+    [Obsolete]
+    public bool IsAssaultEnabled { get { return _isAssaultEnabled; } }
+
+    [Tooltip("Check if assaults should always be successful.")]
+    [SerializeField]
+    private bool _areAssaultsAlwaysSuccessful = false;
+    public bool AreAssaultsAlwaysSuccessful { get { return _areAssaultsAlwaysSuccessful; } }
+
+
+    [Tooltip("Choose how to move ordnance that has a choice.")]
+    [SerializeField]
+    private UnityMoveTech _unityMoveTech = UnityMoveTech.Kinematic;
+    public UnityMoveTech MovementTech { get { return _unityMoveTech; } }
+
+    #region Auto Unit Preset Equipment Controls
+
+    [Tooltip("Choose how equipment is chosen for AutoCreators.")]   // NOTE: Does not affect DebugCreators
+    [SerializeField]
+    private EquipmentLoadout _equipmentPlan = EquipmentLoadout.Preset;
+    public EquipmentLoadout EquipmentPlan { get { return _equipmentPlan; } }
+
+    /******************** If EquipmentPlan chosen is Random, all this is disabled *************************/
+    [SerializeField]
+    private DebugLosWeaponLoadout _losWeaponsPerElement = DebugLosWeaponLoadout.Random;
+    public DebugLosWeaponLoadout LosWeaponsPerElement { get { return _losWeaponsPerElement; } }
+
+    [SerializeField]
+    private DebugLaunchedWeaponLoadout _launchedWeaponsPerElement = DebugLaunchedWeaponLoadout.Random;
+    public DebugLaunchedWeaponLoadout LaunchedWeaponsPerElement { get { return _launchedWeaponsPerElement; } }
+
+    [Range(0, 5)]
+    [SerializeField]
+    private int _activeCMsPerElement = 2;
+    public int ActiveCMsPerElement { get { return _activeCMsPerElement; } }
+
+    [Range(0, 5)]
+    [SerializeField]
+    private int _shieldGeneratorsPerElement = 2;
+    public int ShieldGeneratorsPerElement { get { return _shieldGeneratorsPerElement; } }
+
+    [Range(0, 5)]
+    [SerializeField]
+    private int _passiveCMsPerElement = 2;
+    public int PassiveCMsPerElement { get { return _passiveCMsPerElement; } }
+
+    [Range(1, 3)]
+    [SerializeField]
+    private int _srSensorsPerElement = 1;
+    public int SRSensorsPerElement { get { return _srSensorsPerElement; } }
+
+    [Range(0, 3)]
+    [SerializeField]
+    private int _countermeasuresPerCmd = 2;
+    public int CMsPerCmd { get { return _countermeasuresPerCmd; } }
+
+    [Range(1, 6)]
+    [SerializeField]
+    private int _sensorsPerCmd = 3;
+    public int SensorsPerCmd { get { return _sensorsPerCmd; } }
+    /*****************************************************************************************************/
+
+    #endregion
+
     #endregion
 
     #region Audio Editor Fields
@@ -185,6 +251,43 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     /// otherwise all world tracking sprites and labels will be consolidated under a few UIPanels.
     /// </summary>
     public bool UseOneUIPanelPerWidget { get { return _useOneUIPanelPerWidget; } }
+
+    [Tooltip("Check if all MR Sensors should stay deactivated")]
+    [SerializeField]
+    private bool _deactivateMRSensors = false;
+    public bool DeactivateMRSensors { get { return _deactivateMRSensors; } }
+
+    [Tooltip("Check if all LR Sensors should stay deactivated")]
+    [SerializeField]
+    private bool _deactivateLRSensors = false;
+    public bool DeactivateLRSensors { get { return _deactivateLRSensors; } }
+
+    #endregion
+
+    #region User Relations Change Fields
+
+    [Tooltip("The current relationship of the chosen player to the user. For display only")]
+    [SerializeField]
+    private DiplomaticRelationship _relationsOfPlayerToUser = DiplomaticRelationship.None;
+
+    [Tooltip("The new relationship of the chosen player to the user")]
+    [SerializeField]
+    private UserRelationshipChoices _playerUserRelationsChoice = UserRelationshipChoices.Neutral;
+
+    #endregion
+
+    #region Automatic Random Testing Fields
+
+    [Tooltip("Automatic, random changes of relations between players")]
+    [SerializeField]
+    private bool _isAutoRelationsChangesEnabled = false;
+    public bool IsAutoRelationsChangeEnabled { get { return _isAutoRelationsChangesEnabled; } }
+
+    [Tooltip("Automatic, random pauses followed immediately by resume")]
+    [SerializeField]
+    private bool _isAutoPauseChangesEnabled = false;
+    public bool IsAutoPauseChangesEnabled { get { return _isAutoPauseChangesEnabled; } }
+
 
     #endregion
 
@@ -272,11 +375,12 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     #endregion
 
 
+    public string DebugName { get { return GetType().Name; } }
+
     public override bool IsPersistentAcrossScenes { get { return true; } }  // GameScene -> GameScene retains values
 
-    private string Name { get { return GetType().Name; } }
-
     private IGameManager _gameMgr;
+    private IList<IDisposable> _subscriptions;
 
     #region Initialization
 
@@ -296,6 +400,13 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
         _gameMgr = GameReferences.GameManager;
+        Subscribe();
+    }
+
+    private void Subscribe() {
+        _subscriptions = new List<IDisposable>();
+        _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<IGameManager, bool>(gm => gm.IsPaused, IsPausedChangedHandler));
+        _gameMgr.newGameBuilding += NewGameBuildingEventHandler;
     }
 
     #endregion
@@ -303,7 +414,9 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     #region Value Change Checking
 
     void OnValidate() {
-        CheckValuesForChange();
+        if (Application.isPlaying) { // avoids checking when shutting down
+            CheckValuesForChange();
+        }
     }
 
     private void CheckValuesForChange() {
@@ -323,6 +436,9 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
         CheckShowElementIcons();
         CheckShowPlanetIcons();
         CheckShowStarIcons();
+
+        CheckForChosenPlayerNameChanged();
+        CheckForPlayerRelationsChange();
     }
 
     private bool _showFleetCoursePlotsPrev = false;
@@ -451,6 +567,22 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
         }
     }
 
+    private string _chosenPlayerNamePrev = null;
+    private void CheckForChosenPlayerNameChanged() {
+        if (_chosenPlayerName != _chosenPlayerNamePrev) {
+            _chosenPlayerNamePrev = _chosenPlayerName;
+            HandleChosenPlayerNameChanged();
+        }
+    }
+
+    private UserRelationshipChoices? _chosenPlayerRelationsPrev = null;
+    private void CheckForPlayerRelationsChange() {
+        if (_playerUserRelationsChoice != _chosenPlayerRelationsPrev) {
+            _chosenPlayerRelationsPrev = _playerUserRelationsChoice;
+            HandleChosenPlayerRelationsChoiceChanged();
+        }
+    }
+
     #endregion
 
     #region Event and Prop Change Handlers
@@ -545,19 +677,211 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
         }
     }
 
+    private void IsPausedChangedHandler() {
+        HandleIsPausedChanged();
+    }
+
+    private void NewGameBuildingEventHandler(object sender, EventArgs e) {
+        HandleNewGameBuilding();
+    }
+
+    private void GameReadyForPlayEventHandler(object sender, EventArgs e) {
+        HandleGameReadyForPlay();
+    }
+
+    private void UserMetNewPlayerEventHandler(object sender, Player.NewPlayerMetEventArgs e) {
+        HandleUserMetNewPlayer(e.NewlyMetPlayer);
+    }
+
+    #endregion
+
+    private void HandleIsPausedChanged() {
+        if (_gameMgr.IsPaused) {
+            OnValidatePlayerKnowledgeNow();
+        }
+    }
+
+    #region User Relationship Change System
+
+    /// <summary>
+    /// Returns <c>true</c> if the RelationsChgSystem is enabled, <c>false</c> otherwise.
+    /// <remarks>When not enabled, the editor doesn't allow access to the controls. Typically enabled once 
+    /// the user player has met another player.</remarks>
+    /// </summary>
+    public bool IsRelationsChgSystemEnabled { get; private set; }
+
+    public IList<string> PlayersKnownToUser { get; private set; }
+
+#pragma warning disable 0649
+    /// <summary>
+    /// The chosen player name.
+    /// <remarks>Serialized field so editor can find and assign it the selected player name.</remarks>
+    /// </summary>
+    [SerializeField]
+    private string _chosenPlayerName;
+#pragma warning restore 0649
+
+    private Player _chosenPlayer;
+
+    private void InitializeUserRelationsChgSystem() {
+        IsRelationsChgSystemEnabled = false;
+        PlayersKnownToUser = PlayersKnownToUser ?? new List<string>();
+        PlayersKnownToUser.Clear();
+        _chosenPlayer = null;
+        _chosenPlayerName = null;
+        _relationsOfPlayerToUser = DiplomaticRelationship.None;
+        _playerUserRelationsChoice = UserRelationshipChoices.Neutral;
+    }
+
+    private void HandleNewGameBuilding() {
+        _gameMgr.isReadyForPlayOneShot += GameReadyForPlayEventHandler;
+    }
+
+    private void HandleGameReadyForPlay() {
+        InitializeUserRelationsChgSystem();
+        PopulatePlayersKnownToUser();
+        if (PlayersKnownToUser.Any()) {
+            IsRelationsChgSystemEnabled = true;
+        }
+        _gameMgr.UserPlayer.newPlayerMet += UserMetNewPlayerEventHandler;
+    }
+
+    private void PopulatePlayersKnownToUser() {
+        foreach (var player in _gameMgr.UserAIManager.OtherKnownPlayers) {
+            if (!PlayersKnownToUser.Contains(player.DebugName)) {
+                PlayersKnownToUser.Add(player.DebugName);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Derives the chosen player and its current relationship to the user from _chosenPlayerName.
+    /// </summary>
+    private void HandleChosenPlayerNameChanged() {
+        if (IsRelationsChgSystemEnabled) {
+            Player priorChosenPlayer = _chosenPlayer;
+            DiplomaticRelationship priorChosenPlayerUserRelations = _relationsOfPlayerToUser;
+            _chosenPlayer = GetPlayer(_chosenPlayerName);
+            SyncUserRelationsFieldsTo(_chosenPlayer.UserRelations);
+            string priorChosenPlayerText = priorChosenPlayer != null ? priorChosenPlayer.DebugName : "null";
+            D.Log("{0}: Chosen player changed from {1} to {2}.", DebugName, priorChosenPlayerText, _chosenPlayer.DebugName);
+            D.Log("{0}: Chosen player user relations changed from {1} to {2}.", DebugName, priorChosenPlayerUserRelations.GetValueName(), _relationsOfPlayerToUser.GetValueName());
+        }
+    }
+
+    private void HandleUserMetNewPlayer(Player newlyMetPlayer) {
+        PopulatePlayersKnownToUser();
+        IsRelationsChgSystemEnabled = true;
+    }
+
+    private void HandleChosenPlayerRelationsChoiceChanged() {
+        if (_chosenPlayer != null) {
+            DiplomaticRelationship newUserRelationship = Convert(_playerUserRelationsChoice);
+            if (_chosenPlayer.UserRelations != newUserRelationship) {
+                _chosenPlayer.SetRelationsWith(_gameMgr.UserPlayer, newUserRelationship);
+            }
+            SyncUserRelationsFieldsTo(_chosenPlayer.UserRelations);
+        }
+    }
+
+    /// <summary>
+    /// Synchronizes the user relations fields so selection will always cause a change.
+    /// </summary>
+    /// <param name="relations">The relations.</param>
+    private void SyncUserRelationsFieldsTo(DiplomaticRelationship relations) {
+        _relationsOfPlayerToUser = relations;
+        _playerUserRelationsChoice = Convert(relations);
+    }
+
+    private Player GetPlayer(string playerName) {
+        foreach (var player in _gameMgr.AIPlayers) {
+            if (player.DebugName == playerName) {
+                return player;
+            }
+        }
+        D.Error("{0}: PlayerName: {1}, AllPlayerNames: {2}.", DebugName, playerName, _gameMgr.AIPlayers.Select(p => p.DebugName).Concatenate());
+        return null;
+    }
+
+    private DiplomaticRelationship Convert(UserRelationshipChoices newOwnerUserRelationship) {
+        switch (newOwnerUserRelationship) {
+            case UserRelationshipChoices.Alliance:
+                return DiplomaticRelationship.Alliance;
+            case UserRelationshipChoices.Friendly:
+                return DiplomaticRelationship.Friendly;
+            case UserRelationshipChoices.Neutral:
+                return DiplomaticRelationship.Neutral;
+            case UserRelationshipChoices.ColdWar:
+                return DiplomaticRelationship.ColdWar;
+            case UserRelationshipChoices.War:
+                return DiplomaticRelationship.War;
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(newOwnerUserRelationship));
+        }
+    }
+
+    private UserRelationshipChoices Convert(DiplomaticRelationship newOwnerUserRelationship) {
+        switch (newOwnerUserRelationship) {
+            case DiplomaticRelationship.Alliance:
+                return UserRelationshipChoices.Alliance;
+            case DiplomaticRelationship.Friendly:
+                return UserRelationshipChoices.Friendly;
+            case DiplomaticRelationship.Neutral:
+                return UserRelationshipChoices.Neutral;
+            case DiplomaticRelationship.ColdWar:
+                return UserRelationshipChoices.ColdWar;
+            case DiplomaticRelationship.War:
+                return UserRelationshipChoices.War;
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(newOwnerUserRelationship));
+        }
+    }
+
     #endregion
 
     #region Cleanup
 
     protected override void Cleanup() {
         GameReferences.DebugControls = null;
+        Unsubscribe();
+    }
+
+    private void Unsubscribe() {
+        _subscriptions.ForAll(s => s.Dispose());
+        _subscriptions.Clear();
+        _gameMgr.newGameBuilding -= NewGameBuildingEventHandler;
+        _gameMgr.UserPlayer.newPlayerMet -= UserMetNewPlayerEventHandler;
+        //_gameMgr.isReadyForPlayOneShot is a one shot
     }
 
     #endregion
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
+
+    #region Nested Classes
+
+    public enum UserRelationshipChoices {
+        Alliance,
+        Friendly,
+        Neutral,
+        ColdWar,
+        War
+    }
+
+    public enum UnityMoveTech {
+        Physics,
+        Kinematic
+    }
+
+    public enum EquipmentLoadout {
+        Random = 0,
+        Preset = 1
+    }
+
+
+    #endregion
 
 }
 

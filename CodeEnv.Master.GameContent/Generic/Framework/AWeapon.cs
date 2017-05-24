@@ -64,7 +64,7 @@ namespace CodeEnv.Master.GameContent {
             get { return RangeMonitor != null ? DebugNameFormat.Inject(RangeMonitor.DebugName, Name) : Name; }
         }
 
-        public WDVCategory DeliveryVehicleCategory { get { return DeliveryVehicleStrength.Category; } }
+        public WDVCategory DeliveryVehicleCategory { get { return Stat.DeliveryVehicleCategory; } }
 
         public WDVStrength DeliveryVehicleStrength { get { return Stat.DeliveryVehicleStrength; } }
 
@@ -163,10 +163,10 @@ namespace CodeEnv.Master.GameContent {
         /*****************************************************************************************************************************
         * This weapon does not need to track Owner changes. When the owner of the item with this weapon changes, the weapon's 
         * RangeMonitor drops and then reacquires all detectedItems. As a result, all reacquired items are categorized correctly. In addition,
-        * the RangeMonitor tells each weapon to check its active (fired, currently in route) ordnance via CheckActiveOrdnanceTargeting().
-        * When the owner of an item detected by this weapon changes, the Monitor re-categorizes the detectedItem into the right list - 
-        * enemy or non-enemy, and then, depending on the circumstances, either tells the weapon to CheckActiveOrdnanceTargeting(), 
-        * calls HandleEnemyTargetInRangeChanged(), neither or both.
+        * the RangeMonitor tells each weapon to check its active (fired, currently in route) ordnance and any in-process firing 
+        * solution generation via CheckTargeting(). When the owner of an item detected by this weapon changes, the Monitor re-categorizes 
+        * the detectedItem into the right list - enemy or non-enemy, and then, depending on the circumstances, either tells the weapon to 
+        * CheckTargeting(), calls HandleEnemyTargetInRangeChanged(), neither or both.
         *******************************************************************************************************************************/
 
         /***********************************************************************************************************************************************
@@ -175,39 +175,70 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Called when an ownership change of either the ParentElement or a tracked target requires 
-        /// a check to see if any active ordnance is currently targeted on a non-enemy.
+        /// a check to see if any active ordnance or in-process firing solution generation is targeting a non-enemy.
+        /// <remarks>5.7.17 Added to account for in-process firing solution generation that could result in a firing
+        /// solution targeting a non-enemy, usually caused by a ownership or relationship change.</remarks>
+        /// <remarks>Obsoleted 5.9.17 as I found root cause of the problem I was having. Could still be useful so left in place
+        /// to use in place of CheckActiveOrdnanceTargeting.</remarks>
+        /// </summary>
+        [Obsolete]
+        public void CheckTargeting() {
+            CheckActiveOrdnanceTargeting();
+            AssessReadinessToFire();
+        }
+
+        /// <summary>
+        /// Checks to see if any active ordnance is currently targeted on a non-enemy
+        /// and corrects if found.
+        /// <remarks>Called when an ownership change of the ParentElement occurs which requires 
+        /// a check to see if any active ordnance is targeting a non-enemy.</remarks>
+        /// <remarks>5.8.17 An ownership change in a tracked target is handled by 
+        /// HandleAttackableEnemyTargetInRangeChanged if needed.</remarks>
         /// </summary>
         public abstract void CheckActiveOrdnanceTargeting();
 
         /// <summary>
         /// Called by this weapon's RangeMonitor when an enemy target enters or exits the weapon's range.
+        /// <remarks>A target that is no longer in range can be a dead enemy target or a former enemy target 
+        /// that is no longer an enemy.</remarks>
         /// </summary>
         /// <param name="enemyTarget">The enemy target.</param>
         /// <param name="isInRange">if set to <c>true</c> [is in range].</param>
         public void HandleAttackableEnemyTargetInRangeChanged(IElementAttackable enemyTarget, bool isInRange) {
-            //D.Log(ShowDebugLog, "{0} received HandleAttackableEnemyTargetInRangeChanged. EnemyTarget: {1}, InRange: {2}.", DebugName, enemyTarget.DebugName, isInRange);
+
+            __enemyInRangeChgdLogs.Add("{0} received HandleAttackableEnemyTargetInRangeChanged. EnemyTarget: {1}, InRange: {2}. Frame: {3}."
+                .Inject(DebugName, enemyTarget.DebugName, isInRange, Time.frameCount));
+
             if (isInRange) {
                 if (IsQualifiedEnemyTarget(enemyTarget)) {
                     bool isAdded = _qualifiedEnemyTargets.Add(enemyTarget);
-                    D.Assert(isAdded, "{0} found {1} already being tracked as enemy.".Inject(DebugName, enemyTarget.DebugName));
+                    if (!isAdded) {
+                        // 5.16.17 Unexpectedly occurred. Added more logging.
+                        D.Error("{0} found {1} already being tracked as enemy.".Inject(DebugName, enemyTarget.DebugName));
+                        D.Error("{0}: EnemyInRangeChgdLog including error not added: {1}.", DebugName, __enemyInRangeChgdLogs.Concatenate());
+                    }
 
                     __TryAddToPeakEnemiesInRange();
                 }
             }
             else {
-                bool isPresent = _qualifiedEnemyTargets.Remove(enemyTarget);
+                IElementAttackable target = enemyTarget;
+                bool isPresent = _qualifiedEnemyTargets.Remove(target);
                 if (isPresent) {
                     // Note: Some targets going out of range may not have been qualified as targets for this Weapon so they won't be present
                     // Also, a qualified target can die (goes out of range) from other Weapons fire before it is ever added
                     // to this one, so if it is not present, it was never added to this Weapon because it was immediately killed
                     // by other Weapons as it was being added to them.
-                    ReportCombatResults(enemyTarget);
+                    HandleTargetOutOfRange(target);
+                    ReportCombatResults(target);
                     // IMPROVE report at later time (combat over?) as not all results are available when the target moves out of the 
                     // Monitor's range, aka missile range can be larger or smaller than monitor range
                 }
             }
             IsAnyEnemyInRange = _qualifiedEnemyTargets.Any();
         }
+
+        protected abstract void HandleTargetOutOfRange(IElementAttackable target);
 
         /// <summary>
         /// Confirms the provided enemyTarget is in range PRIOR to launching the weapon's ordnance.
@@ -233,10 +264,11 @@ namespace CodeEnv.Master.GameContent {
         /// other firing solutions which would otherwise only occur once the weapon was fired.</remarks>
         /// </summary>
         public void HandleElementDeclinedToFire() {
+            D.Assert(IsFiringSequenceUnderway);
             IsFiringSequenceUnderway = false;
-            // 3.27.16 AssessReadiness should make IsReady = true, and call AssessReadinessToFire(). This re-assessment
-            // will look for targets again, and if it can't find any firing solutions, will call InitiateFiringSolutionsCheckProcess
-            AssessReadiness();
+            // 5.7.17 A change to IsFiringSequenceUnderway will result in AssessReadiness() which should make IsReady = true, 
+            // and call AssessReadinessToFire(). This re-assessment will look for targets again, and if it can't find any 
+            // firing solutions, will call InitiateFiringSolutionsCheckProcess.
         }
 
         /// <summary>
@@ -280,8 +312,6 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        #region Event and Property Change Handlers
-
         protected override void HandleInitialActivation() {
             base.HandleInitialActivation();
             // IMPROVE If/when Owner's ReloadPeriodMultiplier can change, ReloadPeriod will need to change with it
@@ -294,6 +324,8 @@ namespace CodeEnv.Master.GameContent {
                 D.Warn("{0}.RangeDistance of {1:0.##} < Min {2:0.##}.", DebugName, RangeDistance, TempGameValues.__MinWeaponsRangeDistance);
             }
         }
+
+        #region Event and Property Change Handlers
 
         private void IsFiringSequenceUnderwayPropChangedHandler() {
             AssessReadiness();
@@ -366,7 +398,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="terminatedOrdnance">The terminated ordnance.</param>
         protected abstract void RemoveFiredOrdnanceFromRecord(IOrdnance terminatedOrdnance);
 
-        private bool IsQualifiedEnemyTarget(IElementAttackable enemyTarget) {
+        protected virtual bool IsQualifiedEnemyTarget(IElementAttackable enemyTarget) {
             // 4.12.17 Handles case where 'InRange' enemy targets provided by the WeaponRangeMonitor include ColdWarEnemies.
             // ColdWarEnemy targets would only be included if policy is to allow engagement, and they are in range.
             // However, ColdWarEnemy targets can only be attacked when they are located in Owner's territory. Policy can
@@ -393,8 +425,14 @@ namespace CodeEnv.Master.GameContent {
             IsReady = IsOperational && _isLoaded && !IsFiringSequenceUnderway;
         }
 
+        /// <summary>
+        /// Assesses readiness to fire of this weapon. 
+        /// <remarks>5.7.17 This is the primary way of terminating any in-process FiringSolution generation
+        /// process and restarting it, if needed.</remarks>
+        /// </summary>
         private void AssessReadinessToFire() {
             if (!IsReady || !IsAnyEnemyInRange) {
+                D.AssertNull(_firingSolutionsCheckProcessRecurringDuration);
                 return;
             }
 
@@ -443,6 +481,10 @@ namespace CodeEnv.Master.GameContent {
             firingSolutions = new List<WeaponFiringSolution>(enemyTgtCount);
             foreach (var enemyTgt in _qualifiedEnemyTargets) {
                 WeaponFiringSolution firingSolution;
+                if (!enemyTgt.IsAttackAllowedBy(Owner)) {
+                    __LogErrorNoLongerAttackable(enemyTgt);
+                    return false;
+                }
                 if (WeaponMount.TryGetFiringSolution(enemyTgt, out firingSolution)) {
                     firingSolutions.Add(firingSolution);
                 }
@@ -508,13 +550,25 @@ namespace CodeEnv.Master.GameContent {
 
         // 8.12.16 Handling pausing for all Jobs moved to JobManager
 
+        #region Cleanup
+
         private void Cleanup() {
             // 12.8.16 Job Disposal centralized in JobManager
             KillReloadProcess();
             KillFiringSolutionsCheckProcess();
         }
 
+        #endregion
+
         #region Debug
+
+        private IList<string> __enemyInRangeChgdLogs = new List<string>();
+
+        private void __LogErrorNoLongerAttackable(IElementAttackable target) {
+            D.Warn("{0}: The following are a listing of the enemyInRangeChgd calls received for this weapon before this error.", DebugName);
+            D.Warn(__enemyInRangeChgdLogs.Concatenate());
+            D.Error("{0}: Tgt {1} is no longer attackable. Frame: {2}.", DebugName, target.DebugName, Time.frameCount);
+        }
 
         private static int __peakEnemiesInRangeCount;
 
@@ -529,8 +583,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
-
-        public sealed override string ToString() { return Stat.ToString(); }
 
         #region Nested Classes
 

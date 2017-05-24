@@ -47,10 +47,6 @@ namespace CodeEnv.Master.GameContent {
             FollowRotationDampener = followRotationDampener;
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
     }
 }
 

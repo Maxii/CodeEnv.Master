@@ -22,11 +22,13 @@ namespace CodeEnv.Master.GameContent {
     using Vectrosity;
 
     /// <summary>
-    /// Class that controls the display of a rectangular box wireframe around a gameobject. This
+    /// Class that controls the display of a rectangular box wireframe around a gameObject. This
     /// alternative implementation uses VectorManager.ObjectSetup which enables Brightness (fog) 
     /// control and visibility controls using OnBecameVisible/Invisible.
     /// </summary>
     public class CubeWireframe_Alt : APropertyChangeTracking {
+
+        public string DebugName { get { return GetType().Name; } }
 
         private GameColor _color;
         public GameColor Color {
@@ -78,7 +80,7 @@ namespace CodeEnv.Master.GameContent {
                 VectorManager.ObjectSetup(_target.gameObject, _line, _visibility, Brightness.None, makeBounds: false);
                 // NOTE: Using makeBounds: false means this CubeWireframe object does not automatically gain a renderer and invisible mesh. This renderer 
                 // and mesh enables OnBecameVisible/Invisible which overrides the line.active on/off commands I use to show/not show the line. There is another
-                // alternative to retain control: destroy this SectorWireframe gameobject each time I turn the line off (and then rebuild it of course). Destroying 
+                // alternative to retain control: destroy this SectorWireframe gameObject each time I turn the line off (and then rebuild it of course). Destroying 
                 // the VectorLine itself when using VectorManager.ObjectSetup will result in an error.
             }
             _line.active = toShow;
@@ -117,7 +119,7 @@ namespace CodeEnv.Master.GameContent {
         // is using. This is the proper way to destroy this type of VectorLine.
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
     }

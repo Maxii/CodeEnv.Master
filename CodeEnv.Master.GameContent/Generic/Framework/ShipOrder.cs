@@ -60,7 +60,7 @@ namespace CodeEnv.Master.GameContent {
 
         public ShipOrder FollowonOrder { get; set; }
 
-        public IShipNavigable Target { get; private set; }
+        public IShipNavigableDestination Target { get; private set; }
 
         public bool ToCallback { get { return CmdOrderID != default(Guid); } }
 
@@ -79,7 +79,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="cmdOrderID">The unique ID of the CmdOrder that caused this element order to be generated. If assigned
         /// it indicates that the element receiving this order should callback to Cmd with the outcome of the order's execution.</param>
         /// <param name="target">The target of this order. No need for FormationStation. Default is null.</param>
-        public ShipOrder(ShipDirective directive, OrderSource source, Guid cmdOrderID = default(Guid), IShipNavigable target = null) {
+        public ShipOrder(ShipDirective directive, OrderSource source, Guid cmdOrderID = default(Guid), IShipNavigableDestination target = null) {
             if (directive == ShipDirective.Move) {
                 D.AssertEqual(typeof(ShipMoveOrder), GetType());
                 D.AssertDefault(cmdOrderID);

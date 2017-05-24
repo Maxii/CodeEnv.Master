@@ -28,12 +28,12 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FleetCmdData : AUnitCmdData {
 
-        private INavigable _target;
-        public INavigable Target {
+        private INavigableDestination _target;
+        public INavigableDestination Target {
             get { return _target; }
             set {
                 if (_target == value) { return; }   // eliminates equality warning when targets are the same
-                SetProperty<INavigable>(ref _target, value, "Target");
+                SetProperty<INavigableDestination>(ref _target, value, "Target");
             }
         }
 
@@ -60,12 +60,18 @@ namespace CodeEnv.Master.GameContent {
         private Vector3 _currentHeading;
         /// <summary>
         /// The current heading the entire fleet is pursuing. 
-        /// <remarks>Can be different from CurrentFlagshipFacing when
-        /// the flagship needs to go around a detour. Will be default(Vector3) when the fleet navigator is disengaged.
-        /// </remarks>
+        /// <remarks>When FleetNavigator is engaged, this is set to point at the ApTarget (final destination) 
+        /// which means it can be different than CurrentFlagshipFacing when the flagship needs to go around a detour.</remarks>
+        /// <remarks>5.16.17 Set to default(Vector3) when the fleet navigator is disengaged. 
+        /// In this case, CurrentFlagshipFacing will be used instead.</remarks>
         /// </summary>
         public Vector3 CurrentHeading {
-            get { return _currentHeading; }
+            get {
+                if (_currentHeading == default(Vector3)) {
+                    _currentHeading = CurrentFlagshipFacing;
+                }
+                return _currentHeading;
+            }
             set { SetProperty<Vector3>(ref _currentHeading, value, "CurrentHeading"); }
         }
 
@@ -240,10 +246,6 @@ namespace CodeEnv.Master.GameContent {
                 return _gameMgr.GameKnowledge.GetSpaceTopography(Position);
             }
             return base.GetTopography();
-        }
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
         }
 
         #region Nested Classes

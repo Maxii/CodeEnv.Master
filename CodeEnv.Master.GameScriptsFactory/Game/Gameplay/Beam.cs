@@ -158,6 +158,7 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
 
         AssessShowMuzzleEffects();
         AssessShowOperatingEffects();
+        D.Assert(!enabled);
         enabled = true;
     }
 
@@ -581,10 +582,6 @@ public class Beam : AOrdnance, ITerminatableOrdnance {
             Weapon.isOperationalChanged -= WeaponIsOperationalChangedEventHandler;
         }
         _beamEndListener.inCameraLosChanged -= BeamEndInCameraLosChangedEventHandler;
-    }
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
     }
 
     #region AdjustHeadingForInaccuracy Archive

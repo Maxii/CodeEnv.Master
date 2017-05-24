@@ -293,7 +293,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         planet.Data = data;
 
         GameObject planetsFolder = orbitSlot.OrbitedItem.GetComponentsInImmediateChildren<Transform>().Single(t => t.name == "Planets").gameObject;
-        InstallCelestialItemInOrbit(planet.gameObject, orbitSlot, planetsFolder);
+        InstallCelestialItemInOrbit(planet.gameObject, orbitSlot, altParent: planetsFolder);
     }
 
     #endregion
@@ -466,13 +466,20 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// Installs the provided orbitingObject into orbit around the OrbitedObject held by orbitData.
     /// If altParent is not set, the orbitingObject's parent OrbitSimulator becomes a child of OrbitedObject.
     /// If altParent is set, the parent OrbitSimulator becomes a child of altParent.
-    /// <remarks>altParent is principally used to place orbit simulators under a altParent folder, aka a 
+    /// If altLocalPosition is set, it is used as the value for the local position of the orbitingGo relative to
+    /// its orbit simulator parent. If not set, a random value is generated within the orbitSlot.
+    /// <remarks>altParent is principally used to place orbit simulators under a altParent folder, aka a
     /// System's planets are organized under the System's Planets folder.</remarks>
+    /// <remarks>altLocalPosition is used to specifically locate the orbitingGo in the orbit slot, rather than
+    /// using a random value. 4.21.17 Currently when a Settlement Facility creates a new LoneSettlementCreator parent,
+    /// it should be placed exactly where the facility is located in the orbit slot.
+    /// </remarks>
     /// </summary>
     /// <param name="orbitingGo">The orbiting GameObject.</param>
     /// <param name="orbitData">The orbit slot.</param>
+    /// <param name="altLocalPosition">The alternative local position.</param>
     /// <param name="altParent">The alternative parent for the orbitingGo's parent OrbitSimulator.</param>
-    public void InstallCelestialItemInOrbit(GameObject orbitingGo, OrbitData orbitData, GameObject altParent = null) {
+    public void InstallCelestialItemInOrbit(GameObject orbitingGo, OrbitData orbitData, Vector3 altLocalPosition = default(Vector3), GameObject altParent = null) {
         GameObject orbitSimPrefab = orbitData.IsOrbitedItemMobile ? _mobileCelestialOrbitSimPrefab.gameObject : _immobileCelestialOrbitSimPrefab.gameObject;
         GameObject orbitSimParent = altParent == null ? orbitData.OrbitedItem : altParent;
         GameObject orbitSimGo = UnityUtility.AddChild(orbitSimParent, orbitSimPrefab);
@@ -480,7 +487,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         orbitSim.OrbitData = orbitData;
         orbitSimGo.name = orbitingGo.name + Constants.Space + typeof(OrbitSimulator).Name;
         UnityUtility.AttachChildToParent(orbitingGo, orbitSimGo);
-        orbitingGo.transform.localPosition = GenerateRandomLocalPositionWithinSlot(orbitData);
+        orbitingGo.transform.localPosition = altLocalPosition != default(Vector3) ? altLocalPosition : GenerateRandomLocalPositionWithinSlot(orbitData);
     }
 
     /// <summary>
@@ -502,10 +509,6 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         var passiveCMs = new List<PassiveCountermeasure>(cmStats.Count());
         cmStats.ForAll(stat => passiveCMs.Add(new PassiveCountermeasure(stat)));
         return passiveCMs;
-    }
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
     }
 
 }

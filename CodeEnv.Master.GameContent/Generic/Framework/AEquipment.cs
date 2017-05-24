@@ -28,6 +28,8 @@ namespace CodeEnv.Master.GameContent {
 
         public event EventHandler isDamagedChanged;
 
+        public virtual string DebugName { get { return GetType().Name; } }
+
         /// <summary>
         /// The name of this piece of equipment for display purposes.
         /// </summary>
@@ -135,6 +137,10 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
+
+        public sealed override string ToString() {
+            return DebugName;
+        }
 
     }
 }

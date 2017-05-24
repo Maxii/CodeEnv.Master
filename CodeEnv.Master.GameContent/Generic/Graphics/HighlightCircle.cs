@@ -254,8 +254,5 @@ namespace CodeEnv.Master.GameContent {
             KillDrawCirclesJob();
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
     }
 }

@@ -46,7 +46,9 @@ public abstract class AColliderMonitor : AMonoBase, IColliderMonitor {
         }
     }
 
-    public virtual string DebugName { get { return DebugNameFormat.Inject(ParentItem != null ? ParentItem.DebugName : transform.name, GetType().Name); } }
+    public virtual string DebugName {
+        get { return DebugNameFormat.Inject(ParentItem != null ? ParentItem.DebugName : transform.name, GetType().Name); }
+    }
 
     private float _rangeDistance;
     /// <summary>
@@ -132,45 +134,41 @@ public abstract class AColliderMonitor : AMonoBase, IColliderMonitor {
         HandleIsOperationalChanged();
     }
 
-    protected abstract void HandleIsOperationalChanged();
-
     private void IsPausedPropChangedHandler() {
         HandleIsPausedChanged();
     }
 
-    protected virtual void HandleIsPausedChanged() { }
-
     private void RangeDistancePropChangedHandler() {
         HandleRangeDistanceChanged();
-    }
-
-    protected virtual void HandleRangeDistanceChanged() {
-        //D.Log(ShowDebugLog, "{0} had its RangeDistance changed from {1:0.#} to {2:0.#}.", DebugName, _collider.radius, RangeDistance);
-        _collider.radius = RangeDistance;
     }
 
     private void ParentItemPropSetHandler() {
         HandleParentItemSet();
     }
 
-    protected virtual void HandleParentItemSet() {
-        ParentItem.ownerChanging += ParentOwnerChangingEventHandler;
-        ParentItem.ownerChanged += ParentOwnerChangedEventHandler;
+    private void ParentOwnerChangingEventHandler(object sender, OwnerChangingEventArgs e) {
+        HandleParentItemOwnerChanging(e.IncomingOwner);
     }
 
     private void ParentOwnerChangedEventHandler(object sender, EventArgs e) {
         HandleParentItemOwnerChanged();
     }
 
-    protected virtual void HandleParentItemOwnerChanged() { }
+    #endregion
 
-    private void ParentOwnerChangingEventHandler(object sender, OwnerChangingEventArgs e) {
-        HandleParentItemOwnerChanging(e.IncomingOwner);
+    protected virtual void HandleParentItemSet() {
+        ParentItem.ownerChanging += ParentOwnerChangingEventHandler;
+        ParentItem.ownerChanged += ParentOwnerChangedEventHandler;
     }
 
     protected virtual void HandleParentItemOwnerChanging(Player incomingOwner) { }
-
-    #endregion
+    protected virtual void HandleParentItemOwnerChanged() { }
+    protected abstract void HandleIsOperationalChanged();
+    protected virtual void HandleIsPausedChanged() { }
+    protected virtual void HandleRangeDistanceChanged() {
+        //D.Log(ShowDebugLog, "{0} had its RangeDistance changed from {1:0.#} to {2:0.#}.", DebugName, _collider.radius, RangeDistance);
+        _collider.radius = RangeDistance;
+    }
 
     /// <summary>
     /// Resets this Monitor in preparation for reuse by the same Parent.
@@ -201,6 +199,10 @@ public abstract class AColliderMonitor : AMonoBase, IColliderMonitor {
             ParentItem.ownerChanging -= ParentOwnerChangingEventHandler;
             ParentItem.ownerChanged -= ParentOwnerChangedEventHandler;
         }
+    }
+
+    public sealed override string ToString() {
+        return DebugName;
     }
 
 }

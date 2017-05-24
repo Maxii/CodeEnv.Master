@@ -25,6 +25,8 @@ using UnityEngine;
 /// </summary>
 public abstract class ADebugUnitCreatorEditor : Editor {
 
+    public virtual string DebugName { get { return GetType().Name; } }
+
     protected bool _toDisableCreator = false;
 
     public override void OnInspectorGUI() {
@@ -110,9 +112,9 @@ public abstract class ADebugUnitCreatorEditor : Editor {
             if (NGUIEditorTools.DrawHeader("Equipment")) {
                 NGUIEditorTools.BeginContents();
                 {
-                    NGUIEditorTools.SetLabelWidth(140F);
+                    NGUIEditorTools.SetLabelWidth(160F);
                     NGUIEditorTools.DrawProperty("LOSWeapons/Element", serializedObject, "_losWeaponsPerElement");
-                    NGUIEditorTools.DrawProperty("Missiles/Element", serializedObject, "_missileWeaponsPerElement");
+                    NGUIEditorTools.DrawProperty("LaunchedWeapons/Element", serializedObject, "_launchedWeaponsPerElement");
 
                     NGUIEditorTools.SetLabelWidth(140F);
                     NGUIEditorTools.DrawProperty("ActiveCMs/Element", serializedObject, "_activeCMsPerElement");
@@ -133,6 +135,10 @@ public abstract class ADebugUnitCreatorEditor : Editor {
         EditorGUI.EndDisabledGroup();
 
         serializedObject.ApplyModifiedProperties();
+    }
+
+    public sealed override string ToString() {
+        return DebugName;
     }
 
 }

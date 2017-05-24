@@ -22,7 +22,7 @@ using CodeEnv.Master.GameContent;
 /// Interface for Items that can provide accelerated repair of UnitCmds.
 /// <remarks>Bases only. If accelerated repair at a base is not available, the Cmd can repair in place at a very slow rate.</remarks>
 /// </summary>
-public interface IUnitCmdRepairCapable : IRepairCapable, IFleetNavigable, IElementNavigable {
+public interface IUnitCmdRepairCapable : IRepairCapable, IFleetNavigableDestination, IElementNavigableDestination {
 
     /// <summary>
     /// Gets the repair capacity available for this UnitCmd in hitPts per day.

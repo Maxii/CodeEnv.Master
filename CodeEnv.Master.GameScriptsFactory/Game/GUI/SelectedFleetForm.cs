@@ -26,9 +26,6 @@ public class SelectedFleetForm : ASelectedItemForm {
 
     public override FormID FormID { get { return FormID.SelectedFleet; } }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 }
 

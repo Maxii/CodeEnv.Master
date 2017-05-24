@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IShipNavigable.cs
-// IElementNavigable destination that can be navigated to by Ships.
+// File: IShipNavigableDestination.cs
+// IElementNavigableDestination that can be navigated to by Ships.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,14 +19,14 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// IElementNavigable destination that can be navigated to by Ships.
-    /// <remarks>All IElementNavigable destinations are also IShipNavigable.</remarks>
+    /// IElementNavigableDestination that can be navigated to by Ships.
+    /// <remarks>All IElementNavigableDestinations are also IShipNavigableDestination.</remarks>
     /// <remarks>Used only by Ship FSM to engage the Ship's AutoPilot.</remarks>
     /// </summary>
-    public interface IShipNavigable : IElementNavigable {
+    public interface IShipNavigableDestination : IElementNavigableDestination {
 
         /// <summary>
-        /// Returns the AutoPilotTarget for use by a Ship's AutoPilot when moving to this IShipNavigable destination.
+        /// Returns the AutoPilotTarget for use by a Ship's AutoPilot when moving to this IShipNavigableDestination destination.
         /// </summary>
         /// <param name="tgtOffset">The offset from the target that this ship is actually trying to reach.</param>
         /// <param name="tgtStandoffDistance">The standoff distance from the target.</param>

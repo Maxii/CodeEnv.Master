@@ -26,6 +26,53 @@ namespace CodeEnv.Master.GameContent {
 
         event EventHandler validatePlayerKnowledgeNow;
 
+        event EventHandler showFleetCoursePlots;
+
+        event EventHandler showShipCoursePlots;
+
+        event EventHandler showFleetVelocityRays;
+
+        event EventHandler showShipVelocityRays;
+
+        event EventHandler showFleetFormationStations;
+
+        event EventHandler showShipCollisionDetectionZones;
+
+        event EventHandler showShields;
+
+        event EventHandler showSensors;
+
+        event EventHandler showObstacleZones;
+
+        event EventHandler showSystemTrackingLabels;
+
+        event EventHandler showUnitTrackingLabels;
+
+        event EventHandler showElementIcons;
+
+        event EventHandler showPlanetIcons;
+
+        event EventHandler showStarIcons;
+
+
+        bool ShowOrdnanceDebugLogs { get; }
+
+        bool ShowFacilityDebugLogs { get; }
+
+        bool ShowShipDebugLogs { get; }
+
+        bool ShowStarDebugLogs { get; }
+
+        bool ShowPlanetoidDebugLogs { get; }
+
+        bool ShowBaseCmdDebugLogs { get; }
+
+        bool ShowFleetCmdDebugLogs { get; }
+
+        bool ShowSystemDebugLogs { get; }
+
+        bool ShowDeploymentDebugLogs { get; }
+
         /// <summary>
         /// Indicates whether fleets should automatically explore without countervailing orders.
         /// <remarks>10.17.16 The only current source of countervailing orders are from editor fields
@@ -52,6 +99,57 @@ namespace CodeEnv.Master.GameContent {
         /// Players meet when they first detect a HQ Element owned by another player.
         /// </summary>
         bool IsAllIntelCoverageComprehensive { get; }
+
+        bool AreAssaultsAlwaysSuccessful { get; }
+
+
+        bool DeactivateMRSensors { get; }
+
+        bool DeactivateLRSensors { get; }
+
+        bool IsAutoRelationsChangeEnabled { get; }
+
+
+
+        bool ShowFleetCoursePlots { get; }
+
+        bool ShowShipCoursePlots { get; }
+
+        bool ShowFleetVelocityRays { get; }
+
+        bool ShowShipVelocityRays { get; }
+
+        bool ShowShipCollisionDetectionZones { get; }
+
+        bool ShowFleetFormationStations { get; }
+
+        bool ShowShields { get; }
+
+        bool ShowSensors { get; }
+
+        bool ShowObstacleZones { get; }
+
+        bool ShowUnitTrackingLabels { get; }
+
+        bool ShowSystemTrackingLabels { get; }
+
+        /// <summary>
+        /// If <c>true</c> elements will display 2D icons when the camera is too far away to discern the mesh.
+        /// </summary>
+        bool ShowElementIcons { get; }
+
+        /// <summary>
+        /// If <c>true</c> planets will display 2D icons when the camera is too far away to discern the mesh.
+        /// </summary>
+        bool ShowPlanetIcons { get; }
+
+        /// <summary>
+        /// If <c>true</c> stars will display 2D icons when the camera is too far away to discern the mesh.
+        /// </summary>
+        bool ShowStarIcons { get; }
+
+
+
 
     }
 }

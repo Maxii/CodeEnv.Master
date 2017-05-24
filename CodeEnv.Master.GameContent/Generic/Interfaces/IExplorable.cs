@@ -22,7 +22,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Base Interface for Items that can be explored by ships and fleets.
     /// </summary>
-    public interface IExplorable : INavigable {
+    public interface IExplorable : INavigableDestination {
 
         /// <summary>
         /// Occurs when the owner of this IExplorable has changed.

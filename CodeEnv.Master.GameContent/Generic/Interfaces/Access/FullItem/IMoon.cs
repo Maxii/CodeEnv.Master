@@ -21,6 +21,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IMoon : IPlanetoid {
 
+        bool __IsParentPlanetFullyExploredBy(Player player);
+
     }
 }
 

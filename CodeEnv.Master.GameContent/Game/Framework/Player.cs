@@ -20,6 +20,7 @@ namespace CodeEnv.Master.GameContent {
     using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common;
+    using UnityEngine;
 
     /// <summary>
     /// Instantiable base class for a otherPlayer.
@@ -30,6 +31,8 @@ namespace CodeEnv.Master.GameContent {
         /// Fires when another Player's DiplomaticRelationship changes with this Player.
         /// </summary>
         public event EventHandler<RelationsChangedEventArgs> relationsChanged;
+
+        public event EventHandler<NewPlayerMetEventArgs> newPlayerMet;
 
         private const string DebugNameFormat = "{0}[{1}]";
 
@@ -84,17 +87,20 @@ namespace CodeEnv.Master.GameContent {
         public string HomeSystemName { get; private set; }
 
 
+        [Obsolete("Use only during creation or refit")]
         public float SensorRangeMultiplier { get { return _speciesStat.SensorRangeMultiplier; } }
 
+        [Obsolete("Use only during creation or refit")]
         public float WeaponRangeMultiplier { get { return _speciesStat.WeaponRangeMultiplier; } }
 
+        [Obsolete("Use only during creation or refit")]
         public float CountermeasureRangeMultiplier { get { return _speciesStat.ActiveCountermeasureRangeMultiplier; } }
 
         public float WeaponReloadPeriodMultiplier { get { return _speciesStat.WeaponReloadPeriodMultiplier; } }
 
         public float CountermeasureReloadPeriodMultiplier { get { return _speciesStat.CountermeasureReloadPeriodMultiplier; } }
 
-        public IEnumerable<Player> OtherKnownPlayers { get { return _currentRelationship.Keys.Except(this); } }
+        public IEnumerable<Player> OtherKnownPlayers { get { return _currentRelationship.Keys.Where(p => IsKnown(p)).Except(this); } }
 
         private IDictionary<Player, DiplomaticRelationship> _initialRelationship;
         private IDictionary<Player, DiplomaticRelationship> _priorRelationship;
@@ -203,6 +209,7 @@ namespace CodeEnv.Master.GameContent {
             _currentRelationship[newlyMetPlayer] = _initialRelationship[newlyMetPlayer];
             D.LogBold("{0} discovered new {1}. Initial Relationship: {2}.", DebugName, newlyMetPlayer, _currentRelationship[newlyMetPlayer].GetValueName());
             newlyMetPlayer.HandleMetNewPlayer_Internal(this);
+            OnPlayerMet(newlyMetPlayer);
             CommunicateChangedRelationsWith(newlyMetPlayer);
         }
 
@@ -219,6 +226,7 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(!IsKnown(newlyMetPlayer));
             _currentRelationship[newlyMetPlayer] = _initialRelationship[newlyMetPlayer];
             //D.Log("{0} was discovered by {1}. Initial Relationship: {2}.", DebugName, newlyMetPlayer, _currentRelationship[newlyMetPlayer].GetValueName());
+            OnPlayerMet(newlyMetPlayer);
             CommunicateChangedRelationsWith(newlyMetPlayer);
         }
 
@@ -269,6 +277,8 @@ namespace CodeEnv.Master.GameContent {
             _priorRelationship[otherPlayer] = existingRelationship;
             _currentRelationship[otherPlayer] = newRelationship;
             otherPlayer.SetRelationsWith_Internal(this, newRelationship);
+            D.LogBold("{0}'s relationship with {1} is changing from {2} to {3} in Frame {4}.", DebugName, otherPlayer.DebugName,
+                GetPriorRelations(otherPlayer).GetValueName(), GetCurrentRelations(otherPlayer).GetValueName(), Time.frameCount);
             CommunicateChangedRelationsWith(otherPlayer);
         }
 
@@ -389,6 +399,12 @@ namespace CodeEnv.Master.GameContent {
 
         #region Event and Property Change Handlers
 
+        private void OnPlayerMet(Player newlyMetPlayer) {
+            if (newPlayerMet != null) {
+                newPlayerMet(this, new NewPlayerMetEventArgs(newlyMetPlayer));
+            }
+        }
+
         private void OnRelationsChanged(Player otherPlayer) {
             if (GetCurrentRelations(otherPlayer) != otherPlayer.GetCurrentRelations(this)) {
                 D.Error("{0} must be synchronized with {1} before RelationsChanged event fires.",
@@ -404,6 +420,21 @@ namespace CodeEnv.Master.GameContent {
         public override string ToString() {
             return DebugName;
         }
+
+        #region Nested Classes
+
+        public class NewPlayerMetEventArgs : EventArgs {
+
+            public Player NewlyMetPlayer { get; private set; }
+
+            public NewPlayerMetEventArgs(Player newlyMetPlayer) {
+                NewlyMetPlayer = newlyMetPlayer;
+            }
+        }
+
+
+
+        #endregion
 
         #region Debug
 

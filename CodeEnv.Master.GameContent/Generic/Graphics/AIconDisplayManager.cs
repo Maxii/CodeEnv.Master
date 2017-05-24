@@ -33,15 +33,7 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<IconInfo>(ref _iconInfo, value, "IconInfo", IconInfoPropChangedHandler); }
         }
 
-        private string _debugName;
-        protected override string DebugName {
-            get {
-                if (_debugName == null) {
-                    _debugName = DebugNameFormat.Inject(_trackedItem.DebugName, GetType().Name);
-                }
-                return _debugName;
-            }
-        }
+        protected override string DebugName { get { return DebugNameFormat.Inject(_trackedItem.DebugName, GetType().Name); } }
 
         private IWorldTrackingSprite _icon;
         protected IWorldTrackingSprite Icon {

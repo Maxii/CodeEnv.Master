@@ -108,10 +108,6 @@ public class GeneralFactory : AGenericSingleton<GeneralFactory>, IGeneralFactory
 
     private void Cleanup() { }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
     #region IDisposable
 
     private bool _alreadyDisposed = false;

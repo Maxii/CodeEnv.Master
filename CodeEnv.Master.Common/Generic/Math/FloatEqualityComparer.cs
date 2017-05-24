@@ -24,6 +24,8 @@ namespace CodeEnv.Master.Common {
     /// </summary>
     public class FloatEqualityComparer : IEqualityComparer<float> {
 
+        public string DebugName { get { return GetType().Name; } }
+
         /// <summary>
         /// The default FloatEqualityComparer. Tolerance is 0.0001F.
         /// <see cref="UnityConstants.FloatEqualityPrecision"/>
@@ -35,7 +37,7 @@ namespace CodeEnv.Master.Common {
         private static float _quantum = Mathf.Log10(1 + _relativeMaxQuantError);
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
         /// <summary>

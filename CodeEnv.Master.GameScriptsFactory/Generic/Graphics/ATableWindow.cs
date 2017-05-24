@@ -115,7 +115,7 @@ public abstract class ATableWindow : AGuiWindow {
     /// </summary>
     private void BuildTable() {
         //D.Log("{0}.BuildTable() called.", DebugName);
-        ClearTable();   // OPTIMIZE Reqd to destroy the row already present. Can be removed once optimization to reuse rows is implemented
+        ClearTable();   // OPTIMIZE Reqd to destroy the row already present. Can be removed once reuse of rows is implemented
         AddTableRows();
         _table.onCustomSort = CompareName;
         _table.repositionNow = true;
@@ -153,7 +153,8 @@ public abstract class ATableWindow : AGuiWindow {
     private ATableRowForm BuildRow(string itemName) {
         GameObject rowGo = NGUITools.AddChild(_table.gameObject, rowPrefab.gameObject);
         rowGo.name = itemName + _rowNameExtension;
-        // Note: Can't anchor as UIScrollVIew.Movement = Unrestricted which means the row needs to be able to move both in x and y
+        // 5.24.17 FIXME: Can't anchor as UIScrollVIew.Movement = Unrestricted which means the row needs to be able to move both in x and y.
+        // Probably need a minimum screen width based on info we will need to show so don't need horizontal scrollbar so can anchor ends
         return rowGo.GetSafeComponent<ATableRowForm>(); ;
     }
 

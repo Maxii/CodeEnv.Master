@@ -27,18 +27,28 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AFormationManager {
 
-        private string DebugName { get { return "{0}_{1}".Inject(_unitCmd.DebugName, GetType().Name); } }
+        /// <summary>
+        /// Returns <c>true</c> if this FormationManager currently has more station slots available.
+        /// </summary>
+        public bool HasRoom {
+            get {
+                D.AssertNotEqual(Constants.Zero, __maxFormationStationSlots);
+                return _occupiedStationSlotLookup.Count < __maxFormationStationSlots;
+            }
+        }
+
+        public virtual string DebugName { get { return "{0}_{1}".Inject(_unitCmd.DebugName, GetType().Name); } }
 
         private bool ShowDebugLog { get { return _unitCmd.ShowDebugLog; } }
 
-        private IList<FormationStationSlotInfo> _availableStationSlots;
         private IDictionary<IUnitElement, FormationStationSlotInfo> _occupiedStationSlotLookup;
+        private IList<FormationStationSlotInfo> _availableStationSlots;
         private Formation _currentFormation;
         private IFormationMgrClient _unitCmd;
 
         public AFormationManager(IFormationMgrClient unitCmd) {
             _unitCmd = unitCmd;
-            _occupiedStationSlotLookup = new Dictionary<IUnitElement, FormationStationSlotInfo>(40);
+            _occupiedStationSlotLookup = new Dictionary<IUnitElement, FormationStationSlotInfo>(40);    // HACK
         }
 
         /// <summary>
@@ -125,6 +135,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="element">The element.</param>
         /// <param name="selectionConstraint">The selection constraint.</param>
         private void AddAndPositionElement(IUnitElement element, FormationStationSelectionCriteria selectionConstraint = default(FormationStationSelectionCriteria)) {
+            D.Assert(HasRoom, "No room available to add element to formation.");
             var slotInfo = SelectAndRecordSlotAsOccupied(element, selectionConstraint);
             _unitCmd.PositionElementInFormation(element, slotInfo);
         }
@@ -202,6 +213,7 @@ namespace CodeEnv.Master.GameContent {
 
         #region Debug
 
+        // IMPROVE Turn this into a value for each Formation using a Formation enum ExtensionMethod
         private int __maxFormationStationSlots;
 
         private void __ValidateSingleHqSlotAvailable() {
@@ -213,6 +225,10 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
+
+        public sealed override string ToString() {
+            return DebugName;
+        }
 
         #region Nested Classes
 

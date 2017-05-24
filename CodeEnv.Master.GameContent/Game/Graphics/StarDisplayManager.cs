@@ -100,10 +100,6 @@ namespace CodeEnv.Master.GameContent {
             });
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
         #region Debug
 
         protected override List<MeshRenderer> __GetMeshRenderers() {

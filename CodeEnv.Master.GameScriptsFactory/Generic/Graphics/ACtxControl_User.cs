@@ -45,7 +45,7 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
     /// <summary>
     /// Lookup table for IUnitTargets for this item, keyed by the ID of the item selected.
     /// </summary>
-    protected static IDictionary<int, INavigable> _unitTargetLookup = new Dictionary<int, INavigable>();
+    protected static IDictionary<int, INavigableDestination> _unitTargetLookup = new Dictionary<int, INavigableDestination>();
 
     /// <summary>
     /// The directives available for execution when the user operator of the menu is the Item selected.
@@ -57,12 +57,12 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
 
     public ACtxControl_User(GameObject ctxObjectGO, int uniqueSubmenusReqd, MenuPositionMode menuPosition)
         : base(ctxObjectGO, uniqueSubmenusReqd, menuPosition) {
-        _userKnowledge = GameManager.Instance.UserAIManager.Knowledge;
+        _userKnowledge = _gameMgr.UserAIManager.Knowledge;
         D.AssertNotNull(_userKnowledge);
     }
 
-    protected override void PopulateMenu_UserMenuOperatorIsSelected() {
-        base.PopulateMenu_UserMenuOperatorIsSelected();
+    protected override void PopulateMenu_MenuOperatorIsSelected() {
+        base.PopulateMenu_MenuOperatorIsSelected();
 
         _unusedSubMenus = new Stack<CtxMenu>(_availableSubMenus);
         var topLevelMenuItems = new List<CtxMenu.Item>();
@@ -76,7 +76,7 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
             if (!topLevelItem.isDisabled) {
                 topLevelItem.isDisabled = TryPopulateItemSubMenu_UserMenuOperatorIsSelected(topLevelItem, directive);
             }
-            //D.Log("{0}.{1} disabled state is {2}.", GetType().Name, topLevelItem.text, topLevelItem.isDisabled);
+            //D.Log("{0}.{1} disabled state is {2}.", DebugName, topLevelItem.text, topLevelItem.isDisabled);
             if (!topLevelItem.isSubmenu) {
                 D.AssertNotEqual(Constants.MinusOne, topLevelItem.id);
                 topLevelItem.id = _nextAvailableItemId;
@@ -84,7 +84,7 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
                 _nextAvailableItemId++;
             }
             topLevelMenuItems.Add(topLevelItem);
-            //D.Log("{0}.{1}.ItemID = {2}.", GetType().Name, topLevelItem.text, topLevelItem.id);
+            //D.Log("{0}.{1}.ItemID = {2}.", DebugName, topLevelItem.text, topLevelItem.id);
         }
         _ctxObject.menuItems = topLevelMenuItems.ToArray();
     }
@@ -107,20 +107,20 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
     /// <param name="directive">The directive.</param>
     /// <returns></returns>
     private bool TryPopulateItemSubMenu_UserMenuOperatorIsSelected(CtxMenu.Item topLevelItem, T directive) {
-        IEnumerable<INavigable> targets;
+        IEnumerable<INavigableDestination> targets;
         bool isSubmenuSupported = TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(directive, out targets);
         if (isSubmenuSupported) {
             // directive requires a submenu, although targets may be empty
-            var targetsStack = new Stack<INavigable>(targets);
+            var targetsStack = new Stack<INavigableDestination>(targets);
             int submenuItemCount = targetsStack.Count;
 
-            //D.Log("{0}: _unusedSubMenu count = {1}.", OperatorName, _unusedSubMenus.Count);
+            //D.Log("{0}: _unusedSubMenu count = {1}.", DebugName, _unusedSubMenus.Count);
             if (submenuItemCount > Constants.Zero) {
                 submenuItemCount++; // make room for a Closest item
                 var subMenu = _unusedSubMenus.Pop();
                 subMenu.items = new CtxMenu.Item[submenuItemCount];
                 for (int i = 0; i < submenuItemCount; i++) {
-                    var target = i == 0 ? FindClosestTarget(PositionForDistanceMeasurements, targets) : targetsStack.Pop();
+                    var target = i == 0 ? GameUtility.GetClosest(PositionForDistanceMeasurements, targets) : targetsStack.Pop();
                     int subMenuItemId = i + _nextAvailableItemId; // submenu item IDs can't interfere with IDs already assigned
 
                     string textFormat = i == 0 ? SubmenuItemTextFormat_ClosestTarget : SubmenuItemTextFormat_Target;
@@ -151,18 +151,14 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
     /// <param name="directive">The directive.</param>
     /// <param name="targets">The targets for the submenu if any were found. Can be empty.</param>
     /// <returns></returns>
-    protected virtual bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(T directive, out IEnumerable<INavigable> targets) {
-        targets = Enumerable.Empty<INavigable>();
+    protected virtual bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(T directive, out IEnumerable<INavigableDestination> targets) {
+        targets = Enumerable.Empty<INavigableDestination>();
         return false;
     }
 
     protected override void HandleHideCtxMenu() {
         base.HandleHideCtxMenu();
         _unitTargetLookup.Clear();
-    }
-
-    private INavigable FindClosestTarget(Vector3 position, IEnumerable<INavigable> targets) {
-        return targets.MinBy(t => Vector3.SqrMagnitude(t.Position - position));
     }
 
     #region Debug
@@ -172,14 +168,14 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
     /// as determined by TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected().
     /// </summary>
     protected void __ValidateUniqueSubmenuQtyReqd() {
-        IEnumerable<INavigable> unusedTgts;
+        IEnumerable<INavigableDestination> unusedTgts;
         int submenusReqd = Constants.Zero;
         foreach (var directive in UserMenuOperatorDirectives) {
             if (TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(directive, out unusedTgts)) {
                 submenusReqd++;
             }
         }
-        D.AssertEqual(submenusReqd, _uniqueSubmenuQtyReqd, "{0}: Erroneous number of Reqd Submenus specified {1}.".Inject(OperatorName, _uniqueSubmenuQtyReqd));
+        D.AssertEqual(submenusReqd, _uniqueSubmenuQtyReqd, "{0}: Erroneous number of Reqd Submenus specified {1}.".Inject(DebugName, _uniqueSubmenuQtyReqd));
     }
 
     #endregion

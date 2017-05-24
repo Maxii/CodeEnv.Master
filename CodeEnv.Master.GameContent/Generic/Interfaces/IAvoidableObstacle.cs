@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for IObstacle Items that can be avoided before ship/fleet passage is impeded.
     /// </summary>
-    public interface IAvoidableObstacle : IObstacle {
+    public interface IAvoidableObstacle : IObstacle, IAssemblySupported {
 
         /// <summary>
         /// The radius of the ObstacleZone. 1.24.17 For debug only.

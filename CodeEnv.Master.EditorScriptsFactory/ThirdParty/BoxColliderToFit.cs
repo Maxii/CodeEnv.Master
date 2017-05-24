@@ -21,6 +21,8 @@ using UnityEngine;
 /// </summary>
 public class BoxColliderToFit : MonoBehaviour {
 
+    public string DebugName { get { return GetType().Name; } }
+
     /// <summary>
     /// Constructs a single BoxCollider in a parent GameObject that fits around all the child meshes.
     /// </summary>
@@ -55,7 +57,7 @@ public class BoxColliderToFit : MonoBehaviour {
     }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
 }

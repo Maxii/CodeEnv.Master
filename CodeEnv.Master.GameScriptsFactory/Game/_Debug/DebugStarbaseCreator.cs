@@ -47,13 +47,13 @@ public class DebugStarbaseCreator : ADebugUnitCreator {
                 if (IsCompositionPreset) {
                     var presetHullCats = gameObject.GetSafeComponentsInChildren<FacilityHull>().Select(hull => hull.HullCategory).ToList();
                     _editorSettings = new BaseCreatorEditorSettings(UnitName, _isOwnerUser, _ownerRelationshipWithUser, _countermeasuresPerCmd,
-                        _sensorsPerCmd, _activeCMsPerElement, DateToDeploy, _losWeaponsPerElement, _missileWeaponsPerElement,
+                        _sensorsPerCmd, _activeCMsPerElement, DateToDeploy, _losWeaponsPerElement, _launchedWeaponsPerElement,
                         _passiveCMsPerElement, _shieldGeneratorsPerElement, _srSensorsPerElement, _formation, presetHullCats);
                 }
                 else {
                     _editorSettings = new BaseCreatorEditorSettings(UnitName, _isOwnerUser, _elementQty, _ownerRelationshipWithUser,
                         _countermeasuresPerCmd, _sensorsPerCmd, _activeCMsPerElement, DateToDeploy, _losWeaponsPerElement,
-                        _missileWeaponsPerElement, _passiveCMsPerElement, _shieldGeneratorsPerElement, _srSensorsPerElement, _formation);
+                        _launchedWeaponsPerElement, _passiveCMsPerElement, _shieldGeneratorsPerElement, _srSensorsPerElement, _formation);
                 }
             }
             return _editorSettings;
@@ -114,6 +114,9 @@ public class DebugStarbaseCreator : ADebugUnitCreator {
         else {
             _command = _factory.MakeStarbaseCmdInstance(owner, cameraStat, Configuration.CmdDesignName, gameObject);
         }
+        if (_command.Data.ParentName != UnitName) {  // avoids equals warning
+            _command.Data.ParentName = UnitName;
+        }
     }
 
     protected override void AddElementsToCommand() {
@@ -127,11 +130,10 @@ public class DebugStarbaseCreator : ADebugUnitCreator {
         _command.HQElement = _command.SelectHQElement();
     }
 
-    protected override bool PositionUnit() {
+    protected override void PositionUnit() {
         LogEvent();
         // Starbases don't need to be deployed. They are already on location
         PathfindingManager.Instance.Graph.AddToGraph(_command, SectorID);
-        return true;
     }
 
     protected override void CompleteUnitInitialization() {
@@ -151,9 +153,10 @@ public class DebugStarbaseCreator : ADebugUnitCreator {
         _elements.ForAll(e => e.CommenceOperations());
     }
 
-    protected override void BeginCommandOperations() {
+    protected override bool BeginCommandOperations() {
         LogEvent();
         _command.CommenceOperations();
+        return true;
     }
 
     private CmdCameraStat MakeCmdCameraStat(float maxElementRadius) {
@@ -192,11 +195,13 @@ public class DebugStarbaseCreator : ADebugUnitCreator {
         _elementQty = qty;
     }
 
-    protected override void Cleanup() { }
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+    protected override void ClearElementReferences() {
+        _elements.Clear();
     }
+
+    #region Debug
+
+    #endregion
 
     #region Archive
 

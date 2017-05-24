@@ -57,7 +57,7 @@ namespace CodeEnv.Master.GameContent {
 
         public FacilityOrder FollowonOrder { get; set; }
 
-        public IElementNavigable Target { get; private set; }
+        public IElementNavigableDestination Target { get; private set; }
 
         public bool ToCallback { get { return CmdOrderID != default(Guid); } }
 
@@ -76,7 +76,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="cmdOrderID">The unique ID of the CmdOrder that caused this element order to be generated. If assigned
         /// it indicates that the element receiving this order should callback to Cmd with the outcome of the order's execution.</param>
         /// <param name="target">The target of this order. Default is null.</param>
-        public FacilityOrder(FacilityDirective directive, OrderSource source, Guid cmdOrderID = default(Guid), IElementNavigable target = null) {
+        public FacilityOrder(FacilityDirective directive, OrderSource source, Guid cmdOrderID = default(Guid), IElementNavigableDestination target = null) {
             Directive = directive;
             Source = source;
             CmdOrderID = cmdOrderID;

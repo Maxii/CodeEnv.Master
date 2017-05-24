@@ -41,12 +41,12 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     /// <summary>
     /// The rotation rate of the hub of this turret in degrees per hour.
     /// </summary>
-    private const float HubRotationRate = 270F;
+    private const float __HubRotationRate = 540F;
 
     /// <summary>
     /// The elevation change rate of the barrel of this turret in degrees per hour.
     /// </summary>
-    private const float BarrelElevationRate = 90F;
+    private const float __BarrelElevationRate = 270F;
 
     /// <summary>
     /// The maximum number of degrees the hub should have to rotate when traversing.
@@ -76,16 +76,12 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     [SerializeField]
     private Transform _barrel = null;
 
-    private string _debugName;
     public override string DebugName {
         get {
             if (Weapon == null) {
                 return base.DebugName;
             }
-            if (_debugName == null) {
-                _debugName = DebugNameFormat.Inject(Weapon.Name, GetType().Name, SlotID.GetValueName());
-            }
-            return _debugName;
+            return DebugNameFormat.Inject(Weapon.Name, GetType().Name, SlotID.GetValueName());
         }
     }
 
@@ -296,7 +292,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
             deltaTime = _gameTime.DeltaTime;
             if (!isHubRotationCompleted) {
                 Quaternion previousHubRotation = _hub.rotation;
-                float allowedHubRotationChange = HubRotationRate * _gameTime.GameSpeedAdjustedHoursPerSecond * deltaTime;
+                float allowedHubRotationChange = __HubRotationRate * _gameTime.GameSpeedAdjustedHoursPerSecond * deltaTime;
                 Quaternion inprocessRotation = Quaternion.RotateTowards(previousHubRotation, reqdHubRotation, allowedHubRotationChange);
                 //float rotationChangeInDegrees = Quaternion.Angle(previousHubRotation, inprocessRotation);
                 //D.Log(ShowDebugLog, "{0}: AllowedHubRotationChange = {1}, ActualHubRotationChange = {2}.", DebugName, allowedHubRotationChange, rotationChangeInDegrees);
@@ -306,7 +302,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
 
             if (!isBarrelElevationCompleted) {
                 Quaternion previousBarrelElevation = _barrel.localRotation;
-                float allowedBarrelElevationChange = BarrelElevationRate * _gameTime.GameSpeedAdjustedHoursPerSecond * deltaTime;
+                float allowedBarrelElevationChange = __BarrelElevationRate * _gameTime.GameSpeedAdjustedHoursPerSecond * deltaTime;
                 Quaternion inprocessElevation = Quaternion.RotateTowards(previousBarrelElevation, reqdBarrelElevation, allowedBarrelElevationChange);
                 //float elevationChangeInDegrees = Quaternion.Angle(previousBarrelElevation, inprocessElevation);
                 //D.Log(ShowDebugLog, "{0}: AllowedBarrelElevationChange = {1}, ActualBarrelElevationChange = {2}.", DebugName, allowedBarrelElevationChange, elevationChangeInDegrees);
@@ -439,20 +435,6 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
             KillTraverseJob();
         }
     }
-    //private void WeaponIsOperationalChangedEventHandler(object sender, EventArgs e) {
-    //    D.AssertNotNull(_traverseJob, "{0} received WeaponIsOperational change without traverse underway.".Inject(DebugName));
-    //    if (Weapon.IsOperational) {
-    //        D.Error("{0} should not become operational while traversing.", Weapon.DebugName);
-    //    }
-    //    // Neither Assert should fail as only subscribed to weapon.IsOperationalChanged event when we are traversing and weapon 
-    //    // is already operational. 11.4.16 I saw this fail when AlertStatus changed from Red to Yellow and immediately back to Red 
-    //    // which turned weapons off and immediately back on. As unsubscribing from the event was occurring on the job's jobCompleted
-    //    // delegate, the time delay before executing jobCompleted created the window for this Assert to fail.
-    //    //D.Log(ShowDebugLog, "{0}.IsOperational changed to {1} while traversing, killing TraverseJob. Weapon.IsDamaged = {2}.", Weapon.DebugName, Weapon.IsOperational, Weapon.IsDamaged);
-    //    KillTraverseJob();
-    //    // this unsubscribe action here avoids waiting an extra frame for _traverseJob's onCompleted delegate to fire
-    //    Weapon.isOperationalChanged -= WeaponIsOperationalChangedEventHandler;
-    //}
 
     protected override void WeaponPropSetHandler() {
         base.WeaponPropSetHandler();
@@ -471,8 +453,8 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
     // 8.12.16 Job pausing moved to JobManager to consolidate handling
 
     private GameDate CalcLatestDateToCompleteTraverse() {
-        var latestDateToCompleteHubRotation = DebugUtility.CalcWarningDateForRotation(HubRotationRate, HubMaxRotationTraversal);
-        var latestDateToCompleteBarrelElevation = DebugUtility.CalcWarningDateForRotation(BarrelElevationRate, BarrelMaxElevationTraversal);
+        var latestDateToCompleteHubRotation = DebugUtility.CalcWarningDateForRotation(__HubRotationRate, HubMaxRotationTraversal);
+        var latestDateToCompleteBarrelElevation = DebugUtility.CalcWarningDateForRotation(__BarrelElevationRate, BarrelMaxElevationTraversal);
         return latestDateToCompleteHubRotation >= latestDateToCompleteBarrelElevation ? latestDateToCompleteHubRotation : latestDateToCompleteBarrelElevation;
     }
 
@@ -482,11 +464,11 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
         Weapon.isOperationalChanged -= WeaponIsOperationalChangedEventHandler;
     }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
     #region Debug
+
+    public bool __CheckLineOfSight(IElementAttackable enemyTgt) {
+        return CheckLineOfSight(enemyTgt);
+    }
 
     #endregion
 

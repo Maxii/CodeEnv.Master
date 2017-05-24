@@ -35,7 +35,7 @@ public abstract class AHull : AMonoBase, IHull {
 
     protected abstract int MaxAllowedLosWeapons { get; }
 
-    protected abstract int MaxAllowedMissileWeapons { get; }
+    protected abstract int MaxAllowedLaunchedWeapons { get; }
 
     protected sealed override void Awake() {
         base.Awake();

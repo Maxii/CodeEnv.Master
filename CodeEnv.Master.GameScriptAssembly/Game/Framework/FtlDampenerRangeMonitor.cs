@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: FtlDampenerRangeMonitor.cs
-// Detects IPropellable ships not owned by Owner that enter and exit the range of its FTL dampening field.
+// Detects IManeuverable ships not owned by Owner that enter and exit the range of its FTL dampening field.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,17 +16,20 @@
 
 // default namespace
 
+using System;
+using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 /// <summary>
-/// Detects IPropellable ships not owned by Owner that enter and exit the range of its FTL dampening field. Notifies the
-/// IPropellable ships that are FTL capable that their FTL engines have been damped or undamped depending on whether entering 
+/// Detects IManeuverable ships not owned by Owner that enter and exit the range of its FTL dampening field. Notifies the
+/// IManeuverable ships that are FTL capable that their FTL engines have been damped or undamped depending on whether entering 
 /// or exiting.
 /// <remarks>3.2.17 Currently there is no interaction with the FtlDampener equipment.</remarks>
 /// </summary>
-public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IPropellable, FtlDampener>, IFtlDampenerRangeMonitor {
+public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IManeuverable, FtlDampener>, IFtlDampenerRangeMonitor {
 
     private static LayerMask FtlCapableObjectLayerMask = LayerMaskUtility.CreateInclusiveMask(Layers.Default);
 
@@ -39,74 +42,119 @@ public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IPropellable, Ftl
 
     protected override LayerMask BulkDetectionLayerMask { get { return FtlCapableObjectLayerMask; } }
 
-    protected override bool IsKinematicRigidbodyReqd { get { return false; } }   // Propellables all have Rigidbodies
+    protected override bool IsKinematicRigidbodyReqd { get { return false; } }   // Maneuverables all have Rigidbodies
+
+    /// <summary>
+    /// The IManeuverable targets that are being tracked as targets that either have their FTL already
+    /// dampened, or will shortly.
+    /// </summary>
+    private HashSet<IManeuverable> _trackedDampenableTargets = new HashSet<IManeuverable>();
+
+    /// <summary>
+    /// The IManeuverable targets that were being tracked just prior to _trackedDampenableTargets being cleared.
+    /// Essentially memory used by ReviewKnowledgeOfAllDetectedObjects to record the
+    /// contents of _trackedDampenableTargets before it is cleared.
+    /// </summary>
+    private List<IManeuverable> _targetsPreviouslyTrackedAsDampenable;
 
     protected override void AssignMonitorTo(FtlDampener dampener) {
         dampener.RangeMonitor = this;
     }
 
-    protected override void HandleDetectedObjectAdded(IPropellable newlyDetectedPropellable) {
-        D.Assert(newlyDetectedPropellable.IsOperational);
-        if (newlyDetectedPropellable.IsFtlCapable) {
-            bool toDampen = true;
-            if (newlyDetectedPropellable.IsOwnerAccessibleTo(Owner)) {
-                Player propellableOwner;
-                bool isOwnerFound = newlyDetectedPropellable.TryGetOwner(Owner, out propellableOwner);
-                D.Assert(isOwnerFound);
-                if (propellableOwner == Owner) {
-                    // its one of our ships
-                    toDampen = false;
-                }
+    protected override void HandleDetectedObjectAdded(IManeuverable newlyDetectedManeuverable) {
+        D.Assert(newlyDetectedManeuverable.IsOperational);
+        if (newlyDetectedManeuverable.IsFtlCapable) {
+            //D.Log(ShowDebugLog, "{0} detected and added {1}.", DebugName, newlyDetectedManeuverable.DebugName);
+
+            Profiler.BeginSample("Event Subscription allocation", gameObject);
+            newlyDetectedManeuverable.ownerChanged += DetectedItemOwnerChangedEventHandler;
+            newlyDetectedManeuverable.deathOneShot += DetectedItemDeathEventHandler;
+            // 5.10.17 IMPROVE Will need InfoAccessChgEvent when toDampen criteria more complex than just our ship
+            Profiler.EndSample();
+
+            bool wasItemPreviouslyCategorizedAsDampenable = _trackedDampenableTargets.Contains(newlyDetectedManeuverable);
+            if (wasItemPreviouslyCategorizedAsDampenable) {
+                // 5.11.17 If this occurs, the previous approach of always using wasItemPreviouslyCategorizedAsAttackableEnemy = false was wrong.
+                // If this never happens, I can safely always set it to false which is logical as adding an object should not be previously recorded
+                // as anything. The only question really was it needed during Reacquisition of targets.
+                D.Error("{0}.HandleDetectedObjectAdded({1}) found previously categorized as dampenableTarget.", DebugName, newlyDetectedManeuverable.DebugName);
             }
-            if (toDampen) {
-                newlyDetectedPropellable.HandleFtlDampenerActivated(ParentItem as IUnitCmd_Ltd, RangeCategory);
-            }
+
+            AssessKnowledgeOfItemAndAdjustRecord(newlyDetectedManeuverable);
+
+            HandleTargetDampening(newlyDetectedManeuverable, wasItemPreviouslyCategorizedAsDampenable);
         }
     }
 
-    protected override void HandleDetectedObjectRemoved(IPropellable lostPropellable) {
-        if (lostPropellable.IsOperational && lostPropellable.IsFtlCapable) {
-            bool toUndampen = true;
-            if (lostPropellable.IsOwnerAccessibleTo(Owner)) {
-                Player propellableOwner;
-                bool isOwnerFound = lostPropellable.TryGetOwner(Owner, out propellableOwner);
-                D.Assert(isOwnerFound);
-                if (propellableOwner == Owner) {
-                    // its one of our ships
-                    toUndampen = false;
-                }
-            }
-            if (toUndampen) {
-                lostPropellable.HandleFtlDampenerDeactivated(ParentItem as IUnitCmd_Ltd, RangeCategory);
-            }
+    protected override void HandleDetectedObjectRemoved(IManeuverable lostManeuverable) {
+        if (lostManeuverable.IsFtlCapable) {
+
+            Profiler.BeginSample("Event Subscription allocation", gameObject);
+            lostManeuverable.ownerChanged -= DetectedItemOwnerChangedEventHandler;
+            lostManeuverable.deathOneShot -= DetectedItemDeathEventHandler;
+            Profiler.EndSample();
+
+            bool wasItemPreviouslyCategorizedAsAttackableEnemy = _trackedDampenableTargets.Contains(lostManeuverable);
+            RemoveRecord(lostManeuverable);
+
+            // isOperational filter?
+            HandleTargetDampening(lostManeuverable, wasItemPreviouslyCategorizedAsAttackableEnemy);
         }
     }
 
     #region Event and Property Change Handlers
 
+    /// <summary>
+    /// Called when a FTL-capable IManeuverable item dies. It is necessary to track each item's death
+    /// event as OnTriggerExit() is not called when an item inside the collider is destroyed.
+    /// </summary>
+    /// <param name="sender">The sender.</param>
+    /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
+    private void DetectedItemDeathEventHandler(object sender, EventArgs e) {
+        IManeuverable deadDetectedItem = sender as IManeuverable;
+        HandleDetectedItemDeath(deadDetectedItem);
+    }
+
+    private void DetectedItemOwnerChangedEventHandler(object sender, EventArgs e) {
+        IManeuverable maneuverableItem = sender as IManeuverable;
+        HandleDetectedItemOwnerChanged(maneuverableItem);
+    }
+
+    #endregion
+
+    private void HandleDetectedItemDeath(IManeuverable deadDetectedItem) {
+        D.Assert(!deadDetectedItem.IsOperational);
+        RemoveDetectedObject(deadDetectedItem);
+    }
 
     /// <summary>
-    /// Called when [parent owner changing].
-    /// <remarks>Sets IsOperational to false. If not already false, this change removes all detected items
-    /// while the parentItem still has the old owner, thereby properly notifying those detected items of the
-    /// loss of detection by this item.</remarks>
+    /// Called when a detected item's owner has changed.
+    /// <remarks>Determines whether to dampen the FTL engine of this item, given its new owner.</remarks>
     /// </summary>
-    /// <param name="incomingOwner">The incoming owner.</param>
-    protected override void HandleParentItemOwnerChanging(Player incomingOwner) {
-        base.HandleParentItemOwnerChanging(incomingOwner);
-        IsOperational = false;
+    private void HandleDetectedItemOwnerChanged(IManeuverable ownerChangedItem) {
+        D.Assert(ownerChangedItem.IsOperational);
+
+        bool wasItemPreviouslyCategorizedAsDampenable = _trackedDampenableTargets.Contains(ownerChangedItem);
+        D.Log(ShowDebugLog, "{0}.HandleDetectedItemOwnerChanged({1}) called in Frame {2}. WasPreviouslyDampenable = {3}.",
+            DebugName, ownerChangedItem.DebugName, Time.frameCount, wasItemPreviouslyCategorizedAsDampenable);
+        AssessKnowledgeOfItemAndAdjustRecord(ownerChangedItem);
+
+        HandleTargetDampening(ownerChangedItem, wasItemPreviouslyCategorizedAsDampenable);
     }
 
     /// <summary>
     /// Called when [parent owner changed].
-    /// <remarks>Combined with HandleParentItemOwnerChanging(), this IsOperational change results in re-acquisition of detectable items
-    /// using the new owner if any equipment is operational. If no equipment is operational,then the re-acquisition will be deferred
-    /// until a pieceOfEquipment becomes operational again. When the re-acquisition occurs, each newly detected item will be properly
-    /// notified of its detection by this item.</remarks>
+    /// <remarks>This IsOperational cycling results in loss of detection and therefore potential un-dampening 
+    /// and immediate (if any equipment is operational) re-acquisition and potential dampening of detectable items. 
+    /// If no equipment is operational, the re-acquisition is deferred until a pieceOfEquipment becomes operational again. 
+    /// When the re-acquisition occurs, each newly detected item will be potentially dampened by this item.</remarks>
+    /// <remarks>The un-dampening and re-dampening all occur after the ParentItem(Cmd)'s Owner has changed to avoid
+    /// the situation where this Cmd's Owner has not yet changed, yet its single Element already has, aka the Cmd/Element
+    /// sync issue.</remarks>
     /// </summary>
     protected override void HandleParentItemOwnerChanged() {
         base.HandleParentItemOwnerChanged();
-        AssessIsOperational();
+        ReviewKnowledgeOfAllDetectedObjects();
     }
 
     protected override void HandleIsOperationalChanged() {
@@ -116,16 +164,99 @@ public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IPropellable, Ftl
         }
     }
 
-    #endregion
-
     /// <summary>
-    /// Reviews the knowledge we have of each detected object (via attempting to access their owner) with the objective of
-    /// making sure each object is in the right container, if any.
-    /// <remarks>Called when a relations change occurs between the Owner and another player. 
-    /// No need to re-acquire each detected item as the only thing they care about is which Cmd and which sensorRange
-    /// detected them which hasn't changed.</remarks>
+    /// Reviews the knowledge we have of each detected object and takes appropriate action.
+    /// <remarks>Called when a relations change occurs between the Owner and another player or when this
+    /// Monitor's ParentItem owner has changed.
     /// </summary>
-    protected override void ReviewKnowledgeOfAllDetectedObjects() { }
+    protected override void ReviewKnowledgeOfAllDetectedObjects() {
+
+        // record previous categorization state before clearing and re-categorizing 
+        _targetsPreviouslyTrackedAsDampenable = _targetsPreviouslyTrackedAsDampenable ?? new List<IManeuverable>();
+        _targetsPreviouslyTrackedAsDampenable.Clear();
+        _targetsPreviouslyTrackedAsDampenable.AddRange(_trackedDampenableTargets);
+
+        _trackedDampenableTargets.Clear();
+
+        // 5.18.17 No need to use a copy of _objectsDetected as this AssessKnowledge does not modify _objectsDetected
+        foreach (var objectDetected in _objectsDetected) {
+            AssessKnowledgeOfItemAndAdjustRecord(objectDetected);
+            bool wasTargetPreviouslyTrackedAsDampenable = _targetsPreviouslyTrackedAsDampenable.Contains(objectDetected);
+
+            HandleTargetDampening(objectDetected, wasTargetPreviouslyTrackedAsDampenable);
+        }
+    }
+
+    private void AssessKnowledgeOfItemAndAdjustRecord(IManeuverable maneuverableItem) {
+        //D.Log(ShowDebugLog, "{0} is assessing our knowledge of {1}. Attempting to adjust record.", DebugName, maneuverableItem.DebugName);
+        Player maneuverableItemOwner;
+        if (maneuverableItem.TryGetOwner(Owner, out maneuverableItemOwner)) {
+            // Item owner known
+            bool isOurItem = maneuverableItemOwner == Owner;
+            if (!isOurItem) {
+                // belongs in bucket to dampen
+                _trackedDampenableTargets.Add(maneuverableItem);
+            }
+            else {
+                _trackedDampenableTargets.Remove(maneuverableItem);
+            }
+        }
+        else {
+            // Item owner is unknown
+            bool isRemoved = _trackedDampenableTargets.Remove(maneuverableItem);
+            if (isRemoved) {
+                D.Warn("{0} unexpectedly found {1} in DampenableTgts. Removing.", DebugName, maneuverableItem.DebugName);
+            }
+            else if (IsOperational) {
+                float sqrThreshold = RangeDistance * RangeDistance * 0.99F;
+                // 5.22.17 Most warnings right on edge so use threshold
+                if (Vector3.SqrMagnitude(maneuverableItem.Position - ParentItem.Position).IsLessThan(sqrThreshold)) {
+                    D.Warn("{0} found {1} within range without access to owner and not present to be removed. TargetDistance: {2:0.}.",
+                        DebugName, maneuverableItem.DebugName, Vector3.Distance(maneuverableItem.Position, ParentItem.Position));
+                }
+            }
+        }
+    }
+
+    private void RemoveRecord(IManeuverable lostDetectionItem) {
+        bool isRemovedFromDampenableTgts = _trackedDampenableTargets.Remove(lostDetectionItem);
+
+        if (IsApplicationQuiting) {
+            // Many of the debug confirmations below will fail when quiting
+            return;
+        }
+        // 5.12.17 LostDetectionItem owner should always be accessible to owner of this monitor what with SRSensors now
+        // guaranteed to be operational on this monitor's element, UNLESS this is occurring during a TgtReacquisition cycle
+        // caused by a ParentItemOwner change that resulted in a RangeDistance change. In that case, this monitor's ParentElement's
+        // SRSensor monitor has not yet informed lostDetectionItem of its detection, as it also is going through an owner change
+        // caused TgtReacquisition. Its relevant because the previous version of this method determined removal based on its 
+        // access to lostDetectionItem's owner. This is what was causing left over items in the collections when shutdown.
+        if (IsOperational && !lostDetectionItem.IsOwnerAccessibleTo(Owner)) {
+            // 5.19.17 Definitely getting warnings when didn't have IsOperational filter present
+            float sqrThreshold = RangeDistance * RangeDistance * 0.99F;
+            // 5.20.17 Most warnings right on edge so use threshold
+            if (Vector3.SqrMagnitude(lostDetectionItem.Position - ParentItem.Position).IsLessThan(sqrThreshold)) {
+                D.Warn("{0}.RemoveRecord({1}) found target owner unaccessible. TargetDistance: {2:0.}, TargetIsOperational: {3}, IsRemoved: {4}.",
+                    DebugName, lostDetectionItem.DebugName, Vector3.Distance(transform.position, lostDetectionItem.Position),
+                    lostDetectionItem.IsOperational, ParentItem.IsOperational, isRemovedFromDampenableTgts);
+            }
+        }
+    }
+
+    private void HandleTargetDampening(IManeuverable target, bool wasTargetPreviouslyTrackedAsDampenable) {
+        if (wasTargetPreviouslyTrackedAsDampenable) {
+            if (!_trackedDampenableTargets.Contains(target)) {
+                // categorization changed from dampen-able to non-dampen-able
+                target.HandleFtlUndampenedBy(ParentItem as IUnitCmd_Ltd, RangeCategory);
+            }
+        }
+        else {
+            if (_trackedDampenableTargets.Contains(target)) {
+                // categorization changed from non-dampen-able (or no categorization) to dampen-able
+                target.HandleFtlDampenedBy(ParentItem as IUnitCmd_Ltd, RangeCategory);
+            }
+        }
+    }
 
     protected override float RefreshRangeDistance() {
         return RangeCategory.__GetBaselineFtlDampenerRange();
@@ -136,15 +267,13 @@ public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IPropellable, Ftl
         D.Warn("{0} is being reset for future reuse. Check implementation for completeness before relying on it.", DebugName);
     }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
     #region Debug
+
+    protected override bool __ToReportTargetReacquisitionChanges { get { return false; } }
 
     private const float __acceptableThresholdMultiplierBase = 0.01F;
 
-    protected override void __WarnOnErroneousTriggerExit(IPropellable lostDetectionItem) {
+    protected override void __WarnOnErroneousTriggerExit(IManeuverable lostDetectionItem) {
         if (lostDetectionItem.IsOperational) {
             float gameSpeedMultiplier = __gameTime.GameSpeedMultiplier;  // 0.25 - 4.0
             float acceptableThresholdMultiplier = 1F - __acceptableThresholdMultiplierBase * gameSpeedMultiplier;   // ~1 - 0.99 - 0.96
@@ -167,6 +296,8 @@ public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IPropellable, Ftl
             }
         }
     }
+
+    // 5.10.17 No need to __ValidateRangeDistance as being within SRSensors as knowing owner is not relevant unless owner is us
 
     #endregion
 

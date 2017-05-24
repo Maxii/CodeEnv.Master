@@ -26,6 +26,16 @@ namespace CodeEnv.Master.GameContent {
 
         private const string DebugNameFormat = "{0}.{1}";
 
+        protected string _debugName;
+        public virtual string DebugName {
+            get {
+                if (_debugName == null) {
+                    _debugName = DebugNameFormat.Inject(Name, GetType().Name);
+                }
+                return _debugName;
+            }
+        }
+
         /// <summary>
         /// Display name of the equipment.
         /// </summary>
@@ -79,20 +89,6 @@ namespace CodeEnv.Master.GameContent {
         public sealed override string ToString() {
             return DebugName;
         }
-
-        #region IDebugable Members
-
-        protected string _debugName;
-        public virtual string DebugName {
-            get {
-                if (_debugName == null) {
-                    _debugName = DebugNameFormat.Inject(Name, GetType().Name);
-                }
-                return _debugName;
-            }
-        }
-
-        #endregion
 
     }
 }

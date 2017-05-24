@@ -23,6 +23,8 @@ using UnityEditor;
 /// </summary>
 public abstract class AGuiWindowEditor<T> : Editor where T : AGuiWindow {
 
+    public virtual string DebugName { get { return typeof(T).Name; } }
+
     public override void OnInspectorGUI() {
         var window = target as T;
 
@@ -44,6 +46,10 @@ public abstract class AGuiWindowEditor<T> : Editor where T : AGuiWindow {
 
         NGUIEditorTools.DrawEvents("On Hide Begin", window, window.onHideBegin);
         NGUIEditorTools.DrawEvents("On Hide Complete", window, window.onHideComplete);
+    }
+
+    public sealed override string ToString() {
+        return DebugName;
     }
 
 }

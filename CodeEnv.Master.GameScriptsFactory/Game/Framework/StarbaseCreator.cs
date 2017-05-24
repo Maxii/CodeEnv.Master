@@ -44,6 +44,9 @@ public class StarbaseCreator : AAutoUnitCreator {
     protected override void MakeCommand(Player owner) {
         CmdCameraStat cameraStat = MakeCmdCameraStat(TempGameValues.FacilityMaxRadius);
         _command = _factory.MakeStarbaseCmdInstance(owner, cameraStat, Configuration.CmdDesignName, gameObject);
+        if (_command.Data.ParentName != UnitName) {  // avoids equals warning
+            _command.Data.ParentName = UnitName;
+        }
     }
 
     protected override void AddElementsToCommand() {
@@ -57,11 +60,10 @@ public class StarbaseCreator : AAutoUnitCreator {
         _command.HQElement = _command.SelectHQElement();
     }
 
-    protected override bool PositionUnit() {
+    protected override void PositionUnit() {
         LogEvent();
         // Starbases don't need to be deployed. They are already on location
         PathfindingManager.Instance.Graph.AddToGraph(_command, SectorID);
-        return true;
     }
 
     protected override void CompleteUnitInitialization() {
@@ -81,11 +83,11 @@ public class StarbaseCreator : AAutoUnitCreator {
         _elements.ForAll(e => e.CommenceOperations());
     }
 
-    protected override void BeginCommandOperations() {
+    protected override bool BeginCommandOperations() {
         LogEvent();
         _command.CommenceOperations();
+        return true;
     }
-
 
     private CmdCameraStat MakeCmdCameraStat(float maxElementRadius) {
         float minViewDistance = maxElementRadius + 1F; // close to the HQ Facility
@@ -119,11 +121,13 @@ public class StarbaseCreator : AAutoUnitCreator {
         return new FollowableItemCameraStat(minViewDistance, optViewDistance, fov);
     }
 
-    protected override void Cleanup() { }
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+    protected override void ClearElementReferences() {
+        _elements.Clear();
     }
+
+    #region Debug
+
+    #endregion
 
     #region Archive
 

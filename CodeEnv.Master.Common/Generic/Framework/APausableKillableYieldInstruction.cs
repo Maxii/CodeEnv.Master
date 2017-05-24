@@ -23,15 +23,18 @@ namespace CodeEnv.Master.Common {
     /// </summary>
     public abstract class APausableKillableYieldInstruction : CustomYieldInstruction {
 
+        public virtual string DebugName { get { return GetType().Name; } }
+
         public bool IsPaused { protected get; set; }
 
         public bool IsKilled { get; private set; }
 
-        //protected bool _toKill = false;
-
         public void Kill() {
-            //_toKill = true;
             IsKilled = true;
+        }
+
+        public sealed override string ToString() {
+            return DebugName;
         }
 
     }

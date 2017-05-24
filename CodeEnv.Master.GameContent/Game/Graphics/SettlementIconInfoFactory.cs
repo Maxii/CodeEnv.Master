@@ -93,10 +93,6 @@ namespace CodeEnv.Master.GameContent {
             return _xmlReader.AcquireFilename(section, criteria);
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
         #region Nested Classes
 
         public class SettlementIconInfoXmlReader : ACmdIconInfoXmlReader<SettlementIconInfoXmlReader> {
@@ -105,10 +101,6 @@ namespace CodeEnv.Master.GameContent {
 
             private SettlementIconInfoXmlReader() {
                 Initialize();
-            }
-
-            public override string ToString() {
-                return new ObjectAnalyzer().ToString(this);
             }
 
         }

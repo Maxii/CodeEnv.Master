@@ -25,9 +25,6 @@ using UnityEditor;
 [CustomEditor(typeof(SystemsTableWindow))]
 public class SystemsTableWindowEditor : ATableWindowEditor<SystemsTableWindow> {
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 }
 

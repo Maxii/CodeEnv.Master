@@ -176,10 +176,6 @@ namespace CodeEnv.Master.GameContent {
             return finalDetour;
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
     }
 }
 

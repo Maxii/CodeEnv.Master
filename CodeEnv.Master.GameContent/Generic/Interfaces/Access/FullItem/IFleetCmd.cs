@@ -24,13 +24,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IFleetCmd : IUnitCmd {
 
-        /// <summary>
-        /// Indicates this FleetCmd is a 'ferry' fleet, a fleetCmd designed to 
-        /// support a single ship executing a single mission, aka FleeAndRepair, JoinFleet, etc. 
-        /// <remarks>Used by PlayerAIMgr to determine the action to take after the 'ferry' mission has completed.</remarks>
-        /// </summary>
-        bool IsFerryFleet { get; }
-
         FleetCmdReport UserReport { get; }
 
         float UnitFullSpeedValue { get; }

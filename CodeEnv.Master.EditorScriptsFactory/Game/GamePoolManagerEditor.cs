@@ -26,6 +26,8 @@ using UnityEngine;
 [CustomEditor(typeof(GamePoolManager))]
 public class GamePoolManagerEditor : Editor {
 
+    public string DebugName { get { return GetType().Name; } }
+
     public override void OnInspectorGUI() {
 
         serializedObject.Update();
@@ -37,13 +39,15 @@ public class GamePoolManagerEditor : Editor {
             if (NGUIEditorTools.DrawHeader("Prefabs")) {
                 NGUIEditorTools.BeginContents();
                 {
-                    NGUIEditorTools.SetLabelWidth(180F);
+                    NGUIEditorTools.SetLabelWidth(140F);
                     NGUIEditorTools.DrawProperty("Explosion Effect", serializedObject, "_explosionPrefab");
                     NGUIEditorTools.DrawProperty("Spherical Highlight", serializedObject, "_sphericalHighlightPrefab");
                     NGUIEditorTools.DrawProperty("Fleet Formation Station", serializedObject, "_formationStationPrefab");
-                    NGUIEditorTools.DrawProperty("Beam Ordnance", serializedObject, "_beamPrefab");
-                    NGUIEditorTools.DrawProperty("Projectile Ordnance", serializedObject, "_projectilePrefab");
-                    NGUIEditorTools.DrawProperty("Missile Ordnance", serializedObject, "_missilePrefab");
+                    NGUIEditorTools.DrawProperty("Beam", serializedObject, "_beamPrefab");
+                    NGUIEditorTools.DrawProperty("Physics Projectile", serializedObject, "_physicsProjectilePrefab");
+                    NGUIEditorTools.DrawProperty("Kinematic Projectile", serializedObject, "_kinematicProjectilePrefab");
+                    NGUIEditorTools.DrawProperty("Missile", serializedObject, "_missilePrefab");
+                    NGUIEditorTools.DrawProperty("Assault Vehicle", serializedObject, "_assaultVehiclePrefab");
                 }
                 NGUIEditorTools.EndContents();
             }
@@ -59,7 +63,7 @@ public class GamePoolManagerEditor : Editor {
     }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
 

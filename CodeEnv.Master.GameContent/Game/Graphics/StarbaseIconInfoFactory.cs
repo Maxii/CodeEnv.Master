@@ -93,10 +93,6 @@ namespace CodeEnv.Master.GameContent {
             return _xmlReader.AcquireFilename(section, criteria);
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
         #region Nested Classes
 
         public class StarbaseIconInfoXmlReader : ACmdIconInfoXmlReader<StarbaseIconInfoXmlReader> {
@@ -105,10 +101,6 @@ namespace CodeEnv.Master.GameContent {
 
             private StarbaseIconInfoXmlReader() {
                 Initialize();
-            }
-
-            public override string ToString() {
-                return new ObjectAnalyzer().ToString(this);
             }
 
         }

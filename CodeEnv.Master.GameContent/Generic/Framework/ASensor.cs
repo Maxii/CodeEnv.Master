@@ -59,7 +59,6 @@ namespace CodeEnv.Master.GameContent {
         * changes as a result of its ownership change.
         * *****************************************************************************************************************************/
 
-        public sealed override string ToString() { return Stat.ToString(); }
 
     }
 }

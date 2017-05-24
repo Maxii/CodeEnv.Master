@@ -81,42 +81,15 @@ namespace CodeEnv.Master.GameContent {
                     SystemData sysData = _data as SystemData;
                     hasBasicAccessToOwner = sysData.StarData.InfoAccessCntlr.HasAccessToInfo(player, infoID);
                     if (!hasBasicAccessToOwner) {
-                        hasBasicAccessToOwner = sysData.AllPlanetoidData.Select(pData => pData.InfoAccessCntlr).Any(iac => iac.HasAccessToInfo(player, infoID));
+                        hasBasicAccessToOwner = sysData.AllPlanetoidData.Select(pData => pData.InfoAccessCntlr).
+                            Any(iac => iac.HasAccessToInfo(player, infoID));
                     }
-                    // Reqd when the out is a ValueType
-                    _hasBasicAccessToOwnerLookup[player] = hasBasicAccessToOwner;
-
-                    // Confirmation that setting hasBasicAccessToOwner also sets the value inside the dictionary
-                    ////bool hasBasicAccessToOwnerTest;
-                    ////bool hasKey = _hasBasicAccessToOwnerLookup.TryGetValue(player, out hasBasicAccessToOwnerTest);
-                    ////D.Assert(hasKey);
-                    ////D.AssertEqual(hasBasicAccessToOwner, hasBasicAccessToOwnerTest);
-
+                    _hasBasicAccessToOwnerLookup[player] = hasBasicAccessToOwner;   // Reqd assignment when the out is a ValueType
                     return hasBasicAccessToOwner;
                 // WARNING: Do not inquire about Settlement Owner as Settlement inquires about System Owner creating a circular loop
-
-
-                //SystemData sysData = _data as SystemData;
-                //bool starHasAccess = sysData.StarData.InfoAccessCntlr.HasAccessToInfo(player, infoID);
-                //if (starHasAccess) {
-                //    return true;
-                //}
-                //else {
-                //    bool anyPlanetoidHasAccess = sysData.AllPlanetoidData.Select(pData => pData.InfoAccessCntlr).Any(iac => iac.HasAccessToInfo(player, infoID));
-                //    if (anyPlanetoidHasAccess) {
-                //        return true;
-                //    }
-                //    // WARNING: Do not inquire about Settlement Owner as Settlement inquires about System Owner creating a circular loop
-                //}
-                //return false;
-
                 default:
                     return false;
             }
-        }
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
         }
 
         #region Archive

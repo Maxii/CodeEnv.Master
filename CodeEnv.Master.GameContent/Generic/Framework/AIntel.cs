@@ -23,6 +23,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AIntel : APropertyChangeTracking {
 
+        public string DebugName { get { return GetType().Name; } }
+
         private IntelCoverage _currentCoverage;
         /// <summary>
         /// The current level of IntelCoverage achieved on this object.
@@ -34,6 +36,15 @@ namespace CodeEnv.Master.GameContent {
                 SetProperty<IntelCoverage>(ref _currentCoverage, value, "CurrentCoverage", null, CurrentCoveragePropChangingHandler);
             }
         }
+
+        /// <summary>
+        /// Returns the lowest allowed IntelCoverage value. For NonRegressible Intel, this value
+        /// will always be CurrentCoverage. For Regressible Intel, this value will be the value
+        /// specified when the Intel was created.
+        /// <remarks>5.20.17 Currently only UnitElements and UnitCmds use RegressibleIntel. Ships and FleetCmds
+        /// have a LowestAllowedValue of None, whereas Facilities and BaseCmds have Basic.</remarks>
+        /// </summary>
+        public virtual IntelCoverage LowestAllowedCoverageValue { get { return CurrentCoverage; } }
 
         public AIntel() { }
 
@@ -75,6 +86,10 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="newCoverage">The new coverage.</param>
         protected virtual void PreProcessChange(IntelCoverage newCoverage) { }
+
+        public sealed override string ToString() {
+            return DebugName;
+        }
 
     }
 }

@@ -29,6 +29,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="firingSolution">The firing solution.</param>
         void TraverseTo(LosWeaponFiringSolution firingSolution);
 
+        bool __CheckLineOfSight(IElementAttackable enemyTgt);
+
     }
 }
 

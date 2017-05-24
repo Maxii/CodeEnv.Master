@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
 
         public const bool DoSettlementsActivelyOrbit = false;
 
-        public const float __MaxShipMoveDistanceFromFleetCmdSqrd = 160000F;   // 400
+        public const float __MaxShipMoveDistanceFromFleetCmdSqrd = 22500F;   // 150
 
         /// <summary>
         /// The maximum range of any weapon in a base.
@@ -66,13 +66,15 @@ namespace CodeEnv.Master.GameContent {
 
         public const float ObstacleCheckRayLengthBuffer = 0.1F;
 
-        public const float __ReqdMissileTravelDistanceBeforePushover = 0.2F;
+        public const float __ReqdLaunchVehicleTravelDistanceBeforePushover = 0.2F;
 
         public const float __AllowedTurnTimeBufferFactor = 1.30F;   // 11.6.16 1.2 -> 1.3
 
         public const int MaxLosWeaponsForAnyElement = 12;
 
-        public const int MaxMissileWeaponsForAnyElement = 6;
+        public const int MaxLaunchedWeaponsForAnyElement = 6;
+
+        public const int MaxAssaultWeaponsForAnyElement = 2;
 
         public const float MinimumFramerate = 25F;
 

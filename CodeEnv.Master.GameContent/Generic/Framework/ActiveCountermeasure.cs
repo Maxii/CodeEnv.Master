@@ -156,10 +156,10 @@ namespace CodeEnv.Master.GameContent {
                 }
             }
             else {
-                // Note: Some threats going out of range may not have been qualified as targets for this CM.
+                // Note: Some threats going out of range may not have been deemed a threat to this CM's element and therefore 
+                // never added. Even if it was added, it might not be qualified as a target for this CM.
                 // Also, a qualified threat can be destroyed (goes out of range) by other CMs before it is ever added
-                // to this one, so if it is not present, it was never added to this CM because it was immediately destroyed
-                // by other CMs as it was being added to them.
+                // to this one.
                 _qualifiedThreats.Remove(threat);
             }
             IsAnyThreatInRange = _qualifiedThreats.Any();
@@ -320,8 +320,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
-
-        public sealed override string ToString() { return Stat.ToString(); }
 
 
         #region IDisposable

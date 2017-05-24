@@ -58,7 +58,7 @@ public abstract class ADebugUnitCreator : AUnitCreator {
     protected DebugLosWeaponLoadout _losWeaponsPerElement;
 
     [SerializeField]
-    protected DebugWeaponLoadout _missileWeaponsPerElement;
+    protected DebugLaunchedWeaponLoadout _launchedWeaponsPerElement;
 
     [Range(0, 5)]
     [SerializeField]

@@ -42,6 +42,8 @@ namespace CodeEnv.Master.GameContent {
         /// </remarks>
         event EventHandler isReadyForPlayOneShot;
 
+        event EventHandler isPausedChanged;
+
         /// <summary>
         /// Occurs when GameState is about to change. 
         /// </summary>

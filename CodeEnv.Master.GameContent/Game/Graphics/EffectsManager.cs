@@ -25,6 +25,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class EffectsManager : IDisposable {
 
+        public virtual string DebugName { get { return GetType().Name; } }
+
         protected IEffectsMgrClient _effectsClient;
         protected IGeneralFactory _generalFactory;
         protected IGamePoolManager _gamePoolMgr;
@@ -78,8 +80,8 @@ namespace CodeEnv.Master.GameContent {
             _subscriptions.Clear();
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+        public sealed override string ToString() {
+            return DebugName;
         }
 
         #region IDisposable

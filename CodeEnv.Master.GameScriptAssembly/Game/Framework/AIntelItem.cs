@@ -25,7 +25,7 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// Abstract class for ADiscernibleItem's that have knowledge of each player's IntelCoverage.
 /// </summary>
-public abstract class AIntelItem : ADiscernibleItem, IIntelItem, IIntelItem_Ltd {
+public abstract class AIntelItem : ADiscernibleItem, IIntelItem, IIntelItem_Ltd, IDetectionHandlerClient {
 
     public IntelCoverage UserIntelCoverage { get { return Data.GetIntelCoverage(_gameMgr.UserPlayer); } }
 
@@ -51,15 +51,26 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem, IIntelItem_Ltd 
     public IntelCoverage GetIntelCoverage(Player player) { return Data.GetIntelCoverage(player); }
 
     /// <summary>
-    /// Sets the Intel coverage for this player. Returns <c>true</c> if the <c>newCoverage</c>
-    /// was successfully applied, and <c>false</c> if it was rejected due to the inability of
-    /// the item to regress its IntelCoverage.
+    /// Sets the Intel coverage for this player. 
+    /// <remarks>Convenience method for clients who don't care whether the value was accepted or not.</remarks>
     /// </summary>
     /// <param name="player">The player.</param>
     /// <param name="newCoverage">The new coverage.</param>
+    public void SetIntelCoverage(Player player, IntelCoverage newCoverage) {
+        Data.SetIntelCoverage(player, newCoverage);
+    }
+
+    /// <summary>
+    /// Sets the Intel coverage for this player. Returns <c>true</c> if a coverage value was applied, 
+    /// and <c>false</c> if it was rejected due to the inability of the item to regress its IntelCoverage.
+    /// Either way, <c>resultingCoverage</c> is the value that resulted from this set attempt.
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <param name="newCoverage">The new coverage.</param>
+    /// <param name="resultingCoverage">The resulting coverage.</param>
     /// <returns></returns>
-    public bool SetIntelCoverage(Player player, IntelCoverage newCoverage) {
-        return Data.SetIntelCoverage(player, newCoverage);
+    public bool TrySetIntelCoverage(Player player, IntelCoverage newCoverage, out IntelCoverage resultingCoverage) {
+        return Data.TrySetIntelCoverage(player, newCoverage, out resultingCoverage);
     }
 
     protected override void AssessIsDiscernibleToUser() {
@@ -71,17 +82,29 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem, IIntelItem_Ltd 
         IsDiscernibleToUser = isInMainCameraLOS && UserIntelCoverage > IntelCoverage.None;
     }
 
+    /// <summary>
+    /// Has <c>player</c>'s AIMgr assess their awareness of this item.
+    /// <remarks>The item may or may not be operational. If the item is not operational,
+    /// the PlayerAIMgr doing the assessment will not raise any awareChgd events.</remarks>
+    /// </summary>
+    /// <param name="player">The player.</param>
+    private void AssessAwarenessOfItemFor(Player player) {
+        var playerAIMgr = _gameMgr.GetAIManagerFor(player);
+        playerAIMgr.AssessAwarenessOf(this);
+    }
+
     #region Event and Property Change Handlers
 
     private void IntelCoverageChangedEventHandler(object sender, AIntelItemData.IntelCoverageChangedEventArgs e) {
         HandleIntelCoverageChanged(e.Player);
     }
 
+    #endregion
+
     private void HandleIntelCoverageChanged(Player playerWhosCoverageChgd) {
         //D.Log(ShowDebugLog, "{0}.IntelCoverageChangedHandler() called. {1}'s new IntelCoverage = {2}.", DebugName, playerWhosCoverageChgd.Name, GetIntelCoverage(playerWhosCoverageChgd));
 
-        var playerWhosCoverageChgdAIMgr = _gameMgr.GetAIManagerFor(playerWhosCoverageChgd);
-        playerWhosCoverageChgdAIMgr.AssessAwarenessOf(this);
+        AssessAwarenessOfItemFor(playerWhosCoverageChgd);
 
         if (IsOperational) {    // Will be called during FinalInitialize if Item should be IntelCoverage.Comprehensive
             if (playerWhosCoverageChgd == _gameMgr.UserPlayer) {
@@ -127,10 +150,9 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem, IIntelItem_Ltd 
         AssessAssigningComprehensiveIntelCoverage();
     }
 
-    #endregion
 
     private void AssessAssigningComprehensiveIntelCoverage() {
-        if (DebugControls.Instance.IsAllIntelCoverageComprehensive) {
+        if (_debugCntls.IsAllIntelCoverageComprehensive) {
             foreach (var player in _gameMgr.AllPlayers) {
                 SetIntelCoverage(player, IntelCoverage.Comprehensive);
             }
@@ -147,12 +169,19 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem, IIntelItem_Ltd 
         }
     }
 
+    /// <summary>
+    /// Returns <c>true</c> if allies of itemOwner are found, <c>false</c> otherwise.
+    /// <remarks>itemOwner is required as it can be the prior owner of this Item used
+    /// after Owner has already changed.</remarks>
+    /// </summary>
+    /// <param name="itemOwner">The item owner.</param>
+    /// <param name="alliedPlayers">The allied players.</param>
+    /// <returns></returns>
     protected bool TryGetAllies(out IEnumerable<Player> alliedPlayers) {
         D.AssertNotEqual(TempGameValues.NoPlayer, Owner);
         alliedPlayers = Owner.GetOtherPlayersWithRelationship(DiplomaticRelationship.Alliance);
         return alliedPlayers.Any();
     }
-
 
     #region Cleanup
 
@@ -164,6 +193,16 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem, IIntelItem_Ltd 
     }
 
     #endregion
+
+    #region Debug
+
+    public virtual bool __IsPlayerEntitledToComprehensiveRelationship(Player player) {
+        return GetIntelCoverage(player) == IntelCoverage.Comprehensive;
+    }
+
+    #endregion
+
+
 
 }
 

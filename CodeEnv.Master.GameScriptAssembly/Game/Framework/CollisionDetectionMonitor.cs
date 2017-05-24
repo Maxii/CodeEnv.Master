@@ -62,12 +62,15 @@ public class CollisionDetectionMonitor : AColliderMonitor {
             return;
         }
         IObstacle obstacle = obstacleZoneCollider.gameObject.GetSafeFirstInterfaceInParents<IObstacle>(excludeSelf: true);
-        if (_gameMgr.IsPaused) {
-            D.Warn("{0}.OnTriggerEnter() tripped by {1} while paused.", DebugName, obstacle.DebugName);
-            RecordObstacleEnteringWhilePaused(obstacle);
-            return;
+        if (obstacle.IsOperational) {
+            if (_gameMgr.IsPaused) {
+                D.Warn("{0}.OnTriggerEnter() tripped by {1} while paused. ObstacleDistance: {2:0.#}, ZoneRangeDistance: {3:0.#}.",
+                    DebugName, obstacle.DebugName, Vector3.Distance(transform.position, obstacle.Position), RangeDistance);
+                RecordObstacleEnteringWhilePaused(obstacle);
+                return;
+            }
+            ParentItem.HandlePendingCollisionWith(obstacle);
         }
-        ParentItem.HandlePendingCollisionWith(obstacle);
     }
 
     /// <summary>
@@ -81,12 +84,18 @@ public class CollisionDetectionMonitor : AColliderMonitor {
             return;
         }
         IObstacle obstacle = obstacleZoneCollider.gameObject.GetSafeFirstInterfaceInParents<IObstacle>(excludeSelf: true);
-        if (_gameMgr.IsPaused) {
-            D.Warn("{0}.OnTriggerExit() tripped by {1} while paused.", DebugName, obstacle.DebugName);
-            RecordObstacleExitingWhilePaused(obstacle);
-            return;
+        if (obstacle.IsOperational) {
+            if (_gameMgr.IsPaused) {
+                D.Warn("{0}.OnTriggerExit() tripped by {1} while paused. ObstacleDistance: {2:0.#}, ZoneRangeDistance: {3:0.#}.",
+                    DebugName, obstacle.DebugName, Vector3.Distance(transform.position, obstacle.Position), RangeDistance);
+                RecordObstacleExitingWhilePaused(obstacle);
+                return;
+            }
+            ParentItem.HandlePendingCollisionAverted(obstacle);
         }
-        ParentItem.HandlePendingCollisionAverted(obstacle);
+        else {
+            // 5.13.17 Confirmed obstacle can die once inside and somehow trigger exit
+        }
     }
 
     protected override void HandleIsOperationalChanged() { }
@@ -196,10 +205,6 @@ public class CollisionDetectionMonitor : AColliderMonitor {
     protected override void Cleanup() {
         base.Cleanup();
         CleanupDebugShowCollisionDetectionZone();
-    }
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
     }
 
     #region Debug Show Collision Detection Zone

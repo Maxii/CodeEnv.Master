@@ -28,10 +28,16 @@ using UnityEngine.Profiling;
 /// <summary>
 /// Abstract class for AMortalItem's that are Unit Commands.
 /// </summary>
-public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd_Ltd, IFleetNavigable, IUnitAttackable, IFormationMgrClient,
-    ISensorDetector {
+public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd_Ltd, IFleetNavigableDestination, IUnitAttackable, IFormationMgrClient,
+    ISensorDetector, IFsmEventSubscriptionMgrClient {
 
     public event EventHandler isAvailableChanged;
+
+    /// <summary>
+    /// Occurs when IsOperational becomes true.
+    /// <remarks>5.15.17 Not currently used.</remarks>
+    /// </summary>
+    public event EventHandler isOperationalOneshot;
 
     public Formation UnitFormation { get { return Data.UnitFormation; } }
 
@@ -67,7 +73,25 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         protected set { SetProperty<bool>(ref _isAvailable, value, "IsAvailable", IsAvailablePropChangedHandler); }
     }
 
+    /// <summary>
+    /// Indicates whether this operational Cmd has commenced operations.
+    /// </summary>
+    [Obsolete]
+    public bool __IsActivelyOperating { get; protected set; }
+
     public bool IsAttackCapable { get { return Elements.Where(e => e.IsAttackCapable).Any(); } }
+
+    public abstract bool IsJoinable { get; }
+
+    /// <summary>
+    /// Indicates this Cmd is a 'Lone' Cmd, a basic Cmd designed to support a single element. OPTIMIZE Not currently used for bases.
+    /// <remarks>A LoneFleetCmd's purpose is to 'ferry' a single ship executing a single mission, aka FleeAndRepair, JoinFleet, etc.</remarks>
+    /// <remarks>Used by PlayerAIMgr to determine the orders to issue a LoneFleet once it becomes available.</remarks>
+    /// <remarks>A FleetCmd with only 1 element is not necessarily a LoneFleetCmd.</remarks>
+    /// </summary>
+    public bool IsLoneCmd { get; internal set; }
+
+    public new bool IsOwnerChangeUnderway { get { return base.IsOwnerChangeUnderway; } }
 
     public IconInfo IconInfo {
         get {
@@ -120,6 +144,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     protected new UnitCmdDisplayManager DisplayMgr { get { return base.DisplayMgr as UnitCmdDisplayManager; } }
     protected AFormationManager FormationMgr { get; private set; }
+    protected FsmEventSubscriptionManager FsmEventSubscriptionMgr { get; private set; }
+    protected override bool IsPaused { get { return _gameMgr.IsPaused; } }
 
     protected Job _repairJob;
 
@@ -211,13 +237,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         Profiler.EndSample();
     }
 
-    protected override bool InitializeOwnerAIManager() {
-        bool isInitialized = base.InitializeOwnerAIManager();
-        D.Assert(isInitialized);
-        OwnerAIMgr.awarenessOfFleetChanged += AwarenessOfFleetChangedEventHandler;
-        return true;
-    }
-
     private void AttachEquipment() {
         Data.Sensors.ForAll(s => Attach(s));
         Attach(Data.FtlDampener);
@@ -241,6 +260,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         base.FinalInitialize();
         InitializeUnifiedSRSensorMonitor();
         InitializeCmdRangeMonitors();
+        InitializeFsmEventSubscriptionMgr();
         AssessIcon();
     }
 
@@ -258,6 +278,14 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     private void InitializeCmdRangeMonitors() {
         SensorMonitors.ForAll(srm => srm.InitializeRangeDistance());
         _ftlDampenerRangeMonitor.InitializeRangeDistance();
+    }
+
+    private void InitializeFsmEventSubscriptionMgr() {
+        FsmEventSubscriptionMgr = new FsmEventSubscriptionManager(this);
+    }
+
+    protected void ActivateSensors() {
+        Data.ActivateSensors();
     }
 
     /// <summary>
@@ -280,7 +308,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     public override void CommenceOperations() {
         base.CommenceOperations();
-        RegisterForOrders();
+        // 5.13.17 RegisterForOrders() moved to derived Cmd.CommenceOperations so it occurs AFTER setting Idling state
     }
 
     /// <summary>
@@ -299,6 +327,11 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
             // and non-operational Cmd with operational element when creating a ferryFleet using UnitFactory.
             D.Error("{0}: Adding element {1} with unexpected IsOperational state.", DebugName, element.DebugName);
         }
+        if (IsOperational) {
+            // 5.8.17 FormationMgr not yet initialized when adding during construction
+            D.Assert(IsJoinable, DebugName);
+        }
+
         Elements.Add(element);
         Data.AddElement(element.Data);
         element.Command = this;
@@ -319,6 +352,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     public virtual void RemoveElement(AUnitElementItem element) {
+        element.Command = null; // 4.21.17 Added to uncover issues before AddElement assigns new Cmd, if it occurs
+
         if (Elements.Count == Constants.One) {
             IsOperational = false;  // tell Cmd its dead
             D.Assert(IsDead);
@@ -328,7 +363,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         bool isRemoved = Elements.Remove(element);
         D.Assert(isRemoved, element.DebugName);
         Data.RemoveElement(element.Data);
-
 
         if (!IsOperational) {
             // Cmd construction
@@ -344,22 +378,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     /// <summary>
-    /// Attempts to takeover this Cmd's ownership with player. Returns <c>true</c> if successful, <c>false</c> otherwise.
-    /// </summary>
-    /// <param name="player">The player.</param>
-    /// <param name="takeoverStrength">The takeover strength. A value between 0 and 1.0.</param>
-    /// <returns></returns>
-    public bool __AttemptTakeover(Player player, float takeoverStrength) {
-        D.AssertNotEqual(Owner, player);
-        Utility.ValidateForRange(takeoverStrength, Constants.ZeroPercent, Constants.OneHundredPercent);
-        if (takeoverStrength > Data.CurrentCmdEffectiveness) {   // TEMP takeoverStrength vs loyalty?
-            Data.Owner = player;
-            return true;
-        }
-        return false;
-    }
-
-    /// <summary>
     /// Indicates whether this Unit is in the process of attacking <c>unit</c>.
     /// </summary>
     /// <param name="unitCmd">The unit command potentially under attack by this Unit.</param>
@@ -369,10 +387,10 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     internal void HandleSubordinateElementDeath(IUnitElement deadSubordinateElement) {
         // No ShowDebugLog as I always want this to report except when it doesn't compile
         if (deadSubordinateElement.IsHQ) {
-            D.LogBold("{0} acknowledging {1} has been lost.", DebugName, deadSubordinateElement.DebugName);
+            D.LogBold("{0} acknowledging {1} has been killed.", DebugName, deadSubordinateElement.DebugName);
         }
         else {
-            D.Log("{0} acknowledging {1} has been lost.", DebugName, deadSubordinateElement.DebugName);
+            D.Log("{0} acknowledging {1} has been killed.", DebugName, deadSubordinateElement.DebugName);
         }
         RemoveElement(deadSubordinateElement as AUnitElementItem);
         // state machine notification is after removal so attempts to acquire a replacement don't come up with same element
@@ -421,6 +439,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     /// </summary>
     /// <param name="wasAssessmentDeferred">if <c>true</c> this is a deferred assessment of standing down from RedAlert.</param>
     protected void AssessAlertStatus(bool wasAssessmentDeferred = false) {
+        D.Assert(!IsDead);
         if (!wasAssessmentDeferred) {
             // normal assessment
             if (Data.AlertStatus == AlertStatus.Red) {
@@ -450,7 +469,9 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
                         }
                         else {
                             _deferRedAlertStanddownAssessmentJob = null;
-                            AssessAlertStatus(wasAssessmentDeferred: true);
+                            if (!IsDead) {
+                                AssessAlertStatus(wasAssessmentDeferred: true);
+                            }
                         }
                     });
                 }
@@ -493,14 +514,20 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         return hqCandidates.Any();
     }
 
-    protected override void PrepareForDeathNotification() {
-        base.PrepareForDeathNotification();
-        Data.FtlDampener.IsActivated = false;
+    protected override void PrepareForOnDeath() {
+        base.PrepareForOnDeath();
         // 2.15.17 Moved here from Dead State in case Dead_EnterState becomes IEnumerator
         DeregisterForOrders();
     }
 
-    protected abstract void ResetOrdersAndStateOnNewOwner();
+    protected override void PrepareForDeadState() {
+        base.PrepareForDeadState();
+        // 4.15.17 Get state to a non-Called state before changing to Dead allowing that 
+        // non_Called state to callback with FsmOrderFailureCause.Death if callback is reqd
+        ReturnFromCalledStates();
+    }
+
+    protected abstract void ResetOrderAndState();
 
     protected void RegisterForOrders() {
         OwnerAIMgr.RegisterForOrders(this);
@@ -523,42 +550,67 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         HandleMRSensorMonitorIsOperationalChanged();
     }
 
-    private void HandleMRSensorMonitorIsOperationalChanged() {
-        AssessAlertStatus();
-    }
-
-    private void AwarenessOfFleetChangedEventHandler(object sender, PlayerAIManager.AwarenessOfFleetChangedEventArgs e) {
-        if (IsOperational) {
-            // no point in handling if not yet operational or dead
-            IFleetCmd_Ltd fleet = e.Fleet;
-            bool isAware = e.IsAware;
-            if (!fleet.IsOperational && isAware) {
-                // Filters out initial aware notifications generated by fleet.FinalInitialize before a fleet is operational
-                // Works as we would never become aware of a fleet when it was already dead
-                return;
-            }
-            //D.Log(ShowDebugLog, "{0} has just {1} of {2}.", DebugName, isAware ? "become aware" : "lost awareness", fleet.DebugName);
-            HandleAwarenessOfFleetChanged(fleet, isAware);
-        }
-    }
-
-    private void HandleAwarenessOfFleetChanged(IFleetCmd_Ltd fleet, bool isAware) {
-        D.Assert(IsOperational);
-        D.Assert(fleet.IsOperational);  // awareness changes not used when fleet dies
-        D.AssertNotEqual(Owner, fleet.Owner_Debug); // should never be an awareness change from one of our own
-        UponAwarenessOfFleetChanged(fleet, isAware);
-    }
-
     private void EnemyCmdsInSensorRangeChangedEventHandler(object sender, EventArgs e) {
         HandleEnemyCmdsInSensorRangeChanged();
     }
 
-    private void HandleEnemyCmdsInSensorRangeChanged() {
+    private void WarEnemyElementsInSensorRangeChangedEventHandler(object sender, EventArgs e) {
+        HandleWarEnemyElementsInSensorRangeChanged();
+    }
+
+    private void IsAvailablePropChangedHandler() {
+        OnIsAvailable();
+    }
+
+    private void OnIsAvailable() {
+        if (isAvailableChanged != null) {
+            isAvailableChanged(this, EventArgs.Empty);
+        }
+    }
+
+    private void OnIsOperational() {
+        if (isOperationalOneshot != null) {
+            isOperationalOneshot(this, EventArgs.Empty);
+            isOperationalOneshot = null;
+        }
+    }
+
+    private void HQElementPropChangingHandler(AUnitElementItem newHQElement) {
+        HandleHQElementChanging(newHQElement);
+    }
+
+    private void HQElementPropChangedHandler() {
+        HandleHQElementChanged();
+    }
+
+    private void UnitFormationPropChangedHandler() {
+        FormationMgr.RepositionAllElementsInFormation(Elements.Cast<IUnitElement>().ToList());
+    }
+
+    private void AlertStatusPropChangedHandler() {
+        UponAlertStatusChanged();
+    }
+
+    #endregion
+
+    protected sealed override void HandleIsOperationalChanged() {
+        base.HandleIsOperationalChanged();
+        if (IsDead) {
+            __IsActivelyOperating = false;
+        }
+        else {
+            D.Assert(IsOperational);
+            OnIsOperational();
+        }
+    }
+
+    private void HandleMRSensorMonitorIsOperationalChanged() {
+        __ReportMRSensorStatus();
         AssessAlertStatus();
     }
 
-    private void WarEnemyElementsInSensorRangeChangedEventHandler(object sender, EventArgs e) {
-        HandleWarEnemyElementsInSensorRangeChanged();
+    private void HandleEnemyCmdsInSensorRangeChanged() {
+        AssessAlertStatus();
     }
 
     private void HandleWarEnemyElementsInSensorRangeChanged() {
@@ -581,20 +633,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         SensorMonitors.ForAll(srm => srm.HandleRelationsChangedWith(player));
         Elements.ForAll(e => e.HandleRelationsChangedWith(player));
         UponRelationsChangedWith(player);
-    }
-
-    private void IsAvailablePropChangedHandler() {
-        OnIsAvailable();
-    }
-
-    private void OnIsAvailable() {
-        if (isAvailableChanged != null) {
-            isAvailableChanged(this, EventArgs.Empty);
-        }
-    }
-
-    private void HQElementPropChangingHandler(AUnitElementItem newHQElement) {
-        HandleHQElementChanging(newHQElement);
     }
 
     protected virtual void HandleHQElementChanging(AUnitElementItem newHQElement) {
@@ -636,10 +674,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         }
     }
 
-    private void HQElementPropChangedHandler() {
-        HandleHQElementChanged();
-    }
-
     private void HandleHQElementChanged() {
         float deviationAngle;
         if (!transform.rotation.IsSame(HQElement.transform.rotation, out deviationAngle)) {
@@ -666,40 +700,15 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         }
     }
 
-    private void FsmTargetDeathEventHandler(object sender, EventArgs e) {
-        IMortalItem_Ltd deadFsmTgt = sender as IMortalItem_Ltd;
-        UponFsmTgtDeath(deadFsmTgt);
-    }
-
-    private void FsmTgtInfoAccessChgdEventHandler(object sender, InfoAccessChangedEventArgs e) {
-        IOwnerItem_Ltd fsmTgt = sender as IOwnerItem_Ltd;
-        HandleFsmTgtInfoAccessChgd(e.Player, fsmTgt);
-    }
-
-    private void HandleFsmTgtInfoAccessChgd(Player playerWhoseInfoAccessChgd, IOwnerItem_Ltd fsmTgt) {
-        if (playerWhoseInfoAccessChgd == Owner) {
-            D.Log(ShowDebugLog, "{0}'s access to info about FsmTgt {1} has changed.", DebugName, fsmTgt.DebugName);
-            UponFsmTgtInfoAccessChgd(fsmTgt);
-        }
-    }
-
-    private void FsmTgtOwnerChgdEventHandler(object sender, EventArgs e) {
-        IOwnerItem_Ltd fsmTgt = sender as IOwnerItem_Ltd;
-        HandleFsmTgtOwnerChgd(fsmTgt);
-    }
-
-    private void HandleFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) {
-        UponFsmTgtOwnerChgd(fsmTgt);
-    }
-
-    protected override void HandleOwnerChanging(Player newOwner) {
+    protected sealed override void HandleOwnerChanging(Player newOwner) {
         base.HandleOwnerChanging(newOwner);
-        OwnerAIMgr.awarenessOfFleetChanged -= AwarenessOfFleetChangedEventHandler;
-        // TODO what to do about existing orders and availability?
         DeregisterForOrders();
+        ReturnFromCalledStates();
+        UponLosingOwnership();  // 4.20.17 Do any reqd Callback before exiting current non-Call()ed state
+        ResetOrderAndState();
     }
 
-    protected override void HandleOwnerChanged() {
+    protected sealed override void HandleOwnerChanged() {
         base.HandleOwnerChanged();
         if (_trackingLabel != null) {
             _trackingLabel.Color = Owner.Color;
@@ -709,15 +718,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         }
         AssessIcon();
 
-        ResetOrdersAndStateOnNewOwner();
-    }
-
-    private void UnitFormationPropChangedHandler() {
-        FormationMgr.RepositionAllElementsInFormation(Elements.Cast<IUnitElement>().ToList());
-    }
-
-    private void AlertStatusPropChangedHandler() {
-        UponAlertStatusChanged();
+        RegisterForOrders();
     }
 
     protected override void HandleIsDiscernibleToUserChanged() {
@@ -729,8 +730,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         base.HandleIsSelectedChanged();
         Elements.ForAll(e => e.AssessCircleHighlighting());
     }
-
-    #endregion
 
     #region Orders Support Members
 
@@ -822,6 +821,13 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         D.AssertEqual(Constants.Zero, _activeFsmReturnHandlers.Count);
     }
 
+    protected void ReturnFromCalledStates() {
+        while (IsCurrentStateCalled) {
+            Return();
+        }
+        D.Assert(!IsCurrentStateCalled);
+    }
+
     protected void KillRepairJob() {
         if (_repairJob != null) {
             _repairJob.Kill();
@@ -902,6 +908,13 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     /// </summary>
     protected void UponDeath() { RelayToCurrentState(); }
 
+    /// <summary>
+    /// Called prior to the Owner changing, this method notifies the current
+    /// state that the unit is losing ownership, allowing any current state housekeeping
+    /// required before the Owner is changed.
+    /// </summary>
+    protected void UponLosingOwnership() { RelayToCurrentState(); }
+
     protected void UponEffectSequenceFinished(EffectSequenceID effectSeqID) { RelayToCurrentState(effectSeqID); }
 
     protected void UponNewOrderReceived() { RelayToCurrentState(); }
@@ -929,7 +942,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     private void UponFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) { RelayToCurrentState(fsmTgt); }
 
-    private void UponAwarenessOfFleetChanged(IFleetCmd_Ltd fleet, bool isAware) { RelayToCurrentState(fleet, isAware); }
+    private void UponAwarenessChgd(IOwnerItem_Ltd item) { RelayToCurrentState(item); }
 
     private void UponHQElementChanged() { RelayToCurrentState(); }  // Called after Elements have been notified of HQChangeCompletion
 
@@ -1054,9 +1067,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     #region Show Tracking Label
 
     private void InitializeTrackingLabel() {
-        DebugControls debugControls = DebugControls.Instance;
-        debugControls.showUnitTrackingLabels += ShowUnitTrackingLabelsChangedEventHandler;
-        if (debugControls.ShowUnitTrackingLabels) {
+        _debugCntls.showUnitTrackingLabels += ShowUnitTrackingLabelsChangedEventHandler;
+        if (_debugCntls.ShowUnitTrackingLabels) {
             EnableTrackingLabel(true);
         }
     }
@@ -1086,13 +1098,12 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     private void ShowUnitTrackingLabelsChangedEventHandler(object sender, EventArgs e) {
-        EnableTrackingLabel(DebugControls.Instance.ShowUnitTrackingLabels);
+        EnableTrackingLabel(_debugCntls.ShowUnitTrackingLabels);
     }
 
     private void CleanupTrackingLabel() {
-        var debugControls = DebugControls.Instance;
-        if (debugControls != null) {
-            debugControls.showUnitTrackingLabels -= ShowUnitTrackingLabelsChangedEventHandler;
+        if (_debugCntls != null) {
+            _debugCntls.showUnitTrackingLabels -= ShowUnitTrackingLabelsChangedEventHandler;
         }
         GameUtility.DestroyIfNotNullOrAlreadyDestroyed(_trackingLabel);
     }
@@ -1125,11 +1136,11 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
                 UnsubscribeToIconEvents(icon);
             }
         }
+        UnsubscribeToSensorEvents();
+    }
 
+    private void UnsubscribeToSensorEvents() {
         // Cmds can be destroyed before being initialized
-        if (OwnerAIMgr != null) {
-            OwnerAIMgr.awarenessOfFleetChanged -= AwarenessOfFleetChangedEventHandler;
-        }
         if (MRSensorMonitor != null) {
             MRSensorMonitor.isOperationalChanged -= MRSensorMonitorIsOperationalChangedEventHandler;
         }
@@ -1157,98 +1168,41 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     #region Debug
 
-    private IDictionary<FsmTgtEventSubscriptionMode, bool> __subscriptionStatusLookup =
-        new Dictionary<FsmTgtEventSubscriptionMode, bool>(FsmTgtEventSubscriptionModeEqualityComparer.Default) {
-        {FsmTgtEventSubscriptionMode.TargetDeath, false },
-        {FsmTgtEventSubscriptionMode.InfoAccessChg, false },
-        {FsmTgtEventSubscriptionMode.OwnerChg, false }
-    };
-
-    /// <summary>
-    /// Attempts subscribing or unsubscribing to <c>fsmTgt</c> in the mode provided.
-    /// Returns <c>true</c> if the indicated subscribe action was taken, <c>false</c> if not.
-    /// <remarks>Issues a warning if attempting to create a duplicate subscription.</remarks>
-    /// </summary>
-    /// <param name="subscriptionMode">The subscription mode.</param>
-    /// <param name="fsmTgt">The target used by the State Machine.</param>
-    /// <param name="toSubscribe">if set to <c>true</c> subscribe, otherwise unsubscribe.</param>
-    /// <returns></returns>
-    /// <exception cref="NotImplementedException"></exception>
-    protected bool __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode subscriptionMode, IFleetNavigable fsmTgt, bool toSubscribe) {
-        Utility.ValidateNotNull(fsmTgt);
-        bool isSubscribeActionTaken = false;
-        bool isDuplicateSubscriptionAttempted = false;
-        IOwnerItem_Ltd itemFsmTgt = null;
-        bool isSubscribed = __subscriptionStatusLookup[subscriptionMode];
-        switch (subscriptionMode) {
-            case FsmTgtEventSubscriptionMode.TargetDeath:
-                var mortalFsmTgt = fsmTgt as IMortalItem_Ltd;
-                if (mortalFsmTgt != null) {
-                    if (!toSubscribe) {
-                        mortalFsmTgt.deathOneShot -= FsmTargetDeathEventHandler;
-                        isSubscribeActionTaken = true;
-                    }
-                    else if (!isSubscribed) {
-                        mortalFsmTgt.deathOneShot += FsmTargetDeathEventHandler;
-                        isSubscribeActionTaken = true;
-                    }
-                    else {
-                        isDuplicateSubscriptionAttempted = true;
-                    }
-                }
-                break;
-            case FsmTgtEventSubscriptionMode.InfoAccessChg:
-                itemFsmTgt = fsmTgt as IOwnerItem_Ltd;
-                if (itemFsmTgt != null) {    // fsmTgt can be a StationaryLocation
-                    if (!toSubscribe) {
-                        itemFsmTgt.infoAccessChgd -= FsmTgtInfoAccessChgdEventHandler;
-                        isSubscribeActionTaken = true;
-                    }
-                    else if (!isSubscribed) {
-                        itemFsmTgt.infoAccessChgd += FsmTgtInfoAccessChgdEventHandler;
-                        isSubscribeActionTaken = true;
-                    }
-                    else {
-                        isDuplicateSubscriptionAttempted = true;
-                    }
-                }
-                break;
-            case FsmTgtEventSubscriptionMode.OwnerChg:
-                itemFsmTgt = fsmTgt as IOwnerItem_Ltd;
-                if (itemFsmTgt != null) {    // fsmTgt can be a StationaryLocation
-                    if (!toSubscribe) {
-                        itemFsmTgt.ownerChanged -= FsmTgtOwnerChgdEventHandler;
-                        isSubscribeActionTaken = true;
-                    }
-                    else if (!isSubscribed) {
-                        itemFsmTgt.ownerChanged += FsmTgtOwnerChgdEventHandler;
-                        isSubscribeActionTaken = true;
-                    }
-                    else {
-                        isDuplicateSubscriptionAttempted = true;
-                    }
-                }
-                break;
-            case FsmTgtEventSubscriptionMode.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(subscriptionMode));
+    public override bool __IsPlayerEntitledToComprehensiveRelationship(Player player) {
+        if (_debugCntls.IsAllIntelCoverageComprehensive) {
+            return true;
         }
-        if (isDuplicateSubscriptionAttempted) {
-            D.Warn("{0}: Attempting to subscribe to {1}'s {2} when already subscribed.", DebugName, fsmTgt.DebugName, subscriptionMode.GetValueName());
+        if (IsOwnerChangeUnderway) {
+            D.Error("NOT AN ERROR.");   // 5.20.17 OPTIMIZE Should no longer be needed now that 1) Cmds change owners before the last 
+            return true;                // element Owner property actually changes, and 2) FleetCmds don't track the HQElement's
+                                        // IntelCoverage change if the HQElement is about to create LoneFleetCmd and leave
         }
-        if (isSubscribeActionTaken) {
-            __subscriptionStatusLookup[subscriptionMode] = toSubscribe;
-        }
-        return isSubscribeActionTaken;
+        bool isEntitled = Owner.IsRelationshipWith(player, DiplomaticRelationship.Self, DiplomaticRelationship.Alliance);
+        return isEntitled;
     }
 
     public override void __SimulateAttacked() {
         Elements.ForAll(e => e.__SimulateAttacked());
     }
 
+    #region Debug
+
+    private void __ReportMRSensorStatus() {
+        if (!IsApplicationQuiting) {
+            if (IsOperational) {
+                if (!MRSensorMonitor.IsOperational) {
+                    string dmgText = Data.Sensors.Where(s => s.RangeCategory == RangeCategory.Medium).All(s => s.IsDamaged) ? "have been damaged and" : "are simply cycling but";
+                    D.Log("{0}.MRSensors {1} are down.", DebugName, dmgText);
+                }
+            }
+        }
+    }
+
     #endregion
 
-    #region IFleetNavigable Members
+    #endregion
+
+    #region IFleetNavigableDestination Members
 
     public abstract float GetObstacleCheckRayLength(Vector3 fleetPosition);
 
@@ -1289,6 +1243,34 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     #endregion
 
+    #region IFsmEventSubscriptionMgrClient Members
 
+    void IFsmEventSubscriptionMgrClient.HandleFsmTgtInfoAccessChgd(IOwnerItem_Ltd fsmTgt) {
+        D.Log(ShowDebugLog, "{0}'s access to info about FsmTgt {1} has changed.", DebugName, fsmTgt.DebugName);
+        UponFsmTgtInfoAccessChgd(fsmTgt);
+    }
+
+    void IFsmEventSubscriptionMgrClient.HandleFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) {
+        UponFsmTgtOwnerChgd(fsmTgt);
+    }
+
+    void IFsmEventSubscriptionMgrClient.HandleFsmTgtDeath(IMortalItem_Ltd deadFsmTgt) {
+        UponFsmTgtDeath(deadFsmTgt);
+    }
+
+    void IFsmEventSubscriptionMgrClient.HandleAwarenessChgd(IOwnerItem_Ltd item) {
+        D.Assert(IsOperational);
+        D.Assert(item.IsOperational, item.DebugName);  // awareness changes not used when item dies
+        D.AssertNotEqual(Owner, item.Owner_Debug, item.DebugName); // should never be an awareness change from one of our own
+        UponAwarenessChgd(item);
+    }
+
+    #endregion
+
+    #region IUnitCmd Members
+
+    IUnitElement IUnitCmd.HQElement { get { return HQElement; } }
+
+    #endregion
 }
 

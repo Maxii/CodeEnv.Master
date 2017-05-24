@@ -62,9 +62,6 @@ public class SystemsTableWindow : ATableWindow {
 
     #endregion
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 }
 

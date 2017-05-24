@@ -16,11 +16,7 @@
 
 // default namespace
 
-using System.Collections.Generic;
-using System.Linq;
-using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
-using UnityEngine;
 
 /// <summary>
 /// Abstract base class for all TableWindows for Commands.

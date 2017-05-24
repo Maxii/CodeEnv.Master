@@ -699,7 +699,7 @@ namespace CodeEnv.Master.GameContent {
             return value;
         }
 
-        public static int __MaxMissileWeapons(this ShipHullCategory cat) {
+        public static int __MaxLaunchedWeapons(this ShipHullCategory cat) {
             int value = 0;
             switch (cat) {
                 case ShipHullCategory.Fighter:
@@ -722,13 +722,13 @@ namespace CodeEnv.Master.GameContent {
                     value = 4;
                     break;
                 case ShipHullCategory.Dreadnought:
-                    value = TempGameValues.MaxMissileWeaponsForAnyElement;   // 6
+                    value = TempGameValues.MaxLaunchedWeaponsForAnyElement;   // 6
                     break;
                 case ShipHullCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
             }
-            D.Assert(value <= TempGameValues.MaxMissileWeaponsForAnyElement);
+            D.Assert(value <= TempGameValues.MaxLaunchedWeaponsForAnyElement);
             return value;
         }
 
@@ -754,7 +754,7 @@ namespace CodeEnv.Master.GameContent {
             return value;
         }
 
-        public static int __MaxMissileWeapons(this FacilityHullCategory cat) {
+        public static int __MaxLaunchedWeapons(this FacilityHullCategory cat) {
             int value = 0;
             switch (cat) {
                 case FacilityHullCategory.Economic:
@@ -766,13 +766,13 @@ namespace CodeEnv.Master.GameContent {
                     break;
                 case FacilityHullCategory.CentralHub:
                 case FacilityHullCategory.Defense:
-                    value = TempGameValues.MaxMissileWeaponsForAnyElement;
+                    value = TempGameValues.MaxLaunchedWeaponsForAnyElement;
                     break;
                 case FacilityHullCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
             }
-            D.Assert(value <= TempGameValues.MaxMissileWeaponsForAnyElement);
+            D.Assert(value <= TempGameValues.MaxLaunchedWeaponsForAnyElement);
             return value;
         }
 
@@ -1908,60 +1908,6 @@ namespace CodeEnv.Master.GameContent {
             }
 
 
-            //private float _tinyRadius;
-            //public float TinyRadius {
-            //    get {
-            //        CheckValuesInitialized();
-            //        return _tinyRadius;
-            //    }
-            //    private set { _tinyRadius = value; }
-            //}
-
-            //private float _smallRadius;
-            //public float SmallRadius {
-            //    get {
-            //        CheckValuesInitialized();
-            //        return _smallRadius;
-            //    }
-            //    private set { _smallRadius = value; }
-            //}
-
-            //private float _normalRadius;
-            //public float NormalRadius {
-            //    get {
-            //        CheckValuesInitialized();
-            //        return _normalRadius;
-            //    }
-            //    private set { _normalRadius = value; }
-            //}
-
-            //private float _largeRadius;
-            //public float LargeRadius {
-            //    get {
-            //        CheckValuesInitialized();
-            //        return _largeRadius;
-            //    }
-            //    private set { _largeRadius = value; }
-            //}
-
-            //private float _enormousRadius;
-            //public float EnormousRadius {
-            //    get {
-            //        CheckValuesInitialized();
-            //        return _enormousRadius;
-            //    }
-            //    private set { _enormousRadius = value; }
-            //}
-
-            //private float _giganticRadius;
-            //public float GiganticRadius {
-            //    get {
-            //        CheckValuesInitialized();
-            //        return _giganticRadius;
-            //    }
-            //    private set { _giganticRadius = value; }
-            //}
-
             #endregion
 
             #region Universe Default Player Count
@@ -2090,9 +2036,6 @@ namespace CodeEnv.Master.GameContent {
                 Initialize();
             }
 
-            public override string ToString() {
-                return new ObjectAnalyzer().ToString(this);
-            }
         }
 
         /// <summary>
@@ -2403,10 +2346,6 @@ namespace CodeEnv.Master.GameContent {
                 Initialize();
             }
 
-            public override string ToString() {
-                return new ObjectAnalyzer().ToString(this);
-            }
-
         }
 
         /// <summary>
@@ -2466,10 +2405,6 @@ namespace CodeEnv.Master.GameContent {
 
             private GameSpeedXmlPropertyReader() {
                 Initialize();
-            }
-
-            public override string ToString() {
-                return new ObjectAnalyzer().ToString(this);
             }
 
         }

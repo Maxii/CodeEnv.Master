@@ -25,8 +25,5 @@ using UnityEditor;
 [CustomEditor(typeof(StarbasesTableWindow))]
 public class StarbasesTableWindowEditor : ATableWindowEditor<StarbasesTableWindow> {
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 }

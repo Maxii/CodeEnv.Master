@@ -115,9 +115,6 @@ namespace CodeEnv.Master.GameContent {
             return _lineTemplate.Inject(colorizedApprovalText);
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
 
     }
 }

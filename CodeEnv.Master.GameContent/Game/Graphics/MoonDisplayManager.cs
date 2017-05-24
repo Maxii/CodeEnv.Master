@@ -65,10 +65,6 @@ namespace CodeEnv.Master.GameContent {
         // Once showing (aka DisplayMgr instance created when first discerned) a Planet/Moon never has to 
         // become invisible again so there is no need for the ability to change to an invisible color
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
         #region IMortalDisplayManager Members
 
         /// <summary>

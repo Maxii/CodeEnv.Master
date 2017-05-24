@@ -106,9 +106,19 @@ namespace CodeEnv.Master.GameContent {
 
                 var activeDurationsCopy = GetSetCopy(activeDurations);
                 foreach (var duration in activeDurationsCopy) {
-                    D.Assert(!IsScheduledForRemoval(duration)); // removals just processed and duration is unique to a date
-                    InformClient(duration);
                     if (!IsScheduledForRemoval(duration)) {
+                        // 5.9.17 InformClient can result in the immediate scheduled removal of one or more of the next durations.
+                        // e.g. ReloadPeriod duration for ActiveCMs or AssaultShuttles. When client informed, it can immediately (atomic execution) 
+                        // result in death or owner change (no actual shuttle yet) of target which can cause the removal of other 
+                        // ReloadPeriod durations already added targeted on the same target that just died/changed.
+                        InformClient(duration);
+                    }
+                    else {
+                        //D.Log("{0} has skipped InformClient as {1} is scheduled for removal.", DebugName, duration.DebugName);
+                    }
+
+                    if (!IsScheduledForRemoval(duration)) {
+                        // 5.8.17 InformClient can result in the immediate scheduled removal of this duration
                         UpdateDate(duration, currentDate);
                     }
                     else {
@@ -146,13 +156,18 @@ namespace CodeEnv.Master.GameContent {
 
                         activeDurations = _activeDurationsLookup[date];
 
-                        D.Assert(!HasDurationsScheduledForRemoval(date));   // removals just processed and client not yet informed
-
                         var activeDurationsCopy = GetSetCopy(activeDurations);
                         foreach (var duration in activeDurationsCopy) {
-                            D.Assert(!IsScheduledForRemoval(duration)); // removals just processed and duration is unique to a date
-                            InformClient(duration);
                             if (!IsScheduledForRemoval(duration)) {
+                                // 5.9.17 InformClient can result in the immediate scheduled removal of one or more of the next durations
+                                InformClient(duration);
+                            }
+                            else {
+                                // D.Log("{0} has skipped InformClient as {1} is scheduled for removal.", DebugName, duration.DebugName);
+                            }
+
+                            if (!IsScheduledForRemoval(duration)) {
+                                // 5.8.17 InformClient can result in the immediate scheduled removal of this duration
                                 UpdateDate(duration, date);
                             }
                             else {
@@ -393,7 +408,7 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
     }

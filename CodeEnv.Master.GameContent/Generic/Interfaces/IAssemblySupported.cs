@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2014 Strategic Forge
+// Copyright © 2012 - 2017 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: INavigable.cs
-// Base Interface for a destination that can be navigated to.
+// File: IAssemblySupported.cs
+// Interface for Items that have local assembly stations where fleets can assemble without interference from obstacles.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,25 +16,18 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using UnityEngine;
+    using System.Collections.Generic;
 
     /// <summary>
-    /// Base Interface for a destination that can be navigated to.
+    /// Interface for Items that have local assembly stations 
+    /// where fleets can assemble without interference from obstacles.
     /// </summary>
-    public interface INavigable {
+    public interface IAssemblySupported {
 
         /// <summary>
-        /// The name to use for display.
+        /// A collection of assembly stations that are local to the item.
         /// </summary>
-        string Name { get; }
-
-        string DebugName { get; }
-
-        Vector3 Position { get; }
-
-        bool IsMobile { get; }
-
-        bool IsOperational { get; }
+        IList<StationaryLocation> LocalAssemblyStations { get; }
 
     }
 }

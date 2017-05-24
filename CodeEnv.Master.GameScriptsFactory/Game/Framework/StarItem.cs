@@ -29,7 +29,7 @@ using UnityEngine.Profiling;
 /// <summary>
 /// AIntelItems that are Stars.
 /// </summary>
-public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDetectable, IAvoidableObstacle, IShipExplorable {
+public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigableDestination, ISensorDetectable, IAvoidableObstacle, IShipExplorable {
 
     private static readonly Vector2 IconSize = new Vector2(12F, 12F);
 
@@ -76,7 +76,7 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
     #region Initialization
 
     protected override bool InitializeDebugLog() {
-        return DebugControls.Instance.ShowStarDebugLogs;
+        return _debugCntls.ShowStarDebugLogs;
     }
 
     protected override void InitializeOnData() {
@@ -178,6 +178,7 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
 
     #region Event and Property Change Handlers
 
+
     protected override void HandleOwnerChanging(Player newOwner) {
         base.HandleOwnerChanging(newOwner);
         if (Owner != TempGameValues.NoPlayer) {
@@ -186,7 +187,13 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
 
             IEnumerable<Player> allies;
             if (TryGetAllies(out allies)) {
-                allies.ForAll(ally => ResetBasedOnCurrentDetection(ally));
+                allies.ForAll(ally => {
+                    if (ally != newOwner && !ally.IsRelationshipWith(newOwner, DiplomaticRelationship.Alliance)) {
+                        // 5.18.17 no point assessing current detection for newOwner or a newOwner ally
+                        // as HandleOwnerChgd will assign Comprehensive to them all. 
+                        ResetBasedOnCurrentDetection(ally);
+                    }
+                });
             }
         }
         // Note: A System will assess its IntelCoverage for a player anytime a member's IntelCoverage changes for that player
@@ -198,6 +205,36 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
             DisplayMgr.Icon.Color = Owner.Color;
         }
     }
+    ////protected override void HandleOwnerChanged() {
+    ////    base.HandleOwnerChanged();
+
+    ////    // 5.15.17 Moved to using _previousOwner in Changed as changing allies detection before Owner changes results in subsequent
+    ////    // 'smell' checks down the line using the Owner of this item that hasn't yet changed. Use of Owner like this is common
+    ////    // and will happen again, so I'm best to do this first thing after Owner is newOwner.
+
+    ////    if (_previousOwner != TempGameValues.NoPlayer) {
+    ////        // 5.15.17 Owner has lost ownership of item so reset owner and allies Coverage of item to what they should know using _previousOwner
+    ////        ResetBasedOnCurrentDetection(_previousOwner);
+
+    ////        IEnumerable<Player> prevOwnerAllies;
+    ////        if (TryGetAllies(_previousOwner, out prevOwnerAllies)) {
+    ////            prevOwnerAllies.ForAll(prevOwnerAlly => {
+    ////                D.AssertNotEqual(Owner, prevOwnerAlly);  // 5.16.17 prevOwnerAlly can't be new owner until trading between allies allowed
+    ////                if (!prevOwnerAlly.IsRelationshipWith(Owner, DiplomaticRelationship.Alliance)) {
+    ////                    // 5.15.17 don't reset as base.HandleOwnerChgd has already assigned Comprehensive if prevOwnerAlly is also ally of new owner
+    ////                    ResetBasedOnCurrentDetection(prevOwnerAlly);
+    ////                }
+    ////            });
+    ////        }
+    ////    }
+    ////    // Note: A System will assess its IntelCoverage for a player anytime a member's IntelCoverage changes for that player
+
+
+
+    ////    if (DisplayMgr != null && DisplayMgr.Icon != null) {
+    ////        DisplayMgr.Icon.Color = Owner.Color;
+    ////    }
+    ////}
 
     protected sealed override void HandleIsOperationalChanged() {
         base.HandleIsOperationalChanged();
@@ -211,9 +248,8 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
     #region Show Icon
 
     private void InitializeIcon() {
-        DebugControls debugControls = DebugControls.Instance;
-        debugControls.showStarIcons += ShowStarIconsChangedEventHandler;
-        if (debugControls.ShowStarIcons) {
+        _debugCntls.showStarIcons += ShowStarIconsChangedEventHandler;
+        if (_debugCntls.ShowStarIcons) {
             EnableIcon(true);
         }
     }
@@ -273,7 +309,7 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
     }
 
     private void ShowStarIconsChangedEventHandler(object sender, EventArgs e) {
-        EnableIcon(DebugControls.Instance.ShowStarIcons);
+        EnableIcon(_debugCntls.ShowStarIcons);
     }
 
     /// <summary>
@@ -281,9 +317,8 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
     /// <remarks>The icon itself will be cleaned up when DisplayMgr.Dispose() is called.</remarks>
     /// </summary>
     private void CleanupIconSubscriptions() {
-        var debugControls = DebugControls.Instance;
-        if (debugControls != null) {
-            debugControls.showStarIcons -= ShowStarIconsChangedEventHandler;
+        if (_debugCntls != null) {
+            _debugCntls.showStarIcons -= ShowStarIconsChangedEventHandler;
         }
         if (DisplayMgr != null) {
             var icon = DisplayMgr.Icon;
@@ -354,18 +389,13 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
 
     #endregion
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
     #region Debug
 
     #region Debug Show Obstacle Zones
 
     private void InitializeDebugShowObstacleZone() {
-        DebugControls debugValues = DebugControls.Instance;
-        debugValues.showObstacleZones += ShowDebugObstacleZonesChangedEventHandler;
-        if (debugValues.ShowObstacleZones) {
+        _debugCntls.showObstacleZones += ShowDebugObstacleZonesChangedEventHandler;
+        if (_debugCntls.ShowObstacleZones) {
             EnableDebugShowObstacleZone(true);
         }
     }
@@ -381,13 +411,12 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
     }
 
     private void ShowDebugObstacleZonesChangedEventHandler(object sender, EventArgs e) {
-        EnableDebugShowObstacleZone(DebugControls.Instance.ShowObstacleZones);
+        EnableDebugShowObstacleZone(_debugCntls.ShowObstacleZones);
     }
 
     private void CleanupDebugShowObstacleZone() {
-        var debugCntls = DebugControls.Instance;
-        if (debugCntls != null) {
-            debugCntls.showObstacleZones -= ShowDebugObstacleZonesChangedEventHandler;
+        if (_debugCntls != null) {
+            _debugCntls.showObstacleZones -= ShowDebugObstacleZonesChangedEventHandler;
         }
         if (_obstacleZoneCollider != null) {
 
@@ -402,6 +431,15 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
     }
 
     #endregion
+
+    #endregion
+
+    #region IAssemblySupported Members
+
+    /// <summary>
+    /// A collection of assembly stations that are local to the item.
+    /// </summary>
+    public IList<StationaryLocation> LocalAssemblyStations { get { return (ParentSystem as IAssemblySupported).LocalAssemblyStations; } }
 
     #endregion
 
@@ -441,8 +479,6 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
         }
         return true;
     }
-
-    public IList<StationaryLocation> LocalAssemblyStations { get { return (ParentSystem as IGuardable).GuardStations; } }
 
     #endregion
 
@@ -525,15 +561,15 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
         float insideOrbitSlotThreshold = Data.CloseOrbitOuterRadius - ship.CollisionDetectionZoneRadius_Debug;
         if (shipDistance > insideOrbitSlotThreshold) {
             string arrivingLeavingMsg = isArriving ? "arriving in" : "leaving";
-            D.Log(ShowDebugLog, "{0} is {1} orbit of {2} but collision detection zone is poking outside of orbit slot by {3:0.0000} units.",
+            D.Log(ShowDebugLog, "{0} is {1} close orbit of {2} but collision detection zone is poking outside of orbit slot by {3:0.0000} units.",
                 ship.DebugName, arrivingLeavingMsg, DebugName, shipDistance - insideOrbitSlotThreshold);
             float halfOutsideOrbitSlotThreshold = Data.CloseOrbitOuterRadius;
             if (shipDistance > halfOutsideOrbitSlotThreshold) {
-                D.Warn("{0} is {1} orbit of {2} but collision detection zone is half or more outside of orbit slot.", ship.DebugName, arrivingLeavingMsg, DebugName);
+                D.Warn("{0} is {1} close orbit of {2} but collision detection zone is half or more outside of orbit slot.", ship.DebugName, arrivingLeavingMsg, DebugName);
                 if (isArriving) {
                     float distanceMovedWhileWaitingForArrival = shipDistance - __distanceUponInitialArrival;
                     string distanceMsg = distanceMovedWhileWaitingForArrival < 0F ? "closer in toward" : "further out from";
-                    D.Log("{0} moved {1:0.##} {2} {3}'s orbit slot while waiting for arrival.", ship.DebugName, Mathf.Abs(distanceMovedWhileWaitingForArrival), distanceMsg, DebugName);
+                    D.Log("{0} moved {1:0.##} {2} {3}'s close orbit slot while waiting for arrival.", ship.DebugName, Mathf.Abs(distanceMovedWhileWaitingForArrival), distanceMsg, DebugName);
                 }
             }
         }
@@ -547,8 +583,8 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
         _detectionHandler.HandleDetectionBy(detector, sensorRangeCat);
     }
 
-    public void HandleDetectionLostBy(ISensorDetector detector, RangeCategory sensorRangeCat) {
-        _detectionHandler.HandleDetectionLostBy(detector, sensorRangeCat);
+    public void HandleDetectionLostBy(ISensorDetector detector, Player detectorOwner, RangeCategory sensorRangeCat) {
+        _detectionHandler.HandleDetectionLostBy(detector, detectorOwner, sensorRangeCat);
     }
 
     /// <summary>
@@ -564,7 +600,7 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
 
     #endregion
 
-    #region IFleetNavigable Members
+    #region IFleetNavigableDestination Members
 
     public float GetObstacleCheckRayLength(Vector3 fleetPosition) {
         return Vector3.Distance(fleetPosition, Position) - _obstacleZoneCollider.radius - TempGameValues.ObstacleCheckRayLengthBuffer; ;
@@ -572,7 +608,7 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
 
     #endregion
 
-    #region IShipNavigable Members
+    #region IShipNavigableDestination Members
 
     public override ApMoveDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, IShip ship) {
         float innerShellRadius = Data.CloseOrbitOuterRadius + tgtStandoffDistance;   // closest arrival keeps CDZone outside of close orbit
@@ -626,7 +662,7 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
 
     #endregion
 
-    #region IShipExplorable Members
+    #region IExplorable Members
 
     public bool IsFullyExploredBy(Player player) {
         return GetIntelCoverage(player) == IntelCoverage.Comprehensive;
@@ -638,6 +674,10 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigable, ISensorDe
         }
         return !Owner.IsAtWarWith(player);
     }
+
+    #endregion
+
+    #region IShipExplorable Members
 
     public void RecordExplorationCompletedBy(Player player) {
         SetIntelCoverage(player, IntelCoverage.Comprehensive);

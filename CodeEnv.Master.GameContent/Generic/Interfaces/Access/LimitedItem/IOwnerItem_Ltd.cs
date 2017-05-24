@@ -44,9 +44,33 @@ namespace CodeEnv.Master.GameContent {
 
         Player Owner_Debug { get; }
 
+        /// <summary>
+        /// Debug version of TryGetOwner without the validation that 
+        /// requestingPlayer already knows owner when OwnerInfoAccess is available.
+        /// <remarks>Used by PlayerAIMgr's discover new players process.</remarks>
+        /// </summary>
+        /// <param name="requestingPlayer">The requesting player.</param>
+        /// <param name="owner">The owner.</param>
+        /// <returns></returns>
+        bool TryGetOwner_Debug(Player requestingPlayer, out Player owner);
+
+        /// <summary>
+        /// Returns <c>true</c> if the requestingPlayer has InfoAccess to the
+        /// owner of this item, <c>false</c> otherwise.
+        /// <remarks>Validates that requestingPlayer knows owner if access is granted.</remarks>
+        /// </summary>
+        /// <param name="requestingPlayer">The requesting player.</param>
+        /// <param name="owner">The owner.</param>
+        /// <returns></returns>
         bool TryGetOwner(Player requestingPlayer, out Player owner);
 
         bool IsOwnerAccessibleTo(Player player);
+
+        /// <summary>
+        /// Logs the current subscribers of this Item's infoAccessChgd event.
+        /// <remarks>4.17.17 Used for debugging the receipt of infoAccessChgd events in unexpected places.</remarks>
+        /// </summary>
+        void __LogInfoAccessChangedSubscribers();
 
 
     }

@@ -140,7 +140,9 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
         }
         else {
             int paramCount = param.IsNullOrEmpty() ? Constants.Zero : param.Length;
-            D.Warn("{0} did not find Method with signature {1}(paramCount: {2}). Is it a private method in a base class?", transform.name, message, paramCount);  // my addition
+            string lastStateMsg = LastState != null ? LastState.ToString() : "null";
+            D.Warn("{0} did not find Method with signature {1}(paramCount: {2}). LastState: {3}. Is it a private method in a base class?",
+                transform.name, message, paramCount, lastStateMsg);  // my addition
             return false;   // my addition
         }
     }

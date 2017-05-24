@@ -32,10 +32,6 @@ namespace CodeEnv.Master.GameContent {
             return GameReferences.FormationGenerator.GenerateBaseFormation(formation, cmdTransform, out formationRadius);
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
     }
 }
 

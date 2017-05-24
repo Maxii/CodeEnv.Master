@@ -38,7 +38,13 @@ namespace CodeEnv.Master.GameContent {
         private IDictionary<GameDate, HashSet<IDateMinderClient>> _clientsToAddLookup = new Dictionary<GameDate, HashSet<IDateMinderClient>>();
         private IDictionary<GameDate, HashSet<IDateMinderClient>> _clientsToRemoveLookup = new Dictionary<GameDate, HashSet<IDateMinderClient>>();
 
-        private HashSet<IDateMinderClient> _clientsScheduledForRemoval = new HashSet<IDateMinderClient>();
+        /// <summary>
+        /// The clients currently scheduled for removal the next time CheckForClients is called.
+        /// <remarks>5.18.17 OPTIMIZE This is not the collection that determines what clients get removed. 
+        /// That is handled by _clientsToRemoveLookup. It is principally used as a fast access check to 
+        /// confirm that a particular client is scheduled for removal, accessed thru IsScheduledForRemoval(client).</remarks>
+        /// </summary>
+        private HashSet<IDateMinderClient> __clientsScheduledForRemoval = new HashSet<IDateMinderClient>();
         private List<GameDate> _allDates = new List<GameDate>(50);
 
         private GameTime _gameTime;
@@ -94,7 +100,7 @@ namespace CodeEnv.Master.GameContent {
                     }
                 }
                 _clientsToRemoveLookup.Clear();
-                _clientsScheduledForRemoval.Clear();
+                __clientsScheduledForRemoval.Clear();
             }
 
             // Check for Clients
@@ -104,7 +110,7 @@ namespace CodeEnv.Master.GameContent {
                 // OPTIMIZE While clients can be removed, informing clients of a date reached won't generate an immediate Remove(date, client) 
                 // since dates have no value once reached and can't recur. They can generate an immediate Add(date, client).
                 foreach (var client in clients) {
-                    D.Assert(!IsScheduledForRemoval(client));
+                    D.Assert(!__IsScheduledForRemoval(client));
                 }
                 D.Assert(!HasClientsScheduledForRemoval(currentDate));
                 // Accordingly the set can be recycled.
@@ -137,7 +143,7 @@ namespace CodeEnv.Master.GameContent {
                         // OPTIMIZE While clients can be removed, informing clients of a date reached won't generate an immediate Remove(date, client) 
                         // since dates have no value once reached and can't recur. They can generate an immediate Add(date, client).
                         foreach (var client in clients) {
-                            D.Assert(!IsScheduledForRemoval(client));
+                            D.Assert(!__IsScheduledForRemoval(client));
                         }
                         D.Assert(!HasClientsScheduledForRemoval(date));
                         // Accordingly the set can be recycled.
@@ -200,16 +206,19 @@ namespace CodeEnv.Master.GameContent {
                 // That caused the RangeMonitor to re-categorize all detected items en-masse. That re-categorization removed, 
                 // then re-added the reload dates all within the same frame, thus generating 65 warnings from here. I'm going to keep
                 // the warning for now to get a sense of frequency, but it is warning about acceptable behaviour.
+                // 5.7.17 This acceptable reload event now occurring more commonly since I added automatic relations changes.
+                // Changing warning to log.
+                // 5.18.17 Happening in bunches now when auto relations changes cause AlertStatus to change.
 
                 // Scenario2: the same client gets an Add scheduled but for a different
                 // dates, creating no immediate conflict here. There must be another Remove scheduled for the first date to allow the second
                 // date to be added. This will work out when processed - the two adds will be included, then the remove will remove the first.
                 D.Assert(HasClientsScheduledForRemoval(date));
-                D.Assert(IsScheduledForRemoval(client));
+                D.Assert(__IsScheduledForRemoval(client));
                 bool isRemoved = _clientsToRemoveLookup[date].Remove(client);
                 D.Assert(isRemoved);
                 // no reason to remove the date if its clients is now empty as that will happen during CheckForClients
-                D.Warn("{0} had to remove Client {1} from scheduled removal as the same client attempted a second Add on the same date.", DebugName, client.DebugName);
+                //D.Log("{0} had to remove Client {1} from scheduled removal as the same client attempted a second Add on the same date.", DebugName, client.DebugName);
                 // No need to remove and re-add client to _clientsToAddLookup as both date and client are the same
             }
         }
@@ -222,7 +231,14 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="date">The date.</param>
         /// <param name="client">The client that provided the date.</param>
         public void Remove(GameDate date, IDateMinderClient client) {
-            D.Assert(date > _gameTime.CurrentDate, "{0}: DateToRemove {1} <= CurrentDate {2}. Client: {3}.".Inject(DebugName, date, _gameTime.CurrentDate, client.DebugName));
+            if (date < _gameTime.CurrentDate) {
+                // 5.15.17 Occurred with equal date when reload date was removed as a result of ownerChg due to attack by assaultShuttle.
+                // AssaultShuttleSim is currently an atomic attack and result. Root start was DateMinder initiating firing sequence.
+                // AHA! Since attack and result is atomic, DateMinder is still processing currentDate. This Removal is legal! When
+                // attempting to InformClient of this removedData, it will find scheduled for removal and not InformClient. New criteria
+                // must allow equal to currentDate as this could happen to ActiveCMs too which are atomic.
+                D.Error("{0}: DateToRemove {1} <= CurrentDate {2}. Client: {3}.", DebugName, date, _gameTime.CurrentDate, client.DebugName);
+            }
             HashSet<IDateMinderClient> clients;
             if (!_clientsToRemoveLookup.TryGetValue(date, out clients)) {
                 clients = GetEmptySet();
@@ -231,16 +247,21 @@ namespace CodeEnv.Master.GameContent {
             bool isAdded = clients.Add(client);
             D.Assert(isAdded);
 
-            isAdded = _clientsScheduledForRemoval.Add(client);
-            D.Assert(isAdded);
+            isAdded = __clientsScheduledForRemoval.Add(client);
+            if (!isAdded) {
+                // 5.17.17, 5.22.17 Source was ShieldGenerator KillReloadProcess. This is not an error as it can occur when 
+                // the same client removes 2 separate dates between CheckForClients() calls. Not adding the second instance 
+                // of client won't affect the role it plays as it is simply a fast access check for debugging.
+                //D.Log("{0} was unable to add {1} for scheduled removal in Frame {2} because it is already there.", DebugName, client.DebugName, Time.frameCount);
+            }
         }
 
         /// <summary>
         /// Returns <c>true</c> if this client is scheduled for removal, <c>false</c> otherwise.
         /// </summary>
         /// <param name="client">The client.</param>
-        private bool IsScheduledForRemoval(IDateMinderClient client) {
-            bool isScheduledForRemoval = _clientsScheduledForRemoval.Contains(client);
+        private bool __IsScheduledForRemoval(IDateMinderClient client) {
+            bool isScheduledForRemoval = __clientsScheduledForRemoval.Contains(client);
             return isScheduledForRemoval;
         }
 
@@ -261,7 +282,7 @@ namespace CodeEnv.Master.GameContent {
             _clientsLookup.Clear();
             _clientsToAddLookup.Clear();
             _clientsToRemoveLookup.Clear();
-            _clientsScheduledForRemoval.Clear();
+            __clientsScheduledForRemoval.Clear();
             _allDates.Clear();
         }
 
@@ -310,7 +331,7 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
     }

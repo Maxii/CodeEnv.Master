@@ -77,7 +77,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The course this AutoPilot will follow when engaged. 
         /// </summary>
-        public IList<IShipNavigable> ApCourse { get; private set; }
+        public IList<IShipNavigableDestination> ApCourse { get; private set; }
 
         public bool IsTurnUnderway { get { return _chgHeadingJob != null; } }
 
@@ -111,7 +111,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="shipTransform">The ship transform.</param>
         /// <param name="engineRoom">The engine room.</param>
         public ShipHelm(IShip ship, ShipData shipData, Transform shipTransform, EngineRoom engineRoom) {
-            ApCourse = new List<IShipNavigable>();
+            ApCourse = new List<IShipNavigableDestination>();
             _gameMgr = GameReferences.GameManager;
             _gameTime = GameTime.Instance;
             _jobMgr = GameReferences.JobManager;
@@ -620,7 +620,7 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
         #region Vector3 ExecuteHeadingChange Archive
@@ -705,7 +705,6 @@ namespace CodeEnv.Master.GameContent {
         //}
 
         #endregion
-
 
         #region IDisposable
 

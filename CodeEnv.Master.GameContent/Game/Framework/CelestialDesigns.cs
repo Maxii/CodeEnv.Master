@@ -24,6 +24,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class CelestialDesigns {
 
+        public string DebugName { get { return GetType().Name; } }
+
         private IDictionary<string, StarDesign> _starDesignsLookup;
         private IDictionary<string, PlanetDesign> _planetDesignsLookup;
         private IDictionary<string, MoonDesign> _moonDesignsLookup;
@@ -84,7 +86,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
     }

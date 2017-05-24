@@ -33,9 +33,5 @@ public class SelectedSettlementForm : ASelectedItemForm {
         _resourcesElement.Resources = report.Resources;
     }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
 }
 

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: StationaryLocation.cs
-// An INavigableTarget wrapping a stationary location in world space.
+// An INavigableDestination wrapping a stationary location in world space.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,11 +21,11 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// An INavigable target wrapping a stationary location in world space.
+    /// An INavigableDestination wrapping a stationary location in world space.
     /// </summary>
-    /// <seealso cref="CodeEnv.Master.GameContent.INavigable" />
+    /// <seealso cref="CodeEnv.Master.GameContent.INavigableDestination" />
     /// <seealso cref="System.IEquatable{CodeEnv.Master.GameContent.StationaryLocation}" />
-    public struct StationaryLocation : IShipNavigable, IFleetNavigable, IEquatable<StationaryLocation> {
+    public struct StationaryLocation : IShipNavigableDestination, IFleetNavigableDestination, IEquatable<StationaryLocation> {
 
         #region Equality Operators Override
 
@@ -84,7 +84,7 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        #region INavigable Members
+        #region INavigableDestination Members
 
         public string Name { get { return DebugName; } }
 
@@ -106,7 +106,7 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        #region IShipNavigable Members
+        #region IShipNavigableDestination Members
 
         public ApMoveDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, IShip ship) {
             return new ApMoveDestinationProxy(this, ship, tgtOffset, Constants.ZeroF, TempGameValues.WaypointCloseEnoughDistance);
@@ -114,7 +114,7 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        #region IFleetNavigable Members
+        #region IFleetNavigableDestination Members
 
         public Topography Topography { get; private set; }
 

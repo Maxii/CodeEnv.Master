@@ -48,15 +48,6 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
     }
 
     protected override void HandleDetectedObjectAdded(IInterceptableOrdnance newlyDetectedThreat) {
-        if (CanThreatBeIgnored(newlyDetectedThreat)) {
-            // 2.25.27 shouldn't keep tracking it in base class if I'm not going to keep track of its death here
-            // If I don't remove it, it would stay tracked until it exited the trigger envelope. As trigger exits
-            // aren't a good idea to rely on, this approach will remove all tracked IInterceptableOrdnance since
-            // I track its guaranteed death if not removed here.
-            RemoveDetectedObject(newlyDetectedThreat);
-            //D.Log(ShowDebugLog, "{0} is ignoring friendly detected threat {1} moving away.", DebugName, newlyDetectedThreat.DebugName);
-            return;
-        }
         if (ShowDebugLog) {
             //var distanceFromMonitor = Vector3.Distance(newlyDetectedThreat.Position, transform.position);
             //D.Log("{0} added {1}. Distance from Monitor = {2:0.#}, Monitor Range = {3:0.#}.", DebugName, newlyDetectedThreat.DebugName, distanceFromMonitor, RangeDistance);
@@ -66,8 +57,6 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
 
     protected override void HandleDetectedObjectRemoved(IInterceptableOrdnance previousThreat) {
         RemoveThreat(previousThreat);
-        __threatDeathSubscriptionsRemoved.Add(previousThreat.DebugName);
-
     }
 
     /// <summary>
@@ -76,25 +65,29 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
     /// </summary>
     /// <param name="newThreat">The IInterceptableOrdnance threat.</param>
     private void AddThreat(IInterceptableOrdnance newThreat) {
+        D.Assert(newThreat.IsOperational, newThreat.DebugName);
 
         Profiler.BeginSample("Event Subscription allocation", gameObject);
         newThreat.terminationOneShot += ThreatDeathEventHandler;
-        __threatDeathSubscriptionsAdded.Add(newThreat.DebugName);
         Profiler.EndSample();
 
-        _equipmentList.ForAll(cm => {
-            // GOTCHA!! As each CM receives this inRange notice, it can attack and destroy the threat
-            // before the next ThreatInRange notice is sent to the next CM. As a result, IsOperational must
-            // be checked after each notice.
-            if (newThreat.IsOperational) {
-                cm.HandleThreatInRangeChanged(newThreat, isInRange: true);
-            }
-        });
+        if (!CanThreatBeIgnored(newThreat)) {
+            _equipmentList.ForAll(cm => {
+                // GOTCHA!! As each CM receives this inRange notice, it can attack and destroy the threat
+                // before the next ThreatInRange notice is sent to the next CM. As a result, IsOperational must
+                // be checked after each notice.
+                if (newThreat.IsOperational) {
+                    cm.HandleThreatInRangeChanged(newThreat, isInRange: true);
+                }
+            });
+        }
     }
 
     /// <summary>
     /// Called when an IInterceptableOrdnance threat should be removed from tracking, typically when it goes out of range. 
     /// This can include ordnance owned by the owner of this monitor as ordnance doesn't care who owns it.
+    /// <remarks>It is OK to try to remove a threat that may have never been added as there are multiple conditions
+    /// where that may occur. See CM.HandleThreatInRangeChanged for explanation.</remarks>
     /// </summary>
     /// <param name="previousThreat">The previous threat.</param>
     private void RemoveThreat(IInterceptableOrdnance previousThreat) {
@@ -115,6 +108,8 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
         HandleThreatDeath(deadThreat);
     }
 
+    #endregion
+
     private void HandleThreatDeath(IOrdnance deadThreat) {
         //D.Log(ShowDebugLog, "{0} received threatDeath event for {1}.", DebugName, deadThreat.DebugName);
         RemoveDetectedObject(deadThreat as IInterceptableOrdnance);
@@ -134,31 +129,12 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
         ReviewKnowledgeOfAllDetectedObjects();
     }
 
-    #endregion
-
-    private IList<string> __threatDeathSubscriptionsAdded = new List<string>(100);
-
-    private IList<string> __threatDeathSubscriptionsRemoved = new List<string>(100);
-
     protected override void ReviewKnowledgeOfAllDetectedObjects() {
-        _objectsDetected.ForAll(threat => {
-            // First, remove each threat's death subscription along with all ActiveCM knowledge of the threat.
-            //// 2.15.17 If the threat was initially ignored, HandleThreatOutOfRange will do nothing
+        var objectsDetectedCopy = new List<IInterceptableOrdnance>(_objectsDetected);
+        foreach (var threat in objectsDetectedCopy) {
             RemoveThreat(threat);
-            if (!threat.IsOperational) {
-                D.Error("{0}: Dead Threat {1} should have already been removed when death was detected.", DebugName, threat.DebugName);
-                D.Error("{0}: Subscribed to {1} ThreatDeaths: {2}.", DebugName, __threatDeathSubscriptionsAdded.Count, __threatDeathSubscriptionsAdded.Concatenate());
-                D.Error("{0}: Unsubscribed to {1} ThreatDeaths excluding {2}: {3}.", DebugName, __threatDeathSubscriptionsRemoved.Count, threat.DebugName, __threatDeathSubscriptionsRemoved.Concatenate());
-            }
-            // if its already dead, it could already be despawned which means all its values will be null
-
-            __threatDeathSubscriptionsRemoved.Add(threat.DebugName);
-
-            // Now, if the threat can't be ignored, add back each threat's death subscription and ActiveCM knowledge of the threat.
-            if (!CanThreatBeIgnored(threat)) {  // a parentItemOwner or player relationship change can affect whether to ignore the threat
-                AddThreat(threat);
-            }
-        });
+            AddThreat(threat);            // 5.15.17 effectively 're-categorizes' threats for each ActiveCM by reevaluating with CanThreatBeIgnored
+        }
     }
 
     private bool CanThreatBeIgnored(IInterceptableOrdnance threat) {
@@ -182,18 +158,20 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
     protected override float RefreshRangeDistance() {
         float baselineRange = RangeCategory.GetBaselineActiveCountermeasureRange();
         // IMPROVE add factors based on IUnitElement Type and/or Category. DONOT vary by Cmd
-        return baselineRange * Owner.CountermeasureRangeMultiplier;
+        return baselineRange;
     }
+
+    #region Cleanup
 
     protected override void Cleanup() {
         base.Cleanup();
     }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
+    #endregion
 
     #region Debug
+
+    protected override bool __ToReportTargetReacquisitionChanges { get { return false; } }
 
     private const float __acceptableThresholdSubtractorBase = 1.3F;
 

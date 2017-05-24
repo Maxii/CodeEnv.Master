@@ -59,6 +59,8 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         public event Action<bool> jobCompleted;    // using EventHandler<JobArgs> just complicates usage of the class
 
+        public string DebugName { get { return GetType().Name; } }
+
         public bool IsRunning { get; private set; }
 
         private bool _isPaused;
@@ -410,7 +412,7 @@ namespace CodeEnv.Master.Common {
         #endregion
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
         #region IEquatable<Job> Members

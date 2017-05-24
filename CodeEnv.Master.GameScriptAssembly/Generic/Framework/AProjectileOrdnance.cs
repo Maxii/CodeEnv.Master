@@ -65,18 +65,23 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
 
     protected override bool ToShowMuzzleEffects { get { return base.ToShowMuzzleEffects && !_hasWeaponFired; } }
 
+    protected bool _toConductMovement;
     protected Rigidbody _rigidbody;
     protected Vector3 _launchPosition;
     protected BoxCollider _collider;
 
+    /// <summary>
+    /// Flag that tracks whether an event instructing this ordnance to pause has been received.
+    /// <remarks>5.3.17 There are circumstances where ordnance is launched as a result of the weapon
+    /// receiving a resume event. This results in the ordnance subscribing to a pause state change 
+    /// while the game is in the process of resuming. Thus the ordnance can unexpectedly receive an 
+    /// immediate resume event without ever having received the original paused event.</remarks>
+    /// </summary>
+    protected bool _hasPauseEventBeenReceived;
+    private bool _hasImpactEffectsBegun;
     private bool _hasWeaponFired;
     private AProjectileDisplayManager _displayMgr;
     private int _checkProgressCounter;
-
-    /// <summary>
-    /// The velocity to restore in gameSpeed-adjusted units per second after the pause is resumed.
-    /// </summary>
-    private Vector3 _velocityToRestoreAfterPause;
 
     protected override void Awake() {
         base.Awake();
@@ -110,8 +115,6 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         _launchPosition = transform.position;
 
         // 3.29.17 addition. Could being kinematic prior to this interfere with element's use of Physics.IgnoreCollision?
-        _rigidbody.isKinematic = false;
-        _rigidbody.drag = OpenSpaceDrag * topography.GetRelativeDensity();
         _rigidbody.mass = Mass;
         AssessShowMuzzleEffects();
         _hasWeaponFired = true;
@@ -126,7 +129,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
 
     protected abstract AProjectileDisplayManager MakeDisplayMgr();
 
-    protected override void ProcessUpdate() {
+    protected sealed override void ProcessUpdate() {
         base.ProcessUpdate();
         if (_checkProgressCounter >= CheckProgressCounterThreshold) {
             CheckProgress();
@@ -158,66 +161,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         return distanceTraveled;
     }
 
-    private void HandleCollision(Collision collision) {
-        if (!enabled) {
-            // 12.17.16 parent name is name of Unit, collider name is name of element
-            string collidedObjectName = collision.collider.transform.parent.name + Constants.Underscore + collision.collider.name;
-            D.AssertNull(Target, collidedObjectName);
-            D.Assert(!_collider.enabled, collidedObjectName);
-            // 1.6.17 OnCollisionEnter is called even when both _collider and monoBehaviour are disabled according to OnCollisionEnter 
-            // docs: "Collision events will be sent to disabled MonoBehaviours, to allow enabling Behaviours in response to collisions." 
-            return;
-        }
-        //D.Log(ShowDebugLog, "{0} distance to intended target on collision: {1}.", DebugName, Vector3.Distance(transform.position, Target.Position));
-        bool isImpactEffectRunning = false;
-        var impactedGo = collision.collider.gameObject;
-
-        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
-        var impactedTarget = impactedGo.GetComponent<IElementAttackable>();
-        Profiler.EndSample();
-
-        if (impactedTarget != null) {
-            // hit an attackableTarget
-            //D.Log(ShowDebugLog, "{0} collided with {1}.", DebugName, impactedTarget.DebugName);
-            ContactPoint contactPoint = collision.contacts[0];
-            // The application of impact force is already handled by the physics engine when regular rigidbodies collide
-            ////TryApplyImpactForce(impactedGo, contactPoint);
-            if (impactedTarget.IsOperational) {
-                if (impactedTarget == Target) {
-                    ReportTargetHit();
-                }
-                else {
-                    ReportInterdiction();   // Not from ActiveCM as they don't collide
-                }
-                impactedTarget.TakeHit(DamagePotential);
-                // if target is killed by this hit, TerminateNow will be immediately called by Weapon
-            }
-            if (impactedTarget.IsOperational) {
-                // target survived the hit
-                if (impactedTarget.IsVisualDetailDiscernibleToUser) {
-                    // target is being viewed by user so show impact effect
-                    //D.Log(ShowDebugLog, "{0} starting impact effect on {1}.", DebugName, impactedTarget.DisplayName);
-                    var impactEffectLocation = contactPoint.point + contactPoint.normal * 0.01F;    // HACK
-                    // IMPROVE = Quaternion.FromToRotation(Vector3.up, contact.normal); // see http://docs.unity3d.com/ScriptReference/Collider.OnCollisionEnter.html
-                    ShowImpactEffects(impactEffectLocation);
-                    isImpactEffectRunning = true;
-                }
-                if (impactedTarget.IsVisualDetailDiscernibleToUser || DebugControls.Instance.AlwaysHearWeaponImpacts) {
-                    HearImpactEffect(contactPoint.point);
-                }
-            }
-        }
-        else {
-            // if not an attackableTarget, then??   IMPROVE
-            var otherOrdnance = impactedGo.GetComponent<AOrdnance>();
-            D.AssertNull(otherOrdnance);  // should not be able to impact another piece of ordnance as both are on Ordnance layer
-        }
-
-        if (IsOperational && !isImpactEffectRunning) {
-            // ordnance has not already been terminated by other paths such as the death of the target and impact effect is not running
-            TerminateNow();
-        }
-    }
+    protected abstract void HandleCollision(GameObject impactedGo, ContactPoint contactPoint);
 
     /// <summary>
     /// Tries to apply the impact force to the impacted target.
@@ -263,9 +207,10 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
     /// This is not necessary if the effect isn't showing as the projectile immediately terminates.
     /// </summary>
     protected virtual void HandleImpactEffectsBegun() {
+        _hasImpactEffectsBegun = true;
         _displayMgr.IsDisplayEnabled = false;   // make the projectile disappear
         _collider.enabled = false;              // shutdown collisions
-        enabled = false;                        // shutdown progress checks and propulsion
+        _toConductMovement = false;
         _rigidbody.velocity = Vector3.zero;     // freeze movement including any bounce or deflection as a result of the collision
     }
 
@@ -298,16 +243,17 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         D.Assert(_launchPosition == default(Vector3));
         D.Assert(!_hasWeaponFired);
         D.AssertDefault(_checkProgressCounter);
-        D.Assert(!__isVelocityToRestoreAfterPauseRecorded);
-        D.Assert(_velocityToRestoreAfterPause == default(Vector3));
+        D.Assert(!_hasPauseEventBeenReceived);
         D.Assert(!__doesImpactEffectScaleNeedToBeRestored);
-        D.Assert(_rigidbody.velocity == default(Vector3), _rigidbody.velocity.ToPreciseString());
         D.Assert(_rigidbody.isKinematic);
+        D.Assert(!_toConductMovement);
         // 12.15.16 Moved collider.enabled to Launch as enabling here caused collisions before Launch called
     }
 
     void OnCollisionEnter(Collision collision) {
-        HandleCollision(collision);
+        GameObject impactedGo = collision.collider.gameObject;
+        ContactPoint contactPoint = collision.contacts[0];
+        HandleCollision(impactedGo, contactPoint);
     }
 
     private void GameSpeedPropChangingHandler(GameSpeed newGameSpeed) {
@@ -317,9 +263,9 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         AdjustForGameSpeed(gameSpeedChangeRatio);
     }
 
-    protected override void IsPausedPropChangedHandler() {
+    protected sealed override void IsPausedPropChangedHandler() {
         base.IsPausedPropChangedHandler();
-        PauseVelocity(_gameMgr.IsPaused);
+        HandlePauseChange(_gameMgr.IsPaused);
     }
 
     protected override void OnDespawned() {
@@ -327,52 +273,47 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         _launchPosition = Vector3.zero;
         _hasWeaponFired = false;
         _checkProgressCounter = Constants.Zero;
-        __isVelocityToRestoreAfterPauseRecorded = false;
-        _velocityToRestoreAfterPause = default(Vector3);
-        D.Assert(_rigidbody.velocity == default(Vector3), _rigidbody.velocity.ToPreciseString());
+        _hasPauseEventBeenReceived = false;
         D.Assert(_rigidbody.isKinematic);
         D.Assert(!_collider.enabled);
         D.Assert(!_displayMgr.IsDisplayEnabled);
         D.Assert(!__doesImpactEffectScaleNeedToBeRestored);
+        D.Assert(!_toConductMovement);
     }
 
     #endregion
 
-    private void PauseVelocity(bool toPause) {
+    private void HandlePauseChange(bool toPause) {
         if (toPause) {
-            D.Assert(!__isVelocityToRestoreAfterPauseRecorded);
-            _velocityToRestoreAfterPause = _rigidbody.velocity;
-            _rigidbody.isKinematic = true;
-            __isVelocityToRestoreAfterPauseRecorded = true;
+            D.Assert(!_hasPauseEventBeenReceived);
+            HandleMovementOnPauseChange(toPause: true);
+            _toConductMovement = false;
+            _hasPauseEventBeenReceived = true;
         }
         else {
-            D.Assert(__isVelocityToRestoreAfterPauseRecorded);
-            _rigidbody.isKinematic = false;
-            _rigidbody.velocity = _velocityToRestoreAfterPause;
-            _rigidbody.WakeUp();
-            __isVelocityToRestoreAfterPauseRecorded = false;
+            if (_hasPauseEventBeenReceived) {
+                HandleMovementOnPauseChange(toPause: false);
+                // 5.22.17 If ImpactEffects have already begun, then this ordnance is about to terminate so avoid 
+                // re-engaging propulsion. Rare as would require a pause while an impact effect is being shown to the user.
+                if (!_hasImpactEffectsBegun) {
+                    _toConductMovement = true;
+                }
+                _hasPauseEventBeenReceived = false;
+            }
         }
     }
 
-    private void AdjustForGameSpeed(float gameSpeedChangeRatio) {
-        if (_gameMgr.IsPaused) {
-            D.Assert(__isVelocityToRestoreAfterPauseRecorded, DebugName);
-            _velocityToRestoreAfterPause *= gameSpeedChangeRatio;
-        }
-        else {
-            _rigidbody.velocity *= gameSpeedChangeRatio;
-        }
-    }
+    protected abstract void HandleMovementOnPauseChange(bool toPause);
+
+    protected abstract void AdjustForGameSpeed(float gameSpeedChangeRatio);
 
     protected override void PrepareForTermination() {
         base.PrepareForTermination();
         // Deactivating the gameObject when despawned will disable the PrimaryMeshRenderer stopping LOS events.
         // Don't also do it here using DisplayMgr.HandleDeath() as it won't be enabled again when re-spawned.
         _displayMgr.IsDisplayEnabled = false;
-        // 12.15.16 Moved the following here to avoid any issue with Despawn changing parent
-        _rigidbody.velocity = Vector3.zero;
-        _rigidbody.isKinematic = true;  // 3.29.17 Keeps projectiles from somehow regaining velocity between now and Despawn()
         _collider.enabled = false;  // UNCLEAR disabling the collider removes Physics.IgnoreCollision? 12.16.16 Probably not
+        _toConductMovement = false;
         if (Weapon.Element.IsOperational) {  // avoids trying to access Destroyed gameObject
             Physics.IgnoreCollision(_collider, (Weapon.Element as Component).gameObject.GetSafeComponent<BoxCollider>(), ignore: false);   // HACK
         }
@@ -388,7 +329,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
 
     #region Debug
 
-    private bool __isVelocityToRestoreAfterPauseRecorded = false;
+    protected virtual bool __IsActiveCMInterceptAllowed { get { return true; } }
 
     /// <summary>
     /// Validates the size and scale of the collider.
@@ -440,14 +381,16 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
                 DebugName, IsOperational);
         }
         else {
-            //D.Log(ShowDebugLog, "{0} intercepted. InterceptStrength: {1}, SurvivalStrength: {2}.", DebugName, interceptStrength, DeliveryVehicleStrength);
-            DeliveryVehicleStrength = DeliveryVehicleStrength - interceptStrength;
-            if (DeliveryVehicleStrength.Value == Constants.ZeroF) {
-                ReportInterdiction();
-                D.Log(ShowDebugLog, "{0} was intercepted and destroyed.", DebugName);
-                if (IsOperational) {
-                    // ordnance has not already been terminated by other paths such as the death of the target
-                    TerminateNow();
+            if (__IsActiveCMInterceptAllowed) {
+                //D.Log(ShowDebugLog, "{0} intercepted. InterceptStrength: {1}, SurvivalStrength: {2}.", DebugName, interceptStrength, DeliveryVehicleStrength);
+                DeliveryVehicleStrength = DeliveryVehicleStrength - interceptStrength;
+                if (DeliveryVehicleStrength.Value == Constants.ZeroF) {
+                    ReportInterdiction();
+                    D.Log(ShowDebugLog, "{0} was intercepted and destroyed.", DebugName);
+                    if (IsOperational) {
+                        // ordnance has not already been terminated by other paths such as the death of the target
+                        TerminateNow();
+                    }
                 }
             }
         }

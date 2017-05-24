@@ -27,7 +27,7 @@ public class ShipCtxControl_AI : ACtxControl {
 
     protected override Vector3 PositionForDistanceMeasurements { get { return _shipMenuOperator.Position; } }
 
-    protected override string OperatorName { get { return _shipMenuOperator.DebugName; } }
+    protected override string OperatorName { get { return _shipMenuOperator != null ? _shipMenuOperator.DebugName : "NotYetAssigned"; } }
 
     private ShipItem _shipMenuOperator;
 
@@ -44,12 +44,27 @@ public class ShipCtxControl_AI : ACtxControl {
         return false;
     }
 
-    protected override void HandleMenuPick_OptimalFocusDistance() {
-        _shipMenuOperator.OptimalCameraViewingDistance = _shipMenuOperator.Position.DistanceToCamera();
+    protected override void PopulateMenu_MenuOperatorIsSelected() {
+        base.PopulateMenu_MenuOperatorIsSelected();
+        __PopulateChgOwnerMenu();
     }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+    private void __PopulateChgOwnerMenu() {
+        _ctxObject.menuItems = new CtxMenu.Item[] { new CtxMenu.Item() {
+            text = "ChgOwner",
+            id = Constants.MinusOne,
+            isDisabled = !_shipMenuOperator.IsAssaultAllowedBy(_user)
+        }};
+    }
+
+    protected override void HandleMenuPick_MenuOperatorIsSelected(int itemID) {
+        base.HandleMenuPick_MenuOperatorIsSelected(itemID);
+        D.AssertEqual(Constants.MinusOne, itemID);
+        _shipMenuOperator.__ChangeOwner(_user);
+    }
+
+    protected override void HandleMenuPick_OptimalFocusDistance() {
+        _shipMenuOperator.OptimalCameraViewingDistance = _shipMenuOperator.Position.DistanceToCamera();
     }
 
 }

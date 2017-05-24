@@ -25,6 +25,8 @@ namespace CodeEnv.Master.Common {
     /// </summary>
     public class ActionTask : ATask {
 
+        public string DebugName { get { return GetType().Name; } }
+
         private Func<bool> _action;
 
         /// <summary>
@@ -59,7 +61,7 @@ namespace CodeEnv.Master.Common {
         }
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
     }

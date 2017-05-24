@@ -30,9 +30,15 @@ using UnityEngine.Profiling;
 /// Abstract class for AMortalItem's that are Unit Elements.
 /// </summary>
 public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, IUnitElement_Ltd, ICameraFollowable, IShipBlastable,
-    ISensorDetectable, ISensorDetector {
+    ISensorDetectable, ISensorDetector, IFsmEventSubscriptionMgrClient, IAssaultable {
 
     private const string __HQNameAddendum = "[HQ]";
+
+    /// <summary>
+    /// Occurs when the Command ref is changed.
+    /// <remarks>5.15.17 Not currently used.</remarks>
+    /// </summary>
+    public event EventHandler commandChanged;
 
     public event EventHandler isHQChanged;
 
@@ -79,7 +85,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     private AUnitCmdItem _command;
     public AUnitCmdItem Command {
         get { return _command; }
-        set { SetProperty<AUnitCmdItem>(ref _command, value, "Command"); }
+        set { SetProperty<AUnitCmdItem>(ref _command, value, "Command", CommandPropChangedHandler); }
     }
 
     // OPTIMIZE all elements followable for now to support facilities rotating around bases or stars
@@ -90,16 +96,21 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     public IElementSensorRangeMonitor SRSensorMonitor { get; private set; }
 
+    public new bool IsOwnerChangeUnderway { get { return base.IsOwnerChangeUnderway; } }
+
     protected new AElementDisplayManager DisplayMgr { get { return base.DisplayMgr as AElementDisplayManager; } }
     protected IList<IWeaponRangeMonitor> WeaponRangeMonitors { get; private set; }
     protected IList<IActiveCountermeasureRangeMonitor> CountermeasureRangeMonitors { get; private set; }
     protected IList<IShield> Shields { get; private set; }
     protected Rigidbody Rigidbody { get; private set; }
+    protected FsmEventSubscriptionManager FsmEventSubscriptionMgr { get; private set; }
+    protected override bool IsPaused { get { return _gameMgr.IsPaused; } }
 
     protected Job _repairJob;
 
     private DetectionHandler _detectionHandler;
     private BoxCollider _primaryCollider;
+    private Player _newOwnerAfterPause;
 
     #region Initialization
 
@@ -169,19 +180,38 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     public override void FinalInitialize() {
         base.FinalInitialize();
         InitializeRangeMonitors();
+        InitializeFsmEventSubscriptionMgr();
         __InitializeFinalRigidbodySettings();
     }
 
     protected abstract void __InitializeFinalRigidbodySettings();
 
     private void InitializeRangeMonitors() {
-        CountermeasureRangeMonitors.ForAll(crm => crm.InitializeRangeDistance());
+        SRSensorMonitor.InitializeRangeDistance();  // 5.10.17 First as other Monitors validate their range compared to this range
         WeaponRangeMonitors.ForAll(wrm => {
             wrm.InitializeRangeDistance();
             wrm.ToEngageColdWarEnemies = OwnerAIMgr.IsPolicyToEngageColdWarEnemies;
         });
+        CountermeasureRangeMonitors.ForAll(crm => crm.InitializeRangeDistance());
         Shields.ForAll(srm => srm.InitializeRangeDistance());
-        SRSensorMonitor.InitializeRangeDistance();
+    }
+
+    private void InitializeFsmEventSubscriptionMgr() {
+        FsmEventSubscriptionMgr = new FsmEventSubscriptionManager(this);
+    }
+
+    protected void ActivateSensors() {
+        Data.ActivateSensors();
+    }
+
+    /// <summary>
+    /// Subscribes to sensor events.
+    /// <remarks>Must be called after initial runtime state is set, aka Idling. 
+    /// Otherwise events can arrive immediately as sensors activate.</remarks>
+    /// <remarks>OPTIMIZE Virtual to allow Assert of CurrentState to enforce above.</remarks>
+    /// </summary>
+    protected virtual void SubscribeToSensorEvents() {
+        // UNDONE 5.13.17 No use yet in Elements for responding to what their SRSensors detect
     }
 
     #endregion
@@ -223,27 +253,47 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// </summary>
     public abstract void __HandleLocalPositionManuallyChanged();
 
+    private void ChangeOwnerAfterPause() {
+        D.AssertNotNull(_newOwnerAfterPause);
+        D.Assert(!IsPaused);
+
+        Player newOwner = _newOwnerAfterPause;
+        _newOwnerAfterPause = null;
+        D.Log(/*ShowDebugLog,*/ "{0} is changing owner to {1} after resuming from pause.", DebugName, newOwner.DebugName);
+        Owner = newOwner;
+    }
+
     internal void HandleColdWarEnemyEngagementPolicyChanged() {
         bool toEngageColdWarEnemies = OwnerAIMgr.IsPolicyToEngageColdWarEnemies;
         WeaponRangeMonitors.ForAll(wrm => wrm.ToEngageColdWarEnemies = toEngageColdWarEnemies);
     }
 
-    protected override void PrepareForDeathNotification() {
-        base.PrepareForDeathNotification();
-        Data.Weapons.ForAll(w => {
-            w.readytoFire -= WeaponReadyToFireEventHandler;
-            w.IsActivated = false;
-        });
-        Data.ActiveCountermeasures.ForAll(cm => cm.IsActivated = false);
-        Data.Sensors.ForAll(s => s.IsActivated = false);
-        Data.ShieldGenerators.ForAll(gen => gen.IsActivated = false);
+    protected override void PrepareForOnDeath() {
+        base.PrepareForOnDeath();
+        Data.Weapons.ForAll(weap => weap.readytoFire -= WeaponReadyToFireEventHandler);
     }
 
-    protected override void HandleDeathBeforeBeginningDeathEffect() {
-        base.HandleDeathBeforeBeginningDeathEffect();
-        // Note: Keep the primaryCollider enabled until destroyed or returned to the pool as this allows 
-        // in-route ordnance to show its impact effect while the item is showing its death.
+    protected sealed override void PrepareForDeadState() {
+        base.PrepareForDeadState();
+        PrepareToInformCmdOfSubordinateDeath();
+        InformCmdOfSubordinateDeath();
+    }
+
+    /// <summary>
+    /// Hook to allow derived classes to prepare for Cmd being informed of this element's death.
+    /// <remarks>Allows elements to complete all activities that require the element's Cmd
+    /// reference before it is nulled.</remarks>
+    /// <remarks>this base implementation Return()s all FSM Call()ed states to their Call()ing state.</remarks>
+    /// </summary>
+    protected virtual void PrepareToInformCmdOfSubordinateDeath() {
+        // 4.15.17 Get state to a non-Called state before changing to Dead allowing that 
+        // non_Called state to callback with FsmOrderFailureCause.Death if callback is reqd
+        ReturnFromCalledStates();
+    }
+
+    private void InformCmdOfSubordinateDeath() {
         Command.HandleSubordinateElementDeath(this);
+        D.AssertNull(Command);
     }
 
     /// <summary>
@@ -255,7 +305,10 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// </summary>
     protected override void AssignAlternativeFocusOnDeath() {
         base.AssignAlternativeFocusOnDeath();
-        Command.IsFocus = true;
+        AUnitCmdItem formerCmd = gameObject.GetComponentInParent<AUnitCmdItem>();
+        if (formerCmd.IsOperational) {
+            formerCmd.IsFocus = true;
+        }
     }
 
     /********************************************************************************************************************************************
@@ -338,7 +391,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
             beam.Launch(target, weapon);
         }
         else {
-            // Projectiles are located under PoolingManager in the scene
+            // Projectiles are collected under GamePoolManager in the scene
             ordnanceTransform = GamePoolManager.Instance.Spawn(category, launchLoc, launchRotation);
             Collider ordnanceCollider = UnityUtility.ValidateComponentPresence<Collider>(ordnanceTransform.gameObject);
             D.Assert(ordnanceTransform.gameObject.activeSelf);  // ordnanceGo must be active for IgnoreCollision
@@ -349,9 +402,20 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
                 missile.ElementVelocityAtLaunch = Rigidbody.velocity;
                 missile.Launch(target, weapon, Topography);
             }
+            else if (category == WDVCategory.AssaultVehicle) {
+                AssaultVehicle shuttle = ordnanceTransform.GetComponent<AssaultVehicle>();
+                shuttle.ElementVelocityAtLaunch = Rigidbody.velocity;
+                shuttle.Launch(target, weapon, Topography);
+            }
             else {
                 D.AssertEqual(WDVCategory.Projectile, category);
-                Projectile projectile = ordnanceTransform.GetComponent<Projectile>();
+                AProjectileOrdnance projectile;
+                if (DebugControls.Instance.MovementTech == DebugControls.UnityMoveTech.Kinematic) {
+                    projectile = ordnanceTransform.GetComponent<KinematicProjectile>();
+                }
+                else {
+                    projectile = ordnanceTransform.GetComponent<PhysicsProjectile>();
+                }
                 projectile.Launch(target, weapon, Topography);
             }
         }
@@ -379,10 +443,16 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         var losWeapon = firingSolution.Weapon;
         D.Assert(losWeapon.IsOperational);  // weapon should not have completed aiming if it lost operation
         if (target.IsOperational && target.IsAttackAllowedBy(Owner) && losWeapon.ConfirmInRangeForLaunch(target)) {
-            LaunchOrdnance(losWeapon, target);
+            if (losWeapon.__CheckLineOfSight(target)) {
+                LaunchOrdnance(losWeapon, target);
+            }
+            else {
+                D.Warn("{0} no longer has a bead on Target {1}. Canceling firing solution!", losWeapon.DebugName, target.DebugName);
+                losWeapon.HandleElementDeclinedToFire();
+            }
         }
         else {
-            // target moved out of range, died or changed diplomatic during aiming process
+            // target moved out of range, died or changed relations during aiming process
             losWeapon.HandleElementDeclinedToFire();
         }
         losWeapon.weaponAimed -= LosWeaponAimedEventHandler;
@@ -567,6 +637,62 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #region Event and Property Change Handlers
 
+    private void ChangeOwnerAfterPauseEventHandler(object sender, EventArgs e) {
+        D.Log(ShowDebugLog, "{0}.ChangeOwnerAfterPauseEventHandler called.", DebugName);
+        _gameMgr.isPausedChanged -= ChangeOwnerAfterPauseEventHandler;
+        ChangeOwnerAfterPause();
+    }
+
+    private void IsAvailablePropChangedHandler() {
+        OnIsAvailable();
+    }
+
+    private void IsHQPropChangedHandler() {
+        HandleIsHQChanged();
+    }
+
+    private void CommandPropChangedHandler() {
+        OnCommandChanged();
+    }
+
+    private void OnIsAvailable() {
+        if (isAvailableChanged != null) {
+            isAvailableChanged(this, EventArgs.Empty);
+        }
+    }
+
+    private void OnIsHQChanged() {
+        if (isHQChanged != null) {
+            isHQChanged(this, EventArgs.Empty);
+        }
+    }
+
+    private void OnCommandChanged() {
+        if (commandChanged != null) {
+            commandChanged(this, EventArgs.Empty);
+        }
+    }
+
+    private void WeaponReadyToFireEventHandler(object sender, AWeapon.WeaponFiringSolutionEventArgs e) {
+        HandleWeaponReadyToFire(e.FiringSolutions);
+    }
+
+    private void LosWeaponAimedEventHandler(object sender, ALOSWeapon.LosWeaponFiringSolutionEventArgs e) {
+        HandleLosWeaponAimed(e.FiringSolution);
+    }
+
+    #endregion
+
+    protected override void HandleLeftDoubleClick() {
+        base.HandleLeftDoubleClick();
+        Command.IsSelected = true;
+    }
+
+    protected virtual void HandleIsHQChanged() {
+        Name = IsHQ ? Name + __HQNameAddendum : Name.Remove(__HQNameAddendum);
+        OnIsHQChanged();
+    }
+
     /// <summary>
     /// Handles a change in relations between players.
     /// <remarks> 7.14.16 Primary responsibility for handling Relations changes (existing relationship with a player changes) in Cmd
@@ -586,45 +712,50 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         UponRelationsChangedWith(player);
     }
 
-    private void IsAvailablePropChangedHandler() {
-        OnIsAvailable();
+    protected override void HandleIsVisualDetailDiscernibleToUserChanged() {
+        base.HandleIsVisualDetailDiscernibleToUserChanged();
+        Data.Weapons.ForAll(w => w.IsWeaponDiscernibleToUser = IsVisualDetailDiscernibleToUser);
     }
 
-    private void OnIsAvailable() {
-        if (isAvailableChanged != null) {
-            isAvailableChanged(this, EventArgs.Empty);
+    protected override void HandleUserIntelCoverageChanged() {
+        base.HandleUserIntelCoverageChanged();
+        if (Command != null) {   // 4.24.17 If Cmd is null, a new LoneCmd is being created which will AssessIcon during FinalInitialize
+            Command.AssessIcon();
         }
     }
 
-    private void IsHQPropChangedHandler() {
-        HandleIsHQChanged();
-    }
-
-    protected virtual void HandleIsHQChanged() {
-        Name = IsHQ ? Name + __HQNameAddendum : Name.Remove(__HQNameAddendum);
-        OnIsHQChanged();
-    }
-
-    private void OnIsHQChanged() {
-        if (isHQChanged != null) {
-            isHQChanged(this, EventArgs.Empty);
-        }
-    }
+    protected abstract bool ShouldCmdOwnerChange();
 
     protected override void HandleOwnerChanging(Player newOwner) {
         base.HandleOwnerChanging(newOwner);
-        if (Owner != TempGameValues.NoPlayer) {
-            // Owner is about to lose ownership of item so reset owner and allies IntelCoverage of item to what they should know
-            ResetBasedOnCurrentDetection(Owner);
+        D.AssertNotEqual(TempGameValues.NoPlayer, Owner);
+        D.Assert(IsAssaultAllowedBy(newOwner));
 
-            IEnumerable<Player> allies;
-            if (TryGetAllies(out allies)) {
-                allies.ForAll(ally => ResetBasedOnCurrentDetection(ally));
-            }
+        if (ShouldCmdOwnerChange()) {    // 5.17.17 Reqd BEFORE all these other changes propagate
+            D.Warn(@"FYI. {0} is about to change its Cmd {1}'s Owner from {2} to its own new Owner {3} in Frame {4}. Element and Cmd owner 
+                        will be 'out of sync'.", DebugName, Command.DebugName, Command.Owner, newOwner, Time.frameCount);
+            Command.Data.Owner = newOwner;
+        }
+
+        // Owner is about to lose ownership of item so reset owner and allies IntelCoverage of item to what they should know
+        ResetBasedOnCurrentDetection(Owner);
+
+        IEnumerable<Player> allies;
+        if (TryGetAllies(out allies)) {
+            allies.ForAll(ally => {
+                if (ally != newOwner && !ally.IsRelationshipWith(newOwner, DiplomaticRelationship.Alliance)) {
+                    // 5.18.17 no point assessing current detection for newOwner or a newOwner ally
+                    // as HandleOwnerChgd will assign Comprehensive to them all. 
+                    ResetBasedOnCurrentDetection(ally);
+                }
+            });
         }
         // Note: A Cmd will track its HQ Element's IntelCoverage change for a player
-    }
 
+        ReturnFromCalledStates();
+        UponLosingOwnership();  // 4.20.17 Do any reqd Callback before exiting current non-Call()ed state
+        ResetOrderAndState();
+    }
 
     protected override void HandleOwnerChanged() {
         base.HandleOwnerChanged();
@@ -635,55 +766,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         // Checking weapon targeting on an OwnerChange is handled by WeaponRangeMonitor
     }
 
-    private void WeaponReadyToFireEventHandler(object sender, AWeapon.WeaponFiringSolutionEventArgs e) {
-        HandleWeaponReadyToFire(e.FiringSolutions);
-    }
-
-    private void LosWeaponAimedEventHandler(object sender, ALOSWeapon.LosWeaponFiringSolutionEventArgs e) {
-        HandleLosWeaponAimed(e.FiringSolution);
-    }
-
-    protected override void HandleIsVisualDetailDiscernibleToUserChanged() {
-        base.HandleIsVisualDetailDiscernibleToUserChanged();
-        Data.Weapons.ForAll(w => w.IsWeaponDiscernibleToUser = IsVisualDetailDiscernibleToUser);
-    }
-
-    protected override void HandleUserIntelCoverageChanged() {
-        base.HandleUserIntelCoverageChanged();
-        Command.AssessIcon();
-    }
-
-    protected override void HandleLeftDoubleClick() {
-        base.HandleLeftDoubleClick();
-        Command.IsSelected = true;
-    }
-
-    private void FsmTgtDeathEventHandler(object sender, EventArgs e) {
-        IMortalItem_Ltd deadFsmTgt = sender as IMortalItem_Ltd;
-        UponFsmTgtDeath(deadFsmTgt);
-    }
-
-    private void FsmTgtInfoAccessChgdEventHandler(object sender, InfoAccessChangedEventArgs e) {
-        IOwnerItem_Ltd fsmTgt = sender as IOwnerItem_Ltd;
-        HandleFsmTgtInfoAccessChgd(e.Player, fsmTgt);
-    }
-
-    private void HandleFsmTgtInfoAccessChgd(Player playerWhoseInfoAccessChgd, IOwnerItem_Ltd fsmTgt) {
-        if (playerWhoseInfoAccessChgd == Owner) {
-            UponFsmTgtInfoAccessChgd(fsmTgt);
-        }
-    }
-
-    private void FsmTgtOwnerChgdEventHandler(object sender, EventArgs e) {
-        IOwnerItem_Ltd fsmTgt = sender as IOwnerItem_Ltd;
-        HandleFsmTgtOwnerChgd(fsmTgt);
-    }
-
-    private void HandleFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) {
-        UponFsmTgtOwnerChgd(fsmTgt);
-    }
-
-    #endregion
+    protected abstract void ResetOrderAndState();
 
     #region Orders Support Members
 
@@ -788,6 +871,13 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         D.AssertEqual(Constants.Zero, _activeFsmReturnHandlers.Count);
     }
 
+    protected void ReturnFromCalledStates() {
+        while (IsCurrentStateCalled) {
+            Return();
+        }
+        D.Assert(!IsCurrentStateCalled);
+    }
+
     protected void KillRepairJob() {
         if (_repairJob != null) {
             _repairJob.Kill();
@@ -814,6 +904,13 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// required before entering the Dead state.
     /// </summary>
     protected void UponDeath() { RelayToCurrentState(); }
+
+    /// <summary>
+    /// Called prior to the Owner changing, this method notifies the current
+    /// state that the element is losing ownership, allowing any current state housekeeping
+    /// required before the Owner is changed.
+    /// </summary>
+    protected void UponLosingOwnership() { RelayToCurrentState(); }
 
     protected void UponNewOrderReceived() { RelayToCurrentState(); }
 
@@ -899,9 +996,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     #region Show Icon
 
     private void InitializeIcon() {
-        DebugControls debugControls = DebugControls.Instance;
-        debugControls.showElementIcons += ShowElementIconsChangedEventHandler;
-        if (debugControls.ShowElementIcons) {
+        _debugCntls.showElementIcons += ShowElementIconsChangedEventHandler;
+        if (_debugCntls.ShowElementIcons) {
             EnableIcon(true);
         }
     }
@@ -933,7 +1029,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
                 }
             }
             else {
-                D.Assert(!DebugControls.Instance.ShowElementIcons);
+                D.Assert(!_debugCntls.ShowElementIcons);
             }
         }
     }
@@ -953,7 +1049,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     protected abstract IconInfo MakeIconInfo();
 
     private void ShowElementIconsChangedEventHandler(object sender, EventArgs e) {
-        EnableIcon(DebugControls.Instance.ShowElementIcons);
+        EnableIcon(_debugCntls.ShowElementIcons);
     }
 
     /// <summary>
@@ -961,9 +1057,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// <remarks>The icon itself will be cleaned up when DisplayMgr.Dispose() is called.</remarks>
     /// </summary>
     private void CleanupIconSubscriptions() {
-        var debugControls = DebugControls.Instance;
-        if (debugControls != null) {
-            debugControls.showElementIcons -= ShowElementIconsChangedEventHandler;
+        if (_debugCntls != null) {
+            _debugCntls.showElementIcons -= ShowElementIconsChangedEventHandler;
         }
         if (DisplayMgr != null) {
             var icon = DisplayMgr.Icon;
@@ -1043,6 +1138,37 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #region Debug
 
+    public override bool __IsPlayerEntitledToComprehensiveRelationship(Player player) {
+        if (_debugCntls.IsAllIntelCoverageComprehensive) {
+            return true;
+        }
+        if (IsOwnerChangeUnderway) {
+            return true;
+        }
+        bool isEntitled = Owner.IsRelationshipWith(player, DiplomaticRelationship.Self, DiplomaticRelationship.Alliance);
+        if (!isEntitled) {
+            //D.Warn("{0} is not entitled to Comprehensive IntelCoverage. IsOwnerChangeUnderway: {1}.", DebugName, IsOwnerChangeUnderway);
+        }
+        return isEntitled;
+    }
+
+    /// <summary>
+    /// Debug flag used to decide when to warn or not warn about Idling state
+    /// receiving _fsmTgt-related events like FsmInfoAccessChgd, FsmOwnerChgd and FsmDeath.
+    /// <remarks>4.18.17 Idling can receive these events even though it has not subscribed to 
+    /// them in some circumstances. When Cmd and its elements have subscribed to a FsmInfoAccessChgd
+    /// event for a System, and the event is raised, Cmd is the first to receive the event. Upon
+    /// receiving the event, Cmd may decide to exit its current state which will immediately cancel
+    /// all element orders and change their state to Idling. Even though each element will 
+    /// remove its subscription to the event upon exiting its current state, the event will still
+    /// show up in Idling. This flag allows me to ignore events 
+    /// arriving in Idling when I expect them, and to warn me when I don't expect them.</remarks>
+    /// <remarks>4.18.17 My Theory was this is because the event's InvocationList has been copied to keep
+    /// it from being modified while it is iterating. 5.19.17 I now know that the InvocationList is a linked
+    /// list so shouldn't need the iteration copy?</remarks>
+    /// </summary>
+    protected bool __warnWhenIdlingReceivesFsmTgtEvents = true;
+
     public bool __TryGetIsHQChangedEventSubscribers(out string targetNames) {
         if (isHQChanged != null) {
             targetNames = isHQChanged.GetInvocationList().Select(d => d.Target.ToString()).Concatenate();
@@ -1053,91 +1179,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     }
 
     protected abstract void __ValidateRadius(float radius);
-
-    private IDictionary<FsmTgtEventSubscriptionMode, bool> __subscriptionStatusLookup =
-        new Dictionary<FsmTgtEventSubscriptionMode, bool>(FsmTgtEventSubscriptionModeEqualityComparer.Default) {
-        {FsmTgtEventSubscriptionMode.TargetDeath, false },
-        {FsmTgtEventSubscriptionMode.InfoAccessChg, false },
-        {FsmTgtEventSubscriptionMode.OwnerChg, false }
-    };
-
-    /// <summary>
-    /// Attempts subscribing or unsubscribing to <c>fsmTgt</c> in the mode provided.
-    /// Returns <c>true</c> if the indicated subscribe action was taken, <c>false</c> if not.
-    /// <remarks>Issues a warning if attempting to create a duplicate subscription.</remarks>
-    /// </summary>
-    /// <param name="subscriptionMode">The subscription mode.</param>
-    /// <param name="fsmTgt">The target used by the State Machine.</param>
-    /// <param name="toSubscribe">if set to <c>true</c> subscribe, otherwise unsubscribe.</param>
-    /// <returns></returns>
-    /// <exception cref="NotImplementedException"></exception>
-    protected bool __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode subscriptionMode, IShipNavigable fsmTgt, bool toSubscribe) {
-        Utility.ValidateNotNull(fsmTgt);
-        bool isSubscribeActionTaken = false;
-        bool isDuplicateSubscriptionAttempted = false;
-        IOwnerItem_Ltd itemFsmTgt = null;
-        bool isSubscribed = __subscriptionStatusLookup[subscriptionMode];
-        switch (subscriptionMode) {
-            case FsmTgtEventSubscriptionMode.TargetDeath:
-                var mortalFsmTgt = fsmTgt as IMortalItem_Ltd;
-                if (mortalFsmTgt != null) {
-                    if (!toSubscribe) {
-                        mortalFsmTgt.deathOneShot -= FsmTgtDeathEventHandler;
-                        isSubscribeActionTaken = true;
-                    }
-                    else if (!isSubscribed) {
-                        mortalFsmTgt.deathOneShot += FsmTgtDeathEventHandler;
-                        isSubscribeActionTaken = true;
-                    }
-                    else {
-                        isDuplicateSubscriptionAttempted = true;
-                    }
-                }
-                break;
-            case FsmTgtEventSubscriptionMode.InfoAccessChg:
-                itemFsmTgt = fsmTgt as IOwnerItem_Ltd;
-                if (itemFsmTgt != null) {    // fsmTgt can be a StationaryLocation
-                    if (!toSubscribe) {
-                        itemFsmTgt.infoAccessChgd -= FsmTgtInfoAccessChgdEventHandler;
-                        isSubscribeActionTaken = true;
-                    }
-                    else if (!isSubscribed) {
-                        itemFsmTgt.infoAccessChgd += FsmTgtInfoAccessChgdEventHandler;
-                        isSubscribeActionTaken = true;
-                    }
-                    else {
-                        isDuplicateSubscriptionAttempted = true;
-                    }
-                }
-                break;
-            case FsmTgtEventSubscriptionMode.OwnerChg:
-                itemFsmTgt = fsmTgt as IOwnerItem_Ltd;
-                if (itemFsmTgt != null) {    // fsmTgt can be a StationaryLocation
-                    if (!toSubscribe) {
-                        itemFsmTgt.ownerChanged -= FsmTgtOwnerChgdEventHandler;
-                        isSubscribeActionTaken = true;
-                    }
-                    else if (!isSubscribed) {
-                        itemFsmTgt.ownerChanged += FsmTgtOwnerChgdEventHandler;
-                        isSubscribeActionTaken = true;
-                    }
-                    else {
-                        isDuplicateSubscriptionAttempted = true;
-                    }
-                }
-                break;
-            case FsmTgtEventSubscriptionMode.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(subscriptionMode));
-        }
-        if (isDuplicateSubscriptionAttempted) {
-            D.Warn("{0}: Attempting to subscribe to {1}'s {2} when already subscribed.", DebugName, fsmTgt.DebugName, subscriptionMode.GetValueName());
-        }
-        if (isSubscribeActionTaken) {
-            __subscriptionStatusLookup[subscriptionMode] = toSubscribe;
-        }
-        return isSubscribeActionTaken;
-    }
 
     // 3.7.17 Moved __ReportCollision(Collision collision) to Facility and Ship as needs differ
 
@@ -1168,7 +1209,56 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     protected override void Unsubscribe() {
         base.Unsubscribe();
         CleanupIconSubscriptions();
+        _gameMgr.isPausedChanged -= ChangeOwnerAfterPauseEventHandler;
     }
+
+    #endregion
+
+    #region AssaultShuttle Sim Archive
+
+    // 5.20.17 Atomic AssaultShuttle attacks without using Ordnance
+
+    //private void LaunchOrdnance(AWeapon weapon, IElementAttackable target) {
+    //    Vector3 launchLoc = weapon.WeaponMount.MuzzleLocation;
+    //    Quaternion launchRotation = Quaternion.LookRotation(weapon.WeaponMount.MuzzleFacing);
+    //    WDVCategory category = weapon.DeliveryVehicleCategory;
+    //    Transform ordnanceTransform;
+    //    if (category == WDVCategory.Beam) {
+    //        ordnanceTransform = GamePoolManager.Instance.Spawn(category, launchLoc, launchRotation, weapon.WeaponMount.Muzzle);
+    //        Beam beam = ordnanceTransform.GetComponent<Beam>();
+    //        beam.Launch(target, weapon);
+    //    }
+    //    else if (category == WDVCategory.AssaultShuttle) {    // 5.20.17 Sim approach prior to using real AssaultShuttles
+    //        IAssaultable assaultTgt = target as IAssaultable;
+    //        D.AssertNotNull(assaultTgt);
+    //        D.Assert(assaultTgt.IsAssaultAllowedBy(Owner));
+    //        D.Log(ShowDebugLog, "{0} is assaulting {1} with value {2:0.00}.", DebugName, assaultTgt.DebugName, weapon.DamagePotential.Total);
+    //        string prevAssaultTgtName = assaultTgt.DebugName;
+    //        bool isAssaultSuccessful = assaultTgt.AttemptAssault(Owner, weapon.DamagePotential);
+    //        if (isAssaultSuccessful) {
+    //            D.LogBold(/*ShowDebugLog, */"{0} has assaulted {1} and taken it over, creating {2}.", DebugName, prevAssaultTgtName, assaultTgt.DebugName);
+    //        }
+    //    }
+    //    else {
+    //        // Projectiles are located under PoolingManager in the scene
+    //        ordnanceTransform = GamePoolManager.Instance.Spawn(category, launchLoc, launchRotation);
+    //        Collider ordnanceCollider = UnityUtility.ValidateComponentPresence<Collider>(ordnanceTransform.gameObject);
+    //        D.Assert(ordnanceTransform.gameObject.activeSelf);  // ordnanceGo must be active for IgnoreCollision
+    //        Physics.IgnoreCollision(ordnanceCollider, _primaryCollider);
+
+    //        if (category == WDVCategory.Missile) {
+    //            Missile missile = ordnanceTransform.GetComponent<Missile>();
+    //            missile.ElementVelocityAtLaunch = Rigidbody.velocity;
+    //            missile.Launch(target, weapon, Topography);
+    //        }
+    //        else {
+    //            D.AssertEqual(WDVCategory.Projectile, category);
+    //            Projectile projectile = ordnanceTransform.GetComponent<Projectile>();
+    //            projectile.Launch(target, weapon, Topography);
+    //        }
+    //    }
+    //    //D.Log(ShowDebugLog, "{0} has fired {1} against {2} on {3}.", DebugName, ordnance.Name, target.DebugName, GameTime.Instance.CurrentDate);
+    //}
 
     #endregion
 
@@ -1187,22 +1277,25 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         }
         D.Log(ShowDebugLog, "{0} has been hit. Taking {1:0.#} damage.", DebugName, damage.Total);
 
-        bool isCmdHit = false;
         float damageSeverity;
         bool isElementAlive = ApplyDamage(damage, out damageSeverity);
-        if (!isElementAlive) {
-            IsOperational = false;  // should immediately propagate thru to Cmd's alive status
-        }
-        if (IsHQ && Command.IsOperational) {
-            isCmdHit = Command.__CheckForDamage(isElementAlive, damage, damageSeverity);
-        }
-
-        Command.HandleDamageIncurredBy(this);
-
         if (isElementAlive) {
+            bool isCmdHit = false;
+            if (IsHQ) {
+                D.Assert(Command.IsOperational);
+                isCmdHit = Command.__CheckForDamage(isElementAlive, damage, damageSeverity);
+            }
             var hitAnimation = isCmdHit ? EffectSequenceID.CmdHit : EffectSequenceID.Hit;
             StartEffectSequence(hitAnimation);
             UponDamageIncurred();
+            Command.HandleDamageIncurredBy(this);
+        }
+        else {
+            AUnitCmdItem cmd = Command; // Killing element will immediately cause element to be removed from Cmd, nulling Command
+            IsOperational = false;  // should immediately propagate thru to Cmd's alive status
+            if (cmd.IsOperational) {
+                cmd.HandleDamageIncurredBy(this);
+            }
         }
     }
 
@@ -1249,8 +1342,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         _detectionHandler.HandleDetectionBy(detector, sensorRangeCat);
     }
 
-    public void HandleDetectionLostBy(ISensorDetector detector, RangeCategory sensorRangeCat) {
-        _detectionHandler.HandleDetectionLostBy(detector, sensorRangeCat);
+    public void HandleDetectionLostBy(ISensorDetector detector, Player detectorOwner, RangeCategory sensorRangeCat) {
+        _detectionHandler.HandleDetectionLostBy(detector, detectorOwner, sensorRangeCat);
     }
 
     /// <summary>
@@ -1275,6 +1368,120 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     #region IUnitElement_Ltd Members
 
     IUnitCmd_Ltd IUnitElement_Ltd.Command { get { return Command as IUnitCmd_Ltd; } }
+
+    #endregion
+
+    #region IFsmEventSubscriptionMgrClient Members
+
+    void IFsmEventSubscriptionMgrClient.HandleFsmTgtInfoAccessChgd(IOwnerItem_Ltd fsmTgt) {
+        D.Log(ShowDebugLog, "{0}'s access to info about FsmTgt {1} has changed.", DebugName, fsmTgt.DebugName);
+        UponFsmTgtInfoAccessChgd(fsmTgt);
+    }
+
+    void IFsmEventSubscriptionMgrClient.HandleFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) {
+        UponFsmTgtOwnerChgd(fsmTgt);
+    }
+
+    void IFsmEventSubscriptionMgrClient.HandleFsmTgtDeath(IMortalItem_Ltd deadFsmTgt) {
+        UponFsmTgtDeath(deadFsmTgt);
+    }
+
+    void IFsmEventSubscriptionMgrClient.HandleAwarenessChgd(IOwnerItem_Ltd item) { }
+
+    #endregion
+
+    #region IAssaultable Members
+
+    public virtual bool IsAssaultAllowedBy(Player player) {
+        if (!IsAttackAllowedBy(player)) {
+            return false;
+        }
+        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Defense)) {
+            return false;
+        }
+        // 5.18.17 Can't use dynamically changing factors where a WRM can't subscribe to 
+        // changes in as this is used by weapons to place targets into the QualifiedTargets
+        // collection which determines whether the target is fired on. Examples that shouldn't
+        // be used here include __lastAssaultFrame and __IsActivelyOperating. 
+        return true;
+    }
+
+    private int __lastAssaultFrame;
+
+    /// <summary>
+    /// Attempts to takeover this Element's ownership with player. Returns <c>true</c> if successful, <c>false</c> otherwise.
+    /// <remarks>4.20.17 Not currently used.</remarks>
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <param name="strength">The takeover strength. A value between 0 and 1.0.</param>
+    /// <returns></returns>
+    public bool AttemptAssault(Player player, DamageStrength strength, string __assaulterName) {
+        D.Assert(!IsPaused);
+        if (!IsAssaultAllowedBy(player)) {
+            D.Error("{0} erroneously assaulted by {1} in Frame {2}. IsAttackAllowedBy: {3}, HasAccessToDefense: {4}.",
+                DebugName, __assaulterName, Time.frameCount, IsAttackAllowedBy(player), InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Defense));
+        }
+        Utility.ValidateForRange(strength.Total, Constants.ZeroPercent, Constants.OneHundredPercent);
+
+        int currentFrame = Time.frameCount;
+        if (IsOwnerChangeUnderway) {
+            // 5.17.17 Multiple assaults in the same frame by the same or other players can occur even if 
+            // AssaultShuttles aren't instantaneous.
+            // 5.22.17 Changed to warn to reconfirm this takes place with real AssaultShuttles
+            D.Warn(/*ShowDebugLog, */"{0} assault is not allowed by {1} in Frame {2} when owner change underway.",
+                DebugName, __assaulterName, currentFrame);
+            return false;
+        }
+
+        if (!Command.__IsActivelyOperating) {
+            // 5.22.17 Changed to Error to see if this still occurs with real AssaultShuttles. I know with instantaneous
+            // Assaults it did occur on LoneFleetCmds
+            D.Error("FYI. {0} assault is not allowed by {1} in Frame {2} when {3} has not yet CommencedOperations.",
+                DebugName, __assaulterName, currentFrame, Command.DebugName);
+            return false;
+        }
+
+        if (__lastAssaultFrame == currentFrame) {
+            // 5.22.17 FIXME Multiple assaults in the same frame by the same or other players can occur even if 
+            // AssaultShuttles aren't instantaneous. Confirmed this does occur. I think multiple changes in the same frame 
+            // may have something to do with the infrequent but bad behaviour I see with SensorMonitor's OnTriggerExit warnings
+            // (items exiting at wrong distance). I'm speculating that multiple collider enable/disable in the same frame 
+            // creates some instability.
+            D.Log(/*ShowDebugLog,*/ "{0} assault is not allowed by {1} in Frame {2} when previously assaulted in same frame.",
+                DebugName, __assaulterName, currentFrame);
+            return false;
+        }
+        __lastAssaultFrame = currentFrame;
+
+        if (IsHQ) {
+            Command.TakeHit(strength);
+        }
+
+        if (_debugCntls.AreAssaultsAlwaysSuccessful) {
+            Owner = player;
+            return true;
+        }
+        else if (strength.Total > Command.Data.CurrentCmdEffectiveness) {   // HACK takeoverStrength vs loyalty?
+            Owner = player;
+            return true;
+        }
+        return false;
+    }
+
+    public void __ChangeOwner(Player newOwner) {
+        D.AssertNotEqual(Owner, newOwner, DebugName);
+        if (IsPaused) {
+            _newOwnerAfterPause = newOwner;
+            // deal with multiple changes all while paused
+            _gameMgr.isPausedChanged -= ChangeOwnerAfterPauseEventHandler;
+            _gameMgr.isPausedChanged += ChangeOwnerAfterPauseEventHandler;
+            D.Log(/*ShowDebugLog, */"{0}.__ChangeOwner({1}) called while paused.", DebugName, newOwner.DebugName);
+        }
+        else {
+            D.AssertNull(_newOwnerAfterPause);
+            Owner = newOwner;
+        }
+    }
 
     #endregion
 

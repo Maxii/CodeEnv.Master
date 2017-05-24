@@ -35,10 +35,6 @@ namespace CodeEnv.Master.GameContent {
             return new StarReport(_data, player, _item);
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
     }
 }
 

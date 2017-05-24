@@ -18,11 +18,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
-using PathologicalGames;
 using UnityEngine;
 
 /// <summary>
@@ -77,7 +74,7 @@ public abstract class AOrdnance : AMonoBase, IOrdnance, IEquatable<AOrdnance> {
 
     public DamageStrength DamagePotential { get { return Weapon.DamagePotential; } }
 
-    public bool ShowDebugLog { get { return DebugControls.Instance.ShowOrdnanceDebugLogs; } }
+    public bool ShowDebugLog { get { return GameReferences.DebugControls.ShowOrdnanceDebugLogs; } }
 
     protected virtual bool ToShowMuzzleEffects { get { return IsWeaponDiscernibleToUser; } }
 
@@ -141,8 +138,6 @@ public abstract class AOrdnance : AMonoBase, IOrdnance, IEquatable<AOrdnance> {
 
         _range = weapon.RangeDistance;
         IsOperational = true;
-
-        enabled = true;
     }
 
     protected virtual void Subscribe() {
@@ -162,8 +157,8 @@ public abstract class AOrdnance : AMonoBase, IOrdnance, IEquatable<AOrdnance> {
 
     void Update() {
         if (_toDespawn) {
-            enabled = false;
             Despawn();
+            enabled = false;
         }
         else {
             ProcessUpdate();
@@ -173,12 +168,13 @@ public abstract class AOrdnance : AMonoBase, IOrdnance, IEquatable<AOrdnance> {
     protected virtual void ProcessUpdate() { }
 
     protected virtual void OnSpawned() {
+        D.Assert(!_gameMgr.IsPaused);
+        D.Assert(!enabled);
         if (!_isNameInitialized) {
             InitializeName();
         }
         D.AssertNull(Target);
         D.AssertNull(Weapon);
-        D.AssertDefault(_uniqueID);
         D.AssertDefault(_range);
         D.Assert(!IsOperational);
         D.Assert(!_toDespawn);
@@ -204,11 +200,14 @@ public abstract class AOrdnance : AMonoBase, IOrdnance, IEquatable<AOrdnance> {
 
     protected virtual void OnDespawned() {
         //D.Log(ShowDebugLog, "{0}.OnDespawned called.", DebugName);
+
+        // 5.24.17 Can't assert not paused as the isPaused event handler has already been unsubscribed. Accordingly, a pause
+        // can occur in the single frame before Update calls Despawn and this AOrdnance wouldn't disable Update from being called.
+
         Target = null;
         Weapon = null;
+        // 5.12.17 No longer resetting _uniqueID to zero as it may be causing equality issues when removing from HashSets in ActiveCmMonitor
         D.AssertNotEqual(Constants.Zero, _uniqueID);
-        D.Assert(!enabled); // should be disabled just before Despawn is called
-        _uniqueID = Constants.Zero;
         _range = Constants.ZeroF;
 
         D.Assert(_toDespawn);
@@ -327,11 +326,15 @@ public abstract class AOrdnance : AMonoBase, IOrdnance, IEquatable<AOrdnance> {
 
     #endregion
 
+    public sealed override string ToString() {
+        return DebugName;
+    }
+
     #region IEquatable<AOrdnance> Members
 
     public bool Equals(AOrdnance other) {
         // if the same instance and _uniqueID are equal, then its the same
-        return base.Equals(other) && _uniqueID == other._uniqueID;  // need instance comparison as _uniqueID is 0 in PoolMgr
+        return base.Equals(other) && _uniqueID == other._uniqueID;
     }
 
     #endregion

@@ -24,16 +24,18 @@ namespace CodeEnv.Master.Common {
     /// </summary>
     public class ResponseCurve {
 
+        public string DebugName { get { return GetType().Name; } }
+
         /// <summary>
         /// The minimum value allowed as an input.  All inputs less than this value produce
-        /// the output value associated with this minimum input value.  ie. inputs are clamped to this
+        /// the output value associated with this minimum input value. i.e. inputs are clamped to this
         /// minimum value.
         /// </summary>
         public int MinimumInput { get; private set; }
 
         /// <summary>
         /// The maximum value allowed as an input.  All inputs greater than this value produce
-        /// the output value associated with this maximum input value.  ie. inputs are clamped to this
+        /// the output value associated with this maximum input value. i.e. inputs are clamped to this
         /// maximum value.
         /// </summary>
         public int MaximumInput { get; private set; }
@@ -75,7 +77,7 @@ namespace CodeEnv.Master.Common {
         }
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
     }

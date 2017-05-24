@@ -26,6 +26,8 @@ using UnityEngine;
 [CustomEditor(typeof(GuiShowModeControlButton))]
 public class GuiShowModeControlButtonEditor : Editor {
 
+    public string DebugName { get { return GetType().Name; } }
+
     public override void OnInspectorGUI() {
         serializedObject.Update();
 
@@ -47,7 +49,7 @@ public class GuiShowModeControlButtonEditor : Editor {
     }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
 }

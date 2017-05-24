@@ -30,6 +30,8 @@ namespace CodeEnv.Master.GameContent {
 
         public bool IsShowing { get { return IsLineActive; } }
 
+        public virtual string DebugName { get { return GetType().Name; } }
+
         /*****************************************************************************************************
         * Parenting: Ability to assign a 2D Vectrosity object to a designated Parent removed as Vectrosity 4.0's
         * use of Unity 4.6's new UICanvas requires that the objects be children of the canvas. Per Eric5h5:
@@ -71,6 +73,10 @@ namespace CodeEnv.Master.GameContent {
 
         protected virtual void Cleanup() {
             VectorLine.Destroy(ref _line);
+        }
+
+        public sealed override string ToString() {
+            return DebugName;
         }
 
         #region IDisposable

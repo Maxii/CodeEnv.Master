@@ -15,6 +15,7 @@
 ////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
+
     using System;
     using CodeEnv.Master.Common;
 
@@ -36,6 +37,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
+
+        public string DebugName { get { return GetType().Name; } }
 
         public Species Species { get; private set; }
 
@@ -107,7 +110,7 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
         #region IEquatable<SpeciesStat> Members

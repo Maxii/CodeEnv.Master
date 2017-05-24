@@ -26,7 +26,12 @@ namespace CodeEnv.Master.GameContent {
 
         event EventHandler deathOneShot;
 
+        event EventHandler __death;
+
         IntVector3 SectorID { get; }
+
+        void __LogDeathEventSubscribers();
+
 
     }
 }

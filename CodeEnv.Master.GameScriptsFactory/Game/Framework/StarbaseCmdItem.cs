@@ -79,8 +79,8 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd,
         SelectedItemHudWindow.Instance.Show(FormID.SelectedStarbase, UserReport);
     }
 
-    protected override void HandleDeathBeforeBeginningDeathEffect() {
-        base.HandleDeathBeforeBeginningDeathEffect();
+    protected override void PrepareForDeathEffect() {
+        base.PrepareForDeathEffect();
         PathfindingManager.Instance.Graph.RemoveFromGraph(this);
         // unlike SettlementCmdItem, no parent orbiter object to disable or destroy
     }
@@ -105,10 +105,6 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd,
     #region Cleanup
 
     #endregion
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
     #region ISectorViewHighlightable Members
 

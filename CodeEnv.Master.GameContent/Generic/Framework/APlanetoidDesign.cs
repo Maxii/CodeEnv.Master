@@ -23,6 +23,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class APlanetoidDesign {
 
+        public string DebugName { get { return GetType().Name; } }
+
         public string DesignName { get; private set; }
 
         public IEnumerable<PassiveCountermeasureStat> PassiveCmStats { get; private set; }
@@ -32,6 +34,9 @@ namespace CodeEnv.Master.GameContent {
             PassiveCmStats = passiveCmStats;
         }
 
+        public sealed override string ToString() {
+            return DebugName;
+        }
 
     }
 }

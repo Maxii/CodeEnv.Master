@@ -30,6 +30,8 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public abstract class AForm : AMonoBase {
 
+    public string DebugName { get { return GetType().Name; } }
+
     public abstract FormID FormID { get; }
 
     protected override void Awake() {
@@ -55,6 +57,10 @@ public abstract class AForm : AMonoBase {
     /// <returns></returns>
     protected UILabel GetLabel(AGuiElement element) {
         return element.gameObject.GetSingleComponentInChildren<UILabel>();
+    }
+
+    public sealed override string ToString() {
+        return DebugName;
     }
 
 }

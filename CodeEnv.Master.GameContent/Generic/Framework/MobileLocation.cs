@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: MobileLocation.cs
-// An INavigableTarget wrapping a mobile location in world space.
+// An INavigableDestination wrapping a mobile location in world space.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,9 +21,9 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// An INavigable target wrapping a mobile location in world space.
+    /// An INavigableDestination target wrapping a mobile location in world space.
     /// </summary>
-    public class MobileLocation : IFleetNavigable, IShipNavigable {
+    public class MobileLocation : IFleetNavigableDestination, IShipNavigableDestination {
 
         private Reference<Vector3> _movingPosition;
 
@@ -35,7 +35,7 @@ namespace CodeEnv.Master.GameContent {
             return DebugName;
         }
 
-        #region INavigable Members
+        #region INavigableDestination Members
 
         public string Name { get { return DebugName; } }
 
@@ -57,7 +57,7 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        #region IShipNavigable Members
+        #region IShipNavigableDestination Members
 
         public ApMoveDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, IShip ship) {
             return new ApMoveDestinationProxy(this, ship, tgtOffset, Constants.ZeroF, TempGameValues.WaypointCloseEnoughDistance);
@@ -65,7 +65,7 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        #region IFleetNavigable Members
+        #region IFleetNavigableDestination Members
 
         public Topography Topography { get { return GameReferences.GameManager.GameKnowledge.GetSpaceTopography(Position); } }
 

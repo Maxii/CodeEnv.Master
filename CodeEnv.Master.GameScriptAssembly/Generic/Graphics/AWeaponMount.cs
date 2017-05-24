@@ -31,8 +31,6 @@ public abstract class AWeaponMount : AMount, IWeaponMount {
     private Transform _muzzle = null;
     public Transform Muzzle { get { return _muzzle; } }
 
-    public virtual string DebugName { get { return transform.name; } }
-
     private AWeapon _weapon;
     public AWeapon Weapon {
         get { return _weapon; }

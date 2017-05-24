@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
         private const string DebugNameFormat = "{0}.{1}";
 
         private string _debugName;
-        public string DebugName {
+        public virtual string DebugName {
             get {
                 if (_debugName == null) {
                     _debugName = DebugNameFormat.Inject(Destination.DebugName, GetType().Name);
@@ -35,6 +35,17 @@ namespace CodeEnv.Master.GameContent {
                 return _debugName;
             }
         }
+
+        /// <summary>
+        /// Returns <c>true</c> if this ApProxy is a potentially uncatchable ship, <c>false</c> otherwise.
+        /// <remarks>4.15.17 This proxy could also be uncatchable if its a fleet. However, ships that have fleets
+        /// as a destination rely on their own FleetCmd to determine whether the fleet being pursued 
+        /// is uncatchable. This makes for more coordinated decision making (the whole fleet decides to 
+        /// abandon the pursuit rather than each ship making its own decision), and is more efficient.
+        /// Thus the property name is not IsPotentiallyUncatchable.
+        /// </remarks>
+        /// </summary>
+        public bool IsPotentiallyUncatchableShip { get; private set; }
 
         public Vector3 Position { get { return Destination.Position + _destOffset; } }
 
@@ -50,7 +61,7 @@ namespace CodeEnv.Master.GameContent {
         public float InnerRadius { get; private set; }
         public float OuterRadius { get; private set; }
 
-        public IShipNavigable Destination { get; private set; }
+        public IShipNavigableDestination Destination { get; private set; }
 
         public virtual float __ShipDistanceFromArrived {
             get {
@@ -85,12 +96,13 @@ namespace CodeEnv.Master.GameContent {
         private float _innerRadiusSqrd;
         private float _outerRadiusSqrd;
 
-        public AApDestinationProxy(IShipNavigable destination, IShip ship, Vector3 destOffset, float innerRadius, float outerRadius) {
+        public AApDestinationProxy(IShipNavigableDestination destination, IShip ship, Vector3 destOffset, float innerRadius, float outerRadius) {
             Utility.ValidateNotNull(destination);
             Utility.ValidateNotNegative(innerRadius);
             Utility.ValidateForRange(outerRadius, innerRadius, Mathf.Infinity); // HACK
             Destination = destination;
             IsFastMover = destination is IShip || destination is IFleetCmd;
+            IsPotentiallyUncatchableShip = destination is IShip;
             _ship = ship;
             _destOffset = destOffset;
             InnerRadius = innerRadius;
@@ -140,6 +152,10 @@ namespace CodeEnv.Master.GameContent {
                 }
             }
             return false;
+        }
+
+        public sealed override string ToString() {
+            return DebugName;
         }
 
     }

@@ -122,7 +122,7 @@ namespace CodeEnv.Master.GameContent {
             return null;
         }
 
-        private float? CalcTargetDistance(INavigable target, Vector3? shipPosition) {
+        private float? CalcTargetDistance(INavigableDestination target, Vector3? shipPosition) {
             if (target != null) {
                 IMortalItem_Ltd mortalTgt = target as IMortalItem_Ltd;
                 if (mortalTgt != null && !mortalTgt.IsOperational) {
@@ -136,9 +136,6 @@ namespace CodeEnv.Master.GameContent {
             return null;
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
 
     }
 }

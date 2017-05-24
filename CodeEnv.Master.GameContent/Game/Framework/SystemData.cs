@@ -186,15 +186,20 @@ namespace CodeEnv.Master.GameContent {
                 _allMemberIntelCoverages.Add(settlementCoverage);
             }
 
+            IntelCoverage currentCoverage = GetIntelCoverage(player);
+
             IntelCoverage lowestCommonCoverage = GetLowestCommonCoverage(_allMemberIntelCoverages);
-            var isCoverageAccepted = SetIntelCoverage(player, lowestCommonCoverage);
-            if (isCoverageAccepted) {
-                //D.Log(ShowDebugLog, "{0} has assessed its IntelCoverage for {1} and set it to the lowest common member value {2}.",
-                //    DebugName, player.DebugName, lowestCommonCoverage.GetValueName());
+            IntelCoverage resultingCoverage;
+            var isCoverageSet = TrySetIntelCoverage(player, lowestCommonCoverage, out resultingCoverage);
+            if (isCoverageSet) {
+                if (resultingCoverage == lowestCommonCoverage) {
+                    D.Log(ShowDebugLog, "{0} has assessed its IntelCoverage for {1} and changed it from {2} to the lowest common member value {3}.",
+                        DebugName, player.DebugName, currentCoverage.GetValueName(), lowestCommonCoverage.GetValueName());
+                }
             }
             else {
-                //D.Log(ShowDebugLog, "{0} has assessed its IntelCoverage for {1} and declined to change it from {2} to the lowest common member value {3}.",
-                //    DebugName, player.DebugName, GetIntelCoverage(player).GetValueName(), lowestCommonCoverage.GetValueName());
+                D.Log(ShowDebugLog, "{0} has assessed its IntelCoverage for {1} and declined to change it from {2} to the lowest common member value {3}.",
+                    DebugName, player.DebugName, currentCoverage.GetValueName(), lowestCommonCoverage.GetValueName());
             }
         }
 
@@ -359,10 +364,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
 
         #region IDisposable
 

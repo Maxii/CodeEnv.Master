@@ -26,6 +26,8 @@ using UnityEngine;
 [CustomEditor(typeof(SectorGrid))]
 public class SectorGridEditor : Editor {
 
+    public string DebugName { get { return GetType().Name; } }
+
     public override void OnInspectorGUI() {
 
         serializedObject.Update();
@@ -43,17 +45,6 @@ public class SectorGridEditor : Editor {
                 NGUIEditorTools.DrawProperty("Grid Size", serializedObject, "_gridSize");
             }
             EditorGUI.EndDisabledGroup();
-
-            ////NGUIEditorTools.SetLabelWidth(160F);
-            ////SerializedProperty isDebugGridSizeLimitEnabledSP = NGUIEditorTools.DrawProperty("Enable Grid Size Limits", serializedObject, "_enableGridSizeLimit");
-
-            ////EditorGUI.BeginDisabledGroup(!isDebugGridSizeLimitEnabledSP.boolValue);
-            ////{
-            ////    NGUIEditorTools.SetLabelWidth(100F);
-            ////    NGUIEditorTools.DrawProperty("Max Grid Size", serializedObject, "_debugMaxGridSize");
-
-            ////}
-            ////EditorGUI.EndDisabledGroup();
         }
         EditorGUI.EndDisabledGroup();
 
@@ -61,7 +52,7 @@ public class SectorGridEditor : Editor {
     }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
 }

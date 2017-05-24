@@ -24,6 +24,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AItemReport {
 
+        public virtual string DebugName { get { return GetType().Name; } }
+
         /// <summary>
         /// Debug. The position of the Item for reporting the camera distance.
         /// </summary>
@@ -63,6 +65,10 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected abstract void AssignValues(AItemData data);
+
+        public sealed override string ToString() {
+            return DebugName;
+        }
 
     }
 }

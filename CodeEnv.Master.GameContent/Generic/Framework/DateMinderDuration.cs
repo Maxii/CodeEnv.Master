@@ -25,9 +25,12 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class DateMinderDuration {
 
-        private const string DebugNameFormat = "{0}[{1}]";
+        private const string DebugNameFormat = "{0}[{1}, {2}]";
+        private static int IdCount = 0;
 
-        public string DebugName { get { return DebugNameFormat.Inject(Client.DebugName, Duration); } }
+        private int _uniqueID;
+
+        public string DebugName { get { return DebugNameFormat.Inject(Client.DebugName, Duration, _uniqueID); } }
 
         public GameTimeDuration Duration { get; private set; }
 
@@ -36,6 +39,8 @@ namespace CodeEnv.Master.GameContent {
         public DateMinderDuration(GameTimeDuration duration, IRecurringDateMinderClient client) {
             Duration = duration;
             Client = client;
+            _uniqueID = IdCount;
+            IdCount++;
         }
 
         public override string ToString() {

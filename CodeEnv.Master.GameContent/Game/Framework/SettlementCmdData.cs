@@ -78,8 +78,9 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="sensors">The MR and LR sensors for this UnitCmd.</param>
         /// <param name="ftlDampener">The FTL dampener.</param>
         /// <param name="cmdStat">The stat.</param>
-        public SettlementCmdData(ISettlementCmd settlementCmd, Player owner, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, SettlementCmdStat cmdStat)
-            : this(settlementCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), sensors, ftlDampener, cmdStat) {
+        public SettlementCmdData(ISettlementCmd settlementCmd, Player owner, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener,
+            SettlementCmdStat cmdStat)
+                : this(settlementCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), sensors, ftlDampener, cmdStat) {
         }
 
         /// <summary>
@@ -91,9 +92,11 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="sensors">The MR and LR sensors for this UnitCmd.</param>
         /// <param name="ftlDampener">The FTL dampener.</param>
         /// <param name="cmdStat">The stat.</param>
-        public SettlementCmdData(ISettlementCmd settlementCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, SettlementCmdStat cmdStat)
-            : base(settlementCmd, owner, passiveCMs, sensors, ftlDampener, cmdStat) {
-            Population = cmdStat.Population;
+        public SettlementCmdData(ISettlementCmd settlementCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs,
+            IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, SettlementCmdStat cmdStat)
+                : base(settlementCmd, owner, passiveCMs, sensors, ftlDampener, cmdStat) {
+            Population = cmdStat.StartingPopulation;
+            Approval = cmdStat.StartingApproval;
         }
 
         protected override AInfoAccessController InitializeInfoAccessController() {
@@ -170,10 +173,6 @@ namespace CodeEnv.Master.GameContent {
             base.Unsubscribe();
             _systemDataSubscriptions.ForAll(s => s.Dispose());
             _systemDataSubscriptions.Clear();
-        }
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
         }
 
     }

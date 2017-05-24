@@ -116,22 +116,8 @@ namespace CodeEnv.Master.GameContent {
             HandleCountermeasureIsDamagedChanged(cm);
         }
 
-        private void HandleCountermeasureIsDamagedChanged(AEquipment countermeasure) {
-            D.Log(ShowDebugLog, "{0}'s {1} is {2}.", DebugName, countermeasure.Name, countermeasure.IsDamaged ? "damaged" : "repaired");
-            RecalcDefensiveValues();
-        }
-
         private void MaxHitPtsPropChangingHandler(float newMaxHitPoints) {
             HandleMaxHitPtsChanging(newMaxHitPoints);
-        }
-
-        private void HandleMaxHitPtsChanging(float newMaxHitPoints) {
-            D.Assert(newMaxHitPoints >= Constants.ZeroF);
-            if (newMaxHitPoints < MaxHitPoints) {
-                // reduction in max hit points so reduce current hit points to match
-                CurrentHitPoints = Mathf.Clamp(CurrentHitPoints, Constants.ZeroF, newMaxHitPoints);
-                // FIXME changing CurrentHitPoints here sends out a temporary erroneous health change event. The accurate health change event follows shortly
-            }
         }
 
         private void MaxHitPtsPropChangedHandler() {
@@ -146,15 +132,36 @@ namespace CodeEnv.Master.GameContent {
             HandleHealthChanged();
         }
 
+        #endregion
+
+        private void HandleCountermeasureIsDamagedChanged(AEquipment countermeasure) {
+            D.Log(ShowDebugLog, "{0}'s {1} is {2}.", DebugName, countermeasure.Name, countermeasure.IsDamaged ? "damaged" : "repaired");
+            RecalcDefensiveValues();
+        }
+
+        private void HandleMaxHitPtsChanging(float newMaxHitPoints) {
+            D.Assert(newMaxHitPoints >= Constants.ZeroF);
+            if (newMaxHitPoints < MaxHitPoints) {
+                // reduction in max hit points so reduce current hit points to match
+                CurrentHitPoints = Mathf.Clamp(CurrentHitPoints, Constants.ZeroF, newMaxHitPoints);
+                // FIXME changing CurrentHitPoints here sends out a temporary erroneous health change event. The accurate health change event follows shortly
+            }
+        }
+
         protected virtual void HandleHealthChanged() {
             //D.Log(ShowDebugLog, "{0}: Health {1}, CurrentHitPoints {2}, MaxHitPoints {3}.", DebugName, _health, CurrentHitPoints, MaxHitPoints);
         }
 
         protected sealed override void HandleIsOperationalChanged() {
             // override the AItemData Assert as MortalItems set IsOperational to false when dieing
+            if (!IsOperational) {
+                HandleDeath();
+            }
         }
 
-        #endregion
+        protected virtual void HandleDeath() {
+            // Can't assert CurrentHitPoints as LoneFleetCmds can 'die' when they transfer their LoneElement to another Fleet
+        }
 
         #region Cleanup
 

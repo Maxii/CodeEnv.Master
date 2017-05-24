@@ -73,14 +73,16 @@ public abstract class AEquipmentMonitor<EquipmentType> : AColliderMonitor where 
         HandleEquipmentIsOperationalChanged();
     }
 
-    private void HandleEquipmentIsOperationalChanged() {
-        // 11.5.16 RefreshRangeDistance moved to HandleEquipmentIsDamagedChanged
-        AssessIsOperational();
-    }
-
     // protected to allow SensorRangeMonitor to support Remove(sensor) 
     protected void EquipmentIsDamagedChangedEventHandler(object sender, EventArgs e) {
         HandleEquipmentIsDamagedChanged();
+    }
+
+    #endregion
+
+    private void HandleEquipmentIsOperationalChanged() {
+        // 11.5.16 RefreshRangeDistance moved to HandleEquipmentIsDamagedChanged
+        AssessIsOperational();
     }
 
     private void HandleEquipmentIsDamagedChanged() {
@@ -91,8 +93,6 @@ public abstract class AEquipmentMonitor<EquipmentType> : AColliderMonitor where 
         base.HandleRangeDistanceChanged();
         RefreshEquipmentRangeDistance();
     }
-
-    #endregion
 
     public virtual void Add(EquipmentType pieceOfEquipment) {
         D.Assert(!pieceOfEquipment.IsActivated);

@@ -25,9 +25,6 @@ using UnityEditor;
 [CustomEditor(typeof(FleetsTableWindow))]
 public class FleetsTableWindowEditor : ATableWindowEditor<FleetsTableWindow> {
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 }
 

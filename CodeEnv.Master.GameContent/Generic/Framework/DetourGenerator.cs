@@ -445,8 +445,8 @@ namespace CodeEnv.Master.GameContent {
             return ApproachPath.Belt;
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+        public sealed override string ToString() {
+            return DebugName;
         }
 
         #region Nested Classes

@@ -16,6 +16,9 @@
 
 // default namespace
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using CodeEnv.Master.Common;
 using UnityEditor;
 using UnityEngine;
@@ -26,12 +29,21 @@ using UnityEngine;
 [CustomEditor(typeof(DebugControls))]
 public class DebugControlsEditor : Editor {
 
-    public override void OnInspectorGUI() {
+    private DebugControls _debugCntlTarget;
+    private SerializedProperty _chosenPlayerNameSP;
 
-        var debugCntlTarget = target as DebugControls;
+    void OnEnable() {
+        _debugCntlTarget = target as DebugControls;
+        _chosenPlayerNameSP = serializedObject.FindProperty("_chosenPlayerName");
+    }
+
+    public override void OnInspectorGUI() {
 
         serializedObject.Update();
 
+        SerializedProperty autoRelationsChgSP = null;
+
+        // Begin disabled while playing group
         EditorGUI.BeginDisabledGroup(EditorApplication.isPlaying);
         {
             GUILayout.Space(10F);
@@ -53,21 +65,23 @@ public class DebugControlsEditor : Editor {
                 NGUIEditorTools.EndContents();
             }
 
-            if (NGUIEditorTools.DrawHeader("AI Settings")) {
+            if (NGUIEditorTools.DrawHeader("AI Settings", detailed: true)) {
                 NGUIEditorTools.BeginContents();
                 {
-                    NGUIEditorTools.SetLabelWidth(80F);
+                    NGUIEditorTools.SetLabelWidth(100F);
                     var autoExploreSP = NGUIEditorTools.DrawProperty("AutoExplore", serializedObject, "_fleetsAutoExplore");
 
                     EditorGUI.BeginDisabledGroup(autoExploreSP.boolValue);
                     {
                         GUILayout.BeginHorizontal();
                         {
-                            var autoAttackSP = NGUIEditorTools.DrawProperty("AutoAttack", serializedObject, "_fleetsAutoAttack", GUILayout.Width(100F));
+                            var autoAttackSP = NGUIEditorTools.DrawProperty("AutoAttack", serializedObject, "_fleetsAutoAttack", GUILayout.Width(120F));
                             EditorGUI.BeginDisabledGroup(!autoAttackSP.boolValue);
                             {
+                                GUILayout.Label("", GUILayout.Width(20F));  // Adds horizontal space between AutoAttack and MaxFleets
+
                                 NGUIEditorTools.SetLabelWidth(80F);
-                                NGUIEditorTools.DrawProperty("MaxFleets", serializedObject, "_maxAttackingFleetsPerPlayer", GUILayout.MinWidth(20F));
+                                NGUIEditorTools.DrawProperty("MaxFleets", serializedObject, "_maxAttackingFleetsPerPlayer", GUILayout.Width(100F));
                             }
                             EditorGUI.EndDisabledGroup();
                         }
@@ -75,7 +89,37 @@ public class DebugControlsEditor : Editor {
                     }
                     EditorGUI.EndDisabledGroup();
                     NGUIEditorTools.SetLabelWidth(200F);
-                    NGUIEditorTools.DrawProperty("Full Intel of All Items", serializedObject, "_allIntelCoverageIsComprehensive");
+                    NGUIEditorTools.DrawProperty("Full Intel of Items & Players", serializedObject, "_allIntelCoverageIsComprehensive");
+
+
+                    NGUIEditorTools.SetLabelWidth(160F);
+                    NGUIEditorTools.DrawProperty("All Assaults Successful", serializedObject, "_areAssaultsAlwaysSuccessful");
+                    NGUIEditorTools.DrawProperty("Ordnance Move Tech", serializedObject, "_unityMoveTech");
+
+
+                    var equipmentPlanSP = NGUIEditorTools.DrawProperty("Equipment Plan", serializedObject, "_equipmentPlan");
+                    EditorGUI.BeginDisabledGroup(equipmentPlanSP.enumValueIndex == 0);  // disabled if Random selected
+                    {
+                        if (NGUIEditorTools.DrawHeader("Preset Equipment Plan")) {
+                            NGUIEditorTools.BeginContents();
+                            {
+                                NGUIEditorTools.SetLabelWidth(160F);
+                                NGUIEditorTools.DrawProperty("LOS Weapon Load", serializedObject, "_losWeaponsPerElement");
+                                NGUIEditorTools.DrawProperty("Launched Weap Load", serializedObject, "_launchedWeaponsPerElement");
+
+                                NGUIEditorTools.SetLabelWidth(160F);
+                                NGUIEditorTools.DrawProperty("ActiveCMs/Element", serializedObject, "_activeCMsPerElement", GUILayout.Width(180F));
+                                NGUIEditorTools.DrawProperty("ShieldGens/Element", serializedObject, "_shieldGeneratorsPerElement", GUILayout.Width(180F));
+                                NGUIEditorTools.DrawProperty("PassiveCMs/Element", serializedObject, "_passiveCMsPerElement", GUILayout.Width(180F));
+                                NGUIEditorTools.DrawProperty("SRSensors/Element", serializedObject, "_srSensorsPerElement", GUILayout.Width(180F));
+                                NGUIEditorTools.DrawProperty("PassiveCMs/Cmd", serializedObject, "_countermeasuresPerCmd", GUILayout.Width(180F));
+                                NGUIEditorTools.DrawProperty("MR_LRSensors/Cmd", serializedObject, "_sensorsPerCmd", GUILayout.Width(180F));
+                            }
+                            NGUIEditorTools.EndContents();
+                        }
+                    }
+                    EditorGUI.EndDisabledGroup();
+
                 }
                 NGUIEditorTools.EndContents();
             }
@@ -94,15 +138,30 @@ public class DebugControlsEditor : Editor {
                 {
                     NGUIEditorTools.SetLabelWidth(160F);
                     NGUIEditorTools.DrawProperty("One UIPanel per widget", serializedObject, "_useOneUIPanelPerWidget");
+                    NGUIEditorTools.DrawProperty("Deactivate MRSensors", serializedObject, "_deactivateMRSensors");
+                    NGUIEditorTools.DrawProperty("Deactivate LRSensors", serializedObject, "_deactivateLRSensors");
                 }
                 NGUIEditorTools.EndContents();
             }
+
+            if (NGUIEditorTools.DrawHeader("Auto Random Testing Settings")) {
+                NGUIEditorTools.BeginContents();
+                {
+                    NGUIEditorTools.SetLabelWidth(160F);
+                    autoRelationsChgSP = NGUIEditorTools.DrawProperty("Auto Relations Changes", serializedObject, "_isAutoRelationsChangesEnabled");
+                    NGUIEditorTools.DrawProperty("Auto Pause Changes", serializedObject, "_isAutoPauseChangesEnabled");
+                }
+                NGUIEditorTools.EndContents();
+            }
+
         }
         EditorGUI.EndDisabledGroup();
+        // End disabled while playing group
 
         GUILayout.Space(10F);
 
-        if (NGUIEditorTools.DrawHeader("InGame Display Controls", detailed: true)) {
+        // Begin not disabled while playing group
+        if (NGUIEditorTools.DrawHeader("Display Controls", detailed: true)) {
             NGUIEditorTools.BeginContents();
             {
                 GUILayout.Space(10F);
@@ -172,6 +231,48 @@ public class DebugControlsEditor : Editor {
             GUILayout.Space(10F);
             NGUIEditorTools.EndContents();
         }
+        // End not disabled while playing group
+
+        GUILayout.Space(10F);
+
+        // Begin disabled while not playing group
+        EditorGUI.BeginDisabledGroup(!EditorApplication.isPlaying);
+        {
+            bool isUserRelationsChgSectionDisabled = autoRelationsChgSP != null ? autoRelationsChgSP.boolValue : false;
+            EditorGUI.BeginDisabledGroup(isUserRelationsChgSectionDisabled);
+            {
+                // Begin User Relations Change System
+                EditorGUI.BeginDisabledGroup(!_debugCntlTarget.IsRelationsChgSystemEnabled);
+                {
+                    if (NGUIEditorTools.DrawHeader("User Relations")) {
+                        NGUIEditorTools.BeginContents();
+                        {
+                            if (_debugCntlTarget.IsRelationsChgSystemEnabled) {
+                                NGUIEditorTools.SetLabelWidth(140F);
+                                string sel = NGUIEditorTools.DrawAdvancedList("User Known Players", _debugCntlTarget.PlayersKnownToUser.ToArray(),
+                                    _chosenPlayerNameSP.stringValue, GUILayout.Width(260F));
+                                _chosenPlayerNameSP.stringValue = sel;  // 5.5.17 does NOT cause DebugControls.OnValidation to run unless changed
+                            }
+
+                            EditorGUI.BeginDisabledGroup(true);
+                            {
+                                NGUIEditorTools.DrawProperty("Current User Relations", serializedObject, "_relationsOfPlayerToUser", GUILayout.Width(220F));
+                            }
+                            EditorGUI.EndDisabledGroup();
+
+                            NGUIEditorTools.DrawProperty("User Relations Choice", serializedObject, "_playerUserRelationsChoice", GUILayout.Width(220F));
+                        }
+                        NGUIEditorTools.EndContents();
+                    }
+                }
+                EditorGUI.EndDisabledGroup();
+                // End User Relations Change System
+            }
+            EditorGUI.EndDisabledGroup();
+
+        }
+        EditorGUI.EndDisabledGroup();
+        // End disabled while not playing group
 
         GUILayout.Space(10F);
 
@@ -181,20 +282,17 @@ public class DebugControlsEditor : Editor {
             {
                 EditorGUILayout.PrefixLabel("Knowledge");
                 if (GUILayout.Button("Validate", GUILayout.MinWidth(60F))) {
-                    debugCntlTarget.OnValidatePlayerKnowledgeNow();
+                    _debugCntlTarget.OnValidatePlayerKnowledgeNow();
                 }
             }
             GUILayout.EndHorizontal();
+
         }
         EditorGUI.EndDisabledGroup();
 
         GUILayout.Space(5F);
 
         serializedObject.ApplyModifiedProperties();
-    }
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
     }
 
 

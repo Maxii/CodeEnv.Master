@@ -25,9 +25,6 @@ using UnityEditor;
 [CustomEditor(typeof(SettlementsTableWindow))]
 public class SettlementsTableWindowEditor : ATableWindowEditor<SettlementsTableWindow> {
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 }
 

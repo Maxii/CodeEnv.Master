@@ -34,15 +34,20 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// The target has been determined to be uncatchable. 
-        /// <remarks>Typically this means the target is moving faster than we can move,
-        /// or we have lost awareness of the target, aka our sensors can no longer detect it.</remarks>
+        /// <remarks>4.15.17 Currently there are 3 sources of this Return and Failure Cause.
+        /// 1) A TgtFleet is progressively getting further away from our pursuing fleet,
+        /// 2) our Cmd has lost awareness of the TgtFleet, aka our sensors can no longer detect it, and
+        /// 3) the TgtShip of our pursuing ship has moved outside the distance envelope that our
+        /// FleetCmd can support. While 3)'s approach was developed when SRSensors were located on Cmds, 
+        /// it still is a useful way of keeping ship's on individual assignments from getting too far
+        /// away from their FleetCmd.</remarks>
         /// <remarks>FailureCause and ReturnCause.</remarks>
         /// </summary>
         TgtUncatchable,
 
         /// <summary>
         /// The target has been determined to be unreachable.
-        /// <remarks>Typically this refers to the inability to plot a course to reach the target.</remarks>
+        /// <remarks>4.15.17 Currently this refers to the inability to plot a course to reach the target.</remarks>
         /// <remarks>FailureCause and ReturnCause.</remarks>
         /// </summary>
         TgtUnreachable,
@@ -65,6 +70,12 @@ namespace CodeEnv.Master.GameContent {
         /// <remarks>FailureCause and ReturnCause.</remarks>
         /// </summary>
         NeedsRepair,
+
+        /// <summary>
+        /// This Unit Cmd or Element's current owner is about to lose ownership.
+        /// <remarks>FailureCause only.</remarks>
+        /// </summary>
+        Ownership,
 
         /// <summary>
         /// This Unit Cmd or Element has died.

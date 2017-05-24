@@ -22,7 +22,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for Items that can be attacked by unit elements.
     /// </summary>
-    public interface IElementAttackable : IShipNavigable, ISensorDetectable, IAttackable {
+    public interface IElementAttackable : IShipNavigableDestination, ISensorDetectable, IAttackable {
 
         new string DebugName { get; }
 

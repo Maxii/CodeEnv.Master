@@ -67,14 +67,29 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Called when an ownership change of either the ParentElement or a tracked target requires
-        /// a check to see if any active ordnance is currently targeted on a non-enemy.
+        /// Checks to see if any active ordnance is currently targeted on a target that is no longer attackable.
+        /// <remarks>This method covers most circumstances but not all. AProjectile ordnance has a range. That
+        /// range is how far it is allowed to travel, not how far away from the launching weapon it is. Accordingly,
+        /// if the target or launcher move to a point where the target is no longer tracked by the WRM, it will be
+        /// removed from this launcher's tracked targets. Now that the launcher is unsubscribed from target changes,
+        /// a change in the target's enemy or assaultable status will NOT result in this targeting status check. Yet
+        /// the ordnance could still reach and attack the target. A change in the target's status can come from 
+        /// a number of sources - a relations change, assault by another shuttle, etc. Accordingly, the Missile or
+        /// AssaultShuttle ordnance must test that it is still allowed to attack before doing so. 
+        /// </remarks>
+        /// <remarks>5.21.17 This hasn't shown up before now because a missile's attack using TakeHit() doesn't
+        /// do a check that says the missile has a right to attack. An AssaultShuttle's attack using AttemptAssault does.</remarks>
         /// </summary>
         public override void CheckActiveOrdnanceTargeting() {
             var ordnanceTargetingNonAttackableTgts = _activeFiredOrdnance.Where(ord => !ord.Target.IsAttackAllowedBy(Owner));
             if (ordnanceTargetingNonAttackableTgts.Any()) {
                 ordnanceTargetingNonAttackableTgts.ForAll(ord => ord.Terminate());
             }
+        }
+
+        protected override void HandleTargetOutOfRange(IElementAttackable target) {
+            // 5.21.17 nothing to do as these are 'fire and forget' ordnance and will 
+            // pursue their target until they run out of fuel, aka their distance traveled range.
         }
 
         protected override void RecordFiredOrdnance(IOrdnance ordnanceFired) {
@@ -91,10 +106,6 @@ namespace CodeEnv.Master.GameContent {
             // Missiles complete firing immediately after initiating it. No chance for weapon to lose operations
             D.Assert(IsOperational);
         }
-
-        #region Event and Property Change Handlers
-
-        #endregion
 
     }
 }

@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
 
         public new IShipBlastable Destination { get { return base.Destination as IShipBlastable; } }
 
-        public ApStrafeDestinationProxy(IShipNavigable destination, IShip ship, float innerRadius, float outerRadius)
+        public ApStrafeDestinationProxy(IShipNavigableDestination destination, IShip ship, float innerRadius, float outerRadius)
             : base(destination, ship, innerRadius, outerRadius) {
             RefreshStrafePosition();
         }
@@ -57,10 +57,6 @@ namespace CodeEnv.Master.GameContent {
             var waypointPosition = Position + waypointDirectionFromTgt * waypointDistanceFromTgt;
             var waypoint = new StationaryLocation(waypointPosition);
             return waypoint.GetApMoveTgtProxy(Vector3.zero, Constants.ZeroF, _ship);
-        }
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
         }
 
     }

@@ -33,10 +33,6 @@ namespace CodeEnv.Master.GameContent {
             base.StartEffect(effectSeqID); // currently just calls HandleEffectFinished
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
     }
 }
 

@@ -49,7 +49,7 @@ namespace CodeEnv.Master.GameContent {
         public string ClientName { private get; set; }
 
         private string _debugName;
-        private string DebugName {
+        public virtual string DebugName {
             get {
                 if (_debugName == null) {
                     _debugName = DebugNameFormat.Inject(ClientName, typeof(DriftCorrector).Name);
@@ -145,8 +145,8 @@ namespace CodeEnv.Master.GameContent {
 
         // 8.12.16 Handling pausing for all Jobs moved to JobManager
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+        public sealed override string ToString() {
+            return DebugName;
         }
 
         private void Cleanup() {

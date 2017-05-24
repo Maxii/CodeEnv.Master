@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -25,7 +26,7 @@ using UnityEngine;
 /// </summary>
 public class FacilityCtxControl_AI : ACtxControl {
 
-    protected override string OperatorName { get { return _facilityMenuOperator.DebugName; } }
+    protected override string OperatorName { get { return _facilityMenuOperator != null ? _facilityMenuOperator.DebugName : "NotYetAssigned"; } }
 
     protected override Vector3 PositionForDistanceMeasurements { get { return _facilityMenuOperator.Position; } }
 
@@ -44,12 +45,27 @@ public class FacilityCtxControl_AI : ACtxControl {
         return false;
     }
 
-    protected override void HandleMenuPick_OptimalFocusDistance() {
-        _facilityMenuOperator.OptimalCameraViewingDistance = _facilityMenuOperator.Position.DistanceToCamera();
+    protected override void PopulateMenu_MenuOperatorIsSelected() {
+        base.PopulateMenu_MenuOperatorIsSelected();
+        __PopulateChgOwnerMenu();
     }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+    private void __PopulateChgOwnerMenu() {
+        _ctxObject.menuItems = new CtxMenu.Item[] { new CtxMenu.Item() {
+            text = "ChgOwner",
+            id = Constants.MinusOne,
+            isDisabled = !_facilityMenuOperator.IsAssaultAllowedBy(_user)
+        }};
+    }
+
+    protected override void HandleMenuPick_MenuOperatorIsSelected(int itemID) {
+        base.HandleMenuPick_MenuOperatorIsSelected(itemID);
+        D.AssertEqual(Constants.MinusOne, itemID);
+        _facilityMenuOperator.__ChangeOwner(_user);
+    }
+
+    protected override void HandleMenuPick_OptimalFocusDistance() {
+        _facilityMenuOperator.OptimalCameraViewingDistance = _facilityMenuOperator.Position.DistanceToCamera();
     }
 
 }

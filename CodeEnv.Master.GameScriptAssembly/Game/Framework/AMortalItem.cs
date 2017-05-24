@@ -30,6 +30,8 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
 
     public event EventHandler deathOneShot;
 
+    public event EventHandler __death;
+
     public new AMortalItemData Data {
         get { return base.Data as AMortalItemData; }
         set { base.Data = value; }
@@ -81,15 +83,15 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
 
     /// <summary>
     /// Execute any preparation work that must occur prior to others hearing about this Item's death.
-    /// The normal death shutdown process is handled by HandleDeathXXX() which is called by the 
-    /// Item's Dead_EnterState method up to a frame later.
     /// </summary>
-    protected virtual void PrepareForDeathNotification() {
+    protected virtual void PrepareForOnDeath() {
         Data.PassiveCountermeasures.ForAll(cm => cm.IsActivated = false);
     }
 
+    protected virtual void PrepareForDeadState() { }
+
     /// <summary>
-    /// Hook for derived classes to initiate transition to their DeadState.
+    /// Hook for derived classes to initiate their DeadState.
     /// </summary>
     protected abstract void InitiateDeadState();
 
@@ -97,35 +99,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
     /// Handles the death shutdown process prior to beginning the
     /// death effect. Called by the item's Dead state.
     /// </summary>
-    protected virtual void HandleDeathBeforeBeginningDeathEffect() {
-        if (IsFocus) {
-            GameReferences.MainCameraControl.CurrentFocus = null;
-            AssignAlternativeFocusOnDeath();
-        }
-        if (IsSelected) {
-            SelectionManager.Instance.CurrentSelection = null;
-        }
-        if (IsHudShowing) {
-            ShowHud(false);
-        }
-        HandleDeathForHighlights();
-    }
-
-    private void HandleDeathForHighlights() {
-        var highlightMgrIDs = Enums<HighlightMgrID>.GetValues(excludeDefault: true);
-        foreach (var mgrID in highlightMgrIDs) {
-            if (DoesHighlightMgrExist(mgrID)) {
-                var highlightMgr = GetHighlightMgr(mgrID);
-                highlightMgr.HandleClientDeath();
-            }
-        }
-    }
-
-    /// <summary>
-    /// Hook that allows derived classes to assign an alternative focus 
-    /// when this mortal item dies while it is the focus.
-    /// </summary>
-    protected virtual void AssignAlternativeFocusOnDeath() { }
+    protected virtual void PrepareForDeathEffect() { }
 
     /// <summary>
     /// Handles the death shutdown process after beginning the death effect. Called by the item's Dead state.
@@ -140,11 +114,53 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
         }
     }
 
+    protected virtual void HandleDeathAfterDeathEffectFinished() {
+        if (IsFocus) {
+            GameReferences.MainCameraControl.CurrentFocus = null;
+            AssignAlternativeFocusOnDeath();
+        }
+        if (IsSelected) {
+            SelectionManager.Instance.CurrentSelection = null;
+        }
+        if (IsHudShowing) {
+            ShowHud(false);
+        }
+        HandleDeathForHighlights();
+    }
+
+    /// <summary>
+    /// Hook that allows derived classes to assign an alternative focus 
+    /// when this mortal item dies while it is the focus.
+    /// </summary>
+    protected virtual void AssignAlternativeFocusOnDeath() { }
+
+    private void HandleDeathForHighlights() {
+        var highlightMgrIDs = Enums<HighlightMgrID>.GetValues(excludeDefault: true);
+        foreach (var mgrID in highlightMgrIDs) {
+            if (DoesHighlightMgrExist(mgrID)) {
+                var highlightMgr = GetHighlightMgr(mgrID);
+                highlightMgr.HandleClientDeath();
+            }
+        }
+    }
+
     #region Event and Property Change Handlers
 
     private void HealthPropChangedHandler() {
         HandleHealthChanged();
     }
+
+    private void OnDeath() {
+        if (deathOneShot != null) {
+            deathOneShot(this, EventArgs.Empty);
+            deathOneShot = null;
+        }
+        if (__death != null) {
+            __death(this, EventArgs.Empty);
+        }
+    }
+
+    #endregion
 
     /// <summary>
     /// Called when the item's health has changed. 
@@ -154,16 +170,17 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
     /// </summary>
     protected virtual void HandleHealthChanged() { }
 
-    protected sealed override void HandleIsOperationalChanged() {
+    protected override void HandleIsOperationalChanged() {
         base.HandleIsOperationalChanged();
         if (!IsOperational) {
             // IsOperational only changes to false when this Item has been killed
             IsDead = true;
             //D.Log(ShowDebugLog, "{0} is initiating death sequence.", DebugName);
-            PrepareForDeathNotification();
+            PrepareForOnDeath();
             OnDeath();
+            PrepareForDeadState();
             InitiateDeadState();
-            // HandleDeathXXX() gets called after this, from Dead_EnterState
+            // DeathEffect methods get called after this, from Dead_EnterState
         }
     }
 
@@ -175,15 +192,6 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
         }
         __SimulateAttacked();
     }
-
-    private void OnDeath() {
-        if (deathOneShot != null) {
-            deathOneShot(this, EventArgs.Empty);
-            deathOneShot = null;
-        }
-    }
-
-    #endregion
 
     #region State Machine Support Members
 
@@ -241,6 +249,10 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
     /// <param name="onCompletion">Optional delegate that fires onCompletion.</param>
     protected virtual void DestroyMe(float delayInHours = Constants.ZeroF, Action onCompletion = null) {
         D.Log(ShowDebugLog, "{0} is being destroyed.", DebugName);
+        if (gameObject == null) {
+            D.Warn("{0} has already been destroyed.", DebugName);
+            return;
+        }
         GameUtility.Destroy(gameObject, delayInHours, onCompletion);
     }
 
@@ -257,39 +269,6 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
 
     #region Nested Classes
 
-    protected enum FsmTgtEventSubscriptionMode {
-        None,
-        TargetDeath,
-        InfoAccessChg,
-        OwnerChg
-    }
-
-    /// <summary>
-    /// IEqualityComparer for FsmTgtEventSubscriptionMode. 
-    /// <remarks>For use when FsmTgtEventSubscriptionMode is used as a Dictionary key as it avoids boxing from use of object.Equals.</remarks>
-    /// </summary>
-    protected class FsmTgtEventSubscriptionModeEqualityComparer : IEqualityComparer<FsmTgtEventSubscriptionMode> {
-
-        public static readonly FsmTgtEventSubscriptionModeEqualityComparer Default = new FsmTgtEventSubscriptionModeEqualityComparer();
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
-        #region IEqualityComparer<FsmTgtEventSubscriptionMode> Members
-
-        public bool Equals(FsmTgtEventSubscriptionMode value1, FsmTgtEventSubscriptionMode value2) {
-            return value1 == value2;
-        }
-
-        public int GetHashCode(FsmTgtEventSubscriptionMode value) {
-            return value.GetHashCode();
-        }
-
-        #endregion
-
-    }
-
     #endregion
 
     #region Debug
@@ -300,11 +279,29 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
         TakeHit(new DamageStrength(damageValue, damageValue, damageValue));
     }
 
+    public void __LogDeathEventSubscribers() {
+        if (__death != null) {
+            IList<string> targetNames = new List<string>();
+            var subscribers = __death.GetInvocationList();
+            foreach (var sub in subscribers) {
+                targetNames.Add(sub.Target.ToString());
+            }
+            Debug.LogFormat("{0}.__death event subscribers: {1}.", DebugName, targetNames.Concatenate());
+        }
+        else {
+            Debug.LogFormat("{0}.__death event has no subscribers.", DebugName);
+        }
+    }
+
+
     #endregion
 
     #region IAttackable Members
 
     public bool IsAttackAllowedBy(Player attackingPlayer) {
+        if (IsDead) {
+            return false;
+        }
         if (!InfoAccessCntlr.HasAccessToInfo(attackingPlayer, ItemInfoID.Owner)) {
             return false;
         }

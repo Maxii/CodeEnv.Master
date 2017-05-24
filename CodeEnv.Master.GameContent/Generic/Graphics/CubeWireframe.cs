@@ -102,10 +102,6 @@ namespace CodeEnv.Master.GameContent {
             VectorLine.Destroy(ref _centerPoint);
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
         #region OverHotSpot Archive
 
         ///// <summary>

@@ -38,10 +38,6 @@ namespace CodeEnv.Master.GameContent {
             return new SettlementCmdReport(_data, player, _item);
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
     }
 }
 

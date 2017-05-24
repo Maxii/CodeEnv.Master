@@ -108,6 +108,8 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         Scuttle,
 
+        ChgOwner,
+
         StopAttack
 
 

@@ -62,7 +62,7 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
 
     protected override Vector3 PositionForDistanceMeasurements { get { return _baseMenuOperator.Position; } }
 
-    protected override string OperatorName { get { return _baseMenuOperator.DebugName; } }
+    protected override string OperatorName { get { return _baseMenuOperator != null ? _baseMenuOperator.DebugName : "NotYetAssigned"; } }
 
     private AUnitBaseCmdItem _baseMenuOperator;
 
@@ -116,20 +116,20 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
     /// <param name="targets">The targets for the submenu if any were found. Can be empty.</param>
     /// <returns></returns>
     /// <exception cref="System.NotImplementedException"></exception>
-    protected override bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(BaseDirective directive, out IEnumerable<INavigable> targets) {
+    protected override bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(BaseDirective directive, out IEnumerable<INavigableDestination> targets) {
         switch (directive) {
             case BaseDirective.Attack:
-                targets = _userKnowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsWarAttackAllowedBy(_user)).Cast<INavigable>();
+                targets = _userKnowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsWarAttackAllowedBy(_user)).Cast<INavigableDestination>();
                 // TODO InRange?
                 return true;
             case BaseDirective.ChangeHQ:
-                targets = _baseMenuOperator.Elements.Except(_baseMenuOperator.HQElement).Cast<INavigable>();
+                targets = _baseMenuOperator.Elements.Except(_baseMenuOperator.HQElement).Cast<INavigableDestination>();
                 return true;
             case BaseDirective.Repair:
             case BaseDirective.Refit:
             case BaseDirective.Disband:
             case BaseDirective.Scuttle:
-                targets = Enumerable.Empty<INavigable>();
+                targets = Enumerable.Empty<INavigableDestination>();
                 return false;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
@@ -168,8 +168,8 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
         _baseMenuOperator.OptimalCameraViewingDistance = _baseMenuOperator.Position.DistanceToCamera();
     }
 
-    protected override void HandleMenuPick_UserMenuOperatorIsSelected(int itemID) {
-        base.HandleMenuPick_UserMenuOperatorIsSelected(itemID);
+    protected override void HandleMenuPick_MenuOperatorIsSelected(int itemID) {
+        base.HandleMenuPick_MenuOperatorIsSelected(itemID);
         IssueUserBaseMenuOperatorOrder(itemID);
     }
 
@@ -185,10 +185,10 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
 
     private void IssueUserBaseMenuOperatorOrder(int itemID) {
         BaseDirective directive = (BaseDirective)_directiveLookup[itemID];
-        INavigable target;
+        INavigableDestination target;
         bool isTarget = _unitTargetLookup.TryGetValue(itemID, out target);
         string tgtMsg = isTarget ? target.DebugName : "[none]";
-        D.Log("{0} selected directive {1} and target {2} from context menu.", _baseMenuOperator.DebugName, directive.GetValueName(), tgtMsg);
+        D.Log("{0} selected directive {1} and target {2} from context menu.", DebugName, directive.GetValueName(), tgtMsg);
         if (directive == BaseDirective.ChangeHQ) {
             _baseMenuOperator.HQElement = target as AUnitElementItem;
         }
@@ -201,7 +201,7 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
 
     private void IssueRemoteUserFleetOrder(int itemID) {
         var directive = (FleetDirective)_directiveLookup[itemID];
-        IFleetNavigable target = _baseMenuOperator;
+        IFleetNavigableDestination target = _baseMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         var order = new FleetOrder(directive, OrderSource.User, target);
         bool isOrderInitiated = remoteFleet.InitiateNewOrder(order);
@@ -214,10 +214,6 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
         var remoteShip = _remoteUserOwnedSelectedItem as ShipItem;
         bool isOrderInitiated = remoteShip.InitiateNewOrder(new ShipOrder(directive, OrderSource.User, target: _baseMenuOperator));
         D.Assert(isOrderInitiated);
-    }
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
     }
 
 

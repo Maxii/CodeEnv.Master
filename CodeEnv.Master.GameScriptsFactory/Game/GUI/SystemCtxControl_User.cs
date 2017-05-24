@@ -61,7 +61,7 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
 
     protected override Vector3 PositionForDistanceMeasurements { get { return _settlement.Position; } }
 
-    protected override string OperatorName { get { return _systemMenuOperator.DebugName; } }
+    protected override string OperatorName { get { return _systemMenuOperator != null ? _systemMenuOperator.DebugName : "NotYetAssigned"; } }
 
     private SystemItem _systemMenuOperator;
     private SettlementCmdItem _settlement;
@@ -117,17 +117,17 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
     /// <param name="targets">The targets for the submenu if any were found. Can be empty.</param>
     /// <returns></returns>
     /// <exception cref="System.NotImplementedException"></exception>
-    protected override bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(BaseDirective directive, out IEnumerable<INavigable> targets) {
+    protected override bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(BaseDirective directive, out IEnumerable<INavigableDestination> targets) {
         switch (directive) {
             case BaseDirective.Attack:
                 // TODO: incorporate distance from settlement
-                targets = _userKnowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsWarAttackAllowedBy(_user)).Cast<INavigable>();
+                targets = _userKnowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsWarAttackAllowedBy(_user)).Cast<INavigableDestination>();
                 return true;
             case BaseDirective.Repair:
             case BaseDirective.Refit:
             case BaseDirective.Disband:
             case BaseDirective.Scuttle:
-                targets = Enumerable.Empty<INavigable>();
+                targets = Enumerable.Empty<INavigableDestination>();
                 return false;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
@@ -166,8 +166,8 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
         _systemMenuOperator.OptimalCameraViewingDistance = _systemMenuOperator.Position.DistanceToCamera();
     }
 
-    protected override void HandleMenuPick_UserMenuOperatorIsSelected(int itemID) {
-        base.HandleMenuPick_UserMenuOperatorIsSelected(itemID);
+    protected override void HandleMenuPick_MenuOperatorIsSelected(int itemID) {
+        base.HandleMenuPick_MenuOperatorIsSelected(itemID);
         IssueUserSystemMenuOperatorOrder(itemID);
     }
 
@@ -183,10 +183,10 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
 
     private void IssueUserSystemMenuOperatorOrder(int itemID) {
         BaseDirective directive = (BaseDirective)_directiveLookup[itemID];
-        INavigable target;
+        INavigableDestination target;
         bool isTarget = _unitTargetLookup.TryGetValue(itemID, out target);
         string msg = isTarget ? target.DebugName : "[none]";
-        D.Log("{0} selected directive {1} and target {2} from context menu.", _systemMenuOperator.DebugName, directive.GetValueName(), msg);
+        D.Log("{0} selected directive {1} and target {2} from context menu.", DebugName, directive.GetValueName(), msg);
         var order = new BaseOrder(directive, OrderSource.User, target as IUnitAttackable);
         bool isOrderInitiated = _settlement.InitiateNewOrder(order);
         D.Assert(isOrderInitiated);
@@ -194,7 +194,7 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
 
     private void IssueRemoteUserFleetOrder(int itemID) {
         var directive = (FleetDirective)_directiveLookup[itemID];
-        IFleetNavigable target = _systemMenuOperator;
+        IFleetNavigableDestination target = _systemMenuOperator;
         if (directive == FleetDirective.Disband || directive == FleetDirective.Refit || directive == FleetDirective.Repair) {
             target = _settlement;
         }
@@ -210,10 +210,6 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
         var remoteShip = _remoteUserOwnedSelectedItem as ShipItem;
         bool isOrderInitiated = remoteShip.InitiateNewOrder(new ShipOrder(directive, OrderSource.User, target: _settlement));
         D.Assert(isOrderInitiated);
-    }
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
     }
 
 }

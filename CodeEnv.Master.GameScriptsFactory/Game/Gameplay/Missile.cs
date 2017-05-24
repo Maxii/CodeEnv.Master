@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: Missile.cs
-// Guided AProjectileOrdnance containing effects for muzzle flash, inFlight operation and impact.  
+// Guided APhysicsProjectileOrdnance containing effects for muzzle flash, inFlight operation and impact.  
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -25,9 +25,9 @@ using UnityEngine;
 using UnityEngine.Profiling;
 
 /// <summary>
-/// Guided AProjectileOrdnance containing effects for muzzle flash, inFlight operation and impact.  
+/// Guided APhysicsProjectileOrdnance containing effects for muzzle flash, inFlight operation and impact.  
 /// </summary>
-public class Missile : AProjectileOrdnance, ITerminatableOrdnance, IRecurringDateMinderClient {
+public class Missile : APhysicsProjectileOrdnance, ITerminatableOrdnance, IRecurringDateMinderClient {
 
     /// <summary>
     /// The maximum heading change a Missile may be required to make in degrees.
@@ -128,8 +128,10 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance, IRecurringDat
         _propulsionPower = CalcPropulsionPower();
         target.deathOneShot += TargetDeathEventHandler;
         _driftCorrector.ClientName = DebugName;
+        D.Assert(!enabled);
         enabled = true;
         _collider.enabled = true;
+        _toConductMovement = true;
     }
 
     protected override AProjectileDisplayManager MakeDisplayMgr() {
@@ -222,7 +224,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance, IRecurringDat
         var distanceTraveled = base.CheckProgress();
         if (IsOperational) {    // Missile can be terminated by base.CheckProgress() if beyond range
             if (!_hasPushedOver) {
-                if (distanceTraveled > TempGameValues.__ReqdMissileTravelDistanceBeforePushover) {
+                if (distanceTraveled > TempGameValues.__ReqdLaunchVehicleTravelDistanceBeforePushover) {
                     _hasPushedOver = true;
                     HandlePushover();
                 }
@@ -234,6 +236,86 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance, IRecurringDat
     private void HandlePushover() {
         //D.Log(ShowDebugLog, "{0} has reached pushover. Starting course updates to {1}.", DebugName, Target.DebugName);
         InitiateCourseUpdateProcess();
+    }
+
+    protected override void HandleCollision(GameObject impactedGo, ContactPoint contactPoint) {
+        // 5.18.17 Mostly copied from AProjectileOrdnance.HandleCollision
+
+        if (!IsOperational) {
+            // 1.6.17 OnCollisionEnter is called even when both _collider and monoBehaviour are disabled according to OnCollisionEnter 
+            // docs: "Collision events will be sent to disabled MonoBehaviours, to allow enabling Behaviours in response to collisions." 
+            return;
+        }
+
+        // 12.17.16 parent name is name of Unit, collider name is name of element
+        bool isImpactEffectRunning = false;
+        Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)", gameObject);
+        var impactedTarget = impactedGo.GetComponent<IElementAttackable>();
+        Profiler.EndSample();
+
+        if (impactedTarget != null) {
+            // hit an attackableTarget
+            //D.Log(ShowDebugLog, "{0} collided with {1}.", DebugName, impactedTarget.DebugName);
+            if (impactedTarget != Target) {
+                // unmanned but intelligent missile so only attack Target
+                //if (__objectsEncounteredBeforeTarget > 0) {
+                //    D.Log(ShowDebugLog, "{0} collided with {1} which is not the Target. Distance to intended target = {2:0.##}, ObjectsPreviouslyEncountered = {3}.",
+                //        DebugName, impactedTarget.DebugName, Vector3.Distance(transform.position, Target.Position), __objectsEncounteredBeforeTarget);
+                //}
+                //else {
+                //    D.Log(ShowDebugLog, "{0} collided with {1} which is not the Target. Distance to intended target = {2:0.##}.",
+                //        DebugName, impactedTarget.DebugName, Vector3.Distance(transform.position, Target.Position));
+                //}
+                __objectsEncounteredBeforeTarget++;
+                return;
+            }
+            // The application of impact force is already handled by the physics engine when regular rigidbodies collide
+            if (impactedTarget.IsOperational) {
+                if (!impactedTarget.IsAttackAllowedBy(Owner)) {
+                    // 5.21.17 If target is out of range of WeaponLauncher, then can't rely on CheckActiveOrdnanceTargeting
+                    // as launcher is no longer subscribed to target changes. We want to allow this ordnance to operate as a
+                    // 'fire and forget' weapon, so don't want to simply terminate it when target goes out of range.
+                    TerminateNow();
+                    return;
+                }
+
+                ReportTargetHit();
+                impactedTarget.TakeHit(DamagePotential);
+                if (__objectsEncounteredBeforeTarget > 0) {
+                    D.LogBold(/*ShowDebugLog, */"{0} has hit {1} in Frame {2}. ObjectsPreviouslyEncountered = {3}.",
+                        DebugName, impactedTarget.DebugName, Time.frameCount, __objectsEncounteredBeforeTarget);
+                }
+                else {
+                    D.Log(ShowDebugLog, "{0} has hit {1} in Frame {2}. No previous objects encountered.",
+                        DebugName, impactedTarget.DebugName, Time.frameCount);
+                }
+
+                // if target is killed by this hit, TerminateNow will be immediately called by Weapon
+            }
+            if (impactedTarget.IsOperational) {
+                if (impactedTarget.IsVisualDetailDiscernibleToUser) {
+                    // target is being viewed by user so show impact effect
+                    //D.Log(ShowDebugLog, "{0} starting impact effect on {1}.", DebugName, impactedTarget.DisplayName);
+                    var impactEffectLocation = contactPoint.point + contactPoint.normal * 0.01F;    // HACK
+                    // IMPROVE = Quaternion.FromToRotation(Vector3.up, contact.normal); // see http://docs.unity3d.com/ScriptReference/Collider.OnCollisionEnter.html
+                    ShowImpactEffects(impactEffectLocation);
+                    isImpactEffectRunning = true;
+                }
+                if (impactedTarget.IsVisualDetailDiscernibleToUser || DebugControls.Instance.AlwaysHearWeaponImpacts) {
+                    HearImpactEffect(contactPoint.point);
+                }
+            }
+        }
+        else {
+            // if not an assaultableTarget, then??   IMPROVE
+            var otherOrdnance = impactedGo.GetComponent<AOrdnance>();
+            D.AssertNull(otherOrdnance);  // should not be able to impact another piece of ordnance as both are on Ordnance layer
+        }
+
+        if (IsOperational && !isImpactEffectRunning) {
+            // ordnance has not already been terminated by other paths such as the death of the target and impact effect is not running
+            TerminateNow();
+        }
     }
 
     #region Event and Property Change Handlers
@@ -255,13 +337,11 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance, IRecurringDat
         D.AssertDefault(__turnTimeWarnDate);
         D.AssertDefault(__turnTimeErrorDate);
         D.AssertNull(__allowedAndActualTurnSteps);
+        D.AssertEqual(0, __objectsEncounteredBeforeTarget);
     }
 
     void FixedUpdate() {
-        if (IsOperational) {
-            // 3.29.17 Added filter as was getting velocity after setting velocity to zero, but this didn't fix it.
-            // I fixed it by making the rigidbody kinematic when not IsOperational, removing it from physics.
-            // UNCLEAR what would happen without this filter now with a kinematic rigidbody.
+        if (_toConductMovement) {
             ApplyThrust();
         }
     }
@@ -292,6 +372,7 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance, IRecurringDat
         _muzzleEffectCompletionJob = null;
         _courseUpdatePeriod = default(GameTimeDuration);
         _hasPushedOver = false;
+        __objectsEncounteredBeforeTarget = 0;
     }
 
     #endregion
@@ -533,11 +614,9 @@ public class Missile : AProjectileOrdnance, ITerminatableOrdnance, IRecurringDat
         _driftCorrector.Dispose();
     }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
     #region Debug
+
+    private int __objectsEncounteredBeforeTarget;
 
     protected override void __ExecuteImpactEffectScaleReduction() {
         ParticleScaler.Scale(_impactEffect, __ImpactEffectScaleReductionFactor, includeChildren: true);   // HACK .01F was used by VisualEffectScale

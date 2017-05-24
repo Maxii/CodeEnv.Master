@@ -23,12 +23,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ApBesiegeDestinationProxy : ApMoveDestinationProxy {
 
-        public ApBesiegeDestinationProxy(IShipNavigable destination, IShip ship, float innerRadius, float outerRadius)
+        public ApBesiegeDestinationProxy(IShipNavigableDestination destination, IShip ship, float innerRadius, float outerRadius)
             : base(destination, ship, innerRadius, outerRadius) {
-        }
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
         }
 
     }

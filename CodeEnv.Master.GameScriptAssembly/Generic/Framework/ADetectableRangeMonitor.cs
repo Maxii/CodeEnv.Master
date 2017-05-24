@@ -59,6 +59,7 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     #region Event and Property Change Handlers
 
     void OnTriggerEnter(Collider other) {
+        D.Assert(IsOperational, "{0}.OnTriggerEnter({1}) called when not operational. ColliderEnabled: {2}.".Inject(DebugName, other.name, _collider.enabled));
         //D.Log(ShowDebugLog, "{0}.OnTriggerEnter() tripped by {1}.", DebugName, other.name);
         if (other.isTrigger) {
             //D.Log(ShowDebugLog, "{0}.OnTriggerEnter() ignored TriggerCollider {1}.", DebugName, other.name);
@@ -85,6 +86,7 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     }
 
     void OnTriggerExit(Collider other) {
+        D.Assert(IsOperational, "{0}.OnTriggerExit({1}) called when not operational. ColliderEnabled: {2}.".Inject(DebugName, other.name, _collider.enabled));
         //D.Log(ShowDebugLog, "{0}.OnTriggerExit() tripped by {1}.", DebugName, other.name);
         if (other.isTrigger) {
             //D.Log(ShowDebugLog, "{0}.OnTriggerExit() ignored TriggerCollider {1}.", DebugName, other.name);
@@ -108,6 +110,8 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
         }
     }
 
+    #endregion
+
     protected override void HandleIsOperationalChanged() {
         //D.Log(ShowDebugLog, "{0}.IsOperational changed to {1}.", DebugName, IsOperational);
         if (IsOperational) {
@@ -115,7 +119,7 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
         }
         else {
             if (_equipmentList.All(e => e.IsDamaged)) {
-                D.LogBold(ShowDebugLog, "{0}'s equipment is all damaged making it no longer operational.", DebugName);
+                D.Log(ShowDebugLog, "{0}'s equipment is all damaged making it no longer operational.", DebugName);
             }
             RemoveAllDetectedObjects();
         }
@@ -123,7 +127,12 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
 
     protected sealed override void HandleRangeDistanceChanged() {
         base.HandleRangeDistanceChanged();
-        if (IsOperational) {    // avoids attempting to re-detect objects with the collider off
+        // IsOperational filter avoids attempting to re-detect objects with the collider off
+        if (IsOperational) {
+            // 5.19.17 Reacquiring objects after change is completed should be OK (vs changing/changed) as the collider
+            // with the just assigned new range will not detect exit/enter until the part of the frame where that
+            // should take place. As RangeDistance changing/changed is atomic, this should all occur before the collider 
+            // determines it has enters and exits to take action on.
             ReacquireAllDetectableObjectsInRange();
         }
         if (!_isResetting) {
@@ -133,7 +142,7 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
 
     protected override void HandleParentItemOwnerChanged() {
         base.HandleParentItemOwnerChanged();
-        RangeDistance = RefreshRangeDistance();
+        // 5.20.17 No longer making range distance changes dynamically from species attributes
     }
 
     protected override void HandleIsPausedChanged() {
@@ -142,8 +151,6 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
             HandleObjectsDetectedWhilePaused();
         }
     }
-
-    #endregion
 
     /// <summary>
     /// Adds the provided object to the list of ObjectsDetected.
@@ -161,21 +168,25 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     }
 
     /// <summary>
-    /// Removes the provided object from the list of ObjectsDetected.
+    /// Removes the provided object from the list of ObjectsDetected, returning <c>true</c>
+    /// if it was removed, <c>false</c> otherwise.
+    /// <remarks>OPTIMIZE 5.13.17 Currently return value is for debug only.</remarks>
     /// </summary>
-    /// <param name="previouslyDetectedObject">The object we just lost detection of.</param>
-    protected void RemoveDetectedObject(IDetectableType previouslyDetectedObject) {
-        bool isRemoved = _objectsDetected.Remove(previouslyDetectedObject);
+    /// <param name="prevDetectedObject">The object we just lost detection of.</param>
+    /// <returns></returns>
+    protected bool RemoveDetectedObject(IDetectableType prevDetectedObject) {
+        bool isRemoved = _objectsDetected.Remove(prevDetectedObject);
         if (isRemoved) {
-            if (previouslyDetectedObject.IsOperational) {
+            if (prevDetectedObject.IsOperational) {
                 //D.Log(ShowDebugLog, "{0} no longer tracking {1} at distance = {2:0.#}. Items remaining: {3}.",
                 //    DebugName, previouslyDetectedObject.DebugName, Vector3.Distance(previouslyDetectedObject.Position, transform.position), _objectsDetected.Select(i => i.DebugName).Concatenate());
             }
             else {
                 //D.Log(ShowDebugLog, "{0} no longer tracking dead {1}.", DebugName, previouslyDetectedObject.DebugName);
             }
-            HandleDetectedObjectRemoved(previouslyDetectedObject);
+            HandleDetectedObjectRemoved(prevDetectedObject);
         }
+        return isRemoved;
     }
 
     /// <summary>
@@ -210,13 +221,26 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     protected abstract void ReviewKnowledgeOfAllDetectedObjects();
 
     /// <summary>
-    /// All items currently detected are removed.
+    /// All objects currently detected are removed.
     /// </summary>
     private void RemoveAllDetectedObjects() {
-        var detectedItemsCopy = _objectsDetected.ToArray();
-        detectedItemsCopy.ForAll(previouslyDetectedItem => {
-            RemoveDetectedObject(previouslyDetectedItem);
-        });
+        var objectsDetectedCopy = _objectsDetected.ToArray();
+        foreach (var prevDetectedObj in objectsDetectedCopy) {
+            bool isRemoved = RemoveDetectedObject(prevDetectedObj);
+            if (!isRemoved) {
+                D.Warn("{0}: {1} could not be removed from detected objects of type {2}. IsObjectOperational = {3}.",
+                    DebugName, prevDetectedObj.DebugName, typeof(IDetectableType).Name, prevDetectedObj.IsOperational);
+            }
+        }
+        if (_objectsDetected.Any()) {
+            D.Warn("{0} has {1} remaining object of Type {2} remaining after removing all objects. Remaining objects: {3}.",
+                DebugName, _objectsDetected.Count, typeof(IDetectableType).Name, _objectsDetected.Select(obj => obj.DebugName).Concatenate());
+            D.Warn("{0} removed {1} objects. Objects removed: {2}.", DebugName, objectsDetectedCopy.Length, objectsDetectedCopy.Select(obj => obj.DebugName).Concatenate());
+            // 5.11.17 I'm getting this warning with a remaining Missile/Projectile and I don't understand how it is possible.
+            // It is present in the copy, but remains in _objectsDetected??? Must be an Equality issue where HashSet
+            // can't find it. I quit setting AOrdnance._uniqueID to zero in PoolMgr so shouldn't get this warning again.
+            // 5.13.17 Still getting it.
+        }
     }
 
     /// <summary>
@@ -225,13 +249,38 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     /// avoids the previous brute force approach removing all and then re-acquiring all which created 
     /// unnecessary churn in derived classes which typically categorize objects added or removed.
     /// </summary>
-    protected virtual void ReacquireAllDetectableObjectsInRange() {
+    private void ReacquireAllDetectableObjectsInRange() {
+        __IsTargetReacquisitionUnderway = true;
+        __PrepForTargetReacquisition();
+
         var allDetectableObjectsInRange = BulkDetectAllDetectableTypesInRange();
-        var objectsToRemove = _objectsDetected.Except(allDetectableObjectsInRange);
-        var objectsToAdd = allDetectableObjectsInRange.Except(_objectsDetected);
-        objectsToRemove.ForAll(obj => RemoveDetectedObject(obj));
-        objectsToAdd.ForAll(obj => AddDetectedObject(obj));
+        __reacquisitionTgtsRemoved = __reacquisitionTgtsRemoved ?? new List<IDetectableType>();
+        __reacquisitionTgtsRemoved.Clear();
+        __reacquisitionTgtsRemoved.AddRange(_objectsDetected.Except(allDetectableObjectsInRange));
+
+        __reacquisitionTgtsAdded = __reacquisitionTgtsAdded ?? new List<IDetectableType>();
+        __reacquisitionTgtsAdded.Clear();
+        __reacquisitionTgtsAdded.AddRange(allDetectableObjectsInRange.Except(_objectsDetected));
+
+        foreach (var obj in __reacquisitionTgtsRemoved) {
+            RemoveDetectedObject(obj);
+        }
+        foreach (var obj in __reacquisitionTgtsAdded) {
+            AddDetectedObject(obj);
+        }
+
+        __IsTargetReacquisitionUnderway = false;
+        if (__ToReportTargetReacquisitionChanges) {
+            __ReportReacquisitionChanges();
+        }
+
+        HandleTargetReacquisitionProcessCompleted();
     }
+
+    /// <summary>
+    /// Hook for derived classes after target reacquisition process completed.
+    /// </summary>
+    protected virtual void HandleTargetReacquisitionProcessCompleted() { }
 
     /// <summary>
     /// All detectable items in range are added to this Monitor.
@@ -257,7 +306,6 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
         //D.Log(ShowDebugLog, "{0}.BulkDetectAllDetectableTypesInRange() called.", DebugName);
         // 8.3.16 added layer mask and Trigger.Ignore
         Collider[] allCollidersInRange = Physics.OverlapSphere(transform.position, RangeDistance, BulkDetectionLayerMask, QueryTriggerInteraction.Ignore);
-
         IList<IDetectableType> allDetectableObjectsInRange = new List<IDetectableType>(allCollidersInRange.Length);
         foreach (var c in allCollidersInRange) {
 
@@ -361,11 +409,17 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
 
     #region Cleanup
 
+    protected override void __CleanupOnApplicationQuit() {
+        base.__CleanupOnApplicationQuit();
+        IsOperational = false;
+    }
+
     protected override void Cleanup() {
         base.Cleanup();
         if (!IsApplicationQuiting && !GameReferences.GameManager.IsSceneLoading) {
             // It is important to cleanup the subscriptions and detected state for each item detected when this Monitor is dying of 
-            // natural causes. However, doing so when the App is quiting or loading a new scene results in a cascade of NREs.
+            // natural causes. However, doing so when the App is quiting or loading a new scene results in a cascade of NREs as 
+            // numerous other detected objects being removed can already be destroyed before this gameObject is destroyed.
             IsOperational = false;
         }
     }
@@ -373,6 +427,47 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     #endregion
 
     #region Debug
+
+    protected abstract bool __ToReportTargetReacquisitionChanges { get; }
+
+    /// <summary>
+    /// The targets that were removed during the most recent reacquisition process initiated by a RangeDistance change.
+    /// </summary>
+    private List<IDetectableType> __reacquisitionTgtsRemoved;
+
+    /// <summary>
+    /// The targets that were added during the most recent reacquisition process initiated by a RangeDistance change.
+    /// </summary>
+    private List<IDetectableType> __reacquisitionTgtsAdded;
+
+    private void __ReportReacquisitionChanges() {
+        if (__reacquisitionTgtsRemoved.Any()) {
+            D.Log("{0} removed {1} targets during RangeDistanceChg Reacquisition process. TargetsRemoved: {2}.",
+                DebugName, __reacquisitionTgtsRemoved.Count, __reacquisitionTgtsRemoved.Select(tgt => tgt.DebugName).Concatenate());
+        }
+        if (__reacquisitionTgtsAdded.Any()) {
+            D.Log("{0} added {1} targets during RangeDistanceChg Reacquisition process. TargetsAdded: {2}.",
+                DebugName, __reacquisitionTgtsAdded.Count, __reacquisitionTgtsAdded.Select(tgt => tgt.DebugName).Concatenate());
+        }
+    }
+
+    /// <summary>
+    /// Flag indicating whether target reacquisition is underway.
+    /// <remarks>Used to tell WRM.HandleDetectedObjectAdded to use _attackableEnemyTargetsMemoryPriorToReacquisition
+    /// to determine whether a removed and then re-added item was previously categorized as an enemy. Without this,
+    /// HandleWeaponsNotification will not notify the weapons that an enemy it was targeting has changed to a non-enemy
+    /// which will throw an error when the weapon tries to fire. This typically occurs when an enemy element gets 
+    /// taken over which may cause a RangeDistance change. If the range changes it will initiate the reacquisition process.</remarks>
+    /// </summary>
+    protected bool __IsTargetReacquisitionUnderway { get; private set; }
+
+    /// <summary>
+    /// Hook to allow derived classes to prepare for the reacquisition process.
+    /// <remarks>This process removes detectedObjects no longer present within the collider,
+    /// and adds any that weren't inside before but are now. Typically run when the radius
+    /// of the collider has changed. This process does not involve cycling IsOperational.</remarks>
+    /// </summary>
+    protected virtual void __PrepForTargetReacquisition() { }
 
     /// <summary>
     /// Hook for derived classes to validate the new RangeDistance value.

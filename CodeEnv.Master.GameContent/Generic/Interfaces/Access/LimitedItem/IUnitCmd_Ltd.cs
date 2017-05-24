@@ -28,6 +28,15 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         bool IsAttacking(IUnitCmd_Ltd unitCmd);
 
+        bool IsLoneCmd { get; }
+
+        /// <summary>
+        /// Indicates whether this operational Cmd has commenced operations.
+        /// </summary>
+        bool __IsActivelyOperating { get; }
+
+        bool IsOwnerChangeUnderway { get; }
+
     }
 }
 

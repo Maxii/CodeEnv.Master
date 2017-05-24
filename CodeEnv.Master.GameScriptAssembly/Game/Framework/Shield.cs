@@ -121,10 +121,6 @@ public class Shield : AEquipmentMonitor<ShieldGenerator>, IShield {
         _equipmentList.ForAll(gen => gen.hasChargeChanged -= GeneratorHasChargeChangedEventHandler);
     }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
     #region Debug Show Shield
 
     private void InitializeDebugShowShield() {

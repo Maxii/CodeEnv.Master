@@ -29,11 +29,14 @@ public class FindMissingScripts : EditorWindow {
         EditorWindow.GetWindow(typeof(FindMissingScripts));
     }
 
+    public string DebugName { get { return GetType().Name; } }
+
     public void OnGUI() {
         if (GUILayout.Button("Find Missing Scripts in selected GameObjects")) {
             FindInSelected();
         }
     }
+
     private static void FindInSelected() {
         GameObject[] go = Selection.gameObjects;
         go_count = 0;
@@ -63,7 +66,7 @@ public class FindMissingScripts : EditorWindow {
     }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
 }

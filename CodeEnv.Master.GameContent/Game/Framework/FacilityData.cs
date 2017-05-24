@@ -30,7 +30,6 @@ namespace CodeEnv.Master.GameContent {
 
         public new FacilityInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as FacilityInfoAccessController; } }
 
-
         protected new FacilityHullEquipment HullEquipment { get { return base.HullEquipment as FacilityHullEquipment; } }
 
         private IntVector3 _sectorID;
@@ -89,13 +88,6 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        #region Event and Property Change Handlers
-
-        #endregion
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
 
     }
 }

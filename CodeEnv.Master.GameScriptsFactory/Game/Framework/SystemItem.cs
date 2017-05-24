@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// Class for ADiscernibleItems that are Systems.
 /// </summary>
-public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFleetNavigable, IPatrollable, IFleetExplorable,
+public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFleetNavigableDestination, IPatrollable, IFleetExplorable,
     IGuardable, ISectorViewHighlightable {
 
     /// <summary>
@@ -104,7 +104,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         get { return _publisher = _publisher ?? new SystemPublisher(Data, this); }
     }
 
-    private bool _hasInfoAccessToOwner;
+    private IList<Player> _playersWithInfoAccessToOwner;
     private IList<APlanetoidItem> _planetoids;
     private IList<MoonItem> _moons;
     private IList<PlanetItem> _planets;
@@ -118,11 +118,12 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         _planetoids = new List<APlanetoidItem>();    // OPTIMIZE size of each of these lists
         _planets = new List<PlanetItem>();
         _moons = new List<MoonItem>();
+        _playersWithInfoAccessToOwner = new List<Player>(TempGameValues.MaxPlayers);
         // there is no collider associated with a SystemItem implementation. The collider used for interaction is located on the orbital plane
     }
 
     protected override bool InitializeDebugLog() {
-        return DebugControls.Instance.ShowSystemDebugLogs;
+        return _debugCntls.ShowSystemDebugLogs;
     }
 
     protected override void InitializeOnData() {
@@ -289,9 +290,9 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         }
         SectorGrid.Instance.GetSector(SectorID).AssessWhetherToFireInfoAccessChangedEventFor(player);
 
-        if (!_hasInfoAccessToOwner) {
+        if (!_playersWithInfoAccessToOwner.Contains(player)) {
             if (InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
-                _hasInfoAccessToOwner = true;
+                _playersWithInfoAccessToOwner.Add(player);
                 OnInfoAccessChanged(player);
             }
         }
@@ -300,6 +301,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
     protected override void ShowSelectedItemHud() {
         SelectedItemHudWindow.Instance.Show(FormID.SelectedSystem, UserReport);
     }
+
 
     #region Event and Property Change Handlers
 
@@ -351,9 +353,8 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
     #region Show Tracking Label
 
     private void InitializeTrackingLabel() {
-        DebugControls debugControls = DebugControls.Instance;
-        debugControls.showSystemTrackingLabels += ShowSystemTrackingLabelsChangedEventHandler;
-        if (debugControls.ShowSystemTrackingLabels) {
+        _debugCntls.showSystemTrackingLabels += ShowSystemTrackingLabelsChangedEventHandler;
+        if (_debugCntls.ShowSystemTrackingLabels) {
             EnableTrackingLabel(true);
         }
     }
@@ -383,18 +384,18 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
     }
 
     private void ShowSystemTrackingLabelsChangedEventHandler(object sender, EventArgs e) {
-        EnableTrackingLabel(DebugControls.Instance.ShowSystemTrackingLabels);
+        EnableTrackingLabel(_debugCntls.ShowSystemTrackingLabels);
     }
 
     private void CleanupTrackingLabel() {
-        var debugControls = DebugControls.Instance;
-        if (debugControls != null) {
-            debugControls.showSystemTrackingLabels -= ShowSystemTrackingLabelsChangedEventHandler;
+        if (_debugCntls != null) {
+            _debugCntls.showSystemTrackingLabels -= ShowSystemTrackingLabelsChangedEventHandler;
         }
         GameUtility.DestroyIfNotNullOrAlreadyDestroyed(_trackingLabel);
     }
 
     #endregion
+
 
     #region Cleanup
 
@@ -407,10 +408,6 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
     }
 
     #endregion
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
     #region ICameraFocusable Members
 
@@ -438,7 +435,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
 
     #endregion
 
-    #region IFleetNavigable Members
+    #region IFleetNavigableDestination Members
 
     public float GetObstacleCheckRayLength(Vector3 fleetPosition) {
         float distanceToFleet = Vector3.Distance(fleetPosition, Position);
@@ -447,12 +444,12 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
             return distanceToFleet - Radius;
         }
         // fleet is inside system so don't cast into star
-        return (Star as IFleetNavigable).GetObstacleCheckRayLength(fleetPosition);
+        return (Star as IFleetNavigableDestination).GetObstacleCheckRayLength(fleetPosition);
     }
 
     #endregion
 
-    #region IShipNavigable Members
+    #region IShipNavigableDestination Members
 
     public override ApMoveDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, IShip ship) {
         float distanceToShip = Vector3.Distance(ship.Position, Position);
@@ -471,6 +468,15 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
 
     #endregion
 
+    #region IAssemblySupported Members
+
+    /// <summary>
+    /// A collection of assembly stations that are local to the item.
+    /// </summary>
+    public IList<StationaryLocation> LocalAssemblyStations { get { return GuardStations; } }
+
+    #endregion
+
     #region IPatrollable Members
 
     private IList<StationaryLocation> _patrolStations;
@@ -482,8 +488,6 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
             return new List<StationaryLocation>(_patrolStations);
         }
     }
-
-    public IList<StationaryLocation> LocalAssemblyStations { get { return GuardStations; } }
 
     public Speed PatrolSpeed { get { return Speed.OneThird; } }
 
@@ -524,8 +528,6 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         bool areAllPlanetsExplored = Planets.Cast<IShipExplorable>().All(p => p.IsFullyExploredBy(player));
         return isStarExplored && areAllPlanetsExplored;
     }
-
-    // LocalAssemblyStations - see IPatrollable
 
     public bool IsExploringAllowedBy(Player player) {
         if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {

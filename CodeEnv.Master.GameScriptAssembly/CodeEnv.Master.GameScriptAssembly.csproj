@@ -63,6 +63,10 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Framework\AKinematicProjectileOrdnance.cs" />
+    <Compile Include="Generic\Framework\AOrdnance.cs" />
+    <Compile Include="Generic\Framework\APhysicsProjectileOrdnance.cs" />
+    <Compile Include="Generic\Framework\AProjectileOrdnance.cs" />
     <Compile Include="Generic\Framework\ASensorRangeMonitor.cs" />
     <Compile Include="Game\Framework\CmdSensorRangeMonitor.cs" />
     <Compile Include="Game\Framework\ElementSensorRangeMonitor.cs" />
@@ -72,10 +76,12 @@
     <Compile Include="Game\_Debug\GameSettingsDebugControl.cs" />
     <Compile Include="Game\_Debug\EffectsFolder.cs" />
     <Compile Include="Generic\Framework\AFormationStation.cs" />
+    <Compile Include="Generic\Graphics\AMountPlaceholder.cs" />
+    <Compile Include="Generic\Graphics\AWeaponMount.cs" />
     <Compile Include="Generic\_Debug\EditModeController.cs" />
     <Compile Include="Game\Gameplay\FormationStationPlaceholder.cs" />
     <Compile Include="Game\Framework\CollisionDetectionMonitor.cs" />
-    <Compile Include="Generic\Framework\AMount.cs" />
+    <Compile Include="Generic\Graphics\AMount.cs" />
     <Compile Include="Generic\_Debug\DrawSphereGizmo.cs" />
     <Compile Include="Game\_Debug\DebugControls.cs" />
     <Compile Include="Game\Framework\FleetFormationStation.cs" />

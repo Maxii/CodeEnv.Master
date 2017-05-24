@@ -48,7 +48,7 @@ namespace CodeEnv.Master.GameContent {
 
         public FleetOrder FollowonOrder { get; set; }
 
-        public IFleetNavigable Target { get; private set; }
+        public IFleetNavigableDestination Target { get; private set; }
 
         /// <summary>
         /// The source of this order. 
@@ -63,7 +63,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="directive">The order directive.</param>
         /// <param name="source">The source of this order.</param>
         /// <param name="target">The target of this order. Default is null.</param>
-        public FleetOrder(FleetDirective directive, OrderSource source, IFleetNavigable target = null) {
+        public FleetOrder(FleetDirective directive, OrderSource source, IFleetNavigableDestination target = null) {
             Directive = directive;
             Source = source;
             Target = target;

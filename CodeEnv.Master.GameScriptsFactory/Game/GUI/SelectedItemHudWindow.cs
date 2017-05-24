@@ -58,9 +58,6 @@ public class SelectedItemHudWindow : AHudWindow<SelectedItemHudWindow>, ISelecte
         GameReferences.SelectedItemHudWindow = null;
     }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 }
 

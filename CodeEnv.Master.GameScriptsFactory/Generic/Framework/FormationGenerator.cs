@@ -153,10 +153,6 @@ public class FormationGenerator : AGenericSingleton<FormationGenerator>, IFormat
 
     private void Cleanup() { }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
     #region IDisposable
 
     private bool _alreadyDisposed = false;

@@ -169,10 +169,11 @@ public abstract class AMonoSingleton<T> : AMonoBaseSingleton, IInstanceCount whe
         }
     }
 
-    protected override void __CleanupOnApplicationQuit() {
-        base.__CleanupOnApplicationQuit();
-        _instance = null;
-    }
+    // 5.9.17 Removed to allow for other debug uses of __CleanupOnApplicationQuit - see ADetectableRangeMonitor
+    ////protected override void __CleanupOnApplicationQuit() {
+    ////    base.__CleanupOnApplicationQuit();
+    ////    _instance = null;
+    ////}
 
     #endregion
 

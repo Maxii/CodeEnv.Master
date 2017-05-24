@@ -20,6 +20,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class GamePlayOptionSettings {
 
+        public string DebugName { get { return GetType().Name; } }
+
         public bool IsCameraRollEnabled { get; set; }
         public bool IsZoomOutOnCursorEnabled { get; set; }
         public bool IsResetOnFocusEnabled { get; set; }
@@ -30,7 +32,7 @@ namespace CodeEnv.Master.GameContent {
         public GamePlayOptionSettings() { }
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
     }

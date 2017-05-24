@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IDetectable.cs
-// Base Interface for GameObjects that are detectable by DectableRangeMonitors.
+// Base Interface for GameObjects that are detectable by DetectableRangeMonitors.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,7 +19,7 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Base Interface for GameObjects that are detectable by DectableRangeMonitors.
+    /// Base Interface for GameObjects that are detectable by DetectableRangeMonitors.
     /// </summary>
     public interface IDetectable : IDebugable {
 

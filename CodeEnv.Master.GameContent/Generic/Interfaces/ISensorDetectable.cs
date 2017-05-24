@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
 
         void HandleDetectionBy(ISensorDetector detector, RangeCategory sensorRangeCat);
 
-        void HandleDetectionLostBy(ISensorDetector detector, RangeCategory sensorRangeCat);
+        void HandleDetectionLostBy(ISensorDetector detector, Player detectorOwner, RangeCategory sensorRangeCat);
 
         /// <summary>
         /// Resets the ISensorDetectable item based on current detection levels of the provided player.

@@ -73,12 +73,12 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        private INavigable _target;
-        public INavigable Target {
+        private INavigableDestination _target;
+        public INavigableDestination Target {
             get { return _target; }
             set {
                 if (_target == value) { return; }   // eliminates equality warning when targets are the same
-                SetProperty<INavigable>(ref _target, value, "Target");
+                SetProperty<INavigableDestination>(ref _target, value, "Target");
             }
         }
 
@@ -247,7 +247,6 @@ namespace CodeEnv.Master.GameContent {
             RefreshFullSpeedValue();
         }
 
-
         #region Event and Property Change Handlers
 
         private void IsFtlOperationalChangedEventHandler(object sender, EventArgs e) {
@@ -283,14 +282,6 @@ namespace CodeEnv.Master.GameContent {
                 _ftlEngine.isOperationalChanged -= IsFtlOperationalChangedEventHandler;
             }
         }
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
-        #region Nested Classes
-
-        #endregion
 
     }
 }

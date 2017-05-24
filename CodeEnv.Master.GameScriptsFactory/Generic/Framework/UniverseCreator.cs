@@ -37,7 +37,7 @@ public class UniverseCreator {
 
     private string DebugName { get { return GetType().Name; } }
 
-    private bool ShowDebugLog { get { return DebugControls.Instance.ShowDeploymentDebugLogs; } }
+    private bool ShowDebugLog { get { return _debugCntls.ShowDeploymentDebugLogs; } }
 
     private IDictionary<DiplomaticRelationship, IList<Player>> _aiPlayerInitialUserRelationsLookup;
     private IDictionary<Player, IntVector3> _playersHomeSectorLookup;
@@ -45,6 +45,7 @@ public class UniverseCreator {
     private List<SystemCreator> _systemCreators;
     //private SectorGrid _sectorGrid;   // ref to SectorGrid complicates things as SectorGrid is not persistent
     private GameManager _gameMgr;
+    private DebugControls _debugCntls;
 
     public UniverseCreator() {
         InitializeValuesAndReferences();
@@ -52,6 +53,7 @@ public class UniverseCreator {
 
     private void InitializeValuesAndReferences() {
         _gameMgr = GameManager.Instance;
+        _debugCntls = DebugControls.Instance;
         SystemConfigurator = new NewGameSystemConfigurator();
         UnitConfigurator = new NewGameUnitConfigurator();
     }
@@ -290,7 +292,7 @@ public class UniverseCreator {
         Dictionary<DiplomaticRelationship, IList<Player>> aiPlayerInitialUserRelationsLookup =
             new Dictionary<DiplomaticRelationship, IList<Player>>(aiPlayerQty, DiplomaticRelationshipEqualityComparer.Default);
 
-        if (DebugControls.Instance.FleetsAutoAttackAsDefault) {
+        if (_debugCntls.FleetsAutoAttackAsDefault) {
             // Setup initial AIPlayer <-> User relationships as War and record in lookup...
             IList<Player> aiPlayersAtWarWithUser = new List<Player>(aiPlayerQty);
             aiPlayerInitialUserRelationsLookup.Add(DiplomaticRelationship.War, aiPlayersAtWarWithUser);
@@ -414,7 +416,13 @@ public class UniverseCreator {
                 for (int deployedCount = creatorsDeployed.Count; deployedCount < qtyToDeploy; deployedCount++) {
                     deployedSectorID = RandomExtended.Choice(candidateSectorIDs);
                     deployedLocation = sectorGrid.GetSector(deployedSectorID).GetClearRandomPointInsideSector();
-                    StarbaseCreator autoCreator = UnitConfigurator.GenerateRandomAutoStarbaseCreator(player, deployedLocation, deployDate);
+                    StarbaseCreator autoCreator;
+                    if (_debugCntls.EquipmentPlan == DebugControls.EquipmentLoadout.Random) {
+                        autoCreator = UnitConfigurator.GenerateRandomAutoStarbaseCreator(player, deployedLocation, deployDate);
+                    }
+                    else {
+                        autoCreator = UnitConfigurator.GeneratePresetAutoStarbaseCreator(player, deployedLocation, deployDate);
+                    }
                     creatorsDeployed.Add(autoCreator);
                     candidateSectorIDs.Remove(deployedSectorID);
                 }
@@ -506,7 +514,13 @@ public class UniverseCreator {
                 for (int deployedCount = creatorsDeployed.Count; deployedCount < qtyToDeploy; deployedCount++) {
                     deployedSectorID = sectorIDsToDeployTo.Pop();
                     deployedLocation = sectorGrid.GetSector(deployedSectorID).GetClearRandomPointInsideSector();
-                    FleetCreator autoCreator = UnitConfigurator.GenerateRandomAutoFleetCreator(player, deployedLocation, deployDate);
+                    FleetCreator autoCreator;
+                    if (_debugCntls.EquipmentPlan == DebugControls.EquipmentLoadout.Random) {
+                        autoCreator = UnitConfigurator.GenerateRandomAutoFleetCreator(player, deployedLocation, deployDate);
+                    }
+                    else {
+                        autoCreator = UnitConfigurator.GeneratePresetAutoFleetCreator(player, deployedLocation, deployDate);
+                    }
                     creatorsDeployed.Add(autoCreator);
                 }
             }
@@ -588,7 +602,13 @@ public class UniverseCreator {
 
                 for (int deployedCount = creatorsDeployed.Count; deployedCount < qtyToDeploy; deployedCount++) {
                     system = systemsToDeployTo.Pop();
-                    SettlementCreator autoCreator = UnitConfigurator.GenerateRandomAutoSettlementCreator(player, system as SystemItem, deployDate);
+                    SettlementCreator autoCreator;
+                    if (_debugCntls.EquipmentPlan == DebugControls.EquipmentLoadout.Random) {
+                        autoCreator = UnitConfigurator.GenerateRandomAutoSettlementCreator(player, system as SystemItem, deployDate);
+                    }
+                    else {
+                        autoCreator = UnitConfigurator.GeneratePresetAutoSettlementCreator(player, system as SystemItem, deployDate);
+                    }
                     creatorsDeployed.Add(autoCreator);
                     bool isAdded = usedSystems.Add(system);
                     D.Assert(isAdded);
@@ -690,7 +710,13 @@ public class UniverseCreator {
                 for (int deployedCount = creatorsDeployed.Count; deployedCount < qtyToDeploy; deployedCount++) {
                     sectorID = sectorIDsToDeployTo.Pop();
                     deployedLocation = sectorGrid.GetSector(sectorID).GetClearRandomPointInsideSector();
-                    StarbaseCreator autoCreator = UnitConfigurator.GenerateRandomAutoStarbaseCreator(player, deployedLocation);
+                    StarbaseCreator autoCreator;
+                    if (_debugCntls.EquipmentPlan == DebugControls.EquipmentLoadout.Random) {
+                        autoCreator = UnitConfigurator.GenerateRandomAutoStarbaseCreator(player, deployedLocation);
+                    }
+                    else {
+                        autoCreator = UnitConfigurator.GeneratePresetAutoStarbaseCreator(player, deployedLocation);
+                    }
                     creatorsDeployed.Add(autoCreator);
                 }
             }
@@ -755,7 +781,13 @@ public class UniverseCreator {
                 for (int deployedCount = creatorsDeployed.Count; deployedCount < qtyToDeploy; deployedCount++) {
                     deployedSectorID = sectorIDsToDeployTo.Pop();
                     deployedLocation = sectorGrid.GetSector(deployedSectorID).GetClearRandomPointInsideSector();
-                    FleetCreator autoCreator = UnitConfigurator.GenerateRandomAutoFleetCreator(player, deployedLocation);
+                    FleetCreator autoCreator;
+                    if (_debugCntls.EquipmentPlan == DebugControls.EquipmentLoadout.Random) {
+                        autoCreator = UnitConfigurator.GenerateRandomAutoFleetCreator(player, deployedLocation);
+                    }
+                    else {
+                        autoCreator = UnitConfigurator.GeneratePresetAutoFleetCreator(player, deployedLocation);
+                    }
                     creatorsDeployed.Add(autoCreator);
                 }
             }
@@ -821,7 +853,13 @@ public class UniverseCreator {
 
                 for (int deployedCount = creatorsDeployed.Count; deployedCount < qtyToDeploy; deployedCount++) {
                     system = systemsToDeployTo.Pop();
-                    SettlementCreator autoCreator = UnitConfigurator.GenerateRandomAutoSettlementCreator(player, system as SystemItem);
+                    SettlementCreator autoCreator;
+                    if (_debugCntls.EquipmentPlan == DebugControls.EquipmentLoadout.Random) {
+                        autoCreator = UnitConfigurator.GenerateRandomAutoSettlementCreator(player, system as SystemItem);
+                    }
+                    else {
+                        autoCreator = UnitConfigurator.GeneratePresetAutoSettlementCreator(player, system as SystemItem);
+                    }
                     creatorsDeployed.Add(autoCreator);
                 }
             }
@@ -1001,6 +1039,7 @@ public class UniverseCreator {
     /// </summary>
     /// <param name="initialUserRelationship">The initial user relationship.</param>
     /// <returns></returns>
+    [Obsolete]
     public IEnumerable<Player> __GetUnmetAiPlayersWithInitialUserRelationsOf(DiplomaticRelationship initialUserRelationship) {
         D.Assert(_gameMgr.IsRunning, "This method should only be called when the User manually changes a unit's user relationship in the editor.");
         Player userPlayer = _gameMgr.UserPlayer;

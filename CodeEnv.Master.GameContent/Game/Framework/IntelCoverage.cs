@@ -47,8 +47,8 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// The item is under constant observation and is completely connected into the player's real-time knowledge
-        /// systems. We know everything there is to know. Typically the item is owned by the player, is
-        /// a trusted ally or the player has a source of realtime information.
+        /// systems. We know everything there is to know. Typically the item is owned by the player, is a trusted ally, 
+        /// the player has fully explored the IExplorable item or the item is a moon of its fully explored parent planet.
         /// </summary>
         Comprehensive = 4
 

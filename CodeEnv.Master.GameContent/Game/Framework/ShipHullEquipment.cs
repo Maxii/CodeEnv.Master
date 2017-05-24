@@ -52,10 +52,6 @@ namespace CodeEnv.Master.GameContent {
             D.AssertEqual(Hull.HullCategory, HullCategory);
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
     }
 }
 

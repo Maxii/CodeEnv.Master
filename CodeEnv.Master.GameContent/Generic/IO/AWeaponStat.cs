@@ -25,6 +25,16 @@ namespace CodeEnv.Master.GameContent {
 
         private const string DebugNameFormat = "{0}(DeliveryVehicleStrength[{1}], DamagePotential[{2}], Range[{3}]).";
 
+        public override string DebugName {
+            get {
+                if (_debugName == null) {
+                    _debugName = DebugNameFormat.Inject(base.DebugName, DeliveryVehicleStrength.DebugName, DamagePotential.DebugName,
+                        RangeCategory.GetValueName());
+                }
+                return _debugName;
+            }
+        }
+
         public WDVCategory DeliveryVehicleCategory { get { return DeliveryVehicleStrength.Category; } }
 
         public WDVStrength DeliveryVehicleStrength { get; private set; }
@@ -57,20 +67,6 @@ namespace CodeEnv.Master.GameContent {
             ReloadPeriod = reloadPeriod;
             DamagePotential = damagePotential;
         }
-
-        #region IDebugable Members
-
-        public override string DebugName {
-            get {
-                if (_debugName == null) {
-                    _debugName = DebugNameFormat.Inject(base.DebugName, DeliveryVehicleStrength.ToString(), DamagePotential.ToString(),
-                        RangeCategory.GetValueName());
-                }
-                return _debugName;
-            }
-        }
-
-        #endregion
 
 
     }

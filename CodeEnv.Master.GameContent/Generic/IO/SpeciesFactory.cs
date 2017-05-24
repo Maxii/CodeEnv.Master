@@ -47,10 +47,6 @@ namespace CodeEnv.Master.GameContent {
             return stat;
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
         #region Nested Classes
 
         private class SpeciesStatXmlReader : AXmlReader<SpeciesStatXmlReader> {
@@ -99,10 +95,6 @@ namespace CodeEnv.Master.GameContent {
                     D.Error("{0} could not find Xml Node for Species {1}.", DebugName, species.GetValueName());
                 }
                 return stat;
-            }
-
-            public override string ToString() {
-                return new ObjectAnalyzer().ToString(this);
             }
 
         }

@@ -17,12 +17,8 @@
 // default namespace
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
-using UnityEngine;
 
 /// <summary>
 /// SensorRangeMonitor for MR and LR Sensors located with the UnitCmd.
@@ -50,5 +46,12 @@ public class CmdSensorRangeMonitor : ASensorRangeMonitor, ICmdSensorRangeMonitor
     }
 
     #endregion
+
+    #region Debug
+
+    protected override bool __ToReportTargetReacquisitionChanges { get { return false; } }
+
+    #endregion
+
 }
 

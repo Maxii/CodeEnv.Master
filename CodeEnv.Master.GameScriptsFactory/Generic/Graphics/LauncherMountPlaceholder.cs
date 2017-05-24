@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AMount.cs
-// Abstract base class for a mount on a hull.
+// File: LauncherMountPlaceholder.cs
+// Placeholder for Launcher Weapon Mounts.  
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,22 +17,14 @@
 // default namespace
 
 using CodeEnv.Master.Common;
-using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Abstract base class for a mount on a hull.
+/// Placeholder for Launcher Weapon Mounts.  
 /// </summary>
-public abstract class AMount : AMonoBase {
+public class LauncherMountPlaceholder : AMountPlaceholder {
 
-    protected sealed override void Awake() {
-        base.Awake();
-        InitializeValuesAndReferences();
-        Validate();
-    }
+    protected override void Cleanup() { }
 
-    protected virtual void InitializeValuesAndReferences() { }
-
-    protected virtual void Validate() { }
 
 }
 

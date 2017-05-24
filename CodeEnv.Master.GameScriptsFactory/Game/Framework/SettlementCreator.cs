@@ -44,6 +44,9 @@ public class SettlementCreator : AAutoUnitCreator {
     protected override void MakeCommand(Player owner) {
         CmdCameraStat cameraStat = MakeCmdCameraStat(TempGameValues.FacilityMaxRadius);
         _command = _factory.MakeSettlementCmdInstance(owner, cameraStat, Configuration.CmdDesignName, gameObject);
+        if (_command.Data.ParentName != UnitName) {  // avoids equals warning
+            _command.Data.ParentName = UnitName;
+        }
     }
 
     protected override void AddElementsToCommand() {
@@ -57,11 +60,10 @@ public class SettlementCreator : AAutoUnitCreator {
         _command.HQElement = _command.SelectHQElement();
     }
 
-    protected override bool PositionUnit() {
+    protected override void PositionUnit() {
         LogEvent(); // 10.6.16 Selection of system to deploy to moved to UniverseCreator
         var system = gameObject.GetSingleComponentInParents<SystemItem>();
         system.Settlement = _command;
-        return true;
     }
 
     protected override void CompleteUnitInitialization() {
@@ -81,9 +83,10 @@ public class SettlementCreator : AAutoUnitCreator {
         _elements.ForAll(e => e.CommenceOperations());
     }
 
-    protected override void BeginCommandOperations() {
+    protected override bool BeginCommandOperations() {
         LogEvent();
         _command.CommenceOperations();
+        return true;
     }
 
     private CmdCameraStat MakeCmdCameraStat(float maxElementRadius) {
@@ -118,11 +121,13 @@ public class SettlementCreator : AAutoUnitCreator {
         return new FollowableItemCameraStat(minViewDistance, optViewDistance, fov);
     }
 
-    protected override void Cleanup() { }
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+    protected override void ClearElementReferences() {
+        _elements.Clear();
     }
+
+    #region Debug
+
+    #endregion
 
     #region Archive
 

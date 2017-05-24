@@ -35,10 +35,6 @@ namespace CodeEnv.Master.GameContent {
             return new PlanetoidReport(_data, player, _item);
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
     }
 }
 

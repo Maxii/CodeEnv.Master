@@ -182,9 +182,8 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable,
     #region Show Icon
 
     private void InitializeIcon() {
-        DebugControls debugControls = DebugControls.Instance;
-        debugControls.showPlanetIcons += ShowPlanetIconsChangedEventHandler;
-        if (debugControls.ShowPlanetIcons) {
+        _debugCntls.showPlanetIcons += ShowPlanetIconsChangedEventHandler;
+        if (_debugCntls.ShowPlanetIcons) {
             EnableIcon(true);
         }
     }
@@ -212,7 +211,7 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable,
                 }
             }
             else {
-                D.Assert(!DebugControls.Instance.ShowPlanetIcons);
+                D.Assert(!_debugCntls.ShowPlanetIcons);
             }
         }
     }
@@ -228,7 +227,7 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable,
     }
 
     private void ShowPlanetIconsChangedEventHandler(object sender, EventArgs e) {
-        EnableIcon(DebugControls.Instance.ShowPlanetIcons);
+        EnableIcon(_debugCntls.ShowPlanetIcons);
     }
 
     /// <summary>
@@ -236,9 +235,8 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable,
     /// <remarks>The icon itself will be cleaned up when DisplayMgr.Dispose() is called.</remarks>
     /// </summary>
     private void CleanupIconSubscriptions() {
-        var debugControls = DebugControls.Instance;
-        if (debugControls != null) {
-            debugControls.showPlanetIcons -= ShowPlanetIconsChangedEventHandler;
+        if (_debugCntls != null) {
+            _debugCntls.showPlanetIcons -= ShowPlanetIconsChangedEventHandler;
         }
     }
 
@@ -274,9 +272,14 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable,
 
     #endregion
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
+    #region IAssemblySupported Members
+
+    /// <summary>
+    /// A collection of assembly stations that are local to the item.
+    /// </summary>
+    public override IList<StationaryLocation> LocalAssemblyStations { get { return ParentSystem.LocalAssemblyStations; } }
+
+    #endregion
 
     #region IShipCloseOrbitable Members
 
@@ -315,8 +318,6 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable,
         return !Owner.IsAtWarWith(player);
     }
 
-    public IList<StationaryLocation> LocalAssemblyStations { get { return ParentSystem.LocalAssemblyStations; } }
-
     #endregion
 
     #region IShipOrbitable Members
@@ -346,15 +347,15 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable,
         float insideOrbitSlotThreshold = Data.CloseOrbitOuterRadius - ship.CollisionDetectionZoneRadius_Debug;
         if (shipDistance > insideOrbitSlotThreshold) {
             string arrivingLeavingMsg = isArriving ? "arriving in" : "leaving";
-            D.Log(ShowDebugLog, "{0} is {1} orbit of {2} but collision detection zone is poking outside of orbit slot by {3:0.0000} units.",
+            D.Log(ShowDebugLog, "{0} is {1} close orbit of {2} but collision detection zone is poking outside of orbit slot by {3:0.0000} units.",
                 ship.DebugName, arrivingLeavingMsg, DebugName, shipDistance - insideOrbitSlotThreshold);
             float halfOutsideOrbitSlotThreshold = Data.CloseOrbitOuterRadius;
             if (shipDistance > halfOutsideOrbitSlotThreshold) {
-                D.Warn("{0} is {1} orbit of {2} but collision detection zone is half or more outside of orbit slot.", ship.DebugName, arrivingLeavingMsg, DebugName);
+                D.Warn("{0} is {1} close orbit of {2} but collision detection zone is half or more outside of orbit slot.", ship.DebugName, arrivingLeavingMsg, DebugName);
                 if (isArriving) {
                     float distanceMovedWhileWaitingForArrival = shipDistance - __distanceUponInitialArrival;
                     string distanceMsg = distanceMovedWhileWaitingForArrival < 0F ? "closer in toward" : "further out from";
-                    D.Log("{0} moved {1:0.##} {2} {3}'s orbit slot while waiting for arrival.", ship.DebugName, Mathf.Abs(distanceMovedWhileWaitingForArrival), distanceMsg, DebugName);
+                    D.Log("{0} moved {1:0.##} {2} {3}'s close orbit slot while waiting for arrival.", ship.DebugName, Mathf.Abs(distanceMovedWhileWaitingForArrival), distanceMsg, DebugName);
                 }
             }
         }
@@ -362,7 +363,7 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable,
 
     #endregion
 
-    #region IShipNavigable Members
+    #region IShipNavigableDestination Members
 
     public override ApMoveDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, IShip ship) {
         float innerShellRadius;
@@ -382,7 +383,7 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable,
 
     #endregion
 
-    #region IShipExplorable Members
+    #region IExplorable Members
 
     public bool IsFullyExploredBy(Player player) {
         return GetIntelCoverage(player) == IntelCoverage.Comprehensive;
@@ -394,6 +395,10 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable,
         }
         return !Owner.IsAtWarWith(player);
     }
+
+    #endregion
+
+    #region IShipExplorable Members
 
     public void RecordExplorationCompletedBy(Player player) {
         SetIntelCoverage(player, IntelCoverage.Comprehensive);

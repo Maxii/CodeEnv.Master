@@ -39,14 +39,16 @@ public class RotateMesh : EditorWindow {
     /// </summary>
     private static string _meshRelativeSavePath = "Assets/Models/RotateMesh/"; // my addition
 
-    private string error = "";
-
-    private string _newlyCreatedMeshName = "";  // my addition
-
     [MenuItem("Window/Rotate Mesh %#r")]
     public static void ShowWindow() {
         EditorWindow.GetWindow(typeof(RotateMesh));
     }
+
+    public string DebugName { get { return GetType().Name; } }
+
+    private string error = "";
+
+    private string _newlyCreatedMeshName = "";  // my addition
 
     void OnGUI() {
         Transform curr = Selection.activeTransform;
@@ -199,7 +201,7 @@ public class RotateMesh : EditorWindow {
     }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
 }

@@ -96,7 +96,7 @@ public class GameSettingsDebugControl : AMonoSingleton<GameSettingsDebugControl>
 
     public override bool IsPersistentAcrossScenes { get { return true; } }  // GameScene -> GameScene retains values
 
-    private string Name { get { return GetType().Name; } }
+    public string DebugName { get { return GetType().Name; } }
 
     private IGameManager _gameMgr;
     private PlayerPrefsManager _playerPrefsMgr;
@@ -275,7 +275,7 @@ public class GameSettingsDebugControl : AMonoSingleton<GameSettingsDebugControl>
     #endregion
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
 

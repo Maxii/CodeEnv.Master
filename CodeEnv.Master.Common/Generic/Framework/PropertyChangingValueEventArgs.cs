@@ -28,6 +28,8 @@ namespace CodeEnv.Master.Common {
     /// <typeparam name="T"></typeparam>
     public class PropertyChangingValueEventArgs<T> : PropertyChangingEventArgs {
 
+        public string DebugName { get { return typeof(T).Name; } }
+
         public T NewValue { get; private set; }
 
         public PropertyChangingValueEventArgs(string propertyName, T newValue)
@@ -36,7 +38,7 @@ namespace CodeEnv.Master.Common {
         }
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
     }

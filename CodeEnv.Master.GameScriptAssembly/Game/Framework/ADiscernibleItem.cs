@@ -240,8 +240,19 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
         }
         else {
             // Not going to show the effect. Complete the handshake so any dependencies can continue
-            HandleEffectSequenceFinished(effectSeqID);
+            if (effectSeqID == EffectSequenceID.Dying) {
+                __DelayDyingEffectCompletion(); // 5.12.17 FIXME delay to keep HandleDeathAfterBeginningDeathEffect()
+                // from allowing DisplayMgr to try to shutdown icons that have already been destroyed.
+            }
         }
+    }
+
+    private void __DelayDyingEffectCompletion() {   // TEMP
+        JobManager.Instance.WaitForHours(1F, "__DyingEffectCompletionDelayJob", (jobWasKilled) => {
+            if (!jobWasKilled) {
+                HandleEffectSequenceFinished(EffectSequenceID.Dying);
+            }
+        });
     }
 
     protected void StopEffectSequence(EffectSequenceID effectSeqID) {
@@ -257,68 +268,22 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
         HandleIsFocusChanged();
     }
 
-    protected virtual void HandleIsFocusChanged() {
-        if (IsFocus) {
-            GameReferences.MainCameraControl.CurrentFocus = this;
-        }
-        AssessCircleHighlighting();
-    }
-
     private void IsSelectedPropChangedHandler() {
         HandleIsSelectedChanged();
-    }
-
-    protected virtual void HandleIsSelectedChanged() {
-        if (IsSelected) {
-            ShowSelectedItemHud();
-            SelectionManager.Instance.CurrentSelection = this;
-        }
-        AssessCircleHighlighting();
-    }
-
-    protected override void HandleOwnerChanging(Player newOwner) {
-        if (_ctxControl != null) {
-            D.Assert(_hasInitOnFirstDiscernibleToUserRun);
-            if (Owner == TempGameValues.NoPlayer || newOwner == TempGameValues.NoPlayer || Owner.IsUser != newOwner.IsUser) {
-                // Kind of owner (NoPlayer, AI or User) has changed so generate a new ctxControl -
-                // aka, a change from one AI player to another does not necessitate a change
-                (_ctxControl as IDisposable).Dispose();
-                _ctxControl = InitializeContextMenu(newOwner);
-            }
-        }
     }
 
     private void IsInMainCameraLosPropChangedHandler() {
         HandleIsInMainCameraLosChanged();
     }
 
-    protected virtual void HandleIsInMainCameraLosChanged() {
-        AssessIsDiscernibleToUser();
-    }
-
     private void IsDiscernibleToUserPropChangedHandler() {
         HandleIsDiscernibleToUserChanged();
     }
-
-    protected virtual void HandleIsDiscernibleToUserChanged() {
-        if (!IsDiscernibleToUser && IsHudShowing) {
-            // lost ability to discern this object while showing the HUD so stop showing
-            ShowHud(false);
-        }
-        if (!_hasInitOnFirstDiscernibleToUserRun) {
-            D.Assert(IsDiscernibleToUser);    // first time change should always be true
-            InitializeOnFirstDiscernibleToUser();
-        }
-        AssessCircleHighlighting();
-        //D.Log(ShowDebugLog, "{0}.IsDiscernibleToUser changed to {1}.", DebugName, IsDiscernibleToUser);
-    }
-    // IMPROVE deal with losing IsDiscernible while hovered or pressed
 
     private void IsVisualDetailDiscernibleToUserPropChangedHandler() {
         HandleIsVisualDetailDiscernibleToUserChanged();
     }
 
-    protected virtual void HandleIsVisualDetailDiscernibleToUserChanged() { }
 
     void OnHover(bool isOver) {
         //D.Log(ShowDebugLog, "{0}.OnHover({1}) called at {2}.", DebugName, isOver, Utility.TimeStamp);
@@ -332,17 +297,97 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
         }
     }
 
-    private void HandleHoveredChanged(bool isHovered) {
-        ShowHud(isHovered);
-        ShowHoverHighlight(isHovered);
-    }
-
     void OnClick() {
         ClickEventHandler(gameObject);
     }
 
     protected void ClickEventHandler(GameObject go) {
         HandleClick();
+    }
+
+    void OnPress(bool isDown) {
+        PressEventHandler(gameObject, isDown);
+    }
+
+    protected void PressEventHandler(GameObject go, bool isDown) {
+        HandlePressedChanged(isDown);
+    }
+
+    void OnDoubleClick() {
+        DoubleClickEventHandler(gameObject);
+    }
+
+    protected void DoubleClickEventHandler(GameObject go) {
+        HandleDoubleClick();
+    }
+
+    private void OnEffectSeqStarting(EffectSequenceID effectSeqID) {
+        if (effectSeqStarting != null) {
+            effectSeqStarting(this, new EffectSeqEventArgs(effectSeqID));
+        }
+    }
+
+    protected void OnEffectSeqFinished(EffectSequenceID effectSeqID) {
+        if (effectSeqFinished != null) {
+            effectSeqFinished(this, new EffectSeqEventArgs(effectSeqID));
+        }
+    }
+
+    #endregion
+
+    protected virtual void HandleIsFocusChanged() {
+        if (IsFocus) {
+            GameReferences.MainCameraControl.CurrentFocus = this;
+        }
+        AssessCircleHighlighting();
+    }
+
+    protected virtual void HandleIsSelectedChanged() {
+        if (IsSelected) {
+            ShowSelectedItemHud();
+            SelectionManager.Instance.CurrentSelection = this;
+        }
+        AssessCircleHighlighting();
+    }
+
+
+    protected override void HandleOwnerChanging(Player newOwner) {
+        if (_ctxControl != null) {
+            D.Assert(_hasInitOnFirstDiscernibleToUserRun);
+            if (Owner == TempGameValues.NoPlayer || newOwner == TempGameValues.NoPlayer || Owner.IsUser != newOwner.IsUser) {
+                // Kind of owner (NoPlayer, AI or User) has changed so generate a new ctxControl -
+                // aka, a change from one AI player to another does not necessitate a change
+
+                // 5.5.17 No worries about being paused as owner changes are deferred until no longer paused
+                _ctxControl.Dispose();
+                _ctxControl = InitializeContextMenu(newOwner);
+            }
+        }
+    }
+
+    protected virtual void HandleIsInMainCameraLosChanged() {
+        AssessIsDiscernibleToUser();
+    }
+
+    // IMPROVE deal with losing IsDiscernible while hovered or pressed
+    protected virtual void HandleIsDiscernibleToUserChanged() {
+        if (!IsDiscernibleToUser && IsHudShowing) {
+            // lost ability to discern this object while showing the HUD so stop showing
+            ShowHud(false);
+        }
+        if (!_hasInitOnFirstDiscernibleToUserRun) {
+            D.Assert(IsDiscernibleToUser);    // first time change should always be true
+            InitializeOnFirstDiscernibleToUser();
+        }
+        AssessCircleHighlighting();
+        //D.Log(ShowDebugLog, "{0}.IsDiscernibleToUser changed to {1}.", DebugName, IsDiscernibleToUser);
+    }
+
+    protected virtual void HandleIsVisualDetailDiscernibleToUserChanged() { }
+
+    private void HandleHoveredChanged(bool isHovered) {
+        ShowHud(isHovered);
+        ShowHoverHighlight(isHovered);
     }
 
     private void HandleClick() {
@@ -368,26 +413,15 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
             }
         }
     }
-
     protected virtual void HandleLeftClick() {
         IsSelected = true;
     }
-
     protected virtual void HandleAltLeftClick() { }
-
     protected virtual void HandleMiddleClick() {
         IsFocus = true;
     }
 
     protected virtual void HandleRightClick() { }
-
-    void OnPress(bool isDown) {
-        PressEventHandler(gameObject, isDown);
-    }
-
-    protected void PressEventHandler(GameObject go, bool isDown) {
-        HandlePressedChanged(isDown);
-    }
 
     private void HandlePressedChanged(bool isPressed) {
         //D.Log(ShowDebugLog, "{0} is handling an OnPress event. IsDown = {1}.", DebugName, isPressed);
@@ -439,14 +473,6 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
         }
     }
 
-    void OnDoubleClick() {
-        DoubleClickEventHandler(gameObject);
-    }
-
-    protected void DoubleClickEventHandler(GameObject go) {
-        HandleDoubleClick();
-    }
-
     private void HandleDoubleClick() {
         //D.Log(ShowDebugLog, "{0} is handling an OnDoubleClick event.", DebugName);
         if (IsDiscernibleToUser) {
@@ -464,31 +490,16 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
             }
         }
     }
-
     protected virtual void HandleLeftDoubleClick() { }
     protected virtual void HandleMiddleDoubleClick() { }
     protected virtual void HandleRightDoubleClick() { }
-
-    private void OnEffectSeqStarting(EffectSequenceID effectSeqID) {
-        if (effectSeqStarting != null) {
-            effectSeqStarting(this, new EffectSeqEventArgs(effectSeqID));
-        }
-    }
-
-    protected void OnEffectSeqFinished(EffectSequenceID effectSeqID) {
-        if (effectSeqFinished != null) {
-            effectSeqFinished(this, new EffectSeqEventArgs(effectSeqID));
-        }
-    }
-
-    #endregion
 
     #region Cleanup
 
     protected override void Cleanup() {
         base.Cleanup();
         if (_ctxControl != null) {
-            (_ctxControl as IDisposable).Dispose();
+            _ctxControl.Dispose();
         }
         if (EffectsMgr != null) {
             EffectsMgr.Dispose();
@@ -567,7 +578,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     /// Indicates whether this instance is currently eligible to be a camera target for zooming, focusing or following.
     /// e.g. - the camera should not react to the object when it is not discernible to the user.
     /// </summary>
-    public virtual bool IsCameraTargetEligible { get { return IsDiscernibleToUser; } }
+    public bool IsCameraTargetEligible { get { return IsDiscernibleToUser; } }
 
     public float MinimumCameraViewingDistance { get { return CameraStat.MinimumViewingDistance; } }
 

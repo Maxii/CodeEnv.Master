@@ -32,10 +32,6 @@ namespace CodeEnv.Master.GameContent {
             return GameReferences.FormationGenerator.GenerateFleetFormation(formation, cmdTransform, out formationRadius);
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
     }
 }
 

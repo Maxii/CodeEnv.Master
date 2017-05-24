@@ -138,9 +138,5 @@ public class TopographyMonitor : AColliderMonitor {
 
     #endregion
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
 }
 

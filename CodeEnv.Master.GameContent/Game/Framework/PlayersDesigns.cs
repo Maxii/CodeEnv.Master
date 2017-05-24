@@ -25,6 +25,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class PlayersDesigns {
 
+        public string DebugName { get { return GetType().Name; } }
+
         private IDictionary<Player, IDictionary<string, StarbaseCmdDesign>> _starbaseCmdDesignsLookup;
         private IDictionary<Player, IDictionary<string, FleetCmdDesign>> _fleetCmdDesignsLookup;
         private IDictionary<Player, IDictionary<string, SettlementCmdDesign>> _settlementCmdDesignsLookup;
@@ -213,7 +215,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
     }

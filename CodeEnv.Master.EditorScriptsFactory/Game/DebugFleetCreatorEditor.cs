@@ -55,9 +55,5 @@ public class DebugFleetCreatorEditor : ADebugUnitCreatorEditor {
         EditorGUI.EndDisabledGroup();
     }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
 }
 

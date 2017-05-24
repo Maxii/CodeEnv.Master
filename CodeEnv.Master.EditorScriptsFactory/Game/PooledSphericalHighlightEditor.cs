@@ -26,6 +26,8 @@ using UnityEngine;
 [CustomEditor(typeof(PooledSphericalHighlight))]
 public class PooledSphericalHighlightEditor : Editor {
 
+    public string DebugName { get { return GetType().Name; } }
+
     public override void OnInspectorGUI() {
         serializedObject.Update();
 
@@ -49,7 +51,7 @@ public class PooledSphericalHighlightEditor : Editor {
     }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
 }

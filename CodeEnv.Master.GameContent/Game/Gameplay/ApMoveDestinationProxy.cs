@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ApMoveDestinationProxy.cs
-// Proxy used by a Ship's AutoPilot to navigate to an IShipNavigable destination.
+// Proxy used by a Ship's AutoPilot to navigate to an IShipNavigableDestination destination.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,7 +20,7 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Proxy used by a Ship's AutoPilot to navigate to an IShipNavigable destination.
+    /// Proxy used by a Ship's AutoPilot to navigate to an IShipNavigableDestination destination.
     /// </summary>
     public class ApMoveDestinationProxy : AApDestinationProxy {
 
@@ -40,20 +40,16 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public ApMoveDestinationProxy(IShipNavigable dest, IShip ship, float innerRadius, float outerRadius)
+        public ApMoveDestinationProxy(IShipNavigableDestination dest, IShip ship, float innerRadius, float outerRadius)
             : this(dest, ship, Vector3.zero, innerRadius, outerRadius) {
         }
 
-        public ApMoveDestinationProxy(IShipNavigable dest, IShip ship, Vector3 destOffset, float innerRadius, float outerRadius)
+        public ApMoveDestinationProxy(IShipNavigableDestination dest, IShip ship, Vector3 destOffset, float innerRadius, float outerRadius)
             : base(dest, ship, destOffset, innerRadius, outerRadius) {
         }
 
         public void ResetOffset() {
             _destOffset = Vector3.zero;
-        }
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
         }
 
     }

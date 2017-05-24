@@ -15,7 +15,7 @@
 ////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
-
+    using System;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
@@ -34,7 +34,7 @@ namespace CodeEnv.Master.GameContent {
         private Player _owner;
         public Player Owner {
             get { return _owner; }
-            set { SetProperty<Player>(ref _owner, value, "Owner", OwnerPropChangedHandler); }
+            set { SetProperty<Player>(ref _owner, value, "Owner", OwnerPropChangedHandler, OwnerPropertyChangingHandler); }
         }
 
         private Topography _topography;
@@ -58,6 +58,8 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<bool>(ref _isOperational, value, "IsOperational", IsOperationalPropChangedHandler); }
         }
 
+        public bool IsOwnerChangeUnderway { get; set; }
+
         /// <summary>
         /// Used for controlling other player's access to Item Info.
         /// </summary>
@@ -66,6 +68,8 @@ namespace CodeEnv.Master.GameContent {
         public bool ShowDebugLog { get { return Item.ShowDebugLog; } }
 
         protected IOwnerItem Item { get; private set; }
+
+        protected IDebugControls _debugCntls;
 
         #region Initialization
 
@@ -78,6 +82,7 @@ namespace CodeEnv.Master.GameContent {
             Item = item;
             D.AssertNotNull(owner, DebugName);  // owner can be NoPlayer but never null
             _owner = owner;
+            _debugCntls = GameReferences.DebugControls;
             // 7.9.16 Initialize(); now called by AItem.InitializeOnData to move out of constructor
         }
 
@@ -111,26 +116,38 @@ namespace CodeEnv.Master.GameContent {
             HandleIsOperationalChanged();
         }
 
-        protected virtual void HandleIsOperationalChanged() {
-            D.Assert(IsOperational);    // only MortalItems should ever see a change to false
+        private void OwnerPropertyChangingHandler(Player newOwner) {
+            IsOwnerChangeUnderway = true;
+            HandleOwnerChanging(newOwner);
         }
 
         private void OwnerPropChangedHandler() {
             D.AssertNotNull(Owner, DebugName);  // owner can be NoPlayer but never null
             HandleOwnerChanged();
-        }
-
-        protected virtual void HandleOwnerChanged() {
-            //D.Log(ShowDebugLog, "{0} Owner has changed to {1}.", DebugName, Owner);
+            // IsOwnerChangeUnderway = false; Handled from AItem when all change work completed
         }
 
         private void TopographyPropChangedHandler() {
             HandleTopographyChanged();
         }
 
+        #endregion
+
+        protected virtual void HandleIsOperationalChanged() {
+            D.Assert(IsOperational);    // only MortalItems should ever see a change to false
+        }
+
+        protected virtual void HandleOwnerChanging(Player newOwner) { }
+
+        protected virtual void HandleOwnerChanged() {
+            //D.Log(ShowDebugLog, "{0} Owner has changed to {1}.", DebugName, Owner);
+        }
+
         protected virtual void HandleTopographyChanged() { }
 
-        #endregion
+        public sealed override string ToString() {
+            return DebugName;
+        }
 
     }
 }

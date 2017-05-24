@@ -27,7 +27,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for all Items.
 /// </summary>
-public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNavigable {
+public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNavigableDestination {
 
     /// <summary>
     /// Occurs when the owner of this <c>AItem</c> is about to change.
@@ -114,7 +114,7 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
 
     public Player Owner {
         get { return Data.Owner; }
-        set { Data.Owner = value; }
+        protected set { Data.Owner = value; }
     }
 
     /// <summary>
@@ -123,6 +123,11 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
     /// </summary>
     public PlayerAIManager OwnerAIMgr { get; private set; }
 
+    protected bool IsOwnerChangeUnderway {
+        get { return Data.IsOwnerChangeUnderway; }
+        private set { Data.IsOwnerChangeUnderway = value; }
+    }
+
     protected AInfoAccessController InfoAccessCntlr { get { return Data.InfoAccessCntlr; } }
 
     protected IList<IDisposable> _subscriptions;
@@ -130,6 +135,7 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
     protected ItemHudManager _hudManager;
     protected IGameManager _gameMgr;
     protected IJobManager _jobMgr;
+    protected IDebugControls _debugCntls;
 
     #region Initialization
 
@@ -145,6 +151,7 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
         _inputMgr = GameReferences.InputManager;
         _gameMgr = GameReferences.GameManager;
         _jobMgr = GameReferences.JobManager;
+        _debugCntls = GameReferences.DebugControls;
     }
 
     protected abstract bool InitializeDebugLog();
@@ -173,18 +180,10 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
     }
 
     /// <summary>
-    /// Initializes the Owner's PlayerAIManager for this item. Returns <c>true</c>
-    /// if the OwnerAIMgr was initialized (aka the Owner is not NoPlayer), <c>false</c>
-    /// if the Owner is NoPlayer and OwnerAIMgr is null.
+    /// Initializes the Owner's PlayerAIManager for this item.
     /// </summary>
-    /// <returns></returns>
-    protected virtual bool InitializeOwnerAIManager() {
-        if (Owner != TempGameValues.NoPlayer) {
-            OwnerAIMgr = _gameMgr.GetAIManagerFor(Owner);
-            return true;
-        }
-        OwnerAIMgr = null;
-        return false;
+    protected void InitializeOwnerAIManager() {
+        OwnerAIMgr = Owner != TempGameValues.NoPlayer ? _gameMgr.GetAIManagerFor(Owner) : null;
     }
 
     protected sealed override void Start() {
@@ -239,48 +238,20 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
         HandleIsOperationalChanged();
     }
 
-    protected virtual void HandleIsOperationalChanged() {
-        enabled = IsOperational;
-    }
-
     private void OwnerPropChangingHandler(Player newOwner) {
+        // IsOwnerChangeUnderway = true; Handled by AItemData before any change work is done
         HandleOwnerChanging(newOwner);
-        OnOwnerChanging(newOwner);
+        OnOwnerChanging(newOwner);  // UNCLEAR 5.15.17 Send event BEFORE handling internally?
     }
-
-    protected abstract void HandleOwnerChanging(Player newOwner);
 
     private void OwnerPropChangedHandler() {
         HandleOwnerChanged();
         OnOwnerChanged();
+        IsOwnerChangeUnderway = false;  // after all change work is done, changes state in AItemData
     }
-
-    protected virtual void HandleOwnerChanged() {
-        InitializeOwnerAIManager();
-    }
-
 
     private void InputModePropChangedHandler() {
         HandleInputModeChanged(_inputMgr.InputMode);
-    }
-
-    private void HandleInputModeChanged(GameInputMode inputMode) {
-        if (IsHudShowing) {
-            switch (inputMode) {
-                case GameInputMode.NoInput:
-                case GameInputMode.PartialPopup:
-                case GameInputMode.FullPopup:
-                    //D.Log(ShowDebugLog, "InputMode changed to {0}. {1} is no longer showing HUD.", inputMode.GetValueName(), DebugName);
-                    ShowHud(false);
-                    break;
-                case GameInputMode.Normal:
-                    // do nothing
-                    break;
-                case GameInputMode.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(inputMode));
-            }
-        }
     }
 
     private void OnOwnerChanging(Player newOwner) {
@@ -302,6 +273,35 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
     }
 
     #endregion
+
+    protected virtual void HandleIsOperationalChanged() {
+        enabled = IsOperational;
+    }
+
+    protected abstract void HandleOwnerChanging(Player newOwner);
+
+    protected virtual void HandleOwnerChanged() {
+        InitializeOwnerAIManager();
+    }
+
+    private void HandleInputModeChanged(GameInputMode inputMode) {
+        if (IsHudShowing) {
+            switch (inputMode) {
+                case GameInputMode.NoInput:
+                case GameInputMode.PartialPopup:
+                case GameInputMode.FullPopup:
+                    //D.Log(ShowDebugLog, "InputMode changed to {0}. {1} is no longer showing HUD.", inputMode.GetValueName(), DebugName);
+                    ShowHud(false);
+                    break;
+                case GameInputMode.Normal:
+                    // do nothing
+                    break;
+                case GameInputMode.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(inputMode));
+            }
+        }
+    }
 
     #region Cleanup
 
@@ -351,7 +351,25 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
         }
     }
 
+    public void __LogInfoAccessChangedSubscribers() {
+        if (infoAccessChgd != null) {
+            IList<string> targetNames = new List<string>();
+            var subscribers = infoAccessChgd.GetInvocationList();
+            foreach (var sub in subscribers) {
+                targetNames.Add(sub.Target.ToString());
+            }
+            Debug.LogFormat("{0}.InfoAccessChgdSubscribers: {1}.", DebugName, targetNames.Concatenate());
+        }
+        else {
+            Debug.LogFormat("{0}.InfoAccessChgd event has no subscribers.", DebugName);
+        }
+    }
+
     #endregion
+
+    public sealed override string ToString() {
+        return DebugName;
+    }
 
     #region Archive
 
@@ -401,13 +419,14 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
 
     #endregion
 
-    #region INavigable Members
+
+    #region INavigableDestination Members
 
     public virtual bool IsMobile { get { return false; } }
 
     #endregion
 
-    #region IShipNavigable Members
+    #region IShipNavigableDestination Members
 
     public abstract ApMoveDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, IShip ship);
 
@@ -417,9 +436,22 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
 
     public Player Owner_Debug { get { return Data.Owner; } }
 
+    public bool TryGetOwner_Debug(Player requestingPlayer, out Player owner) {
+        if (InfoAccessCntlr.HasAccessToInfo(requestingPlayer, ItemInfoID.Owner)) {
+            owner = Data.Owner;
+            return true;
+        }
+        owner = null;
+        return false;
+    }
+
     public bool TryGetOwner(Player requestingPlayer, out Player owner) {
         if (InfoAccessCntlr.HasAccessToInfo(requestingPlayer, ItemInfoID.Owner)) {
             owner = Data.Owner;
+            if (owner != TempGameValues.NoPlayer) {
+                D.Assert(owner.IsKnown(requestingPlayer), "{0}: How can {1} have access to Owner {2} without knowing them??? Frame: {3}."
+                    .Inject(DebugName, requestingPlayer.DebugName, owner.DebugName, Time.frameCount));
+            }
             return true;
         }
         owner = null;

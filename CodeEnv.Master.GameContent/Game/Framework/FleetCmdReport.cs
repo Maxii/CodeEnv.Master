@@ -43,7 +43,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public FleetComposition UnitComposition { get; private set; }
 
-        public INavigable Target { get; private set; }
+        public INavigableDestination Target { get; private set; }
 
         public Vector3? CurrentHeading { get; private set; }
 
@@ -199,10 +199,6 @@ namespace CodeEnv.Master.GameContent {
                 return cmdData.GenerateCmdCategory(UnitComposition);
             }
             return FleetCategory.None;
-        }
-
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
         }
 
         #region Archive

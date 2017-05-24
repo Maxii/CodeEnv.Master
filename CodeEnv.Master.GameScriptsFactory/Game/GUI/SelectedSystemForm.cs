@@ -26,9 +26,6 @@ public class SelectedSystemForm : ASelectedItemForm {
 
     public override FormID FormID { get { return FormID.SelectedSystem; } }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 }
 

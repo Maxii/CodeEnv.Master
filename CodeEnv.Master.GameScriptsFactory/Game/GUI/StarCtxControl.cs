@@ -43,7 +43,7 @@ public class StarCtxControl : ACtxControl {
 
     protected override Vector3 PositionForDistanceMeasurements { get { return _starMenuOperator.Position; } }
 
-    protected override string OperatorName { get { return _starMenuOperator.DebugName; } }
+    protected override string OperatorName { get { return _starMenuOperator != null ? _starMenuOperator.DebugName : "NotYetAssigned"; } }
 
     private StarItem _starMenuOperator;
 
@@ -95,18 +95,14 @@ public class StarCtxControl : ACtxControl {
 
     private void IssueRemoteUserFleetOrder(int itemID) {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
-        IFleetNavigable target = _starMenuOperator;
+        IFleetNavigableDestination target = _starMenuOperator;
         if (directive == FleetDirective.Explore || directive == FleetDirective.Guard || directive == FleetDirective.Patrol) {
-            target = _starMenuOperator.ParentSystem as IFleetNavigable;
+            target = _starMenuOperator.ParentSystem as IFleetNavigableDestination;
         }
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         var order = new FleetOrder(directive, OrderSource.User, target);
         bool isOrderInitiated = remoteFleet.InitiateNewOrder(order);
         D.Assert(isOrderInitiated);
-    }
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
     }
 
 }

@@ -20,7 +20,7 @@ namespace CodeEnv.Master.GameContent {
     /// Interface for Items or stations that can repair Ships.
     /// <remarks>Planets, Bases and FormationStations.</remarks>
     /// </summary>
-    public interface IShipRepairCapable : IRepairCapable, IShipNavigable {
+    public interface IShipRepairCapable : IRepairCapable, IShipNavigableDestination {
 
         /// <summary>
         /// Gets the repair capacity available in hitPts per day.

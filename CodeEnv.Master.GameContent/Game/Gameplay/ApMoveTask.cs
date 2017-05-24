@@ -72,7 +72,7 @@ namespace CodeEnv.Master.GameContent {
 
         private static readonly LayerMask AvoidableObstacleZoneOnlyLayerMask = LayerMaskUtility.CreateInclusiveMask(Layers.AvoidableObstacleZone);
 
-        public string DebugName { get { return DebugNameFormat.Inject(_autoPilot.DebugName, GetType().Name); } }
+        public virtual string DebugName { get { return DebugNameFormat.Inject(_autoPilot.DebugName, GetType().Name); } }
 
         private bool _isFleetwideMove;
         internal protected virtual bool IsFleetwideMove {
@@ -169,6 +169,17 @@ namespace CodeEnv.Master.GameContent {
                 D.Log(ShowDebugLog, "{0} has already arrived! It is engaging Pilot from within {1}.", DebugName, tgtProxy.DebugName);
                 HandleTargetReached();
                 return;
+            }
+
+            if (tgtProxy.IsPotentiallyUncatchableShip) {
+                // 4.15.17 Currently, ships only have another ship as a destination if attacking it which is not a fleetwide move
+                // and meets the intention of the test - aka keeping ships moving individually from straying too far from FleetCmd.
+                if (CheckForUncatchable(tgtProxy)) {
+                    D.Warn(@"{0} has been assigned Destination {1} that is already uncatchable. ShipToDestinationDistance: {2:0.##}, 
+                        CmdToDestDistance: {3:0.##}, CmdToDestThresholdDistance: {4:0.##}.", DebugName, tgtProxy.DebugName,
+                        tgtProxy.__ShipDistanceFromArrived, Vector3.Distance(_autoPilot.Ship.Command.Position, tgtProxy.Position),
+                        Mathf.Sqrt(TempGameValues.__MaxShipMoveDistanceFromFleetCmdSqrd));
+                }
             }
 
             _autoPilot.RefreshCourse(CourseRefreshMode.NewCourse);
@@ -364,6 +375,7 @@ namespace CodeEnv.Master.GameContent {
                 return false;   // already arrived so nav not initiated
             }
 
+            bool isPotentiallyUncatchableShip = destProxy.IsPotentiallyUncatchableShip;
             bool isDestinationADetour = destProxy != TargetProxy;
             bool isDestFastMover = destProxy.IsFastMover;
             IsIncreaseAboveApSpeedSettingAllowed = isDestinationADetour || isDestFastMover;
@@ -390,9 +402,11 @@ namespace CodeEnv.Master.GameContent {
                     return; // ends execution of waitMilestone
                 }
 
-                if (CheckForUncatchable(destProxy)) {
-                    _autoPilot.HandleTgtUncatchable();
-                    return;
+                if (isPotentiallyUncatchableShip) {
+                    if (CheckForUncatchable(destProxy)) {
+                        _autoPilot.HandleTgtUncatchable();
+                        return;
+                    }
                 }
 
                 //D.Log(ShowDebugLog, "{0} beginning progress check.", DebugName);
@@ -427,10 +441,12 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Checks whether the destination represented by destProxy cannot be caught.
         /// Returns <c>true</c> if destination is uncatchable, <c>false</c> if it can be caught.
+        /// <remarks>4.15.17 ProxyTgts that are potentially uncatchable can now only be ships.</remarks>
         /// </summary>
         /// <param name="destProxy">The destination proxy.</param>
         /// <returns></returns>
         protected bool CheckForUncatchable(ApMoveDestinationProxy destProxy) {
+            D.Assert(destProxy.IsPotentiallyUncatchableShip);
             return !_autoPilot.IsCmdWithinRangeToSupportMoveTo(destProxy.Position);
         }
 
@@ -716,10 +732,11 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private bool TryCheckForObstacleEnrouteTo(ApMoveDestinationProxy destProxy, out ApMoveDestinationProxy detourProxy, out IAvoidableObstacle obstacle, ref int iterationCount) {
-            __ValidateIterationCount(iterationCount, destProxy, allowedIterations: 10);
-            iterationCount++;
             detourProxy = null;
             obstacle = null;
+            __ValidateIterationCount(iterationCount, destProxy, obstacle, allowedIterations: 10);
+            iterationCount++;
+
             Vector3 destBearing = (destProxy.Position - Position).normalized;
             float rayLength = destProxy.ObstacleCheckRayLength;
             Ray ray = new Ray(Position, destBearing);
@@ -747,7 +764,7 @@ namespace CodeEnv.Master.GameContent {
                             D.Log(ShowDebugLog, "{0} found another obstacle {1} on the way to detour {2} around obstacle {3}.", DebugName, newObstacle.DebugName, detourProxy.DebugName, obstacle.DebugName);
                         }
                         detourProxy = newDetourProxy;
-                        obstacle = newObstacle; //// UNCLEAR whether useful. 2.7.17 Only use is to compare whether obstacle is the same
+                        obstacle = newObstacle;
                     }
                     isDetourGenerated = true;
                 }
@@ -823,10 +840,11 @@ namespace CodeEnv.Master.GameContent {
             return detour.GetApMoveTgtProxy(detourOffset, tgtStandoffDistance, _autoPilot.Ship);
         }
 
+        private IList<IAvoidableObstacle> __obstacleRecord;
         private ApMoveDestinationProxy __initialDestination;
         private IList<ApMoveDestinationProxy> __destinationRecord;
 
-        private void __ValidateIterationCount(int iterationCount, ApMoveDestinationProxy destProxy, int allowedIterations) {
+        private void __ValidateIterationCount(int iterationCount, ApMoveDestinationProxy destProxy, IAvoidableObstacle obstacle, int allowedIterations) {
             if (iterationCount == Constants.Zero) {
                 __initialDestination = destProxy;
             }
@@ -835,8 +853,16 @@ namespace CodeEnv.Master.GameContent {
                     __destinationRecord = __destinationRecord ?? new List<ApMoveDestinationProxy>(allowedIterations + 1);
                     __destinationRecord.Clear();
                     __destinationRecord.Add(__initialDestination);
+
+                    __obstacleRecord = __obstacleRecord ?? new List<IAvoidableObstacle>(allowedIterations);
+                    __obstacleRecord.Clear();
                 }
                 __destinationRecord.Add(destProxy);
+                __obstacleRecord.Add(obstacle);
+                if (iterationCount > allowedIterations) {
+                    Debug.LogFormat("{0}.ObstacleDetourCheck Iteration Error. Obstacles: {1}.",
+                        DebugName, __obstacleRecord.Where(obs => obs != null).Select(obs => obs.DebugName).Concatenate());
+                }
                 D.AssertException(iterationCount <= allowedIterations, "{0}.ObstacleDetourCheck Iteration Error. Destination & Detours: {1}."
                     .Inject(DebugName, __destinationRecord.Select(det => det.DebugName).Concatenate()));
             }
@@ -879,7 +905,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="obstacle">The obstacle.</param>
         private void HandleObstacleFoundIsTarget(IAvoidableObstacle obstacle) {
             D.Assert(IsEngaged);
-            D.AssertEqual(TargetProxy.Destination, obstacle as IShipNavigable);
+            D.AssertEqual(TargetProxy.Destination, obstacle as IShipNavigableDestination);
 
             D.Log(ShowDebugLog, "{0} encountered obstacle {1} which is the target! Resuming direct course to target.", DebugName, obstacle.DebugName);
             TargetProxy.ResetOffset();
@@ -963,8 +989,8 @@ namespace CodeEnv.Master.GameContent {
             KillProcesses();
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+        public sealed override string ToString() {
+            return DebugName;
         }
 
         #region IDisposable

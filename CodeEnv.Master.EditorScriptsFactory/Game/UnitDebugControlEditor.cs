@@ -23,6 +23,7 @@ using UnityEngine;
 /// <summary>
 /// Custom editor for UnitDebugControl.
 /// </summary>
+[System.Obsolete]
 [CustomEditor(typeof(UnitDebugControl))]
 public class UnitDebugControlEditor : Editor {
 

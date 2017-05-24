@@ -26,9 +26,6 @@ public class SelectedShipForm : ASelectedItemForm {
 
     public override FormID FormID { get { return FormID.SelectedShip; } }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 }
 

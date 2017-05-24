@@ -509,10 +509,6 @@ namespace CodeEnv.Master.GameContent {
             _subscriptions.Clear();
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
         #region Debug
 
         private void __WarnIfGameNotRunning() {

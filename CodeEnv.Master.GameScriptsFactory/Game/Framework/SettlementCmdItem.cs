@@ -17,6 +17,7 @@
 // default namespace
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
@@ -60,9 +61,14 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmd, ISettlementCm
         get { return _publisher = _publisher ?? new SettlementPublisher(Data, this); }
     }
 
-    private bool _hasInfoAccessToOwner;
+    private IList<Player> _playersWithInfoAccessToOwner;
 
     #region Initialization
+
+    protected override void InitializeOnAwake() {
+        base.InitializeOnAwake();
+        _playersWithInfoAccessToOwner = new List<Player>(TempGameValues.MaxPlayers);
+    }
 
     protected override AFormationManager InitializeFormationMgr() {
         return new SettlementFormationManager(this);
@@ -100,17 +106,16 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmd, ISettlementCm
     /// </summary>
     /// <param name="player">The player.</param>
     internal void AssessWhetherToFireInfoAccessChangedEventFor(Player player) {
-        if (_hasInfoAccessToOwner) {
+        if (!_playersWithInfoAccessToOwner.Contains(player)) {
             // A Settlement provides access to its Owner under 2 circumstances. First, if IntelCoverage >= Essential,
             // and second and more commonly, if its System provides access. A System provides access to its Owner
             // when its Star or any of its Planetoids provides access. They in turn provide access if their IntelCoverage
             // >= Essential. As IntelCoverage of Planetoids, Stars and Systems can't regress, once access is provided
             // it can't be lost which means access to a Settlement's Owner can't be lost either.
-            return;
-        }
-        if (InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
-            _hasInfoAccessToOwner = true;
-            OnInfoAccessChanged(player);
+            if (InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
+                _playersWithInfoAccessToOwner.Add(player);
+                OnInfoAccessChanged(player);
+            }
         }
     }
 
@@ -129,8 +134,8 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmd, ISettlementCm
         SelectedItemHudWindow.Instance.Show(FormID.SelectedSettlement, UserReport);
     }
 
-    protected override void HandleDeathBeforeBeginningDeathEffect() {
-        base.HandleDeathBeforeBeginningDeathEffect();
+    protected override void PrepareForDeathEffect() {
+        base.PrepareForDeathEffect();
         RemoveSettlementFromSystem();
     }
 
@@ -158,11 +163,7 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmd, ISettlementCm
 
     #endregion
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
-    #region INavigable Members
+    #region INavigableDestination Members
 
     public override bool IsMobile { get { return ParentSystem.SettlementOrbitData.ToOrbit; } }
 

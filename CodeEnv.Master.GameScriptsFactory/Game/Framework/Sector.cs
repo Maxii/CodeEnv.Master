@@ -27,7 +27,7 @@ using UnityEngine;
 /// <summary>
 /// Non-MonoBehaviour Sector.
 /// </summary>
-public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd, IShipNavigable, IFleetNavigable, IPatrollable,
+public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd, IShipNavigableDestination, IFleetNavigableDestination, IPatrollable,
     IFleetExplorable, IGuardable {
 
     /// <summary>
@@ -64,7 +64,13 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     /// <summary>
     /// Indicates whether this sector is on the outer periphery of the universe.
     /// </summary>
+    [Obsolete]
     public bool IsOnPeriphery { get; private set; }
+
+    /// <summary>
+    /// The SectorCategory(Core, Peripheral or Rim) of this Sector.
+    /// </summary>
+    public SectorCategory Category { get; private set; }
 
     public bool ShowDebugLog { get; set; }
 
@@ -150,22 +156,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
         get { return _publisher = _publisher ?? new SectorPublisher(Data, this); }
     }
 
-    /// <summary>
-    /// A randomly selected point guaranteed to be inside the sector.
-    /// <remarks>Warning: If this sector is on the periphery of the universe,
-    /// the point returned is NOT guaranteed to be within the universe's radius.</remarks>
-    /// </summary>
-    private Vector3 RandomInsidePoint {
-        get {
-            float radius = Radius;
-            float x = UnityEngine.Random.Range(-radius, radius);
-            float y = UnityEngine.Random.Range(-radius, radius);
-            float z = UnityEngine.Random.Range(-radius, radius);
-            return Position + new Vector3(x, y, z);
-        }
-    }
-
-    private bool _hasInfoAccessToOwner;
+    private IList<Player> _playersWithInfoAccessToOwner;
     private IList<IDisposable> _subscriptions;
     private IInputManager _inputMgr;
     private ItemHudManager _hudManager;
@@ -174,9 +165,17 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
 
     #region Initialization
 
+    [Obsolete]
     public Sector(Vector3 position, bool isOnPeriphery) {
         Position = position;
         IsOnPeriphery = isOnPeriphery;
+        Initialize();
+        Subscribe();
+    }
+
+    public Sector(Vector3 position, SectorCategory category) {
+        Position = position;
+        Category = category;
         Initialize();
         Subscribe();
     }
@@ -185,6 +184,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
         _inputMgr = GameReferences.InputManager;
         _gameMgr = GameReferences.GameManager;
         _debugSettings = DebugSettings.Instance;
+        _playersWithInfoAccessToOwner = new List<Player>(TempGameValues.MaxPlayers);
     }
 
     private void Subscribe() {
@@ -266,28 +266,26 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     public IntelCoverage GetIntelCoverage(Player player) { return Data.GetIntelCoverage(player); }
 
     /// <summary>
-    /// Sets the Intel coverage for this player. Returns <c>true</c> if the <c>newCoverage</c>
-    /// was successfully applied, and <c>false</c> if it was rejected due to the inability of
-    /// the item to regress its IntelCoverage.
+    /// Sets the Intel coverage for this player. 
+    /// <remarks>Convenience method for clients who don't care whether the value was accepted or not.</remarks>
     /// </summary>
     /// <param name="player">The player.</param>
     /// <param name="newCoverage">The new coverage.</param>
+    public void SetIntelCoverage(Player player, IntelCoverage newCoverage) {
+        Data.SetIntelCoverage(player, newCoverage);
+    }
+
+    /// <summary>
+    /// Sets the Intel coverage for this player. Returns <c>true</c> if a coverage value was applied, 
+    /// and <c>false</c> if it was rejected due to the inability of the item to regress its IntelCoverage.
+    /// Either way, <c>resultingCoverage</c> is the value that resulted from this set attempt.
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <param name="newCoverage">The new coverage.</param>
+    /// <param name="resultingCoverage">The resulting coverage.</param>
     /// <returns></returns>
-    public bool SetIntelCoverage(Player player, IntelCoverage newCoverage) {
-        return Data.SetIntelCoverage(player, newCoverage);
-    }
-
-    public bool TryGetOwner(Player requestingPlayer, out Player owner) {
-        if (InfoAccessCntlr.HasAccessToInfo(requestingPlayer, ItemInfoID.Owner)) {
-            owner = Data.Owner;
-            return true;
-        }
-        owner = null;
-        return false;
-    }
-
-    public bool IsOwnerAccessibleTo(Player player) {
-        return InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner);
+    public bool TrySetIntelCoverage(Player player, IntelCoverage newCoverage, out IntelCoverage resultingCoverage) {
+        return Data.TrySetIntelCoverage(player, newCoverage, out resultingCoverage);
     }
 
     /// <summary>
@@ -305,19 +303,20 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     /// </summary>
     /// <param name="player">The player.</param>
     internal void AssessWhetherToFireInfoAccessChangedEventFor(Player player) {
-        if (_hasInfoAccessToOwner) {
+        if (!_playersWithInfoAccessToOwner.Contains(player)) {
             // A Sector provides access to its Owner under 2 circumstances. First, if IntelCoverage >= Essential,
             // and second and more commonly, if a System provides access. A System provides access to its Owner
             // when its Star or any of its Planetoids provides access. They in turn provide access if their IntelCoverage
             // >= Essential. As IntelCoverage of Planetoids, Stars and Systems can't regress, once access is provided
             // it can't be lost which means access to a Sector's Owner can't be lost either.
-            return;
-        }
-        if (InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
-            _hasInfoAccessToOwner = true;
-            OnInfoAccessChanged(player);
+            if (InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
+                _playersWithInfoAccessToOwner.Add(player);
+                OnInfoAccessChanged(player);
+            }
         }
     }
+
+    #region Clear Random Point Inside Sector
 
     /// <summary>
     /// Returns a random position inside the sector that is clear of any interference.
@@ -325,30 +324,58 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     /// </summary>
     /// <returns></returns>
     public Vector3 GetClearRandomPointInsideSector() {
-        return GetClearRandomPointInsideSector(Constants.Zero);
+        float universeRadius = _gameMgr.GameSettings.UniverseSize.Radius();
+        return GetClearRandomPointInsideSector(Constants.Zero, universeRadius * universeRadius);
     }
 
-    private Vector3 GetClearRandomPointInsideSector(int iterateCount) {
-        var pointCandidate = RandomInsidePoint;
-        if (!IsOnPeriphery) {
+    private Vector3 GetClearRandomPointInsideSector(int iterateCount, float universeRadiusSqrd) {
+        var pointCandidate = GetRandomInsidePoint();
+        if (Category == SectorCategory.Core) {
             if (ConfirmLocationIsClear(pointCandidate)) {
                 return pointCandidate;
             }
         }
-        else {
-            // on the periphery so may be outside universe radius
-            float universeRadius = _gameMgr.GameSettings.UniverseSize.Radius();
-            if (Vector3.SqrMagnitude(pointCandidate - GameConstants.UniverseOrigin) < universeRadius * universeRadius) {
+        else if (Category == SectorCategory.Peripheral) {
+            // may be outside universe radius
+            if (Vector3.SqrMagnitude(pointCandidate - GameConstants.UniverseOrigin) < universeRadiusSqrd) {
                 // inside the universe
                 if (ConfirmLocationIsClear(pointCandidate)) {
                     return pointCandidate;
                 }
             }
         }
-        // 1.18.17 FIXME I'm guessing this can easily fail if a peripheral sector. 3.27.17, 4.3.17 Confirmed failed peripheral sector.
-        D.AssertException(iterateCount < 100, "{0}: Iterate check error. IsOnPeriphery = {1}.".Inject(DebugName, IsOnPeriphery));
+        else {
+            D.AssertEqual(SectorCategory.Rim, Category);
+            D.Warn("{0}: Checking for a clear location in a Rim Sector??", DebugName);
+            // could easily be outside universe radius
+            if (Vector3.SqrMagnitude(pointCandidate - GameConstants.UniverseOrigin) < universeRadiusSqrd) {
+                // inside the universe
+                if (ConfirmLocationIsClear(pointCandidate)) {
+                    return pointCandidate;
+                }
+            }
+        }
+        // 1.18.17 FIXME I'm guessing this can easily fail if a peripheral sector. 
+        // 3.27.17, 4.3.17, 5.12.17 Confirmed failed peripheral sector. I'm guessing almost all sector is outside radius
+        if (iterateCount > 100) {
+            var sectorGrid = SectorGrid.Instance;
+            D.Error("{0}: Iterate check error. Category = {1}.".Inject(DebugName, Category.GetValueName()));
+        }
         iterateCount++;
-        return GetClearRandomPointInsideSector(iterateCount);
+        return GetClearRandomPointInsideSector(iterateCount, universeRadiusSqrd);
+    }
+
+    /// <summary>
+    /// Returns a randomly selected point guaranteed to be inside the sector.
+    /// <remarks>Warning: If this sector is a Peripheral or Rim Sector,
+    /// the point returned is NOT guaranteed to be within the universe's radius.</remarks>
+    /// </summary>
+    private Vector3 GetRandomInsidePoint() {
+        float radius = Radius;
+        float x = UnityEngine.Random.Range(-radius, radius);
+        float y = UnityEngine.Random.Range(-radius, radius);
+        float z = UnityEngine.Random.Range(-radius, radius);
+        return Position + new Vector3(x, y, z);
     }
 
     /// <summary>
@@ -407,6 +434,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
         return true;
     }
 
+    #endregion
 
     #region Event and Property Change Handlers
 
@@ -418,6 +446,43 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     private void IntelCoverageChangedEventHandler(object sender, AIntelItemData.IntelCoverageChangedEventArgs e) {
         HandleIntelCoverageChanged(e.Player);
     }
+
+    private void DataPropSetHandler() {
+        InitializeOnData();
+        SubscribeToDataValueChanges();
+    }
+
+    private void OwnerPropChangingHandler(Player newOwner) {
+        HandleOwnerChanging(newOwner);
+    }
+
+    private void OwnerPropChangedHandler() {
+        HandleOwnerChanged();
+    }
+
+    private void InputModePropChangedHandler() {
+        HandleInputModeChanged(_inputMgr.InputMode);
+    }
+
+    private void OnOwnerChanging(Player newOwner) {
+        if (ownerChanging != null) {
+            ownerChanging(this, new OwnerChangingEventArgs(newOwner));
+        }
+    }
+
+    private void OnOwnerChanged() {
+        if (ownerChanged != null) {
+            ownerChanged(this, EventArgs.Empty);
+        }
+    }
+
+    private void OnInfoAccessChanged(Player player) {
+        if (infoAccessChgd != null) {
+            infoAccessChgd(this, new InfoAccessChangedEventArgs(player));
+        }
+    }
+
+    #endregion
 
     private void HandleIntelCoverageChanged(Player playerWhosCoverageChgd) {
         if (!IsOperational) {
@@ -443,29 +508,12 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
         }
     }
 
-    private void DataPropSetHandler() {
-        InitializeOnData();
-        SubscribeToDataValueChanges();
-    }
-
-    private void OwnerPropChangingHandler(Player newOwner) {
-        HandleOwnerChanging(newOwner);
-    }
-
     private void HandleOwnerChanging(Player newOwner) {
         OnOwnerChanging(newOwner);
     }
 
-    private void OwnerPropChangedHandler() {
-        HandleOwnerChanged();
-    }
-
     private void HandleOwnerChanged() {
         OnOwnerChanged();
-    }
-
-    private void InputModePropChangedHandler() {
-        HandleInputModeChanged(_inputMgr.InputMode);
     }
 
     private void HandleInputModeChanged(GameInputMode inputMode) {
@@ -487,22 +535,41 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
         }
     }
 
-    private void OnOwnerChanging(Player newOwner) {
-        if (ownerChanging != null) {
-            ownerChanging(this, new OwnerChangingEventArgs(newOwner));
+    #region Debug
+
+    public bool __IsPlayerEntitledToComprehensiveRelationship(Player player) {
+        D.Warn("Not yet fully implemented.");
+        if (System != null && System.GetIntelCoverage(player) == IntelCoverage.Comprehensive) {
+            return true;
+        }
+        return false;
+    }
+
+    private const string AItemDebugLogEventMethodNameFormat = "{0}.{1}()";
+
+    /// <summary>
+    /// Logs a statement that the method that calls this has been called.
+    /// Logging only occurs if DebugSettings.EnableEventLogging and ShowDebugLog are true.
+    /// </summary>
+    private void LogEvent() {
+        if ((_debugSettings.EnableEventLogging && ShowDebugLog)) {
+            string methodName = GetMethodName();
+            string fullMethodName = AItemDebugLogEventMethodNameFormat.Inject(DebugName, methodName);
+            Debug.Log("{0} beginning execution.".Inject(fullMethodName));
         }
     }
 
-    private void OnOwnerChanged() {
-        if (ownerChanged != null) {
-            ownerChanged(this, EventArgs.Empty);
+    private string GetMethodName() {
+        var stackFrame = new System.Diagnostics.StackFrame(2);
+        string methodName = stackFrame.GetMethod().ReflectedType.Name;
+        if (methodName.Contains(Constants.LessThan)) {
+            string coroutineMethodName = methodName.Substring(methodName.IndexOf(Constants.LessThan) + 1, methodName.IndexOf(Constants.GreaterThan) - 1);
+            methodName = coroutineMethodName;
         }
-    }
-
-    private void OnInfoAccessChanged(Player player) {
-        if (infoAccessChgd != null) {
-            infoAccessChgd(this, new InfoAccessChangedEventArgs(player));
+        else {
+            methodName = stackFrame.GetMethod().Name;
         }
+        return methodName;
     }
 
     #endregion
@@ -532,6 +599,32 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     public override string ToString() {
         return DebugName;
     }
+
+    #region Nested Classes
+
+    public enum SectorCategory {
+
+        None,
+
+        /// <summary>
+        /// Indicates the sector is entirely contained within the boundary of the universe.
+        /// </summary>
+        Core,
+
+        /// <summary>
+        /// Indicates the sector is substantially inside the boundary of the universe.
+        /// <remarks>5.13.17 Current implementation &gt; 40%, &lt; 100% contained.</remarks>
+        /// </summary>
+        Peripheral,
+
+        /// <summary>
+        /// Indicates the sector is partially inside the boundary of the universe.
+        /// <remarks>5.13.17 Current implementation &lt; 40% contained.</remarks>
+        /// </summary>
+        Rim
+    }
+
+    #endregion
 
     #region IDisposable
 
@@ -573,46 +666,13 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
 
     #endregion
 
-    #region Debug
-
-    public Player Owner_Debug { get { return Data.Owner; } }
-
-    private const string AItemDebugLogEventMethodNameFormat = "{0}.{1}()";
-
-    /// <summary>
-    /// Logs a statement that the method that calls this has been called.
-    /// Logging only occurs if DebugSettings.EnableEventLogging and ShowDebugLog are true.
-    /// </summary>
-    private void LogEvent() {
-        if ((_debugSettings.EnableEventLogging && ShowDebugLog)) {
-            string methodName = GetMethodName();
-            string fullMethodName = AItemDebugLogEventMethodNameFormat.Inject(DebugName, methodName);
-            Debug.Log("{0} beginning execution.".Inject(fullMethodName));
-        }
-    }
-
-    private string GetMethodName() {
-        var stackFrame = new System.Diagnostics.StackFrame(2);
-        string methodName = stackFrame.GetMethod().ReflectedType.Name;
-        if (methodName.Contains(Constants.LessThan)) {
-            string coroutineMethodName = methodName.Substring(methodName.IndexOf(Constants.LessThan) + 1, methodName.IndexOf(Constants.GreaterThan) - 1);
-            methodName = coroutineMethodName;
-        }
-        else {
-            methodName = stackFrame.GetMethod().Name;
-        }
-        return methodName;
-    }
-
-    #endregion
-
-    #region INavigable Members
+    #region INavigableDestination Members
 
     public bool IsMobile { get { return false; } }
 
     #endregion
 
-    #region IFleetNavigable Members
+    #region IFleetNavigableDestination Members
 
     // TODO what about a Starbase or Nebula?
     public float GetObstacleCheckRayLength(Vector3 fleetPosition) {
@@ -624,7 +684,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
 
     #endregion
 
-    #region IShipNavigable Members
+    #region IShipNavigableDestination Members
 
     public ApMoveDestinationProxy GetApMoveTgtProxy(Vector3 tgtOffset, float tgtStandoffDistance, IShip ship) {
         float distanceToShip = Vector3.Distance(ship.Position, Position);
@@ -643,6 +703,15 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
 
     #endregion
 
+    #region IAssemblySupported Members
+
+    /// <summary>
+    /// A collection of assembly stations that are local to the item.
+    /// </summary>
+    public IList<StationaryLocation> LocalAssemblyStations { get { return GuardStations; } }
+
+    #endregion
+
     #region IPatrollable Members
 
     private IList<StationaryLocation> _patrolStations;
@@ -654,8 +723,6 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
             return new List<StationaryLocation>(_patrolStations);
         }
     }
-
-    public IList<StationaryLocation> LocalAssemblyStations { get { return GuardStations; } }
 
     public Speed PatrolSpeed { get { return Speed.TwoThirds; } }
 
@@ -695,8 +762,6 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
         return System != null ? System.IsFullyExploredBy(player) : true;
     }
 
-    // LocalAssemblyStations - see IPatrollable
-
     public bool IsExploringAllowedBy(Player player) {
         if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
             return true;
@@ -709,6 +774,48 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     #region ISector_Ltd Members
 
     ISystem_Ltd ISector_Ltd.System { get { return System; } }
+
+    public Player Owner_Debug { get { return Data.Owner; } }
+
+    public bool TryGetOwner_Debug(Player requestingPlayer, out Player owner) {
+        if (InfoAccessCntlr.HasAccessToInfo(requestingPlayer, ItemInfoID.Owner)) {
+            owner = Data.Owner;
+            return true;
+        }
+        owner = null;
+        return false;
+    }
+
+    public bool TryGetOwner(Player requestingPlayer, out Player owner) {
+        if (InfoAccessCntlr.HasAccessToInfo(requestingPlayer, ItemInfoID.Owner)) {
+            owner = Data.Owner;
+            if (owner != TempGameValues.NoPlayer) {
+                D.Assert(owner.IsKnown(requestingPlayer), "{0}: How can {1} have access to Owner {2} without knowing them??? Frame: {3}."
+                    .Inject(DebugName, requestingPlayer.DebugName, owner.DebugName, Time.frameCount));
+            }
+            return true;
+        }
+        owner = null;
+        return false;
+    }
+
+    public bool IsOwnerAccessibleTo(Player player) {
+        return InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner);
+    }
+
+    public void __LogInfoAccessChangedSubscribers() {
+        if (infoAccessChgd != null) {
+            IList<string> targetNames = new List<string>();
+            var subscribers = infoAccessChgd.GetInvocationList();
+            foreach (var sub in subscribers) {
+                targetNames.Add(sub.Target.ToString());
+            }
+            Debug.LogFormat("{0}.InfoAccessChgdSubscribers: {1}.", DebugName, targetNames.Concatenate());
+        }
+        else {
+            Debug.LogFormat("{0}.InfoAccessChgd event has no subscribers.", DebugName);
+        }
+    }
 
     #endregion
 

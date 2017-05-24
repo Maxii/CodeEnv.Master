@@ -30,9 +30,6 @@ public class GuiWindowEditor : AGuiWindowEditor<GuiWindow> {
         NGUIEditorTools.DrawProperty("Content Holder", serializedObject, "contentHolder");
     }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 }
 

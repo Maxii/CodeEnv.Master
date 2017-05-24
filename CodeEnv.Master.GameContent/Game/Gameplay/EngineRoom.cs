@@ -508,17 +508,17 @@ namespace CodeEnv.Master.GameContent {
         #region Collision Avoidance 
 
         public void HandlePendingCollisionWith(IObstacle obstacle) {
-            if (_caPropulsionJobs == null) {
-                _caPropulsionJobs = new Dictionary<IObstacle, Job>(2);
-            }
+            _caPropulsionJobs = _caPropulsionJobs ?? new Dictionary<IObstacle, Job>(2);
             DisengageForwardPropulsion();
             DisengageReversePropulsion();
             DisengageDriftCorrection();
 
-            var mortalObstacle = obstacle as IMortalItem;
+            var mortalObstacle = obstacle as IMortalItem_Ltd;
             if (mortalObstacle != null) {
                 // obstacle could die while we are avoiding collision
-                mortalObstacle.deathOneShot += CollidingObstacleDeathEventHandler;
+                D.Assert(mortalObstacle.IsOperational, mortalObstacle.DebugName);
+                //mortalObstacle.deathOneShot += CollidingObstacleDeathEventHandler;
+                mortalObstacle.__death += CollidingObstacleDeathEventHandler;
             }
 
             //D.Log(ShowDebugLog, "{0} engaging Collision Avoidance to avoid {1}.", DebugName, obstacle.DebugName);
@@ -529,11 +529,12 @@ namespace CodeEnv.Master.GameContent {
             D.AssertNotNull(_caPropulsionJobs);
 
             Profiler.BeginSample("Local Reference variable creation", _shipTransform);
-            var mortalObstacle = obstacle as IMortalItem;
+            var mortalObstacle = obstacle as IMortalItem_Ltd;
             Profiler.EndSample();
             if (mortalObstacle != null) {
                 Profiler.BeginSample("Unsubscribing to event", _shipTransform);
-                mortalObstacle.deathOneShot -= CollidingObstacleDeathEventHandler;
+                //mortalObstacle.deathOneShot -= CollidingObstacleDeathEventHandler;
+                mortalObstacle.__death -= CollidingObstacleDeathEventHandler;
                 Profiler.EndSample();
             }
             //D.Log(ShowDebugLog, "{0} dis-engaging Collision Avoidance for {1} as collision has been averted.", DebugName, obstacle.DebugName);
@@ -566,6 +567,9 @@ namespace CodeEnv.Master.GameContent {
         private void EngageCollisionAvoidancePropulsionFor(IObstacle obstacle) {
             D.Assert(!_caPropulsionJobs.ContainsKey(obstacle));
             Vector3 worldSpaceDirectionToAvoidCollision = (_shipData.Position - obstacle.Position).normalized;
+            if (worldSpaceDirectionToAvoidCollision == Vector3.zero) {
+                D.Error("{0}: Illegal Direction. Obstacle {1} and Ship are at same location!", DebugName, obstacle.DebugName);
+            }
 
             string jobName = "{0}.CollisionAvoidanceJob".Inject(DebugName);
             Job caJob = _jobMgr.StartGameplayJob(OperateCollisionAvoidancePropulsionIn(worldSpaceDirectionToAvoidCollision), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
@@ -629,12 +633,21 @@ namespace CodeEnv.Master.GameContent {
 
         private void DisengageCollisionAvoidancePropulsionFor(IObstacle obstacle) {
             // 3.4.17 EngineRoom removes obstacle on obstacle death. Ship won't call HandlePendingCollisionAverted if obstacle is dead
-            D.Assert(_caPropulsionJobs.ContainsKey(obstacle), DebugName);
+            // 4.18.17 Got a key not found so added debug log. 4.19.17, 5.11.17 Called from death event. 
+            // 5.11.17 I think I solved this with UnsubscribeFromAllCollisionAvoidanceObstacleDeaths
+            if (!_caPropulsionJobs.ContainsKey(obstacle)) {
+                D.Error("{0}: Obstacle {1} not found when disengaging CA. Obstacles currently being avoided: {2}.",
+                    DebugName, obstacle.DebugName, _caPropulsionJobs.Keys.Select(k => k.DebugName).Concatenate());
+                if (!obstacle.IsOperational) {
+                    (obstacle as IMortalItem_Ltd).__LogDeathEventSubscribers();
+                }
+            }
             _caPropulsionJobs[obstacle].Kill();
             _caPropulsionJobs.Remove(obstacle);
         }
 
         private void DisengageAllCollisionAvoidancePropulsion() {
+            UnsubscribeFromAllCollisionAvoidanceObstacleDeaths();
             KillAllCollisionAvoidancePropulsionJobs();
         }
 
@@ -644,6 +657,17 @@ namespace CodeEnv.Master.GameContent {
                     _caPropulsionJobs[obstacle].Kill();
                     _caPropulsionJobs.Remove(obstacle);
                 });
+            }
+        }
+
+        private void UnsubscribeFromAllCollisionAvoidanceObstacleDeaths() {
+            if (_caPropulsionJobs != null && _caPropulsionJobs.Any()) {
+                foreach (var obstacle in _caPropulsionJobs.Keys) {
+                    var mortalObstacle = obstacle as IMortalItem_Ltd;
+                    if (mortalObstacle != null) {
+                        mortalObstacle.__death -= CollidingObstacleDeathEventHandler;
+                    }
+                }
             }
         }
 
@@ -739,10 +763,11 @@ namespace CodeEnv.Master.GameContent {
         private void Unsubscribe() {
             _subscriptions.ForAll(d => d.Dispose());
             _subscriptions.Clear();
+            UnsubscribeFromAllCollisionAvoidanceObstacleDeaths();
         }
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
         #region EngineRoom SpeedRange Approach Archive

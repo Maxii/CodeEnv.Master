@@ -16,6 +16,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
@@ -26,20 +27,23 @@ using UnityEngine;
 /// </summary>
 public class FacilityCtxControl_User : ACtxControl_User<FacilityDirective> {
 
-    private static FacilityDirective[] _userMenuOperatorDirectives = new FacilityDirective[] {  FacilityDirective.Disband,
-                                                                                                FacilityDirective.Scuttle };
+    private static FacilityDirective[] _userMenuOperatorDirectives = new FacilityDirective[] {
+                                                                                                FacilityDirective.Disband,
+                                                                                                FacilityDirective.Scuttle,
+    };
+
     protected override IEnumerable<FacilityDirective> UserMenuOperatorDirectives {
         get { return _userMenuOperatorDirectives; }
     }
 
     protected override Vector3 PositionForDistanceMeasurements { get { return _facilityMenuOperator.Position; } }
 
-    protected override string OperatorName { get { return _facilityMenuOperator.DebugName; } }
+    protected override string OperatorName { get { return _facilityMenuOperator != null ? _facilityMenuOperator.DebugName : "NotYetAssigned"; } }
 
     private FacilityItem _facilityMenuOperator;
 
     public FacilityCtxControl_User(FacilityItem facility)
-    : base(facility.gameObject, uniqueSubmenusReqd: 0, menuPosition: MenuPositionMode.Offset) {
+        : base(facility.gameObject, uniqueSubmenusReqd: 0, menuPosition: MenuPositionMode.Offset) {
         _facilityMenuOperator = facility;
         __ValidateUniqueSubmenuQtyReqd();
     }
@@ -66,20 +70,16 @@ public class FacilityCtxControl_User : ACtxControl_User<FacilityDirective> {
         _facilityMenuOperator.OptimalCameraViewingDistance = _facilityMenuOperator.Position.DistanceToCamera();
     }
 
-    protected override void HandleMenuPick_UserMenuOperatorIsSelected(int itemID) {
-        base.HandleMenuPick_UserMenuOperatorIsSelected(itemID);
+    protected override void HandleMenuPick_MenuOperatorIsSelected(int itemID) {
+        base.HandleMenuPick_MenuOperatorIsSelected(itemID);
         IssueUserFacilityMenuOperatorOrder(itemID);
     }
 
     private void IssueUserFacilityMenuOperatorOrder(int itemID) {
         FacilityDirective directive = (FacilityDirective)_directiveLookup[itemID];
-        D.Log("{0} selected directive {1} from context menu.", _facilityMenuOperator.DebugName, directive.GetValueName());
+        D.Log("{0} selected directive {1} from context menu.", DebugName, directive.GetValueName());
         bool isOrderInitiated = _facilityMenuOperator.InitiateNewOrder(new FacilityOrder(directive, OrderSource.User));
         D.Assert(isOrderInitiated);
-    }
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
     }
 
 }
