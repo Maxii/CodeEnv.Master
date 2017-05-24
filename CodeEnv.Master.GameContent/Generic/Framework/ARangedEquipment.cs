@@ -30,8 +30,6 @@ namespace CodeEnv.Master.GameContent {
 
         public RangeCategory RangeCategory { get { return Stat.RangeCategory; } }
 
-        public abstract string DebugName { get; }
-
         public override string Name { get { return NameFormat.Inject(base.Name, RangeCategory.GetValueName(), RangeDistance); } }
 
         private float _rangeDistance;
