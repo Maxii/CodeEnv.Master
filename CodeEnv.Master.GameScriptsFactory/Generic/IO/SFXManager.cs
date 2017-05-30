@@ -26,6 +26,8 @@ using UnityEngine.Profiling;
 /// </summary>
 public class SFXManager : AMonoSingleton<SFXManager>, ISFXManager {
 
+    public string DebugName { get { return GetType().Name; } }
+
     public override bool IsPersistentAcrossScenes { get { return true; } }
 
     #region Initialization
@@ -119,7 +121,7 @@ public class SFXManager : AMonoSingleton<SFXManager>, ISFXManager {
     #endregion
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
 }

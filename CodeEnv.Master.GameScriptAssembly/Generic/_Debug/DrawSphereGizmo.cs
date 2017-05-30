@@ -27,6 +27,8 @@ using UnityEngine;
 /// </summary>
 public class DrawSphereGizmo : AMonoBase {
 
+    public string DebugName { get { return GetType().Name; } }
+
     public bool DrawSelected { get; set; }
 
     private Color _color = Color.white;
@@ -63,7 +65,7 @@ public class DrawSphereGizmo : AMonoBase {
     protected override void Cleanup() { }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
 }

@@ -123,9 +123,6 @@ public class WorldTrackingSprite_Independent : AWorldTrackingWidget_ConstantSize
 
     protected override void Cleanup() { }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
     #region Debug
 

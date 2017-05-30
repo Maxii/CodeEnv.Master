@@ -29,6 +29,8 @@ using Vectrosity;
 /// </summary>
 public class Loader : AMonoSingleton<Loader> {
 
+    public string DebugName { get { return GetType().Name; } }
+
     [Tooltip("FramesPerSecond goal. Used when DebugSettings enables its usage.")]
     [SerializeField]
     private int _targetFPS = Mathf.RoundToInt(TempGameValues.MinimumFramerate);
@@ -151,7 +153,7 @@ public class Loader : AMonoSingleton<Loader> {
     }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
     #region Debug

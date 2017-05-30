@@ -27,6 +27,8 @@ using UnityEngine.Serialization;
 /// </summary>
 public abstract class AHull : AMonoBase, IHull {
 
+    public string DebugName { get { return GetType().Name; } }
+
     //[FormerlySerializedAs("hullMesh")]
     [SerializeField]
     private Transform _hullMesh = null;
@@ -54,6 +56,8 @@ public abstract class AHull : AMonoBase, IHull {
         //D.Assert(missileMountPlaceholders.Count() == MaxAllowedMissileWeapons);
     }
 
-
+    public sealed override string ToString() {
+        return DebugName;
+    }
 }
 

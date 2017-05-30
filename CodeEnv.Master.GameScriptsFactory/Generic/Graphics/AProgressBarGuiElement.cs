@@ -29,6 +29,8 @@ using UnityEngine.Serialization;
 /// </summary>
 public abstract class AProgressBarGuiElement : AGuiElement {
 
+    public override string DebugName { get { return GetType().Name + Constants.Space + _detailValuesContent; } }
+
     //[FormerlySerializedAs("widgetsPresent")]
     [Tooltip("The widgets that are present to display the content of this GuiElement.")]
     [SerializeField]
@@ -98,8 +100,6 @@ public abstract class AProgressBarGuiElement : AGuiElement {
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_widgetsPresent));
         }
     }
-
-    public sealed override string ToString() { return GetType().Name + Constants.Space + _detailValuesContent; }
 
     #region Nested Classes
 

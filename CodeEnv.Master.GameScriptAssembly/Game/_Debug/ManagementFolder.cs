@@ -95,9 +95,6 @@ public class ManagementFolder : AFolderAccess<ManagementFolder> {
         _gameMgr.sceneLoading -= SceneLoadingEventHandler;
     }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
     #region Record and Attach Children Archive
 

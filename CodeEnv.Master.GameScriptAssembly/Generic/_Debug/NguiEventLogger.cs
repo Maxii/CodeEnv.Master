@@ -26,6 +26,8 @@ public class NguiEventLogger : AMonoBase {
 
     private const string DebugNameFormat = "{0}(from transform)";
 
+    public string DebugName { get { return DebugNameFormat.Inject(transform.name); } }
+
     void OnClick() {
         LogNguiEvent();
     }
@@ -56,7 +58,7 @@ public class NguiEventLogger : AMonoBase {
     /// <param name="parameter">The parameter.</param>
     public void LogNguiEvent(object parameter = null) {
         var stackFrame = new System.Diagnostics.StackFrame(1);
-        string name = DebugNameFormat.Inject(transform.name);
+        string name = DebugName;
         string paramName = parameter != null ? parameter.ToString() : string.Empty;
         Debug.Log("{0}.{1}({2}) called.".Inject(name, stackFrame.GetMethod().Name, paramName));
     }
@@ -64,7 +66,7 @@ public class NguiEventLogger : AMonoBase {
     protected override void Cleanup() { }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
 }

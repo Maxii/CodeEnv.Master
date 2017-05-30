@@ -24,6 +24,8 @@ using UnityEngine;
 /// </summary>
 public abstract class AFolderAccess<T> : AMonoSingleton<T> where T : AFolderAccess<T> {
 
+    public string DebugName { get { return typeof(T).Name; } }
+
     protected virtual string FolderName { get { return typeof(T).Name; } }
 
     /// <summary>
@@ -40,6 +42,10 @@ public abstract class AFolderAccess<T> : AMonoSingleton<T> where T : AFolderAcce
             //return transform ?? transform;
             return transform;
         }
+    }
+
+    public sealed override string ToString() {
+        return DebugName;
     }
 
 }

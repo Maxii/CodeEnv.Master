@@ -290,11 +290,11 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     /// <summary>
     /// Subscribes to sensor events including events from the UnifiedSRSensorMonitor.
-    /// <remarks>Must be called after initial runtime state is set, aka Idling. 
+    /// <remarks>Must be called after initial runtime state is set. 
     /// Otherwise events can arrive immediately as sensors activate.</remarks>
-    /// <remarks>OPTIMIZE Virtual to allow Assert of CurrentState to enforce above.</remarks>
     /// </summary>
-    protected virtual void SubscribeToSensorEvents() {
+    protected void SubscribeToSensorEvents() {
+        __ValidateStateForSensorEventSubscription();
         SensorMonitors.ForAll(sm => {
             sm.enemyCmdsInRangeChgd += EnemyCmdsInSensorRangeChangedEventHandler;
             sm.warEnemyElementsInRangeChgd += WarEnemyElementsInSensorRangeChangedEventHandler;
@@ -304,12 +304,18 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         UnifiedSRSensorMonitor.warEnemyElementsInRangeChgd += WarEnemyElementsInSensorRangeChangedEventHandler;
     }
 
+    protected abstract void __ValidateStateForSensorEventSubscription();
+
     #endregion
 
     public override void CommenceOperations() {
         base.CommenceOperations();
-        // 5.13.17 RegisterForOrders() moved to derived Cmd.CommenceOperations so it occurs AFTER setting Idling state
+        DetermineInitialState();
+        //// 5.13.17 RegisterForOrders() moved to derived Cmd.CommenceOperations so it occurs AFTER setting Idling state
+        RegisterForOrders();
     }
+
+    protected abstract void DetermineInitialState();
 
     /// <summary>
     /// Adds the Element to this Command including parenting if needed.
@@ -529,9 +535,12 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     protected abstract void ResetOrderAndState();
 
-    protected void RegisterForOrders() {
+    private void RegisterForOrders() {
         OwnerAIMgr.RegisterForOrders(this);
     }
+    ////protected void RegisterForOrders() {
+    ////    OwnerAIMgr.RegisterForOrders(this);
+    ////}
 
     private void DeregisterForOrders() {
         OwnerAIMgr.DeregisterForOrders(this);

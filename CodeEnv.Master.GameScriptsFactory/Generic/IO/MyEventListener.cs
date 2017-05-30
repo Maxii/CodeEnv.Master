@@ -65,6 +65,10 @@ public class MyEventListener : AMonoBase, IMyEventListener {
     public event Action<GameObject, Collision> onCollisionEnter;
     public event Action<GameObject, Collision> onCollisionExit;
 
+    public string DebugName { get { return GetType().Name; } }
+
+    #region Event and Property Change Handlers
+
     void OnSubmit() { if (onSubmit != null) { onSubmit(gameObject); } }
     void OnClick() { if (onClick != null) { onClick(gameObject); } }
     void OnDoubleClick() { if (onDoubleClick != null) { onDoubleClick(gameObject); } }
@@ -86,10 +90,12 @@ public class MyEventListener : AMonoBase, IMyEventListener {
     void OnCollisionEnter(Collision collision) { if (onCollisionEnter != null) { onCollisionEnter(gameObject, collision); } }
     void OnCollisionExit(Collision collision) { if (onCollisionExit != null) { onCollisionExit(gameObject, collision); } }
 
+    #endregion
+
     protected override void Cleanup() { }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
 }

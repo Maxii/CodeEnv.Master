@@ -38,9 +38,6 @@ public class ElementIconsFolder : AFolderAccess<ElementIconsFolder> {
 
     #endregion
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 }
 

@@ -149,9 +149,5 @@ public class GuiPlayerCountPopupList : AGuiMenuPopupList<int> {
         _universeSizePopupList.universeSizeChanged -= UniverseSizeChangedEventHandler;
     }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
 }
 

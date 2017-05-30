@@ -25,9 +25,6 @@ public class SystemsFolder : AFolderAccess<SystemsFolder> {
 
     protected override void Cleanup() { }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 }
 

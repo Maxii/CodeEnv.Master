@@ -153,9 +153,5 @@ public class Explosion : AMonoBase, IEffect {
         KillWaitForExplosionFinishedJob();
     }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
 }
 

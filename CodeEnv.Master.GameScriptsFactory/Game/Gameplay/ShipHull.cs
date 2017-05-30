@@ -47,9 +47,6 @@ public class ShipHull : AHull, IShipHull {
 
     protected override void Cleanup() { }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 }
 

@@ -389,38 +389,21 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         return Command.Elements.Count == Constants.One;
     }
 
-    ////protected override void HandleOwnerChanging(Player newOwner) {
-    ////    base.HandleOwnerChanging(newOwner);
-
-    ////    if (Command.Elements.Count == Constants.One) {
-    ////        D.Warn(@"{0} is about to change its Cmd {1}'s Owner from {2} to its own new Owner {3} in Frame {4}. Element and Cmd owner 
-    ////                    will be 'out of sync'.", DebugName, Command.DebugName, Command.Owner, newOwner, Time.frameCount);
-
-    ////        Command.Data.Owner = newOwner;
-    ////    }
-    ////}
-    ////protected override void HandleOwnerChanging(Player newOwner) {
-    ////    base.HandleOwnerChanging(newOwner);
-
-
-
     protected override void HandleOwnerChanged() {
         base.HandleOwnerChanged();
 
-
         if (Command.Elements.Count > Constants.One) {
-
             string priorCmdName = Command.DebugName;
             string loneFleetRootname = "LoneNewOwnerFleet";
             MakeCommandChange(loneFleetRootname);
             D.AssertEqual(Owner, Command.Owner);
             D.Log(ShowDebugLog, "{0} created Cmd {1} in Frame {2}.", DebugName, Command.DebugName, Time.frameCount);
 
-            if (SRSensorMonitor.AreWarEnemyElementsInRange) {
-                var warEnemyElementsInSRSensorRange = SRSensorMonitor.WarEnemyElementsDetected;
-                Vector3 enemyDirection = UnityExtensions.FindMeanDirectionTo(Position, warEnemyElementsInSRSensorRange.Select(wee => wee.Position));
-                Command.IssueRegroupOrderFromShip(-enemyDirection);
-            }
+            ////if (SRSensorMonitor.AreWarEnemyElementsInRange) {
+            ////    var warEnemyElementsInSRSensorRange = SRSensorMonitor.WarEnemyElementsDetected;
+            ////    Vector3 enemyDirection = UnityExtensions.FindMeanDirectionTo(Position, warEnemyElementsInSRSensorRange.Select(wee => wee.Position));
+            ////    Command.IssueRegroupOrderFromShip(-enemyDirection);
+            ////}
         }
         else {
             // if only one, Cmd owner change has already been made
@@ -428,39 +411,10 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             D.AssertEqual(Owner, Command.Owner);
             D.Log(ShowDebugLog, "{0} just seized its existing Cmd {1} in Frame {2}.", DebugName, Command.DebugName, Time.frameCount);
         }
-
     }
-    ////protected override void HandleOwnerChanged() {
-    ////    base.HandleOwnerChanged();
-
-    ////    string priorCmdName = Command.DebugName;
-    ////    string loneFleetRootname = "LoneNewOwnerFleet";
-    ////    D.AssertNotNull(Command);
-    ////    bool isCmdChanged = AttemptCommandChange(loneFleetRootname, __isSourceOwnerChg: true);
-    ////    D.AssertNotNull(Command);
-
-    ////    if (isCmdChanged) {
-    ////        D.Assert(Command.IsLoneCmd);
-    ////        ////Command.Data.ParentName = "NewOwnerLoneFleet";
-    ////    }
-    ////    D.AssertEqual(Owner, Command.Owner);
-
-    ////    if (SRSensorMonitor.AreWarEnemyElementsInRange) {
-    ////        var warEnemyElementsInSRSensorRange = SRSensorMonitor.WarEnemyElementsDetected;
-    ////        Vector3 enemyDirection = UnityExtensions.FindMeanDirectionTo(Position, warEnemyElementsInSRSensorRange.Select(wee => wee.Position));
-    ////        ////Command.Data.ParentName = isCmdChanged ? "NewOwnerLoneEscapeFleet" : "NewOwnerEscapeFleet";
-    ////        Command.IssueRegroupOrderFromShip(-enemyDirection);
-    ////    }
-
-    ////    if (isCmdChanged) {
-    ////        D.Log(/*ShowDebugLog,*/ "{0} created Cmd {1} in Frame {2}.", DebugName, Command.DebugName, Time.frameCount);
-    ////    }
-    ////    else {
-    ////        D.Log(/*ShowDebugLog, */"{0} just seized its existing Cmd {1}, now called {2} in Frame {3}.", DebugName, priorCmdName, Command.DebugName, Time.frameCount);
-    ////    }
-    ////}
 
     private void MakeCommandChange(string loneFleetRootName) {
+        D.Assert(Command.Elements.Count > Constants.One);
         Command.RemoveElement(this);
         UnitFactory.Instance.MakeLoneFleetInstance(loneFleetRootName, this);
         // This element is now properly parented with the proper Cmd Reference so tell oldCmd to not null it when Removing
@@ -482,30 +436,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         D.AssertEqual(Command.Owner, Owner);
         return false;
     }
-    ////private bool AttemptCommandChange(string loneFleetRootname, bool isSourceOwnerChg = false) {
-    ////    bool isCmdChanged = true;
-    ////    if (Command.Elements.Count > Constants.One) {
-    ////        MakeCommandChange(loneFleetRootname);
-    ////        ////Command.RemoveElement(this);
-    ////        ////UnitFactory.Instance.MakeLoneFleetInstance(loneFleetRootname, this);
-    ////        ////// This element is now properly parented with the proper Cmd Reference so tell oldCmd to not null it when Removing
-    ////        ////D.Assert(Command.IsLoneCmd);
-    ////    }
-    ////    else {
-    ////        if (Command.Data.Owner != Owner) {   // avoids equals warning
-    ////            if (isSourceOwnerChg) {
-    ////                // WARNING: 5.10.17 Cmd Ownership change process begins after element's ends. Sync problems are popping up.
-    ////                D.Warn(@"{0} is about to change its Cmd {1}'s Owner from {2} to its own new Owner {3} in Frame {4}. Element and Cmd owner 
-    ////                    will be 'out of sync' if using Cmd.ownerChanging event.", DebugName, Command.DebugName, Command.Owner, Owner, Time.frameCount);
-    ////            }
-    ////            Command.Data.Owner = Owner;
-    ////        }
-    ////        isCmdChanged = false;
-    ////    }
-    ////    return isCmdChanged;
-    ////}
-
-
 
     public override void __HandleLocalPositionManuallyChanged() {
         // Nothing to do as manual reposition only occurs when the formation is initially changed before the ship becomes operational
@@ -2469,18 +2399,17 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         bool hasOperatingLRWeapons = weapRange.Long > Constants.ZeroF;
         bool hasOperatingMRWeapons = weapRange.Medium > Constants.ZeroF;
         bool hasOperatingSRWeapons = weapRange.Short > Constants.ZeroF;
-        float weapRangeMultiplier = Owner.WeaponRangeMultiplier;
 
         bool toBombard = true;
         switch (combatStance) {
             case ShipCombatStance.Standoff:
                 if (hasOperatingLRWeapons) {
                     maxDesiredDistanceToTgtSurface = weapRange.Long;
-                    minDesiredDistanceToTgtSurface = RangeCategory.Medium.GetBaselineWeaponRange() * weapRangeMultiplier;
+                    minDesiredDistanceToTgtSurface = RangeCategory.Medium.GetBaselineWeaponRange();
                 }
                 else if (hasOperatingMRWeapons) {
                     maxDesiredDistanceToTgtSurface = weapRange.Medium;
-                    minDesiredDistanceToTgtSurface = RangeCategory.Short.GetBaselineWeaponRange() * weapRangeMultiplier;
+                    minDesiredDistanceToTgtSurface = RangeCategory.Short.GetBaselineWeaponRange();
                 }
                 else {
                     D.Assert(hasOperatingSRWeapons);
@@ -2491,11 +2420,11 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             case ShipCombatStance.BalancedStrafe:
                 if (hasOperatingMRWeapons) {
                     maxDesiredDistanceToTgtSurface = weapRange.Medium;
-                    minDesiredDistanceToTgtSurface = RangeCategory.Short.GetBaselineWeaponRange() * weapRangeMultiplier;
+                    minDesiredDistanceToTgtSurface = RangeCategory.Short.GetBaselineWeaponRange();
                 }
                 else if (hasOperatingLRWeapons) {
                     maxDesiredDistanceToTgtSurface = weapRange.Long;
-                    minDesiredDistanceToTgtSurface = RangeCategory.Medium.GetBaselineWeaponRange() * weapRangeMultiplier;
+                    minDesiredDistanceToTgtSurface = RangeCategory.Medium.GetBaselineWeaponRange();
                 }
                 else {
                     D.Assert(hasOperatingSRWeapons);
@@ -2507,11 +2436,11 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             case ShipCombatStance.BalancedBombard:
                 if (hasOperatingMRWeapons) {
                     maxDesiredDistanceToTgtSurface = weapRange.Medium;
-                    minDesiredDistanceToTgtSurface = RangeCategory.Short.GetBaselineWeaponRange() * weapRangeMultiplier;
+                    minDesiredDistanceToTgtSurface = RangeCategory.Short.GetBaselineWeaponRange();
                 }
                 else if (hasOperatingLRWeapons) {
                     maxDesiredDistanceToTgtSurface = weapRange.Long;
-                    minDesiredDistanceToTgtSurface = RangeCategory.Medium.GetBaselineWeaponRange() * weapRangeMultiplier;
+                    minDesiredDistanceToTgtSurface = RangeCategory.Medium.GetBaselineWeaponRange();
                 }
                 else {
                     D.Assert(hasOperatingSRWeapons);
@@ -2526,12 +2455,12 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 }
                 else if (hasOperatingMRWeapons) {
                     maxDesiredDistanceToTgtSurface = weapRange.Medium;
-                    minDesiredDistanceToTgtSurface = RangeCategory.Short.GetBaselineWeaponRange() * weapRangeMultiplier;
+                    minDesiredDistanceToTgtSurface = RangeCategory.Short.GetBaselineWeaponRange();
                 }
                 else {
                     D.Assert(hasOperatingLRWeapons);
                     maxDesiredDistanceToTgtSurface = weapRange.Long;
-                    minDesiredDistanceToTgtSurface = RangeCategory.Medium.GetBaselineWeaponRange() * weapRangeMultiplier;
+                    minDesiredDistanceToTgtSurface = RangeCategory.Medium.GetBaselineWeaponRange();
                 }
                 break;
             case ShipCombatStance.Defensive:
@@ -4466,7 +4395,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     }
 
     #endregion
-
 
     private void __CheckForRemainingFtlDampeningSources() {
         if (_dampeningSources != null && _dampeningSources.Any()) {

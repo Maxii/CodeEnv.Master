@@ -27,7 +27,7 @@ public abstract class AGuiMenuPopupListBase : AGuiMenuElement {
     private const string DebugNameFormat = "{0}.{1}";
 
     private string _debugName;
-    public string DebugName {
+    public override string DebugName {
         get {
             if (_debugName == null) {
                 _debugName = DebugNameFormat.Inject(GetType().Name, ElementID.GetValueName());

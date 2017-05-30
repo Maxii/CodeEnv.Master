@@ -108,9 +108,6 @@ public class WorldTrackingSprite_IndependentVariableSize : AWorldTrackingWidget_
 
     protected override void Cleanup() { }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
     #region Debug
 

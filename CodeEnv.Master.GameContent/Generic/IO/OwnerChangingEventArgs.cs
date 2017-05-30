@@ -24,6 +24,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class OwnerChangingEventArgs : EventArgs {
 
+        public string DebugName { get { return GetType().Name; } }
+
         public Player IncomingOwner { get; private set; }
 
         public OwnerChangingEventArgs(Player incomingOwner) {
@@ -31,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
     }

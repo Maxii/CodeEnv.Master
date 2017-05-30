@@ -26,6 +26,8 @@ using UnityEngine;
 [ExecuteInEditMode]
 public class EditModeController : AMonoBase {
 
+    public string DebugName { get { return GetType().Name; } }
+
     public bool enableRenderers = false;
 
     void Update() {
@@ -47,7 +49,7 @@ public class EditModeController : AMonoBase {
     protected override void Cleanup() { }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
 }

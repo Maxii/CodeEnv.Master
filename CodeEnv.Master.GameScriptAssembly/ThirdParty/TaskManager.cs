@@ -40,6 +40,8 @@ using UnityEngine;
 /// </summary>
 public class TaskManager : MonoBehaviour, ITaskManager {
 
+    public string DebugName { get { return GetType().Name; } }
+
     private List<ATask> _taskList = new List<ATask>();
     private Queue<ATask> _completedTaskQueue = new Queue<ATask>();
     private bool _isRunningTasks = false;
@@ -203,7 +205,7 @@ public class TaskManager : MonoBehaviour, ITaskManager {
     }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
 }

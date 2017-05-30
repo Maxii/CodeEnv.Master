@@ -23,6 +23,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class PlanetoidStat {
 
+        public string DebugName { get { return GetType().Name; } }
+
         // A Planetoid's name is assigned once its parent's name and its orbit are known
         public float Radius { get; private set; }
         public float Mass { get; private set; }
@@ -49,8 +51,8 @@ namespace CodeEnv.Master.GameContent {
             Resources = resources;
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+        public sealed override string ToString() {
+            return DebugName;
         }
 
     }

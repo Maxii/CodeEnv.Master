@@ -33,6 +33,8 @@ public class ScaleRelativeToCamera : AMonoBase {
     [SerializeField]
     private float _relativeScaleFactor = .001F;
 
+    public string DebugName { get { return GetType().Name; } }
+
     public Vector3 Scale { get; private set; }
 
     private bool _warnIfUIPanelPresentInParents = true;
@@ -73,7 +75,7 @@ public class ScaleRelativeToCamera : AMonoBase {
     protected override void Cleanup() { }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
     #region Occasional RefreshScale Update Archive

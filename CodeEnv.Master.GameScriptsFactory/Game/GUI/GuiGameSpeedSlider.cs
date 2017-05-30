@@ -33,9 +33,5 @@ public class GuiGameSpeedSlider : AGuiEnumSlider<GameSpeed> {
         GameTime.Instance.GameSpeed = value;
     }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
 }
 

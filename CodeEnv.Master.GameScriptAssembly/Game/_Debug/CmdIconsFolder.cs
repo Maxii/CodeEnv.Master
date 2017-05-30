@@ -38,10 +38,6 @@ public class CmdIconsFolder : AFolderAccess<CmdIconsFolder> {
 
     #endregion
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
 
 }
 

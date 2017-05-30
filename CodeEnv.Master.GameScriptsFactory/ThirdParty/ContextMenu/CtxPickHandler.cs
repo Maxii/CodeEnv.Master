@@ -49,6 +49,8 @@ public class CtxPickHandler : AMonoBase {
     /// </summary>
     public bool dontUseFallThrough = false;
 
+    public string DebugName { get { return GetType().Name; } }
+
     protected override void Start() {
         base.Start();
         // We rely on NGUI to send us the events it doesn't handle. This
@@ -132,7 +134,7 @@ public class CtxPickHandler : AMonoBase {
     protected override void Cleanup() { }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
 

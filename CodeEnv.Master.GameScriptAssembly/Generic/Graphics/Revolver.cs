@@ -46,6 +46,8 @@ public class Revolver : AMonoBase, IRevolver {
     [SerializeField]
     private float _relativeRotationRate = 0.1F;
 
+    public string DebugName { get { return GetType().Name; } }
+
     private bool _isActivated;
     /// <summary>
     /// Control for activating this Revolver. Activating does not necessarily
@@ -143,7 +145,7 @@ public class Revolver : AMonoBase, IRevolver {
     }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
 }

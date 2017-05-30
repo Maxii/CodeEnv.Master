@@ -1192,7 +1192,7 @@ public class UniverseCreator {
     #endregion
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
 }

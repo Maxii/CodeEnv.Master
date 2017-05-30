@@ -27,6 +27,8 @@ public class AnimateOnHover : AMonoBase {
     /// <summary>
     /// The sprite to change when moving between hovered and not hovered.
     /// </summary>
+    public string DebugName { get { return GetType().Name; } }
+
     public UISprite targetSprite;   // Has Editor
 
     /// <summary>
@@ -65,7 +67,7 @@ public class AnimateOnHover : AMonoBase {
     protected override void Cleanup() { }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
 }

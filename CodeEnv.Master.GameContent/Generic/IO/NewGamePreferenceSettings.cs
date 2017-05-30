@@ -23,6 +23,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class NewGamePreferenceSettings {
 
+        public string DebugName { get { return GetType().Name; } }
+
         public UniverseSizeGuiSelection UniverseSizeSelection { get; set; }
 
         public UniverseSize UniverseSize { get; set; }  // 10.4.16 Reqd to know which Pref Property gets PlayerCount
@@ -52,7 +54,7 @@ namespace CodeEnv.Master.GameContent {
         public NewGamePreferenceSettings() { }
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
     }

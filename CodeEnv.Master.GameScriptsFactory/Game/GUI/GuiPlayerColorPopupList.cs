@@ -101,9 +101,6 @@ public class GuiPlayerColorPopupList : AGuiMenuPopupList<GameColor> {
 
     #endregion
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 }
 

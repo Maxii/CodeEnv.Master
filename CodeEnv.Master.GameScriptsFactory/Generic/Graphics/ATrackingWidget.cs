@@ -297,6 +297,10 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     /// </summary>
     protected abstract void SetPosition();
 
+    public sealed override string ToString() {
+        return DebugName;
+    }
+
     #region Debug
 
     protected virtual void __RenameGameObjects() {

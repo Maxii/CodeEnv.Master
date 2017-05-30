@@ -42,9 +42,6 @@ public class FacilityHull : AHull, IFacilityHull {
 
     protected override void Cleanup() { }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 }
 

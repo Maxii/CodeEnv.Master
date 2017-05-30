@@ -132,12 +132,14 @@ public class RequiredPrefabs : AMonoSingleton<RequiredPrefabs> {
 
     #endregion
 
+    public string DebugName { get { return GetType().Name; } }
+
     public override bool IsPersistentAcrossScenes { get { return true; } }
 
     protected override void Cleanup() { }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
 }

@@ -29,6 +29,8 @@ public class Billboard : AMonoBase, IBillboard {
 
     private const int CheckFacingCounterThreshold = 4;
 
+    public string DebugName { get { return GetType().Name; } }
+
     //[FormerlySerializedAs("reverseFacing")]
     [SerializeField]
     private bool _reverseFacing = false;
@@ -102,7 +104,7 @@ public class Billboard : AMonoBase, IBillboard {
     protected override void Cleanup() { }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
 }

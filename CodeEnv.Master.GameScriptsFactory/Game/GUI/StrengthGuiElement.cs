@@ -134,9 +134,6 @@ public class StrengthGuiElement : AGuiElement, IComparable<StrengthGuiElement> {
 
     protected override void Cleanup() { }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
     #region IComparable<StrengthGuiElement> Members
 

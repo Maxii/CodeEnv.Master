@@ -43,9 +43,5 @@ public class GuiSystemDensityPopupList : AGuiMenuPopupList<SystemDensityGuiSelec
     // no need for taking an action OnPopupListSelectionChanged as changes aren't recorded 
     // from this pop up list until the Menu Accept Button is pushed
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
 }
 

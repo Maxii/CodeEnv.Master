@@ -172,7 +172,7 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
     #endregion
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
 }

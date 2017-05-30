@@ -106,9 +106,5 @@ public class WorldTrackingSprite : AWorldTrackingWidget_ConstantSize, IWorldTrac
 
     protected override void Cleanup() { }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
 }
 

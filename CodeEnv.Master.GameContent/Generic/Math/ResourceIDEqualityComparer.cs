@@ -27,8 +27,10 @@ namespace CodeEnv.Master.GameContent {
 
         public static readonly ResourceIDEqualityComparer Default = new ResourceIDEqualityComparer();
 
+        public string DebugName { get { return GetType().Name; } }
+
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
         #region IEqualityComparer<ResourceID> Members

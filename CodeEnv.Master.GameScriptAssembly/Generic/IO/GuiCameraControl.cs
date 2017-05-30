@@ -28,6 +28,8 @@ public class GuiCameraControl : AMonoSingleton<GuiCameraControl>, IGuiCameraCont
 
     private static LayerMask _guiCameraCullingMask = LayerMaskUtility.CreateInclusiveMask(Layers.UI);
 
+    public string DebugName { get { return GetType().Name; } }
+
     public Camera GuiCamera { get; private set; }
 
     protected override void InitializeOnInstance() {
@@ -59,7 +61,7 @@ public class GuiCameraControl : AMonoSingleton<GuiCameraControl>, IGuiCameraCont
     }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
 }

@@ -36,9 +36,6 @@ public class DynamicObjectsFolder : AFolderAccess<DynamicObjectsFolder>, IDynami
         GameReferences.DynamicObjectsFolder = null;
     }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 }
 
 

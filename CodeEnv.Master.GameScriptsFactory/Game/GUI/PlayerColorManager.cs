@@ -29,6 +29,8 @@ public class PlayerColorManager : AMonoBase {
 
     private static GameColor[] _allPlayerColors = TempGameValues.AllPlayerColors;
 
+    public string DebugName { get { return GetType().Name; } }
+
     private GameColor _userPlayerColorSelected;
     private HashSet<GameColor> _aiPlayerColorsInUse;
     private IDictionary<GameColor, GuiPlayerColorPopupList> _aiPlayerPopupLookupByColor;
@@ -214,7 +216,7 @@ public class PlayerColorManager : AMonoBase {
     }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
 

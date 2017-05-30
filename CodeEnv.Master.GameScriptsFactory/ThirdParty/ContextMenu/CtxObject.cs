@@ -107,6 +107,8 @@ public class CtxObject : AMonoBase {
     [HideInInspector]
     public bool isEditingItems = false;
 
+    public string DebugName { get { return GetType().Name; } }
+
     /// <summary>
     /// The menu's position in screen space (defined in pixels). Z is ignored.
     /// <remarks>Warning: this value is invalid once the menu has been opened as it calculates a screen space location
@@ -325,7 +327,7 @@ public class CtxObject : AMonoBase {
     }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
 }

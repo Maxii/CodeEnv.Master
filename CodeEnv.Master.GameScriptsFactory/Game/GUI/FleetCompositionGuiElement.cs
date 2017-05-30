@@ -60,10 +60,6 @@ public class FleetCompositionGuiElement : ACompositionGuiElement {
 
     protected override void Cleanup() { }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
     #region IComparable<ACompositionGuiElement> Members
 
     public override int CompareTo(ACompositionGuiElement other) {

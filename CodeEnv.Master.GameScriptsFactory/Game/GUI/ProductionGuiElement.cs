@@ -100,9 +100,6 @@ public class ProductionGuiElement : AGuiElement, IComparable<ProductionGuiElemen
 
     protected override void Cleanup() { }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
     #region IComparable<ProductionGuiElement> Members
 

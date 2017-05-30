@@ -60,9 +60,5 @@ public class GuiDateReadout : AGuiLabelReadout {
         _gameTime.calenderDateChanged -= CalenderDateChangedEventHandler;
     }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
 }
 

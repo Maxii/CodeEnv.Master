@@ -38,9 +38,6 @@ public class PlanetIconsFolder : AFolderAccess<PlanetIconsFolder> {
 
     #endregion
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 }
 

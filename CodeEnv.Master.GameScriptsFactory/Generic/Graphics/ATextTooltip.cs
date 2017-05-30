@@ -21,6 +21,8 @@
 /// </summary>
 public abstract class ATextTooltip : AMonoBase {
 
+    public virtual string DebugName { get { return GetType().Name; } }
+
     protected virtual string TooltipContent { get { return null; } }
 
     #region Event and Property Change Handlers
@@ -40,5 +42,9 @@ public abstract class ATextTooltip : AMonoBase {
 
     #endregion
 
+
+    public sealed override string ToString() {
+        return DebugName;
+    }
 }
 

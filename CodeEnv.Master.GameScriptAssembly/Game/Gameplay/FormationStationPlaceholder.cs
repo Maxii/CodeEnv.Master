@@ -25,6 +25,8 @@ using UnityEngine;
 /// </summary>
 public class FormationStationPlaceholder : AFormationStation {
 
+    public string DebugName { get { return GetType().Name; } }
+
     public FormationStationSlotID slotID = FormationStationSlotID.None; // public so FormationGridOrganizer can change it in edit mode
 
     [SerializeField]
@@ -52,7 +54,7 @@ public class FormationStationPlaceholder : AFormationStation {
     protected override void Cleanup() { }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
 }

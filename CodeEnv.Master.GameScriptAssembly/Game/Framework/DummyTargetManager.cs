@@ -27,10 +27,12 @@ public class DummyTargetManager : AMonoSingleton<DummyTargetManager>, ICameraTar
 
     private const float CameraMinViewingDistance_DummyTarget = 5F;
 
+    public string DebugName { get { return GetType().Name; } }
+
     protected override void Cleanup() { }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
     #region ICameraTargetable Members

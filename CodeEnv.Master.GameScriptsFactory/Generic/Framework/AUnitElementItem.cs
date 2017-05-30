@@ -340,14 +340,24 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     }
 
     protected WeaponFiringSolution PickBestFiringSolution(IList<WeaponFiringSolution> firingSolutions, IElementAttackable tgtHint = null) {
-        if (tgtHint == null) {
-            return firingSolutions.First();
+        int count = firingSolutions.Count;
+        D.Assert(count > Constants.Zero);
+
+        WeaponFiringSolution solution = null;
+        if (count == Constants.One) {
+            solution = firingSolutions[0];
         }
-        var hintFiringSolution = firingSolutions.SingleOrDefault(fs => fs.EnemyTarget == tgtHint);
-        if (hintFiringSolution == null) {
-            return firingSolutions.First();
+        else if (tgtHint != null) {
+            var hintFiringSolution = firingSolutions.SingleOrDefault(fs => fs.EnemyTarget == tgtHint);
+            if (hintFiringSolution != null) {
+                solution = hintFiringSolution;
+            }
         }
-        return hintFiringSolution;
+
+        if (solution == null) {
+            solution = firingSolutions.Shuffle().First();
+        }
+        return solution;
     }
 
     /// <summary>
@@ -1427,14 +1437,14 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         if (IsOwnerChangeUnderway) {
             // 5.17.17 Multiple assaults in the same frame by the same or other players can occur even if 
             // AssaultShuttles aren't instantaneous.
-            // 5.22.17 Changed to warn to reconfirm this takes place with real AssaultShuttles
+            // 5.22.17 Changed to warn to reconfirm this takes place with real AssaultVehicles
             D.Warn(/*ShowDebugLog, */"{0} assault is not allowed by {1} in Frame {2} when owner change underway.",
                 DebugName, __assaulterName, currentFrame);
             return false;
         }
 
         if (!Command.__IsActivelyOperating) {
-            // 5.22.17 Changed to Error to see if this still occurs with real AssaultShuttles. I know with instantaneous
+            // 5.22.17 Changed to Error to see if this still occurs with real AssaultVehicles. I know with instantaneous
             // Assaults it did occur on LoneFleetCmds
             D.Error("FYI. {0} assault is not allowed by {1} in Frame {2} when {3} has not yet CommencedOperations.",
                 DebugName, __assaulterName, currentFrame, Command.DebugName);

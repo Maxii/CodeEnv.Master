@@ -34,6 +34,7 @@ namespace CodeEnv.Master.Common {
     /// 
     /// @author James L. Evans, derived from Cay Horstmann, CoreJava.
     /// </summary>
+    [Obsolete]
     public class ObjectAnalyzer {
 
         /// <summary>

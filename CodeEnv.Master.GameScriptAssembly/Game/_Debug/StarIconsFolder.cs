@@ -38,9 +38,6 @@ public class StarIconsFolder : AFolderAccess<StarIconsFolder> {
 
     #endregion
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 
 }

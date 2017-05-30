@@ -32,6 +32,8 @@ public class GuiManager : AMonoSingleton<GuiManager> {
 
 #pragma warning disable 0649
 
+    public string DebugName { get { return GetType().Name; } }
+
     /// <summary>
     /// The fixed panels of the GUI that should normally be hidden when a pop up shows.
     /// Use GuiShowModeControlButton.exceptions to exclude a panel listed here from being hidden.
@@ -136,7 +138,7 @@ public class GuiManager : AMonoSingleton<GuiManager> {
     }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
     #region Debug

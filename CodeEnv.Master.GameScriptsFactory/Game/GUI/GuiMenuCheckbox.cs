@@ -129,10 +129,6 @@ public class GuiMenuCheckbox : AGuiMenuElement {
         EventDelegate.Remove(_checkbox.onChange, CheckboxStateSetEventHandler);
     }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
     #region PlayerPrefs Reflection-based Property Acquisition Archive
 
     /// <summary>

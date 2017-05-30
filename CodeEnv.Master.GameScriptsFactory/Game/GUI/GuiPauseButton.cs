@@ -76,9 +76,5 @@ public class GuiPauseButton : AGuiButton {
         _subscriptions.Clear();
     }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
 }
 

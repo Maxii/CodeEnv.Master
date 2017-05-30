@@ -39,9 +39,6 @@ public sealed class GuiElement : AGuiElement {
 
     protected override void Cleanup() { }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 }
 

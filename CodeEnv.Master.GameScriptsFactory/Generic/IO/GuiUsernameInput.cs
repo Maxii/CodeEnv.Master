@@ -64,9 +64,6 @@ public class GuiUsernameInput : ATextTooltip {
         EventDelegate.Remove(_inputField.onSubmit, InputFieldSubmitEventHandler);
     }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 }
 

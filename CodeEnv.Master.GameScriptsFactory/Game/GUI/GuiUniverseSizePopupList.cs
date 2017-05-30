@@ -61,9 +61,6 @@ public class GuiUniverseSizePopupList : AGuiMenuPopupList<UniverseSizeGuiSelecti
 
     #endregion
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 }
 

@@ -161,6 +161,8 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     public event EventHandler sectorIDChanged;
 
+    public string DebugName { get { return GetType().Name; } }
+
     #region Editor Fields
 
     [SerializeField]    // OPTIMIZE
@@ -1922,7 +1924,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
     #region Nested Classes

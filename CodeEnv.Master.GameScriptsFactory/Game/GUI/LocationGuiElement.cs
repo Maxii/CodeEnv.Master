@@ -110,9 +110,6 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
 
     protected override void Cleanup() { }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
     #region IComparable<LocationGuiElement> Members
 

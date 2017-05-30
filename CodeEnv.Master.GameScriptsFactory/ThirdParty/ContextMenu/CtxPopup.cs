@@ -79,6 +79,8 @@ public class CtxPopup : AMonoBase {
     [HideInInspector]
     public bool isEditingItems = false;
 
+    public string DebugName { get { return GetType().Name; } }
+
     private CtxMenu.Item[] MenuItems {
         get {
             CtxMenu.Item[] items = menuItems;
@@ -281,7 +283,7 @@ public class CtxPopup : AMonoBase {
     }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
 }

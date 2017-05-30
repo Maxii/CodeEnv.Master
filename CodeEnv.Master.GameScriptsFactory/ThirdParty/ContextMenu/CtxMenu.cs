@@ -289,6 +289,8 @@ public class CtxMenu : AMonoBase {
     [HideInInspector]
     public CtxMenu parentMenu;
 
+    public string DebugName { get { return GetType().Name; } }
+
     /// <summary>
     /// Returns this menu's visible state.
     /// </summary>
@@ -2603,7 +2605,7 @@ public class CtxMenu : AMonoBase {
     protected override void Cleanup() { }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
     #region Nested Classes

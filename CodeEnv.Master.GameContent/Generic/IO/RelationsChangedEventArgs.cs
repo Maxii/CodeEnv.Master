@@ -25,6 +25,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class RelationsChangedEventArgs : EventArgs {
 
+        public string DebugName { get { return GetType().Name; } }
+
         public Player ChgdRelationsPlayer { get; private set; }
 
         public RelationsChangedEventArgs(Player otherPlayer) {
@@ -32,7 +34,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
     }
 

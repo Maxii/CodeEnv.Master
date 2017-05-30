@@ -255,7 +255,7 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
     #endregion
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
     #region IEquatable<FleetFormationStation> Members

@@ -310,7 +310,7 @@ public class SystemCreator : AMonoBase {
 
     protected override void Cleanup() { }
 
-    public override string ToString() {
+    public sealed override string ToString() {
         return DebugName;
     }
 

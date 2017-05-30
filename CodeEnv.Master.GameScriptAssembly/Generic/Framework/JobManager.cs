@@ -36,7 +36,7 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
 
     public override bool IsPersistentAcrossScenes { get { return true; } }
 
-    private string DebugName { get { return GetType().Name; } }
+    public string DebugName { get { return GetType().Name; } }
 
     private bool IsGameRunning { get { return _gameMgr.IsRunning; } }
 
@@ -840,7 +840,7 @@ public class JobManager : AMonoSingleton<JobManager>, IJobManager, IJobRunner {
     #endregion
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
     #region Debug

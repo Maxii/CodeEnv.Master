@@ -38,6 +38,8 @@ public class FormationGridOrganizer : AMonoBase {
 
     private const string SlotIdNameFormat = "Slot_{0}_{1}_{2}";
 
+    public string DebugName { get { return GetType().Name; } }
+
     public Vector3 cellSize = Vector3.zero;
 
     public Vector3 gridDimensions = Vector3.zero;
@@ -155,8 +157,7 @@ public class FormationGridOrganizer : AMonoBase {
     }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
-
 }
 

@@ -44,9 +44,5 @@ public class NewGameMenuCancelButton : MenuCancelButton {
         base.RestorePopupListsState();  // restores only the popupLists that need restoring, so will ignore the UIPopupLists handling PlayerColor
     }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
 }
 

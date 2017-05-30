@@ -124,9 +124,6 @@ public class WorldTrackingLabel_IndependentVariableSize : AWorldTrackingWidget_V
 
     protected override void Cleanup() { }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
     #region Debug
 

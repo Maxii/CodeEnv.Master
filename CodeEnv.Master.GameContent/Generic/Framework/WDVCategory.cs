@@ -35,7 +35,7 @@ namespace CodeEnv.Master.GameContent {
         [EnumAttribute("M")]
         Missile,
 
-        [EnumAttribute("AV")]
+        [EnumAttribute("A")]
         AssaultVehicle
 
 

@@ -536,7 +536,7 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
     }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
     #region Debug

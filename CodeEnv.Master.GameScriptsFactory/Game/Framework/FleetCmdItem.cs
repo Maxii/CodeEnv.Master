@@ -133,22 +133,30 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         IsOperational = true;
     }
 
-    protected override void SubscribeToSensorEvents() {
+    protected override void __ValidateStateForSensorEventSubscription() {
         D.AssertNotEqual(FleetState.None, CurrentState);
         D.AssertNotEqual(FleetState.FinalInitialize, CurrentState);
-        base.SubscribeToSensorEvents();
     }
 
     #endregion
 
     public override void CommenceOperations() {
         base.CommenceOperations();
-        CurrentState = FleetState.Idling;
+        ////CurrentState = FleetState.Idling;
         ActivateSensors();
-        RegisterForOrders();
+        ////RegisterForOrders();
         AssessAlertStatus();
         SubscribeToSensorEvents();
         __IsActivelyOperating = true;
+    }
+
+    protected override void DetermineInitialState() {
+        CurrentState = FleetState.Idling;   // Start in Idling so if Regroup order is issued, doesn't find FinalInitialize state
+        if (IsLoneCmd && UnifiedSRSensorMonitor.AreWarEnemyElementsInRange) {
+            var warEnemyElementsInSRSensorRange = UnifiedSRSensorMonitor.WarEnemyElementsDetected;
+            Vector3 enemyDirection = UnityExtensions.FindMeanDirectionTo(Position, warEnemyElementsInSRSensorRange.Select(wee => wee.Position));
+            IssueRegroupOrder(-enemyDirection);
+        }
     }
 
     private void TransferShip(ShipItem ship, FleetCmdItem fleetToJoin) {
@@ -538,13 +546,16 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     void FinalInitialize_UponNewOrderReceived() {
-        // 5.12.17 FIXME Occurs when Ship gives flee order to EscapeLoneFleet
+        //// 5.12.17 FIXME Occurs when Ship gives flee order to EscapeLoneFleet
+        // 5.30.17 NewOwnerLoneFleet decision to escape now determined in FleetCmd.CommenceOperations
+        D.Error("{0} received FinalInitialize_UponNewOrderReceived().", DebugName);
     }
 
     void FinalInitialize_UponRelationsChangedWith(Player player) {
         LogEvent();
-        // 5.19.17 FIXME Creators have elements CommenceOperations before Cmds do. Reversing won't work as
+        // 5.19.17 Creators have elements CommenceOperations before Cmds do. Reversing won't work as
         // Cmds have Sensors too. Its the sensors that come up and detect things before all Cmd is ready
+        // 5.30.17 IMPROVE No real harm as will change to Idling immediately afterward
         D.Warn("{0} received FinalInitialize_UponRelationsChangedWith({1}).", DebugName, player);
     }
 
@@ -4295,10 +4306,14 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     /// <remarks>The client of this method is the single ship inside the fleet.</remarks><remarks>Handled this way to properly use InitiateNewOrder and OverrideCurrentOrder.</remarks>
     /// </summary>
     /// <param name="preferredDirection">The preferred direction.</param>
-    internal void IssueRegroupOrderFromShip(Vector3 preferredDirection) {
+    private void IssueRegroupOrder(Vector3 preferredDirection) {
         IFleetNavigableDestination regroupDest = GetRegroupDestination(preferredDirection);
         IssueCmdStaffsRegroupOrder(regroupDest, retainSuperiorsOrder: false);
     }
+    ////internal void IssueRegroupOrderFromShip(Vector3 preferredDirection) {
+    ////    IFleetNavigableDestination regroupDest = GetRegroupDestination(preferredDirection);
+    ////    IssueCmdStaffsRegroupOrder(regroupDest, retainSuperiorsOrder: false);
+    ////}
 
     /// <summary>
     /// Convenience method that has the CmdStaff issue an AssumeFormation order to all ships.

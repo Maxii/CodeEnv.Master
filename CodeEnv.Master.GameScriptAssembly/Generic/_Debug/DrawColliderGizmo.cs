@@ -27,6 +27,8 @@ using UnityEngine;
 /// </summary>
 public class DrawColliderGizmo : AMonoBase {
 
+    public string DebugName { get { return GetType().Name; } }
+
 #pragma warning disable 0414
     [SerializeField]
     private string _note1 = "To Hide all, collapse component";
@@ -91,7 +93,7 @@ public class DrawColliderGizmo : AMonoBase {
     protected override void Cleanup() { }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
 }

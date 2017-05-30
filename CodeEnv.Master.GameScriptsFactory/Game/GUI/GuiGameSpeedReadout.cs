@@ -63,9 +63,6 @@ public class GuiGameSpeedReadout : AGuiLabelReadout {
         _subscriptions.Clear();
     }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 }
 

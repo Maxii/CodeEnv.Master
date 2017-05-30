@@ -50,6 +50,8 @@ public class MyEnvelopContent : AMonoBase {
     [SerializeField]
     private int _padTop = Constants.Zero;
 
+    public string DebugName { get { return GetType().Name; } }
+
     private bool _isStarted = false;
 
     protected override void Start() {
@@ -97,7 +99,7 @@ public class MyEnvelopContent : AMonoBase {
     }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
 }

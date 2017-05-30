@@ -110,22 +110,25 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         CurrentState = BaseState.FinalInitialize;
     }
 
-    protected sealed override void SubscribeToSensorEvents() {
+    protected override void __ValidateStateForSensorEventSubscription() {
         D.AssertNotEqual(BaseState.None, CurrentState);
         D.AssertNotEqual(BaseState.FinalInitialize, CurrentState);
-        base.SubscribeToSensorEvents();
     }
 
     #endregion
 
     public override void CommenceOperations() {
         base.CommenceOperations();
-        CurrentState = BaseState.Idling;
+        ////CurrentState = BaseState.Idling;
         ActivateSensors();
-        RegisterForOrders();
+        ////RegisterForOrders();
         AssessAlertStatus();
         SubscribeToSensorEvents();
         __IsActivelyOperating = true;
+    }
+
+    protected override void DetermineInitialState() {
+        CurrentState = BaseState.Idling;
     }
 
     /// <summary>

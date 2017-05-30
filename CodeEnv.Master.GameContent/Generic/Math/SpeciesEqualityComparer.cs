@@ -27,8 +27,10 @@ namespace CodeEnv.Master.GameContent {
 
         public static readonly SpeciesEqualityComparer Default = new SpeciesEqualityComparer();
 
+        public string DebugName { get { return GetType().Name; } }
+
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
         #region IEqualityComparer<Species> Members

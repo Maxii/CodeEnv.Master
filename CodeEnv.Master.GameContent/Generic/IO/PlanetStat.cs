@@ -30,10 +30,6 @@ namespace CodeEnv.Master.GameContent {
             CloseOrbitInnerRadius = closeOrbitInnerRadius;
         }
 
-        public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
-        }
-
     }
 }
 

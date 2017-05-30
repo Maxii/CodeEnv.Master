@@ -50,7 +50,7 @@ public class Logger : AMonoSingleton<Logger> {
     /// log.
     /// </summary>
     /// <param name="format">The message object, typically a composite message string.</param>
-    /// <param name="paramList">The paramaters to insert into the composite message string.</param>
+    /// <param name="paramList">The parameters to insert into the composite message string.</param>
     public static void Log(object format, params object[] paramList) {
         if (_instance) {
             Instance.LogIfEnabled(format, paramList);

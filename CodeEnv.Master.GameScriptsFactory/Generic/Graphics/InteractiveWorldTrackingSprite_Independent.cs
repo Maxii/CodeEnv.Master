@@ -76,10 +76,6 @@ public class InteractiveWorldTrackingSprite_Independent : WorldTrackingSprite_In
         NGUITools.UpdateWidgetCollider(WidgetTransform.gameObject);
     }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
 
 }
 

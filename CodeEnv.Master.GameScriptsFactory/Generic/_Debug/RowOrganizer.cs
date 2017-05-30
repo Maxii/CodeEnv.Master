@@ -31,6 +31,8 @@ using UnityEngine.Profiling;
 /// </summary>
 public class RowOrganizer : AMonoBase {
 
+    public string DebugName { get { return GetType().Name; } }
+
     public UISprite separatorPrefab;
 
     private float _rowMemberLocalPositionY;
@@ -141,7 +143,7 @@ public class RowOrganizer : AMonoBase {
     protected override void Cleanup() { }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
 }

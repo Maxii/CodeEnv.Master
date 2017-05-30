@@ -28,6 +28,8 @@ using UnityEngine;
 /// </summary>
 public class DestroyEffectOnCompletion : AMonoBase {
 
+    public string DebugName { get { return GetType().Name; } }
+
     [SerializeField]
     private EffectType _effectType = EffectType.None;
     public EffectType KindOfEffect {
@@ -177,7 +179,7 @@ public class DestroyEffectOnCompletion : AMonoBase {
     }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
     #region Nested Classes

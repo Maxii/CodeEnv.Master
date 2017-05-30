@@ -35,8 +35,6 @@ public class FpsReadout : AGuiLabelReadout, IFpsReadout {
     [SerializeField]
     private float _displayRefreshPeriod = 0.4F;
 
-    public string DebugName { get { return GetType().Name; } }
-
     public float FramesPerSecond { get { return _lastFpsValue; } }
 
     private bool _isReadoutToShow;
@@ -188,10 +186,6 @@ public class FpsReadout : AGuiLabelReadout, IFpsReadout {
     }
 
     #endregion
-
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 }
 

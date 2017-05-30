@@ -35,9 +35,5 @@ public class GuiSavedGamesPopupList : AGuiMenuPopupList<string> {
     //    return savedGames.Select(game => game.Caption).ToArray();
     //}
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
 }
 

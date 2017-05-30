@@ -114,9 +114,6 @@ public class WorldTrackingLabel : AWorldTrackingWidget_ConstantSize {
 
     protected override void Cleanup() { }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
     #region Debug
 

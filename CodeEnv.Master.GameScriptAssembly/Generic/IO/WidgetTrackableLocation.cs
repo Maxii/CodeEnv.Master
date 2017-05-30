@@ -26,15 +26,15 @@ using UnityEngine;
 /// </summary>
 public class WidgetTrackableLocation : AMonoBase, IWidgetTrackable {
 
+    public string DebugName { get { return typeof(WidgetTrackableLocation).Name; } }
+
     protected override void Cleanup() { }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
     #region IWidgetTrackable Members
-
-    public string DebugName { get { return typeof(WidgetTrackableLocation).Name; } }
 
     public Vector3 Position { get { return transform.position; } }
 

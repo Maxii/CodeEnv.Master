@@ -229,9 +229,6 @@ public class DebugSystemCreator : SystemCreator {
         _planetsInSystem = qty;
     }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
 }
 

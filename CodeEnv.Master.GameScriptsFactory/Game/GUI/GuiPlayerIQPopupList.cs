@@ -40,9 +40,5 @@ public class GuiPlayerIQPopupList : AGuiMenuPopupList<IQ> {
     // no need for taking an action OnPopupListSelectionChanged as changes aren't recorded 
     // from this popup list until the Menu Accept Button is pushed
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
 }
 

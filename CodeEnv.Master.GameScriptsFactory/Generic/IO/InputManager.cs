@@ -52,6 +52,8 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     /// </summary>
     public static LayerMask EventDispatcherMask_NoInput { get { return (LayerMask)Constants.Zero; } }
 
+    public string DebugName { get { return GetType().Name; } }
+
     private GameInputMode _inputMode;
     /// <summary>
     /// The InputMode the game is currently operating in.
@@ -655,7 +657,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     #endregion
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
     #region Debug

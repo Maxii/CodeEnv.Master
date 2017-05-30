@@ -97,9 +97,6 @@ public class OwnerGuiElement : AImageGuiElement, IComparable<OwnerGuiElement> {
 
     protected override void Cleanup() { }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
 
     #region IComparable<OwnerGuiElement> Members
 

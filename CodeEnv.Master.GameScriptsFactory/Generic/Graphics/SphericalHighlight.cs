@@ -26,6 +26,8 @@ using UnityEngine;
 /// </summary>
 public class SphericalHighlight : AMonoBase, ISphericalHighlight {
 
+    public string DebugName { get { return GetType().Name; } }
+
     [Tooltip("Shows a label that tracks the highlight")]
     [SerializeField]
     private bool _enableTrackingLabel = false;
@@ -188,7 +190,7 @@ public class SphericalHighlight : AMonoBase, ISphericalHighlight {
     }
 
     public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
+        return DebugName;
     }
 
 }

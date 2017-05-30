@@ -211,10 +211,6 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
         MyEventListener.Get(_unknownLabel.gameObject).onTooltip -= UnknownTooltipEventHandler;
     }
 
-    public override string ToString() {
-        return new ObjectAnalyzer().ToString(this);
-    }
-
     #region IComparable<ResourcesGuiElement> Members
 
     public int CompareTo(ResourcesGuiElement other) {
@@ -243,8 +239,10 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
 
         public static readonly SlotEqualityComparer Default = new SlotEqualityComparer();
 
+        public string DebugName { get { return GetType().Name; } }
+
         public override string ToString() {
-            return new ObjectAnalyzer().ToString(this);
+            return DebugName;
         }
 
         #region IEqualityComparer<Slot> Members
