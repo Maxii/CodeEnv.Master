@@ -23,6 +23,23 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AProjectileWeaponStat : AWeaponStat {
 
+        #region Comparison Operators Override
+
+        // see C# 4.0 In a Nutshell, page 254
+
+        public static bool operator ==(AProjectileWeaponStat left, AProjectileWeaponStat right) {
+            // https://msdn.microsoft.com/en-us/library/ms173147(v=vs.90).aspx
+            if (ReferenceEquals(left, right)) { return true; }
+            if (((object)left == null) || ((object)right == null)) { return false; }
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(AProjectileWeaponStat left, AProjectileWeaponStat right) {
+            return !(left == right);
+        }
+
+        #endregion
+
         /// <summary>
         /// The maximum speed of this projectile in units per hour in Topography.OpenSpace.
         /// </summary>
@@ -64,6 +81,28 @@ namespace CodeEnv.Master.GameContent {
             OrdnanceMass = ordnanceMass;
             OrdnanceDrag = ordnanceDrag;
         }
+
+        #region Object.Equals and GetHashCode Override
+
+        public override int GetHashCode() {
+            unchecked {
+                int hash = base.GetHashCode();
+                hash = hash * 31 + MaxSpeed.GetHashCode(); // 31 = another prime number
+                hash = hash * 31 + OrdnanceMass.GetHashCode();
+                hash = hash * 31 + OrdnanceDrag.GetHashCode();
+                return hash;
+            }
+        }
+
+        public override bool Equals(object obj) {
+            if (base.Equals(obj)) {
+                AProjectileWeaponStat oStat = (AProjectileWeaponStat)obj;
+                return oStat.MaxSpeed == MaxSpeed && oStat.OrdnanceMass == OrdnanceMass && oStat.OrdnanceDrag == OrdnanceDrag;
+            }
+            return false;
+        }
+
+        #endregion
 
     }
 }

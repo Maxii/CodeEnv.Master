@@ -23,14 +23,16 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class LoneFleetCreator : ALoneUnitCreator {
 
+    protected override void InitializeRootUnitName() {
+        RootUnitName = "LoneFleet";
+    }
+
     protected override void MakeCommand(Player owner) {
         FleetCmdCameraStat cameraStat = MakeCmdCameraStat(TempGameValues.ShipMaxRadius);
-        _command = _factory.MakeFleetCmdInstance(owner, cameraStat, Configuration.CmdDesignName, gameObject);
+        Formation formation = Formation.Wedge;
+        _command = _factory.MakeFleetCmdInstance(owner, cameraStat, Configuration.CmdDesignName, gameObject, UnitName, formation);
         _command.transform.rotation = LoneElement.transform.rotation;
         _command.IsLoneCmd = true;
-        if (_command.Data.ParentName != UnitName) {  // avoids equals warning
-            _command.Data.ParentName = UnitName;
-        }
     }
 
     protected override void PositionUnit() {

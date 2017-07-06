@@ -330,7 +330,7 @@ public class GamePoolManager : AMonoSingleton<GamePoolManager>, IGamePoolManager
         SpawnPool spawnPool = PoolManager.Pools[spawnPoolName];
         spawnPool.logMessages = _showVerboseDebugLog;
         spawnPool.CreatePrefabPool(prefabPool);
-        D.Log(/*ShowDebugLog, */"{0} has created {1} instances of {2}.", DebugName, prefabPool.totalCount, prefab.name);
+        D.Log(ShowDebugLog, "{0} has created {1} instances of {2}.", DebugName, prefabPool.totalCount, prefab.name);
     }
 
     [Obsolete("Use DebugUtility")]

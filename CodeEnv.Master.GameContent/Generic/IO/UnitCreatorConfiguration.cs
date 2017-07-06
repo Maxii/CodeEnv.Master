@@ -27,8 +27,6 @@ namespace CodeEnv.Master.GameContent {
 
         public string DebugName { get { return GetType().Name; } }
 
-        public string UnitName { get; private set; }
-
         public Player Owner { get; private set; }
 
         public GameDate DeployDate { get; private set; }
@@ -37,8 +35,7 @@ namespace CodeEnv.Master.GameContent {
 
         public IEnumerable<string> ElementDesignNames { get; private set; }
 
-        public UnitCreatorConfiguration(string unitName, Player owner, GameDate deployDate, string cmdDesignName, IEnumerable<string> elementDesignNames) {
-            UnitName = unitName;
+        public UnitCreatorConfiguration(Player owner, GameDate deployDate, string cmdDesignName, IEnumerable<string> elementDesignNames) {
             Owner = owner;
             DeployDate = deployDate;
             CmdDesignName = cmdDesignName;

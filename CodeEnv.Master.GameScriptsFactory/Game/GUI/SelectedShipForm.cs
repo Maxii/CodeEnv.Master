@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: SelectedShipForm.cs
-// Form used by the SelectedItemHudWindow to display info from a ShipReport when a ship is selected.   
+// Form used by the SelectedItemHudWindow to display info about a 'selected' ship.   
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,7 +20,7 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Form used by the SelectedItemHudWindow to display info from a ShipReport when a ship is selected.   
+/// Form used by the SelectedItemHudWindow to display info about a 'selected' ship.   
 /// </summary>
 public class SelectedShipForm : ASelectedItemForm {
 

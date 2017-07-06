@@ -31,6 +31,171 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public static class GameUtility {
 
+        #region Assess Design Equality
+
+        /// <summary>
+        /// Compares two designs to see if their content is the same.
+        /// <remarks>Does not take into account Name factors or DesignCategory.</remarks>
+        /// </summary>
+        /// <param name="designA">The design a.</param>
+        /// <param name="designB">The design b.</param>
+        /// <returns>
+        ///   <c>true</c> if [is design equipment content equal] [the specified design a]; otherwise, <c>false</c>.
+        /// </returns>
+        public static bool IsDesignContentEqual(ShipDesign designA, ShipDesign designB) {
+            if (designA.CombatStance != designB.CombatStance || designA.FtlEngineStat != designB.FtlEngineStat
+                || designA.HullStat != designB.HullStat || designA.Player != designB.Player || designA.HQPriority != designB.HQPriority
+                || designA.StlEngineStat != designB.StlEngineStat || designA.ReqdSRSensorStat != designB.ReqdSRSensorStat) {
+                return false;
+            }
+            EquipmentSlotID slotID;
+            AEquipmentStat eStat;
+            while (designA.GetNextEquipmentStat(out slotID, out eStat)) {
+                if (designB.GetEquipmentStat(slotID) != eStat) {
+                    designA.ResetIterators();
+                    return false;
+                }
+            }
+            while (designB.GetNextEquipmentStat(out slotID, out eStat)) {
+                if (designA.GetEquipmentStat(slotID) != eStat) {
+                    designB.ResetIterators();
+                    return false;
+                }
+            }
+            //D.Log("{0} and {1} have identical content.", designA.DebugName, designB.DebugName);
+            return true;
+        }
+
+        /// <summary>
+        /// Compares two designs to see if their content is the same.
+        /// <remarks>Does not take into account Name factors or DesignCategory.</remarks>
+        /// </summary>
+        /// <param name="designA">The design a.</param>
+        /// <param name="designB">The design b.</param>
+        /// <returns>
+        ///   <c>true</c> if [is design equipment content equal] [the specified design a]; otherwise, <c>false</c>.
+        /// </returns>
+        public static bool IsDesignContentEqual(FacilityDesign designA, FacilityDesign designB) {
+            if (designA.HullStat != designB.HullStat || designA.Player != designB.Player || designA.HQPriority != designB.HQPriority
+                || designA.ReqdSRSensorStat != designB.ReqdSRSensorStat) {
+                return false;
+            }
+            EquipmentSlotID slotID;
+            AEquipmentStat eStat;
+            while (designA.GetNextEquipmentStat(out slotID, out eStat)) {
+                if (designB.GetEquipmentStat(slotID) != eStat) {
+                    designA.ResetIterators();
+                    return false;
+                }
+            }
+            while (designB.GetNextEquipmentStat(out slotID, out eStat)) {
+                if (designA.GetEquipmentStat(slotID) != eStat) {
+                    designB.ResetIterators();
+                    return false;
+                }
+            }
+            //D.Log("{0} and {1} have identical content.", designA.DebugName, designB.DebugName);
+            return true;
+        }
+
+        /// <summary>
+        /// Compares two designs to see if their content is the same.
+        /// <remarks>Does not take into account Name factors or DesignCategory.</remarks>
+        /// </summary>
+        /// <param name="designA">The design a.</param>
+        /// <param name="designB">The design b.</param>
+        /// <returns>
+        ///   <c>true</c> if [is design equipment content equal] [the specified design a]; otherwise, <c>false</c>.
+        /// </returns>
+        public static bool IsDesignContentEqual(StarbaseCmdDesign designA, StarbaseCmdDesign designB) {
+            if (designA.Player != designB.Player || designA.CmdStat != designB.CmdStat || designA.FtlDampenerStat != designB.FtlDampenerStat
+                || designA.ReqdMRSensorStat != designB.ReqdMRSensorStat) {
+                return false;
+            }
+            EquipmentSlotID slotID;
+            AEquipmentStat eStat;
+            while (designA.GetNextEquipmentStat(out slotID, out eStat)) {
+                if (designB.GetEquipmentStat(slotID) != eStat) {
+                    designA.ResetIterators();
+                    return false;
+                }
+            }
+            while (designB.GetNextEquipmentStat(out slotID, out eStat)) {
+                if (designA.GetEquipmentStat(slotID) != eStat) {
+                    designB.ResetIterators();
+                    return false;
+                }
+            }
+            //D.Log("{0} and {1} have identical content.", designA.DebugName, designB.DebugName);
+            return true;
+        }
+
+        /// <summary>
+        /// Compares two designs to see if their content is the same.
+        /// <remarks>Does not take into account Name factors or DesignCategory.</remarks>
+        /// </summary>
+        /// <param name="designA">The design a.</param>
+        /// <param name="designB">The design b.</param>
+        /// <returns>
+        ///   <c>true</c> if [is design equipment content equal] [the specified design a]; otherwise, <c>false</c>.
+        /// </returns>
+        public static bool IsDesignContentEqual(SettlementCmdDesign designA, SettlementCmdDesign designB) {
+            if (designA.Player != designB.Player || designA.CmdStat != designB.CmdStat || designA.FtlDampenerStat != designB.FtlDampenerStat
+                || designA.ReqdMRSensorStat != designB.ReqdMRSensorStat) {
+                //D.Log("{0} and {1} failed basic content test.", designA.DebugName, designB.DebugName);
+                return false;
+            }
+            EquipmentSlotID slotID;
+            AEquipmentStat eStat;
+            while (designA.GetNextEquipmentStat(out slotID, out eStat)) {
+                if (designB.GetEquipmentStat(slotID) != eStat) {
+                    designA.ResetIterators();
+                    return false;
+                }
+            }
+            while (designB.GetNextEquipmentStat(out slotID, out eStat)) {
+                if (designA.GetEquipmentStat(slotID) != eStat) {
+                    designB.ResetIterators();
+                    return false;
+                }
+            }
+            //D.Log("{0} and {1} have identical content.", designA.DebugName, designB.DebugName);
+            return true;
+        }
+
+        /// <summary>
+        /// Compares two designs to see if their content is the same.
+        /// </summary>
+        /// <param name="designA">The design a.</param>
+        /// <param name="designB">The design b.</param>
+        /// <returns>
+        ///   <c>true</c> if [is design equipment content equal] [the specified design a]; otherwise, <c>false</c>.
+        /// </returns>
+        public static bool IsDesignContentEqual(FleetCmdDesign designA, FleetCmdDesign designB) {
+            if (designA.Player != designB.Player || designA.CmdStat != designB.CmdStat || designA.FtlDampenerStat != designB.FtlDampenerStat
+                || designA.ReqdMRSensorStat != designB.ReqdMRSensorStat) {
+                return false;
+            }
+            EquipmentSlotID slotID;
+            AEquipmentStat eStat;
+            while (designA.GetNextEquipmentStat(out slotID, out eStat)) {
+                if (designB.GetEquipmentStat(slotID) != eStat) {
+                    designA.ResetIterators();
+                    return false;
+                }
+            }
+            while (designB.GetNextEquipmentStat(out slotID, out eStat)) {
+                if (designA.GetEquipmentStat(slotID) != eStat) {
+                    designB.ResetIterators();
+                    return false;
+                }
+            }
+            //D.Log("{0} and {1} have identical content.", designA.DebugName, designB.DebugName);
+            return true;
+        }
+
+        #endregion
+
         /// <summary>
         /// Calculates and returns the maximum attainable speed from the provided values.
         /// <remarks>See Flight.txt</remarks>

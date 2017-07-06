@@ -216,10 +216,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         Rigidbody.isKinematic = false;
     }
 
-    protected override void SubscribeToSensorEvents() {
+    protected override void __ValidateStateForSensorEventSubscription() {
         D.AssertNotEqual(ShipState.None, CurrentState);
         D.AssertNotEqual(ShipState.FinalInitialize, CurrentState);
-        base.SubscribeToSensorEvents();
     }
 
     #endregion
@@ -398,12 +397,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             MakeCommandChange(loneFleetRootname);
             D.AssertEqual(Owner, Command.Owner);
             D.Log(ShowDebugLog, "{0} created Cmd {1} in Frame {2}.", DebugName, Command.DebugName, Time.frameCount);
-
-            ////if (SRSensorMonitor.AreWarEnemyElementsInRange) {
-            ////    var warEnemyElementsInSRSensorRange = SRSensorMonitor.WarEnemyElementsDetected;
-            ////    Vector3 enemyDirection = UnityExtensions.FindMeanDirectionTo(Position, warEnemyElementsInSRSensorRange.Select(wee => wee.Position));
-            ////    Command.IssueRegroupOrderFromShip(-enemyDirection);
-            ////}
         }
         else {
             // if only one, Cmd owner change has already been made
@@ -416,7 +409,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     private void MakeCommandChange(string loneFleetRootName) {
         D.Assert(Command.Elements.Count > Constants.One);
         Command.RemoveElement(this);
-        UnitFactory.Instance.MakeLoneFleetInstance(loneFleetRootName, this);
+        UnitFactory.Instance.MakeLoneFleetInstance(this, optionalRootUnitName: loneFleetRootName);
         // This element is now properly parented with the proper Cmd Reference so tell oldCmd to not null it when Removing
         D.Assert(Command.IsLoneCmd);
     }

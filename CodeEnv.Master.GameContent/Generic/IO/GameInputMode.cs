@@ -49,7 +49,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>        
         /// Valid only while in the GameScene.
         /// InputMode active when a window pops up that fills the whole screen.
-        /// UI element interaction is allowed but all 3D world interaction is disabled.
+        /// UI element interaction is allowed but 3D world interaction via the main camera is disabled.
         /// </summary>
         FullPopup,
 

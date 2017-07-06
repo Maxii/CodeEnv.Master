@@ -187,13 +187,13 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         protected set { base.CurrentState = value; }
     }
 
-    private PlayersDesigns _playersDesigns;
+    private PlayerDesigns _playersDesigns;
     /// <summary>
     /// A collection of Element Designs for each player.
     /// </summary>
-    public PlayersDesigns PlayersDesigns {
+    public PlayerDesigns PlayersDesigns {
         get { return _playersDesigns; }
-        private set { SetProperty<PlayersDesigns>(ref _playersDesigns, value, "PlayersDesigns"); }
+        private set { SetProperty<PlayerDesigns>(ref _playersDesigns, value, "PlayersDesigns"); }
     }
 
     private CelestialDesigns _celestialDesigns = new CelestialDesigns();
@@ -217,7 +217,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         get {
             Scene scene = SceneManager.GetActiveScene();
             //D.Log("CurrentScene is {0}.", scene.name);
-            D.Assert(scene != default(Scene));  //D.AssertNotDefault(scene);    // Scene does not implement IEquatable<Scene>
+            D.AssertNotEqual(default(Scene), scene);
             return scene;
         }
     }
@@ -452,7 +452,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         AllPlayers = allPlayers;
         UserPlayer = GameSettings.UserPlayer;
 
-        PlayersDesigns = new PlayersDesigns(AllPlayers);
+        PlayersDesigns = new PlayerDesigns(AllPlayers);
     }
 
     #endregion
@@ -1147,7 +1147,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
             FpsReadout.Instance.IsReadoutToShow = true;
 
             OnIsReadyForPlay();
-            Debug.LogFormat("{0}: Game is now ready to show play. Frame = {1}. FPS = {2:0.#}.", DebugName, Time.frameCount, FpsReadout.Instance.FramesPerSecond);
+            Debug.LogFormat("{0}: Game is now ready to show GamePlay. Frame = {1}. FPS = {2:0.#}.", DebugName, Time.frameCount, FpsReadout.Instance.FramesPerSecond);
 
             if (_playerPrefsMgr.IsPauseOnLoadEnabled) { // Note: My practice - IsRunning THEN pause changes
                 RequestPauseStateChange(toPause: true, toOverride: true);
@@ -1190,7 +1190,9 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     #endregion
 
-    public void ExitGame() { Shutdown(); }  //TODO Confirmation Dialog
+    public void ExitGame() {
+        Shutdown();
+    }  //TODO Confirmation Dialog
 
     private void Shutdown() {
         _playerPrefsMgr.Store();

@@ -179,8 +179,9 @@ public class UniverseCreator {
         IEnumerable<ADebugUnitCreator> starbaseDebugCreators = existingDebugCreators.Where(c => c is DebugStarbaseCreator);
         IEnumerable<ADebugUnitCreator> settlementDebugCreators = existingDebugCreators.Where(c => c is DebugSettlementCreator);
 
-        GameSettings gameSettings = _gameMgr.GameSettings;
+        UnitConfigurator.CreateAndRegisterRequiredDesigns();
 
+        GameSettings gameSettings = _gameMgr.GameSettings;
         if (gameSettings.__UseDebugCreatorsOnly) {
             var deployedCreators = __ConfigureExistingDebugCreatorsOnly_Fleet(fleetDebugCreators);
             _unitCreators.AddRange(deployedCreators);

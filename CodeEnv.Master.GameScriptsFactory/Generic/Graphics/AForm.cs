@@ -6,8 +6,8 @@
 // </copyright> 
 // <summary> 
 // File: AForm.cs
-//  Abstract base class for Forms. A Form supervises a collection of UIWidgets
-//in an arrangement that can be displayed by a HudWindow.
+// Abstract base class for Forms. A Form supervises a collection of UIWidgets
+// in an arrangement that can be displayed by a HudWindow.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,10 +23,15 @@ using CodeEnv.Master.GameContent;
 
 /// <summary>
 /// Abstract base class for Forms. A Form supervises a collection of UIWidgets
-///in an arrangement that can be displayed by a GuiWindow. AForms are
-///populated with content to display by feeding them Text, Reports or individual
-///values (e.g. a ResourceForm is fed a ResourceID, displaying values derived from
-///the ResourceID in a TooltipHudWindow).
+/// in an arrangement that can be displayed by a AGuiWindow. AForms are
+/// populated with content to display by feeding them Text, Reports or individual
+/// values (e.g. a ResourceForm is fed a ResourceID, displaying values derived from
+/// the ResourceID in a TooltipHudWindow).
+/// <remarks>6.17.17 Many AForms are shown in HUDs and the FormID is used by the HUD 
+/// to pick the form to show. Some AForms don't lend themselves to HUD displays due to 
+/// the way the form is structured. TableRowForms and MiniDesignForms are good examples
+/// as Rows can be quite long, and MiniDesignForms contain minimal info. In these cases
+/// the FormID is currently not used.</remarks>
 /// </summary>
 public abstract class AForm : AMonoBase {
 

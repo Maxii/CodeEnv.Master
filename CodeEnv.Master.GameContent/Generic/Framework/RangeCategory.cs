@@ -14,7 +14,10 @@
 ////#define DEBUG_WARN
 ////#define DEBUG_ERROR
 
+
 namespace CodeEnv.Master.GameContent {
+
+    using CodeEnv.Master.Common;
 
     /// <summary>
     /// Enum delineating different categories of range distance.
@@ -26,10 +29,13 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         None = 0,
 
+        [EnumAttribute("SR")]
         Short = 1,
 
+        [EnumAttribute("MR")]
         Medium = 2,
 
+        [EnumAttribute("LR")]
         Long = 3
 
     }

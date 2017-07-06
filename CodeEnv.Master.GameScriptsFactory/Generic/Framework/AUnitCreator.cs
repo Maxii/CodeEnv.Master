@@ -27,6 +27,12 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
 
     private const string DebugNameFormat = "{0}.{1}";
 
+    private const string UnitNameFormat = "{0}{1}";
+
+    private const string CreatorExtension = " Creator";
+
+    private static int _unitNameCounter = Constants.One;
+
     private string _debugName;
     public string DebugName {
         get {
@@ -37,13 +43,31 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
         }
     }
 
+    private string _rootUnitName;
+    public string RootUnitName {
+        get { return _rootUnitName; }
+        set {
+            if (_rootUnitName != value) {
+                _rootUnitName = value;
+                RootUnitNamePropertyChangedHandler();
+            }
+        }
+    }
+
+    private string _unitName;
     /// <summary>
     /// The name of the top level Unit, aka the Settlement, Starbase or Fleet name.
     /// A Unit contains a Command and one or more Elements.
     /// </summary>
     public string UnitName {
-        get { return transform.name; }
-        private set { transform.name = value; }
+        get { return _unitName; }
+        set {
+            if (_unitName != value) {
+                _unitName = value;
+                //D.Log("Initializing UnitName to {0}.", value);
+                UnitNamePropertyChangedHandler();
+            }
+        }
     }
 
     public IntVector3 SectorID { get { return SectorGrid.Instance.GetSectorIDThatContains(transform.position); } }
@@ -53,7 +77,7 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
         get { return _configuration; }
         set {
             D.AssertNull(_configuration);   // currently one time only
-            SetProperty<UnitCreatorConfiguration>(ref _configuration, value, "Configuration", ConfigurationSetHandler);
+            SetProperty<UnitCreatorConfiguration>(ref _configuration, value, "Configuration");
         }
     }
 
@@ -64,18 +88,22 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
     protected JobManager _jobMgr;
     protected GameManager _gameMgr;
     protected UnitFactory _factory;
-    ////protected bool _isUnitPositioned;
 
     protected override void Awake() {
         base.Awake();
         __ValidateStaticSetting();
         InitializeValuesAndReferences();
+        Subscribe();
     }
 
-    private void InitializeValuesAndReferences() {
+    protected virtual void InitializeValuesAndReferences() {
         _factory = UnitFactory.Instance;
         _gameMgr = GameManager.Instance;
         _jobMgr = JobManager.Instance;
+    }
+
+    private void Subscribe() {
+        _gameMgr.sceneLoading += SceneLoadingEventHandler;
     }
 
     protected override void Start() {
@@ -90,22 +118,38 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
         }
     }
 
+    protected abstract void InitializeRootUnitName();
+
+    private void InitializeUnitName() {
+        UnitName = UnitNameFormat.Inject(RootUnitName, _unitNameCounter);
+        _unitNameCounter++;
+    }
+
     #region Event and Property Change Handlers
 
-    protected void ConfigurationSetHandler() {
-        UnitName = Configuration.UnitName;
+    private void SceneLoadingEventHandler(object sender, EventArgs e) {
+        _unitNameCounter = Constants.One;
+    }
+
+    private void UnitNamePropertyChangedHandler() {
+        transform.name = UnitName + CreatorExtension;
+    }
+
+    private void RootUnitNamePropertyChangedHandler() {
+        InitializeUnitName();
     }
 
     #endregion
 
     /// <summary>
     /// Builds and positions the Unit in preparation for deployment and operations.
+    /// <remarks>Must be called before AuthorizeDeployment.</remarks>
     /// </summary>
     public void BuildAndPositionUnit() {
         D.AssertNotNull(Configuration);    // would only be called with a Configuration
-        D.Log(ShowDebugLog, "{0} is building and positioning {1}. Targeted DeployDate = {2}.", DebugName, Configuration.UnitName, Configuration.DeployDate);
+        D.Log(ShowDebugLog, "{0} is building and positioning {1}. Targeted DeployDate = {2}.", DebugName, UnitName, Configuration.DeployDate);
+        InitializeRootUnitName();
         MakeUnitAndPrepareForPositioning();
-        ////_isUnitPositioned = PositionUnit();
         PositionUnit();
     }
 
@@ -119,13 +163,8 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
     /// is already running and call BuildAndPosition() followed by AuthorizeDeployment() itself.</remarks>
     /// </summary>
     public void AuthorizeDeployment() {
-        ////if (!_isUnitPositioned) {
-        ////    Destroy(gameObject);
-        ////    return;
-        ////}
-
         D.AssertNotNull(Configuration);    // would only be called with a Configuration
-        D.Log(ShowDebugLog, "{0} is authorizing deployment of {1}. Targeted DeployDate = {2}.", DebugName, Configuration.UnitName, Configuration.DeployDate);
+        D.Log(ShowDebugLog, "{0} is authorizing deployment of {1}. Targeted DeployDate = {2}.", DebugName, UnitName, Configuration.DeployDate);
         var currentDate = GameTime.Instance.CurrentDate;
         D.Assert(currentDate >= GameTime.GameStartDate, currentDate.ToString());
         if (currentDate >= Configuration.DeployDate) {
@@ -161,7 +200,7 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
         if (currentDate < dateToDeploy) {
             D.Error("{0}: {1} should not be < {2}.", DebugName, currentDate, dateToDeploy);
         }
-        //D.Log(ShowDebugLog, "{0} is about to begin ops of {1}'s {2} on {3}.", DebugName, Owner, Configuration.UnitName, currentDate);
+        //D.Log(ShowDebugLog, "{0} is about to begin ops of {1}'s {2} on {3}.", DebugName, Owner, UnitName, currentDate);
 
         if (currentDate > dateToDeploy) {
             D.Log(ShowDebugLog, "{0} exceeded DeployDate {1}, so actually deployed on {2}.", DebugName, dateToDeploy, currentDate);
@@ -170,7 +209,6 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
             D.Log(ShowDebugLog, "{0} was deployed on intended date {1}.", DebugName, currentDate);
         }
         PrepareForUnitOperations();
-        ////BeginUnitOperations();
 
         // 5.3.17 Added bool return to avoid clearing element ref if beginning CmdOperations was deferred
         BeginElementsOperations();
@@ -215,8 +253,6 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
         LogEvent();
         CompleteUnitInitialization();   // 10.19.16 Moved up from last as Knowledge organizes Cmds by their sectorID which this initializes
         AddUnitToGameKnowledge();
-        ////AddUnitToOwnerAndAllysKnowledge();
-        ////RegisterCommandForOrders();
     }
 
     protected abstract void CompleteUnitInitialization();
@@ -236,12 +272,7 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
         // to finish if it had more than one set of yields in it. In addition, if there is going to be a problem with 
         // changing state (from issued orders here) when Idling is the state, but its EnterState hasn't run yet, I
         // should find it out now as this can easily happen during the game.
-
-        InitializeUnitDebugControl();
-        ////__IssueFirstUnitOrder(onCompleted: delegate {
-        ////    // issuing the first unit order can sometimes require access to this creator script so remove it after the order has been issued
-        ////    //RemoveCreatorScript();
-        ////});
+        __InitializeUnitDebugControl();
     }
 
     /// <summary>
@@ -264,6 +295,7 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
 
     protected virtual void Unsubscribe() {
         _gameMgr.isPausedChanged -= DeployAfterPauseEventHandler;
+        _gameMgr.sceneLoading -= SceneLoadingEventHandler;
     }
 
     #region Debug
@@ -277,7 +309,7 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
     }
 
     [Obsolete]
-    private void InitializeUnitDebugControl() {
+    private void __InitializeUnitDebugControl() {
         var unitDebugCntl = gameObject.GetComponent<UnitDebugControl>();
         if (unitDebugCntl != null) {    // 4.21.17 Getting ready to remove these from Cmds
             unitDebugCntl.Initialize();

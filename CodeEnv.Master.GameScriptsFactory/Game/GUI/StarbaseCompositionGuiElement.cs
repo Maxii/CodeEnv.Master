@@ -50,7 +50,7 @@ public class StarbaseCompositionGuiElement : ACompositionGuiElement {
 
     #endregion
 
-    protected override string GetTextForCategory() { return Category != StarbaseCategory.None ? Category.GetValueName() : _unknown; }
+    protected override string GetTextForCategory() { return Category != StarbaseCategory.None ? Category.GetValueName() : Unknown; }
 
     public override void Reset() {
         base.Reset();

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AMountPlaceholder.cs
-//  Abstract base class for a mount placeholder.
+// Abstract base class for a mount placeholder.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -26,15 +26,21 @@ using UnityEngine.Serialization;
 /// </summary>
 public abstract class AMountPlaceholder : AMount {
 
-    //[FormerlySerializedAs("slotID")]
     [SerializeField]
-    private MountSlotID _slotID = MountSlotID.None;
+    private int _slotNumber = 0;
 
-    public MountSlotID SlotID { get { return _slotID; } }
+    public EquipmentSlotID SlotIDD { get; private set; }
+
+    protected abstract EquipmentCategory EquipmentCategory { get; }
+
+    protected override void InitializeValuesAndReferences() {
+        base.InitializeValuesAndReferences();
+        SlotIDD = new EquipmentSlotID(_slotNumber, EquipmentCategory);
+    }
 
     protected override void Validate() {
         base.Validate();
-        D.AssertNotDefault((int)_slotID);
+        D.AssertNotDefault(_slotNumber);
     }
 
 }

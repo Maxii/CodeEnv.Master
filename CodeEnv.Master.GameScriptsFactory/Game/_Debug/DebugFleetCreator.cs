@@ -79,16 +79,16 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
             if (_editorSettings == null) {
                 if (IsCompositionPreset) {
                     var presetHullCats = gameObject.GetSafeComponentsInChildren<ShipHull>().Select(hull => hull.HullCategory).ToList();
-                    _editorSettings = new FleetCreatorEditorSettings(UnitName, _isOwnerUser, _ownerRelationshipWithUser, _countermeasuresPerCmd,
-                        _sensorsPerCmd, _activeCMsPerElement, DateToDeploy, _losWeaponsPerElement, _launchedWeaponsPerElement,
-                        _passiveCMsPerElement, _shieldGeneratorsPerElement, _srSensorsPerElement, _formation, _move, _findFarthest,
-                        _attack, _stanceExclusions, presetHullCats);
+                    _editorSettings = new FleetCreatorEditorSettings(_isOwnerUser, _ownerRelationshipWithUser, _countermeasuresPerCmd,
+                    _sensorsPerCmd, _activeCMsPerElement, DateToDeploy, _losWeaponsPerElement, _launchedWeaponsPerElement,
+                    _passiveCMsPerElement, _shieldGeneratorsPerElement, _srSensorsPerElement, _move, _findFarthest,
+                    _attack, _stanceExclusions, presetHullCats);
                 }
                 else {
-                    _editorSettings = new FleetCreatorEditorSettings(UnitName, _isOwnerUser, _elementQty, _ownerRelationshipWithUser,
-                        _countermeasuresPerCmd, _sensorsPerCmd, _activeCMsPerElement, DateToDeploy, _losWeaponsPerElement,
-                        _launchedWeaponsPerElement, _passiveCMsPerElement, _shieldGeneratorsPerElement, _srSensorsPerElement,
-                        _formation, _move, _findFarthest, _attack, _stanceExclusions);
+                    _editorSettings = new FleetCreatorEditorSettings(_isOwnerUser, _elementQty, _ownerRelationshipWithUser,
+                    _countermeasuresPerCmd, _sensorsPerCmd, _activeCMsPerElement, DateToDeploy, _losWeaponsPerElement,
+                    _launchedWeaponsPerElement, _passiveCMsPerElement, _shieldGeneratorsPerElement, _srSensorsPerElement,
+                    _move, _findFarthest, _attack, _stanceExclusions);
                 }
             }
             return _editorSettings;
@@ -97,6 +97,10 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
 
     private FleetCmdItem _command;
     private IList<ShipItem> _elements;
+
+    protected override void InitializeRootUnitName() {
+        RootUnitName = !transform.name.IsNullOrEmpty() ? transform.name : "DebugFleet";
+    }
 
     protected override void MakeElements() {
         _elements = new List<ShipItem>();
@@ -144,13 +148,10 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
         FleetCmdCameraStat cameraStat = MakeCmdCameraStat(TempGameValues.ShipMaxRadius);
         if (IsCompositionPreset) {
             _command = gameObject.GetSingleComponentInChildren<FleetCmdItem>();
-            _factory.PopulateInstance(owner, cameraStat, Configuration.CmdDesignName, ref _command);
+            _factory.PopulateInstance(owner, cameraStat, Configuration.CmdDesignName, ref _command, UnitName, _formation.Convert());
         }
         else {
-            _command = _factory.MakeFleetCmdInstance(owner, cameraStat, Configuration.CmdDesignName, gameObject);
-        }
-        if (_command.Data.ParentName != UnitName) {  // avoids equals warning
-            _command.Data.ParentName = UnitName;
+            _command = _factory.MakeFleetCmdInstance(owner, cameraStat, Configuration.CmdDesignName, gameObject, UnitName, _formation.Convert());
         }
     }
 

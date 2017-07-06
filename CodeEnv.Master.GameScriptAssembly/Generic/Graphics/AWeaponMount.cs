@@ -51,12 +51,6 @@ public abstract class AWeaponMount : AMount, IWeaponMount {
     /// </summary>
     public abstract Vector3 MuzzleFacing { get; }
 
-    private MountSlotID _slotID;    // OPTIMIZE Not currently used
-    public MountSlotID SlotID {
-        get { return _slotID; }
-        set { SetProperty<MountSlotID>(ref _slotID, value, "SlotID"); }
-    }
-
     protected override void Validate() {
         base.Validate();
         D.AssertNotNull(_muzzle);

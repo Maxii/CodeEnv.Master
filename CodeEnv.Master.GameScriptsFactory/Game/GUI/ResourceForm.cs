@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ResourceForm.cs
-// Forms that displays info about a resource.
+// Forms that are used to display info about a Resource in HudWindows.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,7 +21,7 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Forms that displays info about a resource.
+/// Forms that are used to display info about a Resource in HudWindows.
 /// </summary>
 public class ResourceForm : AForm {
 

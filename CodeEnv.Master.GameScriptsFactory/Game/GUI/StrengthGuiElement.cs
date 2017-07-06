@@ -96,9 +96,9 @@ public class StrengthGuiElement : AGuiElement, IComparable<StrengthGuiElement> {
     #endregion
 
     private void PopulateElementWidgets() {
-        string combinedValueLabelText = _unknown;
-        string detailValuesLabelText = _unknown;
-        string tooltipText = _unknown;
+        string combinedValueLabelText = Unknown;
+        string detailValuesLabelText = Unknown;
+        string tooltipText = Unknown;
 
         if (Strength.HasValue) {
             combinedValueLabelText = Strength.Value.TotalDeliveryStrength.FormatValue();

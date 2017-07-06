@@ -34,6 +34,8 @@ public class LOSMountPlaceholder : AMountPlaceholder {
 
     public float MinimumBarrelElevation { get { return _minBarrelElevation; } }
 
+    protected override EquipmentCategory EquipmentCategory { get { return EquipmentCategory.LosWeapon; } }
+
     protected override void Validate() {
         base.Validate();
         Utility.ValidateForRange(_minBarrelElevation, TempGameValues.MinimumBarrelElevationRange);

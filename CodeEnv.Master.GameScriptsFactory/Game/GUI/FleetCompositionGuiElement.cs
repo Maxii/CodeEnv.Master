@@ -51,7 +51,7 @@ public class FleetCompositionGuiElement : ACompositionGuiElement {
 
     #endregion
 
-    protected override string GetTextForCategory() { return Category != FleetCategory.None ? Category.GetValueName() : _unknown; }
+    protected override string GetTextForCategory() { return Category != FleetCategory.None ? Category.GetValueName() : Unknown; }
 
     public override void Reset() {
         base.Reset();

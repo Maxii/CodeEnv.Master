@@ -24,7 +24,35 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ActiveCountermeasureStat : ARangedEquipmentStat {
 
-        private static string DebugNameFormat = "{0}({1})";
+        private const string DebugNameFormat = "{0}({1})";
+
+        #region Comparison Operators Override
+
+        // see C# 4.0 In a Nutshell, page 254
+
+        public static bool operator ==(ActiveCountermeasureStat left, ActiveCountermeasureStat right) {
+            // https://msdn.microsoft.com/en-us/library/ms173147(v=vs.90).aspx
+            if (ReferenceEquals(left, right)) { return true; }
+            if (((object)left == null) || ((object)right == null)) { return false; }
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(ActiveCountermeasureStat left, ActiveCountermeasureStat right) {
+            return !(left == right);
+        }
+
+        #endregion
+
+        public override string DebugName {
+            get {
+                if (_debugName == null) {
+                    _debugName = DebugNameFormat.Inject(base.DebugName, InterceptStrengths.Select(intS => intS.Category.GetEnumAttributeText()).Concatenate());
+                }
+                return _debugName;
+            }
+        }
+
+        public override EquipmentCategory Category { get { return EquipmentCategory.ActiveCountermeasure; } }
 
         public WDVStrength[] InterceptStrengths { get; private set; }
 
@@ -62,19 +90,31 @@ namespace CodeEnv.Master.GameContent {
             DamageMitigation = damageMitigation;
         }
 
-        #region IDebugable Members
+        #region Object.Equals and GetHashCode Override
 
-        public override string DebugName {
-            get {
-                if (_debugName == null) {
-                    _debugName = DebugNameFormat.Inject(base.DebugName, InterceptStrengths.Select(intS => intS.Category.GetEnumAttributeText()).Concatenate());
+        public override int GetHashCode() {
+            unchecked {
+                int hash = base.GetHashCode();
+                foreach (var strength in InterceptStrengths) {
+                    hash = hash * 31 + strength.GetHashCode();
                 }
-                return _debugName;
+                hash = hash * 31 + InterceptAccuracy.GetHashCode(); // 31 = another prime number
+                hash = hash * 31 + ReloadPeriod.GetHashCode();
+                hash = hash * 31 + DamageMitigation.GetHashCode();
+                return hash;
             }
         }
 
-        #endregion
+        public override bool Equals(object obj) {
+            if (base.Equals(obj)) {
+                ActiveCountermeasureStat oStat = (ActiveCountermeasureStat)obj;
+                return oStat.InterceptStrengths.SequenceEqual(InterceptStrengths) && oStat.InterceptAccuracy == InterceptAccuracy
+                    && oStat.ReloadPeriod == ReloadPeriod && oStat.DamageMitigation == DamageMitigation;
+            }
+            return false;
+        }
 
+        #endregion
 
         #region ActiveCM Firing Solutions Check Job Archive
 

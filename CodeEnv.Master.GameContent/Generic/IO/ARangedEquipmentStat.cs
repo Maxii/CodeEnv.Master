@@ -18,8 +18,26 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Immutable abstract base class for ranged Equipment stats.
+    /// <remarks>Implements value-based Equality and HashCode.</remarks>
     /// </summary>
     public abstract class ARangedEquipmentStat : AEquipmentStat {
+
+        #region Comparison Operators Override
+
+        // see C# 4.0 In a Nutshell, page 254
+
+        public static bool operator ==(ARangedEquipmentStat left, ARangedEquipmentStat right) {
+            // https://msdn.microsoft.com/en-us/library/ms173147(v=vs.90).aspx
+            if (ReferenceEquals(left, right)) { return true; }
+            if (((object)left == null) || ((object)right == null)) { return false; }
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(ARangedEquipmentStat left, ARangedEquipmentStat right) {
+            return !(left == right);
+        }
+
+        #endregion
 
         public RangeCategory RangeCategory { get; private set; }
 
@@ -42,7 +60,25 @@ namespace CodeEnv.Master.GameContent {
             RangeCategory = rangeCat;
         }
 
+        #region Object.Equals and GetHashCode Override
 
+        public override int GetHashCode() {
+            unchecked {
+                int hash = base.GetHashCode();
+                hash = hash * 31 + RangeCategory.GetHashCode(); // 31 = another prime number
+                return hash;
+            }
+        }
+
+        public override bool Equals(object obj) {
+            if (base.Equals(obj)) {
+                ARangedEquipmentStat oStat = (ARangedEquipmentStat)obj;
+                return oStat.RangeCategory == RangeCategory;
+            }
+            return false;
+        }
+
+        #endregion
     }
 }
 

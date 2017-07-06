@@ -20,11 +20,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
-using PathologicalGames;
 using UnityEngine;
-using UnityEngine.Profiling;
 
 /// <summary>
 /// Abstract class for AMortalItem's that are Unit Elements.
@@ -208,11 +205,13 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// Subscribes to sensor events.
     /// <remarks>Must be called after initial runtime state is set, aka Idling. 
     /// Otherwise events can arrive immediately as sensors activate.</remarks>
-    /// <remarks>OPTIMIZE Virtual to allow Assert of CurrentState to enforce above.</remarks>
+    /// <remarks>UNDONE 5.13.17 No use yet in Elements for responding to what their SRSensors detect.</remarks>
     /// </summary>
-    protected virtual void SubscribeToSensorEvents() {
-        // UNDONE 5.13.17 No use yet in Elements for responding to what their SRSensors detect
+    protected void SubscribeToSensorEvents() {
+        __ValidateStateForSensorEventSubscription();
     }
+
+    protected abstract void __ValidateStateForSensorEventSubscription();
 
     #endregion
 

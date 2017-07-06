@@ -193,35 +193,29 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     private DebugLaunchedWeaponLoadout _launchedWeaponsPerElement = DebugLaunchedWeaponLoadout.Random;
     public DebugLaunchedWeaponLoadout LaunchedWeaponsPerElement { get { return _launchedWeaponsPerElement; } }
 
-    [Range(0, 5)]
     [SerializeField]
-    private int _activeCMsPerElement = 2;
-    public int ActiveCMsPerElement { get { return _activeCMsPerElement; } }
+    private DebugActiveCMLoadout _activeCMsPerElement = DebugActiveCMLoadout.Random;
+    public DebugActiveCMLoadout ActiveCMsPerElement { get { return _activeCMsPerElement; } }
 
-    [Range(0, 5)]
     [SerializeField]
-    private int _shieldGeneratorsPerElement = 2;
-    public int ShieldGeneratorsPerElement { get { return _shieldGeneratorsPerElement; } }
+    private DebugShieldGenLoadout _shieldGeneratorsPerElement = DebugShieldGenLoadout.Random;
+    public DebugShieldGenLoadout ShieldGeneratorsPerElement { get { return _shieldGeneratorsPerElement; } }
 
-    [Range(0, 5)]
     [SerializeField]
-    private int _passiveCMsPerElement = 2;
-    public int PassiveCMsPerElement { get { return _passiveCMsPerElement; } }
+    private DebugPassiveCMLoadout _passiveCMsPerElement = DebugPassiveCMLoadout.Random;
+    public DebugPassiveCMLoadout PassiveCMsPerElement { get { return _passiveCMsPerElement; } }
 
-    [Range(1, 3)]
     [SerializeField]
-    private int _srSensorsPerElement = 1;
-    public int SRSensorsPerElement { get { return _srSensorsPerElement; } }
+    private DebugSensorLoadout _srSensorsPerElement = DebugSensorLoadout.Random;
+    public DebugSensorLoadout SRSensorsPerElement { get { return _srSensorsPerElement; } }
 
-    [Range(0, 3)]
     [SerializeField]
-    private int _countermeasuresPerCmd = 2;
-    public int CMsPerCmd { get { return _countermeasuresPerCmd; } }
+    private DebugPassiveCMLoadout _countermeasuresPerCmd = DebugPassiveCMLoadout.Random;
+    public DebugPassiveCMLoadout CMsPerCmd { get { return _countermeasuresPerCmd; } }
 
-    [Range(1, 6)]
     [SerializeField]
-    private int _sensorsPerCmd = 3;
-    public int SensorsPerCmd { get { return _sensorsPerCmd; } }
+    private DebugSensorLoadout _sensorsPerCmd = DebugSensorLoadout.Random;
+    public DebugSensorLoadout SensorsPerCmd { get { return _sensorsPerCmd; } }
     /*****************************************************************************************************/
 
     #endregion

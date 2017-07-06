@@ -39,9 +39,9 @@ public class GuiManager : AMonoSingleton<GuiManager> {
     /// Use GuiShowModeControlButton.exceptions to exclude a panel listed here from being hidden.
     /// </summary>
     //[FormerlySerializedAs("fixedGuiPanels")]
-    [Tooltip("The fixed panels of the GUI that should be hidden when a pop up shows.")]
+    [Tooltip(@"The fixed panels of the GUI that should be hidden when a pop up shows. Use GuiShowModeControlButton.exceptions to exclude a panel listed here from being hidden.")]
     [SerializeField]
-    private UIPanel[] _fixedGuiPanels;
+    private UIPanel[] fixedGuiPanelsToHide;
 
 #pragma warning restore 0649
 
@@ -52,8 +52,8 @@ public class GuiManager : AMonoSingleton<GuiManager> {
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
         _hiddenPanels = new List<UIPanel>();
-        if (GameManager.Instance.CurrentSceneID == SceneID.GameScene && _fixedGuiPanels.IsNullOrEmpty()) {
-            D.WarnContext(gameObject, "{0}.fixedGuiPanels list is empty.", GetType().Name);
+        if (GameManager.Instance.CurrentSceneID == SceneID.GameScene && fixedGuiPanelsToHide.IsNullOrEmpty()) {
+            D.WarnContext(gameObject, "{0}.fixedGuiPanelsToHide is empty.", GetType().Name);
         }
         CheckDebugSettings();
         InitializeButtonClickSystem();
@@ -117,13 +117,13 @@ public class GuiManager : AMonoSingleton<GuiManager> {
     public void HideFixedPanels(IList<UIPanel> exceptions) {
         D.Assert(!_hiddenPanels.Any());
         WarnIfExceptionNotNeeded(exceptions);
-        _hiddenPanels.AddRange(_fixedGuiPanels.Except(exceptions));
+        _hiddenPanels.AddRange(fixedGuiPanelsToHide.Except(exceptions));
         _hiddenPanels.ForAll(p => p.alpha = Constants.ZeroF);
     }
 
     private void WarnIfExceptionNotNeeded(IEnumerable<UIPanel> exceptions) {
         exceptions.ForAll(e => {
-            if (!_fixedGuiPanels.Contains(e)) {
+            if (!fixedGuiPanelsToHide.Contains(e)) {
                 D.Warn("{0}: UIPanel exception {1} not needed.", GetType().Name, e.name);
             }
         });

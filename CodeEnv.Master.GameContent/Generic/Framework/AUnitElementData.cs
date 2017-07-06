@@ -56,6 +56,8 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        public string DesignName { get; private set; }
+
         private AlertStatus _alertStatus;
         public AlertStatus AlertStatus {
             get { return _alertStatus; }
@@ -141,8 +143,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="sensors">The sensors.</param>
         /// <param name="shieldGenerators">The shield generators.</param>
         /// <param name="hqPriority">The HQ priority.</param>
+        /// <param name="designName">Name of the design.</param>
         public AUnitElementData(IUnitElement element, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, AHullEquipment hullEquipment,
-            IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<ElementSensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators, Priority hqPriority)
+            IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<ElementSensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators,
+            Priority hqPriority, string designName)
             : base(element, owner, hullEquipment.MaxHitPoints, passiveCMs) {
             HullEquipment = hullEquipment;
             Mass = hullEquipment.Mass + hullEquipment.Weapons.Sum(w => w.Mass) + activeCMs.Sum(cm => cm.Mass) + sensors.Sum(s => s.Mass) + passiveCMs.Sum(cm => cm.Mass) + shieldGenerators.Sum(gen => gen.Mass);
@@ -152,6 +156,7 @@ namespace CodeEnv.Master.GameContent {
             Initialize(activeCMs);
             Initialize(shieldGenerators);
             HQPriority = hqPriority;
+            DesignName = designName;
         }
 
         private void InitializeWeapons() {

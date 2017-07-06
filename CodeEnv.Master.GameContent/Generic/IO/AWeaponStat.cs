@@ -25,6 +25,23 @@ namespace CodeEnv.Master.GameContent {
 
         private const string DebugNameFormat = "{0}(DeliveryVehicleStrength[{1}], DamagePotential[{2}], Range[{3}]).";
 
+        #region Comparison Operators Override
+
+        // see C# 4.0 In a Nutshell, page 254
+
+        public static bool operator ==(AWeaponStat left, AWeaponStat right) {
+            // https://msdn.microsoft.com/en-us/library/ms173147(v=vs.90).aspx
+            if (ReferenceEquals(left, right)) { return true; }
+            if (((object)left == null) || ((object)right == null)) { return false; }
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(AWeaponStat left, AWeaponStat right) {
+            return !(left == right);
+        }
+
+        #endregion
+
         public override string DebugName {
             get {
                 if (_debugName == null) {
@@ -68,6 +85,29 @@ namespace CodeEnv.Master.GameContent {
             DamagePotential = damagePotential;
         }
 
+        #region Object.Equals and GetHashCode Override
+
+        public override int GetHashCode() {
+            unchecked {
+                int hash = base.GetHashCode();
+                hash = hash * 31 + DeliveryVehicleCategory.GetHashCode(); // 31 = another prime number
+                hash = hash * 31 + DeliveryVehicleStrength.GetHashCode();
+                hash = hash * 31 + DamagePotential.GetHashCode();
+                hash = hash * 31 + ReloadPeriod.GetHashCode();
+                return hash;
+            }
+        }
+
+        public override bool Equals(object obj) {
+            if (base.Equals(obj)) {
+                AWeaponStat oStat = (AWeaponStat)obj;
+                return oStat.DeliveryVehicleCategory == DeliveryVehicleCategory && oStat.DeliveryVehicleStrength == DeliveryVehicleStrength
+                    && oStat.DamagePotential == DamagePotential && oStat.ReloadPeriod == ReloadPeriod;
+            }
+            return false;
+        }
+
+        #endregion
 
     }
 }

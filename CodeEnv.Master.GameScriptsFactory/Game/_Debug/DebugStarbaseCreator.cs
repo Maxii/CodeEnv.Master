@@ -46,14 +46,14 @@ public class DebugStarbaseCreator : ADebugUnitCreator {
             if (_editorSettings == null) {
                 if (IsCompositionPreset) {
                     var presetHullCats = gameObject.GetSafeComponentsInChildren<FacilityHull>().Select(hull => hull.HullCategory).ToList();
-                    _editorSettings = new BaseCreatorEditorSettings(UnitName, _isOwnerUser, _ownerRelationshipWithUser, _countermeasuresPerCmd,
-                        _sensorsPerCmd, _activeCMsPerElement, DateToDeploy, _losWeaponsPerElement, _launchedWeaponsPerElement,
-                        _passiveCMsPerElement, _shieldGeneratorsPerElement, _srSensorsPerElement, _formation, presetHullCats);
+                    _editorSettings = new BaseCreatorEditorSettings(_isOwnerUser, _ownerRelationshipWithUser, _countermeasuresPerCmd,
+                    _sensorsPerCmd, _activeCMsPerElement, DateToDeploy, _losWeaponsPerElement, _launchedWeaponsPerElement,
+                    _passiveCMsPerElement, _shieldGeneratorsPerElement, _srSensorsPerElement, presetHullCats);
                 }
                 else {
-                    _editorSettings = new BaseCreatorEditorSettings(UnitName, _isOwnerUser, _elementQty, _ownerRelationshipWithUser,
-                        _countermeasuresPerCmd, _sensorsPerCmd, _activeCMsPerElement, DateToDeploy, _losWeaponsPerElement,
-                        _launchedWeaponsPerElement, _passiveCMsPerElement, _shieldGeneratorsPerElement, _srSensorsPerElement, _formation);
+                    _editorSettings = new BaseCreatorEditorSettings(_isOwnerUser, _elementQty, _ownerRelationshipWithUser,
+                    _countermeasuresPerCmd, _sensorsPerCmd, _activeCMsPerElement, DateToDeploy, _losWeaponsPerElement,
+                    _launchedWeaponsPerElement, _passiveCMsPerElement, _shieldGeneratorsPerElement, _srSensorsPerElement);
                 }
             }
             return _editorSettings;
@@ -62,6 +62,10 @@ public class DebugStarbaseCreator : ADebugUnitCreator {
 
     private StarbaseCmdItem _command;
     private IList<FacilityItem> _elements;
+
+    protected override void InitializeRootUnitName() {
+        RootUnitName = !transform.name.IsNullOrEmpty() ? transform.name : "DebugStarbase";
+    }
 
     protected override void MakeElements() {
         _elements = new List<FacilityItem>();
@@ -109,13 +113,10 @@ public class DebugStarbaseCreator : ADebugUnitCreator {
         CmdCameraStat cameraStat = MakeCmdCameraStat(TempGameValues.FacilityMaxRadius);
         if (IsCompositionPreset) {
             _command = gameObject.GetSingleComponentInChildren<StarbaseCmdItem>();
-            _factory.PopulateInstance(owner, cameraStat, Configuration.CmdDesignName, ref _command);
+            _factory.PopulateInstance(owner, cameraStat, Configuration.CmdDesignName, ref _command, UnitName, _formation.Convert());
         }
         else {
-            _command = _factory.MakeStarbaseCmdInstance(owner, cameraStat, Configuration.CmdDesignName, gameObject);
-        }
-        if (_command.Data.ParentName != UnitName) {  // avoids equals warning
-            _command.Data.ParentName = UnitName;
+            _command = _factory.MakeStarbaseCmdInstance(owner, cameraStat, Configuration.CmdDesignName, gameObject, UnitName, _formation.Convert());
         }
     }
 

@@ -24,15 +24,12 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class BaseCreatorEditorSettings : AUnitCreatorEditorSettings {
 
-        public DebugBaseFormation Formation { get; private set; }
-
         public IList<FacilityHullCategory> PresetElementHullCategories { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BaseCreatorEditorSettings" /> struct
         /// when the unit composition is NOT preset.
         /// </summary>
-        /// <param name="unitName">Name of the unit.</param>
         /// <param name="isOwnerUser">if set to <c>true</c> [is owner user].</param>
         /// <param name="elementQty">The element qty.</param>
         /// <param name="userRelations">The user relations.</param>
@@ -45,20 +42,18 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="passiveCMs">The passive c ms.</param>
         /// <param name="shieldGens">The shield gens.</param>
         /// <param name="srSensors">SR sensor qty per element.</param>
-        /// <param name="formation">The formation.</param>
-        public BaseCreatorEditorSettings(string unitName, bool isOwnerUser, int elementQty, DebugDiploUserRelations userRelations, int cmsPerCmd,
-            int sensorsPerCmd, int activeCMs, GameDate deployDate, DebugLosWeaponLoadout losTurrets, DebugLaunchedWeaponLoadout launchers,
-            int passiveCMs, int shieldGens, int srSensors, DebugBaseFormation formation)
-            : base(unitName, isOwnerUser, elementQty, userRelations, cmsPerCmd, sensorsPerCmd, activeCMs, deployDate, losTurrets, launchers, passiveCMs,
-                shieldGens, srSensors) {
-            Formation = formation;
+        public BaseCreatorEditorSettings(bool isOwnerUser, int elementQty, DebugDiploUserRelations userRelations,
+            DebugPassiveCMLoadout cmsPerCmd, DebugSensorLoadout sensorsPerCmd, DebugActiveCMLoadout activeCMs, GameDate deployDate,
+            DebugLosWeaponLoadout losTurrets, DebugLaunchedWeaponLoadout launchers, DebugPassiveCMLoadout passiveCMs,
+            DebugShieldGenLoadout shieldGens, DebugSensorLoadout srSensors)
+            : base(isOwnerUser, elementQty, userRelations, cmsPerCmd, sensorsPerCmd, activeCMs, deployDate, losTurrets, launchers,
+                  passiveCMs, shieldGens, srSensors) {
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BaseCreatorEditorSettings" /> struct
         /// when the unit composition is preset.
         /// </summary>
-        /// <param name="unitName">Name of the unit.</param>
         /// <param name="isOwnerUser">if set to <c>true</c> [is owner user].</param>
         /// <param name="userRelations">The user relations.</param>
         /// <param name="cmsPerCmd">The CMS per command.</param>
@@ -70,16 +65,16 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="passiveCMs">The passive c ms.</param>
         /// <param name="shieldGens">The shield gens.</param>
         /// <param name="srSensors">SR sensor qty per element.</param>
-        /// <param name="formation">The formation.</param>
         /// <param name="presetHullCats">The preset hull cats.</param>
-        public BaseCreatorEditorSettings(string unitName, bool isOwnerUser, DebugDiploUserRelations userRelations, int cmsPerCmd, int sensorsPerCmd,
-            int activeCMs, GameDate deployDate, DebugLosWeaponLoadout losTurrets, DebugLaunchedWeaponLoadout launchers, int passiveCMs,
-            int shieldGens, int srSensors, DebugBaseFormation formation, IList<FacilityHullCategory> presetHullCats)
-            : base(unitName, isOwnerUser, userRelations, cmsPerCmd, sensorsPerCmd, activeCMs, deployDate, losTurrets, launchers,
-                  passiveCMs, shieldGens, srSensors) {
-            Formation = formation;
+        public BaseCreatorEditorSettings(bool isOwnerUser, DebugDiploUserRelations userRelations, DebugPassiveCMLoadout cmsPerCmd,
+            DebugSensorLoadout sensorsPerCmd, DebugActiveCMLoadout activeCMs, GameDate deployDate, DebugLosWeaponLoadout losTurrets,
+            DebugLaunchedWeaponLoadout launchers, DebugPassiveCMLoadout passiveCMs, DebugShieldGenLoadout shieldGens,
+            DebugSensorLoadout srSensors, IList<FacilityHullCategory> presetHullCats)
+            : base(isOwnerUser, userRelations, cmsPerCmd, sensorsPerCmd, activeCMs, deployDate, losTurrets, launchers, passiveCMs,
+                  shieldGens, srSensors) {
             PresetElementHullCategories = presetHullCats;
         }
+
 
     }
 }

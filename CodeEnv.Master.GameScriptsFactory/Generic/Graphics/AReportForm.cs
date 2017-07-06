@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AReportForm.cs
-// Abstract base class for Forms that are fed content by an Item Report.
+// Abstract base class for Forms that are fed content from an Item Report.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -24,11 +24,11 @@ using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Abstract base class for Forms that are fed content by an Item Report.
+/// Abstract base class for Forms that are fed content from an Item Report.
 /// </summary>
 public abstract class AReportForm : AForm {
 
-    protected static string _unknown = Constants.QuestionMark;
+    protected const string Unknown = Constants.QuestionMark;
 
     private AItemReport _report;
     public AItemReport Report {
@@ -304,7 +304,7 @@ public abstract class AReportForm : AForm {
 
     private void AssignValueToOwnerGuiElement() { _ownerElement.Owner = Report.Owner; }
 
-    protected virtual void AssignValueToNameGuiElement() { _nameLabel.text = Report.Name != null ? Report.Name : _unknown; }
+    protected virtual void AssignValueToNameGuiElement() { _nameLabel.text = Report.Name != null ? Report.Name : Unknown; }
 
     protected virtual void AssignValuesToNonGuiElementMembers() { }
 

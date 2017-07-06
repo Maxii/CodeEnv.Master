@@ -35,6 +35,8 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public virtual string Name { get; private set; }
 
+        public EquipmentCategory Category { get { return Stat.Category; } }
+
         public AtlasID ImageAtlasID { get { return Stat.ImageAtlasID; } }
         public string ImageFilename { get { return Stat.ImageFilename; } }
         public string Description { get { return Stat.Description; } }

@@ -50,7 +50,7 @@ public class SettlementCompositionGuiElement : ACompositionGuiElement {
 
     #endregion
 
-    protected override string GetTextForCategory() { return Category != SettlementCategory.None ? Category.GetValueName() : _unknown; }
+    protected override string GetTextForCategory() { return Category != SettlementCategory.None ? Category.GetValueName() : Unknown; }
 
     public override void Reset() {
         base.Reset();

@@ -26,7 +26,7 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public abstract class AGuiElement : ATextTooltip {
 
-    protected static string _unknown = Constants.QuestionMark;
+    protected const string Unknown = Constants.QuestionMark;
 
     public abstract GuiElementID ElementID { get; }
 
@@ -41,7 +41,7 @@ public abstract class AGuiElement : ATextTooltip {
     public abstract void Reset();
 
     protected virtual void Validate() {
-        UnityUtility.ValidateComponentPresence<UIWidget>(gameObject);
+        // 7.5.17 Removed requirement for a UIWidget so I can use GuiElement as an identifier for GuiWindows
         if (ElementID == default(GuiElementID)) {
             D.WarnContext(this, "{0}.{1} not set.", gameObject.name, typeof(GuiElementID).Name);
         }

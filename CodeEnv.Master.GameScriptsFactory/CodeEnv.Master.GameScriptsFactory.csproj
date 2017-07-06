@@ -66,13 +66,24 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Graphics\AEquipmentIcon.cs" />
+    <Compile Include="Game\GUI\EquipmentIcon.cs" />
+    <Compile Include="Generic\Graphics\AImageIcon.cs" />
+    <Compile Include="Generic\Graphics\AEquipmentForm.cs" />
+    <Compile Include="Generic\Graphics\ASelectedUnitDesignForm.cs" />
+    <Compile Include="Generic\Graphics\AUnitDesignForm.cs" />
     <Compile Include="Game\Gameplay\AssaultVehicle.cs" />
     <Compile Include="Generic\Framework\ALoneUnitCreator.cs" />
     <Compile Include="Game\Framework\FleetNavigator.cs" />
     <Compile Include="Game\Framework\LoneFleetCreator.cs" />
-    <Compile Include="Game\Framework\LoneSettlementCreator.cs" />
-    <Compile Include="Game\Framework\LoneStarbaseCreator.cs" />
     <Compile Include="Game\Gameplay\KinematicProjectile.cs" />
+    <Compile Include="Game\GUI\ShipDesignWindow.cs" />
+    <Compile Include="Game\GUI\SelectedShipDesignForm.cs" />
+    <Compile Include="Generic\Graphics\SelectedEquipmentForm.cs" />
+    <Compile Include="Game\GUI\ShipDesignImageIcon.cs" />
+    <Compile Include="Game\GUI\DesignEquipmentStorage.cs" />
+    <Compile Include="Game\GUI\EquipmentStorageIcon.cs" />
+    <Compile Include="ThirdParty\MyCustomCursor.cs" />
     <Compile Include="ThirdParty\GamePoolManager.cs" />
     <Compile Include="Game\_Debug\DebugSystemCreator.cs" />
     <Compile Include="Generic\Framework\NewGameSystemConfigurator.cs" />
@@ -294,9 +305,13 @@
       <Name>AStar</Name>
       <Private>False</Private>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\Plugins\GridFramework2\GridFramework2.csproj">
-      <Project>{a8831d30-df32-47b0-8070-bf23e8febe53}</Project>
-      <Name>GridFramework2</Name>
+    <ProjectReference Include="..\..\..\Plugins\GridFramework\GridFramework.csproj">
+      <Project>{c67bf06a-f39d-41cc-939c-9bb856e12f7a}</Project>
+      <Name>GridFramework</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Plugins\NguiExamples\NguiExamples.csproj">
+      <Project>{b865439c-3030-458a-8e76-9398d05128c3}</Project>
+      <Name>NguiExamples</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Plugins\Ngui\Ngui.csproj">
       <Project>{ac0f8b23-dd41-4bab-a967-aa2c33bb1d0b}</Project>

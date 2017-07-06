@@ -15,13 +15,33 @@
 ////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
-
+    using System;
     using CodeEnv.Master.Common;
 
     /// <summary>
     /// Immutable stat for an element's engine.
+    /// <remarks>Implements value-based Equality and HashCode.</remarks>
     /// </summary>
     public class EngineStat : AEquipmentStat {
+
+        #region Comparison Operators Override
+
+        // see C# 4.0 In a Nutshell, page 254
+
+        public static bool operator ==(EngineStat left, EngineStat right) {
+            // https://msdn.microsoft.com/en-us/library/ms173147(v=vs.90).aspx
+            if (ReferenceEquals(left, right)) { return true; }
+            if (((object)left == null) || ((object)right == null)) { return false; }
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(EngineStat left, EngineStat right) {
+            return !(left == right);
+        }
+
+        #endregion
+
+        public override EquipmentCategory Category { get { return EquipmentCategory.Propulsion; } }
 
         public bool IsFtlEngine { get; private set; }
 
@@ -59,6 +79,29 @@ namespace CodeEnv.Master.GameContent {
             MaxTurnRate = maxTurnRate;
             IsFtlEngine = isFtlEngine;
         }
+
+        #region Object.Equals and GetHashCode Override
+
+        public override int GetHashCode() {
+            unchecked {
+                int hash = base.GetHashCode();
+                hash = hash * 31 + IsFtlEngine.GetHashCode();
+                hash = hash * 31 + FullPropulsionPower.GetHashCode();
+                hash = hash * 31 + MaxTurnRate.GetHashCode();
+                return hash;
+            }
+        }
+
+        public override bool Equals(object obj) {
+            if (base.Equals(obj)) {
+                EngineStat oStat = (EngineStat)obj;
+                return oStat.IsFtlEngine == IsFtlEngine && oStat.FullPropulsionPower == FullPropulsionPower
+                    && oStat.MaxTurnRate == MaxTurnRate;
+            }
+            return false;
+        }
+
+        #endregion
 
     }
 }

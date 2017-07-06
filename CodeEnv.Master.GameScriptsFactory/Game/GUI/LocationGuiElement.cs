@@ -91,7 +91,7 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
         }
 
         IUnitBaseCmd myClosestBase = null;
-        string distanceText = _unknown;
+        string distanceText = Unknown;
         // can return false if there are no bases currently owned by the user
         if (GameManager.Instance.UserAIManager.TryFindMyClosestItem<IUnitBaseCmd>(position, out myClosestBase)) {
             _closestBaseDistanceInSectors = SectorGrid.Instance.GetDistanceInSectors(SectorID, myClosestBase.SectorID);
@@ -99,7 +99,7 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
         }
         _label.text = LabelFormat.Inject(distanceText, SectorID);
 
-        string baseText = myClosestBase != null ? myClosestBase.DebugName : _unknown;
+        string baseText = myClosestBase != null ? myClosestBase.DebugName : Unknown;
         _tooltipContent = TooltipFormat.Inject(baseText, distanceText);
     }
 

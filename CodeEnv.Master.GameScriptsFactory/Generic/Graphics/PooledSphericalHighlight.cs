@@ -29,8 +29,6 @@ public class PooledSphericalHighlight : SphericalHighlight, IEquatable<PooledSph
 
     private static int _UniqueIDCount = Constants.One;
 
-    public string DebugName { get { return GetType().Name; } }
-
     private int _uniqueID;
 
     #region Event and Property Change Handlers
@@ -82,9 +80,6 @@ public class PooledSphericalHighlight : SphericalHighlight, IEquatable<PooledSph
 
     #endregion
 
-    public override string ToString() {
-        return DebugName;
-    }
 
     #region IEquatable<PooledSphericalHighlight> Members
 

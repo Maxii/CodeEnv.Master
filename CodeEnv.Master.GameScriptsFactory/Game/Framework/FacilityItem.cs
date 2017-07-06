@@ -160,10 +160,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         Rigidbody.isKinematic = true;   // 3.7.17 TEMP stops facility from taking on velocity from collisions
     }
 
-    protected override void SubscribeToSensorEvents() {
+    protected override void __ValidateStateForSensorEventSubscription() {
         D.AssertNotEqual(FacilityState.None, CurrentState);
         D.AssertNotEqual(FacilityState.FinalInitialize, CurrentState);
-        base.SubscribeToSensorEvents();
     }
 
     #endregion

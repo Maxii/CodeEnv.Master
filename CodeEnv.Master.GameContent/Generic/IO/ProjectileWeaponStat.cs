@@ -23,6 +23,25 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ProjectileWeaponStat : AProjectileWeaponStat {
 
+        #region Comparison Operators Override
+
+        // see C# 4.0 In a Nutshell, page 254
+
+        public static bool operator ==(ProjectileWeaponStat left, ProjectileWeaponStat right) {
+            // https://msdn.microsoft.com/en-us/library/ms173147(v=vs.90).aspx
+            if (ReferenceEquals(left, right)) { return true; }
+            if (((object)left == null) || ((object)right == null)) { return false; }
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(ProjectileWeaponStat left, ProjectileWeaponStat right) {
+            return !(left == right);
+        }
+
+        #endregion
+
+        public override EquipmentCategory Category { get { return EquipmentCategory.LosWeapon; } }
+
         /// <summary>
         /// The maximum inaccuracy of the weapon's bearing when launched in degrees.
         /// </summary>
@@ -57,6 +76,26 @@ namespace CodeEnv.Master.GameContent {
             }
             MaxLaunchInaccuracy = maxLaunchInaccuracy;
         }
+
+        #region Object.Equals and GetHashCode Override
+
+        public override int GetHashCode() {
+            unchecked {
+                int hash = base.GetHashCode();
+                hash = hash * 31 + MaxLaunchInaccuracy.GetHashCode(); // 31 = another prime number
+                return hash;
+            }
+        }
+
+        public override bool Equals(object obj) {
+            if (base.Equals(obj)) {
+                ProjectileWeaponStat oStat = (ProjectileWeaponStat)obj;
+                return oStat.MaxLaunchInaccuracy == MaxLaunchInaccuracy;
+            }
+            return false;
+        }
+
+        #endregion
 
     }
 }

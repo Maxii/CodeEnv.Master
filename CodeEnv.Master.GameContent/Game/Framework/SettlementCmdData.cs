@@ -78,9 +78,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="sensors">The MR and LR sensors for this UnitCmd.</param>
         /// <param name="ftlDampener">The FTL dampener.</param>
         /// <param name="cmdStat">The stat.</param>
+        /// <param name="designName">Name of the design.</param>
         public SettlementCmdData(ISettlementCmd settlementCmd, Player owner, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener,
-            SettlementCmdStat cmdStat)
-                : this(settlementCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), sensors, ftlDampener, cmdStat) {
+            SettlementCmdStat cmdStat, string designName)
+                : this(settlementCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), sensors, ftlDampener, cmdStat, designName) {
         }
 
         /// <summary>
@@ -92,9 +93,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="sensors">The MR and LR sensors for this UnitCmd.</param>
         /// <param name="ftlDampener">The FTL dampener.</param>
         /// <param name="cmdStat">The stat.</param>
+        /// <param name="designName">Name of the design.</param>
         public SettlementCmdData(ISettlementCmd settlementCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs,
-            IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, SettlementCmdStat cmdStat)
-                : base(settlementCmd, owner, passiveCMs, sensors, ftlDampener, cmdStat) {
+            IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, SettlementCmdStat cmdStat, string designName)
+                : base(settlementCmd, owner, passiveCMs, sensors, ftlDampener, cmdStat, designName) {
             Population = cmdStat.StartingPopulation;
             Approval = cmdStat.StartingApproval;
         }

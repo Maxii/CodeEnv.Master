@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: TextForm.cs
-// A form that displays simple text content. 
+// A form that displays text content. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,7 +20,7 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// A form that displays simple text content. 
+/// A form that displays text content. 
 /// </summary>
 public class TextForm : AForm {
 

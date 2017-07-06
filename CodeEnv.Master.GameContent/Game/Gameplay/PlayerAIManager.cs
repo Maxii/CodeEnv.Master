@@ -461,7 +461,7 @@ namespace CodeEnv.Master.GameContent {
             if (awareChgd_Fleet != null) {
                 D.Assert(fleet.IsOperational, fleet.DebugName);
                 if (fleet.Owner_Debug == Owner) {
-                    // 5.10.17 ship taken over chgd Cmd owner. Intel got chgd to None due to Sensor IsOperational recycle.
+                    // 5.10.17 ship taken over changed Cmd owner. Intel got changed to None due to Sensor IsOperational recycle.
                     D.Error("{0}: Awareness Chg of {1} owned by us. IsLoneCmd = {2}. HQElementOwner = {3}.",
                         DebugName, fleet.DebugName, fleet.IsLoneCmd, (fleet as IUnitCmd).HQElement.Owner);
                 }

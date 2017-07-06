@@ -21,8 +21,30 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Stat for FtlDampener Equipment.
+    /// <remarks>Implements value-based Equality and HashCode.</remarks>
     /// </summary>
     public class FtlDampenerStat : ARangedEquipmentStat {
+
+        #region Comparison Operators Override
+
+        // see C# 4.0 In a Nutshell, page 254
+
+        public static bool operator ==(FtlDampenerStat left, FtlDampenerStat right) {
+            // https://msdn.microsoft.com/en-us/library/ms173147(v=vs.90).aspx
+            if (ReferenceEquals(left, right)) { return true; }
+            if (((object)left == null) || ((object)right == null)) { return false; }
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(FtlDampenerStat left, FtlDampenerStat right) {
+            return !(left == right);
+        }
+
+        #endregion
+
+        private const string BasicDescriptionFormat = "Basic {0} sensor.";
+
+        public override EquipmentCategory Category { get { return EquipmentCategory.FtlDampener; } }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FtlDampenerStat" /> class.
@@ -43,11 +65,29 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Initializes a new instance of the most basic <see cref="FtlDampenerStat"/> class.
+        /// Initializes a new instance of the most basic <see cref="FtlDampenerStat" /> class.
         /// </summary>
-        public FtlDampenerStat()
-            : this("BasicFtlDampener", AtlasID.MyGui, TempGameValues.AnImageFilename, "BasicDescription..", 0F, 0F, 0F, 0F, RangeCategory.Short) {
+        /// <param name="name">The name.</param>
+        /// <param name="rangeCat">The range category.</param>
+        public FtlDampenerStat(string name, RangeCategory rangeCat)
+            : this(name, AtlasID.MyGui, TempGameValues.AnImageFilename, BasicDescriptionFormat.Inject(rangeCat.GetEnumAttributeText())
+                  , 0F, 0F, 0F, 0F, rangeCat) {
         }
+
+        #region Object.Equals and GetHashCode Override
+
+        public override int GetHashCode() {
+            unchecked {
+                int hash = base.GetHashCode();
+                return hash;
+            }
+        }
+
+        public override bool Equals(object obj) {
+            return base.Equals(obj);
+        }
+
+        #endregion
 
     }
 }

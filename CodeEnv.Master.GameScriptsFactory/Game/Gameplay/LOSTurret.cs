@@ -30,7 +30,8 @@ using UnityEngine.Serialization;
 /// </summary>
 public class LOSTurret : AWeaponMount, ILOSWeaponMount {
 
-    private const string DebugNameFormat = "{0}.{1}.{2}";
+    private const string DebugNameFormat = "{0}.{1}";
+    ////private const string DebugNameFormat = "{0}.{1}.{2}";
 
     /// <summary>
     /// The barrel's maximum elevation angle. 
@@ -81,7 +82,7 @@ public class LOSTurret : AWeaponMount, ILOSWeaponMount {
             if (Weapon == null) {
                 return base.DebugName;
             }
-            return DebugNameFormat.Inject(Weapon.Name, GetType().Name, SlotID.GetValueName());
+            return DebugNameFormat.Inject(Weapon.Name, GetType().Name);
         }
     }
 

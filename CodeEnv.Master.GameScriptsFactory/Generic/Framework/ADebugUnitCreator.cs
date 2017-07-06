@@ -55,34 +55,28 @@ public abstract class ADebugUnitCreator : AUnitCreator {
     private int _yearDelay = 0;
 
     [SerializeField]
-    protected DebugLosWeaponLoadout _losWeaponsPerElement;
+    protected DebugLosWeaponLoadout _losWeaponsPerElement = DebugLosWeaponLoadout.Random;
 
     [SerializeField]
-    protected DebugLaunchedWeaponLoadout _launchedWeaponsPerElement;
+    protected DebugLaunchedWeaponLoadout _launchedWeaponsPerElement = DebugLaunchedWeaponLoadout.Random;
 
-    [Range(0, 5)]
     [SerializeField]
-    protected int _activeCMsPerElement = 2;
+    protected DebugActiveCMLoadout _activeCMsPerElement = DebugActiveCMLoadout.One;
 
-    [Range(0, 5)]
     [SerializeField]
-    protected int _shieldGeneratorsPerElement = 2;
+    protected DebugShieldGenLoadout _shieldGeneratorsPerElement = DebugShieldGenLoadout.One;
 
-    [Range(0, 5)]
     [SerializeField]
-    protected int _passiveCMsPerElement = 2;
+    protected DebugPassiveCMLoadout _passiveCMsPerElement = DebugPassiveCMLoadout.One;
 
-    [Range(1, 3)]
     [SerializeField]
-    protected int _srSensorsPerElement = 1;
+    protected DebugSensorLoadout _srSensorsPerElement = DebugSensorLoadout.One;
 
-    [Range(0, 3)]
     [SerializeField]
-    protected int _countermeasuresPerCmd = 2;
+    protected DebugPassiveCMLoadout _countermeasuresPerCmd = DebugPassiveCMLoadout.One;
 
-    [Range(1, 6)]
     [SerializeField]
-    protected int _sensorsPerCmd = 3;
+    protected DebugSensorLoadout _sensorsPerCmd = DebugSensorLoadout.Random;
 
     #endregion
 

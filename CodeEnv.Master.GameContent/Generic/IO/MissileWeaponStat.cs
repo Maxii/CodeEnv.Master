@@ -23,6 +23,25 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class MissileWeaponStat : AProjectileWeaponStat {
 
+        #region Comparison Operators Override
+
+        // see C# 4.0 In a Nutshell, page 254
+
+        public static bool operator ==(MissileWeaponStat left, MissileWeaponStat right) {
+            // https://msdn.microsoft.com/en-us/library/ms173147(v=vs.90).aspx
+            if (ReferenceEquals(left, right)) { return true; }
+            if (((object)left == null) || ((object)right == null)) { return false; }
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(MissileWeaponStat left, MissileWeaponStat right) {
+            return !(left == right);
+        }
+
+        #endregion
+
+        public override EquipmentCategory Category { get { return EquipmentCategory.LaunchedWeapon; } }
+
         /// <summary>
         /// The turn rate of the ordnance in degrees per hour .
         /// </summary>
@@ -70,6 +89,29 @@ namespace CodeEnv.Master.GameContent {
             CourseUpdateFrequency = courseUpdateFreq;
             MaxSteeringInaccuracy = maxSteeringInaccuracy;
         }
+
+        #region Object.Equals and GetHashCode Override
+
+        public override int GetHashCode() {
+            unchecked {
+                int hash = base.GetHashCode();
+                hash = hash * 31 + TurnRate.GetHashCode(); // 31 = another prime number
+                hash = hash * 31 + CourseUpdateFrequency.GetHashCode();
+                hash = hash * 31 + MaxSteeringInaccuracy.GetHashCode();
+                return hash;
+            }
+        }
+
+        public override bool Equals(object obj) {
+            if (base.Equals(obj)) {
+                MissileWeaponStat oStat = (MissileWeaponStat)obj;
+                return oStat.TurnRate == TurnRate && oStat.CourseUpdateFrequency == CourseUpdateFrequency
+                    && oStat.MaxSteeringInaccuracy == MaxSteeringInaccuracy;
+            }
+            return false;
+        }
+
+        #endregion
 
     }
 }

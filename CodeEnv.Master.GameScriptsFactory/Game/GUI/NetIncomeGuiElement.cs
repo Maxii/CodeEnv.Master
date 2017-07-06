@@ -61,7 +61,6 @@ public class NetIncomeGuiElement : AGuiElement, IComparable<NetIncomeGuiElement>
 
     protected override void Awake() {
         base.Awake();
-        Validate();
         _label = gameObject.GetSingleComponentInChildren<UILabel>();
     }
 
@@ -84,9 +83,9 @@ public class NetIncomeGuiElement : AGuiElement, IComparable<NetIncomeGuiElement>
     #endregion
 
     private void PopulateElementWidgets() {
-        string incomeTooltipContent = _unknown;
-        string expenseTooltipContent = _unknown;
-        string labelContent = _unknown;
+        string incomeTooltipContent = Unknown;
+        string expenseTooltipContent = Unknown;
+        string labelContent = Unknown;
 
         _netIncome = Income - Expense;  // if either are null, the result is null
         if (_netIncome.HasValue) {

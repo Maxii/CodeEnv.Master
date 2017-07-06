@@ -119,12 +119,12 @@ public class HealthGuiElement : AProgressBarGuiElement, IComparable<HealthGuiEle
             healthColor = GameColor.Red;
         }
 
-        string currentHitPtsValueText = _unknown;
+        string currentHitPtsValueText = Unknown;
         if (CurrentHitPts.HasValue) {
             currentHitPtsValueText = Constants.FormatFloat_0Dp.Inject(CurrentHitPts.Value);
         }
 
-        string maxHitPtsValueText = _unknown;
+        string maxHitPtsValueText = Unknown;
         if (MaxHitPts.HasValue) {
             maxHitPtsValueText = Constants.FormatFloat_0Dp.Inject(MaxHitPts.Value);
         }

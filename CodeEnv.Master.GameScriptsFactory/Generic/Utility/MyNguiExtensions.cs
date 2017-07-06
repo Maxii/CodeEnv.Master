@@ -42,6 +42,8 @@ public static class MyNguiExtensions {
             case AtlasID.MyGui:
                 return RequiredPrefabs.Instance.myGuiAtlas;
             case AtlasID.None:
+                //D.Log("{0}: returning a null UIAtlas for AtlasID.None.", typeof(MyNguiExtensions).Name);
+                return null;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(atlasID));
         }

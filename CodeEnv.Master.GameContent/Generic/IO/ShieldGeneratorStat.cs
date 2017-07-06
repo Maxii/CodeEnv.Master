@@ -23,6 +23,25 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ShieldGeneratorStat : ARangedEquipmentStat {
 
+        #region Comparison Operators Override
+
+        // see C# 4.0 In a Nutshell, page 254
+
+        public static bool operator ==(ShieldGeneratorStat left, ShieldGeneratorStat right) {
+            // https://msdn.microsoft.com/en-us/library/ms173147(v=vs.90).aspx
+            if (ReferenceEquals(left, right)) { return true; }
+            if (((object)left == null) || ((object)right == null)) { return false; }
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(ShieldGeneratorStat left, ShieldGeneratorStat right) {
+            return !(left == right);
+        }
+
+        #endregion
+
+        public override EquipmentCategory Category { get { return EquipmentCategory.ShieldGenerator; } }
+
         /// <summary>
         ///The maximum absorption capacity of this generator.
         /// </summary>
@@ -69,6 +88,29 @@ namespace CodeEnv.Master.GameContent {
             DamageMitigation = damageMitigation;
         }
 
+        #region Object.Equals and GetHashCode Override
+
+        public override int GetHashCode() {
+            unchecked {
+                int hash = base.GetHashCode();
+                hash = hash * 31 + MaximumCharge.GetHashCode(); // 31 = another prime number
+                hash = hash * 31 + TrickleChargeRate.GetHashCode();
+                hash = hash * 31 + ReloadPeriod.GetHashCode();
+                hash = hash * 31 + DamageMitigation.GetHashCode();
+                return hash;
+            }
+        }
+
+        public override bool Equals(object obj) {
+            if (base.Equals(obj)) {
+                ShieldGeneratorStat oStat = (ShieldGeneratorStat)obj;
+                return oStat.MaximumCharge == MaximumCharge && oStat.TrickleChargeRate == TrickleChargeRate
+                    && oStat.ReloadPeriod == ReloadPeriod && oStat.DamageMitigation == DamageMitigation;
+            }
+            return false;
+        }
+
+        #endregion
     }
 }
 

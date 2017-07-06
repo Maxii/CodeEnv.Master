@@ -14,8 +14,9 @@
 ////#define DEBUG_WARN
 ////#define DEBUG_ERROR
 
-using CodeEnv.Master.Common;
 namespace CodeEnv.Master.GameContent {
+
+    using CodeEnv.Master.Common;
 
     /// <summary>
     /// Unique ID for each Gui Element that needs to be distinguishable.
@@ -107,7 +108,7 @@ namespace CodeEnv.Master.GameContent {
         AIPlayer4UserSeparationPopupList = 82,
         AIPlayer5UserSeparationPopupList = 83,
         AIPlayer6UserSeparationPopupList = 84,
-        AIPlayer7UserSeparationPopupList = 85,     // last
+        AIPlayer7UserSeparationPopupList = 85,
 
         PlayerCountPopupList = 53,
 
@@ -146,6 +147,8 @@ namespace CodeEnv.Master.GameContent {
         CultureLabel = 32,
 
         PopulationLabel = 43,
+
+        DesignerUITitleLabel = 87,
 
         #endregion
 
@@ -186,6 +189,17 @@ namespace CodeEnv.Master.GameContent {
 
         #region Miscellaneous
 
+        DesignerUIContainer = 86,
+
+        ThreeDStageUIContainer = 88,
+
+        DesignsUIContainer = 89,
+
+        MenuControlsUIContainer = 90,
+
+        CreateDesignPopupWindow = 91,
+
+        RenameObsoleteDesignPopupWindow = 92    // last
 
         #endregion
 

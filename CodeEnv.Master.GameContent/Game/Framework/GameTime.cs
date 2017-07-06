@@ -512,7 +512,7 @@ namespace CodeEnv.Master.GameContent {
         #region Debug
 
         private void __WarnIfGameNotRunning() {
-            if (!_gameMgr.IsRunning) {
+            if (!_gameMgr.IsRunning && !_gameMgr.IsSceneLoading) {
                 D.Warn("{0}: {1} should be running. Frame = {2}.", GetType().Name, typeof(IGameManager).Name, Time.frameCount);
             }
         }

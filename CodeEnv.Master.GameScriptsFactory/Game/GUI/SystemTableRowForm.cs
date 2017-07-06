@@ -36,19 +36,19 @@ public class SystemTableRowForm : ATableRowForm {
     protected override void AssignValueToEnergyGuiElement() {
         base.AssignValueToEnergyGuiElement();
         var report = Report as SystemReport;
-        _energyLabel.text = report.Resources.HasValue ? Constants.FormatFloat_0Dp.Inject(report.Resources.Value.GetYield(ResourceID.Energy)) : _unknown;
+        _energyLabel.text = report.Resources.HasValue ? Constants.FormatFloat_0Dp.Inject(report.Resources.Value.GetYield(ResourceID.Energy)) : Unknown;
     }
 
     protected override void AssignValueToOrganicsGuiElement() {
         base.AssignValueToOrganicsGuiElement();
         var report = Report as SystemReport;
-        _organicsLabel.text = report.Resources.HasValue ? Constants.FormatFloat_0Dp.Inject(report.Resources.Value.GetYield(ResourceID.Organics)) : _unknown;
+        _organicsLabel.text = report.Resources.HasValue ? Constants.FormatFloat_0Dp.Inject(report.Resources.Value.GetYield(ResourceID.Organics)) : Unknown;
     }
 
     protected override void AssignValueToParticulatesGuiElement() {
         base.AssignValueToParticulatesGuiElement();
         var report = Report as SystemReport;
-        _particulatesLabel.text = report.Resources.HasValue ? Constants.FormatFloat_0Dp.Inject(report.Resources.Value.GetYield(ResourceID.Particulates)) : _unknown;
+        _particulatesLabel.text = report.Resources.HasValue ? Constants.FormatFloat_0Dp.Inject(report.Resources.Value.GetYield(ResourceID.Particulates)) : Unknown;
     }
 
     protected override void AssignValueToStrategicResourcesGuiElement() {

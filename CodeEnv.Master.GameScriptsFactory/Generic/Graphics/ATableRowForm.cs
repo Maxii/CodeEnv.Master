@@ -30,9 +30,25 @@ public abstract class ATableRowForm : AReportForm {
     /// </summary>
     public event EventHandler<TableRowFocusUserActionEventArgs> itemFocusUserAction;
 
+    private UISprite _rowSprite;
+
+    protected override void InitializeNonGuiElementMembers() {
+        base.InitializeNonGuiElementMembers();
+        _rowSprite = GetComponent<UISprite>();
+    }
+
     protected override void InitializeNameGuiElement(AGuiElement e) {
         base.InitializeNameGuiElement(e);
-        MyEventListener.Get(e.gameObject).onDoubleClick += NameDoubleClickEventHandler;
+        UIEventListener.Get(e.gameObject).onDoubleClick += NameDoubleClickEventHandler;
+    }
+
+    public void SetSideAnchors(Transform target, int left, int right) {
+        _rowSprite.leftAnchor.target = target;
+        _rowSprite.leftAnchor.absolute = left;
+        _rowSprite.rightAnchor.target = target;
+        _rowSprite.rightAnchor.absolute = right;
+        _rowSprite.ResetAnchors();
+        _rowSprite.UpdateAnchors();
     }
 
     #region Event and Property Change Handlers
@@ -49,9 +65,16 @@ public abstract class ATableRowForm : AReportForm {
 
     #endregion
 
+    public override void Reset() {
+        base.Reset();
+        _rowSprite.leftAnchor.target = null;
+        _rowSprite.rightAnchor.target = null;
+        _rowSprite.ResetAnchors();
+    }
+
     protected override void CleanupNameGuiElement(AGuiElement e) {
         base.CleanupNameGuiElement(e);
-        MyEventListener.Get(e.gameObject).onDoubleClick -= NameDoubleClickEventHandler;
+        UIEventListener.Get(e.gameObject).onDoubleClick -= NameDoubleClickEventHandler;
     }
 
     #region Nested Classes

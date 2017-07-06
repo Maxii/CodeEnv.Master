@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: SelectedItemHudWindow.cs
-//  Fixed position HudWindow displaying a customized HudForm for a Selected Item.
+// Fixed position HudWindow displaying a customized Form for something that has been 'selected'.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,9 +21,9 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Fixed position HudWindow displaying a customized HudForm for a Selected Item.
-/// The current version is located on the bottom left of the screen and only appears
-/// when an ISelectable Item has been selected.
+/// Fixed position HudWindow displaying a customized Form for something that has been 'selected'.
+/// <remarks>The current version is located on the bottom left of the screen and appears when called to Show().</remarks>
+/// <remarks>6.21.17 Currently used by Items, UnitDesigns and EquipmentStats.</remarks>
 /// </summary>
 public class SelectedItemHudWindow : AHudWindow<SelectedItemHudWindow>, ISelectedItemHudWindow {
 
@@ -48,6 +48,19 @@ public class SelectedItemHudWindow : AHudWindow<SelectedItemHudWindow>, ISelecte
     public void Show(FormID formID, AItemReport report) {
         var form = PrepareForm(formID);
         (form as AReportForm).Report = report;
+        ShowForm(form);
+    }
+
+    public void Show(FormID formID, AUnitDesign design) {
+        //D.Log("{0}.Show({1}) called.", DebugName, design.DebugName);
+        var form = PrepareForm(formID);
+        (form as AUnitDesignForm).Design = design;
+        ShowForm(form);
+    }
+
+    public void Show(FormID formID, AEquipmentStat stat) {
+        var form = PrepareForm(formID);
+        (form as AEquipmentForm).EquipmentStat = stat;
         ShowForm(form);
     }
 

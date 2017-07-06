@@ -56,10 +56,11 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="shieldGenerators">The shield generators.</param>
         /// <param name="hqPriority">The HQ priority.</param>
         /// <param name="topography">The topography.</param>
+        /// <param name="designName">Name of the design.</param>
         public FacilityData(IFacility facility, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, FacilityHullEquipment hullEquipment,
             IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<ElementSensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators,
-            Priority hqPriority, Topography topography)
-            : base(facility, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, hqPriority) {
+            Priority hqPriority, Topography topography, string designName)
+            : base(facility, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, hqPriority, designName) {
             Topography = topography;
             Science = hullEquipment.Science;
             Culture = hullEquipment.Culture;

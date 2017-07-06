@@ -142,9 +142,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     public override void CommenceOperations() {
         base.CommenceOperations();
-        ////CurrentState = FleetState.Idling;
         ActivateSensors();
-        ////RegisterForOrders();
         AssessAlertStatus();
         SubscribeToSensorEvents();
         __IsActivelyOperating = true;
@@ -4749,7 +4747,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     protected override void __CleanupOnApplicationQuit() {
         base.__CleanupOnApplicationQuit();
-        _navigator.__ReportLongestWaypointTransitDuration();
+        if (_navigator != null) {
+            _navigator.__ReportLongestWaypointTransitDuration();
+        }
     }
 
     #endregion

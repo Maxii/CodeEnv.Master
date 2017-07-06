@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -34,6 +35,12 @@ public class Loader : AMonoSingleton<Loader> {
     [Tooltip("FramesPerSecond goal. Used when DebugSettings enables its usage.")]
     [SerializeField]
     private int _targetFPS = Mathf.RoundToInt(TempGameValues.MinimumFramerate);
+
+    /// <summary>
+    /// Gets or sets the current additive scene loader.
+    /// <remarks>6.16.17 Not currently used but good repository for additive scene loader/unloader.</remarks>
+    /// </summary>
+    public AAdditiveSceneLoader CurrentAdditiveSceneLoader { get; set; }
 
     public override bool IsPersistentAcrossScenes { get { return true; } }
 
@@ -69,6 +76,7 @@ public class Loader : AMonoSingleton<Loader> {
     protected override void Start() {
         base.Start();
         LaunchGameManagerStartupScene();
+        __ValidateMaxHullWeaponSlots();
     }
 
     private void LaunchGameManagerStartupScene() {
@@ -149,14 +157,53 @@ public class Loader : AMonoSingleton<Loader> {
         _subscriptions.Clear();
         // GameManager gets destroyed first due to ScriptExecutionOrder
         ////GameManager.Instance.sceneLoaded -= SceneLoadedEventHandler;
-
     }
 
     public override string ToString() {
         return DebugName;
     }
 
+
     #region Debug
+
+    /// <summary>
+    /// Validates that the max values for weapon slots from GameEnumExtensions matches 
+    /// the actual number of weapon slots present in the Hull prefab.
+    /// <remarks>6.29.17 One time check to verify that coded values and hull prefab content match.</remarks>
+    /// </summary>
+    private void __ValidateMaxHullWeaponSlots() {
+        foreach (var cat in TempGameValues.ShipHullCategoriesInUse) {
+            int maxAllowedLaunchedWeaponSlots = cat.__MaxLaunchedWeapons();
+            int maxAllowedLOSWeaponSlots = cat.__MaxLOSWeapons();
+
+            var hullPrefabGo = RequiredPrefabs.Instance.shipHulls.Single(hull => hull.HullCategory == cat);
+            var launchedWeapMountPlaceholders = hullPrefabGo.GetComponentsInChildren<LauncherMountPlaceholder>();
+            var losWeapMountPlaceholders = hullPrefabGo.GetComponentsInChildren<LOSMountPlaceholder>();
+
+            if (maxAllowedLaunchedWeaponSlots != launchedWeapMountPlaceholders.Count()) {
+                D.Error("{0}: {1} WeaponSlot Validation Error: {2} != {3}.", DebugName, cat.GetValueName(), maxAllowedLaunchedWeaponSlots, launchedWeapMountPlaceholders.Count());
+            }
+            if (maxAllowedLOSWeaponSlots != losWeapMountPlaceholders.Count()) {
+                D.Error("{0}: {1} WeaponSlot Validation Error: {2} != {3}.", DebugName, cat.GetValueName(), maxAllowedLOSWeaponSlots, losWeapMountPlaceholders.Count());
+            }
+        }
+
+        foreach (var cat in TempGameValues.FacilityHullCategoriesInUse) {
+            int maxAllowedLaunchedWeaponSlots = cat.__MaxLaunchedWeapons();
+            int maxAllowedLOSWeaponSlots = cat.__MaxLOSWeapons();
+
+            var hullPrefabGo = RequiredPrefabs.Instance.facilityHulls.Single(hull => hull.HullCategory == cat);
+            var launchedWeapMountPlaceholders = hullPrefabGo.GetComponentsInChildren<LauncherMountPlaceholder>();
+            var losWeapMountPlaceholders = hullPrefabGo.GetComponentsInChildren<LOSMountPlaceholder>();
+
+            if (maxAllowedLaunchedWeaponSlots != launchedWeapMountPlaceholders.Count()) {
+                D.Error("{0}: {1} WeaponSlot Validation Error: {2} != {3}.", DebugName, cat.GetValueName(), maxAllowedLaunchedWeaponSlots, launchedWeapMountPlaceholders.Count());
+            }
+            if (maxAllowedLOSWeaponSlots != losWeapMountPlaceholders.Count()) {
+                D.Error("{0}: {1} WeaponSlot Validation Error: {2} != {3}.", DebugName, cat.GetValueName(), maxAllowedLOSWeaponSlots, losWeapMountPlaceholders.Count());
+            }
+        }
+    }
 
     private void CheckQualityDebugSettings() {
         if (_debugSettings.ForceFpsToTarget) {

@@ -189,7 +189,7 @@ public class SphericalHighlight : AMonoBase, ISphericalHighlight {
         GameUtility.DestroyIfNotNullOrAlreadyDestroyed(_trackingLabel);
     }
 
-    public override string ToString() {
+    public sealed override string ToString() {
         return DebugName;
     }
 

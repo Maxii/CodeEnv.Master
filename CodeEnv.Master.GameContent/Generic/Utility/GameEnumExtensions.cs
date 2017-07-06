@@ -668,73 +668,69 @@ namespace CodeEnv.Master.GameContent {
         public static int __MaxLOSWeapons(this ShipHullCategory cat) {
             int value = 0;
             switch (cat) {
-                case ShipHullCategory.Fighter:
-                case ShipHullCategory.Scout:
-                    value = 1;
-                    break;
-                case ShipHullCategory.Investigator:
-                case ShipHullCategory.Support:
-                case ShipHullCategory.Colonizer:
-                case ShipHullCategory.Troop:
-                    value = 2;
-                    break;
+                // WARNING: To change these values, the Hull prefabs must also be changed
                 case ShipHullCategory.Frigate:
                     value = 3;
                     break;
                 case ShipHullCategory.Destroyer:
                 case ShipHullCategory.Carrier:
+                case ShipHullCategory.Support:
                     value = 4;
                     break;
                 case ShipHullCategory.Cruiser:
+                case ShipHullCategory.Colonizer:
+                case ShipHullCategory.Investigator:
                     value = 7;
                     break;
                 case ShipHullCategory.Dreadnought:
-                    value = TempGameValues.MaxLosWeaponsForAnyElement;   // 12
+                case ShipHullCategory.Troop:
+                    value = TempGameValues.MaxLosWeapons;   // 12
                     break;
                 case ShipHullCategory.None:
+                case ShipHullCategory.Fighter:
+                case ShipHullCategory.Scout:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
             }
-            D.Assert(value <= TempGameValues.MaxLosWeaponsForAnyElement);
+            D.Assert(value <= TempGameValues.MaxLosWeapons);
             return value;
         }
 
         public static int __MaxLaunchedWeapons(this ShipHullCategory cat) {
             int value = 0;
             switch (cat) {
-                case ShipHullCategory.Fighter:
-                case ShipHullCategory.Scout:
-                    break;
-                case ShipHullCategory.Investigator:
-                case ShipHullCategory.Support:
-                case ShipHullCategory.Colonizer:
-                case ShipHullCategory.Troop:
-                    value = 1;
-                    break;
+                // WARNING: To change these values, the Hull prefabs must also be changed
                 case ShipHullCategory.Frigate:
                     value = 2;
                     break;
                 case ShipHullCategory.Destroyer:
                 case ShipHullCategory.Carrier:
+                case ShipHullCategory.Support:
                     value = 3;
                     break;
                 case ShipHullCategory.Cruiser:
+                case ShipHullCategory.Investigator:
+                case ShipHullCategory.Colonizer:
                     value = 4;
                     break;
                 case ShipHullCategory.Dreadnought:
-                    value = TempGameValues.MaxLaunchedWeaponsForAnyElement;   // 6
+                case ShipHullCategory.Troop:
+                    value = TempGameValues.MaxLaunchedWeapons;   // 6
                     break;
                 case ShipHullCategory.None:
+                case ShipHullCategory.Fighter:
+                case ShipHullCategory.Scout:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
             }
-            D.Assert(value <= TempGameValues.MaxLaunchedWeaponsForAnyElement);
+            D.Assert(value <= TempGameValues.MaxLaunchedWeapons);
             return value;
         }
 
         public static int __MaxLOSWeapons(this FacilityHullCategory cat) {
             int value = 0;
             switch (cat) {
+                // WARNING: To change these values, the Hull prefabs must also be changed
                 case FacilityHullCategory.Economic:
                 case FacilityHullCategory.Factory:
                 case FacilityHullCategory.Laboratory:
@@ -744,19 +740,20 @@ namespace CodeEnv.Master.GameContent {
                     break;
                 case FacilityHullCategory.CentralHub:
                 case FacilityHullCategory.Defense:
-                    value = TempGameValues.MaxLosWeaponsForAnyElement;   // 12
+                    value = TempGameValues.MaxLosWeapons;   // 12
                     break;
                 case FacilityHullCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
             }
-            D.Assert(value <= TempGameValues.MaxLosWeaponsForAnyElement);
+            D.Assert(value <= TempGameValues.MaxLosWeapons);
             return value;
         }
 
         public static int __MaxLaunchedWeapons(this FacilityHullCategory cat) {
             int value = 0;
             switch (cat) {
+                // WARNING: To change these values, the Hull prefabs must also be changed
                 case FacilityHullCategory.Economic:
                 case FacilityHullCategory.Factory:
                 case FacilityHullCategory.Laboratory:
@@ -766,15 +763,293 @@ namespace CodeEnv.Master.GameContent {
                     break;
                 case FacilityHullCategory.CentralHub:
                 case FacilityHullCategory.Defense:
-                    value = TempGameValues.MaxLaunchedWeaponsForAnyElement;
+                    value = TempGameValues.MaxLaunchedWeapons;  // 6
                     break;
                 case FacilityHullCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
             }
-            D.Assert(value <= TempGameValues.MaxLaunchedWeaponsForAnyElement);
+            D.Assert(value <= TempGameValues.MaxLaunchedWeapons);
             return value;
         }
+
+        #endregion
+
+        #region Element Hull Category - Equipment
+
+        public static string GetEmptyTemplateDesignName(this ShipHullCategory cat) {
+            string designNameFormat = "Empty{0}Design";
+            string designName;
+            switch (cat) {
+                case ShipHullCategory.Investigator:
+                case ShipHullCategory.Frigate:
+                case ShipHullCategory.Support:
+                case ShipHullCategory.Destroyer:
+                case ShipHullCategory.Colonizer:
+                case ShipHullCategory.Troop:
+                case ShipHullCategory.Cruiser:
+                case ShipHullCategory.Carrier:
+                case ShipHullCategory.Dreadnought:
+                    designName = designNameFormat.Inject(cat.GetValueName());
+                    break;
+                case ShipHullCategory.Fighter:
+                case ShipHullCategory.Scout:
+                case ShipHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
+            }
+            D.AssertNotNull(designName);
+            return designName;
+        }
+
+        public static string GetEmptyTemplateDesignName(this FacilityHullCategory cat) {
+            string designNameFormat = "Empty{0}Design";
+            string designName;
+            switch (cat) {
+                case FacilityHullCategory.Barracks:
+                case FacilityHullCategory.CentralHub:
+                case FacilityHullCategory.ColonyHab:
+                case FacilityHullCategory.Defense:
+                case FacilityHullCategory.Economic:
+                case FacilityHullCategory.Factory:
+                case FacilityHullCategory.Laboratory:
+                    designName = designNameFormat.Inject(cat.GetValueName());
+                    break;
+                case FacilityHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
+            }
+            D.AssertNotNull(designName);
+            return designName;
+        }
+
+
+
+        public static int __MaxPassiveCMs(this ShipHullCategory cat) {
+            int value = 0;
+            switch (cat) {
+                case ShipHullCategory.Fighter:
+                case ShipHullCategory.Scout:
+                    break;
+                case ShipHullCategory.Investigator:
+                case ShipHullCategory.Frigate:
+                    value = 2;
+                    break;
+                case ShipHullCategory.Support:
+                case ShipHullCategory.Destroyer:
+                    value = 3;
+                    break;
+                case ShipHullCategory.Colonizer:
+                case ShipHullCategory.Troop:
+                case ShipHullCategory.Cruiser:
+                    value = 4;
+                    break;
+                case ShipHullCategory.Carrier:
+                case ShipHullCategory.Dreadnought:
+                    value = TempGameValues.MaxElementPassiveCMs;   // 6
+                    break;
+                case ShipHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
+            }
+            D.Assert(value <= TempGameValues.MaxElementPassiveCMs);
+            return value;
+        }
+
+        public static int __MaxPassiveCMs(this FacilityHullCategory cat) {
+            int value = 0;
+            switch (cat) {
+                case FacilityHullCategory.Economic:
+                case FacilityHullCategory.Factory:
+                case FacilityHullCategory.Laboratory:
+                case FacilityHullCategory.Barracks:
+                case FacilityHullCategory.ColonyHab:
+                    value = 4;
+                    break;
+                case FacilityHullCategory.CentralHub:
+                case FacilityHullCategory.Defense:
+                    value = TempGameValues.MaxElementPassiveCMs;   // 6
+                    break;
+                case FacilityHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
+            }
+            D.Assert(value <= TempGameValues.MaxElementPassiveCMs);
+            return value;
+        }
+
+        public static int __MaxActiveCMs(this ShipHullCategory cat) {
+            int value = 0;
+            switch (cat) {
+                case ShipHullCategory.Fighter:
+                case ShipHullCategory.Scout:
+                    break;
+                case ShipHullCategory.Investigator:
+                case ShipHullCategory.Frigate:
+                    value = 2;
+                    break;
+                case ShipHullCategory.Support:
+                case ShipHullCategory.Destroyer:
+                    value = 3;
+                    break;
+                case ShipHullCategory.Colonizer:
+                case ShipHullCategory.Troop:
+                case ShipHullCategory.Cruiser:
+                    value = 4;
+                    break;
+                case ShipHullCategory.Carrier:
+                case ShipHullCategory.Dreadnought:
+                    value = TempGameValues.MaxElementActiveCMs;   // 6
+                    break;
+                case ShipHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
+            }
+            D.Assert(value <= TempGameValues.MaxElementActiveCMs);
+            return value;
+        }
+
+        public static int __MaxActiveCMs(this FacilityHullCategory cat) {
+            int value = 0;
+            switch (cat) {
+                case FacilityHullCategory.Economic:
+                case FacilityHullCategory.Factory:
+                case FacilityHullCategory.Laboratory:
+                case FacilityHullCategory.Barracks:
+                case FacilityHullCategory.ColonyHab:
+                    value = 4;
+                    break;
+                case FacilityHullCategory.CentralHub:
+                case FacilityHullCategory.Defense:
+                    value = TempGameValues.MaxElementActiveCMs;   // 6
+                    break;
+                case FacilityHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
+            }
+            D.Assert(value <= TempGameValues.MaxElementActiveCMs);
+            return value;
+        }
+
+        /// <summary>
+        /// The maximum number of sensors allowed for a ship hull category.
+        /// Includes both reqd and optional sensors.
+        /// </summary>
+        /// <param name="cat">The cat.</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotImplementedException"></exception>
+        public static int __MaxSensors(this ShipHullCategory cat) {
+            int value = 1;
+            switch (cat) {
+                case ShipHullCategory.Fighter:
+                case ShipHullCategory.Scout:
+                case ShipHullCategory.Support:
+                case ShipHullCategory.Frigate:
+                    break;
+                case ShipHullCategory.Troop:
+                case ShipHullCategory.Destroyer:
+                    value = 2;
+                    break;
+                case ShipHullCategory.Colonizer:
+                case ShipHullCategory.Cruiser:
+                    value = 3;
+                    break;
+                case ShipHullCategory.Investigator:
+                case ShipHullCategory.Carrier:
+                case ShipHullCategory.Dreadnought:
+                    value = TempGameValues.MaxElementSensors;   // 4
+                    break;
+                case ShipHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
+            }
+            D.Assert(value <= TempGameValues.MaxElementSensors);
+            return value;
+        }
+
+        /// <summary>
+        /// The maximum number of sensors allowed for a facility hull category.
+        /// Includes both reqd and optional sensors.
+        /// </summary>
+        /// <param name="cat">The cat.</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotImplementedException"></exception>
+        public static int __MaxSensors(this FacilityHullCategory cat) {
+            int value = 1;
+            switch (cat) {
+                case FacilityHullCategory.Economic:
+                case FacilityHullCategory.Factory:
+                case FacilityHullCategory.Barracks:
+                case FacilityHullCategory.Defense:
+                case FacilityHullCategory.ColonyHab:
+                    value = 3;
+                    break;
+                case FacilityHullCategory.Laboratory:
+                case FacilityHullCategory.CentralHub:
+                    value = TempGameValues.MaxElementSensors;   // 4
+                    break;
+                case FacilityHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
+            }
+            D.Assert(value <= TempGameValues.MaxElementSensors);
+            return value;
+        }
+
+        public static int __MaxShieldGenerators(this ShipHullCategory cat) {
+            int value = 0;
+            switch (cat) {
+                case ShipHullCategory.Fighter:
+                case ShipHullCategory.Scout:
+                    break;
+                case ShipHullCategory.Support:
+                case ShipHullCategory.Frigate:
+                    value = 1;
+                    break;
+                case ShipHullCategory.Destroyer:
+                    value = 2;
+                    break;
+                case ShipHullCategory.Investigator:
+                case ShipHullCategory.Colonizer:
+                case ShipHullCategory.Cruiser:
+                    value = 3;
+                    break;
+                case ShipHullCategory.Troop:
+                case ShipHullCategory.Carrier:
+                case ShipHullCategory.Dreadnought:
+                    value = TempGameValues.MaxElementShieldGenerators;   // 4
+                    break;
+                case ShipHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
+            }
+            D.Assert(value <= TempGameValues.MaxElementShieldGenerators);
+            return value;
+        }
+
+        public static int __MaxShieldGenerators(this FacilityHullCategory cat) {
+            int value = 0;
+            switch (cat) {
+                case FacilityHullCategory.Economic:
+                case FacilityHullCategory.Factory:
+                case FacilityHullCategory.Barracks:
+                case FacilityHullCategory.Laboratory:
+                case FacilityHullCategory.ColonyHab:
+                    value = 3;
+                    break;
+                case FacilityHullCategory.Defense:
+                case FacilityHullCategory.CentralHub:
+                    value = TempGameValues.MaxElementShieldGenerators;   // 4
+                    break;
+                case FacilityHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
+            }
+            D.Assert(value <= TempGameValues.MaxElementShieldGenerators);
+            return value;
+        }
+
+
 
         #endregion
 
@@ -1054,6 +1329,96 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        public static float Income(this FacilityHullCategory hullCat) {
+            float result;
+            switch (hullCat) {
+                case FacilityHullCategory.CentralHub:
+                    result = 5F;
+                    break;
+                case FacilityHullCategory.Economic:
+                    result = 20F;
+                    break;
+                case FacilityHullCategory.Barracks:
+                case FacilityHullCategory.ColonyHab:
+                case FacilityHullCategory.Defense:
+                case FacilityHullCategory.Factory:
+                case FacilityHullCategory.Laboratory:
+                    result = Constants.ZeroF;
+                    break;
+                case FacilityHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+            }
+            return result;
+        }
+
+        public static float Expense(this FacilityHullCategory hullCat) {
+            float result;
+            switch (hullCat) {
+                case FacilityHullCategory.CentralHub:
+                case FacilityHullCategory.Economic:
+                    result = Constants.ZeroF;
+                    break;
+                case FacilityHullCategory.Barracks:
+                case FacilityHullCategory.ColonyHab:
+                    result = 3F;
+                    break;
+                case FacilityHullCategory.Defense:
+                case FacilityHullCategory.Factory:
+                case FacilityHullCategory.Laboratory:
+                    result = 5F;
+                    break;
+                case FacilityHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+            }
+            return result;
+        }
+
+        public static float Science(this FacilityHullCategory hullCat) {
+            float result;
+            switch (hullCat) {
+                case FacilityHullCategory.Laboratory:
+                    result = 10F;
+                    break;
+                case FacilityHullCategory.CentralHub:
+                case FacilityHullCategory.Economic:
+                case FacilityHullCategory.Barracks:
+                case FacilityHullCategory.ColonyHab:
+                case FacilityHullCategory.Defense:
+                case FacilityHullCategory.Factory:
+                    result = Constants.ZeroF;
+                    break;
+                case FacilityHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+            }
+            return result;
+        }
+
+        public static float Culture(this FacilityHullCategory hullCat) {
+            float result;
+            switch (hullCat) {
+                case FacilityHullCategory.CentralHub:
+                case FacilityHullCategory.ColonyHab:
+                    result = 3F;
+                    break;
+                case FacilityHullCategory.Economic:
+                case FacilityHullCategory.Barracks:
+                case FacilityHullCategory.Defense:
+                case FacilityHullCategory.Factory:
+                case FacilityHullCategory.Laboratory:
+                    result = Constants.ZeroF;
+                    break;
+                case FacilityHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+            }
+            return result;
+        }
+
+
+        [System.Obsolete]
         public static float Income(this FacilityHullCategory hullCat, bool _isSettlement) {
             float factor = _isSettlement ? 2.0F : 1.0F;
             float result;
@@ -1078,6 +1443,7 @@ namespace CodeEnv.Master.GameContent {
             return result * factor;
         }
 
+        [System.Obsolete]
         public static float Expense(this FacilityHullCategory hullCat, bool _isSettlement) {
             float factor = _isSettlement ? 2.0F : 1.0F;
             float result;
@@ -1102,6 +1468,7 @@ namespace CodeEnv.Master.GameContent {
             return result * factor;
         }
 
+        [System.Obsolete]
         public static float Science(this FacilityHullCategory hullCat, bool _isSettlement) {
             float factor = _isSettlement ? 2.0F : 1.0F;
             float result;
@@ -1124,6 +1491,7 @@ namespace CodeEnv.Master.GameContent {
             return result * factor;
         }
 
+        [System.Obsolete]
         public static float Culture(this FacilityHullCategory hullCat, bool _isSettlement) {
             float factor = _isSettlement ? 2.0F : 1.0F;
             float result;

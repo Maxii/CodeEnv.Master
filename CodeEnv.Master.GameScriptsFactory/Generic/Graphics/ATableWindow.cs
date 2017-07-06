@@ -30,8 +30,8 @@ using UnityEngine.Serialization;
 /// </summary>
 public abstract class ATableWindow : AGuiWindow {
 
-    protected static string _unknown = Constants.QuestionMark;
-    private static string _rowNameExtension = " Row";
+    protected const string Unknown = Constants.QuestionMark;
+    private const string RowNameExtension = " Row";
 
     public ATableRowForm rowPrefab; // Has Editor
 
@@ -40,6 +40,8 @@ public abstract class ATableWindow : AGuiWindow {
     protected SortDirection _sortDirection;
     protected UITable _table;
 
+    private Transform _tableContainer;
+    private UIScrollView _tableScrollView;
     private Transform _contentHolder;
     private GuiElementID _lastSortTopic;
     private SortDirection _lastSortDirection;
@@ -63,6 +65,8 @@ public abstract class ATableWindow : AGuiWindow {
         _table.sorting = UITable.Sorting.Custom;
         _rowForms = new List<ATableRowForm>();
         _panel.widgetsAreStatic = true; // OPTIMIZE see http://www.tasharen.com/forum/index.php?topic=261.0
+        _tableScrollView = GetComponentInChildren<UIScrollView>();
+        _tableContainer = _tableScrollView.transform.parent;
     }
 
     private void InitializeContentHolder() {
@@ -152,17 +156,27 @@ public abstract class ATableWindow : AGuiWindow {
 
     private ATableRowForm BuildRow(string itemName) {
         GameObject rowGo = NGUITools.AddChild(_table.gameObject, rowPrefab.gameObject);
-        rowGo.name = itemName + _rowNameExtension;
-        // 5.24.17 FIXME: Can't anchor as UIScrollVIew.Movement = Unrestricted which means the row needs to be able to move both in x and y.
-        // Probably need a minimum screen width based on info we will need to show so don't need horizontal scrollbar so can anchor ends
+        rowGo.name = itemName + RowNameExtension;
         return rowGo.GetSafeComponent<ATableRowForm>(); ;
     }
 
     private void ConfigureRow(ATableRowForm rowForm, AItem item) {
+        ////MakeRowDraggable(rowForm);
+        rowForm.SetSideAnchors(_tableContainer, left: 0, right: 0);
         rowForm.Report = GetUserReportFor(item);
         rowForm.itemFocusUserAction += ItemFocusUserActionEventHandler;
     }
 
+    /// <summary>
+    /// Makes the provided row vertically draggable.
+    /// <remarks>6.3.17 UNDONE Not currently sufficient as GuiElements cover the row gameObject
+    /// where this UIDragScrollView is attached. All GuiElements will need UIDragScrollView to always work.</remarks>
+    /// </summary>
+    /// <param name="rowForm">The row form.</param>
+    private void MakeRowDraggable(ATableRowForm rowForm) {
+        UIDragScrollView rowDragger = rowForm.gameObject.AddMissingComponent<UIDragScrollView>();
+        rowDragger.scrollView = _tableScrollView;
+    }
 
     /// <summary>
     /// The derived class returns the UserReport for the provided item.

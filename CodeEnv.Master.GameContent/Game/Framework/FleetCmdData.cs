@@ -127,8 +127,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="sensors">The MR and LR sensors for this UnitCmd.</param>
         /// <param name="ftlDampener">The FTL dampener.</param>
         /// <param name="cmdStat">The stat.</param>
-        public FleetCmdData(IFleetCmd fleetCmd, Player owner, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, UnitCmdStat cmdStat)
-            : this(fleetCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), sensors, ftlDampener, cmdStat) {
+        /// <param name="designName">Name of the design.</param>
+        public FleetCmdData(IFleetCmd fleetCmd, Player owner, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, UnitCmdStat cmdStat,
+            string designName)
+            : this(fleetCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), sensors, ftlDampener, cmdStat, designName) {
         }
 
         /// <summary>
@@ -140,8 +142,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="sensors">The MR and LR sensors for this UnitCmd.</param>
         /// <param name="ftlDampener">The FTL dampener.</param>
         /// <param name="cmdStat">The stat.</param>
-        public FleetCmdData(IFleetCmd fleetCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, UnitCmdStat cmdStat)
-            : base(fleetCmd, owner, passiveCMs, sensors, ftlDampener, cmdStat) { }
+        /// <param name="designName">Name of the design.</param>
+        public FleetCmdData(IFleetCmd fleetCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors,
+            FtlDampener ftlDampener, UnitCmdStat cmdStat, string designName)
+            : base(fleetCmd, owner, passiveCMs, sensors, ftlDampener, cmdStat, designName) { }
 
         protected override AIntel MakeIntelInstance() {
             return new RegressibleIntel(lowestRegressedCoverage: IntelCoverage.None);

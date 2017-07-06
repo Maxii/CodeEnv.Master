@@ -33,6 +33,10 @@ public class FleetCreator : AAutoUnitCreator {
     private FleetCmdItem _command;
     private IList<ShipItem> _elements;
 
+    protected override void InitializeRootUnitName() {
+        RootUnitName = "AutoFleet";
+    }
+
     protected override void MakeElements() {
         _elements = new List<ShipItem>();
         foreach (var designName in Configuration.ElementDesignNames) {
@@ -45,10 +49,8 @@ public class FleetCreator : AAutoUnitCreator {
 
     protected override void MakeCommand(Player owner) {
         FleetCmdCameraStat cameraStat = MakeCmdCameraStat(TempGameValues.ShipMaxRadius);
-        _command = _factory.MakeFleetCmdInstance(owner, cameraStat, Configuration.CmdDesignName, gameObject);
-        if (_command.Data.ParentName != UnitName) {  // avoids equals warning
-            _command.Data.ParentName = UnitName;
-        }
+        Formation formation = Formation.Globe;
+        _command = _factory.MakeFleetCmdInstance(owner, cameraStat, Configuration.CmdDesignName, gameObject, UnitName, formation);
     }
 
     protected override void AddElementsToCommand() {

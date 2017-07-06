@@ -43,7 +43,7 @@ public class FleetTableRowForm : ACommandTableRowForm {
     protected override void AssignValueToSpeedGuiElement() {
         base.AssignValueToSpeedGuiElement();
         var report = Report as FleetCmdReport;
-        _speedLabel.text = report.UnitFullSpeed.HasValue ? Constants.FormatFloat_1DpMax.Inject(report.UnitFullSpeed.Value) : _unknown;
+        _speedLabel.text = report.UnitFullSpeed.HasValue ? Constants.FormatFloat_1DpMax.Inject(report.UnitFullSpeed.Value) : Unknown;
     }
 
 }

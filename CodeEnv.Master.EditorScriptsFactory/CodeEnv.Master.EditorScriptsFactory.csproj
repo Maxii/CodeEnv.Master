@@ -85,6 +85,7 @@
     <Compile Include="Game\SectorGridEditor.cs" />
     <Compile Include="Game\PooledSphericalHighlightEditor.cs" />
     <Compile Include="Game\SphericalHighlightEditor.cs" />
+    <Compile Include="Game\ShipDesignWindowEditor.cs" />
     <Compile Include="ThirdParty\ContextMenu\CtxMenuButtonInspector.cs" />
     <Compile Include="ThirdParty\ContextMenu\CtxMenuInspector.cs" />
     <Compile Include="ThirdParty\ContextMenu\ACtxMenuItemInspector.cs" />

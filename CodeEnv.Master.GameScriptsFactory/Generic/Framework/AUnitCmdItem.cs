@@ -311,7 +311,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     public override void CommenceOperations() {
         base.CommenceOperations();
         DetermineInitialState();
-        //// 5.13.17 RegisterForOrders() moved to derived Cmd.CommenceOperations so it occurs AFTER setting Idling state
         RegisterForOrders();
     }
 

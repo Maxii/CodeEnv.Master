@@ -24,8 +24,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FleetCreatorEditorSettings : AUnitCreatorEditorSettings {
 
-        public DebugFleetFormation Formation { get; private set; }
-
         public bool Move { get; private set; }
 
         public bool FindFarthest { get; private set; }
@@ -40,7 +38,6 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new instance of the <see cref="FleetCreatorEditorSettings" /> struct
         /// when the unit composition is NOT preset.
         /// </summary>
-        /// <param name="unitName">Name of the unit.</param>
         /// <param name="isOwnerUser">if set to <c>true</c> [is owner user].</param>
         /// <param name="elementQty">The element qty.</param>
         /// <param name="userRelations">The user relations.</param>
@@ -53,28 +50,28 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="passiveCMs">The passive c ms.</param>
         /// <param name="shieldGens">The shield gens.</param>
         /// <param name="srSensors">SR sensor qty per element.</param>
-        /// <param name="formation">The formation.</param>
         /// <param name="toMove">if set to <c>true</c> [to move].</param>
         /// <param name="findFarthest">if set to <c>true</c> [find farthest].</param>
         /// <param name="toAttack">if set to <c>true</c> [to attack].</param>
         /// <param name="stanceExclusions">The stance exclusions.</param>
-        public FleetCreatorEditorSettings(string unitName, bool isOwnerUser, int elementQty, DebugDiploUserRelations userRelations, int cmsPerCmd,
-            int sensorsPerCmd, int activeCMs, GameDate deployDate, DebugLosWeaponLoadout losTurrets, DebugLaunchedWeaponLoadout launchers,
-            int passiveCMs, int shieldGens, int srSensors, DebugFleetFormation formation, bool toMove, bool findFarthest, bool toAttack, DebugShipCombatStanceExclusions stanceExclusions)
-            : base(unitName, isOwnerUser, elementQty, userRelations, cmsPerCmd, sensorsPerCmd, activeCMs, deployDate, losTurrets,
-                  launchers, passiveCMs, shieldGens, srSensors) {
-            Formation = formation;
+        public FleetCreatorEditorSettings(bool isOwnerUser, int elementQty, DebugDiploUserRelations userRelations,
+            DebugPassiveCMLoadout cmsPerCmd, DebugSensorLoadout sensorsPerCmd, DebugActiveCMLoadout activeCMs, GameDate deployDate,
+            DebugLosWeaponLoadout losTurrets, DebugLaunchedWeaponLoadout launchers, DebugPassiveCMLoadout passiveCMs,
+            DebugShieldGenLoadout shieldGens, DebugSensorLoadout srSensors, bool toMove, bool findFarthest, bool toAttack,
+            DebugShipCombatStanceExclusions stanceExclusions)
+            : base(isOwnerUser, elementQty, userRelations, cmsPerCmd, sensorsPerCmd, activeCMs, deployDate, losTurrets, launchers,
+                  passiveCMs, shieldGens, srSensors) {
             Move = toMove;
             FindFarthest = findFarthest;
             Attack = toAttack;
             StanceExclusions = stanceExclusions;
         }
 
+
         /// <summary>
         /// Initializes a new instance of the <see cref="FleetCreatorEditorSettings" /> struct
         /// when the unit composition is preset.
         /// </summary>
-        /// <param name="unitName">Name of the unit.</param>
         /// <param name="isOwnerUser">if set to <c>true</c> [is owner user].</param>
         /// <param name="userRelations">The user relations.</param>
         /// <param name="cmsPerCmd">The CMS per command.</param>
@@ -86,19 +83,18 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="passiveCMs">The passive c ms.</param>
         /// <param name="shieldGens">The shield gens.</param>
         /// <param name="srSensors">SR sensor qty per element.</param>
-        /// <param name="formation">The formation.</param>
         /// <param name="toMove">if set to <c>true</c> [to move].</param>
         /// <param name="findFarthest">if set to <c>true</c> [find farthest].</param>
         /// <param name="toAttack">if set to <c>true</c> [to attack].</param>
         /// <param name="stanceExclusions">The stance exclusions.</param>
         /// <param name="presetHullCats">The preset hull cats.</param>
-        public FleetCreatorEditorSettings(string unitName, bool isOwnerUser, DebugDiploUserRelations userRelations, int cmsPerCmd, int sensorsPerCmd,
-            int activeCMs, GameDate deployDate, DebugLosWeaponLoadout losTurrets, DebugLaunchedWeaponLoadout launchers, int passiveCMs,
-            int shieldGens, int srSensors, DebugFleetFormation formation, bool toMove, bool findFarthest, bool toAttack,
-            DebugShipCombatStanceExclusions stanceExclusions, IList<ShipHullCategory> presetHullCats)
-            : base(unitName, isOwnerUser, userRelations, cmsPerCmd, sensorsPerCmd, activeCMs, deployDate, losTurrets, launchers, passiveCMs,
+        public FleetCreatorEditorSettings(bool isOwnerUser, DebugDiploUserRelations userRelations, DebugPassiveCMLoadout cmsPerCmd,
+            DebugSensorLoadout sensorsPerCmd, DebugActiveCMLoadout activeCMs, GameDate deployDate, DebugLosWeaponLoadout losTurrets,
+            DebugLaunchedWeaponLoadout launchers, DebugPassiveCMLoadout passiveCMs, DebugShieldGenLoadout shieldGens,
+            DebugSensorLoadout srSensors, bool toMove, bool findFarthest, bool toAttack, DebugShipCombatStanceExclusions stanceExclusions,
+            IList<ShipHullCategory> presetHullCats)
+            : base(isOwnerUser, userRelations, cmsPerCmd, sensorsPerCmd, activeCMs, deployDate, losTurrets, launchers, passiveCMs,
                 shieldGens, srSensors) {
-            Formation = formation;
             Move = toMove;
             FindFarthest = findFarthest;
             Attack = toAttack;

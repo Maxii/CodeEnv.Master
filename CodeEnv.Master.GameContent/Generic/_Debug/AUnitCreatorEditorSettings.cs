@@ -25,8 +25,6 @@ namespace CodeEnv.Master.GameContent {
 
         public string DebugName { get { return GetType().Name; } }
 
-        public string UnitName { get; private set; }
-
         public bool IsOwnerUser { get; private set; }
 
         public bool IsCompositionPreset { get; private set; }
@@ -35,29 +33,28 @@ namespace CodeEnv.Master.GameContent {
 
         public DebugDiploUserRelations DesiredRelationshipWithUser { get; private set; }
 
-        public int CMsPerCommand { get; private set; }
+        public DebugPassiveCMLoadout CMsPerCommand { get; private set; }
 
-        public int SensorsPerCommand { get; private set; }
+        public DebugSensorLoadout SensorsPerCommand { get; private set; }
 
-        public int ActiveCMsPerElement { get; private set; }
+        public DebugActiveCMLoadout ActiveCMsPerElement { get; private set; }
 
         public GameDate DateToDeploy { get; private set; }
 
-        public DebugLosWeaponLoadout LosTurretsPerElement { get; private set; }
+        public DebugLosWeaponLoadout LosTurretLoadout { get; private set; }
 
-        public DebugLaunchedWeaponLoadout LaunchersPerElement { get; private set; }
+        public DebugLaunchedWeaponLoadout LauncherLoadout { get; private set; }
 
-        public int PassiveCMsPerElement { get; private set; }
+        public DebugPassiveCMLoadout PassiveCMsPerElement { get; private set; }
 
-        public int ShieldGeneratorsPerElement { get; private set; }
+        public DebugShieldGenLoadout ShieldGeneratorsPerElement { get; private set; }
 
-        public int SRSensorsPerElement { get; private set; }
+        public DebugSensorLoadout SRSensorsPerElement { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AUnitCreatorEditorSettings" /> struct
         /// when the unit composition is NOT preset.
         /// </summary>
-        /// <param name="unitName">Name of the unit.</param>
         /// <param name="isOwnerUser">if set to <c>true</c> [is owner user].</param>
         /// <param name="elementQty">The element qty.</param>
         /// <param name="userRelations">The user relations.</param>
@@ -70,10 +67,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="passiveCMs">The passive c ms.</param>
         /// <param name="shieldGens">The shield gens.</param>
         /// <param name="srSensors">SR sensor qty per element.</param>
-        public AUnitCreatorEditorSettings(string unitName, bool isOwnerUser, int elementQty, DebugDiploUserRelations userRelations,
-            int cmsPerCmd, int sensorsPerCmd, int activeCMs, GameDate deployDate, DebugLosWeaponLoadout losTurrets,
-            DebugLaunchedWeaponLoadout launchers, int passiveCMs, int shieldGens, int srSensors) {
-            UnitName = unitName;
+        public AUnitCreatorEditorSettings(bool isOwnerUser, int elementQty, DebugDiploUserRelations userRelations,
+            DebugPassiveCMLoadout cmsPerCmd, DebugSensorLoadout sensorsPerCmd, DebugActiveCMLoadout activeCMs, GameDate deployDate,
+            DebugLosWeaponLoadout losTurrets, DebugLaunchedWeaponLoadout launchers, DebugPassiveCMLoadout passiveCMs,
+            DebugShieldGenLoadout shieldGens, DebugSensorLoadout srSensors) {
             IsOwnerUser = isOwnerUser;
             IsCompositionPreset = false;
             NonPresetElementQty = elementQty;
@@ -82,8 +79,8 @@ namespace CodeEnv.Master.GameContent {
             SensorsPerCommand = sensorsPerCmd;
             ActiveCMsPerElement = activeCMs;
             DateToDeploy = deployDate;
-            LosTurretsPerElement = losTurrets;
-            LaunchersPerElement = launchers;
+            LosTurretLoadout = losTurrets;
+            LauncherLoadout = launchers;
             PassiveCMsPerElement = passiveCMs;
             ShieldGeneratorsPerElement = shieldGens;
             SRSensorsPerElement = srSensors;
@@ -93,7 +90,6 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new instance of the <see cref="AUnitCreatorEditorSettings" /> struct
         /// when the unit composition is preset.
         /// </summary>
-        /// <param name="unitName">Name of the unit.</param>
         /// <param name="isOwnerUser">if set to <c>true</c> [is owner user].</param>
         /// <param name="userRelations">The user relations.</param>
         /// <param name="cmsPerCmd">The CMS per command.</param>
@@ -105,10 +101,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="passiveCMs">The passive c ms.</param>
         /// <param name="shieldGens">The shield gens.</param>
         /// <param name="srSensors">SR sensor qty per element.</param>
-        public AUnitCreatorEditorSettings(string unitName, bool isOwnerUser, DebugDiploUserRelations userRelations, int cmsPerCmd, int sensorsPerCmd,
-            int activeCMs, GameDate deployDate, DebugLosWeaponLoadout losTurrets, DebugLaunchedWeaponLoadout launchers, int passiveCMs,
-            int shieldGens, int srSensors) {
-            UnitName = unitName;
+        public AUnitCreatorEditorSettings(bool isOwnerUser, DebugDiploUserRelations userRelations, DebugPassiveCMLoadout cmsPerCmd,
+            DebugSensorLoadout sensorsPerCmd, DebugActiveCMLoadout activeCMs, GameDate deployDate, DebugLosWeaponLoadout losTurrets,
+            DebugLaunchedWeaponLoadout launchers, DebugPassiveCMLoadout passiveCMs, DebugShieldGenLoadout shieldGens,
+            DebugSensorLoadout srSensors) {
             IsOwnerUser = isOwnerUser;
             IsCompositionPreset = true;
             NonPresetElementQty = Constants.Zero;
@@ -116,8 +112,8 @@ namespace CodeEnv.Master.GameContent {
             CMsPerCommand = cmsPerCmd;
             ActiveCMsPerElement = activeCMs;
             DateToDeploy = deployDate;
-            LosTurretsPerElement = losTurrets;
-            LaunchersPerElement = launchers;
+            LosTurretLoadout = losTurrets;
+            LauncherLoadout = launchers;
             PassiveCMsPerElement = passiveCMs;
             ShieldGeneratorsPerElement = shieldGens;
             SRSensorsPerElement = srSensors;

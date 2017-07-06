@@ -26,13 +26,13 @@ public abstract class ACommandTableRowForm : ATableRowForm {
 
     protected override void AssignValueToNameGuiElement() {
         var report = Report as AUnitCmdReport;
-        _nameLabel.text = report.ParentName != null ? report.ParentName : _unknown;
+        _nameLabel.text = report.ParentName != null ? report.ParentName : Unknown;
     }
 
     protected sealed override void AssignValueToCultureGuiElement() {
         base.AssignValueToCultureGuiElement();
         var report = Report as AUnitCmdReport;
-        _cultureLabel.text = report.UnitCulture.HasValue ? Constants.FormatFloat_0Dp.Inject(report.UnitCulture) : _unknown;
+        _cultureLabel.text = report.UnitCulture.HasValue ? Constants.FormatFloat_0Dp.Inject(report.UnitCulture) : Unknown;
     }
 
     protected sealed override void AssignValueToDefensiveStrengthGuiElement() {
@@ -82,7 +82,7 @@ public abstract class ACommandTableRowForm : ATableRowForm {
     protected sealed override void AssignValueToScienceGuiElement() {
         base.AssignValueToScienceGuiElement();
         var report = Report as AUnitCmdReport;
-        _scienceLabel.text = report.UnitScience.HasValue ? Constants.FormatFloat_0Dp.Inject(report.UnitScience) : _unknown;
+        _scienceLabel.text = report.UnitScience.HasValue ? Constants.FormatFloat_0Dp.Inject(report.UnitScience) : Unknown;
     }
 
 }

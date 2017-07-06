@@ -23,6 +23,25 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class PassiveCountermeasureStat : AEquipmentStat {
 
+        #region Comparison Operators Override
+
+        // see C# 4.0 In a Nutshell, page 254
+
+        public static bool operator ==(PassiveCountermeasureStat left, PassiveCountermeasureStat right) {
+            // https://msdn.microsoft.com/en-us/library/ms173147(v=vs.90).aspx
+            if (ReferenceEquals(left, right)) { return true; }
+            if (((object)left == null) || ((object)right == null)) { return false; }
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(PassiveCountermeasureStat left, PassiveCountermeasureStat right) {
+            return !(left == right);
+        }
+
+        #endregion
+
+        public override EquipmentCategory Category { get { return EquipmentCategory.PassiveCountermeasure; } }
+
         public DamageStrength DamageMitigation { get; private set; }
 
         /// <summary>
@@ -48,6 +67,26 @@ namespace CodeEnv.Master.GameContent {
         public PassiveCountermeasureStat()
             : this("BasicPassiveCM", AtlasID.MyGui, TempGameValues.AnImageFilename, "BasicDescription..", 0F, 0F, 0F, 0F, new DamageStrength(1F, 1F, 1F)) {
         }
+
+        #region Object.Equals and GetHashCode Override
+
+        public override int GetHashCode() {
+            unchecked {
+                int hash = base.GetHashCode();
+                hash = hash * 31 + DamageMitigation.GetHashCode(); // 31 = another prime number
+                return hash;
+            }
+        }
+
+        public override bool Equals(object obj) {
+            if (base.Equals(obj)) {
+                PassiveCountermeasureStat oStat = (PassiveCountermeasureStat)obj;
+                return oStat.DamageMitigation == DamageMitigation;
+            }
+            return false;
+        }
+
+        #endregion
 
     }
 }

@@ -20,19 +20,41 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Immutable stat containing externally acquirable values for Sensors.
+    /// <remarks>Implements value-based Equality and HashCode.</remarks>
     /// </summary>
     public class SensorStat : ARangedEquipmentStat {
 
         private const string DebugNameFormat = "{0}(Range[{1}]).";
 
+        private const string BasicDescriptionFormat = "Basic {0} sensor.";
+
+        #region Comparison Operators Override
+
+        // see C# 4.0 In a Nutshell, page 254
+
+        public static bool operator ==(SensorStat left, SensorStat right) {
+            // https://msdn.microsoft.com/en-us/library/ms173147(v=vs.90).aspx
+            if (ReferenceEquals(left, right)) { return true; }
+            if (((object)left == null) || ((object)right == null)) { return false; }
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(SensorStat left, SensorStat right) {
+            return !(left == right);
+        }
+
+        #endregion
+
         public override string DebugName {
             get {
                 if (_debugName == null) {
-                    _debugName = DebugNameFormat.Inject(base.DebugName, RangeCategory.GetValueName());
+                    _debugName = DebugNameFormat.Inject(base.DebugName, RangeCategory.GetEnumAttributeText());
                 }
                 return _debugName;
             }
         }
+
+        public override EquipmentCategory Category { get { return EquipmentCategory.Sensor; } }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SensorStat" /> struct.
@@ -49,14 +71,33 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="isDamageable">if set to <c>true</c> [is damageable].</param>
         public SensorStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass, float pwrRqmt,
             float expense, RangeCategory rangeCat, bool isDamageable)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, isDamageable) { }
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, isDamageable) {
+        }
 
         /// <summary>
-        /// Initializes a new instance of the most basic <see cref="SensorStat"/> class.
+        /// Initializes a new instance of the most basic <see cref="SensorStat" /> class.
         /// </summary>
-        public SensorStat(RangeCategory rangeCat)
-            : this("BasicSensorStat", AtlasID.MyGui, TempGameValues.AnImageFilename, "BasicDescription..", 0F, 0F, 0F, 0F, rangeCat, true) {
+        /// <param name="name">The name.</param>
+        /// <param name="rangeCat">The range category of the sensor.</param>
+        /// <param name="isDamageable">if set to <c>true</c> [is damageable].</param>
+        public SensorStat(string name, RangeCategory rangeCat, bool isDamageable)
+            : this(name, AtlasID.MyGui, TempGameValues.AnImageFilename,
+                  BasicDescriptionFormat.Inject(rangeCat.GetEnumAttributeText()), 0F, 0F, 0F, 0F, rangeCat, isDamageable) {
         }
+
+        #region Object.Equals and GetHashCode Override
+
+        public override int GetHashCode() {
+            unchecked {
+                return base.GetHashCode();
+            }
+        }
+
+        public override bool Equals(object obj) {
+            return base.Equals(obj);
+        }
+
+        #endregion
 
     }
 }

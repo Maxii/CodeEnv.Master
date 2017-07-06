@@ -105,15 +105,15 @@ public class DebugControlsEditor : Editor {
                             {
                                 NGUIEditorTools.SetLabelWidth(160F);
                                 NGUIEditorTools.DrawProperty("LOS Weapon Load", serializedObject, "_losWeaponsPerElement");
-                                NGUIEditorTools.DrawProperty("Launched Weap Load", serializedObject, "_launchedWeaponsPerElement");
+                                NGUIEditorTools.DrawProperty("Launched Weapon Load", serializedObject, "_launchedWeaponsPerElement");
 
                                 NGUIEditorTools.SetLabelWidth(160F);
-                                NGUIEditorTools.DrawProperty("ActiveCMs/Element", serializedObject, "_activeCMsPerElement", GUILayout.Width(180F));
-                                NGUIEditorTools.DrawProperty("ShieldGens/Element", serializedObject, "_shieldGeneratorsPerElement", GUILayout.Width(180F));
-                                NGUIEditorTools.DrawProperty("PassiveCMs/Element", serializedObject, "_passiveCMsPerElement", GUILayout.Width(180F));
-                                NGUIEditorTools.DrawProperty("SRSensors/Element", serializedObject, "_srSensorsPerElement", GUILayout.Width(180F));
-                                NGUIEditorTools.DrawProperty("PassiveCMs/Cmd", serializedObject, "_countermeasuresPerCmd", GUILayout.Width(180F));
-                                NGUIEditorTools.DrawProperty("MR_LRSensors/Cmd", serializedObject, "_sensorsPerCmd", GUILayout.Width(180F));
+                                NGUIEditorTools.DrawProperty("ActiveCMs/Element", serializedObject, "_activeCMsPerElement");
+                                NGUIEditorTools.DrawProperty("ShieldGens/Element", serializedObject, "_shieldGeneratorsPerElement");
+                                NGUIEditorTools.DrawProperty("PassiveCMs/Element", serializedObject, "_passiveCMsPerElement");
+                                NGUIEditorTools.DrawProperty("SRSensors/Element", serializedObject, "_srSensorsPerElement");
+                                NGUIEditorTools.DrawProperty("PassiveCMs/Cmd", serializedObject, "_countermeasuresPerCmd");
+                                NGUIEditorTools.DrawProperty("MR_LRSensors/Cmd", serializedObject, "_sensorsPerCmd");
                             }
                             NGUIEditorTools.EndContents();
                         }

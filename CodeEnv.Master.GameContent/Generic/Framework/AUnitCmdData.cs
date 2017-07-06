@@ -45,6 +45,8 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<float>(ref _unitMaxFormationRadius, value, "UnitMaxFormationRadius"); }
         }
 
+        public string DesignName { get; private set; }
+
         /// <summary>
         /// The radius of the Command, aka the radius of the HQElement.
         /// </summary>
@@ -216,15 +218,17 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="cmd">The command.</param>
         /// <param name="owner">The owner.</param>
         /// <param name="passiveCMs">The passive countermeasures protecting the command staff.</param>
+        /// <param name="sensors">The sensors.</param>
         /// <param name="ftlDampener">The FTL dampener.</param>
         /// <param name="cmdStat">The command stat.</param>
-        public AUnitCmdData(IUnitCmd cmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, UnitCmdStat cmdStat)
+        /// <param name="designName">Name of the design.</param>
+        public AUnitCmdData(IUnitCmd cmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors,
+            FtlDampener ftlDampener, UnitCmdStat cmdStat, string designName)
             : base(cmd, owner, cmdStat.MaxHitPoints, passiveCMs) {
             FtlDampener = ftlDampener;
             Sensors = sensors;
-            ParentName = cmdStat.UnitName;
-            UnitFormation = cmdStat.UnitFormation;
             MaxCmdEffectiveness = cmdStat.MaxCmdEffectiveness;
+            DesignName = designName;
             // A command's UnitMaxHitPoints are constructed from the sum of the elements
             InitializeCollections();
             Subscribe();

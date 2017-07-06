@@ -32,6 +32,10 @@ public class SettlementCreator : AAutoUnitCreator {
     private SettlementCmdItem _command;
     private IList<FacilityItem> _elements;
 
+    protected override void InitializeRootUnitName() {
+        RootUnitName = "AutoSettlement";
+    }
+
     protected override void MakeElements() {
         _elements = new List<FacilityItem>();
         foreach (var designName in Configuration.ElementDesignNames) {
@@ -43,10 +47,8 @@ public class SettlementCreator : AAutoUnitCreator {
 
     protected override void MakeCommand(Player owner) {
         CmdCameraStat cameraStat = MakeCmdCameraStat(TempGameValues.FacilityMaxRadius);
-        _command = _factory.MakeSettlementCmdInstance(owner, cameraStat, Configuration.CmdDesignName, gameObject);
-        if (_command.Data.ParentName != UnitName) {  // avoids equals warning
-            _command.Data.ParentName = UnitName;
-        }
+        Formation formation = Formation.Globe;
+        _command = _factory.MakeSettlementCmdInstance(owner, cameraStat, Configuration.CmdDesignName, gameObject, UnitName, formation);
     }
 
     protected override void AddElementsToCommand() {

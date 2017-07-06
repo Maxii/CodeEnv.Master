@@ -78,6 +78,7 @@
     <Compile Include="Generic\Framework\AFormationStation.cs" />
     <Compile Include="Generic\Graphics\AMountPlaceholder.cs" />
     <Compile Include="Generic\Graphics\AWeaponMount.cs" />
+    <Compile Include="Generic\IO\AAdditiveSceneLoader.cs" />
     <Compile Include="Generic\_Debug\EditModeController.cs" />
     <Compile Include="Game\Gameplay\FormationStationPlaceholder.cs" />
     <Compile Include="Game\Framework\CollisionDetectionMonitor.cs" />
@@ -121,6 +122,7 @@
     <Compile Include="Game\_Debug\SystemsFolder.cs" />
     <Compile Include="Game\_Debug\PlanetIconsFolder.cs" />
     <Compile Include="Game\_Debug\StarIconsFolder.cs" />
+    <Compile Include="Game\_Debug\Gui3DStageFolder.cs" />
     <Compile Include="ThirdParty\AMonoStateMachine_NoCall.cs" />
     <Compile Include="ThirdParty\TaskManager.cs" />
     <Compile Include="Generic\Framework\JobManager.cs" />

@@ -70,11 +70,28 @@ namespace CodeEnv.Master.GameContent {
 
         public const float __AllowedTurnTimeBufferFactor = 1.30F;   // 11.6.16 1.2 -> 1.3
 
-        public const int MaxLosWeaponsForAnyElement = 12;
+        /// <summary>
+        /// The maximum LOS weapons for an element.
+        /// </summary>
+        public const int MaxLosWeapons = 12;
 
-        public const int MaxLaunchedWeaponsForAnyElement = 6;
+        /// <summary>
+        /// The maximum launched weapons for an element.
+        /// </summary>
+        public const int MaxLaunchedWeapons = 6;
 
-        public const int MaxAssaultWeaponsForAnyElement = 2;
+        public const int MaxElementPassiveCMs = 6;
+        public const int MaxElementActiveCMs = 6;
+        public const int MaxElementShieldGenerators = 4;
+        /// <summary>
+        /// The maximum number of SR sensors allowed for any element, including both reqd and optional sensors.
+        /// </summary>
+        public const int MaxElementSensors = 4;
+        public const int MaxCmdPassiveCMs = 4;
+        /// <summary>
+        /// The maximum number of RR and LR sensors allowed for any cmd, including both reqd and optional sensors.
+        /// </summary>
+        public const int MaxCmdSensors = 5;
 
         public const float MinimumFramerate = 25F;
 
@@ -90,6 +107,34 @@ namespace CodeEnv.Master.GameContent {
         /// The range in degrees that a Turret's minimum barrel elevation setting can take.
         /// </summary>
         public static readonly ValueRange<float> MinimumBarrelElevationRange = new ValueRange<float>(-20F, 70F);
+
+        public static ShipHullCategory[] ShipHullCategoriesInUse =  {
+                                                                        ShipHullCategory.Carrier,
+                                                                        ShipHullCategory.Colonizer,
+                                                                        ShipHullCategory.Cruiser,
+                                                                        ShipHullCategory.Destroyer,
+                                                                        ShipHullCategory.Dreadnought,
+                                                                        ShipHullCategory.Frigate,
+                                                                        ShipHullCategory.Investigator,
+                                                                        ShipHullCategory.Support,
+                                                                        ShipHullCategory.Troop
+                                                                    };
+
+        public static FacilityHullCategory[] FacilityHullCategoriesInUse =  {
+                                                                                FacilityHullCategory.Barracks,
+                                                                                FacilityHullCategory.CentralHub,
+                                                                                FacilityHullCategory.ColonyHab,
+                                                                                FacilityHullCategory.Defense,
+                                                                                FacilityHullCategory.Economic,
+                                                                                FacilityHullCategory.Factory,
+                                                                                FacilityHullCategory.Laboratory,
+                                                                            };
+
+        public const string LoneFleetCmdDesignName = "LoneFleetCmdDesign";
+
+        public const string EmptyFleetCmdTemplateDesignName = "EmptyFleetCmdTemplateDesign";
+        public const string EmptyStarbaseCmdTemplateDesignName = "EmptyStarbaseCmdTemplateDesign";
+        public const string EmptySettlementCmdTemplateDesignName = "EmptySettlementCmdTemplateDesign";
 
         #region Ship Speed
 

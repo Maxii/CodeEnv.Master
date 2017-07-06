@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ASelectedItemForm.cs
-// Abstract base class for ReportForms that are used for selected items.
+// Abstract base class for AReportForms that are used for selected items.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,7 +23,7 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Abstract base class for ReportForms that are used for selected items.
+/// Abstract base class for AReportForms that are used for selected items.
 /// </summary>
 public abstract class ASelectedItemForm : AReportForm {
 

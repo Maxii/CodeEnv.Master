@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: FormID.cs
-// Unique identifier for Forms.
+// Unique identifier for a Form.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,8 +17,16 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Unique identifier for Forms. A Form supervises a collection of UIWidgets
-    ///in an arrangement that can be displayed by a GuiWindow.  
+    /// Unique identifier for a Form. A Form supervises a collection of UIWidgets
+    /// in an arrangement that can be displayed by a AGuiWindow. AForms are
+    /// populated with content to display by feeding them Text, Reports or individual
+    /// values (e.g. a ResourceForm is fed a ResourceID, displaying values derived from
+    /// the ResourceID in a TooltipHudWindow).
+    /// <remarks>6.17.17 Many AForms are shown in HUDs and the FormID is used by the HUD 
+    /// to pick the form to show. Some AForms don't lend themselves to HUD displays due to 
+    /// the way the form is structured. TableRowForms and MiniDesignForms are good examples
+    /// as Rows can be quite long, and MiniDesignForms contain minimal info. In these cases
+    /// the FormID is currently not used.</remarks>
     /// </summary>
     public enum FormID {
 
@@ -28,6 +36,7 @@ namespace CodeEnv.Master.GameContent {
 
         ResourceHud,
 
+
         SettlementTableRow,
 
         StarbaseTableRow,
@@ -35,6 +44,7 @@ namespace CodeEnv.Master.GameContent {
         FleetTableRow,
 
         SystemTableRow,
+
 
         SelectedSettlement,
 
@@ -52,7 +62,15 @@ namespace CodeEnv.Master.GameContent {
 
         SelectedPlanetoid,
 
-        SelectedUniverseCenter
+        SelectedUniverseCenter,
+
+
+        ShipDesign,
+
+        SelectedShipDesign,
+
+        SelectedEquipment,   // TEMP Placeholder for a number of EquipmentType-specific forms
+
 
     }
 }

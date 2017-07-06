@@ -119,9 +119,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     public override void CommenceOperations() {
         base.CommenceOperations();
-        ////CurrentState = BaseState.Idling;
         ActivateSensors();
-        ////RegisterForOrders();
         AssessAlertStatus();
         SubscribeToSensorEvents();
         __IsActivelyOperating = true;
