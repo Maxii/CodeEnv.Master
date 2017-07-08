@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ShipDesignImageIcon.cs
-// ImageIcon that holds a ShipDesign.
+// File: UnitDesignImageIcon.cs
+// ImageIcon that holds an AUnitDesign.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,13 +20,11 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// ImageIcon that holds a ShipDesign.
-/// <remarks>6.21.17 Currently used in the ShipDesignWindow.</remarks>
+/// ImageIcon that holds an AUnitDesign.
 /// </summary>
-public class ShipDesignImageIcon : AImageIcon {
+public class UnitDesignImageIcon : AImageIcon {
 
     private const string DebugNameFormat = "{0}[{1}]";
-
     private const string TooltipFormat = "{0}{1}";
 
     public override string DebugName { get { return DebugNameFormat.Inject(GetType().Name, Design.DesignName); } }
@@ -38,12 +36,12 @@ public class ShipDesignImageIcon : AImageIcon {
         }
     }
 
-    private ShipDesign _design;
-    public ShipDesign Design {
+    private AUnitDesign _design;
+    public AUnitDesign Design {
         get { return _design; }
         set {
             D.AssertNull(_design);
-            SetProperty<ShipDesign>(ref _design, value, "Design", DesignPropSetHandler);
+            SetProperty<AUnitDesign>(ref _design, value, "Design", DesignPropSetHandler);
         }
     }
 
@@ -71,7 +69,7 @@ public class ShipDesignImageIcon : AImageIcon {
     #endregion
 
     private void Show(GameColor color = GameColor.White) {
-        Show(Design.HullStat.ImageAtlasID, Design.HullStat.ImageFilename, Design.DesignName, color);
+        Show(Design.ImageAtlasID, Design.ImageFilename, Design.DesignName, color);
     }
 
     private void HandleIsSelectedChanged() {
@@ -111,6 +109,5 @@ public class ShipDesignImageIcon : AImageIcon {
     }
 
     protected override void Cleanup() { }
-
 }
 

@@ -38,11 +38,6 @@ public class HoveredItemHudWindow : AHudWindow<HoveredItemHudWindow>, IHoveredHu
         GameReferences.HoveredItemHudWindow = Instance;
     }
 
-    protected override void InitializeOnAwake() {
-        base.InitializeOnAwake();
-        Subscribe();
-    }
-
     protected override void InitializeValuesAndReferences() {
         base.InitializeValuesAndReferences();
         _startingLocalPosition = transform.localPosition;
@@ -52,7 +47,8 @@ public class HoveredItemHudWindow : AHudWindow<HoveredItemHudWindow>, IHoveredHu
         //D.Log("{0} initial local position: {1}.", DebugName, _startingLocalPosition);
     }
 
-    private void Subscribe() {
+    protected override void Subscribe() {
+        base.Subscribe();
         _subscriptions = new List<IDisposable>();
         _subscriptions.Add(SelectionManager.Instance.SubscribeToPropertyChanged<SelectionManager, ISelectable>(sm => sm.CurrentSelection, CurrentSelectionPropChangedHandler));
     }

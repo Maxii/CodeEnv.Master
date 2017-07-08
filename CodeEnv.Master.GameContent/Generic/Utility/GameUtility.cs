@@ -108,7 +108,7 @@ namespace CodeEnv.Master.GameContent {
         ///   <c>true</c> if [is design equipment content equal] [the specified design a]; otherwise, <c>false</c>.
         /// </returns>
         public static bool IsDesignContentEqual(StarbaseCmdDesign designA, StarbaseCmdDesign designB) {
-            if (designA.Player != designB.Player || designA.CmdStat != designB.CmdStat || designA.FtlDampenerStat != designB.FtlDampenerStat
+            if (designA.Player != designB.Player || designA.ReqdCmdStat != designB.ReqdCmdStat || designA.FtlDampenerStat != designB.FtlDampenerStat
                 || designA.ReqdMRSensorStat != designB.ReqdMRSensorStat) {
                 return false;
             }
@@ -140,7 +140,7 @@ namespace CodeEnv.Master.GameContent {
         ///   <c>true</c> if [is design equipment content equal] [the specified design a]; otherwise, <c>false</c>.
         /// </returns>
         public static bool IsDesignContentEqual(SettlementCmdDesign designA, SettlementCmdDesign designB) {
-            if (designA.Player != designB.Player || designA.CmdStat != designB.CmdStat || designA.FtlDampenerStat != designB.FtlDampenerStat
+            if (designA.Player != designB.Player || designA.ReqdCmdStat != designB.ReqdCmdStat || designA.FtlDampenerStat != designB.FtlDampenerStat
                 || designA.ReqdMRSensorStat != designB.ReqdMRSensorStat) {
                 //D.Log("{0} and {1} failed basic content test.", designA.DebugName, designB.DebugName);
                 return false;
@@ -172,7 +172,7 @@ namespace CodeEnv.Master.GameContent {
         ///   <c>true</c> if [is design equipment content equal] [the specified design a]; otherwise, <c>false</c>.
         /// </returns>
         public static bool IsDesignContentEqual(FleetCmdDesign designA, FleetCmdDesign designB) {
-            if (designA.Player != designB.Player || designA.CmdStat != designB.CmdStat || designA.FtlDampenerStat != designB.FtlDampenerStat
+            if (designA.Player != designB.Player || designA.ReqdCmdStat != designB.ReqdCmdStat || designA.FtlDampenerStat != designB.FtlDampenerStat
                 || designA.ReqdMRSensorStat != designB.ReqdMRSensorStat) {
                 return false;
             }

@@ -61,13 +61,13 @@ public class EquipmentIcon : AEquipmentIcon {
 
     private void EquipmentStatPropSetHandler() {
         AssignValuesToMembers();
+        Show(EquipmentStat.ImageAtlasID, EquipmentStat.ImageFilename, EquipmentStat.Name);
     }
 
     #endregion
 
     private void AssignValuesToMembers() {
         Size = IconSize.Large;
-        Show(EquipmentStat.ImageAtlasID, EquipmentStat.ImageFilename, EquipmentStat.Name);
     }
 
     public void Reset() {

@@ -63,7 +63,6 @@ public abstract class AGuiWindow : AMonoBase {
         private set { SetProperty<bool>(ref _isShowing, value, "IsShowing"); }
     }
 
-    protected abstract Transform ContentHolder { get; }
 
     private string _debugName;
     public string DebugName {
@@ -74,6 +73,19 @@ public abstract class AGuiWindow : AMonoBase {
             return _debugName;
         }
     }
+
+    private bool _autoExecuteStartingState = true;
+    /// <summary>
+    /// Controls whether Start automatically initializes the window to the starting
+    /// state indicated by the startHidden field. Default is true.
+    /// <remarks>Typically used to keep Start from reversing a Show call when it immediately follows Awake().</remarks>
+    /// </summary>
+    public bool AutoExecuteStartingState {
+        get { return _autoExecuteStartingState; }
+        set { _autoExecuteStartingState = value; }
+    }
+
+    protected abstract Transform ContentHolder { get; }
 
     protected GameManager _gameMgr;
     protected UIPanel _panel;
@@ -110,9 +122,14 @@ public abstract class AGuiWindow : AMonoBase {
 
     protected sealed override void Start() {
         base.Start();
-        ExecuteStartingState();
+        if (AutoExecuteStartingState) {
+            ExecuteStartingState();
+        }
     }
 
+    /// <summary>
+    /// Executes the starting state as determined by the startHidden field.
+    /// </summary>
     private void ExecuteStartingState() {
         if (startHidden) {
             _panel.alpha = Constants.ZeroF;
@@ -305,6 +322,44 @@ public abstract class AGuiWindow : AMonoBase {
         _currentFadeMode = FadeMode.None;
     }
 
+    private void KillFadeInJob() {
+        if (_fadeInJob != null) {
+            //D.Log("{0}.FadeInJob is being killed in Frame {1}.", DebugName, Time.frameCount);
+            _fadeInJob.Kill();
+            _fadeInJob = null;
+        }
+    }
+
+    private void KillFadeOutJob() {
+        if (_fadeOutJob != null) {
+            //D.Log("{0}.FadeOutJob is being killed in Frame {1}.", DebugName, Time.frameCount);
+            _fadeOutJob.Kill();
+            _fadeOutJob = null;
+        }
+    }
+
+    /// <summary>
+    /// Activates the GameObject holding the content of the window (ContentHolder) along with any
+    /// other nested window's content.
+    /// <remarks>Typically used when dynamically swapping AGuiWindow instances. Allows the new instance to
+    /// acquire its references inside content which it would not be able to do if deactivated.</remarks>
+    /// </summary>
+    public virtual void ActivateContent() {
+        ContentHolder.gameObject.SetActive(true);
+    }
+
+    protected override void Cleanup() {
+        // 12.8.16 Job Disposal centralized in JobManager
+        KillFadeInJob();
+        KillFadeOutJob();
+    }
+
+    public sealed override string ToString() {
+        return DebugName;
+    }
+
+    #region Debug
+
     /// <summary>
     /// Validates the provided fade Job reference that has been killed. 
     /// 
@@ -324,31 +379,7 @@ public abstract class AGuiWindow : AMonoBase {
         D.AssertNull(fadeJobRef, DebugName);    // if this Assert fails, another derived class also has the problem above
     }
 
-    private void KillFadeInJob() {
-        if (_fadeInJob != null) {
-            //D.Log("{0}.FadeInJob is being killed in Frame {1}.", DebugName, Time.frameCount);
-            _fadeInJob.Kill();
-            _fadeInJob = null;
-        }
-    }
-
-    private void KillFadeOutJob() {
-        if (_fadeOutJob != null) {
-            //D.Log("{0}.FadeOutJob is being killed in Frame {1}.", DebugName, Time.frameCount);
-            _fadeOutJob.Kill();
-            _fadeOutJob = null;
-        }
-    }
-
-    protected override void Cleanup() {
-        // 12.8.16 Job Disposal centralized in JobManager
-        KillFadeInJob();
-        KillFadeOutJob();
-    }
-
-    public sealed override string ToString() {
-        return DebugName;
-    }
+    #endregion
 
     #region Nested Classes
 

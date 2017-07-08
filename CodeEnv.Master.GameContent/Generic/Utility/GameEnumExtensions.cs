@@ -1065,23 +1065,23 @@ namespace CodeEnv.Master.GameContent {
             Vector3 dimensions;
             switch (hullCat) {  // 10.28.15 Hull collider dimensions increased to encompass turrets, 11.20.15 reduced mesh scale from 2 to 1
                 case ShipHullCategory.Frigate:
-                    dimensions = new Vector3(.02F, .03F, .05F); //new Vector3(.04F, .035F, .10F);
+                    dimensions = new Vector3(.02F, .03F, .05F);     // magnitude = .066
                     break;
                 case ShipHullCategory.Destroyer:
                 case ShipHullCategory.Support:
-                    dimensions = new Vector3(.06F, .035F, .10F);    //new Vector3(.08F, .05F, .18F);
+                    dimensions = new Vector3(.06F, .035F, .10F);    // magnitude = .122
                     break;
                 case ShipHullCategory.Cruiser:
                 case ShipHullCategory.Investigator:
                 case ShipHullCategory.Colonizer:
-                    dimensions = new Vector3(.09F, .05F, .16F); //new Vector3(.15F, .08F, .30F); 
+                    dimensions = new Vector3(.09F, .05F, .16F);     // magnitude = .190
                     break;
                 case ShipHullCategory.Dreadnought:
                 case ShipHullCategory.Troop:
-                    dimensions = new Vector3(.12F, .05F, .25F); //new Vector3(.21F, .07F, .45F);
+                    dimensions = new Vector3(.12F, .05F, .25F);     // magnitude = .282
                     break;
                 case ShipHullCategory.Carrier:
-                    dimensions = new Vector3(.10F, .06F, .32F); // new Vector3(.20F, .10F, .60F); 
+                    dimensions = new Vector3(.10F, .06F, .32F);     // magnitude = .341
                     break;
                 case ShipHullCategory.Fighter:
                 case ShipHullCategory.Scout:
@@ -1107,14 +1107,14 @@ namespace CodeEnv.Master.GameContent {
             switch (hullCat) {
                 case FacilityHullCategory.CentralHub:
                 case FacilityHullCategory.Defense:
-                    dimensions = new Vector3(.4F, .4F, .4F);
+                    dimensions = new Vector3(.4F, .4F, .4F);    // magnitude = .693
                     break;
                 case FacilityHullCategory.Economic:
                 case FacilityHullCategory.Factory:
                 case FacilityHullCategory.Laboratory:
                 case FacilityHullCategory.ColonyHab:
                 case FacilityHullCategory.Barracks:
-                    dimensions = new Vector3(.2F, .2F, .2F);
+                    dimensions = new Vector3(.2F, .2F, .2F);    // magnitude = .346
                     break;
                 case FacilityHullCategory.None:
                 default:

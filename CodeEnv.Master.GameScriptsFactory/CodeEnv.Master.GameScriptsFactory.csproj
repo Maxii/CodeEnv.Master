@@ -66,6 +66,10 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Graphics\AUnitDesignWindow.cs" />
+    <Compile Include="Game\GUI\DesignScreensManager.cs" />
+    <Compile Include="Game\GUI\FacilityDesignWindow.cs" />
+    <Compile Include="Game\GUI\FleetCmdDesignWindow.cs" />
     <Compile Include="Generic\Graphics\AEquipmentIcon.cs" />
     <Compile Include="Game\GUI\EquipmentIcon.cs" />
     <Compile Include="Generic\Graphics\AImageIcon.cs" />
@@ -80,9 +84,10 @@
     <Compile Include="Game\GUI\ShipDesignWindow.cs" />
     <Compile Include="Game\GUI\SelectedShipDesignForm.cs" />
     <Compile Include="Generic\Graphics\SelectedEquipmentForm.cs" />
-    <Compile Include="Game\GUI\ShipDesignImageIcon.cs" />
     <Compile Include="Game\GUI\DesignEquipmentStorage.cs" />
     <Compile Include="Game\GUI\EquipmentStorageIcon.cs" />
+    <Compile Include="Game\GUI\SettlementCmdDesignWindow.cs" />
+    <Compile Include="Game\GUI\StarbaseCmdDesignWindow.cs" />
     <Compile Include="ThirdParty\MyCustomCursor.cs" />
     <Compile Include="ThirdParty\GamePoolManager.cs" />
     <Compile Include="Game\_Debug\DebugSystemCreator.cs" />
@@ -174,7 +179,7 @@
     <Compile Include="Generic\Graphics\AGuiEnumSlider.cs" />
     <Compile Include="Game\GUI\GuiManager.cs" />
     <Compile Include="Game\GUI\GuiExitButton.cs" />
-    <Compile Include="Game\GUI\GuiMenuCheckbox.cs" />
+    <Compile Include="Game\GUI\GuiMenuCheckbox_PlayerPrefs.cs" />
     <Compile Include="Game\GUI\GuiGameSpeedOnLoadPopupList.cs" />
     <Compile Include="Game\GUI\GuiUniverseSizePopupList.cs" />
     <Compile Include="Generic\Graphics\GuiPauseStateControlButton.cs" />
@@ -294,6 +299,7 @@
     <Compile Include="Generic\Framework\UniverseCreator.cs" />
     <Compile Include="Generic\Graphics\WorldTrackingSprite.cs" />
     <Compile Include="Generic\Graphics\WorldTrackingLabel.cs" />
+    <Compile Include="Game\GUI\UnitDesignImageIcon.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">

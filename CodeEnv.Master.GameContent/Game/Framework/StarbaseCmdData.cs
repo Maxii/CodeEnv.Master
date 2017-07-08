@@ -59,7 +59,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="cmdStat">The stat.</param>
         /// <param name="designName">Name of the design.</param>
         public StarbaseCmdData(IStarbaseCmd starbaseCmd, Player owner, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener,
-            UnitCmdStat cmdStat, string designName)
+            StarbaseCmdModuleStat cmdStat, string designName)
             : this(starbaseCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), sensors, ftlDampener, cmdStat, designName) {
         }
 
@@ -74,7 +74,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="cmdStat">The stat.</param>
         /// <param name="designName">Name of the design.</param>
         public StarbaseCmdData(IStarbaseCmd starbaseCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs,
-            IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, UnitCmdStat cmdStat, string designName)
+            IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, StarbaseCmdModuleStat cmdStat, string designName)
             : base(starbaseCmd, owner, passiveCMs, sensors, ftlDampener, cmdStat, designName) {
             __PopulateResourcesFromSector();
         }

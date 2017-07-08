@@ -80,7 +80,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="cmdStat">The stat.</param>
         /// <param name="designName">Name of the design.</param>
         public SettlementCmdData(ISettlementCmd settlementCmd, Player owner, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener,
-            SettlementCmdStat cmdStat, string designName)
+            SettlementCmdModuleStat cmdStat, string designName)
                 : this(settlementCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), sensors, ftlDampener, cmdStat, designName) {
         }
 
@@ -95,7 +95,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="cmdStat">The stat.</param>
         /// <param name="designName">Name of the design.</param>
         public SettlementCmdData(ISettlementCmd settlementCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs,
-            IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, SettlementCmdStat cmdStat, string designName)
+            IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, SettlementCmdModuleStat cmdStat, string designName)
                 : base(settlementCmd, owner, passiveCMs, sensors, ftlDampener, cmdStat, designName) {
             Population = cmdStat.StartingPopulation;
             Approval = cmdStat.StartingApproval;

@@ -29,6 +29,10 @@ namespace CodeEnv.Master.GameContent {
 
         public ShipHullStat HullStat { get; private set; }
 
+        public override AtlasID ImageAtlasID { get { return HullStat.ImageAtlasID; } }
+
+        public override string ImageFilename { get { return HullStat.ImageFilename; } }
+
         public EngineStat StlEngineStat { get; private set; }
 
         public EngineStat FtlEngineStat { get; private set; }
@@ -62,13 +66,20 @@ namespace CodeEnv.Master.GameContent {
             InitializeValuesAndReferences();
         }
 
-        protected override int GetMaxSlotsFor(EquipmentCategory equipCat) {
+        /// <summary>
+        /// Returns the maximum number of AEquipmentStat slots that this design is allowed for the provided EquipmentCategory.
+        /// <remarks>AEquipmentStats that are required for a design are not included. These are typically added via the constructor.</remarks>
+        /// </summary>
+        /// <param name="equipCat">The equip cat.</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotImplementedException"></exception>
+        protected override int GetMaxEquipmentSlotsFor(EquipmentCategory equipCat) {
             switch (equipCat) {
                 case EquipmentCategory.PassiveCountermeasure:
                     return HullCategory.__MaxPassiveCMs();
                 case EquipmentCategory.ActiveCountermeasure:
                     return HullCategory.__MaxActiveCMs();
-                case EquipmentCategory.Sensor:
+                case EquipmentCategory.ElementSensor:
                     return HullCategory.__MaxSensors() - Constants.One;
                 case EquipmentCategory.ShieldGenerator:
                     return HullCategory.__MaxShieldGenerators();
@@ -76,9 +87,11 @@ namespace CodeEnv.Master.GameContent {
                     return HullCategory.__MaxLOSWeapons();
                 case EquipmentCategory.LaunchedWeapon:
                     return HullCategory.__MaxLaunchedWeapons();
+                case EquipmentCategory.CommandSensor:
                 case EquipmentCategory.Propulsion:
                 case EquipmentCategory.FtlDampener:
                 case EquipmentCategory.Hull:
+                case EquipmentCategory.CommandModule:
                 case EquipmentCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(equipCat));

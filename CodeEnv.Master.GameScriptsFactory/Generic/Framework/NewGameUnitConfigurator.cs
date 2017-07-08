@@ -860,8 +860,6 @@ public class NewGameUnitConfigurator {
         return statsList;
     }
 
-    private FtlDampenerStat CreateReqdCmdFtlDampenerStat() { return new FtlDampenerStat("ReqdSRFtlDampener", RangeCategory.Short); }
-
     private IList<ShieldGeneratorStat> __CreateAvailableShieldGeneratorStats(int quantity) {
         IList<ShieldGeneratorStat> statsList = new List<ShieldGeneratorStat>(quantity);
         for (int i = 0; i < quantity; i++) {
@@ -940,6 +938,16 @@ public class NewGameUnitConfigurator {
         return new FacilityHullStat(hullCat, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F,
             hullMass, 0F, expense, 50F, new DamageStrength(2F, 2F, 2F), hullDimensions, science, culture, income);
     }
+
+    private FtlDampenerStat CreateReqdCmdFtlDampenerStat() { return new FtlDampenerStat("ReqdSRFtlDampener", RangeCategory.Short); }
+
+    private FleetCmdModuleStat MakeReqdFleetCmdStat(float maxEffectiveness) {
+        return new FleetCmdModuleStat("ReqdCmdModuleStat", maxEffectiveness);
+    }
+
+    private StarbaseCmdModuleStat MakeReqdStarbaseCmdStat() { return new StarbaseCmdModuleStat("ReqdCmdModuleStat"); }
+
+    private SettlementCmdModuleStat MakeReqdSettlementCmdStat() { return new SettlementCmdModuleStat("ReqdCmdModuleStat"); }
 
     #endregion
 
@@ -1102,7 +1110,7 @@ public class NewGameUnitConfigurator {
             optionalCmdSensorStats.AddRange(_availableCmdSensorStats.Shuffle().Take(sensorQty - 1));
         }
 
-        SettlementCmdStat cmdStat = MakeSettlementCmdStat();
+        SettlementCmdModuleStat cmdStat = MakeReqdSettlementCmdStat();
         SettlementCmdDesign design = new SettlementCmdDesign(owner, _cmdsReqdFtlDampener, cmdStat, _cmdsReqdMRSensorStat);
         AEquipmentStat[] allEquipStats = passiveCmStats.Cast<AEquipmentStat>().Union(optionalCmdSensorStats.Cast<AEquipmentStat>()).ToArray();
         foreach (var stat in allEquipStats) {
@@ -1125,7 +1133,7 @@ public class NewGameUnitConfigurator {
             optionalCmdSensorStats.AddRange(_availableCmdSensorStats.Shuffle().Take(sensorQty - 1));
         }
 
-        UnitCmdStat cmdStat = MakeStarbaseCmdStat();
+        StarbaseCmdModuleStat cmdStat = MakeReqdStarbaseCmdStat();
         StarbaseCmdDesign design = new StarbaseCmdDesign(owner, _cmdsReqdFtlDampener, cmdStat, _cmdsReqdMRSensorStat);
         AEquipmentStat[] allEquipStats = passiveCmStats.Cast<AEquipmentStat>().Union(optionalCmdSensorStats.Cast<AEquipmentStat>()).ToArray();
         foreach (var stat in allEquipStats) {
@@ -1148,7 +1156,7 @@ public class NewGameUnitConfigurator {
             optionalCmdSensorStats.AddRange(_availableCmdSensorStats.Shuffle().Take(sensorQty - 1));
         }
 
-        UnitCmdStat cmdStat = MakeFleetCmdStat(maxCmdEffectiveness);
+        FleetCmdModuleStat cmdStat = MakeReqdFleetCmdStat(maxCmdEffectiveness);
         FleetCmdDesign design = new FleetCmdDesign(owner, _cmdsReqdFtlDampener, cmdStat, _cmdsReqdMRSensorStat);
         AEquipmentStat[] allEquipStats = passiveCmStats.Cast<AEquipmentStat>().Union(optionalCmdSensorStats.Cast<AEquipmentStat>()).ToArray();
         foreach (var stat in allEquipStats) {
@@ -1224,26 +1232,6 @@ public class NewGameUnitConfigurator {
         existingDesign.Status = AUnitDesign.SourceAndStatus.Player_Current;
         D.Log(ShowDebugLog, "{0} found Design {1} has equivalent already registered so using {2}.", DebugName, design.DebugName, existingDesignName);
         return existingDesignName;
-    }
-
-    private UnitCmdStat MakeFleetCmdStat(float maxEffectiveness) {
-        float maxHitPts = 10F;
-        float maxCmdEffect = maxEffectiveness;
-        return new UnitCmdStat(maxHitPts, maxCmdEffect);
-    }
-
-    private UnitCmdStat MakeStarbaseCmdStat() {
-        float maxHitPts = 10F;
-        float maxCmdEffect = Constants.OneHundredPercent;
-        return new UnitCmdStat(maxHitPts, maxCmdEffect);
-    }
-
-    private SettlementCmdStat MakeSettlementCmdStat() {
-        float maxHitPts = 10F;
-        float maxCmdEffect = Constants.OneHundredPercent;
-        int startingPopulation = 100;
-        float startingApproval = Constants.OneHundredPercent;
-        return new SettlementCmdStat(maxHitPts, maxCmdEffect, startingPopulation, startingApproval);
     }
 
     #endregion
@@ -1505,11 +1493,43 @@ public class NewGameUnitConfigurator {
 
     #region Debug
 
-    public IEnumerable<AEquipmentStat> __GetAvailableUserElementEquipmentStats() {
-        return _availableActiveCountermeasureStats.Cast<AEquipmentStat>().UnionBy(_availableElementSensorStats.Cast<AEquipmentStat>(),
-        _availablePassiveCountermeasureStats.Cast<AEquipmentStat>(), _availableShieldGeneratorStats.Cast<AEquipmentStat>(),
-        _availableAssaultWeaponStats.Cast<AEquipmentStat>(), _availableBeamWeaponStats.Cast<AEquipmentStat>(),
-        _availableMissileWeaponStats.Cast<AEquipmentStat>(), _availableProjectileWeaponStats.Cast<AEquipmentStat>());
+    public IEnumerable<AEquipmentStat> GetAvailableUserEquipmentStats(IEnumerable<EquipmentCategory> supportedEquipCats) {
+        List<AEquipmentStat> allAvailableStats = new List<AEquipmentStat>();
+        IEnumerable<AEquipmentStat> eCatStats;
+        foreach (var eCat in supportedEquipCats) {
+            switch (eCat) {
+                case EquipmentCategory.PassiveCountermeasure:
+                    eCatStats = _availablePassiveCountermeasureStats.Cast<AEquipmentStat>();
+                    break;
+                case EquipmentCategory.ActiveCountermeasure:
+                    eCatStats = _availableActiveCountermeasureStats.Cast<AEquipmentStat>();
+                    break;
+                case EquipmentCategory.LosWeapon:
+                    eCatStats = _availableBeamWeaponStats.Cast<AEquipmentStat>().Union(_availableProjectileWeaponStats.Cast<AEquipmentStat>());
+                    break;
+                case EquipmentCategory.LaunchedWeapon:
+                    eCatStats = _availableMissileWeaponStats.Cast<AEquipmentStat>().Union(_availableAssaultWeaponStats.Cast<AEquipmentStat>());
+                    break;
+                case EquipmentCategory.ElementSensor:
+                    eCatStats = _availableElementSensorStats.Cast<AEquipmentStat>();
+                    break;
+                case EquipmentCategory.CommandSensor:
+                    eCatStats = _availableCmdSensorStats.Cast<AEquipmentStat>();
+                    break;
+                case EquipmentCategory.ShieldGenerator:
+                    eCatStats = _availableShieldGeneratorStats.Cast<AEquipmentStat>();
+                    break;
+                case EquipmentCategory.Propulsion:
+                case EquipmentCategory.CommandModule:
+                case EquipmentCategory.FtlDampener:
+                case EquipmentCategory.Hull:
+                case EquipmentCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(eCat));
+            }
+            allAvailableStats.AddRange(eCatStats);
+        }
+        return allAvailableStats;
     }
 
     private void __ValidateOwner(Player owner, AUnitCreatorEditorSettings editorSettings) {

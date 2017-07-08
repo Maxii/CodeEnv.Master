@@ -30,6 +30,8 @@ namespace CodeEnv.Master.GameContent {
 
         None = 0,
 
+        // last Checkbox_5 = 97  
+
         #region Checkboxes
 
         CameraRollCheckbox = 1,
@@ -41,6 +43,12 @@ namespace CodeEnv.Master.GameContent {
         ZoomOutOnCursorCheckbox = 4,
 
         ElementIconsCheckbox = 5,
+
+        Checkbox_1 = 93,
+        Checkbox_2 = 94,
+        Checkbox_3 = 95,
+        Checkbox_4 = 96,
+        Checkbox_5 = 97,
 
         #endregion
 
@@ -199,7 +207,7 @@ namespace CodeEnv.Master.GameContent {
 
         CreateDesignPopupWindow = 91,
 
-        RenameObsoleteDesignPopupWindow = 92    // last
+        RenameObsoleteDesignPopupWindow = 92,
 
         #endregion
 

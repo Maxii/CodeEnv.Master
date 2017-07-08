@@ -24,7 +24,7 @@ using UnityEngine;
 /// <summary>
 /// Keeps track of a AUnitDesign's inventory of AEquipmentStats and manages the icons that represent that inventory.
 /// </summary>
-public class DesignEquipmentStorage : AMonoBase, IEquipmentStorage {
+public class DesignEquipmentStorage : AMonoBase {
 
     public string DebugName { get { return GetType().Name; } }
 

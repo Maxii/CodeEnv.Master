@@ -16,18 +16,15 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System.Collections.Generic;
-    using CodeEnv.Master.Common;
-
     /// <summary>
     /// The design of a Starbase Command for a player.
     /// </summary>
     public class StarbaseCmdDesign : ACommandDesign {
 
-        public UnitCmdStat CmdStat { get; private set; }
+        public new StarbaseCmdModuleStat ReqdCmdStat { get { return base.ReqdCmdStat as StarbaseCmdModuleStat; } }
 
         public StarbaseCmdDesign(StarbaseCmdDesign designToCopy)
-            : this(designToCopy.Player, designToCopy.FtlDampenerStat, designToCopy.CmdStat, designToCopy.ReqdMRSensorStat) {
+            : this(designToCopy.Player, designToCopy.FtlDampenerStat, designToCopy.ReqdCmdStat, designToCopy.ReqdMRSensorStat) {
 
             EquipmentSlotID slotID;
             AEquipmentStat equipStat;
@@ -42,9 +39,8 @@ namespace CodeEnv.Master.GameContent {
             _designNameCounter = designToCopy._designNameCounter;
         }
 
-        public StarbaseCmdDesign(Player player, FtlDampenerStat ftlDampenerStat, UnitCmdStat cmdStat, SensorStat reqdMRSensorStat)
-            : base(player, ftlDampenerStat, reqdMRSensorStat) {
-            CmdStat = cmdStat;
+        public StarbaseCmdDesign(Player player, FtlDampenerStat ftlDampenerStat, StarbaseCmdModuleStat cmdStat, SensorStat reqdMRSensorStat)
+            : base(player, ftlDampenerStat, reqdMRSensorStat, cmdStat) {
             InitializeValuesAndReferences();
         }
 

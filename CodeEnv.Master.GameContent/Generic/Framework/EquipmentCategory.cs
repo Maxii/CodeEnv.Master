@@ -43,14 +43,32 @@ namespace CodeEnv.Master.GameContent {
         [EnumAttribute("LauW")]
         LaunchedWeapon,
 
-        [EnumAttribute("Sens")]
-        Sensor,
+        ////[EnumAttribute("Sens")]
+        ////Sensor,
+
+        [EnumAttribute("ESense")]
+        ElementSensor,
+
+        [EnumAttribute("CSense")]
+        CommandSensor,
 
         [EnumAttribute("SGen")]
         ShieldGenerator,
 
         [EnumAttribute("FtlD")]
-        FtlDampener
+        FtlDampener,
+
+        [EnumAttribute("CmdM")]
+        CommandModule,
+
+        ////[EnumAttribute("FCM")]
+        ////FleetCmdModule,
+
+        ////[EnumAttribute("SbCM")]
+        ////StarbaseCmdModule,
+
+        ////[EnumAttribute("SeCM")]
+        ////SettlementCmdModule
 
 
     }

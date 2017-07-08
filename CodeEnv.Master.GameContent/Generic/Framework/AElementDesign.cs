@@ -25,12 +25,12 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AElementDesign : AUnitDesign {
 
-        private static EquipmentCategory[] _supportedEquipCategories =  {
+        public static EquipmentCategory[] SupportedEquipCategories =  {
                                                                             EquipmentCategory.LaunchedWeapon,
                                                                             EquipmentCategory.LosWeapon,
                                                                             EquipmentCategory.ActiveCountermeasure,
                                                                             EquipmentCategory.PassiveCountermeasure,
-                                                                            EquipmentCategory.Sensor,
+                                                                            EquipmentCategory.ElementSensor,
                                                                             EquipmentCategory.ShieldGenerator
                                                                         };
 
@@ -50,7 +50,7 @@ namespace CodeEnv.Master.GameContent {
         [Obsolete]
         public IEnumerable<SensorStat> SensorStats {
             get {
-                var keys = _equipLookupBySlotID.Keys.Where(key => key.Category == EquipmentCategory.Sensor
+                var keys = _equipLookupBySlotID.Keys.Where(key => key.Category == EquipmentCategory.ElementSensor
                 && _equipLookupBySlotID[key] != null);
                 IList<SensorStat> stats = new List<SensorStat>();
                 foreach (var key in keys) {
@@ -77,7 +77,7 @@ namespace CodeEnv.Master.GameContent {
 
         public Priority HQPriority { get; private set; }
 
-        protected sealed override EquipmentCategory[] SupportedEquipmentCategories { get { return _supportedEquipCategories; } }
+        protected sealed override EquipmentCategory[] SupportedEquipmentCategories { get { return SupportedEquipCategories; } }
 
         public AElementDesign(Player player, Priority hqPriority, SensorStat reqdSRSensorStat)
             : base(player) {

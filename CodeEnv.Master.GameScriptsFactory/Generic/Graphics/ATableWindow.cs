@@ -47,7 +47,7 @@ public abstract class ATableWindow : AGuiWindow {
     private SortDirection _lastSortDirection;
     private IList<ATableRowForm> _rowForms;
 
-    protected override void Awake() {
+    protected sealed override void Awake() {
         base.Awake();
         InitializeOnAwake();
     }
@@ -436,7 +436,6 @@ public abstract class ATableWindow : AGuiWindow {
         ClearTable();
         // UNCLEAR detach GuiWindowEvents?
     }
-
 
     private void ResetRows() {
         _rowForms.ForAll(rf => rf.Reset());

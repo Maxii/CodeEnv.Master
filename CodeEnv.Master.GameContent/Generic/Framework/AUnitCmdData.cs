@@ -223,7 +223,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="cmdStat">The command stat.</param>
         /// <param name="designName">Name of the design.</param>
         public AUnitCmdData(IUnitCmd cmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors,
-            FtlDampener ftlDampener, UnitCmdStat cmdStat, string designName)
+            FtlDampener ftlDampener, ACmdModuleStat cmdStat, string designName)
             : base(cmd, owner, cmdStat.MaxHitPoints, passiveCMs) {
             FtlDampener = ftlDampener;
             Sensors = sensors;

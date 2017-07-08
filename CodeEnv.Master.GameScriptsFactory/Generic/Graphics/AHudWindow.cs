@@ -113,7 +113,7 @@ public abstract class AHudWindow<T> : AGuiWindow where T : AHudWindow<T> {
         _contentHolder = _formLookup.Values.First().transform;
     }
 
-    private void Subscribe() {
+    protected virtual void Subscribe() {
         EventDelegate.Add(onHideComplete, WindowHideCompleteEventHandler);
     }
 

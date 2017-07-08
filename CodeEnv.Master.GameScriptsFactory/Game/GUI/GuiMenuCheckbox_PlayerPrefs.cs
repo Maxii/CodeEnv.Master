@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: GuiMenuCheckbox.cs
-// Standalone but extensible class for Gui Checkboxes that are elements of a menu with an Accept button.
+// File: GuiMenuCheckbox_PlayerPrefs.cs
+// Standalone but extensible class for Checkboxes that represent and change PlayerPrefs values.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -24,9 +24,9 @@ using UnityEngine;
 using UnityEngine.Serialization;
 
 /// <summary>
-/// Standalone but extensible class for Checkboxes that are elements of a menu with an Accept button.
+/// Standalone but extensible class for Checkboxes that represent and change PlayerPrefs values.
 /// </summary>
-public class GuiMenuCheckbox : AGuiMenuElement {
+public class GuiMenuCheckbox_PlayerPrefs : AGuiMenuElement {
 
     //[FormerlySerializedAs("tooltip")]
     [Tooltip("Optional tooltip")]
@@ -133,7 +133,7 @@ public class GuiMenuCheckbox : AGuiMenuElement {
 
     /// <summary>
     /// The name of the PlayerPrefsManager property for this checkbox. 
-    /// WARNING: If clients inherit from this class and wish to set this value programatically, 
+    /// WARNING: If clients inherit from this class and wish to set this value programmatically, 
     /// it must be set in Awake() BEFORE base.Awake() is called.
     /// </summary>
     //public string propertyName = string.Empty;

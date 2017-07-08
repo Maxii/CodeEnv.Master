@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
 
         private const string DebugNameFormat = "{0}[{1}]";
 
-        private const string DesignNameFormat = "{0}{1}";
+        private const string DesignNameFormat = "{0}_{1}";
 
         public string DebugName {
             get {
@@ -57,6 +57,10 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public SourceAndStatus Status { get; set; }
 
+        public abstract AtlasID ImageAtlasID { get; }
+
+        public abstract string ImageFilename { get; }
+
         public int TotalReqdEquipmentSlots { get; private set; }
 
         [System.Obsolete]
@@ -72,6 +76,10 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        /// <summary>
+        /// The Equipment Categories that can be added, removed and replaced in this design.
+        /// <remarks>Some equipment can be reqd in a design and are added through the constructor.</remarks>
+        /// </summary>
         protected abstract EquipmentCategory[] SupportedEquipmentCategories { get; }
 
         protected IDictionary<EquipmentSlotID, AEquipmentStat> _equipLookupBySlotID;
@@ -85,7 +93,6 @@ namespace CodeEnv.Master.GameContent {
             Status = SourceAndStatus.Player_Current;
             __ValidateEquipmentCategorySequence();
         }
-
 
         /// <summary>
         /// Increments DesignName by adding the next ascending int value to the RootDesignName.
@@ -107,7 +114,7 @@ namespace CodeEnv.Master.GameContent {
             _equipLookupBySlotID = new Dictionary<EquipmentSlotID, AEquipmentStat>();
             int slotNumber = Constants.One;
             foreach (var cat in SupportedEquipmentCategories) {
-                int maxCatSlots = GetMaxSlotsFor(cat);
+                int maxCatSlots = GetMaxEquipmentSlotsFor(cat);
                 for (int i = 0; i < maxCatSlots; i++) {
                     EquipmentSlotID slotID = new EquipmentSlotID(slotNumber, cat);
                     _equipLookupBySlotID.Add(slotID, null);
@@ -231,12 +238,12 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Returns this design's maximum number of slots available to populate for 
-        /// the provided EquipmentCategory.
+        /// Returns the maximum number of AEquipmentStat slots that this design is allowed for the provided EquipmentCategory.
+        /// <remarks>AEquipmentStats that are required for a design are not included. These are typically added via the constructor.</remarks>
         /// </summary>
         /// <param name="equipCat">The equip cat.</param>
         /// <returns></returns>
-        protected abstract int GetMaxSlotsFor(EquipmentCategory equipCat);
+        protected abstract int GetMaxEquipmentSlotsFor(EquipmentCategory equipCat);
 
         public sealed override string ToString() {
             return DebugName;

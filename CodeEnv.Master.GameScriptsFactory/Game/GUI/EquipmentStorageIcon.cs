@@ -32,7 +32,7 @@ public class EquipmentStorageIcon : AEquipmentIcon {
 
     public UILabel backgroundSlotCategoryLabel;
 
-    private IEquipmentStorage _storage;
+    private DesignEquipmentStorage _storage;
 
     private EquipmentSlotID _slotID;
 
@@ -43,7 +43,7 @@ public class EquipmentStorageIcon : AEquipmentIcon {
         // no need to hide icon as not yet instantiated via Initialize
     }
 
-    public void Initialize(IEquipmentStorage storage, EquipmentSlotID slotID, AEquipmentStat stat) {
+    public void Initialize(DesignEquipmentStorage storage, EquipmentSlotID slotID, AEquipmentStat stat) {
         _storage = storage;
         _slotID = slotID;
 

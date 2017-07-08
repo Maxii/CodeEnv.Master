@@ -197,7 +197,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var sensors = MakeSensors(design, cmd);
         var ftlDampener = MakeFtlDampener(design.FtlDampenerStat, cmd);
         cmd.Name = __GetUniqueFleetCmdName(design.DesignName);
-        FleetCmdData data = new FleetCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, design.CmdStat, design.DesignName) {
+        FleetCmdData data = new FleetCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, design.ReqdCmdStat, design.DesignName) {
             ParentName = unitName,
             UnitFormation = formation
         };
@@ -405,7 +405,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var sensors = MakeSensors(design, cmd);
         var ftlDampener = MakeFtlDampener(design.FtlDampenerStat, cmd);
         cmd.Name = __GetUniqueStarbaseCmdName(design.DesignName);
-        StarbaseCmdData data = new StarbaseCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, design.CmdStat, design.DesignName) {
+        StarbaseCmdData data = new StarbaseCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, design.ReqdCmdStat, design.DesignName) {
             ParentName = unitName,
             UnitFormation = formation
         };
@@ -505,7 +505,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var sensors = MakeSensors(design, cmd);
         var ftlDampener = MakeFtlDampener(design.FtlDampenerStat, cmd);
         cmd.Name = __GetUniqueSettlementCmdName(design.DesignName);
-        SettlementCmdData data = new SettlementCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, design.CmdStat, design.DesignName) {
+        SettlementCmdData data = new SettlementCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, design.ReqdCmdStat, design.DesignName) {
             ParentName = unitName,
             UnitFormation = formation
         };
@@ -671,7 +671,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         AttachMonitor(reqdSRSensor, element);
 
         AEquipmentStat eStat;
-        while (elementDesign.GetNextEquipmentStat(EquipmentCategory.Sensor, out eStat)) {
+        while (elementDesign.GetNextEquipmentStat(EquipmentCategory.ElementSensor, out eStat)) {
             if (eStat != null) {
                 sName = eStat.Name + nameCounter;
                 nameCounter++;
@@ -697,7 +697,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         AttachMonitor(reqdMRSensor, cmd);
 
         AEquipmentStat eStat;
-        while (cmdDesign.GetNextEquipmentStat(EquipmentCategory.Sensor, out eStat)) {
+        while (cmdDesign.GetNextEquipmentStat(EquipmentCategory.CommandSensor, out eStat)) {
             if (eStat != null) {
                 sName = eStat.Name + nameCounter;
                 nameCounter++;

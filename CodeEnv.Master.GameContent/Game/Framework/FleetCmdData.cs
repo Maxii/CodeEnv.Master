@@ -128,7 +128,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="ftlDampener">The FTL dampener.</param>
         /// <param name="cmdStat">The stat.</param>
         /// <param name="designName">Name of the design.</param>
-        public FleetCmdData(IFleetCmd fleetCmd, Player owner, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, UnitCmdStat cmdStat,
+        public FleetCmdData(IFleetCmd fleetCmd, Player owner, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, FleetCmdModuleStat cmdStat,
             string designName)
             : this(fleetCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), sensors, ftlDampener, cmdStat, designName) {
         }
@@ -144,7 +144,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="cmdStat">The stat.</param>
         /// <param name="designName">Name of the design.</param>
         public FleetCmdData(IFleetCmd fleetCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors,
-            FtlDampener ftlDampener, UnitCmdStat cmdStat, string designName)
+            FtlDampener ftlDampener, FleetCmdModuleStat cmdStat, string designName)
             : base(fleetCmd, owner, passiveCMs, sensors, ftlDampener, cmdStat, designName) { }
 
         protected override AIntel MakeIntelInstance() {

@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2015 Strategic Forge
+// Copyright © 2012 - 2017 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AUnitCmdStat.cs
-// Immutable stat containing externally acquirable values for UnitCmds.
+// File: ACmdModuleStat.cs
+// Immutable abstract AEquipmentStat for Command Module equipment.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -14,46 +14,54 @@
 ////#define DEBUG_WARN
 ////#define DEBUG_ERROR
 
+using CodeEnv.Master.Common;
+
 namespace CodeEnv.Master.GameContent {
 
-    using CodeEnv.Master.Common;
-    using UnityEngine;
-
     /// <summary>
-    /// Immutable stat containing externally acquirable values for UnitCmds.
-    /// This version is sufficient by itself for Fleet and Starbase Cmds.
+    /// Immutable abstract AEquipmentStat for Command Module equipment.
     /// <remarks>Implements value-based Equality and HashCode.</remarks>
     /// </summary>
-    public class UnitCmdStat {
+    public abstract class ACmdModuleStat : AEquipmentStat {
 
         #region Comparison Operators Override
 
         // see C# 4.0 In a Nutshell, page 254
 
-        public static bool operator ==(UnitCmdStat left, UnitCmdStat right) {
+        public static bool operator ==(ACmdModuleStat left, ACmdModuleStat right) {
             // https://msdn.microsoft.com/en-us/library/ms173147(v=vs.90).aspx
             if (ReferenceEquals(left, right)) { return true; }
             if (((object)left == null) || ((object)right == null)) { return false; }
             return left.Equals(right);
         }
 
-        public static bool operator !=(UnitCmdStat left, UnitCmdStat right) {
+        public static bool operator !=(ACmdModuleStat left, ACmdModuleStat right) {
             return !(left == right);
         }
 
         #endregion
 
-        public string DebugName { get { return GetType().Name; } }
-
         public float MaxHitPoints { get; private set; }
         public float MaxCmdEffectiveness { get; private set; }
 
+        public sealed override EquipmentCategory Category { get { return EquipmentCategory.CommandModule; } }
+
         /// <summary>
-        /// Initializes a new instance of the <see cref="UnitCmdStat" /> class.
+        /// Initializes a new instance of the <see cref="ACmdModuleStat" /> class.
         /// </summary>
+        /// <param name="name">The display name of the Equipment.</param>
+        /// <param name="imageAtlasID">The image atlas identifier.</param>
+        /// <param name="imageFilename">The image filename.</param>
+        /// <param name="description">The description.</param>
+        /// <param name="size">The physical size of the equipment.</param>
+        /// <param name="mass">The mass of the equipment.</param>
+        /// <param name="pwrRqmt">The power required to operate the equipment.</param>
+        /// <param name="expense">The expense required to operate this equipment.</param>
         /// <param name="maxHitPts">The maximum hit PTS.</param>
         /// <param name="maxCmdEffectiveness">The maximum command effectiveness.</param>
-        public UnitCmdStat(float maxHitPts, float maxCmdEffectiveness) {
+        public ACmdModuleStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass,
+            float pwrRqmt, float expense, float maxHitPts, float maxCmdEffectiveness)
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, isDamageable: false) {
             MaxHitPoints = maxHitPts;
             MaxCmdEffectiveness = maxCmdEffectiveness;
         }
@@ -69,7 +77,7 @@ namespace CodeEnv.Master.GameContent {
         /// </returns>
         public override int GetHashCode() {
             unchecked { // http://dobrzanski.net/2010/09/13/csharp-gethashcode-cause-overflowexception/
-                int hash = 17;  // 17 = some prime number
+                int hash = base.GetHashCode();
                 hash = hash * 31 + MaxHitPoints.GetHashCode(); // 31 = another prime number
                 hash = hash * 31 + MaxCmdEffectiveness.GetHashCode();
                 return hash;
@@ -77,19 +85,15 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public override bool Equals(object obj) {
-            if (obj == null) { return false; }
-            if (ReferenceEquals(obj, this)) { return true; }
-            if (obj.GetType() != GetType()) { return false; }
-
-            UnitCmdStat oStat = (UnitCmdStat)obj;
-            return oStat.MaxHitPoints == MaxHitPoints && oStat.MaxCmdEffectiveness == MaxCmdEffectiveness;
+            if (base.Equals(obj)) {
+                ACmdModuleStat oStat = (ACmdModuleStat)obj;
+                return oStat.MaxHitPoints == MaxHitPoints && oStat.MaxCmdEffectiveness == MaxCmdEffectiveness;
+            }
+            return false;
         }
 
         #endregion
 
-        public sealed override string ToString() {
-            return DebugName;
-        }
 
     }
 }

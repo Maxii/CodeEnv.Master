@@ -16,18 +16,15 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System.Collections.Generic;
-    using CodeEnv.Master.Common;
-
     /// <summary>
     /// The design of a Settlement Command for a player.
     /// </summary>
     public class SettlementCmdDesign : ACommandDesign {
 
-        public SettlementCmdStat CmdStat { get; private set; }
+        public new SettlementCmdModuleStat ReqdCmdStat { get { return base.ReqdCmdStat as SettlementCmdModuleStat; } }
 
         public SettlementCmdDesign(SettlementCmdDesign designToCopy)
-            : this(designToCopy.Player, designToCopy.FtlDampenerStat, designToCopy.CmdStat, designToCopy.ReqdMRSensorStat) {
+            : this(designToCopy.Player, designToCopy.FtlDampenerStat, designToCopy.ReqdCmdStat, designToCopy.ReqdMRSensorStat) {
 
             EquipmentSlotID slotID;
             AEquipmentStat equipStat;
@@ -42,9 +39,8 @@ namespace CodeEnv.Master.GameContent {
             _designNameCounter = designToCopy._designNameCounter;
         }
 
-        public SettlementCmdDesign(Player player, FtlDampenerStat ftlDampenerStat, SettlementCmdStat cmdStat, SensorStat reqdMRSensorStat)
-            : base(player, ftlDampenerStat, reqdMRSensorStat) {
-            CmdStat = cmdStat;
+        public SettlementCmdDesign(Player player, FtlDampenerStat ftlDampenerStat, SettlementCmdModuleStat cmdStat, SensorStat reqdMRSensorStat)
+            : base(player, ftlDampenerStat, reqdMRSensorStat, cmdStat) {
             InitializeValuesAndReferences();
         }
 

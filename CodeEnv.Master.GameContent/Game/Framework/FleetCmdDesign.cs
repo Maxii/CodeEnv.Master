@@ -16,18 +16,15 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System.Collections.Generic;
-    using CodeEnv.Master.Common;
-
     /// <summary>
     /// The design of a Fleet Command for a player.
     /// </summary>
     public class FleetCmdDesign : ACommandDesign {
 
-        public UnitCmdStat CmdStat { get; private set; }
+        public new FleetCmdModuleStat ReqdCmdStat { get { return base.ReqdCmdStat as FleetCmdModuleStat; } }
 
         public FleetCmdDesign(FleetCmdDesign designToCopy)
-            : this(designToCopy.Player, designToCopy.FtlDampenerStat, designToCopy.CmdStat, designToCopy.ReqdMRSensorStat) {
+            : this(designToCopy.Player, designToCopy.FtlDampenerStat, designToCopy.ReqdCmdStat, designToCopy.ReqdMRSensorStat) {
 
             EquipmentSlotID slotID;
             AEquipmentStat equipStat;
@@ -42,9 +39,8 @@ namespace CodeEnv.Master.GameContent {
             _designNameCounter = designToCopy._designNameCounter;
         }
 
-        public FleetCmdDesign(Player player, FtlDampenerStat ftlDampenerStat, UnitCmdStat cmdStat, SensorStat reqdMRSensorStat)
-            : base(player, ftlDampenerStat, reqdMRSensorStat) {
-            CmdStat = cmdStat;
+        public FleetCmdDesign(Player player, FtlDampenerStat ftlDampenerStat, FleetCmdModuleStat cmdStat, SensorStat reqdMRSensorStat)
+            : base(player, ftlDampenerStat, reqdMRSensorStat, cmdStat) {
             InitializeValuesAndReferences();
         }
 

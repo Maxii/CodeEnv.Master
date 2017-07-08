@@ -29,7 +29,7 @@ public class ShipDesignWindowEditor : AGuiWindowEditor<ShipDesignWindow> {
         NGUIEditorTools.SetLabelWidth(140F);
         NGUIEditorTools.DrawProperty("Design Icon Prefab", serializedObject, "_designIconPrefab");
         NGUIEditorTools.DrawProperty("Equipment Icon Prefab", serializedObject, "_equipmentIconPrefab");
-        NGUIEditorTools.DrawProperty("Hull 3DStage Prefab", serializedObject, "_hull3DStagePrefab");
+        NGUIEditorTools.DrawProperty("3DModelStage Prefab", serializedObject, "_threeDModelStagePrefab");
 
         NGUIEditorTools.SetLabelWidth(160F);
         NGUIEditorTools.DrawProperty("Include Obsolete Designs", serializedObject, "_includeObsoleteDesigns");

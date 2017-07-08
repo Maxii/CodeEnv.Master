@@ -16,11 +16,9 @@
 
 // default namespace
 
-using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 /// <summary>
 /// Abstract base class for an element hull.

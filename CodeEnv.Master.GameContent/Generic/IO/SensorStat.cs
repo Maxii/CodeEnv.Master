@@ -54,7 +54,9 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public override EquipmentCategory Category { get { return EquipmentCategory.Sensor; } }
+        public override EquipmentCategory Category {
+            get { return RangeCategory == RangeCategory.Short ? EquipmentCategory.ElementSensor : EquipmentCategory.CommandSensor; }
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SensorStat" /> struct.

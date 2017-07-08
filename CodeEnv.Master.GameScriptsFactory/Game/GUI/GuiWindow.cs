@@ -16,12 +16,8 @@
 
 // default namespace
 
-using System.Collections;
-using System.Collections.Generic;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.GameContent;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 /// <summary>
 /// Gui Window with fading ability able to handle a single content root.
@@ -32,14 +28,14 @@ public class GuiWindow : AGuiWindow {
 
     protected override Transform ContentHolder { get { return contentHolder; } }
 
-    protected override void Awake() {
+    protected sealed override void Awake() {
         base.Awake();
         InitializeOnAwake();
     }
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        D.Assert(contentHolder != null, gameObject, DebugName);
+        D.AssertNotNull(contentHolder);
     }
 
     public void Show() {
