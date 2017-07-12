@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
@@ -298,8 +299,24 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         }
     }
 
-    protected override void ShowSelectedItemHud() {
-        SelectedItemHudWindow.Instance.Show(FormID.SelectedSystem, UserReport);
+    protected override void ShowSelectedItemInHud() {
+        InteractableHudWindow.Instance.Show(FormID.SelectedSystem, Data);
+    }
+
+    protected override void HandleNameChanged() {
+        base.HandleNameChanged();
+        if (Star != null) {
+            Star.Data.Name = GameConstants.StarNameFormat.Inject(Name, CommonTerms.Star);
+        }
+        // Planets first so Moons will get the correctly updated parent planet name
+        foreach (var planet in _planets) {
+            int planetOrbitIndex = planet.CelestialOrbitSimulator.OrbitSlotIndex;
+            planet.Data.Name = GameConstants.PlanetNameFormat.Inject(Name, GameConstants.PlanetNumbers[planetOrbitIndex]);
+        }
+        foreach (var moon in _moons) {
+            int moonOrbitIndex = moon.CelestialOrbitSimulator.OrbitSlotIndex;
+            moon.Data.Name = GameConstants.MoonNameFormat.Inject(moon.ParentPlanet.Name, GameConstants.MoonLetters[moonOrbitIndex]);
+        }
     }
 
 

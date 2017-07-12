@@ -54,6 +54,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void UnconsumedPressEventHandler(object sender, EventArgs e) {
             if (GameReferences.InputHelper.IsLeftMouseButton) {
+                D.Log("{0} is attempting to de-select the current selection due to an unconsumed press.", DebugName);
                 CurrentSelection = null;
             }
         }
@@ -69,9 +70,10 @@ namespace CodeEnv.Master.GameContent {
                 _sfxMgr.PlaySFX(SfxClipID.Select);
             }
             else {
-                _sfxMgr.PlaySFX(SfxClipID.Select);  //TODO play a different sound indicating selection cleared
+                _sfxMgr.PlaySFX(SfxClipID.UnSelect);
                 // Note: Hide() handled centrally here as ISelectable's don't know whether another item has been selected
-                GameReferences.SelectedItemHudWindow.Hide();
+                GameReferences.InteractableHudWindow.Hide();
+                //D.Log("{0} is Hiding InteractableHudWindow.", DebugName);
             }
         }
 

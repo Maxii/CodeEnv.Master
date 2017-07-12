@@ -90,14 +90,22 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
         }
     }
 
-    private string _name;
     public string Name {
         get {
-            D.AssertNotNull(_name);
-            return _name;
+            if (Data != null) {
+                return Data.Name;
+            }
+            return transform.name + " (from transform)";
         }
-        set { SetProperty<string>(ref _name, value, "Name", NamePropChangedHandler); }
     }
+    ////private string _name;
+    ////public string Name {
+    ////    get {
+    ////        D.AssertNotNull(_name);
+    ////        return _name;
+    ////    }
+    ////    set { SetProperty<string>(ref _name, value, "Name", NamePropChangedHandler); }
+    ////}
 
     public Vector3 Position { get { return transform.position; } }
 
@@ -177,6 +185,8 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
         _subscriptions.Add(Data.SubscribeToPropertyChanging<AItemData, Player>(d => d.Owner, OwnerPropChangingHandler));
         _subscriptions.Add(Data.SubscribeToPropertyChanged<AItemData, Player>(d => d.Owner, OwnerPropChangedHandler));
         _subscriptions.Add(Data.SubscribeToPropertyChanged<AItemData, bool>(d => d.IsOperational, IsOperationalPropChangedHandler));
+
+        _subscriptions.Add(Data.SubscribeToPropertyChanged<AItemData, string>(d => d.Name, NamePropChangedHandler));
     }
 
     /// <summary>
@@ -231,7 +241,8 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
     }
 
     private void NamePropChangedHandler() {
-        transform.name = Name; // 12.5.16 Don't use DebugName
+        HandleNameChanged();
+        ////transform.name = Name; // 12.5.16 Don't use DebugName
     }
 
     private void IsOperationalPropChangedHandler() {
@@ -273,6 +284,10 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
     }
 
     #endregion
+
+    protected virtual void HandleNameChanged() {
+        transform.name = Name;
+    }
 
     protected virtual void HandleIsOperationalChanged() {
         enabled = IsOperational;

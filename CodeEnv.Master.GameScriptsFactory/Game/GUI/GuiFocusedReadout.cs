@@ -49,12 +49,13 @@ public class GuiFocusedReadout : AGuiLabelReadout {
 
     private void CurrentFocusPropChangedHandler() {
         ICameraFocusable focus = MainCameraControl.Instance.CurrentFocus;
-        TryRetainingFocus(focus);
+        AttemptRetainingFocus(focus);
     }
 
     private void HandleMiddleClick() {
         if (_retainedFocus != null) {
             _retainedFocus.IsFocus = true;
+            SFXManager.Instance.PlaySFX(SfxClipID.Swipe);
         }
     }
 
@@ -70,7 +71,7 @@ public class GuiFocusedReadout : AGuiLabelReadout {
 
     #endregion
 
-    private void TryRetainingFocus(ICameraFocusable focus) {
+    private void AttemptRetainingFocus(ICameraFocusable focus) {
         if (focus != null && focus.IsRetainedFocusEligible) {
             _retainedFocus = focus;
             RefreshReadout(focus.DebugName);

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: SelectedShipForm.cs
-// Form used by the SelectedItemHudWindow to display info about a 'selected' ship.   
+// Form used by the InteractableHudWindow to display info and allow changes when a user-owned Item is selected.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,12 +20,30 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Form used by the SelectedItemHudWindow to display info about a 'selected' ship.   
+/// Form used by the InteractableHudWindow to display info and allow changes when a user-owned Item is selected.
 /// </summary>
 public class SelectedShipForm : ASelectedItemForm {
 
     public override FormID FormID { get { return FormID.SelectedShip; } }
 
+    protected override void AssignValueToNameInputGuiElement() {
+        base.AssignValueToNameInputGuiElement();
+        _nameInput.value = (ItemData as AUnitElementData).Name;
+        //D.Log("{0}: Input field has been assigned {1}.", DebugName, _nameInput.value);
+    }
+
+    protected override void HandleNameInputSubmitted() {
+        base.HandleNameInputSubmitted();
+        AUnitElementData eData = ItemData as AUnitElementData;
+        if (eData.Name != _nameInput.value) {
+            //D.Log("{0}: Name changing from {1} to {2}.", DebugName, eData.Name, _nameInput.value);
+            eData.Name = _nameInput.value;
+        }
+        else {
+            D.Warn("{0}: Name {1} submitted without being changed.", DebugName, eData.Name);
+        }
+        _nameInput.RemoveFocus();
+    }
 
 }
 

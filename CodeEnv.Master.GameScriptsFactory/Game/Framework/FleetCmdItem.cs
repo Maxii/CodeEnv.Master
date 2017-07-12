@@ -262,8 +262,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         Elements.ForAll(e => (e as ShipItem).InitiateNewOrder(elementScuttleOrder));
     }
 
-    protected override void ShowSelectedItemHud() {
-        SelectedItemHudWindow.Instance.Show(FormID.SelectedFleet, UserReport);
+    protected override void ShowSelectedItemInHud() {
+        InteractableHudWindow.Instance.Show(FormID.SelectedFleet, Data);
     }
 
     protected override IconInfo MakeIconInfo() {

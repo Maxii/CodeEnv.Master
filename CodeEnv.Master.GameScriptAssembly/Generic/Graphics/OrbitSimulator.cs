@@ -59,6 +59,13 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
 
     #endregion
 
+    /// <summary>
+    /// The relative orbit speed of the object around the location. A value of 1 means
+    /// an orbit will take one OrbitPeriod.
+    /// </summary>
+    [SerializeField]
+    private float _relativeOrbitRate = 1.0F;
+
     private string _debugName;
     public virtual string DebugName {
         get {
@@ -68,13 +75,6 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
             return _debugName;
         }
     }
-
-    /// <summary>
-    /// The relative orbit speed of the object around the location. A value of 1 means
-    /// an orbit will take one OrbitPeriod.
-    /// </summary>
-    [SerializeField]
-    private float _relativeOrbitRate = 1.0F;
 
     private bool _isActivated;
     /// <summary>
@@ -98,6 +98,8 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
             return _orbitRigidbody;
         }
     }
+
+    public int OrbitSlotIndex { get { return OrbitData.SlotIndex; } }
 
     private OrbitData _orbitData;
     public OrbitData OrbitData {

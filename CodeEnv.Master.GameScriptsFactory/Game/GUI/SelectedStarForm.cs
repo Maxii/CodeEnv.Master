@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: SelectedStarForm.cs
-// Form used by the SelectedItemHudWindow to display info from a StarReport when a star is selected.  
+// Form used by the InteractableHudWindow to display info and allow changes when a user-owned Item is selected.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,12 +20,16 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Form used by the SelectedItemHudWindow to display info from a StarReport when a star is selected.    
+/// Form used by the InteractableHudWindow to display info and allow changes when a user-owned Item is selected.
 /// </summary>
 public class SelectedStarForm : ASelectedItemForm {
 
     public override FormID FormID { get { return FormID.SelectedStar; } }
 
+    protected override void AssignValueToNameGuiElement() {
+        base.AssignValueToNameGuiElement();
+        _nameLabel.text = ItemData.Name;
+    }
 
 }
 

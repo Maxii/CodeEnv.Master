@@ -72,7 +72,7 @@ namespace CodeEnv.Master.GameContent {
         protected override bool HasAccessToInfo_Basic(ItemInfoID infoID, Player player) {
             switch (infoID) {
                 case ItemInfoID.Name:
-                case ItemInfoID.ParentName:
+                case ItemInfoID.UnitName:
                 case ItemInfoID.Position:
                 case ItemInfoID.SectorID:
                     return true;

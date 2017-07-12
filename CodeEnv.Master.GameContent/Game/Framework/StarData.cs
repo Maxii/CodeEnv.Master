@@ -33,12 +33,6 @@ namespace CodeEnv.Master.GameContent {
 
         public float CloseOrbitOuterRadius { get { return CloseOrbitInnerRadius + TempGameValues.ShipCloseOrbitSlotDepth; } }
 
-        private string _parentName;
-        public string ParentName {
-            get { return _parentName; }
-            set { SetProperty<string>(ref _parentName, value, "ParentName"); }
-        }
-
         // Star DebugName already includes its System's name
 
         private int _capacity;

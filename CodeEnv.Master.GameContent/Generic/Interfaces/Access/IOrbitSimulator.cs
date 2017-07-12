@@ -37,6 +37,10 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         float RelativeOrbitSpeed { get; }
 
+        int OrbitSlotIndex { get; }
+
+        Transform transform { get; }
+
 
     }
 }

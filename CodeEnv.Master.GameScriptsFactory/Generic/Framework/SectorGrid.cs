@@ -71,7 +71,6 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     public IEnumerable<IntVector3> SectorIDs { get { return _sectorIdToSectorLookup.Keys; } }
 
     public IEnumerable<IntVector3> NonPeripheralSectorIDs { get { return _coreSectorIDs; } }
-    //public IEnumerable<IntVector3> NonPeripheralSectorIDs { get { return _nonPeripheralSectorIDs; } }
 
     /// <summary>
     /// Read-only. The location of the center of all sectors in world space.
@@ -912,8 +911,8 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     private Sector MakeSectorInstance(IntVector3 sectorID, Vector3 worldLocation, Sector.SectorCategory category) {
         Sector sector = new Sector(worldLocation, category);
 
-        sector.Name = SectorNameFormat.Inject(sectorID);
         SectorData data = new SectorData(sector, sectorID) {
+            Name = SectorNameFormat.Inject(sectorID)
             //Density = 1F  the concept of space density is now attached to Topography, not Sectors. Density is relative and affects only drag
         };
         sector.Data = data;
@@ -967,19 +966,6 @@ public class SectorGrid : AMonoSingleton<SectorGrid>, ISectorGrid {
     [Obsolete]
     private IList<IntVector3> _nonPeripheralSectorIDs;
 #pragma warning restore 0649
-
-    [Obsolete]
-    private Sector MakeSectorInstance(IntVector3 sectorID, Vector3 worldLocation, bool isOnPeriphery) {
-        Sector sector = new Sector(worldLocation, isOnPeriphery);
-
-        sector.Name = SectorNameFormat.Inject(sectorID);
-        SectorData data = new SectorData(sector, sectorID) {
-            //Density = 1F  the concept of space density is now attached to Topography, not Sectors. Density is relative and affects only drag
-        };
-        sector.Data = data;
-        // IMPROVE use data values in place of sector values
-        return sector;
-    }
 
     /// <summary>
     /// Returns <c>true</c> if the provided cell vertex world location is contained within the radius of the universe, <c>false</c> otherwise.

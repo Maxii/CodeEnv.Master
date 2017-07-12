@@ -46,30 +46,24 @@ namespace CodeEnv.Master.GameContent {
         SystemTableRow,
 
 
+        // 7.10.17 No SelectedUniverseCenter as only user owned items are displayed in a form when selected.
+        // Only user owned items because the InteractableHUD that displays 'selected' items is designed to allow
+        // interactive controls to be present. Only user owned items should have interactive controls.
         SelectedSettlement,
-
         SelectedStarbase,
-
         SelectedFleet,
-
         SelectedSystem,
-
         SelectedShip,
-
         SelectedFacility,
-
         SelectedStar,
-
         SelectedPlanetoid,
 
-        SelectedUniverseCenter,
 
+        UnitDesign,
 
-        ShipDesign,
+        Equipment,
 
-        SelectedShipDesign,
-
-        SelectedEquipment,   // TEMP Placeholder for a number of EquipmentType-specific forms
+        UniverseCenter,
 
 
     }

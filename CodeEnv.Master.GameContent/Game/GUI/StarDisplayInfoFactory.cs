@@ -27,7 +27,6 @@ namespace CodeEnv.Master.GameContent {
 
         private static ItemInfoID[] _infoIDsToDisplay = new ItemInfoID[] {
             ItemInfoID.Name,
-            ItemInfoID.ParentName,
             ItemInfoID.Category,
             ItemInfoID.Owner,
             ItemInfoID.Capacity,
@@ -55,10 +54,6 @@ namespace CodeEnv.Master.GameContent {
             bool isSuccess = base.TryMakeColorizedText(infoID, report, out colorizedText);
             if (!isSuccess) {
                 switch (infoID) {
-                    case ItemInfoID.ParentName:
-                        isSuccess = true;
-                        colorizedText = _lineTemplate.Inject(report.ParentName != null ? report.ParentName : Unknown);
-                        break;
                     case ItemInfoID.Category:
                         isSuccess = true;
                         colorizedText = _lineTemplate.Inject(report.Category != StarCategory.None ? report.Category.GetValueName() : Unknown);

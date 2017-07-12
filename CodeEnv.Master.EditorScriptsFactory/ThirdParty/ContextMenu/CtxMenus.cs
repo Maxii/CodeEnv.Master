@@ -100,7 +100,7 @@ public static class CtxMenus {
             lbl.color = Color.black;
             lbl.MakePixelPerfect();
             Vector2 size = lbl.printedSize;     // Force NGUI to process metrics before adding collider. Otherwise you get incorrect-sized collider.
-            size.x -= 1f;                       // Suppress compiler warning for unused 'size' variable. Sheesh...
+            size.x -= 1f;                       // Suppress compiler warning for unused 'size' variable. 
 
             // Attach button and menu components.
             NGUITools.AddWidgetCollider(ctxButtonObj, true);

@@ -212,14 +212,25 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     }
 
     /// <summary>
-    /// Shows the SelectedItemHudWindow for this ISelectable Item.
+    /// Shows the ISelectable Item in the InteractableHud.
     /// </summary>
     /// <remarks>This method must be called prior to notifying SelectionMgr of the selection change. 
-    /// HoveredItemHudWindow subscribes to the change and needs the SelectedItemHud to already 
-    /// be resized and showing so it can position itself properly. Hiding the SelectedItemHud is 
+    /// HoveredHudWindow subscribes to the change and needs the InteractableHudWindow to already 
+    /// be resized and showing so it can position itself properly. Hiding the InteractableHud is 
     /// handled by the SelectionMgr when there is no longer an item selected.
     /// </remarks>
-    protected abstract void ShowSelectedItemHud();
+    protected abstract void ShowSelectedItemInHud();
+
+    /// <summary>
+    /// Hides the InteractableHUD. Called when this Item has been selected but is not owned by user.
+    /// Accordingly, the HUD won't be told to show this Item, so it must be told to stop showing the previous Item, if any.
+    /// <remarks>SelectionManager also hides the InteractableHUD but only when the user chooses to 
+    /// cancel any selection by clicking on empty space.</remarks>
+    /// </summary>
+    private void HideInteractableHud() {
+        D.Assert(!Owner.IsUser);
+        GameReferences.InteractableHudWindow.Hide();
+    }
 
     /// <summary>
     /// Allows derived classes to take action after the finish of an effect.
@@ -344,12 +355,16 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
 
     protected virtual void HandleIsSelectedChanged() {
         if (IsSelected) {
-            ShowSelectedItemHud();
+            if (Owner.IsUser) {
+                ShowSelectedItemInHud();
+            }
+            else {
+                HideInteractableHud();
+            }
             SelectionManager.Instance.CurrentSelection = this;
         }
         AssessCircleHighlighting();
     }
-
 
     protected override void HandleOwnerChanging(Player newOwner) {
         if (_ctxControl != null) {

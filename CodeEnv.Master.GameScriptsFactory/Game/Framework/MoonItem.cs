@@ -30,9 +30,10 @@ public class MoonItem : APlanetoidItem, IMoon, IMoon_Ltd {
 
     public override float ClearanceRadius { get { return _obstacleZoneCollider.radius * 2F; } }  // HACK
 
+    public PlanetItem ParentPlanet { get; private set; }
+
     protected override float ObstacleClearanceDistance { get { return _obstacleZoneCollider.radius; } }
 
-    private PlanetItem _parentPlanet;
     private bool _isParentPlanetDying;
 
     #region Initialization
@@ -57,7 +58,7 @@ public class MoonItem : APlanetoidItem, IMoon, IMoon_Ltd {
     }
 
     private void RecordParentPlanet() {
-        _parentPlanet = gameObject.GetSingleComponentInParents<PlanetItem>();
+        ParentPlanet = gameObject.GetSingleComponentInParents<PlanetItem>();
     }
 
     #endregion
@@ -70,7 +71,7 @@ public class MoonItem : APlanetoidItem, IMoon, IMoon_Ltd {
     protected override void AssignAlternativeFocusOnDeath() {
         base.AssignAlternativeFocusOnDeath();
         if (!_isParentPlanetDying) {
-            (_parentPlanet as ICameraFocusable).IsFocus = true;
+            (ParentPlanet as ICameraFocusable).IsFocus = true;
         }
     }
 
@@ -95,7 +96,7 @@ public class MoonItem : APlanetoidItem, IMoon, IMoon_Ltd {
         // complete override reqd to call OnEffectFinished in the right sequence
         switch (effectID) {
             case EffectSequenceID.Dying:
-                _parentPlanet.RemoveMoon(this);  // remove from planet list just before planet checks whether this is last moon
+                ParentPlanet.RemoveMoon(this);  // remove from planet list just before planet checks whether this is last moon
                 OnEffectSeqFinished(effectID); // if the planet is causing the moons death, event causes planet to check whether this is the last moon
                 if (!_isParentPlanetDying) {
                     // if the planet dying is the cause of this moons death, than the planet will destroy all the game objects
@@ -124,7 +125,7 @@ public class MoonItem : APlanetoidItem, IMoon, IMoon_Ltd {
     /// <summary>
     /// A collection of assembly stations that are local to the item.
     /// </summary>
-    public override IList<StationaryLocation> LocalAssemblyStations { get { return _parentPlanet.LocalAssemblyStations; } }
+    public override IList<StationaryLocation> LocalAssemblyStations { get { return ParentPlanet.LocalAssemblyStations; } }
 
     #endregion
 
@@ -141,7 +142,7 @@ public class MoonItem : APlanetoidItem, IMoon, IMoon_Ltd {
     #region IMoon Members
 
     bool IMoon.__IsParentPlanetFullyExploredBy(Player player) {
-        return _parentPlanet.IsFullyExploredBy(player);
+        return ParentPlanet.IsFullyExploredBy(player);
     }
 
     #endregion

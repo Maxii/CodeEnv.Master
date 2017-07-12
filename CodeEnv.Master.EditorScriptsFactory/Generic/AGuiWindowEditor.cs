@@ -29,10 +29,17 @@ public abstract class AGuiWindowEditor<T> : Editor where T : AGuiWindow {
         var window = target as T;
 
         serializedObject.Update();
+
         DrawDerivedClassProperties();
-        NGUIEditorTools.DrawProperty("Start Hidden", serializedObject, "startHidden");
-        NGUIEditorTools.DrawProperty("Use Fading", serializedObject, "useFading");
-        NGUIEditorTools.DrawProperty("Fading Duration", serializedObject, "fadeDuration");
+
+        EditorGUI.BeginDisabledGroup(EditorApplication.isPlaying);
+        {
+            NGUIEditorTools.DrawProperty("Start Hidden", serializedObject, "startHidden");
+            NGUIEditorTools.DrawProperty("Use Fading", serializedObject, "useFading");
+            NGUIEditorTools.DrawProperty("Fading Duration", serializedObject, "fadeDuration");
+        }
+        EditorGUI.EndDisabledGroup();
+
         serializedObject.ApplyModifiedProperties();
 
         DrawEvents(window);

@@ -33,14 +33,7 @@ using UnityEngine;
 /// </summary>
 public class SystemFactory : AGenericSingleton<SystemFactory> {
     // Note: no reason to dispose of _instance during scene transition as all its references persist across scenes
-
-    private const string StarNameFormat = "{0} {1}";
-    private const string PlanetNameFormat = "{0}{1}";
-    private const string MoonNameFormat = "{0}{1}";
-
-    private static int[] PlanetNumbers = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-    private static string[] MoonLetters = new string[] { "a", "b", "c", "d", "e" };
-
+    // Constants moved to GameConstants
 
     /// <summary>
     /// The prefab used to make stars. Children include
@@ -179,13 +172,13 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
             D.Error("{0}: {1} should = {2}.", DebugName, starStat.Category.GetValueName(), star.category.GetValueName());
         }
 
-        star.Name = StarNameFormat.Inject(systemName, CommonTerms.Star);
         StarData starData = new StarData(star, starStat) {
-            ParentName = systemName
+            // Name assignment must follow after Data assigned to Item so Item is subscribed to the change
             // Owners are all initialized to TempGameValues.NoPlayer by AItemData
         };
         star.CameraStat = cameraStat;
         star.Data = starData;
+        star.Data.Name = GameConstants.StarNameFormat.Inject(systemName, CommonTerms.Star);
     }
 
     #endregion
@@ -271,8 +264,8 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// <param name="orbitSlot">The orbit slot.</param>
     /// <param name="cmStats">The countermeasure stats.</param>
     /// <param name="planet">The planet item.</param>
-    public void PopulateInstance(PlanetStat planetStat, FollowableItemCameraStat cameraStat, OrbitData orbitSlot, IEnumerable<PassiveCountermeasureStat> cmStats,
-        ref PlanetItem planet) {
+    public void PopulateInstance(PlanetStat planetStat, FollowableItemCameraStat cameraStat, OrbitData orbitSlot,
+        IEnumerable<PassiveCountermeasureStat> cmStats, ref PlanetItem planet) {
         D.Assert(!planet.IsOperational, planet.DebugName);
         if (planet.GetComponentInParent<SystemItem>() == null) {
             D.Error("{0}: {1} must have a system parent before data assigned.", DebugName, planet.DebugName);
@@ -283,14 +276,14 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         D.AssertNotNull(orbitSlot.OrbitedItem, orbitSlot.ToString());
 
         string systemName = orbitSlot.OrbitedItem.name;
-        planet.Name = PlanetNameFormat.Inject(systemName, PlanetNumbers[orbitSlot.SlotIndex]);
         var passiveCMs = MakeCountermeasures(cmStats);
         PlanetData data = new PlanetData(planet, passiveCMs, planetStat) {
-            ParentName = systemName
+            // Name assignment must follow after Data assigned to Item so Item is subscribed to the change
         };
         planet.GetComponent<Rigidbody>().mass = data.Mass;  // 7.26.16 Not really needed as Planetoid Rigidbodies are kinematic
         planet.CameraStat = cameraStat;
         planet.Data = data;
+        planet.Data.Name = GameConstants.PlanetNameFormat.Inject(systemName, GameConstants.PlanetNumbers[orbitSlot.SlotIndex]);
 
         GameObject planetsFolder = orbitSlot.OrbitedItem.GetComponentsInImmediateChildren<Transform>().Single(t => t.name == "Planets").gameObject;
         InstallCelestialItemInOrbit(planet.gameObject, orbitSlot, altParent: planetsFolder);
@@ -380,7 +373,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     /// <param name="cmStats">The countermeasure stats.</param>
     /// <param name="moon">The item.</param>
     public void PopulateInstance(PlanetoidStat moonStat, FollowableItemCameraStat cameraStat, OrbitData orbitSlot,
-        IEnumerable<PassiveCountermeasureStat> cmStats, ref MoonItem moon) {
+    IEnumerable<PassiveCountermeasureStat> cmStats, ref MoonItem moon) {
         D.Assert(!moon.IsOperational, moon.DebugName);
         if (moon.GetComponentInParent<SystemItem>() == null) {
             D.Error("{0}: {1} must have a system parent before data assigned.", DebugName, moon.DebugName);
@@ -391,15 +384,14 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         D.AssertNotNull(orbitSlot.OrbitedItem, orbitSlot.ToString());
 
         string parentPlanetName = orbitSlot.OrbitedItem.name;
-        moon.Name = MoonNameFormat.Inject(parentPlanetName, MoonLetters[orbitSlot.SlotIndex]);
-
         var passiveCMs = MakeCountermeasures(cmStats);
         PlanetoidData data = new PlanetoidData(moon, passiveCMs, moonStat) {
-            ParentName = parentPlanetName
+            // Name assignment must follow after Data assigned to Item so Item is subscribed to the change
         };
         moon.GetComponent<Rigidbody>().mass = data.Mass;    // 7.26.16 Not really needed as Planetoid Rigidbodies are kinematic
         moon.CameraStat = cameraStat;
         moon.Data = data;
+        moon.Data.Name = GameConstants.MoonNameFormat.Inject(parentPlanetName, GameConstants.MoonLetters[orbitSlot.SlotIndex]);
 
         InstallCelestialItemInOrbit(moon.gameObject, orbitSlot);
     }
@@ -420,7 +412,6 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
     public SystemItem MakeSystemInstance(string systemName, GameObject parent, FocusableItemCameraStat cameraStat) {
         GameObject systemPrefab = _systemPrefab.gameObject;
         GameObject systemGo = UnityUtility.AddChild(parent, systemPrefab);
-        systemGo.name = systemName;
         SystemItem item = systemGo.GetSafeComponent<SystemItem>();
         PopulateSystemInstance(systemName, cameraStat, ref item);
         return item;
@@ -436,12 +427,13 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         D.Assert(!system.IsOperational, system.DebugName);
         D.AssertNotNull(system.transform.parent, system.DebugName);
 
-        system.Name = systemName;
         SystemData data = new SystemData(system) {
+            // Name assignment must follow after Data assigned to Item so Item is subscribed to the change
             // Owners are all initialized to TempGameValues.NoPlayer by AItemData
         };
         system.CameraStat = cameraStat;
         system.Data = data;
+        system.Data.Name = systemName;
     }
 
     /// <summary>
@@ -485,7 +477,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         GameObject orbitSimGo = UnityUtility.AddChild(orbitSimParent, orbitSimPrefab);
         var orbitSim = orbitSimGo.GetComponent<OrbitSimulator>();
         orbitSim.OrbitData = orbitData;
-        orbitSimGo.name = orbitingGo.name + Constants.Space + typeof(OrbitSimulator).Name;
+        orbitSimGo.name = orbitingGo.name + GameConstants.OrbitSimulatorNameExtension;
         UnityUtility.AttachChildToParent(orbitingGo, orbitSimGo);
         orbitingGo.transform.localPosition = altLocalPosition != default(Vector3) ? altLocalPosition : GenerateRandomLocalPositionWithinSlot(orbitData);
     }

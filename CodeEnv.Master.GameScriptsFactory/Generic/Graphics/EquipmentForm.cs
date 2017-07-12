@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: SelectedEquipmentForm.cs
-// Form that is used to display info about Equipment in the SelectedItemHudWindow.
+// File: EquipmentForm.cs
+// Form used by the HoveredHudWindow to display info about Equipment.   
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,11 +21,13 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Form that is used to display info about Equipment in the SelectedItemHudWindow.
+/// Form used by the HoveredHudWindow to display info about Equipment.   
+/// <remarks>TEMP as I expect equipment to differ in what is shown.
+/// 7.12.17 Currently only shows the EquipmentName.</remarks>
 /// </summary>
-public class SelectedEquipmentForm : AEquipmentForm {
+public class EquipmentForm : AEquipmentForm {
 
-    public override FormID FormID { get { return FormID.SelectedEquipment; } }
+    public override FormID FormID { get { return FormID.Equipment; } }
 
     private UILabel _titleLabel;
 
@@ -34,6 +36,12 @@ public class SelectedEquipmentForm : AEquipmentForm {
         var immediateChildLabels = gameObject.GetSafeComponentsInImmediateChildren<UILabel>();
         _titleLabel = immediateChildLabels.Single(l => l != _nameLabel);
     }
+
+    protected override void AssignValueToNameGuiElement() {
+        base.AssignValueToNameGuiElement();
+        _nameLabel.text = EquipmentStat.Name;
+    }
+
 
     protected override void AssignValuesToNonGuiElementMembers() {
         base.AssignValuesToNonGuiElementMembers();

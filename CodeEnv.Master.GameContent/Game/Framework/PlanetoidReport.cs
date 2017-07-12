@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class PlanetoidReport : AMortalItemReport {
 
-        public string ParentName { get; private set; }
+        ////public string ParentName { get; private set; }
 
         public PlanetoidCategory Category { get; private set; }
 
@@ -65,9 +65,6 @@ namespace CodeEnv.Master.GameContent {
             }
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Name)) {
                 Name = pData.Name;
-            }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.ParentName)) {
-                ParentName = pData.ParentName;
             }
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Position)) {
                 Position = pData.Position;

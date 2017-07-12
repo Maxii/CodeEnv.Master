@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AUnitElementReport : AMortalItemReport {
 
-        public string ParentName { get; protected set; }
+        public string UnitName { get; protected set; }
 
         public CombatStrength? OffensiveStrength { get; protected set; }
 

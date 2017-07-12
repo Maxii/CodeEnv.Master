@@ -56,7 +56,7 @@ namespace CodeEnv.Master.GameContent {
         private void Show(bool toShow) {
             if (toShow) {
                 if (_hudRefreshJob == null) {
-                    var itemHud = GameReferences.HoveredItemHudWindow;
+                    var itemHud = GameReferences.HoveredHudWindow;
                     string jobName = "{0}.HudRefreshJob".Inject(GetType().Name);
                     // Note: This job refreshes the values in the HUD as item values can change when the game is not paused.
                     // When the game is paused, this refresh is unneeded. OPTIMIZE The job is not required to make
@@ -70,7 +70,7 @@ namespace CodeEnv.Master.GameContent {
             }
             else {
                 KillHudRefreshJob();
-                GameReferences.HoveredItemHudWindow.Hide();
+                GameReferences.HoveredHudWindow.Hide();
             }
         }
 

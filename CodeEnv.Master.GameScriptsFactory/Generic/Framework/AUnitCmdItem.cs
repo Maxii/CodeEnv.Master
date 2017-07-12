@@ -41,7 +41,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     public Formation UnitFormation { get { return Data.UnitFormation; } }
 
-    public string UnitName { get { return Data.ParentName; } }
+    public string UnitName { get { return Data.UnitName; } }
 
     /// <summary>
     /// The maximum radius of this Unit's current formation, independent of the number of elements currently assigned a
@@ -537,9 +537,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     private void RegisterForOrders() {
         OwnerAIMgr.RegisterForOrders(this);
     }
-    ////protected void RegisterForOrders() {
-    ////    OwnerAIMgr.RegisterForOrders(this);
-    ////}
 
     private void DeregisterForOrders() {
         OwnerAIMgr.DeregisterForOrders(this);
@@ -600,6 +597,11 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     #endregion
+
+    protected override void HandleNameChanged() {
+        base.HandleNameChanged();
+        UnitContainer.name = UnitName + GameConstants.CreatorExtension;
+    }
 
     protected sealed override void HandleIsOperationalChanged() {
         base.HandleIsOperationalChanged();
@@ -690,7 +692,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         }
         HQElement.IsHQ = true;
         Data.HQElementData = HQElement.Data;    // CmdData.Radius now returns Radius of new HQElement
-        D.Log(ShowDebugLog, "{0}'s HQElement is now {1}. Radius = {2:0.00}.", Data.ParentName, HQElement.Data.Name, Data.Radius);
+        D.Log(ShowDebugLog, "{0}'s HQElement is now {1}. Radius = {2:0.00}.", UnitName, HQElement.Name, Radius);
+        ////D.Log(ShowDebugLog, "{0}'s HQElement is now {1}. Radius = {2:0.00}.", Data.ParentName, HQElement.Data.Name, Data.Radius);
         AttachCmdToHQElement(); // needs to occur before formation changed
 
         if (DisplayMgr != null) {

@@ -42,8 +42,6 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     /// </summary>
     private const float GuardStationDistanceMultiplier = 0.2F;
 
-    private const string NameFormat = "{0}{1}";
-
     /// <summary>
     /// Occurs when the owner of this <c>AItem</c> is about to change.
     /// The new incoming owner is the <c>Player</c> provided in the EventArgs.
@@ -110,17 +108,10 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
 
     public string DebugName { get { return Data.DebugName; } }
 
-    private string _name;
     /// <summary>
     /// The display name of this Sector.
     /// </summary>
-    public string Name {
-        get {
-            D.AssertNotNull(_name);
-            return _name;
-        }
-        set { SetProperty<string>(ref _name, value, "Name"); }
-    }
+    public string Name { get { return Data.Name; } }
 
     public Vector3 Position { get; private set; }
 

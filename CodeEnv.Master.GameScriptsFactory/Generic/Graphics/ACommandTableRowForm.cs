@@ -26,7 +26,7 @@ public abstract class ACommandTableRowForm : ATableRowForm {
 
     protected override void AssignValueToNameGuiElement() {
         var report = Report as AUnitCmdReport;
-        _nameLabel.text = report.ParentName != null ? report.ParentName : Unknown;
+        _nameLabel.text = report.UnitName != null ? report.UnitName : Unknown;
     }
 
     protected sealed override void AssignValueToCultureGuiElement() {

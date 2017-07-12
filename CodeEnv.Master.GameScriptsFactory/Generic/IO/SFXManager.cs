@@ -54,14 +54,14 @@ public class SFXManager : AMonoSingleton<SFXManager>, ISFXManager {
 
     /// <summary>
     /// Plays the specified 2D AudioClip from Vector3.zero.
-    /// Warning: If the AudioClip is encoded 3D, the user may not hear it
-    /// as the location it is play from is Vector3.zero.
+    /// <remarks>Warning: If the AudioClip is encoded 3D, the user may not hear 
+    /// it as the location it is playing from is Vector3.zero.</remarks>
     /// </summary>
     /// <param name="clipID">The ID for the 2D AudioClip.</param>
     /// <returns></returns>
     public AudioSource PlaySFX(SfxClipID clipID) {
         //TODO verify clip is coded as 2D - need AudioImporter???
-        return SoundManager.PlaySFX(clipID.GetValueName());
+        return SoundManager.PlaySFX(clipID.SfxClipName());
     }
 
     /// <summary>
@@ -73,7 +73,7 @@ public class SFXManager : AMonoSingleton<SFXManager>, ISFXManager {
     /// <returns></returns>
     public AudioSource PlaySFX(GameObject go, SfxClipID clipID, bool toLoop = false) {
         //TODO verify clip is coded as 3D - need AudioImporter???
-        return SoundManager.PlaySFX(go, clipID.GetValueName(), toLoop);
+        return SoundManager.PlaySFX(go, clipID.SfxClipName(), toLoop);
     }
 
     /// <summary>
@@ -90,9 +90,8 @@ public class SFXManager : AMonoSingleton<SFXManager>, ISFXManager {
     }
 
     /// <summary>
-    /// Plays the specified 3D AudioClip on the designated GameObject IFF 
-    /// the number of clip instances currently playing with <c>capID</c> does
-    /// not exceed the cap amount associated with the clip.
+    /// Plays the specified 3D AudioClip on the designated GameObject IFF the number of clip instances 
+    /// currently playing with <c>capID</c> does not exceed the cap amount associated with the clip.
     /// </summary>
     /// <param name="go">The GameObject to play on.</param>
     /// <param name="clipID">The ID of the AudioClip.</param>
@@ -104,7 +103,7 @@ public class SFXManager : AMonoSingleton<SFXManager>, ISFXManager {
         var aS = go.AddMissingComponent<AudioSource>();
         Profiler.EndSample();
 
-        return SoundManager.PlayCappedSFX(aS, clipID.GetValueName(), capID.GetValueName());
+        return SoundManager.PlayCappedSFX(aS, clipID.SfxClipName(), capID.GetValueName());
     }
 
     protected override void ExecutePriorToDestroy() {

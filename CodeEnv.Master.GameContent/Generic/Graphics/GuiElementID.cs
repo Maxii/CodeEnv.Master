@@ -30,7 +30,8 @@ namespace CodeEnv.Master.GameContent {
 
         None = 0,
 
-        // last Checkbox_5 = 97  
+        // last: NameInputField = 98  
+        //// last: SettlementCmdDesignWindowCheckbox = 97  
 
         #region Checkboxes
 
@@ -44,11 +45,12 @@ namespace CodeEnv.Master.GameContent {
 
         ElementIconsCheckbox = 5,
 
-        Checkbox_1 = 93,
-        Checkbox_2 = 94,
-        Checkbox_3 = 95,
-        Checkbox_4 = 96,
-        Checkbox_5 = 97,
+        // 7.8.17 Currently used in DesignScreensManager
+        ShipDesignWindowCheckbox = 93,
+        FacilityDesignWindowCheckbox = 94,
+        FleetCmdDesignWindowCheckbox = 95,
+        StarbaseCmdDesignWindowCheckbox = 96,
+        SettlementCmdDesignWindowCheckbox = 97,
 
         #endregion
 
@@ -140,7 +142,7 @@ namespace CodeEnv.Master.GameContent {
 
         #region Labels
 
-        ItemNameLabel = 26,
+        NameLabel = 26,
 
         OrganicsLabel = 27,
 
@@ -192,6 +194,12 @@ namespace CodeEnv.Master.GameContent {
 
         #region Buttons
 
+
+        #endregion
+
+        #region Input Fields
+
+        NameInput = 98,
 
         #endregion
 

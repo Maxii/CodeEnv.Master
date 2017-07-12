@@ -75,8 +75,8 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd,
         return StarbaseIconInfoFactory.Instance.MakeInstance(UserReport);
     }
 
-    protected override void ShowSelectedItemHud() {
-        SelectedItemHudWindow.Instance.Show(FormID.SelectedStarbase, UserReport);
+    protected override void ShowSelectedItemInHud() {
+        InteractableHudWindow.Instance.Show(FormID.SelectedStarbase, Data);
     }
 
     protected override void PrepareForDeathEffect() {

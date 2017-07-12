@@ -29,9 +29,8 @@ using CodeEnv.Master.GameContent;
 /// the ResourceID in a TooltipHudWindow).
 /// <remarks>6.17.17 Many AForms are shown in HUDs and the FormID is used by the HUD 
 /// to pick the form to show. Some AForms don't lend themselves to HUD displays due to 
-/// the way the form is structured. TableRowForms and MiniDesignForms are good examples
-/// as Rows can be quite long, and MiniDesignForms contain minimal info. In these cases
-/// the FormID is currently not used.</remarks>
+/// the way the form is structured. TableRowForms are the primary example as Rows can be
+/// quite long. In this case the FormID is currently not used.</remarks>
 /// </summary>
 public abstract class AForm : AMonoBase {
 
@@ -56,7 +55,7 @@ public abstract class AForm : AMonoBase {
     public abstract void Reset();
 
     /// <summary>
-    /// Returns the single UILabel sibling or child of the provided GuiElement.
+    /// Returns the single UILabel component that is present with or a child of the provided GuiElement's GameObject.
     /// </summary>
     /// <param name="element">The element.</param>
     /// <returns></returns>

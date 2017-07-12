@@ -31,6 +31,8 @@ using UnityEngine;
 /// </summary>
 public class DesignScreensManager : AMonoBase {
 
+    private const int ScreenChoiceCheckboxGroupNumber = 1;
+
     [SerializeField]
     private UnitDesignImageIcon _designIconPrefab = null;
 
@@ -42,7 +44,7 @@ public class DesignScreensManager : AMonoBase {
 
     public string DebugName { get { return GetType().Name; } }
 
-    private UIToggle[] _screenChoiceCheckboxes;
+    ////private UIToggle[] _screenChoiceCheckboxes;
     private GuiWindow _screenChoicePopupWindow;
 
     private AUnitDesignWindow _currentDesignWindow;
@@ -62,8 +64,11 @@ public class DesignScreensManager : AMonoBase {
 
     private void InitializeValuesAndReferences() {
         _screenChoicePopupWindow = gameObject.GetSingleComponentInImmediateChildren<GuiWindow>();
-        _screenChoiceCheckboxes = _screenChoicePopupWindow.GetComponentsInChildren<UIToggle>();
-        D.AssertEqual(5, _screenChoiceCheckboxes.Length);
+        var screenChoiceCheckboxes = _screenChoicePopupWindow.GetComponentsInChildren<UIToggle>();
+        D.AssertEqual(5, screenChoiceCheckboxes.Length);
+        foreach (var checkbox in screenChoiceCheckboxes) {
+            checkbox.group = ScreenChoiceCheckboxGroupNumber;
+        }
 
         _currentDesignWindow = gameObject.GetSingleComponentInChildren<AUnitDesignWindow>();
         _currentDesignWindowGo = _currentDesignWindow.gameObject;
@@ -167,33 +172,10 @@ public class DesignScreensManager : AMonoBase {
     /// </summary>
     /// <exception cref="System.NotImplementedException"></exception>
     public void ShowChosenDesignScreen() {
-        foreach (var checkbox in _screenChoiceCheckboxes) {
-            if (checkbox.value) {
-                DesignWindowCategory windowCat = DesignWindowCategory.None;
-                GuiElementID checkboxID = checkbox.GetComponent<GuiElement>().ElementID;
-                switch (checkboxID) {
-                    case GuiElementID.Checkbox_1:
-                        windowCat = DesignWindowCategory.Ship;
-                        break;
-                    case GuiElementID.Checkbox_2:
-                        windowCat = DesignWindowCategory.Facility;
-                        break;
-                    case GuiElementID.Checkbox_3:
-                        windowCat = DesignWindowCategory.FleetCmd;
-                        break;
-                    case GuiElementID.Checkbox_4:
-                        windowCat = DesignWindowCategory.StarbaseCmd;
-                        break;
-                    case GuiElementID.Checkbox_5:
-                        windowCat = DesignWindowCategory.SettlementCmd;
-                        break;
-                    default:
-                        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(checkboxID));
-                }
-                InitializeDesignWindow(windowCat);
-                break;
-            }
-        }
+        UIToggle chosenToggle = UIToggle.GetActiveToggle(ScreenChoiceCheckboxGroupNumber);
+        D.Assert(chosenToggle.value);
+        GuiElementID checkboxID = chosenToggle.GetComponent<GuiElement>().ElementID;
+        InitializeDesignWindow(checkboxID);
         _currentDesignWindow.Show();
     }
 
@@ -204,15 +186,15 @@ public class DesignScreensManager : AMonoBase {
     #endregion
 
     /// <summary>
-    /// Initializes the design window indicated by windowCat. If the design window designated by windowCat is not 
+    /// Initializes the design window indicated by checkboxID. If the design window designated by checkboxID is not 
     /// the _currentDesignWindow, then the DesignWindow script will be replaced and then initialized in preparation for showing.
     /// </summary>
-    /// <param name="windowCat">The window category.</param>
+    /// <param name="checkboxID">The CheckboxID indicating the chosen design window.</param>
     /// <exception cref="System.NotImplementedException"></exception>
-    private void InitializeDesignWindow(DesignWindowCategory windowCat) {
+    private void InitializeDesignWindow(GuiElementID checkboxID) {
         Type currentDesignWindowType = _currentDesignWindow.GetType();
-        switch (windowCat) {
-            case DesignWindowCategory.Ship:
+        switch (checkboxID) {
+            case GuiElementID.ShipDesignWindowCheckbox:
                 if (currentDesignWindowType != typeof(ShipDesignWindow)) {
                     _currentDesignWindow.ActivateContent();
                     Destroy(_currentDesignWindow);
@@ -220,7 +202,7 @@ public class DesignScreensManager : AMonoBase {
                     _currentDesignWindow.AutoExecuteStartingState = false;
                 }
                 break;
-            case DesignWindowCategory.Facility:
+            case GuiElementID.FacilityDesignWindowCheckbox:
                 if (currentDesignWindowType != typeof(FacilityDesignWindow)) {
                     _currentDesignWindow.ActivateContent();
                     Destroy(_currentDesignWindow);
@@ -228,7 +210,7 @@ public class DesignScreensManager : AMonoBase {
                     _currentDesignWindow.AutoExecuteStartingState = false;
                 }
                 break;
-            case DesignWindowCategory.FleetCmd:
+            case GuiElementID.FleetCmdDesignWindowCheckbox:
                 if (currentDesignWindowType != typeof(FleetCmdDesignWindow)) {
                     _currentDesignWindow.ActivateContent();
                     Destroy(_currentDesignWindow);
@@ -236,7 +218,7 @@ public class DesignScreensManager : AMonoBase {
                     _currentDesignWindow.AutoExecuteStartingState = false;
                 }
                 break;
-            case DesignWindowCategory.StarbaseCmd:
+            case GuiElementID.StarbaseCmdDesignWindowCheckbox:
                 if (currentDesignWindowType != typeof(StarbaseCmdDesignWindow)) {
                     _currentDesignWindow.ActivateContent();
                     Destroy(_currentDesignWindow);
@@ -244,7 +226,7 @@ public class DesignScreensManager : AMonoBase {
                     _currentDesignWindow.AutoExecuteStartingState = false;
                 }
                 break;
-            case DesignWindowCategory.SettlementCmd:
+            case GuiElementID.SettlementCmdDesignWindowCheckbox:
                 if (currentDesignWindowType != typeof(SettlementCmdDesignWindow)) {
                     _currentDesignWindow.ActivateContent();
                     Destroy(_currentDesignWindow);
@@ -252,9 +234,8 @@ public class DesignScreensManager : AMonoBase {
                     _currentDesignWindow.AutoExecuteStartingState = false;
                 }
                 break;
-            case DesignWindowCategory.None:
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(windowCat));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(checkboxID));
         }
         _currentDesignWindow.__InitializePrefabs(_designIconPrefab, _equipmentIconPrefab, _threeDModelStagePrefab);
     }
@@ -264,20 +245,6 @@ public class DesignScreensManager : AMonoBase {
     public override string ToString() {
         return DebugName;
     }
-
-    #region Nested Classes
-
-    public enum DesignWindowCategory {
-        None,
-
-        Ship,
-        Facility,
-        FleetCmd,
-        StarbaseCmd,
-        SettlementCmd
-    }
-
-    #endregion
 
 }
 

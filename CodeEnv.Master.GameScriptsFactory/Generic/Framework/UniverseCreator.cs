@@ -63,11 +63,13 @@ public class UniverseCreator {
         if (UniverseCenter != null) {
             float radius = TempGameValues.UniverseCenterRadius;
             float closeOrbitInnerRadius = radius + 5F;
-            UniverseCenter.Name = "UniverseCenter";
-            UniverseCenterData data = new UniverseCenterData(UniverseCenter, radius, closeOrbitInnerRadius);
+            UniverseCenterData data = new UniverseCenterData(UniverseCenter, radius, closeOrbitInnerRadius) {
+                // Name assignment must follow after Data assigned to Item so Item is subscribed to the change
+            };
             FocusableItemCameraStat cameraStat = __MakeUCenterCameraStat(radius, closeOrbitInnerRadius);
             UniverseCenter.CameraStat = cameraStat;
             UniverseCenter.Data = data;
+            UniverseCenter.Data.Name = "UniverseCenter";
             // UC will be enabled when CommenceOperations() called
         }
     }

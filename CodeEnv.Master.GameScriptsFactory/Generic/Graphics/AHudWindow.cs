@@ -27,7 +27,7 @@ using UnityEngine;
 /// Singleton. Abstract Gui Window for showing customized Forms that 'popup' at various locations on the screen. 
 /// HudWindows have the ability to envelop their background around the Form they are displaying.
 /// Each derived type instance can handle multiple Forms.
-/// 6.17.17 Current derived classes include TooltipHudWindow, the left side HoveredItemHudWindow and the bottom SelectedItemHudWindow.
+/// 6.17.17 Current derived classes include TooltipHudWindow, the left side HoveredHudWindow and the bottom SelectedItemHudWindow.
 /// </summary>
 public abstract class AHudWindow<T> : AGuiWindow where T : AHudWindow<T> {
 

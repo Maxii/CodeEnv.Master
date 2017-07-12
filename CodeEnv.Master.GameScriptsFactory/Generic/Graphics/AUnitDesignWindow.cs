@@ -238,7 +238,13 @@ public abstract class AUnitDesignWindow : AGuiWindow {
 
     private void HandleEquipmentIconDoubleClicked(GameObject iconGo) {
         var eStat = iconGo.GetComponent<EquipmentIcon>().EquipmentStat;
-        _designerEquipmentStorage.PlaceInEmptySlot(eStat);
+        bool isPlaced = _designerEquipmentStorage.PlaceInEmptySlot(eStat);
+        if (isPlaced) {
+            SFXManager.Instance.PlaySFX(SfxClipID.Tap);
+        }
+        else {
+            SFXManager.Instance.PlaySFX(SfxClipID.Error);
+        }
     }
 
     /// <summary>
@@ -250,7 +256,6 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         _renameObsoleteDesignNameInput.value = null;
         HideDesignsUI();
         HideWindowControlUI();
-        RefreshSelectedItemHudWindow(null);
         _renameObsoleteDesignPopupWindow.Show();
     }
 
@@ -279,7 +284,6 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     /// Hide the Window.
     /// </summary>
     public void Hide() {
-        RefreshSelectedItemHudWindow(null);
         HideWindow();
     }
 
@@ -296,12 +300,10 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         }
         else {
             _createDesignPopupListContainer.gameObject.SetActive(false);
-            ////_createDesignPopupList.gameObject.SetActive(false);
         }
         _createDesignNameInput.value = null;
         HideDesignsUI();
         HideWindowControlUI();
-        RefreshSelectedItemHudWindow(null);
     }
 
     /// <summary>
@@ -319,6 +321,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     public void CreateDesign() {
         if (_createDesignNameInput.value.IsNullOrEmpty()) {
             D.Warn("{0}: User did not pick a Design name when attempting to create a design.", DebugName);
+            SFXManager.Instance.PlaySFX(SfxClipID.Error);
             ShowDesignsUI();
             ShowWindowControlUI();
             return;
@@ -327,6 +330,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         string rootDesignName = _createDesignNameInput.value;
         if (_gameMgr.PlayersDesigns.IsDesignNameInUseByUser(rootDesignName)) {
             D.Warn("{0}: User picked DesignName {1} that is already in use when attempting to create a design.", DebugName, rootDesignName);
+            SFXManager.Instance.PlaySFX(SfxClipID.Error);
             ShowDesignsUI();
             ShowWindowControlUI();
             return;
@@ -338,6 +342,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
             // E.g. The design of a Command has no counterpart to the different hulls that elements have.
             if (_createDesignPopupList.value.IsNullOrEmpty()) {
                 D.Warn("{0}: User did not make a Hull choice when attempting to create a design.", DebugName);
+                SFXManager.Instance.PlaySFX(SfxClipID.Error);
                 ShowDesignsUI();
                 ShowWindowControlUI();
                 return;
@@ -387,6 +392,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         D.AssertNotNull(_selectedDesignIcon);
         if (_renameObsoleteDesignNameInput.value.IsNullOrEmpty()) {
             D.Warn("{0}: User did not pick a Design name when attempting to edit an obsolete design.", DebugName);
+            SFXManager.Instance.PlaySFX(SfxClipID.Error);
             ShowDesignsUI();
             ShowWindowControlUI();
             return;
@@ -395,6 +401,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         string rootDesignName = _renameObsoleteDesignNameInput.value;
         if (_gameMgr.PlayersDesigns.IsDesignNameInUseByUser(rootDesignName)) {
             D.Warn("{0}: User picked DesignName {1} that is already in use when attempting to edit an obsolete design.", DebugName, rootDesignName);
+            SFXManager.Instance.PlaySFX(SfxClipID.Error);
             ShowDesignsUI();
             ShowWindowControlUI();
             return;
@@ -461,6 +468,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
 
     public void AutoDesigner() {
         D.Warn("{0}: AutoDesigner not yet implemented.", DebugName);
+        SFXManager.Instance.PlaySFX(SfxClipID.Error);
         // UNDONE
     }
 
@@ -481,6 +489,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         if (_selectedDesignIcon != null) {
             AUnitDesign selectedDesign = _selectedDesignIcon.Design;
             ObsoleteDesign(selectedDesign.DesignName);
+            SFXManager.Instance.PlaySFX(SfxClipID.OpenShut);
 
             if (!_includeObsoleteDesigns) {
                 RemoveIcon(_selectedDesignIcon);
@@ -491,6 +500,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         }
         else {
             D.Warn("{0}: User attempted to obsolete a design without a design selected.", DebugName);
+            SFXManager.Instance.PlaySFX(SfxClipID.Error);
         }
     }
 
@@ -522,10 +532,6 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         _selectedDesignIcon = newSelectedDesignIcon;
         if (_selectedDesignIcon != null) {
             _selectedDesignIcon.IsSelected = true;
-            RefreshSelectedItemHudWindow(_selectedDesignIcon.Design);
-        }
-        else {
-            RefreshSelectedItemHudWindow(null);
         }
     }
 
@@ -848,15 +854,6 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         // Note: DestroyImmediate() because Destroy() doesn't always get rid of the existing icon before Reposition occurs on LateUpdate
         // This results in an extra 'empty' icon that stays until another Reposition() call, usually from sorting something
         DestroyImmediate(equipIcon.gameObject);
-    }
-
-    private void RefreshSelectedItemHudWindow(AUnitDesign design) {
-        if (design == null) {
-            SelectedItemHudWindow.Instance.Hide();
-        }
-        else {
-            SelectedItemHudWindow.Instance.Show(FormID.SelectedShipDesign, design);
-        }
     }
 
     /// <summary>

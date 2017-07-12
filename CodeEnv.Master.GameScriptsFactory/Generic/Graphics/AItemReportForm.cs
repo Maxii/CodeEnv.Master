@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2017 
+// Copyright © 2012 - 2015 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AUnitDesignForm.cs
-// Abstract base class for Forms that are that are used to display info about a unit design in a HudWindow.
+// File: AItemReportForm.cs
+// Abstract base class for Forms that are fed content from an Item Report.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,31 +20,32 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Abstract base class for Forms that are that are used to display info about a unit design in a HudWindow.
+/// Abstract base class for Forms that are fed content from an Item Report.
 /// </summary>
-public abstract class AUnitDesignForm : AInfoDisplayForm {
+public abstract class AItemReportForm : AInfoDisplayForm {
 
-    private AUnitDesign _design;
-    public AUnitDesign Design {
-        get { return _design; }
+    protected const string Unknown = Constants.QuestionMark;
+
+    private AItemReport _report;
+    public AItemReport Report {
+        get { return _report; }
         set {
-            D.AssertNull(_design);  // occurs only once between Resets
-            SetProperty<AUnitDesign>(ref _design, value, "Design", DesignPropSetHandler);
+            D.AssertNull(_report);  // occurs only once between Resets
+            SetProperty<AItemReport>(ref _report, value, "Report", ReportPropSetHandler);
         }
     }
 
     #region Event and Property Change Handlers
 
-    private void DesignPropSetHandler() {
+    private void ReportPropSetHandler() {
         AssignValuesToMembers();
     }
 
     #endregion
 
     public override void Reset() {
-        _design = null;
+        _report = null;
     }
-
 
 }
 

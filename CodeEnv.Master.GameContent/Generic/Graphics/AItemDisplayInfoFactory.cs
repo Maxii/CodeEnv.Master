@@ -36,7 +36,7 @@ namespace CodeEnv.Master.GameContent {
                 {ItemInfoID.Separator, "--------------------"},
 
                 {ItemInfoID.Name, "Name: {0}"},
-                {ItemInfoID.ParentName, "Parent: {0}"},
+                {ItemInfoID.UnitName, "Unit: {0}"},
                 {ItemInfoID.Owner, "Owner: {0}, UserRelations: {1}"},
                 {ItemInfoID.Category, "Category: {0}"},
                 {ItemInfoID.SectorID, "Sector: {0}"},

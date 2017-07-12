@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: HoveredItemHudEditor.cs
-// Custom editor for the HoveredItemHudWindow.
+// File: InteractableHudEditor.cs
+// Custom editor for the InteractableHudWindow.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,10 +20,10 @@ using CodeEnv.Master.Common;
 using UnityEditor;
 
 /// <summary>
-/// Custom editor for the HoveredItemHudWindow.
+/// Custom editor for the InteractableHudWindow.
 /// </summary>
-[CustomEditor(typeof(HoveredItemHudWindow))]
-public class HoveredItemHudEditor : AGuiWindowEditor<HoveredItemHudWindow> {
+[CustomEditor(typeof(InteractableHudWindow))]
+public class InteractableHudEditor : AGuiWindowEditor<InteractableHudWindow> {
 
 
 }

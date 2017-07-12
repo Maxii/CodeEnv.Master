@@ -27,8 +27,8 @@ namespace CodeEnv.Master.GameContent {
     public class FleetDisplayInfoFactory : AUnitCmdDisplayInfoFactory<FleetCmdReport, FleetDisplayInfoFactory> {
 
         private static ItemInfoID[] _infoIDsToDisplay = new ItemInfoID[] {
-            ItemInfoID.Name,
-            ItemInfoID.ParentName,
+            //ItemInfoID.Name,
+            ItemInfoID.UnitName,
             ItemInfoID.Category,
             ItemInfoID.Composition,
             ItemInfoID.Owner,

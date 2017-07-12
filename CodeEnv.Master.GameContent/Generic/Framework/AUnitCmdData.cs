@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AUnitCmdData : AMortalItemData {
 
-        private const string DebugNameFormat = "{0}'s {1}.{2}";
+        private const string DebugNameFormat = "{0}'s {1}"; //"{0}'s {1}.{2}";
 
         private float _unitMaxFormationRadius;
         /// <summary>
@@ -52,18 +52,19 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float Radius { get { return HQElementData.HullDimensions.magnitude / 2F; } }
 
-        private string _parentName;
-        public string ParentName {
-            get { return _parentName; }
-            set { SetProperty<string>(ref _parentName, value, "ParentName", ParentNamePropChangedHandler); }
+        private string _unitName;
+        public string UnitName {
+            get { return _unitName; }
+            set { SetProperty<string>(ref _unitName, value, "UnitName", UnitNamePropChangedHandler); }
         }
 
         public override string DebugName {
             get {
-                if (ParentName.IsNullOrEmpty()) {
-                    return base.DebugName;
+                // 7.10.17 UnitName is already embedded in Cmd's Name
+                if (Owner != null) {
+                    return DebugNameFormat.Inject(Owner.DebugName, Name);
                 }
-                return DebugNameFormat.Inject(Owner.DebugName, ParentName, Name);
+                return DebugNameFormat.Inject(Constants.Empty, Name);
             }
         }
 
@@ -327,8 +328,8 @@ namespace CodeEnv.Master.GameContent {
             RefreshCurrentCmdEffectiveness();
         }
 
-        private void ParentNamePropChangedHandler() {
-            HandleParentNameChanged();
+        private void UnitNamePropChangedHandler() {
+            HandleUnitNameChanged();
         }
 
         private void CmdSensorRangeDistancePropChangedHandler() {
@@ -475,10 +476,10 @@ namespace CodeEnv.Master.GameContent {
 
         protected abstract void HandleUnitWeaponsRangeChanged();
 
-        private void HandleParentNameChanged() {
-            // the parent name of a command is the unit name
+        private void HandleUnitNameChanged() {
+            Name = UnitName + GameConstants.CmdNameExtension;
             if (!_elementsData.IsNullOrEmpty()) {
-                _elementsData.ForAll(eData => eData.ParentName = ParentName);
+                _elementsData.ForAll(eData => eData.UnitName = UnitName);
             }
         }
 
@@ -495,7 +496,7 @@ namespace CodeEnv.Master.GameContent {
         public virtual void AddElement(AUnitElementData elementData) {
             D.Assert(!_elementsData.Contains(elementData), elementData.DebugName);
             __ValidateOwner(elementData);
-            UpdateElementParentName(elementData);
+            UpdateElementUnitName(elementData);
             _elementsData.Add(elementData);
             Subscribe(elementData);
             RefreshComposition();
@@ -517,9 +518,9 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private void UpdateElementParentName(AUnitElementData elementData) {
-            //D.Log(ShowDebugLog, "{0}.ParentName changing to {1}.", elementData.Name, ParentName);
-            elementData.ParentName = ParentName;    // the name of the fleet, not the command
+        private void UpdateElementUnitName(AUnitElementData elementData) {
+            //D.Log(ShowDebugLog, "{0}.ParentName changing to {1}.", elementData.Name, UnitName);
+            elementData.UnitName = UnitName;    // the name of the fleet, not the command
         }
 
         public virtual void RemoveElement(AUnitElementData elementData) {

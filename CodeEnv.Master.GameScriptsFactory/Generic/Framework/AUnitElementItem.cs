@@ -698,7 +698,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     }
 
     protected virtual void HandleIsHQChanged() {
-        Name = IsHQ ? Name + __HQNameAddendum : Name.Remove(__HQNameAddendum);
+        Data.Name = IsHQ ? Name + __HQNameAddendum : Name.Remove(__HQNameAddendum);
         OnIsHQChanged();
     }
 

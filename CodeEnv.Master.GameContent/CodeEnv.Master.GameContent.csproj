@@ -199,7 +199,7 @@
     <Compile Include="Generic\IO\AEquipmentStat.cs" />
     <Compile Include="Generic\Framework\ARangedEquipment.cs" />
     <Compile Include="Generic\IO\ARangedEquipmentStat.cs" />
-    <Compile Include="Generic\Graphics\AElementItemDisplayInfoFactory.cs" />
+    <Compile Include="Generic\Graphics\AUnitElementDisplayInfoFactory.cs" />
     <Compile Include="Generic\Graphics\AIntelItemDisplayInfoFactory.cs" />
     <Compile Include="Generic\Graphics\AItemDisplayInfoFactory.cs" />
     <Compile Include="Generic\Graphics\AMortalItemDisplayInfoFactory.cs" />
@@ -352,7 +352,7 @@
     <Compile Include="Generic\IO\PlayerPrefsManager.cs" />
     <Compile Include="Generic\Interfaces\Access\IHoveredHudWindow.cs" />
     <Compile Include="Generic\Graphics\FormID.cs" />
-    <Compile Include="Generic\Interfaces\Access\ISelectedItemHudWindow.cs" />
+    <Compile Include="Generic\Interfaces\Access\IInteractableHudWindow.cs" />
     <Compile Include="Generic\Interfaces\Access\ITooltipHudWindow.cs" />
     <Compile Include="Generic\IO\NewGamePreferenceSettings.cs" />
     <Compile Include="Generic\IO\LeaderStat.cs" />

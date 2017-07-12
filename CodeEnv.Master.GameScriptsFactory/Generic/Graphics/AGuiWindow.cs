@@ -175,7 +175,7 @@ public abstract class AGuiWindow : AMonoBase {
     /// </summary>
     protected void HideWindow() {
         if (!enabled || !gameObject.activeSelf || !IsShowing) {
-            //D.Log("{0}.HideWindow() erroneously called. enabled = {1}, IsShowing = {2}.", DebugName, enabled, IsShowing);
+            //D.Log("{0}.HideWindow() unnecessarily called. enabled = {1}, IsShowing = {2}.", DebugName, enabled, IsShowing);
             return;
         }
         IsShowing = false;

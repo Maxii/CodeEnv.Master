@@ -55,17 +55,19 @@ public class DesignEquipmentStorage : AMonoBase {
 
     /// <summary>
     /// Attempts to place the stat in an empty slot compatible with the stat's category.
-    /// If none are available, the method does nothing.
+    /// Returns true if the stat was placed in an appropriate slot, false otherwise.
     /// </summary>
     /// <param name="eStat">The AEquipmentStat.</param>
-    public void PlaceInEmptySlot(AEquipmentStat eStat) {
+    /// <returns></returns>
+    public bool PlaceInEmptySlot(AEquipmentStat eStat) {
         EquipmentSlotID emptySlotID;
         if (WorkingDesign.TryGetEmptySlotIDFor(eStat.Category, out emptySlotID)) {
             var storageIcon = _storageIconLookup[emptySlotID];
             bool isAccepted = storageIcon.Replace(eStat);
             D.Assert(isAccepted);
-            storageIcon.PlaySound(AEquipmentIcon.IconSoundID.Place);
+            return true;
         }
+        return false;
     }
 
     /// <summary>
@@ -89,7 +91,7 @@ public class DesignEquipmentStorage : AMonoBase {
     /// </summary>
     /// <param name="design">The design.</param>
     public void InstallEquipmentStorageIconsFor(AUnitDesign design) {
-        WorkingDesign = design; //// new ShipDesign(design);
+        WorkingDesign = design;
 
         int reqdSlotQty = design.TotalReqdEquipmentSlots;
 

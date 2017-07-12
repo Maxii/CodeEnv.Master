@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AUnitCmdReport : AMortalItemReport {
 
-        public string ParentName { get; protected set; }
+        public string UnitName { get; protected set; }
 
         public float? CurrentCmdEffectiveness { get; protected set; }
 
@@ -131,7 +131,7 @@ namespace CodeEnv.Master.GameContent {
                 return null;
             }
             if (unitCurrentHitPts > unitMaxHitPts) {
-                D.Warn("{0}.CurrentHitPts {1} > MaxHitPts {2}.", ParentName, unitCurrentHitPts, unitMaxHitPts);
+                D.Warn("{0}.CurrentHitPts {1} > MaxHitPts {2}.", UnitName, unitCurrentHitPts, unitMaxHitPts);
             }
             // The above warning can occur if Element CurrentHitPts is made available at a more restricted IntelCoverage than MaxHitPts
             if (unitMaxHitPts.Value > Constants.ZeroF) {

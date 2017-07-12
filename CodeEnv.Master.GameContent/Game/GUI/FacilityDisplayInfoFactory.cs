@@ -23,11 +23,11 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Factory that makes instances of text containing info about Facilities.
     /// </summary>
-    public class FacilityDisplayInfoFactory : AElementItemDisplayInfoFactory<FacilityReport, FacilityDisplayInfoFactory> {
+    public class FacilityDisplayInfoFactory : AUnitElementDisplayInfoFactory<FacilityReport, FacilityDisplayInfoFactory> {
 
         private static ItemInfoID[] _infoIDsToDisplay = new ItemInfoID[] {
             ItemInfoID.Name,
-            ItemInfoID.ParentName,
+            ItemInfoID.UnitName,
             ItemInfoID.Owner,
             ItemInfoID.Category,
             ItemInfoID.Health,

@@ -177,8 +177,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     public FacilityReport GetReport(Player player) { return Publisher.GetReport(player); }
 
-    protected override void ShowSelectedItemHud() {
-        SelectedItemHudWindow.Instance.Show(FormID.SelectedFacility, UserReport);
+    protected override void ShowSelectedItemInHud() {
+        D.Assert(Owner.IsUser);
+        InteractableHudWindow.Instance.Show(FormID.SelectedFacility, Data);
     }
 
     protected override bool ShouldCmdOwnerChange() {

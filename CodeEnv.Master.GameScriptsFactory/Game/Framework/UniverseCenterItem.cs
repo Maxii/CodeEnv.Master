@@ -175,8 +175,8 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
 
     public UniverseCenterReport GetReport(Player player) { return Publisher.GetReport(player); }
 
-    protected override void ShowSelectedItemHud() {
-        SelectedItemHudWindow.Instance.Show(FormID.SelectedUniverseCenter, UserReport);
+    protected override void ShowSelectedItemInHud() {
+        throw new NotSupportedException("{0}".Inject(DebugName));   // should not be called as can't be owned
     }
 
     #region Event and Property Change Handlers

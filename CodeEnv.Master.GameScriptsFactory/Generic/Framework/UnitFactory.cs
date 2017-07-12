@@ -31,6 +31,8 @@ using UnityEngine;
 public class UnitFactory : AGenericSingleton<UnitFactory> {
     // Note: no reason to dispose of _instance during scene transition as all its references persist across scenes
 
+    ////private const string CmdNameExtension = " Cmd";
+
     private FleetCreator _fleetCreatorPrefab;
     private StarbaseCreator _starbaseCreatorPrefab;
     private SettlementCreator _settlementCreatorPrefab;
@@ -187,7 +189,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
     public void PopulateInstance(Player owner, FleetCmdCameraStat cameraStat, FleetCmdDesign design, ref FleetCmdItem cmd, string unitName,
-        Formation formation) {
+    Formation formation) {
         D.Assert(!cmd.IsOperational, cmd.DebugName);
         D.AssertNotNull(unitName);
         if (cmd.transform.parent == null) {
@@ -196,13 +198,13 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var passiveCMs = MakeCountermeasures(design);
         var sensors = MakeSensors(design, cmd);
         var ftlDampener = MakeFtlDampener(design.FtlDampenerStat, cmd);
-        cmd.Name = __GetUniqueFleetCmdName(design.DesignName);
         FleetCmdData data = new FleetCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, design.ReqdCmdStat, design.DesignName) {
-            ParentName = unitName,
+            // Name assignment must follow after Data assigned to Item so Item is subscribed to the change
             UnitFormation = formation
         };
         cmd.CameraStat = cameraStat;
         cmd.Data = data;
+        cmd.Data.UnitName = unitName;
     }
 
     /// <summary>
@@ -304,12 +306,14 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             ftlEngine = MakeEngine(design.FtlEngineStat, "FtlEngine") as FtlEngine;
         }
 
-        element.Name = __GetUniqueShipName(design.DesignName);
         ShipData data = new ShipData(element, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, hqPriority,
-            stlEngine, ftlEngine, design.CombatStance, design.DesignName);
+            stlEngine, ftlEngine, design.CombatStance, design.DesignName) {
+            // Name assignment must follow after Data assigned to Item so Item is subscribed to the change
+        };
         element.GetComponent<Rigidbody>().mass = data.Mass; // 7.26.16 Set externally to keep the Rigidbody out of Data
         element.CameraStat = cameraStat;
         element.Data = data;
+        element.Data.Name = __GetUniqueShipName(design.DesignName);
     }
 
     #endregion
@@ -395,7 +399,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
     public void PopulateInstance(Player owner, CmdCameraStat cameraStat, StarbaseCmdDesign design, ref StarbaseCmdItem cmd, string unitName,
-        Formation formation) {
+    Formation formation) {
         D.Assert(!cmd.IsOperational, cmd.DebugName);
         D.AssertNotNull(unitName);
         if (cmd.transform.parent == null) {
@@ -404,13 +408,13 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var passiveCMs = MakeCountermeasures(design);
         var sensors = MakeSensors(design, cmd);
         var ftlDampener = MakeFtlDampener(design.FtlDampenerStat, cmd);
-        cmd.Name = __GetUniqueStarbaseCmdName(design.DesignName);
         StarbaseCmdData data = new StarbaseCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, design.ReqdCmdStat, design.DesignName) {
-            ParentName = unitName,
+            // Name assignment must follow after Data assigned to Item so Item is subscribed to the change
             UnitFormation = formation
         };
         cmd.CameraStat = cameraStat;
         cmd.Data = data;
+        cmd.Data.UnitName = unitName;
     }
 
     #endregion
@@ -495,7 +499,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
     public void PopulateInstance(Player owner, CmdCameraStat cameraStat, SettlementCmdDesign design, ref SettlementCmdItem cmd,
-        string unitName, Formation formation) {
+    string unitName, Formation formation) {
         D.Assert(!cmd.IsOperational, cmd.DebugName);
         D.AssertNotNull(unitName);
         if (cmd.transform.parent == null) {
@@ -504,13 +508,13 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var passiveCMs = MakeCountermeasures(design);
         var sensors = MakeSensors(design, cmd);
         var ftlDampener = MakeFtlDampener(design.FtlDampenerStat, cmd);
-        cmd.Name = __GetUniqueSettlementCmdName(design.DesignName);
         SettlementCmdData data = new SettlementCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, design.ReqdCmdStat, design.DesignName) {
-            ParentName = unitName,
+            // Name assignment must follow after Data assigned to Item so Item is subscribed to the change
             UnitFormation = formation
         };
         cmd.CameraStat = cameraStat;
         cmd.Data = data;
+        cmd.Data.UnitName = unitName;
     }
 
     #endregion
@@ -559,7 +563,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     public void PopulateInstance(Player owner, Topography topography, FollowableItemCameraStat cameraStat, FacilityDesign design,
-        ref FacilityItem element) {
+    ref FacilityItem element) {
         D.Assert(!element.IsOperational, element.DebugName);
         if (element.transform.parent == null) {
             D.Error("{0} should already have a parent.", element.DebugName);
@@ -586,12 +590,14 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var shieldGenerators = MakeShieldGenerators(design, element);
         Priority hqPriority = design.HQPriority;
 
-        element.Name = __GetUniqueFacilityName(design.DesignName);
         FacilityData data = new FacilityData(element, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators,
-            hqPriority, topography, design.DesignName);
+            hqPriority, topography, design.DesignName) {
+            // Name assignment must follow after Data assigned to Item so Item is subscribed to the change
+        };
         element.GetComponent<Rigidbody>().mass = data.Mass; // 7.26.16 Set externally to keep the Rigidbody out of Data
         element.CameraStat = cameraStat;
         element.Data = data;
+        element.Data.Name = __GetUniqueFacilityName(design.DesignName);
     }
 
     #endregion
@@ -981,22 +987,18 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
     #region Debug
 
-    private const string UnitItemNameFormat = "{0}_{1}";    // aka DesignName_Count
+    private const string UnitElementNameFormat = "{0}_{1}";    // aka DesignName_Count
 
     private IDictionary<string, int> __facilityNameCountLookup = new Dictionary<string, int>();
     private IDictionary<string, int> __shipNameCountLookup = new Dictionary<string, int>();
-    private IDictionary<string, int> __fleetCmdNameCountLookup = new Dictionary<string, int>();
-    private IDictionary<string, int> __starbaseCmdNameCountLookup = new Dictionary<string, int>();
-    private IDictionary<string, int> __settlementCmdNameCountLookup = new Dictionary<string, int>();
-
 
     private string __GetUniqueFacilityName(string designName) {
         if (!__facilityNameCountLookup.ContainsKey(designName)) {
             __facilityNameCountLookup.Add(designName, 1);
         }
-        int catNameCount = __facilityNameCountLookup[designName];
-        string name = UnitItemNameFormat.Inject(designName, catNameCount);
-        __facilityNameCountLookup[designName] = ++catNameCount;
+        int nameCount = __facilityNameCountLookup[designName];
+        string name = UnitElementNameFormat.Inject(designName, nameCount);
+        __facilityNameCountLookup[designName] = ++nameCount;
         return name;
     }
 
@@ -1004,43 +1006,11 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         if (!__shipNameCountLookup.ContainsKey(designName)) {
             __shipNameCountLookup.Add(designName, 1);
         }
-        int catNameCount = __shipNameCountLookup[designName];
-        string name = UnitItemNameFormat.Inject(designName, catNameCount);
-        __shipNameCountLookup[designName] = ++catNameCount;
+        int nameCount = __shipNameCountLookup[designName];
+        string name = UnitElementNameFormat.Inject(designName, nameCount);
+        __shipNameCountLookup[designName] = ++nameCount;
         return name;
     }
-
-    private string __GetUniqueFleetCmdName(string designName) {
-        if (!__fleetCmdNameCountLookup.ContainsKey(designName)) {
-            __fleetCmdNameCountLookup.Add(designName, 1);
-        }
-        int catNameCount = __fleetCmdNameCountLookup[designName];
-        string name = UnitItemNameFormat.Inject(designName, catNameCount);
-        __fleetCmdNameCountLookup[designName] = ++catNameCount;
-        return name;
-    }
-
-    private string __GetUniqueStarbaseCmdName(string designName) {
-        if (!__starbaseCmdNameCountLookup.ContainsKey(designName)) {
-            __starbaseCmdNameCountLookup.Add(designName, 1);
-        }
-        int catNameCount = __starbaseCmdNameCountLookup[designName];
-        string name = UnitItemNameFormat.Inject(designName, catNameCount);
-        __starbaseCmdNameCountLookup[designName] = ++catNameCount;
-        return name;
-    }
-
-    private string __GetUniqueSettlementCmdName(string designName) {
-        if (!__settlementCmdNameCountLookup.ContainsKey(designName)) {
-            __settlementCmdNameCountLookup.Add(designName, 1);
-        }
-        int catNameCount = __settlementCmdNameCountLookup[designName];
-        string name = UnitItemNameFormat.Inject(designName, catNameCount);
-        __settlementCmdNameCountLookup[designName] = ++catNameCount;
-        return name;
-    }
-
-
 
     #endregion
 

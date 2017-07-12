@@ -25,6 +25,8 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class ResourceForm : AForm {
 
+    public override FormID FormID { get { return FormID.ResourceHud; } }
+
     private ResourceID _resourceID;
     public ResourceID ResourceID {
         get { return _resourceID; }
@@ -33,8 +35,6 @@ public class ResourceForm : AForm {
             SetProperty<ResourceID>(ref _resourceID, value, "ResourceID", ResourceIDPropSetHandler);
         }
     }
-
-    public override FormID FormID { get { return FormID.ResourceHud; } }
 
     private UILabel _categoryLabel;
     private UILabel _descriptionLabel;

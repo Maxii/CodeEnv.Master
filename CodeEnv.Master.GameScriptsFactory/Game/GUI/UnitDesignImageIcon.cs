@@ -66,6 +66,15 @@ public class UnitDesignImageIcon : AImageIcon {
         HandleIsSelectedChanged();
     }
 
+    void OnHover(bool isOver) {
+        if (isOver) {
+            HoveredHudWindow.Instance.Show(FormID.UnitDesign, Design);
+        }
+        else {
+            HoveredHudWindow.Instance.Hide();
+        }
+    }
+
     #endregion
 
     private void Show(GameColor color = GameColor.White) {
@@ -79,10 +88,12 @@ public class UnitDesignImageIcon : AImageIcon {
         if (IsSelected) {
             D.Log("{0} has been selected.", DebugName);
             Show(TempGameValues.SelectedColor);
+            SFXManager.Instance.PlaySFX(SfxClipID.Select);
         }
         else {
             D.Log("{0} has been unselected.", DebugName);
             Show();
+            SFXManager.Instance.PlaySFX(SfxClipID.UnSelect);
         }
     }
 

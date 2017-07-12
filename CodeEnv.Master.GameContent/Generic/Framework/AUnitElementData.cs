@@ -41,18 +41,14 @@ namespace CodeEnv.Master.GameContent {
 
         public Vector3 HullDimensions { get { return HullEquipment.HullDimensions; } }
 
-        private string _parentName;
-        public string ParentName {
-            get { return _parentName; }
-            set { SetProperty<string>(ref _parentName, value, "ParentName"); }
-        }
+        public string UnitName { get; set; }
 
         public override string DebugName {
             get {
-                if (ParentName.IsNullOrEmpty()) {
-                    return base.DebugName;
+                if (Owner != null) {
+                    return DebugNameFormat.Inject(Owner.DebugName, UnitName, Name);
                 }
-                return DebugNameFormat.Inject(Owner.DebugName, ParentName, Name);
+                return DebugNameFormat.Inject(Constants.Empty, UnitName, Name);
             }
         }
 

@@ -38,6 +38,15 @@ public class EquipmentIcon : AEquipmentIcon {
 
     #region Event and Property Change Handlers
 
+    void OnHover(bool isOver) {
+        if (isOver) {
+            HoveredHudWindow.Instance.Show(FormID.Equipment, EquipmentStat);
+        }
+        else {
+            HoveredHudWindow.Instance.Hide();
+        }
+    }
+
     void OnDragStart() {
         _isInitialDrag = true;
     }
@@ -47,8 +56,7 @@ public class EquipmentIcon : AEquipmentIcon {
         if (_isInitialDrag) {
             UICamera.currentTouch.clickNotification = UICamera.ClickNotification.BasedOnDelta;
             // select this icon's stat and show the cursor dragging it
-            PlaySound(IconSoundID.Grab);
-            RefreshSelectedItemHudWindow(EquipmentStat);
+            SFXManager.Instance.PlaySFX(SfxClipID.Swipe);
             UpdateCursor(EquipmentStat);
             _isInitialDrag = false;
         }

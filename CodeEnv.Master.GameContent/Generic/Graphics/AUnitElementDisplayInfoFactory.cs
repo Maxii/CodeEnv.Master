@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AElementItemDisplayInfoFactory.cs
+// File: AUnitElementDisplayInfoFactory.cs
 // Abstract generic base factory that makes instances of text containing info about ElementItems.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -23,17 +23,17 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Abstract generic base factory that makes instances of text containing info about ElementItems.
     /// </summary>
-    public abstract class AElementItemDisplayInfoFactory<ReportType, FactoryType> : AMortalItemDisplayInfoFactory<ReportType, FactoryType>
+    public abstract class AUnitElementDisplayInfoFactory<ReportType, FactoryType> : AMortalItemDisplayInfoFactory<ReportType, FactoryType>
         where ReportType : AUnitElementReport
-        where FactoryType : AElementItemDisplayInfoFactory<ReportType, FactoryType> {
+        where FactoryType : AUnitElementDisplayInfoFactory<ReportType, FactoryType> {
 
         protected override bool TryMakeColorizedText(ItemInfoID infoID, ReportType report, out string colorizedText) {
             bool isSuccess = base.TryMakeColorizedText(infoID, report, out colorizedText);
             if (!isSuccess) {
                 switch (infoID) {
-                    case ItemInfoID.ParentName:
+                    case ItemInfoID.UnitName:
                         isSuccess = true;
-                        colorizedText = _lineTemplate.Inject(report.ParentName != null ? report.ParentName : Unknown);
+                        colorizedText = _lineTemplate.Inject(report.UnitName != null ? report.UnitName : Unknown);
                         break;
                     case ItemInfoID.Offense:
                         isSuccess = true;

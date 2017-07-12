@@ -15,7 +15,7 @@
 ////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
-    using System;
+
     using CodeEnv.Master.Common;
     using UnityEngine;
 
@@ -24,10 +24,14 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AItemData : APropertyChangeTracking {
 
+        private string _name;
         /// <summary>
         /// The display name of this item.
         /// </summary>
-        public string Name { get { return Item.Name; } }
+        public string Name {
+            get { return _name; }
+            set { SetProperty<string>(ref _name, value, "Name"); }  // 7.10.17 AItem subscribes to changes
+        }
 
         public virtual string DebugName { get { return Name; } }
 
@@ -67,7 +71,7 @@ namespace CodeEnv.Master.GameContent {
 
         public bool ShowDebugLog { get { return Item.ShowDebugLog; } }
 
-        protected IOwnerItem Item { get; private set; }
+        public IOwnerItem Item { get; private set; }
 
         protected IDebugControls _debugCntls;
 

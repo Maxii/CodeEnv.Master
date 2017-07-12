@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: SelectedItemHudEditor.cs
-// Custom editor for the SelectedItemHudWindow.
+// File: IInteractableHudWindow.cs
+// Interface for easy access to the InteractableHudWindow. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,15 +16,14 @@
 
 // default namespace
 
-using CodeEnv.Master.Common;
-using UnityEditor;
+using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Custom editor for the SelectedItemHudWindow.
+/// Interface for easy access to the InteractableHudWindow. 
 /// </summary>
-[CustomEditor(typeof(SelectedItemHudWindow))]
-public class SelectedItemHudEditor : AGuiWindowEditor<SelectedItemHudWindow> {
+public interface IInteractableHudWindow : IHudWindow {
 
+    void Show(FormID formID, AItemData data);
 
 }
 

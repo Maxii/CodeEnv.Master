@@ -75,8 +75,8 @@
     <Compile Include="Game\DebugStarbaseCreatorEditor.cs" />
     <Compile Include="Game\DebugSystemCreatorEditor.cs" />
     <Compile Include="Game\GuiWindowEditor.cs" />
-    <Compile Include="Game\HoveredItemHudEditor.cs" />
-    <Compile Include="Game\SelectedItemHudEditor.cs" />
+    <Compile Include="Game\HoveredHudEditor.cs" />
+    <Compile Include="Game\InteractableHudEditor.cs" />
     <Compile Include="Game\SettlementsTableWindowEditor.cs" />
     <Compile Include="Game\StarbasesTableWindowEditor.cs" />
     <Compile Include="Game\SystemsTableWindowEditor.cs" />

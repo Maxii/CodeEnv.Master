@@ -26,7 +26,8 @@ namespace CodeEnv.Master.GameContent {
 
         // Commonly available at IntelCoverage.Basic
         Name,
-        ParentName,
+
+        UnitName,
         Position,
         SectorID,
 

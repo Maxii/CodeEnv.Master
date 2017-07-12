@@ -61,12 +61,17 @@ public class EquipmentStorageIcon : AEquipmentIcon {
     /// <param name="replacementStat">The replacement stat.</param>
     /// <returns></returns>
     public bool Replace(AEquipmentStat replacementStat) {
+        AEquipmentStat unusedReplacedStat;
+        return TryReplace(replacementStat, out unusedReplacedStat);
+    }
+
+    private bool TryReplace(AEquipmentStat replacementStat, out AEquipmentStat replacedStat) {
         if (replacementStat != null && replacementStat.Category != _slotID.Category) {
             // wrong category
-            PlaySound(IconSoundID.Error);
+            replacedStat = null;
             return false;
         }
-        var replacedStat = _storage.Replace(_slotID, replacementStat);
+        replacedStat = _storage.Replace(_slotID, replacementStat);
         if (replacedStat != replacementStat) {
             HandleStatReplacedWith(replacementStat);
         }
@@ -74,13 +79,34 @@ public class EquipmentStorageIcon : AEquipmentIcon {
     }
 
     private void RemoveAnyStatPresent() {
-        bool isReplaced = Replace(null);
+        AEquipmentStat replacedStat;
+        bool isReplaced = TryReplace(null, out replacedStat);
         D.Assert(isReplaced);
-        RefreshSelectedItemHudWindow(null);
+
+        if (replacedStat == null) {
+            SFXManager.Instance.PlaySFX(SfxClipID.Error);
+        }
+        else {
+            SFXManager.Instance.PlaySFX(SfxClipID.UnSelect);
+        }
+
+        HoveredHudWindow.Instance.Hide();
         UpdateCursor(null);
     }
 
     #region Event and Property Change Handlers
+
+    void OnHover(bool isOver) {
+        if (isOver) {
+            AEquipmentStat stat = _storage.GetEquipmentStat(_slotID);
+            if (stat != null) {
+                HoveredHudWindow.Instance.Show(FormID.Equipment, stat);
+            }
+        }
+        else {
+            HoveredHudWindow.Instance.Hide();
+        }
+    }
 
     /// <summary>
     /// Called when [click].
@@ -103,13 +129,12 @@ public class EquipmentStorageIcon : AEquipmentIcon {
             eStat = droppedEquipIcon.EquipmentStat;
             bool isReplaced = Replace(eStat);
             if (isReplaced) {
-                PlaySound(IconSoundID.Place);
+                SFXManager.Instance.PlaySFX(SfxClipID.Tap);
             }
         }
         else {
-            PlaySound(IconSoundID.Error);
+            SFXManager.Instance.PlaySFX(SfxClipID.Error);
         }
-        RefreshSelectedItemHudWindow(eStat);
         UpdateCursor(null);
     }
 
@@ -133,7 +158,6 @@ public class EquipmentStorageIcon : AEquipmentIcon {
         else {
             Show(replacementStat.ImageAtlasID, replacementStat.ImageFilename, replacementStat.Name);
         }
-        RefreshSelectedItemHudWindow(replacementStat);
     }
 
     protected override void Cleanup() { }

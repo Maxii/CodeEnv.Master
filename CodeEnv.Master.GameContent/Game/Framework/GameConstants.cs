@@ -16,12 +16,26 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using Common;
     using UnityEngine;
 
     /// <summary>
     /// Constant values specific to the game.
     /// </summary>
     public static class GameConstants {
+
+        public const string StarNameFormat = "{0} {1}";
+        public const string PlanetNameFormat = "{0}{1}";
+        public const string MoonNameFormat = "{0}{1}";
+
+        public const string CmdNameExtension = " Cmd";
+        public const string CreatorExtension = " Creator";
+        public const string OrbitSimulatorNameExtension = " OrbitSimulator";
+
+        public static int[] PlanetNumbers = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+        public static string[] MoonLetters = new string[] { "a", "b", "c", "d", "e" };
+
+
 
         public static readonly Vector3 UniverseOrigin = Vector3.zero;
 

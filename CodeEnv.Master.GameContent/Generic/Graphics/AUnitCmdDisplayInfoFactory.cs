@@ -15,6 +15,7 @@
 ////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
+
     using System;
     using CodeEnv.Master.Common;
     using Common.LocalResources;
@@ -30,9 +31,9 @@ namespace CodeEnv.Master.GameContent {
             bool isSuccess = base.TryMakeColorizedText(infoID, report, out colorizedText);
             if (!isSuccess) {
                 switch (infoID) {
-                    case ItemInfoID.ParentName:
+                    case ItemInfoID.UnitName:
                         isSuccess = true;
-                        colorizedText = _lineTemplate.Inject(report.ParentName != null ? report.ParentName : Unknown);
+                        colorizedText = _lineTemplate.Inject(report.UnitName != null ? report.UnitName : Unknown);
                         break;
                     case ItemInfoID.CurrentCmdEffectiveness:
                         isSuccess = true;

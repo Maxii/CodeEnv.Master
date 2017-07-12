@@ -26,7 +26,17 @@ namespace CodeEnv.Master.GameContent {
 
         Select,
 
-        Explosion1
+        UnSelect,
+
+        Explosion1,
+
+        Error,
+
+        Swipe,
+
+        Tap,
+
+        OpenShut
 
     }
 }

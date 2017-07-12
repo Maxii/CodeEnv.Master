@@ -30,10 +30,6 @@ using UnityEngine;
 /// </summary>
 public abstract class AEquipmentIcon : AImageIcon {
 
-    public AudioClip grabSound;
-    public AudioClip placeSound;
-    public AudioClip errorSound;
-
     protected sealed override void Awake() {
         base.Awake();
         InitializeValuesAndReferences();
@@ -56,34 +52,6 @@ public abstract class AEquipmentIcon : AImageIcon {
         AnchorTo(widget);
     }
 
-    public void PlaySound(IconSoundID soundID) {
-        AudioClip sound;
-        switch (soundID) {
-            case IconSoundID.Grab:
-                sound = grabSound;
-                break;
-            case IconSoundID.Place:
-                sound = placeSound;
-                break;
-            case IconSoundID.Error:
-                sound = errorSound;
-                break;
-            case IconSoundID.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(soundID));
-        }
-        NGUITools.PlaySound(sound);
-    }
-
-    protected void RefreshSelectedItemHudWindow(AEquipmentStat stat) {
-        if (stat == null) {
-            SelectedItemHudWindow.Instance.Hide();
-        }
-        else {
-            SelectedItemHudWindow.Instance.Show(FormID.SelectedEquipment, stat);
-        }
-    }
-
     /// <summary>
     /// Set the cursor to the image of the provided stat, 'simulating' a drag of the stat's icon.
     /// </summary>
@@ -96,16 +64,5 @@ public abstract class AEquipmentIcon : AImageIcon {
         }
     }
 
-    #region Nested Classes
-
-    public enum IconSoundID {
-        None,
-
-        Grab,
-        Place,
-        Error
-    }
-
-    #endregion
 }
 

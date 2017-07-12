@@ -21,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.GameContent;
 using UnityEngine;
 using UnityEngine.Profiling;
 
@@ -244,25 +245,34 @@ public class CtxMenu : AMonoBase {
     /// </summary>
     public bool toCenterPieItems = false;
 
+    // 7.12.17 My changes to incorporate SfxClipID into sound system replacing use of audioClips
+    [Obsolete("Use showSoundID instead.")]
+    public AudioClip showSound;
     /// <summary>
     /// Sound played when the menu is shown.
     /// </summary>
-    public AudioClip showSound;
+    public SfxClipID showSoundID = SfxClipID.None;
 
+    [Obsolete("Use hideSoundID instead.")]
+    public AudioClip hideSound;
     /// <summary>
     /// Sound played when the menu is hidden.
     /// </summary>
-    public AudioClip hideSound;
+    public SfxClipID hideSoundID = SfxClipID.None;
 
+    [Obsolete("Use highlightSoundID instead.")]
+    public AudioClip highlightSound;
     /// <summary>
     /// Sound played when the highlight changes.
     /// </summary>
-    public AudioClip highlightSound;
+    public SfxClipID highlightSoundID = SfxClipID.None;
 
+    [Obsolete("Use selectSoundID instead.")]
+    public AudioClip selectSound;
     /// <summary>
     /// Sound played when a menu item is chosen.
     /// </summary>
-    public AudioClip selectSound;
+    public SfxClipID selectSoundID = SfxClipID.Select;
 
     /// <summary>
     /// List of menu items.
@@ -460,8 +470,8 @@ public class CtxMenu : AMonoBase {
                     ts.method = UITweener.Method.EaseOut;
                     ts.onFinished.Add(new EventDelegate(HideAnimationFinishedEventHandler));    //ts.onFinished.Add(new EventDelegate(OnHideAnimationFinished));
 
-                    if (hideSound) {
-                        NGUITools.PlaySound(hideSound);
+                    if (hideSoundID != SfxClipID.None) {
+                        SFXManager.Instance.PlaySFX(hideSoundID);
                     }
                 }
                 else {
@@ -2127,8 +2137,8 @@ public class CtxMenu : AMonoBase {
             menuTransform.localScale = CollapsedScale;
             TweenScale.Begin(menuTransform.gameObject, animationDuration, Vector3.one);
 
-            if (showSound) {
-                NGUITools.PlaySound(showSound);
+            if (showSoundID != SfxClipID.None) {
+                SFXManager.Instance.PlaySFX(showSoundID);
             }
         }
     }
@@ -2159,8 +2169,8 @@ public class CtxMenu : AMonoBase {
             }
         }
 
-        if (selectSound != null && !item.isSubmenu) {
-            NGUITools.PlaySound(selectSound);
+        if (selectSoundID != SfxClipID.None && !item.isSubmenu) {
+            SFXManager.Instance.PlaySFX(selectSoundID);
         }
 
         // If this is a submenu item, then we obviously want to pop the submenu.
@@ -2472,8 +2482,8 @@ public class CtxMenu : AMonoBase {
 
     private void PlayHighlightSound() {
         if (UICamera.useMouse) {
-            if (highlightSound != null) {
-                NGUITools.PlaySound(highlightSound);
+            if (highlightSoundID != SfxClipID.None) {
+                SFXManager.Instance.PlaySFX(highlightSoundID);
             }
         }
     }

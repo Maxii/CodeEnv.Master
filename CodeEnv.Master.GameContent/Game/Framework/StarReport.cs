@@ -25,8 +25,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class StarReport : AIntelItemReport {
 
-        public string ParentName { get; protected set; }
-
         public StarCategory Category { get; private set; }
 
         public int? Capacity { get; private set; }
@@ -49,9 +47,6 @@ namespace CodeEnv.Master.GameContent {
             }
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Owner)) {
                 Owner = sData.Owner;
-            }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.ParentName)) {
-                ParentName = sData.ParentName;
             }
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Category)) {
                 Category = sData.Category;

@@ -2076,6 +2076,40 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        #region Sound Effects
+
+        /// <summary>
+        /// Returns the name of the AudioClip associated with this clipID.
+        /// SoundManagerPro uses the string name of the clip to find it. 
+        /// <remarks>Done this way to allow my own clipID naming, independent of the name
+        /// of the AudioClips that I can acquire.</remarks>
+        /// </summary>
+        /// <param name="clipID">The clip identifier.</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotImplementedException"></exception>
+        public static string SfxClipName(this SfxClipID clipID) {
+            switch (clipID) {
+                case SfxClipID.Select:
+                    return "Select";
+                case SfxClipID.Explosion1:
+                    return "Explosion1";
+                case SfxClipID.Error:
+                    return "Rumble";
+                case SfxClipID.Swipe:
+                    return "Swipe";
+                case SfxClipID.Tap:
+                    return "Tap";
+                case SfxClipID.UnSelect:
+                    return "Crumple";
+                case SfxClipID.OpenShut:
+                    return "OpenShut";
+                case SfxClipID.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(clipID));
+            }
+        }
+
+        #endregion
 
         #region Debug Enums
 

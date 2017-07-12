@@ -110,8 +110,8 @@ namespace CodeEnv.Master.GameContent {
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Name)) {
                 Name = sbData.Name;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.ParentName)) {
-                ParentName = sbData.ParentName;
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitName)) {
+                UnitName = sbData.UnitName;
             }
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Position)) {
                 Position = sbData.Position;

@@ -158,22 +158,22 @@ namespace CodeEnv.Master.GameContent {
             set { _tooltipHudWindow = value; }
         }
 
-        private static ISelectedItemHudWindow _selectedItemHudWindow;
-        public static ISelectedItemHudWindow SelectedItemHudWindow {
+        private static IInteractableHudWindow _interactableHudWindow;
+        public static IInteractableHudWindow InteractableHudWindow {
             get {
-                D.AssertNotNull(_selectedItemHudWindow);
-                return _selectedItemHudWindow;
+                D.AssertNotNull(_interactableHudWindow);
+                return _interactableHudWindow;
             }
-            set { _selectedItemHudWindow = value; }
+            set { _interactableHudWindow = value; }
         }
 
-        private static IHoveredHudWindow _hoveredItemHudWindow;
-        public static IHoveredHudWindow HoveredItemHudWindow {
+        private static IHoveredHudWindow _hoveredHudWindow;
+        public static IHoveredHudWindow HoveredHudWindow {
             get {
-                D.AssertNotNull(_hoveredItemHudWindow);
-                return _hoveredItemHudWindow;
+                D.AssertNotNull(_hoveredHudWindow);
+                return _hoveredHudWindow;
             }
-            set { _hoveredItemHudWindow = value; }
+            set { _hoveredHudWindow = value; }
         }
 
         [System.Obsolete]

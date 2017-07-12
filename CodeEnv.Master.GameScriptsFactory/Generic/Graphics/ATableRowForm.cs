@@ -23,7 +23,7 @@ using UnityEngine;
 /// <summary>
 /// Abstract base class for ReportForms that are TableRows. 
 /// </summary>
-public abstract class ATableRowForm : AReportForm {
+public abstract class ATableRowForm : AItemReportForm {
 
     /// <summary>
     /// Occurs when the user takes an action requesting that an Item (represented by a TableRow) should become the Focus.
@@ -40,6 +40,11 @@ public abstract class ATableRowForm : AReportForm {
     protected override void InitializeNameGuiElement(AGuiElement e) {
         base.InitializeNameGuiElement(e);
         UIEventListener.Get(e.gameObject).onDoubleClick += NameDoubleClickEventHandler;
+    }
+
+    protected override void AssignValueToNameGuiElement() {
+        base.AssignValueToNameGuiElement();
+        _nameLabel.text = Report.Name != null ? Report.Name : Unknown;
     }
 
     public void SetSideAnchors(Transform target, int left, int right) {

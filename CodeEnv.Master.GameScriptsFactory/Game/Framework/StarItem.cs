@@ -167,8 +167,8 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigableDestination
 
     public StarReport GetReport(Player player) { return Publisher.GetReport(player); }
 
-    protected override void ShowSelectedItemHud() {
-        SelectedItemHudWindow.Instance.Show(FormID.SelectedStar, UserReport);
+    protected override void ShowSelectedItemInHud() {
+        InteractableHudWindow.Instance.Show(FormID.SelectedStar, Data);
     }
 
     protected override void HandleInfoAccessChangedFor(Player player) {

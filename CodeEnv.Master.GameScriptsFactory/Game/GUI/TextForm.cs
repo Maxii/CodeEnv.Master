@@ -24,6 +24,8 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class TextForm : AForm {
 
+    public override FormID FormID { get { return FormID.TextHud; } }
+
     private string _text;
     public string Text {
         get { return _text; }
@@ -33,12 +35,10 @@ public class TextForm : AForm {
         }
     }
 
-    public override FormID FormID { get { return FormID.TextHud; } }
-
-    private UILabel _label;
+    private UILabel _textLabel;
 
     protected override void InitializeValuesAndReferences() {
-        _label = gameObject.GetSingleComponentInChildren<UILabel>();
+        _textLabel = gameObject.GetSingleComponentInChildren<UILabel>();
     }
 
     #region Event and Property Change Handlers
@@ -51,7 +51,7 @@ public class TextForm : AForm {
 
     protected override void AssignValuesToMembers() {
         //D.Log("{0}.AssignValuesToMembers() called. Text = {1}.", GetType().Name, Text);
-        _label.text = Text;
+        _textLabel.text = Text;
     }
 
     public override void Reset() {

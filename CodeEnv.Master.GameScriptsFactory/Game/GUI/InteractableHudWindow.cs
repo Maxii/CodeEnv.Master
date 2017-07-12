@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: SelectedItemHudWindow.cs
-// Fixed position HudWindow displaying a customized Form for something that has been 'selected'.
+// File: InteractableHudWindow.cs
+// Fixed position HudWindow displaying interactable info and controls. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,21 +21,21 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Fixed position HudWindow displaying a customized Form for something that has been 'selected'.
+/// Fixed position HudWindow displaying interactable info and controls. 
+/// <remarks>7.9.17 Current uses include user-owned selected Items. Can also be used to supplement screens.</remarks>
 /// <remarks>The current version is located on the bottom left of the screen and appears when called to Show().</remarks>
-/// <remarks>6.21.17 Currently used by Items, UnitDesigns and EquipmentStats.</remarks>
 /// </summary>
-public class SelectedItemHudWindow : AHudWindow<SelectedItemHudWindow>, ISelectedItemHudWindow {
+public class InteractableHudWindow : AHudWindow<InteractableHudWindow>, IInteractableHudWindow {
 
     /// <summary>
     /// The local-space corners of this window. Order is bottom-left, top-left, top-right, bottom-right.
-    /// Used by HoveredItemHudWindow to reposition itself to avoid interfering with this fixed window.
+    /// Used by HoveredHudWindow to reposition itself to avoid interfering with this fixed window.
     /// </summary>
     public Vector3[] LocalCorners { get { return _backgroundWidget.localCorners; } }
 
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
-        GameReferences.SelectedItemHudWindow = Instance;
+        GameReferences.InteractableHudWindow = Instance;
     }
 
     protected override void InitializeValuesAndReferences() {
@@ -45,22 +45,9 @@ public class SelectedItemHudWindow : AHudWindow<SelectedItemHudWindow>, ISelecte
         }
     }
 
-    public void Show(FormID formID, AItemReport report) {
+    public void Show(FormID formID, AItemData itemData) {
         var form = PrepareForm(formID);
-        (form as AReportForm).Report = report;
-        ShowForm(form);
-    }
-
-    public void Show(FormID formID, AUnitDesign design) {
-        //D.Log("{0}.Show({1}) called.", DebugName, design.DebugName);
-        var form = PrepareForm(formID);
-        (form as AUnitDesignForm).Design = design;
-        ShowForm(form);
-    }
-
-    public void Show(FormID formID, AEquipmentStat stat) {
-        var form = PrepareForm(formID);
-        (form as AEquipmentForm).EquipmentStat = stat;
+        (form as AItemDataForm).ItemData = itemData;
         ShowForm(form);
     }
 
@@ -68,7 +55,7 @@ public class SelectedItemHudWindow : AHudWindow<SelectedItemHudWindow>, ISelecte
 
     protected override void Cleanup() {
         base.Cleanup();
-        GameReferences.SelectedItemHudWindow = null;
+        GameReferences.InteractableHudWindow = null;
     }
 
 

@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: HoveredItemHudWindow.cs
-// HudWIndow displaying item info when hovered over the item.
+// File: HoveredHudWindow.cs
+// HudWindow displaying item info when hovered over the item.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -24,18 +24,21 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// HudWindow displaying item info when hovered over the item.
-/// The current version is located on the left side of the screen and moves 
-/// itself to avoid interference with the fixed SelectedItemHudWindow.
+/// HudWindow displaying non-interactable info about the object the mouse is hovering over.
+/// <remarks>The current version is located on the left side of the screen and moves itself to avoid interference 
+/// with the fixed InteractableHudWindow.</remarks>
 /// </summary>
-public class HoveredItemHudWindow : AHudWindow<HoveredItemHudWindow>, IHoveredHudWindow {
+public class HoveredHudWindow : AHudWindow<HoveredHudWindow>, IHoveredHudWindow {
+
+    [SerializeField]
+    private bool _showAboveInteractableHud = false;
 
     private Vector3 _startingLocalPosition;
     private IList<IDisposable> _subscriptions;
 
     protected override void InitializeOnInstance() {
         base.InitializeOnInstance();
-        GameReferences.HoveredItemHudWindow = Instance;
+        GameReferences.HoveredHudWindow = Instance;
     }
 
     protected override void InitializeValuesAndReferences() {
@@ -68,16 +71,34 @@ public class HoveredItemHudWindow : AHudWindow<HoveredItemHudWindow>, IHoveredHu
         ShowForm(form);
     }
 
+    public void Show(FormID formID, AUnitDesign design) {
+        //D.Log("{0}.Show({1}) called.", DebugName, design.DebugName);
+        var form = PrepareForm(formID);
+        (form as AUnitDesignForm).Design = design;
+        ShowForm(form);
+    }
+
+    public void Show(FormID formID, AEquipmentStat stat) {
+        var form = PrepareForm(formID);
+        (form as AEquipmentForm).EquipmentStat = stat;
+        ShowForm(form);
+    }
+
+    public void Show(FormID formID, AItemReport report) {   // 7.9.17 IMPROVE Not currently used as hovered items use Show(text)
+        var form = PrepareForm(formID);
+        (form as AItemReportForm).Report = report;
+        ShowForm(form);
+    }
+
     protected override void PositionWindow() {
         //D.Log("{0}.PositionWindow() called.", DebugName);
-        Vector3 intendedLocalPosition;
-        if (SelectedItemHudWindow.Instance.IsShowing) {
-            var selectionPopupLocalCorners = SelectedItemHudWindow.Instance.LocalCorners;
-            //D.Log("{0} local corners: {1}.", typeof(SelectedItemHudWindow).Name, selectionPopupLocalCorners.Concatenate());
-            intendedLocalPosition = _startingLocalPosition + selectionPopupLocalCorners[1];
-        }
-        else {
-            intendedLocalPosition = _startingLocalPosition;
+        Vector3 intendedLocalPosition = _startingLocalPosition;
+        if (_showAboveInteractableHud) {
+            if (InteractableHudWindow.Instance.IsShowing) {
+                var selectionPopupLocalCorners = InteractableHudWindow.Instance.LocalCorners;
+                //D.Log("{0} local corners: {1}.", typeof(InteractableHudWindow).Name, selectionPopupLocalCorners.Concatenate());
+                intendedLocalPosition = _startingLocalPosition + selectionPopupLocalCorners[1];
+            }
         }
         transform.localPosition = intendedLocalPosition;
     }
@@ -103,7 +124,7 @@ public class HoveredItemHudWindow : AHudWindow<HoveredItemHudWindow>, IHoveredHu
 
     protected override void Cleanup() {
         base.Cleanup();
-        GameReferences.HoveredItemHudWindow = null;
+        GameReferences.HoveredHudWindow = null;
         Unsubscribe();
     }
 

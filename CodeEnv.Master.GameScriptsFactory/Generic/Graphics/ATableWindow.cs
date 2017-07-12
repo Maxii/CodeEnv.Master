@@ -140,11 +140,11 @@ public abstract class ATableWindow : AGuiWindow {
 
     private void AddTableRows() {
         IEnumerable<AItem> items = GetItemsUserIsAwareOf();
-        items.ForAll((Action<AItem>)(item => {
-            ATableRowForm rowForm = BuildRow((string)item.DebugName);
+        items.ForAll(item => {
+            ATableRowForm rowForm = BuildRow(item.DebugName);
             ConfigureRow(rowForm, item);
             _rowForms.Add(rowForm);
-        }));
+        });
     }
 
     /// <summary>
@@ -192,7 +192,7 @@ public abstract class ATableWindow : AGuiWindow {
 
     public void SortOnName() {
         _table.onCustomSort = CompareName;
-        _sortDirection = DetermineSortDirection(GuiElementID.ItemNameLabel);
+        _sortDirection = DetermineSortDirection(GuiElementID.NameLabel);
         _table.repositionNow = true;
     }
 
@@ -214,9 +214,9 @@ public abstract class ATableWindow : AGuiWindow {
     // Note 2: All Compare methods are located here. Only a subset are used by any particular Table Screen Manager
 
     private int CompareName(Transform rowA, Transform rowB) {
-        _lastSortTopic = GuiElementID.ItemNameLabel;
-        var rowANameLabel = GetLabel(rowA, GuiElementID.ItemNameLabel);
-        var rowBNameLabel = GetLabel(rowB, GuiElementID.ItemNameLabel);
+        _lastSortTopic = GuiElementID.NameLabel;
+        var rowANameLabel = GetLabel(rowA, GuiElementID.NameLabel);
+        var rowBNameLabel = GetLabel(rowB, GuiElementID.NameLabel);
         return (int)_sortDirection * rowANameLabel.text.CompareTo(rowBNameLabel.text);
     }
 

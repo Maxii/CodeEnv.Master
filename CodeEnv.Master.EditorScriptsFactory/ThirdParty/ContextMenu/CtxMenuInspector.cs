@@ -17,6 +17,7 @@
 
 // default namespace
 
+using CodeEnv.Master.GameContent;
 using UnityEditor;
 using UnityEngine;
 
@@ -367,32 +368,55 @@ public class CtxMenuInspector : ACtxMenuItemInspector {
             EditorGUIUtility.labelWidth = 70f;
             EditorGUILayout.BeginHorizontal();
 
-            AudioClip showSound = EditorGUILayout.ObjectField("Show", _contextMenu.showSound, typeof(AudioClip), false) as AudioClip;
-            if (_contextMenu.showSound != showSound) {
+            // 7.12.17 My changes to incorporate SfxClipID into my sound system, replacing use of AudioClips
+            SfxClipID showSoundID = (SfxClipID)EditorGUILayout.EnumPopup("Show", _contextMenu.showSoundID);
+            if (_contextMenu.showSoundID != showSoundID) {
                 RegisterUndo();
-                _contextMenu.showSound = showSound;
+                _contextMenu.showSoundID = showSoundID;
             }
+            ////AudioClip showSound = EditorGUILayout.ObjectField("Show", _contextMenu.showSound, typeof(AudioClip), false) as AudioClip;
+            ////if (_contextMenu.showSound != showSound) {
+            ////    RegisterUndo();
+            ////    _contextMenu.showSound = showSound;
+            ////}
             GUILayout.Space(20f);
-            AudioClip hideSound = EditorGUILayout.ObjectField("Hide", _contextMenu.hideSound, typeof(AudioClip), false) as AudioClip;
-            if (_contextMenu.hideSound != hideSound) {
+
+            SfxClipID hideSoundID = (SfxClipID)EditorGUILayout.EnumPopup("Hide", _contextMenu.hideSoundID);
+            if (_contextMenu.hideSoundID != hideSoundID) {
                 RegisterUndo();
-                _contextMenu.hideSound = hideSound;
+                _contextMenu.hideSoundID = hideSoundID;
             }
+            ////AudioClip hideSound = EditorGUILayout.ObjectField("Hide", _contextMenu.hideSound, typeof(AudioClip), false) as AudioClip;
+            ////if (_contextMenu.hideSound != hideSound) {
+            ////    RegisterUndo();
+            ////    _contextMenu.hideSound = hideSound;
+            ////}
 
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.BeginHorizontal();
 
-            AudioClip highlightSound = EditorGUILayout.ObjectField("Highlight", _contextMenu.highlightSound, typeof(AudioClip), false) as AudioClip;
-            if (_contextMenu.highlightSound != highlightSound) {
+            SfxClipID highlightSoundID = (SfxClipID)EditorGUILayout.EnumPopup("Highlight", _contextMenu.highlightSoundID);
+            if (_contextMenu.highlightSoundID != highlightSoundID) {
                 RegisterUndo();
-                _contextMenu.highlightSound = highlightSound;
+                _contextMenu.highlightSoundID = highlightSoundID;
             }
+            ////AudioClip highlightSound = EditorGUILayout.ObjectField("Highlight", _contextMenu.highlightSound, typeof(AudioClip), false) as AudioClip;
+            ////if (_contextMenu.highlightSound != highlightSound) {
+            ////    RegisterUndo();
+            ////    _contextMenu.highlightSound = highlightSound;
+            ////}
             GUILayout.Space(20f);
-            AudioClip selectSound = EditorGUILayout.ObjectField("Select", _contextMenu.selectSound, typeof(AudioClip), false) as AudioClip;
-            if (_contextMenu.selectSound != selectSound) {
+
+            SfxClipID selectSoundID = (SfxClipID)EditorGUILayout.EnumPopup("Select", _contextMenu.selectSoundID);
+            if (_contextMenu.selectSoundID != selectSoundID) {
                 RegisterUndo();
-                _contextMenu.selectSound = selectSound;
+                _contextMenu.selectSoundID = selectSoundID;
             }
+            ////AudioClip selectSound = EditorGUILayout.ObjectField("Select", _contextMenu.selectSound, typeof(AudioClip), false) as AudioClip;
+            ////if (_contextMenu.selectSound != selectSound) {
+            ////    RegisterUndo();
+            ////    _contextMenu.selectSound = selectSound;
+            ////}
 
             EditorGUILayout.EndHorizontal();
             EditorGUIUtility.labelWidth = 100f;

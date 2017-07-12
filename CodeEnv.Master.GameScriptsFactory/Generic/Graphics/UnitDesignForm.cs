@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ASelectedUnitDesignForm.cs
-// Abstract base class for AUnitDesignForms that are used to display info about a unit design in the SelectedItemHudWindow.
+// File: UnitDesignForm.cs
+// Form used by the HoveredHudWindow to display info about a UnitDesign.   
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,9 +21,13 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Abstract base class for AUnitDesignForms that are used to display info about a unit design in the SelectedItemHudWindow.
+/// Form used by the HoveredHudWindow to display info about a UnitDesign.   
+/// <remarks>TEMP as I expect ship, facility and cmd designs to differ in what is shown.
+/// 7.12.17 Currently only shows the DesignName.</remarks>
 /// </summary>
-public abstract class ASelectedUnitDesignForm : AUnitDesignForm {
+public class UnitDesignForm : AUnitDesignForm {
+
+    public override FormID FormID { get { return FormID.UnitDesign; } }
 
     private UILabel _titleLabel;
 
@@ -31,6 +35,11 @@ public abstract class ASelectedUnitDesignForm : AUnitDesignForm {
         base.InitializeNonGuiElementMembers();
         var immediateChildLabels = gameObject.GetSafeComponentsInImmediateChildren<UILabel>();
         _titleLabel = immediateChildLabels.Single(l => l != _nameLabel);
+    }
+
+    protected override void AssignValueToNameGuiElement() {
+        base.AssignValueToNameGuiElement();
+        _nameLabel.text = Design.DesignName;
     }
 
     protected override void AssignValuesToNonGuiElementMembers() {

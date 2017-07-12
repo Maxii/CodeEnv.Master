@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2015 Strategic Forge
+// Copyright © 2012 - 2017 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ASelectedItemForm.cs
-// Abstract base class for AItemDataForms that are used for selected items.
+// File: UniverseCenterForm.cs
+// Form used by the HoveredHudWindow to display info about the UniverseCenter.   
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,16 +16,17 @@
 
 // default namespace
 
-using System;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Abstract base class for AItemDataForms that are used for selected items.
+/// Form used by the HoveredHudWindow to display info about the UniverseCenter.   
 /// </summary>
-public abstract class ASelectedItemForm : AItemDataForm {
+public class UniverseCenterForm : AItemReportForm {
+
+    public override FormID FormID { get { return FormID.UniverseCenter; } }
 
     private UILabel _titleLabel;
 
@@ -40,6 +41,11 @@ public abstract class ASelectedItemForm : AItemDataForm {
         _titleLabel = immediateChildLabels.Single(l => l != _nameLabel);
     }
 
+    protected override void AssignValueToNameGuiElement() {
+        base.AssignValueToNameGuiElement();
+        _nameLabel.text = Report.Name != null ? Report.Name : Unknown;
+    }
+
     protected override void AssignValuesToNonGuiElementMembers() {
         base.AssignValuesToNonGuiElementMembers();
         _titleLabel.text = FormID.GetValueName();
@@ -48,8 +54,7 @@ public abstract class ASelectedItemForm : AItemDataForm {
     #region Event and Property Change Handlers
 
     private void NameDoubleClickEventHandler(GameObject go) {
-        //D.Log("{0} Name Label double clicked.", DebugName);
-        (ItemData.Item as ICameraFocusable).IsFocus = true;
+        (Report.Item as ICameraFocusable).IsFocus = true;
     }
 
     #endregion

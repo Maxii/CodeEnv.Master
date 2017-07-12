@@ -16,11 +16,9 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
     using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common;
-    using UnityEngine;
 
     /// <summary>
     /// Data associated with a APlanetoidItem.
@@ -32,12 +30,6 @@ namespace CodeEnv.Master.GameContent {
         public PlanetoidCategory Category { get; private set; }
 
         public float Radius { get; private set; }
-
-        private string _parentName;
-        public string ParentName {
-            get { return _parentName; }
-            set { SetProperty<string>(ref _parentName, value, "ParentName"); }
-        }
 
         // Planetoid FullNames already include their System's name (Regulas6, Regulas6a)
 
@@ -124,7 +116,6 @@ namespace CodeEnv.Master.GameContent {
         protected override AIntel MakeIntelInstance() {
             return new NonRegressibleIntel();
         }
-
 
     }
 }

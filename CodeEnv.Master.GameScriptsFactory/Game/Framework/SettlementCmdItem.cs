@@ -130,8 +130,8 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmd, ISettlementCm
         return SettlementIconInfoFactory.Instance.MakeInstance(UserReport);
     }
 
-    protected override void ShowSelectedItemHud() {
-        SelectedItemHudWindow.Instance.Show(FormID.SelectedSettlement, UserReport);
+    protected override void ShowSelectedItemInHud() {
+        InteractableHudWindow.Instance.Show(FormID.SelectedSettlement, Data);
     }
 
     protected override void PrepareForDeathEffect() {
@@ -149,6 +149,13 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmd, ISettlementCm
 
     protected override void AttemptHighOrbitRigidbodyDeactivation() {
         // Do nothing as Settlement HighOrbitRigidbody is on CelestialOrbitSimulator which needs to stay activated
+    }
+
+    protected override void HandleNameChanged() {
+        base.HandleNameChanged();
+        if (CelestialOrbitSimulator != null) {
+            CelestialOrbitSimulator.transform.name = Name + GameConstants.OrbitSimulatorNameExtension;
+        }
     }
 
     #region Event and Property Change Handlers

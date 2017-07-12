@@ -40,7 +40,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
     public IOrbitSimulator CelestialOrbitSimulator {
         get {
             if (_celestialOrbitSimulator == null) { // moons have 2 IOrbitSims in parents so can't use GetSafeInterfaceInParents
-                _celestialOrbitSimulator = transform.parent.GetSafeInterface<IOrbitSimulator>();
+                _celestialOrbitSimulator = transform.parent.GetComponent<IOrbitSimulator>();
             }
             return _celestialOrbitSimulator;
         }
@@ -184,8 +184,8 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
 
     public PlanetoidReport GetReport(Player player) { return Publisher.GetReport(player); }
 
-    protected override void ShowSelectedItemHud() {
-        SelectedItemHudWindow.Instance.Show(FormID.SelectedPlanetoid, UserReport);
+    protected override void ShowSelectedItemInHud() {
+        InteractableHudWindow.Instance.Show(FormID.SelectedPlanetoid, Data);
     }
 
     protected sealed override void HandleInfoAccessChangedFor(Player player) {
@@ -228,8 +228,12 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         shipOrbitJoint.connectedBody = CelestialOrbitSimulator.OrbitRigidbody;
     }
 
-    #region Event and Property Change Handlers
-
+    protected override void HandleNameChanged() {
+        base.HandleNameChanged();
+        if (CelestialOrbitSimulator != null) {
+            CelestialOrbitSimulator.transform.name = Name + GameConstants.OrbitSimulatorNameExtension;
+        }
+    }
 
     protected override void HandleOwnerChanging(Player newOwner) {
         base.HandleOwnerChanging(newOwner);
@@ -254,6 +258,8 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
     private void CurrentStatePropChangedHandler() {
         HandleStateChange();
     }
+
+    #region Event and Property Change Handlers
 
     #endregion
 

@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AEquipmentForm.cs
-// Abstract base class for a Form that is used to display info about a piece of Equipment in a HudWindow.
+// File: AItemDataForm.cs
+// Abstract base class for Forms that are fed content from and can make changes to ItemData.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,29 +20,29 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Abstract base class for a Form that is used to display info about a piece of Equipment in a HudWindow.
+/// Abstract base class for Forms that are fed content from and can make changes to ItemData.
 /// </summary>
-public abstract class AEquipmentForm : AInfoDisplayForm {
+public abstract class AItemDataForm : AInfoChangeForm {
 
-    private AEquipmentStat _equipmentStat;
-    public AEquipmentStat EquipmentStat {
-        get { return _equipmentStat; }
+    private AItemData _itemData;
+    public AItemData ItemData {
+        get { return _itemData; }
         set {
-            D.AssertNull(_equipmentStat);  // occurs only once between Resets
-            SetProperty<AEquipmentStat>(ref _equipmentStat, value, "EquipmentStat", EquipmentStatPropSetHandler);
+            D.AssertNull(_itemData);  // occurs only once between Resets
+            SetProperty<AItemData>(ref _itemData, value, "ItemData", DataPropSetHandler);
         }
     }
 
     #region Event and Property Change Handlers
 
-    private void EquipmentStatPropSetHandler() {
+    private void DataPropSetHandler() {
         AssignValuesToMembers();
     }
 
     #endregion
 
     public override void Reset() {
-        _equipmentStat = null;
+        _itemData = null;
     }
 
 }

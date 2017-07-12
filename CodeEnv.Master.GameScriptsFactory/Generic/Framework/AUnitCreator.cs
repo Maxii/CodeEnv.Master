@@ -29,8 +29,6 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
 
     private const string UnitNameFormat = "{0}{1}";
 
-    private const string CreatorExtension = " Creator";
-
     private static int _unitNameCounter = Constants.One;
 
     private string _debugName;
@@ -132,7 +130,7 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
     }
 
     private void UnitNamePropertyChangedHandler() {
-        transform.name = UnitName + CreatorExtension;
+        transform.name = UnitName + GameConstants.CreatorExtension;
     }
 
     private void RootUnitNamePropertyChangedHandler() {

@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2015 Strategic Forge
+// Copyright © 2012 - 2017 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AReportForm.cs
-// Abstract base class for Forms that are fed content from an Item Report.
+// File: AInfoDisplayForm.cs
+// Abstract base class for Forms that are capable of displaying info.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,28 +16,15 @@
 
 // default namespace
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Abstract base class for Forms that are fed content from an Item Report.
+/// Abstract base class for Forms that are capable of displaying info.
 /// </summary>
-public abstract class AReportForm : AForm {
-
-    protected const string Unknown = Constants.QuestionMark;
-
-    private AItemReport _report;
-    public AItemReport Report {
-        get { return _report; }
-        set {
-            D.AssertNull(_report);  // occurs only once between Resets
-            SetProperty<AItemReport>(ref _report, value, "Report", ReportPropSetHandler);
-        }
-    }
+public abstract class AInfoDisplayForm : AForm {
 
     protected UILabel _nameLabel;
     protected NetIncomeGuiElement _netIncomeElement;
@@ -56,20 +43,24 @@ public abstract class AReportForm : AForm {
     protected UILabel _populationLabel;
     protected ApprovalGuiElement _approvalElement;
     protected ProductionGuiElement _productionElement;
+    protected OwnerGuiElement _ownerElement;
 
-    private OwnerGuiElement _ownerElement;
     private IDictionary<GuiElementID, AGuiElement> _guiElementsPresent;
 
     protected sealed override void InitializeValuesAndReferences() {
         var guiElementsPresent = gameObject.GetSafeComponentsInChildren<AGuiElement>();
         _guiElementsPresent = guiElementsPresent.ToDictionary<AGuiElement, GuiElementID>(e => e.ElementID, GuiElementIDEqualityComparer.Default);
-        _guiElementsPresent.Values.ForAll(e => InitializeGuiElement(e));
+        foreach (var guiElement in _guiElementsPresent.Values) {
+            bool isFound = InitializeGuiElement(guiElement);
+            D.Assert(isFound, guiElement.ElementID.GetValueName());
+        }
         InitializeNonGuiElementMembers();
     }
 
-    private void InitializeGuiElement(AGuiElement e) {
+    protected virtual bool InitializeGuiElement(AGuiElement e) {
+        bool isFound = true;
         switch (e.ElementID) {
-            case GuiElementID.ItemNameLabel:
+            case GuiElementID.NameLabel:
                 InitializeNameGuiElement(e);
                 break;
             case GuiElementID.Owner:
@@ -127,8 +118,10 @@ public abstract class AReportForm : AForm {
                 InitializeSpeedGuiElement(e);
                 break;
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(e.ElementID));
+                isFound = false;
+                break;
         }
+        return isFound;
     }
 
     private void InitializeSpeedGuiElement(AGuiElement e) {
@@ -216,13 +209,17 @@ public abstract class AReportForm : AForm {
     #endregion
 
     protected sealed override void AssignValuesToMembers() {
-        _guiElementsPresent.Keys.ForAll(id => AssignValueTo(id));
+        foreach (GuiElementID id in _guiElementsPresent.Keys) {
+            bool isFound = AssignValueTo(id);
+            D.Assert(isFound, id.GetValueName());
+        }
         AssignValuesToNonGuiElementMembers();
     }
 
-    private void AssignValueTo(GuiElementID id) {
+    protected virtual bool AssignValueTo(GuiElementID id) {
+        bool isFound = true;
         switch (id) {
-            case GuiElementID.ItemNameLabel:
+            case GuiElementID.NameLabel:
                 AssignValueToNameGuiElement();
                 break;
             case GuiElementID.Owner:
@@ -280,8 +277,10 @@ public abstract class AReportForm : AForm {
                 AssignValueToStrategicResourcesGuiElement();
                 break;
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(id));
+                isFound = false;
+                break;
         }
+        return isFound;
     }
 
     protected virtual void AssignValueToStrategicResourcesGuiElement() { }
@@ -301,20 +300,15 @@ public abstract class AReportForm : AForm {
     protected virtual void AssignValueToCultureGuiElement() { }
     protected virtual void AssignValueToCompositionGuiElement() { }
     protected virtual void AssignValueToApprovalGuiElement() { }
-
-    private void AssignValueToOwnerGuiElement() { _ownerElement.Owner = Report.Owner; }
-
-    protected virtual void AssignValueToNameGuiElement() { _nameLabel.text = Report.Name != null ? Report.Name : Unknown; }
+    protected virtual void AssignValueToOwnerGuiElement() { }
+    protected virtual void AssignValueToNameGuiElement() { }
 
     protected virtual void AssignValuesToNonGuiElementMembers() { }
 
-    public override void Reset() {
-        _report = null;
-    }
-
-    private void CleanupGuiElement(AGuiElement e) {
+    protected virtual bool CleanupGuiElement(AGuiElement e) {
+        bool isFound = true;
         switch (e.ElementID) {
-            case GuiElementID.ItemNameLabel:
+            case GuiElementID.NameLabel:
                 CleanupNameGuiElement(e);
                 break;
             case GuiElementID.Owner:
@@ -372,8 +366,10 @@ public abstract class AReportForm : AForm {
                 CleanupSpeedGuiElement(e);
                 break;
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(e.ElementID));
+                isFound = false;
+                break;
         }
+        return isFound;
     }
 
     protected virtual void CleanupNameGuiElement(AGuiElement e) { }
@@ -399,7 +395,10 @@ public abstract class AReportForm : AForm {
     protected virtual void CleanupNonGuiElementMembers() { }
 
     protected override void Cleanup() {
-        _guiElementsPresent.Values.ForAll(e => CleanupGuiElement(e));
+        foreach (var guiElement in _guiElementsPresent.Values) {
+            bool isFound = CleanupGuiElement(guiElement);
+            D.Assert(isFound, guiElement.ElementID.GetValueName());
+        }
         CleanupNonGuiElementMembers();
     }
 
