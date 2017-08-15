@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
@@ -36,24 +37,24 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     /// <summary>
     /// The position in 3DStageCamera's Viewport space where the 3D model should be located.
     /// </summary>
-    private static Vector3 _3DCameraViewportPosition_Closest = new Vector3(0.75f, 0.30F, 0.2F);
-    private static Vector3 _3DCameraViewportPosition_Close = new Vector3(0.75f, 0.30F, 0.35F);
-    private static Vector3 _3DCameraViewportPosition_Average = new Vector3(0.75f, 0.30F, 0.6F);
-    private static Vector3 _3DCameraViewportPosition_Far = new Vector3(0.75f, 0.30F, 1.0F);
-    private static Vector3 _3DCameraViewportPosition_Farthest = new Vector3(0.75f, 0.30F, 2.0F);
+    private static Vector3 _3DCameraViewportPosition_Closest = new Vector3(0.75F, 0.28F, 0.2F);
+    private static Vector3 _3DCameraViewportPosition_Close = new Vector3(0.75F, 0.28F, 0.35F);
+    private static Vector3 _3DCameraViewportPosition_Average = new Vector3(0.75F, 0.28F, 0.6F);
+    private static Vector3 _3DCameraViewportPosition_Far = new Vector3(0.75F, 0.28F, 1.0F);
+    private static Vector3 _3DCameraViewportPosition_Farthest = new Vector3(0.75F, 0.28F, 2.0F);
 
     /// <summary>
     /// The Euler angle rotation of the hull for display.
     /// </summary>
     private static Vector3 _threeDModelRotationAngle = new Vector3(20F, 90F, 0F);
 
-    [SerializeField]
-    private UnitDesignImageIcon _designIconPrefab = null;
+    [SerializeField]    // 7.29.17 Ability to place prefabs in Editor fields not needed while using DesignScreensManager
+    private UnitDesignIcon _designIconPrefab = null;
 
-    [SerializeField]
+    [SerializeField]    // 7.29.17 Ability to place prefabs in Editor fields not needed while using DesignScreensManager
     private EquipmentIcon _equipmentIconPrefab = null;
 
-    [SerializeField]
+    [SerializeField]    // 7.29.17 Ability to place prefabs in Editor fields not needed while using DesignScreensManager
     private GameObject _threeDModelStagePrefab = null;
 
     [SerializeField]
@@ -63,20 +64,20 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     protected override Transform ContentHolder { get { return _contentHolder; } }
 
     /// <summary>
-    /// The DesignIcon that is currently 'selected'.
-    /// <remarks>Warning: do not change this value directly. Use ChangeSelectedDesignIcon() to change it.</remarks>
+    /// The DesignIcon that is currently chosen.
+    /// <remarks>Warning: do not change this value directly. Use ChangeChosenDesignIcon() to change it.</remarks>
     /// </summary>
-    private UnitDesignImageIcon _selectedDesignIcon;
+    private UnitDesignIcon _chosenDesignIcon;
 
     /// <summary>
-    /// The 'stage' that shows the 3D model of the 'selected' design.
+    /// The 'stage' that shows the 3D model of the chosen design.
     /// </summary>
     private GameObject _threeDModelStage;
 
     /// <summary>
     /// List of icons associated with registered designs.
     /// </summary>
-    private IList<UnitDesignImageIcon> _registeredDesignIcons;
+    private IList<UnitDesignIcon> _registeredDesignIcons;
 
     private GuiWindow _createDesignPopupWindow;
     private UIWidget _createDesignPopupListContainer;
@@ -101,6 +102,11 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     private UIGrid _registeredDesignIconsGrid;
 
     /// <summary>
+    /// The size of the design icon to display in the _registeredDesignIconsGrid.
+    /// </summary>
+    private AGuiIcon.IconSize _designIconSize;
+
+    /// <summary>
     /// Widget that contains the UI where equipment can be added or removed from a design.
     /// </summary>
     private UIWidget _designerUIContainerWidget;
@@ -117,7 +123,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     /// <summary>
     /// The UIGrid that allows scrolling through the icons of available equipment for use in a design.
     /// </summary>
-    private UIGrid _designerEquipmentGrid;
+    private UIGrid _designerEquipmentIconsGrid;
 
     protected sealed override void Awake() {
         base.Awake();
@@ -141,12 +147,13 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         _designerUIContainerWidget = gameObject.GetComponentsInChildren<GuiElement>().Single(e => e.ElementID == GuiElementID.DesignerUIContainer).GetComponent<UIWidget>();
         _designerUITitleLabel = gameObject.GetComponentsInChildren<GuiElement>().Single(e => e.ElementID == GuiElementID.DesignerUITitleLabel).GetComponent<UILabel>();
         _3DModelStageUIContainerWidget = gameObject.GetComponentsInChildren<GuiElement>().Single(e => e.ElementID == GuiElementID.ThreeDStageUIContainer).GetComponent<UIWidget>();
-        _designerEquipmentGrid = _designerUIContainerWidget.GetComponentInChildren<UIGrid>();
-        _designerEquipmentGrid.sorting = UIGrid.Sorting.Alphabetic;
+        _designerEquipmentIconsGrid = _designerUIContainerWidget.gameObject.GetSingleComponentInChildren<EquipmentIcon>().gameObject.GetSingleComponentInParents<UIGrid>();
+        _designerEquipmentIconsGrid.arrangement = UIGrid.Arrangement.Horizontal;
+        _designerEquipmentIconsGrid.sorting = UIGrid.Sorting.Alphabetic;
 
-        _registeredDesignIconsGrid = gameObject.GetComponentsInChildren<UIGrid>().Single(grid => grid != _designerEquipmentGrid);
+        _registeredDesignIconsGrid = gameObject.GetSingleComponentInChildren<UnitDesignIcon>().gameObject.GetSingleComponentInParents<UIGrid>();
         _registeredDesignIconsGrid.sorting = UIGrid.Sorting.Alphabetic;
-        _registeredDesignIcons = new List<UnitDesignImageIcon>();
+        _registeredDesignIcons = new List<UnitDesignIcon>();
         _panel.widgetsAreStatic = true; // OPTIMIZE see http://www.tasharen.com/forum/index.php?topic=261.0
 
         _createDesignPopupWindow = GetComponentsInChildren<GuiElement>().Single(e => e.ElementID == GuiElementID.CreateDesignPopupWindow).GetComponent<GuiWindow>();
@@ -180,10 +187,14 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         _transientDesignIconHolder = gameObject.GetComponentsInImmediateChildren<Transform>().Single(t => t != _contentHolder).gameObject;
     }
 
-    private void Subscribe() {
+    protected override void Subscribe() {
+        base.Subscribe();
         EventDelegate.Add(onShowBegin, ShowBeginEventHandler);
-        EventDelegate.Add(onHideComplete, HideCompleteEventHandler);
     }
+    ////private void Subscribe() {
+    ////    EventDelegate.Add(onShowBegin, ShowBeginEventHandler);
+    ////    EventDelegate.Add(onHideComplete, HideCompleteEventHandler);
+    ////}
 
     #region Event and Property Change Handlers
 
@@ -195,21 +206,21 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         ShowDesignsUI();
     }
 
-    /// <summary>
-    /// Event handler called when the GuiWindow completes hiding.
-    /// </summary>
-    private void HideCompleteEventHandler() {
-        Reset();
-    }
+    /////// <summary>
+    /////// Event handler called when the GuiWindow completes hiding.
+    /////// </summary>
+    ////private void HideCompleteEventHandler() {
+    ////    ResetforReuse();
+    ////}
 
     private void DesignIconDoubleClickedEventHandler(GameObject go) {
-        var doubleClickedIcon = go.GetComponent<UnitDesignImageIcon>();
-        ChangeSelectedDesignIcon(doubleClickedIcon);
-        EditSelectedDesign();
+        var doubleClickedIcon = go.GetComponent<UnitDesignIcon>();
+        ChangeChosenDesignIcon(doubleClickedIcon);
+        EditChosenDesign();
     }
 
     private void DesignIconClickedEventHandler(GameObject go) {
-        UnitDesignImageIcon designIcon = go.GetComponent<UnitDesignImageIcon>();
+        UnitDesignIcon designIcon = go.GetComponent<UnitDesignIcon>();
         D.AssertNotNull(designIcon);
         HandleDesignIconClicked(designIcon);
     }
@@ -225,14 +236,14 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     /// If the same designIcon is clicked twice in sequence, the icon is selected then unselected.
     /// </summary>
     /// <param name="designIcon">The designIcon that was clicked.</param>
-    private void HandleDesignIconClicked(UnitDesignImageIcon designIcon) {
-        if (designIcon == _selectedDesignIcon) {
-            // current icon unselected by user without another selection
-            ChangeSelectedDesignIcon(null);
+    private void HandleDesignIconClicked(UnitDesignIcon designIcon) {
+        if (designIcon == _chosenDesignIcon) {
+            // current icon re-chosen by user without another choice
+            ChangeChosenDesignIcon(null);
         }
         else {
-            // a new designIcon has been selected
-            ChangeSelectedDesignIcon(designIcon);
+            // a new designIcon has been chosen
+            ChangeChosenDesignIcon(designIcon);
         }
     }
 
@@ -255,7 +266,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     private void ShowRenameObsoleteDesignPopupWindow() {
         _renameObsoleteDesignNameInput.value = null;
         HideDesignsUI();
-        HideWindowControlUI();
+        HideWindowControlsUI();
         _renameObsoleteDesignPopupWindow.Show();
     }
 
@@ -267,7 +278,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     /// Initializes the prefab fields of this DesignWindow.
     /// <remarks>Called by DesignScreensManager when it installs a new AUnitDesignWindow.</remarks>
     /// </summary>
-    public void __InitializePrefabs(UnitDesignImageIcon designIconPrefab, EquipmentIcon equipmentIconPrefab, GameObject threeDModelStagePrefab) {
+    public void __InitializePrefabs(UnitDesignIcon designIconPrefab, EquipmentIcon equipmentIconPrefab, GameObject threeDModelStagePrefab) {
         _designIconPrefab = designIconPrefab;
         _equipmentIconPrefab = equipmentIconPrefab;
         _threeDModelStagePrefab = threeDModelStagePrefab;
@@ -303,7 +314,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         }
         _createDesignNameInput.value = null;
         HideDesignsUI();
-        HideWindowControlUI();
+        HideWindowControlsUI();
     }
 
     /// <summary>
@@ -311,7 +322,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     /// </summary>
     public void HandleCreateDesignPopupCancelled() {
         ShowDesignsUI();
-        ShowWindowControlUI();
+        ShowWindowControlsUI();
     }
 
     /// <summary>
@@ -320,10 +331,10 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     /// </summary>
     public void CreateDesign() {
         if (_createDesignNameInput.value.IsNullOrEmpty()) {
-            D.Warn("{0}: User did not pick a Design name when attempting to create a design.", DebugName);
+            D.Warn("{0}: User did not include a Design name when attempting to create a design.", DebugName);
             SFXManager.Instance.PlaySFX(SfxClipID.Error);
             ShowDesignsUI();
-            ShowWindowControlUI();
+            ShowWindowControlsUI();
             return;
         }
         // Acquire hull and design name from CreateDesignWindow
@@ -332,7 +343,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
             D.Warn("{0}: User picked DesignName {1} that is already in use when attempting to create a design.", DebugName, rootDesignName);
             SFXManager.Instance.PlaySFX(SfxClipID.Error);
             ShowDesignsUI();
-            ShowWindowControlUI();
+            ShowWindowControlsUI();
             return;
         }
 
@@ -344,7 +355,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
                 D.Warn("{0}: User did not make a Hull choice when attempting to create a design.", DebugName);
                 SFXManager.Instance.PlaySFX(SfxClipID.Error);
                 ShowDesignsUI();
-                ShowWindowControlUI();
+                ShowWindowControlsUI();
                 return;
             }
             chosenPopupValue = _createDesignPopupList.value;
@@ -358,21 +369,21 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         controlDesign.Status = AUnitDesign.SourceAndStatus.System_CreationTemplate;
         controlDesign.RootDesignName = rootDesignName;
 
-        var controlDesignIcon = CreateIcon(controlDesign, _transientDesignIconHolder);
-        ChangeSelectedDesignIcon(controlDesignIcon);
+        var controlDesignIcon = CreateIcon(controlDesign, _designIconSize, _transientDesignIconHolder);
+        ChangeChosenDesignIcon(controlDesignIcon);
 
         HideDesignsUI();
         ShowDesignerUI();   // copies selectedIconDesign to WorkingDesign
-        ShowWindowControlUI();
+        ShowWindowControlsUI();
     }
 
     /// <summary>
     /// Edits the selected design.
     /// <remarks>Called by Design's EditDesign Button.</remarks>
     /// </summary>
-    public void EditSelectedDesign() {
-        if (_selectedDesignIcon != null) {
-            if (_selectedDesignIcon.Design.Status == AUnitDesign.SourceAndStatus.Player_Obsolete) {
+    public void EditChosenDesign() {
+        if (_chosenDesignIcon != null) {
+            if (_chosenDesignIcon.Design.Status == AUnitDesign.SourceAndStatus.Player_Obsolete) {
                 ShowRenameObsoleteDesignPopupWindow();
                 return;
             }
@@ -380,21 +391,21 @@ public abstract class AUnitDesignWindow : AGuiWindow {
             HideDesignsUI();
         }
         else {
-            D.Warn("{0}: User attempted to edit a design without a design selected.", DebugName);
+            D.Warn("{0}: User attempted to edit a design without a design chosen.", DebugName);
         }
     }
 
     /// <summary>
-    /// Allows editing of the selected obsolete Design after its name has been changed.
+    /// Allows editing of the chosen obsolete Design after its name has been changed.
     /// <remarks>Called by RenameObsoleteDesignPopupWindow's Accept Button.</remarks>
     /// </summary>
     public void EditObsoleteDesign() {
-        D.AssertNotNull(_selectedDesignIcon);
+        D.AssertNotNull(_chosenDesignIcon);
         if (_renameObsoleteDesignNameInput.value.IsNullOrEmpty()) {
-            D.Warn("{0}: User did not pick a Design name when attempting to edit an obsolete design.", DebugName);
+            D.Warn("{0}: User did not include a new Design name when attempting to edit an obsolete design.", DebugName);
             SFXManager.Instance.PlaySFX(SfxClipID.Error);
             ShowDesignsUI();
-            ShowWindowControlUI();
+            ShowWindowControlsUI();
             return;
         }
         // Acquire design name from RenameObsoleteDesignPopupWindow
@@ -403,23 +414,23 @@ public abstract class AUnitDesignWindow : AGuiWindow {
             D.Warn("{0}: User picked DesignName {1} that is already in use when attempting to edit an obsolete design.", DebugName, rootDesignName);
             SFXManager.Instance.PlaySFX(SfxClipID.Error);
             ShowDesignsUI();
-            ShowWindowControlUI();
+            ShowWindowControlsUI();
             return;
         }
 
-        // Instantiate a 'control' design with the info along with a new icon and assign it to _selectedDesignIcon.
+        // Instantiate a 'control' design with the info along with a new icon and assign it to _chosenDesignIcon.
         // This design will become the 'previousDesign' in UpdateDesigns to see if newDesign (aka WorkingDesign) has any changes.
         // The status of this 'previousDesign' needs to be obsolete so UpdateDesigns won't attempt to obsolete it.
-        AUnitDesign controlDesign = CopyDesignFrom(_selectedDesignIcon.Design);
+        AUnitDesign controlDesign = CopyDesignFrom(_chosenDesignIcon.Design);
         controlDesign.Status = AUnitDesign.SourceAndStatus.Player_Obsolete;
         controlDesign.RootDesignName = rootDesignName;
 
-        var controlDesignIcon = CreateIcon(controlDesign, _transientDesignIconHolder);
-        ChangeSelectedDesignIcon(controlDesignIcon);
+        var controlDesignIcon = CreateIcon(controlDesign, _designIconSize, _transientDesignIconHolder);
+        ChangeChosenDesignIcon(controlDesignIcon);
 
         HideDesignsUI();
-        ShowDesignerUI();   // copies selectedIconDesign to WorkingDesign
-        ShowWindowControlUI();
+        ShowDesignerUI();   // copies chosenIconDesign to WorkingDesign
+        ShowWindowControlsUI();
     }
 
     /// <summary>
@@ -427,7 +438,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     /// </summary>
     public void HandleRenameObsoleteDesignPopupCancelled() {
         ShowDesignsUI();
-        ShowWindowControlUI();
+        ShowWindowControlsUI();
     }
 
     /// <summary>
@@ -435,17 +446,17 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     /// <remarks>Called by Designer's Apply Button.</remarks>
     /// </summary>
     public void ApplyDesign() {
-        var previousDesign = _selectedDesignIcon.Design;
+        var previousDesign = _chosenDesignIcon.Design;
         AUnitDesign newDesign = _designerEquipmentStorage.WorkingDesign;
         if (!IsDesignContentEqual(previousDesign, newDesign)) {
             // The user modified the design
             D.Log("{0}.ApplyDesign: {1} has changed and is being registered as a new design.", DebugName, newDesign.DebugName);
-            UpdateDesign(_selectedDesignIcon, newDesign);
+            UpdateDesign(_chosenDesignIcon, newDesign);
         }
         else if (previousDesign.Status == AUnitDesign.SourceAndStatus.System_CreationTemplate) {
             // The user has chosen to create an empty design that has the same content as the empty CreationTemplateDesign
             D.Log("{0}.ApplyDesign: {1} has not changed but is being registered as a new design.", DebugName, newDesign.DebugName);
-            UpdateDesign(_selectedDesignIcon, newDesign);
+            UpdateDesign(_chosenDesignIcon, newDesign);
         }
         else {
             D.Log("{0}.ApplyDesign: {1} will not be registered as a new design.", DebugName, newDesign.DebugName);
@@ -453,7 +464,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
 
         ShowDesignsUI();
         HideDesignerUI();
-        // UpdateDesign hides the SelectedItemHudWindow
+        // UpdateDesign hides the InteractableHudWindow
     }
 
     /// <summary>
@@ -462,7 +473,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     /// </summary>
     public void ResetDesigner() {
         RemoveEquipmentStorageIcons();
-        InstallEquipmentStorageIconsFor(_selectedDesignIcon.Design);
+        InstallEquipmentStorageIconsFor(_chosenDesignIcon.Design);
         MyCustomCursor.Clear();
     }
 
@@ -482,24 +493,24 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     }
 
     /// <summary>
-    /// Obsoletes the selected design, if any.
+    /// Obsoletes the chosen design, if any.
     /// <remarks>Called by Design's Obsolete Button.</remarks>
     /// </summary>
-    public void ObsoleteSelectedDesign() {
-        if (_selectedDesignIcon != null) {
-            AUnitDesign selectedDesign = _selectedDesignIcon.Design;
+    public void ObsoleteChosenDesign() {
+        if (_chosenDesignIcon != null) {
+            AUnitDesign selectedDesign = _chosenDesignIcon.Design;
             ObsoleteDesign(selectedDesign.DesignName);
             SFXManager.Instance.PlaySFX(SfxClipID.OpenShut);
 
             if (!_includeObsoleteDesigns) {
-                RemoveIcon(_selectedDesignIcon);
+                RemoveIcon(_chosenDesignIcon);
             }
-            ChangeSelectedDesignIcon(null);
+            ChangeChosenDesignIcon(null);
             HideDesignerUI();
             _registeredDesignIconsGrid.repositionNow = true;
         }
         else {
-            D.Warn("{0}: User attempted to obsolete a design without a design selected.", DebugName);
+            D.Warn("{0}: User attempted to obsolete a design without a design chosen.", DebugName);
             SFXManager.Instance.PlaySFX(SfxClipID.Error);
         }
     }
@@ -518,20 +529,20 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     /// <remarks>Handled this way to make sure any partially created icon and design that has not
     /// yet been applied is properly destroyed.</remarks>
     /// </summary>
-    /// <param name="newSelectedDesignIcon">The new selected design icon.</param>
-    private void ChangeSelectedDesignIcon(UnitDesignImageIcon newSelectedDesignIcon) {
-        if (_selectedDesignIcon != null) {
-            if (_selectedDesignIcon.gameObject != null) {    // could already be destroyed
-                if (!_registeredDesignIcons.Contains(_selectedDesignIcon)) {
+    /// <param name="newChosenDesignIcon">The new chosen design icon.</param>
+    private void ChangeChosenDesignIcon(UnitDesignIcon newChosenDesignIcon) {
+        if (_chosenDesignIcon != null) {
+            if (_chosenDesignIcon.gameObject != null) {    // could already be destroyed
+                if (!_registeredDesignIcons.Contains(_chosenDesignIcon)) {
                     // design and icon were created but never accepted and added to list of icons and registered designs
-                    Destroy(_selectedDesignIcon.gameObject);
+                    Destroy(_chosenDesignIcon.gameObject);
                 }
             }
-            _selectedDesignIcon.IsSelected = false;
+            _chosenDesignIcon.IsPicked = false;
         }
-        _selectedDesignIcon = newSelectedDesignIcon;
-        if (_selectedDesignIcon != null) {
-            _selectedDesignIcon.IsSelected = true;
+        _chosenDesignIcon = newChosenDesignIcon;
+        if (_chosenDesignIcon != null) {
+            _chosenDesignIcon.IsPicked = true;
         }
     }
 
@@ -548,9 +559,9 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     /// Shows the designer UI and populates it with the Design embedded in _selectedDesignIcon, prepared to be edited.
     /// </summary>
     private void ShowDesignerUI() {
-        D.AssertNotNull(_selectedDesignIcon);
+        D.AssertNotNull(_chosenDesignIcon);
         BuildAvailableEquipmentIcons();
-        AUnitDesign design = _selectedDesignIcon.Design;
+        AUnitDesign design = _chosenDesignIcon.Design;
 
         InstallEquipmentStorageIconsFor(design);
         _designerUITitleLabel.text = DesignerUITitleRoot + Constants.Colon + Constants.Space + design.DesignName;
@@ -632,7 +643,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         _3DModelStageUIContainerWidget.alpha = Constants.OneF;
     }
 
-    private void ShowWindowControlUI() {
+    private void ShowWindowControlsUI() {
         _windowControlsUIContainerWidget.alpha = Constants.OneF;
     }
 
@@ -657,12 +668,12 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         _3DModelStageUIContainerWidget.alpha = Constants.ZeroF;
     }
 
-    private void HideWindowControlUI() {
+    private void HideWindowControlsUI() {
         _windowControlsUIContainerWidget.alpha = Constants.ZeroF;
     }
 
-    private void UpdateDesign(UnitDesignImageIcon previousDesignIcon, AUnitDesign newDesign) {
-        D.AssertEqual(_selectedDesignIcon, previousDesignIcon);
+    private void UpdateDesign(UnitDesignIcon previousDesignIcon, AUnitDesign newDesign) {
+        D.AssertEqual(_chosenDesignIcon, previousDesignIcon);
         D.AssertEqual(AUnitDesign.SourceAndStatus.Player_Current, newDesign.Status);
 
         // handle the previous design and its icon
@@ -688,11 +699,11 @@ public abstract class AUnitDesignWindow : AGuiWindow {
 
         // add the new design and its icon
         AddToPlayerDesigns(newDesign);
-        var newDesignIcon = CreateIcon(newDesign, _registeredDesignIconsGrid.gameObject);
+        var newDesignIcon = CreateIcon(newDesign, _designIconSize, _registeredDesignIconsGrid.gameObject);
         AddIcon(newDesignIcon);
 
         // clear any prior selection
-        ChangeSelectedDesignIcon(null);
+        ChangeChosenDesignIcon(null);
         _registeredDesignIconsGrid.repositionNow = true;
     }
 
@@ -708,9 +719,26 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     private void BuildRegisteredDesignIcons() {
         D.AssertEqual(Constants.Zero, _registeredDesignIcons.Count);
         RemoveRegisteredDesignIcons();   // OPTIMIZE Reqd to destroy the icon already present. Can be removed once reuse of icons is implemented
+
         IEnumerable<AUnitDesign> designs = GetRegisteredUserDesigns(_includeObsoleteDesigns);
+        int desiredDesignsToAccommodateInGrid = designs.Count();
+
+        Vector2 gridContainerViewSize = _registeredDesignIconsGrid.GetComponentInParent<UIPanel>().GetViewSize();
+        IntVector2 gridContainerDimensions = new IntVector2((int)gridContainerViewSize.x, (int)gridContainerViewSize.y);
+        int gridColumns, unusedGridRows;
+        AGuiIcon.IconSize iconSize = AGuiIcon.DetermineGridIconSize(gridContainerDimensions, desiredDesignsToAccommodateInGrid, _designIconPrefab, out unusedGridRows, out gridColumns);
+        _designIconSize = iconSize;
+
+        // configure grid for icon size
+        IntVector2 iconDimensions = _designIconPrefab.GetIconDimensions(iconSize);
+        _registeredDesignIconsGrid.cellHeight = iconDimensions.y;
+        _registeredDesignIconsGrid.cellWidth = iconDimensions.x;
+
+        // make grid gridColumns wide
+        _registeredDesignIconsGrid.maxPerLine = gridColumns;
+
         designs.ForAll(design => {
-            var designIcon = CreateIcon(design, _registeredDesignIconsGrid.gameObject);
+            var designIcon = CreateIcon(design, iconSize, _registeredDesignIconsGrid.gameObject);
             AddIcon(designIcon);
         });
         _registeredDesignIconsGrid.repositionNow = true;
@@ -721,15 +749,26 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     /// </summary>
     private void BuildAvailableEquipmentIcons() {
         RemoveAvailableEquipmentIcons();   // OPTIMIZE Reqd to destroy the icon already present. Can be removed once reuse of icons is implemented
+
         IEnumerable<AEquipmentStat> availableEquipStats = GetAvailableUserEquipmentStats();
+        int desiredStatsToAccommodateInGrid = availableEquipStats.Count();
 
-        // make grid 2 rows deep
-        int maxStatsPerRow = Mathf.CeilToInt(availableEquipStats.Count() / (float)2);
-        //D.Log("{0}: Equipment count = {1}, allowedEquipmentPerRow = {2}.", DebugName, equipStats.Count(), maxStatsPerRow);
-        _designerEquipmentGrid.maxPerLine = maxStatsPerRow;
+        Vector2 gridContainerViewSize = _designerEquipmentIconsGrid.GetComponentInParent<UIPanel>().GetViewSize();
+        IntVector2 gridContainerDimensions = new IntVector2((int)gridContainerViewSize.x, (int)gridContainerViewSize.y);
 
-        availableEquipStats.ForAll(eStat => AddIcon(eStat));
-        _designerEquipmentGrid.repositionNow = true;
+        int gridColumns, unusedGridRows;
+        AGuiIcon.IconSize iconSize = AGuiIcon.DetermineGridIconSize(gridContainerDimensions, desiredStatsToAccommodateInGrid, _equipmentIconPrefab, out unusedGridRows, out gridColumns);
+
+        // configure grid for icon size
+        IntVector2 iconDimensions = _equipmentIconPrefab.GetIconDimensions(iconSize);
+        _designerEquipmentIconsGrid.cellHeight = iconDimensions.y;
+        _designerEquipmentIconsGrid.cellWidth = iconDimensions.x;
+
+        // make grid gridColumns wide
+        _designerEquipmentIconsGrid.maxPerLine = gridColumns;
+
+        availableEquipStats.ForAll(eStat => CreateAndAddIcon(eStat, iconSize));
+        _designerEquipmentIconsGrid.repositionNow = true;
     }
 
     /// <summary>
@@ -765,13 +804,13 @@ public abstract class AUnitDesignWindow : AGuiWindow {
             if (iconTransforms.Any()) {
                 D.AssertEqual(Constants.One, iconTransforms.Count);
                 foreach (var it in iconTransforms) {
-                    var icon = it.GetComponent<UnitDesignImageIcon>();
+                    var icon = it.GetComponent<UnitDesignIcon>();
                     RemoveIcon(icon);
                 }
             }
         }
         else {
-            var iconsCopy = new List<UnitDesignImageIcon>(_registeredDesignIcons);
+            var iconsCopy = new List<UnitDesignIcon>(_registeredDesignIcons);
             iconsCopy.ForAll(i => {
                 RemoveIcon(i);
             });
@@ -779,7 +818,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     }
 
     private void RemoveAvailableEquipmentIcons() {
-        IList<Transform> iconTransforms = _designerEquipmentGrid.GetChildList();
+        IList<Transform> iconTransforms = _designerEquipmentIconsGrid.GetChildList();
         if (iconTransforms.Any()) {
             foreach (var it in iconTransforms) {
                 var icon = it.GetComponent<EquipmentIcon>();
@@ -793,18 +832,20 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     }
 
     /// <summary>
-    /// Creates a ShipDesignImageIcon from the provided design and parents it to parent. 
+    /// Creates a UnitDesignImageIcon from the provided design and parents it to parent.
     /// <remarks>Handled this way to avoid adding the icon generated by CreateDesign to the list of
     /// available designs. This icon is not an available design until the design is accepted by pressing
     /// the ApplyDesign button in the DesignerUI.</remarks>
     /// </summary>
     /// <param name="design">The design.</param>
+    /// <param name="iconSize">Size of the icon to create.</param>
     /// <param name="parent">The parent.</param>
     /// <returns></returns>
-    private UnitDesignImageIcon CreateIcon(AUnitDesign design, GameObject parent) {
+    private UnitDesignIcon CreateIcon(AUnitDesign design, AGuiIcon.IconSize iconSize, GameObject parent) {
         GameObject designIconGo = NGUITools.AddChild(parent, _designIconPrefab.gameObject);
         designIconGo.name = design.DesignName + DesignIconExtension;
-        UnitDesignImageIcon designIcon = designIconGo.GetSafeComponent<UnitDesignImageIcon>(); ;
+        UnitDesignIcon designIcon = designIconGo.GetSafeComponent<UnitDesignIcon>(); ;
+        designIcon.Size = iconSize;
         designIcon.Design = design;
         return designIcon;
     }
@@ -817,7 +858,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     /// the ApplyDesign button in the DesignerUI.</remarks>
     /// </summary>
     /// <param name="designIcon">The design icon.</param>
-    private void AddIcon(UnitDesignImageIcon designIcon) {
+    private void AddIcon(UnitDesignIcon designIcon) {
         if (designIcon.transform.parent != _registeredDesignIconsGrid.transform) {
             UnityUtility.AttachChildToParent(designIcon.gameObject, _registeredDesignIconsGrid.gameObject);
         }
@@ -828,16 +869,17 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         _registeredDesignIcons.Add(designIcon);
     }
 
-    private void AddIcon(AEquipmentStat equipStat) {
-        GameObject equipIconGo = NGUITools.AddChild(_designerEquipmentGrid.gameObject, _equipmentIconPrefab.gameObject);
+    private void CreateAndAddIcon(AEquipmentStat equipStat, AGuiIcon.IconSize iconSize) {
+        GameObject equipIconGo = NGUITools.AddChild(_designerEquipmentIconsGrid.gameObject, _equipmentIconPrefab.gameObject);
         equipIconGo.name = equipStat.Name + EquipmentIconExtension;
-        EquipmentIcon equipIcon = equipIconGo.GetSafeComponent<EquipmentIcon>(); ;
+        EquipmentIcon equipIcon = equipIconGo.GetSafeComponent<EquipmentIcon>();
+        equipIcon.Size = iconSize;
         equipIcon.EquipmentStat = equipStat;
 
         UIEventListener.Get(equipIconGo).onDoubleClick += EquipmentIconDoubleClickedEventHandler;
     }
 
-    private void RemoveIcon(UnitDesignImageIcon designIcon) {
+    private void RemoveIcon(UnitDesignIcon designIcon) {
         var eventListener = UIEventListener.Get(designIcon.gameObject);
         eventListener.onDoubleClick -= DesignIconDoubleClickedEventHandler;
         eventListener.onClick -= DesignIconClickedEventHandler;
@@ -869,9 +911,9 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     /// <returns></returns>
     protected abstract IEnumerable<AEquipmentStat> GetAvailableUserEquipmentStats();
 
-    private void Reset() {
+    protected override void ResetForReuse() {
         RemoveRegisteredDesignIcons();
-        ChangeSelectedDesignIcon(null);
+        ChangeChosenDesignIcon(null);
         HideDesignerUI();
         D.AssertEqual(Constants.Zero, _registeredDesignIcons.Count);
     }
@@ -884,13 +926,9 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         _renameObsoleteDesignPopupWindow.ActivateContent();
     }
 
-    protected override void Cleanup() {
-        Unsubscribe();
-    }
-
-    private void Unsubscribe() {
+    protected override void Unsubscribe() {
+        base.Unsubscribe();
         EventDelegate.Remove(onShowBegin, ShowBeginEventHandler);
-        EventDelegate.Remove(onHideComplete, HideCompleteEventHandler);
     }
 
     #region Debug

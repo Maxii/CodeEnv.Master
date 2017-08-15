@@ -70,16 +70,22 @@ public abstract class ATableRowForm : AItemReportForm {
 
     #endregion
 
-    public override void Reset() {
-        base.Reset();
+    protected override void ResetForReuse_Internal() {
+        base.ResetForReuse_Internal();
         _rowSprite.leftAnchor.target = null;
         _rowSprite.rightAnchor.target = null;
         _rowSprite.ResetAnchors();
+        itemFocusUserAction = null;
     }
 
     protected override void CleanupNameGuiElement(AGuiElement e) {
         base.CleanupNameGuiElement(e);
         UIEventListener.Get(e.gameObject).onDoubleClick -= NameDoubleClickEventHandler;
+    }
+
+    protected override void Cleanup() {
+        base.Cleanup();
+        itemFocusUserAction = null;
     }
 
     #region Nested Classes

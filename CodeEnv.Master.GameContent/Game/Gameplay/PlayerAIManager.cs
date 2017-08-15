@@ -196,6 +196,50 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
+        public bool TryFindMyCloseItems<T>(Vector3 worldPosition, float radius, out IEnumerable<T> closeItems, params T[] excludedItems) where T : IOwnerItem {
+            Type tType = typeof(T);
+            IEnumerable<T> itemCandidates = null;
+            if (tType == typeof(IStarbaseCmd)) {
+                itemCandidates = Knowledge.OwnerStarbases.Cast<T>();
+            }
+            else if (tType == typeof(ISettlementCmd)) {
+                itemCandidates = Knowledge.OwnerSettlements.Cast<T>();
+            }
+            else if (tType == typeof(IUnitBaseCmd)) {
+                itemCandidates = Knowledge.OwnerBases.Cast<T>();
+            }
+            else if (tType == typeof(IFleetCmd)) {
+                itemCandidates = Knowledge.OwnerFleets.Cast<T>();
+            }
+            else if (tType == typeof(ISystem)) {
+                itemCandidates = Knowledge.OwnerSystems.Cast<T>();
+            }
+            else if (tType == typeof(IPlanet)) {
+                itemCandidates = Knowledge.OwnerPlanets.Cast<T>();
+            }
+            else if (tType == typeof(IMoon)) {
+                itemCandidates = Knowledge.OwnerMoons.Cast<T>();
+            }
+            else if (tType == typeof(IPlanetoid)) {
+                itemCandidates = Knowledge.OwnerPlanetoids.Cast<T>();
+            }
+            else if (tType == typeof(IStar)) {
+                itemCandidates = Knowledge.OwnerStars.Cast<T>();
+            }
+            else {
+                D.Error("Unanticipated Type {0}.", tType.Name);
+            }
+
+            float sqrRadius = radius * radius;
+            itemCandidates = itemCandidates.Except(excludedItems).Where(cand => Vector3.SqrMagnitude(cand.Position - worldPosition) < sqrRadius);
+            if (itemCandidates.Any()) {
+                closeItems = itemCandidates;
+                return true;
+            }
+            closeItems = Enumerable.Empty<T>();
+            return false;
+        }
+
         /// <summary>
         /// Tries to find the closest known item of Type T to <c>worldPosition</c>, if any. 
         /// Returns <c>true</c> if one was found, <c>false</c> otherwise. 
@@ -235,6 +279,9 @@ namespace CodeEnv.Master.GameContent {
             else if (tType == typeof(IStar_Ltd)) {
                 itemCandidates = Knowledge.Stars.Cast<T>();
             }
+            ////else if (tType == typeof(IUniverseCenter_Ltd)) {
+            ////    itemCandidates = new IUniverseCenter_Ltd[] { Knowledge.UniverseCenter }.Cast<T>();
+            ////}
             else {
                 D.Error("Unanticipated Type {0}.", tType.Name);
             }
@@ -247,6 +294,157 @@ namespace CodeEnv.Master.GameContent {
             closestItem = default(T);
             return false;
         }
+
+        public bool TryFindCloseKnownItems<T>(Vector3 worldPosition, float radius, out IEnumerable<T> closeItems, params T[] excludedItems) where T : IOwnerItem_Ltd {
+            Type tType = typeof(T);
+            IEnumerable<T> itemCandidates = null;
+            if (tType == typeof(IStarbaseCmd_Ltd)) {
+                itemCandidates = Knowledge.Starbases.Cast<T>();
+            }
+            else if (tType == typeof(ISettlementCmd_Ltd)) {
+                itemCandidates = Knowledge.Settlements.Cast<T>();
+            }
+            else if (tType == typeof(IUnitBaseCmd_Ltd)) {
+                itemCandidates = Knowledge.Bases.Cast<T>();
+            }
+            else if (tType == typeof(IFleetCmd_Ltd)) {
+                itemCandidates = Knowledge.Fleets.Cast<T>();
+            }
+            else if (tType == typeof(ISystem_Ltd)) {
+                itemCandidates = Knowledge.Systems.Cast<T>();
+            }
+            else if (tType == typeof(IPlanet_Ltd)) {
+                itemCandidates = Knowledge.Planets.Cast<T>();
+            }
+            else if (tType == typeof(IMoon_Ltd)) {
+                itemCandidates = Knowledge.Moons.Cast<T>();
+            }
+            else if (tType == typeof(IPlanetoid_Ltd)) {
+                itemCandidates = Knowledge.Planetoids.Cast<T>();
+            }
+            else if (tType == typeof(IStar_Ltd)) {
+                itemCandidates = Knowledge.Stars.Cast<T>();
+            }
+            ////else if (tType == typeof(IUniverseCenter_Ltd)) {
+            ////    itemCandidates = new IUniverseCenter_Ltd[] { Knowledge.UniverseCenter }.Cast<T>();
+            ////}
+            else {
+                D.Error("Unanticipated Type {0}.", tType.Name);
+            }
+
+            float sqrRadius = radius * radius;
+            itemCandidates = itemCandidates.Except(excludedItems).Where(cand => Vector3.SqrMagnitude(cand.Position - worldPosition) < sqrRadius);
+            if (itemCandidates.Any()) {
+                closeItems = itemCandidates;
+                return true;
+            }
+            closeItems = Enumerable.Empty<T>();
+            return false;
+        }
+
+        /// <summary>
+        /// Returns <c>true</c> if there is a known item that Owner is allowed to guard, <c>false</c> otherwise.
+        /// If true, closestItem will be be valid and indicate the closest item that Owner is allowed to guard.
+        /// </summary>
+        /// <param name="worldPosition">The world position.</param>
+        /// <param name="closestItem">The resulting closest item.</param>
+        /// <param name="excludedItems">The excluded items.</param>
+        /// <returns></returns>
+        public bool TryFindClosestGuardableItem(Vector3 worldPosition, out IGuardable closestItem, params IGuardable[] excludedItems) {
+            var itemCandidates = Knowledge.KnownGuardableItems.Except(excludedItems).Where(gItem => gItem.IsGuardingAllowedBy(Owner));
+            if (itemCandidates.Any()) {
+                closestItem = itemCandidates.MinBy(cand => Vector3.SqrMagnitude(cand.Position - worldPosition));
+                return true;
+            }
+            closestItem = null;
+            return false;
+        }
+
+        /// <summary>
+        /// Returns <c>true</c> if there is a known item that Owner is allowed to patrol, <c>false</c> otherwise.
+        /// If true, closestItem will be be valid and indicate the closest item that Owner is allowed to patrol.
+        /// </summary>
+        /// <param name="worldPosition">The world position.</param>
+        /// <param name="closestItem">The resulting closest item.</param>
+        /// <param name="excludedItems">The excluded items.</param>
+        /// <returns></returns>
+        public bool TryFindClosestPatrollableItem(Vector3 worldPosition, out IPatrollable closestItem, params IPatrollable[] excludedItems) {
+            var itemCandidates = Knowledge.KnownPatrollableItems.Except(excludedItems).Where(pItem => pItem.IsPatrollingAllowedBy(Owner));
+            if (itemCandidates.Any()) {
+                closestItem = itemCandidates.MinBy(cand => Vector3.SqrMagnitude(cand.Position - worldPosition));
+                return true;
+            }
+            closestItem = null;
+            return false;
+        }
+
+        /// <summary>
+        /// Returns <c>true</c> if a base is found that will refit both the fleet's ships and its Cmd, <c>false</c> otherwise.
+        /// <remarks>8.13.17 HACK Should be implemented using an IRefitCapable interface.</remarks>
+        /// </summary>
+        /// <param name="worldPosition">The world position.</param>
+        /// <param name="closestBase">The closest base.</param>
+        /// <param name="excludedBases">The excluded bases.</param>
+        /// <returns></returns>
+        public bool TryFindClosestRefitBase(Vector3 worldPosition, out IUnitBaseCmd_Ltd closestBase, params IUnitBaseCmd_Ltd[] excludedBases) {
+            var baseCandidates = Knowledge.Bases.Except(excludedBases).Where(bItem => {
+                Player baseOwner;
+                if (bItem.TryGetOwner(Owner, out baseOwner)) {
+                    return baseOwner.IsRelationshipWith(Owner, DiplomaticRelationship.Self, DiplomaticRelationship.Alliance);
+                }
+                return false;
+            });
+            if (baseCandidates.Any()) {
+                closestBase = baseCandidates.MinBy(cand => Vector3.SqrMagnitude(cand.Position - worldPosition));
+                return true;
+            }
+            closestBase = null;
+            return false;
+        }
+
+        /// <summary>
+        /// Returns <c>true</c> if a base is found that will disband both the fleet's ships and its Cmd, <c>false</c> otherwise.
+        /// <remarks>8.13.17 HACK Should be implemented using an IDisbandCapable interface.</remarks>
+        /// </summary>
+        /// <param name="worldPosition">The world position.</param>
+        /// <param name="closestBase">The closest base.</param>
+        /// <param name="excludedBases">The excluded bases.</param>
+        /// <returns></returns>
+        public bool TryFindClosestDisbandBase(Vector3 worldPosition, out IUnitBaseCmd_Ltd closestBase, params IUnitBaseCmd_Ltd[] excludedBases) {
+            var baseCandidates = Knowledge.Bases.Except(excludedBases).Where(bItem => {
+                Player baseOwner;
+                if (bItem.TryGetOwner(Owner, out baseOwner)) {
+                    return baseOwner.IsRelationshipWith(Owner, DiplomaticRelationship.Self, DiplomaticRelationship.Alliance);
+                }
+                return false;
+            });
+            if (baseCandidates.Any()) {
+                closestBase = baseCandidates.MinBy(cand => Vector3.SqrMagnitude(cand.Position - worldPosition));
+                return true;
+            }
+            closestBase = null;
+            return false;
+        }
+
+        /// <summary>
+        /// Returns <c>true</c> if a base is found that will repair both the fleet's ships and its Cmd, <c>false</c> otherwise.
+        /// </summary>
+        /// <param name="worldPosition">The world position.</param>
+        /// <param name="closestBase">The closest base.</param>
+        /// <param name="excludedBases">The excluded bases.</param>
+        /// <returns></returns>
+        public bool TryFindClosestFleetRepairBase(Vector3 worldPosition, out IUnitBaseCmd_Ltd closestBase, params IUnitBaseCmd_Ltd[] excludedBases) {
+            var baseCandidates = Knowledge.Bases.Except(excludedBases).Where(bItem => {
+                return (bItem as IShipRepairCapable).IsRepairingAllowedBy(Owner) && (bItem as IUnitCmdRepairCapable).IsRepairingAllowedBy(Owner);
+            });
+            if (baseCandidates.Any()) {
+                closestBase = baseCandidates.MinBy(cand => Vector3.SqrMagnitude(cand.Position - worldPosition));
+                return true;
+            }
+            closestBase = null;
+            return false;
+        }
+
 
         #endregion
 

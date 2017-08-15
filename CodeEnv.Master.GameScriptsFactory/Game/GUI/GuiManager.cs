@@ -30,32 +30,39 @@ using UnityEngine.Serialization;
 /// </summary>
 public class GuiManager : AMonoSingleton<GuiManager> {
 
-#pragma warning disable 0649
-
     public string DebugName { get { return GetType().Name; } }
 
+#pragma warning disable 0649
+
     /// <summary>
-    /// The fixed panels of the GUI that should normally be hidden when a pop up shows.
+    /// The panels of the GUI that should be hidden if showing when a pop up shows.
     /// Use GuiShowModeControlButton.exceptions to exclude a panel listed here from being hidden.
     /// </summary>
-    //[FormerlySerializedAs("fixedGuiPanels")]
-    [Tooltip(@"The fixed panels of the GUI that should be hidden when a pop up shows. Use GuiShowModeControlButton.exceptions to exclude a panel listed here from being hidden.")]
+    [Tooltip(@"The panels of the GUI that this manager should consider hiding when a pop up shows. 
+        Use GuiShowModeControlButton.exceptions to exclude a panel listed here from consideration.")]
     [SerializeField]
-    private UIPanel[] fixedGuiPanelsToHide;
+    private UIPanel[] _panelsToConsiderHiding;
 
 #pragma warning restore 0649
 
+    /// <summary>
+    /// The showing state of each panel when it is about to be told to hide, keyed by the panel.
+    /// <c>True</c> indicates the panel was showing, <c>false</c> indicates the panel was not 
+    /// showing (it was already hidden) when it was about to be told to hide.
+    /// <remarks>This state determines whether the panel will be told to show when this manager
+    /// is told to show the previously showing panels.</remarks>
+    /// </summary>
+    private IDictionary<UIPanel, bool> _hiddenPanelLookup;
     private IDictionary<GuiElementID, GameObject> _buttonLookup;
-    private List<UIPanel> _hiddenPanels;
     private List<UIWidget> _allGuiWidgets;
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        _hiddenPanels = new List<UIPanel>();
-        if (GameManager.Instance.CurrentSceneID == SceneID.GameScene && fixedGuiPanelsToHide.IsNullOrEmpty()) {
-            D.WarnContext(gameObject, "{0}.fixedGuiPanelsToHide is empty.", GetType().Name);
+        _hiddenPanelLookup = new Dictionary<UIPanel, bool>();
+        if (GameManager.Instance.CurrentSceneID == SceneID.GameScene && _panelsToConsiderHiding.IsNullOrEmpty()) {
+            D.WarnContext(gameObject, "{0}.panelsToConsiderHiding is empty.", DebugName);
         }
-        CheckDebugSettings();
+        __CheckDebugSettings();
         InitializeButtonClickSystem();
         Subscribe();
     }
@@ -84,10 +91,10 @@ public class GuiManager : AMonoSingleton<GuiManager> {
         HandleScreenResized();
     }
 
+    #endregion
+
     private void HandleScreenResized() {
-        if (_allGuiWidgets == null) {
-            _allGuiWidgets = new List<UIWidget>(200);
-        }
+        _allGuiWidgets = _allGuiWidgets ?? new List<UIWidget>(200);
         _allGuiWidgets.Clear();
         _allGuiWidgets.AddRange(gameObject.GetSafeComponentsInChildren<UIWidget>(includeInactive: true));
         foreach (var w in _allGuiWidgets) {
@@ -98,8 +105,6 @@ public class GuiManager : AMonoSingleton<GuiManager> {
         D.LogBold("{0}: Screen has resized. {1} WidgetAnchors have been updated.", GetType().Name, _allGuiWidgets.Count);
     }
 
-    #endregion
-
     /// <summary>
     /// Calls "OnClick" on the gameObject associated with this buttonID.
     /// </summary>
@@ -109,24 +114,28 @@ public class GuiManager : AMonoSingleton<GuiManager> {
         GameInputHelper.Instance.Notify(buttonGo, "OnClick");
     }
 
-    public void ShowFixedPanels() {
-        _hiddenPanels.ForAll(p => p.alpha = Constants.OneF);
-        _hiddenPanels.Clear();
-    }
-
-    public void HideFixedPanels(IList<UIPanel> exceptions) {
-        D.Assert(!_hiddenPanels.Any());
-        WarnIfExceptionNotNeeded(exceptions);
-        _hiddenPanels.AddRange(fixedGuiPanelsToHide.Except(exceptions));
-        _hiddenPanels.ForAll(p => p.alpha = Constants.ZeroF);
-    }
-
-    private void WarnIfExceptionNotNeeded(IEnumerable<UIPanel> exceptions) {
-        exceptions.ForAll(e => {
-            if (!fixedGuiPanelsToHide.Contains(e)) {
-                D.Warn("{0}: UIPanel exception {1} not needed.", GetType().Name, e.name);
+    public void ShowHiddenPanels() {
+        foreach (var panel in _hiddenPanelLookup.Keys) {
+            bool restorePanelToShowing = _hiddenPanelLookup[panel];
+            if (restorePanelToShowing) {
+                panel.alpha = Constants.OneF;
             }
-        });
+        }
+        _hiddenPanelLookup.Clear();
+    }
+
+    public void HideShowingPanels(IList<UIPanel> exceptions) {
+        D.Assert(!_hiddenPanelLookup.Any());
+        __WarnIfExceptionNotNeeded(exceptions);
+        var panelsToConsiderHiding = _panelsToConsiderHiding.Except(exceptions);
+        foreach (var panel in panelsToConsiderHiding) {
+            if (panel.alpha > Constants.ZeroF && panel.alpha < Constants.OneF) {
+                D.Warn("{0}: UIPanel {1} is partially showing with alpha of {2:0.00}.", DebugName, panel.name, panel.alpha);
+            }
+            bool isPanelCurrentlyShowing = panel.alpha > Constants.ZeroF;
+            _hiddenPanelLookup.Add(panel, isPanelCurrentlyShowing);
+            panel.alpha = Constants.ZeroF;
+        }
     }
 
     protected override void Cleanup() {
@@ -143,8 +152,15 @@ public class GuiManager : AMonoSingleton<GuiManager> {
 
     #region Debug
 
-    //[System.Diagnostics.Conditional("UNITY_EDITOR")]
-    private void CheckDebugSettings() {
+    private void __WarnIfExceptionNotNeeded(IEnumerable<UIPanel> exceptions) {
+        exceptions.ForAll(e => {
+            if (!_panelsToConsiderHiding.Contains(e)) {
+                D.Warn("{0}: UIPanel exception {1} not needed.", DebugName, e.name);
+            }
+        });
+    }
+
+    private void __CheckDebugSettings() {
         if (_debugSettings.DisableGui) {
             GuiCameraControl.Instance.GuiCamera.enabled = false;
         }

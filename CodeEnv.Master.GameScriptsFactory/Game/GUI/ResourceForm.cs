@@ -66,7 +66,7 @@ public class ResourceForm : AForm {
         _imageNameLabel.text = ResourceID.GetValueName();
     }
 
-    public override void Reset() {
+    protected override void ResetForReuse_Internal() {
         _resourceID = default(ResourceID);
     }
 

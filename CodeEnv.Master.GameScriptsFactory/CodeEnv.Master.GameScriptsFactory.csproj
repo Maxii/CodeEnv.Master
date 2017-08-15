@@ -66,19 +66,24 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Graphics\AInteractableHudUnitForm.cs" />
+    <Compile Include="Game\GUI\UnitHudUserFleetForm.cs" />
+    <Compile Include="Generic\Graphics\AUnitIcon.cs" />
+    <Compile Include="Game\GUI\FleetIcon.cs" />
+    <Compile Include="Generic\Graphics\AElementIcon.cs" />
     <Compile Include="Generic\Graphics\AInfoChangeForm.cs" />
     <Compile Include="Generic\Graphics\AItemDataForm.cs" />
     <Compile Include="Generic\Graphics\AInfoDisplayForm.cs" />
-    <Compile Include="Generic\Graphics\EquipmentForm.cs" />
+    <Compile Include="Generic\Graphics\__HoveredHudEquipmentForm.cs" />
     <Compile Include="Generic\Graphics\AUnitDesignWindow.cs" />
     <Compile Include="Game\GUI\DesignScreensManager.cs" />
     <Compile Include="Game\GUI\FacilityDesignWindow.cs" />
     <Compile Include="Game\GUI\FleetCmdDesignWindow.cs" />
     <Compile Include="Generic\Graphics\AEquipmentIcon.cs" />
     <Compile Include="Game\GUI\EquipmentIcon.cs" />
-    <Compile Include="Generic\Graphics\AImageIcon.cs" />
-    <Compile Include="Generic\Graphics\AEquipmentForm.cs" />
-    <Compile Include="Generic\Graphics\AUnitDesignForm.cs" />
+    <Compile Include="Generic\Graphics\AGuiIcon.cs" />
+    <Compile Include="Generic\Graphics\AHoveredHudEquipmentForm.cs" />
+    <Compile Include="Generic\Graphics\AHoveredHudDesignForm.cs" />
     <Compile Include="Game\Gameplay\AssaultVehicle.cs" />
     <Compile Include="Generic\Framework\ALoneUnitCreator.cs" />
     <Compile Include="Game\Framework\FleetNavigator.cs" />
@@ -90,6 +95,9 @@
     <Compile Include="Game\GUI\SettlementCmdDesignWindow.cs" />
     <Compile Include="Game\GUI\StarbaseCmdDesignWindow.cs" />
     <Compile Include="Generic\_Debug\ReplaceAll.cs" />
+    <Compile Include="Game\GUI\ShipIcon.cs" />
+    <Compile Include="Generic\Graphics\MyNguiToggleButton.cs" />
+    <Compile Include="ThirdParty\MyNGPathfindingGraph.cs" />
     <Compile Include="ThirdParty\MyPlaySFX.cs" />
     <Compile Include="ThirdParty\MyCustomCursor.cs" />
     <Compile Include="ThirdParty\GamePoolManager.cs" />
@@ -127,9 +135,9 @@
     <Compile Include="Generic\Graphics\AnimateOnHover.cs" />
     <Compile Include="Generic\Graphics\ACommandTableRowForm.cs" />
     <Compile Include="Generic\Graphics\AForm.cs" />
-    <Compile Include="Generic\Graphics\ASelectedItemForm.cs" />
+    <Compile Include="Generic\Graphics\AInteractableHudtemDataForm.cs" />
     <Compile Include="Generic\Graphics\AItemReportForm.cs" />
-    <Compile Include="Game\GUI\SelectedFleetForm.cs" />
+    <Compile Include="Game\GUI\InteractableHudFleetForm.cs" />
     <Compile Include="Game\GUI\FleetTableRowForm.cs" />
     <Compile Include="Generic\Graphics\ATableWindow.cs" />
     <Compile Include="Generic\Graphics\AGuiWindow.cs" />
@@ -233,13 +241,13 @@
     <Compile Include="Game\GUI\ResourcesGuiElement.cs" />
     <Compile Include="Game\GUI\SystemsTableWindow.cs" />
     <Compile Include="Game\GUI\ResourceForm.cs" />
-    <Compile Include="Game\GUI\SelectedSettlementForm.cs" />
+    <Compile Include="Game\GUI\InteractableHudSettlementForm.cs" />
     <Compile Include="Generic\Graphics\ATableRowForm.cs" />
     <Compile Include="Game\GUI\SettlementTableRowForm.cs" />
-    <Compile Include="Game\GUI\SelectedShipForm.cs" />
-    <Compile Include="Game\GUI\SelectedStarbaseForm.cs" />
+    <Compile Include="Game\GUI\InteractableHudShipForm.cs" />
+    <Compile Include="Game\GUI\InteractableHudStarbaseForm.cs" />
     <Compile Include="Game\GUI\StarbaseTableRowForm.cs" />
-    <Compile Include="Game\GUI\SelectedSystemForm.cs" />
+    <Compile Include="Game\GUI\InteractableHudSystemForm.cs" />
     <Compile Include="Game\GUI\SystemTableRowForm.cs" />
     <Compile Include="Game\GUI\TextForm.cs" />
     <Compile Include="Generic\Graphics\GuiShowModeControlButton.cs" />
@@ -256,9 +264,9 @@
     <Compile Include="Generic\Graphics\LOSMountPlaceholder.cs" />
     <Compile Include="Generic\Graphics\LauncherMountPlaceholder.cs" />
     <Compile Include="GlobalSuppressions.cs" />
-    <Compile Include="Game\GUI\SelectedFacilityForm.cs" />
-    <Compile Include="Game\GUI\SelectedPlanetoidForm.cs" />
-    <Compile Include="Game\GUI\SelectedStarForm.cs" />
+    <Compile Include="Game\GUI\InteractableHudFacilityForm.cs" />
+    <Compile Include="Game\GUI\InteractableHudPlanetoidForm.cs" />
+    <Compile Include="Game\GUI\InteractableHudStarForm.cs" />
     <Compile Include="Game\GUI\ShipCtxControl_AI.cs" />
     <Compile Include="Game\GUI\PlanetCtxControl.cs" />
     <Compile Include="Game\Gameplay\Missile.cs" />
@@ -272,7 +280,6 @@
     <Compile Include="Game\GUI\GuiPlayerHomeDesirabilityPopupList.cs" />
     <Compile Include="Game\GUI\GuiPlayerStartLevelPopupList.cs" />
     <Compile Include="Generic\Graphics\InteractiveWorldTrackingSprite_Independent.cs" />
-    <Compile Include="ThirdParty\MyPathfindingGraph.cs" />
     <Compile Include="ThirdParty\MyPoolManager.cs" />
     <Compile Include="ThirdParty\ContextMenu\CtxHelper.cs" />
     <Compile Include="ThirdParty\ContextMenu\CtxMenu.cs" />
@@ -301,9 +308,10 @@
     <Compile Include="Generic\Framework\UniverseCreator.cs" />
     <Compile Include="Generic\Graphics\WorldTrackingSprite.cs" />
     <Compile Include="Generic\Graphics\WorldTrackingLabel.cs" />
-    <Compile Include="Game\GUI\UnitDesignImageIcon.cs" />
-    <Compile Include="Generic\Graphics\UnitDesignForm.cs" />
-    <Compile Include="Game\GUI\UniverseCenterForm.cs" />
+    <Compile Include="Game\GUI\UnitDesignIcon.cs" />
+    <Compile Include="Generic\Graphics\__HoveredHudDesignForm.cs" />
+    <Compile Include="Game\GUI\HoveredHudUCForm.cs" />
+    <Compile Include="Game\GUI\UnitHudWindow.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">

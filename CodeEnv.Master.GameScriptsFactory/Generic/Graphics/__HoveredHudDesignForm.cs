@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: UnitDesignForm.cs
+// File: __HoveredHudDesignForm.cs
 // Form used by the HoveredHudWindow to display info about a UnitDesign.   
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -25,7 +25,7 @@ using CodeEnv.Master.GameContent;
 /// <remarks>TEMP as I expect ship, facility and cmd designs to differ in what is shown.
 /// 7.12.17 Currently only shows the DesignName.</remarks>
 /// </summary>
-public class UnitDesignForm : AUnitDesignForm {
+public class __HoveredHudDesignForm : AHoveredHudDesignForm {
 
     public override FormID FormID { get { return FormID.UnitDesign; } }
 

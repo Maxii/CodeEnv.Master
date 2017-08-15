@@ -28,17 +28,7 @@ using UnityEngine;
 /// <remarks>7.5.17 Previous implementation had a static _selectedIcon which was used to communicate between
 /// EquipmentIcon and EquipmentStorageIcon, similar to the way ArenMook did it in his InventorySystem example.</remarks>
 /// </summary>
-public abstract class AEquipmentIcon : AImageIcon {
-
-    protected sealed override void Awake() {
-        base.Awake();
-        InitializeValuesAndReferences();
-    }
-
-    protected virtual void InitializeValuesAndReferences() {
-        UnityUtility.ValidateComponentPresence<UIWidget>(gameObject);
-        UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
-    }
+public abstract class AEquipmentIcon : AGuiIcon {
 
     protected override void HandleIconSizeSet() {
         base.HandleIconSizeSet();
@@ -46,10 +36,10 @@ public abstract class AEquipmentIcon : AImageIcon {
     }
 
     private void ResizeWidgetAndAnchorIcon() {
-        IntVector2 iconSize = GetIconDimensions(Size);
-        UIWidget widget = GetComponent<UIWidget>();
-        widget.SetDimensions(iconSize.x, iconSize.y);
-        AnchorTo(widget);
+        IntVector2 iconDimensions = GetIconDimensions(Size);
+        UIWidget topLevelWidget = GetComponent<UIWidget>();
+        topLevelWidget.SetDimensions(iconDimensions.x, iconDimensions.y);
+        AnchorTo(topLevelWidget);
     }
 
     /// <summary>
@@ -63,6 +53,15 @@ public abstract class AEquipmentIcon : AImageIcon {
             MyCustomCursor.Clear();
         }
     }
+
+    #region Debug
+
+    protected override void __Validate() {
+        base.__Validate();
+        UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
+    }
+
+    #endregion
 
 }
 

@@ -68,11 +68,22 @@ namespace CodeEnv.Master.GameContent {
             Source = source;
             Target = target;
             OrderID = Guid.NewGuid();
+            __Validate();
         }
 
         public override string ToString() {
             return DebugName;
         }
+
+        #region Debug
+
+        private void __Validate() {
+            if (Directive == FleetDirective.Cancel) {
+                D.AssertEqual(OrderSource.User, Source);
+            }
+        }
+
+        #endregion
 
     }
 }

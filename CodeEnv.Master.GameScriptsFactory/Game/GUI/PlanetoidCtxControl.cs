@@ -30,7 +30,7 @@ using UnityEngine;
 public class PlanetoidCtxControl : ACtxControl {
 
     // No Explore available as Fleets only explore Systems, Sectors and UniverseCenter
-    protected static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] { FleetDirective.FullSpeedMove,
+    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] { FleetDirective.FullSpeedMove,
                                                                                         FleetDirective.Move };
     // 3.27.17 TEMP removed until planetoids become IUnitAttackable again           //FleetDirective.Attack };
 
@@ -41,6 +41,10 @@ public class PlanetoidCtxControl : ACtxControl {
     protected sealed override Vector3 PositionForDistanceMeasurements { get { return _planetoidMenuOperator.Position; } }
 
     protected sealed override string OperatorName { get { return _planetoidMenuOperator != null ? _planetoidMenuOperator.DebugName : "NotYetAssigned"; } }
+
+    protected override bool IsItemMenuOperatorTheCameraFocus { get { return _planetoidMenuOperator.IsFocus; } }
+
+    protected override bool SelectedItemMenuHasContent { get { return true; } } // TEMP allows 'die'
 
     protected APlanetoidItem _planetoidMenuOperator;
 

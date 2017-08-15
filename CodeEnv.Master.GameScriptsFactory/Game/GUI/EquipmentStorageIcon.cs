@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -26,29 +27,22 @@ using UnityEngine;
 public class EquipmentStorageIcon : AEquipmentIcon {
 
     /// <summary>
-    /// Empty 'icon slot' image that is always enabled. When the slot is filled, this background shows through as a 'highlight'.
+    /// Empty 'icon slot' sprite that is always enabled. When the slot is filled, this background sprite shows through as a 'highlight'.
     /// </summary>
-    public UISprite background;
+    public UISprite emptySlotSprite;
 
-    public UILabel backgroundSlotCategoryLabel;
+    public UILabel emptySlotCategoryLabel;
 
     private DesignEquipmentStorage _storage;
-
     private EquipmentSlotID _slotID;
-
-    protected override void InitializeValuesAndReferences() {
-        base.InitializeValuesAndReferences();
-        D.AssertNotNull(background);
-        D.Assert(background.enabled);
-        // no need to hide icon as not yet instantiated via Initialize
-    }
 
     public void Initialize(DesignEquipmentStorage storage, EquipmentSlotID slotID, AEquipmentStat stat) {
         _storage = storage;
         _slotID = slotID;
 
+        D.AssertNotDefault((int)Size);
         D.AssertEqual(_storage.GetEquipmentStat(slotID), stat);
-        backgroundSlotCategoryLabel.text = slotID.Category.GetEnumAttributeText();
+        emptySlotCategoryLabel.text = slotID.Category.GetEnumAttributeText();
         if (stat != null) {
             Show(stat.ImageAtlasID, stat.ImageFilename, stat.Name);
         }
@@ -77,6 +71,8 @@ public class EquipmentStorageIcon : AEquipmentIcon {
         }
         return true;
     }
+
+    protected override void AcquireAdditionalIconWidgets(GameObject topLevelIconGo) { }
 
     private void RemoveAnyStatPresent() {
         AEquipmentStat replacedStat;
@@ -142,13 +138,13 @@ public class EquipmentStorageIcon : AEquipmentIcon {
 
     protected override void HandleIconSizeSet() {
         base.HandleIconSizeSet();
-        ResizeAndAnchorBackground();
+        ResizeAndAnchorEmptySlotBackgroundSprite();
     }
 
-    private void ResizeAndAnchorBackground() {
-        IntVector2 iconSize = GetIconDimensions(Size);
-        background.SetDimensions(iconSize.x, iconSize.y);
-        background.SetAnchor(gameObject);
+    private void ResizeAndAnchorEmptySlotBackgroundSprite() {
+        IntVector2 iconDimensions = GetIconDimensions(Size);
+        emptySlotSprite.SetDimensions(iconDimensions.x, iconDimensions.y);
+        emptySlotSprite.SetAnchor(gameObject);
     }
 
     private void HandleStatReplacedWith(AEquipmentStat replacementStat) {
@@ -160,7 +156,24 @@ public class EquipmentStorageIcon : AEquipmentIcon {
         }
     }
 
+    public override void ResetForReuse() {
+        base.ResetForReuse();
+        _storage = null;
+        _slotID = default(EquipmentSlotID);
+    }
+
     protected override void Cleanup() { }
+
+    #region Debug
+
+    protected override void __Validate() {
+        base.__Validate();
+        D.AssertNotNull(emptySlotSprite);
+        D.Assert(emptySlotSprite.enabled);
+        D.AssertNotNull(emptySlotCategoryLabel);
+    }
+
+    #endregion
 
 }
 

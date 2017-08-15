@@ -19,6 +19,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -40,7 +41,7 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
     /// </summary>
     /// <param name="keys">The keys.</param>
     /// <returns></returns>
-    public bool IsCurrentKeyAnyOf(IList<KeyCode> keys) {
+    public bool IsCurrentKeyAnyOf(IEnumerable<KeyCode> keys) {
         return keys.Contains(UICamera.currentKey);
     }
 
@@ -50,7 +51,7 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
     /// </summary>
     /// <param name="buttons">The buttons.</param>
     /// <returns></returns>
-    public bool IsCurrentMouseButtonAnyOf(IList<NguiMouseButton> buttons) {
+    public bool IsCurrentMouseButtonAnyOf(IEnumerable<NguiMouseButton> buttons) {
         return buttons.Contains(GetCurrentMouseButton(warn: false));
     }
 
@@ -136,6 +137,8 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
         return -((int)unityMouseButton + 1);
     }
 
+    public bool IsOverUI { get { return UICamera.isOverUI; } }
+
     /// <summary>
     /// Detects whether any mouse button is being held down across multiple frames.
     /// </summary>
@@ -181,12 +184,27 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
         return value != 0F; // No floating point equality issues as value is smoothed by Unity
     }
 
+    /// <summary>
+    /// Returns <c>true</c> if this key is being held down, <c>false</c> otherwise.
+    /// </summary>
+    /// <param name="key">The key.</param>
+    /// <returns></returns>
     public bool IsKeyHeldDown(KeyCode key) { return Input.GetKey(key); }
 
     /// <summary>
-    /// Determines whether any of the specified keys are being held down.
+    /// Returns <c>true</c> if any of the specified keys are being held down, <c>false</c> otherwise.
     /// </summary>
-    /// <param name="keyHeldDown">The key held down.</param>
+    /// <param name="keys">The keys.</param>
+    /// <returns></returns>
+    public bool IsAnyKeyHeldDown(params KeyCode[] keys) {
+        KeyCode unused;
+        return TryIsKeyHeldDown(out unused, keys);
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if any of the specified keys are being held down, <c>false</c> otherwise.
+    /// </summary>
+    /// <param name="keyHeldDown">The resulting key held down.</param>
     /// <param name="keys">The keys.</param>
     /// <returns></returns>
     public bool TryIsKeyHeldDown(out KeyCode keyHeldDown, params KeyCode[] keys) {
@@ -201,11 +219,21 @@ public class GameInputHelper : AGenericSingleton<GameInputHelper>, IGameInputHel
     }
 
     /// <summary>
-    /// Determines whether this key has been pressed down during this frame.
+    /// Returns <c>true</c> if this key has been pressed down during this frame, <c>false</c> otherwise.
     /// </summary>
     /// <param name="key">The key.</param>
     /// <returns></returns>
     public bool IsKeyDown(KeyCode key) { return Input.GetKeyDown(key); }
+
+    /// <summary>
+    /// Returns <c>true</c> if any of these keys have been pressed down during this frame, <c>false</c> otherwise.
+    /// </summary>
+    /// <param name="keys">The keys.</param>
+    /// <returns></returns>
+    public bool IsAnyKeyDown(params KeyCode[] keys) {
+        KeyCode unused;
+        return TryIsKeyDown(out unused, keys);
+    }
 
     /// <summary>
     /// Determines whether any of the specified keys were pressed down this frame.

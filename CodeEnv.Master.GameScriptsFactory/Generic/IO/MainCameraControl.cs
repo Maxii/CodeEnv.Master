@@ -611,7 +611,6 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
     private void CurrentFocusPropChangingHandler(ICameraFocusable newFocus) {
         if (CurrentFocus != null) {
             CurrentFocus.IsFocus = false;
-            //CurrentFocus.OptimalCameraViewingDistance = _optimalDistanceFromTarget;
         }
     }
 

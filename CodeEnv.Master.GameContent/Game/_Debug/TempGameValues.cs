@@ -127,8 +127,23 @@ namespace CodeEnv.Master.GameContent {
                                                                                 FacilityHullCategory.Defense,
                                                                                 FacilityHullCategory.Economic,
                                                                                 FacilityHullCategory.Factory,
-                                                                                FacilityHullCategory.Laboratory,
+                                                                                FacilityHullCategory.Laboratory
                                                                             };
+
+        public static Formation[] AcceptableFleetFormations =   {
+                                                                    Formation.Diamond,
+                                                                    Formation.Globe,
+                                                                    Formation.Plane,
+                                                                    Formation.Spread,
+                                                                    Formation.Wedge
+                                                                };
+
+        public static Formation[] AcceptableBaseFormations =    {
+                                                                    Formation.Diamond,
+                                                                    Formation.Globe,
+                                                                    Formation.Plane,
+                                                                    Formation.Spread
+                                                                };
 
         public const string LoneFleetCmdDesignName = "LoneFleetCmdDesign";
 

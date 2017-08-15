@@ -152,7 +152,7 @@ public class HealthGuiElement : AProgressBarGuiElement, IComparable<HealthGuiEle
         }
     }
 
-    public override void Reset() {
+    public override void ResetForReuse() {
         _isCurrentHitPtsSet = false;
         _isHealthSet = false;
         _isMaxHitPtsSet = false;

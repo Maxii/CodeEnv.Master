@@ -25,16 +25,18 @@ using UnityEngine;
 
 /// <summary>
 /// Context Menu Control for <see cref="SystemItem"/>s owned by the AI.
+/// <remarks>OPTIMIZE 8.7.17 these AI-owned Items aren't selectable.</remarks>
 /// </summary>
 public class SystemCtxControl_AI : ACtxControl {
 
-    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] { FleetDirective.Attack,
-                                                                                        FleetDirective.FullSpeedMove,
-                                                                                        FleetDirective.Move,
-                                                                                        FleetDirective.Guard,
-                                                                                        FleetDirective.Explore,
-                                                                                        FleetDirective.Patrol
-                                                                                      };
+    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[]   {
+                                                                                            FleetDirective.Attack,
+                                                                                            FleetDirective.FullSpeedMove,
+                                                                                            FleetDirective.Move,
+                                                                                            FleetDirective.Guard,
+                                                                                            FleetDirective.Explore,
+                                                                                            FleetDirective.Patrol
+                                                                                        };
 
     protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
         get { return _userRemoteFleetDirectives; }
@@ -43,6 +45,8 @@ public class SystemCtxControl_AI : ACtxControl {
     protected override Vector3 PositionForDistanceMeasurements { get { return _settlement.Position; } }
 
     protected override string OperatorName { get { return _systemMenuOperator != null ? _systemMenuOperator.DebugName : "NotYetAssigned"; } }
+
+    protected override bool IsItemMenuOperatorTheCameraFocus { get { return _systemMenuOperator.IsFocus; } }
 
     private SystemItem _systemMenuOperator;
     private SettlementCmdItem _settlement;

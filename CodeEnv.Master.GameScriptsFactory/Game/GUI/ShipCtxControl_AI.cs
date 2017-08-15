@@ -22,12 +22,15 @@ using UnityEngine;
 
 /// <summary>
 /// Context Menu Control for <see cref="ShipItem"/>s owned by the AI.
+/// <remarks>OPTIMIZE 8.7.17 these AI-owned Items aren't selectable.</remarks>
 /// </summary>
 public class ShipCtxControl_AI : ACtxControl {
 
     protected override Vector3 PositionForDistanceMeasurements { get { return _shipMenuOperator.Position; } }
 
     protected override string OperatorName { get { return _shipMenuOperator != null ? _shipMenuOperator.DebugName : "NotYetAssigned"; } }
+
+    protected override bool IsItemMenuOperatorTheCameraFocus { get { return _shipMenuOperator.IsFocus; } }
 
     private ShipItem _shipMenuOperator;
 

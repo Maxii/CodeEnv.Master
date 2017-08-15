@@ -103,7 +103,7 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
         _tooltipContent = TooltipFormat.Inject(baseText, distanceText);
     }
 
-    public override void Reset() {
+    public override void ResetForReuse() {
         _isPositionSet = false;
         _sectorID = default(IntVector3);
     }

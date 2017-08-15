@@ -212,6 +212,23 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
+        /// Returns all known Items that implement IGuardable.
+        /// <remarks>The items returned may or may not allow the client owner to guard them.</remarks>
+        /// </summary>
+        public IEnumerable<IGuardable> KnownGuardableItems {
+            get { return _items.Where(item => (item is IGuardable)).Cast<IGuardable>(); }
+        }
+
+        /// <summary>
+        /// Returns all known Items that implement IPatrollable.
+        /// <remarks>The items returned may or may not allow the client owner to patrol them.</remarks>
+        /// </summary>
+        public IEnumerable<IPatrollable> KnownPatrollableItems {
+            get { return _items.Where(item => (item is IPatrollable)).Cast<IPatrollable>(); }
+        }
+
+
+        /// <summary>
         /// The Moons this player has knowledge of.
         /// </summary>
         public IEnumerable<IMoon_Ltd> Moons { get { return _planetoids.Where(p => p is IMoon_Ltd).Cast<IMoon_Ltd>(); } }

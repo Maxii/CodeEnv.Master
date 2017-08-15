@@ -29,7 +29,9 @@ using UnityEngine;
 /// </summary>
 public class GraphicsOptionMenuAcceptButton : AGuiMenuAcceptButton {
 
-    protected override IList<KeyCode> ValidKeys { get { return new List<KeyCode>() { KeyCode.Return }; } }
+    private static IEnumerable<KeyCode> _validKeys = new KeyCode[] { KeyCode.Return };
+
+    protected override IEnumerable<KeyCode> ValidKeys { get { return _validKeys; } }
 
     protected override string TooltipContent { get { return "Click to implement Option changes."; } }
 
@@ -60,8 +62,6 @@ public class GraphicsOptionMenuAcceptButton : AGuiMenuAcceptButton {
         }
     }
 
-    #region Event and Property Change Handlers
-
     protected override void HandleValidClick() {
         base.HandleValidClick();
         GraphicsOptionSettings settings = new GraphicsOptionSettings() {
@@ -71,6 +71,8 @@ public class GraphicsOptionMenuAcceptButton : AGuiMenuAcceptButton {
         };
         _playerPrefsMgr.RecordGraphicsOptions(settings);
     }
+
+    #region Event and Property Change Handlers
 
     #endregion
 

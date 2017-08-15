@@ -32,7 +32,7 @@ public abstract class ACtxControl : ICtxControl {
 
     private const string DebugNameFormat = "{0}.{1}";
 
-    private const string SetOptimalFocusDistanceItemText = "Set Optimal Focus Distance";
+    private const string OptimalFocusDistanceItemText = "Set Focus Distance";
 
     /// <summary>
     /// The format for a top-level menu item containing only the name of the directive.
@@ -75,6 +75,17 @@ public abstract class ACtxControl : ICtxControl {
     public bool IsShowing { get; private set; }
 
     protected abstract string OperatorName { get; }
+
+    /// <summary>
+    /// Returns <c>true</c> if the Item that operates this menu is the focus of the camera.
+    /// </summary>
+    protected abstract bool IsItemMenuOperatorTheCameraFocus { get; }
+
+    /// <summary>
+    /// Indicates whether the menu will be populated with any content when the SelectedItem is the menu operator.
+    /// <remarks>Helps determine whether to show the menu, as a menu without content has nothing to pick to close it.</remarks>
+    /// </summary>
+    protected virtual bool SelectedItemMenuHasContent { get { return false; } }
 
     /// <summary>
     /// The directives available for execution by a user-owned remote fleet, if any.
@@ -208,7 +219,7 @@ public abstract class ACtxControl : ICtxControl {
         //D.Log("{0} is about to subscribe to {1}'s onSelection eventDelegate. Frame: {2}. SubscriberCount: {3}. CurrentSubscribers: {4}.",
         //    DebugName, _ctxObject.name, Time.frameCount, _ctxObject.onSelection.Count, onSelectionSubscribers);
 
-        EventDelegate.Add(_ctxObject.onSelection, CtxMenuSelectionEventHandler);
+        EventDelegate.Add(_ctxObject.onSelection, CtxMenuPickEventHandler);
         //onSelectionSubscribers = _ctxObject.onSelection.Where(d => d.target != null).Select(d => d.target.name).Concatenate();
         //D.Log("{0} has just subscribed to {1}'s onSelection eventDelegate. Frame: {2}. SubscriberCount: {3}. CurrentSubscribers: {4}.",
         //    DebugName, _ctxObject.name, Time.frameCount, _ctxObject.onSelection.Count, onSelectionSubscribers);
@@ -249,13 +260,13 @@ public abstract class ACtxControl : ICtxControl {
     /// <returns></returns>
     public bool AttemptShowContextMenu() {
         bool toShow = false;
-        var selectedItem = SelectionManager.Instance.CurrentSelection;
-        if (selectedItem != null) {
+        if (SelectionManager.Instance.CurrentSelection != null) {
+            ISelectable selectedItem = SelectionManager.Instance.CurrentSelection;
             if (IsSelectedItemMenuOperator(selectedItem)) {
                 // the item that operates this context menu is selected
-                _menuOpenedMode = CtxMenuOpenedMode.MenuOperatorIsSelected;
+                _menuOpenedMode = IsItemMenuOperatorTheCameraFocus ? CtxMenuOpenedMode.MenuOperatorIsSelectedAndFocused : CtxMenuOpenedMode.MenuOperatorIsSelected;
                 _remoteUserOwnedSelectedItem = null;
-                toShow = true;
+                toShow = SelectedItemMenuHasContent || IsItemMenuOperatorTheCameraFocus;
             }
             else {
                 FleetCmdItem selectedFleet;
@@ -289,7 +300,11 @@ public abstract class ACtxControl : ICtxControl {
                 }
             }
         }
-        //D.Log("{0}.TryShowContextMenu called. Resulting AccessSource = {1}.", DebugName, _accessSource.GetValueName());
+        else if (IsItemMenuOperatorTheCameraFocus) {
+            _menuOpenedMode = CtxMenuOpenedMode.MenuOperatorIsFocus;
+            _remoteUserOwnedSelectedItem = null;
+            toShow = true;
+        }
         if (toShow) {
             _lastPressReleasePosition = UICamera.lastWorldPosition;
             Show(true);
@@ -363,11 +378,23 @@ public abstract class ACtxControl : ICtxControl {
         HandleShowCtxMenu();
     }
 
-    private void CtxMenuSelectionEventHandler() {
-        //D.Log("{0}.CtxMenuSelectionEventHandler called.", DebugName);
+    private void CtxMenuPickEventHandler() {
+        //D.Log("{0}.CtxMenuPickEventHandler called.", DebugName);
         int menuItemID = _ctxObject.selectedItem;
         switch (_menuOpenedMode) {
             case CtxMenuOpenedMode.MenuOperatorIsSelected:
+                //if (menuItemID == _optimalFocusDistanceItemID) {
+                //    HandleMenuPick_OptimalFocusDistance();
+                //}
+                //else {
+                HandleMenuPick_MenuOperatorIsSelected(menuItemID);
+                //}
+                break;
+            case CtxMenuOpenedMode.MenuOperatorIsFocus:
+                D.AssertEqual(_optimalFocusDistanceItemID, menuItemID);
+                HandleMenuPick_OptimalFocusDistance();
+                break;
+            case CtxMenuOpenedMode.MenuOperatorIsSelectedAndFocused:
                 if (menuItemID == _optimalFocusDistanceItemID) {
                     HandleMenuPick_OptimalFocusDistance();
                 }
@@ -407,6 +434,13 @@ public abstract class ACtxControl : ICtxControl {
         InputManager.Instance.InputMode = GameInputMode.PartialPopup;
         switch (_menuOpenedMode) {
             case CtxMenuOpenedMode.MenuOperatorIsSelected:
+                PopulateMenu_MenuOperatorIsSelected();
+                //AddOptimalFocusDistanceItemToMenu();
+                break;
+            case CtxMenuOpenedMode.MenuOperatorIsFocus:
+                AddOptimalFocusDistanceItemToMenu();
+                break;
+            case CtxMenuOpenedMode.MenuOperatorIsSelectedAndFocused:
                 PopulateMenu_MenuOperatorIsSelected();
                 AddOptimalFocusDistanceItemToMenu();
                 break;
@@ -456,7 +490,7 @@ public abstract class ACtxControl : ICtxControl {
     private void AddOptimalFocusDistanceItemToMenu() {
         _optimalFocusDistanceItemID = _nextAvailableItemId;
         CtxMenu.Item optimalFocusDistanceItem = new CtxMenu.Item() {
-            text = SetOptimalFocusDistanceItemText,
+            text = OptimalFocusDistanceItemText,
             id = _optimalFocusDistanceItemID
         };
         // many SelectedItems will not offer any other menuItems to select
@@ -567,7 +601,6 @@ public abstract class ACtxControl : ICtxControl {
     private void Cleanup() {
         // 4.25.17 Added Hide to fully cleanup. Cleanup called by Dispose which can be called in runtime when Item owner changes.
         // 5.5.17 Solved the need for Hide when owner changing by deferring owner changes until unpaused
-        ////Hide(); 
         Unsubscribe();
         _ctxObject.contextMenu = null;
         if (_gameMgr.IsApplicationQuiting) {
@@ -578,7 +611,7 @@ public abstract class ACtxControl : ICtxControl {
 
     private void Unsubscribe() {
         EventDelegate.Remove(_ctxObject.onShow, ShowCtxMenuEventHandler);
-        EventDelegate.Remove(_ctxObject.onSelection, CtxMenuSelectionEventHandler);
+        EventDelegate.Remove(_ctxObject.onSelection, CtxMenuPickEventHandler);
         //string onSelectionSubscribers = _ctxObject.onSelection.Where(d => d.target != null).Select(d => d.target.name).Concatenate();
         //D.Log("{0} has just unsubscribed to {1}'s onSelection eventDelegate. Frame: {2}. SubscriberCount: {3}. CurrentSubscribers: {4}.",
         //    DebugName, _ctxObject.name, Time.frameCount, _ctxObject.onSelection.Count, onSelectionSubscribers);
@@ -662,11 +695,24 @@ public abstract class ACtxControl : ICtxControl {
         None,
 
         /// <summary>
-        /// This menu has been opened while the Item that operates the menu is Selected. Can be User
-        /// or AI owned as some choices on the SelectedItem's menu are independent of owner. Best current
-        /// example is the menu choice that allows the camera's OptimalFocusDistance to be set.
+        /// This menu has been opened while the Item that operates the menu is Selected. 
+        /// <remarks>8.7.17 Besides all user-owned items, discernible AI-owned units and all planetoids are selectable.
+        /// Planetoids are currently selectable as I want a Debug ability to tell them to die.</remarks>
         /// </summary>
         MenuOperatorIsSelected,
+
+        /// <summary>
+        /// This menu has been opened while the Item that operates the menu is the CameraFocus but IS NOT Selected. 
+        /// <remarks>Does not have to be User owned as the command exposed allows the camera's OptimalFocusDistance to be set.</remarks>
+        /// </summary>
+        MenuOperatorIsFocus,
+
+        /// <summary>
+        /// This menu has been opened while the Item that operates the menu is Selected AND the CameraFocus.
+        /// <remarks>8.7.17 Besides all user-owned items, discernible AI-owned units and all planetoids are selectable.
+        /// Planetoids are currently selectable as I want a Debug ability to tell them to die.</remarks>
+        /// </summary>
+        MenuOperatorIsSelectedAndFocused,
 
         /// <summary>
         /// This menu has been opened while a user-owned Ship that doesn't operate the menu is Selected.

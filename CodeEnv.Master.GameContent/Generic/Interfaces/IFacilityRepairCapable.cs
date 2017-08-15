@@ -19,6 +19,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for Items or stations that can repair Facilities.
     /// <remarks>Bases and FormationStations.</remarks>
+    /// <remarks>Anything that can repair a facility can repair a ship.</remarks>
     /// </summary>
     public interface IFacilityRepairCapable : IShipRepairCapable {
 

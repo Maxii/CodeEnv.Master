@@ -366,7 +366,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Clears all knowledge in preparation for re-populating it for a new game using Initialize().
         /// </summary>
-        public void Reset() {
+        public void ResetForReuse() {
             Cleanup();
             ClearItemCollections();
         }

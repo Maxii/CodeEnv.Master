@@ -27,10 +27,10 @@ using UnityEngine;
 /// </summary>
 public class FacilityCtxControl_User : ACtxControl_User<FacilityDirective> {
 
-    private static FacilityDirective[] _userMenuOperatorDirectives = new FacilityDirective[] {
-                                                                                                FacilityDirective.Disband,
-                                                                                                FacilityDirective.Scuttle,
-    };
+    private static FacilityDirective[] _userMenuOperatorDirectives = new FacilityDirective[]    {
+                                                                                                    FacilityDirective.Disband,
+                                                                                                    FacilityDirective.Scuttle,
+                                                                                                };
 
     protected override IEnumerable<FacilityDirective> UserMenuOperatorDirectives {
         get { return _userMenuOperatorDirectives; }
@@ -39,6 +39,8 @@ public class FacilityCtxControl_User : ACtxControl_User<FacilityDirective> {
     protected override Vector3 PositionForDistanceMeasurements { get { return _facilityMenuOperator.Position; } }
 
     protected override string OperatorName { get { return _facilityMenuOperator != null ? _facilityMenuOperator.DebugName : "NotYetAssigned"; } }
+
+    protected override bool IsItemMenuOperatorTheCameraFocus { get { return _facilityMenuOperator.IsFocus; } }
 
     private FacilityItem _facilityMenuOperator;
 

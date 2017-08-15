@@ -63,7 +63,6 @@ public abstract class AGuiWindow : AMonoBase {
         private set { SetProperty<bool>(ref _isShowing, value, "IsShowing"); }
     }
 
-
     private string _debugName;
     public string DebugName {
         get {
@@ -107,6 +106,7 @@ public abstract class AGuiWindow : AMonoBase {
     /// <remarks> This is because derived class AHudWindow is a singleton, using InitializeOnAwake(), not Awake().</remarks>
     protected virtual void InitializeOnAwake() {
         InitializeValuesAndReferences();
+        Subscribe();
     }
 
     protected virtual void InitializeValuesAndReferences() {
@@ -118,6 +118,10 @@ public abstract class AGuiWindow : AMonoBase {
         if (_optimizeWidgetsAreStatic) {
             _panel.widgetsAreStatic = true; // OPTIMIZE see http://www.tasharen.com/forum/index.php?board=1.0
         }
+    }
+
+    protected virtual void Subscribe() {
+        EventDelegate.Add(onHideComplete, HideCompleteEventHandler);
     }
 
     protected sealed override void Start() {
@@ -142,6 +146,14 @@ public abstract class AGuiWindow : AMonoBase {
             IsShowing = true;
         }
     }
+
+    #region Event and Property Change Handlers
+
+    private void HideCompleteEventHandler() {
+        ResetForReuse();
+    }
+
+    #endregion
 
     /// <summary>
     /// Show the window.
@@ -348,10 +360,17 @@ public abstract class AGuiWindow : AMonoBase {
         ContentHolder.gameObject.SetActive(true);
     }
 
+    protected abstract void ResetForReuse();
+
+    protected virtual void Unsubscribe() {
+        EventDelegate.Remove(onHideComplete, HideCompleteEventHandler);
+    }
+
     protected override void Cleanup() {
         // 12.8.16 Job Disposal centralized in JobManager
         KillFadeInJob();
         KillFadeOutJob();
+        Unsubscribe();
     }
 
     public sealed override string ToString() {

@@ -29,17 +29,14 @@ public class MenuCancelButton : AGuiButton {
     protected override string TooltipContent { get { return "Click to cancel changes."; } }
 
     protected AGuiWindow _window;
+
     private UIToggle[] _checkboxes;
     private bool[] _checkboxesStateOnShow;
     private UIPopupList[] _popupLists;
     private string[] _popupListsSelectionOnShow;
 
-    protected override void Awake() {
-        base.Awake();
-        InitializeValuesAndReferences();
-    }
-
-    protected virtual void InitializeValuesAndReferences() {
+    protected override void InitializeValuesAndReferences() {
+        base.InitializeValuesAndReferences();
         _window = gameObject.GetSingleComponentInParents<AGuiWindow>();
 
         _checkboxes = _window.gameObject.GetComponentsInChildren<UIToggle>(includeInactive: true);
@@ -55,14 +52,14 @@ public class MenuCancelButton : AGuiButton {
         EventDelegate.Add(_window.onShowBegin, WindowShowBeginEventHandler);
     }
 
+    protected sealed override void HandleValidClick() {
+        RestoreMenuState();
+    }
+
     #region Event and Property Change Handlers
 
     protected void WindowShowBeginEventHandler() {
         CaptureMenuState();
-    }
-
-    protected sealed override void HandleValidClick() {
-        RestoreMenuState();
     }
 
     #endregion

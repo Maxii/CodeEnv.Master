@@ -149,8 +149,8 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         _orbitalPlaneCollider.enabled = true;
     }
 
-    protected override ItemHudManager InitializeHudManager() {
-        return new ItemHudManager(Publisher);
+    protected override ItemHoveredHudManager InitializeHudManager() {
+        return new ItemHoveredHudManager(Publisher);
     }
 
     protected override ICtxControl InitializeContextMenu(Player owner) {
@@ -299,8 +299,8 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         }
     }
 
-    protected override void ShowSelectedItemInHud() {
-        InteractableHudWindow.Instance.Show(FormID.SelectedSystem, Data);
+    protected override void ShowSelectedItemHud() {
+        InteractableHudWindow.Instance.Show(FormID.UserSystem, Data);
     }
 
     protected override void HandleNameChanged() {

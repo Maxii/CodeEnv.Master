@@ -58,7 +58,7 @@ namespace CodeEnv.Master.GameContent {
         /// <remarks>Repositioning is accomplished by calling Cmd.PositionElementInFormation().</remarks>
         /// </summary>
         /// <param name="allElements">All elements.</param>
-        public void RepositionAllElementsInFormation(IList<IUnitElement> allElements) {
+        public void RepositionAllElementsInFormation(IEnumerable<IUnitElement> allElements) {
             Formation formation = _unitCmd.UnitFormation;
             if (formation != _currentFormation) {
                 _occupiedStationSlotLookup.Clear();

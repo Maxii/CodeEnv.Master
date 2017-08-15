@@ -41,10 +41,10 @@ namespace CodeEnv.Master.GameContent {
 
         protected abstract AtlasID AtlasID { get; }
 
-        private IDictionary<IconSection, IDictionary<GameColor, IDictionary<IEnumerable<IconSelectionCriteria>, IconInfo>>> _infoCache;
+        private IDictionary<IconSection, IDictionary<GameColor, IDictionary<IEnumerable<IconSelectionCriteria>, TrackingIconInfo>>> _infoCache;
 
         protected override void Initialize() {
-            _infoCache = new Dictionary<IconSection, IDictionary<GameColor, IDictionary<IEnumerable<IconSelectionCriteria>, IconInfo>>>(IconSectionEqualityComparer.Default);
+            _infoCache = new Dictionary<IconSection, IDictionary<GameColor, IDictionary<IEnumerable<IconSelectionCriteria>, TrackingIconInfo>>>(IconSectionEqualityComparer.Default);
             // WARNING: Do not use Instance or _instance in here as this is still part of Constructor
         }
 
@@ -54,7 +54,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="userRqstdCmdReport">The Command Report that was requested by the user.</param>
         /// <returns></returns>
-        public IconInfo MakeInstance(ReportType userRqstdCmdReport) {
+        public TrackingIconInfo MakeInstance(ReportType userRqstdCmdReport) {
             D.AssertEqual(GameReferences.GameManager.UserPlayer, userRqstdCmdReport.Player);
             IconSection section = GetIconSection();
             IconSelectionCriteria[] criteria = GetSelectionCriteria(userRqstdCmdReport);
@@ -75,8 +75,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="color">The color.</param>
         /// <param name="criteria">The criteria.</param>
         /// <returns></returns>
-        private IconInfo GetInstance(IconSection section, GameColor color, params IconSelectionCriteria[] criteria) {
-            IconInfo info;
+        private TrackingIconInfo GetInstance(IconSection section, GameColor color, params IconSelectionCriteria[] criteria) {
+            TrackingIconInfo info;
             if (!TryCheckCache(section, color, out info, criteria)) {
                 info = MakeInstance(section, color, criteria);
                 RecordToCache(info, section, color, criteria);
@@ -84,17 +84,17 @@ namespace CodeEnv.Master.GameContent {
             return info;
         }
 
-        private IconInfo MakeInstance(IconSection section, GameColor color, params IconSelectionCriteria[] criteria) {
+        private TrackingIconInfo MakeInstance(IconSection section, GameColor color, params IconSelectionCriteria[] criteria) {
             string filename = AcquireFilename(section, criteria);
-            return new IconInfo(filename, AtlasID, color, Size, Placement, Layer);
+            return new TrackingIconInfo(filename, AtlasID, color, Size, Placement, Layer);
         }
 
         protected abstract string AcquireFilename(IconSection section, params IconSelectionCriteria[] criteria);
 
-        private bool TryCheckCache(IconSection section, GameColor color, out IconInfo info, params IconSelectionCriteria[] criteria) {
-            IDictionary<GameColor, IDictionary<IEnumerable<IconSelectionCriteria>, IconInfo>> colorCache;
+        private bool TryCheckCache(IconSection section, GameColor color, out TrackingIconInfo info, params IconSelectionCriteria[] criteria) {
+            IDictionary<GameColor, IDictionary<IEnumerable<IconSelectionCriteria>, TrackingIconInfo>> colorCache;
             if (_infoCache.TryGetValue(section, out colorCache)) {
-                IDictionary<IEnumerable<IconSelectionCriteria>, IconInfo> criteriaCache;
+                IDictionary<IEnumerable<IconSelectionCriteria>, TrackingIconInfo> criteriaCache;
                 if (colorCache.TryGetValue(color, out criteriaCache)) {
                     if (criteriaCache.TryGetValue(criteria, out info)) {
                         //D.LogBold("{0}: {1} has been reused from cache. SectionKey: {2}, ColorKey: {3}, CriteriaSequenceKey {4}.",
@@ -103,7 +103,7 @@ namespace CodeEnv.Master.GameContent {
                     }
                 }
             }
-            info = default(IconInfo);
+            info = default(TrackingIconInfo);
             return false;
         }
 
@@ -134,14 +134,14 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        private void RecordToCache(IconInfo info, IconSection section, GameColor color, params IconSelectionCriteria[] criteria) {
+        private void RecordToCache(TrackingIconInfo info, IconSection section, GameColor color, params IconSelectionCriteria[] criteria) {
             if (!_infoCache.ContainsKey(section)) {
-                _infoCache.Add(section, new Dictionary<GameColor, IDictionary<IEnumerable<IconSelectionCriteria>, IconInfo>>(GameColorEqualityComparer.Default));
+                _infoCache.Add(section, new Dictionary<GameColor, IDictionary<IEnumerable<IconSelectionCriteria>, TrackingIconInfo>>(GameColorEqualityComparer.Default));
             }
 
             var colorCache = _infoCache[section];
             if (!colorCache.ContainsKey(color)) {
-                colorCache.Add(color, new Dictionary<IEnumerable<IconSelectionCriteria>, IconInfo>(IconSelectionCriteriaSequenceEqualityComparer.Default));
+                colorCache.Add(color, new Dictionary<IEnumerable<IconSelectionCriteria>, TrackingIconInfo>(IconSelectionCriteriaSequenceEqualityComparer.Default));
             }
 
             var criteriaCache = colorCache[color];

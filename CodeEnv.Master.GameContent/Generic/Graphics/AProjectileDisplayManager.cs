@@ -40,7 +40,7 @@ namespace CodeEnv.Master.GameContent {
             ICameraLosChangedListener listener;
             if (_operatingEffect == null) {
                 // no particle operating effect will be used so make a projectile icon to show
-                IconInfo projectileIconInfo = MakeIconInfo();
+                TrackingIconInfo projectileIconInfo = MakeIconInfo();
                 _icon = GameReferences.TrackingWidgetFactory.MakeWorldTrackingSprite_Independent(_trackedProjectile, projectileIconInfo);
                 (_icon as IWorldTrackingSprite_Independent).DrawDepth = 7;  // HACK
                 listener = _icon.CameraLosChangedListener;
@@ -80,7 +80,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        protected abstract IconInfo MakeIconInfo();
+        protected abstract TrackingIconInfo MakeIconInfo();
 
     }
 }

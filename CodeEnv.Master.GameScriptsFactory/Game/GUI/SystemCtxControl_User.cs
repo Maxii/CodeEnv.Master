@@ -63,6 +63,8 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
 
     protected override string OperatorName { get { return _systemMenuOperator != null ? _systemMenuOperator.DebugName : "NotYetAssigned"; } }
 
+    protected override bool IsItemMenuOperatorTheCameraFocus { get { return _systemMenuOperator.IsFocus; } }
+
     private SystemItem _systemMenuOperator;
     private SettlementCmdItem _settlement;
 

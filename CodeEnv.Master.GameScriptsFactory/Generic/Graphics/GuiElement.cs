@@ -35,7 +35,7 @@ public sealed class GuiElement : AGuiElement {
 
     public override GuiElementID ElementID { get { return _elementID; } }
 
-    public override void Reset() { }
+    public override void ResetForReuse() { }
 
     protected override void Cleanup() { }
 

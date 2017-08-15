@@ -657,6 +657,98 @@ namespace CodeEnv.Master.GameContent {
 
         // TODO The following have not yet externalized to XML
 
+        #region Unit Directive
+
+        [Obsolete("Icons on Order Directive Buttons currently manually assigned")]
+        public static AtlasID __GetAtlasID(this FleetDirective directive) {
+            switch (directive) {
+                case FleetDirective.Patrol:
+                case FleetDirective.Guard:
+                    return AtlasID.MyGui;
+                case FleetDirective.Move:
+                case FleetDirective.FullSpeedMove:
+                case FleetDirective.Explore:
+                case FleetDirective.Attack:
+                case FleetDirective.Refit:
+                case FleetDirective.Repair:
+                case FleetDirective.Disband:
+                case FleetDirective.AssumeFormation:
+                case FleetDirective.Regroup:
+                case FleetDirective.Join:
+                case FleetDirective.Withdraw:
+                case FleetDirective.Retreat:
+                case FleetDirective.Scuttle:
+                case FleetDirective.ChangeHQ:
+                case FleetDirective.Cancel:
+                case FleetDirective.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
+            }
+        }
+
+        [Obsolete("Icons on Order Directive Buttons currently manually assigned")]
+        public static string __GetFilename(this FleetDirective directive) {
+            switch (directive) {
+                case FleetDirective.Patrol:
+                case FleetDirective.Guard:
+                    return TempGameValues.AnImageFilename;
+                case FleetDirective.Move:
+                case FleetDirective.FullSpeedMove:
+                case FleetDirective.Explore:
+                case FleetDirective.Attack:
+                case FleetDirective.Refit:
+                case FleetDirective.Repair:
+                case FleetDirective.Disband:
+                case FleetDirective.AssumeFormation:
+                case FleetDirective.Regroup:
+                case FleetDirective.Join:
+                case FleetDirective.Withdraw:
+                case FleetDirective.Retreat:
+                case FleetDirective.Scuttle:
+                case FleetDirective.ChangeHQ:
+                case FleetDirective.Cancel:
+                case FleetDirective.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
+            }
+        }
+
+        [Obsolete("Icons on Order Directive Buttons currently manually assigned")]
+        public static AtlasID __GetAtlasID(this BaseDirective directive) {
+            switch (directive) {
+                case BaseDirective.Attack:
+                case BaseDirective.Repair:
+                case BaseDirective.Refit:
+                case BaseDirective.Disband:
+                    return AtlasID.MyGui;
+                case BaseDirective.Scuttle:
+                case BaseDirective.ChangeHQ:
+                case BaseDirective.Cancel:
+                case BaseDirective.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
+            }
+        }
+
+        [Obsolete("Icons on Order Directive Buttons currently manually assigned")]
+        public static string __GetFilename(this BaseDirective directive) {
+            switch (directive) {
+                case BaseDirective.Attack:
+                case BaseDirective.Repair:
+                case BaseDirective.Refit:
+                case BaseDirective.Disband:
+                    return TempGameValues.AnImageFilename;
+                case BaseDirective.Scuttle:
+                case BaseDirective.ChangeHQ:
+                case BaseDirective.Cancel:
+                case BaseDirective.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
+            }
+        }
+
+        #endregion
+
         #region Element Hull Category
 
         #region Element Hull Category - Weapons
@@ -2133,7 +2225,7 @@ namespace CodeEnv.Master.GameContent {
         public static Formation Convert(this DebugBaseFormation debugFormation) {
             switch (debugFormation) {
                 case DebugBaseFormation.Random:
-                    return Enums<Formation>.GetRandomExcept(Formation.Wedge, default(Formation));
+                    return Enums<Formation>.GetRandomFrom(TempGameValues.AcceptableBaseFormations);
                 case DebugBaseFormation.Globe:
                     return Formation.Globe;
                 case DebugBaseFormation.Plane:
@@ -2150,7 +2242,7 @@ namespace CodeEnv.Master.GameContent {
         public static Formation Convert(this DebugFleetFormation debugFormation) {
             switch (debugFormation) {
                 case DebugFleetFormation.Random:
-                    return Enums<Formation>.GetRandom(excludeDefault: true);
+                    return Enums<Formation>.GetRandomFrom(TempGameValues.AcceptableFleetFormations);
                 case DebugFleetFormation.Globe:
                     return Formation.Globe;
                 case DebugFleetFormation.Plane:

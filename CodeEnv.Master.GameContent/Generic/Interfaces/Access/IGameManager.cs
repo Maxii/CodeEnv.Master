@@ -113,6 +113,15 @@ namespace CodeEnv.Master.GameContent {
 
         void RecordGameStateProgressionReadiness(MonoBehaviour source, GameState maxGameStateUntilReady, bool isReady);
 
+        /// <summary>
+        /// Requests a pause state change. A request to resume [!toPause] from a pause without 
+        /// overriding may not be accommodated if the current pause was set without overriding.
+        /// </summary>
+        /// <param name="toPause">if set to <c>true</c> [to pause].</param>
+        /// <param name="toOverride">if set to <c>true</c> [to override].</param>
+        void RequestPauseStateChange(bool toPause, bool toOverride = false);
+
+
     }
 }
 

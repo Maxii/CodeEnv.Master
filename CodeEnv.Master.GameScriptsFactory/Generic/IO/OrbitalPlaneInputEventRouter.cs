@@ -264,7 +264,7 @@ public class OrbitalPlaneInputEventRouter : AMonoBase {
         occludedObject = null;
         occludedSystem = null;
 
-        if (!UICamera.isOverUI) {
+        if (!_inputHelper.IsOverUI) {
             RaycastHit hit;
             Ray ray = UICamera.lastWorldRay;    // Ngui 3.11.0 introduced UICamera.lastWorldRay // Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             if (Physics.Raycast(ray, out hit, _universeDiameter, _occludedObjectDetectionMask)) {

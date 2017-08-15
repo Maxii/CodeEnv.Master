@@ -27,12 +27,14 @@ using UnityEngine.Serialization;
 /// </summary>
 public class GuiPauseStateControlButton : AGuiButton {
 
-    protected override IList<KeyCode> ValidKeys { get { return new List<KeyCode>() { KeyCode.Return }; } }
+    private static IEnumerable<KeyCode> _validKeys = new KeyCode[] { KeyCode.Return };
 
     //[FormerlySerializedAs("pauseRequestOnClick")]
     [Tooltip("The Pause/Resume action to take when clicked")]
     [SerializeField]
     private PauseRequest _pauseRequestOnClick = PauseRequest.None;
+
+    protected override IEnumerable<KeyCode> ValidKeys { get { return _validKeys; } }
 
     #region Event and Property Change Handlers
 

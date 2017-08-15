@@ -26,11 +26,20 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AVectrosityBase : APropertyChangeTracking, IDisposable {
 
+        private const string DebugNameFormat = "{0}[{1}]";
+
         public Texture texture;
 
         public bool IsShowing { get { return IsLineActive; } }
 
-        public virtual string DebugName { get { return GetType().Name; } }
+        public virtual string DebugName {
+            get {
+                if (LineName.IsNullOrEmpty()) {
+                    return GetType().Name;
+                }
+                return DebugNameFormat.Inject(GetType().Name, LineName);
+            }
+        }
 
         /*****************************************************************************************************
         * Parenting: Ability to assign a 2D Vectrosity object to a designated Parent removed as Vectrosity 4.0's

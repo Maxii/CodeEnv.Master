@@ -28,6 +28,17 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class CircleHighlightManager : AHighlightManager {
 
+        private const string DebugNameFormat = "{0}[{1}]";
+
+        public override string DebugName {
+            get {
+                if (CircleTitle.IsNullOrEmpty()) {
+                    return base.DebugName;
+                }
+                return DebugNameFormat.Inject(base.DebugName, CircleTitle);
+            }
+        }
+
         public override bool IsHighlightShowing { get { return _circles != null && _circles.IsShowing; } }
 
         public string CircleTitle { get; set; }
@@ -48,7 +59,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="circleRadius">The circle radius.</param>
         /// <param name="isCircleSizeDynamic">Performance optimization flag indicating whether the size of the 
         /// highlight on the screen should dynamically adjust as the camera distance changes or stay the same.</param>
-        public CircleHighlightManager(Transform trackedClientTransform, float circleRadius, bool isCircleSizeDynamic = true) : base(trackedClientTransform) {
+        public CircleHighlightManager(Transform trackedClientTransform, float circleRadius, bool isCircleSizeDynamic = true)
+            : base(trackedClientTransform) {
             _circleRadius = circleRadius;
             _isCircleSizeDynamic = isCircleSizeDynamic;
             CircleTitle = "{0} Circle Highlight".Inject(trackedClientTransform.name);
@@ -87,6 +99,7 @@ namespace CodeEnv.Master.GameContent {
             if (_circles == null) {
                 return;
             }
+            //D.Log("{0}.HideCircle({1}) called.", DebugName, id.GetValueName());
             _circles.Show(false, GetCircleIndex(id));
         }
 

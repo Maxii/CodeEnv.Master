@@ -27,7 +27,7 @@ using UnityEngine;
 /// Singleton. Abstract Gui Window for showing customized Forms that 'popup' at various locations on the screen. 
 /// HudWindows have the ability to envelop their background around the Form they are displaying.
 /// Each derived type instance can handle multiple Forms.
-/// 6.17.17 Current derived classes include TooltipHudWindow, the left side HoveredHudWindow and the bottom SelectedItemHudWindow.
+/// 6.17.17 Current derived classes include dynamically positioned TooltipHudWindow, HoveredHudWindow and the fixed InteractableHudWindow.
 /// </summary>
 public abstract class AHudWindow<T> : AGuiWindow where T : AHudWindow<T> {
 
@@ -93,7 +93,6 @@ public abstract class AHudWindow<T> : AGuiWindow where T : AHudWindow<T> {
         base.InitializeOnAwake();
         InitializeFormLookup();
         InitializeContentHolder();
-        Subscribe();
         DeactivateAllForms();
     }
 
@@ -105,7 +104,8 @@ public abstract class AHudWindow<T> : AGuiWindow where T : AHudWindow<T> {
     }
 
     private void InitializeFormLookup() {
-        var hudForms = gameObject.GetSafeComponentsInChildren<AForm>();
+        var hudForms = gameObject.GetSafeComponentsInChildren<AForm>(excludeSelf: true, includeInactive: true);
+        D.Log("{0} found {1} HudForm children: {2}.", DebugName, hudForms.Count(), hudForms.Select(form => form.DebugName).Concatenate());
         _formLookup = hudForms.ToDictionary(form => form.FormID, FormIDEqualityComparer.Default);
     }
 
@@ -113,15 +113,7 @@ public abstract class AHudWindow<T> : AGuiWindow where T : AHudWindow<T> {
         _contentHolder = _formLookup.Values.First().transform;
     }
 
-    protected virtual void Subscribe() {
-        EventDelegate.Add(onHideComplete, WindowHideCompleteEventHandler);
-    }
-
     #region Event and Property Change Handlers
-
-    private void WindowHideCompleteEventHandler() {
-        DeactivateAllForms();
-    }
 
     #endregion
 
@@ -130,13 +122,8 @@ public abstract class AHudWindow<T> : AGuiWindow where T : AHudWindow<T> {
     /// </summary>
     /// <param name="form">The form to activate.</param>
     private void ActivateForm(AForm form) {
-        Utility.ValidateNotNull(form);
         DeactivateAllForms();
         NGUITools.SetActive(form.gameObject, true);
-    }
-
-    private void DeactivateAllForms() {
-        _formLookup.Values.ForAll(f => NGUITools.SetActive(f.gameObject, false));
     }
 
     private void EncompassFormWithBackground(AForm form) {
@@ -151,8 +138,8 @@ public abstract class AHudWindow<T> : AGuiWindow where T : AHudWindow<T> {
     /// <returns></returns>
     protected AForm PrepareForm(FormID formID) {
         var form = _formLookup[formID];
-        form.Reset();
         ActivateForm(form);
+        form.ResetForReuse();
         _contentHolder = form.transform;
         return form;
     }
@@ -177,24 +164,19 @@ public abstract class AHudWindow<T> : AGuiWindow where T : AHudWindow<T> {
         HideWindow();
     }
 
+    protected override void ResetForReuse() {
+        _formLookup.Values.ForAll(f => f.ResetForReuse());  // IMPROVE Brute force approach
+        DeactivateAllForms();
+    }
+
+    private void DeactivateAllForms() {
+        _formLookup.Values.ForAll(f => NGUITools.SetActive(f.gameObject, false));
+    }
+
     #region Cleanup
 
     protected sealed override void OnDestroy() {
         base.OnDestroy();
-        _instance = null;
-    }
-
-    protected override void Cleanup() {
-        base.Cleanup();
-        Unsubscribe();
-    }
-
-    private void Unsubscribe() {
-        EventDelegate.Remove(onHideComplete, WindowHideCompleteEventHandler);
-    }
-
-    protected override void __CleanupOnApplicationQuit() {
-        base.__CleanupOnApplicationQuit();
         _instance = null;
     }
 

@@ -804,8 +804,8 @@ public abstract class ASensorRangeMonitor : ADetectableRangeMonitor<ISensorDetec
     /// <summary>
     /// Resets this Monitor in preparation for reuse by the same Parent.
     /// </summary>
-    public void Reset() {
-        ResetForReuse();
+    public new void ResetForReuse() {
+        base.ResetForReuse();
     }
 
     protected override void CompleteResetForReuse() {

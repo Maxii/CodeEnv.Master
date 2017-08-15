@@ -24,6 +24,12 @@ namespace CodeEnv.Master.GameContent {
         None,
 
         /// <summary>
+        /// Cancels all unit orders including CmdStaff override orders.
+        /// <remarks>8.14.17 Must be issued by OrderSource.User.</remarks>
+        /// </summary>
+        Cancel,
+
+        /// <summary>
         /// Bases can attack Fleets owned by enemies of the Base owner if they are in range. 
         /// Used primarily to focus fire on a single fleet when multiple enemy fleets are in range
         /// since Bases will always fire on enemy fleets in range but may spread that fire across multiple
@@ -63,7 +69,7 @@ namespace CodeEnv.Master.GameContent {
         ChangeHQ,
 
 
-        StopAttack
+        ////StopAttack
 
 
     }

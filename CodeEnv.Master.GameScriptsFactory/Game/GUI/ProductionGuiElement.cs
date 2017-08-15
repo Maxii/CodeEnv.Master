@@ -93,7 +93,7 @@ public class ProductionGuiElement : AGuiElement, IComparable<ProductionGuiElemen
         _tooltipContent = "Unknown";
     }
 
-    public override void Reset() {
+    public override void ResetForReuse() {
         // UNDONE
         __isProductionSet = false;
     }

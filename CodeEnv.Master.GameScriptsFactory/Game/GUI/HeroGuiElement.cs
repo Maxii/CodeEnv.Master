@@ -92,7 +92,7 @@ public class HeroGuiElement : AImageGuiElement, IComparable<HeroGuiElement> {
         }
     }
 
-    public override void Reset() {
+    public override void ResetForReuse() {
         // UNDONE
         __isHeroNameSet = false;
     }

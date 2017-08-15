@@ -138,9 +138,9 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem, IIntelItem_Ltd,
     /// </summary>
     protected virtual void HandleUserIntelCoverageChanged() {
         AssessIsDiscernibleToUser();
-        if (IsHudShowing) {
+        if (IsHoveredHudShowing) {
             // refresh the HUD as IntelCoverage has changed
-            ShowHud(true);
+            ShowHoveredHud(true);
         }
         DisplayMgr.IsDisplayEnabled = UserIntelCoverage != IntelCoverage.None;
     }

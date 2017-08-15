@@ -32,11 +32,14 @@ public class StarCtxControl : ACtxControl {
     // Note: Stars are not IFleetExplorable, IPatrollable or IGuardable but the Star's System is. The Directives Patrol, Guard 
     // and Explore here for a remote user-owned fleet are simply a convenience for the user to execute a Directive on the System.
 
-    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] { FleetDirective.Move,
-                                                                                        FleetDirective.FullSpeedMove,
-                                                                                        FleetDirective.Patrol,
-                                                                                        FleetDirective.Guard,
-                                                                                        FleetDirective.Explore };
+    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[]   {
+                                                                                            FleetDirective.Move,
+                                                                                            FleetDirective.FullSpeedMove,
+                                                                                            FleetDirective.Patrol,
+                                                                                            FleetDirective.Guard,
+                                                                                            FleetDirective.Explore
+                                                                                        };
+
     protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
         get { return _userRemoteFleetDirectives; }
     }
@@ -44,6 +47,8 @@ public class StarCtxControl : ACtxControl {
     protected override Vector3 PositionForDistanceMeasurements { get { return _starMenuOperator.Position; } }
 
     protected override string OperatorName { get { return _starMenuOperator != null ? _starMenuOperator.DebugName : "NotYetAssigned"; } }
+
+    protected override bool IsItemMenuOperatorTheCameraFocus { get { return _starMenuOperator.IsFocus; } }
 
     private StarItem _starMenuOperator;
 

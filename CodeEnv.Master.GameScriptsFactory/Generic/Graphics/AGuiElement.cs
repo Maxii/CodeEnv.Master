@@ -38,7 +38,7 @@ public abstract class AGuiElement : ATextTooltip {
     /// <summary>
     /// Resets this GuiElement instance so it can be reused. 
     /// </summary>
-    public abstract void Reset();
+    public abstract void ResetForReuse();
 
     protected virtual void Validate() {
         // 7.5.17 Removed requirement for a UIWidget so I can use GuiElement as an identifier for GuiWindows

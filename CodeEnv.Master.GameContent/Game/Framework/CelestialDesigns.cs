@@ -79,7 +79,7 @@ namespace CodeEnv.Master.GameContent {
             return _moonDesignsLookup[designName];
         }
 
-        public void Reset() {
+        public void ResetForReuse() {
             _starDesignsLookup.Clear();
             _planetDesignsLookup.Clear();
             _moonDesignsLookup.Clear();

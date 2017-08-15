@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class PlanetDisplayManager : AIconDisplayManager, IMortalDisplayManager {
 
-        public new IWorldTrackingSprite Icon { get { return base.Icon; } }
+        public new IWorldTrackingSprite TrackingIcon { get { return base.TrackingIcon; } }
 
         protected override int IconDepth { get { return 2; } }
 

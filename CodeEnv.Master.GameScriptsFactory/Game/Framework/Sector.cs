@@ -150,7 +150,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     private IList<Player> _playersWithInfoAccessToOwner;
     private IList<IDisposable> _subscriptions;
     private IInputManager _inputMgr;
-    private ItemHudManager _hudManager;
+    private ItemHoveredHudManager _hudManager;
     private IGameManager _gameMgr;
     private DebugSettings _debugSettings;
 
@@ -189,7 +189,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     /// </summary>
     private void InitializeOnData() {
         Data.Initialize();
-        _hudManager = new ItemHudManager(Publisher);
+        _hudManager = new ItemHoveredHudManager(Publisher);
         // Note: There is no collider associated with a Sector. The collider used for HUD and context menu activation is part of the SectorExaminer
     }
 

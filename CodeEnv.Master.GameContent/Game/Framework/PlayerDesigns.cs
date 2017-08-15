@@ -482,6 +482,24 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        #region Debug
+
+        [System.Obsolete]
+        public AElementDesign __GetUserElementDesign(string designName) {
+            ShipDesign shipDesign;
+            if (TryGetShipDesign(_userPlayer, designName, out shipDesign)) {
+                return shipDesign;
+            }
+            else {
+                FacilityDesign facilityDesign;
+                bool isDesignFound = TryGetFacilityDesign(_userPlayer, designName, out facilityDesign);
+                D.Assert(isDesignFound);
+                return facilityDesign;
+            }
+        }
+
+        #endregion
+
         public override string ToString() {
             return DebugName;
         }

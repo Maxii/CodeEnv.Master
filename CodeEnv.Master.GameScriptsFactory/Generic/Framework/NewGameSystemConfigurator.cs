@@ -437,7 +437,7 @@ public class NewGameSystemConfigurator {
 
     #endregion
 
-    public void Reset() {
+    public void ResetForReuse() {
         _designNameCounter = Constants.One;
         __systemOrbitSlotDepth = Constants.ZeroF;
     }

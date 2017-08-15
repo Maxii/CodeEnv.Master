@@ -123,7 +123,7 @@ public class StrengthGuiElement : AGuiElement, IComparable<StrengthGuiElement> {
             + Constants.NewLine + strength.MissileDeliveryStrength.ToLabel();
     }
 
-    public override void Reset() {
+    public override void ResetForReuse() {
         _isStrengthSet = false;
     }
 

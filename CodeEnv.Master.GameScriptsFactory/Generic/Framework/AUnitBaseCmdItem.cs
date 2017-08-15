@@ -191,12 +191,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         return IsCurrentStateAnyOf(BaseState.ExecuteAttackOrder) && _fsmTgt == unitCmd;
     }
 
-    protected override void ResetOrderAndState() {
-        CurrentOrder = null;
-        CurrentState = BaseState.Idling;    // 4.20.17 Will unsubscribe from any FsmEvents when exiting the Current non-Call()ed state
-        // 4.20.17 Notifying elements of loss not needed as Cmd losing ownership is the result of last element losing ownership
-    }
-
     protected override void PrepareForDeadState() {
         base.PrepareForDeadState();
         UponDeath();    // 4.19.17 Do any reqd Callback before exiting current non-Call()ed state
@@ -214,12 +208,19 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     /// <param name="orderSource">The order source.</param>
     private void ScuttleUnit(OrderSource orderSource) {
         var elementScuttleOrder = new FacilityOrder(FacilityDirective.Scuttle, orderSource);
-        Elements.ForAll(e => (e as FacilityItem).InitiateNewOrder(elementScuttleOrder));
+        // Scuttle HQElement last to avoid multiple selections of new HQElement
+        Elements.Except(HQElement).ForAll(e => (e as FacilityItem).InitiateNewOrder(elementScuttleOrder));
+        (HQElement as FacilityItem).InitiateNewOrder(elementScuttleOrder);
     }
 
     protected abstract void ConnectHighOrbitRigidbodyToShipOrbitJoint(FixedJoint shipOrbitJoint);
 
     protected abstract void AttemptHighOrbitRigidbodyDeactivation();
+
+    protected override void HandleFormationChanged() {
+        base.HandleFormationChanged();
+        // UNDONE relocate facilities to new formation stations
+    }
 
     #region Event and Property Change Handlers
 
@@ -256,23 +257,31 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
             // deal with multiple changes all while paused
             _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedEventHandler;
             _gameMgr.isPausedChanged += NewOrderReceivedWhilePausedEventHandler;
-            bool willOrderExecutionImmediatelyFollowResume = order.Source == OrderSource.User || CurrentOrder == null || CurrentOrder.Source != OrderSource.CmdStaff;
+            bool willOrderExecutionImmediatelyFollowResume = IsCurrentOrderImmediatelyReplaceableBy(order);
             return willOrderExecutionImmediatelyFollowResume;
         }
 
         D.Assert(!IsPaused);
         D.AssertNull(_newOrderReceivedWhilePaused);
 
-        if (order.Source != OrderSource.User) {
-            if (CurrentOrder != null) {
-                if (CurrentOrder.Source == OrderSource.CmdStaff) {
-                    CurrentOrder.StandingOrder = order;
-                    return false;
-                }
-            }
+        if (!IsCurrentOrderImmediatelyReplaceableBy(order)) {
+            CurrentOrder.StandingOrder = order;
+            return false;
         }
         CurrentOrder = order;
         return true;
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if CurrentOrder can immediately be replaced by order, <c>false</c> otherwise.
+    /// <remarks>CurrentOrder can immediately be replaced by order if order was issued by the User, OR
+    /// CurrentOrder is null OR CurrentOrder isn't an override order issued by CmdStaff.</remarks>
+    /// <remarks>A CmdStaff-issued override order can only be immediately replaced by a User-issued order.</remarks>
+    /// </summary>
+    /// <param name="order">The order.</param>
+    /// <returns></returns>
+    private bool IsCurrentOrderImmediatelyReplaceableBy(BaseOrder order) {
+        return order.Source == OrderSource.User || CurrentOrder == null || CurrentOrder.Source != OrderSource.CmdStaff;
     }
 
     private void ChangeOrderAfterPause() {
@@ -285,11 +294,38 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         InitiateNewOrder(newOrder);
     }
 
+    /// <summary>
+    /// Returns <c>true</c> if the directive of the CurrentOrder or if paused, a pending order 
+    /// about to become the CurrentOrder matches any of the provided directive(s).
+    /// </summary>
+    /// <param name="directiveA">The directive a.</param>
+    /// <returns></returns>
     public bool IsCurrentOrderDirectiveAnyOf(BaseDirective directiveA) {
+        if (IsPaused && _newOrderReceivedWhilePaused != null) {
+            // paused with a pending order replacement
+            if (IsCurrentOrderImmediatelyReplaceableBy(_newOrderReceivedWhilePaused)) {
+                // _newOrderReceivedWhilePaused will immediately replace CurrentOrder as soon as unpaused
+                return _newOrderReceivedWhilePaused.Directive == directiveA;
+            }
+        }
         return CurrentOrder != null && CurrentOrder.Directive == directiveA;
     }
 
+    /// <summary>
+    /// Returns <c>true</c> if the directive of the CurrentOrder or if paused, a pending order 
+    /// about to become the CurrentOrder matches any of the provided directive(s).
+    /// </summary>
+    /// <param name="directiveA">The directive a.</param>
+    /// <param name="directiveB">The directive b.</param>
+    /// <returns></returns>
     public bool IsCurrentOrderDirectiveAnyOf(BaseDirective directiveA, BaseDirective directiveB) {
+        if (IsPaused && _newOrderReceivedWhilePaused != null) {
+            // paused with a pending order replacement
+            if (IsCurrentOrderImmediatelyReplaceableBy(_newOrderReceivedWhilePaused)) {
+                // _newOrderReceivedWhilePaused will immediately replace CurrentOrder as soon as unpaused
+                return _newOrderReceivedWhilePaused.Directive == directiveA || _newOrderReceivedWhilePaused.Directive == directiveB;
+            }
+        }
         return CurrentOrder != null && (CurrentOrder.Directive == directiveA || CurrentOrder.Directive == directiveB);
     }
 
@@ -348,7 +384,10 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
                 case BaseDirective.Scuttle:
                     ScuttleUnit(CurrentOrder.Source);
                     break;
-                case BaseDirective.StopAttack:
+                case BaseDirective.Cancel:
+                    ResetOrderAndState();
+                    break;
+                ////case BaseDirective.StopAttack:
                 case BaseDirective.Refit:
                 case BaseDirective.Disband:
                     D.Warn("{0}.{1} is not currently implemented.", typeof(BaseDirective).Name, directive.GetValueName());
@@ -359,6 +398,14 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
             }
         }
+    }
+
+    protected override void ResetOrderAndState() {
+        D.Assert(!IsPaused);    // 8.13.17 ResetOrderAndState doesn't account for _newOrderReceivedWhilePaused
+        CurrentOrder = null;
+        D.Assert(!IsCurrentStateCalled);
+        CurrentState = BaseState.Idling;    // 4.20.17 Will unsubscribe from any FsmEvents when exiting the Current non-Call()ed state
+        // 4.20.17 Notifying elements of loss not needed as Cmd losing ownership is the result of last element losing ownership
     }
 
     #endregion
@@ -393,6 +440,10 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     /// execution of the state Return()ed too, aka the new CurrentState.
     /// </summary>
     private void RestartState() {
+        if (IsDead) {
+            D.Warn("{0}.RestartState() called when dead.", DebugName);
+            return;
+        }
         var stateWhenCalled = CurrentState;
         ReturnFromCalledStates();
         D.LogBold(/*ShowDebugLog, */"{0}.RestartState called from {1}.{2}. RestartedState = {3}.",
@@ -1272,7 +1323,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     public override float OptimalCameraViewingDistance {
         get {
             if (_optimalCameraViewingDistance != Constants.ZeroF) {
-                // the user has set the value manually
+                // the user has set the value manually via the context menu
                 return _optimalCameraViewingDistance;
             }
             return CloseOrbitOuterRadius + CameraStat.OptimalViewingDistanceAdder;

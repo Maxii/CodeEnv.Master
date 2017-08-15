@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IWorldTrackingSprite : IWorldTrackingWidget {
 
-        IconInfo IconInfo { get; set; }
+        TrackingIconInfo IconInfo { get; set; }
 
         ICameraLosChangedListener CameraLosChangedListener { get; }
 

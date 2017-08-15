@@ -172,7 +172,7 @@ public abstract class AColliderMonitor : AMonoBase, IColliderMonitor {
 
     /// <summary>
     /// Resets this Monitor in preparation for reuse by the same Parent.
-    /// <remarks>_isResetting will be true while reseting.</remarks>
+    /// <remarks>_isResetting will be true while resetting.</remarks>
     /// </summary>
     protected void ResetForReuse() {
         _isResetting = true;

@@ -73,7 +73,7 @@ namespace CodeEnv.Master.GameContent {
             if (options.shape) {
                 var shape = particles.shape;
                 shape.radius *= scale;
-                shape.box = shape.box * scale;
+                shape.scale *= scale;   //shape.box = shape.box * scale;    Deprecated in Unity 2017.1
             }
 
             // Currently disabled due to a bug in Unity 5.3.4. 

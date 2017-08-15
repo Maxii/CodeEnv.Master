@@ -16,13 +16,10 @@
 
 // default namespace
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
-using MoreLinq;
 using UnityEngine;
 
 /// <summary>
@@ -51,6 +48,8 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
     /// The directives available for execution when the user operator of the menu is the Item selected.
     /// </summary>
     protected abstract IEnumerable<T> UserMenuOperatorDirectives { get; }
+
+    protected override bool SelectedItemMenuHasContent { get { return UserMenuOperatorDirectives.Any(); } }
 
     protected PlayerKnowledge _userKnowledge;
     private Stack<CtxMenu> _unusedSubMenus;

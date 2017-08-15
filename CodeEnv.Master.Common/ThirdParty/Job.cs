@@ -46,6 +46,20 @@ namespace CodeEnv.Master.Common {
          * on the last line of the body of the IEnumerator coroutine. This handles the scenario where the job naturally
          * completes. 2) add a KillXXXJob() method that both kills the job and immediately unsubscribes from the event. 
          * This handles the scenario where the job is killed before it naturally completes.
+         * 
+         * Note 1a: 8.14.17 Naturally completing Jobs:
+         * jobCompleted is delayed a frame if the last line of code executed is followed by a yield. 
+         * If the last line of code executed is followed by the end of the coroutine method, jobCompleted is executed
+         * atomically after that line. MoveNext() executes the code following the last yield, returning true if another
+         * yield is found, false if not, aka it found the end of the coroutine method. There is no time gap between 
+         * execution of code that finishes the method (without a yield at the end) and execution of jobCompleted.
+         * Accordingly, there is no advantage in placing code inside the coroutine method as it finishes versus placing 
+         * it in jobCompleted.
+         * 
+         * Note 1b: 8.14.17 Killed Jobs:
+         * jobCompleted can be delayed a frame after the Job is killed. If killed in a frame before the Coroutine
+         * execution phase has run for that frame, there will be no frame delay. If killed after the execution phase, 
+         * but still in the same frame, jobCompleted won't run until the next frame.
          **************************************************************************************************************/
 
         public static IJobRunner JobRunner { private get; set; }

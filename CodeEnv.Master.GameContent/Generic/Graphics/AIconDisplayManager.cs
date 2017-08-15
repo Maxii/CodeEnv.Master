@@ -27,18 +27,18 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AIconDisplayManager : ADisplayManager {
 
-        private IconInfo _iconInfo;
-        public IconInfo IconInfo {
+        private TrackingIconInfo _iconInfo;
+        public TrackingIconInfo IconInfo {
             get { return _iconInfo; }
-            set { SetProperty<IconInfo>(ref _iconInfo, value, "IconInfo", IconInfoPropChangedHandler); }
+            set { SetProperty<TrackingIconInfo>(ref _iconInfo, value, "IconInfo", IconInfoPropChangedHandler); }
         }
 
         protected override string DebugName { get { return DebugNameFormat.Inject(_trackedItem.DebugName, GetType().Name); } }
 
-        private IWorldTrackingSprite _icon;
-        protected IWorldTrackingSprite Icon {
-            get { return _icon; }
-            private set { SetProperty<IWorldTrackingSprite>(ref _icon, value, "Icon"); }
+        private IWorldTrackingSprite _trackingIcon;
+        protected IWorldTrackingSprite TrackingIcon {
+            get { return _trackingIcon; }
+            private set { SetProperty<IWorldTrackingSprite>(ref _trackingIcon, value, "TrackingIcon"); }
         }
 
         /// <summary>
@@ -55,13 +55,13 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void ShowIcon(bool toShow) {
-            if (Icon != null) {
+            if (TrackingIcon != null) {
                 //D.Log("{0}.ShowIcon({1}) called.", DebugName, toShow);
-                if (Icon.IsShowing == toShow) {
+                if (TrackingIcon.IsShowing == toShow) {
                     //D.Warn("{0} recording duplicate call to ShowIcon({1}).", DebugName, toShow);
                     return;
                 }
-                Icon.Show(toShow);
+                TrackingIcon.Show(toShow);
             }
             else {
                 D.Assert(!toShow, DebugName);
@@ -72,11 +72,11 @@ namespace CodeEnv.Master.GameContent {
 
         private void IconInfoPropChangedHandler() {
             D.AssertNotNull(_primaryMeshRenderer, "Always Initialize before setting IconInfo.");
-            if (Icon != null) {
+            if (TrackingIcon != null) {
                 // icon already present
-                if (IconInfo != default(IconInfo)) {
+                if (IconInfo != null) {
                     // something about the existing icon needs to change
-                    Icon.IconInfo = IconInfo;
+                    TrackingIcon.IconInfo = IconInfo;
                 }
                 else {
                     // Element Icons have an option that allows them to be turned off, aka IconInfo changed to default(IconInfo)
@@ -85,7 +85,7 @@ namespace CodeEnv.Master.GameContent {
             }
             else {
                 // initial or subsequent generation of the Icon
-                Icon = MakeIcon();
+                TrackingIcon = MakeIcon();
             }
         }
 
@@ -113,7 +113,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected override void AssessInMainCameraLOS() {
-            IsInMainCameraLOS = Icon == null ? IsPrimaryMeshInMainCameraLOS : IsPrimaryMeshInMainCameraLOS || _isIconInMainCameraLOS;
+            IsInMainCameraLOS = TrackingIcon == null ? IsPrimaryMeshInMainCameraLOS : IsPrimaryMeshInMainCameraLOS || _isIconInMainCameraLOS;
             //D.Log("{0}.AssessInMainCameraLOS() called. IsInMainCameraLOS = {1}.", DebugName, IsInMainCameraLOS);
         }
 
@@ -131,27 +131,27 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <returns></returns>
         protected virtual bool ShouldIconShow() {
-            bool result = IsDisplayEnabled && Icon != null && _isIconInMainCameraLOS && !IsPrimaryMeshInMainCameraLOS;
+            bool result = IsDisplayEnabled && TrackingIcon != null && _isIconInMainCameraLOS && !IsPrimaryMeshInMainCameraLOS;
             //D.Log("{0}.ShouldIconShow() result = {1}, IsDisplayEnabled = {2}, _isIconInMainCameraLOS = {3}, IsPrimaryMeshInMainCameraLOS = {4}.", 
             //DebugName, result, IsDisplayEnabled, _isIconInMainCameraLOS, IsPrimaryMeshInMainCameraLOS);
             return result;
         }
 
         /// <summary>
-        /// Destroys the icon if present, include any subscription unwiring required.
+        /// Destroys the icon if present, include any subscription un-wiring required.
         /// WARNING: Destroying an Icon that is used for other purposes by the Item can result in difficult to diagnose errors.
         /// e.g. Cmds use the Icon as the transform upon which to center highlighting.
         /// </summary>
         protected void DestroyIcon() {
-            if (Icon != null) {  // Use of Element Icons is an option
+            if (TrackingIcon != null) {  // Use of Element Icons is an option
                 //D.Log("{0}.Icon about to be destroyed.", DebugName);
                 ShowIcon(false); // accessing destroy gameObject error if we are showing it while destroying it
-                var iconCameraLosChgdListener = Icon.CameraLosChangedListener;
+                var iconCameraLosChgdListener = TrackingIcon.CameraLosChangedListener;
                 iconCameraLosChgdListener.inCameraLosChanged -= IconInCameraLosChangedEventHandler;
                 // event subscriptions already removed by Item before Icon changed
                 iconCameraLosChgdListener.enabled = false;  // avoids no subscribers warning when OnBecameInvisible is called when destroyed
-                GameUtility.DestroyIfNotNullOrAlreadyDestroyed(Icon);
-                Icon = null;    // Destroying the Icon doesn't null the reference
+                GameUtility.DestroyIfNotNullOrAlreadyDestroyed(TrackingIcon);
+                TrackingIcon = null;    // Destroying the Icon doesn't null the reference
             }
         }
 
@@ -168,8 +168,8 @@ namespace CodeEnv.Master.GameContent {
 
         protected override List<MeshRenderer> __GetMeshRenderers() {
             List<MeshRenderer> result = base.__GetMeshRenderers();
-            if (Icon != null) {
-                result.AddRange((Icon as Component).GetComponentsInChildren<MeshRenderer>());
+            if (TrackingIcon != null) {
+                result.AddRange((TrackingIcon as Component).GetComponentsInChildren<MeshRenderer>());
             }
             return result;
         }

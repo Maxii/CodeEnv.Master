@@ -68,8 +68,8 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
 
     public Topography Topography { get { return Data.Topography; } }
 
-    public bool IsHudShowing {
-        get { return _hudManager != null && _hudManager.IsHudShowing; }
+    public bool IsHoveredHudShowing {
+        get { return _hoveredHudManager != null && _hoveredHudManager.IsHudShowing; }
     }
 
     /// <summary>
@@ -98,14 +98,6 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
             return transform.name + " (from transform)";
         }
     }
-    ////private string _name;
-    ////public string Name {
-    ////    get {
-    ////        D.AssertNotNull(_name);
-    ////        return _name;
-    ////    }
-    ////    set { SetProperty<string>(ref _name, value, "Name", NamePropChangedHandler); }
-    ////}
 
     public Vector3 Position { get { return transform.position; } }
 
@@ -138,9 +130,9 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
 
     protected AInfoAccessController InfoAccessCntlr { get { return Data.InfoAccessCntlr; } }
 
+    protected ItemHoveredHudManager _hoveredHudManager;
     protected IList<IDisposable> _subscriptions;
     protected IInputManager _inputMgr;
-    protected ItemHudManager _hudManager;
     protected IGameManager _gameMgr;
     protected IJobManager _jobMgr;
     protected IDebugControls _debugCntls;
@@ -222,13 +214,13 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
         Data.CommenceOperations();
     }
 
-    public void ShowHud(bool toShow) {
-        if (_hudManager != null) {
+    public void ShowHoveredHud(bool toShow) {
+        if (_hoveredHudManager != null) {
             if (toShow) {
-                _hudManager.ShowHud();
+                _hoveredHudManager.ShowHud();
             }
             else {
-                _hudManager.HideHud();
+                _hoveredHudManager.HideHud();
             }
         }
     }
@@ -300,13 +292,13 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
     }
 
     private void HandleInputModeChanged(GameInputMode inputMode) {
-        if (IsHudShowing) {
+        if (IsHoveredHudShowing) {
             switch (inputMode) {
                 case GameInputMode.NoInput:
                 case GameInputMode.PartialPopup:
                 case GameInputMode.FullPopup:
                     //D.Log(ShowDebugLog, "InputMode changed to {0}. {1} is no longer showing HUD.", inputMode.GetValueName(), DebugName);
-                    ShowHud(false);
+                    ShowHoveredHud(false);
                     break;
                 case GameInputMode.Normal:
                     // do nothing
@@ -329,8 +321,8 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
     /// Note: most members should be tested for null before disposing as Items can be destroyed in Creators before completely initialized
     /// </summary>
     protected override void Cleanup() {
-        if (_hudManager != null) {
-            _hudManager.Dispose();
+        if (_hoveredHudManager != null) {
+            _hoveredHudManager.Dispose();
         }
         Unsubscribe();
     }

@@ -43,7 +43,7 @@ public abstract class AItemReportForm : AInfoDisplayForm {
 
     #endregion
 
-    public override void Reset() {
+    protected override void ResetForReuse_Internal() {
         _report = null;
     }
 

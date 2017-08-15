@@ -56,7 +56,6 @@ public abstract class ATableWindow : AGuiWindow {
         base.InitializeOnAwake();
         Utility.ValidateNotNull(rowPrefab);
         InitializeContentHolder();
-        Subscribe();
     }
 
     protected override void InitializeValuesAndReferences() {
@@ -73,9 +72,9 @@ public abstract class ATableWindow : AGuiWindow {
         _contentHolder = gameObject.GetSingleComponentInImmediateChildren<UISprite>().transform;    // background sprite
     }
 
-    private void Subscribe() {
+    protected override void Subscribe() {
+        base.Subscribe();
         EventDelegate.Add(onShowBegin, ShowBeginEventHandler);
-        EventDelegate.Add(onHideComplete, HideCompleteEventHandler);
     }
 
     #region Event and Property Change Handlers
@@ -85,13 +84,6 @@ public abstract class ATableWindow : AGuiWindow {
     /// </summary>
     private void ShowBeginEventHandler() {
         BuildTable();
-    }
-
-    /// <summary>
-    /// Event handler called when the GuiWindow completes hiding.
-    /// </summary>
-    private void HideCompleteEventHandler() {
-        Reset();
     }
 
     private void ItemFocusUserActionEventHandler(object sender, ATableRowForm.TableRowFocusUserActionEventArgs e) {
@@ -132,10 +124,16 @@ public abstract class ATableWindow : AGuiWindow {
     }
 
     private void ClearTable() {
-        var existingRows = _table.GetChildList();
+        _rowForms.ForAll(form => form.itemFocusUserAction -= ItemFocusUserActionEventHandler);
+        _rowForms.Clear();
+        DestroyRowForms();
+    }
+
+    private void DestroyRowForms() {
+        var existingRowTransforms = _table.GetChildList();
         // Note: DestroyImmediate() because Destroy() doesn't always get rid of the existing rows before Reposition occurs on LateUpdate
         // This results in an extra 'empty' row that stays until another Reposition() call, usually from sorting something
-        existingRows.ForAll(r => DestroyImmediate(r.gameObject));
+        existingRowTransforms.ForAll(r => DestroyImmediate(r.gameObject));
     }
 
     private void AddTableRows() {
@@ -430,15 +428,10 @@ public abstract class ATableWindow : AGuiWindow {
 
     #endregion
 
-    private void Reset() {
-        ResetRows();
+    protected override void ResetForReuse() {
         ResetSortDirectionState();
-        ClearTable();
-        // UNCLEAR detach GuiWindowEvents?
-    }
-
-    private void ResetRows() {
-        _rowForms.ForAll(rf => rf.Reset());
+        // IMPROVE Either destroy the rowForms or reuse them, but not both
+        ClearTable();        //_rowForms.ForAll(f => f.ResetForReuse());
     }
 
     private void ResetSortDirectionState() {
@@ -447,14 +440,9 @@ public abstract class ATableWindow : AGuiWindow {
         _lastSortDirection = SortDirection.Descending;
     }
 
-    protected override void Cleanup() {
-        Unsubscribe();
-    }
-
-    private void Unsubscribe() {
-        _rowForms.ForAll(rf => rf.itemFocusUserAction -= ItemFocusUserActionEventHandler);
+    protected override void Unsubscribe() {
+        base.Unsubscribe();
         EventDelegate.Remove(onShowBegin, ShowBeginEventHandler);
-        EventDelegate.Remove(onHideComplete, HideCompleteEventHandler);
     }
 
     #region Nested Classes

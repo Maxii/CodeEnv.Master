@@ -27,12 +27,12 @@ public abstract class ACompositionGuiElement : AGuiElement, IComparable<AComposi
 
     public override GuiElementID ElementID { get { return GuiElementID.Composition; } }
 
-    private IconInfo _iconInfo;
-    public IconInfo IconInfo {
+    private TrackingIconInfo _iconInfo;
+    public TrackingIconInfo IconInfo {
         get { return _iconInfo; }
         set {
-            D.AssertDefault(_iconInfo);   // only occurs once between Resets
-            SetProperty<IconInfo>(ref _iconInfo, value, "IconInfo", IconInfoPropSetHandler);
+            D.AssertNull(_iconInfo);   // only occurs once between Resets
+            SetProperty<TrackingIconInfo>(ref _iconInfo, value, "IconInfo", IconInfoPropSetHandler);
         }
     }
 
@@ -74,8 +74,8 @@ public abstract class ACompositionGuiElement : AGuiElement, IComparable<AComposi
 
     protected abstract string GetTextForCategory();
 
-    public override void Reset() {
-        _iconInfo = default(IconInfo);
+    public override void ResetForReuse() {
+        _iconInfo = default(TrackingIconInfo);
     }
 
     #region IComparable<ACompositionGuiElement> Members

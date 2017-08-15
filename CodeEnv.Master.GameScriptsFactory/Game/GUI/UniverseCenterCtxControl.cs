@@ -26,14 +26,16 @@ using UnityEngine;
 /// <summary>
 /// Context Menu Control for <see cref="UniverseCenterItem"/>.
 /// No distinction between AI and User owned.    
+/// <remarks>OPTIMIZE 8.7.17 these non-user-owned Items aren't selectable.</remarks>
 /// </summary>
 public class UniverseCenterCtxControl : ACtxControl {
 
-    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] { FleetDirective.Move,
-                                                                                        FleetDirective.FullSpeedMove,
-                                                                                        FleetDirective.Patrol,
-                                                                                        FleetDirective.Guard,
-                                                                                        FleetDirective.Explore};
+    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[]   {   FleetDirective.Move,
+                                                                                            FleetDirective.FullSpeedMove,
+                                                                                            FleetDirective.Patrol,
+                                                                                            FleetDirective.Guard,
+                                                                                            FleetDirective.Explore
+                                                                                        };
     protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
         get { return _userRemoteFleetDirectives; }
     }
@@ -41,6 +43,8 @@ public class UniverseCenterCtxControl : ACtxControl {
     protected override Vector3 PositionForDistanceMeasurements { get { return _universeCenterMenuOperator.Position; } }
 
     protected override string OperatorName { get { return _universeCenterMenuOperator != null ? _universeCenterMenuOperator.DebugName : "NotYetAssigned"; } }
+
+    protected override bool IsItemMenuOperatorTheCameraFocus { get { return _universeCenterMenuOperator.IsFocus; } }
 
     private UniverseCenterItem _universeCenterMenuOperator;
 

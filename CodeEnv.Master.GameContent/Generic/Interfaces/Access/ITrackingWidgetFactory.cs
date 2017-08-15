@@ -50,7 +50,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="trackedTgt">The target this sprite will track.</param>
         /// <param name="iconInfo">The info needed to build the sprite.</param>
         /// <returns></returns>
-        IInteractiveWorldTrackingSprite MakeInteractiveWorldTrackingSprite(IWidgetTrackable trackedTgt, IconInfo iconInfo);
+        IInteractiveWorldTrackingSprite MakeInteractiveWorldTrackingSprite(IWidgetTrackable trackedTgt, TrackingIconInfo iconInfo);
 
         /// <summary>
         /// Creates a sprite whose size doesn't change on the screen. It does not interact with the mouse.
@@ -59,7 +59,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="trackedTgt">The target this sprite will track.</param>
         /// <param name="iconInfo">The info needed to build the sprite.</param>
         /// <returns></returns>
-        IWorldTrackingSprite MakeWorldTrackingSprite(IWidgetTrackable trackedTgt, IconInfo iconInfo);
+        IWorldTrackingSprite MakeWorldTrackingSprite(IWidgetTrackable trackedTgt, TrackingIconInfo iconInfo);
 
         /// <summary>
         /// Creates a sprite whose size doesn't change on the screen. It does not interact with the mouse.
@@ -77,7 +77,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="trackedTgt">The target this sprite will track.</param>
         /// <param name="iconInfo">The info needed to build the sprite.</param>
         /// <returns></returns>
-        IInteractiveWorldTrackingSprite_Independent MakeInteractiveWorldTrackingSprite_Independent(IWidgetTrackable trackedTgt, IconInfo iconInfo);
+        IInteractiveWorldTrackingSprite_Independent MakeInteractiveWorldTrackingSprite_Independent(IWidgetTrackable trackedTgt, TrackingIconInfo iconInfo);
 
         /// <summary>
         /// Creates a sprite whose size doesn't change on the screen. It does interact with the mouse.
@@ -86,7 +86,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="trackedTgt">The target this sprite will track.</param>
         /// <param name="iconInfo">The info needed to build the sprite.</param>
         /// <returns></returns>
-        IInteractiveWorldTrackingSprite MakeInteractiveWorldTrackingSprite_Common(IWidgetTrackable trackedTgt, IconInfo iconInfo);
+        IInteractiveWorldTrackingSprite MakeInteractiveWorldTrackingSprite_Common(IWidgetTrackable trackedTgt, TrackingIconInfo iconInfo);
 
         /// <summary>
         /// Creates a sprite whose size doesn't change on the screen. It does not interact with the mouse.
@@ -95,7 +95,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="trackedTgt">The target.</param>
         /// <param name="iconInfo">The icon information.</param>
         /// <returns></returns>
-        IWorldTrackingSprite_Independent MakeWorldTrackingSprite_Independent(IWidgetTrackable trackedTgt, IconInfo iconInfo);
+        IWorldTrackingSprite_Independent MakeWorldTrackingSprite_Independent(IWidgetTrackable trackedTgt, TrackingIconInfo iconInfo);
 
         /// <summary>
         /// Creates a sprite whose size doesn't change on the screen. It does not interact with the mouse.
@@ -105,7 +105,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="iconInfo">The icon information.</param>
         /// <param name="parentFolder">The parent folder.</param>
         /// <returns></returns>
-        IWorldTrackingSprite MakeWorldTrackingSprite_Common(IWidgetTrackable trackedTgt, IconInfo iconInfo);
+        IWorldTrackingSprite MakeWorldTrackingSprite_Common(IWidgetTrackable trackedTgt, TrackingIconInfo iconInfo);
 
         /// <summary>
         /// Creates a label whose size doesn't change on the screen. It does not interact with the mouse.

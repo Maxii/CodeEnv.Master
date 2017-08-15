@@ -276,7 +276,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     #region ScrollWheel Events
 
     private void ScrollEventHandler(GameObject go, float delta) {
-        if (UICamera.isOverUI) {
+        if (_inputHelper.IsOverUI) {
             //D.Log("Scroll using GameObject {0} detected over UI.", go.name);
             return;
         }
@@ -346,7 +346,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     private Vector2 _dragDelta;
 
     private void DragStartEventHandler(GameObject go) {
-        if (UICamera.isOverUI) {
+        if (_inputHelper.IsOverUI) {
             //D.Log("DragStartEventHandler using GameObject {0} detected over UI.", go.name);
             return;
         }
@@ -357,7 +357,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     }
 
     private void DraggingEventHandler(GameObject go, Vector2 delta) {
-        if (UICamera.isOverUI) {
+        if (_inputHelper.IsOverUI) {
             //D.Log("DraggingEventHandler using GameObject {0} detected over UI.", go.name);
             return;
         }
@@ -367,7 +367,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     }
 
     private void DragEndEventHandler(GameObject go) {
-        if (UICamera.isOverUI) {
+        if (_inputHelper.IsOverUI) {
             //D.Log("DragEndEventHandler using GameObject {0} detected over UI.", go.name);
             return;
         }
@@ -409,7 +409,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     //public event Action<NguiMouseButton> onUnconsumedPressDown;
 
     private void PressEventHandler(GameObject go, bool isDown) {
-        if (UICamera.isOverUI) {
+        if (_inputHelper.IsOverUI) {
             //D.Log("PressEventHandler({0}) detected over UI.", go.name);
             return;
         }

@@ -26,21 +26,20 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public abstract class AGuiMenuAcceptButton : AGuiButton {
 
+    protected PlayerPrefsManager _playerPrefsMgr;
+
     private UIToggle[] _checkboxes;
     private UIPopupList[] _popupLists;
     private UISlider[] _sliders;
     private UIPanel _panel;
 
-    protected override void Awake() {
-        base.Awake();
-        InitializeValuesAndReferences();
-    }
-
-    protected virtual void InitializeValuesAndReferences() {
+    protected override void InitializeValuesAndReferences() {
+        base.InitializeValuesAndReferences();
         _panel = gameObject.GetSafeFirstComponentInParents<UIPanel>();  // more than one _panel in parents
         _checkboxes = _panel.gameObject.GetComponentsInChildren<UIToggle>(includeInactive: true);
         _popupLists = _panel.gameObject.GetComponentsInChildren<UIPopupList>(includeInactive: true);
         _sliders = _panel.gameObject.GetComponentsInChildren<UISlider>(includeInactive: true);
+        _playerPrefsMgr = PlayerPrefsManager.Instance;
     }
 
     #region Event and Property Change Handlers

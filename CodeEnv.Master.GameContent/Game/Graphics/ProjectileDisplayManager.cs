@@ -32,8 +32,8 @@ namespace CodeEnv.Master.GameContent {
             : base(trackedProjectile, meshLayer, operatingEffect) {
         }
 
-        protected override IconInfo MakeIconInfo() {    // HACK
-            return new IconInfo("Flat", AtlasID.MyGui, GameColor.White, IconSize, WidgetPlacement.Over, _meshLayer);
+        protected override TrackingIconInfo MakeIconInfo() {    // HACK
+            return new TrackingIconInfo("Flat", AtlasID.MyGui, GameColor.White, IconSize, WidgetPlacement.Over, _meshLayer);
         }
 
 

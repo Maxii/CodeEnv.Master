@@ -92,7 +92,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     /// <param name="trackedTgt">The target this sprite will track.</param>
     /// <param name="iconInfo">The info needed to build the sprite.</param>
     /// <returns></returns>
-    public IInteractiveWorldTrackingSprite MakeInteractiveWorldTrackingSprite(IWidgetTrackable trackedTgt, IconInfo iconInfo) {
+    public IInteractiveWorldTrackingSprite MakeInteractiveWorldTrackingSprite(IWidgetTrackable trackedTgt, TrackingIconInfo iconInfo) {
         if (DebugControls.Instance.UseOneUIPanelPerWidget) {
             return MakeInteractiveWorldTrackingSprite_Independent(trackedTgt, iconInfo);
         }
@@ -108,7 +108,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     /// <param name="trackedTgt">The target this sprite will track.</param>
     /// <param name="iconInfo">The info needed to build the sprite.</param>
     /// <returns></returns>
-    public IInteractiveWorldTrackingSprite_Independent MakeInteractiveWorldTrackingSprite_Independent(IWidgetTrackable trackedTgt, IconInfo iconInfo) {
+    public IInteractiveWorldTrackingSprite_Independent MakeInteractiveWorldTrackingSprite_Independent(IWidgetTrackable trackedTgt, TrackingIconInfo iconInfo) {
         GameObject trackingPrefabGo = RequiredPrefabs.Instance.worldTrackingSprite_Independent;
         GameObject trackingWidgetGo = NGUITools.AddChild(trackedTgt.transform.gameObject, trackingPrefabGo);
 
@@ -130,7 +130,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     /// <param name="trackedTgt">The target this sprite will track.</param>
     /// <param name="iconInfo">The info needed to build the sprite.</param>
     /// <returns></returns>
-    public IInteractiveWorldTrackingSprite MakeInteractiveWorldTrackingSprite_Common(IWidgetTrackable trackedTgt, IconInfo iconInfo) {
+    public IInteractiveWorldTrackingSprite MakeInteractiveWorldTrackingSprite_Common(IWidgetTrackable trackedTgt, TrackingIconInfo iconInfo) {
         GameObject trackingPrefabGo = RequiredPrefabs.Instance.worldTrackingSprite;
         GameObject trackingWidgetGo = NGUITools.AddChild(null, trackingPrefabGo);
         AttachWidgetAsChildOfParentFolder(trackingWidgetGo, trackedTgt);
@@ -153,7 +153,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     /// <param name="trackedTgt">The target this sprite will track.</param>
     /// <param name="iconInfo">The info needed to build the sprite.</param>
     /// <returns></returns>
-    public IWorldTrackingSprite MakeWorldTrackingSprite(IWidgetTrackable trackedTgt, IconInfo iconInfo) {
+    public IWorldTrackingSprite MakeWorldTrackingSprite(IWidgetTrackable trackedTgt, TrackingIconInfo iconInfo) {
         if (DebugControls.Instance.UseOneUIPanelPerWidget) {
             return MakeWorldTrackingSprite_Independent(trackedTgt, iconInfo);
         }
@@ -169,7 +169,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     /// <param name="trackedTgt">The target.</param>
     /// <param name="iconInfo">The icon information.</param>
     /// <returns></returns>
-    public IWorldTrackingSprite_Independent MakeWorldTrackingSprite_Independent(IWidgetTrackable trackedTgt, IconInfo iconInfo) {
+    public IWorldTrackingSprite_Independent MakeWorldTrackingSprite_Independent(IWidgetTrackable trackedTgt, TrackingIconInfo iconInfo) {
         GameObject trackingPrefabGo = RequiredPrefabs.Instance.worldTrackingSprite_Independent;
         GameObject trackingWidgetGo = NGUITools.AddChild(trackedTgt.transform.gameObject, trackingPrefabGo);
 
@@ -191,7 +191,7 @@ public class TrackingWidgetFactory : AGenericSingleton<TrackingWidgetFactory>, I
     /// <param name="trackedTgt">The tracked target.</param>
     /// <param name="iconInfo">The icon information.</param>
     /// <returns></returns>
-    public IWorldTrackingSprite MakeWorldTrackingSprite_Common(IWidgetTrackable trackedTgt, IconInfo iconInfo) {
+    public IWorldTrackingSprite MakeWorldTrackingSprite_Common(IWidgetTrackable trackedTgt, TrackingIconInfo iconInfo) {
         GameObject trackingPrefabGo = RequiredPrefabs.Instance.worldTrackingSprite;
         GameObject trackingWidgetGo = NGUITools.AddChild(null, trackingPrefabGo);
         AttachWidgetAsChildOfParentFolder(trackingWidgetGo, trackedTgt);

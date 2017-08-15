@@ -190,20 +190,20 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable,
 
     private void EnableIcon(bool toEnable) {
         if (toEnable) {
-            if (DisplayMgr.Icon == null) {
+            if (DisplayMgr.TrackingIcon == null) {
                 DisplayMgr.IconInfo = MakeIconInfo();
             }
         }
         else {
-            if (DisplayMgr.Icon != null) {
-                DisplayMgr.IconInfo = default(IconInfo);
+            if (DisplayMgr.TrackingIcon != null) {
+                DisplayMgr.IconInfo = default(TrackingIconInfo);
             }
         }
     }
 
     private void AssessIcon() {
         if (DisplayMgr != null) {
-            if (DisplayMgr.Icon != null) {
+            if (DisplayMgr.TrackingIcon != null) {
                 var iconInfo = RefreshIconInfo();
                 if (DisplayMgr.IconInfo != iconInfo) {    // avoid property not changed warning
                     //D.Log(ShowDebugLog, "{0} changing IconInfo from {1} to {2}.", DebugName, DisplayMgr.IconInfo, iconInfo);
@@ -216,14 +216,14 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable,
         }
     }
 
-    private IconInfo RefreshIconInfo() {
+    private TrackingIconInfo RefreshIconInfo() {
         return MakeIconInfo();
     }
 
-    private IconInfo MakeIconInfo() {
+    private TrackingIconInfo MakeIconInfo() {
         var report = UserReport;
         GameColor iconColor = report.Owner != null ? report.Owner.Color : GameColor.White;
-        return new IconInfo("Icon02", AtlasID.Contextual, iconColor, IconSize, WidgetPlacement.Over, TempGameValues.PlanetIconCullLayer);
+        return new TrackingIconInfo("Icon02", AtlasID.Contextual, iconColor, IconSize, WidgetPlacement.Over, TempGameValues.PlanetIconCullLayer);
     }
 
     private void ShowPlanetIconsChangedEventHandler(object sender, EventArgs e) {

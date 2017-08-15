@@ -53,7 +53,7 @@ public class HoveredHudWindow : AHudWindow<HoveredHudWindow>, IHoveredHudWindow 
     protected override void Subscribe() {
         base.Subscribe();
         _subscriptions = new List<IDisposable>();
-        _subscriptions.Add(SelectionManager.Instance.SubscribeToPropertyChanged<SelectionManager, ISelectable>(sm => sm.CurrentSelection, CurrentSelectionPropChangedHandler));
+        _subscriptions.Add(InteractableHudWindow.Instance.SubscribeToPropertyChanged<InteractableHudWindow, bool>(iHud => iHud.IsShowing, InteractableHudIsShowingPropChangedHandler));
     }
 
     public void Show(StringBuilder sb) {
@@ -74,13 +74,13 @@ public class HoveredHudWindow : AHudWindow<HoveredHudWindow>, IHoveredHudWindow 
     public void Show(FormID formID, AUnitDesign design) {
         //D.Log("{0}.Show({1}) called.", DebugName, design.DebugName);
         var form = PrepareForm(formID);
-        (form as AUnitDesignForm).Design = design;
+        (form as AHoveredHudDesignForm).Design = design;
         ShowForm(form);
     }
 
     public void Show(FormID formID, AEquipmentStat stat) {
         var form = PrepareForm(formID);
-        (form as AEquipmentForm).EquipmentStat = stat;
+        (form as AHoveredHudEquipmentForm).EquipmentStat = stat;
         ShowForm(form);
     }
 
@@ -105,14 +105,27 @@ public class HoveredHudWindow : AHudWindow<HoveredHudWindow>, IHoveredHudWindow 
 
     #region Event and Property Change Handlers
 
-    private void CurrentSelectionPropChangedHandler() {
-        //D.Log("{0}.CurrentSelectionPropChangedHandler() called.", GetType().Name);
+    private void InteractableHudIsShowingPropChangedHandler() {
+        //D.Log("{0}.InteractableHudIsShowingPropChangedHandler() called.", DebugName);
         if (IsShowing) {
             PositionWindow();
         }
     }
 
     #endregion
+
+    protected override void Unsubscribe() {
+        base.Unsubscribe();
+        _subscriptions.ForAll(s => s.Dispose());
+        _subscriptions.Clear();
+    }
+
+    protected override void Cleanup() {
+        base.Cleanup();
+        GameReferences.HoveredHudWindow = null;
+    }
+
+    #region Debug
 
     [Obsolete]
     protected override void __ValidateKilledFadeJobReference(Job fadeJobRef) {
@@ -122,17 +135,7 @@ public class HoveredHudWindow : AHudWindow<HoveredHudWindow>, IHoveredHudWindow 
         }
     }
 
-    protected override void Cleanup() {
-        base.Cleanup();
-        GameReferences.HoveredHudWindow = null;
-        Unsubscribe();
-    }
-
-    private void Unsubscribe() {
-        _subscriptions.ForAll(s => s.Dispose());
-        _subscriptions.Clear();
-    }
-
+    #endregion
 
 }
 

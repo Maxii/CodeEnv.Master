@@ -28,7 +28,9 @@ using UnityEngine;
 /// </summary>
 public class GuiPauseButton : AGuiButton {
 
-    protected override IList<KeyCode> ValidKeys { get { return new List<KeyCode>() { KeyCode.Pause }; } }
+    private static IEnumerable<KeyCode> _validKeys = new KeyCode[] { KeyCode.Pause };
+
+    protected override IEnumerable<KeyCode> ValidKeys { get { return _validKeys; } }
 
     protected override string TooltipContent {  // called by AGuiTooltip before _pauseButtonLabel reference is established
         get { return _pauseButtonLabel != null ? "{0} the game.".Inject(_pauseButtonLabel.text) : "I'm not empty."; }
@@ -37,8 +39,8 @@ public class GuiPauseButton : AGuiButton {
     private UILabel _pauseButtonLabel;
     private IList<IDisposable> _subscriptions;
 
-    protected override void Awake() {
-        base.Awake();
+    protected override void InitializeValuesAndReferences() {
+        base.InitializeValuesAndReferences();
         _pauseButtonLabel = _button.GetComponentInChildren<UILabel>();
         UpdateButtonLabel();
         Subscribe();
@@ -49,15 +51,15 @@ public class GuiPauseButton : AGuiButton {
         _subscriptions.Add(_gameMgr.SubscribeToPropertyChanged<GameManager, bool>(gs => gs.IsPaused, IsPausedPropChangedHandler));
     }
 
+    protected override void HandleValidClick() {
+        bool toPause = !_gameMgr.IsPaused;
+        _gameMgr.RequestPauseStateChange(toPause, toOverride: true);
+    }
+
     #region Event and Property Change Handlers
 
     private void IsPausedPropChangedHandler() {
         UpdateButtonLabel();
-    }
-
-    protected override void HandleValidClick() {
-        bool toPause = !_gameMgr.IsPaused;
-        _gameMgr.RequestPauseStateChange(toPause, toOverride: true);
     }
 
     #endregion

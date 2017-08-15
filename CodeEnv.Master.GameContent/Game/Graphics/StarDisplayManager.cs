@@ -31,7 +31,7 @@ namespace CodeEnv.Master.GameContent {
             Layers.Cull_Tiny, Layers.Cull_1, Layers.Cull_2, Layers.Cull_3, Layers.Cull_4, Layers.Cull_8, Layers.Cull_15, Layers.Cull_200,
             Layers.Cull_400, Layers.Cull_1000, Layers.Cull_3000, Layers.Projectiles, Layers.Shields, Layers.SystemOrbitalPlane);
 
-        public new IInteractiveWorldTrackingSprite Icon { get { return base.Icon as IInteractiveWorldTrackingSprite; } }
+        public new IInteractiveWorldTrackingSprite TrackingIcon { get { return base.TrackingIcon as IInteractiveWorldTrackingSprite; } }
 
         protected override int IconDepth { get { return 3; } }
 

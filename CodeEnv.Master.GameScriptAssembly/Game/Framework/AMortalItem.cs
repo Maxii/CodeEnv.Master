@@ -112,27 +112,8 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
         if (DisplayMgr != null) {
             (DisplayMgr as IMortalDisplayManager).HandleDeath();
         }
-    }
-
-    protected virtual void HandleDeathAfterDeathEffectFinished() {
-        if (IsFocus) {
-            GameReferences.MainCameraControl.CurrentFocus = null;
-            AssignAlternativeFocusOnDeath();
-        }
-        if (IsSelected) {
-            SelectionManager.Instance.CurrentSelection = null;
-        }
-        if (IsHudShowing) {
-            ShowHud(false);
-        }
         HandleDeathForHighlights();
     }
-
-    /// <summary>
-    /// Hook that allows derived classes to assign an alternative focus 
-    /// when this mortal item dies while it is the focus.
-    /// </summary>
-    protected virtual void AssignAlternativeFocusOnDeath() { }
 
     private void HandleDeathForHighlights() {
         var highlightMgrIDs = Enums<HighlightMgrID>.GetValues(excludeDefault: true);
@@ -143,6 +124,27 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
             }
         }
     }
+
+    protected virtual void HandleDeathAfterDeathEffectFinished() {
+        if (IsFocus) {
+            GameReferences.MainCameraControl.CurrentFocus = null;
+            AssignAlternativeFocusOnDeath();
+        }
+        if (IsSelected) {
+            SelectionManager.Instance.CurrentSelection = null;
+        }
+        if (IsHoveredHudShowing) {
+            ShowHoveredHud(false);
+        }
+        // 7.24.17 HandleDeathForHighlights() moved to HandleDeathAfterBeginningDeathEffect 
+        // as DisplayMgr.HandleDeath can destroy icons used for highlights
+    }
+
+    /// <summary>
+    /// Hook that allows derived classes to assign an alternative focus 
+    /// when this mortal item dies while it is the focus.
+    /// </summary>
+    protected virtual void AssignAlternativeFocusOnDeath() { }
 
     #region Event and Property Change Handlers
 

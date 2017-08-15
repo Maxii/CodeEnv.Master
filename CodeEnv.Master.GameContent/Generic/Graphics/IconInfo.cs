@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IconInfo.cs
-// Immutable struct containing info needed to construct icons.
+// Immutable struct containing info needed to construct TrackingIcons.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,8 +21,9 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Immutable struct containing info needed to construct icons.
+    /// Immutable struct containing info needed to construct TrackingIcons.
     /// </summary>
+    [Obsolete("Use TrackingIconInfo")]
     public struct IconInfo : IEquatable<IconInfo> {
 
         #region Comparison Operators Override
@@ -39,7 +40,14 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        private const string ToStringFormat = "{0}[Filename: {1}, AtlasID: {2}, Color: {3}, Placement: {4}, Size: {5}, Layer: {6}]";
+        private const string DebugNameFormat = "{0}[Filename: {1}, AtlasID: {2}, Color: {3}, Placement: {4}, Size: {5}, Layer: {6}]";
+
+        public string DebugName {
+            get {
+                return DebugNameFormat.Inject(GetType().Name, Filename, AtlasID.GetValueName(), Color.GetValueName(), Placement.GetValueName(),
+                Size, Layer.GetValueName());
+            }
+        }
 
         public string Filename { get; private set; }
 
@@ -92,10 +100,7 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        public override string ToString() {
-            return ToStringFormat.Inject(GetType().Name, Filename, AtlasID.GetValueName(), Color.GetValueName(), Placement.GetValueName(),
-                Size, Layer.GetValueName());
-        }
+        public override string ToString() { return DebugName; }
 
         #region IEquatable<IconInfo> Members
 

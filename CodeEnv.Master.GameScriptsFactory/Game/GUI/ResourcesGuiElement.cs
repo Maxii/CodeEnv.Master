@@ -190,7 +190,7 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
     /// <summary>
     /// Resets this GuiElement instance so it can be reused.
     /// </summary>
-    public override void Reset() {
+    public override void ResetForReuse() {
         _resourceContainerLookup.Values.ForAll(container => {
             NGUITools.SetActive(container.gameObject, false);
         });

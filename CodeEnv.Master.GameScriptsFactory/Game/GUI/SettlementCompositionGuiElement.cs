@@ -37,7 +37,7 @@ public class SettlementCompositionGuiElement : ACompositionGuiElement {
 
     protected override string TooltipContent { get { return base.TooltipContent; } }    //TODO
 
-    protected override bool AreAllValuesSet { get { return IconInfo != default(IconInfo) && _isCategorySet; } }
+    protected override bool AreAllValuesSet { get { return IconInfo != default(TrackingIconInfo) && _isCategorySet; } }
 
     #region Event and Property Change Handlers
 
@@ -52,8 +52,8 @@ public class SettlementCompositionGuiElement : ACompositionGuiElement {
 
     protected override string GetTextForCategory() { return Category != SettlementCategory.None ? Category.GetValueName() : Unknown; }
 
-    public override void Reset() {
-        base.Reset();
+    public override void ResetForReuse() {
+        base.ResetForReuse();
         _isCategorySet = false;
     }
 

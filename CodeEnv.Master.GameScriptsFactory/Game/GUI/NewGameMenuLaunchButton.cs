@@ -28,7 +28,9 @@ using UnityEngine;
 /// </summary>
 public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
 
-    protected override IList<KeyCode> ValidKeys { get { return new List<KeyCode>() { KeyCode.Return }; } }
+    private static IEnumerable<KeyCode> _validKeys = new KeyCode[] { KeyCode.Return };
+
+    protected override IEnumerable<KeyCode> ValidKeys { get { return _validKeys; } }
 
     protected override string TooltipContent { get { return "Launch a New Game with these settings."; } }
 

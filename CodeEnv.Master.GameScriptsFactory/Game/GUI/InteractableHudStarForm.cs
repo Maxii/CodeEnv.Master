@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: SelectedStarForm.cs
+// File: InteractableHudStarForm.cs
 // Form used by the InteractableHudWindow to display info and allow changes when a user-owned Item is selected.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -22,9 +22,9 @@ using CodeEnv.Master.GameContent;
 /// <summary>
 /// Form used by the InteractableHudWindow to display info and allow changes when a user-owned Item is selected.
 /// </summary>
-public class SelectedStarForm : ASelectedItemForm {
+public class InteractableHudStarForm : AInteractableHudItemDataForm {
 
-    public override FormID FormID { get { return FormID.SelectedStar; } }
+    public override FormID FormID { get { return FormID.UserStar; } }
 
     protected override void AssignValueToNameGuiElement() {
         base.AssignValueToNameGuiElement();

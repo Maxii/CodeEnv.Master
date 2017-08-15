@@ -188,8 +188,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         InitializeDebugShowCoursePlot();
     }
 
-    protected override ItemHudManager InitializeHudManager() {
-        return new ItemHudManager(Publisher);
+    protected override ItemHoveredHudManager InitializeHudManager() {
+        return new ItemHoveredHudManager(Publisher);
     }
 
     protected override ADisplayManager MakeDisplayManagerInstance() {
@@ -263,14 +263,14 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         __CheckForRemainingFtlDampeningSources();
     }
 
-    protected override IconInfo MakeIconInfo() {
+    protected override TrackingIconInfo MakeIconInfo() {
         var report = UserReport;
         GameColor iconColor = report.Owner != null ? report.Owner.Color : GameColor.White;
-        return new IconInfo("FleetIcon_Unknown", AtlasID.Fleet, iconColor, IconSize, WidgetPlacement.Over, TempGameValues.ShipIconCullLayer);
+        return new TrackingIconInfo("FleetIcon_Unknown", AtlasID.Fleet, iconColor, IconSize, WidgetPlacement.Over, TempGameValues.ShipIconCullLayer);
     }
 
-    protected override void ShowSelectedItemInHud() {
-        InteractableHudWindow.Instance.Show(FormID.SelectedShip, Data);
+    protected override void ShowSelectedItemHud() {
+        InteractableHudWindow.Instance.Show(FormID.UserShip, Data);
     }
 
     #region Event and Property Change Handlers
@@ -378,13 +378,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
     }
 
-    protected override void ResetOrderAndState() {
-        CurrentOrder = null;
-        D.Assert(!IsCurrentStateCalled);
-        CurrentState = ShipState.Idling;    // 4.20.17 Will unsubscribe from any FsmEvents when exiting the Current non-Call()ed state
-    }
-
-    protected override bool ShouldCmdOwnerChange() {
+    protected override bool ShouldExistingCmdOwnerChange() {
         return Command.Elements.Count == Constants.One;
     }
 
@@ -406,11 +400,16 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
     }
 
+    public FleetCmdItem __CreateSingleShipFleet() {
+        MakeCommandChange("NewSingleElementFleet");
+        return Command;
+    }
+
     private void MakeCommandChange(string loneFleetRootName) {
         D.Assert(Command.Elements.Count > Constants.One);
         Command.RemoveElement(this);
         UnitFactory.Instance.MakeLoneFleetInstance(this, optionalRootUnitName: loneFleetRootName);
-        // This element is now properly parented with the proper Cmd Reference so tell oldCmd to not null it when Removing
+        // This element is now properly parented with the proper Cmd Reference
         D.Assert(Command.IsLoneCmd);
     }
 
@@ -464,23 +463,31 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             // deal with multiple changes all while paused
             _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedEventHandler;
             _gameMgr.isPausedChanged += NewOrderReceivedWhilePausedEventHandler;
-            bool willOrderExecutionImmediatelyFollowResume = order.Source == OrderSource.User || CurrentOrder == null || CurrentOrder.Source != OrderSource.Captain;
+            bool willOrderExecutionImmediatelyFollowResume = IsCurrentOrderImmediatelyReplaceableBy(order);
             return willOrderExecutionImmediatelyFollowResume;
         }
 
         D.Assert(!IsPaused);
         D.AssertNull(_newOrderReceivedWhilePaused);
 
-        if (order.Source != OrderSource.User) {
-            if (CurrentOrder != null) {
-                if (CurrentOrder.Source == OrderSource.Captain) {
-                    CurrentOrder.StandingOrder = order;
-                    return false;
-                }
-            }
+        if (!IsCurrentOrderImmediatelyReplaceableBy(order)) {
+            CurrentOrder.StandingOrder = order;
+            return false;
         }
         CurrentOrder = order;
         return true;
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if CurrentOrder can immediately be replaced by order, <c>false</c> otherwise.
+    /// <remarks>CurrentOrder can immediately be replaced by order if order was issued by the User, OR
+    /// CurrentOrder is null OR CurrentOrder isn't an override order issued by the Captain.</remarks>
+    /// <remarks>A Captain-issued override order can only be immediately replaced by a User-issued order.</remarks>
+    /// </summary>
+    /// <param name="order">The order.</param>
+    /// <returns></returns>
+    private bool IsCurrentOrderImmediatelyReplaceableBy(ShipOrder order) {
+        return order.Source == OrderSource.User || CurrentOrder == null || CurrentOrder.Source != OrderSource.Captain;
     }
 
     private void ChangeOrderAfterPause() {
@@ -493,11 +500,38 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         InitiateNewOrder(newOrder);
     }
 
+    /// <summary>
+    /// Returns <c>true</c> if the directive of the CurrentOrder or if paused, a pending order 
+    /// about to become the CurrentOrder matches any of the provided directive(s).
+    /// </summary>
+    /// <param name="directiveA">The directive a.</param>
+    /// <returns></returns>
     public bool IsCurrentOrderDirectiveAnyOf(ShipDirective directiveA) {
+        if (IsPaused && _newOrderReceivedWhilePaused != null) {
+            // paused with a pending order replacement
+            if (IsCurrentOrderImmediatelyReplaceableBy(_newOrderReceivedWhilePaused)) {
+                // _newOrderReceivedWhilePaused will immediately replace CurrentOrder as soon as unpaused
+                return _newOrderReceivedWhilePaused.Directive == directiveA;
+            }
+        }
         return CurrentOrder != null && CurrentOrder.Directive == directiveA;
     }
 
+    /// <summary>
+    /// Returns <c>true</c> if the directive of the CurrentOrder or if paused, a pending order 
+    /// about to become the CurrentOrder matches any of the provided directive(s).
+    /// </summary>
+    /// <param name="directiveA">The directive a.</param>
+    /// <param name="directiveB">The directive b.</param>
+    /// <returns></returns>
     public bool IsCurrentOrderDirectiveAnyOf(ShipDirective directiveA, ShipDirective directiveB) {
+        if (IsPaused && _newOrderReceivedWhilePaused != null) {
+            // paused with a pending order replacement
+            if (IsCurrentOrderImmediatelyReplaceableBy(_newOrderReceivedWhilePaused)) {
+                // _newOrderReceivedWhilePaused will immediately replace CurrentOrder as soon as unpaused
+                return _newOrderReceivedWhilePaused.Directive == directiveA || _newOrderReceivedWhilePaused.Directive == directiveB;
+            }
+        }
         return CurrentOrder != null && (CurrentOrder.Directive == directiveA || CurrentOrder.Directive == directiveB);
     }
 
@@ -543,6 +577,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         ReturnFromCalledStates();
 
         if (CurrentOrder != null) {
+            D.Assert(!IsDead);
             // 4.8.17 If a non-Call()ed state is to notify Cmd of OrderOutcome, this is when notification of receiving a new order will happen. 
             // CalledStateReturnHandlers can't do it as the new order will change the state before the ReturnCause is processed.
             UponNewOrderReceived();
@@ -589,7 +624,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                     break;
                 case ShipDirective.Scuttle:
                     IsOperational = false;
-                    break;
+                    return; // CurrentOrder will be set to null as a result of death
                 case ShipDirective.Retreat:
                 case ShipDirective.Disband:
                 case ShipDirective.Refit:
@@ -622,6 +657,13 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             }
         }
         return true;
+    }
+
+    protected override void ResetOrderAndState() {
+        D.Assert(!IsPaused);    // 8.13.17 ResetOrderAndState doesn't account for _newOrderReceivedWhilePaused
+        CurrentOrder = null;
+        D.Assert(!IsCurrentStateCalled);
+        CurrentState = ShipState.Idling;    // 4.20.17 Will unsubscribe from any FsmEvents when exiting the Current non-Call()ed state
     }
 
     #endregion
@@ -674,6 +716,10 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     /// execution of the state Return()ed too, aka the new CurrentState.
     /// </summary>
     private void RestartState() {
+        if (IsDead) {
+            D.Warn("{0}.RestartState() called when dead.", DebugName);
+            return;
+        }
         var stateWhenCalled = CurrentState;
         ReturnFromCalledStates();
         D.Log(/*ShowDebugLog, */"{0}.RestartState called from {1}.{2}. RestartedState = {3}.",

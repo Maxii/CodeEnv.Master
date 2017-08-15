@@ -74,8 +74,8 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmd, ISettlementCm
         return new SettlementFormationManager(this);
     }
 
-    protected override ItemHudManager InitializeHudManager() {
-        return new ItemHudManager(Publisher);
+    protected override ItemHoveredHudManager InitializeHudManager() {
+        return new ItemHoveredHudManager(Publisher);
     }
 
     public override void FinalInitialize() {
@@ -126,12 +126,13 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmd, ISettlementCm
         ParentSystem.Settlement = null;
     }
 
-    protected override IconInfo MakeIconInfo() {
+    protected override TrackingIconInfo MakeIconInfo() {
         return SettlementIconInfoFactory.Instance.MakeInstance(UserReport);
     }
 
-    protected override void ShowSelectedItemInHud() {
-        InteractableHudWindow.Instance.Show(FormID.SelectedSettlement, Data);
+    protected override void ShowSelectedItemHud() {
+        InteractableHudWindow.Instance.Show(FormID.UserSettlement, Data);
+        // TODO Change to UnitHudWindow and have it show InteractableHudWindow
     }
 
     protected override void PrepareForDeathEffect() {

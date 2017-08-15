@@ -66,6 +66,8 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
 
     protected override string OperatorName { get { return _fleetMenuOperator != null ? _fleetMenuOperator.DebugName : "NotYetAssigned"; } }
 
+    protected override bool IsItemMenuOperatorTheCameraFocus { get { return _fleetMenuOperator.IsFocus; } }
+
     private FleetCmdItem _fleetMenuOperator;
 
     public FleetCtxControl_User(FleetCmdItem fleetCmd)

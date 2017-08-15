@@ -28,9 +28,10 @@ using UnityEngine;
 /// </summary>
 public class FleetCtxControl_AI : ACtxControl {
 
-    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] {    FleetDirective.Attack,
-                                                                                           FleetDirective.Move,
-                                                                                           FleetDirective.FullSpeedMove};
+    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[]   {   FleetDirective.Attack,
+                                                                                            FleetDirective.Move,
+                                                                                            FleetDirective.FullSpeedMove
+                                                                                        };
 
     private static BaseDirective[] _userRemoteBaseDirectives = new BaseDirective[] { BaseDirective.Attack };
 
@@ -45,6 +46,8 @@ public class FleetCtxControl_AI : ACtxControl {
     protected override Vector3 PositionForDistanceMeasurements { get { return _fleetMenuOperator.Position; } }
 
     protected override string OperatorName { get { return _fleetMenuOperator != null ? _fleetMenuOperator.DebugName : "NotYetAssigned"; } }
+
+    protected override bool IsItemMenuOperatorTheCameraFocus { get { return _fleetMenuOperator.IsFocus; } }
 
     private FleetCmdItem _fleetMenuOperator;
 

@@ -93,16 +93,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     public new bool IsOwnerChangeUnderway { get { return base.IsOwnerChangeUnderway; } }
 
-    public IconInfo IconInfo {
-        get {
-            if (DisplayMgr == null) {
-                D.Warn("{0}.DisplayMgr is null when attempting access to IconInfo.", GetType().Name);
-                return default(IconInfo);
-            }
-            return DisplayMgr.IconInfo;
-        }
-    }
-
     public override float Radius { get { return Data.Radius; } }
 
     public new AUnitCmdData Data {
@@ -124,9 +114,16 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     public IList<AUnitElementItem> Elements { get; private set; }
 
+    ////private UnifiedSRSensorMonitor _unifiedSRSensorMonitor;
     /// <summary>
     /// Unified Monitor for SRSensors that combines the results of all element SRSensorMonitors.
     /// </summary>
+    ////public UnifiedSRSensorMonitor UnifiedSRSensorMonitor {
+    ////    get {
+    ////        _unifiedSRSensorMonitor = _unifiedSRSensorMonitor ?? InitializeUnifiedSRSensorMonitor();
+    ////        return _unifiedSRSensorMonitor;
+    ////    }
+    ////}
     public UnifiedSRSensorMonitor UnifiedSRSensorMonitor { get; private set; }
 
     /// <summary>
@@ -142,7 +139,9 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         set { base.CameraStat = value; }
     }
 
-    protected new UnitCmdDisplayManager DisplayMgr { get { return base.DisplayMgr as UnitCmdDisplayManager; } }
+    public new UnitCmdDisplayManager DisplayMgr { get { return base.DisplayMgr as UnitCmdDisplayManager; } }
+
+    protected override bool IsSelectable { get { return IsDiscernibleToUser; } }
     protected AFormationManager FormationMgr { get; private set; }
     protected FsmEventSubscriptionManager FsmEventSubscriptionMgr { get; private set; }
     protected override bool IsPaused { get { return _gameMgr.IsPaused; } }
@@ -194,7 +193,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         base.InitializeDisplayManager();
         DisplayMgr.MeshColor = Owner.Color;
         DisplayMgr.IconInfo = MakeIconInfo();
-        SubscribeToIconEvents(DisplayMgr.Icon);
+        SubscribeToIconEvents(DisplayMgr.TrackingIcon);
         DisplayMgr.ResizePrimaryMesh(Radius);
     }
 
@@ -215,7 +214,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     protected sealed override CircleHighlightManager InitializeCircleHighlightMgr() {
-        var iconTransform = DisplayMgr.Icon.WidgetTransform;
+        var iconTransform = DisplayMgr.TrackingIcon.WidgetTransform;
         float radius = Screen.height * 0.03F;
         return new CircleHighlightManager(iconTransform, radius, isCircleSizeDynamic: false);
     }
@@ -264,6 +263,16 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         AssessIcon();
     }
 
+    ////private UnifiedSRSensorMonitor InitializeUnifiedSRSensorMonitor() {
+    ////    var monitor = new UnifiedSRSensorMonitor(this);
+    ////    foreach (var element in Elements) {
+    ////        // 4.4.17 Deferring event subscription from here handles FerryFleet case where fully operational element 
+    ////        // is added to Cmd that is not yet operational without triggering EventHandlers. CommenceOperations will 
+    ////        // AssessAlertStatus so Cmd will be aware of element's knowledge of enemy presence, if any, and then subscribe.
+    ////        monitor.Add(element.SRSensorMonitor);
+    ////    }
+    ////    return monitor;
+    ////}
     private void InitializeUnifiedSRSensorMonitor() {
         var monitor = new UnifiedSRSensorMonitor(this);
         foreach (var element in Elements) {
@@ -359,15 +368,16 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     public virtual void RemoveElement(AUnitElementItem element) {
         element.Command = null; // 4.21.17 Added to uncover issues before AddElement assigns new Cmd, if it occurs
 
-        if (Elements.Count == Constants.One) {
-            IsOperational = false;  // tell Cmd its dead
-            D.Assert(IsDead);
-            return;
-        }
-
         bool isRemoved = Elements.Remove(element);
         D.Assert(isRemoved, element.DebugName);
         Data.RemoveElement(element.Data);
+
+        if (Elements.Count == Constants.Zero) {
+            IsOperational = false;  // tell Cmd its dead
+            D.Assert(IsDead);
+            D.LogBold(/*ShowDebugLog,*/ "{0} has lost its last element and is dead.", DebugName);
+            return;
+        }
 
         if (!IsOperational) {
             // Cmd construction
@@ -423,19 +433,19 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         if (DisplayMgr != null) {
             var iconInfo = RefreshIconInfo();
             if (DisplayMgr.IconInfo != iconInfo) {    // avoid property not changed warning
-                UnsubscribeToIconEvents(DisplayMgr.Icon);
+                UnsubscribeToIconEvents(DisplayMgr.TrackingIcon);
                 //D.Log(ShowDebugLog, "{0} changing IconInfo from {1} to {2}.", DebugName, DisplayMgr.IconInfo, iconInfo);
                 DisplayMgr.IconInfo = iconInfo;
-                SubscribeToIconEvents(DisplayMgr.Icon);
+                SubscribeToIconEvents(DisplayMgr.TrackingIcon);
             }
         }
     }
 
-    private IconInfo RefreshIconInfo() {
+    private TrackingIconInfo RefreshIconInfo() {
         return MakeIconInfo();
     }
 
-    protected abstract IconInfo MakeIconInfo();
+    protected abstract TrackingIconInfo MakeIconInfo();
 
     #endregion
 
@@ -519,6 +529,11 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         return hqCandidates.Any();
     }
 
+    protected override void HideSelectedItemHud() {
+        D.Assert(!IsSelected);
+        UnitHudWindow.Instance.Hide();
+    }
+
     protected override void PrepareForOnDeath() {
         base.PrepareForOnDeath();
         // 2.15.17 Moved here from Dead State in case Dead_EnterState becomes IEnumerator
@@ -530,16 +545,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         // 4.15.17 Get state to a non-Called state before changing to Dead allowing that 
         // non_Called state to callback with FsmOrderFailureCause.Death if callback is reqd
         ReturnFromCalledStates();
-    }
-
-    protected abstract void ResetOrderAndState();
-
-    private void RegisterForOrders() {
-        OwnerAIMgr.RegisterForOrders(this);
-    }
-
-    private void DeregisterForOrders() {
-        OwnerAIMgr.DeregisterForOrders(this);
     }
 
     public void HandleColdWarEnemyEngagementPolicyChanged() {
@@ -589,7 +594,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     private void UnitFormationPropChangedHandler() {
-        FormationMgr.RepositionAllElementsInFormation(Elements.Cast<IUnitElement>().ToList());
+        HandleFormationChanged();
     }
 
     private void AlertStatusPropChangedHandler() {
@@ -597,6 +602,10 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     #endregion
+
+    protected virtual void HandleFormationChanged() {
+        FormationMgr.RepositionAllElementsInFormation(Elements.Cast<IUnitElement>());
+    }
 
     protected override void HandleNameChanged() {
         base.HandleNameChanged();
@@ -693,7 +702,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         HQElement.IsHQ = true;
         Data.HQElementData = HQElement.Data;    // CmdData.Radius now returns Radius of new HQElement
         D.Log(ShowDebugLog, "{0}'s HQElement is now {1}. Radius = {2:0.00}.", UnitName, HQElement.Name, Radius);
-        ////D.Log(ShowDebugLog, "{0}'s HQElement is now {1}. Radius = {2:0.00}.", Data.ParentName, HQElement.Data.Name, Data.Radius);
         AttachCmdToHQElement(); // needs to occur before formation changed
 
         if (DisplayMgr != null) {
@@ -707,7 +715,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
             UponHQElementChanged();
         }
         else {
-            FormationMgr.RepositionAllElementsInFormation(Elements.Cast<IUnitElement>().ToList());
+            FormationMgr.RepositionAllElementsInFormation(Elements.Cast<IUnitElement>());
         }
     }
 
@@ -744,6 +752,14 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     #region Orders Support Members
 
+    private void RegisterForOrders() {
+        OwnerAIMgr.RegisterForOrders(this);
+    }
+
+    private void DeregisterForOrders() {
+        OwnerAIMgr.DeregisterForOrders(this);
+    }
+
     /// <summary>
     /// Cancels each Element's CurrentOrder if not issued by the Element's Captain as an override order.
     /// <remarks>Each element that has its CurrentOrder canceled will immediately Idle.</remarks>
@@ -752,6 +768,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         //D.Log(ShowDebugLog, "{0} is canceling any element orders it previously issued.", DebugName);
         Elements.ForAll(e => e.CancelSuperiorsOrder());
     }
+
+    protected abstract void ResetOrderAndState();
 
     #endregion
 
@@ -1142,7 +1160,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     protected override void Unsubscribe() {
         base.Unsubscribe();
         if (DisplayMgr != null) {
-            var icon = DisplayMgr.Icon;
+            var icon = DisplayMgr.TrackingIcon;
             if (icon != null) {
                 UnsubscribeToIconEvents(icon);
             }
@@ -1224,7 +1242,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     public override float OptimalCameraViewingDistance {
         get {
             if (_optimalCameraViewingDistance != Constants.ZeroF) {
-                // the user has set the value manually
+                // the user has set the value manually via the context menu
                 return _optimalCameraViewingDistance;
             }
             return UnitMaxFormationRadius + CameraStat.OptimalViewingDistanceAdder;
@@ -1283,5 +1301,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     IUnitElement IUnitCmd.HQElement { get { return HQElement; } }
 
     #endregion
+
 }
 

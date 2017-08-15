@@ -31,10 +31,10 @@ public class WorldTrackingSprite_Independent : AWorldTrackingWidget_ConstantSize
 
     public ICameraLosChangedListener CameraLosChangedListener { get; private set; }
 
-    private IconInfo _iconInfo;
-    public IconInfo IconInfo {
+    private TrackingIconInfo _iconInfo;
+    public TrackingIconInfo IconInfo {
         get { return _iconInfo; }
-        set { SetProperty<IconInfo>(ref _iconInfo, value, "IconInfo", IconInfoPropChangedHandler); }
+        set { SetProperty<TrackingIconInfo>(ref _iconInfo, value, "IconInfo", IconInfoPropChangedHandler); }
     }
 
     private int _drawDepth = -5;
@@ -103,7 +103,7 @@ public class WorldTrackingSprite_Independent : AWorldTrackingWidget_ConstantSize
     #region Event and Property Change Handlers
 
     private void IconInfoPropChangedHandler() {
-        D.AssertNotDefault(IconInfo);
+        D.AssertNotNull(IconInfo);
 
         Widget.atlas = IconInfo.AtlasID.GetAtlas();
         Set(IconInfo.Filename);

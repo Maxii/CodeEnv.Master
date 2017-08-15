@@ -118,8 +118,8 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
         _detourGenerator = new DetourGenerator(DebugName, obstacleZoneCenter, _obstacleZoneCollider.radius, Data.CloseOrbitOuterRadius);
     }
 
-    protected override ItemHudManager InitializeHudManager() {
-        return new ItemHudManager(Publisher);
+    protected override ItemHoveredHudManager InitializeHudManager() {
+        return new ItemHoveredHudManager(Publisher);
     }
 
     protected override ICtxControl InitializeContextMenu(Player owner) {
@@ -175,7 +175,7 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
 
     public UniverseCenterReport GetReport(Player player) { return Publisher.GetReport(player); }
 
-    protected override void ShowSelectedItemInHud() {
+    protected override void ShowSelectedItemHud() {
         throw new NotSupportedException("{0}".Inject(DebugName));   // should not be called as can't be owned
     }
 

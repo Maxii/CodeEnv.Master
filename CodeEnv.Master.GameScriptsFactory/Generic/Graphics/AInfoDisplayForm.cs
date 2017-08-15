@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
@@ -57,6 +58,12 @@ public abstract class AInfoDisplayForm : AForm {
         InitializeNonGuiElementMembers();
     }
 
+    /// <summary>
+    /// Initializes the provided AGuiElement.
+    /// <remarks>Called once from Awake.</remarks>
+    /// </summary>
+    /// <param name="e">The AGuiElement.</param>
+    /// <returns></returns>
     protected virtual bool InitializeGuiElement(AGuiElement e) {
         bool isFound = true;
         switch (e.ElementID) {
@@ -140,6 +147,11 @@ public abstract class AInfoDisplayForm : AForm {
         _approvalElement = e as ApprovalGuiElement;
     }
 
+    /// <summary>
+    /// Initializes the provided AGuiElement.
+    /// <remarks>Called once from Awake.</remarks>
+    /// </summary>
+    /// <param name="e">The AGuiElement.</param>
     protected virtual void InitializeCompositionGuiElement(AGuiElement e) { }
 
     private void InitializeEnergyGuiElement(AGuiElement e) {
@@ -194,19 +206,20 @@ public abstract class AInfoDisplayForm : AForm {
         _ownerElement = e as OwnerGuiElement;
     }
 
+    /// <summary>
+    /// Initializes the provided AGuiElement.
+    /// <remarks>Called once from Awake.</remarks>
+    /// </summary>
+    /// <param name="e">The AGuiElement.</param>
     protected virtual void InitializeNameGuiElement(AGuiElement e) {
         _nameLabel = GetLabel(e);
     }
 
+    /// <summary>
+    /// Hook for derived classes to initialize any non-GuiElement members.
+    /// <remarks>Called once from Awake.</remarks>
+    /// </summary>
     protected virtual void InitializeNonGuiElementMembers() { }
-
-    #region Event and Property Change Handlers
-
-    private void ReportPropSetHandler() {
-        AssignValuesToMembers();
-    }
-
-    #endregion
 
     protected sealed override void AssignValuesToMembers() {
         foreach (GuiElementID id in _guiElementsPresent.Keys) {
@@ -216,6 +229,13 @@ public abstract class AInfoDisplayForm : AForm {
         AssignValuesToNonGuiElementMembers();
     }
 
+    /// <summary>
+    /// Opportunity for derived classes to assign values to a GuiElement.
+    /// <remarks>Called when the source of these values is set, aka when the 
+    /// Report or Data property is set.</remarks>
+    /// </summary>
+    /// <param name="id">The identifier.</param>
+    /// <returns></returns>
     protected virtual bool AssignValueTo(GuiElementID id) {
         bool isFound = true;
         switch (id) {
@@ -305,6 +325,21 @@ public abstract class AInfoDisplayForm : AForm {
 
     protected virtual void AssignValuesToNonGuiElementMembers() { }
 
+    /// <summary>
+    /// Returns the single UILabel component that is present with or a child of the provided GuiElement's GameObject.
+    /// </summary>
+    /// <param name="element">The element.</param>
+    /// <returns></returns>
+    protected UILabel GetLabel(AGuiElement element) {
+        return element.gameObject.GetSingleComponentInChildren<UILabel>();
+    }
+
+    /// <summary>
+    /// Opportunity for derived classes to cleanup GuiElements.
+    /// <remarks>Called by Cleanup when being destroyed.</remarks>
+    /// </summary>
+    /// <param name="e">The e.</param>
+    /// <returns></returns>
     protected virtual bool CleanupGuiElement(AGuiElement e) {
         bool isFound = true;
         switch (e.ElementID) {

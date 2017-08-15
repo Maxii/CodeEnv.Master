@@ -1,4 +1,4 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
 // Copyright © 2012 - 2013 Strategic Forge
 //
@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: SelectionManager.cs
-// Singleton. Selection Manager that keeps track of what is selected in the game.
+// Singleton. Selection Manager that keeps track of what single Item is selected in the game. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,16 +17,22 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
-    using System.Collections.Generic;
     using CodeEnv.Master.Common;
-    using CodeEnv.Master.GameContent;
 
     /// <summary>
-    /// Singleton. Selection Manager that keeps track of what is selected in the game. Only one item can be selected at a time.
+    /// Singleton. Selection Manager that keeps track of what single Item is selected in the game. 
+    /// <remarks>8.2.17 Replaces deprecated MultiSelectionManager. The only circumstance multiple items can now be concurrently 'chosen' 
+    /// is from the UnitHud - one or more listed user-owned Units can be chosen as can one or more of a single Unit's listed elements.</remarks>
     /// </summary>
     public class SelectionManager : AGenericSingleton<SelectionManager>, IDisposable {
 
         private ISelectable _currentSelection;
+        /// <summary>
+        /// The currently selected Item which can be null if no Item is selected.
+        /// <remarks>Usage: An Item is selected by setting its IsSelected property to true. That Item then automatically populates
+        /// this property with a reference to itself. An Item's deselection is initiated by assigning this CurrentSelection 
+        /// property to some other value, including null. This manager then automatically DeSelect()s any previously selected Item. </remarks>
+        /// </summary>
         public ISelectable CurrentSelection {
             get { return _currentSelection; }
             set { SetProperty<ISelectable>(ref _currentSelection, value, "CurrentSelection", CurrentSelectionPropChangedHandler, CurrentSelectionPropChangingHandler); }
@@ -34,6 +40,8 @@ namespace CodeEnv.Master.GameContent {
 
         private ISFXManager _sfxMgr;
         private IInputManager _inputMgr;
+        private IGameInputHelper _inputHelper;
+        private IGameManager _gameMgr;
 
         private SelectionManager() {
             Initialize();
@@ -43,6 +51,8 @@ namespace CodeEnv.Master.GameContent {
             //D.Log("{0}.Initialize() called.", DebugName);
             _inputMgr = GameReferences.InputManager;
             _sfxMgr = GameReferences.SFXManager;
+            _inputHelper = GameReferences.InputHelper;
+            _gameMgr = GameReferences.GameManager;
             Subscribe();
         }
 
@@ -52,28 +62,33 @@ namespace CodeEnv.Master.GameContent {
 
         #region Events and Property Change Handlers
 
-        private void UnconsumedPressEventHandler(object sender, EventArgs e) {
-            if (GameReferences.InputHelper.IsLeftMouseButton) {
-                D.Log("{0} is attempting to de-select the current selection due to an unconsumed press.", DebugName);
-                CurrentSelection = null;
-            }
-        }
-
-        private void CurrentSelectionPropChangingHandler(ISelectable newSelection) {
+        private void CurrentSelectionPropChangingHandler(ISelectable incomingSelection) {
             if (CurrentSelection != null) {
                 CurrentSelection.IsSelected = false;
+                // 8.2.17 ISelectables now auto hide the HUD they show in when DeSelect()ed
             }
         }
 
         private void CurrentSelectionPropChangedHandler() {
             if (CurrentSelection != null) {
                 _sfxMgr.PlaySFX(SfxClipID.Select);
+                _gameMgr.RequestPauseStateChange(true);
             }
             else {
                 _sfxMgr.PlaySFX(SfxClipID.UnSelect);
-                // Note: Hide() handled centrally here as ISelectable's don't know whether another item has been selected
-                GameReferences.InteractableHudWindow.Hide();
-                //D.Log("{0} is Hiding InteractableHudWindow.", DebugName);
+                _gameMgr.RequestPauseStateChange(false);
+            }
+        }
+
+        private void UnconsumedPressEventHandler(object sender, EventArgs e) {
+            if (_inputHelper.IsLeftMouseButton) {
+                //D.Log("{0} is de-selecting any current selection due to an unconsumed press.", DebugName);
+                if (_inputHelper.IsOverUI) {
+                    // 8.15.17 UNCLEAR whether this occurs
+                    D.Warn("{0} has blocked de-selecting any current selection as the click was over the UI.", DebugName);
+                    return;
+                }
+                CurrentSelection = null;
             }
         }
 
@@ -130,7 +145,7 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-
     }
 }
+
 

@@ -30,7 +30,7 @@ namespace CodeEnv.Master.GameContent {
 
         None = 0,
 
-        // last: NameInputField = 98  
+        // last: NameInput = 98  
         //// last: SettlementCmdDesignWindowCheckbox = 97  
 
         #region Checkboxes

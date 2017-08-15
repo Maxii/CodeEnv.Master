@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: PathfindingManager.cs
-//  The singleton manager for the AStar Pathfinding system. 
+// The singleton manager for the AStar Pathfinding system. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,11 +17,9 @@
 // default namespace
 
 using System;
-using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using Pathfinding;
-using UnityEngine;
 
 // NOTE: Can't move this to GameScriptAssembly as it requires loose AStar scripts in Unity when compiled
 
@@ -39,10 +37,10 @@ public class PathfindingManager : AMonoSingleton<PathfindingManager> {
 
     private string DebugName { get { return GetType().Name; } }
 
-    private MyPathfindingGraph _graph;
-    public MyPathfindingGraph Graph {
+    private MyNGPathfindingGraph _graph;
+    public MyNGPathfindingGraph Graph {
         get { return _graph; }
-        private set { SetProperty<MyPathfindingGraph>(ref _graph, value, "Graph"); }
+        private set { SetProperty<MyNGPathfindingGraph>(ref _graph, value, "Graph"); }
     }
 
     private AstarPath _astarPath;
@@ -104,7 +102,9 @@ public class PathfindingManager : AMonoSingleton<PathfindingManager> {
     }
 
     private void GraphScansCompletedEventHandler(AstarPath astarPath) {
-        Graph = astarPath.graphs[0] as MyPathfindingGraph;  // as MyAStarPointGraph
+        Graph = astarPath.graphs[0] as MyNGPathfindingGraph;  // as MyPathfindingGraph
+
+        ////Graph = astarPath.graphs[0] as MyPathfindingGraph;  // as MyAStarPointGraph
         //D.Log("{0} AstarPath.Scan has completed on Frame {1}.", DebugName, Time.frameCount);
 
         _gameMgr.RecordGameStateProgressionReadiness(this, GameState.GeneratingPathGraphs, isReady: true);

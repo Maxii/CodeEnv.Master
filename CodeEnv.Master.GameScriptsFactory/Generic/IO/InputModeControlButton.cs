@@ -29,21 +29,13 @@ using UnityEngine.Serialization;
 /// </summary>
 public class InputModeControlButton : AGuiButton {
 
-    protected override IList<KeyCode> ValidKeys { get { return new List<KeyCode>() { KeyCode.Return }; } }
+    private static IEnumerable<KeyCode> _validKeys = new KeyCode[] { KeyCode.Return };
 
-    //[FormerlySerializedAs("inputModeOnClick")]
     [Tooltip("The GameSceneInputMode to use when clicked")]
     [SerializeField]
     private GameSceneInputMode _inputModeOnClick = GameSceneInputMode.None;
 
-    protected override void Awake() {
-        base.Awake();
-        if (_inputModeOnClick == default(GameSceneInputMode)) {
-            D.WarnContext(this, "{0} has not set {1}.", GetType().Name, typeof(GameSceneInputMode).Name);
-        }
-    }
-
-    #region Event and Property Change Handlers
+    protected override IEnumerable<KeyCode> ValidKeys { get { return _validKeys; } }
 
     protected override void HandleValidClick() {
         D.AssertNotEqual(SceneID.LobbyScene, _gameMgr.CurrentSceneID);
@@ -66,10 +58,22 @@ public class InputModeControlButton : AGuiButton {
         InputManager.Instance.InputMode = gameInputMode;
     }
 
+    #region Event and Property Change Handlers
+
     #endregion
 
     protected override void Cleanup() { }
 
+    #region Debug
+
+    protected override void __Validate() {
+        base.__Validate();
+        if (_inputModeOnClick == default(GameSceneInputMode)) {
+            D.WarnContext(this, "{0} has not set {1}.", DebugName, typeof(GameSceneInputMode).Name);
+        }
+    }
+
+    #endregion
 
     #region Nested Classes
 
@@ -105,5 +109,6 @@ public class InputModeControlButton : AGuiButton {
     }
 
     #endregion
+
 }
 

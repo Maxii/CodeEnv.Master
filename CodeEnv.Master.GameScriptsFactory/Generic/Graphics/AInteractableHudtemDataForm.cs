@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2017 
+// Copyright © 2012 - 2015 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: UniverseCenterForm.cs
-// Form used by the HoveredHudWindow to display info about the UniverseCenter.   
+// File: AInteractableHudItemDataForm.cs
+// Abstract base class for AItemDataForms that are used by the InteractableHud.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,17 +16,16 @@
 
 // default namespace
 
+using System;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Form used by the HoveredHudWindow to display info about the UniverseCenter.   
+/// Abstract base class for AItemDataForms that are used by the InteractableHud.
 /// </summary>
-public class UniverseCenterForm : AItemReportForm {
-
-    public override FormID FormID { get { return FormID.UniverseCenter; } }
+public abstract class AInteractableHudItemDataForm : AItemDataForm {
 
     private UILabel _titleLabel;
 
@@ -41,11 +40,6 @@ public class UniverseCenterForm : AItemReportForm {
         _titleLabel = immediateChildLabels.Single(l => l != _nameLabel);
     }
 
-    protected override void AssignValueToNameGuiElement() {
-        base.AssignValueToNameGuiElement();
-        _nameLabel.text = Report.Name != null ? Report.Name : Unknown;
-    }
-
     protected override void AssignValuesToNonGuiElementMembers() {
         base.AssignValuesToNonGuiElementMembers();
         _titleLabel.text = FormID.GetValueName();
@@ -54,7 +48,8 @@ public class UniverseCenterForm : AItemReportForm {
     #region Event and Property Change Handlers
 
     private void NameDoubleClickEventHandler(GameObject go) {
-        (Report.Item as ICameraFocusable).IsFocus = true;
+        //D.Log("{0} Name Label double clicked.", DebugName);
+        (ItemData.Item as ICameraFocusable).IsFocus = true;
     }
 
     #endregion

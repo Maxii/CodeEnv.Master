@@ -587,7 +587,7 @@ public class NewGameUnitConfigurator {
 
     #endregion
 
-    public void Reset() {
+    public void ResetForReuse() {
         _rootDesignNameCounter = Constants.One;
     }
 

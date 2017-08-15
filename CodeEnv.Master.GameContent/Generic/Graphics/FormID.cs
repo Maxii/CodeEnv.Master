@@ -45,18 +45,21 @@ namespace CodeEnv.Master.GameContent {
 
         SystemTableRow,
 
+        // 8.2.17 All of these selected item FormIDs are for user-owned items as the 'interactable' HUDs (InteractableHud,
+        // UnitHud) provide the ability to change values.
+        UserSettlement,
+        UserStarbase,
+        UserFleet,
+        UserSystem,
+        UserShip,
+        UserFacility,
+        UserStar,
+        UserPlanetoid,
 
-        // 7.10.17 No SelectedUniverseCenter as only user owned items are displayed in a form when selected.
-        // Only user owned items because the InteractableHUD that displays 'selected' items is designed to allow
-        // interactive controls to be present. Only user owned items should have interactive controls.
-        SelectedSettlement,
-        SelectedStarbase,
-        SelectedFleet,
-        SelectedSystem,
-        SelectedShip,
-        SelectedFacility,
-        SelectedStar,
-        SelectedPlanetoid,
+        // 8.2.17 These 'AI-owned' selected Unit FormIDs provide access to the UnitHud, but without the ability to change values
+        AiSettlement,
+        AiStarbase,
+        AiFleet,
 
 
         UnitDesign,

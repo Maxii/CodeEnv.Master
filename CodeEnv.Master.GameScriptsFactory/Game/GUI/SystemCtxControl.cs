@@ -25,15 +25,17 @@ using UnityEngine;
 
 /// <summary>
 /// Context Menu Control for <see cref="SystemItem"/>s with no owner (and therefore no settlement).
+/// <remarks>OPTIMIZE 8.7.17 these non-user-owned Items aren't selectable.</remarks>
 /// </summary>
 public class SystemCtxControl : ACtxControl {
 
-    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] { FleetDirective.Move,
-                                                                                        FleetDirective.FullSpeedMove,
-                                                                                        FleetDirective.Guard,
-                                                                                        FleetDirective.Explore,
-                                                                                        FleetDirective.Patrol
-                                                                                      };
+    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[]   {
+                                                                                            FleetDirective.Move,
+                                                                                            FleetDirective.FullSpeedMove,
+                                                                                            FleetDirective.Guard,
+                                                                                            FleetDirective.Explore,
+                                                                                            FleetDirective.Patrol
+                                                                                        };
 
     protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
         get { return _userRemoteFleetDirectives; }
@@ -42,6 +44,8 @@ public class SystemCtxControl : ACtxControl {
     protected override Vector3 PositionForDistanceMeasurements { get { return _systemMenuOperator.Position; } }
 
     protected override string OperatorName { get { return _systemMenuOperator != null ? _systemMenuOperator.DebugName : "NotYetAssigned"; } }
+
+    protected override bool IsItemMenuOperatorTheCameraFocus { get { return _systemMenuOperator.IsFocus; } }
 
     private SystemItem _systemMenuOperator;
 

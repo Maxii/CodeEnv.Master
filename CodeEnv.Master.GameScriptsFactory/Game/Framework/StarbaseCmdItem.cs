@@ -50,8 +50,8 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd,
         return new StarbaseFormationManager(this);
     }
 
-    protected override ItemHudManager InitializeHudManager() {
-        return new ItemHudManager(Publisher);
+    protected override ItemHoveredHudManager InitializeHudManager() {
+        return new ItemHoveredHudManager(Publisher);
     }
 
     protected override SectorViewHighlightManager InitializeSectorViewHighlightMgr() {
@@ -71,12 +71,13 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd,
         return Elements.Cast<FacilityItem>().Select(e => e.GetReport(player)).ToArray();
     }
 
-    protected override IconInfo MakeIconInfo() {
+    protected override TrackingIconInfo MakeIconInfo() {
         return StarbaseIconInfoFactory.Instance.MakeInstance(UserReport);
     }
 
-    protected override void ShowSelectedItemInHud() {
-        InteractableHudWindow.Instance.Show(FormID.SelectedStarbase, Data);
+    protected override void ShowSelectedItemHud() {
+        InteractableHudWindow.Instance.Show(FormID.UserStarbase, Data);
+        // TODO Change to UnitHudWindow and have it show InteractableHudWindow
     }
 
     protected override void PrepareForDeathEffect() {

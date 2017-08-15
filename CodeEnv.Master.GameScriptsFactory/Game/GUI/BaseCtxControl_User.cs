@@ -64,6 +64,8 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
 
     protected override string OperatorName { get { return _baseMenuOperator != null ? _baseMenuOperator.DebugName : "NotYetAssigned"; } }
 
+    protected override bool IsItemMenuOperatorTheCameraFocus { get { return _baseMenuOperator.IsFocus; } }
+
     private AUnitBaseCmdItem _baseMenuOperator;
 
     public BaseCtxControl_User(AUnitBaseCmdItem baseCmd)

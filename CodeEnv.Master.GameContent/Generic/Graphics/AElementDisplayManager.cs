@@ -35,7 +35,7 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<GameColor>(ref _meshColor, value, "MeshColor", MeshColorPropChangedHandler); }
         }
 
-        public new IInteractiveWorldTrackingSprite Icon { get { return base.Icon as IInteractiveWorldTrackingSprite; } }
+        public new IInteractiveWorldTrackingSprite TrackingIcon { get { return base.TrackingIcon as IInteractiveWorldTrackingSprite; } }
 
         protected override int IconDepth { get { return 1; } }
 

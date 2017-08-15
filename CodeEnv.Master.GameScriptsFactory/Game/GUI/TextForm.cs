@@ -50,12 +50,11 @@ public class TextForm : AForm {
     #endregion
 
     protected override void AssignValuesToMembers() {
-        //D.Log("{0}.AssignValuesToMembers() called. Text = {1}.", GetType().Name, Text);
+        //D.Log("{0}.AssignValuesToMembers() called. Text = {1}.", DebugName, Text);
         _textLabel.text = Text;
     }
 
-    public override void Reset() {
-        //D.Log("{0}.Reset() called.", GetType().Name);
+    protected override void ResetForReuse_Internal() {
         _text = null;
     }
 

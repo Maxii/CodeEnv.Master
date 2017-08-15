@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: UnitDesignImageIcon.cs
-// ImageIcon that holds an AUnitDesign.
+// File: UnitDesignIcon.cs
+// AGuiIcon that holds an AUnitDesign.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,13 +16,15 @@
 
 // default namespace
 
+using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
-/// ImageIcon that holds an AUnitDesign.
+/// AGuiIcon that holds an AUnitDesign.
 /// </summary>
-public class UnitDesignImageIcon : AImageIcon {
+public class UnitDesignIcon : AGuiIcon {
 
     private const string DebugNameFormat = "{0}[{1}]";
     private const string TooltipFormat = "{0}{1}";
@@ -41,29 +43,34 @@ public class UnitDesignImageIcon : AImageIcon {
         get { return _design; }
         set {
             D.AssertNull(_design);
+            D.AssertNotNull(value);
             SetProperty<AUnitDesign>(ref _design, value, "Design", DesignPropSetHandler);
         }
     }
 
-    private bool _isSelected;
-    public bool IsSelected {
-        get { return _isSelected; }
+    private bool _isPicked;
+    public bool IsPicked {
+        get { return _isPicked; }
         set {
-            if (_isSelected != value) {
-                _isSelected = value;
-                IsSelectedPropertyChangedHandler();
+            if (_isPicked != value) {
+                _isPicked = value;
+                IsPickedPropChangedHandler();
             }
         }
     }
 
+    protected override void AcquireAdditionalIconWidgets(GameObject topLevelIconGo) { }
+
     #region Event and Property Change Handlers
 
     private void DesignPropSetHandler() {
-        AssignValuesToMembers();
+        D.AssertNotDefault((int)Size);
+        Show();
     }
 
-    private void IsSelectedPropertyChangedHandler() {
-        HandleIsSelectedChanged();
+    private void IsPickedPropChangedHandler() {
+        D.Assert(IsShowing);
+        HandleIsPickedChanged();
     }
 
     void OnHover(bool isOver) {
@@ -81,42 +88,35 @@ public class UnitDesignImageIcon : AImageIcon {
         Show(Design.ImageAtlasID, Design.ImageFilename, Design.DesignName, color);
     }
 
-    private void HandleIsSelectedChanged() {
-        if (!IsShowing) {
-            D.Warn("{0} changed selection status when not showing?", DebugName);
-        }
-        if (IsSelected) {
-            D.Log("{0} has been selected.", DebugName);
+    private void HandleIsPickedChanged() {
+        if (IsPicked) {
+            //D.Log("{0} has been picked.", DebugName);
             Show(TempGameValues.SelectedColor);
             SFXManager.Instance.PlaySFX(SfxClipID.Select);
         }
         else {
-            D.Log("{0} has been unselected.", DebugName);
+            //D.Log("{0} has been unpicked.", DebugName);
             Show();
             SFXManager.Instance.PlaySFX(SfxClipID.UnSelect);
         }
     }
 
-    private void AssignValuesToMembers() {
-        Size = IconSize.Large;
-    }
-
     protected override void HandleIconSizeSet() {
         base.HandleIconSizeSet();
         ResizeWidgetAndAnchorIcon();
-        Show();
     }
 
     private void ResizeWidgetAndAnchorIcon() {
-        IntVector2 iconSize = GetIconDimensions(Size);
-        UIWidget widget = GetComponent<UIWidget>();
-        widget.SetDimensions(iconSize.x, iconSize.y);
-        AnchorTo(widget);
+        IntVector2 iconDimensions = GetIconDimensions(Size);
+        UIWidget topLevelWidget = GetComponent<UIWidget>();
+        topLevelWidget.SetDimensions(iconDimensions.x, iconDimensions.y);
+        AnchorTo(topLevelWidget);
     }
 
-    public void Reset() {
+    public override void ResetForReuse() {
+        base.ResetForReuse();
         _design = null;
-        _isSelected = false;
+        _isPicked = false;
     }
 
     protected override void Cleanup() { }

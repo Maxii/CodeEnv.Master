@@ -69,6 +69,13 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     }
 
     /// <summary>
+    /// Returns <c>true</c> if this item can become the selection.
+    /// <remarks>8.7.17 Besides all user-owned items, discernible AI-owned units and all planetoids are selectable.
+    /// Planetoids are currently selectable as I want a Debug ability to tell them to die.</remarks>
+    /// </summary>
+    protected virtual bool IsSelectable { get { return Owner.IsUser; } }
+
+    /// <summary>
     /// Flag indicating whether InitializeOnFirstDiscernibleToUser() has run.
     /// </summary>
     private bool _hasInitOnFirstDiscernibleToUserRun;
@@ -90,7 +97,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     protected virtual void InitializeOnFirstDiscernibleToUser() {
         D.Assert(!_hasInitOnFirstDiscernibleToUserRun);
         D.Assert(IsOperational);
-        _hudManager = InitializeHudManager();
+        _hoveredHudManager = InitializeHudManager();
 
         DisplayMgr = MakeDisplayManagerInstance();
         InitializeDisplayManager();
@@ -102,7 +109,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
         _hasInitOnFirstDiscernibleToUserRun = true;
     }
 
-    protected abstract ItemHudManager InitializeHudManager();
+    protected abstract ItemHoveredHudManager InitializeHudManager();
 
     protected abstract ADisplayManager MakeDisplayManagerInstance();
 
@@ -192,6 +199,8 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     }
 
     protected void ShowCircleHighlights(params CircleHighlightID[] circleHighlightIDs) {
+        //D.Log("{0}.ShowCircleHighlights({1}) called during Frame {2}.", DebugName,
+        //    circleHighlightIDs.Select(id => id.GetValueName()).Concatenate(), Time.frameCount);
         var circleHighlightMgr = GetHighlightMgr(HighlightMgrID.Circles) as CircleHighlightManager;
         if (circleHighlightIDs.Contains(CircleHighlightID.None)) {
             circleHighlightMgr.Show(false);
@@ -212,23 +221,16 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     }
 
     /// <summary>
-    /// Shows the ISelectable Item in the InteractableHud.
+    /// Shows the selected Item in the appropriate HUD.
     /// </summary>
-    /// <remarks>This method must be called prior to notifying SelectionMgr of the selection change. 
-    /// HoveredHudWindow subscribes to the change and needs the InteractableHudWindow to already 
-    /// be resized and showing so it can position itself properly. Hiding the InteractableHud is 
-    /// handled by the SelectionMgr when there is no longer an item selected.
-    /// </remarks>
-    protected abstract void ShowSelectedItemInHud();
+    /// <returns></returns>
+    protected abstract void ShowSelectedItemHud();
 
     /// <summary>
-    /// Hides the InteractableHUD. Called when this Item has been selected but is not owned by user.
-    /// Accordingly, the HUD won't be told to show this Item, so it must be told to stop showing the previous Item, if any.
-    /// <remarks>SelectionManager also hides the InteractableHUD but only when the user chooses to 
-    /// cancel any selection by clicking on empty space.</remarks>
+    /// Hides the HUD that is showing the selected Item.
     /// </summary>
-    private void HideInteractableHud() {
-        D.Assert(!Owner.IsUser);
+    protected virtual void HideSelectedItemHud() {
+        D.Assert(!IsSelected);
         GameReferences.InteractableHudWindow.Hide();
     }
 
@@ -355,13 +357,11 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
 
     protected virtual void HandleIsSelectedChanged() {
         if (IsSelected) {
-            if (Owner.IsUser) {
-                ShowSelectedItemInHud();
-            }
-            else {
-                HideInteractableHud();
-            }
             SelectionManager.Instance.CurrentSelection = this;
+            ShowSelectedItemHud();
+        }
+        else {
+            HideSelectedItemHud();
         }
         AssessCircleHighlighting();
     }
@@ -378,6 +378,17 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
                 _ctxControl = InitializeContextMenu(newOwner);
             }
         }
+
+        if (IsSelected) {
+            D.Assert(Owner.IsUser);
+        }
+    }
+
+    protected override void HandleOwnerChanged() {
+        base.HandleOwnerChanged();
+        if (IsSelected) {
+            SelectionManager.Instance.CurrentSelection = null;
+        }
     }
 
     protected virtual void HandleIsInMainCameraLosChanged() {
@@ -386,9 +397,9 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
 
     // IMPROVE deal with losing IsDiscernible while hovered or pressed
     protected virtual void HandleIsDiscernibleToUserChanged() {
-        if (!IsDiscernibleToUser && IsHudShowing) {
+        if (!IsDiscernibleToUser && IsHoveredHudShowing) {
             // lost ability to discern this object while showing the HUD so stop showing
-            ShowHud(false);
+            ShowHoveredHud(false);
         }
         if (!_hasInitOnFirstDiscernibleToUserRun) {
             D.Assert(IsDiscernibleToUser);    // first time change should always be true
@@ -401,7 +412,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     protected virtual void HandleIsVisualDetailDiscernibleToUserChanged() { }
 
     private void HandleHoveredChanged(bool isHovered) {
-        ShowHud(isHovered);
+        ShowHoveredHud(isHovered);
         ShowHoverHighlight(isHovered);
     }
 
@@ -409,9 +420,11 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
         //D.Log(ShowDebugLog, "{0} is handling an OnClick event.", DebugName);
         if (IsDiscernibleToUser) {
             if (_inputHelper.IsLeftMouseButton) {
-                KeyCode notUsed;
-                if (_inputHelper.TryIsKeyHeldDown(out notUsed, KeyCode.LeftAlt, KeyCode.RightAlt)) {
+                if (_inputHelper.IsAnyKeyHeldDown(KeyCode.LeftAlt, KeyCode.RightAlt)) {
                     HandleAltLeftClick();
+                }
+                else if (_inputHelper.IsAnyKeyHeldDown(KeyCode.LeftControl, KeyCode.RightControl)) {
+                    HandleCntlLeftClick();
                 }
                 else {
                     HandleLeftClick();
@@ -424,18 +437,19 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
                 HandleRightClick();
             }
             else {
-                D.Error("{0}.OnClick() without a mouse button found.", GetType().Name);
+                D.Error("{0}.OnClick() without a mouse button found.", DebugName);
             }
         }
     }
-    protected virtual void HandleLeftClick() {
-        IsSelected = true;
-    }
-    protected virtual void HandleAltLeftClick() { }
-    protected virtual void HandleMiddleClick() {
-        IsFocus = true;
-    }
 
+    private void HandleLeftClick() {
+        if (IsSelectable) {
+            IsSelected = true;
+        }
+    }
+    protected virtual void HandleCntlLeftClick() { }
+    protected virtual void HandleAltLeftClick() { }
+    protected virtual void HandleMiddleClick() { IsFocus = true; }
     protected virtual void HandleRightClick() { }
 
     private void HandlePressedChanged(bool isPressed) {
@@ -593,9 +607,11 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
 
     /// <summary>
     /// Indicates whether this instance is currently eligible to be a camera target for zooming, focusing or following.
-    /// e.g. - the camera should not react to the object when it is not discernible to the user.
+    /// <remarks>8.5.17 Generally, the camera should not react to the object when it is not discernible to the user.
+    /// However, with the introduction of the ability to focus on a user-owned Item whose Icon representation is clicked
+    /// in the Gui, this was expanded to include objects owned by the user.</remarks> 
     /// </summary>
-    public bool IsCameraTargetEligible { get { return IsDiscernibleToUser; } }
+    public bool IsCameraTargetEligible { get { return IsDiscernibleToUser || Owner.IsUser; } }
 
     public float MinimumCameraViewingDistance { get { return CameraStat.MinimumViewingDistance; } }
 
@@ -605,12 +621,12 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
 
     public float FieldOfView { get { return CameraStat.FieldOfView; } }
 
-    //Note: protected and virtual so FleetCmdItems can override using UnitRadius
+    //Note: protected and virtual so UnitCmdItems can override using UnitRadius
     protected float _optimalCameraViewingDistance;
     public virtual float OptimalCameraViewingDistance {
         get {
             if (_optimalCameraViewingDistance != Constants.ZeroF) {
-                // the user has set the value manually
+                // the user has set the value manually via the context menu
                 return _optimalCameraViewingDistance;
             }
             return (CameraStat as FocusableItemCameraStat).OptimalViewingDistance;
@@ -663,9 +679,18 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     #region ISelectable Members
 
     private bool _isSelected;
+    // <summary>
+    // Indicates whether this is the currently selected Item.
+    // <remarks>Usage: An Item's selection is initiated by setting this property to true which will automatically populate
+    // SelectionManager's CurrentSelection property. An Item's deselection is initiated by assigning SelectionManager's 
+    // CurrentSelection property to some other value, including null. DONOT directly set IsSelected to false.</remarks>
+    // </summary>
     public bool IsSelected {
         get { return _isSelected; }
-        set { SetProperty<bool>(ref _isSelected, value, "IsSelected", IsSelectedPropChangedHandler); }
+        set {
+            D.Assert(IsSelectable);
+            SetProperty<bool>(ref _isSelected, value, "IsSelected", IsSelectedPropChangedHandler);
+        }
     }
 
     #endregion

@@ -45,11 +45,14 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
 
     private bool IsShipDisengageOrderDisabled {
         get {
-            return _shipMenuOperator.Data.CombatStance == ShipCombatStance.Disengage ||
-                _shipMenuOperator.IsCurrentOrderDirectiveAnyOf(ShipDirective.Disengage) ||
-            !_shipMenuOperator.Command.RequestPermissionToWithdraw(_shipMenuOperator, ShipItem.WithdrawPurpose.Disengage);
+            return _shipMenuOperator.Data.CombatStance == ShipCombatStance.Disengage
+                || _shipMenuOperator.IsCurrentOrderDirectiveAnyOf(ShipDirective.Disengage)
+                || _shipMenuOperator.IsHQ
+                || !_shipMenuOperator.Command.RequestPermissionToWithdraw(_shipMenuOperator, ShipItem.WithdrawPurpose.Disengage);
         }
     }
+
+    protected override bool IsItemMenuOperatorTheCameraFocus { get { return _shipMenuOperator.IsFocus; } }
 
     private ShipItem _shipMenuOperator;
 

@@ -103,7 +103,7 @@ public class ApprovalGuiElement : AProgressBarGuiElement, IComparable<ApprovalGu
         }
     }
 
-    public override void Reset() {
+    public override void ResetForReuse() {
         _isApprovalSet = false;
     }
 

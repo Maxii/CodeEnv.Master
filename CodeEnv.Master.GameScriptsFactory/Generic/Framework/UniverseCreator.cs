@@ -997,9 +997,9 @@ public class UniverseCreator {
         return isCmdFound;
     }
 
-    public void Reset() {
-        SystemConfigurator.Reset();
-        UnitConfigurator.Reset();
+    public void ResetForReuse() {
+        SystemConfigurator.ResetForReuse();
+        UnitConfigurator.ResetForReuse();
         UniverseCenter = null;
         _systemCreators = null;
         _unitCreators = null;

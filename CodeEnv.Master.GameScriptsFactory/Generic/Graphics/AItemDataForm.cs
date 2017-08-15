@@ -41,7 +41,7 @@ public abstract class AItemDataForm : AInfoChangeForm {
 
     #endregion
 
-    public override void Reset() {
+    protected override void ResetForReuse_Internal() {
         _itemData = null;
     }
 

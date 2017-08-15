@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: EquipmentForm.cs
-// Form used by the HoveredHudWindow to display info about Equipment.   
+// File: HoveredHudUCForm.cs
+// Form used by the HoveredHudWindow to display info about the UniverseCenter.   
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,17 +19,21 @@
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
-/// Form used by the HoveredHudWindow to display info about Equipment.   
-/// <remarks>TEMP as I expect equipment to differ in what is shown.
-/// 7.12.17 Currently only shows the EquipmentName.</remarks>
+/// Form used by the HoveredHudWindow to display info about the UniverseCenter.   
 /// </summary>
-public class EquipmentForm : AEquipmentForm {
+public class HoveredHudUCForm : AItemReportForm {
 
-    public override FormID FormID { get { return FormID.Equipment; } }
+    public override FormID FormID { get { return FormID.UniverseCenter; } }
 
     private UILabel _titleLabel;
+
+    protected override void InitializeNameGuiElement(AGuiElement e) {
+        base.InitializeNameGuiElement(e);
+        MyEventListener.Get(e.gameObject).onDoubleClick += NameDoubleClickEventHandler;
+    }
 
     protected override void InitializeNonGuiElementMembers() {
         base.InitializeNonGuiElementMembers();
@@ -39,15 +43,26 @@ public class EquipmentForm : AEquipmentForm {
 
     protected override void AssignValueToNameGuiElement() {
         base.AssignValueToNameGuiElement();
-        _nameLabel.text = EquipmentStat.Name;
+        _nameLabel.text = Report.Name != null ? Report.Name : Unknown;
     }
-
 
     protected override void AssignValuesToNonGuiElementMembers() {
         base.AssignValuesToNonGuiElementMembers();
         _titleLabel.text = FormID.GetValueName();
     }
 
+    #region Event and Property Change Handlers
+
+    private void NameDoubleClickEventHandler(GameObject go) {
+        (Report.Item as ICameraFocusable).IsFocus = true;
+    }
+
+    #endregion
+
+    protected override void CleanupNameGuiElement(AGuiElement e) {
+        base.CleanupNameGuiElement(e);
+        MyEventListener.Get(e.gameObject).onDoubleClick -= NameDoubleClickEventHandler;
+    }
 
 }
 

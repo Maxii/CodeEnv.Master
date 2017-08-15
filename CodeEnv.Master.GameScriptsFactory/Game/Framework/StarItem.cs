@@ -125,8 +125,8 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigableDestination
         }
     }
 
-    protected override ItemHudManager InitializeHudManager() {
-        return new ItemHudManager(Publisher);
+    protected override ItemHoveredHudManager InitializeHudManager() {
+        return new ItemHoveredHudManager(Publisher);
     }
 
     protected override ICtxControl InitializeContextMenu(Player owner) {
@@ -167,8 +167,8 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigableDestination
 
     public StarReport GetReport(Player player) { return Publisher.GetReport(player); }
 
-    protected override void ShowSelectedItemInHud() {
-        InteractableHudWindow.Instance.Show(FormID.SelectedStar, Data);
+    protected override void ShowSelectedItemHud() {
+        InteractableHudWindow.Instance.Show(FormID.UserStar, Data);
     }
 
     protected override void HandleInfoAccessChangedFor(Player player) {
@@ -201,8 +201,8 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigableDestination
 
     protected override void HandleOwnerChanged() {
         base.HandleOwnerChanged();
-        if (DisplayMgr != null && DisplayMgr.Icon != null) {
-            DisplayMgr.Icon.Color = Owner.Color;
+        if (DisplayMgr != null && DisplayMgr.TrackingIcon != null) {
+            DisplayMgr.TrackingIcon.Color = Owner.Color;
         }
     }
     ////protected override void HandleOwnerChanged() {
@@ -256,17 +256,17 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigableDestination
 
     private void EnableIcon(bool toEnable) {
         if (toEnable) {
-            D.AssertNull(DisplayMgr.Icon);
+            D.AssertNull(DisplayMgr.TrackingIcon);
             DisplayMgr.IconInfo = MakeIconInfo();
-            SubscribeToIconEvents(DisplayMgr.Icon);
+            SubscribeToIconEvents(DisplayMgr.TrackingIcon);
 
             // DisplayMgr will have its meshes on Layers.TransparentFX if Icon was previously disabled
             DisplayMgr.__ChangeMeshLayersTo(TempGameValues.StarMeshCullLayer);
         }
         else {
-            D.AssertNotNull(DisplayMgr.Icon);
-            UnsubscribeToIconEvents(DisplayMgr.Icon);
-            DisplayMgr.IconInfo = default(IconInfo);
+            D.AssertNotNull(DisplayMgr.TrackingIcon);
+            UnsubscribeToIconEvents(DisplayMgr.TrackingIcon);
+            DisplayMgr.IconInfo = default(TrackingIconInfo);
 
             // No StarIcon so don't cull Star meshes
             DisplayMgr.__ChangeMeshLayersTo(Layers.TransparentFX);
@@ -275,13 +275,13 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigableDestination
 
     private void AssessIcon() {
         if (DisplayMgr != null) {
-            if (DisplayMgr.Icon != null) {
+            if (DisplayMgr.TrackingIcon != null) {
                 var iconInfo = RefreshIconInfo();
                 if (DisplayMgr.IconInfo != iconInfo) {    // avoid property not changed warning
-                    UnsubscribeToIconEvents(DisplayMgr.Icon);
+                    UnsubscribeToIconEvents(DisplayMgr.TrackingIcon);
                     //D.Log(ShowDebugLog, "{0} changing IconInfo from {1} to {2}.", DebugName, DisplayMgr.IconInfo, iconInfo);
                     DisplayMgr.IconInfo = iconInfo;
-                    SubscribeToIconEvents(DisplayMgr.Icon);
+                    SubscribeToIconEvents(DisplayMgr.TrackingIcon);
                 }
             }
             else {
@@ -298,14 +298,14 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigableDestination
         iconEventListener.onPress += PressEventHandler;
     }
 
-    private IconInfo RefreshIconInfo() {
+    private TrackingIconInfo RefreshIconInfo() {
         return MakeIconInfo();
     }
 
-    private IconInfo MakeIconInfo() {
+    private TrackingIconInfo MakeIconInfo() {
         var report = UserReport;
         GameColor iconColor = report.Owner != null ? report.Owner.Color : GameColor.White;
-        return new IconInfo("Icon01", AtlasID.Contextual, iconColor, IconSize, WidgetPlacement.Over, TempGameValues.StarIconCullLayer);
+        return new TrackingIconInfo("Icon01", AtlasID.Contextual, iconColor, IconSize, WidgetPlacement.Over, TempGameValues.StarIconCullLayer);
     }
 
     private void ShowStarIconsChangedEventHandler(object sender, EventArgs e) {
@@ -321,7 +321,7 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigableDestination
             _debugCntls.showStarIcons -= ShowStarIconsChangedEventHandler;
         }
         if (DisplayMgr != null) {
-            var icon = DisplayMgr.Icon;
+            var icon = DisplayMgr.TrackingIcon;
             if (icon != null) {
                 UnsubscribeToIconEvents(icon);
             }

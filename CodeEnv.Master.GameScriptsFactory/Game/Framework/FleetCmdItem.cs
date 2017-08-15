@@ -114,8 +114,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         InitializeDebugShowCoursePlot();
     }
 
-    protected override ItemHudManager InitializeHudManager() {
-        return new ItemHudManager(Publisher);
+    protected override ItemHoveredHudManager InitializeHudManager() {
+        return new ItemHoveredHudManager(Publisher);
     }
 
     protected override ICtxControl InitializeContextMenu(Player owner) {
@@ -163,7 +163,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         fleetToJoin.AddElement(ship);
     }
 
-
     public override void RemoveElement(AUnitElementItem element) {
         base.RemoveElement(element);
 
@@ -202,6 +201,15 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         return IsCurrentStateAnyOf(FleetState.ExecuteAttackOrder) && _fsmTgt == unitCmd;
     }
 
+    public bool TryAssessOrbit(out IShipOrbitable orbitedItem) {
+        if (HQElement.IsInOrbit) {
+            orbitedItem = HQElement.ItemBeingOrbited;
+            return true;
+        }
+        orbitedItem = null;
+        return false;
+    }
+
     /// <summary>
     /// Selects and returns a new HQElement.
     /// <remarks>TEMP public to allow creator use.</remarks>
@@ -233,15 +241,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         return ship;
     }
 
-    protected override void ResetOrderAndState() {
-        CurrentOrder = null;
-
-        // 5.18.17 BUG: Idling triggered IsAvailable when not just dead, but destroyed???
-        D.Assert(!IsDead, "{0} is dead but about to initiate Idling!".Inject(DebugName));
-        CurrentState = FleetState.Idling;   // 4.20.17 Will unsubscribe from any FsmEvents when exiting the Current non-Call()ed state
-        // 4.20.17 Notifying elements of loss not needed as Cmd losing ownership is the result of last element losing ownership
-    }
-
     protected override void PrepareForDeadState() {
         base.PrepareForDeadState();
         UponDeath();    // 4.19.17 Do any reqd Callback before exiting current non-Call()ed state
@@ -259,14 +258,17 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     /// <param name="orderSource">The order source.</param>
     private void ScuttleUnit(OrderSource orderSource) {
         var elementScuttleOrder = new ShipOrder(ShipDirective.Scuttle, orderSource);
-        Elements.ForAll(e => (e as ShipItem).InitiateNewOrder(elementScuttleOrder));
+        // Scuttle HQElement last to avoid multiple selections of new HQElement
+        Elements.Except(HQElement).ForAll(e => (e as ShipItem).InitiateNewOrder(elementScuttleOrder));
+        (HQElement as ShipItem).InitiateNewOrder(elementScuttleOrder);
     }
 
-    protected override void ShowSelectedItemInHud() {
-        InteractableHudWindow.Instance.Show(FormID.SelectedFleet, Data);
+    protected override void ShowSelectedItemHud() {
+        UnitHudWindow.Instance.Show(FormID.UserFleet, this);
+        // 8.7.17 UnitHudWindow's InteractableHudFleetForm will auto show InteractableHudWindow's UserFleetForm
     }
 
-    protected override IconInfo MakeIconInfo() {
+    protected override TrackingIconInfo MakeIconInfo() {
         return FleetIconInfoFactory.Instance.MakeInstance(UserReport);
     }
 
@@ -284,7 +286,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     public bool RequestFormationStationChange(ShipItem ship, AFormationManager.FormationStationSelectionCriteria stationSelectionCriteria) {
         int iterateCount = Constants.Zero;
         while (iterateCount < 3) {
-            if (RequestFormationStationChange(ship, stationSelectionCriteria, ref iterateCount)) {
+            if (__RequestFormationStationChange(ship, stationSelectionCriteria, ref iterateCount)) {
                 return true;
             }
             // TODO modify stationSelectionCriteria here to search for criteria that fits an available slot
@@ -292,7 +294,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         return false;
     }
 
-    private bool RequestFormationStationChange(ShipItem ship, AFormationManager.FormationStationSelectionCriteria stationSelectionCriteria, ref int iterateCount) {
+    private bool __RequestFormationStationChange(ShipItem ship, AFormationManager.FormationStationSelectionCriteria stationSelectionCriteria, ref int iterateCount) {
         if (FormationMgr.IsSlotAvailable(stationSelectionCriteria)) {
             //D.Log(ShowDebugLog, "{0} request for formation station change has been approved.", ship.DebugName);
             FormationMgr.AddAndPositionNonHQElement(ship, stationSelectionCriteria);
@@ -300,6 +302,14 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         }
         iterateCount++;
         return false;
+    }
+
+    protected override void HandleFormationChanged() {
+        base.HandleFormationChanged();
+        if (IsCurrentStateAnyOf(FleetState.Idling, FleetState.Guarding, FleetState.AssumingFormation)) {
+            D.Log(/*ShowDebugLog,*/ "{0} is issuing an order to change formation to {1}.", DebugName, UnitFormation.GetValueName());
+            OverrideCurrentOrder(new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff), retainSuperiorsOrder: true);
+        }
     }
 
     #region Event and Property Change Handlers
@@ -351,23 +361,31 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             // deal with multiple changes all while paused
             _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedEventHandler;
             _gameMgr.isPausedChanged += NewOrderReceivedWhilePausedEventHandler;
-            bool willOrderExecutionImmediatelyFollowResume = order.Source == OrderSource.User || CurrentOrder == null || CurrentOrder.Source != OrderSource.CmdStaff;
+            bool willOrderExecutionImmediatelyFollowResume = IsCurrentOrderImmediatelyReplaceableBy(order);
             return willOrderExecutionImmediatelyFollowResume;
         }
 
         D.Assert(!IsPaused);
         D.AssertNull(_newOrderReceivedWhilePaused);
 
-        if (order.Source != OrderSource.User) {
-            if (CurrentOrder != null) {
-                if (CurrentOrder.Source == OrderSource.CmdStaff) {
-                    CurrentOrder.StandingOrder = order;
-                    return false;
-                }
-            }
+        if (!IsCurrentOrderImmediatelyReplaceableBy(order)) {
+            CurrentOrder.StandingOrder = order;
+            return false;
         }
         CurrentOrder = order;
         return true;
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if CurrentOrder can immediately be replaced by order, <c>false</c> otherwise.
+    /// <remarks>CurrentOrder can immediately be replaced by order if order was issued by the User, OR
+    /// CurrentOrder is null OR CurrentOrder isn't an override order issued by CmdStaff.</remarks>
+    /// <remarks>A CmdStaff-issued override order can only be immediately replaced by a User-issued order.</remarks>
+    /// </summary>
+    /// <param name="order">The order.</param>
+    /// <returns></returns>
+    private bool IsCurrentOrderImmediatelyReplaceableBy(FleetOrder order) {
+        return order.Source == OrderSource.User || CurrentOrder == null || CurrentOrder.Source != OrderSource.CmdStaff;
     }
 
     private void ChangeOrderAfterPause() {
@@ -380,11 +398,38 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         InitiateNewOrder(newOrder);
     }
 
+    /// <summary>
+    /// Returns <c>true</c> if the directive of the CurrentOrder or if paused, a pending order 
+    /// about to become the CurrentOrder matches any of the provided directive(s).
+    /// </summary>
+    /// <param name="directiveA">The directive a.</param>
+    /// <returns></returns>
     public bool IsCurrentOrderDirectiveAnyOf(FleetDirective directiveA) {
+        if (IsPaused && _newOrderReceivedWhilePaused != null) {
+            // paused with a pending order replacement
+            if (IsCurrentOrderImmediatelyReplaceableBy(_newOrderReceivedWhilePaused)) {
+                // _newOrderReceivedWhilePaused will immediately replace CurrentOrder as soon as unpaused
+                return _newOrderReceivedWhilePaused.Directive == directiveA;
+            }
+        }
         return CurrentOrder != null && CurrentOrder.Directive == directiveA;
     }
 
+    /// <summary>
+    /// Returns <c>true</c> if the directive of the CurrentOrder or if paused, a pending order 
+    /// about to become the CurrentOrder matches any of the provided directive(s).
+    /// </summary>
+    /// <param name="directiveA">The directive a.</param>
+    /// <param name="directiveB">The directive b.</param>
+    /// <returns></returns>
     public bool IsCurrentOrderDirectiveAnyOf(FleetDirective directiveA, FleetDirective directiveB) {
+        if (IsPaused && _newOrderReceivedWhilePaused != null) {
+            // paused with a pending order replacement
+            if (IsCurrentOrderImmediatelyReplaceableBy(_newOrderReceivedWhilePaused)) {
+                // _newOrderReceivedWhilePaused will immediately replace CurrentOrder as soon as unpaused
+                return _newOrderReceivedWhilePaused.Directive == directiveA || _newOrderReceivedWhilePaused.Directive == directiveB;
+            }
+        }
         return CurrentOrder != null && (CurrentOrder.Directive == directiveA || CurrentOrder.Directive == directiveB);
     }
 
@@ -468,7 +513,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                 case FleetDirective.Repair:
                     CurrentState = FleetState.ExecuteRepairOrder;
                     break;
-                case FleetDirective.StopAttack:
+                case FleetDirective.Cancel:
+                    ResetOrderAndState();
+                    break;
                 case FleetDirective.Disband:
                 case FleetDirective.Refit:
                 case FleetDirective.Retreat:
@@ -481,6 +528,17 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
             }
         }
+    }
+
+    protected override void ResetOrderAndState() {
+        D.Assert(!IsPaused);    // 8.13.17 ResetOrderAndState doesn't account for _newOrderReceivedWhilePaused
+        CurrentOrder = null;
+        D.Assert(!IsCurrentStateCalled);
+
+        // 5.18.17 BUG: Idling triggered IsAvailable when not just dead, but destroyed???
+        D.Assert(!IsDead, "{0} is dead but about to initiate Idling!".Inject(DebugName));
+        CurrentState = FleetState.Idling;   // 4.20.17 Will unsubscribe from any FsmEvents when exiting the Current non-Call()ed state
+        // 4.20.17 Notifying elements of loss not needed as Cmd losing ownership is the result of last element losing ownership
     }
 
     #endregion
@@ -514,11 +572,20 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         return CurrentState == stateA || CurrentState == stateB;
     }
 
+    private bool IsCurrentStateAnyOf(FleetState stateA, FleetState stateB, FleetState stateC) {
+        return CurrentState == stateA || CurrentState == stateB || CurrentState == stateC;
+    }
+
+
     /// <summary>
     /// Restarts execution of the CurrentState. If the CurrentState is a Call()ed state, Return()s first, then restarts
     /// execution of the state Return()ed too, aka the new CurrentState.
     /// </summary>
     private void RestartState() {
+        if (IsDead) {
+            D.Warn("{0}.RestartState() called when dead.", DebugName);
+            return;
+        }
         var stateWhenCalled = CurrentState;
         ReturnFromCalledStates();
         D.Log(/*ShowDebugLog, */"{0}.RestartState called from {1}.{2}. RestartedState = {3}.",
@@ -1627,6 +1694,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void ExecuteMoveOrder_UponLosingOwnership() {
         LogEvent();
         // TODO
+    }
+
+    void ExecuteMoveOrder_UponSubordinateElementDeath(AUnitElementItem deadSubordinateElement) {
+        LogEvent();
     }
 
     void ExecuteMoveOrder_UponDeath() {
@@ -3980,6 +4051,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         LogEvent();
         D.AssertEqual(EffectSequenceID.Dying, effectSeqID);
         HandleDeathAfterDeathEffectFinished();
+        //D.Log("{0} initiating destruction in Frame {1}.", DebugName, Time.frameCount);
         DestroyMe(onCompletion: () => DestroyApplicableParents(5F));  // HACK long wait so last element can play death effect
     }
 
@@ -4308,10 +4380,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         IFleetNavigableDestination regroupDest = GetRegroupDestination(preferredDirection);
         IssueCmdStaffsRegroupOrder(regroupDest, retainSuperiorsOrder: false);
     }
-    ////internal void IssueRegroupOrderFromShip(Vector3 preferredDirection) {
-    ////    IFleetNavigableDestination regroupDest = GetRegroupDestination(preferredDirection);
-    ////    IssueCmdStaffsRegroupOrder(regroupDest, retainSuperiorsOrder: false);
-    ////}
 
     /// <summary>
     /// Convenience method that has the CmdStaff issue an AssumeFormation order to all ships.
@@ -4714,7 +4782,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     private void __ValidateKnowledgeOfOrderTarget(IFleetNavigableDestination target, FleetDirective directive) {
         if (directive == FleetDirective.Retreat || directive == FleetDirective.Withdraw || directive == FleetDirective.Disband
-            || directive == FleetDirective.Refit || directive == FleetDirective.Repair || directive == FleetDirective.StopAttack) {
+            || directive == FleetDirective.Refit) {
             // directives aren't yet implemented
             return;
         }
@@ -4726,10 +4794,17 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             D.Assert(target == null || target is StationaryLocation || target is MobileLocation);
             return;
         }
+        if (directive == FleetDirective.Repair) {
+            if (target == null) {
+                // RepairInPlace
+                return;
+            }
+            D.Assert(target is IRepairCapable);
+        }
         if (directive == FleetDirective.Regroup && target is StationaryLocation) {
             return;
         }
-        if (directive == FleetDirective.Scuttle) {
+        if (directive == FleetDirective.Scuttle || directive == FleetDirective.Cancel) {
             D.AssertNull(target);
             return;
         }

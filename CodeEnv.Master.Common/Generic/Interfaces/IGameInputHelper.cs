@@ -29,7 +29,7 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         /// <param name="keys">The keys.</param>
         /// <returns></returns>
-        bool IsCurrentKeyAnyOf(IList<KeyCode> keys);
+        bool IsCurrentKeyAnyOf(IEnumerable<KeyCode> keys);
 
         /// <summary>
         /// Returns <c>true</c> if UICamera.currentTouchID is present in the provided NguiMouseButtons.
@@ -37,7 +37,7 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         /// <param name="buttons">The buttons.</param>
         /// <returns></returns>
-        bool IsCurrentMouseButtonAnyOf(IList<NguiMouseButton> buttons);
+        bool IsCurrentMouseButtonAnyOf(IEnumerable<NguiMouseButton> buttons);
 
         /// <summary>
         /// Tests whether the left mouse button is the current button that is being
@@ -66,7 +66,11 @@ namespace CodeEnv.Master.Common {
         /// </returns>
         bool IsMiddleMouseButton { get; }
 
+        bool IsOverUI { get; }
+
         bool IsAnyKeyOrMouseButtonDown { get; }
+
+        bool IsAnyKeyHeldDown(params KeyCode[] keys);
 
         /// <summary>
         /// Determines whether any of the specified keys are being held down.
@@ -75,6 +79,8 @@ namespace CodeEnv.Master.Common {
         /// <param name="keys">The keys.</param>
         /// <returns></returns>
         bool TryIsKeyHeldDown(out KeyCode keyHeldDown, params KeyCode[] keys);
+
+        bool IsAnyKeyDown(params KeyCode[] keys);
 
         /// <summary>
         /// Determines whether any of the specified keys were pressed down this frame.

@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using CodeEnv.Master.Common;
 using UnityEngine;
 
@@ -45,6 +46,8 @@ public class GuiWindow : AGuiWindow {
     public void Hide() {
         HideWindow();
     }
+
+    protected override void ResetForReuse() { }
 
 }
 

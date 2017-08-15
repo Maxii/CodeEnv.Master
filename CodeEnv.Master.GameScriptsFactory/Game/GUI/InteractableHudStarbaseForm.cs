@@ -1,11 +1,11 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2015 
+// Copyright © 2012 - 2015 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: SelectedPlanetoidForm.cs
+// File: InteractableHudStarbaseForm.cs
 // Form used by the InteractableHudWindow to display info and allow changes when a user-owned Item is selected.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -16,19 +16,20 @@
 
 // default namespace
 
+using System.Collections.Generic;
+using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
 /// Form used by the InteractableHudWindow to display info and allow changes when a user-owned Item is selected.
 /// </summary>
-public class SelectedPlanetoidForm : ASelectedItemForm {
+public class InteractableHudStarbaseForm : AInteractableHudUnitForm {
 
-    public override FormID FormID { get { return FormID.SelectedPlanetoid; } }
+    public override FormID FormID { get { return FormID.UserStarbase; } }
 
-    protected override void AssignValueToNameGuiElement() {
-        base.AssignValueToNameGuiElement();
-        _nameLabel.text = ItemData.Name;
+    protected override List<string> AcceptableFormationNames {
+        get { return TempGameValues.AcceptableBaseFormations.Select(f => f.GetValueName()).ToList(); }
     }
 
 }

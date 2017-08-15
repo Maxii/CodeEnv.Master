@@ -405,6 +405,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DeadCode", "DeadCode", "{F1
 		DeadCode\MortalDetectionHandler.cs = DeadCode\MortalDetectionHandler.cs
 		DeadCode\MortalItemAnimator.cs = DeadCode\MortalItemAnimator.cs
 		DeadCode\MortalItemDeathEvent.cs = DeadCode\MortalItemDeathEvent.cs
+		DeadCode\MultiSelectionManager.cs = DeadCode\MultiSelectionManager.cs
 		DeadCode\MyAStarPointGraph.cs = DeadCode\MyAStarPointGraph.cs
 		DeadCode\MyAStarPointGraphEditor.cs = DeadCode\MyAStarPointGraphEditor.cs
 		DeadCode\MyCtxPickHandler.cs = DeadCode\MyCtxPickHandler.cs

@@ -28,7 +28,9 @@ using UnityEngine;
 /// </summary>
 public class GamePlayOptionMenuAcceptButton : AGuiMenuAcceptButton {
 
-    protected override IList<KeyCode> ValidKeys { get { return new List<KeyCode>() { KeyCode.Return }; } }
+    private static IEnumerable<KeyCode> _validKeys = new KeyCode[] { KeyCode.Return };
+
+    protected override IEnumerable<KeyCode> ValidKeys { get { return _validKeys; } }
 
     protected override string TooltipContent { get { return "Accept Option changes."; } }
 
@@ -69,8 +71,6 @@ public class GamePlayOptionMenuAcceptButton : AGuiMenuAcceptButton {
         }
     }
 
-    #region Event and Property Change Handlers
-
     protected override void HandleValidClick() {
         base.HandleValidClick();
         GamePlayOptionSettings settings = new GamePlayOptionSettings() {
@@ -82,6 +82,8 @@ public class GamePlayOptionMenuAcceptButton : AGuiMenuAcceptButton {
         };
         _playerPrefsMgr.RecordGamePlayOptions(settings);
     }
+
+    #region Event and Property Change Handlers
 
     #endregion
 

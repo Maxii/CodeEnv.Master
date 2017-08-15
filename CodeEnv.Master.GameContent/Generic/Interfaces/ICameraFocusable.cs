@@ -27,7 +27,9 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Indicates whether this item is the current focus of the camera.
-        /// Set this value to become or remove the camera's focus.
+        /// <remarks>Anyone can set this property to true to become the Item in focus. Only MainCameraControl 
+        /// should set this property to false. If you wish to remove the focused state from an Item, you 
+        /// should set MainCameraControl's CurrentFocus property to null.</remarks>
         /// </summary>
         bool IsFocus { get; set; }
 

@@ -43,6 +43,8 @@ public class BaseCtxControl_AI : ACtxControl {
 
     protected override string OperatorName { get { return _baseMenuOperator != null ? _baseMenuOperator.DebugName : "NotYetAssigned"; } }
 
+    protected override bool IsItemMenuOperatorTheCameraFocus { get { return _baseMenuOperator.IsFocus; } }
+
     private AUnitBaseCmdItem _baseMenuOperator;
 
     public BaseCtxControl_AI(AUnitBaseCmdItem baseCmd)

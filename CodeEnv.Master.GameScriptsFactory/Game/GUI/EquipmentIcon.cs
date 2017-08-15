@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -30,11 +31,14 @@ public class EquipmentIcon : AEquipmentIcon {
         get { return _equipmentStat; }
         set {
             D.AssertNull(_equipmentStat);  // occurs only once between Resets
+            D.AssertNotNull(value);
             SetProperty<AEquipmentStat>(ref _equipmentStat, value, "EquipmentStat", EquipmentStatPropSetHandler);
         }
     }
 
     private bool _isInitialDrag;
+
+    protected override void AcquireAdditionalIconWidgets(GameObject topLevelIconGo) { }
 
     #region Event and Property Change Handlers
 
@@ -68,17 +72,14 @@ public class EquipmentIcon : AEquipmentIcon {
     }
 
     private void EquipmentStatPropSetHandler() {
-        AssignValuesToMembers();
+        D.AssertNotDefault((int)Size);
         Show(EquipmentStat.ImageAtlasID, EquipmentStat.ImageFilename, EquipmentStat.Name);
     }
 
     #endregion
 
-    private void AssignValuesToMembers() {
-        Size = IconSize.Large;
-    }
-
-    public void Reset() {
+    public override void ResetForReuse() {
+        base.ResetForReuse();
         _equipmentStat = null;
         _isInitialDrag = false;
     }

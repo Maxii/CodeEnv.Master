@@ -81,11 +81,11 @@
     <Compile Include="Game\StarbasesTableWindowEditor.cs" />
     <Compile Include="Game\SystemsTableWindowEditor.cs" />
     <Compile Include="Game\GuiShowModeControlButtonEditor.cs" />
-    <Compile Include="Game\MyPathfindingGraphEditor.cs" />
     <Compile Include="Game\SectorGridEditor.cs" />
     <Compile Include="Game\PooledSphericalHighlightEditor.cs" />
     <Compile Include="Game\SphericalHighlightEditor.cs" />
     <Compile Include="Game\ShipDesignWindowEditor.cs" />
+    <Compile Include="Game\MyNGPathfindingGraphEditor.cs" />
     <Compile Include="ThirdParty\ContextMenu\CtxMenuButtonInspector.cs" />
     <Compile Include="ThirdParty\ContextMenu\CtxMenuInspector.cs" />
     <Compile Include="ThirdParty\ContextMenu\ACtxMenuItemInspector.cs" />
@@ -103,6 +103,7 @@
     <Compile Include="Generic\UnityEditorUtility.cs" />
     <Compile Include="Generic\ADebugUnitCreatorEditor.cs" />
     <Compile Include="Game\UnitDebugControlEditor.cs" />
+    <Compile Include="Game\UnitCmdHudEditor.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">

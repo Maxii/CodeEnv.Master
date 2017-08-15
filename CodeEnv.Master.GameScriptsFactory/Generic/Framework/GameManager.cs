@@ -527,10 +527,10 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
 
     private void IsPausedPropChangedHandler() {
         D.Log("{0}.IsPaused changed to {1}.", DebugName, IsPaused);
-        OnIsPausedChanged();
         if (IsPaused) {
             RunGarbageCollector();
         }
+        OnIsPausedChanged();
     }
 
     private void OnIsPausedChanged() {
@@ -709,10 +709,10 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         if (_playerAiMgrLookup != null) {
             _playerAiMgrLookup.Values.ForAll(pAiMgr => pAiMgr.Dispose());
         }
-        GameKnowledge.Reset();
-        CelestialDesigns.Reset();
+        GameKnowledge.ResetForReuse();
+        CelestialDesigns.ResetForReuse();
 
-        UniverseCreator.Reset();
+        UniverseCreator.ResetForReuse();
     }
 
     private void RefreshCurrentSceneID() {

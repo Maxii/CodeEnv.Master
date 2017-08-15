@@ -17,7 +17,6 @@
 
 // default namespace
 
-using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
@@ -38,9 +37,13 @@ public abstract class AForm : AMonoBase {
 
     public abstract FormID FormID { get; }
 
-    protected override void Awake() {
+    private bool _isInitialized;
+
+    protected sealed override void Awake() {
         base.Awake();
+        __Validate();
         InitializeValuesAndReferences();
+        _isInitialized = true;
     }
 
     protected abstract void InitializeValuesAndReferences();
@@ -48,24 +51,33 @@ public abstract class AForm : AMonoBase {
     protected abstract void AssignValuesToMembers();
 
     /// <summary>
-    /// Resets this Form by nulling the existing content (Text, Reports, etc.).
-    /// If this is not done, then incoming content that is the same as 
-    /// existing content will not trigger OnChange initialization.
+    /// Resets this form in preparation for reuse.
+    /// <remarks>If this is not done, then incoming content that is the same as existing 
+    /// content will not trigger OnChange initialization.</remarks>
     /// </summary>
-    public abstract void Reset();
+    public void ResetForReuse() {
+        if (_isInitialized) {
+            ResetForReuse_Internal();
+        }
+    }
 
     /// <summary>
-    /// Returns the single UILabel component that is present with or a child of the provided GuiElement's GameObject.
+    /// Resets this Form by nulling the existing content (Text, Reports, etc.).
+    /// <remarks>Called only if the form has already been initialized, aka the forms references have been set.</remarks>
     /// </summary>
-    /// <param name="element">The element.</param>
-    /// <returns></returns>
-    protected UILabel GetLabel(AGuiElement element) {
-        return element.gameObject.GetSingleComponentInChildren<UILabel>();
-    }
+    protected abstract void ResetForReuse_Internal();
 
     public sealed override string ToString() {
         return DebugName;
     }
+
+    #region Debug
+
+    protected virtual void __Validate() {
+        D.AssertNotDefault((int)FormID);
+    }
+
+    #endregion
 
 }
 

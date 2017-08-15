@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -29,7 +30,7 @@ public class InteractableHudWindow : AHudWindow<InteractableHudWindow>, IInterac
 
     /// <summary>
     /// The local-space corners of this window. Order is bottom-left, top-left, top-right, bottom-right.
-    /// Used by HoveredHudWindow to reposition itself to avoid interfering with this fixed window.
+    /// <remarks>Used by HoveredHudWindow to reposition itself to avoid interfering with this fixed window.</remarks>
     /// </summary>
     public Vector3[] LocalCorners { get { return _backgroundWidget.localCorners; } }
 

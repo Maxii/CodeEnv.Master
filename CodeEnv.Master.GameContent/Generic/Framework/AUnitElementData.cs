@@ -284,8 +284,8 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         private void RecalcSensorRange() {
-            var undamagedSRSensors = Sensors.Where(s => s.IsOperational);
-            float shortRangeDistance = undamagedSRSensors.First().RangeDistance;
+            var undamagedSRSensors = Sensors.Where(s => !s.IsDamaged);
+            float shortRangeDistance = undamagedSRSensors.Any() ? undamagedSRSensors.First().RangeDistance : Constants.ZeroF;
             SensorRange = new RangeDistance(shortRangeDistance, Constants.ZeroF, Constants.ZeroF);
             //D.Log(ShowDebugLog, "{0} recalculated SensorRange: {1}.", DebugName, SensorRange);
         }

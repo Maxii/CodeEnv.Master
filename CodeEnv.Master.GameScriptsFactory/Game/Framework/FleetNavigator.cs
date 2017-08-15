@@ -19,6 +19,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
@@ -92,7 +93,7 @@ public class FleetNavigator : IDisposable {
                 var sqrDistanceTgtTraveled = Vector3.SqrMagnitude(ApTarget.Position - _apTgtPositionAtLastPathPlot);
                 bool isReplotNeeded = sqrDistanceTgtTraveled > ApTgtReplotThresholdDistanceSqrd;
                 if (isReplotNeeded) {
-                    D.Log(ShowDebugLog, "{0} has determined a replot is needed to catch {1}. CurrentPosition: {2}, PrevPosition: {3}.",
+                    D.Log(ShowDebugLog, "{0} has determined a re-plot is needed to catch {1}. CurrentPosition: {2}, PrevPosition: {3}.",
                         DebugName, ApTarget.DebugName, ApTarget.Position, _apTgtPositionAtLastPathPlot);
                 }
                 return isReplotNeeded;
@@ -595,7 +596,8 @@ public class FleetNavigator : IDisposable {
 
     /// <summary>
     /// Debug. Used to detect whether any delegate/ship combo is added once the job starts execution.
-    /// Note: Reqd as Job.IsRunning is true as soon as Job is created, but execution won't begin until the next Update.
+    /// Note: Reqd as Job.IsRunning is true as soon as Job is created, but execution won't begin 
+    /// until the next Coroutine execution phase following Update.
     /// </summary>
     private bool __waitForFleetToAlignJobIsExecuting = false;
 
@@ -614,7 +616,7 @@ public class FleetNavigator : IDisposable {
             // 4.7.17 Occurred when ship in Moving state RestartedState. Should be able to add while Job is running since
             // removing while Job is running clearly works. UNCLEAR what happens if Job completes after removal but before 
             // re-addition? Seems like it would start another Job to align.
-            D.Warn("{0}: Attempt to add {1} during WaitForFleetToAlign Job execution. Adding, albeit late.", DebugName, ship.DebugName);
+            D.Warn("{0}: Adding {1}, albeit late during WaitForFleetToAlign Job execution.", DebugName, ship.DebugName);
         }
         _fleetIsAlignedCallbacks += fleetIsAlignedCallback;
         bool isAdded = _shipsWaitingForFleetAlignment.Add(ship);
@@ -629,19 +631,13 @@ public class FleetNavigator : IDisposable {
                     // the AssertNull to occur failed. I believe this is OK as _jobRef is nulled from KillXXXJob() and, if 
                     // the reference is replaced by a new Job, then the old Job is no longer referenced which is the objective. Jobs Kill()ed
                     // centrally by JobManager won't null the reference, but this only occurs during scene transitions.
-                    if (_gameMgr.IsRunning) {    // JobMgr is source of async Kill so ignore it
-                        if (_fleetIsAlignedCallbacks != null) {  // only killed when all waiting delegates from ships removed
-                            D.Warn("{0}._waitForFleetToAlignJob was unexpectedly killed. RemainingCallbacks = {1}.",
-                                DebugName, _fleetIsAlignedCallbacks.GetInvocationList().Select(cb => cb.Target.ToString()).Concatenate());
-                        }
-                        D.AssertEqual(Constants.Zero, _shipsWaitingForFleetAlignment.Count, DebugName);
-                    }
+                    //D.Log(ShowDebugLog, "{0}.WaitForFleetToAlignJob jobCompleted(jobWasKilled = true) called in Frame {1}.", DebugName, Time.frameCount);
                 }
                 else {
                     _waitForFleetToAlignJob = null;
                     D.AssertNotNull(_fleetIsAlignedCallbacks);  // completed normally so there must be a ship to notify
-                    D.Assert(_shipsWaitingForFleetAlignment.Count > Constants.Zero);
-                    //D.Log(ShowDebugLog, "{0} is now aligned and ready for departure.", _fleet.DebugName);
+                    D.AssertNotEqual(Constants.Zero, _shipsWaitingForFleetAlignment.Count);
+                    //D.Log(ShowDebugLog, "JobCompletion. {0} is now aligned and ready for departure. Frame = {1}, SystemTime = {2}.", _fleet.DebugName, Time.frameCount, Utility.TimeStamp);
                     _fleetIsAlignedCallbacks();
                     _fleetIsAlignedCallbacks = null;
                     _shipsWaitingForFleetAlignment.Clear();
@@ -701,14 +697,17 @@ public class FleetNavigator : IDisposable {
                     }
                 }
             }
+            //D.Log("{0} is waiting for ships to complete turns. Frame = {1}, SystemTime = {2}.", DebugName, Time.frameCount, Utility.TimeStamp);
             yield return null;
         }
+        // Job naturally completed
         //D.Log(ShowDebugLog, "{0}'s WaitWhileShipsAlignToRequestedHeading coroutine completed on {1}. WarnDate = {2}", DebugName, _gameTime.CurrentDate, warnDate);
     }
 
     private void KillWaitForFleetToAlignJob() {
         if (_waitForFleetToAlignJob != null) {
             _waitForFleetToAlignJob.Kill();
+            //D.Log(ShowDebugLog, "{0} has killed WaitForFleetToAlignJob in Frame {1}.", DebugName, Time.frameCount);
             _waitForFleetToAlignJob = null;
         }
     }
@@ -728,7 +727,9 @@ public class FleetNavigator : IDisposable {
         bool isShipRemoved = _shipsWaitingForFleetAlignment.Remove(ship);
         D.Assert(isShipRemoved);
         if (_fleetIsAlignedCallbacks == null) {
+            D.AssertEqual(Constants.Zero, _shipsWaitingForFleetAlignment.Count);
             // delegate invocation list is now empty
+            D.Log("{0} is attempting to kill WaitForFleetToAlignJob as a result of removing {1}.", DebugName, ship.DebugName);
             KillWaitForFleetToAlignJob();
         }
     }
@@ -1128,10 +1129,13 @@ public class FleetNavigator : IDisposable {
                 }
                 if (ShowDebugLog) {
                     Topography topographyFromTag = __GetTopographyFromAStarTag(node.Tag);
-                    D.Log("{0}'s Node at {1} has Topography {2}, penalty {3}{4}.",
-                        DebugName, nodePosition, topographyFromTag.GetValueName(), (int)path.GetTraversalCost(node), distanceFromPrevNodeMsg);
+                    D.Log("{0}'s Node at {1} has Topography {2}, penalty {3}{4}.", DebugName, nodePosition, topographyFromTag.GetValueName(),
+                        (int)path.traversalProvider.GetTraversalCost(path, node), distanceFromPrevNodeMsg);
+                    ////D.Log("{0}'s Node at {1} has Topography {2}, penalty {3}{4}.",
+                    ////    DebugName, nodePosition, topographyFromTag.GetValueName(), (int)path.GetTraversalCost(node), distanceFromPrevNodeMsg);
                 }
-                cumNodePenalties += path.GetTraversalCost(node);
+                cumNodePenalties += path.traversalProvider.GetTraversalCost(path, node);    ////cumNodePenalties += path.GetTraversalCost(node);
+
                 prevNode = node;
             });
             //float lastNodeToDestDistance = Vector3.Distance((Vector3)prevNode.position, ApTarget.Position);

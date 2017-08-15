@@ -24,6 +24,12 @@ namespace CodeEnv.Master.GameContent {
         None,
 
         /// <summary>
+        /// Cancels all unit orders including CmdStaff override orders.
+        /// <remarks>8.14.17 Must be issued by OrderSource.User.</remarks>
+        /// </summary>
+        Cancel,
+
+        /// <summary>
         /// Fleets can move to most INavigableTargets including other Units (fleets and bases), Planetoids, Stars, Systems,
         /// Sectors and the UniverseCenter. Diplomatic state with the owner, if any, is not a factor. The speed of the move
         /// is chosen by Fleet Cmd with the exception of FullSpeedMove below. If the target of the move is IShipOrbitable,
@@ -48,8 +54,8 @@ namespace CodeEnv.Master.GameContent {
         /// Fleets can go into close orbit around Bases, Stars, Planets and the UniverseCenter. 
         /// Diplomatic state with the owner, if any, cannot be at war, and with Bases cannot be an enemy.
         /// </summary>
-        //[System.Obsolete]
-        //CloseOrbit,
+        ////[System.Obsolete]
+        ////CloseOrbit,
 
         /// <summary>
         /// Fleets can patrol any IPatrollable target including Bases, Systems, Sectors and the UniverseCenter. 
@@ -125,7 +131,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         Retreat,
 
-        StopAttack,
+        ////StopAttack,
 
         /// <summary>
         /// Fleets can be scuttled anywhere. No resources are retained by the owner. Scuttle orders are only 

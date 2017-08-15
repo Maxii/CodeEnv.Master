@@ -94,8 +94,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         InitializeObstacleZone();
     }
 
-    protected override ItemHudManager InitializeHudManager() {
-        return new ItemHudManager(Publisher);
+    protected override ItemHoveredHudManager InitializeHudManager() {
+        return new ItemHoveredHudManager(Publisher);
     }
 
     protected override ADisplayManager MakeDisplayManagerInstance() {
@@ -177,15 +177,14 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     public FacilityReport GetReport(Player player) { return Publisher.GetReport(player); }
 
-    protected override void ShowSelectedItemInHud() {
+    protected override void ShowSelectedItemHud() {
         D.Assert(Owner.IsUser);
-        InteractableHudWindow.Instance.Show(FormID.SelectedFacility, Data);
+        InteractableHudWindow.Instance.Show(FormID.UserFacility, Data);
     }
 
-    protected override bool ShouldCmdOwnerChange() {
+    protected override bool ShouldExistingCmdOwnerChange() {
         return Command.Elements.Count == Constants.One;
     }
-
 
     protected override void HandleOwnerChanged() {
         base.HandleOwnerChanged();
@@ -229,10 +228,10 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         _obstacleDetourGenerator = null;
     }
 
-    protected override IconInfo MakeIconInfo() {
+    protected override TrackingIconInfo MakeIconInfo() {
         var report = UserReport;
         GameColor iconColor = report.Owner != null ? report.Owner.Color : GameColor.White;
-        return new IconInfo("FleetIcon_Unknown", AtlasID.Fleet, iconColor, IconSize, WidgetPlacement.Over, TempGameValues.FacilityIconCullLayer);
+        return new TrackingIconInfo("FleetIcon_Unknown", AtlasID.Fleet, iconColor, IconSize, WidgetPlacement.Over, TempGameValues.FacilityIconCullLayer);
     }
 
     protected override void __ValidateRadius(float radius) {
@@ -256,11 +255,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(Data.HullCategory));
         }
-    }
-
-    protected override void ResetOrderAndState() {
-        CurrentOrder = null;
-        CurrentState = FacilityState.Idling;    // 4.20.17 Will unsubscribe from any FsmEvents when exiting the Current non-Call()ed state
     }
 
     #region Orders
@@ -293,23 +287,31 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             // deal with multiple changes all while paused
             _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedEventHandler;
             _gameMgr.isPausedChanged += NewOrderReceivedWhilePausedEventHandler;
-            bool willOrderExecutionImmediatelyFollowResume = order.Source == OrderSource.User || CurrentOrder == null || CurrentOrder.Source != OrderSource.Captain;
+            bool willOrderExecutionImmediatelyFollowResume = IsCurrentOrderImmediatelyReplaceableBy(order);
             return willOrderExecutionImmediatelyFollowResume;
         }
 
         D.Assert(!IsPaused);
         D.AssertNull(_newOrderReceivedWhilePaused);
 
-        if (order.Source != OrderSource.User) {
-            if (CurrentOrder != null) {
-                if (CurrentOrder.Source == OrderSource.Captain) {
-                    CurrentOrder.StandingOrder = order;
-                    return false;
-                }
-            }
+        if (!IsCurrentOrderImmediatelyReplaceableBy(order)) {
+            CurrentOrder.StandingOrder = order;
+            return false;
         }
         CurrentOrder = order;
         return true;
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if CurrentOrder can immediately be replaced by order, <c>false</c> otherwise.
+    /// <remarks>CurrentOrder can immediately be replaced by order if order was issued by the User, OR
+    /// CurrentOrder is null OR CurrentOrder isn't an override order issued by the Captain.</remarks>
+    /// <remarks>A Captain-issued override order can only be immediately replaced by a User-issued order.</remarks>
+    /// </summary>
+    /// <param name="order">The order.</param>
+    /// <returns></returns>
+    private bool IsCurrentOrderImmediatelyReplaceableBy(FacilityOrder order) {
+        return order.Source == OrderSource.User || CurrentOrder == null || CurrentOrder.Source != OrderSource.Captain;
     }
 
     private void ChangeOrderAfterPause() {
@@ -322,11 +324,39 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         InitiateNewOrder(newOrder);
     }
 
+
+    /// <summary>
+    /// Returns <c>true</c> if the directive of the CurrentOrder or if paused, a pending order 
+    /// about to become the CurrentOrder matches any of the provided directive(s).
+    /// </summary>
+    /// <param name="directiveA">The directive a.</param>
+    /// <returns></returns>
     public bool IsCurrentOrderDirectiveAnyOf(FacilityDirective directiveA) {
+        if (IsPaused && _newOrderReceivedWhilePaused != null) {
+            // paused with a pending order replacement
+            if (IsCurrentOrderImmediatelyReplaceableBy(_newOrderReceivedWhilePaused)) {
+                // _newOrderReceivedWhilePaused will immediately replace CurrentOrder as soon as unpaused
+                return _newOrderReceivedWhilePaused.Directive == directiveA;
+            }
+        }
         return CurrentOrder != null && CurrentOrder.Directive == directiveA;
     }
 
+    /// <summary>
+    /// Returns <c>true</c> if the directive of the CurrentOrder or if paused, a pending order 
+    /// about to become the CurrentOrder matches any of the provided directive(s).
+    /// </summary>
+    /// <param name="directiveA">The directive a.</param>
+    /// <param name="directiveB">The directive b.</param>
+    /// <returns></returns>
     public bool IsCurrentOrderDirectiveAnyOf(FacilityDirective directiveA, FacilityDirective directiveB) {
+        if (IsPaused && _newOrderReceivedWhilePaused != null) {
+            // paused with a pending order replacement
+            if (IsCurrentOrderImmediatelyReplaceableBy(_newOrderReceivedWhilePaused)) {
+                // _newOrderReceivedWhilePaused will immediately replace CurrentOrder as soon as unpaused
+                return _newOrderReceivedWhilePaused.Directive == directiveA || _newOrderReceivedWhilePaused.Directive == directiveB;
+            }
+        }
         return CurrentOrder != null && (CurrentOrder.Directive == directiveA || CurrentOrder.Directive == directiveB);
     }
 
@@ -363,8 +393,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         ReturnFromCalledStates();
 
         if (CurrentOrder != null) {
+            D.Assert(!IsDead);
             //D.Log(ShowDebugLog, "{0} received new order {1}. Frame {2}.", DebugName, CurrentOrder.Directive.GetValueName(), Time.frameCount);
-            // Pattern that handles Call()ed states that goes more than one layer deep
 
             // 4.8.17 If a non-Call()ed state is to notify Cmd of OrderOutcome, this is when notification of receiving a new order will happen. 
             // CalledStateReturnHandlers can't do it as the new order will change the state before the ReturnCause is processed.
@@ -383,7 +413,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
                     break;
                 case FacilityDirective.Scuttle:
                     IsOperational = false;
-                    break;
+                    return; // CurrentOrder will be set to null as a result of death
                 case FacilityDirective.StopAttack:
                 case FacilityDirective.Refit:
                 case FacilityDirective.Disband:
@@ -415,6 +445,13 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             }
         }
         return true;
+    }
+
+    protected override void ResetOrderAndState() {
+        D.Assert(!IsPaused);    // 8.13.17 ResetOrderAndState doesn't account for _newOrderReceivedWhilePaused
+        CurrentOrder = null;
+        D.Assert(!IsCurrentStateCalled);
+        CurrentState = FacilityState.Idling;    // 4.20.17 Will unsubscribe from any FsmEvents when exiting the Current non-Call()ed state
     }
 
     #endregion
@@ -457,6 +494,10 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     /// execution of the state Return()ed too, aka the new CurrentState.
     /// </summary>
     private void RestartState() {
+        if (IsDead) {
+            D.Warn("{0}.RestartState() called when dead.", DebugName);
+            return;
+        }
         var stateWhenCalled = CurrentState;
         ReturnFromCalledStates();
         D.LogBold(/*ShowDebugLog, */"{0}.RestartState called from {1}.{2}. RestartedState = {3}.",

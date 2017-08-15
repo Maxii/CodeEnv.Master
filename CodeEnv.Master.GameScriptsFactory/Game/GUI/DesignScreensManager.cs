@@ -34,7 +34,7 @@ public class DesignScreensManager : AMonoBase {
     private const int ScreenChoiceCheckboxGroupNumber = 1;
 
     [SerializeField]
-    private UnitDesignImageIcon _designIconPrefab = null;
+    private UnitDesignIcon _designIconPrefab = null;
 
     [SerializeField]
     private EquipmentIcon _equipmentIconPrefab = null;
@@ -44,9 +44,7 @@ public class DesignScreensManager : AMonoBase {
 
     public string DebugName { get { return GetType().Name; } }
 
-    ////private UIToggle[] _screenChoiceCheckboxes;
     private GuiWindow _screenChoicePopupWindow;
-
     private AUnitDesignWindow _currentDesignWindow;
     private GameObject _currentDesignWindowGo;
 
@@ -103,11 +101,11 @@ public class DesignScreensManager : AMonoBase {
     }
 
     /// <summary>
-    /// Edits the selected design in the current DesignScreen.
+    /// Edits the chosen design in the current DesignScreen.
     /// <remarks>Called by Design's EditDesign Button.</remarks>
     /// </summary>
-    public void __EditSelectedDesign() {
-        _currentDesignWindow.EditSelectedDesign();
+    public void __EditChosenDesign() {
+        _currentDesignWindow.EditChosenDesign();
     }
 
     /// <summary>
@@ -155,11 +153,11 @@ public class DesignScreensManager : AMonoBase {
     }
 
     /// <summary>
-    /// Obsoletes the selected design, if any, in the current DesignScreen.
+    /// Obsoletes the chosen design, if any, in the current DesignScreen.
     /// <remarks>Called by Design's Obsolete Button.</remarks>
     /// </summary>
-    public void __ObsoleteSelectedDesign() {
-        _currentDesignWindow.ObsoleteSelectedDesign();
+    public void __ObsoleteChosenDesign() {
+        _currentDesignWindow.ObsoleteChosenDesign();
     }
 
     public void ShowScreenChoicePopupWindow() {

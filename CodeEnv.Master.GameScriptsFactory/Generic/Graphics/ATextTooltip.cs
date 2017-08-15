@@ -42,7 +42,6 @@ public abstract class ATextTooltip : AMonoBase {
 
     #endregion
 
-
     public sealed override string ToString() {
         return DebugName;
     }

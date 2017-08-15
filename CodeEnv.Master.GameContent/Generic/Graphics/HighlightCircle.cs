@@ -139,6 +139,10 @@ namespace CodeEnv.Master.GameContent {
         private IEnumerator DrawCircles() {
             //D.Log("{0} totalLinePoints = {1}.", LineName, _line.points2.Count);
             while (true) {
+                if (Target == null || Target.gameObject == null) {
+                    D.Error("{0}.DrawCircles coroutine called at end of Frame {1}..", DebugName, Time.frameCount);
+                    yield break;
+                }
                 Vector2 screenPoint = Camera.main.WorldToScreenPoint(Target.position);
                 float distanceToCamera = IsRadiusDynamic ? Target.DistanceToCamera() : 1F;
                 for (int circleIndex = 0; circleIndex < MaxCircles; circleIndex++) {

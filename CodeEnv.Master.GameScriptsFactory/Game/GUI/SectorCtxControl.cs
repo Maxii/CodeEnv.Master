@@ -44,6 +44,8 @@ public class SectorCtxControl : ACtxControl {
 
     protected override string OperatorName { get { return _sector != null ? _sector.DebugName : "NotYetAssigned"; } }
 
+    protected override bool IsItemMenuOperatorTheCameraFocus { get { return false; } }
+
     private SectorExaminer _sectorExaminerMenuOperator;
     private Sector _sector;
 
@@ -80,7 +82,7 @@ public class SectorCtxControl : ACtxControl {
     }
 
     protected override void HandleMenuPick_OptimalFocusDistance() {
-        throw new NotImplementedException("SectorExaminer is not selectable or focusable.");
+        throw new NotImplementedException("Sectors are not selectable or focusable.");
     }
 
     protected override void HandleMenuPick_UserRemoteFleetIsSelected(int itemID) {

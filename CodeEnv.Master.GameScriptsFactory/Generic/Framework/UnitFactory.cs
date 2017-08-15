@@ -31,8 +31,6 @@ using UnityEngine;
 public class UnitFactory : AGenericSingleton<UnitFactory> {
     // Note: no reason to dispose of _instance during scene transition as all its references persist across scenes
 
-    ////private const string CmdNameExtension = " Cmd";
-
     private FleetCreator _fleetCreatorPrefab;
     private StarbaseCreator _starbaseCreatorPrefab;
     private SettlementCreator _settlementCreatorPrefab;

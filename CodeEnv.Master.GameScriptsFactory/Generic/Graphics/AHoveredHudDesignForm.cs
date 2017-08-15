@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AUnitDesignForm.cs
-// Abstract base class for Forms that are that are used to display info about a unit design in a HudWindow.
+// File: AHoveredHudDesignForm.cs
+// Abstract base class for Forms that are that are used to display info about a unit (cmd or element) Design in the HoveredHudWindow.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,9 +20,9 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Abstract base class for Forms that are that are used to display info about a unit design in a HudWindow.
+/// Abstract base class for Forms that are that are used to display info about a unit (cmd or element) Design in the HoveredHudWindow.
 /// </summary>
-public abstract class AUnitDesignForm : AInfoDisplayForm {
+public abstract class AHoveredHudDesignForm : AInfoDisplayForm {
 
     private AUnitDesign _design;
     public AUnitDesign Design {
@@ -41,7 +41,7 @@ public abstract class AUnitDesignForm : AInfoDisplayForm {
 
     #endregion
 
-    public override void Reset() {
+    protected override void ResetForReuse_Internal() {
         _design = null;
     }
 

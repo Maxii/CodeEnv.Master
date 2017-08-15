@@ -154,8 +154,8 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         Data.OrbitalSpeed = CelestialOrbitSimulator.RelativeOrbitSpeed;
     }
 
-    protected override ItemHudManager InitializeHudManager() {
-        return new ItemHudManager(Publisher);
+    protected override ItemHoveredHudManager InitializeHudManager() {
+        return new ItemHoveredHudManager(Publisher);
     }
 
     protected override ICtxControl InitializeContextMenu(Player owner) {
@@ -184,20 +184,13 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
 
     public PlanetoidReport GetReport(Player player) { return Publisher.GetReport(player); }
 
-    protected override void ShowSelectedItemInHud() {
-        InteractableHudWindow.Instance.Show(FormID.SelectedPlanetoid, Data);
+    protected override void ShowSelectedItemHud() {
+        InteractableHudWindow.Instance.Show(FormID.UserPlanetoid, Data);
     }
 
     protected sealed override void HandleInfoAccessChangedFor(Player player) {
         base.HandleInfoAccessChangedFor(player);
         ParentSystem.AssessWhetherToFireInfoAccessChangedEventFor(player);
-    }
-
-    /// <summary>
-    /// Debug test method used by PlanetoidCtxControl to kill planets and moons.
-    /// </summary>
-    public void __Die() {
-        IsOperational = false;
     }
 
     protected sealed override void InitiateDeadState() {
@@ -316,6 +309,17 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
 
     #endregion
 
+    #region Debug
+
+    protected override bool IsSelectable { get { return IsDiscernibleToUser; } }  // allow debug die independent of Owner
+
+    /// <summary>
+    /// Debug test method used by PlanetoidCtxControl to kill planets and moons.
+    /// </summary>
+    public void __Die() {
+        IsOperational = false;
+    }
+
     #region Debug Show Obstacle Zones
 
     private void InitializeDebugShowObstacleZone() {
@@ -354,6 +358,8 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
             }
         }
     }
+
+    #endregion
 
     #endregion
 

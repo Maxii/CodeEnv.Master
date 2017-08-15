@@ -91,7 +91,7 @@ public class OwnerGuiElement : AImageGuiElement, IComparable<OwnerGuiElement> {
         }
     }
 
-    public override void Reset() {
+    public override void ResetForReuse() {
         _isOwnerSet = false;
     }
 

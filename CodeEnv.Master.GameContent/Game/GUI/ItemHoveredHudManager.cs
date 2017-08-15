@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ItemHudManager.cs
-// Manages the HoveredItemHud for items.
+// File: ItemHoveredHudManager.cs
+// Manages the HoveredHud for items.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,15 +17,12 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
-    using System.Collections;
-    using System.Collections.Generic;
     using CodeEnv.Master.Common;
-    using UnityEngine;
 
     /// <summary>
-    /// Manages the HoveredItemHud for items.
+    /// Manages the HoveredHud for items.
     /// </summary>
-    public class ItemHudManager : IDisposable {
+    public class ItemHoveredHudManager : IDisposable {
 
         /// <summary>
         /// The HUD refresh period in seconds.
@@ -40,7 +37,7 @@ namespace CodeEnv.Master.GameContent {
         private Job _hudRefreshJob;
         private IJobManager _jobMgr;
 
-        public ItemHudManager(APublisher publisher) {
+        public ItemHoveredHudManager(APublisher publisher) {
             _publisher = publisher;
             _jobMgr = GameReferences.JobManager;
         }

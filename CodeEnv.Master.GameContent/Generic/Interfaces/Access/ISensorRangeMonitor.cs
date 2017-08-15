@@ -157,7 +157,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Resets this Monitor for reuse by the parent item.
         /// </summary>
-        void Reset();
+        void ResetForReuse();
 
     }
 }

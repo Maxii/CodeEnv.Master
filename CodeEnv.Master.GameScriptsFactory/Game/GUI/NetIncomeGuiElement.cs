@@ -107,7 +107,7 @@ public class NetIncomeGuiElement : AGuiElement, IComparable<NetIncomeGuiElement>
         _tooltipContent = TooltipFormat.Inject(incomeTooltipContent, expenseTooltipContent);
     }
 
-    public override void Reset() {
+    public override void ResetForReuse() {
         _isIncomeSet = false;
         _isExpenseSet = false;
     }

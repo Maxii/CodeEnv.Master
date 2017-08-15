@@ -27,43 +27,51 @@ using UnityEngine.Serialization;
 /// </summary>
 public class GuiShowModeControlButton : AGuiButton {
 
+    private static IEnumerable<KeyCode> _validKeys = new KeyCode[] { KeyCode.Return };
+
     /// <summary>
     /// Indicates whether to show or hide the fixed panels of the Gui when this button is clicked.
     /// </summary>
     [Tooltip("Should the fixed panels of the Gui be shown or hidden when the button is clicked?")]
     [SerializeField]
-    ////[FormerlySerializedAs("showModeOnClick")]
-    public ShowMode _showModeOnClick = ShowMode.None;
+    private ShowMode _showModeOnClick = ShowMode.None;
+
+#pragma warning disable 0649
 
     /// <summary>
     /// The UIPanels that should not be hidden.
     /// </summary>
     [Tooltip("Drag/Drop panels that should not be hidden when Hide is selected above here")]
     [SerializeField]
-    ////[FormerlySerializedAs("hideExceptions")]
-    public List<UIPanel> _hideExceptions;
+    private List<UIPanel> _hideExceptions;
 
-    protected override IList<KeyCode> ValidKeys { get { return new List<KeyCode>() { KeyCode.Return }; } }
+#pragma warning restore 0649
 
-    protected override void Awake() {
-        base.Awake();
-        D.Assert(_showModeOnClick != ShowMode.None, gameObject, "Illegal ShowMode setting.");
+    protected override IEnumerable<KeyCode> ValidKeys { get { return _validKeys; } }
+
+    protected override void HandleValidClick() {
+        if (_showModeOnClick == ShowMode.Show) {
+            GuiManager.Instance.ShowHiddenPanels();
+        }
+        else {
+            GuiManager.Instance.HideShowingPanels(_hideExceptions);
+        }
     }
 
     #region Event and Property Change Handlers
 
-    protected override void HandleValidClick() {
-        if (_showModeOnClick == ShowMode.Show) {
-            GuiManager.Instance.ShowFixedPanels();
-        }
-        else {
-            GuiManager.Instance.HideFixedPanels(_hideExceptions);
-        }
-    }
-
     #endregion
 
     protected override void Cleanup() { }
+
+    #region Debug
+
+    protected override void __Validate() {
+        base.__Validate();
+        D.Assert(_showModeOnClick != ShowMode.None, gameObject, "Illegal ShowMode setting.");
+    }
+
+    #endregion
 
 
     #region Nested Classes

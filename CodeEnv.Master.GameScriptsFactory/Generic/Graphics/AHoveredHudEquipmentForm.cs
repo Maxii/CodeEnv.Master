@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AEquipmentForm.cs
-// Abstract base class for a Form that is used to display info about a piece of Equipment in a HudWindow.
+// File: AHoveredHudEquipmentForm.cs
+// Abstract base class for a Form that is used to display info about a piece of Equipment in the HoveredHudWindow.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,9 +20,9 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Abstract base class for a Form that is used to display info about a piece of Equipment in a HudWindow.
+/// Abstract base class for a Form that is used to display info about a piece of Equipment in the HoveredHudWindow.
 /// </summary>
-public abstract class AEquipmentForm : AInfoDisplayForm {
+public abstract class AHoveredHudEquipmentForm : AInfoDisplayForm {
 
     private AEquipmentStat _equipmentStat;
     public AEquipmentStat EquipmentStat {
@@ -41,7 +41,7 @@ public abstract class AEquipmentForm : AInfoDisplayForm {
 
     #endregion
 
-    public override void Reset() {
+    protected override void ResetForReuse_Internal() {
         _equipmentStat = null;
     }
 

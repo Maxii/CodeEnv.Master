@@ -31,6 +31,11 @@ namespace CodeEnv.Master.GameContent {
         private const string DebugNameFormat = "{0}'s {1}"; //"{0}'s {1}.{2}";
 
         private float _unitMaxFormationRadius;
+
+        public IDisposable SubscribeToPropertyChanged<T1, T2>(Func<T1, T2> p, object unitCompositionPropChangedHandler) {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// The maximum radius of this Unit's current formation, independent of the number of elements currently assigned a
         /// station in the formation or whether the Unit's elements are located on their formation station. 
@@ -506,18 +511,6 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private void __ValidateOwner(AUnitElementData elementData) {
-            D.AssertNotEqual(Owner, TempGameValues.NoPlayer, "Owner should be set before adding elements.");
-            if (elementData.Owner == TempGameValues.NoPlayer) {
-                D.Warn("{0} owner should be set before adding element to {1}.", elementData.Name, DebugName);
-                elementData.Owner = Owner;
-            }
-            else if (elementData.Owner != Owner) {
-                D.Warn("{0} owner {1} is different from {2} owner {3}.", elementData.Name, elementData.Owner, DebugName, Owner);
-                elementData.Owner = Owner;
-            }
-        }
-
         private void UpdateElementUnitName(AUnitElementData elementData) {
             //D.Log(ShowDebugLog, "{0}.ParentName changing to {1}.", elementData.Name, UnitName);
             elementData.UnitName = UnitName;    // the name of the fleet, not the command
@@ -595,7 +588,7 @@ namespace CodeEnv.Master.GameContent {
             var shortRangeSensors = _elementsData.SelectMany(ed => ed.Sensors).Where(s => s.IsOperational);
             var mediumRangeSensors = Sensors.Where(s => s.RangeCategory == RangeCategory.Medium && s.IsOperational);
             var longRangeSensors = Sensors.Where(s => s.RangeCategory == RangeCategory.Long && s.IsOperational);
-            float shortRangeDistance = shortRangeSensors.First().RangeDistance;
+            float shortRangeDistance = shortRangeSensors.Any() ? shortRangeSensors.First().RangeDistance : Constants.ZeroF;
             float mediumRangeDistance = mediumRangeSensors.Any() ? mediumRangeSensors.First().RangeDistance : Constants.ZeroF;
             float longRangeDistance = longRangeSensors.Any() ? longRangeSensors.First().RangeDistance : Constants.ZeroF;
             UnitSensorRange = new RangeDistance(shortRangeDistance, mediumRangeDistance, longRangeDistance);
@@ -646,6 +639,21 @@ namespace CodeEnv.Master.GameContent {
             _subscriptions.Clear();
         }
 
+        #region Debug
+
+        private void __ValidateOwner(AUnitElementData elementData) {
+            D.AssertNotEqual(Owner, TempGameValues.NoPlayer, "Owner should be set before adding elements.");
+            if (elementData.Owner == TempGameValues.NoPlayer) {
+                D.Warn("{0} owner should be set before adding element to {1}.", elementData.Name, DebugName);
+                elementData.Owner = Owner;
+            }
+            else if (elementData.Owner != Owner) {
+                D.Warn("{0} owner {1} is different from {2} owner {3}.", elementData.Name, elementData.Owner, DebugName, Owner);
+                elementData.Owner = Owner;
+            }
+        }
+
+        #endregion
 
     }
 }

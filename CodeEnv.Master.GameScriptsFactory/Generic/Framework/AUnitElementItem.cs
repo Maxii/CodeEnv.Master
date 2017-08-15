@@ -617,7 +617,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     #region Highlighting
 
     public override void AssessCircleHighlighting() {
-        if (IsDiscernibleToUser) {
+        if (!IsDead && IsDiscernibleToUser) {
             if (IsFocus) {
                 if (IsSelected) {
                     ShowCircleHighlights(CircleHighlightID.Focused, CircleHighlightID.Selected);
@@ -694,7 +694,9 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     protected override void HandleLeftDoubleClick() {
         base.HandleLeftDoubleClick();
-        Command.IsSelected = true;
+        if (IsSelectable) {   // IMPROVE clearer criteria would be element's (and therefore command's) owner is user
+            Command.IsSelected = true;
+        }
     }
 
     protected virtual void HandleIsHQChanged() {
@@ -733,14 +735,18 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         }
     }
 
-    protected abstract bool ShouldCmdOwnerChange();
+    /// <summary>
+    /// Returns true if the owner of this element's existing Cmd should be changed as a result of this element's ownership change.
+    /// </summary>
+    /// <returns></returns>
+    protected abstract bool ShouldExistingCmdOwnerChange();
 
     protected override void HandleOwnerChanging(Player newOwner) {
         base.HandleOwnerChanging(newOwner);
         D.AssertNotEqual(TempGameValues.NoPlayer, Owner);
         D.Assert(IsAssaultAllowedBy(newOwner));
 
-        if (ShouldCmdOwnerChange()) {    // 5.17.17 Reqd BEFORE all these other changes propagate
+        if (ShouldExistingCmdOwnerChange()) {    // 5.17.17 Reqd BEFORE all these other changes propagate
             D.Warn(@"FYI. {0} is about to change its Cmd {1}'s Owner from {2} to its own new Owner {3} in Frame {4}. Element and Cmd owner 
                         will be 'out of sync'.", DebugName, Command.DebugName, Command.Owner, newOwner, Time.frameCount);
             Command.Data.Owner = newOwner;
@@ -775,8 +781,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         // Checking weapon targeting on an OwnerChange is handled by WeaponRangeMonitor
     }
 
-    protected abstract void ResetOrderAndState();
-
     #region Orders Support Members
 
     /// <summary>
@@ -790,6 +794,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// </summary>
     /// <returns></returns>
     internal abstract bool CancelSuperiorsOrder();
+
+    protected abstract void ResetOrderAndState();
 
     #endregion
 
@@ -1013,28 +1019,28 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     private void EnableIcon(bool toEnable) {
         if (toEnable) {
-            if (DisplayMgr.Icon == null) {
+            if (DisplayMgr.TrackingIcon == null) {
                 DisplayMgr.IconInfo = MakeIconInfo();
-                SubscribeToIconEvents(DisplayMgr.Icon);
+                SubscribeToIconEvents(DisplayMgr.TrackingIcon);
             }
         }
         else {
-            if (DisplayMgr.Icon != null) {
-                UnsubscribeToIconEvents(DisplayMgr.Icon);
-                DisplayMgr.IconInfo = default(IconInfo);
+            if (DisplayMgr.TrackingIcon != null) {
+                UnsubscribeToIconEvents(DisplayMgr.TrackingIcon);
+                DisplayMgr.IconInfo = null;
             }
         }
     }
 
     private void AssessIcon() {
         if (DisplayMgr != null) {
-            if (DisplayMgr.Icon != null) {
+            if (DisplayMgr.TrackingIcon != null) {
                 var iconInfo = RefreshIconInfo();
                 if (DisplayMgr.IconInfo != iconInfo) {    // avoid property not changed warning
-                    UnsubscribeToIconEvents(DisplayMgr.Icon);
+                    UnsubscribeToIconEvents(DisplayMgr.TrackingIcon);
                     //D.Log(ShowDebugLog, "{0} changing IconInfo from {1} to {2}.", DebugName, DisplayMgr.IconInfo, iconInfo);
                     DisplayMgr.IconInfo = iconInfo;
-                    SubscribeToIconEvents(DisplayMgr.Icon);
+                    SubscribeToIconEvents(DisplayMgr.TrackingIcon);
                 }
             }
             else {
@@ -1051,11 +1057,11 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         iconEventListener.onPress += PressEventHandler;
     }
 
-    private IconInfo RefreshIconInfo() {
+    private TrackingIconInfo RefreshIconInfo() {
         return MakeIconInfo();
     }
 
-    protected abstract IconInfo MakeIconInfo();
+    protected abstract TrackingIconInfo MakeIconInfo();
 
     private void ShowElementIconsChangedEventHandler(object sender, EventArgs e) {
         EnableIcon(_debugCntls.ShowElementIcons);
@@ -1070,7 +1076,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
             _debugCntls.showElementIcons -= ShowElementIconsChangedEventHandler;
         }
         if (DisplayMgr != null) {
-            var icon = DisplayMgr.Icon;
+            var icon = DisplayMgr.TrackingIcon;
             if (icon != null) {
                 UnsubscribeToIconEvents(icon);
             }
