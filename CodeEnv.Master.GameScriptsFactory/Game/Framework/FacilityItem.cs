@@ -28,7 +28,6 @@ using UnityEngine.Profiling;
 
 /// <summary>
 /// Class for AUnitElementItems that are Facilities.
-/// </summary>
 public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidableObstacle {
 
     private static readonly Vector2 IconSize = new Vector2(24F, 24F);

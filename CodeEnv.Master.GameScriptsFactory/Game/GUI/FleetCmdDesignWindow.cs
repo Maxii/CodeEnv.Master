@@ -27,25 +27,25 @@ using UnityEngine;
 /// </summary>
 public class FleetCmdDesignWindow : AUnitDesignWindow {
 
-    protected override void AddToPlayerDesigns(AUnitDesign newDesign) {
+    protected override void AddToPlayerDesigns(AUnitMemberDesign newDesign) {
         _gameMgr.PlayersDesigns.Add(newDesign as FleetCmdDesign);
     }
 
-    protected override AUnitDesign CopyDesignFrom(AUnitDesign design) {
+    protected override AUnitMemberDesign CopyDesignFrom(AUnitMemberDesign design) {
         return new FleetCmdDesign(design as FleetCmdDesign);
     }
 
-    protected override bool TryGet3DModelFor(AUnitDesign design, out Vector3 modelDimensions, out GameObject modelPrefab) {
+    protected override bool TryGet3DModelFor(AUnitMemberDesign design, out Vector3 modelDimensions, out GameObject modelPrefab) {
         modelDimensions = default(Vector3);
         modelPrefab = null;
         return false;
     }
 
-    protected override IEnumerable<AUnitDesign> GetRegisteredUserDesigns(bool includeObsolete) {
-        return _gameMgr.PlayersDesigns.GetAllUserFleetCmdDesigns(includeObsolete).Cast<AUnitDesign>();
+    protected override IEnumerable<AUnitMemberDesign> GetRegisteredUserDesigns(bool includeObsolete) {
+        return _gameMgr.PlayersDesigns.GetAllUserFleetCmdDesigns(includeObsolete).Cast<AUnitMemberDesign>();
     }
 
-    protected override bool IsDesignContentEqual(AUnitDesign previousDesign, AUnitDesign newDesign) {
+    protected override bool IsDesignContentEqual(AUnitMemberDesign previousDesign, AUnitMemberDesign newDesign) {
         return GameUtility.IsDesignContentEqual(previousDesign as FleetCmdDesign, newDesign as FleetCmdDesign);
     }
 
@@ -55,7 +55,7 @@ public class FleetCmdDesignWindow : AUnitDesignWindow {
         return false;
     }
 
-    protected override AUnitDesign GetEmptyTemplateDesign(string designNameHint) {
+    protected override AUnitMemberDesign GetEmptyTemplateDesign(string designNameHint) {
         D.AssertNull(designNameHint);
         return _gameMgr.PlayersDesigns.GetUserFleetCmdDesign(TempGameValues.EmptyFleetCmdTemplateDesignName);
     }
@@ -65,7 +65,7 @@ public class FleetCmdDesignWindow : AUnitDesignWindow {
     }
 
     protected override IEnumerable<AEquipmentStat> GetAvailableUserEquipmentStats() {
-        return _gameMgr.UniverseCreator.UnitConfigurator.GetAvailableUserEquipmentStats(ACommandDesign.SupportedEquipCategories);
+        return _gameMgr.UniverseCreator.UnitConfigurator.GetAvailableUserEquipmentStats(AUnitCmdDesign.SupportedEquipCategories);
     }
 
 }

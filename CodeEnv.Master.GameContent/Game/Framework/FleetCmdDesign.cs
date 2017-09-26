@@ -19,7 +19,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// The design of a Fleet Command for a player.
     /// </summary>
-    public class FleetCmdDesign : ACommandDesign {
+    public class FleetCmdDesign : AUnitCmdDesign {
 
         public new FleetCmdModuleStat ReqdCmdStat { get { return base.ReqdCmdStat as FleetCmdModuleStat; } }
 

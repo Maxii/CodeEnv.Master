@@ -28,26 +28,26 @@ using UnityEngine;
 /// </summary>
 public class ShipDesignWindow : AUnitDesignWindow {
 
-    protected override void AddToPlayerDesigns(AUnitDesign newDesign) {
+    protected override void AddToPlayerDesigns(AUnitMemberDesign newDesign) {
         _gameMgr.PlayersDesigns.Add(newDesign as ShipDesign);
     }
 
-    protected override AUnitDesign CopyDesignFrom(AUnitDesign design) {
+    protected override AUnitMemberDesign CopyDesignFrom(AUnitMemberDesign design) {
         return new ShipDesign(design as ShipDesign);
     }
 
-    protected override bool TryGet3DModelFor(AUnitDesign design, out Vector3 modelDimensions, out GameObject modelPrefab) {
+    protected override bool TryGet3DModelFor(AUnitMemberDesign design, out Vector3 modelDimensions, out GameObject modelPrefab) {
         ShipDesign sDesign = design as ShipDesign;
         modelDimensions = sDesign.HullCategory.Dimensions();
         modelPrefab = RequiredPrefabs.Instance.shipHulls.Single(hull => hull.HullCategory == sDesign.HullCategory).gameObject;
         return true;
     }
 
-    protected override IEnumerable<AUnitDesign> GetRegisteredUserDesigns(bool includeObsolete) {
-        return _gameMgr.PlayersDesigns.GetAllUserShipDesigns(includeObsolete).Cast<AUnitDesign>();
+    protected override IEnumerable<AUnitMemberDesign> GetRegisteredUserDesigns(bool includeObsolete) {
+        return _gameMgr.PlayersDesigns.GetAllUserShipDesigns(includeObsolete).Cast<AUnitMemberDesign>();
     }
 
-    protected override bool IsDesignContentEqual(AUnitDesign previousDesign, AUnitDesign newDesign) {
+    protected override bool IsDesignContentEqual(AUnitMemberDesign previousDesign, AUnitMemberDesign newDesign) {
         return GameUtility.IsDesignContentEqual(previousDesign as ShipDesign, newDesign as ShipDesign);
     }
 
@@ -57,7 +57,7 @@ public class ShipDesignWindow : AUnitDesignWindow {
         return true;
     }
 
-    protected override AUnitDesign GetEmptyTemplateDesign(string designNameHint) {
+    protected override AUnitMemberDesign GetEmptyTemplateDesign(string designNameHint) {
         D.AssertNotNull(designNameHint);
         ShipHullCategory designHullCat = Enums<ShipHullCategory>.Parse(designNameHint);
         return _gameMgr.PlayersDesigns.GetUserShipDesign(designHullCat.GetEmptyTemplateDesignName());
@@ -68,7 +68,7 @@ public class ShipDesignWindow : AUnitDesignWindow {
     }
 
     protected override IEnumerable<AEquipmentStat> GetAvailableUserEquipmentStats() {
-        return _gameMgr.UniverseCreator.UnitConfigurator.GetAvailableUserEquipmentStats(AElementDesign.SupportedEquipCategories);
+        return _gameMgr.UniverseCreator.UnitConfigurator.GetAvailableUserEquipmentStats(AUnitElementDesign.SupportedEquipCategories);
     }
 }
 

@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: UnitDesignIcon.cs
-// AMultiSizeGuiIcon that holds a AUnitDesign for Unit Cmd and Element Designs.
+// File: UnitMemberDesignGuiIcon.cs
+// AMultiSizeGuiIcon that holds a AUnitMemberDesign for Unit Cmd and Element Designs.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,9 +22,9 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// AMultiSizeGuiIcon that holds a AUnitDesign for Unit Cmd and Element Designs.
+/// AMultiSizeGuiIcon that holds a AUnitMemberDesign for Unit Cmd and Element Designs.
 /// </summary>
-public class UnitDesignIcon : AMultiSizeGuiIcon {
+public class UnitMemberDesignGuiIcon : AMultiSizeGuiIcon {
 
     private const string DebugNameFormat = "{0}[{1}]";
     private const string TooltipFormat = "{0}{1}";
@@ -40,23 +40,18 @@ public class UnitDesignIcon : AMultiSizeGuiIcon {
 
     protected override string TooltipContent {
         get {
-            string obsoleteText = _design.Status == AUnitDesign.SourceAndStatus.Player_Obsolete ? "[Obsolete]" : string.Empty;
+            string obsoleteText = _design.Status == AUnitMemberDesign.SourceAndStatus.Player_Obsolete ? "[Obsolete]" : string.Empty;
             return TooltipFormat.Inject(_design.DesignName, obsoleteText);
         }
     }
 
-    /// <summary>
-    /// Indicates whether this Icon has been initialized, aka its Design property has been set.
-    /// </summary>
-    public bool IsInitialized { get; private set; }
-
-    private AUnitDesign _design;
-    public AUnitDesign Design {
+    private AUnitMemberDesign _design;
+    public AUnitMemberDesign Design {
         get { return _design; }
         set {
             D.AssertNull(_design);
             D.AssertNotNull(value);
-            SetProperty<AUnitDesign>(ref _design, value, "Design", DesignPropSetHandler);
+            SetProperty<AUnitMemberDesign>(ref _design, value, "Design", DesignPropSetHandler);
         }
     }
 
@@ -77,8 +72,6 @@ public class UnitDesignIcon : AMultiSizeGuiIcon {
 
     private void DesignPropSetHandler() {
         D.AssertNotDefault((int)Size);
-        D.Assert(!IsInitialized);
-        IsInitialized = true;
         Show();
     }
 
@@ -131,7 +124,6 @@ public class UnitDesignIcon : AMultiSizeGuiIcon {
         base.ResetForReuse();
         _design = null;
         _isPicked = false;
-        IsInitialized = false;
     }
 
     protected override void Cleanup() { }

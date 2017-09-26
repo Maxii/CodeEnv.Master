@@ -99,14 +99,14 @@ public class NewGameUnitConfigurator {
     public void CreateAndRegisterRequiredDesigns() {
         foreach (var player in _gameMgr.AllPlayers) {
             FleetCmdDesign loneFleetCmdDesign = MakeFleetCmdDesign(player, passiveCmQty: 0, sensorQty: 1, maxCmdStaffEffectiveness: 0.50F);
-            loneFleetCmdDesign.Status = AUnitDesign.SourceAndStatus.System_CreationTemplate;
+            loneFleetCmdDesign.Status = AUnitMemberDesign.SourceAndStatus.System_CreationTemplate;
             RegisterCmdDesign(loneFleetCmdDesign, optionalRootDesignName: TempGameValues.LoneFleetCmdDesignName);
 
             var emptyShipDesigns = MakeShipDesigns(player, _shipHullStatLookup.Values, DebugLosWeaponLoadout.None,
                 DebugLaunchedWeaponLoadout.None, DebugPassiveCMLoadout.None, DebugActiveCMLoadout.None, DebugSensorLoadout.One,
                 DebugShieldGenLoadout.None, new ShipCombatStance[] { ShipCombatStance.BalancedBombard });
             foreach (var shipDesign in emptyShipDesigns) {
-                shipDesign.Status = AUnitDesign.SourceAndStatus.System_CreationTemplate;
+                shipDesign.Status = AUnitMemberDesign.SourceAndStatus.System_CreationTemplate;
                 RegisterElementDesign(shipDesign, optionalRootDesignName: shipDesign.HullCategory.GetEmptyTemplateDesignName());
             }
 
@@ -114,20 +114,20 @@ public class NewGameUnitConfigurator {
                 DebugLaunchedWeaponLoadout.None, DebugPassiveCMLoadout.None, DebugActiveCMLoadout.None, DebugSensorLoadout.One,
                 DebugShieldGenLoadout.None);
             foreach (var facilityDesign in emptyFacilityDesigns) {
-                facilityDesign.Status = AUnitDesign.SourceAndStatus.System_CreationTemplate;
+                facilityDesign.Status = AUnitMemberDesign.SourceAndStatus.System_CreationTemplate;
                 RegisterElementDesign(facilityDesign, optionalRootDesignName: facilityDesign.HullCategory.GetEmptyTemplateDesignName());
             }
 
             FleetCmdDesign emptyFleetCmdDesign = MakeFleetCmdDesign(player, passiveCmQty: 0, sensorQty: 1);
-            emptyFleetCmdDesign.Status = AUnitDesign.SourceAndStatus.System_CreationTemplate;
+            emptyFleetCmdDesign.Status = AUnitMemberDesign.SourceAndStatus.System_CreationTemplate;
             RegisterCmdDesign(emptyFleetCmdDesign, optionalRootDesignName: TempGameValues.EmptyFleetCmdTemplateDesignName);
 
             StarbaseCmdDesign emptyStarbaseCmdDesign = MakeStarbaseCmdDesign(player, passiveCmQty: 0, sensorQty: 1);
-            emptyStarbaseCmdDesign.Status = AUnitDesign.SourceAndStatus.System_CreationTemplate;
+            emptyStarbaseCmdDesign.Status = AUnitMemberDesign.SourceAndStatus.System_CreationTemplate;
             RegisterCmdDesign(emptyStarbaseCmdDesign, optionalRootDesignName: TempGameValues.EmptyStarbaseCmdTemplateDesignName);
 
             SettlementCmdDesign emptySettlementCmdDesign = MakeSettlementCmdDesign(player, passiveCmQty: 0, sensorQty: 1);
-            emptySettlementCmdDesign.Status = AUnitDesign.SourceAndStatus.System_CreationTemplate;
+            emptySettlementCmdDesign.Status = AUnitMemberDesign.SourceAndStatus.System_CreationTemplate;
             RegisterCmdDesign(emptySettlementCmdDesign, optionalRootDesignName: TempGameValues.EmptySettlementCmdTemplateDesignName);
         }
     }
@@ -1092,7 +1092,7 @@ public class NewGameUnitConfigurator {
         }
 
         ShipDesign existingDesign = _gameMgr.PlayersDesigns.GetShipDesign(design.Player, existingDesignName);
-        existingDesign.Status = AUnitDesign.SourceAndStatus.Player_Current;
+        existingDesign.Status = AUnitMemberDesign.SourceAndStatus.Player_Current;
         D.Log(ShowDebugLog, "{0} found Design {1} has equivalent already registered so using {2}.", DebugName, design.DebugName, existingDesignName);
         return existingDesignName;
     }
@@ -1114,7 +1114,7 @@ public class NewGameUnitConfigurator {
             return rootDesignName;
         }
         FacilityDesign existingDesign = _gameMgr.PlayersDesigns.GetFacilityDesign(design.Player, existingDesignName);
-        existingDesign.Status = AUnitDesign.SourceAndStatus.Player_Current;
+        existingDesign.Status = AUnitMemberDesign.SourceAndStatus.Player_Current;
         D.Log(ShowDebugLog, "{0} found Design {1} has equivalent already registered so using {2}.", DebugName, design.DebugName, existingDesignName);
         return existingDesignName;
     }
@@ -1209,7 +1209,7 @@ public class NewGameUnitConfigurator {
             return rootDesignName;
         }
         StarbaseCmdDesign existingDesign = _gameMgr.PlayersDesigns.GetStarbaseCmdDesign(design.Player, existingDesignName);
-        existingDesign.Status = AUnitDesign.SourceAndStatus.Player_Current;
+        existingDesign.Status = AUnitMemberDesign.SourceAndStatus.Player_Current;
         D.Log(ShowDebugLog, "{0} found Design {1} has equivalent already registered so using {2}.", DebugName, design.DebugName, existingDesignName);
         return existingDesignName;
     }
@@ -1231,7 +1231,7 @@ public class NewGameUnitConfigurator {
             return rootDesignName;
         }
         SettlementCmdDesign existingDesign = _gameMgr.PlayersDesigns.GetSettlementCmdDesign(design.Player, existingDesignName);
-        existingDesign.Status = AUnitDesign.SourceAndStatus.Player_Current;
+        existingDesign.Status = AUnitMemberDesign.SourceAndStatus.Player_Current;
         D.Log(ShowDebugLog, "{0} found Design {1} has equivalent already registered so using {2}.", DebugName, design.DebugName, existingDesignName);
         return existingDesignName;
     }
@@ -1253,7 +1253,7 @@ public class NewGameUnitConfigurator {
             return rootDesignName;
         }
         FleetCmdDesign existingDesign = _gameMgr.PlayersDesigns.GetFleetCmdDesign(design.Player, existingDesignName);
-        existingDesign.Status = AUnitDesign.SourceAndStatus.Player_Current;
+        existingDesign.Status = AUnitMemberDesign.SourceAndStatus.Player_Current;
         D.Log(ShowDebugLog, "{0} found Design {1} has equivalent already registered so using {2}.", DebugName, design.DebugName, existingDesignName);
         return existingDesignName;
     }

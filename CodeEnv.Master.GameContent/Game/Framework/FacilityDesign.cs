@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Class holding the design of a facility for a player.
     /// </summary>
-    public class FacilityDesign : AElementDesign {
+    public class FacilityDesign : AUnitElementDesign {
 
         public FacilityHullCategory HullCategory { get { return HullStat.HullCategory; } }
 

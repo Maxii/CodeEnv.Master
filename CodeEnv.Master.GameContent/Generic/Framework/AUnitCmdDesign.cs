@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ACommandDesign.cs
-// Abstract base class holding the design of a command for a player.
+// File: AUnitCmdDesign.cs
+// Abstract base class holding the design of a unit command for a player.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,9 +23,9 @@ namespace CodeEnv.Master.GameContent {
     using Common.LocalResources;
 
     /// <summary>
-    /// Abstract base class holding the design of a command for a player.
+    /// Abstract base class holding the design of a unit command for a player.
     /// </summary>
-    public abstract class ACommandDesign : AUnitDesign {
+    public abstract class AUnitCmdDesign : AUnitMemberDesign {
 
         public static EquipmentCategory[] SupportedEquipCategories =  {
                                                                             EquipmentCategory.PassiveCountermeasure,
@@ -58,7 +58,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected sealed override EquipmentCategory[] SupportedEquipmentCategories { get { return SupportedEquipCategories; } }
 
-        public ACommandDesign(Player player, FtlDampenerStat ftlDampenerStat, SensorStat reqdMRSensorStat, ACmdModuleStat reqdCmdStat)
+        public AUnitCmdDesign(Player player, FtlDampenerStat ftlDampenerStat, SensorStat reqdMRSensorStat, ACmdModuleStat reqdCmdStat)
             : base(player) {
             FtlDampenerStat = ftlDampenerStat;
             ReqdMRSensorStat = reqdMRSensorStat;
@@ -106,7 +106,7 @@ namespace CodeEnv.Master.GameContent {
 
         ////public override bool Equals(object obj) {
         ////    if (base.Equals(obj)) {
-        ////        ACommandDesign oDesign = (ACommandDesign)obj;
+        ////        AUnitCmdDesign oDesign = (AUnitCmdDesign)obj;
         ////        return oDesign.ReqdMRSensorStat == ReqdMRSensorStat && oDesign.FtlDampenerStat == FtlDampenerStat;
         ////    }
         ////    return false;

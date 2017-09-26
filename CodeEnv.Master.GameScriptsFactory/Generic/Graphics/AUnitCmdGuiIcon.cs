@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AUnitIcon.cs
+// File: AUnitCmdGuiIcon.cs
 // Abstract base AMultiSizeGuiIcon that holds an AUnitCmdItem.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -26,8 +26,9 @@ using UnityEngine;
 
 /// <summary>
 /// Abstract base AMultiSizeGuiIcon that holds an AUnitCmdItem.
+/// <remarks>This is an icon used by the Gui, not the in game icon that tracks a unit in space.</remarks>
 /// </summary>
-public abstract class AUnitIcon : AMultiSizeGuiIcon {
+public abstract class AUnitCmdGuiIcon : AMultiSizeGuiIcon {
 
     private const string DebugNameFormat = "{0}[{1}]";
     private const string TooltipFormat = "{0}";
@@ -44,7 +45,7 @@ public abstract class AUnitIcon : AMultiSizeGuiIcon {
 
     /// <summary>
     /// Indicates whether this Icon has been initialized, aka its Unit property has been set.
-    /// <remarks>Warning: Unit will return null if Unit is destroyed.</remarks>
+    /// <remarks>Handled this way as Unit will return null if Unit is destroyed.</remarks>
     /// </summary>
     public bool IsInitialized { get; private set; }
 

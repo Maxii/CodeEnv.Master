@@ -35,13 +35,13 @@ public abstract class AUnitHudUserBaseForm : AForm {
     private const string TitleFormat = "Selected Base: {0}";
 
     [SerializeField]
-    private UnitDesignIcon _constructibleDesignIconPrefab = null;
+    private UnitMemberDesignGuiIcon _constructibleDesignIconPrefab = null;
     [SerializeField]
-    private ElementConstructionIcon _constructionQueueIconPrefab = null;
+    private ElementConstructionGuiIcon _constructionQueueIconPrefab = null;
     [SerializeField]
-    private FacilityIcon _facilityIconPrefab = null;
+    private FacilityGuiIcon _facilityIconPrefab = null;
     [SerializeField]
-    private ShipIcon _shipIconPrefab = null;
+    private ShipGuiIcon _shipIconPrefab = null;
 
     [SerializeField]
     private UIButton _unitFocusButton = null;
@@ -90,12 +90,14 @@ public abstract class AUnitHudUserBaseForm : AForm {
         }
     }
 
+    private ConstructionManager _unitConstructionMgr;
+
     private IList<Transform> _sortedConstructibleDesignIconTransforms;
     private IList<Transform> _sortedFacilityIconTransforms;
     private IList<Transform> _sortedShipIconTransforms;
-    private HashSet<FacilityIcon> _pickedFacilityIcons;
-    private HashSet<ShipIcon> _pickedShipIcons;
-    private IDictionary<AElementDesign, UnitDesignIcon> _constructibleDesignIconLookup;
+    private HashSet<FacilityGuiIcon> _pickedFacilityIcons;
+    private HashSet<ShipGuiIcon> _pickedShipIcons;
+    private IDictionary<AUnitElementDesign, UnitMemberDesignGuiIcon> _constructibleDesignIconLookup;
 
     private UILabel _formTitleLabel;
     private UIGrid _constructibleDesignIconsGrid;
@@ -110,28 +112,28 @@ public abstract class AUnitHudUserBaseForm : AForm {
         _gameMgr = GameManager.Instance;
         _formTitleLabel = gameObject.GetSingleComponentInImmediateChildren<UILabel>();
 
-        _constructibleDesignIconsGrid = gameObject.GetSingleComponentInChildren<UnitDesignIcon>().gameObject.GetSingleComponentInParents<UIGrid>();
+        _constructibleDesignIconsGrid = gameObject.GetSingleComponentInChildren<UnitMemberDesignGuiIcon>().gameObject.GetSingleComponentInParents<UIGrid>();
         _constructibleDesignIconsGrid.arrangement = UIGrid.Arrangement.Horizontal;
         _constructibleDesignIconsGrid.sorting = UIGrid.Sorting.Custom;
         _constructibleDesignIconsGrid.onCustomSort = CompareConstructableDesignIcons;
 
-        _constructionQueueIconsGrid = gameObject.GetSingleComponentInChildren<ElementConstructionIcon>().gameObject.GetSingleComponentInParents<UIGrid>();
+        _constructionQueueIconsGrid = gameObject.GetSingleComponentInChildren<ElementConstructionGuiIcon>().gameObject.GetSingleComponentInParents<UIGrid>();
         _constructionQueueIconsGrid.arrangement = UIGrid.Arrangement.Vertical;
         _constructionQueueIconsGrid.sorting = UIGrid.Sorting.Vertical;
 
-        _facilityIconsGrid = gameObject.GetSingleComponentInChildren<FacilityIcon>().gameObject.GetSingleComponentInParents<UIGrid>();
+        _facilityIconsGrid = gameObject.GetSingleComponentInChildren<FacilityGuiIcon>().gameObject.GetSingleComponentInParents<UIGrid>();
         _facilityIconsGrid.arrangement = UIGrid.Arrangement.Horizontal;
         _facilityIconsGrid.sorting = UIGrid.Sorting.Custom;
         _facilityIconsGrid.onCustomSort = CompareFacilityIcons;
 
-        _shipIconsGrid = gameObject.GetSingleComponentInChildren<ShipIcon>().gameObject.GetSingleComponentInParents<UIGrid>();
+        _shipIconsGrid = gameObject.GetSingleComponentInChildren<ShipGuiIcon>().gameObject.GetSingleComponentInParents<UIGrid>();
         _shipIconsGrid.arrangement = UIGrid.Arrangement.Horizontal;
         _shipIconsGrid.sorting = UIGrid.Sorting.Custom;
         _shipIconsGrid.onCustomSort = CompareShipIcons;
 
-        _constructibleDesignIconLookup = new Dictionary<AElementDesign, UnitDesignIcon>();
-        _pickedFacilityIcons = new HashSet<FacilityIcon>();
-        _pickedShipIcons = new HashSet<ShipIcon>();
+        _constructibleDesignIconLookup = new Dictionary<AUnitElementDesign, UnitMemberDesignGuiIcon>();
+        _pickedFacilityIcons = new HashSet<FacilityGuiIcon>();
+        _pickedShipIcons = new HashSet<ShipGuiIcon>();
 
         _sortedConstructibleDesignIconTransforms = new List<Transform>();
         _sortedFacilityIconTransforms = new List<Transform>();
@@ -183,7 +185,8 @@ public abstract class AUnitHudUserBaseForm : AForm {
         _formTitleLabel.text = TitleFormat.Inject(SelectedUnit.UnitName);
         _viewAllConstructibleDesignsButton.SetToggledState(toToggleIn: true, iconColor: TempGameValues.SelectedColor, toNotify: true);
 
-        var unitConstructionQueue = SelectedUnit.Data.GetConstructionQueue();
+        ////var unitConstructionQueue = SelectedUnit.Data.GetConstructionQueue();
+        var unitConstructionQueue = _unitConstructionMgr.GetQueue();
         BuildConstructionQueueIcons(unitConstructionQueue);
 
         BuildUnitCompositionIcons();
@@ -196,6 +199,8 @@ public abstract class AUnitHudUserBaseForm : AForm {
     private void SelectedUnitPropSetHandler() {
         D.Assert(_gameMgr.IsPaused);
 
+        _unitConstructionMgr = SelectedUnit.ConstructionMgr;
+
         SubscribeToSelectedUnit();
         AssignValuesToMembers();
         AssessInteractableHud();
@@ -203,11 +208,12 @@ public abstract class AUnitHudUserBaseForm : AForm {
 
     private void SubscribeToSelectedUnit() {
         SelectedUnit.deathOneShot += UnitDeathEventHandler;
-        SelectedUnit.Data.constructionQueueChanged += UnitConstructionQueueChangedEventHandler;
+        ////SelectedUnit.Data.constructionQueueChanged += UnitConstructionQueueChangedEventHandler;
+        _unitConstructionMgr.constructionQueueChanged += UnitConstructionQueueChangedEventHandler;
     }
 
     private void UnitConstructionQueueChangedEventHandler(object sender, EventArgs e) {
-        D.AssertEqual(SelectedUnit.Data, sender as AUnitBaseCmdData);
+        D.AssertEqual(_unitConstructionMgr, sender as ConstructionManager);
         HandleUnitConstructionQueueChanged();
     }
 
@@ -315,7 +321,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
 
     private void ConstructibleDesignIconClickedEventHandler(GameObject go) {
         var inputHelper = GameInputHelper.Instance;
-        UnitDesignIcon iconClicked = go.GetComponent<UnitDesignIcon>();
+        UnitMemberDesignGuiIcon iconClicked = go.GetComponent<UnitMemberDesignGuiIcon>();
         if (inputHelper.IsLeftMouseButton) {
             if (inputHelper.IsAnyKeyHeldDown(KeyCode.LeftControl, KeyCode.RightControl)) {
                 HandleConstructibleDesignIconCntlLeftClicked(iconClicked);
@@ -331,7 +337,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
 
     private void ConstructionQueueIconClickedEventHandler(GameObject go) {
         var inputHelper = GameInputHelper.Instance;
-        ElementConstructionIcon iconClicked = go.GetComponent<ElementConstructionIcon>();
+        ElementConstructionGuiIcon iconClicked = go.GetComponent<ElementConstructionGuiIcon>();
         if (inputHelper.IsLeftMouseButton) {
             if (inputHelper.IsAnyKeyHeldDown(KeyCode.LeftControl, KeyCode.RightControl)) {
                 HandleConstructionQueueIconCntlLeftClicked(iconClicked);
@@ -347,7 +353,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
 
     private void FacilityIconClickedEventHandler(GameObject go) {
         var inputHelper = GameInputHelper.Instance;
-        FacilityIcon iconClicked = go.GetComponent<FacilityIcon>();
+        FacilityGuiIcon iconClicked = go.GetComponent<FacilityGuiIcon>();
         if (inputHelper.IsLeftMouseButton) {
             if (inputHelper.IsAnyKeyHeldDown(KeyCode.LeftControl, KeyCode.RightControl)) {
                 HandleFacilityIconCntlLeftClicked(iconClicked);
@@ -366,7 +372,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
 
     private void ShipIconClickedEventHandler(GameObject go) {
         var inputHelper = GameInputHelper.Instance;
-        ShipIcon iconClicked = go.GetComponent<ShipIcon>();
+        ShipGuiIcon iconClicked = go.GetComponent<ShipGuiIcon>();
         if (inputHelper.IsLeftMouseButton) {
             if (inputHelper.IsAnyKeyHeldDown(KeyCode.LeftControl, KeyCode.RightControl)) {
                 HandleShipIconCntlLeftClicked(iconClicked);
@@ -381,7 +387,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
     }
 
     private void ConstructionQueueIconBuyoutInitiatedEventHandler(object sender, EventArgs e) {
-        ElementConstructionIcon icon = sender as ElementConstructionIcon;
+        ElementConstructionGuiIcon icon = sender as ElementConstructionGuiIcon;
         HandleConstructionQueueIconBuyoutInitiated(icon);
     }
 
@@ -459,7 +465,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
 
     private void HandleViewAllConstructibleDesignsButtonToggledIn() {
         bool includeFacilities = ShouldFacilityDesignsBeIncludedInView();
-        var constructibleDesigns = __AcquireConstructibleDesigns(includeFacilities, includeShips: true);
+        var constructibleDesigns = GetConstructibleDesigns(includeFacilities, includeShips: true);
         BuildConstructibleDesignIcons(constructibleDesigns);
         _viewAllConstructibleDesignsButton.SetIconColor(TempGameValues.SelectedColor);
         _viewFacilityConstructibleDesignsButton.SetToggledState(toToggleIn: false);
@@ -468,7 +474,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
 
     private void HandleViewFacilityConstructibleDesignsButtonToggleIn() {
         bool includeFacilities = ShouldFacilityDesignsBeIncludedInView();
-        var constructibleDesigns = __AcquireConstructibleDesigns(includeFacilities, includeShips: false);
+        var constructibleDesigns = GetConstructibleDesigns(includeFacilities, includeShips: false);
         BuildConstructibleDesignIcons(constructibleDesigns);
         _viewFacilityConstructibleDesignsButton.SetIconColor(TempGameValues.SelectedColor);
         _viewAllConstructibleDesignsButton.SetToggledState(toToggleIn: false);
@@ -476,49 +482,55 @@ public abstract class AUnitHudUserBaseForm : AForm {
     }
 
     private void HandleViewShipConstructibleDesignsButtonToggledIn() {
-        var constructibleDesigns = __AcquireConstructibleDesigns(includeFacilities: false, includeShips: true);
+        var constructibleDesigns = GetConstructibleDesigns(includeFacilities: false, includeShips: true);
         BuildConstructibleDesignIcons(constructibleDesigns);
         _viewShipConstructibleDesignsButton.SetIconColor(TempGameValues.SelectedColor);
         _viewAllConstructibleDesignsButton.SetToggledState(toToggleIn: false);
         _viewFacilityConstructibleDesignsButton.SetToggledState(toToggleIn: false);
     }
 
-    private void HandleConstructibleDesignIconCntlLeftClicked(UnitDesignIcon iconClicked) {
-        SelectedUnit.Data.AddToConstructionQueue(iconClicked.Design as AElementDesign);
+    private void HandleConstructibleDesignIconCntlLeftClicked(UnitMemberDesignGuiIcon iconClicked) {
+        ////SelectedUnit.Data.AddToConstructionQueue(iconClicked.Design as AUnitElementDesign);
+        _unitConstructionMgr.AddToQueue(iconClicked.Design as AUnitElementDesign);
     }
 
-    private void HandleConstructibleDesignIconLeftClicked(UnitDesignIcon iconClicked) {
-        SelectedUnit.Data.AddToConstructionQueue(iconClicked.Design as AElementDesign);
+    private void HandleConstructibleDesignIconLeftClicked(UnitMemberDesignGuiIcon iconClicked) {
+        ////SelectedUnit.Data.AddToConstructionQueue(iconClicked.Design as AUnitElementDesign);
+        _unitConstructionMgr.AddToQueue(iconClicked.Design as AUnitElementDesign);
     }
 
-    private void HandleConstructibleDesignIconShiftLeftClicked(UnitDesignIcon iconClicked) {
-        SelectedUnit.Data.AddToConstructionQueue(iconClicked.Design as AElementDesign);
+    private void HandleConstructibleDesignIconShiftLeftClicked(UnitMemberDesignGuiIcon iconClicked) {
+        ////SelectedUnit.Data.AddToConstructionQueue(iconClicked.Design as AUnitElementDesign);
+        _unitConstructionMgr.AddToQueue(iconClicked.Design as AUnitElementDesign);
     }
 
     #endregion
 
     #region Construction Queue Icon Interaction
 
-    private void HandleConstructionQueueIconLeftClicked(ElementConstructionIcon clickedIcon) {
+    private void HandleConstructionQueueIconLeftClicked(ElementConstructionGuiIcon clickedIcon) {
         // a construction icon that is clicked is already present in the queue so remove it
-        SelectedUnit.Data.RemoveFromConstructionQueue(clickedIcon.ItemUnderConstruction);
+        ////SelectedUnit.Data.RemoveFromConstructionQueue(clickedIcon.ItemUnderConstruction);
+        _unitConstructionMgr.RemoveFromQueue(clickedIcon.ItemUnderConstruction);
         // No buttons to assess
     }
 
-    private void HandleConstructionQueueIconCntlLeftClicked(ElementConstructionIcon clickedIcon) {
+    private void HandleConstructionQueueIconCntlLeftClicked(ElementConstructionGuiIcon clickedIcon) {
         // a construction icon that is clicked is already present in the queue so remove it
-        SelectedUnit.Data.RemoveFromConstructionQueue(clickedIcon.ItemUnderConstruction);
+        ////SelectedUnit.Data.RemoveFromConstructionQueue(clickedIcon.ItemUnderConstruction);
+        _unitConstructionMgr.RemoveFromQueue(clickedIcon.ItemUnderConstruction);
         // No buttons to assess
     }
 
-    private void HandleConstructionQueueIconShiftLeftClicked(ElementConstructionIcon clickedIcon) {
+    private void HandleConstructionQueueIconShiftLeftClicked(ElementConstructionGuiIcon clickedIcon) {
         // a construction icon that is clicked is already present in the queue so remove it
-        SelectedUnit.Data.RemoveFromConstructionQueue(clickedIcon.ItemUnderConstruction);
+        ////SelectedUnit.Data.RemoveFromConstructionQueue(clickedIcon.ItemUnderConstruction);
+        _unitConstructionMgr.RemoveFromQueue(clickedIcon.ItemUnderConstruction);
         // No buttons to assess
     }
 
     [Obsolete("No designs are currently limited to 1 instance in a base.")]
-    private void AddDesignToAvailableConstructibleDesigns(AElementDesign elementDesign) {
+    private void AddDesignToAvailableConstructibleDesigns(AUnitElementDesign elementDesign) {
         D.Warn("{0}.AddDesignToAvailableConstructibleDesigns() not yet implemented.", DebugName);
         // TODO Add back a ConstructibleDesignIcon for this design to the grid of AvailableConstructibleDesignIcons
         // to allow the design to be picked again. Only needed when the ConstructionQueueIcon for this design
@@ -526,21 +538,26 @@ public abstract class AUnitHudUserBaseForm : AForm {
         // Most designs allow multiple instances of the design to be constructed.
     }
 
-    private void HandleConstructionQueueIconBuyoutInitiated(ElementConstructionIcon boughtIcon) {
-        SelectedUnit.Data.PurchaseQueuedConstructionItem(boughtIcon.ItemUnderConstruction);
+    private void HandleConstructionQueueIconBuyoutInitiated(ElementConstructionGuiIcon boughtIcon) {
+        ////SelectedUnit.Data.PurchaseQueuedConstructionItem(boughtIcon.ItemUnderConstruction);
+        _unitConstructionMgr.PurchaseQueuedItem(boughtIcon.ItemUnderConstruction);
     }
 
     private void HandleConstructionQueueIconDragDropEnded() {
-        IList<ConstructionTracker> unitConstructionQueue = SelectedUnit.Data.GetConstructionQueue();
+        ////IList<ConstructionTracker> unitConstructionQueue = SelectedUnit.Data.GetConstructionQueue();
+        IList<ConstructionTracker> unitConstructionQueue = _unitConstructionMgr.GetQueue();
 
-        var verticallySortedConstructionItemsInIcons = _constructionQueueIconsGrid.GetChildList().Select(t => t.GetComponent<ElementConstructionIcon>()).Select(icon => icon.ItemUnderConstruction);
+        var verticallySortedConstructionItemsInIcons = _constructionQueueIconsGrid.GetChildList()
+            .Select(t => t.GetComponent<ElementConstructionGuiIcon>()).Select(icon => icon.ItemUnderConstruction);
         if (!unitConstructionQueue.SequenceEqual(verticallySortedConstructionItemsInIcons)) {
-            SelectedUnit.Data.RegenerateConstructionQueue(verticallySortedConstructionItemsInIcons.ToList());
+            ////SelectedUnit.Data.RegenerateConstructionQueue(verticallySortedConstructionItemsInIcons.ToList());
+            _unitConstructionMgr.RegenerateQueue(verticallySortedConstructionItemsInIcons.ToList());
         }
     }
 
     private void HandleUnitConstructionQueueChanged() {
-        var changedConstructionQueue = SelectedUnit.Data.GetConstructionQueue();
+        ////var changedConstructionQueue = SelectedUnit.Data.GetConstructionQueue();
+        var changedConstructionQueue = _unitConstructionMgr.GetQueue();
         BuildConstructionQueueIcons(changedConstructionQueue);
     }
 
@@ -548,7 +565,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
 
     #region Unit Composition (Facility) Icon Interaction
 
-    private void HandleFacilityIconLeftClicked(FacilityIcon icon) {
+    private void HandleFacilityIconLeftClicked(FacilityGuiIcon icon) {
         if (icon.IsPicked) {
             D.Assert(_pickedFacilityIcons.Contains(icon));
             // user is unpicking this icon
@@ -563,7 +580,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
         AssessFacilityButtons();
     }
 
-    private void HandleFacilityIconCntlLeftClicked(FacilityIcon icon) {
+    private void HandleFacilityIconCntlLeftClicked(FacilityGuiIcon icon) {
         if (icon.IsPicked) {
             D.Assert(_pickedFacilityIcons.Contains(icon));
             // user is unpicking this icon
@@ -580,11 +597,11 @@ public abstract class AUnitHudUserBaseForm : AForm {
         AssessFacilityButtons();
     }
 
-    private void HandleFacilityIconShiftLeftClicked(FacilityIcon clickedIcon) {
-        var iconsToPick = new List<FacilityIcon>();
+    private void HandleFacilityIconShiftLeftClicked(FacilityGuiIcon clickedIcon) {
+        var iconsToPick = new List<FacilityGuiIcon>();
         int clickedIconIndex = _sortedFacilityIconTransforms.IndexOf(clickedIcon.transform);
         if (_pickedFacilityIcons.Any()) {
-            FacilityIcon anchorIcon = _pickedFacilityIcons.Last();   // should be in order added
+            FacilityGuiIcon anchorIcon = _pickedFacilityIcons.Last();   // should be in order added
             int anchorIconIndex = _sortedFacilityIconTransforms.IndexOf(anchorIcon.transform);
             if (anchorIconIndex == clickedIconIndex) {
                 // clicked on the already picked anchor icon so do nothing
@@ -597,7 +614,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
             if (anchorIconIndex < clickedIconIndex) {
                 for (int index = anchorIconIndex; index <= clickedIconIndex; index++) {
                     Transform iconTransform = _sortedFacilityIconTransforms[index];
-                    FacilityIcon icon = iconTransform.GetComponent<FacilityIcon>();
+                    FacilityGuiIcon icon = iconTransform.GetComponent<FacilityGuiIcon>();
                     if (icon != null) {
                         iconsToPick.Add(icon);
                     }
@@ -606,7 +623,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
             else {
                 for (int index = anchorIconIndex; index >= clickedIconIndex; index--) {
                     Transform iconTransform = _sortedFacilityIconTransforms[index];
-                    FacilityIcon icon = iconTransform.GetComponent<FacilityIcon>();
+                    FacilityGuiIcon icon = iconTransform.GetComponent<FacilityGuiIcon>();
                     if (icon != null) {
                         iconsToPick.Add(icon);
                     }
@@ -617,7 +634,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
             // pick all icons from the first to this one
             for (int index = 0; index <= clickedIconIndex; index++) {
                 Transform iconTransform = _sortedFacilityIconTransforms[index];
-                FacilityIcon icon = iconTransform.GetComponent<FacilityIcon>();
+                FacilityGuiIcon icon = iconTransform.GetComponent<FacilityGuiIcon>();
                 if (icon != null) {
                     iconsToPick.Add(icon);
                 }
@@ -632,7 +649,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
         AssessFacilityButtons();
     }
 
-    private void HandleFacilityIconMiddleClicked(FacilityIcon icon) {
+    private void HandleFacilityIconMiddleClicked(FacilityGuiIcon icon) {
         FocusOn(icon.Element);
     }
 
@@ -723,7 +740,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
         }
     }
 
-    private void PickSingleFacilityIcon(FacilityIcon icon) {
+    private void PickSingleFacilityIcon(FacilityGuiIcon icon) {
         UnpickAllFacilityIcons();
         icon.IsPicked = true;
         _pickedFacilityIcons.Add(icon);
@@ -740,7 +757,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
 
     #region Ship Hanger Icon Interaction
 
-    private void HandleShipIconLeftClicked(ShipIcon icon) {
+    private void HandleShipIconLeftClicked(ShipGuiIcon icon) {
         if (icon.IsPicked) {
             D.Assert(_pickedShipIcons.Contains(icon));
             // user is unpicking this icon
@@ -755,7 +772,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
         AssessShipButtons();
     }
 
-    private void HandleShipIconCntlLeftClicked(ShipIcon icon) {
+    private void HandleShipIconCntlLeftClicked(ShipGuiIcon icon) {
         if (icon.IsPicked) {
             D.Assert(_pickedShipIcons.Contains(icon));
             // user is unpicking this icon
@@ -772,11 +789,11 @@ public abstract class AUnitHudUserBaseForm : AForm {
         AssessShipButtons();
     }
 
-    private void HandleShipIconShiftLeftClicked(ShipIcon clickedIcon) {
-        var iconsToPick = new List<ShipIcon>();
+    private void HandleShipIconShiftLeftClicked(ShipGuiIcon clickedIcon) {
+        var iconsToPick = new List<ShipGuiIcon>();
         int clickedIconIndex = _sortedShipIconTransforms.IndexOf(clickedIcon.transform);
         if (_pickedShipIcons.Any()) {
-            ShipIcon anchorIcon = _pickedShipIcons.Last();   // should be in order added
+            ShipGuiIcon anchorIcon = _pickedShipIcons.Last();   // should be in order added
             int anchorIconIndex = _sortedShipIconTransforms.IndexOf(anchorIcon.transform);
             if (anchorIconIndex == clickedIconIndex) {
                 // clicked on the already picked anchor icon so do nothing
@@ -789,7 +806,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
             if (anchorIconIndex < clickedIconIndex) {
                 for (int index = anchorIconIndex; index <= clickedIconIndex; index++) {
                     Transform iconTransform = _sortedShipIconTransforms[index];
-                    ShipIcon icon = iconTransform.GetComponent<ShipIcon>();
+                    ShipGuiIcon icon = iconTransform.GetComponent<ShipGuiIcon>();
                     if (icon != null) {
                         iconsToPick.Add(icon);
                     }
@@ -798,7 +815,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
             else {
                 for (int index = anchorIconIndex; index >= clickedIconIndex; index--) {
                     Transform iconTransform = _sortedShipIconTransforms[index];
-                    ShipIcon icon = iconTransform.GetComponent<ShipIcon>();
+                    ShipGuiIcon icon = iconTransform.GetComponent<ShipGuiIcon>();
                     if (icon != null) {
                         iconsToPick.Add(icon);
                     }
@@ -809,7 +826,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
             // pick all icons from the first to this one
             for (int index = 0; index <= clickedIconIndex; index++) {
                 Transform iconTransform = _sortedShipIconTransforms[index];
-                ShipIcon icon = iconTransform.GetComponent<ShipIcon>();
+                ShipGuiIcon icon = iconTransform.GetComponent<ShipGuiIcon>();
                 if (icon != null) {
                     iconsToPick.Add(icon);
                 }
@@ -923,7 +940,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
         _shipScuttleButton.isEnabled = _pickedShipIcons.Any();
     }
 
-    private void PickSingleShipIcon(ShipIcon icon) {
+    private void PickSingleShipIcon(ShipGuiIcon icon) {
         UnpickAllShipIcons();
         icon.IsPicked = true;
         _pickedShipIcons.Add(icon);
@@ -938,7 +955,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
 
     #endregion
 
-    private void BuildConstructibleDesignIcons(IEnumerable<AElementDesign> constructibleDesigns) {
+    private void BuildConstructibleDesignIcons(IEnumerable<AUnitElementDesign> constructibleDesigns) {
         RemoveConstructibleDesignIcons();
 
         var gridContainerSize = _constructibleDesignIconsGrid.GetComponentInParent<UIPanel>().GetViewSize();
@@ -1059,10 +1076,10 @@ public abstract class AUnitHudUserBaseForm : AForm {
         _shipIconsGrid.repositionNow = true;
     }
 
-    private void CreateAndAddIcon(AElementDesign design, AMultiSizeGuiIcon.IconSize iconSize) {
+    private void CreateAndAddIcon(AUnitElementDesign design, AMultiSizeGuiIcon.IconSize iconSize) {
         GameObject constructableDesignIconGo = NGUITools.AddChild(_constructibleDesignIconsGrid.gameObject, _constructibleDesignIconPrefab.gameObject);
         constructableDesignIconGo.name = design.DesignName + ConstructibleDesignIconExtension;
-        UnitDesignIcon constructableDesignIcon = constructableDesignIconGo.GetSafeComponent<UnitDesignIcon>();
+        UnitMemberDesignGuiIcon constructableDesignIcon = constructableDesignIconGo.GetSafeComponent<UnitMemberDesignGuiIcon>();
         constructableDesignIcon.Size = iconSize;
         constructableDesignIcon.Design = design;
 
@@ -1072,7 +1089,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
     }
 
     /// <summary>
-    /// Creates and adds a ElementConstructionIcon to the ConstructionQueueIconsGrid and ScrollView.
+    /// Creates and adds a ElementConstructionGuiIcon to the ConstructionQueueIconsGrid and ScrollView.
     /// </summary>
     /// <param name="itemUnderConstruction">The item under construction.</param>
     /// <param name="iconSize">Size of the icon.</param>
@@ -1082,7 +1099,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
         constructionQueueIconGo.name = itemUnderConstruction.Design.DesignName + ConstructionQueueIconExtension;
         constructionQueueIconGo.transform.SetLocalPositionY(topToBottomVerticalOffset); // initial position set for proper vertical sort
 
-        ElementConstructionIcon constructionQueueIcon = constructionQueueIconGo.GetSafeComponent<ElementConstructionIcon>();
+        ElementConstructionGuiIcon constructionQueueIcon = constructionQueueIconGo.GetSafeComponent<ElementConstructionGuiIcon>();
         constructionQueueIcon.Size = iconSize;
         constructionQueueIcon.ItemUnderConstruction = itemUnderConstruction;
 
@@ -1094,7 +1111,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
     private void CreateAndAddIcon(FacilityItem element, AMultiSizeGuiIcon.IconSize iconSize) {
         GameObject elementIconGo = NGUITools.AddChild(_facilityIconsGrid.gameObject, _facilityIconPrefab.gameObject);
         elementIconGo.name = element.Name + ElementIconExtension;
-        FacilityIcon elementIcon = elementIconGo.GetSafeComponent<FacilityIcon>();
+        FacilityGuiIcon elementIcon = elementIconGo.GetSafeComponent<FacilityGuiIcon>();
         elementIcon.Size = iconSize;
         elementIcon.Element = element;
 
@@ -1106,7 +1123,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
     private void CreateAndAddIcon(ShipItem element, AMultiSizeGuiIcon.IconSize iconSize) {
         GameObject elementIconGo = NGUITools.AddChild(_shipIconsGrid.gameObject, _shipIconPrefab.gameObject);
         elementIconGo.name = element.Name + ElementIconExtension;
-        ShipIcon elementIcon = elementIconGo.GetSafeComponent<ShipIcon>();
+        ShipGuiIcon elementIcon = elementIconGo.GetSafeComponent<ShipGuiIcon>();
         elementIcon.Size = iconSize;
         elementIcon.Element = element;
 
@@ -1118,7 +1135,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
     private void RemoveConstructibleDesignIcons() {
         IList<Transform> iconTransforms = _constructibleDesignIconsGrid.GetChildList();
         foreach (var it in iconTransforms) {
-            var icon = it.GetComponent<UnitDesignIcon>();
+            var icon = it.GetComponent<UnitMemberDesignGuiIcon>();
             RemoveIcon(icon);
         }
     }
@@ -1126,7 +1143,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
     private void RemoveConstructionQueueIcons() {
         IList<Transform> iconTransforms = _constructionQueueIconsGrid.GetChildList();
         foreach (var it in iconTransforms) {
-            var icon = it.GetComponent<ElementConstructionIcon>();
+            var icon = it.GetComponent<ElementConstructionGuiIcon>();
             RemoveIcon(icon);
         }
     }
@@ -1134,7 +1151,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
     private void RemoveUnitCompositionIcons() {
         IList<Transform> iconTransforms = _facilityIconsGrid.GetChildList();
         foreach (var it in iconTransforms) {
-            var icon = it.GetComponent<FacilityIcon>();
+            var icon = it.GetComponent<FacilityGuiIcon>();
             RemoveIcon(icon);
         }
     }
@@ -1142,22 +1159,21 @@ public abstract class AUnitHudUserBaseForm : AForm {
     private void RemoveShipIcons() {
         IList<Transform> iconTransforms = _shipIconsGrid.GetChildList();
         foreach (var it in iconTransforms) {
-            var icon = it.GetComponent<ShipIcon>();
+            var icon = it.GetComponent<ShipGuiIcon>();
             RemoveIcon(icon);
         }
     }
 
-    private void RemoveIcon(UnitDesignIcon icon) {
-        if (icon.IsInitialized) {
-            D.AssertNotNull(icon.Design, "{0}: {1}'s Design has been destroyed.".Inject(DebugName, icon.DebugName));
+    private void RemoveIcon(UnitMemberDesignGuiIcon icon) {
+        if (icon.Design != null) {  // no reason for this work if this is debug icon under grid
             bool isRemoved = _sortedConstructibleDesignIconTransforms.Remove(icon.transform);
             D.Assert(isRemoved);
-            isRemoved = _constructibleDesignIconLookup.Remove(icon.Design as AElementDesign);
+            isRemoved = _constructibleDesignIconLookup.Remove(icon.Design as AUnitElementDesign);
             D.Assert(isRemoved);
             //D.Log("{0} is removing {1}.", DebugName, icon.DebugName);
         }
         else {
-            // icon placeholder under grid will not be initialized
+            // icon placeholder under grid will not have Design assigned
             //D.Log("{0} not able to remove icon {1} from collections because it is not initialized.", DebugName, icon.DebugName);
         }
 
@@ -1167,8 +1183,8 @@ public abstract class AUnitHudUserBaseForm : AForm {
         DestroyImmediate(icon.gameObject);
     }
 
-    private void RemoveIcon(ElementConstructionIcon icon) {
-        if (icon.IsInitialized) {
+    private void RemoveIcon(ElementConstructionGuiIcon icon) {
+        if (icon.ItemUnderConstruction != null) {   // no reason for this work if this is debug icon under grid
             icon.constructionBuyoutInitiated -= ConstructionQueueIconBuyoutInitiatedEventHandler;
             icon.dragDropEnded -= ConstructionQueueIconDragDropEndedEventHandler;
             UIEventListener.Get(icon.gameObject).onClick -= ConstructionQueueIconClickedEventHandler;
@@ -1179,7 +1195,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
         DestroyImmediate(icon.gameObject);
     }
 
-    private void RemoveIcon(FacilityIcon icon) {
+    private void RemoveIcon(FacilityGuiIcon icon) {
         _pickedFacilityIcons.Remove(icon);   // may not be present
         if (icon.IsInitialized) {
             D.AssertNotNull(icon.Element, "{0}: {1}'s Element has been destroyed.".Inject(DebugName, icon.DebugName));
@@ -1200,7 +1216,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
         DestroyImmediate(icon.gameObject);
     }
 
-    private void RemoveIcon(ShipIcon icon) {
+    private void RemoveIcon(ShipGuiIcon icon) {
         _pickedShipIcons.Remove(icon);   // may not be present
         if (icon.IsInitialized) {
             D.AssertNotNull(icon.Element, "{0}: {1}'s Element has been destroyed.".Inject(DebugName, icon.DebugName));
@@ -1243,8 +1259,26 @@ public abstract class AUnitHudUserBaseForm : AForm {
 
     private bool ShouldFacilityDesignsBeIncludedInView() {
         int instantiatedFacilityCount = SelectedUnit.Elements.Count();
-        int facilitiesUnderConstructionCount = SelectedUnit.Data.GetConstructionQueue().Select(tracker => tracker.Design).Where(design => design is FacilityDesign).Count();
+        ////int facilitiesUnderConstructionCount = SelectedUnit.Data.GetConstructionQueue().Select(tracker => tracker.Design).Where(design => design is FacilityDesign).Count();
+        int facilitiesUnderConstructionCount = _unitConstructionMgr.GetQueue().Select(tracker => tracker.Design).Where(design => design is FacilityDesign).Count();
         return instantiatedFacilityCount + facilitiesUnderConstructionCount < TempGameValues.MaxFacilitiesPerBase;
+    }
+
+    private IEnumerable<AUnitElementDesign> GetConstructibleDesigns(bool includeFacilities, bool includeShips) {
+        // 9.24.17 Both can be false if ViewConstructibleFacilities and Base already has max facilities
+        ////D.Assert(includeFacilities || includeShips);
+
+        var playersDesigns = _gameMgr.PlayersDesigns;
+        List<AUnitElementDesign> designs = new List<AUnitElementDesign>();
+        if (includeFacilities) {
+            var facilityDesigns = playersDesigns.GetAllUserFacilityDesigns().Cast<AUnitElementDesign>();
+            designs.AddRange(facilityDesigns);
+        }
+        if (includeShips) {
+            var shipDesigns = playersDesigns.GetAllUserShipDesigns().Cast<AUnitElementDesign>();
+            designs.AddRange(shipDesigns);
+        }
+        return designs;
     }
 
     private void AssessInteractableHud() {
@@ -1310,6 +1344,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
 
         UnsubscribeFromSelectedUnit();
         _selectedUnit = null;
+        _unitConstructionMgr = null;
         AssessInteractableHud();
     }
 
@@ -1355,7 +1390,8 @@ public abstract class AUnitHudUserBaseForm : AForm {
     private void UnsubscribeFromSelectedUnit() {
         if (_selectedUnit != null) {
             _selectedUnit.deathOneShot -= UnitDeathEventHandler;
-            _selectedUnit.Data.constructionQueueChanged -= UnitConstructionQueueChangedEventHandler;
+            ////_selectedUnit.Data.constructionQueueChanged -= UnitConstructionQueueChangedEventHandler;
+            _unitConstructionMgr.constructionQueueChanged -= UnitConstructionQueueChangedEventHandler;
         }
     }
 
@@ -1395,23 +1431,6 @@ public abstract class AUnitHudUserBaseForm : AForm {
 
     private IEnumerable<ShipItem> __AcquireShipsInHanger() {
         return Enumerable.Empty<ShipItem>();
-    }
-
-    private IEnumerable<AElementDesign> __AcquireConstructibleDesigns(bool includeFacilities, bool includeShips) {
-        // 9.24.17 Both can be false if ViewConstructibleFacilities and Base already has max facilities
-        ////D.Assert(includeFacilities || includeShips);
-
-        var playersDesigns = _gameMgr.PlayersDesigns;
-        List<AElementDesign> designs = new List<AElementDesign>();
-        if (includeFacilities) {
-            var facilityDesigns = playersDesigns.GetAllUserFacilityDesigns().Cast<AElementDesign>();
-            designs.AddRange(facilityDesigns);
-        }
-        if (includeShips) {
-            var shipDesigns = playersDesigns.GetAllUserShipDesigns().Cast<AElementDesign>();
-            designs.AddRange(shipDesigns);
-        }
-        return designs;
     }
 
     protected override void __Validate() {

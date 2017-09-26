@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: StarbaseIcon.cs
+// File: StarbaseGuiIcon.cs
 // AMultiSizeGuiIcon that holds a StarbaseCmdItem.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -21,9 +21,10 @@ using CodeEnv.Master.GameContent;
 
 /// <summary>
 /// AMultiSizeGuiIcon that holds a StarbaseCmdItem.
+/// <remarks>This is an icon used by the Gui, not the in game icon that tracks a unit in space.</remarks>
 /// </summary>
 [System.Obsolete("Not currently used")]
-public class StarbaseIcon : AUnitIcon {
+public class StarbaseGuiIcon : AUnitCmdGuiIcon {
 
     public new StarbaseCmdItem Unit {
         get { return base.Unit as StarbaseCmdItem; }

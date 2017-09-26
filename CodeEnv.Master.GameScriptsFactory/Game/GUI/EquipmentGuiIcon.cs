@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: EquipmentIcon.cs
+// File: EquipmentGuiIcon.cs
 // Gui 'icon' that holds an AEquipmentStat available to be selected for use in a unit design.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -24,7 +24,7 @@ using UnityEngine;
 /// <summary>
 /// Gui 'icon' that holds an AEquipmentStat available to be selected for use in a unit design.
 /// </summary>
-public class EquipmentIcon : AEquipmentIcon {
+public class EquipmentGuiIcon : AEquipmentGuiIcon {
 
     private AEquipmentStat _equipmentStat;
     public AEquipmentStat EquipmentStat {

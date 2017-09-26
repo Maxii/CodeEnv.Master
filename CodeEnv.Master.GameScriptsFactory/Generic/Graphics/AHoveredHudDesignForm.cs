@@ -24,12 +24,12 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public abstract class AHoveredHudDesignForm : AInfoDisplayForm {
 
-    private AUnitDesign _design;
-    public AUnitDesign Design {
+    private AUnitMemberDesign _design;
+    public AUnitMemberDesign Design {
         get { return _design; }
         set {
             D.AssertNull(_design);  // occurs only once between Resets
-            SetProperty<AUnitDesign>(ref _design, value, "Design", DesignPropSetHandler);
+            SetProperty<AUnitMemberDesign>(ref _design, value, "Design", DesignPropSetHandler);
         }
     }
 

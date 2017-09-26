@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: FleetIcon.cs
+// File: FleetGuiIcon.cs
 // AMultiSizeGuiIcon that holds a FleetCmdItem.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -23,8 +23,9 @@ using UnityEngine;
 
 /// <summary>
 /// AMultiSizeGuiIcon that holds a FleetCmdItem.
+/// <remarks>This is an icon used by the Gui, not the in game icon that tracks a unit in space.</remarks>
 /// </summary>
-public class FleetIcon : AUnitIcon {
+public class FleetGuiIcon : AUnitCmdGuiIcon {
 
     private const string SpeedFormat = "{0:0.#}";
 

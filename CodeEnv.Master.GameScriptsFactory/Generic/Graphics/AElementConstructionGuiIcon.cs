@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AElementConstructionIcon.cs
-// Abstract base AMultiSizeGuiIcon that holds a ConstructionTracker for an AElementDesign under construction.
+// File: AElementConstructionGuiIcon.cs
+// Abstract base AMultiSizeGuiIcon that holds a ConstructionTracker for an AUnitElementDesign under construction.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,9 +23,9 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Abstract base AMultiSizeGuiIcon that holds a ConstructionTracker for an AElementDesign under construction.
+/// Abstract base AMultiSizeGuiIcon that holds a ConstructionTracker for an AUnitElementDesign under construction.
 /// </summary>
-public abstract class AElementConstructionIcon : AMultiSizeGuiIcon {
+public abstract class AElementConstructionGuiIcon : AMultiSizeGuiIcon {
 
     private const string DebugNameFormat = "{0}[{1}]";
     private const string TooltipFormat = "Building {0}";
@@ -43,12 +43,6 @@ public abstract class AElementConstructionIcon : AMultiSizeGuiIcon {
             return DebugNameFormat.Inject(GetType().Name, ItemUnderConstruction.Design.DesignName);
         }
     }
-
-    /// <summary>
-    /// Indicates whether this Icon has been initialized, aka its Element property has been set.
-    /// <remarks>Warning: Element will return null if Element is destroyed.</remarks>
-    /// </summary>
-    public bool IsInitialized { get; private set; }
 
     private ConstructionTracker _itemUnderConstruction;
     public ConstructionTracker ItemUnderConstruction {
@@ -108,9 +102,6 @@ public abstract class AElementConstructionIcon : AMultiSizeGuiIcon {
     }
 
     private void ItemUnderConstructionPropSetHandler() {
-        D.Assert(!IsInitialized);
-
-        IsInitialized = true;
         Show();
     }
 
@@ -190,7 +181,6 @@ public abstract class AElementConstructionIcon : AMultiSizeGuiIcon {
             _buyoutButton.isEnabled = true;
         }
         _itemUnderConstruction = null;
-        IsInitialized = false;
     }
 
     #region Cleanup

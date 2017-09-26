@@ -144,8 +144,8 @@ namespace CodeEnv.Master.GameContent {
             if (!designsByName.TryGetValue(designName, out design)) {
                 D.Error("{0}: {1} {2} not present for {3}. DesignNames: {4}.", GetType().Name, typeof(ShipDesign).Name, designName, player, designsByName.Keys.Concatenate());
             }
-            D.AssertEqual(AUnitDesign.SourceAndStatus.Player_Current, design.Status);
-            design.Status = AUnitDesign.SourceAndStatus.Player_Obsolete;
+            D.AssertEqual(AUnitMemberDesign.SourceAndStatus.Player_Current, design.Status);
+            design.Status = AUnitMemberDesign.SourceAndStatus.Player_Obsolete;
         }
 
         public void ObsoleteUserShipDesign(string designName) {
@@ -158,8 +158,8 @@ namespace CodeEnv.Master.GameContent {
             if (!designsByName.TryGetValue(designName, out design)) {
                 D.Error("{0}: {1} {2} not present for {3}. DesignNames: {4}.", GetType().Name, typeof(FacilityDesign).Name, designName, player, designsByName.Keys.Concatenate());
             }
-            D.AssertEqual(AUnitDesign.SourceAndStatus.Player_Current, design.Status);
-            design.Status = AUnitDesign.SourceAndStatus.Player_Obsolete;
+            D.AssertEqual(AUnitMemberDesign.SourceAndStatus.Player_Current, design.Status);
+            design.Status = AUnitMemberDesign.SourceAndStatus.Player_Obsolete;
         }
 
         public void ObsoleteUserFacilityDesign(string designName) {
@@ -172,8 +172,8 @@ namespace CodeEnv.Master.GameContent {
             if (!designsByName.TryGetValue(designName, out design)) {
                 D.Error("{0}: {1} {2} not present for {3}. DesignNames: {4}.", GetType().Name, typeof(StarbaseCmdDesign).Name, designName, player, designsByName.Keys.Concatenate());
             }
-            D.AssertEqual(AUnitDesign.SourceAndStatus.Player_Current, design.Status);
-            design.Status = AUnitDesign.SourceAndStatus.Player_Obsolete;
+            D.AssertEqual(AUnitMemberDesign.SourceAndStatus.Player_Current, design.Status);
+            design.Status = AUnitMemberDesign.SourceAndStatus.Player_Obsolete;
         }
 
         public void ObsoleteUserStarbaseCmdDesign(string designName) {
@@ -186,8 +186,8 @@ namespace CodeEnv.Master.GameContent {
             if (!designsByName.TryGetValue(designName, out design)) {
                 D.Error("{0}: {1} {2} not present for {3}. DesignNames: {4}.", GetType().Name, typeof(SettlementCmdDesign).Name, designName, player, designsByName.Keys.Concatenate());
             }
-            D.AssertEqual(AUnitDesign.SourceAndStatus.Player_Current, design.Status);
-            design.Status = AUnitDesign.SourceAndStatus.Player_Obsolete;
+            D.AssertEqual(AUnitMemberDesign.SourceAndStatus.Player_Current, design.Status);
+            design.Status = AUnitMemberDesign.SourceAndStatus.Player_Obsolete;
         }
 
         public void ObsoleteUserSettlementCmdDesign(string designName) {
@@ -200,8 +200,8 @@ namespace CodeEnv.Master.GameContent {
             if (!designsByName.TryGetValue(designName, out design)) {
                 D.Error("{0}: {1} {2} not present for {3}. DesignNames: {4}.", GetType().Name, typeof(FleetCmdDesign).Name, designName, player, designsByName.Keys.Concatenate());
             }
-            D.AssertEqual(AUnitDesign.SourceAndStatus.Player_Current, design.Status);
-            design.Status = AUnitDesign.SourceAndStatus.Player_Obsolete;
+            D.AssertEqual(AUnitMemberDesign.SourceAndStatus.Player_Current, design.Status);
+            design.Status = AUnitMemberDesign.SourceAndStatus.Player_Obsolete;
         }
 
         public void ObsoleteUserFleetCmdDesign(string designName) {
@@ -226,7 +226,7 @@ namespace CodeEnv.Master.GameContent {
         ///   <c>true</c> if [is design present] [the specified design]; otherwise, <c>false</c>.
         /// </returns>
         public bool IsDesignPresent(ShipDesign design, out string designName) {
-            var designsPresent = _shipDesignsLookup[design.Player].Values.Where(des => des.Status != AUnitDesign.SourceAndStatus.System_CreationTemplate);
+            var designsPresent = _shipDesignsLookup[design.Player].Values.Where(des => des.Status != AUnitMemberDesign.SourceAndStatus.System_CreationTemplate);
             foreach (var presentDesign in designsPresent) {
                 if (GameUtility.IsDesignContentEqual(design, presentDesign)) {
                     designName = presentDesign.DesignName;
@@ -247,7 +247,7 @@ namespace CodeEnv.Master.GameContent {
         ///   <c>true</c> if [is design present] [the specified design]; otherwise, <c>false</c>.
         /// </returns>
         public bool IsDesignPresent(FacilityDesign design, out string designName) {
-            var designsPresent = _facilityDesignsLookup[design.Player].Values.Where(des => des.Status != AUnitDesign.SourceAndStatus.System_CreationTemplate);
+            var designsPresent = _facilityDesignsLookup[design.Player].Values.Where(des => des.Status != AUnitMemberDesign.SourceAndStatus.System_CreationTemplate);
             foreach (var presentDesign in designsPresent) {
                 if (GameUtility.IsDesignContentEqual(design, presentDesign)) {
                     designName = presentDesign.DesignName;
@@ -268,7 +268,7 @@ namespace CodeEnv.Master.GameContent {
         ///   <c>true</c> if [is design present] [the specified design]; otherwise, <c>false</c>.
         /// </returns>
         public bool IsDesignPresent(FleetCmdDesign design, out string designName) {
-            var designsPresent = _fleetCmdDesignsLookup[design.Player].Values.Where(des => des.Status != AUnitDesign.SourceAndStatus.System_CreationTemplate);
+            var designsPresent = _fleetCmdDesignsLookup[design.Player].Values.Where(des => des.Status != AUnitMemberDesign.SourceAndStatus.System_CreationTemplate);
             foreach (var presentDesign in designsPresent) {
                 if (GameUtility.IsDesignContentEqual(design, presentDesign)) {
                     designName = presentDesign.DesignName;
@@ -289,7 +289,7 @@ namespace CodeEnv.Master.GameContent {
         ///   <c>true</c> if [is design present] [the specified design]; otherwise, <c>false</c>.
         /// </returns>
         public bool IsDesignPresent(StarbaseCmdDesign design, out string designName) {
-            var designsPresent = _starbaseCmdDesignsLookup[design.Player].Values.Where(des => des.Status != AUnitDesign.SourceAndStatus.System_CreationTemplate);
+            var designsPresent = _starbaseCmdDesignsLookup[design.Player].Values.Where(des => des.Status != AUnitMemberDesign.SourceAndStatus.System_CreationTemplate);
             foreach (var presentDesign in designsPresent) {
                 if (GameUtility.IsDesignContentEqual(design, presentDesign)) {
                     designName = presentDesign.DesignName;
@@ -310,7 +310,7 @@ namespace CodeEnv.Master.GameContent {
         ///   <c>true</c> if [is design present] [the specified design]; otherwise, <c>false</c>.
         /// </returns>
         public bool IsDesignPresent(SettlementCmdDesign design, out string designName) {
-            var designsPresent = _settlementCmdDesignsLookup[design.Player].Values.Where(des => des.Status != AUnitDesign.SourceAndStatus.System_CreationTemplate);
+            var designsPresent = _settlementCmdDesignsLookup[design.Player].Values.Where(des => des.Status != AUnitMemberDesign.SourceAndStatus.System_CreationTemplate);
             foreach (var presentDesign in designsPresent) {
                 if (GameUtility.IsDesignContentEqual(design, presentDesign)) {
                     designName = presentDesign.DesignName;
@@ -327,10 +327,10 @@ namespace CodeEnv.Master.GameContent {
 
         public IEnumerable<ShipDesign> GetAllUserShipDesigns(bool includeObsolete = false) {
             if (includeObsolete) {
-                return _shipDesignsLookup[_userPlayer].Values.Where(des => des.Status == AUnitDesign.SourceAndStatus.Player_Current
-                || des.Status == AUnitDesign.SourceAndStatus.Player_Obsolete);
+                return _shipDesignsLookup[_userPlayer].Values.Where(des => des.Status == AUnitMemberDesign.SourceAndStatus.Player_Current
+                || des.Status == AUnitMemberDesign.SourceAndStatus.Player_Obsolete);
             }
-            return _shipDesignsLookup[_userPlayer].Values.Where(des => des.Status == AUnitDesign.SourceAndStatus.Player_Current);
+            return _shipDesignsLookup[_userPlayer].Values.Where(des => des.Status == AUnitMemberDesign.SourceAndStatus.Player_Current);
         }
 
         public ShipDesign GetShipDesign(Player player, string designName) {
@@ -358,10 +358,10 @@ namespace CodeEnv.Master.GameContent {
 
         public IEnumerable<FacilityDesign> GetAllUserFacilityDesigns(bool includeObsolete = false) {
             if (includeObsolete) {
-                return _facilityDesignsLookup[_userPlayer].Values.Where(des => des.Status == AUnitDesign.SourceAndStatus.Player_Current
-                || des.Status == AUnitDesign.SourceAndStatus.Player_Obsolete);
+                return _facilityDesignsLookup[_userPlayer].Values.Where(des => des.Status == AUnitMemberDesign.SourceAndStatus.Player_Current
+                || des.Status == AUnitMemberDesign.SourceAndStatus.Player_Obsolete);
             }
-            return _facilityDesignsLookup[_userPlayer].Values.Where(des => des.Status == AUnitDesign.SourceAndStatus.Player_Current);
+            return _facilityDesignsLookup[_userPlayer].Values.Where(des => des.Status == AUnitMemberDesign.SourceAndStatus.Player_Current);
         }
 
         public FacilityDesign GetFacilityDesign(Player player, string designName) {
@@ -389,10 +389,10 @@ namespace CodeEnv.Master.GameContent {
 
         public IEnumerable<StarbaseCmdDesign> GetAllUserStarbaseCmdDesigns(bool includeObsolete = false) {
             if (includeObsolete) {
-                return _starbaseCmdDesignsLookup[_userPlayer].Values.Where(des => des.Status == AUnitDesign.SourceAndStatus.Player_Current
-                || des.Status == AUnitDesign.SourceAndStatus.Player_Obsolete);
+                return _starbaseCmdDesignsLookup[_userPlayer].Values.Where(des => des.Status == AUnitMemberDesign.SourceAndStatus.Player_Current
+                || des.Status == AUnitMemberDesign.SourceAndStatus.Player_Obsolete);
             }
-            return _starbaseCmdDesignsLookup[_userPlayer].Values.Where(des => des.Status == AUnitDesign.SourceAndStatus.Player_Current);
+            return _starbaseCmdDesignsLookup[_userPlayer].Values.Where(des => des.Status == AUnitMemberDesign.SourceAndStatus.Player_Current);
         }
 
         public StarbaseCmdDesign GetStarbaseCmdDesign(Player player, string designName) {
@@ -420,10 +420,10 @@ namespace CodeEnv.Master.GameContent {
 
         public IEnumerable<FleetCmdDesign> GetAllUserFleetCmdDesigns(bool includeObsolete = false) {
             if (includeObsolete) {
-                return _fleetCmdDesignsLookup[_userPlayer].Values.Where(des => des.Status == AUnitDesign.SourceAndStatus.Player_Current
-                || des.Status == AUnitDesign.SourceAndStatus.Player_Obsolete);
+                return _fleetCmdDesignsLookup[_userPlayer].Values.Where(des => des.Status == AUnitMemberDesign.SourceAndStatus.Player_Current
+                || des.Status == AUnitMemberDesign.SourceAndStatus.Player_Obsolete);
             }
-            return _fleetCmdDesignsLookup[_userPlayer].Values.Where(des => des.Status == AUnitDesign.SourceAndStatus.Player_Current);
+            return _fleetCmdDesignsLookup[_userPlayer].Values.Where(des => des.Status == AUnitMemberDesign.SourceAndStatus.Player_Current);
         }
 
         public FleetCmdDesign GetFleetCmdDesign(Player player, string designName) {
@@ -451,10 +451,10 @@ namespace CodeEnv.Master.GameContent {
 
         public IEnumerable<SettlementCmdDesign> GetAllUserSettlementCmdDesigns(bool includeObsolete = false) {
             if (includeObsolete) {
-                return _settlementCmdDesignsLookup[_userPlayer].Values.Where(des => des.Status == AUnitDesign.SourceAndStatus.Player_Current
-                || des.Status == AUnitDesign.SourceAndStatus.Player_Obsolete);
+                return _settlementCmdDesignsLookup[_userPlayer].Values.Where(des => des.Status == AUnitMemberDesign.SourceAndStatus.Player_Current
+                || des.Status == AUnitMemberDesign.SourceAndStatus.Player_Obsolete);
             }
-            return _settlementCmdDesignsLookup[_userPlayer].Values.Where(des => des.Status == AUnitDesign.SourceAndStatus.Player_Current);
+            return _settlementCmdDesignsLookup[_userPlayer].Values.Where(des => des.Status == AUnitMemberDesign.SourceAndStatus.Player_Current);
         }
 
         public SettlementCmdDesign GetSettlementCmdDesign(Player player, string designName) {
@@ -485,7 +485,7 @@ namespace CodeEnv.Master.GameContent {
         #region Debug
 
         [System.Obsolete]
-        public AElementDesign __GetUserElementDesign(string designName) {
+        public AUnitElementDesign __GetUserElementDesign(string designName) {
             ShipDesign shipDesign;
             if (TryGetShipDesign(_userPlayer, designName, out shipDesign)) {
                 return shipDesign;

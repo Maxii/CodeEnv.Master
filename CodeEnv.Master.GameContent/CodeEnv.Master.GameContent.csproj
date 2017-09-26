@@ -63,6 +63,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Framework\ConstructionManager.cs" />
     <Compile Include="Generic\IO\AIconInfo.cs" />
     <Compile Include="Generic\IO\ACmdModuleStat.cs" />
     <Compile Include="Generic\IO\FleetCmdModuleStat.cs" />
@@ -126,8 +127,8 @@
     <Compile Include="Game\Gameplay\EmpireStartLevel.cs" />
     <Compile Include="Generic\Framework\APlanetoidDesign.cs" />
     <Compile Include="Game\Framework\CelestialDesigns.cs" />
-    <Compile Include="Generic\Framework\ACommandDesign.cs" />
-    <Compile Include="Generic\Framework\AUnitDesign.cs" />
+    <Compile Include="Generic\Framework\AUnitCmdDesign.cs" />
+    <Compile Include="Generic\Framework\AUnitMemberDesign.cs" />
     <Compile Include="Generic\_Debug\BaseCreatorEditorSettings.cs" />
     <Compile Include="Generic\_Debug\DebugBaseFormation.cs" />
     <Compile Include="Generic\_Debug\DebugDiploUserRelations.cs" />
@@ -171,7 +172,7 @@
     <Compile Include="Game\Graphics\ShipDisplayManager.cs" />
     <Compile Include="Game\Graphics\StarDisplayManager.cs" />
     <Compile Include="Game\Graphics\UniverseCenterDisplayManager.cs" />
-    <Compile Include="Generic\Framework\AElementDesign.cs" />
+    <Compile Include="Generic\Framework\AUnitElementDesign.cs" />
     <Compile Include="Game\Framework\FacilityDesign.cs" />
     <Compile Include="Generic\Framework\ALOSWeapon.cs" />
     <Compile Include="Generic\Framework\AWeapon.cs" />

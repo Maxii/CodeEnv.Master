@@ -65,6 +65,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         }
     }
 
+    public ConstructionManager ConstructionMgr { get; private set; }
+
     public override float ClearanceRadius { get { return CloseOrbitOuterRadius * 2F; } }
 
     public float CloseOrbitOuterRadius { get { return CloseOrbitInnerRadius + TempGameValues.ShipCloseOrbitSlotDepth; } }
@@ -75,6 +77,12 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     private IList<IShip_Ltd> _shipsInCloseOrbit;
 
     #region Initialization
+
+    protected override void InitializeOnData() {
+        base.InitializeOnData();
+        ConstructionMgr = new ConstructionManager(Data);
+        ConstructionMgr.constructionCompleted += ConstructionCompletedEventHandler;
+    }
 
     protected override bool InitializeDebugLog() {
         return DebugControls.Instance.ShowBaseCmdDebugLogs;
@@ -110,15 +118,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         CurrentState = BaseState.FinalInitialize;
     }
 
-    protected override void __ValidateStateForSensorEventSubscription() {
-        D.AssertNotEqual(BaseState.None, CurrentState);
-        D.AssertNotEqual(BaseState.FinalInitialize, CurrentState);
-    }
-
     #endregion
 
     public override void CommenceOperations() {
         base.CommenceOperations();
+        ConstructionMgr.InitiateProgressChecks();
         ActivateSensors();
         AssessAlertStatus();
         SubscribeToSensorEvents();
@@ -191,6 +195,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         return IsCurrentStateAnyOf(BaseState.ExecuteAttackOrder) && _fsmTgt == unitCmd;
     }
 
+    protected override void PrepareForOnDeath() {
+        base.PrepareForOnDeath();
+        ConstructionMgr.HandleDeath();
+    }
+
     protected override void PrepareForDeadState() {
         base.PrepareForDeadState();
         UponDeath();    // 4.19.17 Do any reqd Callback before exiting current non-Call()ed state
@@ -222,6 +231,13 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         // UNDONE 9.21.17 order facilities to AssumeFormation if CurrentState allows it. See FleetCmd implementation.
     }
 
+    private void __HandleCompletedConstructionOf(AUnitElementDesign design) {
+        // UNDONE Instantiate the design as an element
+        D.Log("{0} has completed construction of {1} without instantiation.", DebugName, design.DebugName);
+        //D.Log("{0}: {1}.ConstructionCost = {2:0.#}, Prod/Hr = {3:0.#}.",
+        //    DebugName, design.DebugName, design.ConstructionCost, Data.UnitProduction);
+    }
+
     #region Event and Property Change Handlers
 
     protected void CurrentOrderPropChangedHandler() {
@@ -231,6 +247,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     private void NewOrderReceivedWhilePausedUponResumeEventHandler(object sender, EventArgs e) {
         _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedUponResumeEventHandler;
         HandleNewOrderReceivedWhilePausedUponResume();
+    }
+
+    private void ConstructionCompletedEventHandler(object sender, ConstructionManager.ConstructionCompletedEventArgs e) {
+        D.AssertEqual(ConstructionMgr, sender as ConstructionManager);
+        __HandleCompletedConstructionOf(e.CompletedDesign);
     }
 
     #endregion
@@ -1201,14 +1222,25 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     #region Cleanup
 
+    protected override void Cleanup() {
+        base.Cleanup();
+        ConstructionMgr.Dispose();
+    }
+
     protected override void Unsubscribe() {
         base.Unsubscribe();
         _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedUponResumeEventHandler;
+        ConstructionMgr.constructionCompleted -= ConstructionCompletedEventHandler;
     }
 
     #endregion
 
     #region Debug
+
+    protected override void __ValidateStateForSensorEventSubscription() {
+        D.AssertNotEqual(BaseState.None, CurrentState);
+        D.AssertNotEqual(BaseState.FinalInitialize, CurrentState);
+    }
 
     protected override void __ValidateCurrentOrderAndStateWhenAvailable() {
         D.AssertNull(CurrentOrder);

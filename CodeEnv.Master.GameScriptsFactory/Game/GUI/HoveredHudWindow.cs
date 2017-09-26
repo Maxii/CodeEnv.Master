@@ -71,7 +71,7 @@ public class HoveredHudWindow : AHudWindow<HoveredHudWindow>, IHoveredHudWindow 
         ShowForm(form);
     }
 
-    public void Show(FormID formID, AUnitDesign design) {
+    public void Show(FormID formID, AUnitMemberDesign design) {
         //D.Log("{0}.Show({1}) called.", DebugName, design.DebugName);
         var form = PrepareForm(formID);
         (form as AHoveredHudDesignForm).Design = design;

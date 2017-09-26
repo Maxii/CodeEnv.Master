@@ -22,6 +22,7 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Abstract Gui 'icon' with tooltip support that has multiple sizes available.
@@ -76,11 +77,16 @@ public abstract class AMultiSizeGuiIcon : ATextTooltip {
         return AMultiSizeGuiIcon.IconSize.Small;
     }
 
-    public GameObject largeIconPrefab;
+    [SerializeField]
+    private GameObject _largeIconPrefab = null;
+    [SerializeField]
+    private GameObject _mediumIconPrefab = null;
+    [SerializeField]
+    private GameObject _smallIconPrefab = null;
 
-    public GameObject mediumIconPrefab;
-
-    public GameObject smallIconPrefab;
+    [Tooltip("The highest depth value used by a background sprite in a parent within the same UIPanel. Use 0 if no background sprites.")]
+    [SerializeField]
+    private int _highestBackgroundSpriteDepth = -1;
 
     public bool IsShowing { get; private set; }
 
@@ -110,6 +116,8 @@ public abstract class AMultiSizeGuiIcon : ATextTooltip {
         base.Awake();
         InitializeValuesAndReferences();
         __Validate();
+        // adjust any child widgets before the iconPrefab Size is chosen
+        AdjustWidgetDepthsToShowOverParentBackgroundSprites(gameObject);
     }
 
     protected virtual void InitializeValuesAndReferences() { }
@@ -124,13 +132,13 @@ public abstract class AMultiSizeGuiIcon : ATextTooltip {
         GameObject prefab;
         switch (iconSize) {
             case IconSize.Small:
-                prefab = smallIconPrefab;
+                prefab = _smallIconPrefab;
                 break;
             case IconSize.Medium:
-                prefab = mediumIconPrefab;
+                prefab = _mediumIconPrefab;
                 break;
             case IconSize.Large:
-                prefab = largeIconPrefab;
+                prefab = _largeIconPrefab;
                 break;
             case IconSize.None:
             default:
@@ -181,19 +189,20 @@ public abstract class AMultiSizeGuiIcon : ATextTooltip {
         GameObject prefab;
         switch (Size) {
             case IconSize.Small:
-                prefab = smallIconPrefab;
+                prefab = _smallIconPrefab;
                 break;
             case IconSize.Medium:
-                prefab = mediumIconPrefab;
+                prefab = _mediumIconPrefab;
                 break;
             case IconSize.Large:
-                prefab = largeIconPrefab;
+                prefab = _largeIconPrefab;
                 break;
             case IconSize.None:
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(Size));
         }
         GameObject iconGo = NGUITools.AddChild(gameObject, prefab);
+        AdjustWidgetDepthsToShowOverParentBackgroundSprites(iconGo);
 
         _encompassingWidget = iconGo.GetComponent<UIWidget>();
         _imageSprite = AcquireImageSprite(iconGo);
@@ -202,6 +211,17 @@ public abstract class AMultiSizeGuiIcon : ATextTooltip {
         AcquireAdditionalIconWidgets(iconGo);
 
         _encompassingWidget.alpha = Constants.ZeroF;
+    }
+
+    /// <summary>
+    /// Adjusts widget depths to show over any parent background sprites.
+    /// </summary>
+    /// <param name="topLevelGo">The top level GameObject holding widgets.</param>
+    private void AdjustWidgetDepthsToShowOverParentBackgroundSprites(GameObject topLevelGo) {
+        var iconWidgets = topLevelGo.GetComponentsInChildren<UIWidget>();
+        foreach (var widget in iconWidgets) {
+            widget.depth += _highestBackgroundSpriteDepth + 1;
+        }
     }
 
     protected virtual UISprite AcquireImageSprite(GameObject topLevelIconGo) {
@@ -230,9 +250,10 @@ public abstract class AMultiSizeGuiIcon : ATextTooltip {
 
     protected virtual void __Validate() {
         UnityUtility.ValidateComponentPresence<UIWidget>(gameObject);
-        D.AssertNotNull(smallIconPrefab, DebugName);
-        D.AssertNotNull(mediumIconPrefab, DebugName);
-        D.AssertNotNull(largeIconPrefab, DebugName);
+        D.AssertNotNull(_smallIconPrefab, DebugName);
+        D.AssertNotNull(_mediumIconPrefab, DebugName);
+        D.AssertNotNull(_largeIconPrefab, DebugName);
+        D.AssertNotEqual(Constants.MinusOne, _highestBackgroundSpriteDepth);
     }
 
     #endregion

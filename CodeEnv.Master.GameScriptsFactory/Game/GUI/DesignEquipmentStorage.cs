@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: DesignEquipmentStorage.cs
-// Keeps track of a AUnitDesign's inventory of AEquipmentStats and manages the icons that represent that inventory.
+// Keeps track of a AUnitMemberDesign's inventory of AEquipmentStats and manages the icons that represent that inventory.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,20 +22,20 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Keeps track of a AUnitDesign's inventory of AEquipmentStats and manages the icons that represent that inventory.
+/// Keeps track of a AUnitMemberDesign's inventory of AEquipmentStats and manages the icons that represent that inventory.
 /// </summary>
 public class DesignEquipmentStorage : AMonoBase {
 
     public string DebugName { get { return GetType().Name; } }
 
-    public EquipmentStorageIcon storageIconPrefab;
+    public EquipmentStorageGuiIcon storageIconPrefab;
 
-    public AUnitDesign WorkingDesign { get; private set; }
+    public AUnitMemberDesign WorkingDesign { get; private set; }
 
     private UIGrid _storageIconGrid;
     private UIWidget _storageIconContainer;
 
-    private IDictionary<EquipmentSlotID, EquipmentStorageIcon> _storageIconLookup;
+    private IDictionary<EquipmentSlotID, EquipmentStorageGuiIcon> _storageIconLookup;
 
     protected override void Awake() {
         base.Awake();
@@ -51,7 +51,7 @@ public class DesignEquipmentStorage : AMonoBase {
 
         _storageIconContainer = gameObject.GetSingleComponentInImmediateChildren<UIWidget>();
 
-        _storageIconLookup = new Dictionary<EquipmentSlotID, EquipmentStorageIcon>();
+        _storageIconLookup = new Dictionary<EquipmentSlotID, EquipmentStorageGuiIcon>();
     }
 
     public AEquipmentStat GetEquipmentStat(EquipmentSlotID slotID) {
@@ -95,7 +95,7 @@ public class DesignEquipmentStorage : AMonoBase {
     /// installed equipment is determined by the presence of the equipment stat in the design.
     /// </summary>
     /// <param name="design">The design.</param>
-    public void InstallEquipmentStorageIconsFor(AUnitDesign design) {
+    public void InstallEquipmentStorageIconsFor(AUnitMemberDesign design) {
         WorkingDesign = design;
 
         int reqdSlotQty = design.TotalReqdEquipmentSlots;
@@ -123,7 +123,7 @@ public class DesignEquipmentStorage : AMonoBase {
     }
 
     private void PopulateIcon(GameObject storageIconGo, AMultiSizeGuiIcon.IconSize iconSize, EquipmentSlotID slotID, AEquipmentStat equipStat) {
-        EquipmentStorageIcon storageIcon = storageIconGo.GetComponent<EquipmentStorageIcon>();
+        EquipmentStorageGuiIcon storageIcon = storageIconGo.GetComponent<EquipmentStorageGuiIcon>();
         storageIcon.Size = iconSize;
         storageIcon.Initialize(this, slotID, equipStat);
         _storageIconLookup.Add(slotID, storageIcon);

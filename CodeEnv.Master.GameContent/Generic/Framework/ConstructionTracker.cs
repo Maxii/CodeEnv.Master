@@ -62,11 +62,11 @@ namespace CodeEnv.Master.GameContent {
             get { return (decimal)((Design.ConstructionCost - CumProductionApplied) * TempGameValues.ProductionCostBuyoutMultiplier); }
         }
 
-        public AElementDesign Design { get; private set; }
+        public AUnitElementDesign Design { get; private set; }
 
         public float CumProductionApplied { get; private set; }
 
-        public ConstructionTracker(AElementDesign design, GameDate expectedCompletionDate) {
+        public ConstructionTracker(AUnitElementDesign design, GameDate expectedCompletionDate) {
             Design = design;
             _expectedCompletionDate = expectedCompletionDate;
         }

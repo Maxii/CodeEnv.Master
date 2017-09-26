@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AElementIcon.cs
+// File: AElementGuiIcon.cs
 // Abstract base AMultiSizeGuiIcon that holds an AUnitElement.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -25,8 +25,9 @@ using UnityEngine;
 
 /// <summary>
 /// Abstract base AMultiSizeGuiIcon that holds an AUnitElement.
+/// <remarks>This is an icon used by the Gui, not the in game icon that tracks a element in space.</remarks>
 /// </summary>
-public abstract class AElementIcon : AMultiSizeGuiIcon {
+public abstract class AElementGuiIcon : AMultiSizeGuiIcon {
 
     private const string DebugNameFormat = "{0}[{1}]";
     private const string TooltipFormat = "{0}";
@@ -42,7 +43,7 @@ public abstract class AElementIcon : AMultiSizeGuiIcon {
 
     /// <summary>
     /// Indicates whether this Icon has been initialized, aka its Element property has been set.
-    /// <remarks>Warning: Element will return null if Element is destroyed.</remarks>
+    /// <remarks>Handled this way as Element will return null if Element is destroyed.</remarks>
     /// </summary>
     public bool IsInitialized { get; private set; }
 
@@ -71,7 +72,7 @@ public abstract class AElementIcon : AMultiSizeGuiIcon {
     protected override string TooltipContent { get { return TooltipFormat.Inject(_element.Name); } }
 
     private UISlider _healthBar;
-    private AElementDesign _design;
+    private AUnitElementDesign _design;
     private IList<IDisposable> _subscriptions;
 
     protected override UISprite AcquireImageSprite(GameObject topLevelIconGo) {
@@ -140,7 +141,7 @@ public abstract class AElementIcon : AMultiSizeGuiIcon {
         _design = InitializeDesign();
     }
 
-    protected abstract AElementDesign InitializeDesign();
+    protected abstract AUnitElementDesign InitializeDesign();
 
     protected sealed override void HandleIconSizeSet() {
         base.HandleIconSizeSet();

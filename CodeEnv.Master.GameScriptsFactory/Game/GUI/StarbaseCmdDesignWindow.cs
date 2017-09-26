@@ -27,25 +27,25 @@ using UnityEngine;
 /// </summary>
 public class StarbaseCmdDesignWindow : AUnitDesignWindow {
 
-    protected override void AddToPlayerDesigns(AUnitDesign newDesign) {
+    protected override void AddToPlayerDesigns(AUnitMemberDesign newDesign) {
         _gameMgr.PlayersDesigns.Add(newDesign as StarbaseCmdDesign);
     }
 
-    protected override AUnitDesign CopyDesignFrom(AUnitDesign design) {
+    protected override AUnitMemberDesign CopyDesignFrom(AUnitMemberDesign design) {
         return new StarbaseCmdDesign(design as StarbaseCmdDesign);
     }
 
-    protected override bool TryGet3DModelFor(AUnitDesign design, out Vector3 modelDimensions, out GameObject modelPrefab) {
+    protected override bool TryGet3DModelFor(AUnitMemberDesign design, out Vector3 modelDimensions, out GameObject modelPrefab) {
         modelDimensions = default(Vector3);
         modelPrefab = null;
         return false;
     }
 
-    protected override IEnumerable<AUnitDesign> GetRegisteredUserDesigns(bool includeObsolete) {
-        return _gameMgr.PlayersDesigns.GetAllUserStarbaseCmdDesigns(includeObsolete).Cast<AUnitDesign>();
+    protected override IEnumerable<AUnitMemberDesign> GetRegisteredUserDesigns(bool includeObsolete) {
+        return _gameMgr.PlayersDesigns.GetAllUserStarbaseCmdDesigns(includeObsolete).Cast<AUnitMemberDesign>();
     }
 
-    protected override bool IsDesignContentEqual(AUnitDesign previousDesign, AUnitDesign newDesign) {
+    protected override bool IsDesignContentEqual(AUnitMemberDesign previousDesign, AUnitMemberDesign newDesign) {
         return GameUtility.IsDesignContentEqual(previousDesign as StarbaseCmdDesign, newDesign as StarbaseCmdDesign);
     }
 
@@ -55,7 +55,7 @@ public class StarbaseCmdDesignWindow : AUnitDesignWindow {
         return false;
     }
 
-    protected override AUnitDesign GetEmptyTemplateDesign(string designNameHint) {
+    protected override AUnitMemberDesign GetEmptyTemplateDesign(string designNameHint) {
         D.AssertNull(designNameHint);
         return _gameMgr.PlayersDesigns.GetUserStarbaseCmdDesign(TempGameValues.EmptyStarbaseCmdTemplateDesignName);
     }
@@ -65,7 +65,7 @@ public class StarbaseCmdDesignWindow : AUnitDesignWindow {
     }
 
     protected override IEnumerable<AEquipmentStat> GetAvailableUserEquipmentStats() {
-        return _gameMgr.UniverseCreator.UnitConfigurator.GetAvailableUserEquipmentStats(ACommandDesign.SupportedEquipCategories);
+        return _gameMgr.UniverseCreator.UnitConfigurator.GetAvailableUserEquipmentStats(AUnitCmdDesign.SupportedEquipCategories);
     }
 
 }

@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: FacilityIcon.cs
-// AMultiSizeGuiIcon that holds a FacilityItem.
+// File: ShipIcon.cs
+// AMultiSizeGuiIcon that holds a ShipItem.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,21 +16,22 @@
 
 // default namespace
 
-using CodeEnv.Master.Common;
+using System;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// AMultiSizeGuiIcon that holds a FacilityItem.
+/// AMultiSizeGuiIcon that holds a ShipItem.
+/// <remarks>This is an icon used by the Gui, not the in game icon that tracks a element in space.</remarks>
 /// </summary>
-public class FacilityIcon : AElementIcon {
+public class ShipGuiIcon : AElementGuiIcon {
 
-    public new FacilityItem Element {
-        get { return base.Element as FacilityItem; }
+    public new ShipItem Element {
+        get { return base.Element as ShipItem; }
         set { base.Element = value; }
     }
 
-    protected override AElementDesign InitializeDesign() {
-        return GameManager.Instance.PlayersDesigns.GetUserFacilityDesign(Element.Data.DesignName);
+    protected override AUnitElementDesign InitializeDesign() {
+        return GameManager.Instance.PlayersDesigns.GetUserShipDesign(Element.Data.DesignName);
     }
 
     protected override void Cleanup() { }

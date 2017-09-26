@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ElementConstructionIcon.cs
+// File: ElementConstructionGuiIcon.cs
 // AMultiSizeGuiIcon that holds an ElementDesign (Facility or Ship) under construction for use in construction queues.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -18,10 +18,10 @@
 
 
 /// <summary>
-/// AGuiIcon that holds an ElementDesign (Facility or Ship) under construction for use in construction queues.
+/// AMultiSizeGuiIcon that holds an ElementDesign (Facility or Ship) under construction for use in construction queues.
 /// <remarks>9.12.17 No need for facility or ship-specific versions as only names and images are needed from the design for the icon.</remarks>
 /// </summary>
-public class ElementConstructionIcon : AElementConstructionIcon {
+public class ElementConstructionGuiIcon : AElementConstructionGuiIcon {
 
 
 }

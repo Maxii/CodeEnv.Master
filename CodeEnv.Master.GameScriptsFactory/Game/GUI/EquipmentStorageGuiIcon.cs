@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: EquipmentStorageIcon.cs
+// File: EquipmentStorageGuiIcon.cs
 // Icon that represents a AEquipmentStat that can be 'stored' in a slot within a Unit Design.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -24,7 +24,7 @@ using UnityEngine;
 /// <summary>
 /// Icon that represents a AEquipmentStat that can be 'stored' in a slot within a Unit Design.
 /// </summary>
-public class EquipmentStorageIcon : AEquipmentIcon {
+public class EquipmentStorageGuiIcon : AEquipmentGuiIcon {
 
     /// <summary>
     /// Empty 'icon slot' sprite that is always enabled. When the slot is filled, this background sprite shows through as a 'highlight'.
@@ -120,7 +120,7 @@ public class EquipmentStorageIcon : AEquipmentIcon {
     void OnDrop(GameObject droppedGo) {
         //D.Log("{0}.OnDrop({1}) called.", DebugName, droppedGo.name);
         AEquipmentStat eStat = null;
-        EquipmentIcon droppedEquipIcon = droppedGo.GetComponent<EquipmentIcon>();
+        EquipmentGuiIcon droppedEquipIcon = droppedGo.GetComponent<EquipmentGuiIcon>();
         if (droppedEquipIcon != null) {
             eStat = droppedEquipIcon.EquipmentStat;
             bool isReplaced = Replace(eStat);

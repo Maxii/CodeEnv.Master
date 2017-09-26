@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Class holding the design of a ship for a player.
     /// </summary>
-    public class ShipDesign : AElementDesign {
+    public class ShipDesign : AUnitElementDesign {
 
         public ShipHullCategory HullCategory { get { return HullStat.HullCategory; } }
 

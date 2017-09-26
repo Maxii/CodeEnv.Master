@@ -632,7 +632,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// </summary>
     /// <param name="unitDesign">The unit design.</param>
     /// <returns></returns>
-    private IEnumerable<PassiveCountermeasure> MakeCountermeasures(AUnitDesign unitDesign) {
+    private IEnumerable<PassiveCountermeasure> MakeCountermeasures(AUnitMemberDesign unitDesign) {
         var passiveCMs = new List<PassiveCountermeasure>();
         AEquipmentStat eStat;
         while (unitDesign.GetNextEquipmentStat(EquipmentCategory.PassiveCountermeasure, out eStat)) {
@@ -643,7 +643,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         return passiveCMs;
     }
 
-    private IEnumerable<ActiveCountermeasure> MakeCountermeasures(AElementDesign elementDesign, AUnitElementItem element) {
+    private IEnumerable<ActiveCountermeasure> MakeCountermeasures(AUnitElementDesign elementDesign, AUnitElementItem element) {
         int nameCounter = Constants.One;
 
         var activeCMs = new List<ActiveCountermeasure>();
@@ -662,7 +662,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         return activeCMs;
     }
 
-    private IEnumerable<ElementSensor> MakeSensors(AElementDesign elementDesign, AUnitElementItem element) {
+    private IEnumerable<ElementSensor> MakeSensors(AUnitElementDesign elementDesign, AUnitElementItem element) {
         int nameCounter = Constants.One;
 
         var sensors = new List<ElementSensor>();
@@ -688,7 +688,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         return sensors;
     }
 
-    private IEnumerable<CmdSensor> MakeSensors(ACommandDesign cmdDesign, AUnitCmdItem cmd) {
+    private IEnumerable<CmdSensor> MakeSensors(AUnitCmdDesign cmdDesign, AUnitCmdItem cmd) {
         int nameCounter = Constants.One;
 
         var sensors = new List<CmdSensor>();
@@ -714,7 +714,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         return sensors;
     }
 
-    private IEnumerable<ShieldGenerator> MakeShieldGenerators(AElementDesign elementDesign, AUnitElementItem element) {
+    private IEnumerable<ShieldGenerator> MakeShieldGenerators(AUnitElementDesign elementDesign, AUnitElementItem element) {
         var generators = new List<ShieldGenerator>();
         AEquipmentStat eStat;
         while (elementDesign.GetNextEquipmentStat(EquipmentCategory.ShieldGenerator, out eStat)) {
@@ -727,7 +727,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         return generators;
     }
 
-    private IEnumerable<AWeapon> MakeWeapons(AElementDesign elementDesign, AUnitElementItem element, AHull hull) {
+    private IEnumerable<AWeapon> MakeWeapons(AUnitElementDesign elementDesign, AUnitElementItem element, AHull hull) {
         //D.Log("{0}: Making Weapons for {1}.", DebugName, element.DebugName);
         int nameCounter = Constants.One;
 

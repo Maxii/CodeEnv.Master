@@ -19,7 +19,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// The design of a Settlement Command for a player.
     /// </summary>
-    public class SettlementCmdDesign : ACommandDesign {
+    public class SettlementCmdDesign : AUnitCmdDesign {
 
         public new SettlementCmdModuleStat ReqdCmdStat { get { return base.ReqdCmdStat as SettlementCmdModuleStat; } }
 

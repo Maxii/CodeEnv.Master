@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AUnitDesign.cs
+// File: AUnitMemberDesign.cs
 // Abstract base class holding the design of an element or command for a player.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Abstract base class holding the design of an element or command for a player.
     /// </summary>
-    public abstract class AUnitDesign {
+    public abstract class AUnitMemberDesign {
 
         private const string DebugNameFormat = "{0}[{1}]";
         private const string DesignNameFormat = "{0}_{1}";
@@ -87,7 +87,7 @@ namespace CodeEnv.Master.GameContent {
         private IEnumerator<EquipmentSlotID> _statsEnumerator1;
         private IEnumerator<EquipmentSlotID> _statsEnumerator2;
 
-        public AUnitDesign(Player player) {
+        public AUnitMemberDesign(Player player) {
             Player = player;
             Status = SourceAndStatus.Player_Current;
             __ValidateEquipmentCategorySequence();
@@ -313,7 +313,7 @@ namespace CodeEnv.Master.GameContent {
         ////    if (ReferenceEquals(obj, this)) { return true; }
         ////    if (obj.GetType() != GetType()) { return false; }
 
-        ////    AUnitDesign oDesign = (AUnitDesign)obj;
+        ////    AUnitMemberDesign oDesign = (AUnitMemberDesign)obj;
         ////    D.AssertNull(_statsEnumerator1);
         ////    D.AssertNull(_statsEnumerator2);
         ////    D.AssertNull(oDesign._statsEnumerator1);

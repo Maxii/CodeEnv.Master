@@ -66,13 +66,13 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Game\GUI\ElementConstructionIcon.cs" />
-    <Compile Include="Generic\Graphics\AElementConstructionIcon.cs" />
-    <Compile Include="Game\GUI\FacilityIcon.cs" />
+    <Compile Include="Game\GUI\ElementConstructionGuiIcon.cs" />
+    <Compile Include="Generic\Graphics\AElementConstructionGuiIcon.cs" />
+    <Compile Include="Game\GUI\FacilityGuiIcon.cs" />
     <Compile Include="Generic\Graphics\AInteractableHudUnitForm.cs" />
-    <Compile Include="Generic\Graphics\AUnitIcon.cs" />
-    <Compile Include="Game\GUI\FleetIcon.cs" />
-    <Compile Include="Generic\Graphics\AElementIcon.cs" />
+    <Compile Include="Generic\Graphics\AUnitCmdGuiIcon.cs" />
+    <Compile Include="Game\GUI\FleetGuiIcon.cs" />
+    <Compile Include="Generic\Graphics\AElementGuiIcon.cs" />
     <Compile Include="Generic\Graphics\AInfoChangeForm.cs" />
     <Compile Include="Generic\Graphics\AItemDataForm.cs" />
     <Compile Include="Generic\Graphics\AInfoDisplayForm.cs" />
@@ -81,8 +81,8 @@
     <Compile Include="Game\GUI\DesignScreensManager.cs" />
     <Compile Include="Game\GUI\FacilityDesignWindow.cs" />
     <Compile Include="Game\GUI\FleetCmdDesignWindow.cs" />
-    <Compile Include="Generic\Graphics\AEquipmentIcon.cs" />
-    <Compile Include="Game\GUI\EquipmentIcon.cs" />
+    <Compile Include="Generic\Graphics\AEquipmentGuiIcon.cs" />
+    <Compile Include="Game\GUI\EquipmentGuiIcon.cs" />
     <Compile Include="Generic\Graphics\AMultiSizeGuiIcon.cs" />
     <Compile Include="Generic\Graphics\AHoveredHudEquipmentForm.cs" />
     <Compile Include="Generic\Graphics\AHoveredHudDesignForm.cs" />
@@ -93,13 +93,13 @@
     <Compile Include="Game\Gameplay\KinematicProjectile.cs" />
     <Compile Include="Game\GUI\ShipDesignWindow.cs" />
     <Compile Include="Game\GUI\DesignEquipmentStorage.cs" />
-    <Compile Include="Game\GUI\EquipmentStorageIcon.cs" />
+    <Compile Include="Game\GUI\EquipmentStorageGuiIcon.cs" />
     <Compile Include="Game\GUI\SettlementCmdDesignWindow.cs" />
     <Compile Include="Game\GUI\StarbaseCmdDesignWindow.cs" />
     <Compile Include="Generic\_Debug\ReplaceAll.cs" />
-    <Compile Include="Game\GUI\ShipIcon.cs" />
+    <Compile Include="Game\GUI\ShipGuiIcon.cs" />
     <Compile Include="Generic\Graphics\MyNguiToggleButton.cs" />
-    <Compile Include="Game\GUI\StarbaseIcon.cs" />
+    <Compile Include="Game\GUI\StarbaseGuiIcon.cs" />
     <Compile Include="Game\GUI\GuiHeroModule.cs" />
     <Compile Include="ThirdParty\MyDragDropItem.cs" />
     <Compile Include="ThirdParty\MyNGPathfindingGraph.cs" />
@@ -313,7 +313,7 @@
     <Compile Include="Generic\Framework\UniverseCreator.cs" />
     <Compile Include="Generic\Graphics\WorldTrackingSprite.cs" />
     <Compile Include="Generic\Graphics\WorldTrackingLabel.cs" />
-    <Compile Include="Game\GUI\UnitDesignIcon.cs" />
+    <Compile Include="Game\GUI\UnitMemberDesignGuiIcon.cs" />
     <Compile Include="Generic\Graphics\__HoveredHudDesignForm.cs" />
     <Compile Include="Game\GUI\HoveredHudUCForm.cs" />
     <Compile Include="Game\GUI\UnitHudWindow.cs" />

@@ -19,7 +19,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// The design of a Starbase Command for a player.
     /// </summary>
-    public class StarbaseCmdDesign : ACommandDesign {
+    public class StarbaseCmdDesign : AUnitCmdDesign {
 
         public new StarbaseCmdModuleStat ReqdCmdStat { get { return base.ReqdCmdStat as StarbaseCmdModuleStat; } }
 

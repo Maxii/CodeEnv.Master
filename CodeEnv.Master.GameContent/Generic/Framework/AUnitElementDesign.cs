@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AElementDesign.cs
-// Abstract base class holding the design of an element for a player.
+// File: AUnitElementDesign.cs
+// Abstract base class holding the design of a unit element for a player.
 // -------------------------------------------------------------------------------------------------------------------- 
 
 ////#define DEBUG_LOG
@@ -21,9 +21,9 @@ namespace CodeEnv.Master.GameContent {
     using Common;
 
     /// <summary>
-    /// Abstract base class holding the design of an element for a player.
+    /// Abstract base class holding the design of a unit element for a player.
     /// </summary>
-    public abstract class AElementDesign : AUnitDesign {
+    public abstract class AUnitElementDesign : AUnitMemberDesign {
 
         public static EquipmentCategory[] SupportedEquipCategories =  {
                                                                             EquipmentCategory.LaunchedWeapon,
@@ -84,7 +84,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected sealed override EquipmentCategory[] SupportedEquipmentCategories { get { return SupportedEquipCategories; } }
 
-        public AElementDesign(Player player, Priority hqPriority, SensorStat reqdSRSensorStat, float constructionCost)
+        public AUnitElementDesign(Player player, Priority hqPriority, SensorStat reqdSRSensorStat, float constructionCost)
             : base(player) {
             HQPriority = hqPriority;
             ReqdSRSensorStat = reqdSRSensorStat;
@@ -123,7 +123,7 @@ namespace CodeEnv.Master.GameContent {
 
         ////public override bool Equals(object obj) {
         ////    if (base.Equals(obj)) {
-        ////        AElementDesign oDesign = (AElementDesign)obj;
+        ////        AUnitElementDesign oDesign = (AUnitElementDesign)obj;
         ////        return oDesign.ReqdSRSensorStat == ReqdSRSensorStat && oDesign.HQPriority == HQPriority;
         ////    }
         ////    return false;
