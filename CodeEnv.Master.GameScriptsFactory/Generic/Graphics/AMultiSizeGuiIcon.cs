@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AGuiIcon.cs
+// File: AMultiSizeGuiIcon.cs
 // Abstract Gui 'icon' with tooltip support that has multiple sizes available.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -28,11 +28,12 @@ using UnityEngine;
 /// <remarks>This 'icon' is composed of one or more UIWidgets (Sprites, Labels, ProgressBars, etc.).
 /// The base version contains an image sprite and a label.</remarks>
 /// <remarks>7.31.17 Formerly called AImageIcon.</remarks>
+/// <remarks>9.22.17 Formerly called AGuiIcon.</remarks>
 /// </summary>
-public abstract class AGuiIcon : ATextTooltip {
+public abstract class AMultiSizeGuiIcon : ATextTooltip {
 
     /// <summary>
-    /// Determines the size of the AGuiIcon to use to fully populate the cells of a UIGrid without any left over.
+    /// Determines the size of the AMultiSizeGuiIcon to use to fully populate the cells of a UIGrid without any left over.
     /// Also provides the number of rows and columns in the grid that can be accommodated for the returned IconSize.
     /// Warns if the dimensions of the grid container are not sufficient to fully accommodate the number of 
     /// cells desired without scrolling.
@@ -43,29 +44,36 @@ public abstract class AGuiIcon : ATextTooltip {
     /// <param name="gridRows">The number of rows that can be accommodated within gridContainerSize.</param>
     /// <param name="gridColumns">The number of columns that can be accommodated within gridContainerSize.</param>
     /// <returns></returns>
-    public static AGuiIcon.IconSize DetermineGridIconSize(IntVector2 gridContainerSize, int desiredGridCells, AGuiIcon cellIconPrefab, out int gridRows, out int gridColumns) {
-        IntVector2 iconDimensions = cellIconPrefab.GetIconDimensions(AGuiIcon.IconSize.Large);
+    public static AMultiSizeGuiIcon.IconSize DetermineGridIconSize(IntVector2 gridContainerSize, int desiredGridCells, AMultiSizeGuiIcon cellIconPrefab,
+        out int gridRows, out int gridColumns) {
+        IntVector2 iconDimensions = cellIconPrefab.GetIconDimensions(AMultiSizeGuiIcon.IconSize.Large);
         gridRows = gridContainerSize.y / iconDimensions.y;
         gridColumns = gridContainerSize.x / iconDimensions.x;
         if (desiredGridCells <= gridRows * gridColumns) {
-            return AGuiIcon.IconSize.Large;
+            return AMultiSizeGuiIcon.IconSize.Large;
         }
 
-        iconDimensions = cellIconPrefab.GetIconDimensions(AGuiIcon.IconSize.Medium);
+        iconDimensions = cellIconPrefab.GetIconDimensions(AMultiSizeGuiIcon.IconSize.Medium);
         gridRows = gridContainerSize.y / iconDimensions.y;
         gridColumns = gridContainerSize.x / iconDimensions.x;
         if (desiredGridCells <= gridRows * gridColumns) {
-            return AGuiIcon.IconSize.Medium;
+            return AMultiSizeGuiIcon.IconSize.Medium;
         }
 
-        iconDimensions = cellIconPrefab.GetIconDimensions(AGuiIcon.IconSize.Small);
+        iconDimensions = cellIconPrefab.GetIconDimensions(AMultiSizeGuiIcon.IconSize.Small);
         gridRows = gridContainerSize.y / iconDimensions.y;
+        if (gridRows == Constants.Zero) {
+            D.Warn("Grid will not fully show even 1 small {0} icon from top to bottom.", cellIconPrefab.DebugName);
+        }
         gridColumns = gridContainerSize.x / iconDimensions.x;
+        if (gridColumns == Constants.Zero) {
+            D.Warn("Grid will not fully show even 1 small {0} icon from left to right.", cellIconPrefab.DebugName);
+        }
         if (desiredGridCells > gridRows * gridColumns) {
             D.Log("Scrolling will be required. Only {0} {1} icons of the {2} desired can be accommodated in the grid without scrolling.",
                 gridRows * gridColumns, cellIconPrefab.DebugName, desiredGridCells);
         }
-        return AGuiIcon.IconSize.Small;
+        return AMultiSizeGuiIcon.IconSize.Small;
     }
 
     public GameObject largeIconPrefab;
@@ -222,9 +230,9 @@ public abstract class AGuiIcon : ATextTooltip {
 
     protected virtual void __Validate() {
         UnityUtility.ValidateComponentPresence<UIWidget>(gameObject);
-        D.AssertNotNull(smallIconPrefab);
-        D.AssertNotNull(mediumIconPrefab);
-        D.AssertNotNull(largeIconPrefab);
+        D.AssertNotNull(smallIconPrefab, DebugName);
+        D.AssertNotNull(mediumIconPrefab, DebugName);
+        D.AssertNotNull(largeIconPrefab, DebugName);
     }
 
     #endregion

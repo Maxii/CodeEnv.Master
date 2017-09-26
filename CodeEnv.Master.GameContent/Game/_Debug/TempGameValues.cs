@@ -219,6 +219,8 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        public const float ProductionCostBuyoutMultiplier = 2.0F;
+
         /// <summary>
         /// The maximum number of facilities a starbase or settlement can have.
         /// </summary>
@@ -484,10 +486,20 @@ namespace CodeEnv.Master.GameContent {
         public static Player NoPlayer {
             get {
                 if (_noPlayer == null) {
-                    // lazy initialize to avoid creating before References populated with values
+                    // lazy initialize to avoid creating before GameReferences populated with values
                     _noPlayer = new NoPlayer();
                 }
                 return _noPlayer;
+            }
+        }
+
+        private static Hero _noHero;
+        public static Hero NoHero {
+            get {
+                if (_noHero == null) {
+                    _noHero = new NoHero();
+                }
+                return _noHero;
             }
         }
 
@@ -532,6 +544,12 @@ namespace CodeEnv.Master.GameContent {
         /// The name of the UILabel GameObject used to show the "?" symbol.
         /// </summary>
         public const string UnknownLabelName = "Unknown";
+
+        public const string FleetImageFilename = "flying_12";
+
+        public const string StarbaseImageFilename = "ocean3_12";
+
+        public const string SettlementImageFilename = "multiple25_12";
     }
 }
 

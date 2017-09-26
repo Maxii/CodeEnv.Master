@@ -46,6 +46,7 @@ namespace CodeEnv.Master.GameContent {
                 case ItemInfoID.Offense:
                 case ItemInfoID.Defense:
                 case ItemInfoID.Health:
+                case ItemInfoID.ConstructionCost:
                     return true;
                 default:
                     return false;

@@ -24,6 +24,12 @@ namespace CodeEnv.Master.GameContent {
         None,
 
         /// <summary>
+        /// Cancels any element orders issued while paused.
+        /// <remarks>8.14.17 Must be issued by OrderSource.User and only during pause.</remarks>
+        /// </summary>
+        Cancel,
+
+        /// <summary>
         /// Facilities can attack Ships in range owned by enemies of the Facility's owner.
         /// Only Base Cmd may order a Facility to attack.
         /// </summary>

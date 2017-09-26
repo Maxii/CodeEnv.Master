@@ -51,7 +51,7 @@ public abstract class ACommandTableRowForm : ATableRowForm {
 
     protected sealed override void AssignValueToHeroGuiElement() {
         base.AssignValueToHeroGuiElement();
-        _heroElement.__HeroName = "None";   // UNDONE
+        _heroElement.Hero = (Report as AUnitCmdReport).Hero;
     }
 
     protected override void AssignValueToProductionGuiElement() {

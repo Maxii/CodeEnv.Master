@@ -28,7 +28,7 @@ using UnityEngine;
 /// <remarks>7.5.17 Previous implementation had a static _selectedIcon which was used to communicate between
 /// EquipmentIcon and EquipmentStorageIcon, similar to the way ArenMook did it in his InventorySystem example.</remarks>
 /// </summary>
-public abstract class AEquipmentIcon : AGuiIcon {
+public abstract class AEquipmentIcon : AMultiSizeGuiIcon {
 
     protected override void HandleIconSizeSet() {
         base.HandleIconSizeSet();

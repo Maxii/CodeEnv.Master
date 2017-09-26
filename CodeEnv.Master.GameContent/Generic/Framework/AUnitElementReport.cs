@@ -38,8 +38,9 @@ namespace CodeEnv.Master.GameContent {
 
         public float? Science { get; protected set; }
         public float? Culture { get; protected set; }
-        public float? Income { get; protected set; }
-        public float? Expense { get; protected set; }
+        public decimal? Income { get; protected set; }
+        public decimal? Expense { get; protected set; }
+        public float? ConstructionCost { get; protected set; }
 
         public AUnitElementReport(AUnitElementData data, Player player, IUnitElement_Ltd item) : base(data, player, item) { }
 

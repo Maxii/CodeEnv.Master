@@ -42,7 +42,11 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         public float MaxHitPoints { get; private set; }
-        public float MaxCmdEffectiveness { get; private set; }
+        /// <summary>
+        /// The maximum effectiveness of the command staff.
+        /// <remarks>Does not include contributions from Heroes.</remarks>
+        /// </summary>
+        public float MaxCmdStaffEffectiveness { get; private set; }
 
         public sealed override EquipmentCategory Category { get { return EquipmentCategory.CommandModule; } }
 
@@ -58,12 +62,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="pwrRqmt">The power required to operate the equipment.</param>
         /// <param name="expense">The expense required to operate this equipment.</param>
         /// <param name="maxHitPts">The maximum hit PTS.</param>
-        /// <param name="maxCmdEffectiveness">The maximum command effectiveness.</param>
+        /// <param name="maxCmdStaffEffectiveness">The maximum effectiveness of the command staff.</param>
         public ACmdModuleStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass,
-            float pwrRqmt, float expense, float maxHitPts, float maxCmdEffectiveness)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, isDamageable: false) {
+            float pwrRqmt, decimal expense, float maxHitPts, float maxCmdStaffEffectiveness)
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, Constants.ZeroF, expense, isDamageable: false) {
             MaxHitPoints = maxHitPts;
-            MaxCmdEffectiveness = maxCmdEffectiveness;
+            MaxCmdStaffEffectiveness = maxCmdStaffEffectiveness;
         }
 
         #region Object.Equals and GetHashCode Override
@@ -79,7 +83,7 @@ namespace CodeEnv.Master.GameContent {
             unchecked { // http://dobrzanski.net/2010/09/13/csharp-gethashcode-cause-overflowexception/
                 int hash = base.GetHashCode();
                 hash = hash * 31 + MaxHitPoints.GetHashCode(); // 31 = another prime number
-                hash = hash * 31 + MaxCmdEffectiveness.GetHashCode();
+                hash = hash * 31 + MaxCmdStaffEffectiveness.GetHashCode();
                 return hash;
             }
         }
@@ -87,7 +91,7 @@ namespace CodeEnv.Master.GameContent {
         public override bool Equals(object obj) {
             if (base.Equals(obj)) {
                 ACmdModuleStat oStat = (ACmdModuleStat)obj;
-                return oStat.MaxHitPoints == MaxHitPoints && oStat.MaxCmdEffectiveness == MaxCmdEffectiveness;
+                return oStat.MaxHitPoints == MaxHitPoints && oStat.MaxCmdStaffEffectiveness == MaxCmdStaffEffectiveness;
             }
             return false;
         }

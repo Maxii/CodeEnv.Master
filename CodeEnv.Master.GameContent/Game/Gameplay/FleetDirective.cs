@@ -24,8 +24,8 @@ namespace CodeEnv.Master.GameContent {
         None,
 
         /// <summary>
-        /// Cancels all unit orders including CmdStaff override orders.
-        /// <remarks>8.14.17 Must be issued by OrderSource.User.</remarks>
+        /// Cancels any unit orders issued while paused.
+        /// <remarks>8.14.17 Must be issued by OrderSource.User and only during pause.</remarks>
         /// </summary>
         Cancel,
 

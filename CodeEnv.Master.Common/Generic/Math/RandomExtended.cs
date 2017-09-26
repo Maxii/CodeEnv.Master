@@ -124,9 +124,32 @@ namespace CodeEnv.Master.Common {
         /// <param name="qty">The qty.</param>
         /// <returns></returns>
         public static IList<T> Choices<T>(IEnumerable<T> collection, int qty) {
+            Utility.ValidateNotNullOrEmpty(collection);
             IList<T> result = new List<T>(qty);
             for (int i = 0; i < qty; i++) {
                 result.Add(Choice(collection));
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Returns a list of <c>qty</c> randomly chosen non-duplicative elements from an IEnumerable of elements.
+        /// Warns if more elements are requested than are available. Collection cannot be empty.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="collection">The collection.</param>
+        /// <param name="qty">The qty.</param>
+        /// <returns></returns>
+        public static IList<T> DistinctChoices<T>(IEnumerable<T> collection, int qty) {
+            Utility.ValidateNotNullOrEmpty(collection);
+            IList<T> result = new List<T>(qty);
+            var distinctCollection = collection.Distinct().ToArray();
+            for (int i = 0; i < qty; i++) {
+                if (i >= distinctCollection.Length) {
+                    D.Warn("{0} choices of Type {1} requested vs {2} available.", qty, typeof(T).Name, distinctCollection.Length);
+                    break;
+                }
+                result.Add(distinctCollection[i]);
             }
             return result;
         }

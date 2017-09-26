@@ -88,6 +88,10 @@ namespace CodeEnv.Master.GameContent {
                         isSuccess = true;
                         colorizedText = _lineTemplate.Inject(report.UnitIncome.HasValue && report.UnitExpense.HasValue ? GetFormat(infoID).Inject(report.UnitIncome.Value - report.UnitExpense.Value) : Unknown);
                         break;
+                    case ItemInfoID.Hero:
+                        isSuccess = true;
+                        colorizedText = GetColorizedHeroText(report.Hero);
+                        break;
                 }
             }
             return isSuccess;
@@ -116,6 +120,16 @@ namespace CodeEnv.Master.GameContent {
             colorizedText = colorizedText.SurroundWith(color);
             return _lineTemplate.Inject(colorizedText);
         }
+
+        private string GetColorizedHeroText(Hero hero) {
+            string colorizedHeroText = Unknown;
+            if (hero != null) {
+                colorizedHeroText = hero.Name;
+            }
+            string text = _lineTemplate.Inject(colorizedHeroText);
+            return text;
+        }
+
 
     }
 }

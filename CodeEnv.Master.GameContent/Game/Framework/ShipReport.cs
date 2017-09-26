@@ -90,6 +90,9 @@ namespace CodeEnv.Master.GameContent {
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Mass)) {
                 Mass = sData.Mass;
             }
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.ConstructionCost)) {
+                ConstructionCost = sData.ConstructionCost;
+            }
             // SensorRange on an element makes little sense
             ////if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.SensorRange)) {
             ////    SensorRange = sData.SensorRange;

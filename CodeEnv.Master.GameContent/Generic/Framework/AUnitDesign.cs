@@ -26,7 +26,6 @@ namespace CodeEnv.Master.GameContent {
     public abstract class AUnitDesign {
 
         private const string DebugNameFormat = "{0}[{1}]";
-
         private const string DesignNameFormat = "{0}_{1}";
 
         public string DebugName {

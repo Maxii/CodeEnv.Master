@@ -75,6 +75,8 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        public decimal __PlayerBankBalance { get { return 10000; } }
+
         public bool IsOperational { get; private set; }
 
         private bool _isPolicyToEngageColdWarEnemies = false;

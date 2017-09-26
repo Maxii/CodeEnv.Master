@@ -53,9 +53,11 @@ namespace CodeEnv.Master.GameContent {
 
         public float? UnitCulture { get; protected set; }
 
-        public float? UnitIncome { get; protected set; }
+        public decimal? UnitIncome { get; protected set; }
 
-        public float? UnitExpense { get; protected set; }
+        public decimal? UnitExpense { get; protected set; }
+
+        public Hero Hero { get; protected set; }
 
         private IEnumerable<AUnitElementData> _cachedElementsData;
         protected IEnumerable<AUnitElementData> GetElementsData(AUnitCmdData cmdData) {

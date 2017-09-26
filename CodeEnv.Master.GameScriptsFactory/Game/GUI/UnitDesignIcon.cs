@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: UnitDesignIcon.cs
-// AGuiIcon that holds an AUnitDesign.
+// AMultiSizeGuiIcon that holds a AUnitDesign for Unit Cmd and Element Designs.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,14 +22,21 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// AGuiIcon that holds an AUnitDesign.
+/// AMultiSizeGuiIcon that holds a AUnitDesign for Unit Cmd and Element Designs.
 /// </summary>
-public class UnitDesignIcon : AGuiIcon {
+public class UnitDesignIcon : AMultiSizeGuiIcon {
 
     private const string DebugNameFormat = "{0}[{1}]";
     private const string TooltipFormat = "{0}{1}";
 
-    public override string DebugName { get { return DebugNameFormat.Inject(GetType().Name, Design.DesignName); } }
+    public override string DebugName {
+        get {
+            if (Design == null) {
+                return DebugNameFormat.Inject(GetType().Name, "No Design");
+            }
+            return DebugNameFormat.Inject(GetType().Name, Design.DesignName);
+        }
+    }
 
     protected override string TooltipContent {
         get {
@@ -37,6 +44,11 @@ public class UnitDesignIcon : AGuiIcon {
             return TooltipFormat.Inject(_design.DesignName, obsoleteText);
         }
     }
+
+    /// <summary>
+    /// Indicates whether this Icon has been initialized, aka its Design property has been set.
+    /// </summary>
+    public bool IsInitialized { get; private set; }
 
     private AUnitDesign _design;
     public AUnitDesign Design {
@@ -65,6 +77,8 @@ public class UnitDesignIcon : AGuiIcon {
 
     private void DesignPropSetHandler() {
         D.AssertNotDefault((int)Size);
+        D.Assert(!IsInitialized);
+        IsInitialized = true;
         Show();
     }
 
@@ -117,6 +131,7 @@ public class UnitDesignIcon : AGuiIcon {
         base.ResetForReuse();
         _design = null;
         _isPicked = false;
+        IsInitialized = false;
     }
 
     protected override void Cleanup() { }

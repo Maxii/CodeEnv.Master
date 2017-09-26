@@ -48,7 +48,12 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     private bool _isAvailable;
     public bool IsAvailable {
         get { return _isAvailable; }
-        protected set { SetProperty<bool>(ref _isAvailable, value, "IsAvailable", IsAvailablePropChangedHandler); }
+        protected set {
+            if (_isAvailable != value) {
+                _isAvailable = value;
+                IsAvailablePropChangedHandler();
+            }
+        }
     }
 
     /// <summary>
@@ -304,7 +309,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// </summary>
     protected override void AssignAlternativeFocusOnDeath() {
         base.AssignAlternativeFocusOnDeath();
-        AUnitCmdItem formerCmd = gameObject.GetComponentInParent<AUnitCmdItem>();
+        Transform elementParent = transform.parent;
+        AUnitCmdItem formerCmd = elementParent.GetComponentInChildren<AUnitCmdItem>();
         if (formerCmd.IsOperational) {
             formerCmd.IsFocus = true;
         }
@@ -653,6 +659,9 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     }
 
     private void IsAvailablePropChangedHandler() {
+        if (IsAvailable) {
+            __ValidateCurrentOrderAndStateWhenAvailable();
+        }
         OnIsAvailable();
     }
 
@@ -1152,6 +1161,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     #endregion
 
     #region Debug
+
+    protected abstract void __ValidateCurrentOrderAndStateWhenAvailable();
 
     public override bool __IsPlayerEntitledToComprehensiveRelationship(Player player) {
         if (_debugCntls.IsAllIntelCoverageComprehensive) {

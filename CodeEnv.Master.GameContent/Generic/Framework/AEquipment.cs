@@ -44,7 +44,7 @@ namespace CodeEnv.Master.GameContent {
         public float Size { get { return Stat.Size; } }
         public float Mass { get { return Stat.Mass; } }
         public float PowerRequirement { get { return Stat.PowerRequirement; } }
-        public float Expense { get { return Stat.Expense; } }
+        public decimal Expense { get { return Stat.Expense; } }
 
         private bool _isActivated;
         /// <summary>

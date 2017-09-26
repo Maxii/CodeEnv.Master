@@ -127,8 +127,8 @@ public class StrengthGuiElement : AGuiElement, IComparable<StrengthGuiElement> {
         _isStrengthSet = false;
     }
 
-    protected override void Validate() {
-        base.Validate();
+    protected override void __Validate() {
+        base.__Validate();
         D.Assert(ElementID == GuiElementID.OffensiveStrength || ElementID == GuiElementID.DefensiveStrength, ElementID.GetValueName());
     }
 
@@ -160,7 +160,7 @@ public class StrengthGuiElement : AGuiElement, IComparable<StrengthGuiElement> {
     public enum WidgetsPresent {
 
         /// <summary>
-        /// A label  for showing a single value to represent this GuiElement.
+        /// A label for showing a single value to represent this GuiElement.
         /// </summary>
         SumLabel,
 

@@ -105,16 +105,22 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<float>(ref _culture, value, "Culture"); }
         }
 
-        private float _income;
-        public float Income {
-            get { return _income; }
-            set { SetProperty<float>(ref _income, value, "Income"); }
+        private float _constructionCost;
+        public float ConstructionCost {
+            get { return _constructionCost; }
+            set { SetProperty<float>(ref _constructionCost, value, "ConstructionCost"); }
         }
 
-        private float _expense;
-        public float Expense {
+        private decimal _income;
+        public decimal Income {
+            get { return _income; }
+            set { SetProperty<decimal>(ref _income, value, "Income"); }
+        }
+
+        private decimal _expense;
+        public decimal Expense {
             get { return _expense; }
-            set { SetProperty<float>(ref _expense, value, "Expense"); }
+            set { SetProperty<decimal>(ref _expense, value, "Expense"); }
         }
 
         /// <summary>
@@ -139,14 +145,16 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="sensors">The sensors.</param>
         /// <param name="shieldGenerators">The shield generators.</param>
         /// <param name="hqPriority">The HQ priority.</param>
+        /// <param name="constructionCost">The construction cost.</param>
         /// <param name="designName">Name of the design.</param>
         public AUnitElementData(IUnitElement element, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, AHullEquipment hullEquipment,
             IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<ElementSensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators,
-            Priority hqPriority, string designName)
+            Priority hqPriority, float constructionCost, string designName)
             : base(element, owner, hullEquipment.MaxHitPoints, passiveCMs) {
             HullEquipment = hullEquipment;
             Mass = hullEquipment.Mass + hullEquipment.Weapons.Sum(w => w.Mass) + activeCMs.Sum(cm => cm.Mass) + sensors.Sum(s => s.Mass) + passiveCMs.Sum(cm => cm.Mass) + shieldGenerators.Sum(gen => gen.Mass);
             Expense = hullEquipment.Expense + hullEquipment.Weapons.Sum(w => w.Expense) + activeCMs.Sum(cm => cm.Expense) + sensors.Sum(s => s.Expense) + passiveCMs.Sum(cm => cm.Expense) + shieldGenerators.Sum(gen => gen.Expense);
+            ConstructionCost = constructionCost;
             InitializeWeapons();
             Initialize(sensors);
             Initialize(activeCMs);

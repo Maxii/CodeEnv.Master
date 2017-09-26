@@ -64,7 +64,7 @@ namespace CodeEnv.Master.GameContent {
         public DamageStrength DamageMitigation { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ShieldGeneratorStat"/> class.
+        /// Initializes a new instance of the <see cref="ShieldGeneratorStat" /> class.
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="imageAtlasID">The image atlas identifier.</param>
@@ -73,6 +73,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="size">The size.</param>
         /// <param name="mass">The mass.</param>
         /// <param name="pwrRqmt">The PWR RQMT.</param>
+        /// <param name="constructionCost">The production cost.</param>
         /// <param name="expense">The expense.</param>
         /// <param name="rangeCat">The range cat.</param>
         /// <param name="maximumCharge">The maximum charge.</param>
@@ -80,8 +81,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="reloadPeriod">The reload period.</param>
         /// <param name="damageMitigation">The damage mitigation.</param>
         public ShieldGeneratorStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass,
-            float pwrRqmt, float expense, RangeCategory rangeCat, float maximumCharge, float trickleChargeRate, float reloadPeriod, DamageStrength damageMitigation)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, isDamageable: true) {
+            float pwrRqmt, float constructionCost, decimal expense, RangeCategory rangeCat, float maximumCharge, float trickleChargeRate, float reloadPeriod, DamageStrength damageMitigation)
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, constructionCost, expense, rangeCat, isDamageable: true) {
             MaximumCharge = maximumCharge;
             TrickleChargeRate = trickleChargeRate;
             ReloadPeriod = reloadPeriod;

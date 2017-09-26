@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AUnitDesignWindow.cs
-// Abstract base class for Unit Design Windows.
+// Abstract base class for Unit Cmd and Element Design Windows.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -24,7 +24,7 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Abstract base class for Unit Design Windows.
+/// Abstract base class for Unit Cmd and Element Design Windows.
 /// </summary>
 public abstract class AUnitDesignWindow : AGuiWindow {
 
@@ -104,7 +104,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     /// <summary>
     /// The size of the design icon to display in the _registeredDesignIconsGrid.
     /// </summary>
-    private AGuiIcon.IconSize _designIconSize;
+    private AMultiSizeGuiIcon.IconSize _designIconSize;
 
     /// <summary>
     /// Widget that contains the UI where equipment can be added or removed from a design.
@@ -147,11 +147,11 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         _designerUIContainerWidget = gameObject.GetComponentsInChildren<GuiElement>().Single(e => e.ElementID == GuiElementID.DesignerUIContainer).GetComponent<UIWidget>();
         _designerUITitleLabel = gameObject.GetComponentsInChildren<GuiElement>().Single(e => e.ElementID == GuiElementID.DesignerUITitleLabel).GetComponent<UILabel>();
         _3DModelStageUIContainerWidget = gameObject.GetComponentsInChildren<GuiElement>().Single(e => e.ElementID == GuiElementID.ThreeDStageUIContainer).GetComponent<UIWidget>();
-        _designerEquipmentIconsGrid = _designerUIContainerWidget.gameObject.GetSingleComponentInChildren<EquipmentIcon>().gameObject.GetSingleComponentInParents<UIGrid>();
+        _designerEquipmentIconsGrid = _designerUIContainerWidget.gameObject.GetComponentsInChildren<UIGrid>().Single(grid => grid.GetComponentInParent<DesignEquipmentStorage>() == null);
         _designerEquipmentIconsGrid.arrangement = UIGrid.Arrangement.Horizontal;
         _designerEquipmentIconsGrid.sorting = UIGrid.Sorting.Alphabetic;
 
-        _registeredDesignIconsGrid = gameObject.GetSingleComponentInChildren<UnitDesignIcon>().gameObject.GetSingleComponentInParents<UIGrid>();
+        _registeredDesignIconsGrid = _designsUIContainerWidget.gameObject.GetSingleComponentInChildren<UIGrid>();
         _registeredDesignIconsGrid.sorting = UIGrid.Sorting.Alphabetic;
         _registeredDesignIcons = new List<UnitDesignIcon>();
         _panel.widgetsAreStatic = true; // OPTIMIZE see http://www.tasharen.com/forum/index.php?topic=261.0
@@ -726,7 +726,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         Vector2 gridContainerViewSize = _registeredDesignIconsGrid.GetComponentInParent<UIPanel>().GetViewSize();
         IntVector2 gridContainerDimensions = new IntVector2((int)gridContainerViewSize.x, (int)gridContainerViewSize.y);
         int gridColumns, unusedGridRows;
-        AGuiIcon.IconSize iconSize = AGuiIcon.DetermineGridIconSize(gridContainerDimensions, desiredDesignsToAccommodateInGrid, _designIconPrefab, out unusedGridRows, out gridColumns);
+        AMultiSizeGuiIcon.IconSize iconSize = AMultiSizeGuiIcon.DetermineGridIconSize(gridContainerDimensions, desiredDesignsToAccommodateInGrid, _designIconPrefab, out unusedGridRows, out gridColumns);
         _designIconSize = iconSize;
 
         // configure grid for icon size
@@ -757,7 +757,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         IntVector2 gridContainerDimensions = new IntVector2((int)gridContainerViewSize.x, (int)gridContainerViewSize.y);
 
         int gridColumns, unusedGridRows;
-        AGuiIcon.IconSize iconSize = AGuiIcon.DetermineGridIconSize(gridContainerDimensions, desiredStatsToAccommodateInGrid, _equipmentIconPrefab, out unusedGridRows, out gridColumns);
+        AMultiSizeGuiIcon.IconSize iconSize = AMultiSizeGuiIcon.DetermineGridIconSize(gridContainerDimensions, desiredStatsToAccommodateInGrid, _equipmentIconPrefab, out unusedGridRows, out gridColumns);
 
         // configure grid for icon size
         IntVector2 iconDimensions = _equipmentIconPrefab.GetIconDimensions(iconSize);
@@ -841,7 +841,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     /// <param name="iconSize">Size of the icon to create.</param>
     /// <param name="parent">The parent.</param>
     /// <returns></returns>
-    private UnitDesignIcon CreateIcon(AUnitDesign design, AGuiIcon.IconSize iconSize, GameObject parent) {
+    private UnitDesignIcon CreateIcon(AUnitDesign design, AMultiSizeGuiIcon.IconSize iconSize, GameObject parent) {
         GameObject designIconGo = NGUITools.AddChild(parent, _designIconPrefab.gameObject);
         designIconGo.name = design.DesignName + DesignIconExtension;
         UnitDesignIcon designIcon = designIconGo.GetSafeComponent<UnitDesignIcon>(); ;
@@ -869,7 +869,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         _registeredDesignIcons.Add(designIcon);
     }
 
-    private void CreateAndAddIcon(AEquipmentStat equipStat, AGuiIcon.IconSize iconSize) {
+    private void CreateAndAddIcon(AEquipmentStat equipStat, AMultiSizeGuiIcon.IconSize iconSize) {
         GameObject equipIconGo = NGUITools.AddChild(_designerEquipmentIconsGrid.gameObject, _equipmentIconPrefab.gameObject);
         equipIconGo.name = equipStat.Name + EquipmentIconExtension;
         EquipmentIcon equipIcon = equipIconGo.GetSafeComponent<EquipmentIcon>();
@@ -891,6 +891,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     }
 
     private void RemoveIcon(EquipmentIcon equipIcon) {
+        //D.Log("{0} is removing {1} from DesignerUI.", DebugName, equipIcon.DebugName);
         UIEventListener.Get(equipIcon.gameObject).onDoubleClick -= EquipmentIconDoubleClickedEventHandler;
 
         // Note: DestroyImmediate() because Destroy() doesn't always get rid of the existing icon before Reposition occurs on LateUpdate

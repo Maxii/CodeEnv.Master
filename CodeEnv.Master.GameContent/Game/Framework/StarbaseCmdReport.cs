@@ -29,6 +29,7 @@ namespace CodeEnv.Master.GameContent {
         public StarbaseCategory Category { get; private set; }
 
         public int? Capacity { get; private set; }
+        public float? UnitProduction { get; private set; }
 
         public ResourceYield? Resources { get; private set; }
 
@@ -54,6 +55,10 @@ namespace CodeEnv.Master.GameContent {
         protected override void AssignValues(AItemData data) {
             var sbData = data as StarbaseCmdData;
             var accessCntlr = sbData.InfoAccessCntlr;
+
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Hero)) {
+                Hero = sbData.Hero;
+            }
 
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.AlertStatus)) {
                 AlertStatus = sbData.AlertStatus;
@@ -136,6 +141,9 @@ namespace CodeEnv.Master.GameContent {
             }
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Capacity)) {
                 Capacity = sbData.Capacity;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitProduction)) {
+                UnitProduction = sbData.UnitProduction;
             }
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Resources)) {
                 Resources = sbData.Resources;

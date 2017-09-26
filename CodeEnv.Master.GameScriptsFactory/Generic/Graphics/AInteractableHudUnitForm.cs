@@ -29,6 +29,7 @@ public abstract class AInteractableHudUnitForm : AInteractableHudItemDataForm {
 
     private UIPopupList _formationPopupList;
     private UILabel _formationPopupListLabel;
+    private GuiHeroModule _heroModule;
 
     protected override void InitializeNonGuiElementMembers() {
         base.InitializeNonGuiElementMembers();
@@ -36,6 +37,7 @@ public abstract class AInteractableHudUnitForm : AInteractableHudItemDataForm {
         _formationPopupList.keepValue = true;
         EventDelegate.Add(_formationPopupList.onChange, FormationChangedEventHandler);
         _formationPopupListLabel = _formationPopupList.GetComponentInChildren<UILabel>();
+        _heroModule = gameObject.GetSingleComponentInChildren<GuiHeroModule>();
     }
 
     #region Event and Property Change Handlers
@@ -52,6 +54,8 @@ public abstract class AInteractableHudUnitForm : AInteractableHudItemDataForm {
         string currentFormationName = (ItemData as AUnitCmdData).UnitFormation.GetValueName();
         _formationPopupList.Set(currentFormationName, notify: false);
         _formationPopupListLabel.text = currentFormationName;
+
+        _heroModule.UnitData = ItemData as AUnitCmdData;
     }
 
     protected override void AssignValueToNameInputGuiElement() {
@@ -87,6 +91,7 @@ public abstract class AInteractableHudUnitForm : AInteractableHudItemDataForm {
         _nameInput.Set(null, notify: false);    // could also do _nameInput.value = null as don't subscribe to the onChange event
         _formationPopupList.Set(null, notify: false);
         _formationPopupListLabel.text = null;
+        _heroModule.ResetForReuse();
     }
 
     protected override void CleanupNonGuiElementMembers() {

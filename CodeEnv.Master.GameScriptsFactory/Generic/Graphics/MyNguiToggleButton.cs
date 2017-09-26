@@ -25,6 +25,7 @@ using UnityEngine;
 
 /// <summary>
 /// Button that toggles between 'in' and 'out' when clicked.
+/// <remarks>Warning: Radio button implementation must be done manually by the user. Do not use UIToggle.group.</remarks>
 /// </summary>
 public class MyNguiToggleButton : ATextTooltip {
 
@@ -75,8 +76,14 @@ public class MyNguiToggleButton : ATextTooltip {
     private void InitializeValuesAndReferences() {
         _button = GetComponent<UIButton>();
         _toggle = GetComponent<UIToggle>();
-        _toggle.startsActive = false;
-        _toggle.group = Constants.Zero;
+        if (_toggle.startsActive) {
+            D.Warn("{0} startsActive is being reset to false.", DebugName);
+            _toggle.startsActive = false;
+        }
+        if (_toggle.group > Constants.Zero) {
+            D.Warn("{0} radio group number is being reset to zero.", DebugName);
+            _toggle.group = Constants.Zero;
+        }
         _icon = gameObject.GetComponentsInImmediateChildren<UISprite>().MaxBy(s => s.depth);
     }
 

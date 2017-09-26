@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
 
         // 7.10.16 Eliminated usage of Star, Settlement and Planetoid Reports to calculate partial System values.
         // Access to Owner, Capacity and Resources values now determined (in SystemAccessController) by whether 
-        // Star, Settlement and Planetoid AccessControllers provide access. Partial values can be calc'd if not.
+        // Star, Settlement and Planetoid AccessControllers provide access. Partial values can be calculated if not.
 
         public SystemReport(SystemData data, Player player, ISystem_Ltd item)
             : base(data, player, item) {

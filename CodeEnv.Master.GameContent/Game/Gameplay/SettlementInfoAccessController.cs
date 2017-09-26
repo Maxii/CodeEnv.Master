@@ -31,6 +31,7 @@ namespace CodeEnv.Master.GameContent {
                 case ItemInfoID.UnitScience:
                 case ItemInfoID.UnitNetIncome:
                 case ItemInfoID.UnitCulture:
+                case ItemInfoID.UnitProduction:
                 case ItemInfoID.Capacity:
                 case ItemInfoID.Approval:
                 case ItemInfoID.Resources:
@@ -52,6 +53,7 @@ namespace CodeEnv.Master.GameContent {
                 case ItemInfoID.Formation:
                 case ItemInfoID.UnitDefense:
                 case ItemInfoID.UnitOffense:
+                case ItemInfoID.Hero:
                     return true;
                 default:
                     return false;

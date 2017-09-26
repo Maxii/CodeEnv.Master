@@ -106,6 +106,12 @@ namespace CodeEnv.Master.GameContent {
 
         UserPlayerAIManager UserAIManager { get; }
 
+        /// <summary>
+        /// A collection of Element Designs for each player.
+        /// </summary>
+        PlayerDesigns PlayersDesigns { get; }
+
+
         void InitiateNewGame(GameSettings gameSettings);
 
 

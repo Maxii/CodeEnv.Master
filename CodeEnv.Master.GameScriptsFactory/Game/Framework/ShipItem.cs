@@ -329,9 +329,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         UpdateDebugCoursePlot();
     }
 
-    private void NewOrderReceivedWhilePausedEventHandler(object sender, EventArgs e) {
-        _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedEventHandler;
-        ChangeOrderAfterPause();
+    private void NewOrderReceivedWhilePausedUponResumeEventHandler(object sender, EventArgs e) {
+        _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedUponResumeEventHandler;
+        HandleNewOrderReceivedWhilePausedUponResume();
     }
 
     #endregion
@@ -429,10 +429,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         return false;
     }
 
-    public override void __HandleLocalPositionManuallyChanged() {
-        // Nothing to do as manual reposition only occurs when the formation is initially changed before the ship becomes operational
-    }
-
     #region Orders
 
     /// <summary>
@@ -443,7 +439,11 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     /// </summary>
     private Guid _lastCmdOrderID;
 
-    private ShipOrder _newOrderReceivedWhilePaused;
+    /// <summary>
+    /// The sequence of orders received while paused. If any are present, the bottom of the stack will
+    /// contain the order that was current when the first order was received while paused.
+    /// </summary>
+    private Stack<ShipOrder> _ordersReceivedWhilePaused = new Stack<ShipOrder>();
 
     /// <summary>
     /// Attempts to initiate the execution of the provided order, returning <c>true</c>
@@ -458,17 +458,25 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     /// <returns></returns>
     public bool InitiateNewOrder(ShipOrder order) {
         D.Assert(order.Source > OrderSource.Captain);
+        if (order.Directive == ShipDirective.Cancel) {
+            D.Assert(_gameMgr.IsPaused && order.Source == OrderSource.User);
+        }
+
         if (IsPaused) {
-            _newOrderReceivedWhilePaused = order;
+            if (!_ordersReceivedWhilePaused.Any()) {
+                // first order received while paused so record the CurrentOrder before recording the new order
+                _ordersReceivedWhilePaused.Push(CurrentOrder);
+            }
+            _ordersReceivedWhilePaused.Push(order);
             // deal with multiple changes all while paused
-            _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedEventHandler;
-            _gameMgr.isPausedChanged += NewOrderReceivedWhilePausedEventHandler;
+            _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedUponResumeEventHandler;
+            _gameMgr.isPausedChanged += NewOrderReceivedWhilePausedUponResumeEventHandler;
             bool willOrderExecutionImmediatelyFollowResume = IsCurrentOrderImmediatelyReplaceableBy(order);
             return willOrderExecutionImmediatelyFollowResume;
         }
 
         D.Assert(!IsPaused);
-        D.AssertNull(_newOrderReceivedWhilePaused);
+        D.AssertEqual(Constants.Zero, _ordersReceivedWhilePaused.Count);
 
         if (!IsCurrentOrderImmediatelyReplaceableBy(order)) {
             CurrentOrder.StandingOrder = order;
@@ -481,7 +489,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     /// <summary>
     /// Returns <c>true</c> if CurrentOrder can immediately be replaced by order, <c>false</c> otherwise.
     /// <remarks>CurrentOrder can immediately be replaced by order if order was issued by the User, OR
-    /// CurrentOrder is null OR CurrentOrder isn't an override order issued by the Captain.</remarks>
+    /// CurrentOrder is null OR CurrentOrder isn't an override order issued by Captain.</remarks>
     /// <remarks>A Captain-issued override order can only be immediately replaced by a User-issued order.</remarks>
     /// </summary>
     /// <param name="order">The order.</param>
@@ -490,14 +498,29 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         return order.Source == OrderSource.User || CurrentOrder == null || CurrentOrder.Source != OrderSource.Captain;
     }
 
-    private void ChangeOrderAfterPause() {
-        D.AssertNotNull(_newOrderReceivedWhilePaused);
+    private void HandleNewOrderReceivedWhilePausedUponResume() {
         D.Assert(!IsPaused);
-
-        ShipOrder newOrder = _newOrderReceivedWhilePaused;
-        _newOrderReceivedWhilePaused = null;
-        D.Log(/*ShowDebugLog, */"{0} is changing order to {1} after resuming from pause.", DebugName, newOrder.DebugName);
-        InitiateNewOrder(newOrder);
+        D.AssertNotEqual(Constants.Zero, _ordersReceivedWhilePaused.Count);
+        // If the last order received was Cancel, then the order that was current when the first order
+        // was issued during this pause should be reinstated, aka all the orders received while paused are
+        // not valid and the original order should continue.
+        ShipOrder order;
+        var lastOrderReceivedWhilePaused = _ordersReceivedWhilePaused.Pop();
+        if (lastOrderReceivedWhilePaused.Directive == ShipDirective.Cancel) {
+            // if Cancel, then original order and canceled order at minimum must still be present
+            D.Assert(_ordersReceivedWhilePaused.Count > Constants.One);
+            D.Log(/*ShowDebugLog,*/ "{0} received the following order sequence from User during pause prior to Cancel: {1}.", DebugName,
+                _ordersReceivedWhilePaused.Select(o => o.DebugName).Concatenate());
+            order = _ordersReceivedWhilePaused.First();
+        }
+        else {
+            order = lastOrderReceivedWhilePaused;
+        }
+        _ordersReceivedWhilePaused.Clear();
+        if (order != null) { // can be null if lastOrderReceivedWhilePaused is Cancel and there was no original order
+            D.Log(/*ShowDebugLog, */"{0} is changing or re-instating order to {1} after resuming from pause.", DebugName, order.DebugName);
+            InitiateNewOrder(order);
+        }
     }
 
     /// <summary>
@@ -507,11 +530,12 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     /// <param name="directiveA">The directive a.</param>
     /// <returns></returns>
     public bool IsCurrentOrderDirectiveAnyOf(ShipDirective directiveA) {
-        if (IsPaused && _newOrderReceivedWhilePaused != null) {
+        if (IsPaused && _ordersReceivedWhilePaused.Any()) {
             // paused with a pending order replacement
-            if (IsCurrentOrderImmediatelyReplaceableBy(_newOrderReceivedWhilePaused)) {
-                // _newOrderReceivedWhilePaused will immediately replace CurrentOrder as soon as unpaused
-                return _newOrderReceivedWhilePaused.Directive == directiveA;
+            ShipOrder newOrder = _ordersReceivedWhilePaused.Peek();
+            if (IsCurrentOrderImmediatelyReplaceableBy(newOrder)) {
+                // newOrder will immediately replace CurrentOrder as soon as unpaused
+                return newOrder.Directive == directiveA;
             }
         }
         return CurrentOrder != null && CurrentOrder.Directive == directiveA;
@@ -525,11 +549,12 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     /// <param name="directiveB">The directive b.</param>
     /// <returns></returns>
     public bool IsCurrentOrderDirectiveAnyOf(ShipDirective directiveA, ShipDirective directiveB) {
-        if (IsPaused && _newOrderReceivedWhilePaused != null) {
+        if (IsPaused && _ordersReceivedWhilePaused.Any()) {
             // paused with a pending order replacement
-            if (IsCurrentOrderImmediatelyReplaceableBy(_newOrderReceivedWhilePaused)) {
-                // _newOrderReceivedWhilePaused will immediately replace CurrentOrder as soon as unpaused
-                return _newOrderReceivedWhilePaused.Directive == directiveA || _newOrderReceivedWhilePaused.Directive == directiveB;
+            ShipOrder newOrder = _ordersReceivedWhilePaused.Peek();
+            if (IsCurrentOrderImmediatelyReplaceableBy(newOrder)) {
+                // newOrder will immediately replace CurrentOrder as soon as unpaused
+                return newOrder.Directive == directiveA || newOrder.Directive == directiveB;
             }
         }
         return CurrentOrder != null && (CurrentOrder.Directive == directiveA || CurrentOrder.Directive == directiveB);
@@ -630,6 +655,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 case ShipDirective.Refit:
                     D.Warn("{0}.{1} is not currently implemented.", typeof(ShipDirective).Name, directive.GetValueName());
                     break;
+                case ShipDirective.Cancel:
+                // 9.13.17 Cancel should never be processed here as it is only issued by User while paused and is 
+                // handled by HandleNewOrderReceivedWhilePausedUponResume(). 
                 case ShipDirective.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
@@ -813,6 +841,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             //D.Log(ShowDebugLog, "{0} has completed {1} with no follow-on or standing order queued.", DebugName, CurrentOrder);
             CurrentOrder = null;
         }
+        D.AssertNull(CurrentOrder);
 
         // 3.19.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
         // I think it is because there is a rare scenario where no yield return is encountered. 
@@ -822,6 +851,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         if (AssessNeedForRepair(healthThreshold: Constants.OneHundredPercent)) {
             IssueCaptainsRepairOrder_InFormation(retainSuperiorsOrder: false);
             yield return null;  // state immediately changed so avoid setting IsAvailable after the ExitState runs
+            D.Error("{0} should never get here as CurrentOrder was changed to {1}.", DebugName, CurrentOrder);
         }
         IsAvailable = true; // 10.3.16 this can instantly generate a new Order (and thus a state change). Accordingly,  this EnterState
                             // cannot return void as that causes the FSM to fail its 'no state change from void EnterState' test.
@@ -1156,9 +1186,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         Call(ShipState.Moving);
         yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-        if (!returnHandler.IsCallSuccessful) {
+        if (!returnHandler.DidCallSuccessfullyComplete) {
             yield return null;
-            D.Error("Shouldn't get here.");
+            D.Error("Shouldn't get here as the ReturnCause should generate a change of state.");
         }
 
         if (AssessWhetherToAssumeHighOrbitAround(_fsmTgt)) {
@@ -1166,9 +1196,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             Call(ShipState.AssumingHighOrbit);
             yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-            if (!returnHandler.IsCallSuccessful) {
+            if (!returnHandler.DidCallSuccessfullyComplete) {
                 yield return null;
-                D.Error("Shouldn't get here.");
+                D.Error("Shouldn't get here as the ReturnCause should generate a change of state.");
             }
 
             D.Assert(IsInHighOrbit);
@@ -1318,9 +1348,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 Call(ShipState.Moving);
                 yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-                if (!returnHandler.IsCallSuccessful) {
+                if (!returnHandler.DidCallSuccessfullyComplete) {
                     yield return null;
-                    D.Error("Shouldn't get here.");
+                    D.Error("Shouldn't get here as the ReturnCause should generate a change of state.");
                 }
             }
         }
@@ -1338,9 +1368,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             Call(ShipState.Moving);
             yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-            if (!returnHandler.IsCallSuccessful) {
+            if (!returnHandler.DidCallSuccessfullyComplete) {
                 yield return null;
-                D.Error("Shouldn't get here.");
+                D.Error("Shouldn't get here as the ReturnCause should generate a change of state.");
             }
 
             if (FormationStation.IsOnStation) {
@@ -1522,9 +1552,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         Call(ShipState.Moving);
         yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-        if (!returnHandler.IsCallSuccessful) {
+        if (!returnHandler.DidCallSuccessfullyComplete) {
             yield return null;
-            D.Error("Shouldn't get here.");
+            D.Error("Shouldn't get here as the ReturnCause should generate a change of state.");
         }
 
         var exploreTgt = _fsmTgt as IShipExplorable;
@@ -1533,9 +1563,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             Call(ShipState.AssumingCloseOrbit);
             yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-            if (!returnHandler.IsCallSuccessful) {
+            if (!returnHandler.DidCallSuccessfullyComplete) {
                 yield return null;
-                D.Error("Shouldn't get here.");
+                D.Error("Shouldn't get here as the ReturnCause should generate a change of state.");
             }
 
             // AssumingCloseOrbit Return()ed because 1) close orbit was attained thereby fully exploring the target, OR
@@ -2292,7 +2322,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 FsmOrderFailureCause failCause;
                 if (returnHandler.TryProcessAndFindReturnCause(out failCause)) {
                     yield return null;
-                    D.Error("{0} shouldn't get here. FailCause: {1}.", DebugName, failCause.GetValueName());
+                    D.Error("Shouldn't get here as the ReturnCause should generate a change of state.");
                 }
                 else {
                     D.Assert(!primaryAttackTgt.IsOperational);
@@ -2936,9 +2966,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             Call(ShipState.Moving);
             yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-            if (!returnHandler.IsCallSuccessful) {
+            if (!returnHandler.DidCallSuccessfullyComplete) {
                 yield return null;
-                D.Error("Shouldn't get here.");
+                D.Error("Shouldn't get here as the ReturnCause should generate a change of state.");
             }
 
             IShipOrbitable highOrbitDest;
@@ -2951,9 +2981,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                     Call(ShipState.AssumingHighOrbit);
                     yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-                    if (!returnHandler.IsCallSuccessful) {
+                    if (!returnHandler.DidCallSuccessfullyComplete) {
                         yield return null;
-                        D.Error("Shouldn't get here.");
+                        D.Error("Shouldn't get here as the ReturnCause should generate a change of state.");
                     }
 
                     D.Assert(IsInHighOrbit);
@@ -2965,9 +2995,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                     Call(ShipState.AssumingCloseOrbit);
                     yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-                    if (!returnHandler.IsCallSuccessful) {
+                    if (!returnHandler.DidCallSuccessfullyComplete) {
                         yield return null;
-                        D.Error("Shouldn't get here.");
+                        D.Error("Shouldn't get here as the ReturnCause should generate a change of state.");
                     }
 
                     D.Assert(IsInCloseOrbit);
@@ -3881,7 +3911,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             _helm.apTargetReached -= ApTargetReachedEventHandler;
             _helm.apTargetUncatchable -= ApTargetUncatchableEventHandler;
         }
-        _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedEventHandler;
+        _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedUponResumeEventHandler;
     }
 
     private void CleanupNavClasses() {
@@ -4434,6 +4464,15 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     }
 
     #endregion
+
+    public override void __HandleLocalPositionManuallyChanged() {
+        // Nothing to do as manual reposition only occurs when the formation is initially changed before the ship becomes operational
+    }
+
+    protected override void __ValidateCurrentOrderAndStateWhenAvailable() {
+        D.AssertNull(CurrentOrder);
+        D.AssertEqual(ShipState.Idling, CurrentState);
+    }
 
     private void __CheckForRemainingFtlDampeningSources() {
         if (_dampeningSources != null && _dampeningSources.Any()) {

@@ -131,8 +131,7 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmd, ISettlementCm
     }
 
     protected override void ShowSelectedItemHud() {
-        InteractableHudWindow.Instance.Show(FormID.UserSettlement, Data);
-        // TODO Change to UnitHudWindow and have it show InteractableHudWindow
+        UnitHudWindow.Instance.Show(FormID.UserSettlement, this);
     }
 
     protected override void PrepareForDeathEffect() {

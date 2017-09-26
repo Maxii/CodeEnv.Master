@@ -102,7 +102,7 @@ public class DesignEquipmentStorage : AMonoBase {
 
         int unusedGridRows, gridColumns;
         IntVector2 storageContainerDimensions = new IntVector2(_storageIconContainer.width, _storageIconContainer.height);
-        var iconSize = AGuiIcon.DetermineGridIconSize(storageContainerDimensions, reqdSlotQty, storageIconPrefab, out unusedGridRows, out gridColumns);
+        var iconSize = AMultiSizeGuiIcon.DetermineGridIconSize(storageContainerDimensions, reqdSlotQty, storageIconPrefab, out unusedGridRows, out gridColumns);
 
         IntVector2 slotDimensions = storageIconPrefab.GetIconDimensions(iconSize);
         _storageIconGrid.cellHeight = slotDimensions.y;
@@ -122,7 +122,7 @@ public class DesignEquipmentStorage : AMonoBase {
         _storageIconGrid.repositionNow = true;
     }
 
-    private void PopulateIcon(GameObject storageIconGo, AGuiIcon.IconSize iconSize, EquipmentSlotID slotID, AEquipmentStat equipStat) {
+    private void PopulateIcon(GameObject storageIconGo, AMultiSizeGuiIcon.IconSize iconSize, EquipmentSlotID slotID, AEquipmentStat equipStat) {
         EquipmentStorageIcon storageIcon = storageIconGo.GetComponent<EquipmentStorageIcon>();
         storageIcon.Size = iconSize;
         storageIcon.Initialize(this, slotID, equipStat);

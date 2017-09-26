@@ -406,7 +406,6 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     /// This event does not fire when the button is released.
     /// </summary>
     public event EventHandler unconsumedPress;
-    //public event Action<NguiMouseButton> onUnconsumedPressDown;
 
     private void PressEventHandler(GameObject go, bool isDown) {
         if (_inputHelper.IsOverUI) {
@@ -415,10 +414,12 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
         }
         //WriteMessage(go.name);    // FIXME: UICamera.onPress bug? go can be null, posted on Ngui support 11/7/14
 
-        if (isDown && UICamera.fallThrough == go) {
-            // the target of the press is the fallThrough event handler, so this press wasn't consumed by another gameObject
-            //OnUnconsumedPress(isDown);
-            OnUnconsumedPress();
+        if (isDown) {
+            //D.Log("{0} received a Mouse Pressed (down) event.", DebugName);
+            if (UICamera.fallThrough == go) {
+                // the target of the press is the fallThrough event handler, so this press wasn't consumed by another gameObject
+                OnUnconsumedPress();
+            }
         }
     }
 

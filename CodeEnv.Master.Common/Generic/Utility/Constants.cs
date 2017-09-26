@@ -91,7 +91,8 @@ namespace CodeEnv.Master.Common {
         public const string FormatPercent_0Dp = "{0:P00}";
 
         // Common Numeric Formatting  see http://msdn.microsoft.com/en-us/library/dwhawy9k.aspx
-        public const string CurrencyNumericFormat = "C02";
+        public const string FormatCurrency_0Dp = "C0";
+        public const string FormatCurrency_2Dp = "C2";
         public const string PercentNumericFormat = "P00";
 
         // 3.25.16 Moved to GameTime
@@ -161,7 +162,7 @@ namespace CodeEnv.Master.Common {
 
         // For monetary calculations
         public const int MoneyDecimalPlaces = 2;
-        public const decimal ZeroMoney = 0.00M;
+        public const decimal ZeroCurrency = 0.00M;
 
         // Time conversion factors
         public const long NanosecondsPerMillisecond = 1000000L;

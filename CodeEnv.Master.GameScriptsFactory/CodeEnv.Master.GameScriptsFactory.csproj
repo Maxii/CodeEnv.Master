@@ -66,8 +66,10 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\GUI\ElementConstructionIcon.cs" />
+    <Compile Include="Generic\Graphics\AElementConstructionIcon.cs" />
+    <Compile Include="Game\GUI\FacilityIcon.cs" />
     <Compile Include="Generic\Graphics\AInteractableHudUnitForm.cs" />
-    <Compile Include="Game\GUI\UnitHudUserFleetForm.cs" />
     <Compile Include="Generic\Graphics\AUnitIcon.cs" />
     <Compile Include="Game\GUI\FleetIcon.cs" />
     <Compile Include="Generic\Graphics\AElementIcon.cs" />
@@ -81,7 +83,7 @@
     <Compile Include="Game\GUI\FleetCmdDesignWindow.cs" />
     <Compile Include="Generic\Graphics\AEquipmentIcon.cs" />
     <Compile Include="Game\GUI\EquipmentIcon.cs" />
-    <Compile Include="Generic\Graphics\AGuiIcon.cs" />
+    <Compile Include="Generic\Graphics\AMultiSizeGuiIcon.cs" />
     <Compile Include="Generic\Graphics\AHoveredHudEquipmentForm.cs" />
     <Compile Include="Generic\Graphics\AHoveredHudDesignForm.cs" />
     <Compile Include="Game\Gameplay\AssaultVehicle.cs" />
@@ -97,6 +99,9 @@
     <Compile Include="Generic\_Debug\ReplaceAll.cs" />
     <Compile Include="Game\GUI\ShipIcon.cs" />
     <Compile Include="Generic\Graphics\MyNguiToggleButton.cs" />
+    <Compile Include="Game\GUI\StarbaseIcon.cs" />
+    <Compile Include="Game\GUI\GuiHeroModule.cs" />
+    <Compile Include="ThirdParty\MyDragDropItem.cs" />
     <Compile Include="ThirdParty\MyNGPathfindingGraph.cs" />
     <Compile Include="ThirdParty\MyPlaySFX.cs" />
     <Compile Include="ThirdParty\MyCustomCursor.cs" />
@@ -312,6 +317,10 @@
     <Compile Include="Generic\Graphics\__HoveredHudDesignForm.cs" />
     <Compile Include="Game\GUI\HoveredHudUCForm.cs" />
     <Compile Include="Game\GUI\UnitHudWindow.cs" />
+    <Compile Include="Game\GUI\UnitHudUserFleetForm.cs" />
+    <Compile Include="Generic\Graphics\AUnitHudUserBaseForm.cs" />
+    <Compile Include="Game\GUI\UnitHudUserSettlementForm.cs" />
+    <Compile Include="Game\GUI\UnitHudUserStarbaseForm.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">

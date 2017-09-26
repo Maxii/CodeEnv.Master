@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AHoveredHudDesignForm.cs
-// Abstract base class for Forms that are that are used to display info about a unit (cmd or element) Design in the HoveredHudWindow.
+// Abstract base class for Forms that are used to display info about a unit (cmd or element) Design in the HoveredHudWindow.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,7 +20,7 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Abstract base class for Forms that are that are used to display info about a unit (cmd or element) Design in the HoveredHudWindow.
+/// Abstract base class for Forms that are used to display info about a unit (cmd or element) Design in the HoveredHudWindow.
 /// </summary>
 public abstract class AHoveredHudDesignForm : AInfoDisplayForm {
 

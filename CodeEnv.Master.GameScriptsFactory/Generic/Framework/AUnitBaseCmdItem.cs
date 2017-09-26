@@ -219,7 +219,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected override void HandleFormationChanged() {
         base.HandleFormationChanged();
-        // UNDONE relocate facilities to new formation stations
+        // UNDONE 9.21.17 order facilities to AssumeFormation if CurrentState allows it. See FleetCmd implementation.
     }
 
     #region Event and Property Change Handlers
@@ -228,16 +228,20 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         HandleNewOrder();
     }
 
-    private void NewOrderReceivedWhilePausedEventHandler(object sender, EventArgs e) {
-        _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedEventHandler;
-        ChangeOrderAfterPause();
+    private void NewOrderReceivedWhilePausedUponResumeEventHandler(object sender, EventArgs e) {
+        _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedUponResumeEventHandler;
+        HandleNewOrderReceivedWhilePausedUponResume();
     }
 
     #endregion
 
     #region Orders
 
-    private BaseOrder _newOrderReceivedWhilePaused;
+    /// <summary>
+    /// The sequence of orders received while paused. If any are present, the bottom of the stack will
+    /// contain the order that was current when the first order was received while paused.
+    /// </summary>
+    private Stack<BaseOrder> _ordersReceivedWhilePaused = new Stack<BaseOrder>();
 
     /// <summary>
     /// Attempts to initiate the execution of the provided order, returning <c>true</c>
@@ -252,17 +256,25 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     /// <returns></returns>
     public bool InitiateNewOrder(BaseOrder order) {
         D.Assert(order.Source > OrderSource.CmdStaff);
+        if (order.Directive == BaseDirective.Cancel) {
+            D.Assert(_gameMgr.IsPaused && order.Source == OrderSource.User);
+        }
+
         if (IsPaused) {
-            _newOrderReceivedWhilePaused = order;
+            if (!_ordersReceivedWhilePaused.Any()) {
+                // first order received while paused so record the CurrentOrder before recording the new order
+                _ordersReceivedWhilePaused.Push(CurrentOrder);
+            }
+            _ordersReceivedWhilePaused.Push(order);
             // deal with multiple changes all while paused
-            _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedEventHandler;
-            _gameMgr.isPausedChanged += NewOrderReceivedWhilePausedEventHandler;
+            _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedUponResumeEventHandler;
+            _gameMgr.isPausedChanged += NewOrderReceivedWhilePausedUponResumeEventHandler;
             bool willOrderExecutionImmediatelyFollowResume = IsCurrentOrderImmediatelyReplaceableBy(order);
             return willOrderExecutionImmediatelyFollowResume;
         }
 
         D.Assert(!IsPaused);
-        D.AssertNull(_newOrderReceivedWhilePaused);
+        D.AssertEqual(Constants.Zero, _ordersReceivedWhilePaused.Count);
 
         if (!IsCurrentOrderImmediatelyReplaceableBy(order)) {
             CurrentOrder.StandingOrder = order;
@@ -284,14 +296,29 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         return order.Source == OrderSource.User || CurrentOrder == null || CurrentOrder.Source != OrderSource.CmdStaff;
     }
 
-    private void ChangeOrderAfterPause() {
-        D.AssertNotNull(_newOrderReceivedWhilePaused);
+    private void HandleNewOrderReceivedWhilePausedUponResume() {
         D.Assert(!IsPaused);
-
-        BaseOrder newOrder = _newOrderReceivedWhilePaused;
-        _newOrderReceivedWhilePaused = null;
-        D.Log(/*ShowDebugLog,*/ "{0} is changing order to {1} after resuming from pause.", DebugName, newOrder.DebugName);
-        InitiateNewOrder(newOrder);
+        D.AssertNotEqual(Constants.Zero, _ordersReceivedWhilePaused.Count);
+        // If the last order received was Cancel, then the order that was current when the first order
+        // was issued during this pause should be reinstated, aka all the orders received while paused are
+        // not valid and the original order should continue.
+        BaseOrder order;
+        var lastOrderReceivedWhilePaused = _ordersReceivedWhilePaused.Pop();
+        if (lastOrderReceivedWhilePaused.Directive == BaseDirective.Cancel) {
+            // if Cancel, then original order and canceled order at minimum must still be present
+            D.Assert(_ordersReceivedWhilePaused.Count > Constants.One);
+            D.Log(/*ShowDebugLog,*/ "{0} received the following order sequence from User during pause prior to Cancel: {1}.", DebugName,
+                _ordersReceivedWhilePaused.Select(o => o.DebugName).Concatenate());
+            order = _ordersReceivedWhilePaused.First();
+        }
+        else {
+            order = lastOrderReceivedWhilePaused;
+        }
+        _ordersReceivedWhilePaused.Clear();
+        if (order != null) { // can be null if lastOrderReceivedWhilePaused is Cancel and there was no original order
+            D.Log(/*ShowDebugLog, */"{0} is changing or re-instating order to {1} after resuming from pause.", DebugName, order.DebugName);
+            InitiateNewOrder(order);
+        }
     }
 
     /// <summary>
@@ -301,11 +328,12 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     /// <param name="directiveA">The directive a.</param>
     /// <returns></returns>
     public bool IsCurrentOrderDirectiveAnyOf(BaseDirective directiveA) {
-        if (IsPaused && _newOrderReceivedWhilePaused != null) {
+        if (IsPaused && _ordersReceivedWhilePaused.Any()) {
             // paused with a pending order replacement
-            if (IsCurrentOrderImmediatelyReplaceableBy(_newOrderReceivedWhilePaused)) {
-                // _newOrderReceivedWhilePaused will immediately replace CurrentOrder as soon as unpaused
-                return _newOrderReceivedWhilePaused.Directive == directiveA;
+            BaseOrder newOrder = _ordersReceivedWhilePaused.Peek();
+            if (IsCurrentOrderImmediatelyReplaceableBy(newOrder)) {
+                // newOrder will immediately replace CurrentOrder as soon as unpaused
+                return newOrder.Directive == directiveA;
             }
         }
         return CurrentOrder != null && CurrentOrder.Directive == directiveA;
@@ -319,11 +347,12 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     /// <param name="directiveB">The directive b.</param>
     /// <returns></returns>
     public bool IsCurrentOrderDirectiveAnyOf(BaseDirective directiveA, BaseDirective directiveB) {
-        if (IsPaused && _newOrderReceivedWhilePaused != null) {
+        if (IsPaused && _ordersReceivedWhilePaused.Any()) {
             // paused with a pending order replacement
-            if (IsCurrentOrderImmediatelyReplaceableBy(_newOrderReceivedWhilePaused)) {
-                // _newOrderReceivedWhilePaused will immediately replace CurrentOrder as soon as unpaused
-                return _newOrderReceivedWhilePaused.Directive == directiveA || _newOrderReceivedWhilePaused.Directive == directiveB;
+            BaseOrder newOrder = _ordersReceivedWhilePaused.Peek();
+            if (IsCurrentOrderImmediatelyReplaceableBy(newOrder)) {
+                // newOrder will immediately replace CurrentOrder as soon as unpaused
+                return newOrder.Directive == directiveA || newOrder.Directive == directiveB;
             }
         }
         return CurrentOrder != null && (CurrentOrder.Directive == directiveA || CurrentOrder.Directive == directiveB);
@@ -384,15 +413,14 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
                 case BaseDirective.Scuttle:
                     ScuttleUnit(CurrentOrder.Source);
                     break;
-                case BaseDirective.Cancel:
-                    ResetOrderAndState();
-                    break;
-                ////case BaseDirective.StopAttack:
                 case BaseDirective.Refit:
                 case BaseDirective.Disband:
                     D.Warn("{0}.{1} is not currently implemented.", typeof(BaseDirective).Name, directive.GetValueName());
                     break;
                 case BaseDirective.ChangeHQ:   // 3.16.17 implemented by assigning HQElement, not as an order
+                case BaseDirective.Cancel:
+                // 9.13.17 Cancel should never be processed here as it is only issued by User while paused and is 
+                // handled by HandleNewOrderReceivedWhilePausedUponResume(). 
                 case BaseDirective.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
@@ -510,6 +538,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
             //D.Log(ShowDebugLog, "{0} has completed {1} with no follow-on or standing order queued.", DebugName, CurrentOrder);
             CurrentOrder = null;
         }
+        D.AssertNull(CurrentOrder);
 
         IsAvailable = true; // 10.3.16 this can instantly generate a new Order (and thus a state change). Accordingly, this EnterState
                             // cannot return void as that causes the FSM to fail its 'no state change from void EnterState' test.
@@ -602,6 +631,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected void ExecuteAttackOrder_UponOrderOutcomeCallback(FacilityItem facility, bool isSuccess, IElementNavigableDestination target, FsmOrderFailureCause failCause) {
         LogEvent();
         D.Warn("{0}.ExecuteAttackOrder_UponOrderOutcomeCallback() not implemented.", DebugName);
+        // TODO 9.21.17 Once the attack on the UnitAttackTarget has been naturally completed -> Idle
     }
 
     protected void ExecuteAttackOrder_UponNewOrderReceived() {
@@ -727,9 +757,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         Call(BaseState.Repairing);
         yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-        if (!returnHandler.IsCallSuccessful) {
+        if (!returnHandler.DidCallSuccessfullyComplete) {
             yield return null;
-            D.Error("Should not get here.");
+            D.Error("Shouldn't get here as the ReturnCause should generate a change of state.");
         }
 
         CurrentState = BaseState.Idling;
@@ -1173,7 +1203,16 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected override void Unsubscribe() {
         base.Unsubscribe();
-        _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedEventHandler;
+        _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedUponResumeEventHandler;
+    }
+
+    #endregion
+
+    #region Debug
+
+    protected override void __ValidateCurrentOrderAndStateWhenAvailable() {
+        D.AssertNull(CurrentOrder);
+        D.AssertEqual(BaseState.Idling, CurrentState);
     }
 
     #endregion

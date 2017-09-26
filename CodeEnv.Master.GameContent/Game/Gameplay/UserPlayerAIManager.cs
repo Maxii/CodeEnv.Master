@@ -31,6 +31,7 @@ namespace CodeEnv.Master.GameContent {
         public UserPlayerAIManager(UserPlayerKnowledge knowledge)
             : base(GameReferences.GameManager.UserPlayer, knowledge) { }    // Warning: _gameMgr in base not yet initialized
 
+
     }
 }
 

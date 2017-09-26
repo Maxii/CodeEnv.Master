@@ -68,12 +68,13 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="size">The physical size of the sensor.</param>
         /// <param name="mass">The mass.</param>
         /// <param name="pwrRqmt">The power required to operate the sensor.</param>
+        /// <param name="constructionCost">The cost to produce.</param>
         /// <param name="expense">The expense.</param>
         /// <param name="rangeCat">The range category of the sensor.</param>
         /// <param name="isDamageable">if set to <c>true</c> [is damageable].</param>
         public SensorStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass, float pwrRqmt,
-            float expense, RangeCategory rangeCat, bool isDamageable)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, isDamageable) {
+            float constructionCost, decimal expense, RangeCategory rangeCat, bool isDamageable)
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, constructionCost, expense, rangeCat, isDamageable) {
         }
 
         /// <summary>
@@ -84,7 +85,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="isDamageable">if set to <c>true</c> [is damageable].</param>
         public SensorStat(string name, RangeCategory rangeCat, bool isDamageable)
             : this(name, AtlasID.MyGui, TempGameValues.AnImageFilename,
-                  BasicDescriptionFormat.Inject(rangeCat.GetEnumAttributeText()), 0F, 0F, 0F, 0F, rangeCat, isDamageable) {
+                  BasicDescriptionFormat.Inject(rangeCat.GetEnumAttributeText()), 0F, 0F, 0F, 1F, Constants.ZeroCurrency, rangeCat, isDamageable) {
         }
 
         #region Object.Equals and GetHashCode Override

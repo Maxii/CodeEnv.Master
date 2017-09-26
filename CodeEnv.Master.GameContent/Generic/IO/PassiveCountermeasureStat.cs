@@ -45,7 +45,7 @@ namespace CodeEnv.Master.GameContent {
         public DamageStrength DamageMitigation { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PassiveCountermeasureStat"/> class.
+        /// Initializes a new instance of the <see cref="PassiveCountermeasureStat" /> class.
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="imageAtlasID">The image atlas identifier.</param>
@@ -54,10 +54,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="size">The size.</param>
         /// <param name="mass">The mass.</param>
         /// <param name="pwrRqmt">The PWR RQMT.</param>
+        /// <param name="constructionCost">The cost to produce this equipment.</param>
         /// <param name="expense">The expense.</param>
         /// <param name="damageMitigation">The damage mitigation.</param>
-        public PassiveCountermeasureStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass, float pwrRqmt, float expense, DamageStrength damageMitigation)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, isDamageable: true) {
+        public PassiveCountermeasureStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass,
+            float pwrRqmt, float constructionCost, decimal expense, DamageStrength damageMitigation)
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, constructionCost, expense, isDamageable: true) {
             DamageMitigation = damageMitigation;
         }
 
@@ -65,7 +67,8 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new instance of the most basic <see cref="PassiveCountermeasureStat"/> class.
         /// </summary>
         public PassiveCountermeasureStat()
-            : this("BasicPassiveCM", AtlasID.MyGui, TempGameValues.AnImageFilename, "BasicDescription..", 0F, 0F, 0F, 0F, new DamageStrength(1F, 1F, 1F)) {
+            : this("BasicPassiveCM", AtlasID.MyGui, TempGameValues.AnImageFilename, "BasicDescription..", 0F, 0F, 0F, 1F,
+                  Constants.ZeroCurrency, new DamageStrength(1F, 1F, 1F)) {
         }
 
         #region Object.Equals and GetHashCode Override

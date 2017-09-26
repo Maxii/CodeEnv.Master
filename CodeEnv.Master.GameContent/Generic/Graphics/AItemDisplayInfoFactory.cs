@@ -42,6 +42,7 @@ namespace CodeEnv.Master.GameContent {
                 {ItemInfoID.SectorID, "Sector: {0}"},
                 {ItemInfoID.Position, "Position: {0}"},
                 {ItemInfoID.AlertStatus, "AlertStatus: {0}"},
+                {ItemInfoID.Hero, "Hero: {0}"},
 
                 {ItemInfoID.Composition, CommonTerms.Composition + ": {0}"},
                 {ItemInfoID.Formation, "Formation: {0}"},
@@ -80,11 +81,14 @@ namespace CodeEnv.Master.GameContent {
                 {ItemInfoID.UnitScience, "UnitScience: {0}"},
                 {ItemInfoID.UnitCulture, "UnitCulture: {0}"},
                 {ItemInfoID.UnitNetIncome, "UnitNetIncome: {0}"},
+                {ItemInfoID.UnitProduction, "UnitProduction: {0}"},
                 {ItemInfoID.Approval, "Approval: {0}"},
 
                 {ItemInfoID.Capacity, "Capacity: {0}"},
                 {ItemInfoID.Resources, "[800080]Resources:[-] {0}"},
+                {ItemInfoID.Production, "Production: {0}"},
                 {ItemInfoID.OrbitalSpeed, "RelativeOrbitSpeed: {0}"},
+                {ItemInfoID.ConstructionCost, "ConstructionCost: {0}"},
 
                 {ItemInfoID.IntelState, "< {0} >"},
 
@@ -108,13 +112,16 @@ namespace CodeEnv.Master.GameContent {
 
                 {ItemInfoID.Population, Constants.FormatInt_1DMin},
                 {ItemInfoID.Capacity, Constants.FormatInt_1DMin},
+                {ItemInfoID.Production, Constants.FormatFloat_0Dp},
+                {ItemInfoID.ConstructionCost, Constants.FormatFloat_0Dp},
 
                 {ItemInfoID.Science, Constants.FormatFloat_0Dp},
                 {ItemInfoID.Culture, Constants.FormatFloat_0Dp},
-                {ItemInfoID.NetIncome, Constants.FormatFloat_0Dp},
+                {ItemInfoID.NetIncome, Constants.FormatCurrency_0Dp},
                 {ItemInfoID.UnitScience, Constants.FormatFloat_0Dp},
                 {ItemInfoID.UnitCulture, Constants.FormatFloat_0Dp},
-                {ItemInfoID.UnitNetIncome, Constants.FormatFloat_0Dp},
+                {ItemInfoID.UnitNetIncome, Constants.FormatCurrency_0Dp},
+                {ItemInfoID.UnitProduction, Constants.FormatFloat_0Dp},
 
                 {ItemInfoID.CurrentHitPoints, Constants.FormatFloat_0Dp},
                 {ItemInfoID.MaxHitPoints, Constants.FormatFloat_0Dp},

@@ -32,7 +32,8 @@ namespace CodeEnv.Master.GameContent {
 
         public float Science { get { return Stat.Science; } }
         public float Culture { get { return Stat.Culture; } }
-        public float Income { get { return Stat.Income; } }
+        public decimal Income { get { return Stat.Income; } }
+        public float Production { get { return Stat.Production; } }
 
         protected new FacilityHullStat Stat { get { return base.Stat as FacilityHullStat; } }
 

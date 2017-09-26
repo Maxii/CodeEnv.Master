@@ -24,6 +24,12 @@ namespace CodeEnv.Master.GameContent {
         None,
 
         /// <summary>
+        /// Cancels any element orders issued while paused.
+        /// <remarks>8.14.17 Must be issued by OrderSource.User and only during pause.</remarks>
+        /// </summary>
+        Cancel,
+
+        /// <summary>
         /// Ships can attempt to assume their station in the fleet formation at any time and any location. When this order is given, 
         /// the ship attempts to move to its station within the formation. Only Fleet Cmd or the Ship's Captain may order a ship to assume
         /// its station. Ships in orbit do not pay attention to formations. If this order is received 

@@ -32,6 +32,7 @@ namespace CodeEnv.Master.GameContent {
             ItemInfoID.Category,
             ItemInfoID.Composition,
             ItemInfoID.Owner,
+            ItemInfoID.Hero,
             ItemInfoID.SectorID,
             ItemInfoID.AlertStatus,
 

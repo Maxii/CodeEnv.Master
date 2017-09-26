@@ -32,10 +32,6 @@ namespace CodeEnv.Master.GameContent {
 
         private float _unitMaxFormationRadius;
 
-        public IDisposable SubscribeToPropertyChanged<T1, T2>(Func<T1, T2> p, object unitCompositionPropChangedHandler) {
-            throw new NotImplementedException();
-        }
-
         /// <summary>
         /// The maximum radius of this Unit's current formation, independent of the number of elements currently assigned a
         /// station in the formation or whether the Unit's elements are located on their formation station. 
@@ -98,16 +94,29 @@ namespace CodeEnv.Master.GameContent {
         // This CurrentHitPts value is managed by the AUnitCommandItem.ApplyDamage() override which currently 
         // doesn't let it drop below 50% of MaxHitPts. Health is directly derived from changes in CurrentHitPts.
 
+        private Hero _hero = TempGameValues.NoHero;
+        public Hero Hero {
+            get { return _hero; }
+            set {
+                D.AssertNotNull(value, DebugName); // Hero should never be changed to null
+                SetProperty<Hero>(ref _hero, value, "Hero", HeroPropChangedHandler);
+            }
+        }
+
         private float _currentCmdEffectiveness;
+        /// <summary>
+        /// The current effectiveness of this command including contribution from a Hero if present.
+        /// <remarks>9.19.17 Can be > 1.0F if hero is present.</remarks>
+        /// </summary>
         public float CurrentCmdEffectiveness {  // UNDONE concept/range needs work
             get { return _currentCmdEffectiveness; }
             private set { SetProperty<float>(ref _currentCmdEffectiveness, value, "CurrentCmdEffectiveness"); }
         }
 
-        private float _maxCmdEffectiveness;
-        public float MaxCmdEffectiveness {  // UNDONE concept/range needs work
-            get { return _maxCmdEffectiveness; }
-            set { SetProperty<float>(ref _maxCmdEffectiveness, value, "MaxCmdEffectiveness", MaxCmdEffectivenessPropChangedHandler); }
+        private float _maxCmdStaffEffectiveness;
+        public float MaxCmdStaffEffectiveness {  // UNDONE concept/range needs work
+            get { return _maxCmdStaffEffectiveness; }
+            set { SetProperty<float>(ref _maxCmdStaffEffectiveness, value, "MaxCmdStaffEffectiveness", MaxCmdStaffEffectivenessPropChangedHandler); }
         }
 
         private RangeDistance _unitWeaponsRange;
@@ -194,16 +203,16 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<float>(ref _unitCulture, value, "UnitCulture"); }
         }
 
-        private float _unitIncome;
-        public float UnitIncome {
+        private decimal _unitIncome;
+        public decimal UnitIncome {
             get { return _unitIncome; }
-            private set { SetProperty<float>(ref _unitIncome, value, "UnitIncome"); }
+            private set { SetProperty<decimal>(ref _unitIncome, value, "UnitIncome"); }
         }
 
-        private float _unitExpense;
-        public float UnitExpense {
+        private decimal _unitExpense;
+        public decimal UnitExpense {
             get { return _unitExpense; }
-            private set { SetProperty<float>(ref _unitExpense, value, "UnitExpense"); }
+            private set { SetProperty<decimal>(ref _unitExpense, value, "UnitExpense"); }
         }
 
         public IEnumerable<AUnitElementData> ElementsData { get { return _elementsData; } }
@@ -233,7 +242,7 @@ namespace CodeEnv.Master.GameContent {
             : base(cmd, owner, cmdStat.MaxHitPoints, passiveCMs) {
             FtlDampener = ftlDampener;
             Sensors = sensors;
-            MaxCmdEffectiveness = cmdStat.MaxCmdEffectiveness;
+            MaxCmdStaffEffectiveness = cmdStat.MaxCmdStaffEffectiveness;
             DesignName = designName;
             // A command's UnitMaxHitPoints are constructed from the sum of the elements
             InitializeCollections();
@@ -283,11 +292,15 @@ namespace CodeEnv.Master.GameContent {
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementData, RangeDistance>(ed => ed.SensorRange, ElementSensorRangePropChangedHandler));
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementData, float>(ed => ed.Science, ElementSciencePropChangedHandler));
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementData, float>(ed => ed.Culture, ElementCulturePropChangedHandler));
-            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementData, float>(ed => ed.Income, ElementIncomePropChangedHandler));
-            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementData, float>(ed => ed.Expense, ElementExpensePropChangedHandler));
+            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementData, decimal>(ed => ed.Income, ElementIncomePropChangedHandler));
+            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementData, decimal>(ed => ed.Expense, ElementExpensePropChangedHandler));
         }
 
         #region Event and Property Change Handlers
+
+        private void HeroPropChangedHandler() {
+            HandleHeroChanged();
+        }
 
         private void AlertStatusPropChangedHandler() {
             HandleAlertStatusChanged();
@@ -329,7 +342,7 @@ namespace CodeEnv.Master.GameContent {
             HandleUnitWeaponsRangeChanged();
         }
 
-        private void MaxCmdEffectivenessPropChangedHandler() {
+        private void MaxCmdStaffEffectivenessPropChangedHandler() {
             RefreshCurrentCmdEffectiveness();
         }
 
@@ -492,10 +505,14 @@ namespace CodeEnv.Master.GameContent {
             RecalcUnitSensorRange();
         }
 
+        private void HandleHeroChanged() {
+            RefreshCurrentCmdEffectiveness();
+        }
+
         private void RefreshCurrentCmdEffectiveness() {
-            CurrentCmdEffectiveness = MaxCmdEffectiveness * Health;
             // concept: staff and equipment are hurt as health of the Cmd declines
             // as Health of a Cmd cannot decline below 50% due to CurrentHitPoints override, neither can CmdEffectiveness, until the Unit is destroyed
+            CurrentCmdEffectiveness = (MaxCmdStaffEffectiveness * Health) + Hero.CmdEffectiveness;
         }
 
         public virtual void AddElement(AUnitElementData elementData) {

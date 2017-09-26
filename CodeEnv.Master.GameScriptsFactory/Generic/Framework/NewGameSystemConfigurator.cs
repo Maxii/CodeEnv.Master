@@ -731,7 +731,9 @@ public class NewGameSystemConfigurator {
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(damageMitigationCategory));
             }
-            var countermeasureStat = new PassiveCountermeasureStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, 0F, damageMitigation);
+            float constructionCost = Constants.ZeroF;
+            var countermeasureStat = new PassiveCountermeasureStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...",
+                0F, 0F, 0F, constructionCost, Constants.ZeroCurrency, damageMitigation);
             statsList.Add(countermeasureStat);
         }
         return statsList;

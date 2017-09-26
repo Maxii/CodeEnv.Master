@@ -30,6 +30,14 @@ namespace CodeEnv.Master.GameContent {
 
         public new FacilityInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as FacilityInfoAccessController; } }
 
+        private float _production;
+        public float Production {
+            get { return _production; }
+            set { SetProperty<float>(ref _production, value, "Production"); }
+        }
+
+
+
         protected new FacilityHullEquipment HullEquipment { get { return base.HullEquipment as FacilityHullEquipment; } }
 
         private IntVector3 _sectorID;
@@ -56,15 +64,17 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="shieldGenerators">The shield generators.</param>
         /// <param name="hqPriority">The HQ priority.</param>
         /// <param name="topography">The topography.</param>
+        /// <param name="constructionCost">The construction cost.</param>
         /// <param name="designName">Name of the design.</param>
         public FacilityData(IFacility facility, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, FacilityHullEquipment hullEquipment,
             IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<ElementSensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators,
-            Priority hqPriority, Topography topography, string designName)
-            : base(facility, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, hqPriority, designName) {
+            Priority hqPriority, Topography topography, float constructionCost, string designName)
+            : base(facility, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, hqPriority, constructionCost, designName) {
             Topography = topography;
             Science = hullEquipment.Science;
             Culture = hullEquipment.Culture;
             Income = hullEquipment.Income;
+            Production = hullEquipment.Production;
         }
 
         protected override AIntel MakeIntelInstance() {

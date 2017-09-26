@@ -40,6 +40,8 @@ namespace CodeEnv.Master.GameContent {
 
         public int? Population { get; private set; }
 
+        public float? UnitProduction { get; private set; }
+
         public int? Capacity { get; private set; }
 
         public ResourceYield? Resources { get; private set; }
@@ -57,6 +59,10 @@ namespace CodeEnv.Master.GameContent {
         protected override void AssignValues(AItemData data) {
             var sData = data as SettlementCmdData;
             var accessCntlr = sData.InfoAccessCntlr;
+
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Hero)) {
+                Hero = sData.Hero;
+            }
 
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.AlertStatus)) {
                 AlertStatus = sData.AlertStatus;
@@ -139,6 +145,9 @@ namespace CodeEnv.Master.GameContent {
             }
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Capacity)) {
                 Capacity = sData.Capacity;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitProduction)) {
+                UnitProduction = sData.UnitProduction;
             }
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Resources)) {
                 Resources = sData.Resources;

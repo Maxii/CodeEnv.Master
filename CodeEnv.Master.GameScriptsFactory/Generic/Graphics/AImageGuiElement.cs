@@ -16,29 +16,22 @@
 
 // default namespace
 
-using System;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 /// <summary>
 /// Abstract GuiElement handling the display and tooltip content for image-based elements.
 /// </summary>
 public abstract class AImageGuiElement : AGuiElement {
 
-    //[FormerlySerializedAs("widgetsPresent")]
-    [Tooltip("The widgets that are present to display the content of this GuiElement.")]
     [SerializeField]
-    protected WidgetsPresent _widgetsPresent = WidgetsPresent.Both;
-
-    protected string _tooltipContent;
+    private string _tooltipContent = null;
     protected sealed override string TooltipContent { get { return _tooltipContent; } }
 
     protected abstract bool AreAllValuesSet { get; }
 
-    protected UILabel _imageNameLabel;
+    private UILabel _imageNameLabel;
     private UISprite _imageSprite;
 
     protected sealed override void Awake() {
@@ -47,77 +40,42 @@ public abstract class AImageGuiElement : AGuiElement {
     }
 
     private void InitializeValuesAndReferences() {
-        switch (_widgetsPresent) {
-            case WidgetsPresent.Image:
-                var imageFrameSprite = gameObject.GetSingleComponentInImmediateChildren<UISprite>();
-                _imageSprite = imageFrameSprite.gameObject.GetSingleComponentInImmediateChildren<UISprite>();
-                NGUITools.AddWidgetCollider(gameObject);
-                break;
-            case WidgetsPresent.Label:
-                _imageNameLabel = gameObject.GetSingleComponentInChildren<UILabel>(excludeSelf: true);
-                break;
-            case WidgetsPresent.Both:
-                imageFrameSprite = gameObject.GetSingleComponentInImmediateChildren<UISprite>();
-                _imageSprite = imageFrameSprite.gameObject.GetSingleComponentInImmediateChildren<UISprite>();
-                _imageNameLabel = gameObject.GetSingleComponentInChildren<UILabel>(excludeSelf: true);
-                break;
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_widgetsPresent));
-        }
+        UISprite immediateChildSprite = gameObject.GetSingleComponentInImmediateChildren<UISprite>();
+        _imageSprite = immediateChildSprite.transform.childCount == Constants.Zero ? immediateChildSprite : immediateChildSprite.gameObject.GetSingleComponentInImmediateChildren<UISprite>();
+        _imageNameLabel = gameObject.GetComponentInChildren<UILabel>();
     }
 
     protected abstract void PopulateElementWidgets();
 
-    protected void PopulateImageValues(string filename, AtlasID atlasID) {
-        _imageSprite.atlas = atlasID.GetAtlas();
-        _imageSprite.spriteName = filename;
-    }
-
-    protected void HandleValuesUnknown() {
-        switch (_widgetsPresent) {
-            case WidgetsPresent.Image:
-                _imageSprite.atlas = AtlasID.MyGui.GetAtlas();
-                _imageSprite.spriteName = TempGameValues.UnknownImageFilename;
-                _tooltipContent = "Unknown";
-                break;
-            case WidgetsPresent.Label:
-                _imageNameLabel.text = Constants.QuestionMark;
-                break;
-            case WidgetsPresent.Both:
-                _imageSprite.atlas = AtlasID.MyGui.GetAtlas();
-                _imageSprite.spriteName = TempGameValues.UnknownImageFilename;
-                _imageNameLabel.text = Constants.QuestionMark;
-                break;
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_widgetsPresent));
+    protected void PopulateValues(string imageFilename, AtlasID imageAtlasID, string imageLabelText) {
+        _imageSprite.atlas = imageAtlasID.GetAtlas();
+        _imageSprite.spriteName = imageFilename;
+        if (_imageNameLabel != null) {
+            _imageNameLabel.text = imageLabelText;
         }
     }
 
-    #region Nested Classes
+    protected void HandleValuesUnknown() {
+        PopulateValues(TempGameValues.UnknownImageFilename, AtlasID.MyGui, Unknown);
+    }
 
-    /// <summary>
-    /// Enum that identifies the Widget's that are present in this GuiElement.
-    /// </summary>
-    public enum WidgetsPresent {
+    public override void ResetForReuse() {
+        _imageSprite.atlas = AtlasID.None.GetAtlas();
+        _imageSprite.spriteName = null;
+        if (_imageNameLabel != null) {
+            _imageNameLabel.text = null;
+        }
+    }
 
-        /// <summary>
-        /// A multi-widget Image for showing the content of this GuiElement.
-        /// </summary>
-        Image,
+    #region Debug
 
-        /// <summary>
-        /// A label for showing the name of the image to represent the content of this GuiElement.
-        /// </summary>
-        Label,
-
-        /// <summary>
-        /// Both widgets are present.
-        /// </summary>
-        Both
-
+    protected override void __Validate() {
+        base.__Validate();
+        UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
     }
 
     #endregion
+
 
 }
 

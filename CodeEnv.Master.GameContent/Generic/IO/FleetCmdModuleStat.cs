@@ -43,12 +43,12 @@ namespace CodeEnv.Master.GameContent {
 
 
         public FleetCmdModuleStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass,
-            float pwrRqmt, float expense, float maxHitPts, float maxCmdEffectiveness)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, maxHitPts, maxCmdEffectiveness) {
+            float pwrRqmt, decimal expense, float maxHitPts, float maxCmdStaffEffectiveness)
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, maxHitPts, maxCmdStaffEffectiveness) {
         }
 
-        public FleetCmdModuleStat(string name, float maxEffectiveness)
-            : this(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Basic CmdModule Stat", 0F, 0F, 0F, 0F, 10, maxEffectiveness) {
+        public FleetCmdModuleStat(string name, float maxCmdStaffEffectiveness)
+            : this(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Basic CmdModule Stat", 0F, 0F, 0F, Constants.ZeroCurrency, 10, maxCmdStaffEffectiveness) {
         }
 
         public FleetCmdModuleStat(string name)

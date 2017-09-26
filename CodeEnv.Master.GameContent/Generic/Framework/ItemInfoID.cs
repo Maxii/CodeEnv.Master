@@ -36,7 +36,7 @@ namespace CodeEnv.Master.GameContent {
         Category,
         Mass,
 
-        Capacity,
+        Capacity,   // TODO Not used and not clear what it means
         Resources,
 
         Health,
@@ -51,6 +51,8 @@ namespace CodeEnv.Master.GameContent {
         Science,
         Culture,
         NetIncome,
+        Production,
+        ConstructionCost,
 
         WeaponsRange,
         SensorRange,
@@ -67,6 +69,7 @@ namespace CodeEnv.Master.GameContent {
         Composition,
         Formation,
         CurrentCmdEffectiveness,
+        Hero,
 
         // Unit values
         UnitWeaponsRange,
@@ -81,6 +84,7 @@ namespace CodeEnv.Master.GameContent {
         UnitNetIncome,
         UnitFullSpeed,
         UnitMaxTurnRate,
+        UnitProduction,
 
         // Unique
         Population,
@@ -93,8 +97,7 @@ namespace CodeEnv.Master.GameContent {
         CameraDistance,
 
         // Formatting
-        Separator
-
+        Separator,
     }
 }
 

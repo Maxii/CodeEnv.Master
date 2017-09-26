@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AUnitIcon.cs
-// Abstract base AGuiIcon that holds an AUnitCmdItem.
+// Abstract base AMultiSizeGuiIcon that holds an AUnitCmdItem.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -25,9 +25,9 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Abstract base AGuiIcon that holds an AUnitCmdItem.
+/// Abstract base AMultiSizeGuiIcon that holds an AUnitCmdItem.
 /// </summary>
-public abstract class AUnitIcon : AGuiIcon {
+public abstract class AUnitIcon : AMultiSizeGuiIcon {
 
     private const string DebugNameFormat = "{0}[{1}]";
     private const string TooltipFormat = "{0}";

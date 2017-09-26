@@ -40,7 +40,9 @@ namespace CodeEnv.Master.GameContent {
             //ItemInfoID.Science,
             //ItemInfoID.Culture,
             //ItemInfoID.NetIncome,
+            //ItemInfoID.Production,
             //ItemInfoID.Mass,
+            ItemInfoID.ConstructionCost,
 
             ItemInfoID.Target,
             ItemInfoID.TargetDistance,

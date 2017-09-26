@@ -32,6 +32,7 @@ namespace CodeEnv.Master.GameContent {
         public const string NoYearsFormat = "{0} days, {1:0.0} hours";  //= "{0:D3} days, {1:D2} hours";
         public const string HoursOnlyFormat = "{0:0.0} hours"; //= "{0:D2} hours";
 
+        public static readonly GameTimeDuration OneHour = new GameTimeDuration(hours: 1F, days: 0, years: 0);
         public static readonly GameTimeDuration TenHours = new GameTimeDuration(hours: 10F, days: 0, years: 0);
         public static readonly GameTimeDuration OneDay = new GameTimeDuration(hours: 0F, days: 1, years: 0);
         public static readonly GameTimeDuration TwoDays = new GameTimeDuration(hours: 0F, days: 2, years: 0);

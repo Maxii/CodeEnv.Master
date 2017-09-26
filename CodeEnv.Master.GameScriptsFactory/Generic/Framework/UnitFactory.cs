@@ -305,7 +305,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         }
 
         ShipData data = new ShipData(element, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, hqPriority,
-            stlEngine, ftlEngine, design.CombatStance, design.DesignName) {
+            stlEngine, ftlEngine, design.CombatStance, design.ConstructionCost, design.DesignName) {
             // Name assignment must follow after Data assigned to Item so Item is subscribed to the change
         };
         element.GetComponent<Rigidbody>().mass = data.Mass; // 7.26.16 Set externally to keep the Rigidbody out of Data
@@ -589,7 +589,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         Priority hqPriority = design.HQPriority;
 
         FacilityData data = new FacilityData(element, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators,
-            hqPriority, topography, design.DesignName) {
+            hqPriority, topography, design.ConstructionCost, design.DesignName) {
             // Name assignment must follow after Data assigned to Item so Item is subscribed to the change
         };
         element.GetComponent<Rigidbody>().mass = data.Mass; // 7.26.16 Set externally to keep the Rigidbody out of Data

@@ -70,7 +70,12 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     private bool _isAvailable;
     public bool IsAvailable {
         get { return _isAvailable; }
-        protected set { SetProperty<bool>(ref _isAvailable, value, "IsAvailable", IsAvailablePropChangedHandler); }
+        protected set {
+            if (_isAvailable != value) {
+                _isAvailable = value;
+                IsAvailablePropChangedHandler();
+            }
+        }
     }
 
     /// <summary>
@@ -569,6 +574,9 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     private void IsAvailablePropChangedHandler() {
+        if (IsAvailable) {
+            __ValidateCurrentOrderAndStateWhenAvailable();
+        }
         OnIsAvailable();
     }
 
@@ -1196,6 +1204,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     #endregion
 
     #region Debug
+
+    protected abstract void __ValidateCurrentOrderAndStateWhenAvailable();
 
     public override bool __IsPlayerEntitledToComprehensiveRelationship(Player player) {
         if (_debugCntls.IsAllIntelCoverageComprehensive) {

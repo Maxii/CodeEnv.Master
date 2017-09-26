@@ -32,7 +32,7 @@ public abstract class AGuiElement : ATextTooltip {
 
     protected override void Awake() {
         base.Awake();
-        Validate();
+        __Validate();
     }
 
     /// <summary>
@@ -40,12 +40,17 @@ public abstract class AGuiElement : ATextTooltip {
     /// </summary>
     public abstract void ResetForReuse();
 
-    protected virtual void Validate() {
+    #region Debug
+
+    protected virtual void __Validate() {
         // 7.5.17 Removed requirement for a UIWidget so I can use GuiElement as an identifier for GuiWindows
         if (ElementID == default(GuiElementID)) {
-            D.WarnContext(this, "{0}.{1} not set.", gameObject.name, typeof(GuiElementID).Name);
+            D.WarnContext(this, "{0}.{1} not set.", DebugName, typeof(GuiElementID).Name);
         }
     }
+
+    #endregion
+
 
 }
 

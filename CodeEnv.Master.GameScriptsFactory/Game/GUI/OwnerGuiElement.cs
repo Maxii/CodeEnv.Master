@@ -17,11 +17,8 @@
 // default namespace
 
 using System;
-using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
-using UnityEngine;
 
 /// <summary>
 /// GuiElement handling the display and tooltip content for the Owner of an item.
@@ -45,6 +42,10 @@ public class OwnerGuiElement : AImageGuiElement, IComparable<OwnerGuiElement> {
 
     #region Event and Property Change Handlers
 
+    void OnClick() {
+        ClickEventHandler();
+    }
+
     private void ClickEventHandler() {
         D.Warn("{0}.OnClick() not yet implemented.", GetType().Name);
         //TODO: redirect to Owner diplomacy screen.
@@ -56,11 +57,6 @@ public class OwnerGuiElement : AImageGuiElement, IComparable<OwnerGuiElement> {
             PopulateElementWidgets();
         }
     }
-
-    void OnClick() {
-        ClickEventHandler();
-    }
-
 
     #endregion
 
@@ -74,29 +70,15 @@ public class OwnerGuiElement : AImageGuiElement, IComparable<OwnerGuiElement> {
         string imageFilename = Owner.LeaderImageFilename;
         string leaderName_Colored = Owner.LeaderName.SurroundWith(Owner.Color);
 
-        switch (_widgetsPresent) {
-            case WidgetsPresent.Image:
-                PopulateImageValues(imageFilename, imageAtlasID);
-                _tooltipContent = "Owner custom tooltip placeholder";
-                break;
-            case WidgetsPresent.Label:
-                _imageNameLabel.text = leaderName_Colored;
-                break;
-            case WidgetsPresent.Both:
-                PopulateImageValues(imageFilename, imageAtlasID);
-                _imageNameLabel.text = leaderName_Colored;
-                break;
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_widgetsPresent));
-        }
+        PopulateValues(imageFilename, imageAtlasID, leaderName_Colored);
     }
 
     public override void ResetForReuse() {
+        base.ResetForReuse();
         _isOwnerSet = false;
     }
 
     protected override void Cleanup() { }
-
 
     #region IComparable<OwnerGuiElement> Members
 

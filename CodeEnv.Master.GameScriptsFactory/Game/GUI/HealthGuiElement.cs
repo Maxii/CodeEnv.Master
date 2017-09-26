@@ -18,9 +18,7 @@
 
 using System;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
-using UnityEngine;
 
 /// <summary>
 /// GuiElement handling the display and tooltip content for the Health of an Item.      
@@ -30,7 +28,7 @@ public class HealthGuiElement : AProgressBarGuiElement, IComparable<HealthGuiEle
     /// <summary>
     /// Format for the alternative display of values. Health percentage followed by CurrentHitPts / MaxHitPts, aka 100% 240/240.
     /// </summary>
-    private static string _detailValuesFormat = "{0} {1}/{2}";
+    private const string BarValuesTextFormat = "{0} {1}/{2}";
 
     private bool _isCurrentHitPtsSet;
     private float? _currentHitPts;
@@ -74,14 +72,14 @@ public class HealthGuiElement : AProgressBarGuiElement, IComparable<HealthGuiEle
     private void CurrentHitPtsPropSetHandler() {
         _isCurrentHitPtsSet = true;
         if (AreAllValuesSet) {
-            PopulateElementWidgets();
+            PopulateWidgets();
         }
     }
 
     private void MaxHitPtsPropSetHandler() {
         _isMaxHitPtsSet = true;
         if (AreAllValuesSet) {
-            PopulateElementWidgets();
+            PopulateWidgets();
         }
     }
 
@@ -91,13 +89,13 @@ public class HealthGuiElement : AProgressBarGuiElement, IComparable<HealthGuiEle
         }
         _isHealthSet = true;
         if (AreAllValuesSet) {
-            PopulateElementWidgets();
+            PopulateWidgets();
         }
     }
 
     #endregion
 
-    protected override void PopulateElementWidgets() {
+    private void PopulateWidgets() {
         if (!Health.HasValue) {
             HandleValuesUnknown();
             return;
@@ -130,26 +128,10 @@ public class HealthGuiElement : AProgressBarGuiElement, IComparable<HealthGuiEle
         }
 
         string healthValuePercentText = Constants.FormatPercent_0Dp.Inject(healthValue);
-        _detailValuesContent = _detailValuesFormat.Inject(healthValuePercentText, currentHitPtsValueText, maxHitPtsValueText);
-
-        var detailValuesContent_Colored = _detailValuesFormat.Inject(healthValuePercentText.SurroundWith(healthColor),
+        var healthValuesText_Colored = BarValuesTextFormat.Inject(healthValuePercentText.SurroundWith(healthColor),
             currentHitPtsValueText.SurroundWith(healthColor), maxHitPtsValueText.SurroundWith(GameColor.Green));
 
-        switch (_widgetsPresent) {
-            case WidgetsPresent.ProgressBar:
-                PopulateProgressBarValues(healthValue, healthColor);
-                _tooltipContent = detailValuesContent_Colored;
-                break;
-            case WidgetsPresent.Label:
-                _detailValuesLabel.text = detailValuesContent_Colored;
-                break;
-            case WidgetsPresent.Both:
-                PopulateProgressBarValues(healthValue, healthColor);
-                _detailValuesLabel.text = detailValuesContent_Colored;
-                break;
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_widgetsPresent));
-        }
+        PopulateValues(healthValue, healthColor, healthValuesText_Colored);
     }
 
     public override void ResetForReuse() {

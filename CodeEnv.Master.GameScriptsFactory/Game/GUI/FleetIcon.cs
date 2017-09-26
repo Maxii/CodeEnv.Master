@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: FleetIcon.cs
-// AGuiIcon that holds a FleetCmdItem.
+// AMultiSizeGuiIcon that holds a FleetCmdItem.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,7 +22,7 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// AGuiIcon that holds a FleetCmdItem.
+/// AMultiSizeGuiIcon that holds a FleetCmdItem.
 /// </summary>
 public class FleetIcon : AUnitIcon {
 
@@ -35,7 +35,7 @@ public class FleetIcon : AUnitIcon {
 
     protected override int MaxElementsPerUnit { get { return TempGameValues.MaxShipsPerFleet; } }
 
-    protected override string UnitImageFilename { get { return "flying_12"; } }
+    protected override string UnitImageFilename { get { return TempGameValues.FleetImageFilename; } }
 
     private UILabel _speedLabel;
 

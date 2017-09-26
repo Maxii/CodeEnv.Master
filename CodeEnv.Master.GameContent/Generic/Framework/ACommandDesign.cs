@@ -54,6 +54,8 @@ namespace CodeEnv.Master.GameContent {
 
         public sealed override string ImageFilename { get { return ReqdCmdStat.ImageFilename; } }
 
+        // 9.24.17 A CommandDesign is not constructed via a Base ConstructionQueue so no need for a ConstructionCost
+
         protected sealed override EquipmentCategory[] SupportedEquipmentCategories { get { return SupportedEquipCategories; } }
 
         public ACommandDesign(Player player, FtlDampenerStat ftlDampenerStat, SensorStat reqdMRSensorStat, ACmdModuleStat reqdCmdStat)

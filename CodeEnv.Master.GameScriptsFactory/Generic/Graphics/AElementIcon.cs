@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AElementIcon.cs
-// Abstract base AGuiIcon that holds an AUnitElement.
+// Abstract base AMultiSizeGuiIcon that holds an AUnitElement.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -24,9 +24,9 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Abstract base AGuiIcon that holds an AUnitElement.
+/// Abstract base AMultiSizeGuiIcon that holds an AUnitElement.
 /// </summary>
-public abstract class AElementIcon : AGuiIcon {
+public abstract class AElementIcon : AMultiSizeGuiIcon {
 
     private const string DebugNameFormat = "{0}[{1}]";
     private const string TooltipFormat = "{0}";
@@ -98,6 +98,10 @@ public abstract class AElementIcon : AGuiIcon {
     }
 
     void OnHover(bool isOver) {
+        ElementIconHoveredEventHandler(isOver);
+    }
+
+    private void ElementIconHoveredEventHandler(bool isOver) {
         Element.ShowHoveredHud(isOver);
     }
 
@@ -162,8 +166,10 @@ public abstract class AElementIcon : AGuiIcon {
     #region Cleanup
 
     private void Unsubscribe() {
-        _subscriptions.ForAll(d => d.Dispose());
-        _subscriptions.Clear();
+        if (_subscriptions != null) {    // can be null if destroyed before Element is assigned
+            _subscriptions.ForAll(d => d.Dispose());
+            _subscriptions.Clear();
+        }
     }
 
     protected override void Cleanup() {

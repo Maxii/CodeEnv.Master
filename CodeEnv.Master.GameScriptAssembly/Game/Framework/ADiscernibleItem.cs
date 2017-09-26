@@ -70,8 +70,9 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
 
     /// <summary>
     /// Returns <c>true</c> if this item can become the selection.
-    /// <remarks>8.7.17 Besides all user-owned items, discernible AI-owned units and all planetoids are selectable.
-    /// Planetoids are currently selectable as I want a Debug ability to tell them to die.</remarks>
+    /// <remarks>9.15.17 Besides all user-owned items, discernible AI-owned Cmds and all planetoids are selectable.
+    /// Planetoids are currently selectable as I want a Debug ability to tell them to die.
+    /// Discernible AI-owned Cmds are selectable as the user should be able to inspect the known contents of an AI Cmd.</remarks>
     /// </summary>
     protected virtual bool IsSelectable { get { return Owner.IsUser; } }
 
@@ -688,7 +689,9 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     public bool IsSelected {
         get { return _isSelected; }
         set {
-            D.Assert(IsSelectable);
+            if (value) { // Cmds are only selectable when discernible to user. No rqmt to be selectable when losing selection
+                D.Assert(IsSelectable);
+            }
             SetProperty<bool>(ref _isSelected, value, "IsSelected", IsSelectedPropChangedHandler);
         }
     }

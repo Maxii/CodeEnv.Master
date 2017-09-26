@@ -66,12 +66,13 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="maxTurnRate">The maximum turn rate the engine is capable of.</param>
         /// <param name="size">The total physical space consumed by the engine.</param>
         /// <param name="mass">The total mass of the engine.</param>
+        /// <param name="constructionCost">The production cost.</param>
         /// <param name="expense">The total expense consumed by the engine.</param>
         /// <param name="isDamageable">if set to <c>true</c> [is damageable].</param>
         /// <param name="isFtlEngine">if set to <c>true</c> [is FTL engine].</param>
         public EngineStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float fullPropulsionPower,
-            float maxTurnRate, float size, float mass, float expense, bool isDamageable, bool isFtlEngine)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, Constants.ZeroF, expense, isDamageable) {
+            float maxTurnRate, float size, float mass, float constructionCost, decimal expense, bool isDamageable, bool isFtlEngine)
+            : base(name, imageAtlasID, imageFilename, description, size, mass, Constants.ZeroF, constructionCost, expense, isDamageable) {
             FullPropulsionPower = fullPropulsionPower;
             if (maxTurnRate < TempGameValues.MinimumTurnRate) {
                 D.Warn("{0}'s MaxTurnRate {1:0.#} is too low. Game MinTurnRate = {2:0.#}.", DebugName, maxTurnRate, TempGameValues.MinimumTurnRate);

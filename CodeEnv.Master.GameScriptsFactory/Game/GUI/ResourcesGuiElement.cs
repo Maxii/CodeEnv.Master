@@ -199,8 +199,8 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
         _isResourcesSet = false;
     }
 
-    protected override void Validate() {
-        base.Validate();
+    protected override void __Validate() {
+        base.__Validate();
         D.AssertNotDefault((int)_resourceCategory);
     }
 

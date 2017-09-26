@@ -196,15 +196,15 @@ namespace CodeEnv.Master.GameContent {
 
         public ShipData(IShip ship, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, ShipHullEquipment hullEquipment,
             IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<ElementSensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators,
-            Priority hqPriority, Engine stlEngine, ShipCombatStance combatStance, string designName)
+            Priority hqPriority, Engine stlEngine, ShipCombatStance combatStance, float constructionCost, string designName)
             : this(ship, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, hqPriority, stlEngine, null,
-                  combatStance, designName) {
+                  combatStance, constructionCost, designName) {
         }
 
         public ShipData(IShip ship, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, ShipHullEquipment hullEquipment,
             IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<ElementSensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators,
-            Priority hqPriority, Engine stlEngine, FtlEngine ftlEngine, ShipCombatStance combatStance, string designName)
-            : base(ship, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, hqPriority, designName) {
+            Priority hqPriority, Engine stlEngine, FtlEngine ftlEngine, ShipCombatStance combatStance, float constructionCost, string designName)
+            : base(ship, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, hqPriority, constructionCost, designName) {
             Science = hullEquipment.Science;
             Culture = hullEquipment.Culture;
             Income = hullEquipment.Income;

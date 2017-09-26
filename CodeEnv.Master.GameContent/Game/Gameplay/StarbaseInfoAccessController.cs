@@ -32,6 +32,7 @@ namespace CodeEnv.Master.GameContent {
                 case ItemInfoID.UnitNetIncome:
                 case ItemInfoID.Resources:
                 case ItemInfoID.UnitCulture:
+                case ItemInfoID.UnitProduction:
                 case ItemInfoID.Capacity:
                 case ItemInfoID.UnitCurrentHitPts:
                     return true;
@@ -50,6 +51,7 @@ namespace CodeEnv.Master.GameContent {
                 case ItemInfoID.Composition:
                 case ItemInfoID.UnitOffense:
                 case ItemInfoID.UnitDefense:
+                case ItemInfoID.Hero:
                     //D.Log(ShowDebugLog, "{0}.HasAccesstoInfo_Broad({1}, {2}) called.", DebugName, infoID.GetValueName(), player);
                     return true;
                 default:

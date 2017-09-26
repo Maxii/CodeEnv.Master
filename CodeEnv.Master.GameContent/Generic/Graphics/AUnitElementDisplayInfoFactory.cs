@@ -59,6 +59,10 @@ namespace CodeEnv.Master.GameContent {
                         isSuccess = true;
                         colorizedText = _lineTemplate.Inject(report.Income.HasValue && report.Expense.HasValue ? GetFormat(infoID).Inject(report.Income.Value - report.Expense.Value) : Unknown);
                         break;
+                    case ItemInfoID.ConstructionCost:
+                        isSuccess = true;
+                        colorizedText = _lineTemplate.Inject(report.ConstructionCost.HasValue ? GetFormat(infoID).Inject(report.ConstructionCost.Value) : Unknown);
+                        break;
                     case ItemInfoID.Mass:
                         isSuccess = true;
                         colorizedText = _lineTemplate.Inject(report.Mass.HasValue ? GetFormat(infoID).Inject(report.Mass.Value) : Unknown);

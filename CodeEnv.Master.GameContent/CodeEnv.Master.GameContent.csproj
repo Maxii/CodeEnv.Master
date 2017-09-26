@@ -513,6 +513,9 @@
     <Compile Include="Generic\IO\StarbaseCmdModuleStat.cs" />
     <Compile Include="Generic\Interfaces\Access\IUnitCmdHudWindow.cs" />
     <Compile Include="Generic\Framework\SelectionManager.cs" />
+    <Compile Include="Game\Gameplay\Hero.cs" />
+    <Compile Include="Generic\IO\HeroStat.cs" />
+    <Compile Include="Generic\Framework\NoHero.cs" />
     <Compile Include="ThirdParty\ParticleScaler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\GUI\PlayerViewMode.cs" />
@@ -566,7 +569,8 @@
     <Compile Include="Game\Gameplay\UserPlayerAIManager.cs" />
     <Compile Include="Game\Gameplay\UserPlayerKnowledge.cs" />
     <Compile Include="Generic\_Debug\AUnitCreatorEditorSettings.cs" />
-    <Compile Include="TrackingIconInfo.cs" />
+    <Compile Include="Generic\Graphics\TrackingIconInfo.cs" />
+    <Compile Include="Generic\Framework\ConstructionTracker.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

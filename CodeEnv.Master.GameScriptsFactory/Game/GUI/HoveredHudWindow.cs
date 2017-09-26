@@ -95,9 +95,10 @@ public class HoveredHudWindow : AHudWindow<HoveredHudWindow>, IHoveredHudWindow 
         Vector3 intendedLocalPosition = _startingLocalPosition;
         if (_showAboveInteractableHud) {
             if (InteractableHudWindow.Instance.IsShowing) {
-                var selectionPopupLocalCorners = InteractableHudWindow.Instance.LocalCorners;
-                //D.Log("{0} local corners: {1}.", typeof(InteractableHudWindow).Name, selectionPopupLocalCorners.Concatenate());
-                intendedLocalPosition = _startingLocalPosition + selectionPopupLocalCorners[1];
+                var visibleInteractableHudLocalCorners = InteractableHudWindow.Instance.LocalCorners;
+                //D.Log("{0} local corners: {1}.", typeof(InteractableHudWindow).Name, visibleInteractableHudLocalCorners.Concatenate());
+                Vector3 visibleInteractableHudTopLeftCornerLocalPosition = visibleInteractableHudLocalCorners[1];
+                intendedLocalPosition = _startingLocalPosition + visibleInteractableHudTopLeftCornerLocalPosition;
             }
         }
         transform.localPosition = intendedLocalPosition;

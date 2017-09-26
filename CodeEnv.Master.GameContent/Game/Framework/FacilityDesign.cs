@@ -36,7 +36,7 @@ namespace CodeEnv.Master.GameContent {
 
         public FacilityDesign(FacilityDesign designToCopy)
             : this(designToCopy.Player, designToCopy.HQPriority, designToCopy.ReqdSRSensorStat,
-                  designToCopy.HullStat) {
+                  designToCopy.ConstructionCost, designToCopy.HullStat) {
 
             EquipmentSlotID slotID;
             AEquipmentStat equipStat;
@@ -51,8 +51,8 @@ namespace CodeEnv.Master.GameContent {
             _designNameCounter = designToCopy._designNameCounter;
         }
 
-        public FacilityDesign(Player player, Priority hqPriority, SensorStat reqdSRSensorStat, FacilityHullStat hullStat)
-            : base(player, hqPriority, reqdSRSensorStat) {
+        public FacilityDesign(Player player, Priority hqPriority, SensorStat reqdSRSensorStat, float constructionCost, FacilityHullStat hullStat)
+            : base(player, hqPriority, reqdSRSensorStat, constructionCost) {
             HullStat = hullStat;
             InitializeValuesAndReferences();
         }

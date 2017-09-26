@@ -70,6 +70,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="size">The physical size of the weapon.</param>
         /// <param name="mass">The mass.</param>
         /// <param name="pwrRqmt">The power required to operate the weapon.</param>
+        /// <param name="constructionCost">The production cost.</param>
         /// <param name="expense">The expense.</param>
         /// <param name="rangeCat">The range category of the weapon.</param>
         /// <param name="deliveryVehicleStrength">The delivery strength.</param>
@@ -77,9 +78,9 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="damagePotential">The damage potential.</param>
         /// <param name="isDamageable">if set to <c>true</c> [is damageable].</param>
         public AWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass, float pwrRqmt,
-            float expense, RangeCategory rangeCat, WDVStrength deliveryVehicleStrength, float reloadPeriod,
+            float constructionCost, decimal expense, RangeCategory rangeCat, WDVStrength deliveryVehicleStrength, float reloadPeriod,
             DamageStrength damagePotential, bool isDamageable)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, isDamageable) {
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, constructionCost, expense, rangeCat, isDamageable) {
             DeliveryVehicleStrength = deliveryVehicleStrength;
             ReloadPeriod = reloadPeriod;
             DamagePotential = damagePotential;

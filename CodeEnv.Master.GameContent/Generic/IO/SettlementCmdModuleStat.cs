@@ -46,15 +46,15 @@ namespace CodeEnv.Master.GameContent {
         public float StartingApproval { get; private set; }
 
         public SettlementCmdModuleStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass,
-            float pwrRqmt, float expense, float maxHitPts, float maxCmdEffectiveness, int startingPopulation, float startingApproval)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, maxHitPts, maxCmdEffectiveness) {
+            float pwrRqmt, decimal expense, float maxHitPts, float maxCmdStaffEffectiveness, int startingPopulation, float startingApproval)
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, maxHitPts, maxCmdStaffEffectiveness) {
             StartingPopulation = startingPopulation;
             Utility.ValidateForRange(startingApproval, Constants.ZeroPercent, Constants.OneHundredPercent);
             StartingApproval = startingApproval;
         }
 
         public SettlementCmdModuleStat(string name)
-            : this(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Basic CmdModule Stat", 0F, 0F, 0F, 0F, 10,
+            : this(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Basic CmdModule Stat", 0F, 0F, 0F, Constants.ZeroCurrency, 10,
             Constants.OneHundredPercent, 100, Constants.OneHundredPercent) { }
 
 

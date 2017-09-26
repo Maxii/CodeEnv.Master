@@ -342,7 +342,8 @@ public abstract class ATableWindow : AGuiWindow {
     }
 
     private AGuiElement GetGuiElement(Transform row, GuiElementID elementID) {
-        var rowElements = row.gameObject.GetSafeComponentsInImmediateChildren<AGuiElement>();
+        var rowElements = row.gameObject.GetSafeComponentsInChildren<AGuiElement>();
+        //D.Log("{0}: GuiElements found in {1} = {2}.", DebugName, row.name, rowElements.Select(e => e.ElementID.GetValueName()).Concatenate());
         return rowElements.Single(e => e.ElementID == elementID);
     }
 

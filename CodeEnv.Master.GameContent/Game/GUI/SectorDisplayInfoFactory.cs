@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
             ItemInfoID.Name,
             ItemInfoID.Owner,
             ItemInfoID.SectorID,
-            ItemInfoID.Capacity,
+            //ItemInfoID.Capacity,
             ItemInfoID.Resources,
 
             ItemInfoID.Separator,

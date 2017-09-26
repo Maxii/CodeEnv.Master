@@ -40,7 +40,7 @@ namespace CodeEnv.Master.GameContent {
         public ShipCombatStance CombatStance { get; private set; }
 
         public ShipDesign(ShipDesign designToCopy)
-            : this(designToCopy.Player, designToCopy.HQPriority, designToCopy.ReqdSRSensorStat, designToCopy.HullStat,
+            : this(designToCopy.Player, designToCopy.HQPriority, designToCopy.ReqdSRSensorStat, designToCopy.ConstructionCost, designToCopy.HullStat,
                   designToCopy.StlEngineStat, designToCopy.FtlEngineStat, designToCopy.CombatStance) {
 
             EquipmentSlotID slotID;
@@ -56,9 +56,9 @@ namespace CodeEnv.Master.GameContent {
             _designNameCounter = designToCopy._designNameCounter;
         }
 
-        public ShipDesign(Player player, Priority hqPriority, SensorStat reqdSRSensorStat, ShipHullStat hullStat,
+        public ShipDesign(Player player, Priority hqPriority, SensorStat reqdSRSensorStat, float constructionCost, ShipHullStat hullStat,
             EngineStat stlEngineStat, EngineStat ftlEngineStat, ShipCombatStance combatStance)
-            : base(player, hqPriority, reqdSRSensorStat) {
+            : base(player, hqPriority, reqdSRSensorStat, constructionCost) {
             HullStat = hullStat;
             StlEngineStat = stlEngineStat;
             FtlEngineStat = ftlEngineStat;

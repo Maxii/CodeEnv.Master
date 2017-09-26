@@ -30,8 +30,8 @@ public class NetIncomeGuiElement : AGuiElement, IComparable<NetIncomeGuiElement>
     public override GuiElementID ElementID { get { return GuiElementID.NetIncome; } }
 
     private bool _isIncomeSet;
-    private float? _income;
-    public float? Income {
+    private decimal? _income;
+    public decimal? Income {
         get { return _income; }
         set {
             D.Assert(!_isIncomeSet);    // only happens once between Resets
@@ -41,8 +41,8 @@ public class NetIncomeGuiElement : AGuiElement, IComparable<NetIncomeGuiElement>
     }
 
     private bool _isExpenseSet;
-    private float? _expense;
-    public float? Expense {
+    private decimal? _expense;
+    public decimal? Expense {
         get { return _expense; }
         set {
             D.Assert(!_isExpenseSet);    // only happens once between Resets
@@ -56,7 +56,7 @@ public class NetIncomeGuiElement : AGuiElement, IComparable<NetIncomeGuiElement>
 
     private bool AreAllValuesSet { get { return _isIncomeSet && _isExpenseSet; } }
 
-    private float? _netIncome;
+    private decimal? _netIncome;
     private UILabel _label;
 
     protected override void Awake() {

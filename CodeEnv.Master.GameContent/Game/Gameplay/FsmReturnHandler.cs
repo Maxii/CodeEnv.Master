@@ -39,7 +39,15 @@ namespace CodeEnv.Master.GameContent {
 
         public FsmOrderFailureCause ReturnCause { get; set; }
 
-        public bool IsCallSuccessful {
+        /// <summary>
+        /// Processes the FsmOrderFailureCause (aka the cause of the Return()) and executes the Task assigned to that
+        /// Return() cause, if any. Returns <c>true</c> if the Return() has FsmOrderFailureCause.None indicating the 
+        /// Call()ed state Return()ed upon successful completion and had no Task to execute, <c>false</c> if there was
+        /// a FsmOrderFailureCause besides None. An FsmOrderFailureCause besides None indicates the Call()ed state 
+        /// Return()ed as a result of an event and did not successfully complete, resulting in execution of the Task 
+        /// associated with that FsmOrderFailureCause.
+        /// </summary>
+        public bool DidCallSuccessfullyComplete {
             get {
                 FsmOrderFailureCause unusedCause;
                 return !TryProcessAndFindReturnCause(out unusedCause);
@@ -54,6 +62,13 @@ namespace CodeEnv.Master.GameContent {
             DebugName = DebugNameFormat.Inject(calledStateName, GetType().Name);
         }
 
+        /// <summary>
+        /// Processes the FsmOrderFailureCause (aka the cause of the Return()) and executes the Task assigned to that
+        /// Return() cause, if any. Returns <c>false</c> if the Return() has FsmOrderFailureCause.None indicating the 
+        /// Call()ed state Return()ed upon successful completion and no Task was processed, <c>true</c> if there was a 
+        /// FsmOrderFailureCause besides None indicating the Call()ed state Return()ed as a result of an event and 
+        /// the Task associated with that Return() cause was processed.
+        /// </summary>
         public bool TryProcessAndFindReturnCause(out FsmOrderFailureCause returnCause) {
             returnCause = ReturnCause;
             if (ReturnCause != default(FsmOrderFailureCause)) {

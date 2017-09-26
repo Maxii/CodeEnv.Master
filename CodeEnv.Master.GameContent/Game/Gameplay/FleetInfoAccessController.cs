@@ -54,6 +54,7 @@ namespace CodeEnv.Master.GameContent {
                 case ItemInfoID.UnitFullSpeed:
                 case ItemInfoID.CurrentHeading:
                 case ItemInfoID.Target:
+                case ItemInfoID.Hero:
                     return true;
                 default:
                     return false;

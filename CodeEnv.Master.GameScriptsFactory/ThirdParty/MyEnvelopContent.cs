@@ -17,6 +17,7 @@
 
 // default namespace
 
+using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -34,19 +35,12 @@ public class MyEnvelopContent : AMonoBase {
     [Tooltip("The root object of the hierarchy of widgets you wish to envelop")]
     public Transform targetRoot;
 
-    //[FormerlySerializedAs("padLeft")]
     [SerializeField]
     private int _padLeft = Constants.Zero;
-
-    //[FormerlySerializedAs("padRight")]
     [SerializeField]
     private int _padRight = Constants.Zero;
-
-    //[FormerlySerializedAs("padBottom")]
     [SerializeField]
     private int _padBottom = Constants.Zero;
-
-    //[FormerlySerializedAs("padTop")]
     [SerializeField]
     private int _padTop = Constants.Zero;
 
@@ -61,7 +55,7 @@ public class MyEnvelopContent : AMonoBase {
     }
 
     private void Subscribe() {
-        UICamera.onScreenResize += Execute;
+        UICamera.onScreenResize += ScreenResizeEventHandler;
     }
 
     protected override void OnEnable() {
@@ -94,12 +88,21 @@ public class MyEnvelopContent : AMonoBase {
         }
     }
 
+    #region Event and Property Change Handlers
+
+    private void ScreenResizeEventHandler() {
+        //D.Log("{0}.ScreenResizeEventHandler called.", DebugName);
+        Execute();
+    }
+
+    #endregion
+
     protected override void Cleanup() {
         Unsubscribe();
     }
 
     private void Unsubscribe() {
-        UICamera.onScreenResize -= Execute;
+        UICamera.onScreenResize -= ScreenResizeEventHandler;
     }
 
     public override string ToString() {

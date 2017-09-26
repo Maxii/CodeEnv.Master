@@ -18,7 +18,6 @@
 
 using System;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
@@ -29,7 +28,7 @@ public class ApprovalGuiElement : AProgressBarGuiElement, IComparable<ApprovalGu
     /// <summary>
     /// Format for the alternative display of values. Approval percentage aka 100%.
     /// </summary>
-    private static string _detailValuesFormat = "{0}";
+    private const string BarValuesTextFormat = "{0}";
 
     private bool _isApprovalSet;
     private float? _approval;
@@ -54,13 +53,13 @@ public class ApprovalGuiElement : AProgressBarGuiElement, IComparable<ApprovalGu
         }
         _isApprovalSet = true;
         if (AreAllValuesSet) {
-            PopulateElementWidgets();
+            PopulateWidgets();
         }
     }
 
     #endregion
 
-    protected override void PopulateElementWidgets() {
+    private void PopulateWidgets() {
         if (!Approval.HasValue) {
             HandleValuesUnknown();
             return;
@@ -68,7 +67,7 @@ public class ApprovalGuiElement : AProgressBarGuiElement, IComparable<ApprovalGu
 
         float approvalValue = Approval.Value;
         GameColor approvalColor;
-        //D.Log("{0} setting slider value to {1:0.#}.", GetType().Name, Approval.Value);
+        //D.Log("{0} setting ProgressBar value to {1:0.#}.", GetType().Name, Approval.Value);
         if (approvalValue > GeneralSettings.Instance.ContentApprovalThreshold) {
             approvalColor = GameColor.Green;    // Happy
         }
@@ -83,24 +82,9 @@ public class ApprovalGuiElement : AProgressBarGuiElement, IComparable<ApprovalGu
         }
 
         string approvalValuePercentText = Constants.FormatPercent_0Dp.Inject(approvalValue);
-        _detailValuesContent = _detailValuesFormat.Inject(approvalValuePercentText);
-        var detailValuesContent_Colored = _detailValuesFormat.Inject(approvalValuePercentText.SurroundWith(approvalColor));
+        var approvalValueText_Colored = BarValuesTextFormat.Inject(approvalValuePercentText.SurroundWith(approvalColor));
 
-        switch (_widgetsPresent) {
-            case WidgetsPresent.ProgressBar:
-                PopulateProgressBarValues(approvalValue, approvalColor);
-                _tooltipContent = detailValuesContent_Colored;
-                break;
-            case WidgetsPresent.Label:
-                _detailValuesLabel.text = detailValuesContent_Colored;
-                break;
-            case WidgetsPresent.Both:
-                PopulateProgressBarValues(approvalValue, approvalColor);
-                _detailValuesLabel.text = detailValuesContent_Colored;
-                break;
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_widgetsPresent));
-        }
+        PopulateValues(approvalValue, approvalColor, approvalValueText_Colored);
     }
 
     public override void ResetForReuse() {

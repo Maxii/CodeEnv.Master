@@ -29,22 +29,15 @@ using UnityEngine.Serialization;
 /// </summary>
 public abstract class AProgressBarGuiElement : AGuiElement {
 
-    public override string DebugName { get { return GetType().Name + Constants.Space + _detailValuesContent; } }
-
-    //[FormerlySerializedAs("widgetsPresent")]
-    [Tooltip("The widgets that are present to display the content of this GuiElement.")]
     [SerializeField]
-    protected WidgetsPresent _widgetsPresent = WidgetsPresent.Both;
-
-    protected string _tooltipContent;
+    private UILabel _unknownLabel;    // contains "?"
+    [SerializeField]
+    private string _tooltipContent;
     protected sealed override string TooltipContent { get { return _tooltipContent; } }
 
-    protected string _detailValuesContent;
-    protected UILabel _detailValuesLabel;
-
-    private UISlider _slider;
-    private UISprite _barForeground;
-    private UILabel _unknownLabel;    // contains "?"
+    private UILabel _barValueTextLabel;
+    private UIProgressBar _progressBar;
+    private UISprite _progressBarForeground;
 
     protected sealed override void Awake() {
         base.Awake();
@@ -52,77 +45,40 @@ public abstract class AProgressBarGuiElement : AGuiElement {
     }
 
     private void InitializeValuesAndReferences() {
-        var labels = gameObject.GetSafeComponentsInImmediateChildren<UILabel>();
-        _unknownLabel = labels.Single(l => l.gameObject.name == TempGameValues.UnknownLabelName);
-        switch (_widgetsPresent) {
-            case WidgetsPresent.ProgressBar:
-                _slider = gameObject.GetSingleComponentInChildren<UISlider>();
-                _barForeground = _slider.gameObject.GetSingleComponentInImmediateChildren<UISprite>();
-                NGUITools.AddWidgetCollider(gameObject);
-                break;
-            case WidgetsPresent.Label:
-                _detailValuesLabel = labels.Except(_unknownLabel).Single();
-                break;
-            case WidgetsPresent.Both:
-                _slider = gameObject.GetSingleComponentInChildren<UISlider>();
-                _barForeground = _slider.gameObject.GetSingleComponentInImmediateChildren<UISprite>();
-                _detailValuesLabel = labels.Except(_unknownLabel).Single();
-                break;
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_widgetsPresent));
+        _progressBar = gameObject.GetSingleComponentInChildren<UIProgressBar>();
+        _progressBarForeground = _progressBar.gameObject.GetSingleComponentInImmediateChildren<UISprite>();
+
+        var otherLabels = gameObject.GetComponentsInChildren<UILabel>().Except(_unknownLabel);
+        if (otherLabels.Any()) {
+            _barValueTextLabel = otherLabels.Single();
         }
+
         NGUITools.SetActive(_unknownLabel.gameObject, false);
     }
 
     protected abstract bool AreAllValuesSet { get; }
 
-    protected abstract void PopulateElementWidgets();
-
-    protected void PopulateProgressBarValues(float value, GameColor color) {
-        _slider.value = value;
-        _barForeground.color = color.ToUnityColor();
+    protected void PopulateValues(float barValue, GameColor barForegroundColor, string barValueText) {
+        _progressBar.value = barValue;
+        _progressBarForeground.color = barForegroundColor.ToUnityColor();
+        if (_barValueTextLabel != null) {
+            _barValueTextLabel.text = barValueText;
+        }
     }
 
     protected void HandleValuesUnknown() {
         NGUITools.SetActive(_unknownLabel.gameObject, true);
-        switch (_widgetsPresent) {
-            case WidgetsPresent.ProgressBar:
-                NGUITools.SetActive(_slider.gameObject, false);
-                break;
-            case WidgetsPresent.Label:
-                NGUITools.SetActive(_detailValuesLabel.gameObject, false);
-                break;
-            case WidgetsPresent.Both:
-                NGUITools.SetActive(_slider.gameObject, false);
-                NGUITools.SetActive(_detailValuesLabel.gameObject, false);
-                break;
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_widgetsPresent));
+        NGUITools.SetActive(_progressBar.gameObject, false);
+        if (_barValueTextLabel != null) {
+            NGUITools.SetActive(_barValueTextLabel.gameObject, false);
         }
     }
 
-    #region Nested Classes
+    #region Debug
 
-    /// <summary>
-    /// Enum that identifies the Widget's that are present in this GuiElement.
-    /// </summary>
-    public enum WidgetsPresent {
-
-        /// <summary>
-        /// A multi-widget ProgressBar for showing the content of this GuiElement.
-        /// </summary>
-        ProgressBar,
-
-        /// <summary>
-        /// A label for showing the content of this GuiElement in text form.
-        /// </summary>
-        Label,
-
-        /// <summary>
-        /// Both widgets are present.
-        /// </summary>
-        Both
-
+    protected override void __Validate() {
+        base.__Validate();
+        D.AssertNotNull(_unknownLabel);
     }
 
     #endregion

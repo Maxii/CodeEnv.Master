@@ -31,6 +31,7 @@ namespace CodeEnv.Master.GameContent {
             ItemInfoID.Category,
             ItemInfoID.Composition,
             ItemInfoID.Owner,
+            ItemInfoID.Hero,
             ItemInfoID.SectorID,
             ItemInfoID.AlertStatus,
 
@@ -44,6 +45,7 @@ namespace CodeEnv.Master.GameContent {
             //ItemInfoID.UnitScience,
             //ItemInfoID.UnitCulture,
             //ItemInfoID.UnitNetIncome,
+            ItemInfoID.UnitProduction,
 
             //ItemInfoID.Capacity,
             ItemInfoID.Resources,
@@ -80,6 +82,10 @@ namespace CodeEnv.Master.GameContent {
                     case ItemInfoID.Capacity:
                         isSuccess = true;
                         colorizedText = _lineTemplate.Inject(report.Capacity.HasValue ? GetFormat(infoID).Inject(report.Capacity.Value) : Unknown);
+                        break;
+                    case ItemInfoID.UnitProduction:
+                        isSuccess = true;
+                        colorizedText = _lineTemplate.Inject(report.UnitProduction.HasValue ? GetFormat(infoID).Inject(report.UnitProduction.Value) : Unknown);
                         break;
                     case ItemInfoID.Resources:
                         isSuccess = true;

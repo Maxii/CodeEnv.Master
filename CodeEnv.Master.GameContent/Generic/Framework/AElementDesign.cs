@@ -77,12 +77,18 @@ namespace CodeEnv.Master.GameContent {
 
         public Priority HQPriority { get; private set; }
 
+        /// <summary>
+        /// The cost in units of production to construct this design.
+        /// </summary>
+        public float ConstructionCost { get; private set; }
+
         protected sealed override EquipmentCategory[] SupportedEquipmentCategories { get { return SupportedEquipCategories; } }
 
-        public AElementDesign(Player player, Priority hqPriority, SensorStat reqdSRSensorStat)
+        public AElementDesign(Player player, Priority hqPriority, SensorStat reqdSRSensorStat, float constructionCost)
             : base(player) {
             HQPriority = hqPriority;
             ReqdSRSensorStat = reqdSRSensorStat;
+            ConstructionCost = constructionCost;
         }
 
         #region Debug

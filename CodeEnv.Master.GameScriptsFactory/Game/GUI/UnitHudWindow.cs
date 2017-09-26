@@ -46,6 +46,12 @@ public class UnitHudWindow : AHudWindow<UnitHudWindow> {
         ShowForm(form);
     }
 
+    public void Show(FormID formID, AUnitBaseCmdItem unitItem) {
+        var form = PrepareForm(formID);
+        (form as AUnitHudUserBaseForm).SelectedUnit = unitItem;
+        ShowForm(form);
+    }
+
     protected override void PositionWindow() { }
 
 

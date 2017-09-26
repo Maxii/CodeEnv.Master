@@ -76,8 +76,8 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd,
     }
 
     protected override void ShowSelectedItemHud() {
-        InteractableHudWindow.Instance.Show(FormID.UserStarbase, Data);
-        // TODO Change to UnitHudWindow and have it show InteractableHudWindow
+        UnitHudWindow.Instance.Show(FormID.UserStarbase, this);
+        // 9.10.17 UnitHudWindow's UserStarbaseForm will auto show InteractableHudWindow's UserStarbaseForm
     }
 
     protected override void PrepareForDeathEffect() {

@@ -199,9 +199,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         HandleNewOrder();
     }
 
-    private void NewOrderReceivedWhilePausedEventHandler(object sender, EventArgs e) {
-        _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedEventHandler;
-        ChangeOrderAfterPause();
+    private void NewOrderReceivedWhilePausedUponResumeEventHandler(object sender, EventArgs e) {
+        _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedUponResumeEventHandler;
+        HandleNewOrderReceivedWhilePausedUponResume();
     }
 
     #endregion
@@ -219,13 +219,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     protected override void PrepareForDeathEffect() {
         base.PrepareForDeathEffect();
         // Keep the obstacleZoneCollider enabled to keep ships from flying through this exploding facility
-    }
-
-    public override void __HandleLocalPositionManuallyChanged() {
-        // TEMP Facilities have their local position manually changed whenever there is a Formation change
-        // even if operational. As a Facility has an obstacle detour generator which needs to know the (supposedly unmoving) 
-        // facility's position, we have to regenerate that generator if manually relocated.
-        _obstacleDetourGenerator = null;
     }
 
     protected override TrackingIconInfo MakeIconInfo() {
@@ -267,13 +260,17 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     /// </summary>
     private Guid _lastCmdOrderID;
 
-    private FacilityOrder _newOrderReceivedWhilePaused;
+    /// <summary>
+    /// The sequence of orders received while paused. If any are present, the bottom of the stack will
+    /// contain the order that was current when the first order was received while paused.
+    /// </summary>
+    private Stack<FacilityOrder> _ordersReceivedWhilePaused = new Stack<FacilityOrder>();
 
     /// <summary>
     /// Attempts to initiate the execution of the provided order, returning <c>true</c>
     /// if its execution was initiated, <c>false</c> if its execution was deferred until all of the 
     /// override orders issued by the Captain have executed. 
-    /// <remarks>If order.Source is User, even the Captain's orders will be overridden, returning <c>true</c>.</remarks>
+    /// <remarks>If order.Source is User, even the CmdStaff's orders will be overridden, returning <c>true</c>.</remarks>
     /// <remarks>If called while paused, the order will be deferred until unpaused and return the same value it would
     /// have returned if it hadn't been paused.</remarks>
     /// <remarks>5.4.17 I've chosen to hold orders here when paused, allowing the AI to issue orders even when paused.</remarks>
@@ -282,17 +279,25 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     /// <returns></returns>
     public bool InitiateNewOrder(FacilityOrder order) {
         D.Assert(order.Source > OrderSource.Captain);
+        if (order.Directive == FacilityDirective.Cancel) {
+            D.Assert(_gameMgr.IsPaused && order.Source == OrderSource.User);
+        }
+
         if (IsPaused) {
-            _newOrderReceivedWhilePaused = order;
+            if (!_ordersReceivedWhilePaused.Any()) {
+                // first order received while paused so record the CurrentOrder before recording the new order
+                _ordersReceivedWhilePaused.Push(CurrentOrder);
+            }
+            _ordersReceivedWhilePaused.Push(order);
             // deal with multiple changes all while paused
-            _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedEventHandler;
-            _gameMgr.isPausedChanged += NewOrderReceivedWhilePausedEventHandler;
+            _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedUponResumeEventHandler;
+            _gameMgr.isPausedChanged += NewOrderReceivedWhilePausedUponResumeEventHandler;
             bool willOrderExecutionImmediatelyFollowResume = IsCurrentOrderImmediatelyReplaceableBy(order);
             return willOrderExecutionImmediatelyFollowResume;
         }
 
         D.Assert(!IsPaused);
-        D.AssertNull(_newOrderReceivedWhilePaused);
+        D.AssertEqual(Constants.Zero, _ordersReceivedWhilePaused.Count);
 
         if (!IsCurrentOrderImmediatelyReplaceableBy(order)) {
             CurrentOrder.StandingOrder = order;
@@ -305,7 +310,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     /// <summary>
     /// Returns <c>true</c> if CurrentOrder can immediately be replaced by order, <c>false</c> otherwise.
     /// <remarks>CurrentOrder can immediately be replaced by order if order was issued by the User, OR
-    /// CurrentOrder is null OR CurrentOrder isn't an override order issued by the Captain.</remarks>
+    /// CurrentOrder is null OR CurrentOrder isn't an override order issued by Captain.</remarks>
     /// <remarks>A Captain-issued override order can only be immediately replaced by a User-issued order.</remarks>
     /// </summary>
     /// <param name="order">The order.</param>
@@ -314,16 +319,30 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         return order.Source == OrderSource.User || CurrentOrder == null || CurrentOrder.Source != OrderSource.Captain;
     }
 
-    private void ChangeOrderAfterPause() {
-        D.AssertNotNull(_newOrderReceivedWhilePaused);
+    private void HandleNewOrderReceivedWhilePausedUponResume() {
         D.Assert(!IsPaused);
-
-        FacilityOrder newOrder = _newOrderReceivedWhilePaused;
-        _newOrderReceivedWhilePaused = null;
-        D.Log(/*ShowDebugLog,*/ "{0} is changing order to {1} after resuming from pause.", DebugName, newOrder.DebugName);
-        InitiateNewOrder(newOrder);
+        D.AssertNotEqual(Constants.Zero, _ordersReceivedWhilePaused.Count);
+        // If the last order received was Cancel, then the order that was current when the first order
+        // was issued during this pause should be reinstated, aka all the orders received while paused are
+        // not valid and the original order should continue.
+        FacilityOrder order;
+        var lastOrderReceivedWhilePaused = _ordersReceivedWhilePaused.Pop();
+        if (lastOrderReceivedWhilePaused.Directive == FacilityDirective.Cancel) {
+            // if Cancel, then original order and canceled order at minimum must still be present
+            D.Assert(_ordersReceivedWhilePaused.Count > Constants.One);
+            D.Log(/*ShowDebugLog,*/ "{0} received the following order sequence from User during pause prior to Cancel: {1}.", DebugName,
+                _ordersReceivedWhilePaused.Select(o => o.DebugName).Concatenate());
+            order = _ordersReceivedWhilePaused.First();
+        }
+        else {
+            order = lastOrderReceivedWhilePaused;
+        }
+        _ordersReceivedWhilePaused.Clear();
+        if (order != null) { // can be null if lastOrderReceivedWhilePaused is Cancel and there was no original order
+            D.Log(/*ShowDebugLog, */"{0} is changing or re-instating order to {1} after resuming from pause.", DebugName, order.DebugName);
+            InitiateNewOrder(order);
+        }
     }
-
 
     /// <summary>
     /// Returns <c>true</c> if the directive of the CurrentOrder or if paused, a pending order 
@@ -332,11 +351,12 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     /// <param name="directiveA">The directive a.</param>
     /// <returns></returns>
     public bool IsCurrentOrderDirectiveAnyOf(FacilityDirective directiveA) {
-        if (IsPaused && _newOrderReceivedWhilePaused != null) {
+        if (IsPaused && _ordersReceivedWhilePaused.Any()) {
             // paused with a pending order replacement
-            if (IsCurrentOrderImmediatelyReplaceableBy(_newOrderReceivedWhilePaused)) {
-                // _newOrderReceivedWhilePaused will immediately replace CurrentOrder as soon as unpaused
-                return _newOrderReceivedWhilePaused.Directive == directiveA;
+            FacilityOrder newOrder = _ordersReceivedWhilePaused.Peek();
+            if (IsCurrentOrderImmediatelyReplaceableBy(newOrder)) {
+                // newOrder will immediately replace CurrentOrder as soon as unpaused
+                return newOrder.Directive == directiveA;
             }
         }
         return CurrentOrder != null && CurrentOrder.Directive == directiveA;
@@ -350,11 +370,12 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     /// <param name="directiveB">The directive b.</param>
     /// <returns></returns>
     public bool IsCurrentOrderDirectiveAnyOf(FacilityDirective directiveA, FacilityDirective directiveB) {
-        if (IsPaused && _newOrderReceivedWhilePaused != null) {
+        if (IsPaused && _ordersReceivedWhilePaused.Any()) {
             // paused with a pending order replacement
-            if (IsCurrentOrderImmediatelyReplaceableBy(_newOrderReceivedWhilePaused)) {
-                // _newOrderReceivedWhilePaused will immediately replace CurrentOrder as soon as unpaused
-                return _newOrderReceivedWhilePaused.Directive == directiveA || _newOrderReceivedWhilePaused.Directive == directiveB;
+            FacilityOrder newOrder = _ordersReceivedWhilePaused.Peek();
+            if (IsCurrentOrderImmediatelyReplaceableBy(newOrder)) {
+                // newOrder will immediately replace CurrentOrder as soon as unpaused
+                return newOrder.Directive == directiveA || newOrder.Directive == directiveB;
             }
         }
         return CurrentOrder != null && (CurrentOrder.Directive == directiveA || CurrentOrder.Directive == directiveB);
@@ -419,6 +440,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
                 case FacilityDirective.Disband:
                     D.Warn("{0}.{1} is not currently implemented.", typeof(FacilityDirective).Name, directive.GetValueName());
                     break;
+                case FacilityDirective.Cancel:
+                // 9.13.17 Cancel should never be processed here as it is only issued by User while paused and is 
+                // handled by HandleNewOrderReceivedWhilePausedUponResume(). 
                 case FacilityDirective.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
@@ -571,6 +595,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             //D.Log(ShowDebugLog, "{0} has completed {1} with no follow-on or standing order queued.", DebugName, CurrentOrder);
             CurrentOrder = null;
         }
+        D.AssertNull(CurrentOrder);
         D.AssertDefault(_lastCmdOrderID);
 
         IsAvailable = true; // 10.3.16 this can instantly generate a new Order (and thus a state change). Accordingly,  this EnterState
@@ -817,9 +842,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
                                 //D.Log(ShowDebugLog, "{0}.ExecuteRepairOrder got a Return() from Call(Repairing) during Frame {1}.", DebugName, Time.frameCount);
 
-            if (!returnHandler.IsCallSuccessful) {
+            if (!returnHandler.DidCallSuccessfullyComplete) {
                 yield return null;
-                D.Error("Should not get here.");
+                D.Error("Shouldn't get here as the ReturnCause should generate a change of state.");
             }
 
             // IMPROVE Can't assert OneHundredPercent as more hits can occur after repairing completed
@@ -1228,12 +1253,24 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     protected override void Unsubscribe() {
         base.Unsubscribe();
-        _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedEventHandler;
+        _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedUponResumeEventHandler;
     }
 
     #endregion
 
     #region Debug
+
+    public override void __HandleLocalPositionManuallyChanged() {
+        // TEMP Facilities have their local position manually changed whenever there is a Formation change
+        // even if operational. As a Facility has an obstacle detour generator which needs to know the (supposedly unmoving) 
+        // facility's position, we have to regenerate that generator if manually relocated.
+        _obstacleDetourGenerator = null;
+    }
+
+    protected override void __ValidateCurrentOrderAndStateWhenAvailable() {
+        D.AssertNull(CurrentOrder);
+        D.AssertEqual(FacilityState.Idling, CurrentState);
+    }
 
     private void __ValidateKnowledgeOfOrderTarget(IElementNavigableDestination target, FacilityDirective directive) {
         if (directive == FacilityDirective.Disband || directive == FacilityDirective.Refit || directive == FacilityDirective.StopAttack) {

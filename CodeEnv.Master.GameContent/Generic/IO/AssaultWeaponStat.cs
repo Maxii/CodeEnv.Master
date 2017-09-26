@@ -57,6 +57,9 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float MaxSteeringInaccuracy { get; private set; }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AssaultWeaponStat"/> class.
+        /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="imageAtlasID">The image atlas identifier.</param>
         /// <param name="imageFilename">The image filename.</param>
@@ -64,6 +67,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="size">The physical size of the weapon.</param>
         /// <param name="mass">The mass of the weapon.</param>
         /// <param name="pwrRqmt">The power required to operate the weapon.</param>
+        /// <param name="constructionCost">The production cost.</param>
         /// <param name="expense">The expense.</param>
         /// <param name="rangeCat">The range category of the weapon.</param>
         /// <param name="deliveryVehicleStrength">The delivery strength.</param>
@@ -76,10 +80,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="courseUpdateFreq">How often the ordnance's course is updated in updates per hour.</param>
         /// <param name="maxSteeringInaccuracy">The maximum steering inaccuracy in degrees.</param>
         /// <param name="isDamageable">if set to <c>true</c> [is damageable].</param>
-        public AssaultWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass, float pwrRqmt,
-            float expense, RangeCategory rangeCat, WDVStrength deliveryVehicleStrength, float reloadPeriod, DamageStrength damagePotential,
-            float ordnanceMaxSpeed, float ordnanceMass, float ordnanceDrag, float turnRate, float courseUpdateFreq, float maxSteeringInaccuracy, bool isDamageable)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, rangeCat, deliveryVehicleStrength, reloadPeriod, damagePotential, ordnanceMaxSpeed, ordnanceMass, ordnanceDrag, isDamageable) {
+        public AssaultWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass,
+            float pwrRqmt, float constructionCost, decimal expense, RangeCategory rangeCat, WDVStrength deliveryVehicleStrength,
+            float reloadPeriod, DamageStrength damagePotential, float ordnanceMaxSpeed, float ordnanceMass, float ordnanceDrag,
+            float turnRate, float courseUpdateFreq, float maxSteeringInaccuracy, bool isDamageable)
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, constructionCost, expense, rangeCat,
+                  deliveryVehicleStrength, reloadPeriod, damagePotential, ordnanceMaxSpeed, ordnanceMass, ordnanceDrag, isDamageable) {
             D.Assert(turnRate > Constants.ZeroF);
             D.Assert(courseUpdateFreq > Constants.ZeroF);
             if (maxSteeringInaccuracy > 5F) {

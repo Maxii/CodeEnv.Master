@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ShipIcon.cs
-// GuiIcon that holds a ShipItem.
+// AMultiSizeGuiIcon that holds a ShipItem.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,7 +20,7 @@ using System;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// GuiIcon that holds a ShipItem.
+/// AMultiSizeGuiIcon that holds a ShipItem.
 /// </summary>
 public class ShipIcon : AElementIcon {
 

@@ -26,6 +26,8 @@ namespace CodeEnv.Master.GameContent {
 
         public FacilityHullCategory Category { get; private set; }
 
+        public float? Production { get; private set; }
+
         public FacilityReport(FacilityData data, Player player, IFacility_Ltd item) : base(data, player, item) { }
 
         protected override void AssignValues(AItemData data) {
@@ -71,6 +73,12 @@ namespace CodeEnv.Master.GameContent {
             }
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Category)) {
                 Category = fData.HullCategory;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Production)) {
+                Production = fData.Production;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.ConstructionCost)) {
+                ConstructionCost = fData.ConstructionCost;
             }
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.MaxHitPoints)) {
                 MaxHitPoints = fData.MaxHitPoints;  // should always be with or before CurrentHitPts as both are needed to calc CmdReport's UnitHealth
