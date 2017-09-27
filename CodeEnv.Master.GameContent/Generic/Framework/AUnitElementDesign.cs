@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AUnitElementDesign.cs
-// Abstract base class holding the design of a unit element for a player.
+// Abstract design holding the stats of a unit element for a player.
 // -------------------------------------------------------------------------------------------------------------------- 
 
 ////#define DEBUG_LOG
@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     using Common;
 
     /// <summary>
-    /// Abstract base class holding the design of a unit element for a player.
+    /// Abstract design holding the stats of a unit element for a player.
     /// </summary>
     public abstract class AUnitElementDesign : AUnitMemberDesign {
 

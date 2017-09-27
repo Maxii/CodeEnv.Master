@@ -35,7 +35,7 @@ namespace CodeEnv.Master.GameContent {
         public string DebugName { get { return DebugNameFormat.Inject(_baseData.UnitName, GetType().Name); } }
 
         private DateMinderDuration _constructionQueueUpdateDuration;
-        private LinkedList<ConstructionTracker> _constructionQueue;
+        private LinkedList<ElementConstructionTracker> _constructionQueue;
         private AUnitBaseCmdData _baseData;
         private GameTime _gameTime;
         private IList<IDisposable> _subscriptions;
@@ -43,7 +43,7 @@ namespace CodeEnv.Master.GameContent {
         public ConstructionManager(AUnitBaseCmdData data) {
             _baseData = data;
             _gameTime = GameTime.Instance;
-            _constructionQueue = new LinkedList<ConstructionTracker>();
+            _constructionQueue = new LinkedList<ElementConstructionTracker>();
         }
 
         public void InitiateProgressChecks() {
@@ -65,14 +65,14 @@ namespace CodeEnv.Master.GameContent {
             var expectedStartDate = _constructionQueue.Any() ? _constructionQueue.Last.Value.ExpectedCompletionDate : _gameTime.CurrentDate;
             GameTimeDuration expectedConstructionDuration = new GameTimeDuration(designToConstruct.ConstructionCost / _baseData.UnitProduction);
             GameDate expectedCompletionDate = new GameDate(expectedStartDate, expectedConstructionDuration);
-            var constructionItem = new ConstructionTracker(designToConstruct, expectedCompletionDate);
+            var constructionItem = new ElementConstructionTracker(designToConstruct, expectedCompletionDate);
             _constructionQueue.AddLast(constructionItem);
             // Adding to the end of the queue does not change any expected completion dates
             OnConstructionQueueChanged();
         }
 
         [Obsolete("Not currently used")]
-        public void MoveQueueItemAfter(ConstructionTracker beforeItem, ConstructionTracker movingItem) {
+        public void MoveQueueItemAfter(ElementConstructionTracker beforeItem, ElementConstructionTracker movingItem) {
             D.AssertNotEqual(beforeItem, movingItem);
             var beforeItemNode = _constructionQueue.Find(beforeItem);
             bool isRemoved = _constructionQueue.Remove(movingItem);
@@ -83,7 +83,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         [Obsolete("Not currently used")]
-        public void MoveQueueItemBefore(ConstructionTracker afterItem, ConstructionTracker movingItem) {
+        public void MoveQueueItemBefore(ElementConstructionTracker afterItem, ElementConstructionTracker movingItem) {
             D.AssertNotEqual(afterItem, movingItem);
             var afterItemNode = _constructionQueue.Find(afterItem);
             bool isRemoved = _constructionQueue.Remove(movingItem);
@@ -93,7 +93,7 @@ namespace CodeEnv.Master.GameContent {
             OnConstructionQueueChanged();
         }
 
-        public void RegenerateQueue(IList<ConstructionTracker> orderedQueue) {
+        public void RegenerateQueue(IList<ElementConstructionTracker> orderedQueue) {
             _constructionQueue.Clear();
             foreach (var constructionItem in orderedQueue) {
                 _constructionQueue.AddLast(constructionItem);
@@ -102,15 +102,15 @@ namespace CodeEnv.Master.GameContent {
             OnConstructionQueueChanged();
         }
 
-        public void RemoveFromQueue(ConstructionTracker itemToRemove) {
+        public void RemoveFromQueue(ElementConstructionTracker itemToRemove) {
             bool isRemoved = _constructionQueue.Remove(itemToRemove);
             D.Assert(isRemoved);
             UpdateConstructionItemExpectedCompletionDates();
             OnConstructionQueueChanged();
         }
 
-        public IList<ConstructionTracker> GetQueue() {
-            return new List<ConstructionTracker>(_constructionQueue);
+        public IList<ElementConstructionTracker> GetQueue() {
+            return new List<ElementConstructionTracker>(_constructionQueue);
         }
 
         private void ProgressConstruction(float availableProduction) {
@@ -144,7 +144,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public void PurchaseQueuedItem(ConstructionTracker itemUnderConstruction) {
+        public void PurchaseQueuedItem(ElementConstructionTracker itemUnderConstruction) {
             D.Assert(itemUnderConstruction.CanBuyout);
             itemUnderConstruction.CompleteConstruction();
             bool isRemoved = _constructionQueue.Remove(itemUnderConstruction);

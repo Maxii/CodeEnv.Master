@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ShipDesign.cs
-// Class holding the design of a ship for a player.
+// The design of a ship for a player.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     using Common.LocalResources;
 
     /// <summary>
-    /// Class holding the design of a ship for a player.
+    /// The design of a ship for a player.
     /// </summary>
     public class ShipDesign : AUnitElementDesign {
 

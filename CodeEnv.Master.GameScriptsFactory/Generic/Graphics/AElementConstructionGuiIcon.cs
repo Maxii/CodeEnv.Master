@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AElementConstructionGuiIcon.cs
-// Abstract base AMultiSizeGuiIcon that holds a ConstructionTracker for an AUnitElementDesign under construction.
+// Abstract base AMultiSizeGuiIcon that holds a ElementConstructionTracker for an AUnitElementDesign under construction.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,7 +23,7 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Abstract base AMultiSizeGuiIcon that holds a ConstructionTracker for an AUnitElementDesign under construction.
+/// Abstract base AMultiSizeGuiIcon that holds a ElementConstructionTracker for an AUnitElementDesign under construction.
 /// </summary>
 public abstract class AElementConstructionGuiIcon : AMultiSizeGuiIcon {
 
@@ -44,8 +44,8 @@ public abstract class AElementConstructionGuiIcon : AMultiSizeGuiIcon {
         }
     }
 
-    private ConstructionTracker _itemUnderConstruction;
-    public ConstructionTracker ItemUnderConstruction {
+    private ElementConstructionTracker _itemUnderConstruction;
+    public ElementConstructionTracker ItemUnderConstruction {
         get { return _itemUnderConstruction; }
         set {
             D.AssertNull(_itemUnderConstruction);

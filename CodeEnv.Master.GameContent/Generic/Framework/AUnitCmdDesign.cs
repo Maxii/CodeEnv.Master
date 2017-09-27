@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AUnitCmdDesign.cs
-// Abstract base class holding the design of a unit command for a player.
+// Abstract design holding the stats of a unit command for a player.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     using Common.LocalResources;
 
     /// <summary>
-    /// Abstract base class holding the design of a unit command for a player.
+    /// Abstract design holding the stats of a unit command for a player.
     /// </summary>
     public abstract class AUnitCmdDesign : AUnitMemberDesign {
 

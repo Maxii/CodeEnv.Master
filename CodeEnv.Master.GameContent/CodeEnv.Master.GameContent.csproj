@@ -571,7 +571,7 @@
     <Compile Include="Game\Gameplay\UserPlayerKnowledge.cs" />
     <Compile Include="Generic\_Debug\AUnitCreatorEditorSettings.cs" />
     <Compile Include="Generic\Graphics\TrackingIconInfo.cs" />
-    <Compile Include="Generic\Framework\ConstructionTracker.cs" />
+    <Compile Include="Generic\Framework\ElementConstructionTracker.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

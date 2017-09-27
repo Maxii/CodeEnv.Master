@@ -101,6 +101,7 @@
     <Compile Include="Generic\Graphics\MyNguiToggleButton.cs" />
     <Compile Include="Game\GUI\StarbaseGuiIcon.cs" />
     <Compile Include="Game\GUI\GuiHeroModule.cs" />
+    <Compile Include="Game\GUI\GuiElementConstructionModule.cs" />
     <Compile Include="ThirdParty\MyDragDropItem.cs" />
     <Compile Include="ThirdParty\MyNGPathfindingGraph.cs" />
     <Compile Include="ThirdParty\MyPlaySFX.cs" />

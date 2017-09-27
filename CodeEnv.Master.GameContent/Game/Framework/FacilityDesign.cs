@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: FacilityDesign.cs
-// Class holding the design of a facility for a player.
+// The design of a facility for a player.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,7 +22,7 @@ namespace CodeEnv.Master.GameContent {
     using Common.LocalResources;
 
     /// <summary>
-    /// Class holding the design of a facility for a player.
+    /// The design of a facility for a player.
     /// </summary>
     public class FacilityDesign : AUnitElementDesign {
 

@@ -28,8 +28,8 @@ using UnityEngine.Profiling;
 /// <summary>
 /// Abstract class for AMortalItem's that are Unit Commands.
 /// </summary>
-public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd_Ltd, IFleetNavigableDestination, IUnitAttackable, IFormationMgrClient,
-    ISensorDetector, IFsmEventSubscriptionMgrClient {
+public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd_Ltd, IFleetNavigableDestination, IUnitAttackable,
+    IFormationMgrClient, ISensorDetector, IFsmEventSubscriptionMgrClient {
 
     public event EventHandler isAvailableChanged;
 
@@ -119,16 +119,9 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     public IList<AUnitElementItem> Elements { get; private set; }
 
-    ////private UnifiedSRSensorMonitor _unifiedSRSensorMonitor;
     /// <summary>
     /// Unified Monitor for SRSensors that combines the results of all element SRSensorMonitors.
     /// </summary>
-    ////public UnifiedSRSensorMonitor UnifiedSRSensorMonitor {
-    ////    get {
-    ////        _unifiedSRSensorMonitor = _unifiedSRSensorMonitor ?? InitializeUnifiedSRSensorMonitor();
-    ////        return _unifiedSRSensorMonitor;
-    ////    }
-    ////}
     public UnifiedSRSensorMonitor UnifiedSRSensorMonitor { get; private set; }
 
     /// <summary>
@@ -268,16 +261,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         AssessIcon();
     }
 
-    ////private UnifiedSRSensorMonitor InitializeUnifiedSRSensorMonitor() {
-    ////    var monitor = new UnifiedSRSensorMonitor(this);
-    ////    foreach (var element in Elements) {
-    ////        // 4.4.17 Deferring event subscription from here handles FerryFleet case where fully operational element 
-    ////        // is added to Cmd that is not yet operational without triggering EventHandlers. CommenceOperations will 
-    ////        // AssessAlertStatus so Cmd will be aware of element's knowledge of enemy presence, if any, and then subscribe.
-    ////        monitor.Add(element.SRSensorMonitor);
-    ////    }
-    ////    return monitor;
-    ////}
     private void InitializeUnifiedSRSensorMonitor() {
         var monitor = new UnifiedSRSensorMonitor(this);
         foreach (var element in Elements) {
@@ -1224,8 +1207,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         Elements.ForAll(e => e.__SimulateAttacked());
     }
 
-    #region Debug
-
     private void __ReportMRSensorStatus() {
         if (!IsApplicationQuiting) {
             if (IsOperational) {
@@ -1236,8 +1217,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
             }
         }
     }
-
-    #endregion
 
     #endregion
 

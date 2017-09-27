@@ -61,6 +61,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\Framework\AUnitMemberItem.cs" />
     <Compile Include="Generic\Framework\AKinematicProjectileOrdnance.cs" />
     <Compile Include="Generic\Framework\AOrdnance.cs" />
     <Compile Include="Generic\Framework\APhysicsProjectileOrdnance.cs" />

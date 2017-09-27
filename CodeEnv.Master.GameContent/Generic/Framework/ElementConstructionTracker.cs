@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ConstructionTracker.cs
+// File: ElementConstructionTracker.cs
 // Tracks progress of an element design under construction.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -23,12 +23,9 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Tracks progress of an element design under construction.
     /// </summary>
-    public class ConstructionTracker {
+    public class ElementConstructionTracker {
 
         private const string DebugNameFormat = "{0}[{1}]";
-
-        [Obsolete]
-        public event EventHandler constructionCompleted;
 
         public string DebugName {
             get {
@@ -66,7 +63,7 @@ namespace CodeEnv.Master.GameContent {
 
         public float CumProductionApplied { get; private set; }
 
-        public ConstructionTracker(AUnitElementDesign design, GameDate expectedCompletionDate) {
+        public ElementConstructionTracker(AUnitElementDesign design, GameDate expectedCompletionDate) {
             Design = design;
             _expectedCompletionDate = expectedCompletionDate;
         }
@@ -75,7 +72,6 @@ namespace CodeEnv.Master.GameContent {
             CumProductionApplied += productionToApply;
             if (CumProductionApplied >= Design.ConstructionCost) {
                 unconsumedProduction = CumProductionApplied - Design.ConstructionCost;
-                ////OnConstructionCompleted();
                 return true;
             }
             unconsumedProduction = Constants.ZeroF;
@@ -92,13 +88,6 @@ namespace CodeEnv.Master.GameContent {
 
         private void __ExpectedCompletionDatePropChangedHandler() {
             __HandleExpectedCompletionDateChanged();
-        }
-
-        [Obsolete]
-        private void OnConstructionCompleted() {
-            if (constructionCompleted != null) {
-                constructionCompleted(this, EventArgs.Empty);
-            }
         }
 
         #endregion

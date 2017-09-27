@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AUnitMemberDesign.cs
-// Abstract base class holding the design of an element or command for a player.
+// Abstract base design holding the stats of an element or command for a player.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     using Common;
 
     /// <summary>
-    /// Abstract base class holding the design of an element or command for a player.
+    /// Abstract base design holding the stats of an element or command for a player.
     /// </summary>
     public abstract class AUnitMemberDesign {
 

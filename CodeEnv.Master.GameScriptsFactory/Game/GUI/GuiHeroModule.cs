@@ -40,7 +40,6 @@ public class GuiHeroModule : AMonoBase {
 
     public string DebugName { get { return GetType().Name; } }
 
-
     private AUnitCmdData _unitData;
     public AUnitCmdData UnitData {
         get { return _unitData; }
@@ -146,7 +145,7 @@ public class GuiHeroModule : AMonoBase {
         D.AssertNotNull(_heroImage);
     }
 
-    private void __CreateAndAssignHero() {  // TODO
+    private void __CreateAndAssignHero() {  // UNDONE
         var heroStat = new HeroStat("Maureen", AtlasID.MyGui, TempGameValues.AnImageFilename, UnitData.Owner.Species,
             Hero.HeroCategory.Admiral, "Hero Description...", 0.2F, 10F);
         var hero = new Hero(heroStat);
