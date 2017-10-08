@@ -59,6 +59,11 @@ public class HoveredHudUCForm : AItemReportForm {
 
     #endregion
 
+    protected override void ResetNonGuiElementMembers() {
+        base.ResetNonGuiElementMembers();
+        _titleLabel.text = null;
+    }
+
     protected override void CleanupNameGuiElement(AGuiElement e) {
         base.CleanupNameGuiElement(e);
         MyEventListener.Get(e.gameObject).onDoubleClick -= NameDoubleClickEventHandler;

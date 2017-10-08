@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ACompositionGuiElement.cs
-// Abstract base class for a GuiElement handling the display and tooltip content for the Composition of a Command.  
+// File: AUnitCompositionGuiElement.cs
+// Abstract AGuiElement that represent the composition of a Unit.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,9 +21,9 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Abstract base class for a GuiElement handling the display and tooltip content for the Composition of a Command.  
+/// Abstract AGuiElement that represent the composition of a Unit.
 /// </summary>
-public abstract class ACompositionGuiElement : AGuiElement, IComparable<ACompositionGuiElement> {
+public abstract class AUnitCompositionGuiElement : AGuiElement, IComparable<AUnitCompositionGuiElement> {
 
     public override GuiElementID ElementID { get { return GuiElementID.Composition; } }
 
@@ -38,49 +38,43 @@ public abstract class ACompositionGuiElement : AGuiElement, IComparable<AComposi
 
     protected override string TooltipContent { get { return "Composition custom tooltip placeholder"; } }
 
-    protected abstract bool AreAllValuesSet { get; }
+    private UILabel _unitCategoryNameLabel;
+    private UISprite _unitIconSprite;
 
-    private UILabel _label;
-    private UISprite _sprite;
-
-    protected override void Awake() {
-        base.Awake();
-        _sprite = gameObject.GetSingleComponentInChildren<UISprite>();
-        _label = gameObject.GetSingleComponentInChildren<UILabel>();
+    protected override void InitializeValuesAndReferences() {
+        _unitIconSprite = gameObject.GetSingleComponentInChildren<UISprite>();
+        _unitCategoryNameLabel = gameObject.GetSingleComponentInChildren<UILabel>();
     }
 
     #region Event and Property Change Handlers
 
     private void IconInfoPropSetHandler() {
-        if (AreAllValuesSet) {
-            PopulateElementWidgets();
+        if (IsInitialized) {
+            PopulateMemberWidgetValues();
         }
     }
 
     #endregion
 
-    protected void PopulateElementWidgets() {
-        PopulateIcon();
-        _label.text = GetTextForCategory();
-    }
-
-    private void PopulateIcon() {
+    protected override void PopulateMemberWidgetValues() {
+        base.PopulateMemberWidgetValues();
         //D.Log("{0} populating Icon. SpriteName: {1}, Color: {2}.", GetType().Name, IconInfo.Filename, IconInfo.Color.GetValueName());
-        _sprite.atlas = IconInfo.AtlasID.GetAtlas();
-        _sprite.spriteName = IconInfo.Filename;
-        _sprite.color = IconInfo.Color.ToUnityColor();
+        _unitIconSprite.atlas = IconInfo.AtlasID.GetAtlas();
+        _unitIconSprite.spriteName = IconInfo.Filename;
+        _unitIconSprite.color = IconInfo.Color.ToUnityColor();
         //sprite size and placement are preset
+        _unitCategoryNameLabel.text = GetUnitCategoryName();
     }
 
-    protected abstract string GetTextForCategory();
+    protected abstract string GetUnitCategoryName();
 
     public override void ResetForReuse() {
         _iconInfo = default(TrackingIconInfo);
     }
 
-    #region IComparable<ACompositionGuiElement> Members
+    #region IComparable<AUnitCompositionGuiElement> Members
 
-    public abstract int CompareTo(ACompositionGuiElement other);
+    public abstract int CompareTo(AUnitCompositionGuiElement other);
 
     #endregion
 

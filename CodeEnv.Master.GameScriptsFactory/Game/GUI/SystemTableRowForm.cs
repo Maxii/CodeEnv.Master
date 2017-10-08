@@ -24,13 +24,13 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class SystemTableRowForm : ATableRowForm {
 
-    public override FormID FormID { get { return FormID.SystemTableRow; } }
+    public override FormID FormID { get { return FormID.SystemsTableRow; } }
 
     protected override void AssignValueToLocationGuiElement() {
         base.AssignValueToLocationGuiElement();
         var report = Report as SystemReport;
-        _locationElement.SectorID = report.SectorID;
-        _locationElement.Position = report.Position;
+        _locationGuiElement.SectorID = report.SectorID;
+        _locationGuiElement.Position = report.Position;
     }
 
     protected override void AssignValueToEnergyGuiElement() {
@@ -54,7 +54,7 @@ public class SystemTableRowForm : ATableRowForm {
     protected override void AssignValueToStrategicResourcesGuiElement() {
         base.AssignValueToStrategicResourcesGuiElement();
         var report = Report as SystemReport;
-        _resourcesElement.Resources = report.Resources;
+        _resourcesGuiElement.Resources = report.Resources;
     }
 
 }

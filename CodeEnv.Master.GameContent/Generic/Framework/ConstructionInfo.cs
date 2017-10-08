@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ElementConstructionTracker.cs
+// File: ConstructionInfo.cs
 // Tracks progress of an element design under construction.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -23,18 +23,16 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Tracks progress of an element design under construction.
     /// </summary>
-    public class ElementConstructionTracker {
+    public class ConstructionInfo {
 
         private const string DebugNameFormat = "{0}[{1}]";
 
-        public string DebugName {
-            get {
-                return DebugNameFormat.Inject(GetType().Name, Design.DesignName);
-            }
-        }
+        public string DebugName { get { return DebugNameFormat.Inject(GetType().Name, Name); } }
+
+        public virtual string Name { get { return Design.DesignName; } }
 
         private GameDate _expectedCompletionDate;
-        public GameDate ExpectedCompletionDate {
+        public virtual GameDate ExpectedCompletionDate {
             get { return _expectedCompletionDate; }
             set {
                 if (_expectedCompletionDate != value) {
@@ -44,31 +42,35 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public bool CanBuyout {
+        public virtual bool CanBuyout {
             get {
                 decimal playerBankBalance = GameReferences.GameManager.GetAIManagerFor(Design.Player).__PlayerBankBalance;
                 return BuyoutCost <= playerBankBalance;
             }
         }
 
-        public GameTimeDuration TimeToCompletion { get { return ExpectedCompletionDate - GameTime.Instance.CurrentDate; } }
+        public virtual GameTimeDuration TimeToCompletion { get { return ExpectedCompletionDate - GameTime.Instance.CurrentDate; } }
 
-        public float CompletionPercentage { get { return Mathf.Clamp01(CumProductionApplied / Design.ConstructionCost); } }
+        public virtual float CompletionPercentage { get { return Mathf.Clamp01(CumProductionApplied / Design.ConstructionCost); } }
 
-        public decimal BuyoutCost {
+        public virtual decimal BuyoutCost {
             get { return (decimal)((Design.ConstructionCost - CumProductionApplied) * TempGameValues.ProductionCostBuyoutMultiplier); }
         }
+
+        public virtual AtlasID ImageAtlasID { get { return Design.ImageAtlasID; } }
+
+        public virtual string ImageFilename { get { return Design.ImageFilename; } }
 
         public AUnitElementDesign Design { get; private set; }
 
         public float CumProductionApplied { get; private set; }
 
-        public ElementConstructionTracker(AUnitElementDesign design, GameDate expectedCompletionDate) {
+        public ConstructionInfo(AUnitElementDesign design, GameDate expectedCompletionDate) {
             Design = design;
             _expectedCompletionDate = expectedCompletionDate;
         }
 
-        public bool TryCompleteConstruction(float productionToApply, out float unconsumedProduction) {
+        public virtual bool TryCompleteConstruction(float productionToApply, out float unconsumedProduction) {
             CumProductionApplied += productionToApply;
             if (CumProductionApplied >= Design.ConstructionCost) {
                 unconsumedProduction = CumProductionApplied - Design.ConstructionCost;
@@ -78,7 +80,7 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
-        public void CompleteConstruction() {
+        public virtual void CompleteConstruction() {
             float unusedUnconsumedProduction;
             bool isCompleted = TryCompleteConstruction(Design.ConstructionCost - CumProductionApplied, out unusedUnconsumedProduction);
             D.Assert(isCompleted);
@@ -94,7 +96,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void __HandleExpectedCompletionDateChanged() { }
 
-        public override string ToString() {
+        public sealed override string ToString() {
             return DebugName;
         }
 

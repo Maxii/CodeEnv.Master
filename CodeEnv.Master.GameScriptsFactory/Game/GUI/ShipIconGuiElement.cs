@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ShipIcon.cs
-// AMultiSizeGuiIcon that holds a ShipItem.
+// AMultiSizeIconGuiElement that holds a ShipItem.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,10 +20,10 @@ using System;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// AMultiSizeGuiIcon that holds a ShipItem.
+/// AMultiSizeIconGuiElement that represents a ShipItem.
 /// <remarks>This is an icon used by the Gui, not the in game icon that tracks a element in space.</remarks>
 /// </summary>
-public class ShipGuiIcon : AElementGuiIcon {
+public class ShipIconGuiElement : AUnitElementIconGuiElement {
 
     public new ShipItem Element {
         get { return base.Element as ShipItem; }

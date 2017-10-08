@@ -26,18 +26,11 @@ public class FleetTableRowForm : ACommandTableRowForm {
 
     public override FormID FormID { get { return FormID.FleetTableRow; } }
 
-    private FleetCompositionGuiElement _compositionElement;
-
-    protected override void InitializeCompositionGuiElement(AGuiElement e) {
-        base.InitializeCompositionGuiElement(e);
-        _compositionElement = e as FleetCompositionGuiElement;
-    }
-
     protected override void AssignValueToCompositionGuiElement() {
         base.AssignValueToCompositionGuiElement();
         var report = Report as FleetCmdReport;
-        _compositionElement.IconInfo = FleetIconInfoFactory.Instance.MakeInstance(report);
-        _compositionElement.Category = report.Category;
+        _compositionGuiElement.IconInfo = FleetIconInfoFactory.Instance.MakeInstance(report);
+        (_compositionGuiElement as FleetCompositionGuiElement).Category = report.Category;
     }
 
     protected override void AssignValueToSpeedGuiElement() {

@@ -264,8 +264,13 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     protected override void ShowSelectedItemHud() {
-        UnitHudWindow.Instance.Show(FormID.UserFleet, this);
-        // 8.7.17 UnitHudWindow's UserFleetForm will auto show InteractableHudWindow's UserFleetForm
+        if (Owner.IsUser) {
+            UnitHudWindow.Instance.Show(FormID.UserFleet, this);
+            // 8.7.17 UnitHudWindow's UserFleetForm will auto show InteractableHudWindow's UserFleetForm
+        }
+        else {
+            D.Warn("{0}: UnitHudWindow does not yet support showing AI-owned Cmds.", DebugName);
+        }
     }
 
     protected override TrackingIconInfo MakeIconInfo() {

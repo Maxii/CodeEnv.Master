@@ -46,6 +46,7 @@ namespace CodeEnv.Master.GameContent {
             //ItemInfoID.UnitCulture,
             //ItemInfoID.UnitNetIncome,
             ItemInfoID.UnitProduction,
+            ItemInfoID.CurrentConstruction,
 
             //ItemInfoID.Capacity,
             ItemInfoID.Resources,
@@ -100,6 +101,10 @@ namespace CodeEnv.Master.GameContent {
                     case ItemInfoID.Approval:
                         isSuccess = true;
                         colorizedText = GetColorizedApprovalText(report.Approval);
+                        break;
+                    case ItemInfoID.CurrentConstruction:
+                        isSuccess = true;
+                        colorizedText = GetCurrentConstructionText(report.CurrentConstruction);
                         break;
                     default:
                         throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(infoID));

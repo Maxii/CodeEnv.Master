@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: EquipmentGuiIcon.cs
+// File: EquipmentIconGuiElement.cs
 // Gui 'icon' that holds an AEquipmentStat available to be selected for use in a unit design.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -22,9 +22,9 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Gui 'icon' that holds an AEquipmentStat available to be selected for use in a unit design.
+/// AMultiSizeIconGuiElement that represents an EquipmentStat.
 /// </summary>
-public class EquipmentGuiIcon : AEquipmentGuiIcon {
+public class EquipmentIconGuiElement : AEquipmentIconGuiElement {
 
     private AEquipmentStat _equipmentStat;
     public AEquipmentStat EquipmentStat {
@@ -36,20 +36,27 @@ public class EquipmentGuiIcon : AEquipmentGuiIcon {
         }
     }
 
-    private bool _isInitialDrag;
+    public override bool IsInitialized { get { return Size != IconSize.None && EquipmentStat != null; } }
 
-    protected override void AcquireAdditionalIconWidgets(GameObject topLevelIconGo) { }
+    private string _tooltipContent;
+    protected override string TooltipContent { get { return _tooltipContent; } }
+
+    private bool _isInitialDrag;
+    private UILabel _iconImageNameLabel;
+
+    protected override void AcquireAdditionalWidgets() {
+        _iconImageNameLabel = _topLevelIconWidget.gameObject.GetSingleComponentInChildren<UILabel>();
+    }
+
+    protected override void PopulateMemberWidgetValues() {
+        base.PopulateMemberWidgetValues();
+        _iconImageSprite.atlas = EquipmentStat.ImageAtlasID.GetAtlas();
+        _iconImageSprite.spriteName = EquipmentStat.ImageFilename;
+        _iconImageNameLabel.text = EquipmentStat.Name;
+        _tooltipContent = EquipmentStat.Name;
+    }
 
     #region Event and Property Change Handlers
-
-    void OnHover(bool isOver) {
-        if (isOver) {
-            HoveredHudWindow.Instance.Show(FormID.Equipment, EquipmentStat);
-        }
-        else {
-            HoveredHudWindow.Instance.Hide();
-        }
-    }
 
     void OnDragStart() {
         _isInitialDrag = true;
@@ -73,15 +80,29 @@ public class EquipmentGuiIcon : AEquipmentGuiIcon {
 
     private void EquipmentStatPropSetHandler() {
         D.AssertNotDefault((int)Size);
-        Show(EquipmentStat.ImageAtlasID, EquipmentStat.ImageFilename, EquipmentStat.Name);
+        if (IsInitialized) {
+            PopulateMemberWidgetValues();
+            Show();
+        }
     }
 
     #endregion
+
+    protected override void HandleIconHovered(bool isOver) {
+        if (isOver) {
+            HoveredHudWindow.Instance.Show(FormID.Equipment, EquipmentStat);
+        }
+        else {
+            HoveredHudWindow.Instance.Hide();
+        }
+    }
 
     public override void ResetForReuse() {
         base.ResetForReuse();
         _equipmentStat = null;
         _isInitialDrag = false;
+        _iconImageNameLabel = null;
+        _tooltipContent = null;
     }
 
     protected override void Cleanup() { }

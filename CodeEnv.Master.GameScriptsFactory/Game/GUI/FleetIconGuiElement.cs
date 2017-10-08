@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: FleetGuiIcon.cs
-// AMultiSizeGuiIcon that holds a FleetCmdItem.
+// File: FleetIconGuiElement.cs
+// AMultiSizeIconGuiElement that represents a FleetCmdItem.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,16 +16,17 @@
 
 // default namespace
 
+using System;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// AMultiSizeGuiIcon that holds a FleetCmdItem.
+/// AMultiSizeIconGuiElement that represents a FleetCmdItem.
 /// <remarks>This is an icon used by the Gui, not the in game icon that tracks a unit in space.</remarks>
 /// </summary>
-public class FleetGuiIcon : AUnitCmdGuiIcon {
+public class FleetIconGuiElement : AUnitCmdIconGuiElement {
 
     private const string SpeedFormat = "{0:0.#}";
 
@@ -46,9 +47,9 @@ public class FleetGuiIcon : AUnitCmdGuiIcon {
         _subscriptions.Add(Unit.Data.SubscribeToPropertyChanged<FleetCmdData, float>(data => data.UnitFullSpeedValue, UnitFullSpeedPropChangedHandler));
     }
 
-    protected override void AcquireAdditionalIconWidgets(GameObject topLevelIconGo) {
-        base.AcquireAdditionalIconWidgets(topLevelIconGo);
-        _speedLabel = topLevelIconGo.GetComponentsInChildren<GuiElement>().Single(ge => ge.ElementID == GuiElementID.SpeedLabel).GetComponent<UILabel>();
+    protected override void AcquireAdditionalWidgets() {
+        base.AcquireAdditionalWidgets();
+        _speedLabel = _topLevelIconWidget.GetComponentsInChildren<GuiElement>().Single(ge => ge.ElementID == GuiElementID.SpeedLabel).GetComponent<UILabel>();
     }
 
     protected override void Show(GameColor color = GameColor.White) {
@@ -63,11 +64,11 @@ public class FleetGuiIcon : AUnitCmdGuiIcon {
     }
 
     private void UnitFullSpeedPropChangedHandler() {
-        D.Assert(IsShowing);
         _speedLabel.text = SpeedFormat.Inject(Unit.Data.UnitFullSpeedValue);
     }
 
-
     #endregion
+
+
 }
 

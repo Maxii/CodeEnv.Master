@@ -61,11 +61,21 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        private const string DefaultToStringFormat = "{0}.{1}";
-        private const string FirstResourceToStringFormat = "{0}({1:0.#})"; // use of [ ] causes Ngui label problems
-        private const string ContinuingToStringFormat = ", {0}({1:0.#})";
+        private const string DebugNameFormat = "{0}.{1}";
+        private const string FirstResourceStringBuilderFormat = "{0}({1:0.#})"; // use of [ ] causes Ngui label problems
+        private const string ContinuingStringBuilderFormat = ", {0}({1:0.#})";
 
         private static StringBuilder _stringBuilder = new StringBuilder();
+
+        private string _debugName;
+        public string DebugName {
+            get {
+                if (_debugName.IsNullOrEmpty()) {
+                    _debugName = DebugNameFormat.Inject(GetType().Name, ResourceID.None.GetValueName());
+                }
+                return _debugName;
+            }
+        }
 
         private IDictionary<ResourceID, float> _resourceValueLookup;
         private IDictionary<ResourceID, float> ResourceValueLookup {
@@ -103,15 +113,15 @@ namespace CodeEnv.Master.GameContent {
                 ResourceValueLookup.Add(rvp.ResourceID, rvp.Value);
             }
 
-            // as a struct field, _toString must be assigned in the Constructor
+            // as a struct field, _debugName must be assigned in the Constructor
             string format;
             _stringBuilder.Clear();
             for (int i = 0; i < resourceValuePairs.Count(); i++) {
                 var valuePair = resourceValuePairs[i];
-                format = (i == Constants.Zero) ? FirstResourceToStringFormat : ContinuingToStringFormat;
+                format = (i == Constants.Zero) ? FirstResourceStringBuilderFormat : ContinuingStringBuilderFormat;
                 _stringBuilder.AppendFormat(format, valuePair.ResourceID.GetEnumAttributeText(), valuePair.Value);
             }
-            _toString = _stringBuilder.ToString();
+            _debugName = _stringBuilder.ToString();
         }
 
         public bool TryGetYield(ResourceID resourceID, out float yield) {
@@ -161,13 +171,7 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        private string _toString;
-        public override string ToString() {
-            if (_toString.IsNullOrEmpty()) {
-                _toString = DefaultToStringFormat.Inject(GetType().Name, ResourceID.None.GetValueName());
-            }
-            return _toString;
-        }
+        public override string ToString() { return DebugName; }
 
         #region IEquatable<ResourceYield> Members
 

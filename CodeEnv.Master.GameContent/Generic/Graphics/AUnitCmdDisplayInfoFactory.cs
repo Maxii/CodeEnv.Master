@@ -130,6 +130,21 @@ namespace CodeEnv.Master.GameContent {
             return text;
         }
 
+        protected string GetCurrentConstructionText(ConstructionInfo construction) {
+            string constructionText = Unknown;
+            if (construction != null) {
+                if (construction == TempGameValues.NoConstruction) {
+                    constructionText = "None";
+                }
+                else {
+                    constructionText = construction.Name;
+                }
+            }
+            string text = _lineTemplate.Inject(constructionText);
+            return text;
+        }
+
+
 
     }
 }

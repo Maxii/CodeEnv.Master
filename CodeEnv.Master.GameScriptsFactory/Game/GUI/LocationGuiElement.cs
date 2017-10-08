@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: LocationGuiElement.cs
-// GuiElement handling the display and tooltip content for the Location of a Command.  
+// AGuiElement that represents the location of an item.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,7 +22,7 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// GuiElement handling the display and tooltip content for the Location of a Command.  
+/// AGuiElement that represents the location of an item.
 /// </summary>
 public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
 
@@ -54,34 +54,34 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
     private string _tooltipContent;
     protected override string TooltipContent { get { return _tooltipContent; } }
 
-    protected virtual bool AreAllValuesSet { get { return _isPositionSet && SectorID != default(IntVector3); } }
+    public override bool IsInitialized { get { return _isPositionSet && SectorID != default(IntVector3); } }
 
     private float? _closestBaseDistanceInSectors;
     private UILabel _label;
 
-    protected override void Awake() {
-        base.Awake();
+    protected override void InitializeValuesAndReferences() {
         _label = gameObject.GetSingleComponentInChildren<UILabel>();
     }
 
     #region Event and Property Change Handlers
 
     private void SectorIdPropSetHandler() {
-        if (AreAllValuesSet) {
-            PopulateElementWidgets();
+        if (IsInitialized) {
+            PopulateMemberWidgetValues();
         }
     }
 
     private void PositionPropSetHandler() {
         _isPositionSet = true;
-        if (AreAllValuesSet) {
-            PopulateElementWidgets();
+        if (IsInitialized) {
+            PopulateMemberWidgetValues();
         }
     }
 
     #endregion
 
-    protected virtual void PopulateElementWidgets() {
+    protected override void PopulateMemberWidgetValues() {
+        base.PopulateMemberWidgetValues();
         Vector3 position;
         if (Position.HasValue) {
             position = Position.Value;
@@ -109,7 +109,6 @@ public class LocationGuiElement : AGuiElement, IComparable<LocationGuiElement> {
     }
 
     protected override void Cleanup() { }
-
 
     #region IComparable<LocationGuiElement> Members
 

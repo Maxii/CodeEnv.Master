@@ -41,12 +41,19 @@ public abstract class AForm : AMonoBase {
 
     protected sealed override void Awake() {
         base.Awake();
-        __Validate();
+        __ValidateOnAwake();
         InitializeValuesAndReferences();
         _isInitialized = true;
     }
 
     protected abstract void InitializeValuesAndReferences();
+
+    /// <summary>
+    /// Populates this form with its values in preparation for its AFormWindow showing it.
+    /// <remarks>Most forms need to populate the key Property that provides data to the form prior to this method being called. 
+    /// The exception is ATableForm which acquires its own data when this method is called.</remarks>
+    /// </summary>
+    public abstract void PopulateValues();
 
     protected abstract void AssignValuesToMembers();
 
@@ -57,13 +64,16 @@ public abstract class AForm : AMonoBase {
     /// </summary>
     public void ResetForReuse() {
         if (_isInitialized) {
+            //D.Log("{0}.ResetForReuse() called.", DebugName);
             ResetForReuse_Internal();
         }
     }
 
     /// <summary>
-    /// Resets this Form by nulling the existing content (Text, Reports, etc.).
-    /// <remarks>Called only if the form has already been initialized, aka the forms references have been set.</remarks>
+    /// Resets this Form by nulling the existing content (Text, Reports, etc.) of the form. Any AGuiElements present as well as non-AGuiElements
+    /// present will also have their content reset.
+    /// <remarks>Called only if the form has already been initialized, aka the forms references to its AGuiElements and non-AGuiElements have been set.</remarks>
+    /// <remarks>Warning: Do not null references to AGuiElements or non-AGuiElements as they will not be reacquired when the form is reused.</remarks>
     /// </summary>
     protected abstract void ResetForReuse_Internal();
 
@@ -73,7 +83,7 @@ public abstract class AForm : AMonoBase {
 
     #region Debug
 
-    protected virtual void __Validate() {
+    protected virtual void __ValidateOnAwake() {
         D.AssertNotDefault((int)FormID);
     }
 

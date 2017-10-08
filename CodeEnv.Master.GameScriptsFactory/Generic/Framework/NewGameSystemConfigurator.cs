@@ -764,7 +764,7 @@ public class NewGameSystemConfigurator {
                         break;
                     case SystemDesirability.Challenged:
                         minNumberOfResources = 1;
-                        minYield = 0F;
+                        minYield = 0.2F;
                         maxYield = 3F;
                         break;
                     case SystemDesirability.None:

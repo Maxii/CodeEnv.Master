@@ -22,6 +22,7 @@ using System.Linq;
 using CodeEnv.Master.Common;
 using UnityEngine;
 using UnityEngine.Profiling;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Debug class for use in edit mode (via ContextMenu.Execute) that automates the positioning of elements 
@@ -33,7 +34,8 @@ public class RowOrganizer : AMonoBase {
 
     public string DebugName { get { return GetType().Name; } }
 
-    public UISprite separatorPrefab;
+    [SerializeField]
+    private UISprite _separatorPrefab = null;
 
     private float _rowMemberLocalPositionY;
     private int _elementHeight;
@@ -48,8 +50,8 @@ public class RowOrganizer : AMonoBase {
     }
 
     private void InitializeLocalReferences() {
-        D.Assert(separatorPrefab != null, gameObject, "SeparatorPrefab not set.");
-        _separatorWidth = separatorPrefab.width;
+        D.Assert(_separatorPrefab != null, gameObject, "SeparatorPrefab not set.");
+        _separatorWidth = _separatorPrefab.width;
         _rowWidget = gameObject.GetSafeComponent<UIWidget>();
         _rowMemberLocalPositionY = -_rowWidget.height / 2;
     }
@@ -122,7 +124,7 @@ public class RowOrganizer : AMonoBase {
     }
 
     private void MakeAndPositionSeparator(int localPositionX) {
-        var separatorGo = NGUITools.AddChild(gameObject, separatorPrefab.gameObject);
+        var separatorGo = NGUITools.AddChild(gameObject, _separatorPrefab.gameObject);
         separatorGo.GetComponent<UIWidget>().height = _elementHeight;
         separatorGo.transform.localPosition = new Vector3(localPositionX, _rowMemberLocalPositionY);
         separatorGo.transform.SetAsLastSibling();

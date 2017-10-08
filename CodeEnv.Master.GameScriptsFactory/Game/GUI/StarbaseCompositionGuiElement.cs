@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: StarbaseCompositionGuiElement.cs
-// GuiElement handling the display and tooltip content for the Composition of a Starbase.    
+// AGuiElement that represent the composition of a Starbase.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,37 +20,37 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// GuiElement handling the display and tooltip content for the Composition of a Starbase.    
+/// AGuiElement that represent the composition of a Starbase.
 /// </summary>
-public class StarbaseCompositionGuiElement : ACompositionGuiElement {
+public class StarbaseCompositionGuiElement : AUnitCompositionGuiElement {
 
-    private bool _isCategorySet = false;
+    private bool _isCategorySet = false;  // reqd as value can be None if UnitCategory not accessible
     private StarbaseCategory _category;
     public StarbaseCategory Category {
         get { return _category; }
         set {
             D.Assert(!_isCategorySet);  // only happens once between Resets
-            _category = value;  // value can be None if no element category is accessible
-            CategoryPropSetHandler();  // SetProperty() only calls handler when changed
+            _category = value;
+            CategoryPropSetHandler();
         }
     }
 
-    protected override string TooltipContent { get { return base.TooltipContent; } }    //TODO
+    protected override string TooltipContent { get { return "Composition of the Starbase"; } }    // IMPROVE
 
-    protected override bool AreAllValuesSet { get { return IconInfo != default(TrackingIconInfo) && _isCategorySet; } }
+    public override bool IsInitialized { get { return IconInfo != default(TrackingIconInfo) && _isCategorySet; } }
 
     #region Event and Property Change Handlers
 
     private void CategoryPropSetHandler() {
         _isCategorySet = true;
-        if (AreAllValuesSet) {
-            PopulateElementWidgets();
+        if (IsInitialized) {
+            PopulateMemberWidgetValues();
         }
     }
 
     #endregion
 
-    protected override string GetTextForCategory() { return Category != StarbaseCategory.None ? Category.GetValueName() : Unknown; }
+    protected override string GetUnitCategoryName() { return Category != StarbaseCategory.None ? Category.GetValueName() : Unknown; }
 
     public override void ResetForReuse() {
         base.ResetForReuse();
@@ -59,9 +59,9 @@ public class StarbaseCompositionGuiElement : ACompositionGuiElement {
 
     protected override void Cleanup() { }
 
-    #region IComparable<ACompostionGuiElement> Members
+    #region IComparable<StarbaseCompositionGuiElement> Members
 
-    public override int CompareTo(ACompositionGuiElement other) {
+    public override int CompareTo(AUnitCompositionGuiElement other) {
         return Category.CompareTo((other as StarbaseCompositionGuiElement).Category);
     }
 

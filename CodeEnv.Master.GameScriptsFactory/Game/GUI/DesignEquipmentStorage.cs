@@ -28,14 +28,14 @@ public class DesignEquipmentStorage : AMonoBase {
 
     public string DebugName { get { return GetType().Name; } }
 
-    public EquipmentStorageGuiIcon storageIconPrefab;
+    public EquipmentStorageIconGuiElement storageIconPrefab;
 
     public AUnitMemberDesign WorkingDesign { get; private set; }
 
     private UIGrid _storageIconGrid;
     private UIWidget _storageIconContainer;
 
-    private IDictionary<EquipmentSlotID, EquipmentStorageGuiIcon> _storageIconLookup;
+    private IDictionary<EquipmentSlotID, EquipmentStorageIconGuiElement> _storageIconLookup;
 
     protected override void Awake() {
         base.Awake();
@@ -51,7 +51,7 @@ public class DesignEquipmentStorage : AMonoBase {
 
         _storageIconContainer = gameObject.GetSingleComponentInImmediateChildren<UIWidget>();
 
-        _storageIconLookup = new Dictionary<EquipmentSlotID, EquipmentStorageGuiIcon>();
+        _storageIconLookup = new Dictionary<EquipmentSlotID, EquipmentStorageIconGuiElement>();
     }
 
     public AEquipmentStat GetEquipmentStat(EquipmentSlotID slotID) {
@@ -102,7 +102,7 @@ public class DesignEquipmentStorage : AMonoBase {
 
         int unusedGridRows, gridColumns;
         IntVector2 storageContainerDimensions = new IntVector2(_storageIconContainer.width, _storageIconContainer.height);
-        var iconSize = AMultiSizeGuiIcon.DetermineGridIconSize(storageContainerDimensions, reqdSlotQty, storageIconPrefab, out unusedGridRows, out gridColumns);
+        var iconSize = AMultiSizeIconGuiElement.DetermineGridIconSize(storageContainerDimensions, reqdSlotQty, storageIconPrefab, out unusedGridRows, out gridColumns);
 
         IntVector2 slotDimensions = storageIconPrefab.GetIconDimensions(iconSize);
         _storageIconGrid.cellHeight = slotDimensions.y;
@@ -122,8 +122,8 @@ public class DesignEquipmentStorage : AMonoBase {
         _storageIconGrid.repositionNow = true;
     }
 
-    private void PopulateIcon(GameObject storageIconGo, AMultiSizeGuiIcon.IconSize iconSize, EquipmentSlotID slotID, AEquipmentStat equipStat) {
-        EquipmentStorageGuiIcon storageIcon = storageIconGo.GetComponent<EquipmentStorageGuiIcon>();
+    private void PopulateIcon(GameObject storageIconGo, AMultiSizeIconGuiElement.IconSize iconSize, EquipmentSlotID slotID, AEquipmentStat equipStat) {
+        EquipmentStorageIconGuiElement storageIcon = storageIconGo.GetComponent<EquipmentStorageIconGuiElement>();
         storageIcon.Size = iconSize;
         storageIcon.Initialize(this, slotID, equipStat);
         _storageIconLookup.Add(slotID, storageIcon);

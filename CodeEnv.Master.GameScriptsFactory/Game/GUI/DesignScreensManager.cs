@@ -34,10 +34,10 @@ public class DesignScreensManager : AMonoBase {
     private const int ScreenChoiceCheckboxGroupNumber = 1;
 
     [SerializeField]
-    private UnitMemberDesignGuiIcon _designIconPrefab = null;
+    private DesignIconGuiElement _designIconPrefab = null;
 
     [SerializeField]
-    private EquipmentGuiIcon _equipmentIconPrefab = null;
+    private EquipmentIconGuiElement _equipmentIconPrefab = null;
 
     [SerializeField]
     private GameObject _threeDModelStagePrefab = null;

@@ -26,24 +26,17 @@ public class SettlementTableRowForm : ACommandTableRowForm {
 
     public override FormID FormID { get { return FormID.SettlementTableRow; } }
 
-    private SettlementCompositionGuiElement _compositionElement;
-
-    protected override void InitializeCompositionGuiElement(AGuiElement e) {
-        base.InitializeCompositionGuiElement(e);
-        _compositionElement = e as SettlementCompositionGuiElement;
+    protected override void AssignValueToCompositionGuiElement() {
+        base.AssignValueToCompositionGuiElement();
+        var report = Report as SettlementCmdReport;
+        _compositionGuiElement.IconInfo = SettlementIconInfoFactory.Instance.MakeInstance(report);
+        (_compositionGuiElement as SettlementCompositionGuiElement).Category = report.Category;
     }
 
     protected override void AssignValueToApprovalGuiElement() {
         base.AssignValueToApprovalGuiElement();
         var report = Report as SettlementCmdReport;
-        _approvalElement.Approval = report.Approval;
-    }
-
-    protected override void AssignValueToCompositionGuiElement() {
-        base.AssignValueToCompositionGuiElement();
-        var report = Report as SettlementCmdReport;
-        _compositionElement.IconInfo = SettlementIconInfoFactory.Instance.MakeInstance(report);
-        _compositionElement.Category = report.Category;
+        _approvalGuiElement.Approval = report.Approval;
     }
 
     protected override void AssignValueToEnergyGuiElement() {
@@ -73,7 +66,13 @@ public class SettlementTableRowForm : ACommandTableRowForm {
     protected override void AssignValueToStrategicResourcesGuiElement() {
         base.AssignValueToStrategicResourcesGuiElement();
         var report = Report as SettlementCmdReport;
-        _resourcesElement.Resources = report.Resources;
+        _resourcesGuiElement.Resources = report.Resources;
+    }
+
+    protected override void AssignValueToConstructionGuiElement() {
+        base.AssignValueToConstructionGuiElement();
+        var report = Report as SettlementCmdReport;
+        _constructionGuiElement.Construction = report.CurrentConstruction;
     }
 
 }

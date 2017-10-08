@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AEquipmentGuiIcon.cs
-// Abstract Gui 'icon' composed of an image and a name that provides methods supporting AEquipmentStats.
+// File: AEquipmentIconGuiElement.cs
+// Abstract AMultiSizeIconGuiElement that represents an EquipmentStat.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,30 +16,22 @@
 
 // default namespace
 
-using System;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Abstract Gui 'icon' composed of an image and a name that provides methods supporting AEquipmentStats.
-/// <remarks>Used in Gui elements supporting the design of Units.</remarks>
+/// Abstract AMultiSizeIconGuiElement that represents an EquipmentStat.
+/// <remarks>Used in screens supporting the design of Units.</remarks>
 /// <remarks>7.5.17 Previous implementation had a static _selectedIcon which was used to communicate between
-/// EquipmentGuiIcon and EquipmentStorageGuiIcon, similar to the way ArenMook did it in his InventorySystem example.</remarks>
+/// EquipmentIconGuiElement and EquipmentStorageIconGuiElement, similar to the way ArenMook did it in his InventorySystem example.</remarks>
 /// </summary>
-public abstract class AEquipmentGuiIcon : AMultiSizeGuiIcon {
+public abstract class AEquipmentIconGuiElement : AMultiSizeIconGuiElement {
 
-    protected override void HandleIconSizeSet() {
-        base.HandleIconSizeSet();
-        ResizeWidgetAndAnchorIcon();
-    }
+    public override GuiElementID ElementID { get { return GuiElementID.EquipmentIcon; } }
 
-    private void ResizeWidgetAndAnchorIcon() {
-        IntVector2 iconDimensions = GetIconDimensions(Size);
-        UIWidget topLevelWidget = GetComponent<UIWidget>();
-        topLevelWidget.SetDimensions(iconDimensions.x, iconDimensions.y);
-        AnchorTo(topLevelWidget);
+    protected override UISprite AcquireIconImageSprite() {
+        return _topLevelIconWidget.gameObject.GetSingleComponentInImmediateChildren<UISprite>();
     }
 
     /// <summary>
@@ -55,11 +47,6 @@ public abstract class AEquipmentGuiIcon : AMultiSizeGuiIcon {
     }
 
     #region Debug
-
-    protected override void __Validate() {
-        base.__Validate();
-        UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
-    }
 
     #endregion
 

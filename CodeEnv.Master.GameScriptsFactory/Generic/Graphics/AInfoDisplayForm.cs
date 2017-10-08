@@ -28,23 +28,24 @@ using CodeEnv.Master.GameContent;
 public abstract class AInfoDisplayForm : AForm {
 
     protected UILabel _nameLabel;
-    protected NetIncomeGuiElement _netIncomeElement;
+    protected OwnerIconGuiElement _ownerGuiElement;
+    protected HealthGuiElement _healthGuiElement;
+    protected LocationGuiElement _locationGuiElement;
+    protected NetIncomeGuiElement _netIncomeGuiElement;
     protected UILabel _cultureLabel;
     protected UILabel _scienceLabel;
-    protected StrengthGuiElement _defensiveStrengthElement;
-    protected StrengthGuiElement _offensiveStrengthElement;
-    protected HealthGuiElement _healthElement;
-    protected HeroGuiElement _heroElement;
-    protected LocationGuiElement _locationElement;
+    protected StrengthGuiElement _defensiveStrengthGuiElement;
+    protected StrengthGuiElement _offensiveStrengthGuiElement;
+    protected HeroIconGuiElement _heroGuiElement;
     protected UILabel _speedLabel;
-    protected ResourcesGuiElement _resourcesElement;
+    protected ResourcesGuiElement _resourcesGuiElement;
     protected UILabel _organicsLabel;
     protected UILabel _particulatesLabel;
     protected UILabel _energyLabel;
     protected UILabel _populationLabel;
-    protected ApprovalGuiElement _approvalElement;
-    protected ProductionGuiElement _productionElement;
-    protected OwnerGuiElement _ownerElement;
+    protected ApprovalGuiElement _approvalGuiElement;
+    protected ConstructionIconGuiElement _constructionGuiElement;
+    protected AUnitCompositionGuiElement _compositionGuiElement;
 
     private IDictionary<GuiElementID, AGuiElement> _guiElementsPresent;
 
@@ -118,8 +119,8 @@ public abstract class AInfoDisplayForm : AForm {
             case GuiElementID.PopulationLabel:
                 InitializePopulationGuiElement(e);
                 break;
-            case GuiElementID.Production:
-                InitializeProductionGuiElement(e);
+            case GuiElementID.Construction:
+                InitializeConstructionGuiElement(e);
                 break;
             case GuiElementID.SpeedLabel:
                 InitializeSpeedGuiElement(e);
@@ -131,84 +132,190 @@ public abstract class AInfoDisplayForm : AForm {
         return isFound;
     }
 
-    private void InitializeSpeedGuiElement(AGuiElement e) {
+    /// <summary>
+    /// Initializes the provided AGuiElement. Base version simply acquires the reference to the element.
+    /// <remarks>Called once from Awake.</remarks>
+    /// <remarks>Virtual to allow derived classes to further initialize the element, i.e. subscribe to events...</remarks>
+    /// </summary>
+    /// <param name="e">The AGuiElement.</param>
+    protected virtual void InitializeSpeedGuiElement(AGuiElement e) {
         _speedLabel = GetLabel(e);
     }
 
-    private void InitializeProductionGuiElement(AGuiElement e) {
-        _productionElement = e as ProductionGuiElement;
+    /// <summary>
+    /// Initializes the provided AGuiElement. Base version simply acquires the reference to the element.
+    /// <remarks>Called once from Awake.</remarks>
+    /// <remarks>Virtual to allow derived classes to further initialize the element, i.e. subscribe to events...</remarks>
+    /// </summary>
+    /// <param name="e">The AGuiElement.</param>
+    protected virtual void InitializeConstructionGuiElement(AGuiElement e) {
+        _constructionGuiElement = e as ConstructionIconGuiElement;
     }
 
-    private void InitializePopulationGuiElement(AGuiElement e) {
+    /// <summary>
+    /// Initializes the provided AGuiElement. Base version simply acquires the reference to the element.
+    /// <remarks>Called once from Awake.</remarks>
+    /// <remarks>Virtual to allow derived classes to further initialize the element, i.e. subscribe to events...</remarks>
+    /// </summary>
+    /// <param name="e">The AGuiElement.</param>
+    protected virtual void InitializePopulationGuiElement(AGuiElement e) {
         _populationLabel = GetLabel(e);
     }
 
-    private void InitializeApprovalGuiElement(AGuiElement e) {
-        _approvalElement = e as ApprovalGuiElement;
+    /// <summary>
+    /// Initializes the provided AGuiElement. Base version simply acquires the reference to the element.
+    /// <remarks>Called once from Awake.</remarks>
+    /// <remarks>Virtual to allow derived classes to further initialize the element, i.e. subscribe to events...</remarks>
+    /// </summary>
+    /// <param name="e">The AGuiElement.</param>
+    protected virtual void InitializeApprovalGuiElement(AGuiElement e) {
+        _approvalGuiElement = e as ApprovalGuiElement;
     }
 
     /// <summary>
-    /// Initializes the provided AGuiElement.
+    /// Initializes the provided AGuiElement. Base version simply acquires the reference to the element.
     /// <remarks>Called once from Awake.</remarks>
+    /// <remarks>Virtual to allow derived classes to further initialize the element, i.e. subscribe to events...</remarks>
     /// </summary>
     /// <param name="e">The AGuiElement.</param>
-    protected virtual void InitializeCompositionGuiElement(AGuiElement e) { }
+    protected virtual void InitializeCompositionGuiElement(AGuiElement e) {
+        _compositionGuiElement = e as AUnitCompositionGuiElement;
+    }
 
-    private void InitializeEnergyGuiElement(AGuiElement e) {
+    /// <summary>
+    /// Initializes the provided AGuiElement. Base version simply acquires the reference to the element.
+    /// <remarks>Called once from Awake.</remarks>
+    /// <remarks>Virtual to allow derived classes to further initialize the element, i.e. subscribe to events...</remarks>
+    /// </summary>
+    /// <param name="e">The AGuiElement.</param>
+    protected virtual void InitializeEnergyGuiElement(AGuiElement e) {
         _energyLabel = GetLabel(e);
     }
 
-    private void InitializeParticulatesGuiElement(AGuiElement e) {
+    /// <summary>
+    /// Initializes the provided AGuiElement. Base version simply acquires the reference to the element.
+    /// <remarks>Called once from Awake.</remarks>
+    /// <remarks>Virtual to allow derived classes to further initialize the element, i.e. subscribe to events...</remarks>
+    /// </summary>
+    /// <param name="e">The AGuiElement.</param>
+    protected virtual void InitializeParticulatesGuiElement(AGuiElement e) {
         _particulatesLabel = GetLabel(e);
     }
 
-    private void InitializeOrganicsGuiElement(AGuiElement e) {
+    /// <summary>
+    /// Initializes the provided AGuiElement. Base version simply acquires the reference to the element.
+    /// <remarks>Called once from Awake.</remarks>
+    /// <remarks>Virtual to allow derived classes to further initialize the element, i.e. subscribe to events...</remarks>
+    /// </summary>
+    /// <param name="e">The AGuiElement.</param>
+    protected virtual void InitializeOrganicsGuiElement(AGuiElement e) {
         _organicsLabel = GetLabel(e);
     }
 
-    private void InitializeNetIncomeGuiElement(AGuiElement e) {
-        _netIncomeElement = e as NetIncomeGuiElement;
-    }
-
-    private void InitializeCultureGuiElement(AGuiElement e) {
-        _cultureLabel = GetLabel(e);
-    }
-
-    private void InitializeScienceGuiElement(AGuiElement e) {
-        _scienceLabel = GetLabel(e);
-    }
-
-    private void InitializeStrategicResourcesGuiElement(AGuiElement e) {
-        _resourcesElement = e as ResourcesGuiElement;
-    }
-
-    private void InitializeDefensiveStrengthGuiElement(AGuiElement e) {
-        _defensiveStrengthElement = e as StrengthGuiElement;
-    }
-
-    private void InitializeOffensiveStrengthGuiElement(AGuiElement e) {
-        _offensiveStrengthElement = e as StrengthGuiElement;
-    }
-
-    private void InitializeHealthGuiElement(AGuiElement e) {
-        _healthElement = e as HealthGuiElement;
-    }
-
-    private void InitializeHeroGuiElement(AGuiElement e) {
-        _heroElement = e as HeroGuiElement;
-    }
-
-    private void InitializeLocationGuiElement(AGuiElement e) {
-        _locationElement = e as LocationGuiElement;
-    }
-
-    private void InitializeOwnerGuiElement(AGuiElement e) {
-        _ownerElement = e as OwnerGuiElement;
+    /// <summary>
+    /// Initializes the provided AGuiElement. Base version simply acquires the reference to the element.
+    /// <remarks>Called once from Awake.</remarks>
+    /// <remarks>Virtual to allow derived classes to further initialize the element, i.e. subscribe to events...</remarks>
+    /// </summary>
+    /// <param name="e">The AGuiElement.</param>
+    protected virtual void InitializeNetIncomeGuiElement(AGuiElement e) {
+        _netIncomeGuiElement = e as NetIncomeGuiElement;
     }
 
     /// <summary>
-    /// Initializes the provided AGuiElement.
+    /// Initializes the provided AGuiElement. Base version simply acquires the reference to the element.
     /// <remarks>Called once from Awake.</remarks>
+    /// <remarks>Virtual to allow derived classes to further initialize the element, i.e. subscribe to events...</remarks>
+    /// </summary>
+    /// <param name="e">The AGuiElement.</param>
+    protected virtual void InitializeCultureGuiElement(AGuiElement e) {
+        _cultureLabel = GetLabel(e);
+    }
+
+    /// <summary>
+    /// Initializes the provided AGuiElement. Base version simply acquires the reference to the element.
+    /// <remarks>Called once from Awake.</remarks>
+    /// <remarks>Virtual to allow derived classes to further initialize the element, i.e. subscribe to events...</remarks>
+    /// </summary>
+    /// <param name="e">The AGuiElement.</param>
+    protected virtual void InitializeScienceGuiElement(AGuiElement e) {
+        _scienceLabel = GetLabel(e);
+    }
+
+    /// <summary>
+    /// Initializes the provided AGuiElement. Base version simply acquires the reference to the element.
+    /// <remarks>Called once from Awake.</remarks>
+    /// <remarks>Virtual to allow derived classes to further initialize the element, i.e. subscribe to events...</remarks>
+    /// </summary>
+    /// <param name="e">The AGuiElement.</param>
+    protected virtual void InitializeStrategicResourcesGuiElement(AGuiElement e) {
+        _resourcesGuiElement = e as ResourcesGuiElement;
+    }
+
+    /// <summary>
+    /// Initializes the provided AGuiElement. Base version simply acquires the reference to the element.
+    /// <remarks>Called once from Awake.</remarks>
+    /// <remarks>Virtual to allow derived classes to further initialize the element, i.e. subscribe to events...</remarks>
+    /// </summary>
+    /// <param name="e">The AGuiElement.</param>
+    protected virtual void InitializeDefensiveStrengthGuiElement(AGuiElement e) {
+        _defensiveStrengthGuiElement = e as StrengthGuiElement;
+    }
+
+    /// <summary>
+    /// Initializes the provided AGuiElement. Base version simply acquires the reference to the element.
+    /// <remarks>Called once from Awake.</remarks>
+    /// <remarks>Virtual to allow derived classes to further initialize the element, i.e. subscribe to events...</remarks>
+    /// </summary>
+    /// <param name="e">The AGuiElement.</param>
+    protected virtual void InitializeOffensiveStrengthGuiElement(AGuiElement e) {
+        _offensiveStrengthGuiElement = e as StrengthGuiElement;
+    }
+
+    /// <summary>
+    /// Initializes the provided AGuiElement. Base version simply acquires the reference to the element.
+    /// <remarks>Called once from Awake.</remarks>
+    /// <remarks>Virtual to allow derived classes to further initialize the element, i.e. subscribe to events...</remarks>
+    /// </summary>
+    /// <param name="e">The AGuiElement.</param>
+    protected virtual void InitializeHealthGuiElement(AGuiElement e) {
+        _healthGuiElement = e as HealthGuiElement;
+    }
+
+    /// <summary>
+    /// Initializes the provided AGuiElement. Base version simply acquires the reference to the element.
+    /// <remarks>Called once from Awake.</remarks>
+    /// <remarks>Virtual to allow derived classes to further initialize the element, i.e. subscribe to events...</remarks>
+    /// </summary>
+    /// <param name="e">The AGuiElement.</param>
+    protected virtual void InitializeHeroGuiElement(AGuiElement e) {
+        _heroGuiElement = e as HeroIconGuiElement;
+    }
+
+    /// <summary>
+    /// Initializes the provided AGuiElement. Base version simply acquires the reference to the element.
+    /// <remarks>Called once from Awake.</remarks>
+    /// <remarks>Virtual to allow derived classes to further initialize the element, i.e. subscribe to events...</remarks>
+    /// </summary>
+    /// <param name="e">The AGuiElement.</param>
+    protected virtual void InitializeLocationGuiElement(AGuiElement e) {
+        _locationGuiElement = e as LocationGuiElement;
+    }
+
+    /// <summary>
+    /// Initializes the provided AGuiElement. Base version simply acquires the reference to the element.
+    /// <remarks>Called once from Awake.</remarks>
+    /// <remarks>Virtual to allow derived classes to further initialize the element, i.e. subscribe to events...</remarks>
+    /// </summary>
+    /// <param name="e">The AGuiElement.</param>
+    protected virtual void InitializeOwnerGuiElement(AGuiElement e) {
+        _ownerGuiElement = e as OwnerIconGuiElement;
+    }
+
+    /// <summary>
+    /// Initializes the provided AGuiElement. Base version simply acquires the reference to the element.
+    /// <remarks>Called once from Awake.</remarks>
+    /// <remarks>Virtual to allow derived classes to further initialize the element, i.e. subscribe to events...</remarks>
     /// </summary>
     /// <param name="e">The AGuiElement.</param>
     protected virtual void InitializeNameGuiElement(AGuiElement e) {
@@ -220,6 +327,15 @@ public abstract class AInfoDisplayForm : AForm {
     /// <remarks>Called once from Awake.</remarks>
     /// </summary>
     protected virtual void InitializeNonGuiElementMembers() { }
+
+    /// <summary>
+    /// Returns the single UILabel component that is present with or a child of the provided GuiElement's GameObject.
+    /// </summary>
+    /// <param name="element">The element.</param>
+    /// <returns></returns>
+    private UILabel GetLabel(AGuiElement element) {
+        return element.gameObject.GetSingleComponentInChildren<UILabel>();
+    }
 
     protected sealed override void AssignValuesToMembers() {
         foreach (GuiElementID id in _guiElementsPresent.Keys) {
@@ -284,8 +400,8 @@ public abstract class AInfoDisplayForm : AForm {
             case GuiElementID.PopulationLabel:
                 AssignValueToPopulationGuiElement();
                 break;
-            case GuiElementID.Production:
-                AssignValueToProductionGuiElement();
+            case GuiElementID.Construction:
+                AssignValueToConstructionGuiElement();
                 break;
             case GuiElementID.ScienceLabel:
                 AssignValueToScienceGuiElement();
@@ -306,7 +422,7 @@ public abstract class AInfoDisplayForm : AForm {
     protected virtual void AssignValueToStrategicResourcesGuiElement() { }
     protected virtual void AssignValueToSpeedGuiElement() { }
     protected virtual void AssignValueToScienceGuiElement() { }
-    protected virtual void AssignValueToProductionGuiElement() { }
+    protected virtual void AssignValueToConstructionGuiElement() { }
     protected virtual void AssignValueToPopulationGuiElement() { }
     protected virtual void AssignValueToParticulatesGuiElement() { }
     protected virtual void AssignValueToOrganicsGuiElement() { }
@@ -325,14 +441,168 @@ public abstract class AInfoDisplayForm : AForm {
 
     protected virtual void AssignValuesToNonGuiElementMembers() { }
 
-    /// <summary>
-    /// Returns the single UILabel component that is present with or a child of the provided GuiElement's GameObject.
-    /// </summary>
-    /// <param name="element">The element.</param>
-    /// <returns></returns>
-    protected UILabel GetLabel(AGuiElement element) {
-        return element.gameObject.GetSingleComponentInChildren<UILabel>();
+
+    protected override void ResetForReuse_Internal() {
+        foreach (GuiElementID id in _guiElementsPresent.Keys) {
+            bool isFound = ResetForReuse(id);
+            D.Assert(isFound, id.GetValueName());
+        }
+        ResetNonGuiElementMembers();
     }
+
+    /// <summary>
+    /// Opportunity for derived classes to reset the value of a GuiElement.
+    /// <remarks>Called from ResetForReuse_Internal().</remarks>
+    /// </summary>
+    /// <param name="id">The identifier.</param>
+    /// <returns></returns>
+    protected virtual bool ResetForReuse(GuiElementID id) {
+        bool isFound = true;
+        switch (id) {
+            case GuiElementID.NameLabel:
+                ResetNameGuiElement();
+                break;
+            case GuiElementID.Owner:
+                ResetOwnerGuiElement();
+                break;
+            case GuiElementID.Location:
+                ResetLocationGuiElement();
+                break;
+            case GuiElementID.Hero:
+                ResetHeroGuiElement();
+                break;
+            case GuiElementID.Health:
+                ResetHealthGuiElement();
+                break;
+            case GuiElementID.OffensiveStrength:
+                ResetOffensiveStrengthGuiElement();
+                break;
+            case GuiElementID.DefensiveStrength:
+                ResetDefensiveStrengthGuiElement();
+                break;
+            case GuiElementID.Resources:
+                ResetStrategicResourcesGuiElement();
+                break;
+            case GuiElementID.ScienceLabel:
+                ResetScienceGuiElement();
+                break;
+            case GuiElementID.CultureLabel:
+                ResetCultureGuiElement();
+                break;
+            case GuiElementID.NetIncome:
+                ResetNetIncomeGuiElement();
+                break;
+            case GuiElementID.OrganicsLabel:
+                ResetOrganicsGuiElement();
+                break;
+            case GuiElementID.ParticulatesLabel:
+                ResetParticulatesGuiElement();
+                break;
+            case GuiElementID.EnergyLabel:
+                ResetEnergyGuiElement();
+                break;
+            case GuiElementID.Composition:
+                ResetCompositionGuiElement();
+                break;
+            case GuiElementID.Approval:
+                ResetApprovalGuiElement();
+                break;
+            case GuiElementID.PopulationLabel:
+                ResetPopulationGuiElement();
+                break;
+            case GuiElementID.Construction:
+                ResetConstructionGuiElement();
+                break;
+            case GuiElementID.SpeedLabel:
+                ResetSpeedGuiElement();
+                break;
+            default:
+                isFound = false;
+                break;
+        }
+        return isFound;
+    }
+
+    private void ResetNameGuiElement() {
+        _nameLabel.text = null;
+    }
+
+    private void ResetOwnerGuiElement() {
+        _ownerGuiElement.ResetForReuse();
+    }
+
+    private void ResetLocationGuiElement() {
+        _locationGuiElement.ResetForReuse();
+    }
+
+    private void ResetHeroGuiElement() {
+        _heroGuiElement.ResetForReuse();
+    }
+
+    private void ResetHealthGuiElement() {
+        _healthGuiElement.ResetForReuse();
+    }
+
+    private void ResetOffensiveStrengthGuiElement() {
+        _offensiveStrengthGuiElement.ResetForReuse();
+    }
+
+    private void ResetDefensiveStrengthGuiElement() {
+        _defensiveStrengthGuiElement.ResetForReuse();
+    }
+
+    private void ResetStrategicResourcesGuiElement() {
+        _resourcesGuiElement.ResetForReuse();
+    }
+
+    private void ResetScienceGuiElement() {
+        _scienceLabel.text = null;
+    }
+
+    private void ResetCultureGuiElement() {
+        _cultureLabel.text = null;
+    }
+
+    private void ResetNetIncomeGuiElement() {
+        _netIncomeGuiElement.ResetForReuse();
+    }
+
+    private void ResetOrganicsGuiElement() {
+        _organicsLabel.text = null;
+    }
+
+    private void ResetParticulatesGuiElement() {
+        _particulatesLabel.text = null;
+    }
+
+    private void ResetEnergyGuiElement() {
+        _energyLabel.text = null;
+    }
+
+    private void ResetCompositionGuiElement() {
+        _compositionGuiElement.ResetForReuse();
+    }
+
+    private void ResetApprovalGuiElement() {
+        _approvalGuiElement.ResetForReuse();
+    }
+
+    private void ResetPopulationGuiElement() {
+        _populationLabel.text = null;
+    }
+
+    private void ResetConstructionGuiElement() {
+        _constructionGuiElement.ResetForReuse();
+    }
+
+    private void ResetSpeedGuiElement() {
+        _speedLabel.text = null;
+    }
+
+    /// <summary>
+    /// Hook for derived classes to reset any non-GuiElement members for reuse.
+    /// </summary>
+    protected virtual void ResetNonGuiElementMembers() { }
 
     /// <summary>
     /// Opportunity for derived classes to cleanup GuiElements.
@@ -394,8 +664,8 @@ public abstract class AInfoDisplayForm : AForm {
             case GuiElementID.PopulationLabel:
                 CleanupPopulationGuiElement(e);
                 break;
-            case GuiElementID.Production:
-                CleanupProductionGuiElement(e);
+            case GuiElementID.Construction:
+                CleanupConstructionGuiElement(e);
                 break;
             case GuiElementID.SpeedLabel:
                 CleanupSpeedGuiElement(e);
@@ -424,7 +694,7 @@ public abstract class AInfoDisplayForm : AForm {
     protected virtual void CleanupCompositionGuiElement(AGuiElement e) { }
     protected virtual void CleanupApprovalGuiElement(AGuiElement e) { }
     protected virtual void CleanupPopulationGuiElement(AGuiElement e) { }
-    protected virtual void CleanupProductionGuiElement(AGuiElement e) { }
+    protected virtual void CleanupConstructionGuiElement(AGuiElement e) { }
     protected virtual void CleanupSpeedGuiElement(AGuiElement e) { }
 
     protected virtual void CleanupNonGuiElementMembers() { }

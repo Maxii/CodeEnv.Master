@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
@@ -31,19 +32,27 @@ public abstract class AItemReportForm : AInfoDisplayForm {
         get { return _report; }
         set {
             D.AssertNull(_report);  // occurs only once between Resets
-            SetProperty<AItemReport>(ref _report, value, "Report", ReportPropSetHandler);
+            SetProperty<AItemReport>(ref _report, value, "Report");
         }
     }
 
-    #region Event and Property Change Handlers
-
-    private void ReportPropSetHandler() {
+    public sealed override void PopulateValues() {
+        D.AssertNotNull(Report);
         AssignValuesToMembers();
     }
 
-    #endregion
+    protected override void AssignValueToNameGuiElement() {
+        base.AssignValueToNameGuiElement();
+        _nameLabel.text = Report.Name != null ? Report.Name : Unknown;
+    }
+
+    protected override void AssignValueToOwnerGuiElement() {
+        base.AssignValueToOwnerGuiElement();
+        _ownerGuiElement.Owner = Report.Owner;
+    }
 
     protected override void ResetForReuse_Internal() {
+        base.ResetForReuse_Internal();
         _report = null;
     }
 

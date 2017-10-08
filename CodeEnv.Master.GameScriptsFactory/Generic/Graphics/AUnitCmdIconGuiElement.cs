@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: AUnitCmdGuiIcon.cs
-// Abstract base AMultiSizeGuiIcon that holds an AUnitCmdItem.
+// File: AUnitCmdIconGuiElement.cs
+// Abstract AMultiSizeIconGuiElement that represents an AUnitCmdItem.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,35 +20,30 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
-using UnityEngine;
 
 /// <summary>
-/// Abstract base AMultiSizeGuiIcon that holds an AUnitCmdItem.
+/// Abstract AMultiSizeIconGuiElement that represents an AUnitCmdItem.
 /// <remarks>This is an icon used by the Gui, not the in game icon that tracks a unit in space.</remarks>
 /// </summary>
-public abstract class AUnitCmdGuiIcon : AMultiSizeGuiIcon {
+public abstract class AUnitCmdIconGuiElement : AMultiSizeIconGuiElement {
 
     private const string DebugNameFormat = "{0}[{1}]";
     private const string TooltipFormat = "{0}";
     private const string UnitCompositionFormat = "{0}/{1}";
 
+    public override GuiElementID ElementID { get { return GuiElementID.UnitIcon; } }
+
     public override string DebugName {
         get {
-            if (Unit == null) {
-                return DebugNameFormat.Inject(GetType().Name, "No Unit");
-            }
-            return DebugNameFormat.Inject(GetType().Name, Unit.Name);
+            string unitName = Unit != null ? Unit.Name : "Unit either destroyed or not yet assigned";
+            return DebugNameFormat.Inject(GetType().Name, unitName);
         }
     }
 
-    /// <summary>
-    /// Indicates whether this Icon has been initialized, aka its Unit property has been set.
-    /// <remarks>Handled this way as Unit will return null if Unit is destroyed.</remarks>
-    /// </summary>
-    public bool IsInitialized { get; private set; }
+    public override bool IsInitialized { get { return Size != default(IconSize) && _isUnitPropSet; } }
 
+    private bool _isUnitPropSet; // reqd as Unit can return null if destroyed
     private AUnitCmdItem _unit;
     public AUnitCmdItem Unit {
         get { return _unit; }
@@ -78,62 +73,53 @@ public abstract class AUnitCmdGuiIcon : AMultiSizeGuiIcon {
     /// </summary>
     protected abstract string UnitImageFilename { get; }
 
-    protected sealed override string TooltipContent { get { return TooltipFormat.Inject(_unit.UnitName); } }
+    protected sealed override string TooltipContent { get { return TooltipFormat.Inject(Unit.UnitName); } }
 
     protected IList<IDisposable> _subscriptions;
     private UISprite _unitCompositionIcon;
     private UILabel _unitCompositionLabel;
-    private UISlider _healthBar;
+    private UIProgressBar _healthBar;
+    private UILabel _iconImageNameLabel;
 
-    protected sealed override UISprite AcquireImageSprite(GameObject topLevelIconGo) {
-        return topLevelIconGo.GetComponentsInImmediateChildren<UISprite>().Single(s => s.GetComponent<UISlider>() == null
+    protected sealed override UISprite AcquireIconImageSprite() {
+        return _topLevelIconWidget.gameObject.GetComponentsInImmediateChildren<UISprite>().Single(s => s.GetComponent<UIProgressBar>() == null
             && s.GetComponentInChildren<GuiElement>() == null);
     }
 
-    protected sealed override UILabel AcquireNameLabel(GameObject topLevelIconGo) {
-        return topLevelIconGo.GetComponentsInChildren<GuiElement>().Single(ge => ge.ElementID == GuiElementID.NameLabel).GetComponent<UILabel>();
-    }
-
-    protected override void AcquireAdditionalIconWidgets(GameObject topLevelIconGo) {
-        _healthBar = topLevelIconGo.GetComponentInChildren<UISlider>();
-        var compositionContainerGo = topLevelIconGo.GetComponentsInChildren<GuiElement>().Single(ge => ge.ElementID == GuiElementID.Composition).gameObject;
+    protected override void AcquireAdditionalWidgets() {
+        _healthBar = _topLevelIconWidget.GetComponentInChildren<UIProgressBar>();
+        var compositionContainerGo = _topLevelIconWidget.GetComponentsInChildren<GuiElement>().Single(ge => ge.ElementID == GuiElementID.Composition).gameObject;
         _unitCompositionIcon = compositionContainerGo.GetSingleComponentInChildren<UISprite>();
         _unitCompositionLabel = compositionContainerGo.GetSingleComponentInChildren<UILabel>();
+        _iconImageNameLabel = _topLevelIconWidget.GetComponentsInChildren<GuiElement>().Single(ge => ge.ElementID == GuiElementID.NameLabel).GetComponent<UILabel>();
     }
 
     #region Event and Property Change Handlers
 
     private void UnitPropSetHandler() {
         D.AssertNotDefault((int)Size);
-        D.Assert(!IsInitialized);
-        IsInitialized = true;
-        AssignValuesToMembers();
-        Subscribe();
-        Show();
+        _isUnitPropSet = true;
+        if (IsInitialized) {
+            PopulateMemberWidgetValues();
+            Subscribe();
+            Show();
+        }
     }
 
     private void IsPickedPropChangedHandler() {
-        D.Assert(IsShowing);
         HandleIsPickedChanged();
     }
 
-    void OnHover(bool isOver) {
-        Unit.ShowHoveredHud(isOver);
-    }
-
     private void UnitHealthPropChangedHandler() {
-        D.Assert(IsShowing);
         _healthBar.value = Unit.Data.UnitHealth;
     }
 
     private void UnitIconInfoPropChangedHandler() {
-        D.Assert(IsShowing);
         _unitCompositionIcon.atlas = Unit.DisplayMgr.IconInfo.AtlasID.GetAtlas();
         _unitCompositionIcon.spriteName = Unit.DisplayMgr.IconInfo.Filename;
     }
 
     private void UnitNamePropChangedHandler() {
-        D.Assert(IsShowing);
         if (IsPicked) {
             Show(TempGameValues.SelectedColor);
         }
@@ -144,6 +130,10 @@ public abstract class AUnitCmdGuiIcon : AMultiSizeGuiIcon {
 
     #endregion
 
+    protected override void HandleIconHovered(bool isOver) {
+        Unit.ShowHoveredHud(isOver);
+    }
+
     protected virtual void Subscribe() {
         _subscriptions = _subscriptions ?? new List<IDisposable>();
         _subscriptions.Add(Unit.Data.SubscribeToPropertyChanged<AUnitCmdData, float>(data => data.UnitHealth, UnitHealthPropChangedHandler));
@@ -151,7 +141,8 @@ public abstract class AUnitCmdGuiIcon : AMultiSizeGuiIcon {
         _subscriptions.Add(Unit.Data.SubscribeToPropertyChanged<AUnitCmdData, string>(data => data.UnitName, UnitNamePropChangedHandler));
     }
 
-    protected virtual void Show(GameColor color = GameColor.White) {
+    protected override void PopulateMemberWidgetValues() {
+        base.PopulateMemberWidgetValues();
         _healthBar.value = Unit.Data.UnitHealth;
 
         TrackingIconInfo unitIconInfo = Unit.DisplayMgr.IconInfo;
@@ -160,7 +151,9 @@ public abstract class AUnitCmdGuiIcon : AMultiSizeGuiIcon {
         _unitCompositionIcon.color = unitIconInfo.Color.ToUnityColor();
 
         _unitCompositionLabel.text = UnitCompositionFormat.Inject(Unit.Elements.Count, MaxElementsPerUnit);
-        Show(AtlasID.MyGui, UnitImageFilename, Unit.UnitName, color);
+        _iconImageSprite.atlas = AtlasID.MyGui.GetAtlas();
+        _iconImageSprite.spriteName = UnitImageFilename;
+        _iconImageNameLabel.text = Unit.UnitName;
     }
 
     private void HandleIsPickedChanged() {
@@ -180,26 +173,16 @@ public abstract class AUnitCmdGuiIcon : AMultiSizeGuiIcon {
         _unitCompositionLabel.text = UnitCompositionFormat.Inject(Unit.Elements.Count, MaxElementsPerUnit);
     }
 
-    private void AssignValuesToMembers() { }
-
-    protected sealed override void HandleIconSizeSet() {
-        base.HandleIconSizeSet();
-        ResizeWidgetAndAnchorIcon();
-    }
-
-    private void ResizeWidgetAndAnchorIcon() {
-        IntVector2 iconDimensions = GetIconDimensions(Size);
-        UIWidget topLevelWidget = GetComponent<UIWidget>();
-        topLevelWidget.SetDimensions(iconDimensions.x, iconDimensions.y);
-        AnchorTo(topLevelWidget);
-    }
-
     public override void ResetForReuse() {
         base.ResetForReuse();
         Unsubscribe();
         _unit = null;
+        _isUnitPropSet = false;
         _isPicked = false;
-        IsInitialized = false;
+        _healthBar = null;
+        _iconImageNameLabel = null;
+        _unitCompositionIcon = null;
+        _unitCompositionLabel = null;
     }
 
     #region Cleanup
@@ -217,10 +200,6 @@ public abstract class AUnitCmdGuiIcon : AMultiSizeGuiIcon {
 
     #endregion
 
-    protected override void __Validate() {
-        base.__Validate();
-        UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
-    }
 
 }
 

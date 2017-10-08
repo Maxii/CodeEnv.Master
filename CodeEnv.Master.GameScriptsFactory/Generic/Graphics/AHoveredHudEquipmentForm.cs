@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
@@ -29,19 +30,17 @@ public abstract class AHoveredHudEquipmentForm : AInfoDisplayForm {
         get { return _equipmentStat; }
         set {
             D.AssertNull(_equipmentStat);  // occurs only once between Resets
-            SetProperty<AEquipmentStat>(ref _equipmentStat, value, "EquipmentStat", EquipmentStatPropSetHandler);
+            SetProperty<AEquipmentStat>(ref _equipmentStat, value, "EquipmentStat");
         }
     }
 
-    #region Event and Property Change Handlers
-
-    private void EquipmentStatPropSetHandler() {
+    public sealed override void PopulateValues() {
+        D.AssertNotNull(EquipmentStat);
         AssignValuesToMembers();
     }
 
-    #endregion
-
     protected override void ResetForReuse_Internal() {
+        base.ResetForReuse_Internal();
         _equipmentStat = null;
     }
 

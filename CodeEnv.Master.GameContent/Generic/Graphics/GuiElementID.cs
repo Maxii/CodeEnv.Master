@@ -30,8 +30,7 @@ namespace CodeEnv.Master.GameContent {
 
         None = 0,
 
-        // last: NameInput = 98  
-        //// last: SettlementCmdDesignWindowCheckbox = 97  
+        // last: UnitIcon = 101  
 
         #region Checkboxes
 
@@ -134,12 +133,6 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        #region Sliders
-
-        //GameSpeedSlider
-
-        #endregion
-
         #region Labels
 
         NameLabel = 26,
@@ -170,7 +163,6 @@ namespace CodeEnv.Master.GameContent {
         [EnumAttribute("Offensive\nStrength")]
         OffensiveStrength = 34,
 
-        //TotalStrength = 35,                                           // available
 
         Health = 36,
 
@@ -184,16 +176,11 @@ namespace CodeEnv.Master.GameContent {
 
         Composition = 41,
 
-        Production = 42,
+        Construction = 42,
 
         Approval = 44,
 
         NetIncome = 45,
-
-        #endregion
-
-        #region Buttons
-
 
         #endregion
 
@@ -216,6 +203,20 @@ namespace CodeEnv.Master.GameContent {
         CreateDesignPopupWindow = 91,
 
         RenameObsoleteDesignPopupWindow = 92,
+
+        #endregion
+
+        #region Icons
+
+        DesignIcon = 35,
+
+        EquipmentIcon = 99,
+
+        ElementIcon = 100,
+
+        UnitIcon = 101,
+
+
 
         #endregion
 

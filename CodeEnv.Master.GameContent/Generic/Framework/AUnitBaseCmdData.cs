@@ -46,6 +46,16 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<float>(ref _unitProduction, value, "UnitProduction"); }
         }
 
+        private ConstructionInfo _currentConstruction = TempGameValues.NoConstruction;
+        public ConstructionInfo CurrentConstruction {
+            get { return _currentConstruction; }
+            set {
+                D.AssertNotNull(value, DebugName); // CurrentConstruction should never be changed to null
+                _currentConstruction = value;
+                D.Log("{0}.CurrentConstruction changed to {1}.", DebugName, _currentConstruction.DebugName);
+            }
+        }
+
         private IntVector3 _sectorID;
         public override IntVector3 SectorID {
             get {
@@ -108,7 +118,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void RecalcUnitProduction() {
-            UnitProduction = _elementsData.Cast<FacilityData>().Sum(ed => ed.Production);
+            // FIXME 10.1.17 Keeps production above zero as its used as a denominator in division. Require CentralHub facility?
+            UnitProduction = Mathf.Clamp(_elementsData.Cast<FacilityData>().Sum(ed => ed.Production), Constants.OneF, Mathf.Infinity);
         }
 
         protected override void RefreshComposition() {

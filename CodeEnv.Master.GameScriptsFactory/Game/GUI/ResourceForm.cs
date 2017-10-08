@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
@@ -32,7 +33,7 @@ public class ResourceForm : AForm {
         get { return _resourceID; }
         set {
             D.AssertDefault((int)_resourceID);   // occurs only once between Resets
-            SetProperty<ResourceID>(ref _resourceID, value, "ResourceID", ResourceIDPropSetHandler);
+            SetProperty<ResourceID>(ref _resourceID, value, "ResourceID");
         }
     }
 
@@ -45,18 +46,15 @@ public class ResourceForm : AForm {
         var immediateChildLabels = gameObject.GetSafeComponentsInImmediateChildren<UILabel>();
         _categoryLabel = immediateChildLabels.Single(l => l.overflowMethod == UILabel.Overflow.ClampContent);   // HACK
         _descriptionLabel = immediateChildLabels.Single(l => l.overflowMethod == UILabel.Overflow.ResizeHeight);    // HACK
-        var imageFrameSprite = gameObject.GetSafeComponentsInChildren<UISprite>().Single(s => s.spriteName == TempGameValues.ImageFrameSpriteName);
+        var imageFrameSprite = gameObject.GetSafeComponentsInChildren<UISprite>().Single(s => s.spriteName == TempGameValues.ImageFrameFilename);
         _imageSprite = imageFrameSprite.gameObject.GetSingleComponentInImmediateChildren<UISprite>();
         _imageNameLabel = imageFrameSprite.gameObject.GetSingleComponentInChildren<UILabel>();
     }
 
-    #region Event and Property Change Handlers
-
-    private void ResourceIDPropSetHandler() {
+    public sealed override void PopulateValues() {
+        D.AssertNotDefault((int)ResourceID);
         AssignValuesToMembers();
     }
-
-    #endregion
 
     protected override void AssignValuesToMembers() {
         _categoryLabel.text = ResourceID.GetResourceCategory().GetValueName();

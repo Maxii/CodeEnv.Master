@@ -35,6 +35,7 @@ namespace CodeEnv.Master.GameContent {
                 case ItemInfoID.UnitProduction:
                 case ItemInfoID.Capacity:
                 case ItemInfoID.UnitCurrentHitPts:
+                case ItemInfoID.CurrentConstruction:
                     return true;
                 default:
                     return false;

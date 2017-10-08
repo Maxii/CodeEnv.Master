@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
@@ -31,7 +32,7 @@ public class TextForm : AForm {
         get { return _text; }
         set {
             D.AssertNull(_text);    // occurs only once between Resets
-            SetProperty<string>(ref _text, value, "Text", TextPropSetHandler);
+            SetProperty<string>(ref _text, value, "Text");
         }
     }
 
@@ -41,13 +42,10 @@ public class TextForm : AForm {
         _textLabel = gameObject.GetSingleComponentInChildren<UILabel>();
     }
 
-    #region Event and Property Change Handlers
-
-    private void TextPropSetHandler() {
+    public sealed override void PopulateValues() {
+        D.AssertNotNull(Text);  // UNCLEAR assign null text to a form?
         AssignValuesToMembers();
     }
-
-    #endregion
 
     protected override void AssignValuesToMembers() {
         //D.Log("{0}.AssignValuesToMembers() called. Text = {1}.", DebugName, Text);

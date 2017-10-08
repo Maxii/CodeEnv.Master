@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
 
         Strategic = 2,
 
-        Luxury = 3
+        Luxury = 3,
 
     }
 }

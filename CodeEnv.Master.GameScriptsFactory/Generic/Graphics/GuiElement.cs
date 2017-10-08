@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: GuiElement.cs
-// Instantiable version of AGuiElement that is uniquely identifiable by its GuiElementID. 
+// Instantiable AGuiElement that is uniquely identifiable by its GuiElementID. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,24 +16,25 @@
 
 // default namespace
 
-using CodeEnv.Master.Common;
+using System;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 /// <summary>
-/// Instantiable version of AGuiElement that is uniquely identifiable by its GuiElementID. Also has
-/// embedded text tooltip support. GuiElements typically have one or more UIWidget siblings
-/// and/or children associated with them that they help identify and/or find.
+/// Instantiable AGuiElement that is uniquely identifiable by its GuiElementID.
+/// <remarks>Primarily used to identify and find a specific GameObject in a complex Gui implementation.</remarks>
 /// </summary>
 public sealed class GuiElement : AGuiElement {
 
-    //[FormerlySerializedAs("elementID")]
     [Tooltip("The unique ID of this GuiElement")]
     [SerializeField]
     private GuiElementID _elementID = GuiElementID.None;
 
     public override GuiElementID ElementID { get { return _elementID; } }
+
+    public override bool IsInitialized { get { return true; } }
+
+    protected override void InitializeValuesAndReferences() { }
 
     public override void ResetForReuse() { }
 

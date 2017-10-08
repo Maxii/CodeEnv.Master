@@ -23,6 +23,7 @@ using UnityEngine;
 /// <summary>
 /// Gui module that allows display and management of Hero assignments.
 /// </summary>
+[System.Obsolete]
 public class GuiHeroModule : AMonoBase {
 
     private const string HeroLevelFormat = "Level {0}";

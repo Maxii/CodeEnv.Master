@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: NetIncomeGuiElement.cs
-// GuiElement handling the display and tooltip content for the Income and Expense of a Command.   
+// AGuiElement that represents the Income and Expense of an Item or Empire.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,7 +21,7 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// GuiElement handling the display and tooltip content for the Income and Expense of a Command.   
+/// AGuiElement that represents the Income and Expense of an Item or Empire.
 /// </summary>
 public class NetIncomeGuiElement : AGuiElement, IComparable<NetIncomeGuiElement> {
 
@@ -54,35 +54,35 @@ public class NetIncomeGuiElement : AGuiElement, IComparable<NetIncomeGuiElement>
     private string _tooltipContent;
     protected override string TooltipContent { get { return _tooltipContent; } }
 
-    private bool AreAllValuesSet { get { return _isIncomeSet && _isExpenseSet; } }
+    public override bool IsInitialized { get { return _isIncomeSet && _isExpenseSet; } }
 
     private decimal? _netIncome;
-    private UILabel _label;
+    private UILabel _netIncomeLabel;
 
-    protected override void Awake() {
-        base.Awake();
-        _label = gameObject.GetSingleComponentInChildren<UILabel>();
+    protected override void InitializeValuesAndReferences() {
+        _netIncomeLabel = gameObject.GetSingleComponentInChildren<UILabel>();
     }
 
     #region Event and Property Change Handlers
 
     private void IncomePropSetHandler() {
         _isIncomeSet = true;
-        if (AreAllValuesSet) {
-            PopulateElementWidgets();
+        if (IsInitialized) {
+            PopulateMemberWidgetValues();
         }
     }
 
     private void ExpensePropSetHandler() {
         _isExpenseSet = true;
-        if (AreAllValuesSet) {
-            PopulateElementWidgets();
+        if (IsInitialized) {
+            PopulateMemberWidgetValues();
         }
     }
 
     #endregion
 
-    private void PopulateElementWidgets() {
+    protected override void PopulateMemberWidgetValues() {
+        base.PopulateMemberWidgetValues();
         string incomeTooltipContent = Unknown;
         string expenseTooltipContent = Unknown;
         string labelContent = Unknown;
@@ -103,7 +103,7 @@ public class NetIncomeGuiElement : AGuiElement, IComparable<NetIncomeGuiElement>
                 expenseTooltipContent = Constants.FormatFloat_0Dp.Inject(Expense.Value);
             }
         }
-        _label.text = labelContent;
+        _netIncomeLabel.text = labelContent;
         _tooltipContent = TooltipFormat.Inject(incomeTooltipContent, expenseTooltipContent);
     }
 
@@ -113,7 +113,6 @@ public class NetIncomeGuiElement : AGuiElement, IComparable<NetIncomeGuiElement>
     }
 
     protected override void Cleanup() { }
-
 
     #region IComparable<NetIncomeGuiElement> Members
 
@@ -151,6 +150,7 @@ public class NetIncomeGuiElement : AGuiElement, IComparable<NetIncomeGuiElement>
     }
 
     #endregion
+
 
 }
 

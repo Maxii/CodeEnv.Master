@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AProgressBarGuiElement.cs
-// Abstract GuiElement handling the display and tooltip content for Item attributes that use a Progress Bar.
+// Abstract AGuiElement that represents a Progress Bar.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,68 +16,60 @@
 
 // default namespace
 
-using System;
 using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 /// <summary>
-/// Abstract GuiElement handling the display and tooltip content for Item attributes that use a Progress Bar.
+/// Abstract AGuiElement that represents a Progress Bar.
 /// </summary>
 public abstract class AProgressBarGuiElement : AGuiElement {
 
     [SerializeField]
     private UILabel _unknownLabel;    // contains "?"
+
     [SerializeField]
     private string _tooltipContent;
     protected sealed override string TooltipContent { get { return _tooltipContent; } }
 
-    private UILabel _barValueTextLabel;
+    private UILabel _progressBarValueTextLabel;
     private UIProgressBar _progressBar;
     private UISprite _progressBarForeground;
 
-    protected sealed override void Awake() {
-        base.Awake();
-        InitializeValuesAndReferences();
-    }
 
-    private void InitializeValuesAndReferences() {
+    protected override void InitializeValuesAndReferences() {
         _progressBar = gameObject.GetSingleComponentInChildren<UIProgressBar>();
         _progressBarForeground = _progressBar.gameObject.GetSingleComponentInImmediateChildren<UISprite>();
 
         var otherLabels = gameObject.GetComponentsInChildren<UILabel>().Except(_unknownLabel);
         if (otherLabels.Any()) {
-            _barValueTextLabel = otherLabels.Single();
+            _progressBarValueTextLabel = otherLabels.Single();
         }
 
         NGUITools.SetActive(_unknownLabel.gameObject, false);
     }
 
-    protected abstract bool AreAllValuesSet { get; }
-
-    protected void PopulateValues(float barValue, GameColor barForegroundColor, string barValueText) {
+    protected void PopulateProgressBarValues(float barValue, GameColor barForegroundColor, string barValueText) {
         _progressBar.value = barValue;
         _progressBarForeground.color = barForegroundColor.ToUnityColor();
-        if (_barValueTextLabel != null) {
-            _barValueTextLabel.text = barValueText;
+        if (_progressBarValueTextLabel != null) {
+            _progressBarValueTextLabel.text = barValueText;
         }
     }
 
     protected void HandleValuesUnknown() {
         NGUITools.SetActive(_unknownLabel.gameObject, true);
         NGUITools.SetActive(_progressBar.gameObject, false);
-        if (_barValueTextLabel != null) {
-            NGUITools.SetActive(_barValueTextLabel.gameObject, false);
+        if (_progressBarValueTextLabel != null) {
+            NGUITools.SetActive(_progressBarValueTextLabel.gameObject, false);
         }
     }
 
     #region Debug
 
-    protected override void __Validate() {
-        base.__Validate();
+    protected override void __ValidateOnAwake() {
+        base.__ValidateOnAwake();
         D.AssertNotNull(_unknownLabel);
     }
 

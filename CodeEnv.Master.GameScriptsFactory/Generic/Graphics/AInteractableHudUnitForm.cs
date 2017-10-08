@@ -19,17 +19,31 @@
 using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
 /// Abstract base class for InteractableHud forms for Units.
 /// </summary>
 public abstract class AInteractableHudUnitForm : AInteractableHudItemDataForm {
 
+    private const string HeroLevelFormat = "Level {0}";
+
+
+    [SerializeField]
+    private UILabel _heroLevelLabel = null;
+
+    public new AUnitCmdData ItemData { get { return base.ItemData as AUnitCmdData; } }
+
     protected abstract List<string> AcceptableFormationNames { get; }
 
     private UIPopupList _formationPopupList;
     private UILabel _formationPopupListLabel;
-    private GuiHeroModule _heroModule;
+
+    protected override void InitializeHeroGuiElement(AGuiElement e) {
+        base.InitializeHeroGuiElement(e);
+        D.AssertEqual(e, _heroGuiElement);
+        UIEventListener.Get(_heroGuiElement.gameObject).onClick += HeroGuiElementClickedEventHandler;
+    }
 
     protected override void InitializeNonGuiElementMembers() {
         base.InitializeNonGuiElementMembers();
@@ -37,10 +51,13 @@ public abstract class AInteractableHudUnitForm : AInteractableHudItemDataForm {
         _formationPopupList.keepValue = true;
         EventDelegate.Add(_formationPopupList.onChange, FormationChangedEventHandler);
         _formationPopupListLabel = _formationPopupList.GetComponentInChildren<UILabel>();
-        _heroModule = gameObject.GetSingleComponentInChildren<GuiHeroModule>();
     }
 
     #region Event and Property Change Handlers
+
+    private void HeroGuiElementClickedEventHandler(GameObject go) {
+        HandleHeroGuiElementClicked();
+    }
 
     private void FormationChangedEventHandler() {
         HandleFormationChanged();
@@ -48,32 +65,56 @@ public abstract class AInteractableHudUnitForm : AInteractableHudItemDataForm {
 
     #endregion
 
+    private void HandleHeroGuiElementClicked() {
+        ItemData.Hero = ItemData.Hero == TempGameValues.NoHero ? __CreateHero() : TempGameValues.NoHero;
+        RefreshHeroDisplayValues();
+    }
+
+    private void RefreshHeroDisplayValues() {
+        _heroGuiElement.ResetForReuse();
+        AssignHeroElementValues();
+        AssignHeroLevelValues();
+    }
+
+    private void AssignHeroElementValues() {
+        _heroGuiElement.Hero = ItemData.Hero;
+        _heroGuiElement.SetTooltip("Click to change Hero");
+    }
+
+    private void AssignHeroLevelValues() {
+        _heroLevelLabel.text = ItemData.Hero != TempGameValues.NoHero ? HeroLevelFormat.Inject(ItemData.Hero.Level) : null;
+    }
+
+    protected override sealed void AssignValueToHeroGuiElement() {
+        base.AssignValueToHeroGuiElement();
+        AssignHeroElementValues();
+    }
+
+    protected override sealed void AssignValueToNameInputGuiElement() {
+        base.AssignValueToNameInputGuiElement();
+        _nameInput.value = ItemData.UnitName;
+        //D.Log("{0}: Input field has been assigned {1}.", DebugName, _nameInput.value);
+    }
+
     protected override void AssignValuesToNonGuiElementMembers() {
         base.AssignValuesToNonGuiElementMembers();
         _formationPopupList.items = AcceptableFormationNames;
-        string currentFormationName = (ItemData as AUnitCmdData).UnitFormation.GetValueName();
+        string currentFormationName = ItemData.UnitFormation.GetValueName();
         _formationPopupList.Set(currentFormationName, notify: false);
         _formationPopupListLabel.text = currentFormationName;
 
-        _heroModule.UnitData = ItemData as AUnitCmdData;
-    }
-
-    protected override void AssignValueToNameInputGuiElement() {
-        base.AssignValueToNameInputGuiElement();
-        _nameInput.value = (ItemData as AUnitCmdData).UnitName;
-        //D.Log("{0}: Input field has been assigned {1}.", DebugName, _nameInput.value);
+        AssignHeroLevelValues();
     }
 
     private void HandleFormationChanged() {
         var formation = Enums<Formation>.Parse(_formationPopupList.value);
-        AUnitCmdData cmdData = ItemData as AUnitCmdData;
-        if (cmdData.UnitFormation != formation) {
-            D.Log("{0}: UnitFormation changing from {1} to {2}.", DebugName, cmdData.UnitFormation.GetValueName(), formation.GetValueName());
-            cmdData.UnitFormation = formation;
+        if (ItemData.UnitFormation != formation) {
+            D.Log("{0}: UnitFormation changing from {1} to {2}.", DebugName, ItemData.UnitFormation.GetValueName(), formation.GetValueName());
+            ItemData.UnitFormation = formation;
         }
     }
 
-    protected override void HandleNameInputSubmitted() {
+    protected override sealed void HandleNameInputSubmitted() {
         base.HandleNameInputSubmitted();
         AUnitCmdData cmdData = ItemData as AUnitCmdData;
         if (cmdData.UnitName != _nameInput.value) {
@@ -86,18 +127,43 @@ public abstract class AInteractableHudUnitForm : AInteractableHudItemDataForm {
         _nameInput.RemoveFocus();
     }
 
-    protected override void ResetForReuse_Internal() {
-        base.ResetForReuse_Internal();
-        _nameInput.Set(null, notify: false);    // could also do _nameInput.value = null as don't subscribe to the onChange event
+    protected override void ResetNonGuiElementMembers() {
+        base.ResetNonGuiElementMembers();
         _formationPopupList.Set(null, notify: false);
         _formationPopupListLabel.text = null;
-        _heroModule.ResetForReuse();
+        _heroLevelLabel.text = null;
+    }
+
+    #region Cleanup
+
+    protected override void CleanupHeroGuiElement(AGuiElement e) {
+        base.CleanupHeroGuiElement(e);
+        UIEventListener.Get(_heroGuiElement.gameObject).onClick -= HeroGuiElementClickedEventHandler;
     }
 
     protected override void CleanupNonGuiElementMembers() {
         base.CleanupNonGuiElementMembers();
         EventDelegate.Remove(_formationPopupList.onChange, FormationChangedEventHandler);
     }
+
+    #endregion
+
+    #region Debug
+
+    protected override void __ValidateOnAwake() {
+        base.__ValidateOnAwake();
+        D.AssertNotNull(_heroLevelLabel);
+    }
+
+    private Hero __CreateHero() {  // UNDONE
+        var heroStat = new HeroStat("Maureen", AtlasID.MyGui, TempGameValues.AnImageFilename, ItemData.Owner.Species,
+            Hero.HeroCategory.Admiral, "Hero Description...", 0.2F, 10F);
+        var hero = new Hero(heroStat);
+        hero.IncrementExperienceBy(Random.Range(Constants.ZeroF, 2000F));
+        return hero;
+    }
+
+    #endregion
 
 }
 

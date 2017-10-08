@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: FleetCompositionGuiElement.cs
-// GuiElement handling the display and tooltip content for the Composition of a Fleet.   
+// AGuiElement that represent the composition of a Fleet.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,37 +21,37 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// GuiElement handling the display and tooltip content for the Composition of a Fleet.   
+/// AGuiElement that represent the composition of a Fleet.
 /// </summary>
-public class FleetCompositionGuiElement : ACompositionGuiElement {
+public class FleetCompositionGuiElement : AUnitCompositionGuiElement {
 
-    private bool _isCategorySet = false;
+    private bool _isCategorySet = false;    // reqd as value can be None if UnitCategory not accessible
     private FleetCategory _category;
     public FleetCategory Category {
         get { return _category; }
         set {
             D.Assert(!_isCategorySet);  // only happens once between Resets
-            _category = value;  // value can be None if no element category is accessible
-            CategoryPropSetHandler();  // SetProperty() only calls handler when changed
+            _category = value;
+            CategoryPropSetHandler();
         }
     }
 
-    protected override string TooltipContent { get { return base.TooltipContent; } }    //TODO
+    protected override string TooltipContent { get { return "Composition of the Fleet"; } }    // IMPROVE
 
-    protected override bool AreAllValuesSet { get { return IconInfo != default(TrackingIconInfo) && _isCategorySet; } }
+    public override bool IsInitialized { get { return IconInfo != default(TrackingIconInfo) && _isCategorySet; } }
 
     #region Event and Property Change Handlers
 
     private void CategoryPropSetHandler() {
         _isCategorySet = true;
-        if (AreAllValuesSet) {
-            PopulateElementWidgets();
+        if (IsInitialized) {
+            PopulateMemberWidgetValues();
         }
     }
 
     #endregion
 
-    protected override string GetTextForCategory() { return Category != FleetCategory.None ? Category.GetValueName() : Unknown; }
+    protected override string GetUnitCategoryName() { return Category != FleetCategory.None ? Category.GetValueName() : Unknown; }
 
     public override void ResetForReuse() {
         base.ResetForReuse();
@@ -60,9 +60,9 @@ public class FleetCompositionGuiElement : ACompositionGuiElement {
 
     protected override void Cleanup() { }
 
-    #region IComparable<ACompositionGuiElement> Members
+    #region IComparable<FleetCompositionGuiElement> Members
 
-    public override int CompareTo(ACompositionGuiElement other) {
+    public override int CompareTo(AUnitCompositionGuiElement other) {
         return Category.CompareTo((other as FleetCompositionGuiElement).Category);
     }
 

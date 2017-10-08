@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ApprovalGuiElement.cs
-// GuiElement handling the display and tooltip content for the Approval in a Command.       
+// AGuiElement that represents the approval of Unit or Empire.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,14 +21,14 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// GuiElement handling the display and tooltip content for the Approval in a Command.       
+/// AGuiElement that represents the approval of Unit or Empire.
 /// </summary>
 public class ApprovalGuiElement : AProgressBarGuiElement, IComparable<ApprovalGuiElement> {
 
     /// <summary>
     /// Format for the alternative display of values. Approval percentage aka 100%.
     /// </summary>
-    private const string BarValuesTextFormat = "{0}";
+    private const string ApprovalBarValuesTextFormat = "{0}";
 
     private bool _isApprovalSet;
     private float? _approval;
@@ -43,7 +43,7 @@ public class ApprovalGuiElement : AProgressBarGuiElement, IComparable<ApprovalGu
 
     public override GuiElementID ElementID { get { return GuiElementID.Approval; } }
 
-    protected override bool AreAllValuesSet { get { return _isApprovalSet; } }
+    public override bool IsInitialized { get { return _isApprovalSet; } }
 
     #region Event and Property Change Handlers
 
@@ -52,14 +52,15 @@ public class ApprovalGuiElement : AProgressBarGuiElement, IComparable<ApprovalGu
             Utility.ValidateForRange(Approval.Value, Constants.ZeroPercent, Constants.OneHundredPercent);
         }
         _isApprovalSet = true;
-        if (AreAllValuesSet) {
-            PopulateWidgets();
+        if (IsInitialized) {
+            PopulateMemberWidgetValues();
         }
     }
 
     #endregion
 
-    private void PopulateWidgets() {
+    protected override void PopulateMemberWidgetValues() {
+        base.PopulateMemberWidgetValues();
         if (!Approval.HasValue) {
             HandleValuesUnknown();
             return;
@@ -82,9 +83,9 @@ public class ApprovalGuiElement : AProgressBarGuiElement, IComparable<ApprovalGu
         }
 
         string approvalValuePercentText = Constants.FormatPercent_0Dp.Inject(approvalValue);
-        var approvalValueText_Colored = BarValuesTextFormat.Inject(approvalValuePercentText.SurroundWith(approvalColor));
+        var approvalValueText_Colored = ApprovalBarValuesTextFormat.Inject(approvalValuePercentText.SurroundWith(approvalColor));
 
-        PopulateValues(approvalValue, approvalColor, approvalValueText_Colored);
+        PopulateProgressBarValues(approvalValue, approvalColor, approvalValueText_Colored);
     }
 
     public override void ResetForReuse() {

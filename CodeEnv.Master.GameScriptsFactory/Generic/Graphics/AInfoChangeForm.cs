@@ -77,6 +77,26 @@ public abstract class AInfoChangeForm : AInfoDisplayForm {
 
     protected virtual void AssignValueToNameInputGuiElement() { }
 
+    protected override bool ResetForReuse(GuiElementID id) {
+        bool isFound = base.ResetForReuse(id);
+        if (!isFound) {
+            isFound = true;
+            switch (id) {
+                case GuiElementID.NameInput:
+                    ResetNameInputGuiElement();
+                    break;
+                default:
+                    isFound = false;
+                    break;
+            }
+        }
+        return isFound;
+    }
+
+    private void ResetNameInputGuiElement() {
+        _nameInput.Set(null, notify: false);
+    }
+
     protected sealed override bool CleanupGuiElement(AGuiElement e) {
         bool isFound = base.CleanupGuiElement(e);
         if (!isFound) {

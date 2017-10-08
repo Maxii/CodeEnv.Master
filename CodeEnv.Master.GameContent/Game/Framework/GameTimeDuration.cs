@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
     /// number of hours, days and years.
     /// <remarks>5.7.16: Now suitable for a dictionary key.</remarks>
     /// </summary>
-    public struct GameTimeDuration : IEquatable<GameTimeDuration> {
+    public struct GameTimeDuration : IEquatable<GameTimeDuration>, IComparable<GameTimeDuration> {
 
         public const string FullFormat = "{0} years, {1} days, {2:0.0} hours"; //= "{0} years, {1:D3} days, {2:D2} hours";
         public const string NoYearsFormat = "{0} days, {1:0.0} hours";  //= "{0:D3} days, {1:D2} hours";
@@ -229,6 +229,16 @@ namespace CodeEnv.Master.GameContent {
 
         public bool Equals(GameTimeDuration other) {
             return TotalInHours == other.TotalInHours;  // Can't use Approx if comply with "If equal, HashCode must return same value"
+        }
+
+        #endregion
+
+        #region IComparable<GameTimeDuration> Members
+
+        public int CompareTo(GameTimeDuration other) {
+            if (this < other) { return -1; }
+            if (this > other) { return 1; }
+            return 0;
         }
 
         #endregion

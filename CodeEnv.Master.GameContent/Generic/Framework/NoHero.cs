@@ -15,6 +15,7 @@
 ////#define DEBUG_ERROR
 
 using System;
+using CodeEnv.Master.Common;
 
 namespace CodeEnv.Master.GameContent {
 
@@ -23,7 +24,10 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class NoHero : Hero {
 
-        public NoHero() : base(new HeroStat("NoHero", AtlasID.None, null, Species.None, HeroCategory.None, "NoDescription", 0F, 0F)) { }
+        public override int Level { get { return Constants.Zero; } }
+
+        public NoHero() : base(new HeroStat("NoHero", AtlasID.MyGui, TempGameValues.EmptyImageFilename, Species.None, HeroCategory.None,
+            "NoDescription", 0F, 0F)) { }
 
         public override void IncrementExperienceBy(float increasedExperience) {
             throw new NotImplementedException();

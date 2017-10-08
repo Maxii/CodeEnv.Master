@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2015 Strategic Forge
+// Copyright © 2012 - 2017 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ATableWindow.cs
-// Abstract base class for all Table-based Windows.
+// File: ATableForm.cs
+// Abstract AForm that displays a table of information in a TableWindow. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,129 +20,114 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
+using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 /// <summary>
-/// Abstract base class for all Table-based Windows.
-/// OPTIMIZE Reuse rows rather than destroying them.
+/// Abstract AForm that displays a table of information in a TableWindow. 
 /// </summary>
-public abstract class ATableWindow : AGuiWindow {
+public abstract class ATableForm : AForm {
 
     protected const string Unknown = Constants.QuestionMark;
     private const string RowNameExtension = " Row";
 
-    public ATableRowForm rowPrefab; // Has Editor
+    [SerializeField]
+    private ATableRowForm _rowPrefab;
 
-    protected override Transform ContentHolder { get { return _contentHolder; } }
+    protected abstract FormID RowFormID { get; }
 
+    protected GameManager _gameMgr;
     protected SortDirection _sortDirection;
     protected UITable _table;
 
+    /// <summary>
+    /// The sort direction value that _lastSortDirection should be set to when ResetForReuse.
+    /// <remarks>Our goal is to resume the same sort topic and direction that was used when this form was last used.</remarks>
+    /// <remarks>This saved value will be the inverse of the _lastSortDirection value since 
+    /// DetermineSortDirection() will derive the current sort direction by inverting the value of _lastSortDirection. 
+    /// Handled this way to withstand multiple ResetForReuse() calls between use.</remarks>
+    /// </summary>
+    private SortDirection _lastSortDirectionValueToAssumeWhenResetForReuse = SortDirection.Descending;
     private Transform _tableContainer;
     private UIScrollView _tableScrollView;
-    private Transform _contentHolder;
-    private GuiElementID _lastSortTopic;
-    private SortDirection _lastSortDirection;
-    private IList<ATableRowForm> _rowForms;
-
-    protected sealed override void Awake() {
-        base.Awake();
-        InitializeOnAwake();
-    }
-
-    protected override void InitializeOnAwake() {
-        base.InitializeOnAwake();
-        Utility.ValidateNotNull(rowPrefab);
-        InitializeContentHolder();
-    }
+    private GuiElementID _lastSortTopic = GuiElementID.NameLabel;
+    private SortDirection _lastSortDirection = SortDirection.Descending;
+    private IList<ATableRowForm> _rowFormsInUse;
+    private List<ATableRowForm> _rowFormsAvailable;
 
     protected override void InitializeValuesAndReferences() {
-        base.InitializeValuesAndReferences();
+        _gameMgr = GameManager.Instance;
         _table = gameObject.GetSingleComponentInChildren<UITable>();
         _table.sorting = UITable.Sorting.Custom;
-        _rowForms = new List<ATableRowForm>();
-        _panel.widgetsAreStatic = true; // OPTIMIZE see http://www.tasharen.com/forum/index.php?topic=261.0
+        _rowFormsAvailable = new List<ATableRowForm>();
+        _rowFormsInUse = new List<ATableRowForm>();
         _tableScrollView = GetComponentInChildren<UIScrollView>();
         _tableContainer = _tableScrollView.transform.parent;
     }
 
-    private void InitializeContentHolder() {
-        _contentHolder = gameObject.GetSingleComponentInImmediateChildren<UISprite>().transform;    // background sprite
+    public sealed override void PopulateValues() {
+        AssignValuesToMembers();
     }
 
-    protected override void Subscribe() {
-        base.Subscribe();
-        EventDelegate.Add(onShowBegin, ShowBeginEventHandler);
+    protected sealed override void AssignValuesToMembers() {
+        PopulateTableWithRows();
+        ResumePreviousSortTopicAndDirection(_lastSortTopic);
     }
+
+    private void PopulateTableWithRows() {
+        D.Assert(!_rowFormsInUse.Any());
+
+        RecordAnyExistingRowFormChildrenAsAvailable();
+
+        ATableRowForm rowForm;
+        var items = GetItemsUserIsAwareOf();
+        foreach (var item in items) {
+            if (_rowFormsAvailable.Any()) {
+                rowForm = _rowFormsAvailable.First();
+                D.Assert(!rowForm.gameObject.activeSelf);
+                _rowFormsAvailable.Remove(rowForm);
+            }
+            else {
+                rowForm = BuildRow();
+                rowForm.itemFocusUserAction += ItemFocusUserActionEventHandler;
+            }
+            AssignItemToRowForm(item, rowForm);
+            _rowFormsInUse.Add(rowForm);
+            rowForm.PopulateValues();
+            rowForm.gameObject.SetActive(true);
+        }
+    }
+
+    private void RecordAnyExistingRowFormChildrenAsAvailable() {
+        if (!_rowFormsAvailable.Any()) {
+            // first use of this TableForm so check for any unregistered RowForms
+            _table.gameObject.GetComponentsInChildren<ATableRowForm>(includeInactive: true, results: _rowFormsAvailable);
+            foreach (var rowForm in _rowFormsAvailable) {
+                rowForm.ResetForReuse();
+                rowForm.itemFocusUserAction += ItemFocusUserActionEventHandler;
+                rowForm.gameObject.SetActive(false);
+            }
+        }
+    }
+
+    protected abstract void ResumePreviousSortTopicAndDirection(GuiElementID sortTopicToResume);
 
     #region Event and Property Change Handlers
 
-    /// <summary>
-    /// Event handler called when the GuiWindow begins showing.
-    /// </summary>
-    private void ShowBeginEventHandler() {
-        BuildTable();
-    }
-
     private void ItemFocusUserActionEventHandler(object sender, ATableRowForm.TableRowFocusUserActionEventArgs e) {
-        CloseScreenAndFocusOnItem(e.ItemToFocusOn);
+        HandleUserInitiatedFocusOn(e.ItemToFocusOn);
     }
 
     #endregion
 
-    /// <summary>
-    /// Show the Window.
-    /// </summary>
-    public void Show() {
-        ShowWindow();
-    }
-
-    /// <summary>
-    /// Hide the Window.
-    /// </summary>
-    public void Hide() {
-        HideWindow();
-    }
-
-    /// <summary>
-    /// Build a new table sorted by Name.
-    /// </summary>
-    private void BuildTable() {
-        //D.Log("{0}.BuildTable() called.", DebugName);
-        ClearTable();   // OPTIMIZE Reqd to destroy the row already present. Can be removed once reuse of rows is implemented
-        AddTableRows();
-        _table.onCustomSort = CompareName;
-        _table.repositionNow = true;
+    private void HandleUserInitiatedFocusOn(ICameraFocusable item) {
+        CloseScreenAndFocusOnItem(item);
     }
 
     private void CloseScreenAndFocusOnItem(ICameraFocusable item) {
-        GameObject doneButtonGo = gameObject.GetSingleComponentInChildren<InputModeControlButton>().gameObject;
-        GameInputHelper.Instance.Notify(doneButtonGo, "OnClick");
+        TableWindow.Instance.ClickDoneButton();
         item.IsFocus = true;
-    }
-
-    private void ClearTable() {
-        _rowForms.ForAll(form => form.itemFocusUserAction -= ItemFocusUserActionEventHandler);
-        _rowForms.Clear();
-        DestroyRowForms();
-    }
-
-    private void DestroyRowForms() {
-        var existingRowTransforms = _table.GetChildList();
-        // Note: DestroyImmediate() because Destroy() doesn't always get rid of the existing rows before Reposition occurs on LateUpdate
-        // This results in an extra 'empty' row that stays until another Reposition() call, usually from sorting something
-        existingRowTransforms.ForAll(r => DestroyImmediate(r.gameObject));
-    }
-
-    private void AddTableRows() {
-        IEnumerable<AItem> items = GetItemsUserIsAwareOf();
-        items.ForAll(item => {
-            ATableRowForm rowForm = BuildRow(item.DebugName);
-            ConfigureRow(rowForm, item);
-            _rowForms.Add(rowForm);
-        });
     }
 
     /// <summary>
@@ -152,17 +137,16 @@ public abstract class ATableWindow : AGuiWindow {
     /// <returns></returns>
     protected abstract IEnumerable<AItem> GetItemsUserIsAwareOf();
 
-    private ATableRowForm BuildRow(string itemName) {
-        GameObject rowGo = NGUITools.AddChild(_table.gameObject, rowPrefab.gameObject);
-        rowGo.name = itemName + RowNameExtension;
+    private ATableRowForm BuildRow() {
+        GameObject rowGo = NGUITools.AddChild(_table.gameObject, _rowPrefab.gameObject);
         return rowGo.GetSafeComponent<ATableRowForm>(); ;
     }
 
-    private void ConfigureRow(ATableRowForm rowForm, AItem item) {
-        ////MakeRowDraggable(rowForm);
+    private void AssignItemToRowForm(AItem item, ATableRowForm rowForm) {
+        //MakeRowDraggable(rowForm);
+        rowForm.gameObject.name = item.DebugName + RowNameExtension;
         rowForm.SetSideAnchors(_tableContainer, left: 0, right: 0);
         rowForm.Report = GetUserReportFor(item);
-        rowForm.itemFocusUserAction += ItemFocusUserActionEventHandler;
     }
 
     /// <summary>
@@ -220,8 +204,8 @@ public abstract class ATableWindow : AGuiWindow {
 
     private int CompareOwner(Transform rowA, Transform rowB) {
         _lastSortTopic = GuiElementID.Owner;
-        var rowAOwnerElement = GetGuiElement(rowA, GuiElementID.Owner) as OwnerGuiElement;
-        var rowBOwnerElement = GetGuiElement(rowB, GuiElementID.Owner) as OwnerGuiElement;
+        var rowAOwnerElement = GetGuiElement(rowA, GuiElementID.Owner) as OwnerIconGuiElement;
+        var rowBOwnerElement = GetGuiElement(rowB, GuiElementID.Owner) as OwnerIconGuiElement;
         return (int)_sortDirection * rowAOwnerElement.CompareTo(rowBOwnerElement);
     }
 
@@ -262,15 +246,15 @@ public abstract class ATableWindow : AGuiWindow {
 
     protected int CompareHero(Transform rowA, Transform rowB) {
         _lastSortTopic = GuiElementID.Hero;
-        var rowAHeroElement = GetGuiElement(rowA, GuiElementID.Hero) as HeroGuiElement;
-        var rowBHeroElement = GetGuiElement(rowB, GuiElementID.Hero) as HeroGuiElement;
+        var rowAHeroElement = GetGuiElement(rowA, GuiElementID.Hero) as HeroIconGuiElement;
+        var rowBHeroElement = GetGuiElement(rowB, GuiElementID.Hero) as HeroIconGuiElement;
         return (int)_sortDirection * rowAHeroElement.CompareTo(rowBHeroElement);
     }
 
     protected int CompareComposition(Transform rowA, Transform rowB) {
         _lastSortTopic = GuiElementID.Composition;
-        var rowACompElement = GetGuiElement(rowA, GuiElementID.Composition) as ACompositionGuiElement;
-        var rowBCompElement = GetGuiElement(rowB, GuiElementID.Composition) as ACompositionGuiElement;
+        var rowACompElement = GetGuiElement(rowA, GuiElementID.Composition) as AUnitCompositionGuiElement;
+        var rowBCompElement = GetGuiElement(rowB, GuiElementID.Composition) as AUnitCompositionGuiElement;
         return (int)_sortDirection * rowACompElement.CompareTo(rowBCompElement);
     }
 
@@ -337,6 +321,13 @@ public abstract class ATableWindow : AGuiWindow {
         return (int)_sortDirection * CompareEmbeddedFloat(rowASpeedLabel.text, rowBSpeedLabel.text);
     }
 
+    protected int CompareConstruction(Transform rowA, Transform rowB) {
+        _lastSortTopic = GuiElementID.Construction;
+        var rowAConstructionElement = GetGuiElement(rowA, GuiElementID.Construction) as ConstructionIconGuiElement;
+        var rowBConstructionElement = GetGuiElement(rowB, GuiElementID.Construction) as ConstructionIconGuiElement;
+        return (int)_sortDirection * rowAConstructionElement.CompareTo(rowBConstructionElement);
+    }
+
     private UILabel GetLabel(Transform row, GuiElementID elementID) {
         return GetGuiElement(row, elementID).gameObject.GetSingleComponentInChildren<UILabel>();
     }
@@ -356,21 +347,21 @@ public abstract class ATableWindow : AGuiWindow {
     protected SortDirection DetermineSortDirection(GuiElementID sortTopic) {
         SortDirection sortDirection;
         if (_lastSortTopic != sortTopic) {
-            // new sort topic so direction should be descending
-            sortDirection = SortDirection.Descending;
-            //_lastSortTopic = sortTopic;   // now set in Comparison method as the comparison method is called by UITable on Start
+            // new sort topic so lowest values at top
+            sortDirection = SortDirection.Ascending;
         }
         else {
             // same sort topic so direction should be the 'other' direction
-            sortDirection = ToggleSortDirection();
+            sortDirection = ToggleDirection(_lastSortDirection);
         }
         _lastSortDirection = sortDirection;
-        //D.Log("{0}.AssessSortDirection(Topic: {1}): Direction: {2}, Value: {3}.", DebugName, sortTopic.GetValueName(), sortDirection.GetValueName(), (int)sortDirection);
+        _lastSortDirectionValueToAssumeWhenResetForReuse = ToggleDirection(_lastSortDirection);
+        //D.Log("{0}.DetermineSortDirection(Topic: {1}): Direction: {2}, Value: {3}.", DebugName, sortTopic.GetValueName(), sortDirection.GetValueName(), (int)sortDirection);
         return sortDirection;
     }
 
-    private SortDirection ToggleSortDirection() {
-        return _lastSortDirection == SortDirection.Ascending ? SortDirection.Descending : SortDirection.Ascending;
+    private SortDirection ToggleDirection(SortDirection direction) {
+        return direction == SortDirection.Ascending ? SortDirection.Descending : SortDirection.Ascending;
     }
 
     /// <summary>
@@ -429,28 +420,66 @@ public abstract class ATableWindow : AGuiWindow {
 
     #endregion
 
-    protected override void ResetForReuse() {
-        ResetSortDirectionState();
-        // IMPROVE Either destroy the rowForms or reuse them, but not both
-        ClearTable();        //_rowForms.ForAll(f => f.ResetForReuse());
+    protected override void ResetForReuse_Internal() {
+        ResetSortStatesForReuse();
+        RecycleRowFormsInUse();
     }
 
-    private void ResetSortDirectionState() {
-        _sortDirection = SortDirection.Descending;
-        _lastSortTopic = GuiElementID.None;
-        _lastSortDirection = SortDirection.Descending;
+    private void ResetSortStatesForReuse() {
+        //D.Log("{0}.ResetSortStatesForReuse() called.", DebugName);
+        _lastSortDirection = _lastSortDirectionValueToAssumeWhenResetForReuse;
+        // keep _lastSortTopic the same to sort the same topic when reused
     }
 
-    protected override void Unsubscribe() {
-        base.Unsubscribe();
-        EventDelegate.Remove(onShowBegin, ShowBeginEventHandler);
+    private void RecycleRowFormsInUse() {
+        foreach (var rowForm in _rowFormsInUse) {
+            D.Assert(rowForm.gameObject.activeSelf);
+            rowForm.ResetForReuse();
+            rowForm.gameObject.SetActive(false);
+            D.Assert(!_rowFormsAvailable.Contains(rowForm));
+            _rowFormsAvailable.Add(rowForm);
+        }
+        _rowFormsInUse.Clear();
     }
+
+    #region Cleanup
+
+    private void Unsubscribe() {
+        foreach (var rowForm in _rowFormsInUse) {
+            rowForm.itemFocusUserAction -= ItemFocusUserActionEventHandler;
+        }
+        foreach (var rowForm in _rowFormsAvailable) {
+            rowForm.itemFocusUserAction -= ItemFocusUserActionEventHandler;
+        }
+    }
+
+    protected override void Cleanup() {
+        Unsubscribe();
+    }
+
+    #endregion
+
+    #region Debug
+
+    protected override void __ValidateOnAwake() {
+        base.__ValidateOnAwake();
+        D.AssertNotNull(_rowPrefab);
+        D.AssertEqual(RowFormID, _rowPrefab.FormID);
+    }
+
+    #endregion
 
     #region Nested Classes
 
     public enum SortDirection {
-        Descending = 1,
-        Ascending = -1
+        /// <summary>
+        /// Highest values are at the top of the scroll view.
+        /// </summary>
+        Descending = -1,
+        /// <summary>
+        /// Lowest values are at the top of the scroll view.
+        /// </summary>
+        Ascending = 1
     }
 
     #endregion

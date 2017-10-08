@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: FacilityGuiIcon.cs
-// AMultiSizeGuiIcon that holds a FacilityItem.
+// File: FacilityIconGuiElement.cs
+// AMultiSizeIconGuiElement that represents a FacilityItem.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,14 +16,15 @@
 
 // default namespace
 
+using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// AMultiSizeGuiIcon that holds a FacilityItem.
+/// AMultiSizeIconGuiElement that represents a FacilityItem.
 /// <remarks>This is an icon used by the Gui, not the in game icon that tracks a element in space.</remarks>
 /// </summary>
-public class FacilityGuiIcon : AElementGuiIcon {
+public class FacilityIconGuiElement : AUnitElementIconGuiElement {
 
     public new FacilityItem Element {
         get { return base.Element as FacilityItem; }

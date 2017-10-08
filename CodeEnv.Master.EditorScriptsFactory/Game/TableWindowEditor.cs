@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2015 Strategic Forge
+// Copyright © 2012 - 2017 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: SettlementsTableWindowEditor.cs
-// Custom editor for the SettlementsTableWindow.
+// File: TableWindowEditor.cs
+// Custom editor for TableWindow, patterned after SpaceD.UIWindowInspector.  
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,15 +16,13 @@
 
 // default namespace
 
-using CodeEnv.Master.Common;
 using UnityEditor;
 
 /// <summary>
-/// Custom editor for the SettlementsTableWindow.
+/// Custom editor for TableWindow, patterned after SpaceD.UIWindowInspector.  
 /// </summary>
-[CustomEditor(typeof(SettlementsTableWindow))]
-public class SettlementsTableWindowEditor : ATableWindowEditor<SettlementsTableWindow> {
-
+[CustomEditor(typeof(TableWindow))]
+public class TableWindowEditor : AGuiWindowEditor<TableWindow> {
 
 }
 

@@ -1147,7 +1147,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
             FpsReadout.Instance.IsReadoutToShow = true;
 
             OnIsReadyForPlay();
-            Debug.LogFormat("{0}: Game is now ready to show GamePlay. Frame = {1}. FPS = {2:0.#}.", DebugName, Time.frameCount, FpsReadout.Instance.FramesPerSecond);
+            D.LogBold("{0}: Game is now ready to show GamePlay. Frame = {1}. FPS = {2:0.#}.", DebugName, Time.frameCount, FpsReadout.Instance.FramesPerSecond);
 
             if (_playerPrefsMgr.IsPauseOnLoadEnabled) { // Note: My practice - IsRunning THEN pause changes
                 RequestPauseStateChange(toPause: true, toOverride: true);

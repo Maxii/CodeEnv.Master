@@ -27,27 +27,27 @@ namespace CodeEnv.Master.GameContent {
         private const string DebugNameFormat = "{0}[{1}]";
         private const float CmdEffectivenessImprovementPerLevel = 0.05F;    // TODO externalize
 
-        private static IDictionary<int, float> _reqdExperiencePerLevelLookup = new Dictionary<int, float>() {   // TODO externalize
-            { 0, 10F },
-            { 1, 30F }, // + 20
-            { 2, 60F }, // + 30
-            { 3, 100F }, // + 40
-            { 4, 150F }, // + 50
-            { 5, 210F }, // + 60
-            { 6, 280F }, // + 70
-            { 7, 360F }, // + 80
-            { 8, 450F }, // + 90
-            { 9, 550F }, // + 100
-            { 10, 660F }, // + 110
-            { 11, 780F }, // + 120
-            { 12, 910F }, // + 130
-            { 13, 1050F }, // + 140
-            { 14, 1200F }, // + 150
-            { 15, 1360F }, // + 160
-            { 16, 1530F }, // + 170
-            { 17, 1710F }, // + 180
-            { 18, 1900F }, // + 190
-            { 19, 2100F }, // + 200
+        private static IDictionary<int, float> _reqdExperienceForNextLevelLookup = new Dictionary<int, float>() {   // TODO externalize
+            { 1, 10F },
+            { 2, 30F }, // + 20
+            { 3, 60F }, // + 30
+            { 4, 100F }, // + 40
+            { 5, 150F }, // + 50
+            { 6, 210F }, // + 60
+            { 7, 280F }, // + 70
+            { 8, 360F }, // + 80
+            { 9, 450F }, // + 90
+            { 10, 550F }, // + 100
+            { 11, 660F }, // + 110
+            { 12, 780F }, // + 120
+            { 13, 910F }, // + 130
+            { 14, 1050F }, // + 140
+            { 15, 1200F }, // + 150
+            { 16, 1360F }, // + 160
+            { 17, 1530F }, // + 170
+            { 18, 1710F }, // + 180
+            { 19, 1900F }, // + 190
+            { 20, 2100F }, // + 200
         };
 
         private string _debugName;
@@ -76,7 +76,8 @@ namespace CodeEnv.Master.GameContent {
 
         public float Experience { get; private set; }
 
-        public int Level { get; private set; }
+        private int _level = Constants.One;
+        public virtual int Level { get { return _level; } }
 
         private HeroStat _stat;
 
@@ -94,9 +95,9 @@ namespace CodeEnv.Master.GameContent {
 
         private void AssessLevel() {
             float reqdExperienceForNextLevel;
-            if (_reqdExperiencePerLevelLookup.TryGetValue(Level, out reqdExperienceForNextLevel)) {
+            if (_reqdExperienceForNextLevelLookup.TryGetValue(Level, out reqdExperienceForNextLevel)) {
                 if (Experience >= reqdExperienceForNextLevel) {
-                    Level++;
+                    _level++;
                     AssessLevel();
                     AssessCmdEffectiveness();
                 }

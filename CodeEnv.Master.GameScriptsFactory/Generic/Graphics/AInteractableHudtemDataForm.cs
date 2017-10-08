@@ -40,6 +40,11 @@ public abstract class AInteractableHudItemDataForm : AItemDataForm {
         _titleLabel = immediateChildLabels.Single(l => l != _nameLabel);
     }
 
+    public sealed override void PopulateValues() {
+        base.PopulateValues();
+        D.Assert(GameManager.Instance.IsPaused);    // Only Selection (which pauses game) can raise InteractableHud
+    }
+
     protected override void AssignValuesToNonGuiElementMembers() {
         base.AssignValuesToNonGuiElementMembers();
         _titleLabel.text = FormID.GetValueName();
@@ -53,6 +58,11 @@ public abstract class AInteractableHudItemDataForm : AItemDataForm {
     }
 
     #endregion
+
+    protected override void ResetNonGuiElementMembers() {
+        base.ResetNonGuiElementMembers();
+        _titleLabel.text = null;
+    }
 
     protected override void CleanupNameGuiElement(AGuiElement e) {
         base.CleanupNameGuiElement(e);

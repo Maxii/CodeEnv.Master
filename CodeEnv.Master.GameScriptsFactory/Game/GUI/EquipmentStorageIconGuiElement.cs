@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: EquipmentStorageGuiIcon.cs
-// Icon that represents a AEquipmentStat that can be 'stored' in a slot within a Unit Design.
+// File: EquipmentStorageIconGuiElement.cs
+// AMultiSizeIconGuiElement that represents an EquipmentStat stored in a slot within a Unit Design.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,29 +22,44 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Icon that represents a AEquipmentStat that can be 'stored' in a slot within a Unit Design.
+/// AMultiSizeIconGuiElement that represents an EquipmentStat stored in a slot within a Unit Design. Also represents an empty slot.
 /// </summary>
-public class EquipmentStorageGuiIcon : AEquipmentGuiIcon {
+public class EquipmentStorageIconGuiElement : AEquipmentIconGuiElement {
 
     /// <summary>
     /// Empty 'icon slot' sprite that is always enabled. When the slot is filled, this background sprite shows through as a 'highlight'.
     /// </summary>
-    public UISprite emptySlotSprite;
+    [SerializeField]
+    private UISprite _emptySlotSprite = null;
 
-    public UILabel emptySlotCategoryLabel;
+    [SerializeField]
+    private UILabel _emptySlotCategoryLabel = null;
 
+    public override bool IsInitialized {
+        get { return Size != default(IconSize) && _storage != null && _slotID != default(EquipmentSlotID); }
+    }
+
+    private string _tooltipContent;
+    protected override string TooltipContent { get { return _tooltipContent; } }
+
+    private AEquipmentStat _currentStat;
     private DesignEquipmentStorage _storage;
     private EquipmentSlotID _slotID;
+
+    private UILabel _iconImageNameLabel;
 
     public void Initialize(DesignEquipmentStorage storage, EquipmentSlotID slotID, AEquipmentStat stat) {
         _storage = storage;
         _slotID = slotID;
+        _currentStat = stat;
 
-        D.AssertNotDefault((int)Size);
+        D.Assert(IsInitialized);
         D.AssertEqual(_storage.GetEquipmentStat(slotID), stat);
-        emptySlotCategoryLabel.text = slotID.Category.GetEnumAttributeText();
+
+        _emptySlotCategoryLabel.text = slotID.Category.GetEnumAttributeText();
+        PopulateMemberWidgetValues();
         if (stat != null) {
-            Show(stat.ImageAtlasID, stat.ImageFilename, stat.Name);
+            Show();
         }
     }
 
@@ -66,13 +81,33 @@ public class EquipmentStorageGuiIcon : AEquipmentGuiIcon {
             return false;
         }
         replacedStat = _storage.Replace(_slotID, replacementStat);
+        _currentStat = replacementStat;
+        PopulateMemberWidgetValues();
         if (replacedStat != replacementStat) {
             HandleStatReplacedWith(replacementStat);
         }
         return true;
     }
 
-    protected override void AcquireAdditionalIconWidgets(GameObject topLevelIconGo) { }
+    protected override void AcquireAdditionalWidgets() {
+        _iconImageNameLabel = _topLevelIconWidget.gameObject.GetSingleComponentInChildren<UILabel>();
+    }
+
+    protected override void PopulateMemberWidgetValues() {
+        base.PopulateMemberWidgetValues();
+        if (_currentStat != null) {
+            _iconImageSprite.atlas = _currentStat.ImageAtlasID.GetAtlas();
+            _iconImageSprite.spriteName = _currentStat.ImageFilename;
+            _iconImageNameLabel.text = _currentStat.Name;
+            _tooltipContent = _currentStat.Name;
+        }
+        else {
+            _iconImageSprite.atlas = AtlasID.None.GetAtlas();
+            _iconImageSprite.spriteName = null;
+            _iconImageNameLabel.text = null;
+            _tooltipContent = null;
+        }
+    }
 
     private void RemoveAnyStatPresent() {
         AEquipmentStat replacedStat;
@@ -92,21 +127,6 @@ public class EquipmentStorageGuiIcon : AEquipmentGuiIcon {
 
     #region Event and Property Change Handlers
 
-    void OnHover(bool isOver) {
-        if (isOver) {
-            AEquipmentStat stat = _storage.GetEquipmentStat(_slotID);
-            if (stat != null) {
-                HoveredHudWindow.Instance.Show(FormID.Equipment, stat);
-            }
-        }
-        else {
-            HoveredHudWindow.Instance.Hide();
-        }
-    }
-
-    /// <summary>
-    /// Called when [click].
-    /// </summary>
     void OnClick() {
         //D.Log("{0}.OnClick() called.", DebugName);
         RemoveAnyStatPresent();
@@ -120,7 +140,7 @@ public class EquipmentStorageGuiIcon : AEquipmentGuiIcon {
     void OnDrop(GameObject droppedGo) {
         //D.Log("{0}.OnDrop({1}) called.", DebugName, droppedGo.name);
         AEquipmentStat eStat = null;
-        EquipmentGuiIcon droppedEquipIcon = droppedGo.GetComponent<EquipmentGuiIcon>();
+        EquipmentIconGuiElement droppedEquipIcon = droppedGo.GetComponent<EquipmentIconGuiElement>();
         if (droppedEquipIcon != null) {
             eStat = droppedEquipIcon.EquipmentStat;
             bool isReplaced = Replace(eStat);
@@ -136,6 +156,17 @@ public class EquipmentStorageGuiIcon : AEquipmentGuiIcon {
 
     #endregion
 
+    protected override void HandleIconHovered(bool isOver) {
+        if (isOver) {
+            if (_currentStat != null) {
+                HoveredHudWindow.Instance.Show(FormID.Equipment, _currentStat);
+            }
+        }
+        else {
+            HoveredHudWindow.Instance.Hide();
+        }
+    }
+
     protected override void HandleIconSizeSet() {
         base.HandleIconSizeSet();
         ResizeAndAnchorEmptySlotBackgroundSprite();
@@ -143,8 +174,8 @@ public class EquipmentStorageGuiIcon : AEquipmentGuiIcon {
 
     private void ResizeAndAnchorEmptySlotBackgroundSprite() {
         IntVector2 iconDimensions = GetIconDimensions(Size);
-        emptySlotSprite.SetDimensions(iconDimensions.x, iconDimensions.y);
-        emptySlotSprite.SetAnchor(gameObject);
+        _emptySlotSprite.SetDimensions(iconDimensions.x, iconDimensions.y);
+        _emptySlotSprite.SetAnchor(gameObject);
     }
 
     private void HandleStatReplacedWith(AEquipmentStat replacementStat) {
@@ -152,7 +183,7 @@ public class EquipmentStorageGuiIcon : AEquipmentGuiIcon {
             Hide();
         }
         else {
-            Show(replacementStat.ImageAtlasID, replacementStat.ImageFilename, replacementStat.Name);
+            Show();
         }
     }
 
@@ -160,20 +191,24 @@ public class EquipmentStorageGuiIcon : AEquipmentGuiIcon {
         base.ResetForReuse();
         _storage = null;
         _slotID = default(EquipmentSlotID);
+        _currentStat = null;
+        _iconImageNameLabel = null;
+        _tooltipContent = null;
     }
 
     protected override void Cleanup() { }
 
     #region Debug
 
-    protected override void __Validate() {
-        base.__Validate();
-        D.AssertNotNull(emptySlotSprite);
-        D.Assert(emptySlotSprite.enabled);
-        D.AssertNotNull(emptySlotCategoryLabel);
+    protected override void __ValidateOnAwake() {
+        base.__ValidateOnAwake();
+        D.AssertNotNull(_emptySlotSprite);
+        D.Assert(_emptySlotSprite.enabled);
+        D.AssertNotNull(_emptySlotCategoryLabel);
     }
 
     #endregion
+
 
 }
 

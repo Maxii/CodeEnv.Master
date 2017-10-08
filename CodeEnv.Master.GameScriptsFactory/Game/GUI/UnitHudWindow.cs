@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: UnitHudWindow.cs
-// Fixed position HudWindow displaying Unit info and controls. 
+// Fixed position HudWindow displaying Unit forms. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,8 +22,8 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Fixed position HudWindow displaying Unit info and controls.
-/// <remarks>7.9.17 Current uses include user-owned selected Cmd Items. </remarks>
+/// Fixed position HudWindow displaying Unit forms.
+/// <remarks>7.9.17 Current uses include user-owned selected Cmd Items.</remarks>
 /// <remarks>The current version is located on the bottom of the screen and appears when called to Show().</remarks>
 /// </summary>
 public class UnitHudWindow : AHudWindow<UnitHudWindow> {

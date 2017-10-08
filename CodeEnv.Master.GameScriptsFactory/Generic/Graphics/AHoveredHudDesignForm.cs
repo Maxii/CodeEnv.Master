@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
@@ -29,19 +30,17 @@ public abstract class AHoveredHudDesignForm : AInfoDisplayForm {
         get { return _design; }
         set {
             D.AssertNull(_design);  // occurs only once between Resets
-            SetProperty<AUnitMemberDesign>(ref _design, value, "Design", DesignPropSetHandler);
+            SetProperty<AUnitMemberDesign>(ref _design, value, "Design");
         }
     }
 
-    #region Event and Property Change Handlers
-
-    private void DesignPropSetHandler() {
+    public sealed override void PopulateValues() {
+        D.AssertNotNull(Design);
         AssignValuesToMembers();
     }
 
-    #endregion
-
     protected override void ResetForReuse_Internal() {
+        base.ResetForReuse_Internal();
         _design = null;
     }
 

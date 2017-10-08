@@ -89,6 +89,7 @@ namespace CodeEnv.Master.GameContent {
                 {ItemInfoID.Production, "Production: {0}"},
                 {ItemInfoID.OrbitalSpeed, "RelativeOrbitSpeed: {0}"},
                 {ItemInfoID.ConstructionCost, "ConstructionCost: {0}"},
+                {ItemInfoID.CurrentConstruction, "CurrentConstruction: {0}"},
 
                 {ItemInfoID.IntelState, "< {0} >"},
 

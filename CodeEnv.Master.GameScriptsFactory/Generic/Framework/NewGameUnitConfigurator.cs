@@ -1043,7 +1043,7 @@ public class NewGameUnitConfigurator {
         ShipHullCategory hullCategory = hullStat.HullCategory;
         var stlEngineStat = GetEngineStatFor(hullCategory, isFtlEngine: false);
         var ftlEngineStat = GetEngineStatFor(hullCategory, isFtlEngine: true);
-        float constructionCost = CalcDesignProductionCost(hullStat, weaponStats, passiveCmStats, activeCmStats, sensorStats, shieldGenStats,
+        float constructionCost = CalcDesignConstructionCost(hullStat, weaponStats, passiveCmStats, activeCmStats, sensorStats, shieldGenStats,
             stlEngineStat, ftlEngineStat);
         var design = new ShipDesign(owner, hqPriority, _elementsReqdSRSensorStat, constructionCost, hullStat, stlEngineStat, ftlEngineStat, stance);
         AEquipmentStat[] allEquipStats = passiveCmStats.Cast<AEquipmentStat>().UnionBy(activeCmStats.Cast<AEquipmentStat>(),
@@ -1061,7 +1061,7 @@ public class NewGameUnitConfigurator {
         IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<ActiveCountermeasureStat> activeCmStats,
         IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats, Priority hqPriority) {
         FacilityHullCategory hullCategory = hullStat.HullCategory;
-        float constructionCost = CalcDesignProductionCost(hullStat, weaponStats, passiveCmStats, activeCmStats, sensorStats, shieldGenStats);
+        float constructionCost = CalcDesignConstructionCost(hullStat, weaponStats, passiveCmStats, activeCmStats, sensorStats, shieldGenStats);
         var design = new FacilityDesign(owner, hqPriority, _elementsReqdSRSensorStat, constructionCost, hullStat);
         AEquipmentStat[] allEquipStats = passiveCmStats.Cast<AEquipmentStat>().UnionBy(activeCmStats.Cast<AEquipmentStat>(),
             sensorStats.Cast<AEquipmentStat>(), shieldGenStats.Cast<AEquipmentStat>(), weaponStats.Cast<AEquipmentStat>()).ToArray();
@@ -1263,7 +1263,7 @@ public class NewGameUnitConfigurator {
 
     #region Support
 
-    private float CalcDesignProductionCost(AHullStat hullStat, IEnumerable<AWeaponStat> weaponStats,
+    private float CalcDesignConstructionCost(AHullStat hullStat, IEnumerable<AWeaponStat> weaponStats,
     IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<ActiveCountermeasureStat> activeCmStats,
     IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats, params EngineStat[] engineStats) {
         float constructionCost = hullStat.ConstructionCost + weaponStats.Sum(stat => stat.ConstructionCost)

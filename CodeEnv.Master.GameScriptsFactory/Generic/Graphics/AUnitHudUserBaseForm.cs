@@ -32,12 +32,12 @@ public abstract class AUnitHudUserBaseForm : AForm {
     private const string ElementIconExtension = " ElementIcon";
     private const string TitleFormat = "Selected Base: {0}";
 
-    // 9.27.17 Management of ConstructibleElementDesigns and the ConstructionQueue moved to GuiElementConstructionModule
+    // 9.27.17 Management of ConstructibleElementDesigns and the ConstructionQueue moved to ConstructionGuiModule
 
     [SerializeField]
-    private FacilityGuiIcon _facilityIconPrefab = null;
+    private FacilityIconGuiElement _facilityIconPrefab = null;
     [SerializeField]
-    private ShipGuiIcon _shipIconPrefab = null;
+    private ShipIconGuiElement _shipIconPrefab = null;
 
     [SerializeField]
     private UIButton _unitFocusButton = null;
@@ -75,16 +75,16 @@ public abstract class AUnitHudUserBaseForm : AForm {
         get { return _selectedUnit; }
         set {
             D.AssertNull(_selectedUnit);
-            SetProperty<AUnitBaseCmdItem>(ref _selectedUnit, value, "SelectedUnit", SelectedUnitPropSetHandler);
+            SetProperty<AUnitBaseCmdItem>(ref _selectedUnit, value, "SelectedUnit"/*, SelectedUnitPropSetHandler*/);
         }
     }
 
     private IList<Transform> _sortedFacilityIconTransforms;
     private IList<Transform> _sortedShipIconTransforms;
-    private HashSet<FacilityGuiIcon> _pickedFacilityIcons;
-    private HashSet<ShipGuiIcon> _pickedShipIcons;
+    private HashSet<FacilityIconGuiElement> _pickedFacilityIcons;
+    private HashSet<ShipIconGuiElement> _pickedShipIcons;
 
-    private GuiElementConstructionModule _elementConstructionModule;
+    private ConstructionGuiModule _elementConstructionModule;
     private UILabel _formTitleLabel;
     private UIGrid _facilityIconsGrid;
     private UIGrid _shipIconsGrid;
@@ -96,20 +96,20 @@ public abstract class AUnitHudUserBaseForm : AForm {
         _gameMgr = GameManager.Instance;
         _formTitleLabel = gameObject.GetSingleComponentInImmediateChildren<UILabel>();
 
-        _elementConstructionModule = gameObject.GetSingleComponentInChildren<GuiElementConstructionModule>();
+        _elementConstructionModule = gameObject.GetSingleComponentInChildren<ConstructionGuiModule>();
 
-        _facilityIconsGrid = gameObject.GetSingleComponentInChildren<FacilityGuiIcon>().gameObject.GetSingleComponentInParents<UIGrid>();
+        _facilityIconsGrid = gameObject.GetSingleComponentInChildren<FacilityIconGuiElement>().gameObject.GetSingleComponentInParents<UIGrid>();
         _facilityIconsGrid.arrangement = UIGrid.Arrangement.Horizontal;
         _facilityIconsGrid.sorting = UIGrid.Sorting.Custom;
         _facilityIconsGrid.onCustomSort = CompareFacilityIcons;
 
-        _shipIconsGrid = gameObject.GetSingleComponentInChildren<ShipGuiIcon>().gameObject.GetSingleComponentInParents<UIGrid>();
+        _shipIconsGrid = gameObject.GetSingleComponentInChildren<ShipIconGuiElement>().gameObject.GetSingleComponentInParents<UIGrid>();
         _shipIconsGrid.arrangement = UIGrid.Arrangement.Horizontal;
         _shipIconsGrid.sorting = UIGrid.Sorting.Custom;
         _shipIconsGrid.onCustomSort = CompareShipIcons;
 
-        _pickedFacilityIcons = new HashSet<FacilityGuiIcon>();
-        _pickedShipIcons = new HashSet<ShipGuiIcon>();
+        _pickedFacilityIcons = new HashSet<FacilityIconGuiElement>();
+        _pickedShipIcons = new HashSet<ShipIconGuiElement>();
 
         _sortedFacilityIconTransforms = new List<Transform>();
         _sortedShipIconTransforms = new List<Transform>();
@@ -148,6 +148,14 @@ public abstract class AUnitHudUserBaseForm : AForm {
         EventDelegate.Add(_shipScuttleButton.onClick, ShipScuttleButtonClickedEventHandler);
     }
 
+    public sealed override void PopulateValues() {
+        D.Assert(_gameMgr.IsPaused);
+        D.AssertNotNull(SelectedUnit);  // UNCLEAR populate when Unit already destroyed?
+        SubscribeToSelectedUnit();
+        AssignValuesToMembers();
+        AssessInteractableHud();
+    }
+
     protected override void AssignValuesToMembers() {
         _formTitleLabel.text = TitleFormat.Inject(SelectedUnit.UnitName);
 
@@ -159,14 +167,6 @@ public abstract class AUnitHudUserBaseForm : AForm {
     }
 
     #region Event and Property Change Handlers
-
-    private void SelectedUnitPropSetHandler() {
-        D.Assert(_gameMgr.IsPaused);
-
-        SubscribeToSelectedUnit();
-        AssignValuesToMembers();
-        AssessInteractableHud();
-    }
 
     private void SubscribeToSelectedUnit() {
         SelectedUnit.deathOneShot += UnitDeathEventHandler;
@@ -245,7 +245,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
 
     private void FacilityIconClickedEventHandler(GameObject go) {
         var inputHelper = GameInputHelper.Instance;
-        FacilityGuiIcon iconClicked = go.GetComponent<FacilityGuiIcon>();
+        FacilityIconGuiElement iconClicked = go.GetComponent<FacilityIconGuiElement>();
         if (inputHelper.IsLeftMouseButton) {
             if (inputHelper.IsAnyKeyHeldDown(KeyCode.LeftControl, KeyCode.RightControl)) {
                 HandleFacilityIconCntlLeftClicked(iconClicked);
@@ -264,7 +264,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
 
     private void ShipIconClickedEventHandler(GameObject go) {
         var inputHelper = GameInputHelper.Instance;
-        ShipGuiIcon iconClicked = go.GetComponent<ShipGuiIcon>();
+        ShipIconGuiElement iconClicked = go.GetComponent<ShipIconGuiElement>();
         if (inputHelper.IsLeftMouseButton) {
             if (inputHelper.IsAnyKeyHeldDown(KeyCode.LeftControl, KeyCode.RightControl)) {
                 HandleShipIconCntlLeftClicked(iconClicked);
@@ -346,7 +346,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
 
     #region Unit Composition (Facility) Icon Interaction
 
-    private void HandleFacilityIconLeftClicked(FacilityGuiIcon icon) {
+    private void HandleFacilityIconLeftClicked(FacilityIconGuiElement icon) {
         if (icon.IsPicked) {
             D.Assert(_pickedFacilityIcons.Contains(icon));
             // user is unpicking this icon
@@ -361,7 +361,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
         AssessUnitCompositionButtons();
     }
 
-    private void HandleFacilityIconCntlLeftClicked(FacilityGuiIcon icon) {
+    private void HandleFacilityIconCntlLeftClicked(FacilityIconGuiElement icon) {
         if (icon.IsPicked) {
             D.Assert(_pickedFacilityIcons.Contains(icon));
             // user is unpicking this icon
@@ -378,11 +378,11 @@ public abstract class AUnitHudUserBaseForm : AForm {
         AssessUnitCompositionButtons();
     }
 
-    private void HandleFacilityIconShiftLeftClicked(FacilityGuiIcon clickedIcon) {
-        var iconsToPick = new List<FacilityGuiIcon>();
+    private void HandleFacilityIconShiftLeftClicked(FacilityIconGuiElement clickedIcon) {
+        var iconsToPick = new List<FacilityIconGuiElement>();
         int clickedIconIndex = _sortedFacilityIconTransforms.IndexOf(clickedIcon.transform);
         if (_pickedFacilityIcons.Any()) {
-            FacilityGuiIcon anchorIcon = _pickedFacilityIcons.Last();   // should be in order added
+            FacilityIconGuiElement anchorIcon = _pickedFacilityIcons.Last();   // should be in order added
             int anchorIconIndex = _sortedFacilityIconTransforms.IndexOf(anchorIcon.transform);
             if (anchorIconIndex == clickedIconIndex) {
                 // clicked on the already picked anchor icon so do nothing
@@ -395,7 +395,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
             if (anchorIconIndex < clickedIconIndex) {
                 for (int index = anchorIconIndex; index <= clickedIconIndex; index++) {
                     Transform iconTransform = _sortedFacilityIconTransforms[index];
-                    FacilityGuiIcon icon = iconTransform.GetComponent<FacilityGuiIcon>();
+                    FacilityIconGuiElement icon = iconTransform.GetComponent<FacilityIconGuiElement>();
                     if (icon != null) {
                         iconsToPick.Add(icon);
                     }
@@ -404,7 +404,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
             else {
                 for (int index = anchorIconIndex; index >= clickedIconIndex; index--) {
                     Transform iconTransform = _sortedFacilityIconTransforms[index];
-                    FacilityGuiIcon icon = iconTransform.GetComponent<FacilityGuiIcon>();
+                    FacilityIconGuiElement icon = iconTransform.GetComponent<FacilityIconGuiElement>();
                     if (icon != null) {
                         iconsToPick.Add(icon);
                     }
@@ -415,7 +415,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
             // pick all icons from the first to this one
             for (int index = 0; index <= clickedIconIndex; index++) {
                 Transform iconTransform = _sortedFacilityIconTransforms[index];
-                FacilityGuiIcon icon = iconTransform.GetComponent<FacilityGuiIcon>();
+                FacilityIconGuiElement icon = iconTransform.GetComponent<FacilityIconGuiElement>();
                 if (icon != null) {
                     iconsToPick.Add(icon);
                 }
@@ -430,7 +430,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
         AssessUnitCompositionButtons();
     }
 
-    private void HandleFacilityIconMiddleClicked(FacilityGuiIcon icon) {
+    private void HandleFacilityIconMiddleClicked(FacilityIconGuiElement icon) {
         FocusOn(icon.Element);
     }
 
@@ -521,7 +521,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
         }
     }
 
-    private void PickSingleFacilityIcon(FacilityGuiIcon icon) {
+    private void PickSingleFacilityIcon(FacilityIconGuiElement icon) {
         UnpickAllFacilityIcons();
         icon.IsPicked = true;
         _pickedFacilityIcons.Add(icon);
@@ -538,7 +538,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
 
     #region Ship Hanger Icon Interaction
 
-    private void HandleShipIconLeftClicked(ShipGuiIcon icon) {
+    private void HandleShipIconLeftClicked(ShipIconGuiElement icon) {
         if (icon.IsPicked) {
             D.Assert(_pickedShipIcons.Contains(icon));
             // user is unpicking this icon
@@ -553,7 +553,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
         AssessHangerButtons();
     }
 
-    private void HandleShipIconCntlLeftClicked(ShipGuiIcon icon) {
+    private void HandleShipIconCntlLeftClicked(ShipIconGuiElement icon) {
         if (icon.IsPicked) {
             D.Assert(_pickedShipIcons.Contains(icon));
             // user is unpicking this icon
@@ -570,11 +570,11 @@ public abstract class AUnitHudUserBaseForm : AForm {
         AssessHangerButtons();
     }
 
-    private void HandleShipIconShiftLeftClicked(ShipGuiIcon clickedIcon) {
-        var iconsToPick = new List<ShipGuiIcon>();
+    private void HandleShipIconShiftLeftClicked(ShipIconGuiElement clickedIcon) {
+        var iconsToPick = new List<ShipIconGuiElement>();
         int clickedIconIndex = _sortedShipIconTransforms.IndexOf(clickedIcon.transform);
         if (_pickedShipIcons.Any()) {
-            ShipGuiIcon anchorIcon = _pickedShipIcons.Last();   // should be in order added
+            ShipIconGuiElement anchorIcon = _pickedShipIcons.Last();   // should be in order added
             int anchorIconIndex = _sortedShipIconTransforms.IndexOf(anchorIcon.transform);
             if (anchorIconIndex == clickedIconIndex) {
                 // clicked on the already picked anchor icon so do nothing
@@ -587,7 +587,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
             if (anchorIconIndex < clickedIconIndex) {
                 for (int index = anchorIconIndex; index <= clickedIconIndex; index++) {
                     Transform iconTransform = _sortedShipIconTransforms[index];
-                    ShipGuiIcon icon = iconTransform.GetComponent<ShipGuiIcon>();
+                    ShipIconGuiElement icon = iconTransform.GetComponent<ShipIconGuiElement>();
                     if (icon != null) {
                         iconsToPick.Add(icon);
                     }
@@ -596,7 +596,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
             else {
                 for (int index = anchorIconIndex; index >= clickedIconIndex; index--) {
                     Transform iconTransform = _sortedShipIconTransforms[index];
-                    ShipGuiIcon icon = iconTransform.GetComponent<ShipGuiIcon>();
+                    ShipIconGuiElement icon = iconTransform.GetComponent<ShipIconGuiElement>();
                     if (icon != null) {
                         iconsToPick.Add(icon);
                     }
@@ -607,7 +607,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
             // pick all icons from the first to this one
             for (int index = 0; index <= clickedIconIndex; index++) {
                 Transform iconTransform = _sortedShipIconTransforms[index];
-                ShipGuiIcon icon = iconTransform.GetComponent<ShipGuiIcon>();
+                ShipIconGuiElement icon = iconTransform.GetComponent<ShipIconGuiElement>();
                 if (icon != null) {
                     iconsToPick.Add(icon);
                 }
@@ -714,7 +714,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
         _shipScuttleButton.isEnabled = _pickedShipIcons.Any();
     }
 
-    private void PickSingleShipIcon(ShipGuiIcon icon) {
+    private void PickSingleShipIcon(ShipIconGuiElement icon) {
         UnpickAllShipIcons();
         icon.IsPicked = true;
         _pickedShipIcons.Add(icon);
@@ -742,7 +742,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
         int desiredGridCells = selectedUnitElements.Count();
 
         int gridColumns, unusedGridRows;
-        AMultiSizeGuiIcon.IconSize iconSize = AMultiSizeGuiIcon.DetermineGridIconSize(gridContainerDimensions, desiredGridCells, _facilityIconPrefab,
+        AMultiSizeIconGuiElement.IconSize iconSize = AMultiSizeIconGuiElement.DetermineGridIconSize(gridContainerDimensions, desiredGridCells, _facilityIconPrefab,
             out unusedGridRows, out gridColumns);
 
         // configure grid for icon size
@@ -775,7 +775,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
         int desiredGridCells = hangerElements.Count();
 
         int gridColumns, unusedGridRows;
-        AMultiSizeGuiIcon.IconSize iconSize = AMultiSizeGuiIcon.DetermineGridIconSize(gridContainerDimensions, desiredGridCells, _shipIconPrefab,
+        AMultiSizeIconGuiElement.IconSize iconSize = AMultiSizeIconGuiElement.DetermineGridIconSize(gridContainerDimensions, desiredGridCells, _shipIconPrefab,
             out unusedGridRows, out gridColumns);
 
         // configure grid for icon size
@@ -795,10 +795,10 @@ public abstract class AUnitHudUserBaseForm : AForm {
         _shipIconsGrid.repositionNow = true;
     }
 
-    private void CreateAndAddIcon(FacilityItem element, AMultiSizeGuiIcon.IconSize iconSize) {
+    private void CreateAndAddIcon(FacilityItem element, AMultiSizeIconGuiElement.IconSize iconSize) {
         GameObject elementIconGo = NGUITools.AddChild(_facilityIconsGrid.gameObject, _facilityIconPrefab.gameObject);
         elementIconGo.name = element.Name + ElementIconExtension;
-        FacilityGuiIcon elementIcon = elementIconGo.GetSafeComponent<FacilityGuiIcon>();
+        FacilityIconGuiElement elementIcon = elementIconGo.GetSafeComponent<FacilityIconGuiElement>();
         elementIcon.Size = iconSize;
         elementIcon.Element = element;
 
@@ -807,10 +807,10 @@ public abstract class AUnitHudUserBaseForm : AForm {
         _sortedFacilityIconTransforms.Add(elementIconGo.transform);
     }
 
-    private void CreateAndAddIcon(ShipItem element, AMultiSizeGuiIcon.IconSize iconSize) {
+    private void CreateAndAddIcon(ShipItem element, AMultiSizeIconGuiElement.IconSize iconSize) {
         GameObject elementIconGo = NGUITools.AddChild(_shipIconsGrid.gameObject, _shipIconPrefab.gameObject);
         elementIconGo.name = element.Name + ElementIconExtension;
-        ShipGuiIcon elementIcon = elementIconGo.GetSafeComponent<ShipGuiIcon>();
+        ShipIconGuiElement elementIcon = elementIconGo.GetSafeComponent<ShipIconGuiElement>();
         elementIcon.Size = iconSize;
         elementIcon.Element = element;
 
@@ -822,7 +822,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
     private void RemoveUnitCompositionIcons() {
         IList<Transform> iconTransforms = _facilityIconsGrid.GetChildList();
         foreach (var it in iconTransforms) {
-            var icon = it.GetComponent<FacilityGuiIcon>();
+            var icon = it.GetComponent<FacilityIconGuiElement>();
             RemoveIcon(icon);
         }
     }
@@ -830,12 +830,12 @@ public abstract class AUnitHudUserBaseForm : AForm {
     private void RemoveShipIconsInHanger() {
         IList<Transform> iconTransforms = _shipIconsGrid.GetChildList();
         foreach (var it in iconTransforms) {
-            var icon = it.GetComponent<ShipGuiIcon>();
+            var icon = it.GetComponent<ShipIconGuiElement>();
             RemoveIcon(icon);
         }
     }
 
-    private void RemoveIcon(FacilityGuiIcon icon) {
+    private void RemoveIcon(FacilityIconGuiElement icon) {
         _pickedFacilityIcons.Remove(icon);   // may not be present
         if (icon.IsInitialized) {
             D.AssertNotNull(icon.Element, "{0}: {1}'s Element has been destroyed.".Inject(DebugName, icon.DebugName));
@@ -856,7 +856,7 @@ public abstract class AUnitHudUserBaseForm : AForm {
         DestroyImmediate(icon.gameObject);
     }
 
-    private void RemoveIcon(ShipGuiIcon icon) {
+    private void RemoveIcon(ShipIconGuiElement icon) {
         _pickedShipIcons.Remove(icon);   // may not be present
         if (icon.IsInitialized) {
             D.AssertNotNull(icon.Element, "{0}: {1}'s Element has been destroyed.".Inject(DebugName, icon.DebugName));
@@ -1022,8 +1022,8 @@ public abstract class AUnitHudUserBaseForm : AForm {
         return Enumerable.Empty<ShipItem>();
     }
 
-    protected override void __Validate() {
-        base.__Validate();
+    protected override void __ValidateOnAwake() {
+        base.__ValidateOnAwake();
         D.AssertNotNull(_facilityIconPrefab);
         D.AssertNotNull(_shipIconPrefab);
 

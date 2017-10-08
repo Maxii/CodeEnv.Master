@@ -36,8 +36,6 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<float>(ref _production, value, "Production"); }
         }
 
-
-
         protected new FacilityHullEquipment HullEquipment { get { return base.HullEquipment as FacilityHullEquipment; } }
 
         private IntVector3 _sectorID;

@@ -120,16 +120,16 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        //TODO Acquire resource values this starbase has access too, ala SettlementCmdData approach
+        // UNDONE Acquire resource values this starbase has access too, ala SettlementCmdData approach
         private void __PopulateResourcesFromSector() {
             Capacity = 10;
             var resources = new ResourceYield.ResourceValuePair[] {
-                new ResourceYield.ResourceValuePair(ResourceID.Organics, 0.3F),
-                new ResourceYield.ResourceValuePair(ResourceID.Particulates, 0.5F),
-                new ResourceYield.ResourceValuePair(ResourceID.Energy, 1.2F),
-                new ResourceYield.ResourceValuePair(ResourceID.Titanium, 0.5F),
-                new ResourceYield.ResourceValuePair(ResourceID.Duranium, 1.1F),
-                new ResourceYield.ResourceValuePair(ResourceID.Unobtanium, 0.1F)
+                new ResourceYield.ResourceValuePair(ResourceID.Organics, UnityEngine.Random.Range(0F, 0.3F)),
+                new ResourceYield.ResourceValuePair(ResourceID.Particulates, UnityEngine.Random.Range(0.2F, 0.6F)),
+                new ResourceYield.ResourceValuePair(ResourceID.Energy, UnityEngine.Random.Range(1F, 2F)),
+                new ResourceYield.ResourceValuePair(ResourceID.Titanium, UnityEngine.Random.Range(0F, 1F)),
+                new ResourceYield.ResourceValuePair(ResourceID.Duranium, UnityEngine.Random.Range(0F, 1F)),
+                new ResourceYield.ResourceValuePair(ResourceID.Unobtanium, UnityEngine.Random.Range(0F, 0.6F))
             };
             Resources = new ResourceYield(resources);
         }

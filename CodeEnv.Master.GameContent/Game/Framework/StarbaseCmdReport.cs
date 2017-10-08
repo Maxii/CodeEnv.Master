@@ -31,6 +31,7 @@ namespace CodeEnv.Master.GameContent {
         public int? Capacity { get; private set; }
         public float? UnitProduction { get; private set; }
 
+        public ConstructionInfo CurrentConstruction { get; private set; }
         public ResourceYield? Resources { get; private set; }
 
         /// <summary>
@@ -58,6 +59,10 @@ namespace CodeEnv.Master.GameContent {
 
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Hero)) {
                 Hero = sbData.Hero;
+            }
+
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.CurrentConstruction)) {
+                CurrentConstruction = sbData.CurrentConstruction;
             }
 
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.AlertStatus)) {

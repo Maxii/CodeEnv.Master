@@ -734,9 +734,8 @@ namespace Pathfinding {
                 approachWaypoints.Remove(waypoint);
             }
 
-            ////int nextNodeIndex = nodeCount;
-            nds = AddNodes(approachWaypoints, Topography.OpenSpace.AStarTagValue()/*, ref nextNodeIndex*/);
-            D.Log("{0} has completed adding {1}'s {2} approach nodes.", DebugName, starbaseCmd.DebugName, nds.Count);
+            nds = AddNodes(approachWaypoints, Topography.OpenSpace.AStarTagValue());
+            //D.Log("{0} has completed adding {1}'s {2} approach nodes.", DebugName, starbaseCmd.DebugName, nds.Count);
             _starbaseApproachNodes.Add(starbaseCmd, nds);
         }
 

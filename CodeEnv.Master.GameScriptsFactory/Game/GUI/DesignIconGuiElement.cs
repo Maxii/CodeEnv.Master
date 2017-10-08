@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: UnitMemberDesignGuiIcon.cs
-// AMultiSizeGuiIcon that holds a AUnitMemberDesign for Unit Cmd and Element Designs.
+// File: DesignIconGuiElement.cs
+// AMultiSizeIconGuiElement that represents Unit Cmd and Element Designs.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,19 +22,19 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// AMultiSizeGuiIcon that holds a AUnitMemberDesign for Unit Cmd and Element Designs.
+/// AMultiSizeIconGuiElement that represents Unit Cmd and Element Designs.
 /// </summary>
-public class UnitMemberDesignGuiIcon : AMultiSizeGuiIcon {
+public class DesignIconGuiElement : AMultiSizeIconGuiElement {
 
     private const string DebugNameFormat = "{0}[{1}]";
     private const string TooltipFormat = "{0}{1}";
 
+    public override GuiElementID ElementID { get { return GuiElementID.DesignIcon; } }
+
     public override string DebugName {
         get {
-            if (Design == null) {
-                return DebugNameFormat.Inject(GetType().Name, "No Design");
-            }
-            return DebugNameFormat.Inject(GetType().Name, Design.DesignName);
+            string designName = Design != null ? Design.DesignName : "No Design";
+            return DebugNameFormat.Inject(GetType().Name, designName);
         }
     }
 
@@ -44,6 +44,8 @@ public class UnitMemberDesignGuiIcon : AMultiSizeGuiIcon {
             return TooltipFormat.Inject(_design.DesignName, obsoleteText);
         }
     }
+
+    public override bool IsInitialized { get { return Size != default(IconSize) && Design != null; } }
 
     private AUnitMemberDesign _design;
     public AUnitMemberDesign Design {
@@ -66,33 +68,46 @@ public class UnitMemberDesignGuiIcon : AMultiSizeGuiIcon {
         }
     }
 
-    protected override void AcquireAdditionalIconWidgets(GameObject topLevelIconGo) { }
+    private UILabel _iconImageNameLabel;
+
+    protected override UISprite AcquireIconImageSprite() {
+        return _topLevelIconWidget.gameObject.GetSingleComponentInImmediateChildren<UISprite>();
+    }
+
+    protected override void AcquireAdditionalWidgets() {
+        _iconImageNameLabel = _topLevelIconWidget.gameObject.GetSingleComponentInChildren<UILabel>();
+    }
 
     #region Event and Property Change Handlers
 
     private void DesignPropSetHandler() {
         D.AssertNotDefault((int)Size);
-        Show();
+        if (IsInitialized) {
+            PopulateMemberWidgetValues();
+            Show();
+        }
     }
 
     private void IsPickedPropChangedHandler() {
-        D.Assert(IsShowing);
         HandleIsPickedChanged();
     }
 
-    void OnHover(bool isOver) {
+    #endregion
+
+    protected override void HandleIconHovered(bool isOver) {
         if (isOver) {
-            HoveredHudWindow.Instance.Show(FormID.UnitDesign, Design);
+            HoveredHudWindow.Instance.Show(FormID.Design, Design);
         }
         else {
             HoveredHudWindow.Instance.Hide();
         }
     }
 
-    #endregion
-
-    private void Show(GameColor color = GameColor.White) {
-        Show(Design.ImageAtlasID, Design.ImageFilename, Design.DesignName, color);
+    protected override void PopulateMemberWidgetValues() {
+        base.PopulateMemberWidgetValues();
+        _iconImageSprite.atlas = Design.ImageAtlasID.GetAtlas();
+        _iconImageSprite.spriteName = Design.ImageFilename;
+        _iconImageNameLabel.text = Design.DesignName;
     }
 
     private void HandleIsPickedChanged() {
@@ -108,24 +123,14 @@ public class UnitMemberDesignGuiIcon : AMultiSizeGuiIcon {
         }
     }
 
-    protected override void HandleIconSizeSet() {
-        base.HandleIconSizeSet();
-        ResizeWidgetAndAnchorIcon();
-    }
-
-    private void ResizeWidgetAndAnchorIcon() {
-        IntVector2 iconDimensions = GetIconDimensions(Size);
-        UIWidget topLevelWidget = GetComponent<UIWidget>();
-        topLevelWidget.SetDimensions(iconDimensions.x, iconDimensions.y);
-        AnchorTo(topLevelWidget);
-    }
-
     public override void ResetForReuse() {
         base.ResetForReuse();
         _design = null;
         _isPicked = false;
+        _iconImageNameLabel = null;
     }
 
     protected override void Cleanup() { }
+
 }
 

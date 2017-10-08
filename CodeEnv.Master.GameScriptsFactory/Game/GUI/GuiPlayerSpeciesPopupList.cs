@@ -59,7 +59,7 @@ public class GuiPlayerSpeciesPopupList : AGuiMenuPopupList<SpeciesGuiSelection> 
     protected override void InitializeValuesAndReferences() {
         base.InitializeValuesAndReferences();
         var playerContainer = transform.parent.parent.gameObject;
-        var imageFrameSprite = playerContainer.GetSafeComponentsInChildren<UISprite>().Single(s => s.spriteName == TempGameValues.ImageFrameSpriteName);
+        var imageFrameSprite = playerContainer.GetSafeComponentsInChildren<UISprite>().Single(s => s.spriteName == TempGameValues.ImageFrameFilename);
         _speciesNameLabel = imageFrameSprite.gameObject.GetSingleComponentInChildren<UILabel>();
         _speciesImageSprite = imageFrameSprite.gameObject.GetSingleComponentInChildren<UISprite>(excludeSelf: true);
     }

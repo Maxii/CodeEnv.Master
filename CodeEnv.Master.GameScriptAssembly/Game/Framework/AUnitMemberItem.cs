@@ -25,6 +25,7 @@ using CodeEnv.Master.GameContent;
 /// Abstract class for members of a Unit, aka UnitCmds and UnitElements.
 /// <remarks>9.27.17 Not yet used.</remarks>
 /// </summary>
+[Obsolete("Not currently used")]
 public abstract class AUnitMemberItem : AMortalItemStateMachine, ISensorDetector, IFsmEventSubscriptionMgrClient {
 
     public event EventHandler isAvailableChanged;

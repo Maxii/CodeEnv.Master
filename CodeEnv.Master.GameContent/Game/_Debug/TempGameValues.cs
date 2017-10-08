@@ -485,10 +485,7 @@ namespace CodeEnv.Master.GameContent {
         private static Player _noPlayer;
         public static Player NoPlayer {
             get {
-                if (_noPlayer == null) {
-                    // lazy initialize to avoid creating before GameReferences populated with values
-                    _noPlayer = new NoPlayer();
-                }
+                _noPlayer = _noPlayer ?? new NoPlayer();    // lazy initialize to avoid creating before GameReferences populated with values
                 return _noPlayer;
             }
         }
@@ -496,10 +493,16 @@ namespace CodeEnv.Master.GameContent {
         private static Hero _noHero;
         public static Hero NoHero {
             get {
-                if (_noHero == null) {
-                    _noHero = new NoHero();
-                }
+                _noHero = _noHero ?? new NoHero();
                 return _noHero;
+            }
+        }
+
+        private static ConstructionInfo _noConstruction;
+        public static ConstructionInfo NoConstruction {
+            get {
+                _noConstruction = _noConstruction ?? new NoConstruction();
+                return _noConstruction;
             }
         }
 
@@ -523,7 +526,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The name of the sprite (texture) used as a frame around an image.
         /// </summary>
-        public const string ImageFrameSpriteName = "imageFrame";
+        public const string ImageFrameFilename = "imageFrame";
 
         /// <summary>
         /// The name of the only current image in MyGuiAtlas.
@@ -534,6 +537,11 @@ namespace CodeEnv.Master.GameContent {
         /// The name of the sprite (texture) used to represent an unknown image.
         /// </summary>
         public const string UnknownImageFilename = "Question1_16";
+
+        /// <summary>
+        /// The name of the sprite (texture) used to represent an empty image.
+        /// </summary>
+        public const string EmptyImageFilename = ImageFrameFilename;  // TODO
 
         /// <summary>
         /// The name of the UILabel GameObject used to show the title of a GuiElement.

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: HealthGuiElement.cs
-// GuiElement handling the display and tooltip content for the Health of an Item.      
+// AGuiElement that represents the health of an Item.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,7 +21,7 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// GuiElement handling the display and tooltip content for the Health of an Item.      
+/// AGuiElement that represents the health of an Item.
 /// </summary>
 public class HealthGuiElement : AProgressBarGuiElement, IComparable<HealthGuiElement> {
 
@@ -65,21 +65,21 @@ public class HealthGuiElement : AProgressBarGuiElement, IComparable<HealthGuiEle
 
     public override GuiElementID ElementID { get { return GuiElementID.Health; } }
 
-    protected override bool AreAllValuesSet { get { return _isCurrentHitPtsSet && _isMaxHitPtsSet && _isHealthSet; } }
+    public override bool IsInitialized { get { return _isCurrentHitPtsSet && _isMaxHitPtsSet && _isHealthSet; } }
 
     #region Event and Property Change Handlers
 
     private void CurrentHitPtsPropSetHandler() {
         _isCurrentHitPtsSet = true;
-        if (AreAllValuesSet) {
-            PopulateWidgets();
+        if (IsInitialized) {
+            PopulateMemberWidgetValues();
         }
     }
 
     private void MaxHitPtsPropSetHandler() {
         _isMaxHitPtsSet = true;
-        if (AreAllValuesSet) {
-            PopulateWidgets();
+        if (IsInitialized) {
+            PopulateMemberWidgetValues();
         }
     }
 
@@ -88,14 +88,15 @@ public class HealthGuiElement : AProgressBarGuiElement, IComparable<HealthGuiEle
             Utility.ValidateForRange(Health.Value, Constants.ZeroF, Constants.OneF);
         }
         _isHealthSet = true;
-        if (AreAllValuesSet) {
-            PopulateWidgets();
+        if (IsInitialized) {
+            PopulateMemberWidgetValues();
         }
     }
 
     #endregion
 
-    private void PopulateWidgets() {
+    protected override void PopulateMemberWidgetValues() {
+        base.PopulateMemberWidgetValues();
         if (!Health.HasValue) {
             HandleValuesUnknown();
             return;
@@ -131,7 +132,8 @@ public class HealthGuiElement : AProgressBarGuiElement, IComparable<HealthGuiEle
         var healthValuesText_Colored = BarValuesTextFormat.Inject(healthValuePercentText.SurroundWith(healthColor),
             currentHitPtsValueText.SurroundWith(healthColor), maxHitPtsValueText.SurroundWith(GameColor.Green));
 
-        PopulateValues(healthValue, healthColor, healthValuesText_Colored);
+        PopulateProgressBarValues(healthValue, healthColor, healthValuesText_Colored);
+
     }
 
     public override void ResetForReuse() {

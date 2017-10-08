@@ -36,6 +36,7 @@ namespace CodeEnv.Master.GameContent {
                 case ItemInfoID.Approval:
                 case ItemInfoID.Resources:
                 case ItemInfoID.Population:
+                case ItemInfoID.CurrentConstruction:
                     return true;
                 default:
                     return false;

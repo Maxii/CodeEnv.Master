@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: StrengthGuiElement.cs
-// GuiElement handling the display and tooltip content for OffensiveStrength and DefensiveStrength.   
+// AGuiElement that represents the CombatStrength of a MortalItem. Handles Offensive or Defensive and Unknown strength.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,19 +22,16 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 /// <summary>
-/// GuiElement handling the display and tooltip content for OffensiveStrength and DefensiveStrength.   
+/// AGuiElement that represents the CombatStrength of a MortalItem. Handles Offensive or Defensive and Unknown strength.
 /// </summary>
 public class StrengthGuiElement : AGuiElement, IComparable<StrengthGuiElement> {
 
-    //[FormerlySerializedAs("widgetsPresent")]
     [Tooltip("The widgets that are present to display the content of this GuiElement.")]
     [SerializeField]
     private WidgetsPresent _widgetsPresent = WidgetsPresent.SumLabel;
 
-    //[FormerlySerializedAs("elementID")]
     [Tooltip("The unique ID of this Strength GuiElement")]
     [SerializeField]
     private GuiElementID _elementID = GuiElementID.None;
@@ -55,17 +52,12 @@ public class StrengthGuiElement : AGuiElement, IComparable<StrengthGuiElement> {
     private string _tooltipContent;
     protected override string TooltipContent { get { return _tooltipContent; } }
 
-    private bool AreAllValuesSet { get { return _isStrengthSet; } }
+    public override bool IsInitialized { get { return _isStrengthSet; } }
 
     private UILabel _combinedValueLabel;
     private UILabel _detailValuesLabel;
 
-    protected sealed override void Awake() {
-        base.Awake();
-        InitializeValuesAndReferences();
-    }
-
-    private void InitializeValuesAndReferences() {
+    protected override void InitializeValuesAndReferences() {
         var labels = gameObject.GetSafeComponentsInChildren<UILabel>();
         switch (_widgetsPresent) {
             case WidgetsPresent.SumLabel:
@@ -88,14 +80,15 @@ public class StrengthGuiElement : AGuiElement, IComparable<StrengthGuiElement> {
 
     private void StrengthPropSetHandler() {
         _isStrengthSet = true;
-        if (AreAllValuesSet) {
-            PopulateElementWidgets();
+        if (IsInitialized) {
+            PopulateMemberWidgetValues();
         }
     }
 
     #endregion
 
-    private void PopulateElementWidgets() {
+    protected override void PopulateMemberWidgetValues() {
+        base.PopulateMemberWidgetValues();
         string combinedValueLabelText = Unknown;
         string detailValuesLabelText = Unknown;
         string tooltipText = Unknown;
@@ -117,22 +110,26 @@ public class StrengthGuiElement : AGuiElement, IComparable<StrengthGuiElement> {
         }
     }
 
+    public override void ResetForReuse() {
+        _isStrengthSet = false;
+    }
+
+    protected override void Cleanup() { }
+
+    #region Debug
+
     private string __GetStrengthDetailText(CombatStrength strength) {
         return strength.BeamDeliveryStrength.ToLabel()
             + Constants.NewLine + strength.ProjectileDeliveryStrength.ToLabel()
             + Constants.NewLine + strength.MissileDeliveryStrength.ToLabel();
     }
 
-    public override void ResetForReuse() {
-        _isStrengthSet = false;
-    }
-
-    protected override void __Validate() {
-        base.__Validate();
+    protected override void __ValidateOnAwake() {
+        base.__ValidateOnAwake();
         D.Assert(ElementID == GuiElementID.OffensiveStrength || ElementID == GuiElementID.DefensiveStrength, ElementID.GetValueName());
     }
 
-    protected override void Cleanup() { }
+    #endregion
 
 
     #region IComparable<StrengthGuiElement> Members

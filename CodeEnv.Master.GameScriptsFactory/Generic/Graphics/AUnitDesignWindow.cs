@@ -49,10 +49,10 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     private static Vector3 _threeDModelRotationAngle = new Vector3(20F, 90F, 0F);
 
     [SerializeField]    // 7.29.17 Ability to place prefabs in Editor fields not needed while using DesignScreensManager
-    private UnitMemberDesignGuiIcon _designIconPrefab = null;
+    private DesignIconGuiElement _designIconPrefab = null;
 
     [SerializeField]    // 7.29.17 Ability to place prefabs in Editor fields not needed while using DesignScreensManager
-    private EquipmentGuiIcon _equipmentIconPrefab = null;
+    private EquipmentIconGuiElement _equipmentIconPrefab = null;
 
     [SerializeField]    // 7.29.17 Ability to place prefabs in Editor fields not needed while using DesignScreensManager
     private GameObject _threeDModelStagePrefab = null;
@@ -67,7 +67,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     /// The DesignIcon that is currently picked.
     /// <remarks>Warning: do not change this value directly. Use ChangePickedDesignIcon() to change it.</remarks>
     /// </summary>
-    private UnitMemberDesignGuiIcon _pickedDesignIcon;
+    private DesignIconGuiElement _pickedDesignIcon;
 
     /// <summary>
     /// The 'stage' that shows the 3D model of the chosen design.
@@ -77,7 +77,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     /// <summary>
     /// List of icons associated with registered designs.
     /// </summary>
-    private IList<UnitMemberDesignGuiIcon> _registeredDesignIcons;
+    private IList<DesignIconGuiElement> _registeredDesignIcons;
 
     private GuiWindow _createDesignPopupWindow;
     private UIWidget _createDesignPopupListContainer;
@@ -104,7 +104,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     /// <summary>
     /// The size of the design icon to display in the _registeredDesignIconsGrid.
     /// </summary>
-    private AMultiSizeGuiIcon.IconSize _designIconSize;
+    private AMultiSizeIconGuiElement.IconSize _designIconSize;
 
     /// <summary>
     /// Widget that contains the UI where equipment can be added or removed from a design.
@@ -153,7 +153,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
 
         _registeredDesignIconsGrid = _designsUIContainerWidget.gameObject.GetSingleComponentInChildren<UIGrid>();
         _registeredDesignIconsGrid.sorting = UIGrid.Sorting.Alphabetic;
-        _registeredDesignIcons = new List<UnitMemberDesignGuiIcon>();
+        _registeredDesignIcons = new List<DesignIconGuiElement>();
         _panel.widgetsAreStatic = true; // OPTIMIZE see http://www.tasharen.com/forum/index.php?topic=261.0
 
         _createDesignPopupWindow = GetComponentsInChildren<GuiElement>().Single(e => e.ElementID == GuiElementID.CreateDesignPopupWindow).GetComponent<GuiWindow>();
@@ -203,13 +203,13 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     }
 
     private void DesignIconDoubleClickedEventHandler(GameObject go) {
-        var doubleClickedIcon = go.GetComponent<UnitMemberDesignGuiIcon>();
+        var doubleClickedIcon = go.GetComponent<DesignIconGuiElement>();
         ChangePickedDesignIcon(doubleClickedIcon);
         EditChosenDesign();
     }
 
     private void DesignIconClickedEventHandler(GameObject go) {
-        UnitMemberDesignGuiIcon designIcon = go.GetComponent<UnitMemberDesignGuiIcon>();
+        DesignIconGuiElement designIcon = go.GetComponent<DesignIconGuiElement>();
         D.AssertNotNull(designIcon);
         HandleDesignIconClicked(designIcon);
     }
@@ -225,7 +225,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     /// If the same designIcon is clicked twice in sequence, the icon is selected then unselected.
     /// </summary>
     /// <param name="designIcon">The designIcon that was clicked.</param>
-    private void HandleDesignIconClicked(UnitMemberDesignGuiIcon designIcon) {
+    private void HandleDesignIconClicked(DesignIconGuiElement designIcon) {
         if (designIcon == _pickedDesignIcon) {
             // current icon re-picked by user without another choice
             ChangePickedDesignIcon(null);
@@ -237,7 +237,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     }
 
     private void HandleEquipmentIconDoubleClicked(GameObject iconGo) {
-        var eStat = iconGo.GetComponent<EquipmentGuiIcon>().EquipmentStat;
+        var eStat = iconGo.GetComponent<EquipmentIconGuiElement>().EquipmentStat;
         bool isPlaced = _designerEquipmentStorage.PlaceInEmptySlot(eStat);
         if (isPlaced) {
             SFXManager.Instance.PlaySFX(SfxClipID.Tap);
@@ -267,7 +267,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     /// Initializes the prefab fields of this DesignWindow.
     /// <remarks>Called by DesignScreensManager when it installs a new AUnitDesignWindow.</remarks>
     /// </summary>
-    public void __InitializePrefabs(UnitMemberDesignGuiIcon designIconPrefab, EquipmentGuiIcon equipmentIconPrefab, GameObject threeDModelStagePrefab) {
+    public void __InitializePrefabs(DesignIconGuiElement designIconPrefab, EquipmentIconGuiElement equipmentIconPrefab, GameObject threeDModelStagePrefab) {
         _designIconPrefab = designIconPrefab;
         _equipmentIconPrefab = equipmentIconPrefab;
         _threeDModelStagePrefab = threeDModelStagePrefab;
@@ -518,7 +518,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     /// yet been applied is properly destroyed.</remarks>
     /// </summary>
     /// <param name="newPickedDesignIcon">The new picked design icon.</param>
-    private void ChangePickedDesignIcon(UnitMemberDesignGuiIcon newPickedDesignIcon) {
+    private void ChangePickedDesignIcon(DesignIconGuiElement newPickedDesignIcon) {
         if (_pickedDesignIcon != null) {
             if (_pickedDesignIcon.gameObject != null) {    // could already be destroyed
                 if (!_registeredDesignIcons.Contains(_pickedDesignIcon)) {
@@ -660,7 +660,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         _windowControlsUIContainerWidget.alpha = Constants.ZeroF;
     }
 
-    private void UpdateDesign(UnitMemberDesignGuiIcon previousDesignIcon, AUnitMemberDesign newDesign) {
+    private void UpdateDesign(DesignIconGuiElement previousDesignIcon, AUnitMemberDesign newDesign) {
         D.AssertEqual(_pickedDesignIcon, previousDesignIcon);
         D.AssertEqual(AUnitMemberDesign.SourceAndStatus.Player_Current, newDesign.Status);
 
@@ -714,7 +714,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         Vector2 gridContainerViewSize = _registeredDesignIconsGrid.GetComponentInParent<UIPanel>().GetViewSize();
         IntVector2 gridContainerDimensions = new IntVector2((int)gridContainerViewSize.x, (int)gridContainerViewSize.y);
         int gridColumns, unusedGridRows;
-        AMultiSizeGuiIcon.IconSize iconSize = AMultiSizeGuiIcon.DetermineGridIconSize(gridContainerDimensions, desiredDesignsToAccommodateInGrid, _designIconPrefab, out unusedGridRows, out gridColumns);
+        AMultiSizeIconGuiElement.IconSize iconSize = AMultiSizeIconGuiElement.DetermineGridIconSize(gridContainerDimensions, desiredDesignsToAccommodateInGrid, _designIconPrefab, out unusedGridRows, out gridColumns);
         _designIconSize = iconSize;
 
         // configure grid for icon size
@@ -745,7 +745,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         IntVector2 gridContainerDimensions = new IntVector2((int)gridContainerViewSize.x, (int)gridContainerViewSize.y);
 
         int gridColumns, unusedGridRows;
-        AMultiSizeGuiIcon.IconSize iconSize = AMultiSizeGuiIcon.DetermineGridIconSize(gridContainerDimensions, desiredStatsToAccommodateInGrid, _equipmentIconPrefab, out unusedGridRows, out gridColumns);
+        AMultiSizeIconGuiElement.IconSize iconSize = AMultiSizeIconGuiElement.DetermineGridIconSize(gridContainerDimensions, desiredStatsToAccommodateInGrid, _equipmentIconPrefab, out unusedGridRows, out gridColumns);
 
         // configure grid for icon size
         IntVector2 iconDimensions = _equipmentIconPrefab.GetIconDimensions(iconSize);
@@ -792,13 +792,13 @@ public abstract class AUnitDesignWindow : AGuiWindow {
             if (iconTransforms.Any()) {
                 D.AssertEqual(Constants.One, iconTransforms.Count);
                 foreach (var it in iconTransforms) {
-                    var icon = it.GetComponent<UnitMemberDesignGuiIcon>();
+                    var icon = it.GetComponent<DesignIconGuiElement>();
                     RemoveIcon(icon);
                 }
             }
         }
         else {
-            var iconsCopy = new List<UnitMemberDesignGuiIcon>(_registeredDesignIcons);
+            var iconsCopy = new List<DesignIconGuiElement>(_registeredDesignIcons);
             iconsCopy.ForAll(i => {
                 RemoveIcon(i);
             });
@@ -809,7 +809,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         IList<Transform> iconTransforms = _designerEquipmentIconsGrid.GetChildList();
         if (iconTransforms.Any()) {
             foreach (var it in iconTransforms) {
-                var icon = it.GetComponent<EquipmentGuiIcon>();
+                var icon = it.GetComponent<EquipmentIconGuiElement>();
                 RemoveIcon(icon);
             }
         }
@@ -829,10 +829,10 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     /// <param name="iconSize">Size of the icon to create.</param>
     /// <param name="parent">The parent.</param>
     /// <returns></returns>
-    private UnitMemberDesignGuiIcon CreateIcon(AUnitMemberDesign design, AMultiSizeGuiIcon.IconSize iconSize, GameObject parent) {
+    private DesignIconGuiElement CreateIcon(AUnitMemberDesign design, AMultiSizeIconGuiElement.IconSize iconSize, GameObject parent) {
         GameObject designIconGo = NGUITools.AddChild(parent, _designIconPrefab.gameObject);
         designIconGo.name = design.DesignName + DesignIconExtension;
-        UnitMemberDesignGuiIcon designIcon = designIconGo.GetSafeComponent<UnitMemberDesignGuiIcon>(); ;
+        DesignIconGuiElement designIcon = designIconGo.GetSafeComponent<DesignIconGuiElement>(); ;
         designIcon.Size = iconSize;
         designIcon.Design = design;
         return designIcon;
@@ -846,7 +846,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     /// the ApplyDesign button in the DesignerUI.</remarks>
     /// </summary>
     /// <param name="designIcon">The design icon.</param>
-    private void AddIcon(UnitMemberDesignGuiIcon designIcon) {
+    private void AddIcon(DesignIconGuiElement designIcon) {
         if (designIcon.transform.parent != _registeredDesignIconsGrid.transform) {
             UnityUtility.AttachChildToParent(designIcon.gameObject, _registeredDesignIconsGrid.gameObject);
         }
@@ -857,17 +857,17 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         _registeredDesignIcons.Add(designIcon);
     }
 
-    private void CreateAndAddIcon(AEquipmentStat equipStat, AMultiSizeGuiIcon.IconSize iconSize) {
+    private void CreateAndAddIcon(AEquipmentStat equipStat, AMultiSizeIconGuiElement.IconSize iconSize) {
         GameObject equipIconGo = NGUITools.AddChild(_designerEquipmentIconsGrid.gameObject, _equipmentIconPrefab.gameObject);
         equipIconGo.name = equipStat.Name + EquipmentIconExtension;
-        EquipmentGuiIcon equipIcon = equipIconGo.GetSafeComponent<EquipmentGuiIcon>();
+        EquipmentIconGuiElement equipIcon = equipIconGo.GetSafeComponent<EquipmentIconGuiElement>();
         equipIcon.Size = iconSize;
         equipIcon.EquipmentStat = equipStat;
 
         UIEventListener.Get(equipIconGo).onDoubleClick += EquipmentIconDoubleClickedEventHandler;
     }
 
-    private void RemoveIcon(UnitMemberDesignGuiIcon designIcon) {
+    private void RemoveIcon(DesignIconGuiElement designIcon) {
         var eventListener = UIEventListener.Get(designIcon.gameObject);
         eventListener.onDoubleClick -= DesignIconDoubleClickedEventHandler;
         eventListener.onClick -= DesignIconClickedEventHandler;
@@ -878,7 +878,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         DestroyImmediate(designIcon.gameObject);
     }
 
-    private void RemoveIcon(EquipmentGuiIcon equipIcon) {
+    private void RemoveIcon(EquipmentIconGuiElement equipIcon) {
         //D.Log("{0} is removing {1} from DesignerUI.", DebugName, equipIcon.DebugName);
         UIEventListener.Get(equipIcon.gameObject).onDoubleClick -= EquipmentIconDoubleClickedEventHandler;
 

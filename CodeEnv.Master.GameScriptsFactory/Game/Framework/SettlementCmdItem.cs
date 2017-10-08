@@ -131,7 +131,13 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmd, ISettlementCm
     }
 
     protected override void ShowSelectedItemHud() {
-        UnitHudWindow.Instance.Show(FormID.UserSettlement, this);
+        if (Owner.IsUser) {
+            UnitHudWindow.Instance.Show(FormID.UserSettlement, this);
+            // 9.10.17 UnitHudWindow's UserSettlementForm will auto show InteractableHudWindow's UserSettlementForm
+        }
+        else {
+            D.Warn("{0}: UnitHudWindow does not yet support showing AI-owned Cmds.", DebugName);
+        }
     }
 
     protected override void PrepareForDeathEffect() {

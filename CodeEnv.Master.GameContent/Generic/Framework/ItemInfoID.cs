@@ -70,6 +70,7 @@ namespace CodeEnv.Master.GameContent {
         Formation,
         CurrentCmdEffectiveness,
         Hero,
+        CurrentConstruction,
 
         // Unit values
         UnitWeaponsRange,

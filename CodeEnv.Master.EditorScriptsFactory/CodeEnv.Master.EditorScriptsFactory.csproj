@@ -61,12 +61,11 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\TableWindowEditor.cs" />
     <Compile Include="Game\GamePoolManagerEditor.cs" />
     <Compile Include="Game\GameSettingsDebugControlEditor.cs" />
     <Compile Include="Generic\ExampleEditor.cs" />
     <Compile Include="Game\DebugControlsEditor.cs" />
-    <Compile Include="Generic\ATableWindowEditor.cs" />
-    <Compile Include="Game\FleetsTableWindowEditor.cs" />
     <Compile Include="Game\AnimateOnHoverEditor.cs" />
     <Compile Include="Generic\AGuiWindowEditor.cs" />
     <Compile Include="Game\DestroyEffectOnCompletionEditor.cs" />
@@ -77,9 +76,6 @@
     <Compile Include="Game\GuiWindowEditor.cs" />
     <Compile Include="Game\HoveredHudEditor.cs" />
     <Compile Include="Game\InteractableHudEditor.cs" />
-    <Compile Include="Game\SettlementsTableWindowEditor.cs" />
-    <Compile Include="Game\StarbasesTableWindowEditor.cs" />
-    <Compile Include="Game\SystemsTableWindowEditor.cs" />
     <Compile Include="Game\GuiShowModeControlButtonEditor.cs" />
     <Compile Include="Game\SectorGridEditor.cs" />
     <Compile Include="Game\PooledSphericalHighlightEditor.cs" />

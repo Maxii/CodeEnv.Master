@@ -76,8 +76,13 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd,
     }
 
     protected override void ShowSelectedItemHud() {
-        UnitHudWindow.Instance.Show(FormID.UserStarbase, this);
-        // 9.10.17 UnitHudWindow's UserStarbaseForm will auto show InteractableHudWindow's UserStarbaseForm
+        if (Owner.IsUser) {
+            UnitHudWindow.Instance.Show(FormID.UserStarbase, this);
+            // 9.10.17 UnitHudWindow's UserStarbaseForm will auto show InteractableHudWindow's UserStarbaseForm
+        }
+        else {
+            D.Warn("{0}: UnitHudWindow does not yet support showing AI-owned Cmds.", DebugName);
+        }
     }
 
     protected override void PrepareForDeathEffect() {

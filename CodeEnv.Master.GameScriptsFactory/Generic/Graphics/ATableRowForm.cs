@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ATableRowForm.cs
-// Abstract base class for ReportForms that are TableRows. 
+// Abstract base class for AItemReportForms that are TableRows. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,11 +17,12 @@
 // default namespace
 
 using System;
+using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Abstract base class for ReportForms that are TableRows. 
+/// Abstract base class for AItemReportForms that are TableRows. 
 /// </summary>
 public abstract class ATableRowForm : AItemReportForm {
 
@@ -42,11 +43,6 @@ public abstract class ATableRowForm : AItemReportForm {
         UIEventListener.Get(e.gameObject).onDoubleClick += NameDoubleClickEventHandler;
     }
 
-    protected override void AssignValueToNameGuiElement() {
-        base.AssignValueToNameGuiElement();
-        _nameLabel.text = Report.Name != null ? Report.Name : Unknown;
-    }
-
     public void SetSideAnchors(Transform target, int left, int right) {
         _rowSprite.leftAnchor.target = target;
         _rowSprite.leftAnchor.absolute = left;
@@ -59,7 +55,7 @@ public abstract class ATableRowForm : AItemReportForm {
     #region Event and Property Change Handlers
 
     private void NameDoubleClickEventHandler(GameObject go) {
-        OnItemFocusUserAction();
+        HandleNameDoubleClicked();
     }
 
     private void OnItemFocusUserAction() {
@@ -70,12 +66,21 @@ public abstract class ATableRowForm : AItemReportForm {
 
     #endregion
 
+    private void HandleNameDoubleClicked() {
+        OnItemFocusUserAction();
+    }
+
     protected override void ResetForReuse_Internal() {
         base.ResetForReuse_Internal();
+        ////D.AssertNull(itemFocusUserAction);  // ATableForm should already have unsubscribed
+        gameObject.name = "Unused RowForm";
+    }
+
+    protected override void ResetNonGuiElementMembers() {
+        base.ResetNonGuiElementMembers();
         _rowSprite.leftAnchor.target = null;
         _rowSprite.rightAnchor.target = null;
         _rowSprite.ResetAnchors();
-        itemFocusUserAction = null;
     }
 
     protected override void CleanupNameGuiElement(AGuiElement e) {
@@ -85,7 +90,7 @@ public abstract class ATableRowForm : AItemReportForm {
 
     protected override void Cleanup() {
         base.Cleanup();
-        itemFocusUserAction = null;
+        D.AssertNull(itemFocusUserAction);  // ATableForm should already have unsubscribed
     }
 
     #region Nested Classes

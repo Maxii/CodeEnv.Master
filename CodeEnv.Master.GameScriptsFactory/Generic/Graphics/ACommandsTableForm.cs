@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2015 Strategic Forge
+// Copyright © 2012 - 2017 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ACommandsTableWindow.cs
-// Abstract base class for all TableWindows for Commands. 
+// File: ACommandsTableForm.cs
+// Abstract ATableForm that displays a table of information about known Unit Commands in a TableWindow. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,9 +19,9 @@
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Abstract base class for all TableWindows for Commands.
+/// Abstract ATableForm that displays a table of information about known Unit Commands in a TableWindow. 
 /// </summary>
-public abstract class ACommandsTableWindow : ATableWindow {
+public abstract class ACommandsTableForm : ATableForm {
 
     #region Sorting Elements
 

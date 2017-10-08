@@ -42,12 +42,15 @@ public class __HoveredHudEquipmentForm : AHoveredHudEquipmentForm {
         _nameLabel.text = EquipmentStat.Name;
     }
 
-
     protected override void AssignValuesToNonGuiElementMembers() {
         base.AssignValuesToNonGuiElementMembers();
         _titleLabel.text = FormID.GetValueName();
     }
 
+    protected override void ResetNonGuiElementMembers() {
+        base.ResetNonGuiElementMembers();
+        _titleLabel.text = null;
+    }
 
 }
 

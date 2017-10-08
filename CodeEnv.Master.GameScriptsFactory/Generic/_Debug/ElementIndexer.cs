@@ -27,7 +27,9 @@ using UnityEngine;
 /// </summary>
 public class ElementIndexer : AMonoBase {
 
-    private const string ToStringFormat = "{0} Index: {1}";
+    private const string DebugNameFormat = "{0} Index: {1}";
+
+    public string DebugName { get { return DebugNameFormat.Inject(GetType().Name, index); } }
 
     [Tooltip("Index of the element within the row/column/layer beginning on the left/bottom/rear at 0")]
     public int index = -1;
@@ -35,7 +37,7 @@ public class ElementIndexer : AMonoBase {
     protected override void Cleanup() { }
 
     public override string ToString() {
-        return ToStringFormat.Inject(GetType().Name, index);
+        return DebugName;
     }
 
 }

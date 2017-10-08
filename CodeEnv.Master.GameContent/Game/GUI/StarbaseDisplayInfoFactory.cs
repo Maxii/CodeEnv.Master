@@ -46,6 +46,7 @@ namespace CodeEnv.Master.GameContent {
             //ItemInfoID.UnitCulture,
             //ItemInfoID.UnitNetIncome,
             ItemInfoID.UnitProduction,
+            ItemInfoID.CurrentConstruction,
 
             //ItemInfoID.Capacity,
             ItemInfoID.Resources,
@@ -90,6 +91,10 @@ namespace CodeEnv.Master.GameContent {
                     case ItemInfoID.Resources:
                         isSuccess = true;
                         colorizedText = _lineTemplate.Inject(report.Resources.HasValue ? report.Resources.Value.ToString() : Unknown);
+                        break;
+                    case ItemInfoID.CurrentConstruction:
+                        isSuccess = true;
+                        colorizedText = GetCurrentConstructionText(report.CurrentConstruction);
                         break;
                     default:
                         throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(infoID));

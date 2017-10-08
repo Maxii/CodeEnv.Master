@@ -43,7 +43,7 @@ namespace CodeEnv.Master.GameContent {
 
         FleetTableRow,
 
-        SystemTableRow,
+        SystemsTableRow,
 
         // 8.2.17 All of these selected item FormIDs are for user-owned items as the 'interactable' HUDs (InteractableHud,
         // UnitHud) provide the ability to change values.
@@ -62,13 +62,16 @@ namespace CodeEnv.Master.GameContent {
         AiFleet,
 
 
-        UnitDesign,
+        Design,
 
         Equipment,
 
         UniverseCenter,
 
-
+        SystemsTable,
+        SettlementsTable,
+        StarbasesTable,
+        FleetsTable,
     }
 }
 

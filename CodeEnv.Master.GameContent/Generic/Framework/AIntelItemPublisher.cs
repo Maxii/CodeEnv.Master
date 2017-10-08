@@ -27,9 +27,14 @@ namespace CodeEnv.Master.GameContent {
             : base(data) {
         }
 
+        #region Report Cache Archive
+
+        [System.Obsolete]
         protected override bool IsCachedReportCurrent(Player player, out ReportType cachedReport) {
             return base.IsCachedReportCurrent(player, out cachedReport) && cachedReport.IntelCoverage == _data.GetIntelCoverage(player);
         }
+
+        #endregion
 
     }
 }

@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: GuiElementConstructionModule.cs
-// Gui module that allows display and management of a Base's Constructible Element Designs and Construction Queue.
+// File: ConstructionGuiModule.cs
+// Gui module that allows management of a Base's Constructible Element Designs and Construction Queue.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,22 +20,21 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Gui module that allows display and management of a Base's Constructible Element Designs and Construction Queue.
+/// Gui module that allows management of a Base's Constructible Element Designs and Construction Queue.
 /// </summary>
-public class GuiElementConstructionModule : AMonoBase {
+public class ConstructionGuiModule : AMonoBase {
 
     private const string ConstructibleDesignIconExtension = " ConstructibleDesignIcon";
     private const string ConstructionQueueIconExtension = " ConstructionQueueIcon";
 
     [SerializeField]
-    private UnitMemberDesignGuiIcon _constructibleDesignIconPrefab = null;
+    private DesignIconGuiElement _constructibleDesignIconPrefab = null;
     [SerializeField]
-    private ElementConstructionGuiIcon _constructionQueueIconPrefab = null;
+    private ConstructionQueueIconGuiElement _constructionQueueIconPrefab = null;
 
     [SerializeField]
     private MyNguiToggleButton _viewAllConstructibleDesignsButton = null;
@@ -72,12 +71,12 @@ public class GuiElementConstructionModule : AMonoBase {
         //D.Log("{0} is initializing.", DebugName);
         _gameMgr = GameManager.Instance;
 
-        _constructibleDesignIconsGrid = gameObject.GetSingleComponentInChildren<UnitMemberDesignGuiIcon>().gameObject.GetSingleComponentInParents<UIGrid>();
+        _constructibleDesignIconsGrid = gameObject.GetSingleComponentInChildren<DesignIconGuiElement>().gameObject.GetSingleComponentInParents<UIGrid>();
         _constructibleDesignIconsGrid.arrangement = UIGrid.Arrangement.Horizontal;
         _constructibleDesignIconsGrid.sorting = UIGrid.Sorting.Custom;
         _constructibleDesignIconsGrid.onCustomSort = CompareConstructibleDesignIcons;
 
-        _constructionQueueIconsGrid = gameObject.GetSingleComponentInChildren<ElementConstructionGuiIcon>().gameObject.GetSingleComponentInParents<UIGrid>();
+        _constructionQueueIconsGrid = gameObject.GetSingleComponentInChildren<ConstructionQueueIconGuiElement>().gameObject.GetSingleComponentInParents<UIGrid>();
         _constructionQueueIconsGrid.arrangement = UIGrid.Arrangement.Vertical;
         _constructionQueueIconsGrid.sorting = UIGrid.Sorting.Vertical;
 
@@ -158,7 +157,7 @@ public class GuiElementConstructionModule : AMonoBase {
 
     private void ConstructibleDesignIconClickedEventHandler(GameObject go) {
         var inputHelper = GameInputHelper.Instance;
-        UnitMemberDesignGuiIcon iconClicked = go.GetComponent<UnitMemberDesignGuiIcon>();
+        DesignIconGuiElement iconClicked = go.GetComponent<DesignIconGuiElement>();
         if (inputHelper.IsLeftMouseButton) {
             if (inputHelper.IsAnyKeyHeldDown(KeyCode.LeftControl, KeyCode.RightControl)) {
                 HandleConstructibleDesignIconCntlLeftClicked(iconClicked);
@@ -174,7 +173,7 @@ public class GuiElementConstructionModule : AMonoBase {
 
     private void ConstructionQueueIconClickedEventHandler(GameObject go) {
         var inputHelper = GameInputHelper.Instance;
-        ElementConstructionGuiIcon iconClicked = go.GetComponent<ElementConstructionGuiIcon>();
+        ConstructionQueueIconGuiElement iconClicked = go.GetComponent<ConstructionQueueIconGuiElement>();
         if (inputHelper.IsLeftMouseButton) {
             if (inputHelper.IsAnyKeyHeldDown(KeyCode.LeftControl, KeyCode.RightControl)) {
                 HandleConstructionQueueIconCntlLeftClicked(iconClicked);
@@ -189,7 +188,7 @@ public class GuiElementConstructionModule : AMonoBase {
     }
 
     private void ConstructionQueueIconBuyoutInitiatedEventHandler(object sender, EventArgs e) {
-        ElementConstructionGuiIcon icon = sender as ElementConstructionGuiIcon;
+        ConstructionQueueIconGuiElement icon = sender as ConstructionQueueIconGuiElement;
         HandleConstructionQueueIconBuyoutInitiated(icon);
     }
 
@@ -227,15 +226,15 @@ public class GuiElementConstructionModule : AMonoBase {
         _viewFacilityConstructibleDesignsButton.SetToggledState(toToggleIn: false);
     }
 
-    private void HandleConstructibleDesignIconCntlLeftClicked(UnitMemberDesignGuiIcon iconClicked) {
+    private void HandleConstructibleDesignIconCntlLeftClicked(DesignIconGuiElement iconClicked) {
         _unitConstructionMgr.AddToQueue(iconClicked.Design as AUnitElementDesign);
     }
 
-    private void HandleConstructibleDesignIconLeftClicked(UnitMemberDesignGuiIcon iconClicked) {
+    private void HandleConstructibleDesignIconLeftClicked(DesignIconGuiElement iconClicked) {
         _unitConstructionMgr.AddToQueue(iconClicked.Design as AUnitElementDesign);
     }
 
-    private void HandleConstructibleDesignIconShiftLeftClicked(UnitMemberDesignGuiIcon iconClicked) {
+    private void HandleConstructibleDesignIconShiftLeftClicked(DesignIconGuiElement iconClicked) {
         _unitConstructionMgr.AddToQueue(iconClicked.Design as AUnitElementDesign);
     }
 
@@ -243,21 +242,21 @@ public class GuiElementConstructionModule : AMonoBase {
 
     #region Construction Queue Icon Interaction
 
-    private void HandleConstructionQueueIconLeftClicked(ElementConstructionGuiIcon clickedIcon) {
+    private void HandleConstructionQueueIconLeftClicked(ConstructionQueueIconGuiElement clickedIcon) {
         // a construction icon that is clicked is already present in the queue so remove it
-        _unitConstructionMgr.RemoveFromQueue(clickedIcon.ItemUnderConstruction);
+        _unitConstructionMgr.RemoveFromQueue(clickedIcon.Construction);
         // No buttons to assess
     }
 
-    private void HandleConstructionQueueIconCntlLeftClicked(ElementConstructionGuiIcon clickedIcon) {
+    private void HandleConstructionQueueIconCntlLeftClicked(ConstructionQueueIconGuiElement clickedIcon) {
         // a construction icon that is clicked is already present in the queue so remove it
-        _unitConstructionMgr.RemoveFromQueue(clickedIcon.ItemUnderConstruction);
+        _unitConstructionMgr.RemoveFromQueue(clickedIcon.Construction);
         // No buttons to assess
     }
 
-    private void HandleConstructionQueueIconShiftLeftClicked(ElementConstructionGuiIcon clickedIcon) {
+    private void HandleConstructionQueueIconShiftLeftClicked(ConstructionQueueIconGuiElement clickedIcon) {
         // a construction icon that is clicked is already present in the queue so remove it
-        _unitConstructionMgr.RemoveFromQueue(clickedIcon.ItemUnderConstruction);
+        _unitConstructionMgr.RemoveFromQueue(clickedIcon.Construction);
         // No buttons to assess
     }
 
@@ -270,15 +269,15 @@ public class GuiElementConstructionModule : AMonoBase {
         // Most designs allow multiple instances of the design to be constructed.
     }
 
-    private void HandleConstructionQueueIconBuyoutInitiated(ElementConstructionGuiIcon boughtIcon) {
-        _unitConstructionMgr.PurchaseQueuedItem(boughtIcon.ItemUnderConstruction);
+    private void HandleConstructionQueueIconBuyoutInitiated(ConstructionQueueIconGuiElement boughtIcon) {
+        _unitConstructionMgr.PurchaseQueuedConstruction(boughtIcon.Construction);
     }
 
     private void HandleConstructionQueueIconDragDropEnded() {
-        IList<ElementConstructionTracker> unitConstructionQueue = _unitConstructionMgr.GetQueue();
+        IList<ConstructionInfo> unitConstructionQueue = _unitConstructionMgr.GetQueue();
 
         var verticallySortedConstructionItemsInIcons = _constructionQueueIconsGrid.GetChildList()
-            .Select(t => t.GetComponent<ElementConstructionGuiIcon>()).Select(icon => icon.ItemUnderConstruction);
+            .Select(t => t.GetComponent<ConstructionQueueIconGuiElement>()).Select(icon => icon.Construction);
         if (!unitConstructionQueue.SequenceEqual(verticallySortedConstructionItemsInIcons)) {
             _unitConstructionMgr.RegenerateQueue(verticallySortedConstructionItemsInIcons.ToList());
         }
@@ -300,7 +299,7 @@ public class GuiElementConstructionModule : AMonoBase {
         int desiredGridCells = constructibleDesigns.Count();
 
         int gridColumns, unusedGridRows;
-        AMultiSizeGuiIcon.IconSize iconSize = AMultiSizeGuiIcon.DetermineGridIconSize(gridContainerDimensions, desiredGridCells,
+        AMultiSizeIconGuiElement.IconSize iconSize = AMultiSizeIconGuiElement.DetermineGridIconSize(gridContainerDimensions, desiredGridCells,
             _constructibleDesignIconPrefab, out unusedGridRows, out gridColumns);
 
         // configure grid for icon size
@@ -318,7 +317,7 @@ public class GuiElementConstructionModule : AMonoBase {
         _constructibleDesignIconsGrid.repositionNow = true;
     }
 
-    private void BuildConstructionQueueIcons(IEnumerable<ElementConstructionTracker> constructionQueue) {
+    private void BuildConstructionQueueIcons(IEnumerable<ConstructionInfo> constructionQueue) {
         RemoveConstructionQueueIcons();
 
         var gridContainerSize = _constructionQueueIconsGrid.GetComponentInParent<UIPanel>().GetViewSize();
@@ -327,7 +326,7 @@ public class GuiElementConstructionModule : AMonoBase {
         int desiredGridCells = constructionQueue.Count();
 
         int unusedGridColumns, unusedGridRows;
-        AMultiSizeGuiIcon.IconSize iconSize = AMultiSizeGuiIcon.DetermineGridIconSize(gridContainerDimensions, desiredGridCells, _constructionQueueIconPrefab, out unusedGridRows, out unusedGridColumns);
+        AMultiSizeIconGuiElement.IconSize iconSize = AMultiSizeIconGuiElement.DetermineGridIconSize(gridContainerDimensions, desiredGridCells, _constructionQueueIconPrefab, out unusedGridRows, out unusedGridColumns);
 
         // configure grid for icon size
         IntVector2 iconDimensions = _constructionQueueIconPrefab.GetIconDimensions(iconSize);
@@ -346,10 +345,10 @@ public class GuiElementConstructionModule : AMonoBase {
         _constructionQueueIconsGrid.repositionNow = true;
     }
 
-    private void CreateAndAddIcon(AUnitElementDesign design, AMultiSizeGuiIcon.IconSize iconSize) {
+    private void CreateAndAddIcon(AUnitElementDesign design, AMultiSizeIconGuiElement.IconSize iconSize) {
         GameObject constructibleDesignIconGo = NGUITools.AddChild(_constructibleDesignIconsGrid.gameObject, _constructibleDesignIconPrefab.gameObject);
         constructibleDesignIconGo.name = design.DesignName + ConstructibleDesignIconExtension;
-        UnitMemberDesignGuiIcon constructableDesignIcon = constructibleDesignIconGo.GetSafeComponent<UnitMemberDesignGuiIcon>();
+        DesignIconGuiElement constructableDesignIcon = constructibleDesignIconGo.GetSafeComponent<DesignIconGuiElement>();
         constructableDesignIcon.Size = iconSize;
         constructableDesignIcon.Design = design;
 
@@ -358,19 +357,19 @@ public class GuiElementConstructionModule : AMonoBase {
     }
 
     /// <summary>
-    /// Creates and adds a ElementConstructionGuiIcon to the ConstructionQueueIconsGrid and ScrollView.
+    /// Creates and adds a ConstructionQueueIconGuiElement to the ConstructionQueueIconsGrid and ScrollView.
     /// </summary>
     /// <param name="itemUnderConstruction">The item under construction.</param>
     /// <param name="iconSize">Size of the icon.</param>
     /// <param name="topToBottomVerticalOffset">The top to bottom vertical offset needed to vertically sort.</param>
-    private void CreateAndAddIcon(ElementConstructionTracker itemUnderConstruction, AMultiSizeGuiIcon.IconSize iconSize, int topToBottomVerticalOffset) {
+    private void CreateAndAddIcon(ConstructionInfo itemUnderConstruction, AMultiSizeIconGuiElement.IconSize iconSize, int topToBottomVerticalOffset) {
         GameObject constructionQueueIconGo = NGUITools.AddChild(_constructionQueueIconsGrid.gameObject, _constructionQueueIconPrefab.gameObject);
-        constructionQueueIconGo.name = itemUnderConstruction.Design.DesignName + ConstructionQueueIconExtension;
+        constructionQueueIconGo.name = itemUnderConstruction.Name + ConstructionQueueIconExtension;
         constructionQueueIconGo.transform.SetLocalPositionY(topToBottomVerticalOffset); // initial position set for proper vertical sort
 
-        ElementConstructionGuiIcon constructionQueueIcon = constructionQueueIconGo.GetSafeComponent<ElementConstructionGuiIcon>();
+        ConstructionQueueIconGuiElement constructionQueueIcon = constructionQueueIconGo.GetSafeComponent<ConstructionQueueIconGuiElement>();
         constructionQueueIcon.Size = iconSize;
-        constructionQueueIcon.ItemUnderConstruction = itemUnderConstruction;
+        constructionQueueIcon.Construction = itemUnderConstruction;
 
         constructionQueueIcon.constructionBuyoutInitiated += ConstructionQueueIconBuyoutInitiatedEventHandler;
         constructionQueueIcon.dragDropEnded += ConstructionQueueIconDragDropEndedEventHandler;
@@ -380,7 +379,7 @@ public class GuiElementConstructionModule : AMonoBase {
     private void RemoveConstructibleDesignIcons() {
         IList<Transform> iconTransforms = _constructibleDesignIconsGrid.GetChildList();
         foreach (var it in iconTransforms) {
-            var icon = it.GetComponent<UnitMemberDesignGuiIcon>();
+            var icon = it.GetComponent<DesignIconGuiElement>();
             RemoveIcon(icon);
         }
     }
@@ -388,12 +387,12 @@ public class GuiElementConstructionModule : AMonoBase {
     private void RemoveConstructionQueueIcons() {
         IList<Transform> iconTransforms = _constructionQueueIconsGrid.GetChildList();
         foreach (var it in iconTransforms) {
-            var icon = it.GetComponent<ElementConstructionGuiIcon>();
+            var icon = it.GetComponent<ConstructionQueueIconGuiElement>();
             RemoveIcon(icon);
         }
     }
 
-    private void RemoveIcon(UnitMemberDesignGuiIcon icon) {
+    private void RemoveIcon(DesignIconGuiElement icon) {
         if (icon.Design != null) {  // no reason for this work if this is debug icon under grid
             bool isRemoved = _sortedConstructibleDesignIconTransforms.Remove(icon.transform);
             D.Assert(isRemoved);
@@ -410,8 +409,8 @@ public class GuiElementConstructionModule : AMonoBase {
         DestroyImmediate(icon.gameObject);
     }
 
-    private void RemoveIcon(ElementConstructionGuiIcon icon) {
-        if (icon.ItemUnderConstruction != null) {   // no reason for this work if this is debug icon under grid
+    private void RemoveIcon(ConstructionQueueIconGuiElement icon) {
+        if (icon.Construction != TempGameValues.NoConstruction) {   // no reason for this work if this is debug icon under grid
             icon.constructionBuyoutInitiated -= ConstructionQueueIconBuyoutInitiatedEventHandler;
             icon.dragDropEnded -= ConstructionQueueIconDragDropEndedEventHandler;
             UIEventListener.Get(icon.gameObject).onClick -= ConstructionQueueIconClickedEventHandler;

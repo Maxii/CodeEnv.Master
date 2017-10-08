@@ -27,7 +27,7 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class __HoveredHudDesignForm : AHoveredHudDesignForm {
 
-    public override FormID FormID { get { return FormID.UnitDesign; } }
+    public override FormID FormID { get { return FormID.Design; } }
 
     private UILabel _titleLabel;
 
@@ -45,6 +45,11 @@ public class __HoveredHudDesignForm : AHoveredHudDesignForm {
     protected override void AssignValuesToNonGuiElementMembers() {
         base.AssignValuesToNonGuiElementMembers();
         _titleLabel.text = FormID.GetValueName();
+    }
+
+    protected override void ResetNonGuiElementMembers() {
+        base.ResetNonGuiElementMembers();
+        _titleLabel.text = null;
     }
 
 }
