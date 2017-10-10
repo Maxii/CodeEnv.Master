@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ResourceForm.cs
-// Forms that are used to display info about a Resource in HudWindows.
+// File: ResourceTooltipForm.cs
+// Form that is used to display a static description of a Resource in the TooltipHudWindow.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,13 +20,24 @@ using System;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
+using UnityEngine;
 
 /// <summary>
-/// Forms that are used to display info about a Resource in HudWindows.
+/// Form that is used to display a static description of a Resource in the TooltipHudWindow.
+/// <remarks>Does not handle dynamic value changes.</remarks>
 /// </summary>
-public class ResourceForm : AForm {
+public class ResourceTooltipForm : AForm {
 
-    public override FormID FormID { get { return FormID.ResourceHud; } }
+    public override FormID FormID { get { return FormID.ResourceTooltip; } }
+
+    [SerializeField]
+    private UILabel _categoryLabel = null;
+    [SerializeField]
+    private UILabel _descriptionLabel = null;
+    [SerializeField]
+    private UILabel _imageNameLabel = null;
+    [SerializeField]
+    private UISprite _imageSprite = null;
 
     private ResourceID _resourceID;
     public ResourceID ResourceID {
@@ -37,19 +48,7 @@ public class ResourceForm : AForm {
         }
     }
 
-    private UILabel _categoryLabel;
-    private UILabel _descriptionLabel;
-    private UILabel _imageNameLabel;
-    private UISprite _imageSprite;
-
-    protected override void InitializeValuesAndReferences() {
-        var immediateChildLabels = gameObject.GetSafeComponentsInImmediateChildren<UILabel>();
-        _categoryLabel = immediateChildLabels.Single(l => l.overflowMethod == UILabel.Overflow.ClampContent);   // HACK
-        _descriptionLabel = immediateChildLabels.Single(l => l.overflowMethod == UILabel.Overflow.ResizeHeight);    // HACK
-        var imageFrameSprite = gameObject.GetSafeComponentsInChildren<UISprite>().Single(s => s.spriteName == TempGameValues.ImageFrameFilename);
-        _imageSprite = imageFrameSprite.gameObject.GetSingleComponentInImmediateChildren<UISprite>();
-        _imageNameLabel = imageFrameSprite.gameObject.GetSingleComponentInChildren<UILabel>();
-    }
+    protected override void InitializeValuesAndReferences() { }
 
     public sealed override void PopulateValues() {
         D.AssertNotDefault((int)ResourceID);
@@ -58,7 +57,7 @@ public class ResourceForm : AForm {
 
     protected override void AssignValuesToMembers() {
         _categoryLabel.text = ResourceID.GetResourceCategory().GetValueName();
-        _descriptionLabel.text = ResourceID.GetResourceDescription();
+        _descriptionLabel.text = ResourceID.GetDescription();
         _imageSprite.atlas = ResourceID.GetImageAtlasID().GetAtlas();
         _imageSprite.spriteName = ResourceID.GetImageFilename();
         _imageNameLabel.text = ResourceID.GetValueName();
@@ -69,6 +68,18 @@ public class ResourceForm : AForm {
     }
 
     protected override void Cleanup() { }
+
+    #region Debug
+
+    protected override void __ValidateOnAwake() {
+        base.__ValidateOnAwake();
+        D.AssertNotNull(_categoryLabel);
+        D.AssertNotNull(_descriptionLabel);
+        D.AssertNotNull(_imageNameLabel);
+        D.AssertNotNull(_imageSprite);
+    }
+
+    #endregion
 
 
 }

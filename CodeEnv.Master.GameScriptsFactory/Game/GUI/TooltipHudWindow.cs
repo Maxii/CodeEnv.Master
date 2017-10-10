@@ -72,8 +72,8 @@ public class TooltipHudWindow : AHudWindow<TooltipHudWindow>, ITooltipHudWindow 
     }
 
     public void Show(ResourceID resourceID) {
-        var form = PrepareForm(FormID.ResourceHud);
-        (form as ResourceForm).ResourceID = resourceID;
+        var form = PrepareForm(FormID.ResourceTooltip);
+        (form as ResourceTooltipForm).ResourceID = resourceID;
         ShowForm(form);
     }
 

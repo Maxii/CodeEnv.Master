@@ -48,7 +48,7 @@ public abstract class ATableForm : AForm {
     /// DetermineSortDirection() will derive the current sort direction by inverting the value of _lastSortDirection. 
     /// Handled this way to withstand multiple ResetForReuse() calls between use.</remarks>
     /// </summary>
-    private SortDirection _lastSortDirectionValueToAssumeWhenResetForReuse = SortDirection.Descending;
+    ////private SortDirection _lastSortDirectionValueToAssumeWhenResetForReuse = SortDirection.Descending;
     private Transform _tableContainer;
     private UIScrollView _tableScrollView;
     private GuiElementID _lastSortTopic = GuiElementID.NameLabel;
@@ -111,7 +111,19 @@ public abstract class ATableForm : AForm {
         }
     }
 
-    protected abstract void ResumePreviousSortTopicAndDirection(GuiElementID sortTopicToResume);
+    /// <summary>
+    /// Resumes the previous sort topic and direction.
+    /// <remarks>SortDirection is assigned during SortOnXXX(). Since we are resuming the same sort topic,
+    /// DetermineSortDirection() will toggle _sortDirection as it normally does, so we need to pre-toggle
+    /// that value here so the same direction is resumed.</remarks>
+    /// </summary>
+    /// <param name="sortTopicToResume">The sort topic to resume.</param>
+    private void ResumePreviousSortTopicAndDirection(GuiElementID sortTopicToResume) {
+        _lastSortDirection = ToggleDirection(_lastSortDirection);
+        ResumePreviousSortTopic(sortTopicToResume);
+    }
+
+    protected abstract void ResumePreviousSortTopic(GuiElementID sortTopicToResume);
 
     #region Event and Property Change Handlers
 
@@ -216,7 +228,7 @@ public abstract class ATableForm : AForm {
         return (int)_sortDirection * rowALocationElement.CompareTo(rowBLocationElement);
     }
 
-    protected int CompareStrategicResources(Transform rowA, Transform rowB) {
+    protected int CompareResources(Transform rowA, Transform rowB) {
         _lastSortTopic = GuiElementID.Resources;
         var rowAResourcesElement = GetGuiElement(rowA, GuiElementID.Resources) as ResourcesGuiElement;
         var rowBResourcesElement = GetGuiElement(rowB, GuiElementID.Resources) as ResourcesGuiElement;
@@ -355,7 +367,7 @@ public abstract class ATableForm : AForm {
             sortDirection = ToggleDirection(_lastSortDirection);
         }
         _lastSortDirection = sortDirection;
-        _lastSortDirectionValueToAssumeWhenResetForReuse = ToggleDirection(_lastSortDirection);
+        ////_lastSortDirectionValueToAssumeWhenResetForReuse = ToggleDirection(_lastSortDirection);
         //D.Log("{0}.DetermineSortDirection(Topic: {1}): Direction: {2}, Value: {3}.", DebugName, sortTopic.GetValueName(), sortDirection.GetValueName(), (int)sortDirection);
         return sortDirection;
     }
@@ -427,8 +439,8 @@ public abstract class ATableForm : AForm {
 
     private void ResetSortStatesForReuse() {
         //D.Log("{0}.ResetSortStatesForReuse() called.", DebugName);
-        _lastSortDirection = _lastSortDirectionValueToAssumeWhenResetForReuse;
-        // keep _lastSortTopic the same to sort the same topic when reused
+        ////_lastSortDirection = _lastSortDirectionValueToAssumeWhenResetForReuse;
+        // keep _lastSortTopic and _lastSortDirection the same to sort the same topic and direction when reused
     }
 
     private void RecycleRowFormsInUse() {

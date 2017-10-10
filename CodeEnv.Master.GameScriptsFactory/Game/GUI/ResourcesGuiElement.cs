@@ -24,11 +24,11 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// AGuiElement that represents the Resources associated with an Item or Empire. Also handles unknown.
+/// AGuiElement that represents the Resources associated with an Item or Empire. Also handles Resources unknown.
 /// </summary>
 public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement> {
 
-    private const string LabelFormat = Constants.FormatInt_1DMin;
+    private const string ResourceYieldFormat_Label = Constants.FormatInt_1DMin;
 
     /// <summary>
     /// The category of resources to be displayed. Use None if all resources present should be displayed.
@@ -129,21 +129,22 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
             resourcesPresent = Resources.Value.ResourcesPresent.Where(res => res.GetResourceCategory() == _resourceCategory).ToList();
         }
         int resourcesCount = resourcesPresent.Count;
+        D.Assert(_containers.Length >= resourcesCount);
         float cumYield = Constants.ZeroF;
         for (int i = Constants.Zero; i < resourcesCount; i++) {
             UIWidget container = _containers[i];
             NGUITools.SetActive(container.gameObject, true);
 
-            UISprite sprite = container.gameObject.GetSingleComponentInChildren<UISprite>();
+            UISprite iconSprite = container.gameObject.GetSingleComponentInChildren<UISprite>();
             var resourceID = resourcesPresent[i];
-            sprite.atlas = resourceID.GetIconAtlasID().GetAtlas();
-            sprite.spriteName = resourceID.GetIconFilename();
+            iconSprite.atlas = resourceID.GetIconAtlasID().GetAtlas();
+            iconSprite.spriteName = resourceID.GetIconFilename();
             _resourceIDLookup.Add(container.gameObject, resourceID);
 
             float yield = Resources.Value.GetYield(resourceID);
             cumYield += yield;
-            var label = container.gameObject.GetSingleComponentInChildren<UILabel>();
-            label.text = LabelFormat.Inject(Mathf.RoundToInt(yield));
+            var yieldLabel = container.gameObject.GetSingleComponentInChildren<UILabel>();
+            yieldLabel.text = ResourceYieldFormat_Label.Inject(Mathf.RoundToInt(yield));
         }
         _totalYield = cumYield;
         D.Assert(_totalYield >= Constants.ZeroF);

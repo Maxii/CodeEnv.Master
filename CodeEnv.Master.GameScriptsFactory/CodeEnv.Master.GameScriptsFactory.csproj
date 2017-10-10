@@ -111,6 +111,7 @@
     <Compile Include="Game\GUI\SystemsTableForm.cs" />
     <Compile Include="Game\GUI\SettlementsTableForm.cs" />
     <Compile Include="Game\GUI\StarbasesTableForm.cs" />
+    <Compile Include="Game\GUI\OutputsGuiElement.cs" />
     <Compile Include="ThirdParty\MyDragDropItem.cs" />
     <Compile Include="ThirdParty\MyNGPathfindingGraph.cs" />
     <Compile Include="ThirdParty\MyPlaySFX.cs" />
@@ -249,7 +250,7 @@
     <Compile Include="Generic\_Debug\RowOrganizer.cs" />
     <Compile Include="Game\GUI\NetIncomeGuiElement.cs" />
     <Compile Include="Game\GUI\ResourcesGuiElement.cs" />
-    <Compile Include="Game\GUI\ResourceForm.cs" />
+    <Compile Include="Game\GUI\ResourceTooltipForm.cs" />
     <Compile Include="Game\GUI\InteractableHudSettlementForm.cs" />
     <Compile Include="Generic\Graphics\ATableRowForm.cs" />
     <Compile Include="Game\GUI\SettlementTableRowForm.cs" />

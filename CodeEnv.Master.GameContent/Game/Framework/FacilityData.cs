@@ -30,6 +30,12 @@ namespace CodeEnv.Master.GameContent {
 
         public new FacilityInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as FacilityInfoAccessController; } }
 
+        private float _food;
+        public float Food {
+            get { return _food; }
+            set { SetProperty<float>(ref _food, value, "Food"); }
+        }
+
         private float _production;
         public float Production {
             get { return _production; }
@@ -73,6 +79,7 @@ namespace CodeEnv.Master.GameContent {
             Culture = hullEquipment.Culture;
             Income = hullEquipment.Income;
             Production = hullEquipment.Production;
+            Food = hullEquipment.Food;
         }
 
         protected override AIntel MakeIntelInstance() {

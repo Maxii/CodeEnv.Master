@@ -558,6 +558,17 @@ namespace CodeEnv.Master.GameContent {
         public const string StarbaseImageFilename = "ocean3_12";
 
         public const string SettlementImageFilename = "multiple25_12";
+
+
+        public const string FoodIconFilename = "sprig2_12";
+        public const string ProductionIconFilename = "hammer2_12";
+        public const string IncomeIconFilename = "coins15_12";
+        public const string ExpenseIconFilename = IncomeIconFilename;
+        public const string NetIncomeIconFilename = IncomeIconFilename;
+        public const string ScienceIconFilename = "microscope23_12";
+        public const string CultureIconFilename = "Star1_12";
+
+
     }
 }
 

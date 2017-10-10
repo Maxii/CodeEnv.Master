@@ -40,7 +40,7 @@ public class StarbasesTableForm : ACommandsTableForm {
         return _gameMgr.UserAIManager.Knowledge.Starbases.Cast<AItem>();
     }
 
-    protected override void ResumePreviousSortTopicAndDirection(GuiElementID sortTopicToResume) {
+    protected override void ResumePreviousSortTopic(GuiElementID sortTopicToResume) {
         switch (sortTopicToResume) {
             case GuiElementID.NameLabel:
                 SortOnName();
@@ -70,7 +70,7 @@ public class StarbasesTableForm : ACommandsTableForm {
                 SortOnLocation();
                 break;
             case GuiElementID.Resources:
-                SortOnStrategicResources();
+                SortOnResources();
                 break;
             case GuiElementID.Composition:
                 SortOnComposition();
@@ -94,8 +94,8 @@ public class StarbasesTableForm : ACommandsTableForm {
 
     #region Sorting
 
-    public void SortOnStrategicResources() {
-        _table.onCustomSort = CompareStrategicResources;
+    public void SortOnResources() {
+        _table.onCustomSort = CompareResources;
         _sortDirection = DetermineSortDirection(GuiElementID.Resources);
         _table.repositionNow = true;
     }

@@ -40,7 +40,7 @@ public class SettlementsTableForm : ACommandsTableForm {
         return _gameMgr.UserAIManager.Knowledge.Settlements.Cast<AItem>();
     }
 
-    protected override void ResumePreviousSortTopicAndDirection(GuiElementID sortTopicToResume) {
+    protected override void ResumePreviousSortTopic(GuiElementID sortTopicToResume) {
         switch (sortTopicToResume) {
             case GuiElementID.NameLabel:
                 SortOnName();
@@ -82,7 +82,7 @@ public class SettlementsTableForm : ACommandsTableForm {
                 SortOnLocation();
                 break;
             case GuiElementID.Resources:
-                SortOnStrategicResources();
+                SortOnResources();
                 break;
             case GuiElementID.Composition:
                 SortOnComposition();
@@ -104,8 +104,8 @@ public class SettlementsTableForm : ACommandsTableForm {
 
     #region Sorting
 
-    public void SortOnStrategicResources() {
-        _table.onCustomSort = CompareStrategicResources;
+    public void SortOnResources() {
+        _table.onCustomSort = CompareResources;
         _sortDirection = DetermineSortDirection(GuiElementID.Resources);
         _table.repositionNow = true;
     }

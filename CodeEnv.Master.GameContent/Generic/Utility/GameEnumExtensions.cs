@@ -517,8 +517,14 @@ namespace CodeEnv.Master.GameContent {
 
         private static ResourceIDXmlPropertyReader _resourceIDXmlReader = ResourceIDXmlPropertyReader.Instance;
 
-        public static string GetImageFilename(this ResourceID resourceID) {
-            switch (resourceID) {
+        /// <summary>
+        /// Gets the filename of the image (not the icon) of the resource.
+        /// </summary>
+        /// <param name="id">The resource identifier.</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotImplementedException"></exception>
+        public static string GetImageFilename(this ResourceID id) {
+            switch (id) {
                 case ResourceID.Organics:
                     return _resourceIDXmlReader.OrganicsImageFilename;
                 case ResourceID.Particulates:
@@ -532,12 +538,12 @@ namespace CodeEnv.Master.GameContent {
                 case ResourceID.Unobtanium:
                     return _resourceIDXmlReader.UnobtaniumImageFilename;
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(resourceID));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(id));
             }
         }
 
-        public static AtlasID GetImageAtlasID(this ResourceID resourceID) {
-            switch (resourceID) {
+        public static AtlasID GetImageAtlasID(this ResourceID id) {
+            switch (id) {
                 case ResourceID.Organics:
                     return Enums<AtlasID>.Parse(_resourceIDXmlReader.OrganicsImageAtlasID);
                 case ResourceID.Particulates:
@@ -551,12 +557,18 @@ namespace CodeEnv.Master.GameContent {
                 case ResourceID.Unobtanium:
                     return Enums<AtlasID>.Parse(_resourceIDXmlReader.UnobtaniumImageAtlasID);
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(resourceID));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(id));
             }
         }
 
-        public static string GetIconFilename(this ResourceID resourceID) {
-            switch (resourceID) {
+        /// <summary>
+        /// Gets the filename of the icon (not the image) of the resource.
+        /// </summary>
+        /// <param name="id">The resource identifier.</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotImplementedException"></exception>
+        public static string GetIconFilename(this ResourceID id) {
+            switch (id) {
                 case ResourceID.Organics:
                     return _resourceIDXmlReader.OrganicsIconFilename;
                 case ResourceID.Particulates:
@@ -570,12 +582,12 @@ namespace CodeEnv.Master.GameContent {
                 case ResourceID.Unobtanium:
                     return _resourceIDXmlReader.UnobtaniumIconFilename;
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(resourceID));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(id));
             }
         }
 
-        public static AtlasID GetIconAtlasID(this ResourceID resourceID) {
-            switch (resourceID) {
+        public static AtlasID GetIconAtlasID(this ResourceID id) {
+            switch (id) {
                 case ResourceID.Organics:
                     return Enums<AtlasID>.Parse(_resourceIDXmlReader.OrganicsIconAtlasID);
                 case ResourceID.Particulates:
@@ -589,12 +601,12 @@ namespace CodeEnv.Master.GameContent {
                 case ResourceID.Unobtanium:
                     return Enums<AtlasID>.Parse(_resourceIDXmlReader.UnobtaniumIconAtlasID);
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(resourceID));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(id));
             }
         }
 
-        public static string GetResourceDescription(this ResourceID resourceID) {
-            switch (resourceID) {
+        public static string GetDescription(this ResourceID id) {
+            switch (id) {
                 case ResourceID.Organics:
                     return _resourceIDXmlReader.OrganicsDescription;
                 case ResourceID.Particulates:
@@ -608,13 +620,13 @@ namespace CodeEnv.Master.GameContent {
                 case ResourceID.Unobtanium:
                     return _resourceIDXmlReader.UnobtaniumDescription;
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(resourceID));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(id));
             }
         }
 
-        public static ResourceCategory GetResourceCategory(this ResourceID resourceID) {
+        public static ResourceCategory GetResourceCategory(this ResourceID id) {
             // currently don't see a reason to externalize this
-            switch (resourceID) {
+            switch (id) {
                 case ResourceID.Organics:
                 case ResourceID.Particulates:
                 case ResourceID.Energy:
@@ -624,11 +636,116 @@ namespace CodeEnv.Master.GameContent {
                 case ResourceID.Unobtanium:
                     return ResourceCategory.Strategic;
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(resourceID));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(id));
             }
         }
 
         #endregion
+
+        #region OutputsID
+
+        // IMPROVE Externalize like ResourcesID
+
+        /// <summary>
+        /// Gets the filename of the image (not the icon) of the output.
+        /// </summary>
+        /// <param name="id">The identifier.</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotImplementedException"></exception>
+        public static string GetImageFilename(this OutputsID id) {
+            switch (id) {
+                case OutputsID.Food:
+                case OutputsID.Prodn:
+                case OutputsID.Income:
+                case OutputsID.Expense:
+                case OutputsID.NetIncome:
+                case OutputsID.Science:
+                case OutputsID.Culture:
+                    return TempGameValues.AnImageFilename;
+                case OutputsID.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(id));
+            }
+        }
+
+        public static AtlasID GetImageAtlasID(this OutputsID id) {
+            switch (id) {
+                case OutputsID.Food:
+                case OutputsID.Prodn:
+                case OutputsID.Income:
+                case OutputsID.Expense:
+                case OutputsID.NetIncome:
+                case OutputsID.Science:
+                case OutputsID.Culture:
+                    return AtlasID.MyGui;
+                case OutputsID.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(id));
+            }
+        }
+
+        /// <summary>
+        /// Gets the filename of the icon (not the image) of the output.
+        /// </summary>
+        /// <param name="id">The identifier.</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotImplementedException"></exception>
+        public static string GetIconFilename(this OutputsID id) {
+            switch (id) {
+                case OutputsID.Food:
+                    return TempGameValues.FoodIconFilename;
+                case OutputsID.Prodn:
+                    return TempGameValues.ProductionIconFilename;
+                case OutputsID.Income:
+                    return TempGameValues.IncomeIconFilename;
+                case OutputsID.Expense:
+                    return TempGameValues.ExpenseIconFilename;
+                case OutputsID.NetIncome:
+                    return TempGameValues.NetIncomeIconFilename;
+                case OutputsID.Science:
+                    return TempGameValues.ScienceIconFilename;
+                case OutputsID.Culture:
+                    return TempGameValues.CultureIconFilename;
+                case OutputsID.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(id));
+            }
+        }
+
+        public static AtlasID GetIconAtlasID(this OutputsID id) {
+            switch (id) {
+                case OutputsID.Food:
+                case OutputsID.Prodn:
+                case OutputsID.Income:
+                case OutputsID.Expense:
+                case OutputsID.NetIncome:
+                case OutputsID.Science:
+                case OutputsID.Culture:
+                    return AtlasID.MyGui;
+                case OutputsID.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(id));
+            }
+        }
+
+        public static string GetDescription(this OutputsID id) {
+            switch (id) {
+                case OutputsID.Food:
+                case OutputsID.Prodn:
+                case OutputsID.Income:
+                case OutputsID.Expense:
+                case OutputsID.NetIncome:
+                case OutputsID.Science:
+                case OutputsID.Culture:
+                    return "An Outputs Description...";
+                case OutputsID.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(id));
+            }
+        }
+
+        #endregion
+
 
         #region GameSpeed
 
@@ -1526,6 +1643,27 @@ namespace CodeEnv.Master.GameContent {
                 case FacilityHullCategory.Barracks:
                 case FacilityHullCategory.Defense:
                 case FacilityHullCategory.Factory:
+                case FacilityHullCategory.Laboratory:
+                    result = Constants.ZeroF;
+                    break;
+                case FacilityHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+            }
+            return result;
+        }
+
+        public static float Food(this FacilityHullCategory hullCat) {
+            float result;
+            switch (hullCat) {
+                case FacilityHullCategory.CentralHub:
+                case FacilityHullCategory.ColonyHab:
+                    result = 10F;
+                    break;
+                case FacilityHullCategory.Factory:
+                case FacilityHullCategory.Economic:
+                case FacilityHullCategory.Barracks:
+                case FacilityHullCategory.Defense:
                 case FacilityHullCategory.Laboratory:
                     result = Constants.ZeroF;
                     break;

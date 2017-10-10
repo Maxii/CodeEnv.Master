@@ -953,11 +953,12 @@ public class NewGameUnitConfigurator {
         decimal income = hullCat.Income();
         decimal expense = hullCat.Expense();
         float hullMass = hullCat.Mass();
+        float food = hullCat.Food();
         float production = hullCat.Production();
         float constructionCost = hullCat.ConstructionCost();
         Vector3 hullDimensions = hullCat.Dimensions();
         return new FacilityHullStat(hullCat, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F,
-            hullMass, 0F, constructionCost, expense, 50F, new DamageStrength(2F, 2F, 2F), hullDimensions, science, culture, income, production);
+            hullMass, 0F, constructionCost, expense, 50F, new DamageStrength(2F, 2F, 2F), hullDimensions, science, culture, income, food, production);
     }
 
     private FtlDampenerStat CreateReqdCmdFtlDampenerStat() { return new FtlDampenerStat("ReqdSRFtlDampener", RangeCategory.Short); }

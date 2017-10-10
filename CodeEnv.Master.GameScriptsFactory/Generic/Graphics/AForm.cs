@@ -24,7 +24,7 @@ using CodeEnv.Master.GameContent;
 /// Abstract base class for Forms. A Form supervises a collection of UIWidgets
 /// in an arrangement that can be displayed by a AGuiWindow. AForms are
 /// populated with content to display by feeding them Text, Reports or individual
-/// values (e.g. a ResourceForm is fed a ResourceID, displaying values derived from
+/// values (e.g. a ResourceTooltipForm is fed a ResourceID, displaying values derived from
 /// the ResourceID in a TooltipHudWindow).
 /// <remarks>6.17.17 Many AForms are shown in HUDs and the FormID is used by the HUD 
 /// to pick the form to show. Some AForms don't lend themselves to HUD displays due to 

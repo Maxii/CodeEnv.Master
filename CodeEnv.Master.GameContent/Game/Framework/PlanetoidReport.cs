@@ -25,8 +25,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class PlanetoidReport : AMortalItemReport {
 
-        ////public string ParentName { get; private set; }
-
         public PlanetoidCategory Category { get; private set; }
 
         public float? OrbitalSpeed { get; private set; }

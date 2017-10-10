@@ -40,7 +40,7 @@ public class SystemsTableForm : ATableForm {
         return _gameMgr.UserAIManager.Knowledge.Systems.Cast<AItem>();
     }
 
-    protected override void ResumePreviousSortTopicAndDirection(GuiElementID sortTopicToResume) {
+    protected override void ResumePreviousSortTopic(GuiElementID sortTopicToResume) {
         switch (sortTopicToResume) {
             case GuiElementID.NameLabel:
                 SortOnName();
@@ -61,7 +61,7 @@ public class SystemsTableForm : ATableForm {
                 SortOnLocation();
                 break;
             case GuiElementID.Resources:
-                SortOnStrategicResources();
+                SortOnResources();
                 break;
             case GuiElementID.SpeedLabel:
             case GuiElementID.ScienceLabel:
@@ -82,8 +82,8 @@ public class SystemsTableForm : ATableForm {
 
     #region Sorting Elements
 
-    public void SortOnStrategicResources() {
-        _table.onCustomSort = CompareStrategicResources;
+    public void SortOnResources() {
+        _table.onCustomSort = CompareResources;
         _sortDirection = DetermineSortDirection(GuiElementID.Resources);
         _table.repositionNow = true;
     }

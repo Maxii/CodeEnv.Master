@@ -30,6 +30,7 @@ namespace CodeEnv.Master.GameContent {
                 case ItemInfoID.Culture:
                 case ItemInfoID.Science:
                 case ItemInfoID.NetIncome:
+                case ItemInfoID.Food:
                 case ItemInfoID.Production:
                     return true;
                 default:

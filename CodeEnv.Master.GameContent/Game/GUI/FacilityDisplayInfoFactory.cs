@@ -39,6 +39,7 @@ namespace CodeEnv.Master.GameContent {
             //ItemInfoID.Science,
             //ItemInfoID.Culture,
             //ItemInfoID.NetIncome,
+            ItemInfoID.Food,
             ItemInfoID.Production,
             //ItemInfoID.Mass,
             ItemInfoID.ConstructionCost,
@@ -67,6 +68,10 @@ namespace CodeEnv.Master.GameContent {
                     case ItemInfoID.Category:
                         isSuccess = true;
                         colorizedText = _lineTemplate.Inject(report.Category != FacilityHullCategory.None ? report.Category.GetValueName() : Unknown);
+                        break;
+                    case ItemInfoID.Food:
+                        isSuccess = true;
+                        colorizedText = _lineTemplate.Inject(report.Food.HasValue ? GetFormat(infoID).Inject(report.Food.Value) : Unknown);
                         break;
                     case ItemInfoID.Production:
                         isSuccess = true;

@@ -40,6 +40,8 @@ namespace CodeEnv.Master.GameContent {
 
         public int? Population { get; private set; }
 
+        public float? UnitFood { get; private set; }
+
         public float? UnitProduction { get; private set; }
 
         public ConstructionInfo CurrentConstruction { get; private set; }
@@ -151,6 +153,9 @@ namespace CodeEnv.Master.GameContent {
             }
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Capacity)) {
                 Capacity = sData.Capacity;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitFood)) {
+                UnitFood = sData.UnitFood;
             }
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitProduction)) {
                 UnitProduction = sData.UnitProduction;

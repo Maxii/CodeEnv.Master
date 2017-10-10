@@ -34,7 +34,7 @@ namespace CodeEnv.Master.GameContent {
 
         TextHud,
 
-        ResourceHud,
+        ResourceTooltip,
 
 
         SettlementTableRow,

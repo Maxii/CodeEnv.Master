@@ -37,7 +37,12 @@ namespace CodeEnv.Master.GameContent {
         Mass,
 
         Capacity,   // TODO Not used and not clear what it means
+
+        //[System.Obsolete]
         Resources,
+        //CommonResources,
+        //StrategicResources,
+        //LuxuryResources,
 
         Health,
         MaxHitPoints,
@@ -99,6 +104,8 @@ namespace CodeEnv.Master.GameContent {
 
         // Formatting
         Separator,
+        Food,
+        UnitFood,
     }
 }
 

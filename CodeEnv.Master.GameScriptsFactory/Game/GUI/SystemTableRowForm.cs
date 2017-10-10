@@ -51,8 +51,8 @@ public class SystemTableRowForm : ATableRowForm {
         _particulatesLabel.text = report.Resources.HasValue ? Constants.FormatFloat_0Dp.Inject(report.Resources.Value.GetYield(ResourceID.Particulates)) : Unknown;
     }
 
-    protected override void AssignValueToStrategicResourcesGuiElement() {
-        base.AssignValueToStrategicResourcesGuiElement();
+    protected override void AssignValueToResourcesGuiElement() {
+        base.AssignValueToResourcesGuiElement();
         var report = Report as SystemReport;
         _resourcesGuiElement.Resources = report.Resources;
     }

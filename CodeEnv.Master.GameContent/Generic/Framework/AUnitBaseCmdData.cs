@@ -40,6 +40,12 @@ namespace CodeEnv.Master.GameContent {
 
         public new IEnumerable<FacilityData> ElementsData { get { return base.ElementsData.Cast<FacilityData>(); } }
 
+        private float _unitFood;
+        public float UnitFood {
+            get { return _unitFood; }
+            private set { SetProperty<float>(ref _unitFood, value, "UnitFood"); }
+        }
+
         private float _unitProduction;
         public float UnitProduction {
             get { return _unitProduction; }
@@ -95,15 +101,21 @@ namespace CodeEnv.Master.GameContent {
             base.Subscribe(elementData);
             var anElementsSubscriptions = _elementSubscriptionsLookup[elementData];
             FacilityData facilityData = elementData as FacilityData;
+            anElementsSubscriptions.Add(facilityData.SubscribeToPropertyChanged<FacilityData, float>(ed => ed.Food, ElementFoodPropChangedHandler));
             anElementsSubscriptions.Add(facilityData.SubscribeToPropertyChanged<FacilityData, float>(ed => ed.Production, ElementProductionPropChangedHandler));
         }
 
         protected override void RecalcPropertiesDerivedFromCombinedElements() {
             base.RecalcPropertiesDerivedFromCombinedElements();
+            RecalcUnitFood();
             RecalcUnitProduction();
         }
 
         #region Event and Property Change Handlers
+
+        private void ElementFoodPropChangedHandler() {
+            RecalcUnitFood();
+        }
 
         private void ElementProductionPropChangedHandler() {
             RecalcUnitProduction();
@@ -115,6 +127,10 @@ namespace CodeEnv.Master.GameContent {
             if (UnitWeaponsRange.Max > TempGameValues.__MaxBaseWeaponsRangeDistance) {
                 D.Warn("{0} max UnitWeaponsRange {1:0.#} > {2:0.#}.", DebugName, UnitWeaponsRange.Max, TempGameValues.__MaxBaseWeaponsRangeDistance);
             }
+        }
+
+        private void RecalcUnitFood() {
+            UnitFood = _elementsData.Cast<FacilityData>().Sum(ed => ed.Food);
         }
 
         private void RecalcUnitProduction() {

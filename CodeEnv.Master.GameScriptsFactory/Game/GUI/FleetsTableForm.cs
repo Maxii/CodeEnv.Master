@@ -40,7 +40,7 @@ public class FleetsTableForm : ACommandsTableForm {
         return _gameMgr.UserAIManager.Knowledge.Fleets.Cast<AItem>();
     }
 
-    protected override void ResumePreviousSortTopicAndDirection(GuiElementID sortTopicToResume) {
+    protected override void ResumePreviousSortTopic(GuiElementID sortTopicToResume) {
         switch (sortTopicToResume) {
             case GuiElementID.NameLabel:
                 SortOnName();

@@ -26,6 +26,8 @@ namespace CodeEnv.Master.GameContent {
 
         public FacilityHullCategory Category { get; private set; }
 
+        public float? Food { get; private set; }
+
         public float? Production { get; private set; }
 
         public FacilityReport(FacilityData data, Player player, IFacility_Ltd item) : base(data, player, item) { }
@@ -73,6 +75,9 @@ namespace CodeEnv.Master.GameContent {
             }
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Category)) {
                 Category = fData.HullCategory;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Food)) {
+                Food = fData.Food;
             }
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Production)) {
                 Production = fData.Production;

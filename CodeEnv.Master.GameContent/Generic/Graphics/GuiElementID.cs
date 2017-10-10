@@ -30,7 +30,7 @@ namespace CodeEnv.Master.GameContent {
 
         None = 0,
 
-        // last: UnitIcon = 101  
+        // last: Outputs = 102  
 
         #region Checkboxes
 
@@ -181,6 +181,8 @@ namespace CodeEnv.Master.GameContent {
         Approval = 44,
 
         NetIncome = 45,
+
+        Outputs = 102,
 
         #endregion
 

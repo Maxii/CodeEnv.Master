@@ -63,8 +63,8 @@ public class SettlementTableRowForm : ACommandTableRowForm {
         _populationLabel.text = report.Population.HasValue ? Constants.FormatFloat_0Dp.Inject(report.Population.Value) : Unknown;
     }
 
-    protected override void AssignValueToStrategicResourcesGuiElement() {
-        base.AssignValueToStrategicResourcesGuiElement();
+    protected override void AssignValueToResourcesGuiElement() {
+        base.AssignValueToResourcesGuiElement();
         var report = Report as SettlementCmdReport;
         _resourcesGuiElement.Resources = report.Resources;
     }

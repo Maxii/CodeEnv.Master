@@ -2,6 +2,7 @@
 <!-- Be careful where comments are placed! -->
 
 <!-- Client is ResourceIDXmlPropertyReader : AEnumXmlPropertyReader : AXmlPropertyReader : AXmlReader -->
+<!-- UNCLEAR how to break text inside tag without embedding a newline character within the text? -->
 
 <EnumValues EnumTypeName="ResourceID">
   
@@ -108,7 +109,7 @@
     </Setting>
     <Setting>
       <PropertyName>TitaniumDescription</PropertyName>
-      <PropertyValue>A Titanium Description...</PropertyValue>
+      <PropertyValue>A strong, low density metal that can be alloyed with other elements to produce strong, lightweight alloys useful in spacecraft and weapons.</PropertyValue>
     </Setting>
 
     <Setting>

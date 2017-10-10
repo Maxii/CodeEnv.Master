@@ -31,6 +31,7 @@ namespace CodeEnv.Master.GameContent {
                 case ItemInfoID.UnitScience:
                 case ItemInfoID.UnitNetIncome:
                 case ItemInfoID.UnitCulture:
+                case ItemInfoID.UnitFood:
                 case ItemInfoID.UnitProduction:
                 case ItemInfoID.Capacity:
                 case ItemInfoID.Approval:

@@ -29,6 +29,7 @@ namespace CodeEnv.Master.GameContent {
         public StarbaseCategory Category { get; private set; }
 
         public int? Capacity { get; private set; }
+        public float? UnitFood { get; private set; }
         public float? UnitProduction { get; private set; }
 
         public ConstructionInfo CurrentConstruction { get; private set; }
@@ -146,6 +147,9 @@ namespace CodeEnv.Master.GameContent {
             }
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Capacity)) {
                 Capacity = sbData.Capacity;
+            }
+            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitFood)) {
+                UnitFood = sbData.UnitFood;
             }
             if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitProduction)) {
                 UnitProduction = sbData.UnitProduction;

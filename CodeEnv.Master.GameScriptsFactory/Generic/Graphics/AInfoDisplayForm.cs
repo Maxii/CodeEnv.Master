@@ -90,7 +90,7 @@ public abstract class AInfoDisplayForm : AForm {
                 InitializeDefensiveStrengthGuiElement(e);
                 break;
             case GuiElementID.Resources:
-                InitializeStrategicResourcesGuiElement(e);
+                InitializeResourcesGuiElement(e);
                 break;
             case GuiElementID.ScienceLabel:
                 InitializeScienceGuiElement(e);
@@ -248,7 +248,7 @@ public abstract class AInfoDisplayForm : AForm {
     /// <remarks>Virtual to allow derived classes to further initialize the element, i.e. subscribe to events...</remarks>
     /// </summary>
     /// <param name="e">The AGuiElement.</param>
-    protected virtual void InitializeStrategicResourcesGuiElement(AGuiElement e) {
+    protected virtual void InitializeResourcesGuiElement(AGuiElement e) {
         _resourcesGuiElement = e as ResourcesGuiElement;
     }
 
@@ -410,7 +410,7 @@ public abstract class AInfoDisplayForm : AForm {
                 AssignValueToSpeedGuiElement();
                 break;
             case GuiElementID.Resources:
-                AssignValueToStrategicResourcesGuiElement();
+                AssignValueToResourcesGuiElement();
                 break;
             default:
                 isFound = false;
@@ -419,7 +419,7 @@ public abstract class AInfoDisplayForm : AForm {
         return isFound;
     }
 
-    protected virtual void AssignValueToStrategicResourcesGuiElement() { }
+    protected virtual void AssignValueToResourcesGuiElement() { }
     protected virtual void AssignValueToSpeedGuiElement() { }
     protected virtual void AssignValueToScienceGuiElement() { }
     protected virtual void AssignValueToConstructionGuiElement() { }
@@ -481,7 +481,7 @@ public abstract class AInfoDisplayForm : AForm {
                 ResetDefensiveStrengthGuiElement();
                 break;
             case GuiElementID.Resources:
-                ResetStrategicResourcesGuiElement();
+                ResetResourcesGuiElement();
                 break;
             case GuiElementID.ScienceLabel:
                 ResetScienceGuiElement();
@@ -551,7 +551,7 @@ public abstract class AInfoDisplayForm : AForm {
         _defensiveStrengthGuiElement.ResetForReuse();
     }
 
-    private void ResetStrategicResourcesGuiElement() {
+    private void ResetResourcesGuiElement() {
         _resourcesGuiElement.ResetForReuse();
     }
 
@@ -635,7 +635,7 @@ public abstract class AInfoDisplayForm : AForm {
                 CleanupDefensiveStrengthGuiElement(e);
                 break;
             case GuiElementID.Resources:
-                CleanupStrategicResourcesGuiElement(e);
+                CleanupResourcesGuiElement(e);
                 break;
             case GuiElementID.ScienceLabel:
                 CleanupScienceGuiElement(e);
@@ -684,7 +684,7 @@ public abstract class AInfoDisplayForm : AForm {
     protected virtual void CleanupHealthGuiElement(AGuiElement e) { }
     protected virtual void CleanupOffensiveStrengthGuiElement(AGuiElement e) { }
     protected virtual void CleanupDefensiveStrengthGuiElement(AGuiElement e) { }
-    protected virtual void CleanupStrategicResourcesGuiElement(AGuiElement e) { }
+    protected virtual void CleanupResourcesGuiElement(AGuiElement e) { }
     protected virtual void CleanupScienceGuiElement(AGuiElement e) { }
     protected virtual void CleanupCultureGuiElement(AGuiElement e) { }
     protected virtual void CleanupNetIncomeGuiElement(AGuiElement e) { }

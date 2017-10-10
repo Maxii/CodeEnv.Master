@@ -33,8 +33,8 @@ public class StarbaseTableRowForm : ACommandTableRowForm {
         (_compositionGuiElement as StarbaseCompositionGuiElement).Category = report.Category;
     }
 
-    protected override void AssignValueToStrategicResourcesGuiElement() {
-        base.AssignValueToStrategicResourcesGuiElement();
+    protected override void AssignValueToResourcesGuiElement() {
+        base.AssignValueToResourcesGuiElement();
         var report = Report as StarbaseCmdReport;
         _resourcesGuiElement.Resources = report.Resources;
     }

@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2015 Strategic Forge
+// Copyright © 2012 - 2017 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ResourceYield.cs
-// Immutable data container holding the yield values associated with Resources.
+// File: ResourcesYield.cs
+// Immutable data container holding nullable yield values associated with Resources.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,48 +23,49 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Immutable data container holding the yield values associated with Resources.
+    /// Immutable data container holding nullable yield values associated with Resources.
     /// <remarks>11.8.16 I've considered changing to a class, but I really want to 
     /// use value semantics here. See Marc Gravell's comments at 
     /// http://stackoverflow.com/questions/10415157/when-would-a-value-type-contain-a-reference-type 
     /// </remarks>
     /// </summary>
-    ////[Obsolete]
-    public struct ResourceYield : IEquatable<ResourceYield> {
+    public struct ResourcesYield {
+
+        private const string Unknown = Constants.QuestionMark;
 
         #region Operators Override
 
         // see C# 4.0 In a Nutshell, page 254
 
-        public static bool operator ==(ResourceYield left, ResourceYield right) {
+        public static bool operator ==(ResourcesYield left, ResourcesYield right) {
             return left.Equals(right);
         }
 
-        public static bool operator !=(ResourceYield left, ResourceYield right) {
+        public static bool operator !=(ResourcesYield left, ResourcesYield right) {
             return !left.Equals(right);
         }
 
-        public static ResourceYield operator +(ResourceYield left, ResourceYield right) {
-            HashSet<ResourceValuePair> combinedValuePairs = new HashSet<ResourceValuePair>();
+        public static ResourcesYield operator +(ResourcesYield left, ResourcesYield right) {
+            HashSet<ResourcesValuePair> combinedValuePairs = new HashSet<ResourcesValuePair>();
 
             var allResourceIDs = Enums<ResourceID>.GetValues(excludeDefault: true);
             foreach (var resID in allResourceIDs) {
-                float leftValue = Constants.ZeroF;
+                float? leftValue = Constants.ZeroF;
                 bool leftHasValue = left.TryGetYield(resID, out leftValue);
-                float rightValue = Constants.ZeroF;
+                float? rightValue = Constants.ZeroF;
                 bool rightHasValue = right.TryGetYield(resID, out rightValue);
                 if (leftHasValue || rightHasValue) {
-                    combinedValuePairs.Add(new ResourceValuePair(resID, leftValue + rightValue));
+                    combinedValuePairs.Add(new ResourcesValuePair(resID, leftValue + rightValue));
                 }
             }
-            return new ResourceYield(combinedValuePairs.ToArray());
+            return new ResourcesYield(combinedValuePairs.ToArray());
         }
 
         #endregion
 
         private const string DebugNameFormat = "{0}.{1}";
-        private const string FirstResourceStringBuilderFormat = "{0}({1:0.#})"; // use of [ ] causes Ngui label problems
-        private const string ContinuingStringBuilderFormat = ", {0}({1:0.#})";
+        private const string FirstResourceStringBuilderFormat = "{0}({1})"; // use of [ ] causes Ngui label problems
+        private const string ContinuingStringBuilderFormat = ", {0}({1})";
 
         private static StringBuilder _stringBuilder = new StringBuilder();
 
@@ -78,9 +79,9 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private IDictionary<ResourceID, float> _resourceValueLookup;
-        private IDictionary<ResourceID, float> ResourceValueLookup {
-            get { return _resourceValueLookup = _resourceValueLookup ?? new Dictionary<ResourceID, float>(ResourceIDEqualityComparer.Default); }
+        private IDictionary<ResourceID, float?> _resourceValueLookup;
+        private IDictionary<ResourceID, float?> ResourceValueLookup {
+            get { return _resourceValueLookup = _resourceValueLookup ?? new Dictionary<ResourceID, float?>(ResourceIDEqualityComparer.Default); }
         }
 
         /// <summary>
@@ -91,21 +92,21 @@ namespace CodeEnv.Master.GameContent {
         public IEnumerable<ResourceID> ResourcesPresent { get { return ResourceValueLookup.Keys.ToArray(); } }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ResourceYield"/> struct. 
+        /// Initializes a new instance of the <see cref="ResourcesYield"/> struct. 
         /// Resource.None is illegal.
         /// </summary>
         /// <param name="resourceID">The resource ID.</param>
         /// <param name="value">The value.</param>
-        public ResourceYield(ResourceID resourceID, float value)
-            : this(new ResourceValuePair(resourceID, value)) { }
+        public ResourcesYield(ResourceID resourceID, float? value)
+            : this(new ResourcesValuePair(resourceID, value)) { }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ResourceYield" /> struct.
+        /// Initializes a new instance of the <see cref="ResourcesYield" /> struct.
         /// Resource.None is illegal.
         /// </summary>
         /// <param name="resourceValuePairs">The resource value pairs.</param>
         /// <exception cref="System.ArgumentException">if more than 1 value pair specifying the same Resource are found.</exception>
-        public ResourceYield(params ResourceValuePair[] resourceValuePairs)
+        public ResourcesYield(params ResourcesValuePair[] resourceValuePairs)
             : this() {
             // multiple pairs with the same resource type are not allowed
             CheckForDuplicateValues(resourceValuePairs);
@@ -120,24 +121,25 @@ namespace CodeEnv.Master.GameContent {
             for (int i = 0; i < resourceValuePairs.Count(); i++) {
                 var valuePair = resourceValuePairs[i];
                 format = (i == Constants.Zero) ? FirstResourceStringBuilderFormat : ContinuingStringBuilderFormat;
-                _stringBuilder.AppendFormat(format, valuePair.ResourceID.GetEnumAttributeText(), valuePair.Value);
+                string valueText = valuePair.Value.HasValue ? Constants.FormatFloat_1DpMax.Inject(valuePair.Value.Value) : Unknown;
+                _stringBuilder.AppendFormat(format, valuePair.ResourceID.GetEnumAttributeText(), valueText);
             }
             _debugName = _stringBuilder.ToString();
         }
 
-        public bool TryGetYield(ResourceID resourceID, out float yield) {
+        public bool TryGetYield(ResourceID resourceID, out float? yield) {
             return ResourceValueLookup.TryGetValue(resourceID, out yield);
         }
 
-        public float GetYield(ResourceID resourceID) {
-            float result = Constants.ZeroF;
+        public float? GetYield(ResourceID resourceID) {
+            float? result = Constants.ZeroF;
             if (!TryGetYield(resourceID, out result) && resourceID == ResourceID.Energy) {
                 D.Warn("{0} {1} is not present in {2}. Empty System with no Star?", typeof(ResourceID).Name, resourceID.GetValueName(), GetType().Name);
             }
             return result;
         }
 
-        private void CheckForDuplicateValues(params ResourceValuePair[] resourceValuePairs) {
+        private void CheckForDuplicateValues(params ResourcesValuePair[] resourceValuePairs) {
             var duplicates = resourceValuePairs.GroupBy(rvp => rvp.ResourceID).Where(group => group.Count() > 1);
             if (duplicates.Any()) {
                 string duplicateResourceTypes = duplicates.Select(group => group.Key).Concatenate();
@@ -148,8 +150,8 @@ namespace CodeEnv.Master.GameContent {
         #region Object.Equals and GetHashCode Override
 
         public override bool Equals(object obj) {
-            if (!(obj is ResourceYield)) { return false; }
-            return Equals((ResourceYield)obj);
+            if (!(obj is ResourcesYield)) { return false; }
+            return Equals((ResourcesYield)obj);
         }
 
         /// <summary>
@@ -174,9 +176,9 @@ namespace CodeEnv.Master.GameContent {
 
         public override string ToString() { return DebugName; }
 
-        #region IEquatable<ResourceYield> Members
+        #region IEquatable<ResourcesYield> Members
 
-        public bool Equals(ResourceYield other) {
+        public bool Equals(ResourcesYield other) {
             bool keysEqual = ResourcesPresent.OrderBy(r => r).SequenceEqual(other.ResourcesPresent.OrderBy(r => r));
             if (!keysEqual) {
                 return false;
@@ -193,35 +195,34 @@ namespace CodeEnv.Master.GameContent {
 
         #region Nested Classes
 
-        ////[Obsolete]
-        public struct ResourceValuePair : IEquatable<ResourceValuePair> {
+        public struct ResourcesValuePair : IEquatable<ResourcesValuePair> {
 
-            private const string ToStringFormat = "{0}[{1:0.#}]";
+            private const string ToStringFormat = "{0}[{1}]";
 
             #region Operators Override
 
             // see C# 4.0 In a Nutshell, page 254
 
-            public static bool operator ==(ResourceValuePair left, ResourceValuePair right) {
+            public static bool operator ==(ResourcesValuePair left, ResourcesValuePair right) {
                 return left.Equals(right);
             }
 
-            public static bool operator !=(ResourceValuePair left, ResourceValuePair right) {
+            public static bool operator !=(ResourcesValuePair left, ResourcesValuePair right) {
                 return !left.Equals(right);
             }
 
-            public static ResourceValuePair operator +(ResourceValuePair left, ResourceValuePair right) {
+            public static ResourcesValuePair operator +(ResourcesValuePair left, ResourcesValuePair right) {
                 D.AssertEqual(left.ResourceID, right.ResourceID);
                 var newValue = left.Value + right.Value;
-                return new ResourceValuePair(left.ResourceID, newValue);
+                return new ResourcesValuePair(left.ResourceID, newValue);
             }
 
             #endregion
 
             public ResourceID ResourceID { get; private set; }
-            public float Value { get; private set; }
+            public float? Value { get; private set; }
 
-            public ResourceValuePair(ResourceID resourceID, float value)
+            public ResourcesValuePair(ResourceID resourceID, float? value)
                 : this() {
                 ResourceID = resourceID;
                 Value = value;
@@ -230,8 +231,8 @@ namespace CodeEnv.Master.GameContent {
             #region Object.Equals and GetHashCode Override
 
             public override bool Equals(object obj) {
-                if (!(obj is ResourceValuePair)) { return false; }
-                return Equals((ResourceValuePair)obj);
+                if (!(obj is ResourcesValuePair)) { return false; }
+                return Equals((ResourcesValuePair)obj);
             }
 
             /// <summary>
@@ -251,12 +252,13 @@ namespace CodeEnv.Master.GameContent {
             #endregion
 
             public override string ToString() {
-                return ToStringFormat.Inject(ResourceID.GetValueName(), Value);
+                string valueText = Value.HasValue ? Constants.FormatFloat_1DpMax.Inject(Value.Value) : Unknown;
+                return ToStringFormat.Inject(ResourceID.GetValueName(), valueText);
             }
 
-            #region IEquatable<ResourceValuePair> Members
+            #region IEquatable<ResourcesValuePair> Members
 
-            public bool Equals(ResourceValuePair other) {
+            public bool Equals(ResourcesValuePair other) {
                 return ResourceID == other.ResourceID && Value == other.Value;
             }
 

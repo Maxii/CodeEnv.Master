@@ -19,7 +19,7 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Unique identifier for a resource.
+    /// Unique identifier for a resource - common, strategic and luxury.
     /// </summary>
     public enum ResourceID {
 
@@ -34,13 +34,13 @@ namespace CodeEnv.Master.GameContent {
         [EnumAttribute("E")]
         Energy = 3,
 
-        [EnumAttribute("T")]
+        [EnumAttribute("Ti")]
         Titanium = 4,
 
-        [EnumAttribute("D")]
+        [EnumAttribute("Du")]
         Duranium = 5,
 
-        [EnumAttribute("U")]
+        [EnumAttribute("Un")]
         Unobtanium = 6
 
     }
