@@ -31,7 +31,8 @@ namespace CodeEnv.Master.GameContent {
 
         public int? Capacity { get; private set; }
 
-        public ResourceYield? Resources { get; private set; }
+        public ResourcesYield Resources { get; private set; }
+        ////public ResourceYield? Resources { get; private set; }
 
         public float? Mass { get; private set; }
 

@@ -739,13 +739,13 @@ public class NewGameSystemConfigurator {
         return statsList;
     }
 
-    private ResourceYield CreateRandomResourceYield(SystemDesirability desirability, params ResourceCategory[] resCategories) {
-        ResourceYield sum = default(ResourceYield);
+    private ResourcesYield CreateRandomResourceYield(SystemDesirability desirability, params ResourceCategory[] resCategories) {
+        ResourcesYield sum = default(ResourcesYield);
         resCategories.ForAll(resCat => sum += CreateRandomResourceYield(resCat, desirability));
         return sum;
     }
 
-    private ResourceYield CreateRandomResourceYield(ResourceCategory resCategory, SystemDesirability desirability) {
+    private ResourcesYield CreateRandomResourceYield(ResourceCategory resCategory, SystemDesirability desirability) {
         float minYield;
         float maxYield;
         int minNumberOfResources;
@@ -805,13 +805,13 @@ public class NewGameSystemConfigurator {
         D.Assert(categoryResourceCount > minNumberOfResources);
         int numberOfResourcesToCreate = RandomExtended.Range(minNumberOfResources, categoryResourceCount);
 
-        IList<ResourceYield.ResourceValuePair> resValuePairs = new List<ResourceYield.ResourceValuePair>(numberOfResourcesToCreate);
+        IList<ResourcesYield.ResourcesValuePair> resValuePairs = new List<ResourcesYield.ResourcesValuePair>(numberOfResourcesToCreate);
         var resourcesChosen = categoryResources.Shuffle().Take(numberOfResourcesToCreate);
         resourcesChosen.ForAll(resID => {
-            var rvp = new ResourceYield.ResourceValuePair(resID, UnityEngine.Random.Range(minYield, maxYield));
+            var rvp = new ResourcesYield.ResourcesValuePair(resID, UnityEngine.Random.Range(minYield, maxYield));
             resValuePairs.Add(rvp);
         });
-        return new ResourceYield(resValuePairs.ToArray());
+        return new ResourcesYield(resValuePairs.ToArray());
     }
 
     private PlanetStat MakeRandomPlanetStat(PlanetoidCategory pCategory, SystemDesirability desirability) {

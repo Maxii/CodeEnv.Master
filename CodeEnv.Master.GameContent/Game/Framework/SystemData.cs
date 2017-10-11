@@ -35,10 +35,10 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<int>(ref _capacity, value, "Capacity"); }
         }
 
-        private ResourceYield _resources;
-        public ResourceYield Resources {
+        private ResourcesYield _resources;
+        public ResourcesYield Resources {
             get { return _resources; }
-            private set { SetProperty<ResourceYield>(ref _resources, value, "Resources"); }
+            private set { SetProperty<ResourcesYield>(ref _resources, value, "Resources"); }
         }
 
         private SettlementCmdData _settlementData;
@@ -102,13 +102,13 @@ namespace CodeEnv.Master.GameContent {
             }
             var planetSubscriber = _planetoidSubscriptions[pData];
             planetSubscriber.Add(pData.SubscribeToPropertyChanged<PlanetoidData, int>(pd => pd.Capacity, PlanetoidCapacityPropChangedHandler));
-            planetSubscriber.Add(pData.SubscribeToPropertyChanged<PlanetoidData, ResourceYield>(pd => pd.Resources, PlanetoidResourceYieldPropChangedHandler));
+            planetSubscriber.Add(pData.SubscribeToPropertyChanged<PlanetoidData, ResourcesYield>(pd => pd.Resources, PlanetoidResourceYieldPropChangedHandler));
             pData.intelCoverageChanged += PlanetoidIntelCoverageChangedEventHandler;
         }
 
         private void SubscribeToStarDataValueChanges() {
             _starSubscriptions.Add(StarData.SubscribeToPropertyChanged<StarData, int>(sd => sd.Capacity, StarCapacityPropChangedHandler));
-            _starSubscriptions.Add(StarData.SubscribeToPropertyChanged<StarData, ResourceYield>(sd => sd.Resources, StarResourceYieldPropChangedHandler));
+            _starSubscriptions.Add(StarData.SubscribeToPropertyChanged<StarData, ResourcesYield>(sd => sd.Resources, StarResourceYieldPropChangedHandler));
             StarData.intelCoverageChanged += StarIntelCoverageChangedEventHandler;
         }
 
@@ -318,9 +318,9 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void UpdateResources() {
-            var defaultValueIfEmpty = default(ResourceYield);
+            var defaultValueIfEmpty = default(ResourcesYield);
             var resources = _allPlanetoidData.Select(pd => pd.Resources);
-            ResourceYield totalResourcesFromPlanets = resources.Aggregate(defaultValueIfEmpty, (accumulator, res) => accumulator + res);
+            ResourcesYield totalResourcesFromPlanets = resources.Aggregate(defaultValueIfEmpty, (accumulator, res) => accumulator + res);
             Resources = totalResourcesFromPlanets + StarData.Resources;
         }
 

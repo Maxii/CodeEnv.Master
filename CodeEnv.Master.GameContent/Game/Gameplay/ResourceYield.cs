@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
     /// http://stackoverflow.com/questions/10415157/when-would-a-value-type-contain-a-reference-type 
     /// </remarks>
     /// </summary>
-    ////[Obsolete]
+    [Obsolete]
     public struct ResourceYield : IEquatable<ResourceYield> {
 
         #region Operators Override
@@ -193,7 +193,7 @@ namespace CodeEnv.Master.GameContent {
 
         #region Nested Classes
 
-        ////[Obsolete]
+        [Obsolete]
         public struct ResourceValuePair : IEquatable<ResourceValuePair> {
 
             private const string ToStringFormat = "{0}[{1:0.#}]";

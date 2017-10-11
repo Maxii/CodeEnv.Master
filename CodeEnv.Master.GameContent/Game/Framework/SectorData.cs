@@ -35,10 +35,10 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<int>(ref _capacity, value, "Capacity"); }
         }
 
-        private ResourceYield _resources;
-        public ResourceYield Resources {
+        private ResourcesYield _resources;
+        public ResourcesYield Resources {
             get { return _resources; }
-            private set { SetProperty<ResourceYield>(ref _resources, value, "Resources"); }
+            private set { SetProperty<ResourcesYield>(ref _resources, value, "Resources"); }
         }
 
         private SystemData _systemData;
@@ -87,7 +87,7 @@ namespace CodeEnv.Master.GameContent {
             _systemDataSubscribers = new List<IDisposable>();
             _systemDataSubscribers.Add(SystemData.SubscribeToPropertyChanged<SystemData, Player>(sd => sd.Owner, SystemOwnerPropChangedHandler));
             _systemDataSubscribers.Add(SystemData.SubscribeToPropertyChanged<SystemData, int>(sd => sd.Capacity, SystemCapacityPropChangedHandler));
-            _systemDataSubscribers.Add(SystemData.SubscribeToPropertyChanged<SystemData, ResourceYield>(sd => sd.Resources, SystemResourceYieldPropChangedHandler));
+            _systemDataSubscribers.Add(SystemData.SubscribeToPropertyChanged<SystemData, ResourcesYield>(sd => sd.Resources, SystemResourceYieldPropChangedHandler));
             SystemData.intelCoverageChanged += SystemIntelCoverageChangedEventHandler;
         }
 

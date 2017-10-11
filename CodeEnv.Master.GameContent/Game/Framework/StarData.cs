@@ -41,10 +41,10 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<int>(ref _capacity, value, "Capacity"); }
         }
 
-        private ResourceYield _resources;
-        public ResourceYield Resources {
+        private ResourcesYield _resources;
+        public ResourcesYield Resources {
             get { return _resources; }
-            set { SetProperty<ResourceYield>(ref _resources, value, "Resources"); }
+            set { SetProperty<ResourcesYield>(ref _resources, value, "Resources"); }
         }
 
         public IntVector3 SectorID { get; private set; }

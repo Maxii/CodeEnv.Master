@@ -45,21 +45,62 @@ namespace CodeEnv.Master.GameContent {
             return !left.Equals(right);
         }
 
+        /// <summary>
+        /// Adds the two ResourcesYields together returning a ResourcesYield that represents the combined value.
+        /// <remarks>Overrides normal float? addition behaviour which returns null if either value is null.</remarks>
+        /// <remarks>For each ResourceID present, sums their values that aren't null, ignoring those that are. 
+        /// If both values are null, that ResourceID will have a null combined value. My purpose is to not throw
+        /// away known info and treat unknown info as unknown and therefore ignored.
+        /// </remarks>
+        /// </summary>
+        /// <param name="left">The left.</param>
+        /// <param name="right">The right.</param>
+        /// <returns></returns>
         public static ResourcesYield operator +(ResourcesYield left, ResourcesYield right) {
             HashSet<ResourcesValuePair> combinedValuePairs = new HashSet<ResourcesValuePair>();
 
             var allResourceIDs = Enums<ResourceID>.GetValues(excludeDefault: true);
             foreach (var resID in allResourceIDs) {
-                float? leftValue = Constants.ZeroF;
-                bool leftHasValue = left.TryGetYield(resID, out leftValue);
-                float? rightValue = Constants.ZeroF;
-                bool rightHasValue = right.TryGetYield(resID, out rightValue);
-                if (leftHasValue || rightHasValue) {
-                    combinedValuePairs.Add(new ResourcesValuePair(resID, leftValue + rightValue));
+                float? leftValue = null;
+                bool leftResIdIsPresent = left.TryGetYield(resID, out leftValue);
+                float? rightValue = null;
+                bool rightResIdIsPresent = right.TryGetYield(resID, out rightValue);
+                if (leftResIdIsPresent || rightResIdIsPresent) {
+                    float? combinedValue = leftValue.NullableSum(rightValue);
+                    combinedValuePairs.Add(new ResourcesValuePair(resID, combinedValue));
                 }
             }
             return new ResourcesYield(combinedValuePairs.ToArray());
         }
+        ////public static ResourcesYield operator +(ResourcesYield left, ResourcesYield right) {
+        ////    HashSet<ResourcesValuePair> combinedValuePairs = new HashSet<ResourcesValuePair>();
+
+        ////    var allResourceIDs = Enums<ResourceID>.GetValues(excludeDefault: true);
+        ////    foreach (var resID in allResourceIDs) {
+        ////        float? leftValue = null;
+        ////        bool leftResIdIsPresent = left.TryGetYield(resID, out leftValue);
+        ////        float? rightValue = null;
+        ////        bool rightResIdIsPresent = right.TryGetYield(resID, out rightValue);
+        ////        if (leftResIdIsPresent || rightResIdIsPresent) {
+        ////            float? combinedValue = Constants.ZeroF;
+        ////            if (!leftValue.HasValue && !rightValue.HasValue) {
+        ////                // both are unknown so combined unknown
+        ////                combinedValue = null;
+        ////            }
+        ////            else {
+        ////                // one or both have value so exclude any unknown and return the value(s) we know
+        ////                if (leftValue.HasValue) {
+        ////                    combinedValue += leftValue.Value;
+        ////                }
+        ////                if (rightValue.HasValue) {
+        ////                    combinedValue += rightValue.Value;
+        ////                }
+        ////            }
+        ////            combinedValuePairs.Add(new ResourcesValuePair(resID, combinedValue));
+        ////        }
+        ////    }
+        ////    return new ResourcesYield(combinedValuePairs.ToArray());
+        ////}
 
         #endregion
 
@@ -127,14 +168,34 @@ namespace CodeEnv.Master.GameContent {
             _debugName = _stringBuilder.ToString();
         }
 
+        /// <summary>
+        /// Returns <c>true</c> if the ResourceID is present in which case yield can still be null (unknown value);
+        /// If the ResourceID is not present, then will return <c>false</c> with a yield of Zero.
+        /// </summary>
+        /// <param name="resourceID">The resource identifier.</param>
+        /// <param name="yield">The yield.</param>
+        /// <returns></returns>
         public bool TryGetYield(ResourceID resourceID, out float? yield) {
-            return ResourceValueLookup.TryGetValue(resourceID, out yield);
+            bool isResourcePresent = ResourceValueLookup.TryGetValue(resourceID, out yield);
+            if (!isResourcePresent) {
+                yield = Constants.ZeroF;
+            }
+            return isResourcePresent;
         }
 
+        /// <summary>
+        /// Gets the yield for this ResourceID. If not present the yield returned will be Zero. If present,
+        /// the yield can be null (unknown).
+        /// </summary>
+        /// <param name="resourceID">The resource identifier.</param>
+        /// <returns></returns>
         public float? GetYield(ResourceID resourceID) {
-            float? result = Constants.ZeroF;
-            if (!TryGetYield(resourceID, out result) && resourceID == ResourceID.Energy) {
-                D.Warn("{0} {1} is not present in {2}. Empty System with no Star?", typeof(ResourceID).Name, resourceID.GetValueName(), GetType().Name);
+            float? result;
+            if (!TryGetYield(resourceID, out result)) {
+                D.AssertEqual(Constants.ZeroF, result);
+                if (resourceID == ResourceID.Energy) {
+                    D.Warn("{0} {1} is not present in {2}. Empty System with no Star?", typeof(ResourceID).Name, resourceID.GetValueName(), GetType().Name);
+                }
             }
             return result;
         }

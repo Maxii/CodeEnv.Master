@@ -45,9 +45,9 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
 
 #pragma warning restore 0649
 
-    private bool _isResourcesSet;   // can be a ResourceYield or null if unknown
-    private ResourceYield? _resources;
-    public ResourceYield? Resources {
+    private bool _isResourcesSet;   // can be default(ResourcesYield) if no access to Resources
+    private ResourcesYield _resources;
+    public ResourcesYield Resources {
         get { return _resources; }
         set {
             D.Assert(!_isResourcesSet); // occurs only once between Resets
@@ -55,6 +55,16 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
             ResourcesPropSetHandler();
         }
     }
+    ////private bool _isResourcesSet;   // can be a ResourceYield or null if unknown
+    ////private ResourceYield? _resources;
+    ////public ResourceYield? Resources {
+    ////    get { return _resources; }
+    ////    set {
+    ////        D.Assert(!_isResourcesSet); // occurs only once between Resets
+    ////        _resources = value;
+    ////        ResourcesPropSetHandler();
+    ////    }
+    ////}
 
     public override GuiElementID ElementID { get { return GuiElementID.Resources; } }
 
@@ -66,7 +76,7 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
     /// </summary>
     private IDictionary<GameObject, ResourceID> _resourceIDLookup;
     private UILabel _unknownLabel;  // label has a preset '?'
-    private float _totalYield = Constants.ZeroF;
+    private float? _totalYield = Constants.ZeroF;
 
     protected override void InitializeValuesAndReferences() {
         _resourceIDLookup = new Dictionary<GameObject, ResourceID>(_containers.Length);
@@ -116,21 +126,21 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
 
     protected override void PopulateMemberWidgetValues() {
         base.PopulateMemberWidgetValues();
-        if (!Resources.HasValue) {
+        if (Resources == default(ResourcesYield)) {  // UNCLEAR can there ever be no resources at all, aka Energy?
             HandleValuesUnknown();
             return;
         }
 
         IList<ResourceID> resourcesPresent;
         if (_resourceCategory == ResourceCategory.None) {
-            resourcesPresent = Resources.Value.ResourcesPresent.ToList();
+            resourcesPresent = Resources.ResourcesPresent.ToList();
         }
         else {
-            resourcesPresent = Resources.Value.ResourcesPresent.Where(res => res.GetResourceCategory() == _resourceCategory).ToList();
+            resourcesPresent = Resources.ResourcesPresent.Where(res => res.GetResourceCategory() == _resourceCategory).ToList();
         }
         int resourcesCount = resourcesPresent.Count;
         D.Assert(_containers.Length >= resourcesCount);
-        float cumYield = Constants.ZeroF;
+        float? cumYield = Constants.ZeroF;
         for (int i = Constants.Zero; i < resourcesCount; i++) {
             UIWidget container = _containers[i];
             NGUITools.SetActive(container.gameObject, true);
@@ -141,14 +151,48 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
             iconSprite.spriteName = resourceID.GetIconFilename();
             _resourceIDLookup.Add(container.gameObject, resourceID);
 
-            float yield = Resources.Value.GetYield(resourceID);
-            cumYield += yield;
+            float? yield = Resources.GetYield(resourceID);
+            cumYield = cumYield.NullableSum(yield);
             var yieldLabel = container.gameObject.GetSingleComponentInChildren<UILabel>();
-            yieldLabel.text = ResourceYieldFormat_Label.Inject(Mathf.RoundToInt(yield));
+            yieldLabel.text = yield.HasValue ? ResourceYieldFormat_Label.Inject(Mathf.RoundToInt(yield.Value)) : Unknown;
         }
         _totalYield = cumYield;
-        D.Assert(_totalYield >= Constants.ZeroF);
     }
+    ////protected override void PopulateMemberWidgetValues() {
+    ////    base.PopulateMemberWidgetValues();
+    ////    if (!Resources.HasValue) {
+    ////        HandleValuesUnknown();
+    ////        return;
+    ////    }
+
+    ////    IList<ResourceID> resourcesPresent;
+    ////    if (_resourceCategory == ResourceCategory.None) {
+    ////        resourcesPresent = Resources.Value.ResourcesPresent.ToList();
+    ////    }
+    ////    else {
+    ////        resourcesPresent = Resources.Value.ResourcesPresent.Where(res => res.GetResourceCategory() == _resourceCategory).ToList();
+    ////    }
+    ////    int resourcesCount = resourcesPresent.Count;
+    ////    D.Assert(_containers.Length >= resourcesCount);
+    ////    float cumYield = Constants.ZeroF;
+    ////    for (int i = Constants.Zero; i < resourcesCount; i++) {
+    ////        UIWidget container = _containers[i];
+    ////        NGUITools.SetActive(container.gameObject, true);
+
+    ////        UISprite iconSprite = container.gameObject.GetSingleComponentInChildren<UISprite>();
+    ////        var resourceID = resourcesPresent[i];
+    ////        iconSprite.atlas = resourceID.GetIconAtlasID().GetAtlas();
+    ////        iconSprite.spriteName = resourceID.GetIconFilename();
+    ////        _resourceIDLookup.Add(container.gameObject, resourceID);
+
+    ////        float yield = Resources.Value.GetYield(resourceID);
+    ////        cumYield += yield;
+    ////        var yieldLabel = container.gameObject.GetSingleComponentInChildren<UILabel>();
+    ////        yieldLabel.text = ResourceYieldFormat_Label.Inject(Mathf.RoundToInt(yield));
+    ////    }
+    ////    _totalYield = cumYield;
+    ////    D.Assert(_totalYield >= Constants.ZeroF);
+    ////}
 
     private void HandleValuesUnknown() {
         NGUITools.SetActive(_unknownLabel.gameObject, true);
@@ -196,20 +240,32 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
 
     #region IComparable<ResourcesGuiElement> Members
 
+
     public int CompareTo(ResourcesGuiElement other) {
         int result;
-        if (_totalYield == Constants.ZeroF) {
-            result = other._totalYield == Constants.ZeroF ? Constants.Zero : Constants.MinusOne;
-        }
-        else if (Resources == null) {
-            // an unknown yield (Resources == null) sorts higher than a yield that is Zero
-            result = other.Resources == null ? Constants.Zero : (other._totalYield == Constants.ZeroF) ? Constants.One : Constants.MinusOne;
+        if (!_totalYield.HasValue) {
+            result = !other._totalYield.HasValue ? Constants.Zero : Constants.MinusOne;
         }
         else {
-            result = (other._totalYield == Constants.ZeroF || other.Resources == null) ? Constants.One : _totalYield.CompareTo(other._totalYield);
+            result = !other._totalYield.HasValue ? Constants.One : _totalYield.Value.CompareTo(other._totalYield.Value);
         }
         return result;
     }
+    ////public int CompareTo(ResourcesGuiElement other) {
+    ////    int result;
+    ////    if (_totalYield == Constants.ZeroF) {
+    ////        result = other._totalYield == Constants.ZeroF ? Constants.Zero : Constants.MinusOne;
+    ////    }
+    ////    else if (Resources == null) {
+    ////        // an unknown yield (Resources == null) sorts higher than a yield that is Zero
+    ////        result = other.Resources == null ? Constants.Zero : (other._totalYield == Constants.ZeroF) ? Constants.One : Constants.MinusOne;
+    ////    }
+    ////    else {
+    ////        result = (other._totalYield == Constants.ZeroF || other.Resources == null) ? Constants.One : _totalYield.CompareTo(other._totalYield);
+    ////    }
+    ////    Nullable.Compare<float>(_totalYield, other._totalYield);
+    ////    return result;
+    ////}
 
     #endregion
 

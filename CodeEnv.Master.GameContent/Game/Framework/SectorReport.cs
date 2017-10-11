@@ -26,7 +26,8 @@ namespace CodeEnv.Master.GameContent {
 
         public int? Capacity { get; private set; }
 
-        public ResourceYield? Resources { get; private set; }
+        public ResourcesYield Resources { get; private set; }
+        ////public ResourceYield? Resources { get; private set; }
 
         public IntVector3 SectorID { get; private set; }
 

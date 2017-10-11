@@ -506,7 +506,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public static readonly ResourceYield NoResources = default(ResourceYield);
+        public static readonly ResourcesYield NoResources = default(ResourcesYield);
 
         public static readonly CombatStrength NoCombatStrength = default(CombatStrength);
 

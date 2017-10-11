@@ -31,7 +31,7 @@ namespace CodeEnv.Master.GameContent {
         public float MaxHitPoints { get; private set; }
         public PlanetoidCategory Category { get; private set; }
         public int Capacity { get; private set; }
-        public ResourceYield Resources { get; private set; }
+        public ResourcesYield Resources { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="APlanetoidStat" /> class.
@@ -42,7 +42,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="category">The category.</param>
         /// <param name="capacity">The capacity.</param>
         /// <param name="resources">The resources.</param>
-        public PlanetoidStat(float radius, float mass, float maxHitPts, PlanetoidCategory category, int capacity, ResourceYield resources) {
+        public PlanetoidStat(float radius, float mass, float maxHitPts, PlanetoidCategory category, int capacity, ResourcesYield resources) {
             Radius = radius;
             Mass = mass;
             MaxHitPoints = maxHitPts;

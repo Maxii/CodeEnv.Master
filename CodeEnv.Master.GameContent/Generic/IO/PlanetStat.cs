@@ -25,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
 
         public float CloseOrbitInnerRadius { get; private set; }
 
-        public PlanetStat(float radius, float mass, float maxHitPts, PlanetoidCategory category, int capacity, ResourceYield resources, float closeOrbitInnerRadius)
+        public PlanetStat(float radius, float mass, float maxHitPts, PlanetoidCategory category, int capacity, ResourcesYield resources, float closeOrbitInnerRadius)
             : base(radius, mass, maxHitPts, category, capacity, resources) {
             CloseOrbitInnerRadius = closeOrbitInnerRadius;
         }

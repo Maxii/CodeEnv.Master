@@ -35,6 +35,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="source">The source.</param>
         /// <param name="args">The arguments.</param>
         /// <returns></returns>
+        [Obsolete]
         public static ResourceYield? NullableSum(this ResourceYield? source, params ResourceYield?[] args) {
             var argList = new List<ResourceYield?>(args);
             argList.Add(source);
@@ -47,6 +48,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="sequence">The nullable values.</param>
         /// <returns></returns>
+        [Obsolete]
         public static ResourceYield? NullableSum(this IEnumerable<ResourceYield?> sequence) {
             bool isAnyValueFound = false;
             ResourceYield? sum = default(ResourceYield);
@@ -64,8 +66,17 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="sequence">The sequence.</param>
         /// <returns></returns>
+        [Obsolete]
         public static ResourceYield Sum(this IEnumerable<ResourceYield> sequence) {
             ResourceYield sum = default(ResourceYield);
+            foreach (var cs in sequence) {
+                sum += cs;
+            }
+            return sum;
+        }
+
+        public static ResourcesYield Sum(this IEnumerable<ResourcesYield> sequence) {
+            ResourcesYield sum = default(ResourcesYield);
             foreach (var cs in sequence) {
                 sum += cs;
             }

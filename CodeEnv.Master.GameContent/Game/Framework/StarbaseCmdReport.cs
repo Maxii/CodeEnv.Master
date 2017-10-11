@@ -33,7 +33,8 @@ namespace CodeEnv.Master.GameContent {
         public float? UnitProduction { get; private set; }
 
         public ConstructionInfo CurrentConstruction { get; private set; }
-        public ResourceYield? Resources { get; private set; }
+        public ResourcesYield Resources { get; private set; }
+        ////public ResourceYield? Resources { get; private set; }
 
         /// <summary>
         /// The Composition of the Unit this report is about. The unit's elements

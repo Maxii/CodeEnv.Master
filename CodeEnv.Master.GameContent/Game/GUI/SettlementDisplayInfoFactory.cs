@@ -97,7 +97,8 @@ namespace CodeEnv.Master.GameContent {
                         break;
                     case ItemInfoID.Resources:
                         isSuccess = true;
-                        colorizedText = _lineTemplate.Inject(report.Resources.HasValue ? report.Resources.Value.ToString() : Unknown);
+                        colorizedText = _lineTemplate.Inject(report.Resources != default(ResourcesYield) ? report.Resources.ToString() : Unknown);
+                        ////colorizedText = _lineTemplate.Inject(report.Resources.HasValue ? report.Resources.Value.ToString() : Unknown);
                         break;
                     case ItemInfoID.Population:
                         isSuccess = true;

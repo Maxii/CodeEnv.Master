@@ -45,7 +45,7 @@ namespace CodeEnv.Master.GameContent {
         public float Radius { get; private set; }
         public float CloseOrbitInnerRadius { get; private set; }
         public int Capacity { get; private set; }
-        public ResourceYield Resources { get; private set; }
+        public ResourcesYield Resources { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StarStat" /> struct.
@@ -55,7 +55,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="closeOrbitInnerRadius">The low orbit radius.</param>
         /// <param name="capacity">The capacity.</param>
         /// <param name="resources">The resources.</param>
-        public StarStat(StarCategory category, float radius, float closeOrbitInnerRadius, int capacity, ResourceYield resources)
+        public StarStat(StarCategory category, float radius, float closeOrbitInnerRadius, int capacity, ResourcesYield resources)
             : this() {
             Category = category;
             Radius = radius;

@@ -27,7 +27,8 @@ namespace CodeEnv.Master.GameContent {
 
         public int? Capacity { get; private set; }
 
-        public ResourceYield? Resources { get; private set; }
+        public ResourcesYield Resources { get; private set; }
+        ////public ResourceYield? Resources { get; private set; }
 
         public IntVector3 SectorID { get; private set; }
 
@@ -94,9 +95,9 @@ namespace CodeEnv.Master.GameContent {
             return null;
         }
 
-        private ResourceYield? CalcPartialResources(StarData starData, IEnumerable<PlanetoidData> planetoidsData, SettlementCmdData settlementData) {
+        private ResourcesYield CalcPartialResources(StarData starData, IEnumerable<PlanetoidData> planetoidsData, SettlementCmdData settlementData) {
             int count = settlementData != null ? planetoidsData.Count() + 2 : planetoidsData.Count() + 1;
-            IList<ResourceYield> sysMembersResources = new List<ResourceYield>(count);
+            IList<ResourcesYield> sysMembersResources = new List<ResourcesYield>(count);
 
             if (starData.InfoAccessCntlr.HasAccessToInfo(Player, ItemInfoID.Resources)) {
                 sysMembersResources.Add(starData.Resources);
@@ -114,8 +115,30 @@ namespace CodeEnv.Master.GameContent {
             if (sysMembersResources.Any()) {
                 return sysMembersResources.Sum();
             }
-            return null;
+            return default(ResourcesYield);
         }
+        ////private ResourceYield? CalcPartialResources(StarData starData, IEnumerable<PlanetoidData> planetoidsData, SettlementCmdData settlementData) {
+        ////    int count = settlementData != null ? planetoidsData.Count() + 2 : planetoidsData.Count() + 1;
+        ////    IList<ResourceYield> sysMembersResources = new List<ResourceYield>(count);
+
+        ////    if (starData.InfoAccessCntlr.HasAccessToInfo(Player, ItemInfoID.Resources)) {
+        ////        sysMembersResources.Add(starData.Resources);
+        ////    }
+        ////    foreach (var pData in planetoidsData) {
+        ////        var accessCntlr = pData.InfoAccessCntlr;
+        ////        if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Resources)) {
+        ////            sysMembersResources.Add(pData.Resources);
+        ////        }
+        ////    }
+        ////    if (settlementData != null && settlementData.InfoAccessCntlr.HasAccessToInfo(Player, ItemInfoID.Resources)) {
+        ////        sysMembersResources.Add(settlementData.Resources);
+        ////    }
+
+        ////    if (sysMembersResources.Any()) {
+        ////        return sysMembersResources.Sum();
+        ////    }
+        ////    return null;
+        ////}
 
         #region Archive
 

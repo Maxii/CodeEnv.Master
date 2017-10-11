@@ -45,10 +45,10 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<int>(ref _capacity, value, "Capacity"); }
         }
 
-        private ResourceYield _resources;
-        public ResourceYield Resources {
+        private ResourcesYield _resources;
+        public ResourcesYield Resources {
             get { return _resources; }
-            private set { SetProperty<ResourceYield>(ref _resources, value, "Resources"); }
+            private set { SetProperty<ResourcesYield>(ref _resources, value, "Resources"); }
         }
 
         private float _approval;
@@ -109,7 +109,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void SubscribeToSystemDataProperties() {
             _systemDataSubscriptions.Add(ParentSystemData.SubscribeToPropertyChanged<SystemData, int>(sd => sd.Capacity, SystemCapacityPropChangedHandler));
-            _systemDataSubscriptions.Add(ParentSystemData.SubscribeToPropertyChanged<SystemData, ResourceYield>(sd => sd.Resources, SystemResourceYieldPropChangedHandler));
+            _systemDataSubscriptions.Add(ParentSystemData.SubscribeToPropertyChanged<SystemData, ResourcesYield>(sd => sd.Resources, SystemResourceYieldPropChangedHandler));
         }
 
         public override void AddElement(AUnitElementData elementData) {

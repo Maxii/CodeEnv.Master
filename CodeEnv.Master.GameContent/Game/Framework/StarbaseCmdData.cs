@@ -38,10 +38,10 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<int>(ref _capacity, value, "Capacity"); }
         }
 
-        private ResourceYield _resources;
-        public ResourceYield Resources {
+        private ResourcesYield _resources;
+        public ResourcesYield Resources {
             get { return _resources; }
-            private set { SetProperty<ResourceYield>(ref _resources, value, "Resources"); }
+            private set { SetProperty<ResourcesYield>(ref _resources, value, "Resources"); }
         }
 
         public new StarbaseInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as StarbaseInfoAccessController; } }
@@ -123,15 +123,15 @@ namespace CodeEnv.Master.GameContent {
         // UNDONE Acquire resource values this starbase has access too, ala SettlementCmdData approach
         private void __PopulateResourcesFromSector() {
             Capacity = 10;
-            var resources = new ResourceYield.ResourceValuePair[] {
-                new ResourceYield.ResourceValuePair(ResourceID.Organics, UnityEngine.Random.Range(0F, 0.3F)),
-                new ResourceYield.ResourceValuePair(ResourceID.Particulates, UnityEngine.Random.Range(0.2F, 0.6F)),
-                new ResourceYield.ResourceValuePair(ResourceID.Energy, UnityEngine.Random.Range(1F, 2F)),
-                new ResourceYield.ResourceValuePair(ResourceID.Titanium, UnityEngine.Random.Range(0F, 1F)),
-                new ResourceYield.ResourceValuePair(ResourceID.Duranium, UnityEngine.Random.Range(0F, 1F)),
-                new ResourceYield.ResourceValuePair(ResourceID.Unobtanium, UnityEngine.Random.Range(0F, 0.6F))
+            var resources = new ResourcesYield.ResourcesValuePair[] {
+                new ResourcesYield.ResourcesValuePair(ResourceID.Organics, UnityEngine.Random.Range(0F, 0.3F)),
+                new ResourcesYield.ResourcesValuePair(ResourceID.Particulates, UnityEngine.Random.Range(0.2F, 0.6F)),
+                new ResourcesYield.ResourcesValuePair(ResourceID.Energy, UnityEngine.Random.Range(1F, 2F)),
+                new ResourcesYield.ResourcesValuePair(ResourceID.Titanium, UnityEngine.Random.Range(0F, 1F)),
+                new ResourcesYield.ResourcesValuePair(ResourceID.Duranium, UnityEngine.Random.Range(0F, 1F)),
+                new ResourcesYield.ResourcesValuePair(ResourceID.Unobtanium, UnityEngine.Random.Range(0F, 0.6F))
             };
-            Resources = new ResourceYield(resources);
+            Resources = new ResourcesYield(resources);
         }
 
     }
