@@ -29,10 +29,7 @@ namespace CodeEnv.Master.GameContent {
             switch (infoID) {
                 case ItemInfoID.CurrentCmdEffectiveness:
                 case ItemInfoID.Formation:
-                case ItemInfoID.UnitScience:
-                case ItemInfoID.UnitCulture:
-                case ItemInfoID.Resources:
-                case ItemInfoID.UnitNetIncome:
+                // 10.18.17 Resources and Outputs now handled by Report without AccessCntlr
                 case ItemInfoID.Capacity:
                 case ItemInfoID.UnitCurrentHitPts:
                 case ItemInfoID.UnitMaxTurnRate:

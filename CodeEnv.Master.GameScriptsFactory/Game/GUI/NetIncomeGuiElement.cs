@@ -29,34 +29,23 @@ public class NetIncomeGuiElement : AGuiElement, IComparable<NetIncomeGuiElement>
 
     public override GuiElementID ElementID { get { return GuiElementID.NetIncome; } }
 
-    private bool _isIncomeSet;
-    private decimal? _income;
-    public decimal? Income {
-        get { return _income; }
+    private bool _isOutputsPropSet = false;
+    private OutputsYield _outputs;
+    public OutputsYield Outputs {
+        get { return _outputs; }
         set {
-            D.Assert(!_isIncomeSet);    // only happens once between Resets
-            _income = value;
-            IncomePropSetHandler();  // SetProperty() only calls handler when changed
-        }
-    }
-
-    private bool _isExpenseSet;
-    private decimal? _expense;
-    public decimal? Expense {
-        get { return _expense; }
-        set {
-            D.Assert(!_isExpenseSet);    // only happens once between Resets
-            _expense = value;
-            ExpensePropSetHandler();  // SetProperty() only calls handler when changed
+            D.Assert(!_isOutputsPropSet);
+            _outputs = value;
+            OutputsPropSetHandler();
         }
     }
 
     private string _tooltipContent;
     protected override string TooltipContent { get { return _tooltipContent; } }
 
-    public override bool IsInitialized { get { return _isIncomeSet && _isExpenseSet; } }
+    public override bool IsInitialized { get { return _isOutputsPropSet; } }
 
-    private decimal? _netIncome;
+    private float? _netIncomeYield = null;
     private UILabel _netIncomeLabel;
 
     protected override void InitializeValuesAndReferences() {
@@ -65,15 +54,8 @@ public class NetIncomeGuiElement : AGuiElement, IComparable<NetIncomeGuiElement>
 
     #region Event and Property Change Handlers
 
-    private void IncomePropSetHandler() {
-        _isIncomeSet = true;
-        if (IsInitialized) {
-            PopulateMemberWidgetValues();
-        }
-    }
-
-    private void ExpensePropSetHandler() {
-        _isExpenseSet = true;
+    private void OutputsPropSetHandler() {
+        _isOutputsPropSet = true;
         if (IsInitialized) {
             PopulateMemberWidgetValues();
         }
@@ -86,30 +68,47 @@ public class NetIncomeGuiElement : AGuiElement, IComparable<NetIncomeGuiElement>
         string incomeTooltipContent = Unknown;
         string expenseTooltipContent = Unknown;
         string labelContent = Unknown;
+        GameColor labelContentColor = GameColor.White;
 
-        _netIncome = Income - Expense;  // if either are null, the result is null
-        if (_netIncome.HasValue) {
-            labelContent = Constants.FormatFloat_0Dp.Inject(_netIncome);
-            incomeTooltipContent = Constants.FormatFloat_0Dp.Inject(Income.Value);
-            expenseTooltipContent = Constants.FormatFloat_0Dp.Inject(Expense.Value);
+        if (Outputs.IsPresent(OutputID.NetIncome)) {
+            // Income and Expense must also be present per OutputsYield validation
+            _netIncomeYield = Outputs.GetYield(OutputID.NetIncome);
         }
         else {
-            if (Income.HasValue) {
-                D.Assert(!Expense.HasValue);
-                incomeTooltipContent = Constants.FormatFloat_0Dp.Inject(Income.Value);
-            }
-            else if (Expense.HasValue) {
-                D.Assert(!Income.HasValue);
-                expenseTooltipContent = Constants.FormatFloat_0Dp.Inject(Expense.Value);
+            if (Outputs.IsPresent(OutputID.Expense)) {
+                float? expenseYield = Outputs.GetYield(OutputID.Expense);
+                _netIncomeYield = expenseYield.HasValue ? -expenseYield.Value : (float?)null;
             }
         }
-        _netIncomeLabel.text = labelContent;
+
+        if (_netIncomeYield.HasValue) {
+            labelContentColor = _netIncomeYield.Value < Constants.ZeroF ? GameColor.Red : GameColor.Green;
+            labelContent = Constants.FormatFloat_0Dp.Inject(_netIncomeYield.Value);
+            incomeTooltipContent = Unknown;
+            if (Outputs.IsPresent(OutputID.Income)) {
+                float? incomeYield = Outputs.GetYield(OutputID.Income);
+                if (incomeYield.HasValue) {
+                    incomeTooltipContent = Constants.FormatFloat_0Dp.Inject(incomeYield.Value);
+                }
+            }
+
+            D.Assert(Outputs.IsPresent(OutputID.Expense));
+            float? expenseYield = Outputs.GetYield(OutputID.Expense);
+            D.Assert(expenseYield.HasValue);
+            expenseTooltipContent = Constants.FormatFloat_0Dp.Inject(expenseYield.Value);
+        }
+        else {
+            labelContent = Unknown;
+            incomeTooltipContent = Unknown;
+            expenseTooltipContent = Unknown;
+        }
+        _netIncomeLabel.text = labelContent.SurroundWith(labelContentColor);
         _tooltipContent = TooltipFormat.Inject(incomeTooltipContent, expenseTooltipContent);
     }
 
     public override void ResetForReuse() {
-        _isIncomeSet = false;
-        _isExpenseSet = false;
+        _isOutputsPropSet = false;
+        _netIncomeYield = null;
     }
 
     protected override void Cleanup() { }
@@ -118,32 +117,22 @@ public class NetIncomeGuiElement : AGuiElement, IComparable<NetIncomeGuiElement>
 
     public int CompareTo(NetIncomeGuiElement other) {
         int result;
-
-        if (!_netIncome.HasValue) {
-            result = !other._netIncome.HasValue ? Constants.Zero : Constants.MinusOne;
+        if (!_netIncomeYield.HasValue) {
+            if (other._netIncomeYield.HasValue) {
+                // unknown value sorts higher than negative netIncome
+                result = other._netIncomeYield.Value < Constants.ZeroF ? Constants.One : Constants.MinusOne;
+            }
+            else {
+                result = Constants.Zero;
+            }
         }
         else {
-            result = !other._netIncome.HasValue ? Constants.One : _netIncome.Value.CompareTo(other._netIncome.Value);
-        }
-
-        if (result == Constants.Zero) {
-            // either both netIncome = ? or its the same value so sort on Income
-            if (!Income.HasValue) {
-                result = !other.Income.HasValue ? Constants.Zero : Constants.MinusOne;
+            if (!other._netIncomeYield.HasValue) {
+                // unknown value sorts higher than negative netIncome
+                result = _netIncomeYield.Value < Constants.ZeroF ? Constants.MinusOne : Constants.One;
             }
             else {
-                result = !other.Income.HasValue ? Constants.One : Income.Value.CompareTo(other.Income.Value);
-            }
-        }
-
-        if (result == Constants.Zero) {
-            // neither netIncome or Income have separated the two, so use Expense 
-            // as Expense is always accounted for as a positive value, higher Expense is worse than lower expense
-            if (!Expense.HasValue) {
-                result = !other.Expense.HasValue ? Constants.Zero : Constants.One;
-            }
-            else {
-                result = !other.Expense.HasValue ? Constants.MinusOne : -Expense.Value.CompareTo(other.Expense.Value);
+                result = _netIncomeYield.Value.CompareTo(other._netIncomeYield.Value);
             }
         }
         return result;
@@ -151,6 +140,55 @@ public class NetIncomeGuiElement : AGuiElement, IComparable<NetIncomeGuiElement>
 
     #endregion
 
+    #region Archive
 
+    // Secondary comparison using Income and Expense if NetIncome not conclusive
+
+    ////public int CompareTo(NetIncomeGuiElement other) {
+    ////    int result;
+
+    ////    if (!_netIncome.HasValue) {
+    ////        if (other._netIncome.HasValue) {
+    ////            // unknown value sorts higher than negative netIncome
+    ////            result = other._netIncome.Value < Constants.ZeroF ? Constants.One : Constants.MinusOne;
+    ////        }
+    ////        else {
+    ////            result = Constants.Zero;
+    ////        }
+    ////    }
+    ////    else {
+    ////        if (!other._netIncome.HasValue) {
+    ////            // unknown value sorts higher than negative netIncome
+    ////            result = _netIncome.Value < Constants.ZeroF ? Constants.MinusOne : Constants.One;
+    ////        }
+    ////        else {
+    ////            result = _netIncome.Value.CompareTo(other._netIncome.Value);
+    ////        }
+    ////    }
+
+    ////    if (result == Constants.Zero) {
+    ////        // either both _netIncome = ? or they have the same value so sort on Income
+    ////        if (!Income.HasValue) {
+    ////            result = !other.Income.HasValue ? Constants.Zero : Constants.MinusOne;
+    ////        }
+    ////        else {
+    ////            result = !other.Income.HasValue ? Constants.One : Income.Value.CompareTo(other.Income.Value);
+    ////        }
+    ////    }
+
+    ////    if (result == Constants.Zero) {
+    ////        // neither netIncome or Income have separated the two, so use Expense 
+    ////        // as Expense is always accounted for as a positive value, higher Expense is worse than lower expense
+    ////        if (!Expense.HasValue) {
+    ////            result = !other.Expense.HasValue ? Constants.Zero : Constants.One;
+    ////        }
+    ////        else {
+    ////            result = !other.Expense.HasValue ? Constants.MinusOne : -Expense.Value.CompareTo(other.Expense.Value);
+    ////        }
+    ////    }
+    ////    return result;
+    ////}
+
+    #endregion
 }
 

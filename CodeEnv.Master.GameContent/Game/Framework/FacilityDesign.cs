@@ -26,6 +26,15 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FacilityDesign : AUnitElementDesign {
 
+        private const string DebugNameFormat = "{0}[{1}], Player = {2}, Hull = {3}, Status = {4}, ConstructionCost = {5:0.}, RefitBenefit = {6}";
+
+        public override string DebugName {
+            get {
+                string designNameText = DesignName.IsNullOrEmpty() ? "Not yet named" : DesignName;
+                return DebugNameFormat.Inject(GetType().Name, designNameText, Player.DebugName, HullCategory.GetValueName(), Status.GetValueName(), ConstructionCost, RefitBenefit);
+            }
+        }
+
         public FacilityHullCategory HullCategory { get { return HullStat.HullCategory; } }
 
         public FacilityHullStat HullStat { get; private set; }
@@ -35,14 +44,14 @@ namespace CodeEnv.Master.GameContent {
         public override string ImageFilename { get { return HullStat.ImageFilename; } }
 
         public FacilityDesign(FacilityDesign designToCopy)
-            : this(designToCopy.Player, designToCopy.HQPriority, designToCopy.ReqdSRSensorStat,
-                  designToCopy.ConstructionCost, designToCopy.HullStat) {
+            : this(designToCopy.Player, designToCopy.HQPriority, designToCopy.ReqdSRSensorStat, designToCopy.HullStat) {
 
             EquipmentSlotID slotID;
             AEquipmentStat equipStat;
-            while (designToCopy.GetNextEquipmentStat(out slotID, out equipStat)) {
+            while (designToCopy.TryGetNextEquipmentStat(out slotID, out equipStat)) {
                 Add(slotID, equipStat);
             }
+            AssignPropertyValues();
 
             RootDesignName = designToCopy.RootDesignName;
             // If copying System_CreationTemplate counter will always = 0 as they are never incremented. If copying Player_Current counter 
@@ -51,10 +60,22 @@ namespace CodeEnv.Master.GameContent {
             _designNameCounter = designToCopy._designNameCounter;
         }
 
-        public FacilityDesign(Player player, Priority hqPriority, SensorStat reqdSRSensorStat, float constructionCost, FacilityHullStat hullStat)
-            : base(player, hqPriority, reqdSRSensorStat, constructionCost) {
+        public FacilityDesign(Player player, Priority hqPriority, SensorStat reqdSRSensorStat, FacilityHullStat hullStat)
+            : base(player, hqPriority, reqdSRSensorStat) {
             HullStat = hullStat;
             InitializeValuesAndReferences();
+        }
+
+        protected override float CalcConstructionCost() {
+            float cumConstructionCost = base.CalcConstructionCost();
+            cumConstructionCost += HullStat.ConstructionCost;
+            return cumConstructionCost;
+        }
+
+        protected override int CalcRefitBenefit() {
+            int cumBenefit = base.CalcRefitBenefit();
+            cumBenefit += HullStat.RefitBenefit;
+            return cumBenefit;
         }
 
         /// <summary>
@@ -89,12 +110,31 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        public override bool HasEqualContent(AUnitMemberDesign oDesign) {
+            if (base.HasEqualContent(oDesign)) {
+                var fDesign = oDesign as FacilityDesign;
+                return fDesign.HullStat == HullStat;
+            }
+            return false;
+        }
+
         #region Value-based Equality Archive
+
+        ////public static bool operator ==(FacilityDesign left, FacilityDesign right) {
+        ////    // https://msdn.microsoft.com/en-us/library/ms173147(v=vs.90).aspx
+        ////    if (ReferenceEquals(left, right)) { return true; }
+        ////    if (((object)left == null) || ((object)right == null)) { return false; }
+        ////    return left.Equals(right);
+        ////}
+
+        ////public static bool operator !=(FacilityDesign left, FacilityDesign right) {
+        ////    return !(left == right);
+        ////}
 
         ////public override int GetHashCode() {
         ////    unchecked {
         ////        int hash = base.GetHashCode();
-        ////        hash = hash * 31 + HullStat.GetHashCode(); // 31 = another prime number
+        ////        hash = hash * 31 + HullStat.GetHashCode();
         ////        return hash;
         ////    }
         ////}
@@ -102,11 +142,7 @@ namespace CodeEnv.Master.GameContent {
         ////public override bool Equals(object obj) {
         ////    if (base.Equals(obj)) {
         ////        FacilityDesign oDesign = (FacilityDesign)obj;
-        ////        bool isEqual = oDesign.HullStat == HullStat;
-        ////        if (isEqual) {
-        ////            __ValidateHashCodesEqual(obj);
-        ////        }
-        ////        return isEqual;
+        ////        return oDesign.HullStat == HullStat;
         ////    }
         ////    return false;
         ////}

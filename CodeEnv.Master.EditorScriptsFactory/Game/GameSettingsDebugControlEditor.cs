@@ -65,8 +65,9 @@ public class GameSettingsDebugControlEditor : Editor {
                         NGUIEditorTools.DrawProperty("Home System Desirability", serializedObject, "_homeSystemDesirability");
                         NGUIEditorTools.DrawProperty("AI Separation from User", serializedObject, "_aiPlayersSeparationFromUser");
                         NGUIEditorTools.SetLabelWidth(120F);
+                        SerializedProperty addUserCreators = NGUIEditorTools.DrawProperty("Add User Creators", serializedObject, "_deployAdditionalUserCreators");
                         SerializedProperty addAiCreators = NGUIEditorTools.DrawProperty("Add AI Creators", serializedObject, "_deployAdditionalAiCreators");
-                        EditorGUI.BeginDisabledGroup(!addAiCreators.boolValue);
+                        EditorGUI.BeginDisabledGroup(!addAiCreators.boolValue && !addUserCreators.boolValue);
                         {
                             GUILayout.BeginHorizontal();
                             {

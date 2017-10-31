@@ -15,7 +15,8 @@
 ////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
-
+    using System.Collections.Generic;
+    using System.Linq;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
@@ -27,36 +28,32 @@ namespace CodeEnv.Master.GameContent {
         public int? Capacity { get; private set; }
 
         public ResourcesYield Resources { get; private set; }
-        ////public ResourceYield? Resources { get; private set; }
 
         public IntVector3 SectorID { get; private set; }
 
-        public SectorReport(SectorData data, Player player, ISector_Ltd item)
-            : base(data, player, item) {
-        }
+        public SectorReport(SectorData data, Player player) : base(data, player) { }
 
         protected override void AssignValues(AItemData data) {
             var sData = data as SectorData;
             var accessCntlr = sData.InfoAccessCntlr;
 
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Name)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Name)) {
                 Name = sData.Name;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Position)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Position)) {
                 Position = sData.Position;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Owner)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Owner)) {
                 Owner = sData.Owner;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.SectorID)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.SectorID)) {
                 SectorID = sData.SectorID;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Capacity)) {    // true if all members have access
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Capacity)) {    // true if all members have access
                 Capacity = sData.Capacity;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Resources)) {   // true if all members have access
-                Resources = sData.Resources;
-            }
+
+            Resources = AssessResources(sData.Resources);
         }
 
     }

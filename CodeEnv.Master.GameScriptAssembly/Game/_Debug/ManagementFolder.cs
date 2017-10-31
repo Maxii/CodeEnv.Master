@@ -74,17 +74,24 @@ public class ManagementFolder : AFolderAccess<ManagementFolder> {
     #endregion
 
     /// <summary>
-    /// The instance that is persisting has this called before the new scene starts loading. It detaches 
-    /// (and therefore allows their automatic destruction) any non-persistent children from this persisting instance
-    /// so they can be automatically destroyed during the scene transition. Their counterparts (if any) present in the new scene
-    /// will be [re]attached to this instance by TransferNonpersistentChildren().
+    /// The instance that is persisting has this called before the new scene starts loading. It detaches
+    /// any non-persistent children from this persisting instance and destroys them. Their counterparts (if any) 
+    /// present in the new scene will be [re]attached to this instance by TransferNonpersistentChildren().
+    /// <remarks>10.20.17 Detaching these non-persistent children to the scene root used to be sufficient to have them auto destroyed
+    /// during the level change. With Unity's introduction of a DontDestroyOnLoad scene which now holds this ManagementFolder during
+    /// runtime, that auto destruction no longer occurs as the scene root they are now parented to doesn't auto destroy members. 
+    /// To fix, I now manually destroy them here.</remarks>
     /// </summary>
     private void DetachNonPersistentChildren() {
         var allImmediateChildren = gameObject.GetComponentsInImmediateChildren<AMonoBase>();
         allImmediateChildren.ForAll(child => D.Assert(child is AMonoBaseSingleton));   // all children of ManagementFolder are singletons, so far...
         var allImmediateSingletonChildren = allImmediateChildren.Cast<AMonoBaseSingleton>();
         var nonPersistentImmediateChildren = allImmediateSingletonChildren.Where(child => !child.IsPersistentAcrossScenes);
-        nonPersistentImmediateChildren.ForAll(npChild => UnityUtility.AttachChildToParent(child: npChild.gameObject, parent: null));
+        nonPersistentImmediateChildren.ForAll(npChild => {
+            //D.Log("{0} is detaching {1} from its parent {2}.", DebugName, npChild.name, npChild.transform.parent.name);
+            UnityUtility.AttachChildToParent(child: npChild.gameObject, parent: null);
+            Destroy(npChild.gameObject);
+        });
     }
 
     protected override void Cleanup() {

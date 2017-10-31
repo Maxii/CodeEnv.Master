@@ -112,10 +112,40 @@ public abstract class AEquipmentMonitor<EquipmentType> : AColliderMonitor where 
 
     protected abstract void AssignMonitorTo(EquipmentType pieceOfEquipment);
 
-    /**********************************************************************************************************
-     * Remove(equipment) eliminated as it is my intention to replace existing equipment with
-     * upgraded equipment by building a new element to replace the existing element.
-     **********************************************************************************************************/
+    /// <summary>
+    /// Removes the specified equipment. Returns <c>true</c> if this monitor
+    /// is still in use (has equipment remaining even if not operational), <c>false</c> otherwise.
+    /// <remarks>Equipment should be deactivated before removal.</remarks>
+    /// </summary>
+    /// <param name="pieceOfEquipment">The piece of equipment.</param>
+    /// <returns></returns>
+    [Obsolete("Not currently used")]
+    public virtual bool Remove(EquipmentType pieceOfEquipment) {
+        D.Assert(!pieceOfEquipment.IsActivated);
+
+        RemoveMonitorFrom(pieceOfEquipment);
+        bool isRemoved = _equipmentList.Remove(pieceOfEquipment);
+        D.Assert(isRemoved);
+        if (_equipmentList.Count == Constants.Zero) {
+            RangeCategory = RangeCategory.None;
+        }
+
+        Profiler.BeginSample("Event Subscription allocation", gameObject);
+        pieceOfEquipment.isOperationalChanged -= EquipmentIsOperationalChangedEventHandler;
+        pieceOfEquipment.isDamagedChanged -= EquipmentIsDamagedChangedEventHandler;
+        Profiler.EndSample();
+
+        return _equipmentList.Count > Constants.Zero;
+        // Note: no need to RefreshRangeDistance(); as it occurs when the equipment is made non-operational just before removal
+    }
+
+    [Obsolete("Not currently used")]
+    protected abstract void RemoveMonitorFrom(EquipmentType pieceOfEquipment);
+
+    //**********************************************************************************************************
+    // * Remove(equipment) obsoleted as it is my intention to replace existing equipment with
+    // * upgraded equipment by building a new element to replace the existing element.
+    // **********************************************************************************************************/    
 
     protected virtual void AssessIsOperational() {
         IsOperational = _equipmentList.Where(e => e.IsOperational).Any();

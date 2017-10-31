@@ -93,7 +93,7 @@ public class NewGameUnitConfigurator {
     }
 
     /// <summary>
-    /// Creates and registers any required designs including a design for the loneFleetCmd and designs
+    /// Creates and registers any required designs including a design for the LoneFleetCmd and designs
     /// for empty ships, facilities and cmds for use when creating new designs from scratch.
     /// </summary>
     public void CreateAndRegisterRequiredDesigns() {
@@ -104,30 +104,25 @@ public class NewGameUnitConfigurator {
 
             var emptyShipDesigns = MakeShipDesigns(player, _shipHullStatLookup.Values, DebugLosWeaponLoadout.None,
                 DebugLaunchedWeaponLoadout.None, DebugPassiveCMLoadout.None, DebugActiveCMLoadout.None, DebugSensorLoadout.One,
-                DebugShieldGenLoadout.None, new ShipCombatStance[] { ShipCombatStance.BalancedBombard });
+                DebugShieldGenLoadout.None, new ShipCombatStance[] { ShipCombatStance.BalancedBombard }, AUnitMemberDesign.SourceAndStatus.System_CreationTemplate);
             foreach (var shipDesign in emptyShipDesigns) {
-                shipDesign.Status = AUnitMemberDesign.SourceAndStatus.System_CreationTemplate;
                 RegisterElementDesign(shipDesign, optionalRootDesignName: shipDesign.HullCategory.GetEmptyTemplateDesignName());
             }
 
             var emptyFacilityDesigns = MakeFacilityDesigns(player, _facilityHullStatLookup.Values, DebugLosWeaponLoadout.None,
                 DebugLaunchedWeaponLoadout.None, DebugPassiveCMLoadout.None, DebugActiveCMLoadout.None, DebugSensorLoadout.One,
-                DebugShieldGenLoadout.None);
+                DebugShieldGenLoadout.None, AUnitMemberDesign.SourceAndStatus.System_CreationTemplate);
             foreach (var facilityDesign in emptyFacilityDesigns) {
-                facilityDesign.Status = AUnitMemberDesign.SourceAndStatus.System_CreationTemplate;
                 RegisterElementDesign(facilityDesign, optionalRootDesignName: facilityDesign.HullCategory.GetEmptyTemplateDesignName());
             }
 
-            FleetCmdDesign emptyFleetCmdDesign = MakeFleetCmdDesign(player, passiveCmQty: 0, sensorQty: 1);
-            emptyFleetCmdDesign.Status = AUnitMemberDesign.SourceAndStatus.System_CreationTemplate;
+            FleetCmdDesign emptyFleetCmdDesign = MakeFleetCmdDesign(player, passiveCmQty: 0, sensorQty: 1, status: AUnitMemberDesign.SourceAndStatus.System_CreationTemplate);
             RegisterCmdDesign(emptyFleetCmdDesign, optionalRootDesignName: TempGameValues.EmptyFleetCmdTemplateDesignName);
 
-            StarbaseCmdDesign emptyStarbaseCmdDesign = MakeStarbaseCmdDesign(player, passiveCmQty: 0, sensorQty: 1);
-            emptyStarbaseCmdDesign.Status = AUnitMemberDesign.SourceAndStatus.System_CreationTemplate;
+            StarbaseCmdDesign emptyStarbaseCmdDesign = MakeStarbaseCmdDesign(player, passiveCmQty: 0, sensorQty: 1, status: AUnitMemberDesign.SourceAndStatus.System_CreationTemplate);
             RegisterCmdDesign(emptyStarbaseCmdDesign, optionalRootDesignName: TempGameValues.EmptyStarbaseCmdTemplateDesignName);
 
-            SettlementCmdDesign emptySettlementCmdDesign = MakeSettlementCmdDesign(player, passiveCmQty: 0, sensorQty: 1);
-            emptySettlementCmdDesign.Status = AUnitMemberDesign.SourceAndStatus.System_CreationTemplate;
+            SettlementCmdDesign emptySettlementCmdDesign = MakeSettlementCmdDesign(player, passiveCmQty: 0, sensorQty: 1, status: AUnitMemberDesign.SourceAndStatus.System_CreationTemplate);
             RegisterCmdDesign(emptySettlementCmdDesign, optionalRootDesignName: TempGameValues.EmptySettlementCmdTemplateDesignName);
         }
     }
@@ -248,7 +243,7 @@ public class NewGameUnitConfigurator {
         FleetCmdDesign cmdDesign = MakeFleetCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty);
         string cmdDesignName = RegisterCmdDesign(cmdDesign);
 
-        var hullStats = GetShipHullStats(editorSettings);   ////CreateShipHullStats(editorSettings);
+        var hullStats = GetShipHullStats(editorSettings);
         IEnumerable<ShipCombatStance> stances = SelectCombatStances(editorSettings.StanceExclusions);
 
         IList<ShipDesign> elementDesigns = MakeShipDesigns(owner, hullStats, editorSettings.LosTurretLoadout,
@@ -642,7 +637,7 @@ public class NewGameUnitConfigurator {
             float constructionCost = UnityEngine.Random.Range(1F, 5F);
 
             var weapStat = new MissileWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F,
-                constructionCost, Constants.ZeroCurrency, rangeCat, deliveryVehicleStrength, reloadPeriod, damagePotential, ordMaxSpeed,
+                constructionCost, Constants.ZeroF, rangeCat, __GetRandomRefitBenefit(), deliveryVehicleStrength, reloadPeriod, damagePotential, ordMaxSpeed,
                 ordMass, ordDrag, ordTurnRate, ordCourseUpdateFreq, maxSteeringInaccuracy, isDamageable);
             statsList.Add(weapStat);
         }
@@ -673,7 +668,7 @@ public class NewGameUnitConfigurator {
             float constructionCost = UnityEngine.Random.Range(1F, 5F);
 
             var weapStat = new AssaultWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F,
-                constructionCost, Constants.ZeroCurrency, rangeCat, deliveryVehicleStrength, reloadPeriod, damagePotential, ordMaxSpeed, ordMass,
+                constructionCost, Constants.ZeroF, rangeCat, __GetRandomRefitBenefit(), deliveryVehicleStrength, reloadPeriod, damagePotential, ordMaxSpeed, ordMass,
                 ordDrag, ordTurnRate, ordCourseUpdateFreq, maxSteeringInaccuracy, isDamageable);
             statsList.Add(weapStat);
         }
@@ -702,7 +697,7 @@ public class NewGameUnitConfigurator {
             float constructionCost = UnityEngine.Random.Range(1F, 5F);
 
             weapStat = new ProjectileWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F,
-                constructionCost, Constants.ZeroCurrency, rangeCat, deliveryVehicleStrength, reloadPeriod, damagePotential, ordMaxSpeed,
+                constructionCost, Constants.ZeroF, rangeCat, __GetRandomRefitBenefit(), deliveryVehicleStrength, reloadPeriod, damagePotential, ordMaxSpeed,
                 ordMass, ordDrag, maxLaunchInaccuracy, isDamageable);
             statsList.Add(weapStat);
         }
@@ -727,7 +722,7 @@ public class NewGameUnitConfigurator {
             float constructionCost = UnityEngine.Random.Range(1F, 5F);
 
             AWeaponStat weapStat = new BeamWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F,
-                constructionCost, Constants.ZeroCurrency, rangeCat, deliveryVehicleStrength, reloadPeriod, damagePotential, duration,
+                constructionCost, Constants.ZeroF, rangeCat, __GetRandomRefitBenefit(), deliveryVehicleStrength, reloadPeriod, damagePotential, duration,
                 maxLaunchInaccuracy, isDamageable);
             statsList.Add(weapStat);
         }
@@ -764,7 +759,7 @@ public class NewGameUnitConfigurator {
             float constructionCost = UnityEngine.Random.Range(1F, 5F);
 
             var countermeasureStat = new PassiveCountermeasureStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...",
-                0F, 0F, 0F, constructionCost, Constants.ZeroCurrency, damageMitigation);
+                0F, 0F, 0F, constructionCost, Constants.ZeroF, damageMitigation, __GetRandomRefitBenefit());
             statsList.Add(countermeasureStat);
         }
         return statsList;
@@ -817,7 +812,7 @@ public class NewGameUnitConfigurator {
             float constructionCost = UnityEngine.Random.Range(1F, 5F);
 
             var countermeasureStat = new ActiveCountermeasureStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...",
-                0F, 0F, 0F, constructionCost, Constants.ZeroCurrency, rangeCat, interceptStrengths, interceptAccuracy, reloadPeriod, damageMitigation);
+                0F, 0F, 0F, constructionCost, Constants.ZeroF, rangeCat, __GetRandomRefitBenefit(), interceptStrengths, interceptAccuracy, reloadPeriod, damageMitigation);
             statsList.Add(countermeasureStat);
         }
         return statsList;
@@ -855,7 +850,7 @@ public class NewGameUnitConfigurator {
             float constructionCost = Constants.ZeroF;
 
             var sensorStat = new SensorStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F, constructionCost,
-                Constants.ZeroCurrency, rangeCat, isDamageable);
+                Constants.ZeroF, rangeCat, __GetRandomRefitBenefit(), isDamageable);
             statsList.Add(sensorStat);
         }
         return statsList;
@@ -868,7 +863,7 @@ public class NewGameUnitConfigurator {
             bool isDamageable = true;
             float constructionCost = UnityEngine.Random.Range(1F, 5F);
             var sensorStat = new SensorStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F,
-                constructionCost, Constants.ZeroCurrency, RangeCategory.Short, isDamageable);
+                constructionCost, Constants.ZeroF, RangeCategory.Short, __GetRandomRefitBenefit(), isDamageable);
             statsList.Add(sensorStat);
         }
         return statsList;
@@ -886,7 +881,7 @@ public class NewGameUnitConfigurator {
             float constructionCost = UnityEngine.Random.Range(1F, 5F);
 
             var generatorStat = new ShieldGeneratorStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...",
-                0F, 1F, 0F, constructionCost, Constants.ZeroCurrency, rangeCat, maxCharge, trickleChargeRate, reloadPeriod, damageMitigation);
+                0F, 1F, 0F, constructionCost, Constants.ZeroF, rangeCat, __GetRandomRefitBenefit(), maxCharge, trickleChargeRate, reloadPeriod, damageMitigation);
             statsList.Add(generatorStat);
         }
         return statsList;
@@ -897,7 +892,7 @@ public class NewGameUnitConfigurator {
 
         float maxTurnRate = isFtlEngine ? UnityEngine.Random.Range(180F, 270F) : UnityEngine.Random.Range(TempGameValues.MinimumTurnRate, 180F);
         float engineSize = isFtlEngine ? 20F : 10F;
-        decimal engineExpense = isFtlEngine ? 10 : 5;
+        float engineExpense = isFtlEngine ? 10 : 5;
         string engineName = isFtlEngine ? "FtlEngine" : "StlEngine";
         bool isDamageable = isFtlEngine ? true : false;
 
@@ -907,10 +902,10 @@ public class NewGameUnitConfigurator {
             if (isFtlEngine) {
                 fullPropulsionPower *= TempGameValues.__StlToFtlPropulsionPowerFactor;
             }
-            float constructionCost = __GetEngineProdnCost(hullCategory, isFtlEngine);
+            float constructionCost = __GetEngineConstructionCost(hullCategory, isFtlEngine);
 
             var engineStat = new EngineStat(engineName, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", fullPropulsionPower,
-                maxTurnRate, engineSize, engineMass, constructionCost, engineExpense, isDamageable, isFtlEngine);
+                maxTurnRate, engineSize, engineMass, constructionCost, engineExpense, __GetRandomRefitBenefit(), isDamageable, isFtlEngine);
             engineStats.Add(hullCategory, engineStat);
         }
         return engineStats;
@@ -937,28 +932,28 @@ public class NewGameUnitConfigurator {
     private ShipHullStat CreateElementHullStat(ShipHullCategory hullCat) {
         float hullMass = hullCat.Mass();
         float drag = hullCat.Drag();
+        float income = hullCat.Income();
+        float expense = hullCat.Expense();
         float science = hullCat.Science();
         float culture = hullCat.Culture();
-        decimal income = hullCat.Income();
-        decimal expense = hullCat.Expense();
         float constructionCost = hullCat.ConstructionCost();
         Vector3 hullDimensions = hullCat.Dimensions();
         return new ShipHullStat(hullCat, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F,
-            hullMass, drag, 0F, constructionCost, expense, 50F, new DamageStrength(2F, 2F, 2F), hullDimensions, science, culture, income);
+            hullMass, drag, 0F, constructionCost, expense, 50F, new DamageStrength(2F, 2F, 2F), hullDimensions, __GetRandomRefitBenefit(), science, culture, income);
     }
 
     private FacilityHullStat CreateElementHullStat(FacilityHullCategory hullCat) {
-        float science = hullCat.Science();
-        float culture = hullCat.Culture();
-        decimal income = hullCat.Income();
-        decimal expense = hullCat.Expense();
-        float hullMass = hullCat.Mass();
         float food = hullCat.Food();
         float production = hullCat.Production();
+        float income = hullCat.Income();
+        float expense = hullCat.Expense();
+        float science = hullCat.Science();
+        float culture = hullCat.Culture();
+        float hullMass = hullCat.Mass();
         float constructionCost = hullCat.ConstructionCost();
         Vector3 hullDimensions = hullCat.Dimensions();
         return new FacilityHullStat(hullCat, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F,
-            hullMass, 0F, constructionCost, expense, 50F, new DamageStrength(2F, 2F, 2F), hullDimensions, science, culture, income, food, production);
+            hullMass, 0F, constructionCost, expense, 50F, new DamageStrength(2F, 2F, 2F), hullDimensions, __GetRandomRefitBenefit(), science, culture, income, food, production);
     }
 
     private FtlDampenerStat CreateReqdCmdFtlDampenerStat() { return new FtlDampenerStat("ReqdSRFtlDampener", RangeCategory.Short); }
@@ -977,7 +972,8 @@ public class NewGameUnitConfigurator {
 
     private IList<ShipDesign> MakeShipDesigns(Player owner, IEnumerable<ShipHullStat> hullStats, DebugLosWeaponLoadout turretLoadout,
         DebugLaunchedWeaponLoadout launchedLoadout, DebugPassiveCMLoadout passiveCMLoadout, DebugActiveCMLoadout activeCMLoadout,
-        DebugSensorLoadout srSensorLoadout, DebugShieldGenLoadout shieldGenLoadout, IEnumerable<ShipCombatStance> stances) {
+        DebugSensorLoadout srSensorLoadout, DebugShieldGenLoadout shieldGenLoadout, IEnumerable<ShipCombatStance> stances,
+        AUnitMemberDesign.SourceAndStatus status = AUnitMemberDesign.SourceAndStatus.Player_Current) {
 
         IList<ShipDesign> designs = new List<ShipDesign>();
         foreach (var hullStat in hullStats) {
@@ -1001,7 +997,7 @@ public class NewGameUnitConfigurator {
             ShipCombatStance stance = RandomExtended.Choice(stances);
 
             var design = MakeElementDesign(owner, hullStat, weaponStats, passiveCmStats, activeCmStats, optionalSensorStats,
-                shieldGenStats, hqPriority, stance);
+                shieldGenStats, hqPriority, stance, status);
             designs.Add(design);
         }
         return designs;
@@ -1009,7 +1005,8 @@ public class NewGameUnitConfigurator {
 
     private IList<FacilityDesign> MakeFacilityDesigns(Player owner, IEnumerable<FacilityHullStat> hullStats, DebugLosWeaponLoadout turretLoadout,
         DebugLaunchedWeaponLoadout launchedLoadout, DebugPassiveCMLoadout passiveCMLoadout, DebugActiveCMLoadout activeCMLoadout,
-        DebugSensorLoadout srSensorLoadout, DebugShieldGenLoadout shieldGenLoadout) {
+        DebugSensorLoadout srSensorLoadout, DebugShieldGenLoadout shieldGenLoadout,
+        AUnitMemberDesign.SourceAndStatus status = AUnitMemberDesign.SourceAndStatus.Player_Current) {
 
         IList<FacilityDesign> designs = new List<FacilityDesign>();
         foreach (var hullStat in hullStats) {
@@ -1032,7 +1029,7 @@ public class NewGameUnitConfigurator {
             Priority hqPriority = hullCategory.__HQPriority();    // TEMP, IMPROVE
 
             var design = MakeElementDesign(owner, hullStat, weaponStats, passiveCmStats, activeCmStats, optionalSensorStats,
-                shieldGenStats, hqPriority);
+                shieldGenStats, hqPriority, status);
             designs.Add(design);
         }
         return designs;
@@ -1040,13 +1037,14 @@ public class NewGameUnitConfigurator {
 
     private ShipDesign MakeElementDesign(Player owner, ShipHullStat hullStat, IEnumerable<AWeaponStat> weaponStats,
         IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<ActiveCountermeasureStat> activeCmStats,
-        IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats, Priority hqPriority, ShipCombatStance stance) {
+        IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats, Priority hqPriority, ShipCombatStance stance,
+        AUnitMemberDesign.SourceAndStatus status) {
         ShipHullCategory hullCategory = hullStat.HullCategory;
         var stlEngineStat = GetEngineStatFor(hullCategory, isFtlEngine: false);
         var ftlEngineStat = GetEngineStatFor(hullCategory, isFtlEngine: true);
-        float constructionCost = CalcDesignConstructionCost(hullStat, weaponStats, passiveCmStats, activeCmStats, sensorStats, shieldGenStats,
-            stlEngineStat, ftlEngineStat);
-        var design = new ShipDesign(owner, hqPriority, _elementsReqdSRSensorStat, constructionCost, hullStat, stlEngineStat, ftlEngineStat, stance);
+        var design = new ShipDesign(owner, hqPriority, _elementsReqdSRSensorStat, hullStat, stlEngineStat, ftlEngineStat, stance) {
+            Status = status
+        };
         AEquipmentStat[] allEquipStats = passiveCmStats.Cast<AEquipmentStat>().UnionBy(activeCmStats.Cast<AEquipmentStat>(),
             sensorStats.Cast<AEquipmentStat>(), shieldGenStats.Cast<AEquipmentStat>(), weaponStats.Cast<AEquipmentStat>()).ToArray();
         foreach (var stat in allEquipStats) {
@@ -1055,15 +1053,17 @@ public class NewGameUnitConfigurator {
             D.Assert(isSlotAvailable);
             design.Add(availCatSlotID, stat);
         }
+        design.AssignPropertyValues();
         return design;
     }
 
     private FacilityDesign MakeElementDesign(Player owner, FacilityHullStat hullStat, IEnumerable<AWeaponStat> weaponStats,
         IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<ActiveCountermeasureStat> activeCmStats,
-        IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats, Priority hqPriority) {
-        FacilityHullCategory hullCategory = hullStat.HullCategory;
-        float constructionCost = CalcDesignConstructionCost(hullStat, weaponStats, passiveCmStats, activeCmStats, sensorStats, shieldGenStats);
-        var design = new FacilityDesign(owner, hqPriority, _elementsReqdSRSensorStat, constructionCost, hullStat);
+        IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats, Priority hqPriority,
+        AUnitMemberDesign.SourceAndStatus status) {
+        var design = new FacilityDesign(owner, hqPriority, _elementsReqdSRSensorStat, hullStat) {
+            Status = status
+        };
         AEquipmentStat[] allEquipStats = passiveCmStats.Cast<AEquipmentStat>().UnionBy(activeCmStats.Cast<AEquipmentStat>(),
             sensorStats.Cast<AEquipmentStat>(), shieldGenStats.Cast<AEquipmentStat>(), weaponStats.Cast<AEquipmentStat>()).ToArray();
         foreach (var stat in allEquipStats) {
@@ -1072,51 +1072,69 @@ public class NewGameUnitConfigurator {
             D.Assert(isSlotAvailable);
             design.Add(availCatSlotID, stat);
         }
+        design.AssignPropertyValues();
+        D.Log("{0} has created {1} with {2}, {3}, {4}, {5}, {6} EquipmentStats.",
+            DebugName, design.DebugName, weaponStats.Count(), passiveCmStats.Count(), activeCmStats.Count(), sensorStats.Count(), shieldGenStats.Count());
         return design;
     }
 
     private string RegisterElementDesign(ShipDesign design, string optionalRootDesignName = null) {
+        var playersDesigns = _gameMgr.PlayersDesigns;
         string existingDesignName;
         if (optionalRootDesignName != null) {
-            bool isDesignAlreadyRegistered = _gameMgr.PlayersDesigns.IsDesignPresent(design, out existingDesignName);
+            bool isDesignAlreadyRegistered = playersDesigns.IsDesignPresent(design, out existingDesignName);
             D.Assert(!isDesignAlreadyRegistered);
             design.RootDesignName = optionalRootDesignName;
-            _gameMgr.PlayersDesigns.Add(design);
+            playersDesigns.Add(design);
             return optionalRootDesignName;
         }
 
-        if (!_gameMgr.PlayersDesigns.IsDesignPresent(design, out existingDesignName)) {
+        if (!playersDesigns.IsDesignPresent(design, out existingDesignName)) {
             string rootDesignName = GetUniqueElementRootDesignName(design.HullCategory.GetValueName());
             design.RootDesignName = rootDesignName;
-            _gameMgr.PlayersDesigns.Add(design);
+            playersDesigns.Add(design);
             return rootDesignName;
         }
 
-        ShipDesign existingDesign = _gameMgr.PlayersDesigns.GetShipDesign(design.Player, existingDesignName);
+        D.AssertNotNull(existingDesignName);
+        ShipDesign existingDesign = playersDesigns.GetShipDesign(design.Player, existingDesignName);
+        if (existingDesign.Status == AUnitMemberDesign.SourceAndStatus.System_CreationTemplate) {
+            D.Warn("{0}: {1} and TemplateDesign {2} are equivalent?", DebugName, design.DebugName, existingDesign.DebugName);
+        }
         existingDesign.Status = AUnitMemberDesign.SourceAndStatus.Player_Current;
-        D.Log(ShowDebugLog, "{0} found Design {1} has equivalent already registered so using {2}.", DebugName, design.DebugName, existingDesignName);
+        //D.Log(ShowDebugLog, "{0} found Design {1} has equivalent already registered so using {2} with name {3}.",
+        //    DebugName, design.DebugName, existingDesign.DebugName, existingDesignName);
         return existingDesignName;
     }
 
     private string RegisterElementDesign(FacilityDesign design, string optionalRootDesignName = null) {
+        var playersDesigns = _gameMgr.PlayersDesigns;
         string existingDesignName;
         if (optionalRootDesignName != null) {
-            bool isDesignAlreadyRegistered = _gameMgr.PlayersDesigns.IsDesignPresent(design, out existingDesignName);
+            bool isDesignAlreadyRegistered = playersDesigns.IsDesignPresent(design, out existingDesignName);
             D.Assert(!isDesignAlreadyRegistered);
             design.RootDesignName = optionalRootDesignName;
-            _gameMgr.PlayersDesigns.Add(design);
+            playersDesigns.Add(design);
             return optionalRootDesignName;
         }
 
-        if (!_gameMgr.PlayersDesigns.IsDesignPresent(design, out existingDesignName)) {
+        if (!playersDesigns.IsDesignPresent(design, out existingDesignName)) {
             string rootDesignName = GetUniqueElementRootDesignName(design.HullCategory.GetValueName());
             design.RootDesignName = rootDesignName;
-            _gameMgr.PlayersDesigns.Add(design);
+            playersDesigns.Add(design);
             return rootDesignName;
         }
-        FacilityDesign existingDesign = _gameMgr.PlayersDesigns.GetFacilityDesign(design.Player, existingDesignName);
+
+        D.AssertNotNull(existingDesignName);
+        FacilityDesign existingDesign = playersDesigns.GetFacilityDesign(design.Player, existingDesignName);
+        if (existingDesign.Status == AUnitMemberDesign.SourceAndStatus.System_CreationTemplate) {
+            D.Warn("{0}: {1} and TemplateDesign {2} are equivalent?", DebugName, design.DebugName, existingDesign.DebugName);
+        }
         existingDesign.Status = AUnitMemberDesign.SourceAndStatus.Player_Current;
-        D.Log(ShowDebugLog, "{0} found Design {1} has equivalent already registered so using {2}.", DebugName, design.DebugName, existingDesignName);
+        if (design.Player.IsUser) {
+            D.LogBold(/*ShowDebugLog, */"{0} found Design {1} has equivalent already registered so using {2} with name {3}.",
+                DebugName, design.DebugName, existingDesign.DebugName, existingDesignName);
+        }
         return existingDesignName;
     }
 
@@ -1124,7 +1142,9 @@ public class NewGameUnitConfigurator {
 
     #region Command Designs
 
-    private SettlementCmdDesign MakeSettlementCmdDesign(Player owner, int passiveCmQty, int sensorQty) {
+    private SettlementCmdDesign MakeSettlementCmdDesign(Player owner, int passiveCmQty, int sensorQty,
+        AUnitMemberDesign.SourceAndStatus status = AUnitMemberDesign.SourceAndStatus.Player_Current) {
+
         Utility.ValidateForRange(passiveCmQty, 0, TempGameValues.MaxCmdPassiveCMs);
         Utility.ValidateForRange(sensorQty, 1, TempGameValues.MaxCmdSensors);
 
@@ -1136,7 +1156,9 @@ public class NewGameUnitConfigurator {
         }
 
         SettlementCmdModuleStat cmdStat = MakeReqdSettlementCmdStat();
-        SettlementCmdDesign design = new SettlementCmdDesign(owner, _cmdsReqdFtlDampener, cmdStat, _cmdsReqdMRSensorStat);
+        SettlementCmdDesign design = new SettlementCmdDesign(owner, _cmdsReqdFtlDampener, cmdStat, _cmdsReqdMRSensorStat) {
+            Status = status
+        };
         AEquipmentStat[] allEquipStats = passiveCmStats.Cast<AEquipmentStat>().Union(optionalCmdSensorStats.Cast<AEquipmentStat>()).ToArray();
         foreach (var stat in allEquipStats) {
             EquipmentSlotID availCatSlotID;
@@ -1144,10 +1166,13 @@ public class NewGameUnitConfigurator {
             D.Assert(isSlotAvailable);
             design.Add(availCatSlotID, stat);
         }
+        design.AssignPropertyValues();
         return design;
     }
 
-    private StarbaseCmdDesign MakeStarbaseCmdDesign(Player owner, int passiveCmQty, int sensorQty) {
+    private StarbaseCmdDesign MakeStarbaseCmdDesign(Player owner, int passiveCmQty, int sensorQty,
+        AUnitMemberDesign.SourceAndStatus status = AUnitMemberDesign.SourceAndStatus.Player_Current) {
+
         Utility.ValidateForRange(passiveCmQty, 0, TempGameValues.MaxCmdPassiveCMs);
         Utility.ValidateForRange(sensorQty, 1, TempGameValues.MaxCmdSensors);
 
@@ -1159,7 +1184,9 @@ public class NewGameUnitConfigurator {
         }
 
         StarbaseCmdModuleStat cmdStat = MakeReqdStarbaseCmdStat();
-        StarbaseCmdDesign design = new StarbaseCmdDesign(owner, _cmdsReqdFtlDampener, cmdStat, _cmdsReqdMRSensorStat);
+        StarbaseCmdDesign design = new StarbaseCmdDesign(owner, _cmdsReqdFtlDampener, cmdStat, _cmdsReqdMRSensorStat) {
+            Status = status
+        };
         AEquipmentStat[] allEquipStats = passiveCmStats.Cast<AEquipmentStat>().Union(optionalCmdSensorStats.Cast<AEquipmentStat>()).ToArray();
         foreach (var stat in allEquipStats) {
             EquipmentSlotID availCatSlotID;
@@ -1167,10 +1194,13 @@ public class NewGameUnitConfigurator {
             D.Assert(isSlotAvailable);
             design.Add(availCatSlotID, stat);
         }
+        design.AssignPropertyValues();
         return design;
     }
 
-    private FleetCmdDesign MakeFleetCmdDesign(Player owner, int passiveCmQty, int sensorQty, float maxCmdStaffEffectiveness = Constants.OneHundredPercent) {
+    private FleetCmdDesign MakeFleetCmdDesign(Player owner, int passiveCmQty, int sensorQty, float maxCmdStaffEffectiveness = Constants.OneHundredPercent,
+        AUnitMemberDesign.SourceAndStatus status = AUnitMemberDesign.SourceAndStatus.Player_Current) {
+
         Utility.ValidateForRange(passiveCmQty, 0, TempGameValues.MaxCmdPassiveCMs);
         Utility.ValidateForRange(sensorQty, 1, TempGameValues.MaxCmdSensors);
 
@@ -1182,7 +1212,9 @@ public class NewGameUnitConfigurator {
         }
 
         FleetCmdModuleStat cmdStat = MakeReqdFleetCmdStat(maxCmdStaffEffectiveness);
-        FleetCmdDesign design = new FleetCmdDesign(owner, _cmdsReqdFtlDampener, cmdStat, _cmdsReqdMRSensorStat);
+        FleetCmdDesign design = new FleetCmdDesign(owner, _cmdsReqdFtlDampener, cmdStat, _cmdsReqdMRSensorStat) {
+            Status = status
+        };
         AEquipmentStat[] allEquipStats = passiveCmStats.Cast<AEquipmentStat>().Union(optionalCmdSensorStats.Cast<AEquipmentStat>()).ToArray();
         foreach (var stat in allEquipStats) {
             EquipmentSlotID availCatSlotID;
@@ -1190,6 +1222,7 @@ public class NewGameUnitConfigurator {
             D.Assert(isSlotAvailable);
             design.Add(availCatSlotID, stat);
         }
+        design.AssignPropertyValues();
         return design;
     }
 
@@ -1264,9 +1297,10 @@ public class NewGameUnitConfigurator {
 
     #region Support
 
+    [Obsolete("Replaced by ElementDesign.AssignConstructionCost()")]
     private float CalcDesignConstructionCost(AHullStat hullStat, IEnumerable<AWeaponStat> weaponStats,
-    IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<ActiveCountermeasureStat> activeCmStats,
-    IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats, params EngineStat[] engineStats) {
+        IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<ActiveCountermeasureStat> activeCmStats,
+        IEnumerable<SensorStat> sensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats, params EngineStat[] engineStats) {
         float constructionCost = hullStat.ConstructionCost + weaponStats.Sum(stat => stat.ConstructionCost)
             + passiveCmStats.Sum(stat => stat.ConstructionCost) + activeCmStats.Sum(stat => stat.ConstructionCost)
             + sensorStats.Sum(stat => stat.ConstructionCost) + shieldGenStats.Sum(stat => stat.ConstructionCost)
@@ -1290,7 +1324,7 @@ public class NewGameUnitConfigurator {
     }
 
     private IEnumerable<FacilityHullStat> GetFacilityHullStats(int qty) {
-        return new List<FacilityHullStat>(RandomExtended.Choices<FacilityHullStat>(_facilityHullStatLookup.Values, qty));
+        return RandomExtended.Choices<FacilityHullStat>(_facilityHullStatLookup.Values, qty);
     }
 
     private IEnumerable<ShipHullStat> GetShipHullStats(FleetCreatorEditorSettings settings) {
@@ -1305,7 +1339,7 @@ public class NewGameUnitConfigurator {
     }
 
     private IEnumerable<ShipHullStat> GetShipHullStats(int qty) {
-        return new List<ShipHullStat>(RandomExtended.Choices<ShipHullStat>(_shipHullStatLookup.Values, qty));
+        return RandomExtended.Choices<ShipHullStat>(_shipHullStatLookup.Values, qty);
     }
 
     private IEnumerable<AWeaponStat> GetWeaponStats(ShipHullCategory hullCat, DebugLaunchedWeaponLoadout launchedLoadout, DebugLosWeaponLoadout turretLoadout) {
@@ -1342,7 +1376,7 @@ public class NewGameUnitConfigurator {
         return hullCat.Mass() * 0.1F;
     }
 
-    private float __GetEngineProdnCost(ShipHullCategory hullCat, bool isFtlEngine) {
+    private float __GetEngineConstructionCost(ShipHullCategory hullCat, bool isFtlEngine) {
         float lowCost = 10F;
         float highCost = 30F;
         switch (hullCat) {
@@ -1577,6 +1611,15 @@ public class NewGameUnitConfigurator {
     }
 
     #region Debug
+
+    /// <summary>
+    /// Gets a random refit benefit.
+    /// <remarks>TEMP. This value will need to be externalized and set by the designer for each piece of equipment.</remarks>
+    /// </summary>
+    /// <returns></returns>
+    private int __GetRandomRefitBenefit() {
+        return RandomExtended.Range(0, 20);
+    }
 
     public IEnumerable<AEquipmentStat> GetAvailableUserEquipmentStats(IEnumerable<EquipmentCategory> supportedEquipCats) {
         List<AEquipmentStat> allAvailableStats = new List<AEquipmentStat>();

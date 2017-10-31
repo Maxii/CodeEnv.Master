@@ -27,12 +27,10 @@ namespace CodeEnv.Master.GameContent {
             get { return StarDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
         }
 
-        private IStar_Ltd _item;
-
-        public StarPublisher(StarData data, IStar_Ltd item) : base(data) { _item = item; }
+        public StarPublisher(StarData data) : base(data) { }
 
         protected override StarReport MakeReportInstance(Player player) {
-            return new StarReport(_data, player, _item);
+            return new StarReport(_data, player);
         }
 
     }

@@ -28,9 +28,10 @@ namespace CodeEnv.Master.GameContent {
 
             EquipmentSlotID slotID;
             AEquipmentStat equipStat;
-            while (designToCopy.GetNextEquipmentStat(out slotID, out equipStat)) {
+            while (designToCopy.TryGetNextEquipmentStat(out slotID, out equipStat)) {
                 Add(slotID, equipStat);
             }
+            AssignPropertyValues();
 
             RootDesignName = designToCopy.RootDesignName;
             // If copying System_CreationTemplate counter will always = 0 as they are never incremented. If copying Player_Current counter 
@@ -44,26 +45,31 @@ namespace CodeEnv.Master.GameContent {
             InitializeValuesAndReferences();
         }
 
+        public override bool HasEqualContent(AUnitMemberDesign oDesign) {
+            return base.HasEqualContent(oDesign);
+        }
+
         #region Value-based Equality Archive
+
+        ////public static bool operator ==(StarbaseCmdDesign left, StarbaseCmdDesign right) {
+        ////    // https://msdn.microsoft.com/en-us/library/ms173147(v=vs.90).aspx
+        ////    if (ReferenceEquals(left, right)) { return true; }
+        ////    if (((object)left == null) || ((object)right == null)) { return false; }
+        ////    return left.Equals(right);
+        ////}
+
+        ////public static bool operator !=(StarbaseCmdDesign left, StarbaseCmdDesign right) {
+        ////    return !(left == right);
+        ////}
 
         ////public override int GetHashCode() {
         ////    unchecked {
-        ////        int hash = base.GetHashCode();
-        ////        hash = hash * 31 + CmdStat.GetHashCode(); // 31 = another prime number
-        ////        return hash;
+        ////        return base.GetHashCode();
         ////    }
         ////}
 
         ////public override bool Equals(object obj) {
-        ////    if (base.Equals(obj)) {
-        ////        StarbaseCmdDesign oDesign = (StarbaseCmdDesign)obj;
-        ////        bool isEqual = oDesign.CmdStat == CmdStat;
-        ////        if (isEqual) {
-        ////            __ValidateHashCodesEqual(obj);
-        ////        }
-        ////        return isEqual;
-        ////    }
-        ////    return false;
+        ////    return base.Equals(obj);
         ////}
 
         #endregion

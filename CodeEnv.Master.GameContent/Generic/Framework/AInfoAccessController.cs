@@ -17,7 +17,9 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using CodeEnv.Master.Common;
+    using Common.LocalResources;
 
     /// <summary>
     /// Abstract base class that controls other player's access to Item info.
@@ -31,12 +33,21 @@ namespace CodeEnv.Master.GameContent {
         protected bool ShowDebugLog { get { return _data.ShowDebugLog; } }
 
         protected AItemData _data;
+        private IGameManager _gameMgr;
 
         public AInfoAccessController(AItemData data) {
             _data = data;
+            _gameMgr = GameReferences.GameManager;
         }
 
-        public abstract bool HasAccessToInfo(Player player, ItemInfoID infoID);
+        /// <summary>
+        /// Returns <c>true</c> if the provided Player has the proper IntelCoverage required to access 
+        /// the info indicated by ItemInfoID for this Item.
+        /// </summary>
+        /// <param name="player">The player.</param>
+        /// <param name="infoID">The information identifier.</param>
+        /// <returns></returns>
+        public abstract bool HasIntelCoverageReqdToAccess(Player player, ItemInfoID infoID);
 
         public sealed override string ToString() {
             return DebugName;

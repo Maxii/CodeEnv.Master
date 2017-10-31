@@ -57,13 +57,6 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
 
     public override float Radius { get { return Data.Radius; } }
 
-    public UniverseCenterReport UserReport { get { return Publisher.GetUserReport(); } }
-
-    private UniverseCenterPublisher _publisher;
-    private UniverseCenterPublisher Publisher {
-        get { return _publisher = _publisher ?? new UniverseCenterPublisher(Data, this); }
-    }
-
     private DetectionHandler _detectionHandler;
     private SphereCollider _primaryCollider;
     private SphereCollider _obstacleZoneCollider;
@@ -118,8 +111,8 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
         _detourGenerator = new DetourGenerator(DebugName, obstacleZoneCenter, _obstacleZoneCollider.radius, Data.CloseOrbitOuterRadius);
     }
 
-    protected override ItemHoveredHudManager InitializeHudManager() {
-        return new ItemHoveredHudManager(Publisher);
+    protected override ItemHoveredHudManager InitializeHoveredHudManager() {
+        return new ItemHoveredHudManager(Data.Publisher);
     }
 
     protected override ICtxControl InitializeContextMenu(Player owner) {
@@ -172,8 +165,6 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
         _primaryCollider.enabled = true;
         _obstacleZoneCollider.enabled = true;
     }
-
-    public UniverseCenterReport GetReport(Player player) { return Publisher.GetReport(player); }
 
     protected override void ShowSelectedItemHud() {
         throw new NotSupportedException("{0}".Inject(DebugName));   // should not be called as can't be owned
@@ -341,7 +332,7 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
     #region IShipCloseOrbitable Members
 
     public bool IsCloseOrbitAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner)) {
             return true;
         }
         return !Owner.IsAtWarWith(player);
@@ -483,7 +474,7 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
     public Speed PatrolSpeed { get { return Speed.OneThird; } }
 
     public bool IsPatrollingAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner)) {
             return true;
         }
         return !player.IsEnemyOf(Owner);
@@ -504,7 +495,7 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
     }
 
     public bool IsGuardingAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner)) {
             return true;
         }
         return !player.IsEnemyOf(Owner);
@@ -520,7 +511,7 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
 
     public bool IsExploringAllowedBy(Player player) {
         // OPTIMIZE currently owner can only be NoPlayer which by definition is not at war with anyone
-        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner)) {
             return true;
         }
         return !Owner.IsAtWarWith(player);

@@ -61,6 +61,11 @@ public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IManeuverable, Ft
         dampener.RangeMonitor = this;
     }
 
+    [Obsolete("Not currently used")]
+    protected override void RemoveMonitorFrom(FtlDampener dampener) {
+        dampener.RangeMonitor = null;
+    }
+
     protected override void HandleDetectedObjectAdded(IManeuverable newlyDetectedManeuverable) {
         D.Assert(newlyDetectedManeuverable.IsOperational);
         if (newlyDetectedManeuverable.IsFtlCapable) {

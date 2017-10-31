@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: FormationStationSlotInfo.cs
-// Immutable custom struct containing info about individual FormationStation Slots in a Formation.
+// Immutable struct containing info about individual FormationStation Slots in a Formation.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Immutable custom struct containing info about individual FormationStation Slots in a Formation.
+    /// Immutable struct containing info about individual FormationStation Slots in a Formation.
     /// </summary>
     public struct FormationStationSlotInfo : IEquatable<FormationStationSlotInfo> {
 
@@ -39,11 +39,13 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        private const string ToStringFormat = "{0}: SlotID: {1}, IsReserve: {2}, LocalOffset: {3}, IsHQSlot: {4}";
+        private const string DebugNameFormat = "{0}: SlotID: {1}, IsReserve: {2}, LocalOffset: {3}, IsHQSlot: {4}";
+
+        public string DebugName { get { return DebugNameFormat.Inject(GetType().Name, SlotID, IsReserve, LocalOffset, IsHQSlot); } }
 
         /// <summary>
         /// The ID of the FormationStationSlot this info describes.
-        /// OPTIMIZE Unused?
+        /// OPTIMIZE Not currently used.
         /// </summary>
         public FormationStationSlotID SlotID { get; private set; }
 
@@ -92,9 +94,8 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-
         public override string ToString() {
-            return ToStringFormat.Inject(GetType().Name, SlotID, IsReserve, LocalOffset, IsHQSlot);
+            return DebugName;
         }
 
         #region IEquatable<FormationStationSlotInfo> Members

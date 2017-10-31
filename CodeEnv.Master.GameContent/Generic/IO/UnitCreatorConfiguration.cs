@@ -40,10 +40,16 @@ namespace CodeEnv.Master.GameContent {
             DeployDate = deployDate;
             CmdDesignName = cmdDesignName;
             ElementDesignNames = elementDesignNames;
-            ValidateDeployDate();
+            __ValidateDeployDate();
         }
 
-        private void ValidateDeployDate() {
+        public override string ToString() {
+            return DebugName;
+        }
+
+        #region Debug
+
+        private void __ValidateDeployDate() {
             GameDate earliestDate;
             if (!GameReferences.GameManager.IsRunning) {
                 earliestDate = GameTime.GameStartDate;
@@ -56,9 +62,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public override string ToString() {
-            return DebugName;
-        }
+        #endregion
 
     }
 }

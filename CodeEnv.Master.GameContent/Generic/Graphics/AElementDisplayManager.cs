@@ -26,6 +26,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AElementDisplayManager : AIconDisplayManager, IMortalDisplayManager {
 
+        private static readonly IntVector2 ConstructionIconSize = new IntVector2(24, 24);
+
         private GameColor _meshColor;
         /// <summary>
         /// The GameColor to use on the element's primary mesh. Typically the color of the owner.
@@ -37,8 +39,9 @@ namespace CodeEnv.Master.GameContent {
 
         public new IInteractiveWorldTrackingSprite TrackingIcon { get { return base.TrackingIcon as IInteractiveWorldTrackingSprite; } }
 
-        protected override int IconDepth { get { return 1; } }
+        protected override int TrackingIconDepth { get { return 1; } }
 
+        private IWorldTrackingSprite _constructionIcon;
         private IEnumerable<MeshRenderer> _secondaryMeshRenderers;
         private MaterialPropertyBlock _primaryMeshMPB;
 
@@ -92,7 +95,12 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        protected override void InitializeSecondaryMeshes(GameObject elementItemGo) {   // Mounts
+        /// <summary>
+        /// Initializes the secondary meshes.
+        /// <remarks>The secondary meshes of an element are its weapon mounts.</remarks>
+        /// </summary>
+        /// <param name="elementItemGo">The element item go.</param>
+        protected override void InitializeSecondaryMeshes(GameObject elementItemGo) {
             base.InitializeSecondaryMeshes(elementItemGo);
             var hullGo = elementItemGo.GetSingleInterfaceInChildren<IHull>().transform.gameObject;
             _secondaryMeshRenderers = hullGo.GetComponentsInChildren<MeshRenderer>().Except(_primaryMeshRenderer);
@@ -156,6 +164,7 @@ namespace CodeEnv.Master.GameContent {
                     //D.Log("{0} just changed {1}.renderer.enabled to {2}.", DebugName, r.gameObject.name, r.enabled);
                 });
             }
+            AssessConstructionIconShowing();
         }
 
         #region Event and Property Change Handlers
@@ -164,6 +173,49 @@ namespace CodeEnv.Master.GameContent {
             if (IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS) {
                 // change the renderer's color using the updated _primaryMeshMPB
                 ShowPrimaryMesh();
+            }
+        }
+
+        #endregion
+
+        #region Show Construction Underway
+
+        /// <summary>
+        /// Controls showing of 'construction' visuals when display is enabled.
+        /// </summary>
+        /// <param name="completionPercentage">The completion percentage used when toShow is true.</param>
+        public void ShowConstructionUnderway(float completionPercentage) { // TODO make use of completionPercentage
+            _constructionIcon = _constructionIcon ?? InitializeConstructionIcon();
+        }
+
+        public void HideConstructionUnderway() {
+            D.AssertNotNull(_constructionIcon);
+            _constructionIcon.Destroy();
+            _constructionIcon = null;
+        }
+
+        private IWorldTrackingSprite InitializeConstructionIcon() {
+            TrackingIconInfo constructionIconInfo = MakeConstructionIconInfo();
+            IWorldTrackingSprite constructionIcon = GameReferences.TrackingWidgetFactory.MakeWorldTrackingSprite_Independent(_trackedItem, constructionIconInfo);
+            (constructionIcon as IWorldTrackingSprite_Independent).DrawDepth = TrackingIconDepth;
+
+            // listener not used except to acquire MeshRenderer for initialization. MeshRenderer rendering is determined by culling layer
+            ICameraLosChangedListener listener = constructionIcon.CameraLosChangedListener;
+            var constructionIconMeshRenderer = listener.transform.GetComponent<MeshRenderer>();
+            constructionIconMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            constructionIconMeshRenderer.receiveShadows = false;
+            __ValidateAndCorrectMeshLayer(constructionIconMeshRenderer.gameObject);
+            return constructionIcon;
+        }
+
+        private TrackingIconInfo MakeConstructionIconInfo() {    // HACK
+            return new TrackingIconInfo(TempGameValues.ConstructionIconFilename, AtlasID.MyGui, GameColor.White, ConstructionIconSize, WidgetPlacement.AboveRight, _meshLayer);
+        }
+
+        private void AssessConstructionIconShowing() {
+            if (_constructionIcon != null) {
+                bool toShow = IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS;
+                _constructionIcon.Show(toShow);
             }
         }
 

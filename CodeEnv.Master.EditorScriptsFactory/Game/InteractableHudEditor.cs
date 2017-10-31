@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: InteractableHudEditor.cs
-// Custom editor for the InteractableHudWindow.
+// Custom editor for the InteractibleHudWindow.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,10 +20,10 @@ using CodeEnv.Master.Common;
 using UnityEditor;
 
 /// <summary>
-/// Custom editor for the InteractableHudWindow.
+/// Custom editor for the InteractibleHudWindow.
 /// </summary>
-[CustomEditor(typeof(InteractableHudWindow))]
-public class InteractableHudEditor : AGuiWindowEditor<InteractableHudWindow> {
+[CustomEditor(typeof(InteractibleHudWindow))]
+public class InteractableHudEditor : AGuiWindowEditor<InteractibleHudWindow> {
 
 
 }

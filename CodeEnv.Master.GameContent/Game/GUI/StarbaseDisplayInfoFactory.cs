@@ -42,14 +42,15 @@ namespace CodeEnv.Master.GameContent {
             ItemInfoID.UnitHealth,
             //ItemInfoID.UnitWeaponsRange,
             ItemInfoID.UnitSensorRange,
-            //ItemInfoID.UnitScience,
-            //ItemInfoID.UnitCulture,
-            //ItemInfoID.UnitNetIncome,
-            ItemInfoID.UnitFood,
-            ItemInfoID.UnitProduction,
+
+            ItemInfoID.UnitOutputs,
+
             ItemInfoID.CurrentConstruction,
 
             //ItemInfoID.Capacity,
+            //ItemInfoID.Population,
+            //ItemInfoID.Approval,
+
             ItemInfoID.Resources,
 
             ItemInfoID.Separator,
@@ -85,18 +86,17 @@ namespace CodeEnv.Master.GameContent {
                         isSuccess = true;
                         colorizedText = _lineTemplate.Inject(report.Capacity.HasValue ? GetFormat(infoID).Inject(report.Capacity.Value) : Unknown);
                         break;
-                    case ItemInfoID.UnitFood:
-                        isSuccess = true;
-                        colorizedText = _lineTemplate.Inject(report.UnitFood.HasValue ? GetFormat(infoID).Inject(report.UnitFood.Value) : Unknown);
-                        break;
-                    case ItemInfoID.UnitProduction:
-                        isSuccess = true;
-                        colorizedText = _lineTemplate.Inject(report.UnitProduction.HasValue ? GetFormat(infoID).Inject(report.UnitProduction.Value) : Unknown);
-                        break;
                     case ItemInfoID.Resources:
                         isSuccess = true;
                         colorizedText = _lineTemplate.Inject(report.Resources != default(ResourcesYield) ? report.Resources.ToString() : Unknown);
-                        ////colorizedText = _lineTemplate.Inject(report.Resources.HasValue ? report.Resources.Value.ToString() : Unknown);
+                        break;
+                    case ItemInfoID.Population:
+                        isSuccess = true;
+                        colorizedText = _lineTemplate.Inject(report.Population.HasValue ? GetFormat(infoID).Inject(report.Population.Value) : Unknown);
+                        break;
+                    case ItemInfoID.Approval:
+                        isSuccess = true;
+                        colorizedText = GetColorizedApprovalText(report.Approval);
                         break;
                     case ItemInfoID.CurrentConstruction:
                         isSuccess = true;

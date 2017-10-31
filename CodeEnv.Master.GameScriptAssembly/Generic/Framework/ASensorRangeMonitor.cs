@@ -190,52 +190,19 @@ public abstract class ASensorRangeMonitor : ADetectableRangeMonitor<ISensorDetec
 
     protected sealed override bool IsKinematicRigidbodyReqd { get { return true; } }   // Stars and UCenter don't have rigidbodies
 
-    /// <summary>
-    /// Returns <c>true</c> when the ParentItemOwner to use is _previousOwner because all detected objects need
-    /// to be removed from this record and told they are no longer detected.
-    /// <remarks>5.11.17 Removing all detected objects is initiated in HandleParentItemOwnerChanged by setting IsOperational
-    /// to false after this monitor's Owner has changed to avoid element/Cmd owner sync issues when a Cmd's
-    /// element has already completed the change of its owner, but its Cmd is just beginning the change. Was previously
-    /// initiated from HandleParentItemOwnerChanging when this monitor's CmdOwner and the Cmd's single remaining
-    /// element owner were out of sync.</remarks>
-    /// </summary>
-    ////private bool IsRemoveAllDetectedObjectsProcessUnderway { get; set; }
-
-    ////private Player _previousOwner;
-
     protected override void InitializeValuesAndReferences() {
         base.InitializeValuesAndReferences();
         // UnknownTargetsDetected is lazy instantiated as unlikely to be needed for short/medium range sensors
         InitializeDebugShowSensor();
     }
 
-    /// <summary>
-    /// Removes the specified sensor. Returns <c>true</c> if this monitor
-    /// is still in use (has sensors remaining even if not operational), <c>false</c> otherwise.
-    /// </summary>
-    /// <param name="sensor">The sensor.</param>
-    /// <returns></returns>
-    public bool Remove(ASensor sensor) {
-        D.Assert(!sensor.IsActivated);
-        D.Assert(_equipmentList.Contains(sensor));
-
-        sensor.RangeMonitor = null;
-
-        Profiler.BeginSample("Event Subscription allocation", gameObject);
-        sensor.isOperationalChanged -= EquipmentIsOperationalChangedEventHandler;
-        sensor.isDamagedChanged -= EquipmentIsDamagedChangedEventHandler;
-        Profiler.EndSample();
-
-        _equipmentList.Remove(sensor);
-        if (_equipmentList.Count == Constants.Zero) {
-            return false;
-        }
-        // Note: no need to RefreshRangeDistance(); as it occurs when the equipment is made non-operational just before removal
-        return true;
-    }
-
     protected override void AssignMonitorTo(ASensor sensor) {
         sensor.RangeMonitor = this;
+    }
+
+    [Obsolete("Not currently used")]
+    protected override void RemoveMonitorFrom(ASensor sensor) {
+        sensor.RangeMonitor = null;
     }
 
     protected override void HandleDetectedObjectAdded(ISensorDetectable newlyDetectedItem) {

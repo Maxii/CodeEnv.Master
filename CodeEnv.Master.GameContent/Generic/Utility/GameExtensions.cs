@@ -29,6 +29,118 @@ namespace CodeEnv.Master.GameContent {
     public static class GameExtensions {
 
         /// <summary>
+        /// Subtracts right from left, returning the difference between left and right, aka left - right.
+        /// <remarks>Only possible using Outputs from Data (no null yields) where right will always be a subset of left.</remarks>
+        /// </summary>
+        /// <param name="left">The left.</param>
+        /// <param name="right">The right.</param>
+        /// <returns></returns>
+        public static OutputsYield Subtract(this OutputsYield left, OutputsYield right) {
+            var leftIDsPresent = left.OutputsPresent;
+            var rightIDsPresent = right.OutputsPresent;
+            bool isRightSubsetOfLeft = !rightIDsPresent.Except(leftIDsPresent).Any();
+            D.Assert(isRightSubsetOfLeft);
+
+            IList<OutputsYield.OutputValuePair> resultingPairs = new List<OutputsYield.OutputValuePair>();
+
+            foreach (var id in leftIDsPresent) {
+                float? leftYield = left.GetYield(id);
+                D.Assert(leftYield.HasValue);
+                float? rightYield = right.IsPresent(id) ? right.GetYield(id) : Constants.ZeroF;
+                D.Assert(rightYield.HasValue);
+                float result = leftYield.Value - rightYield.Value;
+                resultingPairs.Add(new OutputsYield.OutputValuePair(id, result));
+            }
+            return new OutputsYield(resultingPairs.ToArray());
+        }
+
+        /// <summary>
+        /// Subtracts right from left, returning the difference between left and right, aka left - right.
+        /// <remarks>Only possible using Resources from Data (no null yields) where right will always be a subset of left.</remarks>
+        /// </summary>
+        /// <param name="left">The left.</param>
+        /// <param name="right">The right.</param>
+        /// <returns></returns>
+        public static ResourcesYield Subtract(this ResourcesYield left, ResourcesYield right) {
+            var leftIDsPresent = left.ResourcesPresent;
+            var rightIDsPresent = right.ResourcesPresent;
+            bool isRightSubsetOfLeft = !rightIDsPresent.Except(leftIDsPresent).Any();
+            D.Assert(isRightSubsetOfLeft);
+
+            IList<ResourcesYield.ResourceValuePair> resultingPairs = new List<ResourcesYield.ResourceValuePair>();
+
+            foreach (var id in leftIDsPresent) {
+                float? leftYield = left.GetYield(id);
+                D.Assert(leftYield.HasValue);
+                float? rightYield = right.IsPresent(id) ? right.GetYield(id) : Constants.ZeroF;
+                D.Assert(rightYield.HasValue);
+                float result = leftYield.Value - rightYield.Value;
+                resultingPairs.Add(new ResourcesYield.ResourceValuePair(id, result));
+            }
+            return new ResourcesYield(resultingPairs.ToArray());
+        }
+
+
+
+        /// <summary>
+        /// Aggregates the nullable values provided and returns their addition-based sum. If one or more of these
+        /// nullable values has no value (its null), it is excluded from the sum. If all values are null, the value returned is null.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="args">The arguments.</param>
+        /// <returns></returns>
+        public static float? NullableSum(this float? source, params float?[] args) {
+            var argList = new List<float?>(args);
+            argList.Add(source);
+            return argList.NullableSum();
+        }
+
+        /// <summary>
+        /// Aggregates the nullable values provided and returns their addition-based sum. If one or more of these
+        /// nullable values has no value (its null), it is excluded from the sum. If all values are null, the value returned is null.
+        /// </summary>
+        /// <param name="sequence">The nullable values.</param>
+        /// <returns></returns>
+        public static float? NullableSum(this IEnumerable<float?> sequence) {
+            var result = sequence.Sum();
+            D.Assert(result.HasValue);  // Sum() will never return a null result
+            if (result.Value == Constants.ZeroF && !sequence.IsNullOrEmpty() && sequence.All(fVal => !fVal.HasValue)) {
+                // if the result is zero, then that result is not valid IFF the entire sequence is filled with null
+                result = null;
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Aggregates the nullable values provided and returns their addition-based sum. If one or more of these
+        /// nullable values has no value (its null), it is excluded from the sum. If all values are null, the value returned is null.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="args">The arguments.</param>
+        /// <returns></returns>
+        public static int? NullableSum(this int? source, params int?[] args) {
+            var argList = new List<int?>(args);
+            argList.Add(source);
+            return argList.NullableSum();
+        }
+
+        /// <summary>
+        /// Aggregates the nullable values provided and returns their addition-based sum. If one or more of these
+        /// nullable values has no value (its null), it is excluded from the sum. If all values are null, the value returned is null.
+        /// </summary>
+        /// <param name="sequence">The nullable values.</param>
+        /// <returns></returns>
+        public static int? NullableSum(this IEnumerable<int?> sequence) {
+            var result = sequence.Sum();
+            D.Assert(result.HasValue);  // Sum() will never return a null result
+            if (result.Value == Constants.Zero && !sequence.IsNullOrEmpty() && sequence.All(fVal => !fVal.HasValue)) {
+                // if the result is zero, then that result is not valid IFF the entire sequence is filled with null
+                result = null;
+            }
+            return result;
+        }
+
+        /// <summary>
         /// Aggregates the nullable values provided and returns their addition-based sum. If one or more of these
         /// nullable values has no value (its null), it is excluded from the sum. If all values are null, the value returned is null.
         /// </summary>
@@ -61,24 +173,18 @@ namespace CodeEnv.Master.GameContent {
             return isAnyValueFound ? sum : null;
         }
 
-        /// <summary>
-        /// Sums the sequence of ResourceYields.
-        /// </summary>
-        /// <param name="sequence">The sequence.</param>
-        /// <returns></returns>
-        [Obsolete]
-        public static ResourceYield Sum(this IEnumerable<ResourceYield> sequence) {
-            ResourceYield sum = default(ResourceYield);
-            foreach (var cs in sequence) {
-                sum += cs;
+        public static ResourcesYield Sum(this IEnumerable<ResourcesYield> sequence) {
+            ResourcesYield sum = default(ResourcesYield);
+            foreach (var ry in sequence) {
+                sum += ry;
             }
             return sum;
         }
 
-        public static ResourcesYield Sum(this IEnumerable<ResourcesYield> sequence) {
-            ResourcesYield sum = default(ResourcesYield);
-            foreach (var cs in sequence) {
-                sum += cs;
+        public static OutputsYield Sum(this IEnumerable<OutputsYield> sequence) {
+            OutputsYield sum = default(OutputsYield);
+            foreach (var oy in sequence) {
+                sum += oy;
             }
             return sum;
         }
@@ -105,10 +211,10 @@ namespace CodeEnv.Master.GameContent {
         public static CombatStrength? NullableSum(this IEnumerable<CombatStrength?> sequence) {
             bool isAnyValueFound = false;
             CombatStrength? sum = default(CombatStrength);
-            foreach (var a in sequence) {
-                if (a.HasValue) {
+            foreach (var cs in sequence) {
+                if (cs.HasValue) {
                     isAnyValueFound = true;
-                    sum += a.Value;
+                    sum += cs.Value;
                 }
             }
             return isAnyValueFound ? sum : null;

@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
@@ -24,15 +25,27 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public abstract class AInfoChangeForm : AInfoDisplayForm {
 
-    protected UIInput _nameInput;
+    protected CombatStanceChangeGuiElement _combatStanceChgGuiElement;
+    protected HeroChangeGuiElement _heroChgGuiElement;
+    protected NameChangeGuiElement _nameChgGuiElement;
+    protected FormationChangeGuiElement _formationChgGuiElement;
 
     protected sealed override bool InitializeGuiElement(AGuiElement e) {
         bool isFound = base.InitializeGuiElement(e);
         if (!isFound) {
             isFound = true;
             switch (e.ElementID) {
-                case GuiElementID.NameInput:
-                    InitializeNameInputGuiElement(e);
+                case GuiElementID.NameChange:
+                    InitializeNameChangeGuiElement(e);
+                    break;
+                case GuiElementID.FormationChange:
+                    InitializeFormationChangeGuiElement(e);
+                    break;
+                case GuiElementID.HeroChange:
+                    InitializeHeroChangeGuiElement(e);
+                    break;
+                case GuiElementID.CombatStanceChange:
+                    InitializeCombatStanceChangeGuiElement(e);
                     break;
                 default:
                     isFound = false;
@@ -42,30 +55,42 @@ public abstract class AInfoChangeForm : AInfoDisplayForm {
         return isFound;
     }
 
-    private void InitializeNameInputGuiElement(AGuiElement e) {
-        _nameInput = GetInput(e);
-        EventDelegate.Add(_nameInput.onSubmit, NameInputSubmittedEventHandler);
+    private void InitializeNameChangeGuiElement(AGuiElement e) {
+        _nameChgGuiElement = e as NameChangeGuiElement;
+    }
+
+    private void InitializeFormationChangeGuiElement(AGuiElement e) {
+        _formationChgGuiElement = e as FormationChangeGuiElement;
+    }
+
+    private void InitializeHeroChangeGuiElement(AGuiElement e) {
+        _heroChgGuiElement = e as HeroChangeGuiElement;
+    }
+
+    private void InitializeCombatStanceChangeGuiElement(AGuiElement e) {
+        _combatStanceChgGuiElement = e as CombatStanceChangeGuiElement;
     }
 
     #region Event and Property Change Handlers
 
-    private void NameInputSubmittedEventHandler() {
-        HandleNameInputSubmitted();
-    }
-
     #endregion
-
-    protected virtual void HandleNameInputSubmitted() {
-        SFXManager.Instance.PlaySFX(SfxClipID.Swipe);
-    }
 
     protected sealed override bool AssignValueTo(GuiElementID id) {
         bool isFound = base.AssignValueTo(id);
         if (!isFound) {
             isFound = true;
             switch (id) {
-                case GuiElementID.NameInput:
-                    AssignValueToNameInputGuiElement();
+                case GuiElementID.NameChange:
+                    AssignValueToNameChangeGuiElement();
+                    break;
+                case GuiElementID.FormationChange:
+                    AssignValueToFormationChangeGuiElement();
+                    break;
+                case GuiElementID.HeroChange:
+                    AssignValueToHeroChangeGuiElement();
+                    break;
+                case GuiElementID.CombatStanceChange:
+                    AssignValueToCombatStanceChangeGuiElement();
                     break;
                 default:
                     isFound = false;
@@ -75,15 +100,30 @@ public abstract class AInfoChangeForm : AInfoDisplayForm {
         return isFound;
     }
 
-    protected virtual void AssignValueToNameInputGuiElement() { }
+    protected virtual void AssignValueToNameChangeGuiElement() { }
+
+    protected virtual void AssignValueToFormationChangeGuiElement() { }
+
+    protected virtual void AssignValueToHeroChangeGuiElement() { }
+
+    protected virtual void AssignValueToCombatStanceChangeGuiElement() { }
 
     protected override bool ResetForReuse(GuiElementID id) {
         bool isFound = base.ResetForReuse(id);
         if (!isFound) {
             isFound = true;
             switch (id) {
-                case GuiElementID.NameInput:
-                    ResetNameInputGuiElement();
+                case GuiElementID.NameChange:
+                    ResetNameChangeGuiElement();
+                    break;
+                case GuiElementID.FormationChange:
+                    ResetFormationChangeGuiElement();
+                    break;
+                case GuiElementID.HeroChange:
+                    ResetHeroChangeGuiElement();
+                    break;
+                case GuiElementID.CombatStanceChange:
+                    ResetCombatStanceChangeGuiElement();
                     break;
                 default:
                     isFound = false;
@@ -93,8 +133,20 @@ public abstract class AInfoChangeForm : AInfoDisplayForm {
         return isFound;
     }
 
-    private void ResetNameInputGuiElement() {
-        _nameInput.Set(null, notify: false);
+    private void ResetNameChangeGuiElement() {
+        _nameChgGuiElement.ResetForReuse();
+    }
+
+    private void ResetFormationChangeGuiElement() {
+        _formationChgGuiElement.ResetForReuse();
+    }
+
+    private void ResetHeroChangeGuiElement() {
+        _heroChgGuiElement.ResetForReuse();
+    }
+
+    private void ResetCombatStanceChangeGuiElement() {
+        _combatStanceChgGuiElement.ResetForReuse();
     }
 
     protected sealed override bool CleanupGuiElement(AGuiElement e) {
@@ -102,8 +154,17 @@ public abstract class AInfoChangeForm : AInfoDisplayForm {
         if (!isFound) {
             isFound = true;
             switch (e.ElementID) {
-                case GuiElementID.NameInput:
-                    CleanupNameInputGuiElement(e);
+                case GuiElementID.NameChange:
+                    CleanupNameChangeGuiElement(e);
+                    break;
+                case GuiElementID.FormationChange:
+                    CleanupFormationChangeGuiElement(e);
+                    break;
+                case GuiElementID.HeroChange:
+                    CleanupHeroChangeGuiElement(e);
+                    break;
+                case GuiElementID.CombatStanceChange:
+                    CleanupCombatStanceChangeGuiElement(e);
                     break;
                 default:
                     isFound = false;
@@ -113,18 +174,13 @@ public abstract class AInfoChangeForm : AInfoDisplayForm {
         return isFound;
     }
 
-    protected virtual void CleanupNameInputGuiElement(AGuiElement e) {
-        EventDelegate.Remove(_nameInput.onSubmit, NameInputSubmittedEventHandler);
-    }
+    protected virtual void CleanupNameChangeGuiElement(AGuiElement e) { }
 
-    /// <summary>
-    /// Returns the single UIInput component that is present with or a child of the provided GuiElement's GameObject.
-    /// </summary>
-    /// <param name="element">The element.</param>
-    /// <returns></returns>
-    protected UIInput GetInput(AGuiElement element) {
-        return element.gameObject.GetSingleComponentInChildren<UIInput>();
-    }
+    protected virtual void CleanupFormationChangeGuiElement(AGuiElement e) { }
+
+    protected virtual void CleanupHeroChangeGuiElement(AGuiElement e) { }
+
+    protected virtual void CleanupCombatStanceChangeGuiElement(AGuiElement e) { }
 
 }
 

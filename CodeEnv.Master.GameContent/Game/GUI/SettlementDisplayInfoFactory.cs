@@ -42,15 +42,14 @@ namespace CodeEnv.Master.GameContent {
             ItemInfoID.UnitHealth,
             //ItemInfoID.UnitWeaponsRange,
             ItemInfoID.UnitSensorRange,
-            //ItemInfoID.UnitScience,
-            //ItemInfoID.UnitCulture,
-            //ItemInfoID.UnitNetIncome,
-            ItemInfoID.UnitFood,
-            ItemInfoID.UnitProduction,
-            ItemInfoID.CurrentConstruction,
 
+            ItemInfoID.UnitOutputs,
+
+            ItemInfoID.CurrentConstruction,
             //ItemInfoID.Capacity,
+
             ItemInfoID.Resources,
+
             //ItemInfoID.Population,
             //ItemInfoID.Approval,
 
@@ -87,18 +86,9 @@ namespace CodeEnv.Master.GameContent {
                         isSuccess = true;
                         colorizedText = _lineTemplate.Inject(report.Capacity.HasValue ? GetFormat(infoID).Inject(report.Capacity.Value) : Unknown);
                         break;
-                    case ItemInfoID.UnitFood:
-                        isSuccess = true;
-                        colorizedText = _lineTemplate.Inject(report.UnitFood.HasValue ? GetFormat(infoID).Inject(report.UnitFood.Value) : Unknown);
-                        break;
-                    case ItemInfoID.UnitProduction:
-                        isSuccess = true;
-                        colorizedText = _lineTemplate.Inject(report.UnitProduction.HasValue ? GetFormat(infoID).Inject(report.UnitProduction.Value) : Unknown);
-                        break;
                     case ItemInfoID.Resources:
                         isSuccess = true;
                         colorizedText = _lineTemplate.Inject(report.Resources != default(ResourcesYield) ? report.Resources.ToString() : Unknown);
-                        ////colorizedText = _lineTemplate.Inject(report.Resources.HasValue ? report.Resources.Value.ToString() : Unknown);
                         break;
                     case ItemInfoID.Population:
                         isSuccess = true;
@@ -118,20 +108,6 @@ namespace CodeEnv.Master.GameContent {
             }
             return isSuccess;
         }
-
-        private string GetColorizedApprovalText(float? approval) {
-            GameColor approvalColor = GameColor.White;
-            string colorizedApprovalText = Constants.QuestionMark;
-            if (approval.HasValue) {
-                approvalColor = (approval.Value > GeneralSettings.Instance.ContentApprovalThreshold) ? GameColor.Green :
-                    (approval.Value > GeneralSettings.Instance.UnhappyApprovalThreshold) ? GameColor.White :
-                    (approval.Value > GeneralSettings.Instance.RevoltApprovalThreshold) ? GameColor.Yellow :
-                                                                                          GameColor.Red;
-                colorizedApprovalText = Constants.FormatPercent_0Dp.Inject(approval.Value);
-            }
-            return _lineTemplate.Inject(colorizedApprovalText);
-        }
-
 
     }
 }

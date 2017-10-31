@@ -177,6 +177,12 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     private UnityMoveTech _unityMoveTech = UnityMoveTech.Kinematic;
     public UnityMoveTech MovementTech { get { return _unityMoveTech; } }
 
+    [Tooltip("Check if the buttons on the AiUnitHud are functional for the user.")]
+    [SerializeField]
+    private bool _areAiUnitHudButtonsFunctional = false;
+    public bool AreAiUnitHudButtonsFunctional { get { return _areAiUnitHudButtonsFunctional; } }
+
+
     #region Auto Unit Preset Equipment Controls
 
     [Tooltip("Choose how equipment is chosen for AutoCreators.")]   // NOTE: Does not affect DebugCreators

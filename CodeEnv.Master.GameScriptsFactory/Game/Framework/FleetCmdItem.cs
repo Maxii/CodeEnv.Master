@@ -47,7 +47,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     public override bool IsJoinable {
         get {
-            bool isJoinable = Elements.Count < TempGameValues.MaxShipsPerFleet;
+            bool isJoinable = Utility.IsInRange(Elements.Count, Constants.One, TempGameValues.MaxShipsPerFleet - Constants.One);
             if (isJoinable) {
                 D.Assert(FormationMgr.HasRoom);
             }
@@ -66,7 +66,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         private set { SetProperty<FleetOrder>(ref _currentOrder, value, "CurrentOrder", CurrentOrderPropChangedHandler); }
     }
 
-    public FleetCmdReport UserReport { get { return Publisher.GetUserReport(); } }
+    public FleetCmdReport UserReport { get { return Data.Publisher.GetUserReport(); } }
 
     public float UnitFullSpeedValue { get { return Data.UnitFullSpeedValue; } }
 
@@ -76,11 +76,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     protected new FleetFormationManager FormationMgr { get { return base.FormationMgr as FleetFormationManager; } }
-
-    private FleetPublisher _publisher;
-    private FleetPublisher Publisher {
-        get { return _publisher = _publisher ?? new FleetPublisher(Data, this); }
-    }
 
     private FleetNavigator _navigator;
 
@@ -114,8 +109,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         InitializeDebugShowCoursePlot();
     }
 
-    protected override ItemHoveredHudManager InitializeHudManager() {
-        return new ItemHoveredHudManager(Publisher);
+    protected override ItemHoveredHudManager InitializeHoveredHudManager() {
+        return new ItemHoveredHudManager(Data.Publisher);
     }
 
     protected override ICtxControl InitializeContextMenu(Player owner) {
@@ -157,10 +152,13 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         }
     }
 
-    private void TransferShip(ShipItem ship, FleetCmdItem fleetToJoin) {
-        RemoveElement(ship);
-        ship.IsHQ = false; // Needed - RemoveElement never changes HQ Element as the TransferCmd is dead as soon as ship removed
-        fleetToJoin.AddElement(ship);
+    public override void AddElement(AUnitElementItem element) {
+        //if (IsOperational && !element.IsOperational) {
+        //    // 4.4.17 Acceptable combos: Both not operational during construction, both operational during runtime
+        //    // and non-operational Cmd with operational element when creating a LoneFleet using UnitFactory.
+        //    D.Error("{0}: Adding element {1} with unexpected IsOperational state.", DebugName, element.DebugName);
+        //}
+        base.AddElement(element);   // TODO once I determine how to make Ships in a base
     }
 
     public override void RemoveElement(AUnitElementItem element) {
@@ -191,7 +189,13 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         }
     }
 
-    public FleetCmdReport GetReport(Player player) { return Publisher.GetReport(player); }
+    private void TransferShip(ShipItem ship, FleetCmdItem fleetToJoin) {
+        RemoveElement(ship);
+        ship.IsHQ = false; // Needed - RemoveElement never changes HQ Element as the TransferCmd is dead as soon as ship removed
+        fleetToJoin.AddElement(ship);
+    }
+
+    public FleetCmdReport GetReport(Player player) { return Data.Publisher.GetReport(player); }
 
     public ShipReport[] GetElementReports(Player player) {
         return Elements.Cast<ShipItem>().Select(s => s.GetReport(player)).ToArray();
@@ -264,12 +268,12 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     protected override void ShowSelectedItemHud() {
+        // 8.7.17 UnitHudWindow's FleetForm will auto show InteractibleHudWindow's FleetForm
         if (Owner.IsUser) {
             UnitHudWindow.Instance.Show(FormID.UserFleet, this);
-            // 8.7.17 UnitHudWindow's UserFleetForm will auto show InteractableHudWindow's UserFleetForm
         }
         else {
-            D.Warn("{0}: UnitHudWindow does not yet support showing AI-owned Cmds.", DebugName);
+            UnitHudWindow.Instance.Show(FormID.AiFleet, this);
         }
     }
 
@@ -371,8 +375,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
         if (IsPaused) {
             if (!_ordersReceivedWhilePaused.Any()) {
-                // first order received while paused so record the CurrentOrder before recording the new order
-                _ordersReceivedWhilePaused.Push(CurrentOrder);
+                if (CurrentOrder != null) {
+                    // first order received while paused so record the CurrentOrder before recording the new order
+                    _ordersReceivedWhilePaused.Push(CurrentOrder);
+                }
             }
             _ordersReceivedWhilePaused.Push(order);
             // deal with multiple changes all while paused
@@ -414,11 +420,12 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         FleetOrder order;
         var lastOrderReceivedWhilePaused = _ordersReceivedWhilePaused.Pop();
         if (lastOrderReceivedWhilePaused.Directive == FleetDirective.Cancel) {
-            // if Cancel, then original order and canceled order at minimum must still be present
-            D.Assert(_ordersReceivedWhilePaused.Count > Constants.One);
-            D.Log(/*ShowDebugLog,*/ "{0} received the following order sequence from User during pause prior to Cancel: {1}.", DebugName,
-                _ordersReceivedWhilePaused.Select(o => o.DebugName).Concatenate());
-            order = _ordersReceivedWhilePaused.First();
+            // if Cancel, then order that was canceled at minimum must still be present
+            D.Assert(_ordersReceivedWhilePaused.Count >= Constants.One);
+            //D.Log(ShowDebugLog, "{0} received the following order sequence from User during pause prior to Cancel: {1}.", DebugName,
+            //    _ordersReceivedWhilePaused.Select(o => o.DebugName).Concatenate());
+            _ordersReceivedWhilePaused.Pop();   // remove the order that was canceled
+            order = _ordersReceivedWhilePaused.Any() ? _ordersReceivedWhilePaused.First() : null;
         }
         else {
             order = lastOrderReceivedWhilePaused;

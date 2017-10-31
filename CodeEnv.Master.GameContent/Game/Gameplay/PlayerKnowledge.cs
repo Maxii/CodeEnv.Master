@@ -25,11 +25,29 @@ namespace CodeEnv.Master.GameContent {
     /// Holds the current knowledge of a player about items in the universe.
     /// What is known by the player about each item is available through the item from Reports.
     /// </summary>
-    public class PlayerKnowledge : IDisposable {
+    public class PlayerKnowledge : APropertyChangeTracking, IDisposable {
 
         private const string DebugNameFormat = "{0}'s {1}";
 
         public Player Owner { get; private set; }
+
+        public decimal __BankBalance { get { return 10000; } }
+
+        private OutputsYield _totalOutputs;
+        public OutputsYield TotalOutputs {
+            get { return _totalOutputs; }
+            private set { SetProperty<OutputsYield>(ref _totalOutputs, value, "TotalOutputs"); }
+        }
+
+        private ResourcesYield _totalResources;
+        public ResourcesYield TotalResources {
+            get { return _totalResources; }
+            private set { SetProperty<ResourcesYield>(ref _totalResources, value, "TotalResources"); }
+        }
+
+        public bool IsOperational { get; private set; }
+
+        #region Universe Awareness
 
         public IUniverseCenter_Ltd UniverseCenter { get; private set; }
 
@@ -302,6 +320,8 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        #endregion
+
         private string _debugName;
         public virtual string DebugName {
             get {
@@ -355,6 +375,12 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void InitializeValuesAndReferences() { }
+
+        internal void CommenceOperations() {
+            IsOperational = true;
+            RefreshTotalOutputs();
+            RefreshTotalResources();
+        }
 
         /// <summary>
         /// Returns true if the sector indicated by sectorID contains a System.
@@ -522,10 +548,24 @@ namespace CodeEnv.Master.GameContent {
 
         #region Event and Property Change Handlers
 
+        private void OwnerCmdOutputsChangedEventHandler(object sender, EventArgs e) {
+            RefreshTotalOutputs();
+        }
+
+        private void OwnerBaseCmdResourcesChangedEventHandler(object sender, EventArgs e) {
+            RefreshTotalResources();
+        }
+
         private void ItemDeathEventHandler(object sender, EventArgs e) {
             IMortalItem_Ltd deadItem = sender as IMortalItem_Ltd;
             D.AssertNotNull(deadItem);
             HandleItemDeath(deadItem);
+        }
+
+        private void CmdOwnerChangedEventHandler(object sender, EventArgs e) {
+            // Only Cmds owned by Owner were subscribed too
+            RefreshTotalOutputs();
+            RefreshTotalResources();
         }
 
         #endregion
@@ -585,9 +625,37 @@ namespace CodeEnv.Master.GameContent {
                 }
             }
 
-            command.deathOneShot += ItemDeathEventHandler;
+            bool isOwnedByOwner = Subscribe(command);
+            if (isOwnedByOwner && IsOperational) {
+                RefreshTotalOutputs();
+                RefreshTotalResources();
+            }
+
             return true;
         }
+
+        /// <summary>
+        /// Wires subscriptions for the provided cmd.
+        /// As a convenience, returns <c>true</c> if the cmd is owned by the Owner of this
+        /// Knowledge, <c>false</c> otherwise.
+        /// </summary>
+        /// <param name="cmd">The command.</param>
+        /// <returns></returns>
+        private bool Subscribe(IUnitCmd_Ltd cmd) {
+            cmd.deathOneShot += ItemDeathEventHandler;
+            var unitCmd = cmd as IUnitCmd;
+            if (unitCmd.Owner == Owner) {
+                unitCmd.ownerChanged += CmdOwnerChangedEventHandler;
+                unitCmd.unitOutputsChanged += OwnerCmdOutputsChangedEventHandler;
+                var unitBaseCmd = unitCmd as IUnitBaseCmd;
+                if (unitBaseCmd != null) {
+                    unitBaseCmd.resourcesChanged += OwnerBaseCmdResourcesChangedEventHandler;
+                }
+                return true;
+            }
+            return false;
+        }
+
 
         /// <summary>
         /// Removes the provided command from this player's knowledge. Throws
@@ -595,6 +663,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="command">The command.</param>
         internal void RemoveCommand(IUnitCmd_Ltd command) {
+            D.Assert(IsOperational);
             var isRemoved = _commands.Remove(command);
             isRemoved = isRemoved & _items.Remove(command);
             D.Assert(isRemoved);
@@ -631,7 +700,22 @@ namespace CodeEnv.Master.GameContent {
                     }
                 }
             }
-            command.deathOneShot -= ItemDeathEventHandler;
+
+            Unsubscribe(command);
+            RefreshTotalOutputs();
+            RefreshTotalResources();
+        }
+
+        private void Unsubscribe(IUnitCmd_Ltd cmd) {
+            cmd.deathOneShot -= ItemDeathEventHandler;
+            // Can't check if command is owned by Owner as it could be Removed due to an ownership change in which case
+            // Cmd.Owner would have already changed. Won't hurt to always remove.
+            cmd.ownerChanged -= CmdOwnerChangedEventHandler;
+            (cmd as IUnitCmd).unitOutputsChanged -= OwnerCmdOutputsChangedEventHandler;
+            var baseCmd = cmd as IUnitBaseCmd;
+            if (baseCmd != null) {
+                baseCmd.resourcesChanged -= OwnerBaseCmdResourcesChangedEventHandler;
+            }
         }
 
         /// <summary>
@@ -671,6 +755,14 @@ namespace CodeEnv.Master.GameContent {
             var isRemoved = _planetoids.Remove(deadPlanetoid);
             isRemoved = isRemoved & _items.Remove(deadPlanetoid);
             D.Assert(isRemoved, deadPlanetoid.DebugName);
+        }
+
+        private void RefreshTotalOutputs() {
+            TotalOutputs = OwnerCommands.Select(cmd => cmd.UnitOutputs).Sum();
+        }
+
+        private void RefreshTotalResources() {
+            TotalResources = OwnerBases.Select(cmd => cmd.Resources).Sum();
         }
 
         private void Cleanup() {

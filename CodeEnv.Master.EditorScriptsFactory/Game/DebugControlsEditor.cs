@@ -95,7 +95,7 @@ public class DebugControlsEditor : Editor {
                     NGUIEditorTools.SetLabelWidth(160F);
                     NGUIEditorTools.DrawProperty("All Assaults Successful", serializedObject, "_areAssaultsAlwaysSuccessful");
                     NGUIEditorTools.DrawProperty("Ordnance Move Tech", serializedObject, "_unityMoveTech");
-
+                    NGUIEditorTools.DrawProperty("AIUnitHud Buttons work", serializedObject, "_areAiUnitHudButtonsFunctional");
 
                     var equipmentPlanSP = NGUIEditorTools.DrawProperty("Equipment Plan", serializedObject, "_equipmentPlan");
                     EditorGUI.BeginDisabledGroup(equipmentPlanSP.enumValueIndex == 0);  // disabled if Random selected

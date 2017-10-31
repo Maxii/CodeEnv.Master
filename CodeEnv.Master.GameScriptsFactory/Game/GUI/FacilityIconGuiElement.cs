@@ -31,10 +31,6 @@ public class FacilityIconGuiElement : AUnitElementIconGuiElement {
         set { base.Element = value; }
     }
 
-    protected override AUnitElementDesign InitializeDesign() {
-        return GameManager.Instance.PlayersDesigns.GetUserFacilityDesign(Element.Data.DesignName);
-    }
-
     protected override void Cleanup() { }
 
 }

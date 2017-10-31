@@ -38,11 +38,7 @@ namespace CodeEnv.Master.GameContent {
 
         Capacity,   // TODO Not used and not clear what it means
 
-        //[System.Obsolete]
         Resources,
-        //CommonResources,
-        //StrategicResources,
-        //LuxuryResources,
 
         Health,
         MaxHitPoints,
@@ -53,10 +49,8 @@ namespace CodeEnv.Master.GameContent {
         CombatStance,
         AlertStatus,
 
-        Science,
-        Culture,
-        NetIncome,
-        Production,
+        Outputs,
+
         ConstructionCost,
 
         WeaponsRange,
@@ -85,12 +79,10 @@ namespace CodeEnv.Master.GameContent {
         UnitMaxHitPts,
         UnitCurrentHitPts,
         UnitHealth,
-        UnitScience,
-        UnitCulture,
-        UnitNetIncome,
         UnitFullSpeed,
         UnitMaxTurnRate,
-        UnitProduction,
+
+        UnitOutputs,
 
         // Unique
         Population,
@@ -104,8 +96,6 @@ namespace CodeEnv.Master.GameContent {
 
         // Formatting
         Separator,
-        Food,
-        UnitFood,
     }
 }
 

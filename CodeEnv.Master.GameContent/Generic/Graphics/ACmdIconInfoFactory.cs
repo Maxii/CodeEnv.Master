@@ -37,7 +37,7 @@ namespace CodeEnv.Master.GameContent {
 
         private static readonly WidgetPlacement Placement = WidgetPlacement.Above;
 
-        private static readonly Vector2 Size = new Vector2(40F, 40F);
+        private static readonly IntVector2 Size = new IntVector2(40, 40);
 
         protected abstract AtlasID AtlasID { get; }
 

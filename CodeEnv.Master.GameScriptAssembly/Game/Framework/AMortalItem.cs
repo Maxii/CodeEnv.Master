@@ -269,10 +269,6 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
 
     #endregion
 
-    #region Nested Classes
-
-    #endregion
-
     #region Debug
 
     public virtual void __SimulateAttacked() {
@@ -304,14 +300,14 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
         if (IsDead) {
             return false;
         }
-        if (!InfoAccessCntlr.HasAccessToInfo(attackingPlayer, ItemInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasIntelCoverageReqdToAccess(attackingPlayer, ItemInfoID.Owner)) {
             return false;
         }
         return IsWarAttackAllowedBy(attackingPlayer) || IsColdWarAttackAllowedBy(attackingPlayer);
     }
 
     public bool IsColdWarAttackAllowedBy(Player attackingPlayer) {
-        if (!InfoAccessCntlr.HasAccessToInfo(attackingPlayer, ItemInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasIntelCoverageReqdToAccess(attackingPlayer, ItemInfoID.Owner)) {
             return false;
         }
         if (Owner.IsRelationshipWith(attackingPlayer, DiplomaticRelationship.ColdWar)) {
@@ -327,7 +323,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
     }
 
     public bool IsWarAttackAllowedBy(Player attackingPlayer) {
-        if (!InfoAccessCntlr.HasAccessToInfo(attackingPlayer, ItemInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasIntelCoverageReqdToAccess(attackingPlayer, ItemInfoID.Owner)) {
             return false;
         }
         return Owner.IsAtWarWith(attackingPlayer);

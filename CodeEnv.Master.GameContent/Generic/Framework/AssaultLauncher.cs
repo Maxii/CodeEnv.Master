@@ -15,6 +15,7 @@
 ////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
+
     using System;
     using System.Collections.Generic;
     using System.Linq;
@@ -113,6 +114,9 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(IsOperational);
         }
 
+        public override bool AreSpecsEqual(AEquipmentStat otherStat) {
+            return Stat == otherStat as AssaultWeaponStat;
+        }
     }
 }
 

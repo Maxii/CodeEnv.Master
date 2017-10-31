@@ -28,15 +28,12 @@ namespace CodeEnv.Master.GameContent {
         protected override bool HasAccessToInfo_Comprehensive(ItemInfoID infoID, Player player) {
             switch (infoID) {
                 case ItemInfoID.CurrentCmdEffectiveness:
-                case ItemInfoID.UnitScience:
-                case ItemInfoID.UnitNetIncome:
-                case ItemInfoID.Resources:
-                case ItemInfoID.UnitCulture:
-                case ItemInfoID.UnitFood:
-                case ItemInfoID.UnitProduction:
+                // 10.18.17 Resources and Outputs now handled by Report without AccessCntlr
                 case ItemInfoID.Capacity:
                 case ItemInfoID.UnitCurrentHitPts:
                 case ItemInfoID.CurrentConstruction:
+                case ItemInfoID.Approval:
+                case ItemInfoID.Population:
                     return true;
                 default:
                     return false;

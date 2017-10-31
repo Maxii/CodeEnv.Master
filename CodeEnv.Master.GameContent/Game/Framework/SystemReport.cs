@@ -28,65 +28,104 @@ namespace CodeEnv.Master.GameContent {
         public int? Capacity { get; private set; }
 
         public ResourcesYield Resources { get; private set; }
-        ////public ResourceYield? Resources { get; private set; }
+
+        public OutputsYield Outputs { get; private set; }
 
         public IntVector3 SectorID { get; private set; }
+
+        public int? Population { get; private set; }
+
+        public Hero Hero { get; private set; }
 
         // 7.10.16 Eliminated usage of Star, Settlement and Planetoid Reports to calculate partial System values.
         // Access to Owner, Capacity and Resources values now determined (in SystemAccessController) by whether 
         // Star, Settlement and Planetoid AccessControllers provide access. Partial values can be calculated if not.
 
-        public SystemReport(SystemData data, Player player, ISystem_Ltd item)
-            : base(data, player, item) {
-        }
+        public SystemReport(SystemData data, Player player) : base(data, player) { }
 
         protected override void AssignValues(AItemData data) {
-            var sData = data as SystemData;
-            var accessCntlr = sData.InfoAccessCntlr;
+            var sysData = data as SystemData;
+            var accessCntlr = sysData.InfoAccessCntlr;
 
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Name)) {
-                Name = sData.Name;
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Name)) {
+                Name = sysData.Name;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Position)) {
-                Position = sData.Position;
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Position)) {
+                Position = sysData.Position;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.SectorID)) {
-                SectorID = sData.SectorID;
-            }
-
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Owner)) {    // true if any member has access
-                Owner = sData.Owner;
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.SectorID)) {
+                SectorID = sysData.SectorID;
             }
 
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Capacity)) {    // true if all members have access
-                Capacity = sData.Capacity;
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Owner)) {
+                // SystemAccessController grants access to owner if any System member has access 
+                Owner = sysData.Owner;
+            }
+
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Capacity)) {
+                Capacity = sysData.Capacity;
             }
             else {
-                Capacity = CalcPartialCapacity(sData.StarData, sData.AllPlanetoidData, sData.SettlementData);
+                Capacity = CalcCapacityFromSystemMembers(sysData);
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Resources)) {   // true if all members have access
-                Resources = sData.Resources;
+
+            if (sysData.IsAnyMembersIntelCoverageGreaterThanSystem(Player)) {
+                Resources = CalcResourcesFromSystemMembers(sysData);
             }
             else {
-                Resources = CalcPartialResources(sData.StarData, sData.AllPlanetoidData, sData.SettlementData);
+                Resources = AssessResources(sysData.Resources);
+            }
+
+            if (sysData.SettlementData != null) {
+                var settlementReport = sysData.SettlementData.GetReport(Player);
+                Outputs = settlementReport.UnitOutputs;
+                Population = settlementReport.Population;
+                Hero = settlementReport.Hero;
             }
         }
 
-        private int? CalcPartialCapacity(StarData starData, IEnumerable<PlanetoidData> planetoidsData, SettlementCmdData settlementData) {
-            int count = settlementData != null ? planetoidsData.Count() + 2 : planetoidsData.Count() + 1;
-            IList<int> sysMembersCapacity = new List<int>(count);
+        #region Calc Values from System Members
 
-            if (starData.InfoAccessCntlr.HasAccessToInfo(Player, ItemInfoID.Capacity)) {
-                sysMembersCapacity.Add(starData.Capacity);
+        /// <summary>
+        /// Calculates System resources from the reports of the star and planetoids.
+        /// <remarks>10.21.17 Previously calculated using AssessResources(StarData) and AssessResources(PlanetoidData)
+        /// which was erroneous as this Report's AssessResources() is for SystemData. Only Star Report's AssessResources()
+        /// can be used for StarData and likewise for PlanetoidData since the criteria used by AssessResources() can be overridden.</remarks>
+        /// </summary>
+        /// <param name="sysData">The system data.</param>
+        /// <returns></returns>
+        private ResourcesYield CalcResourcesFromSystemMembers(SystemData sysData) {
+            IList<ResourcesYield> sysMembersResources = new List<ResourcesYield>();
+
+            var starReport = sysData.StarData.GetReport(Player);
+            sysMembersResources.Add(starReport.Resources);
+
+            foreach (var pData in sysData.AllPlanetoidData) {
+                var pReport = pData.GetReport(Player);
+                sysMembersResources.Add(pReport.Resources);
             }
-            foreach (var pData in planetoidsData) {
+            // Settlements don't have inherent resources. Their Report.Resources value is the sum of the other members
+
+            if (sysMembersResources.Any()) {
+                return sysMembersResources.Sum();
+            }
+            return default(ResourcesYield);
+        }
+
+        private int? CalcCapacityFromSystemMembers(SystemData sysData) {
+            IList<int> sysMembersCapacity = new List<int>();
+
+            if (sysData.StarData.InfoAccessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Capacity)) {
+                sysMembersCapacity.Add(sysData.StarData.Capacity);
+            }
+            foreach (var pData in sysData.AllPlanetoidData) {
                 var accessCntlr = pData.InfoAccessCntlr;
-                if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Capacity)) {
+                if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Capacity)) {
                     sysMembersCapacity.Add(pData.Capacity);
                 }
             }
-            if (settlementData != null && settlementData.InfoAccessCntlr.HasAccessToInfo(Player, ItemInfoID.Capacity)) {
-                sysMembersCapacity.Add(settlementData.Capacity);
+            if (sysData.SettlementData != null && sysData.SettlementData.InfoAccessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Capacity)) {
+                sysMembersCapacity.Add(sysData.SettlementData.Capacity);
             }
 
             if (sysMembersCapacity.Any()) {
@@ -95,50 +134,7 @@ namespace CodeEnv.Master.GameContent {
             return null;
         }
 
-        private ResourcesYield CalcPartialResources(StarData starData, IEnumerable<PlanetoidData> planetoidsData, SettlementCmdData settlementData) {
-            int count = settlementData != null ? planetoidsData.Count() + 2 : planetoidsData.Count() + 1;
-            IList<ResourcesYield> sysMembersResources = new List<ResourcesYield>(count);
-
-            if (starData.InfoAccessCntlr.HasAccessToInfo(Player, ItemInfoID.Resources)) {
-                sysMembersResources.Add(starData.Resources);
-            }
-            foreach (var pData in planetoidsData) {
-                var accessCntlr = pData.InfoAccessCntlr;
-                if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Resources)) {
-                    sysMembersResources.Add(pData.Resources);
-                }
-            }
-            if (settlementData != null && settlementData.InfoAccessCntlr.HasAccessToInfo(Player, ItemInfoID.Resources)) {
-                sysMembersResources.Add(settlementData.Resources);
-            }
-
-            if (sysMembersResources.Any()) {
-                return sysMembersResources.Sum();
-            }
-            return default(ResourcesYield);
-        }
-        ////private ResourceYield? CalcPartialResources(StarData starData, IEnumerable<PlanetoidData> planetoidsData, SettlementCmdData settlementData) {
-        ////    int count = settlementData != null ? planetoidsData.Count() + 2 : planetoidsData.Count() + 1;
-        ////    IList<ResourceYield> sysMembersResources = new List<ResourceYield>(count);
-
-        ////    if (starData.InfoAccessCntlr.HasAccessToInfo(Player, ItemInfoID.Resources)) {
-        ////        sysMembersResources.Add(starData.Resources);
-        ////    }
-        ////    foreach (var pData in planetoidsData) {
-        ////        var accessCntlr = pData.InfoAccessCntlr;
-        ////        if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Resources)) {
-        ////            sysMembersResources.Add(pData.Resources);
-        ////        }
-        ////    }
-        ////    if (settlementData != null && settlementData.InfoAccessCntlr.HasAccessToInfo(Player, ItemInfoID.Resources)) {
-        ////        sysMembersResources.Add(settlementData.Resources);
-        ////    }
-
-        ////    if (sysMembersResources.Any()) {
-        ////        return sysMembersResources.Sum();
-        ////    }
-        ////    return null;
-        ////}
+        #endregion
 
         #region Archive
 

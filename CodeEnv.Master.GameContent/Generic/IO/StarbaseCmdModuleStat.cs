@@ -41,27 +41,40 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        public int StartingPopulation { get; private set; }
+
+        public float StartingApproval { get; private set; }
+
         public StarbaseCmdModuleStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass,
-            float pwrRqmt, decimal expense, float maxHitPts, float maxCmdStaffEffectiveness)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, maxHitPts, maxCmdStaffEffectiveness) {
+            float pwrRqmt, float expense, float maxHitPts, float maxCmdStaffEffectiveness, int refitBenefit, int startingPopulation, float startingApproval)
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, maxHitPts, maxCmdStaffEffectiveness, refitBenefit) {
+            StartingPopulation = startingPopulation;
+            Utility.ValidateForRange(startingApproval, Constants.ZeroPercent, Constants.OneHundredPercent);
+            StartingApproval = startingApproval;
         }
 
         public StarbaseCmdModuleStat(string name)
-            : this(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Basic CmdModule Stat", 0F, 0F, 0F, Constants.ZeroCurrency, 10,
-                  Constants.OneHundredPercent) {
+            : this(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Basic CmdModule Stat", 0F, 0F, 0F, Constants.ZeroF, 10,
+                  Constants.OneHundredPercent, 0, 100, Constants.OneHundredPercent) {
         }
-
 
         #region Object.Equals and GetHashCode Override
 
         public override int GetHashCode() {
-            unchecked { // http://dobrzanski.net/2010/09/13/csharp-gethashcode-cause-overflowexception/
-                return base.GetHashCode();
+            unchecked {
+                int hash = base.GetHashCode();
+                hash = hash * 31 + StartingPopulation.GetHashCode(); // 31 = another prime number
+                hash = hash * 31 + StartingApproval.GetHashCode();
+                return hash;
             }
         }
 
         public override bool Equals(object obj) {
-            return base.Equals(obj);
+            if (base.Equals(obj)) {
+                StarbaseCmdModuleStat oStat = (StarbaseCmdModuleStat)obj;
+                return oStat.StartingApproval == StartingApproval && oStat.StartingPopulation == StartingPopulation;
+            }
+            return false;
         }
 
         #endregion

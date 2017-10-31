@@ -33,6 +33,8 @@ namespace CodeEnv.Master.GameContent {
 
         IElementSensorRangeMonitor SRSensorMonitor { get; }
 
+        void HandleUncompletedRemovalFromConstructionQueue();
+
     }
 }
 

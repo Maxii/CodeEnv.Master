@@ -70,8 +70,8 @@ public class WorldTrackingSprite : AWorldTrackingWidget_ConstantSize, IWorldTrac
         enabled = false;
     }
 
-    protected virtual void SetDimensions(Vector2 size) {
-        Widget.SetDimensions(Mathf.RoundToInt(size.x), Mathf.RoundToInt(size.y));
+    protected virtual void SetDimensions(IntVector2 size) {
+        Widget.SetDimensions(size.x, size.y);
     }
 
     void Update() {

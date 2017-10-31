@@ -75,20 +75,15 @@ namespace CodeEnv.Master.GameContent {
                 {ItemInfoID.WeaponsRange, "WeaponsRange: {0}"},
                 {ItemInfoID.SensorRange, "SensorRange: {0}"},
 
-                {ItemInfoID.Science, "Science: {0}"},
-                {ItemInfoID.Culture, "Culture: {0}"},
-                {ItemInfoID.NetIncome, "NetIncome: {0}"},
-                {ItemInfoID.UnitScience, "UnitScience: {0}"},
-                {ItemInfoID.UnitCulture, "UnitCulture: {0}"},
-                {ItemInfoID.UnitNetIncome, "UnitNetIncome: {0}"},
-                {ItemInfoID.UnitFood, "UnitFood: {0}"},
-                {ItemInfoID.UnitProduction, "UnitProduction: {0}"},
+                {ItemInfoID.Outputs, "Outputs: {0}"},
+                {ItemInfoID.UnitOutputs, "UnitOutputs: {0}"},
+
                 {ItemInfoID.Approval, "Approval: {0}"},
 
                 {ItemInfoID.Capacity, "Capacity: {0}"},
+
                 {ItemInfoID.Resources, "[800080]Resources:[-] {0}"},
-                {ItemInfoID.Food, "Food: {0}"},
-                {ItemInfoID.Production, "Production: {0}"},
+
                 {ItemInfoID.OrbitalSpeed, "RelativeOrbitSpeed: {0}"},
                 {ItemInfoID.ConstructionCost, "ConstructionCost: {0}"},
                 {ItemInfoID.CurrentConstruction, "CurrentConstruction: {0}"},
@@ -115,18 +110,8 @@ namespace CodeEnv.Master.GameContent {
 
                 {ItemInfoID.Population, Constants.FormatInt_1DMin},
                 {ItemInfoID.Capacity, Constants.FormatInt_1DMin},
-                {ItemInfoID.Food, Constants.FormatFloat_0Dp},
-                {ItemInfoID.Production, Constants.FormatFloat_0Dp},
-                {ItemInfoID.ConstructionCost, Constants.FormatFloat_0Dp},
 
-                {ItemInfoID.Science, Constants.FormatFloat_0Dp},
-                {ItemInfoID.Culture, Constants.FormatFloat_0Dp},
-                {ItemInfoID.NetIncome, Constants.FormatCurrency_0Dp},
-                {ItemInfoID.UnitScience, Constants.FormatFloat_0Dp},
-                {ItemInfoID.UnitCulture, Constants.FormatFloat_0Dp},
-                {ItemInfoID.UnitNetIncome, Constants.FormatCurrency_0Dp},
-                {ItemInfoID.UnitFood, Constants.FormatFloat_0Dp},
-                {ItemInfoID.UnitProduction, Constants.FormatFloat_0Dp},
+                {ItemInfoID.ConstructionCost, Constants.FormatFloat_0Dp},
 
                 {ItemInfoID.CurrentHitPoints, Constants.FormatFloat_0Dp},
                 {ItemInfoID.MaxHitPoints, Constants.FormatFloat_0Dp},

@@ -97,6 +97,7 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
             }
             return transform.name + " (from transform)";
         }
+        set { Data.Name = value; }
     }
 
     public Vector3 Position { get { return transform.position; } }
@@ -234,7 +235,6 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
 
     private void NamePropChangedHandler() {
         HandleNameChanged();
-        ////transform.name = Name; // 12.5.16 Don't use DebugName
     }
 
     private void IsOperationalPropChangedHandler() {
@@ -444,7 +444,7 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
     public Player Owner_Debug { get { return Data.Owner; } }
 
     public bool TryGetOwner_Debug(Player requestingPlayer, out Player owner) {
-        if (InfoAccessCntlr.HasAccessToInfo(requestingPlayer, ItemInfoID.Owner)) {
+        if (InfoAccessCntlr.HasIntelCoverageReqdToAccess(requestingPlayer, ItemInfoID.Owner)) {
             owner = Data.Owner;
             return true;
         }
@@ -453,7 +453,7 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
     }
 
     public bool TryGetOwner(Player requestingPlayer, out Player owner) {
-        if (InfoAccessCntlr.HasAccessToInfo(requestingPlayer, ItemInfoID.Owner)) {
+        if (InfoAccessCntlr.HasIntelCoverageReqdToAccess(requestingPlayer, ItemInfoID.Owner)) {
             owner = Data.Owner;
             if (owner != TempGameValues.NoPlayer) {
                 D.Assert(owner.IsKnown(requestingPlayer), "{0}: How can {1} have access to Owner {2} without knowing them??? Frame: {3}."
@@ -466,7 +466,7 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
     }
 
     public bool IsOwnerAccessibleTo(Player player) {
-        return InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner);
+        return InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner);
     }
 
     #endregion

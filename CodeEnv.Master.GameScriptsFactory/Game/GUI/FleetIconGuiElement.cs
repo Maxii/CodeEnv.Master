@@ -49,7 +49,7 @@ public class FleetIconGuiElement : AUnitCmdIconGuiElement {
 
     protected override void AcquireAdditionalWidgets() {
         base.AcquireAdditionalWidgets();
-        _speedLabel = _topLevelIconWidget.GetComponentsInChildren<GuiElement>().Single(ge => ge.ElementID == GuiElementID.SpeedLabel).GetComponent<UILabel>();
+        _speedLabel = _topLevelIconWidget.GetComponentsInChildren<GuiElement>().Single(ge => ge.ElementID == GuiElementID.Speed).GetComponent<UILabel>();
     }
 
     protected override void Show(GameColor color = GameColor.White) {

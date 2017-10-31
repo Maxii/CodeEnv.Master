@@ -32,7 +32,7 @@ namespace CodeEnv.Master.GameContent {
 
         public event EventHandler topographyChanged;
 
-        public Priority HQPriority { get; private set; }
+        public Priority HQPriority { get { return Design.HQPriority; } }
 
         public IList<AWeapon> Weapons { get { return HullEquipment.Weapons; } }
         public IList<ElementSensor> Sensors { get; private set; }
@@ -51,8 +51,6 @@ namespace CodeEnv.Master.GameContent {
                 return DebugNameFormat.Inject(Constants.Empty, UnitName, Name);
             }
         }
-
-        public string DesignName { get; private set; }
 
         private AlertStatus _alertStatus;
         public AlertStatus AlertStatus {
@@ -93,35 +91,17 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<RangeDistance>(ref _shieldRange, value, "ShieldRange"); }
         }
 
-        private float _science;
-        public float Science {
-            get { return _science; }
-            set { SetProperty<float>(ref _science, value, "Science"); }
+        private OutputsYield _outputs;
+        public OutputsYield Outputs {
+            get { return _outputs; }
+            set { SetProperty<OutputsYield>(ref _outputs, value, "Outputs"); }
         }
 
-        private float _culture;
-        public float Culture {
-            get { return _culture; }
-            set { SetProperty<float>(ref _culture, value, "Culture"); }
-        }
-
-        private float _constructionCost;
-        public float ConstructionCost {
-            get { return _constructionCost; }
-            set { SetProperty<float>(ref _constructionCost, value, "ConstructionCost"); }
-        }
-
-        private decimal _income;
-        public decimal Income {
-            get { return _income; }
-            set { SetProperty<decimal>(ref _income, value, "Income"); }
-        }
-
-        private decimal _expense;
-        public decimal Expense {
-            get { return _expense; }
-            set { SetProperty<decimal>(ref _expense, value, "Expense"); }
-        }
+        /// <summary>
+        /// The current design of this Element.
+        /// <remarks>Public set as must be changeable to the intended refit design from ExecuteRefitOrder state.</remarks>
+        /// </summary>
+        public AUnitElementDesign Design { get; set; }
 
         /// <summary>
         /// The mass of this Element.
@@ -144,23 +124,18 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="activeCMs">The active countermeasures.</param>
         /// <param name="sensors">The sensors.</param>
         /// <param name="shieldGenerators">The shield generators.</param>
-        /// <param name="hqPriority">The HQ priority.</param>
-        /// <param name="constructionCost">The construction cost.</param>
-        /// <param name="designName">Name of the design.</param>
+        /// <param name="design">The design.</param>
         public AUnitElementData(IUnitElement element, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, AHullEquipment hullEquipment,
             IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<ElementSensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators,
-            Priority hqPriority, float constructionCost, string designName)
+            AUnitElementDesign design)
             : base(element, owner, hullEquipment.MaxHitPoints, passiveCMs) {
             HullEquipment = hullEquipment;
             Mass = hullEquipment.Mass + hullEquipment.Weapons.Sum(w => w.Mass) + activeCMs.Sum(cm => cm.Mass) + sensors.Sum(s => s.Mass) + passiveCMs.Sum(cm => cm.Mass) + shieldGenerators.Sum(gen => gen.Mass);
-            Expense = hullEquipment.Expense + hullEquipment.Weapons.Sum(w => w.Expense) + activeCMs.Sum(cm => cm.Expense) + sensors.Sum(s => s.Expense) + passiveCMs.Sum(cm => cm.Expense) + shieldGenerators.Sum(gen => gen.Expense);
-            ConstructionCost = constructionCost;
             InitializeWeapons();
             Initialize(sensors);
             Initialize(activeCMs);
             Initialize(shieldGenerators);
-            HQPriority = hqPriority;
-            DesignName = designName;
+            Design = design;
         }
 
         private void InitializeWeapons() {
@@ -219,10 +194,152 @@ namespace CodeEnv.Master.GameContent {
             RecalcSensorRange();
         }
 
+        #region Initial Construction and Refitting
+
+        public OutputsYield PrepareForInitialConstruction() {
+            // store the values that will need to be restored upon completion
+            var outputsStorage = Outputs;
+
+            // change the values to what they should be during construction
+            DamageEquipment(Constants.OneHundredPercent);
+            Outputs *= TempGameValues.UnderConstructionValuesScaler;
+            // All other Element-specific Properties are changed as a result of DamageEquipment
+            float maxAllowedCurrentHitPts = MaxHitPoints * TempGameValues.UnderConstructionValuesScaler;
+            CurrentHitPoints = CurrentHitPoints < maxAllowedCurrentHitPts ? CurrentHitPoints : maxAllowedCurrentHitPts;
+
+            return outputsStorage;
+        }
+
+        public virtual void HandleConstructionComplete() {
+            // Outputs regenerated from equipment in derived classes
+            RemoveDamageFromAllEquipment();
+            CurrentHitPoints = MaxHitPoints;
+        }
+
+        public RefitStorage PrepareForRefit() {
+            // store the values that will need to be restored if Refit is canceled
+            var refitStorage = new RefitStorage(Design, CurrentHitPoints);
+            // damage the equipment and store what was damaged
+            var damagedEquipment = DamageEquipment(Constants.OneHundredPercent);
+            refitStorage.EquipmentDamaged = damagedEquipment;
+            // Outputs will be regenerated from equipment in derived classes if canceled
+
+            // change the values to what they should be during Refit
+            Outputs *= TempGameValues.UnderConstructionValuesScaler;
+            // All other Element-specific Properties are changed as a result of DamageEquipment
+            float maxAllowedCurrentHitPts = MaxHitPoints * TempGameValues.UnderConstructionValuesScaler;
+            CurrentHitPoints = CurrentHitPoints < maxAllowedCurrentHitPts ? CurrentHitPoints : maxAllowedCurrentHitPts;
+            return refitStorage;
+        }
+
+        public virtual void HandleRefitCanceled(RefitStorage valuesBeforeRefit) {
+            // UNCLEAR currently restoring previous values, but consider leaving most as is requiring repair
+            Design = valuesBeforeRefit.Design;
+            CurrentHitPoints = valuesBeforeRefit.CurrentHitPts;
+            valuesBeforeRefit.EquipmentDamaged.RestoreUndamagedState();
+            // Outputs regenerated from equipment in derived classes
+        }
+
+        // Refit completion is handled by creating an upgraded UnitElementItem
+
+        /// <summary>
+        /// Damages non-hull equipment including CMs, ShieldGenerators, Weapons and Sensors. 
+        /// The equipment damaged is determined by 1) whether its damageable, 2) how many of each type are kept 
+        /// undamaged to simulate a minimal defense while being constructed or refitted, and 3) the damagePercent.
+        /// <remarks>This approach allows a degree of control on the availability of equipment
+        /// as refit proceeds and doesn't interfere with use of operational equipment when AlertLevel changes.</remarks>
+        /// </summary>
+        /// <param name="damagePercent">The damage percent.</param>
+        public EquipmentDamagedFromRefit DamageEquipment(float damagePercent) {
+            Utility.ValidateForRange(damagePercent, Constants.ZeroPercent, Constants.OneHundredPercent);
+
+            var equipDamagedFromRefit = new EquipmentDamagedFromRefit();
+            var damageablePCMs = PassiveCountermeasures.Where(pcm => pcm.IsDamageable).Skip(1);
+            var pCMsToBeDamaged = damageablePCMs.Where(pcm => RandomExtended.Chance(damagePercent));
+            equipDamagedFromRefit.PassiveCMs = pCMsToBeDamaged;
+
+            var damageableACMs = ActiveCountermeasures.Where(acm => acm.IsDamageable).Skip(1);
+            var aCMsToBeDamaged = damageableACMs.Where(acm => RandomExtended.Chance(damagePercent));
+            equipDamagedFromRefit.ActiveCMs = aCMsToBeDamaged;
+
+            var damageableSGs = ShieldGenerators.Where(sg => sg.IsDamageable).Skip(1);
+            var sGsToBeDamaged = damageableSGs.Where(sg => RandomExtended.Chance(damagePercent));
+            equipDamagedFromRefit.ShieldGenerators = sGsToBeDamaged;
+
+            var damageableWeaps = Weapons.Where(w => w.IsDamageable).Skip(1);
+            var weapsToBeDamaged = damageableWeaps.Where(weap => RandomExtended.Chance(damagePercent));
+            equipDamagedFromRefit.Weapons = weapsToBeDamaged;
+
+            var damageableSensors = Sensors.Where(s => s.IsDamageable).Skip(1);
+            var sensorsToBeDamaged = damageableSensors.Where(s => RandomExtended.Chance(damagePercent));
+            equipDamagedFromRefit.Sensors = sensorsToBeDamaged;
+
+            RemoveDamageFromAllEquipment();
+            pCMsToBeDamaged.ForAll(pcm => pcm.IsDamaged = true);
+            aCMsToBeDamaged.ForAll(acm => acm.IsDamaged = true);
+            sGsToBeDamaged.ForAll(sg => sg.IsDamaged = true);
+            weapsToBeDamaged.ForAll(w => w.IsDamaged = true);
+            sensorsToBeDamaged.ForAll(s => s.IsDamaged = true);
+
+            return equipDamagedFromRefit;
+        }
+
+        public void RemoveDamageFromAllEquipment() {
+            PassiveCountermeasures.Where(cm => cm.IsDamageable).ForAll(cm => cm.IsDamaged = false);
+            ActiveCountermeasures.Where(cm => cm.IsDamageable).ForAll(cm => cm.IsDamaged = false);
+            ShieldGenerators.Where(gen => gen.IsDamageable).ForAll(gen => gen.IsDamaged = false);
+            Weapons.Where(w => w.IsDamageable).ForAll(w => w.IsDamaged = false);
+            Sensors.Where(s => s.IsDamageable).ForAll(s => s.IsDamaged = false);
+        }
+
+        #endregion
+
         #region Event and Property Change Handlers
 
         private void AlertStatusPropChangedHandler() {
             HandleAlertStatusChanged();
+        }
+
+        private void SensorIsDamagedChangedEventHandler(object sender, EventArgs e) {
+            HandleSensorIsDamagedChanged(sender as ElementSensor);
+        }
+
+        private void WeaponIsDamagedChangedEventHandler(object sender, EventArgs e) {
+            HandleWeaponIsDamagedChanged(sender as AWeapon);
+        }
+
+        private void ShieldGeneratorIsDamagedChangedEventHandler(object sender, EventArgs e) {
+            HandleShieldGeneratorIsDamagedChanged(sender as ShieldGenerator);
+        }
+
+        private void OnTopographyChanged() {
+            if (topographyChanged != null) {
+                topographyChanged(this, EventArgs.Empty);
+            }
+        }
+
+        #endregion
+
+        private void HandleSensorIsDamagedChanged(ElementSensor sensor) {
+            D.Log(ShowDebugLog, "{0}'s {1} is {2}.", DebugName, sensor.Name, sensor.IsDamaged ? "damaged" : "repaired");
+            RecalcSensorRange();
+        }
+
+        private void HandleWeaponIsDamagedChanged(AWeapon weapon) {
+            D.Log(ShowDebugLog, "{0}'s {1} is {2}.", DebugName, weapon.Name, weapon.IsDamaged ? "damaged" : "repaired");
+            RecalcWeaponsRange();
+            RecalcOffensiveStrength();
+        }
+
+        private void HandleShieldGeneratorIsDamagedChanged(ShieldGenerator sGen) {
+            D.Log(ShowDebugLog, "{0}'s {1} is {2}.", DebugName, sGen.Name, sGen.IsDamaged ? "damaged" : "repaired");
+            RecalcShieldRange();
+            RecalcDefensiveValues();
+        }
+
+        protected override void HandleTopographyChanged() {
+            base.HandleTopographyChanged();
+            OnTopographyChanged();
         }
 
         private void HandleAlertStatusChanged() {
@@ -248,48 +365,6 @@ namespace CodeEnv.Master.GameContent {
             }
             // sensors stay activated to allow detection of enemy proximity by Cmd which determines AlertStatus
         }
-
-        private void SensorIsDamagedChangedEventHandler(object sender, EventArgs e) {
-            HandleSensorIsDamagedChanged(sender as ElementSensor);
-        }
-
-        private void HandleSensorIsDamagedChanged(ElementSensor sensor) {
-            D.Log(ShowDebugLog, "{0}'s {1} is {2}.", DebugName, sensor.Name, sensor.IsDamaged ? "damaged" : "repaired");
-            RecalcSensorRange();
-        }
-
-        private void WeaponIsDamagedChangedEventHandler(object sender, EventArgs e) {
-            HandleWeaponIsDamagedChanged(sender as AWeapon);
-        }
-
-        private void HandleWeaponIsDamagedChanged(AWeapon weapon) {
-            D.Log(ShowDebugLog, "{0}'s {1} is {2}.", DebugName, weapon.Name, weapon.IsDamaged ? "damaged" : "repaired");
-            RecalcWeaponsRange();
-            RecalcOffensiveStrength();
-        }
-
-        private void ShieldGeneratorIsDamagedChangedEventHandler(object sender, EventArgs e) {
-            HandleShieldGeneratorIsDamagedChanged(sender as ShieldGenerator);
-        }
-
-        private void HandleShieldGeneratorIsDamagedChanged(ShieldGenerator sGen) {
-            D.Log(ShowDebugLog, "{0}'s {1} is {2}.", DebugName, sGen.Name, sGen.IsDamaged ? "damaged" : "repaired");
-            RecalcShieldRange();
-            RecalcDefensiveValues();
-        }
-
-        protected override void HandleTopographyChanged() {
-            base.HandleTopographyChanged();
-            OnTopographyChanged();
-        }
-
-        private void OnTopographyChanged() {
-            if (topographyChanged != null) {
-                topographyChanged(this, EventArgs.Empty);
-            }
-        }
-
-        #endregion
 
         private void RecalcSensorRange() {
             var undamagedSRSensors = Sensors.Where(s => !s.IsDamaged);
@@ -352,6 +427,45 @@ namespace CodeEnv.Master.GameContent {
             ActiveCountermeasures.ForAll(cm => cm.isDamagedChanged -= CountermeasureIsDamagedChangedEventHandler);
             ShieldGenerators.ForAll(gen => gen.isDamagedChanged -= ShieldGeneratorIsDamagedChangedEventHandler);
         }
+
+        #region Nested Classes
+
+        public class EquipmentDamagedFromRefit {
+
+            public IEnumerable<PassiveCountermeasure> PassiveCMs { get; set; }
+            public IEnumerable<ActiveCountermeasure> ActiveCMs { get; set; }
+            public IEnumerable<ShieldGenerator> ShieldGenerators { get; set; }
+            public IEnumerable<AWeapon> Weapons { get; set; }
+            public IEnumerable<ElementSensor> Sensors { get; set; }
+
+            public EquipmentDamagedFromRefit() { }
+
+            public void RestoreUndamagedState() {
+                PassiveCMs.ForAll(cm => cm.IsDamaged = false);
+                ActiveCMs.ForAll(cm => cm.IsDamaged = false);
+                ShieldGenerators.ForAll(sg => sg.IsDamaged = false);
+                Weapons.ForAll(w => w.IsDamaged = false);
+                Sensors.ForAll(s => s.IsDamaged = false);
+            }
+        }
+
+        public class RefitStorage {
+
+            public AUnitElementDesign Design { get; private set; }
+
+            // No need for Outputs as it can be regenerated by Data from equipment
+
+            public float CurrentHitPts { get; private set; }
+
+            public EquipmentDamagedFromRefit EquipmentDamaged { get; set; }
+
+            public RefitStorage(AUnitElementDesign design, float currentHitPts) {
+                Design = design;
+                CurrentHitPts = currentHitPts;
+            }
+        }
+
+        #endregion
 
     }
 }

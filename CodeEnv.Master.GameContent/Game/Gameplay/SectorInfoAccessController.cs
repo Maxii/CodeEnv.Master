@@ -36,7 +36,7 @@ namespace CodeEnv.Master.GameContent {
         protected override bool HasAccessToInfo_Broad(ItemInfoID infoID, Player player) {
             switch (infoID) {
                 case ItemInfoID.Capacity:
-                case ItemInfoID.Resources:
+                    // 10.13.17 Removed Resources as Report now handles Resources without AccessCntlr
                     return true;
                 default:
                     return false;
@@ -61,7 +61,7 @@ namespace CodeEnv.Master.GameContent {
                 case ItemInfoID.Owner:
                     // If gets here, Sector IntelCoverage is Basic, but a member could be allowing access.
                     SectorData sectorData = _data as SectorData;
-                    bool systemHasAccess = sectorData.SystemData != null ? sectorData.SystemData.InfoAccessCntlr.HasAccessToInfo(player, infoID) : false;
+                    bool systemHasAccess = sectorData.SystemData != null ? sectorData.SystemData.InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, infoID) : false;
                     if (systemHasAccess) {
                         return true;
                     }

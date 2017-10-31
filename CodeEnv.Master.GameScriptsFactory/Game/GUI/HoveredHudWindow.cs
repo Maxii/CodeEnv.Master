@@ -26,7 +26,7 @@ using UnityEngine;
 /// <summary>
 /// HudWindow displaying non-interactable info about the object the mouse is hovering over.
 /// <remarks>The current version is located on the left side of the screen and moves itself to avoid interference 
-/// with the fixed InteractableHudWindow.</remarks>
+/// with the fixed InteractibleHudWindow.</remarks>
 /// </summary>
 public class HoveredHudWindow : AHudWindow<HoveredHudWindow>, IHoveredHudWindow {
 
@@ -53,7 +53,7 @@ public class HoveredHudWindow : AHudWindow<HoveredHudWindow>, IHoveredHudWindow 
     protected override void Subscribe() {
         base.Subscribe();
         _subscriptions = new List<IDisposable>();
-        _subscriptions.Add(InteractableHudWindow.Instance.SubscribeToPropertyChanged<InteractableHudWindow, bool>(iHud => iHud.IsShowing, InteractableHudIsShowingPropChangedHandler));
+        _subscriptions.Add(InteractibleHudWindow.Instance.SubscribeToPropertyChanged<InteractibleHudWindow, bool>(iHud => iHud.IsShowing, InteractableHudIsShowingPropChangedHandler));
     }
 
     public void Show(StringBuilder sb) {
@@ -74,13 +74,13 @@ public class HoveredHudWindow : AHudWindow<HoveredHudWindow>, IHoveredHudWindow 
     public void Show(FormID formID, AUnitMemberDesign design) {
         //D.Log("{0}.Show({1}) called.", DebugName, design.DebugName);
         var form = PrepareForm(formID);
-        (form as AHoveredHudDesignForm).Design = design;
+        (form as ADesignHoveredHudForm).Design = design;
         ShowForm(form);
     }
 
     public void Show(FormID formID, AEquipmentStat stat) {
         var form = PrepareForm(formID);
-        (form as AHoveredHudEquipmentForm).EquipmentStat = stat;
+        (form as AEquipmentHoveredHudForm).EquipmentStat = stat;
         ShowForm(form);
     }
 
@@ -94,9 +94,9 @@ public class HoveredHudWindow : AHudWindow<HoveredHudWindow>, IHoveredHudWindow 
         //D.Log("{0}.PositionWindow() called.", DebugName);
         Vector3 intendedLocalPosition = _startingLocalPosition;
         if (_showAboveInteractableHud) {
-            if (InteractableHudWindow.Instance.IsShowing) {
-                var visibleInteractableHudLocalCorners = InteractableHudWindow.Instance.LocalCorners;
-                //D.Log("{0} local corners: {1}.", typeof(InteractableHudWindow).Name, visibleInteractableHudLocalCorners.Concatenate());
+            if (InteractibleHudWindow.Instance.IsShowing) {
+                var visibleInteractableHudLocalCorners = InteractibleHudWindow.Instance.LocalCorners;
+                //D.Log("{0} local corners: {1}.", typeof(InteractibleHudWindow).Name, visibleInteractableHudLocalCorners.Concatenate());
                 Vector3 visibleInteractableHudTopLeftCornerLocalPosition = visibleInteractableHudLocalCorners[1];
                 intendedLocalPosition = _startingLocalPosition + visibleInteractableHudTopLeftCornerLocalPosition;
             }

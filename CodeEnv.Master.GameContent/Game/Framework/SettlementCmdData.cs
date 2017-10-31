@@ -33,28 +33,10 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<SettlementCategory>(ref _category, value, "Category"); }
         }
 
-        private int _population;
-        public int Population {
-            get { return _population; }
-            set { SetProperty<int>(ref _population, value, "Population"); }
-        }
-
         private int _capacity;
         public int Capacity {
-            get { return ParentSystemData.Capacity; }
+            get { return _capacity; }
             private set { SetProperty<int>(ref _capacity, value, "Capacity"); }
-        }
-
-        private ResourcesYield _resources;
-        public ResourcesYield Resources {
-            get { return _resources; }
-            private set { SetProperty<ResourcesYield>(ref _resources, value, "Resources"); }
-        }
-
-        private float _approval;
-        public float Approval {
-            get { return _approval; }
-            set { SetProperty<float>(ref _approval, value, "Approval", ApprovalPropChangedHandler); }
         }
 
         private SystemData _parentSystemData;
@@ -64,6 +46,16 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public new SettlementInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as SettlementInfoAccessController; } }
+
+        private SettlementPublisher _publisher;
+        public SettlementPublisher Publisher {
+            get { return _publisher = _publisher ?? new SettlementPublisher(this); }
+        }
+
+        public new SettlementCmdDesign CmdDesign {
+            get { return base.CmdDesign as SettlementCmdDesign; }
+            set { base.CmdDesign = value; }
+        }
 
         private IList<IDisposable> _systemDataSubscriptions = new List<IDisposable>(2);
 
@@ -78,10 +70,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="sensors">The MR and LR sensors for this UnitCmd.</param>
         /// <param name="ftlDampener">The FTL dampener.</param>
         /// <param name="cmdStat">The stat.</param>
-        /// <param name="designName">Name of the design.</param>
+        /// <param name="cmdDesign">The command design.</param>
         public SettlementCmdData(ISettlementCmd settlementCmd, Player owner, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener,
-            SettlementCmdModuleStat cmdStat, string designName)
-                : this(settlementCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), sensors, ftlDampener, cmdStat, designName) {
+           SettlementCmdModuleStat cmdStat, SettlementCmdDesign cmdDesign)
+               : this(settlementCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), sensors, ftlDampener, cmdStat, cmdDesign) {
         }
 
         /// <summary>
@@ -93,10 +85,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="sensors">The MR and LR sensors for this UnitCmd.</param>
         /// <param name="ftlDampener">The FTL dampener.</param>
         /// <param name="cmdStat">The stat.</param>
-        /// <param name="designName">Name of the design.</param>
+        /// <param name="cmdDesign">The command design.</param>
         public SettlementCmdData(ISettlementCmd settlementCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs,
-            IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, SettlementCmdModuleStat cmdStat, string designName)
-                : base(settlementCmd, owner, passiveCMs, sensors, ftlDampener, cmdStat, designName) {
+            IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, SettlementCmdModuleStat cmdStat, SettlementCmdDesign cmdDesign)
+            : base(settlementCmd, owner, passiveCMs, sensors, ftlDampener, cmdStat, cmdDesign) {
             Population = cmdStat.StartingPopulation;
             Approval = cmdStat.StartingApproval;
         }
@@ -143,14 +135,12 @@ namespace CodeEnv.Master.GameContent {
             return SettlementCategory.None;
         }
 
+        public SettlementCmdReport GetReport(Player player) { return Publisher.GetReport(player); }
+
         #region Event and Property Change Handlers
 
         private void ParentSystemDataPropSetHandler() {
             SubscribeToSystemDataProperties();
-        }
-
-        private void ApprovalPropChangedHandler() {
-            Utility.ValidateForRange(Approval, Constants.ZeroPercent, Constants.OneHundredPercent);
         }
 
         private void SystemCapacityPropChangedHandler() {

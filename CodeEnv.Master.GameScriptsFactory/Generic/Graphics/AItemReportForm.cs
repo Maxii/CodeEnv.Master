@@ -32,24 +32,29 @@ public abstract class AItemReportForm : AInfoDisplayForm {
         get { return _report; }
         set {
             D.AssertNull(_report);  // occurs only once between Resets
-            SetProperty<AItemReport>(ref _report, value, "Report");
+            _report = value;
+            ReportPropSetHandler();
         }
     }
 
-    public sealed override void PopulateValues() {
+    public override void PopulateValues() {
         D.AssertNotNull(Report);
         AssignValuesToMembers();
     }
 
-    protected override void AssignValueToNameGuiElement() {
-        base.AssignValueToNameGuiElement();
-        _nameLabel.text = Report.Name != null ? Report.Name : Unknown;
+    #region Event and Property Change Handlers
+
+    private void ReportPropSetHandler() {
+        HandleReportPropSet();
     }
 
-    protected override void AssignValueToOwnerGuiElement() {
-        base.AssignValueToOwnerGuiElement();
-        _ownerGuiElement.Owner = Report.Owner;
-    }
+    #endregion
+
+    /// <summary>
+    /// Hook for derived classes after Report is set but before values are assigned to members.
+    /// <remarks>Default does nothing.</remarks>
+    /// </summary>
+    protected virtual void HandleReportPropSet() { }
 
     protected override void ResetForReuse_Internal() {
         base.ResetForReuse_Internal();

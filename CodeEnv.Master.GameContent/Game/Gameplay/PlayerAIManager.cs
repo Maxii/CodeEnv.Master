@@ -20,6 +20,7 @@ namespace CodeEnv.Master.GameContent {
     using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common;
+    using Common.LocalResources;
     using MoreLinq;
     using UnityEngine;
 
@@ -31,6 +32,13 @@ namespace CodeEnv.Master.GameContent {
         private const string DebugNameFormat = "{0}'s {1}";
 
         /// <summary>
+        /// Occurs when this player's awareness of a Cmd has changed.
+        /// <remarks>This event will not fire when the player loses awareness because of the death 
+        /// of a mortalItem. Knowledge of a mortalItem's death should be handled by subscribing to its deathOneShot event.</remarks>
+        /// </summary>
+        public event EventHandler<AwareChgdEventArgs> awareChgd_Cmd;
+
+        /// <summary>
         /// Occurs when this player's awareness of a fleet has changed.
         /// <remarks>This event will not fire when the player loses awareness because of the death 
         /// of a mortalItem. Knowledge of a mortalItem's death should be handled by subscribing to its deathOneShot event.</remarks>
@@ -38,18 +46,18 @@ namespace CodeEnv.Master.GameContent {
         public event EventHandler<AwareChgdEventArgs> awareChgd_Fleet;
 
         /// <summary>
-        /// Occurs when this player's awareness of a ship has changed.
-        /// <remarks>This event will not fire when the player loses awareness because of the death 
-        /// of a mortalItem. Knowledge of a mortalItem's death should be handled by subscribing to its deathOneShot event.</remarks>
-        /// </summary>
-        public event EventHandler<AwareChgdEventArgs> awareChgd_Ship;
-
-        /// <summary>
         /// Occurs when this player's awareness of a base has changed.
         /// <remarks>This event will not fire when the player loses awareness because of the death 
         /// of a mortalItem. Knowledge of a mortalItem's death should be handled by subscribing to its deathOneShot event.</remarks>
         /// </summary>
         public event EventHandler<AwareChgdEventArgs> awareChgd_Base;
+
+        /// <summary>
+        /// Occurs when this player's awareness of a ship has changed.
+        /// <remarks>This event will not fire when the player loses awareness because of the death 
+        /// of a mortalItem. Knowledge of a mortalItem's death should be handled by subscribing to its deathOneShot event.</remarks>
+        /// </summary>
+        public event EventHandler<AwareChgdEventArgs> awareChgd_Ship;
 
         /// <summary>
         /// Occurs when this player's awareness of a facility has changed.
@@ -74,8 +82,6 @@ namespace CodeEnv.Master.GameContent {
                 return _debugName;
             }
         }
-
-        public decimal __PlayerBankBalance { get { return 10000; } }
 
         public bool IsOperational { get; private set; }
 
@@ -122,6 +128,7 @@ namespace CodeEnv.Master.GameContent {
 
         public void CommenceOperations() {
             IsOperational = true;
+            Knowledge.CommenceOperations();
 
             if (_debugControls.IsAutoRelationsChangeEnabled) {
                 __InitializeAutoRelationsChgSystem();
@@ -533,6 +540,7 @@ namespace CodeEnv.Master.GameContent {
                                 D.Assert(fleetCmd.IsOperational);   // 4.20.17 This is a revert to None so must be operational
                                 Knowledge.RemoveCommand(fleetCmd);
                                 OnAwareChgd_Fleet(fleetCmd);
+                                OnAwareChgd_Cmd(cmd);
                                 return;
                             }
                         }
@@ -546,6 +554,7 @@ namespace CodeEnv.Master.GameContent {
                                 D.Assert(cmd is IUnitBaseCmd_Ltd);
                                 OnAwareChgd_Base(cmd as IUnitBaseCmd_Ltd);
                             }
+                            OnAwareChgd_Cmd(cmd);
                         }
                     }
                     else {
@@ -657,6 +666,14 @@ namespace CodeEnv.Master.GameContent {
             Knowledge.OwnerCommands.ForAll(cmd => cmd.HandleColdWarEnemyEngagementPolicyChanged());
         }
 
+        private void OnAwareChgd_Cmd(IUnitCmd_Ltd cmd) {
+            if (awareChgd_Cmd != null) {
+                D.Assert(cmd.IsOperational, cmd.DebugName);
+                D.AssertNotEqual(cmd.Owner_Debug, Owner);
+                awareChgd_Cmd(this, new AwareChgdEventArgs(cmd));
+            }
+        }
+
         private void OnAwareChgd_Fleet(IFleetCmd_Ltd fleet) {
             if (awareChgd_Fleet != null) {
                 D.Assert(fleet.IsOperational, fleet.DebugName);
@@ -669,19 +686,19 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private void OnAwareChgd_Ship(IShip_Ltd ship) {
-            if (awareChgd_Ship != null) {
-                D.Assert(ship.IsOperational, ship.DebugName);
-                D.AssertNotEqual(ship.Owner_Debug, Owner);
-                awareChgd_Ship(this, new AwareChgdEventArgs(ship));
-            }
-        }
-
         private void OnAwareChgd_Base(IUnitBaseCmd_Ltd baseCmd) {
             if (awareChgd_Base != null) {
                 D.Assert(baseCmd.IsOperational, baseCmd.DebugName);
                 D.AssertNotEqual(baseCmd.Owner_Debug, Owner);
                 awareChgd_Base(this, new AwareChgdEventArgs(baseCmd));
+            }
+        }
+
+        private void OnAwareChgd_Ship(IShip_Ltd ship) {
+            if (awareChgd_Ship != null) {
+                D.Assert(ship.IsOperational, ship.DebugName);
+                D.AssertNotEqual(ship.Owner_Debug, Owner);
+                awareChgd_Ship(this, new AwareChgdEventArgs(ship));
             }
         }
 
@@ -1214,6 +1231,30 @@ namespace CodeEnv.Master.GameContent {
             return Knowledge.__GetItemsOwnedBy(player);
         }
 
+        /// <summary>
+        /// Debug placeholder for determining whether the player has the proper technology enabling awareness of the provided ResourceID.
+        /// <remarks>Default returns true. Currently intended to allow testing for certain strategic and luxury resources.</remarks>
+        /// </summary>
+        /// <param name="resID">The resource identifier.</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotImplementedException"></exception>
+        public bool __IsTechSufficientForAwarenessOf(ResourceID resID) {
+            switch (resID) {
+                case ResourceID.Organics:
+                case ResourceID.Particulates:
+                case ResourceID.Energy:
+                    return true;
+                case ResourceID.Titanium:
+                    return true;    // UNDONE
+                case ResourceID.Duranium:
+                    return true;   // UNDONE
+                case ResourceID.Unobtanium:
+                    return true;   // UNDONE
+                case ResourceID.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(resID));
+            }
+        }
 
         #endregion
 

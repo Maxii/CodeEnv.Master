@@ -50,13 +50,13 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public Vector2 Size { get; private set; }
+        public IntVector2 Size { get; private set; }
 
         public WidgetPlacement Placement { get; private set; }
 
         public Layers Layer { get; private set; }
 
-        public TrackingIconInfo(string filename, AtlasID atlasID, GameColor color, Vector2 size, WidgetPlacement placement, Layers layer)
+        public TrackingIconInfo(string filename, AtlasID atlasID, GameColor color, IntVector2 size, WidgetPlacement placement, Layers layer)
             : base(filename, atlasID, color) {
             Size = size;
             Placement = placement;

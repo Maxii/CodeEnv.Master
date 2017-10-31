@@ -19,9 +19,8 @@ namespace CodeEnv.Master.Common {
     using System;
 
     /// <summary>
-    /// Simple wrapper class that provides access to a variable. Used when you
-    /// want to be able to get or set the current value of a field in another class without having 
-    /// direct access to that field.
+    /// Simple wrapper class that provides access to a variable. Used when you want to be able to get or set the current value
+    /// of a field in another class without having direct access to that field.
     /// Usage:
     /// int variableYouWantToAccess;
     /// Reference&lt;int&gt; wrapper = new Reference&lt;int&gt;(() => variableYouWantToAccess, z => {variableYouWantToAccess = z;});

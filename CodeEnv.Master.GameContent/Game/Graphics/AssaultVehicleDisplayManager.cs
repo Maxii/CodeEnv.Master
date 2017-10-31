@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class AssaultVehicleDisplayManager : AProjectileDisplayManager {
 
-        private static readonly Vector2 IconSize = new Vector2(8F, 8F);
+        private static readonly IntVector2 IconSize = new IntVector2(8, 8);
 
         public AssaultVehicleDisplayManager(IWidgetTrackable trackedMissile, Layers meshLayer, ParticleSystem operatingEffect)
             : base(trackedMissile, meshLayer, operatingEffect) {

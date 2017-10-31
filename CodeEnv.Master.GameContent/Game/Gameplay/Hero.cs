@@ -18,6 +18,7 @@ namespace CodeEnv.Master.GameContent {
 
     using System.Collections.Generic;
     using Common;
+    using UnityEngine;
 
     /// <summary>
     /// Character that can be deployed to UnitCmds to improve CmdEffectiveness.
@@ -76,6 +77,8 @@ namespace CodeEnv.Master.GameContent {
 
         public float Experience { get; private set; }
 
+        public float NextLevelCompletionPercentage { get; private set; }
+
         private int _level = Constants.One;
         public virtual int Level { get { return _level; } }
 
@@ -94,6 +97,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void AssessLevel() {
+            bool isMaxLevel = false;
             float reqdExperienceForNextLevel;
             if (_reqdExperienceForNextLevelLookup.TryGetValue(Level, out reqdExperienceForNextLevel)) {
                 if (Experience >= reqdExperienceForNextLevel) {
@@ -102,10 +106,34 @@ namespace CodeEnv.Master.GameContent {
                     AssessCmdEffectiveness();
                 }
             }
+            else {
+                isMaxLevel = true;
+            }
+
+            if (Level == 1) {
+                NextLevelCompletionPercentage = Mathf.Clamp01(Experience / reqdExperienceForNextLevel);
+            }
+            else if (isMaxLevel) {
+                NextLevelCompletionPercentage = Constants.ZeroF;
+            }
+            else {
+                float currentLevelReqdExperience;
+                bool hasNextLevel = _reqdExperienceForNextLevelLookup.TryGetValue(Level - 1, out currentLevelReqdExperience);
+                D.Assert(hasNextLevel);
+                NextLevelCompletionPercentage = Mathf.Clamp01((Experience - currentLevelReqdExperience) / (reqdExperienceForNextLevel - currentLevelReqdExperience));
+            }
         }
 
         private void AssessCmdEffectiveness() {
             CmdEffectiveness = _stat.StartingCmdEffectiveness + CmdEffectivenessImprovementPerLevel * Level;
+        }
+
+        private float GetExperienceReqdForNextLevel(int level) {
+            float nextLevelReqdExperience;
+            if (!_reqdExperienceForNextLevelLookup.TryGetValue(level, out nextLevelReqdExperience)) {
+                nextLevelReqdExperience = Mathf.Infinity;
+            }
+            return nextLevelReqdExperience;
         }
 
         public sealed override string ToString() {

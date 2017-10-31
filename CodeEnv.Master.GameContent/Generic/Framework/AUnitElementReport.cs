@@ -32,17 +32,13 @@ namespace CodeEnv.Master.GameContent {
 
         public AlertStatus AlertStatus { get; protected set; }
 
-        ////public RangeDistance? SensorRange { get; protected set; } // makes no sense
-
         public float? Mass { get; protected set; }
 
-        public float? Science { get; protected set; }
-        public float? Culture { get; protected set; }
-        public decimal? Income { get; protected set; }
-        public decimal? Expense { get; protected set; }
+        public OutputsYield Outputs { get; protected set; }
+
         public float? ConstructionCost { get; protected set; }
 
-        public AUnitElementReport(AUnitElementData data, Player player, IUnitElement_Ltd item) : base(data, player, item) { }
+        public AUnitElementReport(AUnitElementData data, Player player) : base(data, player) { }
 
     }
 }

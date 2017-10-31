@@ -18,6 +18,7 @@ namespace CodeEnv.Master.GameContent {
 
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
@@ -30,20 +31,6 @@ namespace CodeEnv.Master.GameContent {
 
         public new FacilityInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as FacilityInfoAccessController; } }
 
-        private float _food;
-        public float Food {
-            get { return _food; }
-            set { SetProperty<float>(ref _food, value, "Food"); }
-        }
-
-        private float _production;
-        public float Production {
-            get { return _production; }
-            set { SetProperty<float>(ref _production, value, "Production"); }
-        }
-
-        protected new FacilityHullEquipment HullEquipment { get { return base.HullEquipment as FacilityHullEquipment; } }
-
         private IntVector3 _sectorID;
         public override IntVector3 SectorID {
             get {
@@ -53,6 +40,18 @@ namespace CodeEnv.Master.GameContent {
                 return _sectorID;
             }
         }
+
+        private FacilityPublisher _publisher;
+        public FacilityPublisher Publisher {
+            get { return _publisher = _publisher ?? new FacilityPublisher(this); }
+        }
+
+        public new FacilityDesign Design {
+            get { return base.Design as FacilityDesign; }
+            set { base.Design = value; }
+        }
+
+        private new FacilityHullEquipment HullEquipment { get { return base.HullEquipment as FacilityHullEquipment; } }
 
         #region Initialization 
 
@@ -66,20 +65,14 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="activeCMs">The active countermeasures.</param>
         /// <param name="sensors">SR sensors.</param>
         /// <param name="shieldGenerators">The shield generators.</param>
-        /// <param name="hqPriority">The HQ priority.</param>
         /// <param name="topography">The topography.</param>
-        /// <param name="constructionCost">The construction cost.</param>
-        /// <param name="designName">Name of the design.</param>
+        /// <param name="design">The design.</param>
         public FacilityData(IFacility facility, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, FacilityHullEquipment hullEquipment,
             IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<ElementSensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators,
-            Priority hqPriority, Topography topography, float constructionCost, string designName)
-            : base(facility, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, hqPriority, constructionCost, designName) {
+            Topography topography, FacilityDesign design)
+            : base(facility, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, design) {
             Topography = topography;
-            Science = hullEquipment.Science;
-            Culture = hullEquipment.Culture;
-            Income = hullEquipment.Income;
-            Production = hullEquipment.Production;
-            Food = hullEquipment.Food;
+            Outputs = MakeOutputs();
         }
 
         protected override AIntel MakeIntelInstance() {
@@ -104,6 +97,39 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        public FacilityReport GetReport(Player player) { return Publisher.GetReport(player); }
+
+        public override void HandleConstructionComplete() {
+            base.HandleConstructionComplete();
+            Outputs = MakeOutputs();
+        }
+
+        public override void HandleRefitCanceled(RefitStorage valuesBeforeRefit) {
+            base.HandleRefitCanceled(valuesBeforeRefit);
+            Outputs = MakeOutputs();
+        }
+
+        private OutputsYield MakeOutputs() {
+            IList<OutputsYield.OutputValuePair> outputPairs = new List<OutputsYield.OutputValuePair>(7);
+
+            float nonHullExpense = HullEquipment.Weapons.Sum(w => w.Expense) + PassiveCountermeasures.Sum(pcm => pcm.Expense)
+                + ActiveCountermeasures.Sum(acm => acm.Expense) + Sensors.Sum(s => s.Expense) + ShieldGenerators.Sum(gen => gen.Expense);
+
+            var allOutputIDs = Enums<OutputID>.GetValues(excludeDefault: true);
+            foreach (var id in allOutputIDs) {
+                float yield;
+                if (HullEquipment.TryGetYield(id, out yield)) {
+                    if (id == OutputID.Expense) {
+                        yield += nonHullExpense;
+                    }
+                    else if (id == OutputID.NetIncome) {
+                        yield -= nonHullExpense;
+                    }
+                    outputPairs.Add(new OutputsYield.OutputValuePair(id, yield));
+                }
+            }
+            return new OutputsYield(outputPairs.ToArray());
+        }
 
     }
 }

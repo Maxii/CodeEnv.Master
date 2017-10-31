@@ -30,7 +30,9 @@ namespace CodeEnv.Master.GameContent {
             ItemInfoID.Category,
             ItemInfoID.Owner,
             //ItemInfoID.Capacity,
+
             ItemInfoID.Resources,
+
             ItemInfoID.Health,
             ItemInfoID.Defense,
             ItemInfoID.Mass,
@@ -68,7 +70,6 @@ namespace CodeEnv.Master.GameContent {
                     case ItemInfoID.Resources:
                         isSuccess = true;
                         colorizedText = _lineTemplate.Inject(report.Resources != default(ResourcesYield) ? report.Resources.ToString() : Unknown);
-                        ////colorizedText = _lineTemplate.Inject(report.Resources.HasValue ? report.Resources.Value.ToString() : Unknown);
                         break;
                     case ItemInfoID.OrbitalSpeed:
                         isSuccess = true;

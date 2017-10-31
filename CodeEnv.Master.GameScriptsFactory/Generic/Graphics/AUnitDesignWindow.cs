@@ -336,7 +336,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
             return;
         }
 
-        string chosenPopupValue = null;
+        string emptyTemplateHint = null;
         if (_createDesignPopupList.gameObject.activeInHierarchy) {
             // Not all create design popup windows require the user to use a popupList to provide a emptyTemplateDesign name hint.
             // E.g. The design of a Command has no counterpart to the different hulls that elements have.
@@ -347,9 +347,9 @@ public abstract class AUnitDesignWindow : AGuiWindow {
                 ShowWindowControlsUI();
                 return;
             }
-            chosenPopupValue = _createDesignPopupList.value;
+            emptyTemplateHint = _createDesignPopupList.value;
         }
-        AUnitMemberDesign emptyTemplateDesign = GetEmptyTemplateDesign(chosenPopupValue);
+        AUnitMemberDesign emptyTemplateDesign = GetEmptyTemplateDesign(emptyTemplateHint);
 
         // Instantiate a 'control' design with the info along with a new icon and assign it to _selectedDesignIcon.
         // This design will become the 'previousDesign' in UpdateDesigns to see if newDesign (aka WorkingDesign) has any changes.
@@ -437,7 +437,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     public void ApplyDesign() {
         var previousDesign = _pickedDesignIcon.Design;
         AUnitMemberDesign newDesign = _designerEquipmentStorage.WorkingDesign;
-        if (!IsDesignContentEqual(previousDesign, newDesign)) {
+        if (!newDesign.HasEqualContent(previousDesign)) {
             // The user modified the design
             D.Log("{0}.ApplyDesign: {1} has changed and is being registered as a new design.", DebugName, newDesign.DebugName);
             UpdateDesign(_pickedDesignIcon, newDesign);
@@ -453,7 +453,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
 
         ShowDesignsUI();
         HideDesignerUI();
-        // UpdateDesign hides the InteractableHudWindow
+        // UpdateDesign hides the InteractibleHudWindow
     }
 
     /// <summary>
@@ -505,8 +505,6 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     }
 
     #endregion
-
-    protected abstract bool IsDesignContentEqual(AUnitMemberDesign previousDesign, AUnitMemberDesign newDesign);
 
     protected abstract void ObsoleteDesign(string designName);
 
@@ -769,12 +767,12 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     protected abstract AUnitMemberDesign CopyDesignFrom(AUnitMemberDesign design);
 
     /// <summary>
-    /// Returns an empty template design using the provided designNameHint which
-    /// can be null if no hint is necessary.
+    /// Returns an empty template design using the provided designNameHint which can be null if no hint is necessary.
+    /// <remarks>If hint is not null, it represents a HullCategory name.</remarks>
     /// </summary>
-    /// <param name="designNameHint">A hint as to the name of the design. Can be null if there is no hint.</param>
+    /// <param name="emptyTemplateHint">A hint as to the name of the design. Can be null if there is no hint.</param>
     /// <returns></returns>
-    protected abstract AUnitMemberDesign GetEmptyTemplateDesign(string designNameHint);
+    protected abstract AUnitMemberDesign GetEmptyTemplateDesign(string emptyTemplateHint);
 
     /// <summary>
     /// Creates the equipment storage representation of the provided design using EquipmentStorageIcons.

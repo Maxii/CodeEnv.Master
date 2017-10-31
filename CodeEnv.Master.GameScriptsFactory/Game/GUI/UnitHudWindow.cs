@@ -42,13 +42,13 @@ public class UnitHudWindow : AHudWindow<UnitHudWindow> {
 
     public void Show(FormID formID, FleetCmdItem unitItem) {
         var form = PrepareForm(formID);
-        (form as UnitHudUserFleetForm).SelectedUnit = unitItem;
+        (form as AFleetUnitHudForm).SelectedUnit = unitItem;
         ShowForm(form);
     }
 
     public void Show(FormID formID, AUnitBaseCmdItem unitItem) {
         var form = PrepareForm(formID);
-        (form as AUnitHudUserBaseForm).SelectedUnit = unitItem;
+        (form as ABaseUnitHudForm).SelectedUnit = unitItem;
         ShowForm(form);
     }
 

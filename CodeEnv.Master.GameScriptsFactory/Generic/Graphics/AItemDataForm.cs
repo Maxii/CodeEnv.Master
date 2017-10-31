@@ -30,7 +30,7 @@ public abstract class AItemDataForm : AInfoChangeForm {
         get { return _itemData; }
         set {
             D.AssertNull(_itemData);  // occurs only once between Resets
-            SetProperty<AItemData>(ref _itemData, value, "ItemData");
+            SetProperty<AItemData>(ref _itemData, value, "ItemData", ItemDataPropSetHandler);
         }
     }
 
@@ -38,6 +38,20 @@ public abstract class AItemDataForm : AInfoChangeForm {
         D.AssertNotNull(ItemData);
         AssignValuesToMembers();
     }
+
+    #region Event and Property Change Handlers
+
+    private void ItemDataPropSetHandler() {
+        HandleItemDataPropSet();
+    }
+
+    #endregion
+
+    /// <summary>
+    /// Hook for derived classes after ItemData is set but before values are assigned to members.
+    /// <remarks>Default does nothing.</remarks>
+    /// </summary>
+    protected virtual void HandleItemDataPropSet() { }
 
     protected override void ResetForReuse_Internal() {
         base.ResetForReuse_Internal();

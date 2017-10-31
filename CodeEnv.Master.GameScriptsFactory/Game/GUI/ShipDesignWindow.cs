@@ -47,19 +47,15 @@ public class ShipDesignWindow : AUnitDesignWindow {
         return _gameMgr.PlayersDesigns.GetAllUserShipDesigns(includeObsolete).Cast<AUnitMemberDesign>();
     }
 
-    protected override bool IsDesignContentEqual(AUnitMemberDesign previousDesign, AUnitMemberDesign newDesign) {
-        return GameUtility.IsDesignContentEqual(previousDesign as ShipDesign, newDesign as ShipDesign);
-    }
-
     protected override bool TryGetCreateDesignPopupContent(out string popupTitle, out List<string> popupContent) {
         popupTitle = "Hull";
         popupContent = TempGameValues.ShipHullCategoriesInUse.Select(hullCat => hullCat.GetValueName()).ToList();
         return true;
     }
 
-    protected override AUnitMemberDesign GetEmptyTemplateDesign(string designNameHint) {
-        D.AssertNotNull(designNameHint);
-        ShipHullCategory designHullCat = Enums<ShipHullCategory>.Parse(designNameHint);
+    protected override AUnitMemberDesign GetEmptyTemplateDesign(string emptyTemplateHint) {
+        D.AssertNotNull(emptyTemplateHint);
+        ShipHullCategory designHullCat = Enums<ShipHullCategory>.Parse(emptyTemplateHint);
         return _gameMgr.PlayersDesigns.GetUserShipDesign(designHullCat.GetEmptyTemplateDesignName());
     }
 

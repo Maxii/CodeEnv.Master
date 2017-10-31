@@ -27,7 +27,7 @@ using UnityEngine;
 /// <summary>
 /// Singleton. Abstract Gui Window for showing customized Forms. Each derived type instance can handle multiple Forms.
 /// <remarks>10.5.17 Current derived classes include dynamically positioned TooltipHudWindow, HoveredHudWindow 
-/// the fixed InteractableHudWindow, UnitHudWindow and the full screen TableWindow.</remarks>
+/// the fixed InteractibleHudWindow, UnitHudWindow and the full screen TableWindow.</remarks>
 /// </summary>
 public abstract class AFormWindow<T> : AGuiWindow where T : AFormWindow<T> {
 

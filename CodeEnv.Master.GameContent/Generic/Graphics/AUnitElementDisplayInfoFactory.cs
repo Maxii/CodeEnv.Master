@@ -47,17 +47,9 @@ namespace CodeEnv.Master.GameContent {
                         isSuccess = true;
                         colorizedText = GetColorizedAlertStatusText(report.AlertStatus);
                         break;
-                    case ItemInfoID.Science:
+                    case ItemInfoID.Outputs:
                         isSuccess = true;
-                        colorizedText = _lineTemplate.Inject(report.Science.HasValue ? GetFormat(infoID).Inject(report.Science.Value) : Unknown);
-                        break;
-                    case ItemInfoID.Culture:
-                        isSuccess = true;
-                        colorizedText = _lineTemplate.Inject(report.Culture.HasValue ? GetFormat(infoID).Inject(report.Culture.Value) : Unknown);
-                        break;
-                    case ItemInfoID.NetIncome:
-                        isSuccess = true;
-                        colorizedText = _lineTemplate.Inject(report.Income.HasValue && report.Expense.HasValue ? GetFormat(infoID).Inject(report.Income.Value - report.Expense.Value) : Unknown);
+                        colorizedText = _lineTemplate.Inject(report.Outputs != default(OutputsYield) ? report.Outputs.ToColorizedString(Constants.FormatInt_1DMin, useNetIncome: false) : Unknown);
                         break;
                     case ItemInfoID.ConstructionCost:
                         isSuccess = true;

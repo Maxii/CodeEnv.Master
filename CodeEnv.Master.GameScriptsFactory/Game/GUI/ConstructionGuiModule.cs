@@ -425,9 +425,9 @@ public class ConstructionGuiModule : AMonoBase {
         if (!SelectedUnit.IsJoinable) {
             return false;
         }
-        int facilitiesUnderConstructionCount = _unitConstructionMgr.GetQueue().Select(tracker => tracker.Design).Where(design => design is FacilityDesign).Count();
+        int facilitiesUnderConstructionCount = _unitConstructionMgr.GetQueue().Select(c => c.Design).Where(design => design is FacilityDesign).Count();
         if (facilitiesUnderConstructionCount == Constants.Zero) {
-            return false;
+            return true;
         }
         int instantiatedFacilityCount = SelectedUnit.Elements.Count();
         return instantiatedFacilityCount + facilitiesUnderConstructionCount < TempGameValues.MaxFacilitiesPerBase;
@@ -495,6 +495,13 @@ public class ConstructionGuiModule : AMonoBase {
     }
 
     #region Debug
+
+    public void __DisableButtons() {
+        D.AssertNull(SelectedUnit);
+        _viewAllConstructibleDesignsButton.IsEnabled = false;
+        _viewFacilityConstructibleDesignsButton.IsEnabled = false;
+        _viewShipConstructibleDesignsButton.IsEnabled = false;
+    }
 
     private void __Validate() {
         D.AssertNotNull(_constructibleDesignIconPrefab);

@@ -30,6 +30,8 @@ namespace CodeEnv.Master.GameContent {
 
         event EventHandler isOperationalOneshot;
 
+        event EventHandler unitOutputsChanged;
+
         bool IsOwnerChangeUnderway { get; }
 
         /// <summary>
@@ -56,7 +58,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         bool IsJoinable { get; }
 
-        string UnitName { get; }
+        string UnitName { get; set; }
 
         float UnitMaxFormationRadius { get; }
 
@@ -69,6 +71,8 @@ namespace CodeEnv.Master.GameContent {
         ICmdSensorRangeMonitor MRSensorMonitor { get; }
 
         IList<ICmdSensorRangeMonitor> SensorMonitors { get; }
+
+        OutputsYield UnitOutputs { get; }
 
         void HandleRelationsChangedWith(Player chgdRelationsPlayer);
 

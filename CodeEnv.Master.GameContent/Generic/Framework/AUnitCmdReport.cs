@@ -31,7 +31,7 @@ namespace CodeEnv.Master.GameContent {
 
         public float? CurrentCmdEffectiveness { get; protected set; }
 
-        public Formation UnitFormation { get; protected set; }
+        public Formation Formation { get; protected set; }
 
         public AlertStatus AlertStatus { get; protected set; }
 
@@ -49,15 +49,11 @@ namespace CodeEnv.Master.GameContent {
 
         public float? UnitHealth { get; protected set; }
 
-        public float? UnitScience { get; protected set; }
-
-        public float? UnitCulture { get; protected set; }
-
-        public decimal? UnitIncome { get; protected set; }
-
-        public decimal? UnitExpense { get; protected set; }
+        public OutputsYield UnitOutputs { get; protected set; }
 
         public Hero Hero { get; protected set; }
+
+        public new IUnitCmd_Ltd Item { get { return base.Item as IUnitCmd_Ltd; } }
 
         private IEnumerable<AUnitElementData> _cachedElementsData;
         protected IEnumerable<AUnitElementData> GetElementsData(AUnitCmdData cmdData) {
@@ -67,15 +63,13 @@ namespace CodeEnv.Master.GameContent {
             return _cachedElementsData;
         }
 
-        public AUnitCmdReport(AUnitCmdData data, Player player, IUnitCmd_Ltd item)
-            : base(data, player, item) {
-        }
+        public AUnitCmdReport(AUnitCmdData data, Player player) : base(data, player) { }
 
-        protected CombatStrength? CalcPartialUnitOffensiveStrength(IEnumerable<AUnitElementData> elementsData) {
+        protected CombatStrength? CalcUnitOffensiveStrengthFromKnownElements(IEnumerable<AUnitElementData> elementsData) {
             IList<CombatStrength> elementsStrength = new List<CombatStrength>(elementsData.Count());
             foreach (var eData in elementsData) {
                 var accessCntlr = eData.InfoAccessCntlr;
-                if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Offense)) {
+                if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Offense)) {
                     elementsStrength.Add(eData.OffensiveStrength);
                 }
             }
@@ -85,11 +79,11 @@ namespace CodeEnv.Master.GameContent {
             return null;
         }
 
-        protected CombatStrength? CalcPartialUnitDefensiveStrength(IEnumerable<AUnitElementData> elementsData) {
+        protected CombatStrength? CalcUnitDefensiveStrengthFromKnownElements(IEnumerable<AUnitElementData> elementsData) {
             IList<CombatStrength> elementsStrength = new List<CombatStrength>(elementsData.Count());
             foreach (var eData in elementsData) {
                 var accessCntlr = eData.InfoAccessCntlr;
-                if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Defense)) {
+                if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Defense)) {
                     elementsStrength.Add(eData.DefensiveStrength);
                 }
             }
@@ -99,12 +93,12 @@ namespace CodeEnv.Master.GameContent {
             return null;
         }
 
-        protected float? CalcPartialUnitMaxHitPoints(IEnumerable<AUnitElementData> elementsData) {
+        protected float? CalcUnitMaxHitPointsFromKnownElements(IEnumerable<AUnitElementData> elementsData) {
             //D.Log("{0}.CalcPartialUnitMaxHitPoints called.", Name + GetType().Name);
             float elementsHitPts = Constants.ZeroF;
             foreach (var eData in elementsData) {
                 var accessCntlr = eData.InfoAccessCntlr;
-                if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.MaxHitPoints)) {
+                if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.MaxHitPoints)) {
                     elementsHitPts += eData.MaxHitPoints;
                 }
             }
@@ -114,11 +108,11 @@ namespace CodeEnv.Master.GameContent {
             return null;
         }
 
-        protected float? CalcPartialUnitCurrentHitPoints(IEnumerable<AUnitElementData> elementsData) {
+        protected float? CalcUnitCurrentHitPointsFromKnownElements(IEnumerable<AUnitElementData> elementsData) {
             float elementsHitPts = Constants.ZeroF;
             foreach (var eData in elementsData) {
                 var accessCntlr = eData.InfoAccessCntlr;
-                if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.CurrentHitPoints)) {
+                if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.CurrentHitPoints)) {
                     elementsHitPts += eData.CurrentHitPoints;
                 }
             }
@@ -128,7 +122,7 @@ namespace CodeEnv.Master.GameContent {
             return null;
         }
 
-        protected float? CalcPartialUnitHealth(float? unitCurrentHitPts, float? unitMaxHitPts) {
+        protected float? CalcUnitHealthFromKnownElements(float? unitCurrentHitPts, float? unitMaxHitPts) {
             if (!unitMaxHitPts.HasValue || !unitCurrentHitPts.HasValue) {
                 return null;
             }
@@ -141,22 +135,6 @@ namespace CodeEnv.Master.GameContent {
             }
             return null;
         }
-
-        protected float? CalcPartialUnitScience(IEnumerable<AUnitElementData> elementsData) {
-            IList<float> elementsScience = new List<float>(elementsData.Count());
-            foreach (var eData in elementsData) {
-                var accessCntlr = eData.InfoAccessCntlr;
-                if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Science)) {
-                    elementsScience.Add(eData.Science);
-                }
-            }
-            if (elementsScience.Any()) {
-                return elementsScience.Sum();
-            }
-            return null;
-        }
-
-        // IMPROVE other partial calculations can be added like income, expense, culture, etc.
 
         #region Archive
 

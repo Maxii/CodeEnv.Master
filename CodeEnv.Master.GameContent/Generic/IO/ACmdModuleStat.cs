@@ -63,9 +63,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="expense">The expense required to operate this equipment.</param>
         /// <param name="maxHitPts">The maximum hit PTS.</param>
         /// <param name="maxCmdStaffEffectiveness">The maximum effectiveness of the command staff.</param>
+        /// <param name="refitBenefit">The refit benefit.</param>
         public ACmdModuleStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass,
-            float pwrRqmt, decimal expense, float maxHitPts, float maxCmdStaffEffectiveness)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, Constants.ZeroF, expense, isDamageable: false) {
+            float pwrRqmt, float expense, float maxHitPts, float maxCmdStaffEffectiveness, int refitBenefit)
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, Constants.ZeroF, expense, refitBenefit, isDamageable: false) {
             MaxHitPoints = maxHitPts;
             MaxCmdStaffEffectiveness = maxCmdStaffEffectiveness;
         }

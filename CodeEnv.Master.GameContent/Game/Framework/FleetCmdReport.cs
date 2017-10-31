@@ -57,137 +57,123 @@ namespace CodeEnv.Master.GameContent {
         // 7.18.16 If Cmd's IntelCoverage does not allow full view of selected values
         // a partial value is calculated from element's data and their infoAccessCntlr. 
 
-        public FleetCmdReport(FleetCmdData cmdData, Player player, IFleetCmd_Ltd item)
-            : base(cmdData, player, item) {
-        }
+        public FleetCmdReport(FleetCmdData cmdData, Player player) : base(cmdData, player) { }
 
         protected override void AssignValues(AItemData data) {
             var fData = data as FleetCmdData;
             var accessCntlr = fData.InfoAccessCntlr;
 
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Hero)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Hero)) {
                 Hero = fData.Hero;
             }
 
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.AlertStatus)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.AlertStatus)) {
                 AlertStatus = fData.AlertStatus;
             }
 
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitDefense)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.UnitDefense)) {
                 UnitDefensiveStrength = fData.UnitDefensiveStrength;
             }
             else {
-                UnitDefensiveStrength = CalcPartialUnitDefensiveStrength(GetElementsData(fData));
+                UnitDefensiveStrength = CalcUnitDefensiveStrengthFromKnownElements(GetElementsData(fData));
             }
 
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitOffense)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.UnitOffense)) {
                 UnitOffensiveStrength = fData.UnitOffensiveStrength;
             }
             else {
-                UnitOffensiveStrength = CalcPartialUnitOffensiveStrength(GetElementsData(fData));
+                UnitOffensiveStrength = CalcUnitOffensiveStrengthFromKnownElements(GetElementsData(fData));
             }
 
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitMaxHitPts)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.UnitMaxHitPts)) {
                 UnitMaxHitPoints = fData.UnitMaxHitPoints;
             }
             else {
-                UnitMaxHitPoints = CalcPartialUnitMaxHitPoints(GetElementsData(fData));
+                UnitMaxHitPoints = CalcUnitMaxHitPointsFromKnownElements(GetElementsData(fData));
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitCurrentHitPts)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.UnitCurrentHitPts)) {
                 UnitCurrentHitPoints = fData.UnitCurrentHitPoints;
             }
             else {
-                UnitCurrentHitPoints = CalcPartialUnitCurrentHitPoints(GetElementsData(fData));
+                UnitCurrentHitPoints = CalcUnitCurrentHitPointsFromKnownElements(GetElementsData(fData));
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitHealth)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.UnitHealth)) {
                 UnitHealth = fData.UnitHealth;
             }
             else {
                 // Calculate HitPts before attempting calculation of partial unit health
-                UnitHealth = CalcPartialUnitHealth(UnitCurrentHitPoints, UnitMaxHitPoints);
+                UnitHealth = CalcUnitHealthFromKnownElements(UnitCurrentHitPoints, UnitMaxHitPoints);
             }
 
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitScience)) {
-                UnitScience = fData.UnitScience;
-            }
-            else {
-                UnitScience = CalcPartialUnitScience(GetElementsData(fData));
-            }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitNetIncome)) {
-                UnitIncome = fData.UnitIncome;
-                UnitExpense = fData.UnitExpense;
-            }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitCulture)) {
-                UnitCulture = fData.UnitCulture;
-            }
-
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Name)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Name)) {
                 Name = fData.Name;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitName)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.UnitName)) {
                 UnitName = fData.UnitName;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Position)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Position)) {
                 Position = fData.Position;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Owner)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Owner)) {
                 Owner = fData.Owner;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.CurrentCmdEffectiveness)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.CurrentCmdEffectiveness)) {
                 CurrentCmdEffectiveness = fData.CurrentCmdEffectiveness;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitSensorRange)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.UnitSensorRange)) {
                 UnitSensorRange = fData.UnitSensorRange;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitWeaponsRange)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.UnitWeaponsRange)) {
                 UnitWeaponsRange = fData.UnitWeaponsRange;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.SectorID)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.SectorID)) {
                 SectorID = fData.SectorID;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Formation)) {
-                UnitFormation = fData.UnitFormation;
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Formation)) {
+                Formation = fData.UnitFormation;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Target)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Target)) {
                 Target = fData.Target;
             }
 
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Composition)) { // must precede Category
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Composition)) { // must precede Category
                 UnitComposition = fData.UnitComposition;
             }
             else {
-                UnitComposition = CalcPartialUnitComposition(fData);
+                UnitComposition = CalcUnitCompositionFromKnownElements(fData);
             }
 
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Category)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Category)) {
                 Category = fData.Category;
             }
             else {
-                Category = CalcPartialCmdCategory(fData);
+                Category = CalcCmdCategoryFromKnownElements(fData);
             }
 
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.CurrentHeading)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.CurrentHeading)) {
                 CurrentHeading = fData.CurrentHeading;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.CurrentSpeedSetting)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.CurrentSpeedSetting)) {
                 CurrentSpeedSetting = fData.CurrentSpeedSetting;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitFullSpeed)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.UnitFullSpeed)) {
                 UnitFullSpeed = fData.UnitFullSpeedValue;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitMaxTurnRate)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.UnitMaxTurnRate)) {
                 UnitMaxTurnRate = fData.UnitMaxTurnRate;
             }
 
             __ActualSpeedValue = (Item as IFleetCmd_Ltd).ActualSpeedValue_Debug;
+
+            UnitOutputs = AssessOutputs(fData.UnitOutputs);
         }
 
-        private FleetComposition CalcPartialUnitComposition(FleetCmdData cmdData) {
+        private FleetComposition CalcUnitCompositionFromKnownElements(FleetCmdData cmdData) {
             var elementsData = GetElementsData(cmdData).Cast<ShipData>();
             IList<ShipHullCategory> knownElementCategories = new List<ShipHullCategory>();
             foreach (var eData in elementsData) {
                 var accessCntlr = eData.InfoAccessCntlr;
-                if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Category)) {
+                if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Category)) {
                     knownElementCategories.Add(eData.HullCategory);
                 }
             }
@@ -198,7 +184,7 @@ namespace CodeEnv.Master.GameContent {
             return null;
         }
 
-        private FleetCategory CalcPartialCmdCategory(FleetCmdData cmdData) {
+        private FleetCategory CalcCmdCategoryFromKnownElements(FleetCmdData cmdData) {
             if (UnitComposition != null) {
                 return cmdData.GenerateCmdCategory(UnitComposition);
             }

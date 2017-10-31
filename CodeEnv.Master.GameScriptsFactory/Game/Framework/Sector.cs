@@ -111,7 +111,10 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     /// <summary>
     /// The display name of this Sector.
     /// </summary>
-    public string Name { get { return Data.Name; } }
+    public string Name {
+        get { return Data.Name; }
+        set { Data.Name = value; }
+    }
 
     public Vector3 Position { get; private set; }
 
@@ -119,7 +122,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
 
     public IntVector3 SectorID { get { return Data.SectorID; } }
 
-    public SectorReport UserReport { get { return Publisher.GetUserReport(); } }
+    public SectorReport UserReport { get { return Data.Publisher.GetUserReport(); } }
 
     /// <summary>
     /// The radius of the sphere inscribed inside a sector cube = 600.
@@ -141,11 +144,6 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     public Player Owner { get { return Data.Owner; } }
 
     private AInfoAccessController InfoAccessCntlr { get { return Data.InfoAccessCntlr; } }
-
-    private SectorPublisher _publisher;
-    private SectorPublisher Publisher {
-        get { return _publisher = _publisher ?? new SectorPublisher(Data, this); }
-    }
 
     private IList<Player> _playersWithInfoAccessToOwner;
     private IList<IDisposable> _subscriptions;
@@ -189,7 +187,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     /// </summary>
     private void InitializeOnData() {
         Data.Initialize();
-        _hudManager = new ItemHoveredHudManager(Publisher);
+        _hudManager = new ItemHoveredHudManager(Data.Publisher);
         // Note: There is no collider associated with a Sector. The collider used for HUD and context menu activation is part of the SectorExaminer
     }
 
@@ -252,7 +250,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
         }
     }
 
-    public SectorReport GetReport(Player player) { return Publisher.GetReport(player); }
+    public SectorReport GetReport(Player player) { return Data.Publisher.GetReport(player); }
 
     public IntelCoverage GetIntelCoverage(Player player) { return Data.GetIntelCoverage(player); }
 
@@ -300,7 +298,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
             // when its Star or any of its Planetoids provides access. They in turn provide access if their IntelCoverage
             // >= Essential. As IntelCoverage of Planetoids, Stars and Systems can't regress, once access is provided
             // it can't be lost which means access to a Sector's Owner can't be lost either.
-            if (InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
+            if (InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner)) {
                 _playersWithInfoAccessToOwner.Add(player);
                 OnInfoAccessChanged(player);
             }
@@ -718,7 +716,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     public Speed PatrolSpeed { get { return Speed.TwoThirds; } }
 
     public bool IsPatrollingAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner)) {
             return true;
         }
         return !Owner.IsEnemyOf(player);
@@ -739,7 +737,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     }
 
     public bool IsGuardingAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner)) {
             return true;
         }
         return !player.IsEnemyOf(Owner);
@@ -754,7 +752,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     }
 
     public bool IsExploringAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner)) {
             return true;
         }
         return !Owner.IsAtWarWith(player);
@@ -769,7 +767,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     public Player Owner_Debug { get { return Data.Owner; } }
 
     public bool TryGetOwner_Debug(Player requestingPlayer, out Player owner) {
-        if (InfoAccessCntlr.HasAccessToInfo(requestingPlayer, ItemInfoID.Owner)) {
+        if (InfoAccessCntlr.HasIntelCoverageReqdToAccess(requestingPlayer, ItemInfoID.Owner)) {
             owner = Data.Owner;
             return true;
         }
@@ -778,7 +776,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     }
 
     public bool TryGetOwner(Player requestingPlayer, out Player owner) {
-        if (InfoAccessCntlr.HasAccessToInfo(requestingPlayer, ItemInfoID.Owner)) {
+        if (InfoAccessCntlr.HasIntelCoverageReqdToAccess(requestingPlayer, ItemInfoID.Owner)) {
             owner = Data.Owner;
             if (owner != TempGameValues.NoPlayer) {
                 D.Assert(owner.IsKnown(requestingPlayer), "{0}: How can {1} have access to Owner {2} without knowing them??? Frame: {3}."
@@ -791,7 +789,7 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     }
 
     public bool IsOwnerAccessibleTo(Player player) {
-        return InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner);
+        return InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner);
     }
 
     public void __LogInfoAccessChangedSubscribers() {

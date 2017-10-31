@@ -24,7 +24,7 @@ using UnityEngine;
 /// Abstract AGuiElement for members of the Gui that contain an image and operate as an icon.
 /// <remarks>Contains an image sprite to represent the icon.</remarks>
 /// <remarks>10.4.17 An AIconGuiElement supports hovering over the body of the icon by showing more info about 
-/// what the icon represents in the HoveredHud. As such, it can be used in Screens, the UnitHud and the InteractableHud.</remarks>
+/// what the icon represents in the HoveredHud. As such, it can be used in Screens, the UnitHud and the InteractibleHud.</remarks>
 /// </summary>
 public abstract class AIconGuiElement : AGuiElement {
 
@@ -66,16 +66,16 @@ public abstract class AIconGuiElement : AGuiElement {
     #region Event and Property Change Handlers
 
     void OnHover(bool isOver) {
-        IconHoveredEventHandler(isOver);
+        GuiElementHoveredEventHandler(isOver);
     }
 
-    private void IconHoveredEventHandler(bool isOver) {
-        HandleIconHovered(isOver);
+    private void GuiElementHoveredEventHandler(bool isOver) {
+        HandleGuiElementHovered(isOver);
     }
 
     #endregion
 
-    protected abstract void HandleIconHovered(bool isOver);
+    protected abstract void HandleGuiElementHovered(bool isOver);
 
     protected virtual void HandleValuesUnknown() {
         _iconImageSprite.atlas = AtlasID.MyGui.GetAtlas();

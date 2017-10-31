@@ -42,25 +42,31 @@ public class SettlementsTableForm : ACommandsTableForm {
 
     protected override void ResumePreviousSortTopic(GuiElementID sortTopicToResume) {
         switch (sortTopicToResume) {
-            case GuiElementID.NameLabel:
+            case GuiElementID.Name:
                 SortOnName();
                 break;
-            case GuiElementID.OrganicsLabel:
-                SortOnOrganics();
+            case GuiElementID.Food:
+                SortOnFood();
                 break;
-            case GuiElementID.ParticulatesLabel:
-                SortOnParticulates();
+            case GuiElementID.Production:
+                SortOnProduction();
                 break;
-            case GuiElementID.EnergyLabel:
-                SortOnEnergy();
+            case GuiElementID.Income:
+                SortOnIncome();
                 break;
-            case GuiElementID.ScienceLabel:
+            case GuiElementID.Expense:
+                SortOnExpense();
+                break;
+            case GuiElementID.NetIncome:
+                SortOnNetIncome();
+                break;
+            case GuiElementID.Science:
                 SortOnScience();
                 break;
-            case GuiElementID.CultureLabel:
+            case GuiElementID.Culture:
                 SortOnCulture();
                 break;
-            case GuiElementID.PopulationLabel:
+            case GuiElementID.Population:
                 SortOnPopulation();
                 break;
             case GuiElementID.DefensiveStrength:
@@ -93,10 +99,7 @@ public class SettlementsTableForm : ACommandsTableForm {
             case GuiElementID.Approval:
                 SortOnApproval();
                 break;
-            case GuiElementID.NetIncome:
-                SortOnNetIncome();
-                break;
-            case GuiElementID.SpeedLabel:
+            case GuiElementID.Speed:
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(sortTopicToResume.GetValueName()));
         }
@@ -104,33 +107,9 @@ public class SettlementsTableForm : ACommandsTableForm {
 
     #region Sorting
 
-    public void SortOnResources() {
-        _table.onCustomSort = CompareResources;
-        _sortDirection = DetermineSortDirection(GuiElementID.Resources);
-        _table.repositionNow = true;
-    }
-
-    public void SortOnOrganics() {
-        _table.onCustomSort = CompareOrganics;
-        _sortDirection = DetermineSortDirection(GuiElementID.OrganicsLabel);
-        _table.repositionNow = true;
-    }
-
-    public void SortOnParticulates() {
-        _table.onCustomSort = CompareParticulates;
-        _sortDirection = DetermineSortDirection(GuiElementID.ParticulatesLabel);
-        _table.repositionNow = true;
-    }
-
-    public void SortOnEnergy() {
-        _table.onCustomSort = CompareEnergy;
-        _sortDirection = DetermineSortDirection(GuiElementID.EnergyLabel);
-        _table.repositionNow = true;
-    }
-
     public void SortOnPopulation() {
         _table.onCustomSort = ComparePopulation;
-        _sortDirection = DetermineSortDirection(GuiElementID.PopulationLabel);
+        _sortDirection = DetermineSortDirection(GuiElementID.Population);
         _table.repositionNow = true;
     }
 

@@ -26,7 +26,6 @@ using CodeEnv.Master.GameContent;
 public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
 
     private const string DebugNameFormat = "{0}.{1}";
-
     private const string UnitNameFormat = "{0}{1}";
 
     private static int _unitNameCounter = Constants.One;
@@ -153,7 +152,6 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
 
     /// <summary>
     /// Authorizes the creator to deploy and commence operations of the Unit on the DeployDate specified by the Configuration.
-    /// If the unit was not able to be pre-positioned when built, it will be destroyed by this method.
     /// <remarks>If this creator is present in the scene before the game IsRunning then UniverseCreator will call 
     /// BuildAndPosition(). It will be followed by AuthorizeDeployment() when the game begins running but after all 
     /// CelestialObjects have commenced operations. This way, celestial objects are operational before they can be 
@@ -238,8 +236,8 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
     protected abstract void AssignHQElement();
 
     /// <summary>
-    /// Deploys the unit. Most creators deploy the unit they create where they are located.
-    /// The only exception is the SettlementCreator which deploys its unit into orbit around
+    /// Positions the unit. Most creators position the unit they create where they are located.
+    /// The only exception is the SettlementCreator which positions its unit into orbit around
     /// its parent system.
     /// <remarks>5.3.17 Removed isPositioned return value as it is no longer reqd since
     /// DebugSettlementCreators are Destroy()ed in UniverseCreator if there is no System to deploy them too.</remarks>

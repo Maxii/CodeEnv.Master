@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
                                                                                                     FacilityDirective.Scuttle,
                                                                                                     FacilityDirective.StopAttack,
                                                                                                 };
-        public string DebugName {
+        public virtual string DebugName {
             get {
                 string targetText = Target != null ? Target.DebugName : "none";
                 string followonOrderText = FollowonOrder != null ? FollowonOrder.ToString() : "none";
@@ -81,14 +81,22 @@ namespace CodeEnv.Master.GameContent {
             Source = source;
             CmdOrderID = cmdOrderID;
             Target = target;
-            if (DirectivesWithNullTarget.Contains(directive)) {
-                D.AssertNull(target, DebugName);
+            __Validate();
+        }
+
+        public sealed override string ToString() {
+            return DebugName;
+        }
+
+        #region Debug
+
+        protected virtual void __Validate() {
+            if (DirectivesWithNullTarget.Contains(Directive)) {
+                D.AssertNull(Target);   // Use of DebugName will NRE for RefitFacilityOrder
             }
         }
 
-        public override string ToString() {
-            return DebugName;
-        }
+        #endregion
 
     }
 }

@@ -69,16 +69,15 @@ public abstract class AUnitElementIconGuiElement : AMultiSizeIconGuiElement {
     protected override string TooltipContent { get { return TooltipFormat.Inject(Element.Name); } }
 
     private UILabel _iconImageNameLabel;
-    private UISlider _healthBar;
-    private AUnitElementDesign _design;
+    private UIProgressBar _healthBar;
     private IList<IDisposable> _subscriptions;
 
     protected override UISprite AcquireIconImageSprite() {
-        return _topLevelIconWidget.gameObject.GetComponentsInImmediateChildren<UISprite>().Single(s => s.GetComponent<UISlider>() == null);
+        return _topLevelIconWidget.gameObject.GetComponentsInImmediateChildren<UISprite>().Single(s => s.GetComponent<UIProgressBar>() == null);
     }
 
     protected override void AcquireAdditionalWidgets() {
-        _healthBar = _topLevelIconWidget.GetComponentInChildren<UISlider>();
+        _healthBar = _topLevelIconWidget.GetComponentInChildren<UIProgressBar>();
         _iconImageNameLabel = _topLevelIconWidget.gameObject.GetSingleComponentInChildren<UILabel>();
     }
 
@@ -98,12 +97,12 @@ public abstract class AUnitElementIconGuiElement : AMultiSizeIconGuiElement {
     }
 
     private void ElementHealthPropChangedHandler() {
-        _healthBar.value = Element.Data.Health;
+        PopulateHealthBarValues();
     }
 
     #endregion
 
-    protected override void HandleIconHovered(bool isOver) {
+    protected override void HandleGuiElementHovered(bool isOver) {
         Element.ShowHoveredHud(isOver);
     }
 
@@ -114,10 +113,11 @@ public abstract class AUnitElementIconGuiElement : AMultiSizeIconGuiElement {
 
     protected override void PopulateMemberWidgetValues() {
         base.PopulateMemberWidgetValues();
-        _design = InitializeDesign();
-        _iconImageSprite.atlas = _design.ImageAtlasID.GetAtlas();
-        _iconImageSprite.spriteName = _design.ImageFilename;
+        var design = Element.Data.Design;
+        _iconImageSprite.atlas = design.ImageAtlasID.GetAtlas();
+        _iconImageSprite.spriteName = design.ImageFilename;
         _iconImageNameLabel.text = Element.name;
+        PopulateHealthBarValues();
     }
 
     private void HandleIsPickedChanged() {
@@ -133,16 +133,39 @@ public abstract class AUnitElementIconGuiElement : AMultiSizeIconGuiElement {
         }
     }
 
-    protected abstract AUnitElementDesign InitializeDesign();
+    private void PopulateHealthBarValues() {
+        float? health;
+        if (TryGetHealth(out health)) {
+            D.Assert(health.HasValue);
+            _healthBar.value = health.Value;
+        }
+        else {
+            _healthBar.value = Constants.OneHundredPercent;
+            _healthBar.foregroundWidget.color = TempGameValues.UnknownHealthColor.ToUnityColor();
+        }
+    }
+
+    private bool TryGetHealth(out float? health) {
+        if (Element.Data.InfoAccessCntlr.HasIntelCoverageReqdToAccess(GameManager.Instance.UserPlayer, ItemInfoID.Health)) {
+            health = Element.Data.Health;
+            return true;
+        }
+        health = null;
+        return false;
+    }
 
     public override void ResetForReuse() {
         base.ResetForReuse();
         Unsubscribe();
         _element = null;
         _isElementPropSet = false;
-        _design = null;
+        ////_design = null;
         _isPicked = false;
-        _healthBar = null;
+        if (_healthBar != null) {
+            _healthBar.value = Constants.ZeroPercent;
+            _healthBar.foregroundWidget.color = GameColor.Green.ToUnityColor();
+            _healthBar = null;
+        }
         _iconImageNameLabel = null;
     }
 

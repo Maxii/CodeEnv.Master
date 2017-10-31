@@ -28,6 +28,17 @@ namespace CodeEnv.Master.GameContent {
         public const float __MaxShipMoveDistanceFromFleetCmdSqrd = 22500F;   // 150
 
         /// <summary>
+        /// The scaler to use on selected element values when an Element has construction underway.
+        /// </summary>
+        public const float UnderConstructionValuesScaler = 0.25F;
+
+        /// <summary>
+        /// The multiplier to use with a Design's ConstructionCost when calculating the minimum
+        /// allowed ConstructionCost for an Element Refit.
+        /// </summary>
+        public const float RefitMinConstructionCostFactor = 0.25F;
+
+        /// <summary>
         /// The maximum range of any weapon in a base.
         /// </summary>
         public const float __MaxBaseWeaponsRangeDistance = 25F;
@@ -511,17 +522,19 @@ namespace CodeEnv.Master.GameContent {
         public static readonly CombatStrength NoCombatStrength = default(CombatStrength);
 
 
-        public static GameColor SelectedColor { get { return GameColor.Green; } }
+        public const GameColor SelectedColor = GameColor.Green;
 
-        public static GameColor FocusedColor { get { return GameColor.Yellow; } }
+        public const GameColor FocusedColor = GameColor.Yellow;
 
-        public static GameColor GeneralHighlightColor { get { return GameColor.White; } }
+        public const GameColor GeneralHighlightColor = GameColor.White;
 
-        public static GameColor SectorHighlightColor { get { return GameColor.Yellow; } }
+        public const GameColor SectorHighlightColor = GameColor.Yellow;
 
-        public static GameColor HoveredHighlightColor { get { return GameColor.Green; } }
+        public const GameColor HoveredHighlightColor = GameColor.Green;
 
-        public static GameColor DisabledColor { get { return GameColor.Gray; } }
+        public const GameColor DisabledColor = GameColor.Gray;
+
+        public const GameColor UnknownHealthColor = DisabledColor;
 
         /// <summary>
         /// The name of the sprite (texture) used as a frame around an image.
@@ -567,6 +580,17 @@ namespace CodeEnv.Master.GameContent {
         public const string NetIncomeIconFilename = IncomeIconFilename;
         public const string ScienceIconFilename = "microscope23_12";
         public const string CultureIconFilename = "Star1_12";
+
+        public const string PopulationIconFilename = "Team1_12";
+        public const string ConstructionIconFilename = "Wrench1_12";    // shows on black space background
+
+        public const string DefensiveStrengthIconFilename = "shield94_12";
+        public const string OffensiveStrengthIconFilename = "lightning24_12";
+
+        public const string BeamIconFilename = "Beam1_12";
+        public const string ProjectileIconFilename = "Projectile1_12";
+        public const string MissileIconFilename = "Missile1_12";
+        public const string AssaultVehicleIconFilename = "flying_12";
 
 
     }

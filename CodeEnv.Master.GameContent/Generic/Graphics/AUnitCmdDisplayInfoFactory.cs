@@ -41,7 +41,7 @@ namespace CodeEnv.Master.GameContent {
                         break;
                     case ItemInfoID.Formation:
                         isSuccess = true;
-                        colorizedText = _lineTemplate.Inject(report.UnitFormation != Formation.None ? report.UnitFormation.GetValueName() : Unknown);
+                        colorizedText = _lineTemplate.Inject(report.Formation != Formation.None ? report.Formation.GetValueName() : Unknown);
                         break;
                     case ItemInfoID.AlertStatus:
                         isSuccess = true;
@@ -76,17 +76,9 @@ namespace CodeEnv.Master.GameContent {
                         isSuccess = true;
                         colorizedText = _lineTemplate.Inject(report.UnitSensorRange.HasValue ? report.UnitSensorRange.Value.ToString() : Unknown);
                         break;
-                    case ItemInfoID.UnitScience:
+                    case ItemInfoID.UnitOutputs:
                         isSuccess = true;
-                        colorizedText = _lineTemplate.Inject(report.UnitScience.HasValue ? GetFormat(infoID).Inject(report.UnitScience.Value) : Unknown);
-                        break;
-                    case ItemInfoID.UnitCulture:
-                        isSuccess = true;
-                        colorizedText = _lineTemplate.Inject(report.UnitCulture.HasValue ? GetFormat(infoID).Inject(report.UnitCulture.Value) : Unknown);
-                        break;
-                    case ItemInfoID.UnitNetIncome:
-                        isSuccess = true;
-                        colorizedText = _lineTemplate.Inject(report.UnitIncome.HasValue && report.UnitExpense.HasValue ? GetFormat(infoID).Inject(report.UnitIncome.Value - report.UnitExpense.Value) : Unknown);
+                        colorizedText = _lineTemplate.Inject(report.UnitOutputs != default(OutputsYield) ? report.UnitOutputs.ToColorizedString(Constants.FormatInt_1DMin, useNetIncome: false) : Unknown);
                         break;
                     case ItemInfoID.Hero:
                         isSuccess = true;
@@ -144,6 +136,18 @@ namespace CodeEnv.Master.GameContent {
             return text;
         }
 
+        protected string GetColorizedApprovalText(float? approval) {
+            GameColor approvalColor = GameColor.White;
+            string colorizedApprovalText = Constants.QuestionMark;
+            if (approval.HasValue) {
+                approvalColor = (approval.Value > GeneralSettings.Instance.ContentApprovalThreshold) ? GameColor.Green :
+                    (approval.Value > GeneralSettings.Instance.UnhappyApprovalThreshold) ? GameColor.White :
+                    (approval.Value > GeneralSettings.Instance.RevoltApprovalThreshold) ? GameColor.Yellow :
+                                                                                          GameColor.Red;
+                colorizedApprovalText = Constants.FormatPercent_0Dp.Inject(approval.Value).SurroundWith(approvalColor);
+            }
+            return _lineTemplate.Inject(colorizedApprovalText);
+        }
 
 
     }

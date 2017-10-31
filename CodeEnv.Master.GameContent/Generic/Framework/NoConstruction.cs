@@ -24,12 +24,12 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class NoConstruction : ConstructionInfo {
 
-        public override string Name { get { return "No Construction"; } }
+        public override string Name { get { return GetType().Name; } }
 
         public override GameTimeDuration TimeToCompletion { get { return default(GameTimeDuration); } }
 
         public override GameDate ExpectedCompletionDate {
-            get { return base.ExpectedCompletionDate; }
+            get { throw new NotImplementedException("ExpectedCompletionDate.set is not implemented in {0}.".Inject(DebugName)); }
             set { throw new NotImplementedException("ExpectedCompletionDate.set is not implemented in {0}.".Inject(DebugName)); }
         }
 
@@ -43,7 +43,7 @@ namespace CodeEnv.Master.GameContent {
 
         public override string ImageFilename { get { return TempGameValues.EmptyImageFilename; } }
 
-        public NoConstruction() : base(null, default(GameDate)) { }
+        public NoConstruction() : base(null) { }
 
         public override bool TryCompleteConstruction(float productionToApply, out float unconsumedProduction) {
             throw new NotImplementedException("TryCompleteConstruction() is not implemented in {0}.".Inject(DebugName));

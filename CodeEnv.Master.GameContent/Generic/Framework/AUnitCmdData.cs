@@ -46,7 +46,7 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<float>(ref _unitMaxFormationRadius, value, "UnitMaxFormationRadius"); }
         }
 
-        public string DesignName { get; private set; }
+        public abstract IEnumerable<Formation> AcceptableFormations { get; }
 
         /// <summary>
         /// The radius of the Command, aka the radius of the HQElement.
@@ -191,28 +191,10 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private float _unitScience;
-        public float UnitScience {
-            get { return _unitScience; }
-            private set { SetProperty<float>(ref _unitScience, value, "UnitScience"); }
-        }
-
-        private float _unitCulture;
-        public float UnitCulture {
-            get { return _unitCulture; }
-            private set { SetProperty<float>(ref _unitCulture, value, "UnitCulture"); }
-        }
-
-        private decimal _unitIncome;
-        public decimal UnitIncome {
-            get { return _unitIncome; }
-            private set { SetProperty<decimal>(ref _unitIncome, value, "UnitIncome"); }
-        }
-
-        private decimal _unitExpense;
-        public decimal UnitExpense {
-            get { return _unitExpense; }
-            private set { SetProperty<decimal>(ref _unitExpense, value, "UnitExpense"); }
+        private OutputsYield _unitOutputs;
+        public OutputsYield UnitOutputs {
+            get { return _unitOutputs; }
+            private set { SetProperty<OutputsYield>(ref _unitOutputs, value, "UnitOutputs"); }
         }
 
         public IEnumerable<AUnitElementData> ElementsData { get { return _elementsData; } }
@@ -220,6 +202,8 @@ namespace CodeEnv.Master.GameContent {
         public IEnumerable<CmdSensor> Sensors { get; private set; }
 
         public FtlDampener FtlDampener { get; private set; }
+
+        public AUnitCmdDesign CmdDesign { get; set; }
 
         protected IList<AUnitElementData> _elementsData;
         protected IDictionary<AUnitElementData, IList<IDisposable>> _elementSubscriptionsLookup;
@@ -236,14 +220,14 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="sensors">The sensors.</param>
         /// <param name="ftlDampener">The FTL dampener.</param>
         /// <param name="cmdStat">The command stat.</param>
-        /// <param name="designName">Name of the design.</param>
+        /// <param name="cmdDesign">The command design.</param>
         public AUnitCmdData(IUnitCmd cmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors,
-            FtlDampener ftlDampener, ACmdModuleStat cmdStat, string designName)
+            FtlDampener ftlDampener, ACmdModuleStat cmdStat, AUnitCmdDesign cmdDesign)
             : base(cmd, owner, cmdStat.MaxHitPoints, passiveCMs) {
             FtlDampener = ftlDampener;
             Sensors = sensors;
             MaxCmdStaffEffectiveness = cmdStat.MaxCmdStaffEffectiveness;
-            DesignName = designName;
+            CmdDesign = cmdDesign;
             // A command's UnitMaxHitPoints are constructed from the sum of the elements
             InitializeCollections();
             Subscribe();
@@ -290,10 +274,7 @@ namespace CodeEnv.Master.GameContent {
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementData, CombatStrength>(ed => ed.OffensiveStrength, ElementOffensiveStrengthPropChangedHandler));
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementData, RangeDistance>(ed => ed.WeaponsRange, ElementWeaponsRangePropChangedHandler));
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementData, RangeDistance>(ed => ed.SensorRange, ElementSensorRangePropChangedHandler));
-            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementData, float>(ed => ed.Science, ElementSciencePropChangedHandler));
-            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementData, float>(ed => ed.Culture, ElementCulturePropChangedHandler));
-            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementData, decimal>(ed => ed.Income, ElementIncomePropChangedHandler));
-            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementData, decimal>(ed => ed.Expense, ElementExpensePropChangedHandler));
+            anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementData, OutputsYield>(ed => ed.Outputs, ElementOutputsPropChangedHandler));
         }
 
         #region Event and Property Change Handlers
@@ -378,20 +359,8 @@ namespace CodeEnv.Master.GameContent {
             RecalcUnitSensorRange();
         }
 
-        private void ElementSciencePropChangedHandler() {
-            RecalcUnitScience();
-        }
-
-        private void ElementCulturePropChangedHandler() {
-            RecalcUnitCulture();
-        }
-
-        private void ElementIncomePropChangedHandler() {
-            RecalcUnitIncome();
-        }
-
-        private void ElementExpensePropChangedHandler() {
-            RecalcUnitExpense();
+        private void ElementOutputsPropChangedHandler() {
+            RecalcUnitOutputs();
         }
 
         #endregion
@@ -565,10 +534,7 @@ namespace CodeEnv.Master.GameContent {
             RecalcUnitCurrentHitPoints();
             RecalcUnitWeaponsRange();
             RecalcUnitSensorRange();
-            RecalcUnitScience();
-            RecalcUnitCulture();
-            RecalcUnitIncome();
-            RecalcUnitExpense();
+            RecalcUnitOutputs();
         }
 
         private void RecalcUnitOffensiveStrength() {
@@ -611,20 +577,8 @@ namespace CodeEnv.Master.GameContent {
             UnitSensorRange = new RangeDistance(shortRangeDistance, mediumRangeDistance, longRangeDistance);
         }
 
-        private void RecalcUnitScience() {
-            UnitScience = _elementsData.Sum(ed => ed.Science);
-        }
-
-        private void RecalcUnitCulture() {
-            UnitCulture = _elementsData.Sum(ed => ed.Culture);
-        }
-
-        private void RecalcUnitIncome() {
-            UnitIncome = _elementsData.Sum(ed => ed.Income);
-        }
-
-        private void RecalcUnitExpense() {
-            UnitExpense = _elementsData.Sum(ed => ed.Expense);
+        private void RecalcUnitOutputs() {
+            UnitOutputs = _elementsData.Select(ed => ed.Outputs).Sum();
         }
 
         protected override void HandleDeath() {

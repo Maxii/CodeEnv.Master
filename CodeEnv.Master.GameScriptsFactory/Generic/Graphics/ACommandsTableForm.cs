@@ -55,24 +55,6 @@ public abstract class ACommandsTableForm : ATableForm {
         _table.repositionNow = true;
     }
 
-    public void SortOnScience() {
-        _table.onCustomSort = CompareScience;
-        _sortDirection = DetermineSortDirection(GuiElementID.ScienceLabel);
-        _table.repositionNow = true;
-    }
-
-    public void SortOnCulture() {
-        _table.onCustomSort = CompareCulture;
-        _sortDirection = DetermineSortDirection(GuiElementID.CultureLabel);
-        _table.repositionNow = true;
-    }
-
-    public void SortOnNetIncome() {
-        _table.onCustomSort = CompareNetIncome;
-        _sortDirection = DetermineSortDirection(GuiElementID.NetIncome);
-        _table.repositionNow = true;
-    }
-
     #endregion
 
 }

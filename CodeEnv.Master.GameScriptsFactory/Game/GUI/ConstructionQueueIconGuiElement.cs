@@ -152,7 +152,7 @@ public class ConstructionQueueIconGuiElement : AMultiSizeIconGuiElement {
         }
     }
 
-    protected override void HandleIconHovered(bool isOver) {
+    protected override void HandleGuiElementHovered(bool isOver) {
         if (isOver) {
             HoveredHudWindow.Instance.Show(FormID.Design, Construction.Design);
         }

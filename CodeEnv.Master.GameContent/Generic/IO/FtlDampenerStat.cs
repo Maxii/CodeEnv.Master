@@ -59,9 +59,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="constructionCost">The production cost.</param>
         /// <param name="expense">The expense.</param>
         /// <param name="rangeCat">The range category.</param>
+        /// <param name="refitBenefit">The refit benefit.</param>
         public FtlDampenerStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass,
-            float pwrRqmt, float constructionCost, decimal expense, RangeCategory rangeCat)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, constructionCost, expense, rangeCat, isDamageable: false) {
+            float pwrRqmt, float constructionCost, float expense, RangeCategory rangeCat, int refitBenefit)
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, constructionCost, expense, rangeCat, refitBenefit, isDamageable: false) {
             D.AssertEqual(RangeCategory.Short, rangeCat);
         }
 
@@ -72,7 +73,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="rangeCat">The range category.</param>
         public FtlDampenerStat(string name, RangeCategory rangeCat)
             : this(name, AtlasID.MyGui, TempGameValues.AnImageFilename, BasicDescriptionFormat.Inject(rangeCat.GetEnumAttributeText())
-                  , 0F, 0F, 0F, 1F, Constants.ZeroCurrency, rangeCat) {
+                  , 0F, 0F, 0F, 1F, Constants.ZeroF, rangeCat, 0) {
         }
 
         #region Object.Equals and GetHashCode Override

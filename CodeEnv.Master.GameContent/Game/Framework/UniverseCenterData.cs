@@ -33,6 +33,11 @@ namespace CodeEnv.Master.GameContent {
 
         public new UniverseCenterInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as UniverseCenterInfoAccessController; } }
 
+        private UniverseCenterPublisher _publisher;
+        public UniverseCenterPublisher Publisher {
+            get { return _publisher = _publisher ?? new UniverseCenterPublisher(this); }
+        }
+
         protected override IntelCoverage DefaultStartingIntelCoverage { get { return IntelCoverage.Basic; } }
 
         // No Mass as no Rigidbody

@@ -79,7 +79,9 @@ namespace CodeEnv.Master.GameContent {
 
         public float ConstructionCost { get; private set; }
 
-        public decimal Expense { get; private set; }
+        public float Expense { get; private set; }
+
+        public int RefitBenefit { get; private set; }
 
         public bool IsDamageable { get; private set; }
 
@@ -95,9 +97,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="pwrRqmt">The power required to operate the equipment.</param>
         /// <param name="constructionCost">The cost to produce this equipment.</param>
         /// <param name="expense">The expense required to operate this equipment.</param>
+        /// <param name="refitBenefit">The refit benefit.</param>
         /// <param name="isDamageable">if set to <c>true</c> [is damageable].</param>
         public AEquipmentStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass,
-            float pwrRqmt, float constructionCost, decimal expense, bool isDamageable) {
+            float pwrRqmt, float constructionCost, float expense, int refitBenefit, bool isDamageable) {
             Name = name;
             ImageAtlasID = imageAtlasID;
             ImageFilename = imageFilename;
@@ -107,6 +110,7 @@ namespace CodeEnv.Master.GameContent {
             PowerRequirement = pwrRqmt;
             ConstructionCost = constructionCost;
             Expense = expense;
+            RefitBenefit = refitBenefit;
             IsDamageable = isDamageable;
         }
 
@@ -132,6 +136,7 @@ namespace CodeEnv.Master.GameContent {
                 hash = hash * 31 + PowerRequirement.GetHashCode();
                 hash = hash * 31 + ConstructionCost.GetHashCode();
                 hash = hash * 31 + Expense.GetHashCode();
+                hash = hash * 31 + RefitBenefit.GetHashCode();
                 hash = hash * 31 + IsDamageable.GetHashCode();
                 return hash;
             }
@@ -146,7 +151,7 @@ namespace CodeEnv.Master.GameContent {
             return oStat.Name == Name && oStat.Category == Category && oStat.ImageAtlasID == ImageAtlasID
                 && oStat.ImageFilename == ImageFilename && oStat.Description == Description && oStat.Size == Size && oStat.Mass == Mass
                 && oStat.PowerRequirement == PowerRequirement && oStat.ConstructionCost == ConstructionCost && oStat.Expense == Expense
-                && oStat.IsDamageable == IsDamageable;
+                && oStat.RefitBenefit == RefitBenefit && oStat.IsDamageable == IsDamageable;
         }
 
         #endregion

@@ -44,7 +44,7 @@ namespace CodeEnv.Master.GameContent {
         public float Size { get { return Stat.Size; } }
         public float Mass { get { return Stat.Mass; } }
         public float PowerRequirement { get { return Stat.PowerRequirement; } }
-        public decimal Expense { get { return Stat.Expense; } }
+        public float Expense { get { return Stat.Expense; } }
 
         private bool _isActivated;
         /// <summary>
@@ -139,6 +139,14 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
+
+        /// <summary>
+        /// Returns <c>true</c> if the specs derived from the Equipment's Stat are equal to those of otherStat.
+        /// <remarks>Does not account for non-Stat values such as IsOperational, IsDamaged, etc.</remarks>
+        /// </summary>
+        /// <param name="otherStat">The other stat.</param>
+        /// <returns></returns>
+        public abstract bool AreSpecsEqual(AEquipmentStat otherStat);
 
         public sealed override string ToString() {
             return DebugName;

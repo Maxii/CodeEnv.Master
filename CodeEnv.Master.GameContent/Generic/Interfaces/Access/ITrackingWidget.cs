@@ -61,6 +61,8 @@ namespace CodeEnv.Master.GameContent {
 
         void Clear();
 
+        void Destroy();
+
     }
 }
 

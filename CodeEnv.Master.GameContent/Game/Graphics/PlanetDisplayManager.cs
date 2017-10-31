@@ -29,7 +29,7 @@ namespace CodeEnv.Master.GameContent {
 
         public new IWorldTrackingSprite TrackingIcon { get { return base.TrackingIcon; } }
 
-        protected override int IconDepth { get { return 2; } }
+        protected override int TrackingIconDepth { get { return 2; } }
 
         private IRevolver _revolver;
         private IEnumerable<MeshRenderer> _secondaryMeshRenderers;

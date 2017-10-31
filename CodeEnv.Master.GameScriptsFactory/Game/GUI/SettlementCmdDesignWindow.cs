@@ -45,18 +45,14 @@ public class SettlementCmdDesignWindow : AUnitDesignWindow {
         return _gameMgr.PlayersDesigns.GetAllUserSettlementCmdDesigns(includeObsolete).Cast<AUnitMemberDesign>();
     }
 
-    protected override bool IsDesignContentEqual(AUnitMemberDesign previousDesign, AUnitMemberDesign newDesign) {
-        return GameUtility.IsDesignContentEqual(previousDesign as SettlementCmdDesign, newDesign as SettlementCmdDesign);
-    }
-
     protected override bool TryGetCreateDesignPopupContent(out string popupTitle, out List<string> popupContent) {
         popupTitle = null;
         popupContent = null;
         return false;
     }
 
-    protected override AUnitMemberDesign GetEmptyTemplateDesign(string designNameHint) {
-        D.AssertNull(designNameHint);
+    protected override AUnitMemberDesign GetEmptyTemplateDesign(string emptyTemplateHint) {
+        D.AssertNull(emptyTemplateHint);
         return _gameMgr.PlayersDesigns.GetUserSettlementCmdDesign(TempGameValues.EmptySettlementCmdTemplateDesignName);
     }
 

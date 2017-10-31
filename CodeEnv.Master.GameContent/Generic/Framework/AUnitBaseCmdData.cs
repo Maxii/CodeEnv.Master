@@ -32,25 +32,33 @@ namespace CodeEnv.Master.GameContent {
             set { base.HQElementData = value; }
         }
 
+        private int _population;
+        public int Population {
+            get { return _population; }
+            set { SetProperty<int>(ref _population, value, "Population"); }
+        }
+
+        private float _approval;
+        public float Approval {
+            get { return _approval; }
+            set { SetProperty<float>(ref _approval, value, "Approval", ApprovalPropChangedHandler); }
+        }
+
         private BaseComposition _unitComposition;
         public BaseComposition UnitComposition {
             get { return _unitComposition; }
             private set { SetProperty<BaseComposition>(ref _unitComposition, value, "UnitComposition"); }
         }
 
+        private ResourcesYield _resources;
+        public ResourcesYield Resources {
+            get { return _resources; }
+            protected set { SetProperty<ResourcesYield>(ref _resources, value, "Resources"); }
+        }
+
+        public sealed override IEnumerable<Formation> AcceptableFormations { get { return TempGameValues.AcceptableBaseFormations; } }
+
         public new IEnumerable<FacilityData> ElementsData { get { return base.ElementsData.Cast<FacilityData>(); } }
-
-        private float _unitFood;
-        public float UnitFood {
-            get { return _unitFood; }
-            private set { SetProperty<float>(ref _unitFood, value, "UnitFood"); }
-        }
-
-        private float _unitProduction;
-        public float UnitProduction {
-            get { return _unitProduction; }
-            private set { SetProperty<float>(ref _unitProduction, value, "UnitProduction"); }
-        }
 
         private ConstructionInfo _currentConstruction = TempGameValues.NoConstruction;
         public ConstructionInfo CurrentConstruction {
@@ -75,8 +83,8 @@ namespace CodeEnv.Master.GameContent {
         #region Initialization 
 
         public AUnitBaseCmdData(IUnitCmd cmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors,
-            FtlDampener ftlDampener, ACmdModuleStat cmdStat, string designName)
-            : base(cmd, owner, passiveCMs, sensors, ftlDampener, cmdStat, designName) {
+            FtlDampener ftlDampener, ACmdModuleStat cmdStat, AUnitCmdDesign cmdDesign)
+            : base(cmd, owner, passiveCMs, sensors, ftlDampener, cmdStat, cmdDesign) {
         }
 
         protected override AIntel MakeIntelInstance() {
@@ -97,28 +105,10 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        protected override void Subscribe(AUnitElementData elementData) {
-            base.Subscribe(elementData);
-            var anElementsSubscriptions = _elementSubscriptionsLookup[elementData];
-            FacilityData facilityData = elementData as FacilityData;
-            anElementsSubscriptions.Add(facilityData.SubscribeToPropertyChanged<FacilityData, float>(ed => ed.Food, ElementFoodPropChangedHandler));
-            anElementsSubscriptions.Add(facilityData.SubscribeToPropertyChanged<FacilityData, float>(ed => ed.Production, ElementProductionPropChangedHandler));
-        }
-
-        protected override void RecalcPropertiesDerivedFromCombinedElements() {
-            base.RecalcPropertiesDerivedFromCombinedElements();
-            RecalcUnitFood();
-            RecalcUnitProduction();
-        }
-
         #region Event and Property Change Handlers
 
-        private void ElementFoodPropChangedHandler() {
-            RecalcUnitFood();
-        }
-
-        private void ElementProductionPropChangedHandler() {
-            RecalcUnitProduction();
+        private void ApprovalPropChangedHandler() {
+            Utility.ValidateForRange(Approval, Constants.ZeroPercent, Constants.OneHundredPercent);
         }
 
         #endregion
@@ -127,15 +117,6 @@ namespace CodeEnv.Master.GameContent {
             if (UnitWeaponsRange.Max > TempGameValues.__MaxBaseWeaponsRangeDistance) {
                 D.Warn("{0} max UnitWeaponsRange {1:0.#} > {2:0.#}.", DebugName, UnitWeaponsRange.Max, TempGameValues.__MaxBaseWeaponsRangeDistance);
             }
-        }
-
-        private void RecalcUnitFood() {
-            UnitFood = _elementsData.Cast<FacilityData>().Sum(ed => ed.Food);
-        }
-
-        private void RecalcUnitProduction() {
-            // FIXME 10.1.17 Keeps production above zero as its used as a denominator in division. Require CentralHub facility?
-            UnitProduction = Mathf.Clamp(_elementsData.Cast<FacilityData>().Sum(ed => ed.Production), Constants.OneF, Mathf.Infinity);
         }
 
         protected override void RefreshComposition() {

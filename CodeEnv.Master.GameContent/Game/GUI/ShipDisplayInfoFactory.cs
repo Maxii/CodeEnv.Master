@@ -36,11 +36,8 @@ namespace CodeEnv.Master.GameContent {
             //ItemInfoID.Offense,
             //ItemInfoID.WeaponsRange,
             ItemInfoID.AlertStatus,
-            ////ItemInfoID.SensorRange,  // makes no sense
-            //ItemInfoID.Science,
-            //ItemInfoID.Culture,
-            //ItemInfoID.NetIncome,
-            //ItemInfoID.Production,
+
+            ItemInfoID.Outputs,
             //ItemInfoID.Mass,
             ItemInfoID.ConstructionCost,
 
@@ -79,17 +76,18 @@ namespace CodeEnv.Master.GameContent {
                         break;
                     case ItemInfoID.Target:
                         isSuccess = true;
-                        colorizedText = _lineTemplate.Inject(report.Target != null ? report.Target.DebugName : Unknown);
+                        colorizedText = _lineTemplate.Inject(GetTargetText(report.Target, report.Owner));
                         break;
                     case ItemInfoID.TargetDistance:
                         isSuccess = true;
-                        float? targetDistance = CalcTargetDistance(report.Target, report.Position);
-                        colorizedText = _lineTemplate.Inject(targetDistance.HasValue ? GetFormat(infoID).Inject(targetDistance.Value) : Unknown);
+                        string noTgtDistanceValueText;
+                        float? tgtDistance = CalcTargetDistance(report.Target, report.Position, report.Owner, out noTgtDistanceValueText);
+                        colorizedText = _lineTemplate.Inject(tgtDistance.HasValue ? GetFormat(infoID).Inject(tgtDistance.Value) : noTgtDistanceValueText);
                         break;
                     case ItemInfoID.CurrentSpeedSetting:
                         isSuccess = true;
-                        float? speedSettingValue = CalcSpeedSettingValue(report.CurrentSpeedSetting, report.FullSpeed);
-                        string speedSettingText = report.CurrentSpeedSetting != Speed.None ? report.CurrentSpeedSetting.GetValueName() : Unknown;
+                        float? speedSettingValue = CalcSpeedSettingValue(report.CurrentSpeedSetting, report.FullSpeed, report.Owner);
+                        string speedSettingText = GetSpeedSettingText(report.CurrentSpeedSetting, report.Owner);
                         colorizedText = _lineTemplate.Inject(speedSettingText, speedSettingValue.HasValue ? GetFormat(infoID).Inject(speedSettingValue.Value) : Unknown);
                         break;
                     case ItemInfoID.FullSpeed:
@@ -115,27 +113,57 @@ namespace CodeEnv.Master.GameContent {
             return isSuccess;
         }
 
-        private float? CalcSpeedSettingValue(Speed speedSetting, float? fullSpeedValue) {
-            if (speedSetting != Speed.None) {
-                if (fullSpeedValue.HasValue) {
-                    return speedSetting.GetUnitsPerHour(fullSpeedValue.Value);
+        private string GetTargetText(INavigableDestination target, Player owner) {
+            string tgtText = Unknown;
+            if (target != null) {
+                tgtText = target.DebugName;
+            }
+            else {
+                if (owner != null && (owner.IsUser || owner.IsRelationshipWithUser(DiplomaticRelationship.Alliance))) {
+                    tgtText = "None";
                 }
+            }
+            return tgtText;
+        }
+
+        private float? CalcTargetDistance(INavigableDestination target, Vector3? fleetPosition, Player owner, out string noTgtDistanceValueText) {
+            noTgtDistanceValueText = Unknown;
+            if (owner != null && (owner.IsUser || owner.IsRelationshipWithUser(DiplomaticRelationship.Alliance))) {
+                noTgtDistanceValueText = "N/A";
+            }
+
+            if (target != null && fleetPosition.HasValue) {
+                return Vector3.Distance(target.Position, fleetPosition.Value);
             }
             return null;
         }
 
-        private float? CalcTargetDistance(INavigableDestination target, Vector3? shipPosition) {
-            if (target != null) {
-                IMortalItem_Ltd mortalTgt = target as IMortalItem_Ltd;
-                if (mortalTgt != null && !mortalTgt.IsOperational) {
-                    // target has died so don't try to access its position
-                    return null;
-                }
-                if (shipPosition.HasValue) {
-                    return Vector3.Distance(target.Position, shipPosition.Value);
+        private string GetSpeedSettingText(Speed speedSetting, Player owner) {
+            string text = Unknown;
+            if (speedSetting != Speed.None) {
+                text = speedSetting.GetValueName();
+            }
+            else {
+                if (owner != null && (owner.IsUser || owner.IsRelationshipWithUser(DiplomaticRelationship.Alliance))) {
+                    text = Speed.Stop.GetValueName();
                 }
             }
-            return null;
+            return text;
+        }
+
+        private float? CalcSpeedSettingValue(Speed speedSetting, float? fullSpeedValue, Player owner) {
+            float? speedValue = null;
+            if (speedSetting != Speed.None) {
+                if (fullSpeedValue.HasValue) {
+                    speedValue = speedSetting.GetUnitsPerHour(fullSpeedValue.Value);
+                }
+            }
+            else {
+                if (owner != null && (owner.IsUser || owner.IsRelationshipWithUser(DiplomaticRelationship.Alliance))) {
+                    speedValue = Constants.ZeroF;
+                }
+            }
+            return speedValue;
         }
 
 

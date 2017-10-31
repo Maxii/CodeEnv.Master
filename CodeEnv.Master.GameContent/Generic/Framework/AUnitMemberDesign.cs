@@ -25,13 +25,13 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AUnitMemberDesign {
 
-        private const string DebugNameFormat = "{0}[{1}]";
+        private const string DebugNameFormat = "{0}[{1}], Player = {2}, Status = {3}, ConstructionCost = {4:0.}, RefitBenefit = {5}";
         private const string DesignNameFormat = "{0}_{1}";
 
-        public string DebugName {
+        public virtual string DebugName {
             get {
                 string designNameText = DesignName.IsNullOrEmpty() ? "Not yet named" : DesignName;
-                return DebugNameFormat.Inject(GetType().Name, designNameText);
+                return DebugNameFormat.Inject(GetType().Name, designNameText, Player.DebugName, Status.GetValueName(), ConstructionCost, RefitBenefit);
             }
         }
 
@@ -61,6 +61,17 @@ namespace CodeEnv.Master.GameContent {
         public abstract string ImageFilename { get; }
 
         public int TotalReqdEquipmentSlots { get; private set; }
+
+        /// <summary>
+        /// The cost in units of production to construct this design from scratch.
+        /// </summary>
+        public float ConstructionCost { get; private set; }
+
+        /// <summary>
+        /// The benefit of refitting to this design.
+        /// <remarks>A value used to rank the 'value' of a design when deciding to refit. Higher is more valuable, aka an upgrade.</remarks>
+        /// </summary>
+        public int RefitBenefit { get; private set; }
 
         [System.Obsolete]
         public IEnumerable<PassiveCountermeasureStat> PassiveCmStats {
@@ -126,6 +137,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Returns <c>true</c> if there is another AEquipmentStat that has yet to be returned.
         /// All stats will eventually be returned including null stats.
+        /// <remarks>10.28.17 Only acquires EquipmentStats that require EquipmentSlots, e.g. does not acquire HullStats or EngineStats.</remarks>
         /// <remarks>Done this way to avoid exposing _equipmentLookupBySlotID.</remarks>
         /// <remarks>Usage: while(GetEquipmentStat(out stat)) { doWorkOn(stat) }.</remarks>
         /// <remarks>Warning: Be sure to call ResetIterators() if you stop use of this method
@@ -134,7 +146,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="slotID">The returned slotID.</param>
         /// <param name="equipStat">The returned equip stat.</param>
         /// <returns></returns>
-        public bool GetNextEquipmentStat(out EquipmentSlotID slotID, out AEquipmentStat equipStat) {
+        public bool TryGetNextEquipmentStat(out EquipmentSlotID slotID, out AEquipmentStat equipStat) {
             _statsEnumerator1 = _statsEnumerator1 ?? _equipLookupBySlotID.Keys.GetEnumerator();
             if (_statsEnumerator1.MoveNext()) {
                 slotID = _statsEnumerator1.Current;
@@ -150,6 +162,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Returns <c>true</c> if there is another AEquipmentStat of the provided EquipmentCategory that has yet to be returned.
         /// All stats of the provided EquipmentCategory will eventually be returned including null stats.
+        /// <remarks>10.28.17 Only acquires EquipmentStats that require EquipmentSlots, e.g. does not acquire HullStats or EngineStats.</remarks>
         /// <remarks>Done this way to avoid exposing _equipmentLookupBySlotID.</remarks>
         /// <remarks>Usage: while(GetEquipmentStat(out stat)) { doWorkOn(stat) }.</remarks>
         /// <remarks>Warning: Be sure to call ResetIterators() if you stop use of this method
@@ -159,7 +172,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="slotID">The returned slotID.</param>
         /// <param name="equipStat">The returned equip stat.</param>
         /// <returns></returns>
-        public bool GetNextEquipmentStat(EquipmentCategory equipCat, out EquipmentSlotID slotID, out AEquipmentStat equipStat) {
+        public bool TryGetNextEquipmentStat(EquipmentCategory equipCat, out EquipmentSlotID slotID, out AEquipmentStat equipStat) {
             D.Assert(SupportedEquipmentCategories.Contains(equipCat), equipCat.GetValueName());
 
             _statsEnumerator2 = _statsEnumerator2 ?? _equipLookupBySlotID.Keys.GetEnumerator();
@@ -179,6 +192,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Returns <c>true</c> if there is another AEquipmentStat of the provided EquipmentCategory that has yet to be returned.
         /// All stats of the provided EquipmentCategory will eventually be returned including null stats.
+        /// <remarks>10.28.17 Only acquires EquipmentStats that require EquipmentSlots, e.g. does not acquire HullStats or EngineStats.</remarks>
         /// <remarks>Done this way to avoid exposing _equipmentLookupBySlotID.</remarks>
         /// <remarks>Usage: while(GetEquipmentStat(out stat)) { doWorkOn(stat) }.</remarks>
         /// <remarks>Warning: Be sure to call ResetIterators() if you stop use of this method
@@ -187,9 +201,9 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="equipCat">The EquipmentCategory of the desired stats.</param>
         /// <param name="equipStat">The returned equip stat.</param>
         /// <returns></returns>
-        public bool GetNextEquipmentStat(EquipmentCategory equipCat, out AEquipmentStat equipStat) {
+        public bool TryGetNextEquipmentStat(EquipmentCategory equipCat, out AEquipmentStat equipStat) {
             EquipmentSlotID unusedSlotID;
-            return (GetNextEquipmentStat(equipCat, out unusedSlotID, out equipStat));
+            return (TryGetNextEquipmentStat(equipCat, out unusedSlotID, out equipStat));
         }
 
         public AEquipmentStat GetEquipmentStat(EquipmentSlotID slotID) {
@@ -237,12 +251,75 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
+        /// Calculates and assigns a value to each Property that is dependent on the equipment added to the design.
+        /// <remarks>Call after all EquipmentStats have been added.</remarks>
+        /// </summary>
+        public void AssignPropertyValues() {
+            ConstructionCost = CalcConstructionCost();
+            RefitBenefit = CalcRefitBenefit();
+        }
+
+        protected virtual float CalcConstructionCost() {
+            float cumConstructionCost = Constants.ZeroF;
+            EquipmentSlotID unusedSlot;
+            AEquipmentStat stat;
+            while (TryGetNextEquipmentStat(out unusedSlot, out stat)) {
+                if (stat != null) {
+                    cumConstructionCost += stat.ConstructionCost;
+                }
+            }
+            return cumConstructionCost;
+        }
+
+        protected virtual int CalcRefitBenefit() {
+            int cumBenefit = Constants.Zero;
+            EquipmentSlotID unusedSlot;
+            AEquipmentStat stat;
+            while (TryGetNextEquipmentStat(out unusedSlot, out stat)) {
+                if (stat != null) {
+                    cumBenefit += stat.RefitBenefit;
+                }
+            }
+            return cumBenefit;
+        }
+
+        /// <summary>
         /// Returns the maximum number of AEquipmentStat slots that this design is allowed for the provided EquipmentCategory.
         /// <remarks>AEquipmentStats that are required for a design are not included. These are typically added via the constructor.</remarks>
         /// </summary>
         /// <param name="equipCat">The equip cat.</param>
         /// <returns></returns>
         protected abstract int GetMaxEquipmentSlotsFor(EquipmentCategory equipCat);
+
+        /// <summary>
+        /// Returns <c>true</c> if the content is equal, excluding transient values like Name, Status and iterators.
+        /// </summary>
+        /// <param name="oDesign">The other design.</param>
+        /// <returns></returns>
+        public virtual bool HasEqualContent(AUnitMemberDesign oDesign) {
+            return oDesign.Player == Player && oDesign.ConstructionCost == ConstructionCost && oDesign.RefitBenefit == RefitBenefit
+                && AreStatsEqual(oDesign);
+        }
+
+        private bool AreStatsEqual(AUnitMemberDesign oDesign) {
+            EquipmentSlotID slotID;
+            AEquipmentStat aStat;
+            while (TryGetNextEquipmentStat(out slotID, out aStat)) {
+                AEquipmentStat bStat = oDesign.GetEquipmentStat(slotID);
+                if (aStat != bStat) {
+                    ResetIterators();
+                    return false;
+                }
+            }
+            while (oDesign.TryGetNextEquipmentStat(out slotID, out aStat)) {
+                AEquipmentStat bStat = GetEquipmentStat(slotID);
+                if (aStat != bStat) {
+                    oDesign.ResetIterators();
+                    return false;
+                }
+            }
+            return true;
+        }
 
         public sealed override string ToString() {
             return DebugName;
@@ -283,6 +360,17 @@ namespace CodeEnv.Master.GameContent {
 
         #region Value-based Equality Archive
 
+        ////public static bool operator ==(AUnitMemberDesign left, AUnitMemberDesign right) {
+        ////    // https://msdn.microsoft.com/en-us/library/ms173147(v=vs.90).aspx
+        ////    if (ReferenceEquals(left, right)) { return true; }
+        ////    if (((object)left == null) || ((object)right == null)) { return false; }
+        ////    return left.Equals(right);
+        ////}
+
+        ////public static bool operator !=(AUnitMemberDesign left, AUnitMemberDesign right) {
+        ////    return !(left == right);
+        ////}
+
         /// <summary>
         /// Returns a hash code for this instance.
         /// See "Page 254, C# 4.0 in a Nutshell."
@@ -294,12 +382,20 @@ namespace CodeEnv.Master.GameContent {
         ////    unchecked { // http://dobrzanski.net/2010/09/13/csharp-gethashcode-cause-overflowexception/
         ////        int hash = 17;  // 17 = some prime number
         ////        hash = hash * 31 + Player.GetHashCode(); // 31 = another prime number
-        ////        hash = hash * 31 + Category.GetHashCode();
+        ////        hash = hash * 31 + DesignName.GetHashCode();
+        ////        hash = hash * 31 + RootDesignName.GetHashCode();
+        ////        hash = hash * 31 + Status.GetHashCode();
+        ////        hash = hash * 31 + ImageAtlasID.GetHashCode();
+        ////        hash = hash * 31 + ImageFilename.GetHashCode();
         ////        hash = hash * 31 + TotalReqdEquipmentSlots.GetHashCode();
+        ////        hash = hash * 31 + ConstructionCost.GetHashCode();
+        ////        hash = hash * 31 + RefitBenefit.GetHashCode();
+        ////        hash = hash * 31 + SupportedEquipmentCategories.GetHashCode();
+        ////        hash = hash * 31 + _designNameCounter.GetHashCode();
 
         ////        EquipmentSlotID slotID;
         ////        AEquipmentStat eStat;
-        ////        while (GetNextEquipmentStat(out slotID, out eStat)) {
+        ////        while (TryGetNextEquipmentStat(out slotID, out eStat)) {
         ////            hash = hash * 31 + slotID.GetHashCode();
         ////            int eStatHash = (eStat == null) ? 0 : eStat.GetHashCode();
         ////            hash = hash * 31 + eStatHash;
@@ -314,33 +410,11 @@ namespace CodeEnv.Master.GameContent {
         ////    if (obj.GetType() != GetType()) { return false; }
 
         ////    AUnitMemberDesign oDesign = (AUnitMemberDesign)obj;
-        ////    D.AssertNull(_statsEnumerator1);
-        ////    D.AssertNull(_statsEnumerator2);
-        ////    D.AssertNull(oDesign._statsEnumerator1);
-        ////    D.AssertNull(oDesign._statsEnumerator2);
-
-        ////    if (oDesign.Player != Player || oDesign.Category != Category || oDesign.TotalReqdEquipmentSlots != TotalReqdEquipmentSlots) {
-        ////        return false;
-        ////    }
-        ////    EquipmentSlotID slotID;
-        ////    AEquipmentStat eStat;
-        ////    while (GetNextEquipmentStat(out slotID, out eStat)) {
-        ////        if (oDesign.GetEquipmentStat(slotID) != eStat) {
-        ////            ResetIterators();
-        ////            return false;
-        ////        }
-        ////    }
-        ////    while (oDesign.GetNextEquipmentStat(out slotID, out eStat)) {
-        ////        if (GetEquipmentStat(slotID) != eStat) {
-        ////            oDesign.ResetIterators();
-        ////            return false;
-        ////        }
-        ////    }
-        ////    return true;
-        ////}
-
-        ////protected void __ValidateHashCodesEqual(object obj) {
-        ////    D.AssertEqual(GetHashCode(), obj.GetHashCode(), "{0} HashCode != {1} HashCode.".Inject(DebugName, obj.ToString()));
+        ////    return oDesign.Player == Player && oDesign.DesignName == DesignName && oDesign.RootDesignName == RootDesignName
+        ////        && oDesign.Status == Status && oDesign.ImageAtlasID == ImageAtlasID && oDesign.ImageFilename == ImageFilename
+        ////        && oDesign.TotalReqdEquipmentSlots == TotalReqdEquipmentSlots && oDesign.ConstructionCost == ConstructionCost
+        ////        && oDesign.RefitBenefit == RefitBenefit && oDesign.SupportedEquipmentCategories == SupportedEquipmentCategories
+        ////        && oDesign._designNameCounter == _designNameCounter && AreStatsEqual(oDesign);
         ////}
 
         #endregion

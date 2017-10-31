@@ -27,12 +27,10 @@ namespace CodeEnv.Master.GameContent {
             get { return PlanetoidDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
         }
 
-        private IPlanetoid_Ltd _item;
-
-        public PlanetoidPublisher(PlanetoidData data, IPlanetoid_Ltd item) : base(data) { _item = item; }
+        public PlanetoidPublisher(PlanetoidData data) : base(data) { }
 
         protected override PlanetoidReport MakeReportInstance(Player player) {
-            return new PlanetoidReport(_data, player, _item);
+            return new PlanetoidReport(_data, player);
         }
 
     }

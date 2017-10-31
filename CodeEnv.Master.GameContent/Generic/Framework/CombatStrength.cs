@@ -278,6 +278,35 @@ namespace CodeEnv.Master.GameContent {
             return weaponsDamagePotential.Aggregate(defaultValueIfEmpty, (accum, damagePotential) => accum + damagePotential);
         }
 
+        public WDVStrength GetStrength(WDVCategory category) {
+            switch (category) {
+                case WDVCategory.Beam:
+                    return BeamDeliveryStrength;
+                case WDVCategory.Projectile:
+                    return ProjectileDeliveryStrength;
+                case WDVCategory.Missile:
+                    return MissileDeliveryStrength;
+                case WDVCategory.AssaultVehicle:
+                    return AssaultDeliveryStrength;
+                case WDVCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(category));
+            }
+        }
+
+        public string ToTextHud() {
+            if (Mode == CombatMode.Defensive) {
+                return DefensiveToTextHudFormat.Inject(BeamDeliveryStrength.ToTextHud(), ProjectileDeliveryStrength.ToTextHud(),
+                    MissileDeliveryStrength.ToTextHud(), AssaultDeliveryStrength.ToTextHud(), TotalDamageMitigation.ToTextHud());
+            }
+            if (Mode == CombatMode.Offensive) {
+                return OffensiveToTextHudFormat.Inject(BeamDeliveryStrength.ToTextHud(), BeamDamagePotential.ToTextHud(),
+                    ProjectileDeliveryStrength.ToTextHud(), ProjectileDamagePotential.ToTextHud(), MissileDeliveryStrength.ToTextHud(),
+                    MissileDamagePotential.ToTextHud(), AssaultDeliveryStrength.ToTextHud(), AssaultDamagePotential.ToTextHud());
+            }
+            return Mode.GetValueName();
+        }
+
         #region Object.Equals and GetHashCode Override
 
         public override bool Equals(object obj) {
@@ -310,19 +339,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
-
-        public string ToTextHud() {
-            if (Mode == CombatMode.Defensive) {
-                return DefensiveToTextHudFormat.Inject(BeamDeliveryStrength.ToTextHud(), ProjectileDeliveryStrength.ToTextHud(),
-                    MissileDeliveryStrength.ToTextHud(), AssaultDeliveryStrength.ToTextHud(), TotalDamageMitigation.ToTextHud());
-            }
-            if (Mode == CombatMode.Offensive) {
-                return OffensiveToTextHudFormat.Inject(BeamDeliveryStrength.ToTextHud(), BeamDamagePotential.ToTextHud(),
-                    ProjectileDeliveryStrength.ToTextHud(), ProjectileDamagePotential.ToTextHud(), MissileDeliveryStrength.ToTextHud(),
-                    MissileDamagePotential.ToTextHud(), AssaultDeliveryStrength.ToTextHud(), AssaultDamagePotential.ToTextHud());
-            }
-            return Mode.GetValueName();
-        }
 
         public override string ToString() {
             return DebugName;

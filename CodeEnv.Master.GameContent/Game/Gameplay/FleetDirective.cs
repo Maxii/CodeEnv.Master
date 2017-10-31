@@ -24,7 +24,7 @@ namespace CodeEnv.Master.GameContent {
         None,
 
         /// <summary>
-        /// Cancels any unit orders issued while paused.
+        /// Cancels any unit orders issued while in the CURRENT pause. Orders issued in a prior pause will not be canceled.
         /// <remarks>8.14.17 Must be issued by OrderSource.User and only during pause.</remarks>
         /// </summary>
         Cancel,

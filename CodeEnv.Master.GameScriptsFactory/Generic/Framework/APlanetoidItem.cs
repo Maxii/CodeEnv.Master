@@ -51,7 +51,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         set { base.Data = value; }
     }
 
-    public PlanetoidReport UserReport { get { return Publisher.GetUserReport(); } }
+    public PlanetoidReport UserReport { get { return Data.Publisher.GetUserReport(); } }
 
     public override float Radius { get { return Data.Radius; } }
 
@@ -67,11 +67,6 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
     /// </summary>
     protected abstract float ObstacleClearanceDistance { get; }
     protected SystemItem ParentSystem { get; private set; }
-
-    private PlanetoidPublisher _publisher;
-    private PlanetoidPublisher Publisher {
-        get { return _publisher = _publisher ?? new PlanetoidPublisher(Data, this); }
-    }
 
     protected SphereCollider _obstacleZoneCollider;
 
@@ -154,8 +149,8 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         Data.OrbitalSpeed = CelestialOrbitSimulator.RelativeOrbitSpeed;
     }
 
-    protected override ItemHoveredHudManager InitializeHudManager() {
-        return new ItemHoveredHudManager(Publisher);
+    protected override ItemHoveredHudManager InitializeHoveredHudManager() {
+        return new ItemHoveredHudManager(Data.Publisher);
     }
 
     protected override ICtxControl InitializeContextMenu(Player owner) {
@@ -182,10 +177,15 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         _obstacleZoneCollider.enabled = true;
     }
 
-    public PlanetoidReport GetReport(Player player) { return Publisher.GetReport(player); }
+    public PlanetoidReport GetReport(Player player) { return Data.Publisher.GetReport(player); }
 
     protected override void ShowSelectedItemHud() {
-        InteractableHudWindow.Instance.Show(FormID.UserPlanetoid, Data);
+        if (Owner.IsUser) {
+            InteractibleHudWindow.Instance.Show(FormID.UserPlanetoid, Data);
+        }
+        else {
+            InteractibleHudWindow.Instance.Show(FormID.NonUserPlanetoid, UserReport);
+        }
     }
 
     protected sealed override void HandleInfoAccessChangedFor(Player player) {
@@ -310,8 +310,6 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
     #endregion
 
     #region Debug
-
-    protected override bool IsSelectable { get { return IsDiscernibleToUser; } }  // allow debug die independent of Owner
 
     /// <summary>
     /// Debug test method used by PlanetoidCtxControl to kill planets and moons.

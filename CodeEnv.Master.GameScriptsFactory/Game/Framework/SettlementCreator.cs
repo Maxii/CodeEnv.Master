@@ -40,8 +40,8 @@ public class SettlementCreator : AAutoUnitCreator {
         _elements = new List<FacilityItem>();
         foreach (var designName in Configuration.ElementDesignNames) {
             FacilityDesign design = _gameMgr.PlayersDesigns.GetFacilityDesign(Owner, designName);
-            FollowableItemCameraStat cameraStat = MakeElementCameraStat(design.HullStat);
-            _elements.Add(_factory.MakeFacilityInstance(Owner, Topography.System, cameraStat, design, gameObject));
+            string name = _factory.__GetUniqueFacilityName(design.DesignName);
+            _elements.Add(_factory.MakeFacilityInstance(Owner, Topography.System, design, name, gameObject));
         }
     }
 
@@ -82,7 +82,7 @@ public class SettlementCreator : AAutoUnitCreator {
 
     protected override void BeginElementsOperations() {
         LogEvent();
-        _elements.ForAll(e => e.CommenceOperations());
+        _elements.ForAll(e => e.CommenceOperations(isInitialConstructionNeeded: false));
     }
 
     protected override bool BeginCommandOperations() {
@@ -97,6 +97,7 @@ public class SettlementCreator : AAutoUnitCreator {
         return new CmdCameraStat(minViewDistance, optViewDistanceAdder, fov: 60F);
     }
 
+    [Obsolete("Moved to UnitFactory")]
     private FollowableItemCameraStat MakeElementCameraStat(FacilityHullStat hullStat) {
         FacilityHullCategory hullCat = hullStat.HullCategory;
         float fov;

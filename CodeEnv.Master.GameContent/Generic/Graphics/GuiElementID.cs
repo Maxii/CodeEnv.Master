@@ -30,7 +30,7 @@ namespace CodeEnv.Master.GameContent {
 
         None = 0,
 
-        // last: Outputs = 102  
+        // last: CombatStance = 111  
 
         #region Checkboxes
 
@@ -131,25 +131,29 @@ namespace CodeEnv.Master.GameContent {
 
         SavedGamesPopupList = 25,
 
+
         #endregion
 
         #region Labels
 
-        NameLabel = 26,
+        Name = 26,
 
-        OrganicsLabel = 27,
+        // 10.14.17 Used for sorting table rows in Systems
+        Organics = 27,
+        Particulates = 28,
+        Energy = 29,
 
-        ParticulatesLabel = 28,
+        // 10.14.17 Used for sorting table rows in Cmds
+        Food = 103,
+        Production = 104,
+        Income = 105,
+        Expense = 106,
+        Science = 31,
+        Culture = 32,
 
-        EnergyLabel = 29,
-
-        SpeedLabel = 30,
-
-        ScienceLabel = 31,
-
-        CultureLabel = 32,
-
-        PopulationLabel = 43,
+        Speed = 30,
+        Formation = 109,
+        CombatStance = 111,
 
         DesignerUITitleLabel = 87,
 
@@ -184,11 +188,15 @@ namespace CodeEnv.Master.GameContent {
 
         Outputs = 102,
 
-        #endregion
+        Population = 108,
 
-        #region Input Fields
+        FormationChange = 107,
 
-        NameInput = 98,
+        NameChange = 98,
+
+        HeroChange = 43,
+
+        CombatStanceChange = 110,
 
         #endregion
 

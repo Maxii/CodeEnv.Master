@@ -42,6 +42,7 @@ namespace CodeEnv.Master.GameContent {
         /// <returns>
         ///   <c>true</c> if [is design equipment content equal] [the specified design a]; otherwise, <c>false</c>.
         /// </returns>
+        [Obsolete("Use built-in HasEqualContent instead as this is hard to maintain")]
         public static bool IsDesignContentEqual(ShipDesign designA, ShipDesign designB) {
             if (designA.CombatStance != designB.CombatStance || designA.FtlEngineStat != designB.FtlEngineStat
                 || designA.HullStat != designB.HullStat || designA.Player != designB.Player || designA.HQPriority != designB.HQPriority
@@ -50,13 +51,13 @@ namespace CodeEnv.Master.GameContent {
             }
             EquipmentSlotID slotID;
             AEquipmentStat eStat;
-            while (designA.GetNextEquipmentStat(out slotID, out eStat)) {
+            while (designA.TryGetNextEquipmentStat(out slotID, out eStat)) {
                 if (designB.GetEquipmentStat(slotID) != eStat) {
                     designA.ResetIterators();
                     return false;
                 }
             }
-            while (designB.GetNextEquipmentStat(out slotID, out eStat)) {
+            while (designB.TryGetNextEquipmentStat(out slotID, out eStat)) {
                 if (designA.GetEquipmentStat(slotID) != eStat) {
                     designB.ResetIterators();
                     return false;
@@ -75,6 +76,7 @@ namespace CodeEnv.Master.GameContent {
         /// <returns>
         ///   <c>true</c> if [is design equipment content equal] [the specified design a]; otherwise, <c>false</c>.
         /// </returns>
+        [Obsolete("Use built-in HasEqualContent instead as this is hard to maintain")]
         public static bool IsDesignContentEqual(FacilityDesign designA, FacilityDesign designB) {
             if (designA.HullStat != designB.HullStat || designA.Player != designB.Player || designA.HQPriority != designB.HQPriority
                 || designA.ReqdSRSensorStat != designB.ReqdSRSensorStat) {
@@ -82,13 +84,13 @@ namespace CodeEnv.Master.GameContent {
             }
             EquipmentSlotID slotID;
             AEquipmentStat eStat;
-            while (designA.GetNextEquipmentStat(out slotID, out eStat)) {
+            while (designA.TryGetNextEquipmentStat(out slotID, out eStat)) {
                 if (designB.GetEquipmentStat(slotID) != eStat) {
                     designA.ResetIterators();
                     return false;
                 }
             }
-            while (designB.GetNextEquipmentStat(out slotID, out eStat)) {
+            while (designB.TryGetNextEquipmentStat(out slotID, out eStat)) {
                 if (designA.GetEquipmentStat(slotID) != eStat) {
                     designB.ResetIterators();
                     return false;
@@ -107,6 +109,7 @@ namespace CodeEnv.Master.GameContent {
         /// <returns>
         ///   <c>true</c> if [is design equipment content equal] [the specified design a]; otherwise, <c>false</c>.
         /// </returns>
+        [Obsolete("Use built-in HasEqualContent instead as this is hard to maintain")]
         public static bool IsDesignContentEqual(StarbaseCmdDesign designA, StarbaseCmdDesign designB) {
             if (designA.Player != designB.Player || designA.ReqdCmdStat != designB.ReqdCmdStat || designA.FtlDampenerStat != designB.FtlDampenerStat
                 || designA.ReqdMRSensorStat != designB.ReqdMRSensorStat) {
@@ -114,13 +117,13 @@ namespace CodeEnv.Master.GameContent {
             }
             EquipmentSlotID slotID;
             AEquipmentStat eStat;
-            while (designA.GetNextEquipmentStat(out slotID, out eStat)) {
+            while (designA.TryGetNextEquipmentStat(out slotID, out eStat)) {
                 if (designB.GetEquipmentStat(slotID) != eStat) {
                     designA.ResetIterators();
                     return false;
                 }
             }
-            while (designB.GetNextEquipmentStat(out slotID, out eStat)) {
+            while (designB.TryGetNextEquipmentStat(out slotID, out eStat)) {
                 if (designA.GetEquipmentStat(slotID) != eStat) {
                     designB.ResetIterators();
                     return false;
@@ -139,6 +142,7 @@ namespace CodeEnv.Master.GameContent {
         /// <returns>
         ///   <c>true</c> if [is design equipment content equal] [the specified design a]; otherwise, <c>false</c>.
         /// </returns>
+        [Obsolete("Use built-in HasEqualContent instead as this is hard to maintain")]
         public static bool IsDesignContentEqual(SettlementCmdDesign designA, SettlementCmdDesign designB) {
             if (designA.Player != designB.Player || designA.ReqdCmdStat != designB.ReqdCmdStat || designA.FtlDampenerStat != designB.FtlDampenerStat
                 || designA.ReqdMRSensorStat != designB.ReqdMRSensorStat) {
@@ -147,13 +151,13 @@ namespace CodeEnv.Master.GameContent {
             }
             EquipmentSlotID slotID;
             AEquipmentStat eStat;
-            while (designA.GetNextEquipmentStat(out slotID, out eStat)) {
+            while (designA.TryGetNextEquipmentStat(out slotID, out eStat)) {
                 if (designB.GetEquipmentStat(slotID) != eStat) {
                     designA.ResetIterators();
                     return false;
                 }
             }
-            while (designB.GetNextEquipmentStat(out slotID, out eStat)) {
+            while (designB.TryGetNextEquipmentStat(out slotID, out eStat)) {
                 if (designA.GetEquipmentStat(slotID) != eStat) {
                     designB.ResetIterators();
                     return false;
@@ -171,6 +175,7 @@ namespace CodeEnv.Master.GameContent {
         /// <returns>
         ///   <c>true</c> if [is design equipment content equal] [the specified design a]; otherwise, <c>false</c>.
         /// </returns>
+        [Obsolete("Use built-in HasEqualContent instead as this is hard to maintain")]
         public static bool IsDesignContentEqual(FleetCmdDesign designA, FleetCmdDesign designB) {
             if (designA.Player != designB.Player || designA.ReqdCmdStat != designB.ReqdCmdStat || designA.FtlDampenerStat != designB.FtlDampenerStat
                 || designA.ReqdMRSensorStat != designB.ReqdMRSensorStat) {
@@ -178,13 +183,13 @@ namespace CodeEnv.Master.GameContent {
             }
             EquipmentSlotID slotID;
             AEquipmentStat eStat;
-            while (designA.GetNextEquipmentStat(out slotID, out eStat)) {
+            while (designA.TryGetNextEquipmentStat(out slotID, out eStat)) {
                 if (designB.GetEquipmentStat(slotID) != eStat) {
                     designA.ResetIterators();
                     return false;
                 }
             }
-            while (designB.GetNextEquipmentStat(out slotID, out eStat)) {
+            while (designB.TryGetNextEquipmentStat(out slotID, out eStat)) {
                 if (designA.GetEquipmentStat(slotID) != eStat) {
                     designB.ResetIterators();
                     return false;

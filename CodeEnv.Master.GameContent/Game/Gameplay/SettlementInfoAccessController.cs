@@ -28,14 +28,9 @@ namespace CodeEnv.Master.GameContent {
         protected override bool HasAccessToInfo_Comprehensive(ItemInfoID infoID, Player player) {
             switch (infoID) {
                 case ItemInfoID.CurrentCmdEffectiveness:
-                case ItemInfoID.UnitScience:
-                case ItemInfoID.UnitNetIncome:
-                case ItemInfoID.UnitCulture:
-                case ItemInfoID.UnitFood:
-                case ItemInfoID.UnitProduction:
                 case ItemInfoID.Capacity:
                 case ItemInfoID.Approval:
-                case ItemInfoID.Resources:
+                // 10.18.17 Resources and Outputs now handled by Report without AccessCntlr
                 case ItemInfoID.Population:
                 case ItemInfoID.CurrentConstruction:
                     return true;
@@ -84,7 +79,7 @@ namespace CodeEnv.Master.GameContent {
                     // If gets here, Settlement IntelCoverage is Basic, but ParentSystem could be allowing access.
                     // System uses NonRegressibleIntel where Coverage can't regress. Settlement uses RegressibleIntel which allows regress
                     SystemInfoAccessController parentSysAccessCntlr = (_data as SettlementCmdData).ParentSystemData.InfoAccessCntlr;
-                    return parentSysAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner);
+                    return parentSysAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner);
                 default:
                     return false;
             }

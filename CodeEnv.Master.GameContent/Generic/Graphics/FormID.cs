@@ -36,31 +36,29 @@ namespace CodeEnv.Master.GameContent {
 
         ResourceTooltip,
 
+        UserEmpireMgmt,
 
-        SettlementTableRow,
-
-        StarbaseTableRow,
-
-        FleetTableRow,
-
-        SystemsTableRow,
-
-        // 8.2.17 All of these selected item FormIDs are for user-owned items as the 'interactable' HUDs (InteractableHud,
-        // UnitHud) provide the ability to change values.
+        // 8.2.17 These 'User-owned' FormIDs are for use by the 'interactible' HUDs (InteractibleHud, UnitHud)
+        // which provide the ability to change values.
         UserSettlement,
         UserStarbase,
         UserFleet,
-        UserSystem,
         UserShip,
         UserFacility,
+        UserSystem,
         UserStar,
         UserPlanetoid,
 
-        // 8.2.17 These 'AI-owned' selected Unit FormIDs provide access to the UnitHud, but without the ability to change values
+        // 10.21.17 These 'AI or NonUser-owned' FormIDs are for use by the 'interactible' HUDs (InteractibleHud, UnitHud)
+        // which are read only with the exception of having the ability to change Unit member and System names.
         AiSettlement,
         AiStarbase,
         AiFleet,
-
+        AiShip,
+        AiFacility,
+        NonUserSystem,
+        NonUserStar,
+        NonUserPlanetoid,
 
         Design,
 
@@ -72,6 +70,11 @@ namespace CodeEnv.Master.GameContent {
         SettlementsTable,
         StarbasesTable,
         FleetsTable,
+
+        SettlementTableRow,
+        StarbaseTableRow,
+        FleetTableRow,
+        SystemsTableRow,
     }
 }
 

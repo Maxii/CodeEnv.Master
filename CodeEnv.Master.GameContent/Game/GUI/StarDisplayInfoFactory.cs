@@ -30,7 +30,9 @@ namespace CodeEnv.Master.GameContent {
             ItemInfoID.Category,
             ItemInfoID.Owner,
             //ItemInfoID.Capacity,
+
             ItemInfoID.Resources,
+
             ItemInfoID.SectorID,
 
             ItemInfoID.Separator,
@@ -69,8 +71,23 @@ namespace CodeEnv.Master.GameContent {
                     case ItemInfoID.Resources:
                         isSuccess = true;
                         colorizedText = _lineTemplate.Inject(report.Resources != default(ResourcesYield) ? report.Resources.ToString() : Unknown);
-                        ////colorizedText = _lineTemplate.Inject(report.Resources.HasValue ? report.Resources.Value.ToString() : Unknown);
                         break;
+                    ////case ItemInfoID.CommonResources:
+                    ////    isSuccess = true;
+                    ////    colorizedText = GetColorizedTextFor(ResourceCategory.Common, report.Resources);
+                    ////    break;
+                    ////case ItemInfoID.Titanium:
+                    ////    isSuccess = true;
+                    ////    colorizedText = GetColorizedTextFor(ResourceID.Titanium, report.Resources);
+                    ////    break;
+                    ////case ItemInfoID.Duranium:
+                    ////    isSuccess = true;
+                    ////    colorizedText = GetColorizedTextFor(ResourceID.Duranium, report.Resources);
+                    ////    break;
+                    ////case ItemInfoID.Unobtanium:
+                    ////    isSuccess = true;
+                    ////    colorizedText = GetColorizedTextFor(ResourceID.Unobtanium, report.Resources);
+                    ////    break;
                     default:
                         throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(infoID));
                 }

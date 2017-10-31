@@ -24,21 +24,19 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class UniverseCenterReport : AIntelItemReport {
 
-        public UniverseCenterReport(UniverseCenterData data, Player player, IUniverseCenter_Ltd item)
-            : base(data, player, item) {
-        }
+        public UniverseCenterReport(UniverseCenterData data, Player player) : base(data, player) { }
 
         protected override void AssignValues(AItemData data) {
             var ucData = data as UniverseCenterData;
             var accessCntlr = ucData.InfoAccessCntlr;
 
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Name)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Name)) {
                 Name = ucData.Name;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Position)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Position)) {
                 Position = ucData.Position;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Owner)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Owner)) {
                 Owner = ucData.Owner;
             }
         }

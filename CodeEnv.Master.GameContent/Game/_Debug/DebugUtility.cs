@@ -52,6 +52,9 @@ namespace CodeEnv.Master.GameContent {
                 return 3;   // HACK
             }
             int userFleetQty = gameSettings.UserStartLevel.FleetStartQty();
+            if (gameSettings.__DeployAdditionalUserCreators) {
+                userFleetQty += gameSettings.__AdditionalFleetCreatorQty;
+            }
             int aiFleetQty = 0;
             var aiStartLevels = gameSettings.AIPlayersStartLevels;
             foreach (var aiStartLevel in aiStartLevels) {
@@ -69,6 +72,9 @@ namespace CodeEnv.Master.GameContent {
                 return 4;   // HACK
             }
             int userBaseQty = gameSettings.UserStartLevel.StarbaseStartQty() + gameSettings.UserStartLevel.SettlementStartQty();
+            if (gameSettings.__DeployAdditionalUserCreators) {
+                userBaseQty += gameSettings.__AdditionalStarbaseCreatorQty + gameSettings.__AdditionalSettlementCreatorQty;
+            }
             int aiBaseQty = 0;
             var aiStartLevels = gameSettings.AIPlayersStartLevels;
             foreach (var aiStartLevel in aiStartLevels) {

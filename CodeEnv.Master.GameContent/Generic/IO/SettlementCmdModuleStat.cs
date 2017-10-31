@@ -46,18 +46,16 @@ namespace CodeEnv.Master.GameContent {
         public float StartingApproval { get; private set; }
 
         public SettlementCmdModuleStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass,
-            float pwrRqmt, decimal expense, float maxHitPts, float maxCmdStaffEffectiveness, int startingPopulation, float startingApproval)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, maxHitPts, maxCmdStaffEffectiveness) {
+            float pwrRqmt, float expense, float maxHitPts, float maxCmdStaffEffectiveness, int refitBenefit, int startingPopulation, float startingApproval)
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, expense, maxHitPts, maxCmdStaffEffectiveness, refitBenefit) {
             StartingPopulation = startingPopulation;
             Utility.ValidateForRange(startingApproval, Constants.ZeroPercent, Constants.OneHundredPercent);
             StartingApproval = startingApproval;
         }
 
         public SettlementCmdModuleStat(string name)
-            : this(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Basic CmdModule Stat", 0F, 0F, 0F, Constants.ZeroCurrency, 10,
-            Constants.OneHundredPercent, 100, Constants.OneHundredPercent) { }
-
-
+            : this(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Basic CmdModule Stat", 0F, 0F, 0F, Constants.ZeroF, 10,
+            Constants.OneHundredPercent, 0, 100, Constants.OneHundredPercent) { }
 
         #region Object.Equals and GetHashCode Override
 

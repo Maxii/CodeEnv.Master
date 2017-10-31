@@ -36,15 +36,15 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         event EventHandler ownerChanged;
 
-        Player Owner { get; }   // TODO will need ability to set
-        bool IsOperational { get; }
-        float Radius { get; }
-        Vector3 Position { get; }
-
         /// <summary>
         /// The display name of this item.
         /// </summary>
-        string Name { get; }
+        string Name { get; set; }
+
+        Player Owner { get; }
+        bool IsOperational { get; }
+        float Radius { get; }
+        Vector3 Position { get; }
 
         Topography Topography { get; }
 

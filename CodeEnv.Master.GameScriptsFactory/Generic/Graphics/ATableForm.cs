@@ -41,17 +41,9 @@ public abstract class ATableForm : AForm {
     protected SortDirection _sortDirection;
     protected UITable _table;
 
-    /// <summary>
-    /// The sort direction value that _lastSortDirection should be set to when ResetForReuse.
-    /// <remarks>Our goal is to resume the same sort topic and direction that was used when this form was last used.</remarks>
-    /// <remarks>This saved value will be the inverse of the _lastSortDirection value since 
-    /// DetermineSortDirection() will derive the current sort direction by inverting the value of _lastSortDirection. 
-    /// Handled this way to withstand multiple ResetForReuse() calls between use.</remarks>
-    /// </summary>
-    ////private SortDirection _lastSortDirectionValueToAssumeWhenResetForReuse = SortDirection.Descending;
     private Transform _tableContainer;
     private UIScrollView _tableScrollView;
-    private GuiElementID _lastSortTopic = GuiElementID.NameLabel;
+    private GuiElementID _lastSortTopic = GuiElementID.Name;
     private SortDirection _lastSortDirection = SortDirection.Descending;
     private IList<ATableRowForm> _rowFormsInUse;
     private List<ATableRowForm> _rowFormsAvailable;
@@ -115,7 +107,7 @@ public abstract class ATableForm : AForm {
     /// Resumes the previous sort topic and direction.
     /// <remarks>SortDirection is assigned during SortOnXXX(). Since we are resuming the same sort topic,
     /// DetermineSortDirection() will toggle _sortDirection as it normally does, so we need to pre-toggle
-    /// that value here so the same direction is resumed.</remarks>
+    /// _lastSortDirection here so _sortDirection is toggled to the direction we want resumed.</remarks>
     /// </summary>
     /// <param name="sortTopicToResume">The sort topic to resume.</param>
     private void ResumePreviousSortTopicAndDirection(GuiElementID sortTopicToResume) {
@@ -186,7 +178,7 @@ public abstract class ATableForm : AForm {
 
     public void SortOnName() {
         _table.onCustomSort = CompareName;
-        _sortDirection = DetermineSortDirection(GuiElementID.NameLabel);
+        _sortDirection = DetermineSortDirection(GuiElementID.Name);
         _table.repositionNow = true;
     }
 
@@ -202,16 +194,64 @@ public abstract class ATableForm : AForm {
         _table.repositionNow = true;
     }
 
+    public void SortOnFood() {
+        _table.onCustomSort = CompareFood;
+        _sortDirection = DetermineSortDirection(GuiElementID.Food);
+        _table.repositionNow = true;
+    }
+
+    public void SortOnProduction() {
+        _table.onCustomSort = CompareProduction;
+        _sortDirection = DetermineSortDirection(GuiElementID.Production);
+        _table.repositionNow = true;
+    }
+
+    public void SortOnIncome() {
+        _table.onCustomSort = CompareIncome;
+        _sortDirection = DetermineSortDirection(GuiElementID.Income);
+        _table.repositionNow = true;
+    }
+
+    public void SortOnExpense() {
+        _table.onCustomSort = CompareExpense;
+        _sortDirection = DetermineSortDirection(GuiElementID.Expense);
+        _table.repositionNow = true;
+    }
+
+    public void SortOnNetIncome() {
+        _table.onCustomSort = CompareNetIncome;
+        _sortDirection = DetermineSortDirection(GuiElementID.NetIncome);
+        _table.repositionNow = true;
+    }
+
+    public void SortOnScience() {
+        _table.onCustomSort = CompareScience;
+        _sortDirection = DetermineSortDirection(GuiElementID.Science);
+        _table.repositionNow = true;
+    }
+
+    public void SortOnCulture() {
+        _table.onCustomSort = CompareCulture;
+        _sortDirection = DetermineSortDirection(GuiElementID.Culture);
+        _table.repositionNow = true;
+    }
+
+    public void SortOnResources() {
+        _table.onCustomSort = CompareResources;
+        _sortDirection = DetermineSortDirection(GuiElementID.Resources);
+        _table.repositionNow = true;
+    }
+
     #region Sort Support
 
     // Note 1: These comparison algorithms will be called multiple times when doing the sort so _sortDirection must be setup outside before sorting starts
     // Note 2: All Compare methods are located here. Only a subset are used by any particular Table Screen Manager
 
     private int CompareName(Transform rowA, Transform rowB) {
-        _lastSortTopic = GuiElementID.NameLabel;
-        var rowANameLabel = GetLabel(rowA, GuiElementID.NameLabel);
-        var rowBNameLabel = GetLabel(rowB, GuiElementID.NameLabel);
-        return (int)_sortDirection * rowANameLabel.text.CompareTo(rowBNameLabel.text);
+        _lastSortTopic = GuiElementID.Name;
+        var rowAName = GetLabel(rowA, GuiElementID.Name);
+        var rowBName = GetLabel(rowB, GuiElementID.Name);
+        return (int)_sortDirection * rowAName.text.CompareTo(rowBName.text);
     }
 
     private int CompareOwner(Transform rowA, Transform rowB) {
@@ -228,38 +268,87 @@ public abstract class ATableForm : AForm {
         return (int)_sortDirection * rowALocationElement.CompareTo(rowBLocationElement);
     }
 
-    protected int CompareResources(Transform rowA, Transform rowB) {
+    private int CompareResources(Transform rowA, Transform rowB) {
         _lastSortTopic = GuiElementID.Resources;
         var rowAResourcesElement = GetGuiElement(rowA, GuiElementID.Resources) as ResourcesGuiElement;
         var rowBResourcesElement = GetGuiElement(rowB, GuiElementID.Resources) as ResourcesGuiElement;
         return (int)_sortDirection * rowAResourcesElement.CompareTo(rowBResourcesElement);
     }
 
+    private int CompareFood(Transform rowA, Transform rowB) {
+        _lastSortTopic = GuiElementID.Food;
+        var rowAFood = GetLabel(rowA, GuiElementID.Food);
+        var rowBFood = GetLabel(rowB, GuiElementID.Food);
+        return (int)_sortDirection * CompareEmbeddedFloat(rowAFood.text, rowBFood.text);
+    }
+
+    private int CompareProduction(Transform rowA, Transform rowB) {
+        _lastSortTopic = GuiElementID.Production;
+        var rowAProdn = GetLabel(rowA, GuiElementID.Production);
+        var rowBProdn = GetLabel(rowB, GuiElementID.Production);
+        return (int)_sortDirection * CompareEmbeddedFloat(rowAProdn.text, rowBProdn.text);
+    }
+
+    private int CompareIncome(Transform rowA, Transform rowB) {
+        _lastSortTopic = GuiElementID.Income;
+        var rowAIncome = GetLabel(rowA, GuiElementID.Income);
+        var rowBIncome = GetLabel(rowB, GuiElementID.Income);
+        return (int)_sortDirection * CompareEmbeddedFloat(rowAIncome.text, rowBIncome.text);
+    }
+
+    private int CompareExpense(Transform rowA, Transform rowB) {
+        _lastSortTopic = GuiElementID.Expense;
+        var rowAExpense = GetLabel(rowA, GuiElementID.Expense);
+        var rowBExpense = GetLabel(rowB, GuiElementID.Expense);
+        return (int)_sortDirection * CompareEmbeddedFloat(rowAExpense.text, rowBExpense.text);
+    }
+
+    private int CompareNetIncome(Transform rowA, Transform rowB) {
+        _lastSortTopic = GuiElementID.NetIncome;
+        var rowANetIncomeElement = GetGuiElement(rowA, GuiElementID.NetIncome) as NetIncomeGuiElement;
+        var rowBNetIncomeElement = GetGuiElement(rowB, GuiElementID.NetIncome) as NetIncomeGuiElement;
+        return (int)_sortDirection * rowANetIncomeElement.CompareTo(rowBNetIncomeElement);
+    }
+
+    private int CompareScience(Transform rowA, Transform rowB) {
+        _lastSortTopic = GuiElementID.Science;
+        var rowAScienceLabel = GetLabel(rowA, GuiElementID.Science);
+        var rowBScienceLabel = GetLabel(rowB, GuiElementID.Science);
+        return (int)_sortDirection * CompareEmbeddedFloat(rowAScienceLabel.text, rowBScienceLabel.text);
+    }
+
+    private int CompareCulture(Transform rowA, Transform rowB) {
+        _lastSortTopic = GuiElementID.Culture;
+        var rowACultureLabel = GetLabel(rowA, GuiElementID.Culture);
+        var rowBCultureLabel = GetLabel(rowB, GuiElementID.Culture);
+        return (int)_sortDirection * CompareEmbeddedFloat(rowACultureLabel.text, rowBCultureLabel.text);
+    }
+
     protected int CompareOrganics(Transform rowA, Transform rowB) {
-        _lastSortTopic = GuiElementID.OrganicsLabel;
-        var rowAOrganicsLabel = GetLabel(rowA, GuiElementID.OrganicsLabel);
-        var rowBOrganicsLabel = GetLabel(rowB, GuiElementID.OrganicsLabel);
-        return (int)_sortDirection * CompareEmbeddedFloat(rowAOrganicsLabel.text, rowBOrganicsLabel.text);
+        _lastSortTopic = GuiElementID.Organics;
+        var rowAOrganics = GetLabel(rowA, GuiElementID.Organics);
+        var rowBOrganics = GetLabel(rowB, GuiElementID.Organics);
+        return (int)_sortDirection * CompareEmbeddedFloat(rowAOrganics.text, rowBOrganics.text);
     }
 
     protected int CompareParticulates(Transform rowA, Transform rowB) {
-        _lastSortTopic = GuiElementID.ParticulatesLabel;
-        var rowAParticulatesLabel = GetLabel(rowA, GuiElementID.ParticulatesLabel);
-        var rowBParticulatesLabel = GetLabel(rowB, GuiElementID.ParticulatesLabel);
-        return (int)_sortDirection * CompareEmbeddedFloat(rowAParticulatesLabel.text, rowBParticulatesLabel.text);
+        _lastSortTopic = GuiElementID.Particulates;
+        var rowAParticulates = GetLabel(rowA, GuiElementID.Particulates);
+        var rowBParticulates = GetLabel(rowB, GuiElementID.Particulates);
+        return (int)_sortDirection * CompareEmbeddedFloat(rowAParticulates.text, rowBParticulates.text);
     }
 
     protected int CompareEnergy(Transform rowA, Transform rowB) {
-        _lastSortTopic = GuiElementID.EnergyLabel;
-        var rowAEnergyLabel = GetLabel(rowA, GuiElementID.EnergyLabel);
-        var rowBEnergyLabel = GetLabel(rowB, GuiElementID.EnergyLabel);
-        return (int)_sortDirection * CompareEmbeddedFloat(rowAEnergyLabel.text, rowBEnergyLabel.text);
+        _lastSortTopic = GuiElementID.Energy;
+        var rowAEnergy = GetLabel(rowA, GuiElementID.Energy);
+        var rowBEnergy = GetLabel(rowB, GuiElementID.Energy);
+        return (int)_sortDirection * CompareEmbeddedFloat(rowAEnergy.text, rowBEnergy.text);
     }
 
     protected int CompareHero(Transform rowA, Transform rowB) {
         _lastSortTopic = GuiElementID.Hero;
-        var rowAHeroElement = GetGuiElement(rowA, GuiElementID.Hero) as HeroIconGuiElement;
-        var rowBHeroElement = GetGuiElement(rowB, GuiElementID.Hero) as HeroIconGuiElement;
+        var rowAHeroElement = GetGuiElement(rowA, GuiElementID.Hero) as HeroGuiElement;
+        var rowBHeroElement = GetGuiElement(rowB, GuiElementID.Hero) as HeroGuiElement;
         return (int)_sortDirection * rowAHeroElement.CompareTo(rowBHeroElement);
     }
 
@@ -291,32 +380,11 @@ public abstract class ATableForm : AForm {
         return (int)_sortDirection * rowAStrengthElement.CompareTo(rowBStrengthElement);
     }
 
-    protected int CompareScience(Transform rowA, Transform rowB) {
-        _lastSortTopic = GuiElementID.ScienceLabel;
-        var rowAScienceLabel = GetLabel(rowA, GuiElementID.ScienceLabel);
-        var rowBScienceLabel = GetLabel(rowB, GuiElementID.ScienceLabel);
-        return (int)_sortDirection * CompareEmbeddedFloat(rowAScienceLabel.text, rowBScienceLabel.text);
-    }
-
-    protected int CompareCulture(Transform rowA, Transform rowB) {
-        _lastSortTopic = GuiElementID.CultureLabel;
-        var rowACultureLabel = GetLabel(rowA, GuiElementID.CultureLabel);
-        var rowBCultureLabel = GetLabel(rowB, GuiElementID.CultureLabel);
-        return (int)_sortDirection * CompareEmbeddedFloat(rowACultureLabel.text, rowBCultureLabel.text);
-    }
-
-    protected int CompareNetIncome(Transform rowA, Transform rowB) {
-        _lastSortTopic = GuiElementID.NetIncome;
-        var rowANetIncomeElement = GetGuiElement(rowA, GuiElementID.NetIncome) as NetIncomeGuiElement;
-        var rowBNetIncomeElement = GetGuiElement(rowB, GuiElementID.NetIncome) as NetIncomeGuiElement;
-        return (int)_sortDirection * rowANetIncomeElement.CompareTo(rowBNetIncomeElement);
-    }
-
     protected int ComparePopulation(Transform rowA, Transform rowB) {
-        _lastSortTopic = GuiElementID.PopulationLabel;
-        var rowAPopulationLabel = GetLabel(rowA, GuiElementID.PopulationLabel);
-        var rowBPopulationLabel = GetLabel(rowB, GuiElementID.PopulationLabel);
-        return (int)_sortDirection * CompareEmbeddedInt(rowAPopulationLabel.text, rowBPopulationLabel.text);
+        _lastSortTopic = GuiElementID.Population;
+        var rowAPopulation = GetGuiElement(rowA, GuiElementID.Population) as PopulationGuiElement;
+        var rowBPopulation = GetGuiElement(rowB, GuiElementID.Population) as PopulationGuiElement;
+        return (int)_sortDirection * rowAPopulation.CompareTo(rowBPopulation);
     }
 
     protected int CompareApproval(Transform rowA, Transform rowB) {
@@ -327,10 +395,10 @@ public abstract class ATableForm : AForm {
     }
 
     protected int CompareSpeed(Transform rowA, Transform rowB) {
-        _lastSortTopic = GuiElementID.SpeedLabel;
-        var rowASpeedLabel = GetLabel(rowA, GuiElementID.SpeedLabel);
-        var rowBSpeedLabel = GetLabel(rowB, GuiElementID.SpeedLabel);
-        return (int)_sortDirection * CompareEmbeddedFloat(rowASpeedLabel.text, rowBSpeedLabel.text);
+        _lastSortTopic = GuiElementID.Speed;
+        var rowASpeed = GetLabel(rowA, GuiElementID.Speed);
+        var rowBSpeed = GetLabel(rowB, GuiElementID.Speed);
+        return (int)_sortDirection * CompareEmbeddedFloat(rowASpeed.text, rowBSpeed.text);
     }
 
     protected int CompareConstruction(Transform rowA, Transform rowB) {
@@ -367,7 +435,6 @@ public abstract class ATableForm : AForm {
             sortDirection = ToggleDirection(_lastSortDirection);
         }
         _lastSortDirection = sortDirection;
-        ////_lastSortDirectionValueToAssumeWhenResetForReuse = ToggleDirection(_lastSortDirection);
         //D.Log("{0}.DetermineSortDirection(Topic: {1}): Direction: {2}, Value: {3}.", DebugName, sortTopic.GetValueName(), sortDirection.GetValueName(), (int)sortDirection);
         return sortDirection;
     }
@@ -439,7 +506,6 @@ public abstract class ATableForm : AForm {
 
     private void ResetSortStatesForReuse() {
         //D.Log("{0}.ResetSortStatesForReuse() called.", DebugName);
-        ////_lastSortDirection = _lastSortDirectionValueToAssumeWhenResetForReuse;
         // keep _lastSortTopic and _lastSortDirection the same to sort the same topic and direction when reused
     }
 

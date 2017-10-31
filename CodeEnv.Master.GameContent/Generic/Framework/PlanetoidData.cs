@@ -62,6 +62,12 @@ namespace CodeEnv.Master.GameContent {
 
         public new PlanetoidInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as PlanetoidInfoAccessController; } }
 
+        private PlanetoidPublisher _publisher;
+        public PlanetoidPublisher Publisher {
+            get { return _publisher = _publisher ?? new PlanetoidPublisher(this); }
+        }
+
+
         #region Initialization 
 
         /// <summary>
@@ -116,6 +122,8 @@ namespace CodeEnv.Master.GameContent {
         protected override AIntel MakeIntelInstance() {
             return new NonRegressibleIntel();
         }
+
+        public PlanetoidReport GetReport(Player player) { return Publisher.GetReport(player); }
 
     }
 }

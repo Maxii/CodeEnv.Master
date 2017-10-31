@@ -642,7 +642,30 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        #region OutputsID
+        #region ResourceCategory
+
+        private static ResourceID[] CommonResourceIDs = { ResourceID.Organics, ResourceID.Particulates, ResourceID.Energy };
+        private static ResourceID[] StrategicResourceIDs = { ResourceID.Titanium, ResourceID.Duranium, ResourceID.Unobtanium };
+        private static ResourceID[] AllResourceIDs = { ResourceID.Organics, ResourceID.Particulates, ResourceID.Energy, ResourceID.Titanium, ResourceID.Duranium, ResourceID.Unobtanium };
+
+        public static IEnumerable<ResourceID> GetResourceIDs(this ResourceCategory category) {
+            switch (category) {
+                case ResourceCategory.Common:
+                    return CommonResourceIDs;
+                case ResourceCategory.Strategic:
+                    return StrategicResourceIDs;
+                case ResourceCategory.All:
+                    return AllResourceIDs;
+                case ResourceCategory.Luxury:
+                case ResourceCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(category));
+            }
+        }
+
+        #endregion
+
+        #region OutputID
 
         // IMPROVE Externalize like ResourcesID
 
@@ -652,33 +675,33 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="id">The identifier.</param>
         /// <returns></returns>
         /// <exception cref="System.NotImplementedException"></exception>
-        public static string GetImageFilename(this OutputsID id) {
+        public static string GetImageFilename(this OutputID id) {
             switch (id) {
-                case OutputsID.Food:
-                case OutputsID.Prodn:
-                case OutputsID.Income:
-                case OutputsID.Expense:
-                case OutputsID.NetIncome:
-                case OutputsID.Science:
-                case OutputsID.Culture:
+                case OutputID.Food:
+                case OutputID.Production:
+                case OutputID.Income:
+                case OutputID.Expense:
+                case OutputID.NetIncome:
+                case OutputID.Science:
+                case OutputID.Culture:
                     return TempGameValues.AnImageFilename;
-                case OutputsID.None:
+                case OutputID.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(id));
             }
         }
 
-        public static AtlasID GetImageAtlasID(this OutputsID id) {
+        public static AtlasID GetImageAtlasID(this OutputID id) {
             switch (id) {
-                case OutputsID.Food:
-                case OutputsID.Prodn:
-                case OutputsID.Income:
-                case OutputsID.Expense:
-                case OutputsID.NetIncome:
-                case OutputsID.Science:
-                case OutputsID.Culture:
+                case OutputID.Food:
+                case OutputID.Production:
+                case OutputID.Income:
+                case OutputID.Expense:
+                case OutputID.NetIncome:
+                case OutputID.Science:
+                case OutputID.Culture:
                     return AtlasID.MyGui;
-                case OutputsID.None:
+                case OutputID.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(id));
             }
@@ -690,55 +713,55 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="id">The identifier.</param>
         /// <returns></returns>
         /// <exception cref="System.NotImplementedException"></exception>
-        public static string GetIconFilename(this OutputsID id) {
+        public static string GetIconFilename(this OutputID id) {
             switch (id) {
-                case OutputsID.Food:
+                case OutputID.Food:
                     return TempGameValues.FoodIconFilename;
-                case OutputsID.Prodn:
+                case OutputID.Production:
                     return TempGameValues.ProductionIconFilename;
-                case OutputsID.Income:
+                case OutputID.Income:
                     return TempGameValues.IncomeIconFilename;
-                case OutputsID.Expense:
+                case OutputID.Expense:
                     return TempGameValues.ExpenseIconFilename;
-                case OutputsID.NetIncome:
+                case OutputID.NetIncome:
                     return TempGameValues.NetIncomeIconFilename;
-                case OutputsID.Science:
+                case OutputID.Science:
                     return TempGameValues.ScienceIconFilename;
-                case OutputsID.Culture:
+                case OutputID.Culture:
                     return TempGameValues.CultureIconFilename;
-                case OutputsID.None:
+                case OutputID.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(id));
             }
         }
 
-        public static AtlasID GetIconAtlasID(this OutputsID id) {
+        public static AtlasID GetIconAtlasID(this OutputID id) {
             switch (id) {
-                case OutputsID.Food:
-                case OutputsID.Prodn:
-                case OutputsID.Income:
-                case OutputsID.Expense:
-                case OutputsID.NetIncome:
-                case OutputsID.Science:
-                case OutputsID.Culture:
+                case OutputID.Food:
+                case OutputID.Production:
+                case OutputID.Income:
+                case OutputID.Expense:
+                case OutputID.NetIncome:
+                case OutputID.Science:
+                case OutputID.Culture:
                     return AtlasID.MyGui;
-                case OutputsID.None:
+                case OutputID.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(id));
             }
         }
 
-        public static string GetDescription(this OutputsID id) {
+        public static string GetDescription(this OutputID id) {
             switch (id) {
-                case OutputsID.Food:
-                case OutputsID.Prodn:
-                case OutputsID.Income:
-                case OutputsID.Expense:
-                case OutputsID.NetIncome:
-                case OutputsID.Science:
-                case OutputsID.Culture:
+                case OutputID.Food:
+                case OutputID.Production:
+                case OutputID.Income:
+                case OutputID.Expense:
+                case OutputID.NetIncome:
+                case OutputID.Science:
+                case OutputID.Culture:
                     return "An Outputs Description...";
-                case OutputsID.None:
+                case OutputID.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(id));
             }
@@ -746,6 +769,87 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        #region Combat Strength
+
+        public static AtlasID GetImageAtlasID(this WDVCategory category) {
+            switch (category) {
+                case WDVCategory.Beam:
+                case WDVCategory.Projectile:
+                case WDVCategory.Missile:
+                case WDVCategory.AssaultVehicle:
+                    return AtlasID.MyGui;
+                case WDVCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(category));
+            }
+        }
+
+        public static string GetImageFilename(this WDVCategory category) {
+            switch (category) {
+                case WDVCategory.Beam:
+                case WDVCategory.Projectile:
+                case WDVCategory.Missile:
+                case WDVCategory.AssaultVehicle:
+                    return TempGameValues.AnImageFilename;
+                case WDVCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(category));
+            }
+        }
+
+        public static AtlasID GetIconAtlasID(this WDVCategory category) {
+            switch (category) {
+                case WDVCategory.Beam:
+                case WDVCategory.Projectile:
+                case WDVCategory.Missile:
+                case WDVCategory.AssaultVehicle:
+                    return AtlasID.MyGui;
+                case WDVCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(category));
+            }
+        }
+
+        public static string GetIconFilename(this WDVCategory category) {
+            switch (category) {
+                case WDVCategory.Beam:
+                    return TempGameValues.BeamIconFilename;
+                case WDVCategory.Projectile:
+                    return TempGameValues.ProjectileIconFilename;
+                case WDVCategory.Missile:
+                    return TempGameValues.MissileIconFilename;
+                case WDVCategory.AssaultVehicle:
+                    return TempGameValues.AssaultVehicleIconFilename;
+                case WDVCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(category));
+            }
+        }
+
+        public static AtlasID GetIconAtlasID(this CombatStrength.CombatMode combatMode) {
+            switch (combatMode) {
+                case CombatStrength.CombatMode.Offensive:
+                case CombatStrength.CombatMode.Defensive:
+                    return AtlasID.MyGui;
+                case CombatStrength.CombatMode.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(combatMode));
+            }
+        }
+
+        public static string GetIconFilename(this CombatStrength.CombatMode combatMode) {
+            switch (combatMode) {
+                case CombatStrength.CombatMode.Offensive:
+                    return TempGameValues.OffensiveStrengthIconFilename;
+                case CombatStrength.CombatMode.Defensive:
+                    return TempGameValues.DefensiveStrengthIconFilename;
+                case CombatStrength.CombatMode.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(combatMode));
+            }
+        }
+
+        #endregion
 
         #region GameSpeed
 
@@ -1483,23 +1587,23 @@ namespace CodeEnv.Master.GameContent {
         public static float ConstructionCost(this ShipHullCategory hullCat) {
             switch (hullCat) {
                 case ShipHullCategory.Frigate:
-                    return 25F;
+                    return 125F;
                 case ShipHullCategory.Investigator:
-                    return 30F;
+                    return 130F;
                 case ShipHullCategory.Destroyer:
-                    return 35F;
+                    return 200F;
                 case ShipHullCategory.Support:
-                    return 40F;
+                    return 240F;
                 case ShipHullCategory.Troop:
-                    return 45F;
+                    return 245F;
                 case ShipHullCategory.Cruiser:
-                    return 50F;
+                    return 350F;
                 case ShipHullCategory.Colonizer:
-                    return 55F;
+                    return 355F;
                 case ShipHullCategory.Dreadnought:
-                    return 70F;
+                    return 470F;
                 case ShipHullCategory.Carrier:
-                    return 80F;
+                    return 480F;
                 case ShipHullCategory.Fighter:
                 case ShipHullCategory.Scout:
                 case ShipHullCategory.None:
@@ -1515,7 +1619,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="hullCat">The hull category.</param>
         /// <returns></returns>
         /// <exception cref="NotImplementedException"></exception>
-        public static decimal Income(this ShipHullCategory hullCat) {
+        public static float Income(this ShipHullCategory hullCat) {
             switch (hullCat) {
                 case ShipHullCategory.Support:
                     return 3;
@@ -1527,7 +1631,7 @@ namespace CodeEnv.Master.GameContent {
                 case ShipHullCategory.Frigate:
                 case ShipHullCategory.Investigator:
                 case ShipHullCategory.Troop:
-                    return Constants.ZeroCurrency;
+                    return Constants.ZeroF;
                 case ShipHullCategory.Fighter:
                 case ShipHullCategory.Scout:
                 case ShipHullCategory.None:
@@ -1542,7 +1646,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="hullCat">The hull category.</param>
         /// <returns></returns>
         /// <exception cref="NotImplementedException"></exception>
-        public static decimal Expense(this ShipHullCategory hullCat) {
+        public static float Expense(this ShipHullCategory hullCat) {
             switch (hullCat) {
                 case ShipHullCategory.Carrier:
                 case ShipHullCategory.Dreadnought:
@@ -1565,8 +1669,8 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public static decimal Income(this FacilityHullCategory hullCat) {
-            decimal result;
+        public static float Income(this FacilityHullCategory hullCat) {
+            float result;
             switch (hullCat) {
                 case FacilityHullCategory.CentralHub:
                     result = 5;
@@ -1579,7 +1683,7 @@ namespace CodeEnv.Master.GameContent {
                 case FacilityHullCategory.Defense:
                 case FacilityHullCategory.Factory:
                 case FacilityHullCategory.Laboratory:
-                    result = Constants.ZeroCurrency;
+                    result = Constants.ZeroF;
                     break;
                 case FacilityHullCategory.None:
                 default:
@@ -1588,12 +1692,12 @@ namespace CodeEnv.Master.GameContent {
             return result;
         }
 
-        public static decimal Expense(this FacilityHullCategory hullCat) {
-            decimal result;
+        public static float Expense(this FacilityHullCategory hullCat) {
+            float result;
             switch (hullCat) {
                 case FacilityHullCategory.CentralHub:
                 case FacilityHullCategory.Economic:
-                    result = Constants.ZeroCurrency;
+                    result = Constants.ZeroF;
                     break;
                 case FacilityHullCategory.Barracks:
                 case FacilityHullCategory.ColonyHab:
@@ -1686,7 +1790,7 @@ namespace CodeEnv.Master.GameContent {
                 case FacilityHullCategory.ColonyHab:
                 case FacilityHullCategory.Defense:
                 case FacilityHullCategory.Laboratory:
-                    result = Constants.ZeroF;
+                    result = Constants.OneF;    // TEMP Reqd to make sure UnitProduction is not zero when used as a denominator
                     break;
                 case FacilityHullCategory.None:
                 default:
@@ -1699,127 +1803,31 @@ namespace CodeEnv.Master.GameContent {
             float result;
             switch (hullCat) {
                 case FacilityHullCategory.Barracks:
-                    result = 50F;
+                    result = 250F;
                     break;
                 case FacilityHullCategory.Economic:
-                    result = 60F;
+                    result = 260F;
                     break;
                 case FacilityHullCategory.ColonyHab:
-                    result = 70F;
+                    result = 270F;
                     break;
                 case FacilityHullCategory.Laboratory:
-                    result = 80F;
+                    result = 280F;
                     break;
                 case FacilityHullCategory.Factory:
-                    result = 90F;
+                    result = 290F;
                     break;
                 case FacilityHullCategory.Defense:
-                    result = 90F;
+                    result = 300F;
                     break;
                 case FacilityHullCategory.CentralHub:
-                    result = 100F;
+                    result = 400F;
                     break;
                 case FacilityHullCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
             }
             return result;
-        }
-
-        [System.Obsolete]
-        public static float Income(this FacilityHullCategory hullCat, bool _isSettlement) {
-            float factor = _isSettlement ? 2.0F : 1.0F;
-            float result;
-            switch (hullCat) {
-                case FacilityHullCategory.CentralHub:
-                    result = 5F;
-                    break;
-                case FacilityHullCategory.Economic:
-                    result = 20F;
-                    break;
-                case FacilityHullCategory.Barracks:
-                case FacilityHullCategory.ColonyHab:
-                case FacilityHullCategory.Defense:
-                case FacilityHullCategory.Factory:
-                case FacilityHullCategory.Laboratory:
-                    result = Constants.ZeroF;
-                    break;
-                case FacilityHullCategory.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
-            }
-            return result * factor;
-        }
-
-        [System.Obsolete]
-        public static float Expense(this FacilityHullCategory hullCat, bool _isSettlement) {
-            float factor = _isSettlement ? 2.0F : 1.0F;
-            float result;
-            switch (hullCat) {
-                case FacilityHullCategory.CentralHub:
-                case FacilityHullCategory.Economic:
-                    result = Constants.ZeroF;
-                    break;
-                case FacilityHullCategory.Barracks:
-                case FacilityHullCategory.ColonyHab:
-                    result = 3F;
-                    break;
-                case FacilityHullCategory.Defense:
-                case FacilityHullCategory.Factory:
-                case FacilityHullCategory.Laboratory:
-                    result = 5F;
-                    break;
-                case FacilityHullCategory.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
-            }
-            return result * factor;
-        }
-
-        [System.Obsolete]
-        public static float Science(this FacilityHullCategory hullCat, bool _isSettlement) {
-            float factor = _isSettlement ? 2.0F : 1.0F;
-            float result;
-            switch (hullCat) {
-                case FacilityHullCategory.Laboratory:
-                    result = 10F;
-                    break;
-                case FacilityHullCategory.CentralHub:
-                case FacilityHullCategory.Economic:
-                case FacilityHullCategory.Barracks:
-                case FacilityHullCategory.ColonyHab:
-                case FacilityHullCategory.Defense:
-                case FacilityHullCategory.Factory:
-                    result = Constants.ZeroF;
-                    break;
-                case FacilityHullCategory.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
-            }
-            return result * factor;
-        }
-
-        [System.Obsolete]
-        public static float Culture(this FacilityHullCategory hullCat, bool _isSettlement) {
-            float factor = _isSettlement ? 2.0F : 1.0F;
-            float result;
-            switch (hullCat) {
-                case FacilityHullCategory.CentralHub:
-                case FacilityHullCategory.ColonyHab:
-                    result = 3F;
-                    break;
-                case FacilityHullCategory.Economic:
-                case FacilityHullCategory.Barracks:
-                case FacilityHullCategory.Defense:
-                case FacilityHullCategory.Factory:
-                case FacilityHullCategory.Laboratory:
-                    result = Constants.ZeroF;
-                    break;
-                case FacilityHullCategory.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
-            }
-            return result * factor;
         }
 
         #endregion

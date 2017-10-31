@@ -135,7 +135,7 @@ public class ConstructionIconGuiElement : AIconGuiElement, IComparable<Construct
         _tooltipContent = TooltipFormat.Inject(Unknown);
     }
 
-    protected override void HandleIconHovered(bool isOver) {
+    protected override void HandleGuiElementHovered(bool isOver) {
         if (isOver) {
             if (Construction != null && Construction != TempGameValues.NoConstruction) {
                 HoveredHudWindow.Instance.Show(FormID.Design, Construction.Design);

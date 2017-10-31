@@ -65,6 +65,22 @@ namespace CodeEnv.Master.GameContent {
             ReqdCmdStat = reqdCmdStat;
         }
 
+        protected override float CalcConstructionCost() {
+            float cumConstructionCost = base.CalcConstructionCost();
+            cumConstructionCost += ReqdCmdStat.ConstructionCost;
+            cumConstructionCost += ReqdMRSensorStat.ConstructionCost;
+            cumConstructionCost += FtlDampenerStat.ConstructionCost;
+            return cumConstructionCost;
+        }
+
+        protected override int CalcRefitBenefit() {
+            int cumBenefit = base.CalcRefitBenefit();
+            cumBenefit += ReqdCmdStat.RefitBenefit;
+            cumBenefit += ReqdMRSensorStat.RefitBenefit;
+            cumBenefit += FtlDampenerStat.RefitBenefit;
+            return cumBenefit;
+        }
+
         /// <summary>
         /// Returns the maximum number of AEquipmentStat slots that this design is allowed for the provided EquipmentCategory.
         /// <remarks>AEquipmentStats that are required for a design are not included. These are typically added via the constructor.</remarks>
@@ -93,13 +109,34 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        public override bool HasEqualContent(AUnitMemberDesign oDesign) {
+            if (base.HasEqualContent(oDesign)) {
+                var cmdDesign = oDesign as AUnitCmdDesign;
+                return cmdDesign.FtlDampenerStat == FtlDampenerStat && cmdDesign.ReqdMRSensorStat == ReqdMRSensorStat
+                    && cmdDesign.ReqdCmdStat == ReqdCmdStat;
+            }
+            return false;
+        }
+
         #region Value-based Equality Archive
+
+        ////public static bool operator ==(AUnitCmdDesign left, AUnitCmdDesign right) {
+        ////    // https://msdn.microsoft.com/en-us/library/ms173147(v=vs.90).aspx
+        ////    if (ReferenceEquals(left, right)) { return true; }
+        ////    if (((object)left == null) || ((object)right == null)) { return false; }
+        ////    return left.Equals(right);
+        ////}
+
+        ////public static bool operator !=(AUnitCmdDesign left, AUnitCmdDesign right) {
+        ////    return !(left == right);
+        ////}
 
         ////public override int GetHashCode() {
         ////    unchecked {
         ////        int hash = base.GetHashCode();
-        ////        hash = hash * 31 + ReqdMRSensorStat.GetHashCode(); // 31 = another prime number
         ////        hash = hash * 31 + FtlDampenerStat.GetHashCode();
+        ////        hash = hash * 31 + ReqdMRSensorStat.GetHashCode();
+        ////        hash = hash * 31 + ReqdCmdStat.GetHashCode();
         ////        return hash;
         ////    }
         ////}
@@ -107,7 +144,8 @@ namespace CodeEnv.Master.GameContent {
         ////public override bool Equals(object obj) {
         ////    if (base.Equals(obj)) {
         ////        AUnitCmdDesign oDesign = (AUnitCmdDesign)obj;
-        ////        return oDesign.ReqdMRSensorStat == ReqdMRSensorStat && oDesign.FtlDampenerStat == FtlDampenerStat;
+        ////        return oDesign.FtlDampenerStat == FtlDampenerStat && oDesign.ReqdMRSensorStat == ReqdMRSensorStat
+        ////            && oDesign.ReqdCmdStat == ReqdCmdStat;
         ////    }
         ////    return false;
         ////}

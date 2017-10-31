@@ -62,6 +62,11 @@ namespace CodeEnv.Master.GameContent {
 
         public IEnumerable<PlanetoidData> AllPlanetoidData { get { return _allPlanetoidData; } }
 
+        private SystemPublisher _publisher;
+        public SystemPublisher Publisher {
+            get { return _publisher = _publisher ?? new SystemPublisher(this); }
+        }
+
         protected override IntelCoverage DefaultStartingIntelCoverage { get { return IntelCoverage.Basic; } }
 
         private IList<PlanetoidData> _allPlanetoidData = new List<PlanetoidData>();
@@ -155,7 +160,28 @@ namespace CodeEnv.Master.GameContent {
             return new NonRegressibleIntel();
         }
 
+        public SystemReport GetReport(Player player) { return Publisher.GetReport(player); }
+
         #region Assess System IntelCoverage
+
+        public bool IsAnyMembersIntelCoverageGreaterThanSystem(Player player) {
+            _allMemberIntelCoverages.Clear();
+            foreach (var pData in _allPlanetoidData) {
+                IntelCoverage pCoverage = pData.GetIntelCoverage(player);
+                _allMemberIntelCoverages.Add(pCoverage);
+            }
+
+            IntelCoverage starCoverage = StarData.GetIntelCoverage(player);
+            _allMemberIntelCoverages.Add(starCoverage);
+
+            if (SettlementData != null) {
+                IntelCoverage settlementCoverage = SettlementData.GetIntelCoverage(player);
+                _allMemberIntelCoverages.Add(settlementCoverage);
+            }
+
+            IntelCoverage sysCoverage = GetIntelCoverage(player);
+            return _allMemberIntelCoverages.Any(memberCoverage => memberCoverage > sysCoverage);
+        }
 
         /// <summary>
         /// Static list used to collect all planetoid, star and settlement IntelCoverage values when

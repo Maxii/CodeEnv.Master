@@ -25,6 +25,14 @@ namespace CodeEnv.Master.GameContent {
         public bool __UseDebugCreatorsOnly { get; set; }
 
         /// <summary>
+        /// Indicates whether to deploy additional User creators beyond those deployed 
+        /// due to the chosen player start level. These additional creators would use 
+        /// randomly generated deploy dates to provide more test coverage.
+        /// <remarks>Not used when __UseDebugCreatorsOnly is true.</remarks>
+        /// </summary>
+        public bool __DeployAdditionalUserCreators { get; set; }
+
+        /// <summary>
         /// Indicates whether to deploy additional AI creators beyond those deployed 
         /// due to the chosen player start level. These additional creators would use 
         /// randomly generated deploy dates to provide more test coverage.

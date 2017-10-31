@@ -92,7 +92,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
 
     public IEnumerable<IPlanetoid_Ltd> Planetoids { get { return _planetoids.Cast<IPlanetoid_Ltd>(); } }
 
-    public SystemReport UserReport { get { return Publisher.GetUserReport(); } }
+    public SystemReport UserReport { get { return Data.Publisher.GetUserReport(); } }
 
     public override float Radius { get { return Data.Radius; } }
 
@@ -100,10 +100,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
 
     public IntVector3 SectorID { get { return Data.SectorID; } }
 
-    private SystemPublisher _publisher;
-    private SystemPublisher Publisher {
-        get { return _publisher = _publisher ?? new SystemPublisher(Data, this); }
-    }
+    ////protected override bool IsSelectable { get { return true; } }
 
     private IList<Player> _playersWithInfoAccessToOwner;
     private IList<APlanetoidItem> _planetoids;
@@ -149,8 +146,8 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         _orbitalPlaneCollider.enabled = true;
     }
 
-    protected override ItemHoveredHudManager InitializeHudManager() {
-        return new ItemHoveredHudManager(Publisher);
+    protected override ItemHoveredHudManager InitializeHoveredHudManager() {
+        return new ItemHoveredHudManager(Data.Publisher);
     }
 
     protected override ICtxControl InitializeContextMenu(Player owner) {
@@ -244,7 +241,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         Data.RemovePlanetoidData((planetoid as APlanetoidItem).Data);
     }
 
-    public SystemReport GetReport(Player player) { return Publisher.GetReport(player); }
+    public SystemReport GetReport(Player player) { return Data.Publisher.GetReport(player); }
 
     public StarReport GetStarReport(Player player) { return Star.GetReport(player); }
 
@@ -292,7 +289,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         SectorGrid.Instance.GetSector(SectorID).AssessWhetherToFireInfoAccessChangedEventFor(player);
 
         if (!_playersWithInfoAccessToOwner.Contains(player)) {
-            if (InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
+            if (InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner)) {
                 _playersWithInfoAccessToOwner.Add(player);
                 OnInfoAccessChanged(player);
             }
@@ -300,7 +297,13 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
     }
 
     protected override void ShowSelectedItemHud() {
-        InteractableHudWindow.Instance.Show(FormID.UserSystem, Data);
+        if (Owner.IsUser) {
+            InteractibleHudWindow.Instance.Show(FormID.UserSystem, Data);
+        }
+        else {
+            InteractibleHudWindow.Instance.Show(FormID.NonUserSystem, UserReport);
+            ////D.Warn("{0}: InteractibleHudWindow does not yet support showing Systems not owned by the user.", DebugName);
+        }
     }
 
     protected override void HandleNameChanged() {
@@ -318,7 +321,6 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
             moon.Data.Name = GameConstants.MoonNameFormat.Inject(moon.ParentPlanet.Name, GameConstants.MoonLetters[moonOrbitIndex]);
         }
     }
-
 
     #region Event and Property Change Handlers
 
@@ -509,7 +511,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
     public Speed PatrolSpeed { get { return Speed.OneThird; } }
 
     public bool IsPatrollingAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner)) {
             return true;
         }
         return !player.IsEnemyOf(Owner);
@@ -530,7 +532,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
     }
 
     public bool IsGuardingAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner)) {
             return true;
         }
         return !player.IsEnemyOf(Owner);
@@ -547,7 +549,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
     }
 
     public bool IsExploringAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner)) {
             return true;
         }
         return !Owner.IsAtWarWith(player);

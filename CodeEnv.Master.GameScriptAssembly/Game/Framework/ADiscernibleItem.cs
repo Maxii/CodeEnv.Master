@@ -70,11 +70,14 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
 
     /// <summary>
     /// Returns <c>true</c> if this item can become the selection.
-    /// <remarks>9.15.17 Besides all user-owned items, discernible AI-owned Cmds and all planetoids are selectable.
-    /// Planetoids are currently selectable as I want a Debug ability to tell them to die.
-    /// Discernible AI-owned Cmds are selectable as the user should be able to inspect the known contents of an AI Cmd.</remarks>
+    /// <remarks>9.15.17 Besides all user-owned items, discernible AI-owned Cmds, all systems and all planetoids are selectable.
+    /// Planetoids are currently selectable as I want a Debug ability to tell them to die via the context menu.
+    /// Discernible AI-owned Cmds are selectable as the user should be able to inspect the known contents of an AI Cmd.
+    /// All systems are selectable as I want the user to have the ability of changing a system's name which will propagate
+    /// to the star and all the system's planetoids.</remarks>
+    /// <remarks>10.22.17 I've now made all discernible items selectable, adding in stars and AI-owned Elements.</remarks>
     /// </summary>
-    protected virtual bool IsSelectable { get { return Owner.IsUser; } }
+    protected virtual bool IsSelectable { get { return IsDiscernibleToUser; } }
 
     /// <summary>
     /// Flag indicating whether InitializeOnFirstDiscernibleToUser() has run.
@@ -98,7 +101,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     protected virtual void InitializeOnFirstDiscernibleToUser() {
         D.Assert(!_hasInitOnFirstDiscernibleToUserRun);
         D.Assert(IsOperational);
-        _hoveredHudManager = InitializeHudManager();
+        _hoveredHudManager = InitializeHoveredHudManager();
 
         DisplayMgr = MakeDisplayManagerInstance();
         InitializeDisplayManager();
@@ -110,7 +113,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
         _hasInitOnFirstDiscernibleToUserRun = true;
     }
 
-    protected abstract ItemHoveredHudManager InitializeHudManager();
+    protected abstract ItemHoveredHudManager InitializeHoveredHudManager();
 
     protected abstract ADisplayManager MakeDisplayManagerInstance();
 
@@ -232,7 +235,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     /// </summary>
     protected virtual void HideSelectedItemHud() {
         D.Assert(!IsSelected);
-        GameReferences.InteractableHudWindow.Hide();
+        GameReferences.InteractibleHudWindow.Hide();
     }
 
     /// <summary>

@@ -26,17 +26,17 @@ public class StarbaseTableRowForm : ACommandTableRowForm {
 
     public override FormID FormID { get { return FormID.StarbaseTableRow; } }
 
+    protected override void AssignValueToResourcesGuiElement() {
+        base.AssignValueToResourcesGuiElement();
+        var report = Report as StarbaseCmdReport;
+        _resourcesGuiElement.Resources = report.Resources;
+    }
+
     protected override void AssignValueToCompositionGuiElement() {
         base.AssignValueToCompositionGuiElement();
         var report = Report as StarbaseCmdReport;
         _compositionGuiElement.IconInfo = StarbaseIconInfoFactory.Instance.MakeInstance(report);
         (_compositionGuiElement as StarbaseCompositionGuiElement).Category = report.Category;
-    }
-
-    protected override void AssignValueToResourcesGuiElement() {
-        base.AssignValueToResourcesGuiElement();
-        var report = Report as StarbaseCmdReport;
-        _resourcesGuiElement.Resources = report.Resources;
     }
 
     protected override void AssignValueToConstructionGuiElement() {

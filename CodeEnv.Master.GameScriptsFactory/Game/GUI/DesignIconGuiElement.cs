@@ -94,7 +94,7 @@ public class DesignIconGuiElement : AMultiSizeIconGuiElement {
 
     #endregion
 
-    protected override void HandleIconHovered(bool isOver) {
+    protected override void HandleGuiElementHovered(bool isOver) {
         if (isOver) {
             HoveredHudWindow.Instance.Show(FormID.Design, Design);
         }

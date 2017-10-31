@@ -361,6 +361,7 @@ public class NewGameMenuLaunchButton : AGuiMenuAcceptButton {
         GameSettings settings = new GameSettings() {
             __IsStartup = false,
             __UseDebugCreatorsOnly = false,
+            __DeployAdditionalUserCreators = false,
             __DeployAdditionalAICreators = false,
             __AdditionalFleetCreatorQty = 0,
             __AdditionalStarbaseCreatorQty = 0,

@@ -42,13 +42,28 @@ public class StarbasesTableForm : ACommandsTableForm {
 
     protected override void ResumePreviousSortTopic(GuiElementID sortTopicToResume) {
         switch (sortTopicToResume) {
-            case GuiElementID.NameLabel:
+            case GuiElementID.Name:
                 SortOnName();
                 break;
-            case GuiElementID.ScienceLabel:
+            case GuiElementID.Food:
+                SortOnFood();
+                break;
+            case GuiElementID.Production:
+                SortOnProduction();
+                break;
+            case GuiElementID.Income:
+                SortOnIncome();
+                break;
+            case GuiElementID.Expense:
+                SortOnExpense();
+                break;
+            case GuiElementID.NetIncome:
+                SortOnNetIncome();
+                break;
+            case GuiElementID.Science:
                 SortOnScience();
                 break;
-            case GuiElementID.CultureLabel:
+            case GuiElementID.Culture:
                 SortOnCulture();
                 break;
             case GuiElementID.DefensiveStrength:
@@ -78,27 +93,18 @@ public class StarbasesTableForm : ACommandsTableForm {
             case GuiElementID.Construction:
                 SortOnConstruction();
                 break;
-            case GuiElementID.NetIncome:
-                SortOnNetIncome();
-                break;
             case GuiElementID.Approval:
-            case GuiElementID.OrganicsLabel:
-            case GuiElementID.ParticulatesLabel:
-            case GuiElementID.EnergyLabel:
-            case GuiElementID.PopulationLabel:
-            case GuiElementID.SpeedLabel:
+            case GuiElementID.Organics:
+            case GuiElementID.Particulates:
+            case GuiElementID.Energy:
+            case GuiElementID.Population:
+            case GuiElementID.Speed:
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(sortTopicToResume.GetValueName()));
         }
     }
 
     #region Sorting
-
-    public void SortOnResources() {
-        _table.onCustomSort = CompareResources;
-        _sortDirection = DetermineSortDirection(GuiElementID.Resources);
-        _table.repositionNow = true;
-    }
 
     public void SortOnConstruction() {
         _table.onCustomSort = CompareConstruction;

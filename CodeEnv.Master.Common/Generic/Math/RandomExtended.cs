@@ -209,18 +209,19 @@ namespace CodeEnv.Master.Common {
         /// <param name="array">The array.</param>
         /// <returns></returns>
         public static T[] Shuffle<T>(T[] array) {
-            T[] shuffledArray = new T[array.Length];
-            List<int> elementIndices = new List<int>(0);
-            for (int i = 0; i < array.Length; i++) {
-                elementIndices.Add(i);
+            int arrayLength = array.Length;
+            //D.Log("{0} is shuffling an array of length {1}.", typeof(RandomExtended).Name, arrayLength);
+            T[] shuffledArray = new T[arrayLength];
+            IList<int> arrayIndices = new List<int>();
+            for (int i = 0; i < arrayLength; i++) {
+                arrayIndices.Add(i);
             }
             int arrayIndex;
-            for (int i = 0; i < array.Length; i++) {
-                arrayIndex = elementIndices[Random.Range(0, elementIndices.Count)];
+            for (int i = 0; i < arrayLength; i++) {
+                arrayIndex = arrayIndices[Random.Range(0, arrayIndices.Count)];
                 shuffledArray[i] = array[arrayIndex];
-                elementIndices.Remove(arrayIndex);
+                arrayIndices.Remove(arrayIndex);
             }
-
             return shuffledArray;
         }
 
@@ -230,16 +231,20 @@ namespace CodeEnv.Master.Common {
         /// <typeparam name="T"></typeparam>
         /// <param name="list">The list.</param>
         /// <returns></returns>
-        public static List<T> Shuffle<T>(IList<T> list) {
-            List<T> shuffledList = new List<T>(0);
+        public static IList<T> Shuffle<T>(IList<T> list) {
             int listCount = list.Count;
-            int elementIndex;
+            //D.Log("{0} is shuffling a list of length {1}.", typeof(RandomExtended).Name, listCount);
+            IList<T> shuffledList = new List<T>(listCount);
+            IList<int> listIndices = new List<int>(listCount);
             for (int i = 0; i < listCount; i++) {
-                elementIndex = Random.Range(0, list.Count);
-                shuffledList.Add(list[elementIndex]);
-                list.RemoveAt(elementIndex);
+                listIndices.Add(i);
             }
-
+            int listIndex;
+            for (int i = 0; i < listCount; i++) {
+                listIndex = listIndices[Random.Range(0, listIndices.Count)];
+                shuffledList.Add(list[listIndex]);
+                listIndices.Remove(listIndex);
+            }
             return shuffledList;
         }
 

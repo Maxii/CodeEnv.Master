@@ -57,9 +57,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="constructionCost">The cost to produce this equipment.</param>
         /// <param name="expense">The expense.</param>
         /// <param name="damageMitigation">The damage mitigation.</param>
+        /// <param name="refitBenefit">The refit benefit.</param>
         public PassiveCountermeasureStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass,
-            float pwrRqmt, float constructionCost, decimal expense, DamageStrength damageMitigation)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, constructionCost, expense, isDamageable: true) {
+            float pwrRqmt, float constructionCost, float expense, DamageStrength damageMitigation, int refitBenefit)
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, constructionCost, expense, refitBenefit, isDamageable: true) {
             DamageMitigation = damageMitigation;
         }
 
@@ -68,7 +69,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public PassiveCountermeasureStat()
             : this("BasicPassiveCM", AtlasID.MyGui, TempGameValues.AnImageFilename, "BasicDescription..", 0F, 0F, 0F, 1F,
-                  Constants.ZeroCurrency, new DamageStrength(1F, 1F, 1F)) {
+                  Constants.ZeroF, new DamageStrength(1F, 1F, 1F), 0) {
         }
 
         #region Object.Equals and GetHashCode Override

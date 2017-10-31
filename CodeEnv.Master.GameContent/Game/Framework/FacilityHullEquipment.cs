@@ -16,7 +16,9 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using CodeEnv.Master.Common;
+    using Common.LocalResources;
 
     /// <summary>
     /// Holds a reference to a facility hull, values associated with that hull along with any equipment that uses mounts attached to the hull.
@@ -30,12 +32,6 @@ namespace CodeEnv.Master.GameContent {
 
         public FacilityHullCategory HullCategory { get { return Stat.HullCategory; } }
 
-        public float Science { get { return Stat.Science; } }
-        public float Culture { get { return Stat.Culture; } }
-        public decimal Income { get { return Stat.Income; } }
-        public float Food { get { return Stat.Food; } }
-        public float Production { get { return Stat.Production; } }
-
         protected new FacilityHullStat Stat { get { return base.Stat as FacilityHullStat; } }
 
         /// <summary>
@@ -45,10 +41,47 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="name">The optional unique name for this equipment. If not provided, the name embedded in the stat will be used.</param>
         public FacilityHullEquipment(FacilityHullStat stat, string name = null) : base(stat, name) { }
 
+        #region Event and Property Change Handlers
+
         protected override void HullPropSetHandler() {
             D.AssertEqual(Hull.HullCategory, HullCategory);
         }
 
+        #endregion
+
+        public override bool TryGetYield(OutputID outputID, out float yield) {
+            switch (outputID) {
+                case OutputID.Food:
+                    yield = Stat.Food;
+                    break;
+                case OutputID.Production:
+                    yield = Stat.Production;
+                    break;
+                case OutputID.Income:
+                    yield = Stat.Income;
+                    break;
+                case OutputID.Expense:
+                    yield = Expense;
+                    break;
+                case OutputID.NetIncome:
+                    yield = Stat.Income - Expense;
+                    break;
+                case OutputID.Science:
+                    yield = Stat.Science;
+                    break;
+                case OutputID.Culture:
+                    yield = Stat.Culture;
+                    break;
+                case OutputID.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(outputID));
+            }
+            return true;
+        }
+
+        public override bool AreSpecsEqual(AEquipmentStat otherStat) {
+            return Stat == otherStat as FacilityHullStat;
+        }
     }
 }
 

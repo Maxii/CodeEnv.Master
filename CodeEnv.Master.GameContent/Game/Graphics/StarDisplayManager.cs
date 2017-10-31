@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
 
         public new IInteractiveWorldTrackingSprite TrackingIcon { get { return base.TrackingIcon as IInteractiveWorldTrackingSprite; } }
 
-        protected override int IconDepth { get { return 3; } }
+        protected override int TrackingIconDepth { get { return 3; } }
 
         private IEnumerable<MeshRenderer> __secondaryMeshRenderers;
         private IBillboard _glowBillboard;

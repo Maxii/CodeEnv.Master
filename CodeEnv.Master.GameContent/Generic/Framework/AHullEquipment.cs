@@ -64,6 +64,15 @@ namespace CodeEnv.Master.GameContent {
             Weapons.Add(weapon);
         }
 
+        /// <summary>
+        /// Returns <c>true</c> if this Hull supports the provided outputID, <c>false</c> otherwise.
+        /// <remarks>If false, the yield returned will be zero.</remarks>
+        /// </summary>
+        /// <param name="outputID">The output identifier.</param>
+        /// <param name="yield">The yield this hull produces for the provided outputID.</param>
+        /// <returns></returns>
+        public abstract bool TryGetYield(OutputID outputID, out float yield);
+
         protected abstract void HullPropSetHandler();
 
     }

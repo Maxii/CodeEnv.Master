@@ -85,6 +85,11 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementBlastable, AWe
         weapon.RangeMonitor = this;
     }
 
+    [Obsolete("Not currently used")]
+    protected override void RemoveMonitorFrom(AWeapon weapon) {
+        weapon.RangeMonitor = null;
+    }
+
     protected override void HandleDetectedObjectAdded(IElementBlastable newlyDetectedItem) {
         //D.Log(ShowDebugLog, "{0} detected and added {1}.", DebugName, newlyDetectedItem.DebugName);
 

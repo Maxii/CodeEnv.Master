@@ -38,88 +38,77 @@ namespace CodeEnv.Master.GameContent {
 
         public ShipHullCategory Category { get; private set; }
 
-        public ShipReport(ShipData data, Player player, IShip_Ltd item) : base(data, player, item) { }
+        public ShipReport(ShipData data, Player player) : base(data, player) { }
 
         protected override void AssignValues(AItemData data) {
             var sData = data as ShipData;
             var accessCntlr = sData.InfoAccessCntlr;
 
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Culture)) {
-                Culture = sData.Culture;
-            }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Defense)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Defense)) {
                 DefensiveStrength = sData.DefensiveStrength;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Offense)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Offense)) {
                 OffensiveStrength = sData.OffensiveStrength;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Health)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Health)) {
                 Health = sData.Health;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.AlertStatus)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.AlertStatus)) {
                 AlertStatus = sData.AlertStatus;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.CurrentHitPoints)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.CurrentHitPoints)) {
                 CurrentHitPoints = sData.CurrentHitPoints;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Science)) {
-                Science = sData.Science;
-            }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.NetIncome)) {
-                Income = sData.Income;
-                Expense = sData.Expense;
-            }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Name)) {
+
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Name)) {
                 Name = sData.Name;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.UnitName)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.UnitName)) {
                 UnitName = sData.UnitName;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Position)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Position)) {
                 Position = sData.Position;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Owner)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Owner)) {
                 Owner = sData.Owner;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Category)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Category)) {
                 Category = sData.HullCategory;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.MaxHitPoints)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.MaxHitPoints)) {
                 MaxHitPoints = sData.MaxHitPoints;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Mass)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Mass)) {
                 Mass = sData.Mass;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.ConstructionCost)) {
-                ConstructionCost = sData.ConstructionCost;
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.ConstructionCost)) {
+                ConstructionCost = sData.Design.ConstructionCost;
             }
-            // SensorRange on an element makes little sense
-            ////if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.SensorRange)) {
-            ////    SensorRange = sData.SensorRange;
-            ////}
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.WeaponsRange)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.WeaponsRange)) {
                 WeaponsRange = sData.WeaponsRange;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.SectorID)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.SectorID)) {
                 SectorID = sData.SectorID;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.Target)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Target)) {
                 Target = sData.Target;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.CombatStance)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.CombatStance)) {
                 CombatStance = sData.CombatStance;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.CurrentSpeedSetting)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.CurrentSpeedSetting)) {
                 CurrentSpeedSetting = sData.CurrentSpeedSetting;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.FullSpeed)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.FullSpeed)) {
                 FullSpeed = sData.FullSpeedValue;
             }
-            if (accessCntlr.HasAccessToInfo(Player, ItemInfoID.MaxTurnRate)) {
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.MaxTurnRate)) {
                 MaxTurnRate = sData.MaxTurnRate;
             }
 
             __ActualSpeedValue = (Item as IShip_Ltd).ActualSpeedValue_Debug;
+
+            Outputs = AssessOutputs(sData.Outputs);
         }
 
 

@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override bool HasAccessToInfo_Comprehensive(ItemInfoID infoID, Player player) {
             switch (infoID) {
-                case ItemInfoID.Resources:
+                // 10.13.17 Removed Resources as Report now handles Resources without AccessCntlr
                 default:
                     return false;
             }

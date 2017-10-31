@@ -94,26 +94,32 @@ namespace CodeEnv.Master.GameContent {
         protected abstract IList<FormationStationSlotInfo> GenerateFormationSlotInfo(Formation formation, Transform cmdTransform, out float formationRadius);
 
         /// <summary>
-        /// Selects a FormationStation slot for the provided (non-HQ) element based on the selection constraints
-        /// provided, and then calls Command.PositionElementInFormation() using the slot selected.
+        /// Replaces an existing element in the formation with another.
+        /// <remarks>Handles both HQ and non-HQ elements but can't be mixed. Used primarily when a refit is completed.</remarks>
         /// </summary>
-        /// <param name="element">The element.</param>
-        /// <param name="selectionConstraint">The selection constraint.</param>
-        public void AddAndPositionNonHQElement(IUnitElement element, FormationStationSelectionCriteria selectionConstraint) {
-            D.Assert(element.IsOperational, element.DebugName);
-            D.Assert(!element.IsHQ);
-            AddAndPositionElement(element, selectionConstraint);
+        /// <param name="elementToReplace">The element to replace.</param>
+        /// <param name="replacingElement">The replacing element.</param>
+        public void ReplaceElement(IUnitElement elementToReplace, IUnitElement replacingElement) {
+            D.Assert(elementToReplace.IsHQ == replacingElement.IsHQ);
+            FormationStationSlotInfo slot;
+            bool isFound = _occupiedStationSlotLookup.TryGetValue(elementToReplace, out slot);
+            D.Assert(isFound);
+            _occupiedStationSlotLookup.Remove(elementToReplace);
+
+            _occupiedStationSlotLookup.Add(replacingElement, slot); // throws exception if element already present
+            _unitCmd.PositionElementInFormation(replacingElement, slot);
         }
 
         /// <summary>
-        /// Selects a FormationStation slot for the provided (non-HQ) element based on default selection constraints, 
-        /// and then calls Command.PositionElementInFormation() using the slot selected.
+        /// Selects a FormationStation slot for the provided (non-HQ) element based on the selection constraints
+        /// provided, if any, and then calls Command.PositionElementInFormation() using the slot selected.
         /// </summary>
         /// <param name="element">The element.</param>
-        public void AddAndPositionNonHQElement(IUnitElement element) {
-            D.Assert(element.IsOperational, element.DebugName);
+        /// <param name="selectionConstraint">The optional selection constraint.</param>
+        public void AddAndPositionNonHQElement(IUnitElement element, FormationStationSelectionCriteria selectionConstraint = default(FormationStationSelectionCriteria)) {
+            // 10.25.17 Elements will not yet be operational when added upon starting initial construction
             D.Assert(!element.IsHQ);
-            AddAndPositionElement(element);
+            AddAndPositionElement(element, selectionConstraint);
         }
 
         /// <summary>
@@ -123,7 +129,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="hqElement">The HQElement.</param>
         public void AddAndPositionHQElement(IUnitElement hqElement) {
-            D.Assert(hqElement.IsOperational, hqElement.DebugName);
+            D.Assert(hqElement.IsOperational, hqElement.DebugName); // 10.30.17 Should be operational to handle HQChange events
             D.Assert(hqElement.IsHQ);
             AddAndPositionElement(hqElement);
         }
@@ -136,11 +142,11 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="selectionConstraint">The selection constraint.</param>
         private void AddAndPositionElement(IUnitElement element, FormationStationSelectionCriteria selectionConstraint = default(FormationStationSelectionCriteria)) {
             D.Assert(HasRoom, "No room available to add element to formation.");
-            var slotInfo = SelectAndRecordSlotAsOccupied(element, selectionConstraint);
-            _unitCmd.PositionElementInFormation(element, slotInfo);
+            var slot = SelectAndRecordSlotAsOccupied(element, selectionConstraint);
+            _unitCmd.PositionElementInFormation(element, slot);
         }
 
-        private FormationStationSlotInfo SelectAndRecordSlotAsOccupied(IUnitElement element, FormationStationSelectionCriteria selectionConstraints) {
+        private FormationStationSlotInfo SelectAndRecordSlotAsOccupied(IUnitElement element, FormationStationSelectionCriteria selectionConstraint) {
             bool isRemoved;
             FormationStationSlotInfo slotInfo;
             if (_occupiedStationSlotLookup.TryGetValue(element, out slotInfo)) {
@@ -150,7 +156,7 @@ namespace CodeEnv.Master.GameContent {
                 _availableStationSlots.Add(slotInfo);
                 D.Assert(_availableStationSlots.Count <= __maxFormationStationSlots, "{0}: {1} > Max {2}.".Inject(DebugName, _availableStationSlots.Count, __maxFormationStationSlots));
             }
-            slotInfo = SelectSlotInfoFor(element, selectionConstraints);
+            slotInfo = SelectSlotInfoFor(element, selectionConstraint);
             isRemoved = _availableStationSlots.Remove(slotInfo);
             D.Assert(isRemoved, slotInfo.ToString());
             _occupiedStationSlotLookup.Add(element, slotInfo);

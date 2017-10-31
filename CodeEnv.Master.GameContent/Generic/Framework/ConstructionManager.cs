@@ -32,16 +32,19 @@ namespace CodeEnv.Master.GameContent {
 
         public event EventHandler<ConstructionCompletedEventArgs> constructionCompleted;
 
-        public string DebugName { get { return DebugNameFormat.Inject(_unitData.UnitName, GetType().Name); } }
+        public string DebugName { get { return DebugNameFormat.Inject(_baseData.UnitName, GetType().Name); } }
 
+        private float _unitProduction;
         private DateMinderDuration _constructionQueueUpdateDuration;
         private LinkedList<ConstructionInfo> _constructionQueue;
-        private AUnitBaseCmdData _unitData;
+        private IConstructionManagerClient _baseClient;
+        private AUnitBaseCmdData _baseData;
         private GameTime _gameTime;
         private IList<IDisposable> _subscriptions;
 
-        public ConstructionManager(AUnitBaseCmdData data) {
-            _unitData = data;
+        public ConstructionManager(AUnitBaseCmdData data, IConstructionManagerClient baseClient) {
+            _baseData = data;
+            _baseClient = baseClient;
             _gameTime = GameTime.Instance;
             _constructionQueue = new LinkedList<ConstructionInfo>();
         }
@@ -53,23 +56,56 @@ namespace CodeEnv.Master.GameContent {
             // apply. Would also need to remove/add dates to DateMinder whenever CompletionDates changed.
             _constructionQueueUpdateDuration = new DateMinderDuration(GameTimeDuration.OneHour, this);
             _gameTime.RecurringDateMinder.Add(_constructionQueueUpdateDuration);
+            RefreshUnitProduction();
             Subscribe();
         }
 
         private void Subscribe() {
             _subscriptions = new List<IDisposable>();
-            _subscriptions.Add(_unitData.SubscribeToPropertyChanged<AUnitBaseCmdData, float>(data => data.UnitProduction, UnitProductionPropChangedHandler));
+            _subscriptions.Add(_baseData.SubscribeToPropertyChanged<AUnitBaseCmdData, OutputsYield>(data => data.UnitOutputs, UnitOutputsPropChangedHandler));
         }
 
-        public void AddToQueue(AUnitElementDesign designToConstruct) {
+        /// <summary>
+        /// Adds the provided refit design to the ConstructionQueue.
+        /// </summary>
+        /// <param name="designToRefit">The design to refit.</param>
+        /// <param name="item">The item to be refitted.</param>
+        /// <param name="refitCost">The refit cost.</param>
+        /// <returns></returns>
+        public RefitConstructionInfo AddToQueue(AUnitElementDesign designToRefit, IUnitElement item, float refitCost) {
+            var refitConstruction = new RefitConstructionInfo(designToRefit, item, refitCost);
+
             var expectedStartDate = _constructionQueue.Any() ? _constructionQueue.Last.Value.ExpectedCompletionDate : _gameTime.CurrentDate;
-            GameTimeDuration expectedConstructionDuration = new GameTimeDuration(designToConstruct.ConstructionCost / _unitData.UnitProduction);
+            float refitConstructionCost = refitConstruction.CostToConstruct;
+            GameTimeDuration expectedConstructionDuration = new GameTimeDuration(refitConstructionCost / _unitProduction);
             GameDate expectedCompletionDate = new GameDate(expectedStartDate, expectedConstructionDuration);
-            var constructionItem = new ConstructionInfo(designToConstruct, expectedCompletionDate);
-            _constructionQueue.AddLast(constructionItem);
+            refitConstruction.ExpectedCompletionDate = expectedCompletionDate;
+
+            _constructionQueue.AddLast(refitConstruction);
             RefreshCurrentConstructionProperty();
             // Adding to the end of the queue does not change any expected completion dates
             OnConstructionQueueChanged();
+            _baseClient.HandleConstructionAdded(refitConstruction);
+            return refitConstruction;
+        }
+
+        /// <summary>
+        /// Adds the provided new construction design to the ConstructionQueue.
+        /// </summary>
+        /// <param name="designToConstruct">The design to construct.</param>
+        public void AddToQueue(AUnitElementDesign designToConstruct) {
+            var expectedStartDate = _constructionQueue.Any() ? _constructionQueue.Last.Value.ExpectedCompletionDate : _gameTime.CurrentDate;
+            GameTimeDuration expectedConstructionDuration = new GameTimeDuration(designToConstruct.ConstructionCost / _unitProduction);
+            GameDate expectedCompletionDate = new GameDate(expectedStartDate, expectedConstructionDuration);
+            var construction = new ConstructionInfo(designToConstruct) {
+                ExpectedCompletionDate = expectedCompletionDate
+            };
+
+            _constructionQueue.AddLast(construction);
+            RefreshCurrentConstructionProperty();
+            // Adding to the end of the queue does not change any expected completion dates
+            OnConstructionQueueChanged();
+            _baseClient.HandleConstructionAdded(construction);
         }
 
         [Obsolete("Not currently used")]
@@ -98,19 +134,25 @@ namespace CodeEnv.Master.GameContent {
 
         public void RegenerateQueue(IList<ConstructionInfo> orderedQueue) {
             _constructionQueue.Clear();
-            foreach (var constructionItem in orderedQueue) {
-                _constructionQueue.AddLast(constructionItem);
+            foreach (var construction in orderedQueue) {
+                _constructionQueue.AddLast(construction);
             }
             RefreshCurrentConstructionProperty();
             UpdateExpectedCompletionDates();
             OnConstructionQueueChanged();
         }
 
-        public void RemoveFromQueue(ConstructionInfo itemToRemove) {
-            bool isRemoved = _constructionQueue.Remove(itemToRemove);
+        public void RemoveFromQueue(ConstructionInfo construction) {
+            bool isRemoved = _constructionQueue.Remove(construction);
             D.Assert(isRemoved);
             UpdateExpectedCompletionDates();
             RefreshCurrentConstructionProperty();
+            if (!construction.IsCompleted && construction.CompletionPercentage > Constants.ZeroPercent) {
+                _baseClient.HandleUncompletedConstructionRemovedFromQueue(construction);
+                if (construction.CompletionPercentage > Constants.ZeroPercent) {
+                    __HandlePartiallyCompletedConstructionBeingRemovedFromQueue(construction);
+                }
+            }
             OnConstructionQueueChanged();
         }
 
@@ -118,14 +160,18 @@ namespace CodeEnv.Master.GameContent {
             return new List<ConstructionInfo>(_constructionQueue);
         }
 
+        public ConstructionInfo GetConstructionFor(IUnitElement element) {
+            return _constructionQueue.Single(c => c.Element == element);
+        }
+
         private void ProgressConstruction(float availableProduction) {
             D.Assert(!GameReferences.GameManager.IsPaused);
             if (_constructionQueue.Any()) {
-                var firstConstructionItem = _constructionQueue.First.Value;
+                var firstConstruction = _constructionQueue.First.Value;
                 float unconsumedProduction;
-                if (firstConstructionItem.TryCompleteConstruction(availableProduction, out unconsumedProduction)) {
-                    RemoveFromQueue(firstConstructionItem);
-                    OnConstructionCompleted(firstConstructionItem.Design);
+                if (firstConstruction.TryCompleteConstruction(availableProduction, out unconsumedProduction)) {
+                    RemoveFromQueue(firstConstruction);
+                    OnConstructionCompleted(firstConstruction);
                     ProgressConstruction(unconsumedProduction);
                 }
             }
@@ -136,7 +182,7 @@ namespace CodeEnv.Master.GameContent {
                 GameDate dateConstructionResumes = _gameTime.CurrentDate;
                 foreach (var construction in _constructionQueue) {
                     float additionalProdnReqd = construction.Design.ConstructionCost - construction.CumProductionApplied;
-                    float remainingHoursToCompletion = additionalProdnReqd / _unitData.UnitProduction;
+                    float remainingHoursToCompletion = additionalProdnReqd / _unitProduction;
                     GameTimeDuration remainingDurationToCompletion = new GameTimeDuration(remainingHoursToCompletion);
                     GameDate updatedCompletionDate = new GameDate(dateConstructionResumes, remainingDurationToCompletion);
                     if (updatedCompletionDate != construction.ExpectedCompletionDate) {
@@ -162,7 +208,8 @@ namespace CodeEnv.Master.GameContent {
 
         #region Event and Property Change Handlers
 
-        private void UnitProductionPropChangedHandler() {
+        private void UnitOutputsPropChangedHandler() {
+            RefreshUnitProduction();
             UpdateExpectedCompletionDates();
         }
 
@@ -172,9 +219,9 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private void OnConstructionCompleted(AUnitElementDesign completedDesign) {
+        private void OnConstructionCompleted(ConstructionInfo completedConstruction) {
             if (constructionCompleted != null) {
-                constructionCompleted(this, new ConstructionCompletedEventArgs(completedDesign));
+                constructionCompleted(this, new ConstructionCompletedEventArgs(completedConstruction));
             }
         }
 
@@ -186,13 +233,20 @@ namespace CodeEnv.Master.GameContent {
 
         private void RefreshCurrentConstructionProperty() {
             var currentConstructionItem = _constructionQueue.Any() ? _constructionQueue.First() : TempGameValues.NoConstruction;
-            if (_unitData.CurrentConstruction != currentConstructionItem) {
-                _unitData.CurrentConstruction = currentConstructionItem;
+            if (_baseData.CurrentConstruction != currentConstructionItem) {
+                _baseData.CurrentConstruction = currentConstructionItem;
             }
         }
 
-        private void __ReduceBankBalanceByBuyoutCost(decimal buyoutCost) {
-            D.Log("{0}.__ReduceBankBalanceByBuyoutCost({1:0.}) not yet implemented.", DebugName, buyoutCost);
+        private void RefreshUnitProduction() {
+            var unitOutputs = _baseData.UnitOutputs;
+            if (_baseData.ElementsData.Any()) {
+                // unitOutputs can be default without Production present when 
+                // Base's last element is removed which occurs before IsOperational is set to false
+                D.AssertNotDefault(unitOutputs);
+                D.Assert(unitOutputs.IsPresent(OutputID.Production));
+            }
+            _unitProduction = unitOutputs.GetYield(OutputID.Production).Value;
         }
 
         private void Cleanup() {
@@ -210,16 +264,25 @@ namespace CodeEnv.Master.GameContent {
 
         #region Debug
 
+        private void __HandlePartiallyCompletedConstructionBeingRemovedFromQueue(ConstructionInfo construction) {
+            D.Warn("{0} is removing {1} from Queue that is partially completed.", DebugName, construction.DebugName);
+            // TODO This question should be raised by the Gui click handler as a popup before sending to the ConstructionManager
+        }
+
+        private void __ReduceBankBalanceByBuyoutCost(decimal buyoutCost) {
+            D.Log("{0}.__ReduceBankBalanceByBuyoutCost({1:0.}) not yet implemented.", DebugName, buyoutCost);
+        }
+
         #endregion
 
         #region Nested Classes
 
         public class ConstructionCompletedEventArgs : EventArgs {
 
-            public AUnitElementDesign CompletedDesign { get; private set; }
+            public ConstructionInfo CompletedConstruction { get; private set; }
 
-            public ConstructionCompletedEventArgs(AUnitElementDesign completedDesign) {
-                CompletedDesign = completedDesign;
+            public ConstructionCompletedEventArgs(ConstructionInfo completedConstruction) {
+                CompletedConstruction = completedConstruction;
             }
         }
 
@@ -269,7 +332,7 @@ namespace CodeEnv.Master.GameContent {
 
         public void HandleDateReached(DateMinderDuration recurringDuration) {
             D.AssertEqual(_constructionQueueUpdateDuration, recurringDuration);
-            ProgressConstruction(_unitData.UnitProduction);
+            ProgressConstruction(_unitProduction);
         }
 
         #endregion

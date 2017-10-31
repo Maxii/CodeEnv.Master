@@ -64,10 +64,11 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="maxHitPts">The maximum hit points of this hull.</param>
         /// <param name="damageMitigation">The resistance to damage of this hull.</param>
         /// <param name="hullDimensions">The hull dimensions.</param>
+        /// <param name="refitBenefit">The refit benefit.</param>
         public AHullStat(string hullCategoryName, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass,
-            float pwrRqmt, float constructionCost, decimal expense, float maxHitPts, DamageStrength damageMitigation, Vector3 hullDimensions)
+            float pwrRqmt, float constructionCost, float expense, float maxHitPts, DamageStrength damageMitigation, Vector3 hullDimensions, int refitBenefit)
             : base(hullCategoryName + HullCategoryNameExtension, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, constructionCost,
-                  expense, isDamageable: false) {
+                  expense, refitBenefit, isDamageable: false) {
             MaxHitPoints = maxHitPts;
             DamageMitigation = damageMitigation;
             HullDimensions = hullDimensions;

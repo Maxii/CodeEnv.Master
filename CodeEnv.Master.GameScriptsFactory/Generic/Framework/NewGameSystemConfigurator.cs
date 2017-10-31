@@ -733,7 +733,7 @@ public class NewGameSystemConfigurator {
             }
             float constructionCost = Constants.ZeroF;
             var countermeasureStat = new PassiveCountermeasureStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...",
-                0F, 0F, 0F, constructionCost, Constants.ZeroCurrency, damageMitigation);
+                0F, 0F, 0F, constructionCost, Constants.ZeroF, damageMitigation, 0);
             statsList.Add(countermeasureStat);
         }
         return statsList;
@@ -753,12 +753,12 @@ public class NewGameSystemConfigurator {
             case ResourceCategory.Common:
                 switch (desirability) {
                     case SystemDesirability.Desirable:
-                        minNumberOfResources = 2;
+                        minNumberOfResources = 3;
                         minYield = 1F;
                         maxYield = 5F;
                         break;
                     case SystemDesirability.Normal:
-                        minNumberOfResources = 1;
+                        minNumberOfResources = 2;
                         minYield = 1F;
                         maxYield = 4F;
                         break;
@@ -775,12 +775,12 @@ public class NewGameSystemConfigurator {
             case ResourceCategory.Strategic:
                 switch (desirability) {
                     case SystemDesirability.Desirable:
-                        minNumberOfResources = 1;
+                        minNumberOfResources = 2;
                         minYield = 1F;
                         maxYield = 3F;
                         break;
                     case SystemDesirability.Normal:
-                        minNumberOfResources = 0;
+                        minNumberOfResources = 1;
                         minYield = 1F;
                         maxYield = 2F;
                         break;
@@ -794,6 +794,7 @@ public class NewGameSystemConfigurator {
                         throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(desirability));
                 }
                 break;
+            case ResourceCategory.All:
             case ResourceCategory.Luxury:   // No Luxury Resources yet
             case ResourceCategory.None:
             default:
@@ -802,13 +803,13 @@ public class NewGameSystemConfigurator {
 
         var categoryResources = Enums<ResourceID>.GetValues(excludeDefault: true).Where(res => res.GetResourceCategory() == resCategory);
         int categoryResourceCount = categoryResources.Count();
-        D.Assert(categoryResourceCount > minNumberOfResources);
+        D.Assert(minNumberOfResources <= categoryResourceCount);
         int numberOfResourcesToCreate = RandomExtended.Range(minNumberOfResources, categoryResourceCount);
 
-        IList<ResourcesYield.ResourcesValuePair> resValuePairs = new List<ResourcesYield.ResourcesValuePair>(numberOfResourcesToCreate);
+        IList<ResourcesYield.ResourceValuePair> resValuePairs = new List<ResourcesYield.ResourceValuePair>(numberOfResourcesToCreate);
         var resourcesChosen = categoryResources.Shuffle().Take(numberOfResourcesToCreate);
         resourcesChosen.ForAll(resID => {
-            var rvp = new ResourcesYield.ResourcesValuePair(resID, UnityEngine.Random.Range(minYield, maxYield));
+            var rvp = new ResourcesYield.ResourceValuePair(resID, UnityEngine.Random.Range(minYield, maxYield));
             resValuePairs.Add(rvp);
         });
         return new ResourcesYield(resValuePairs.ToArray());

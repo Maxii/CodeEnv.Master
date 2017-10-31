@@ -27,15 +27,10 @@ namespace CodeEnv.Master.GameContent {
             get { return StarbaseDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
         }
 
-        private IStarbaseCmd_Ltd _item;
-
-        public StarbasePublisher(StarbaseCmdData data, IStarbaseCmd_Ltd item)
-            : base(data) {
-            _item = item;
-        }
+        public StarbasePublisher(StarbaseCmdData data) : base(data) { }
 
         protected override StarbaseCmdReport MakeReportInstance(Player player) {
-            return new StarbaseCmdReport(_data, player, _item);
+            return new StarbaseCmdReport(_data, player);
         }
 
     }

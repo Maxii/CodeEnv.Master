@@ -29,15 +29,10 @@ namespace CodeEnv.Master.GameContent {
             get { return SystemDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
         }
 
-        private ISystem_Ltd _item;
-
-        public SystemPublisher(SystemData data, ISystem_Ltd item)
-            : base(data) {
-            _item = item;
-        }
+        public SystemPublisher(SystemData data) : base(data) { }
 
         protected override SystemReport MakeReportInstance(Player player) {
-            return new SystemReport(_data, player, _item);
+            return new SystemReport(_data, player);
         }
 
         [System.Obsolete]

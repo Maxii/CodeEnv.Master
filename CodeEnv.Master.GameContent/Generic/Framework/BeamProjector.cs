@@ -99,6 +99,10 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        public override bool AreSpecsEqual(AEquipmentStat otherStat) {
+            return Stat == otherStat as BeamWeaponStat;
+        }
+
     }
 }
 

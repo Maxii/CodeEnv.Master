@@ -122,8 +122,8 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
                 var design = designs.First(d => d.HullCategory == hullCat);
                 designs.Remove(design);
 
-                var cameraStat = MakeElementCameraStat(design.HullStat);
-                _factory.PopulateInstance(Owner, cameraStat, design, ref element);
+                string name = _factory.__GetUniqueShipName(design.DesignName);
+                _factory.PopulateInstance(Owner, design, name, ref element);
 
                 // Note: Need to tell each element where this creator is located. This assures that whichever element is picked as the HQElement
                 // will start with this position. However, the elements here are all placed on top of each other. When the physics engine starts
@@ -138,8 +138,8 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
         else {
             foreach (var designName in Configuration.ElementDesignNames) {
                 ShipDesign design = _gameMgr.PlayersDesigns.GetShipDesign(Owner, designName);
-                FollowableItemCameraStat cameraStat = MakeElementCameraStat(design.HullStat);
-                _elements.Add(_factory.MakeShipInstance(Owner, cameraStat, design, gameObject));
+                string name = _factory.__GetUniqueShipName(design.DesignName);
+                _elements.Add(_factory.MakeShipInstance(Owner, design, name, gameObject));
             }
         }
     }
@@ -188,7 +188,7 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
 
     protected override void BeginElementsOperations() {
         LogEvent();
-        _elements.ForAll(e => e.CommenceOperations());
+        _elements.ForAll(e => e.CommenceOperations(isInitialConstructionNeeded: false));
     }
 
     protected override bool BeginCommandOperations() {
@@ -209,6 +209,7 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
         return new FleetCmdCameraStat(minViewDistance, optViewDistanceAdder, fov: 60F);
     }
 
+    [Obsolete("Moved to UnitFactory")]
     private FollowableItemCameraStat MakeElementCameraStat(ShipHullStat hullStat) {
         ShipHullCategory hullCat = hullStat.HullCategory;
         float fov;

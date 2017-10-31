@@ -46,19 +46,15 @@ public class FacilityDesignWindow : AUnitDesignWindow {
         return _gameMgr.PlayersDesigns.GetAllUserFacilityDesigns(includeObsolete).Cast<AUnitMemberDesign>();
     }
 
-    protected override bool IsDesignContentEqual(AUnitMemberDesign previousDesign, AUnitMemberDesign newDesign) {
-        return GameUtility.IsDesignContentEqual(previousDesign as FacilityDesign, newDesign as FacilityDesign);
-    }
-
     protected override bool TryGetCreateDesignPopupContent(out string popupTitle, out List<string> popupContent) {
         popupTitle = "Hull";
         popupContent = TempGameValues.FacilityHullCategoriesInUse.Select(hullCat => hullCat.GetValueName()).ToList();
         return true;
     }
 
-    protected override AUnitMemberDesign GetEmptyTemplateDesign(string designNameHint) {
-        D.AssertNotNull(designNameHint);
-        FacilityHullCategory designHullCat = Enums<FacilityHullCategory>.Parse(designNameHint);
+    protected override AUnitMemberDesign GetEmptyTemplateDesign(string emptyTemplateHint) {
+        D.AssertNotNull(emptyTemplateHint);
+        FacilityHullCategory designHullCat = Enums<FacilityHullCategory>.Parse(emptyTemplateHint);
         return _gameMgr.PlayersDesigns.GetUserFacilityDesign(designHullCat.GetEmptyTemplateDesignName());
     }
 

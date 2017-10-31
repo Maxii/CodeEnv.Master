@@ -29,6 +29,12 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ActiveCountermeasure : ARangedEquipment, ICountermeasure, IDateMinderClient, IDisposable {
 
+        public override string DebugName {
+            get {
+                return RangeMonitor != null ? DebugNameFormat.Inject(RangeMonitor.DebugName, Name) : Name;
+            }
+        }
+
         private bool _isReady;
         private bool IsReady {
             get { return _isReady; }
@@ -48,12 +54,6 @@ namespace CodeEnv.Master.GameContent {
         public IActiveCountermeasureRangeMonitor RangeMonitor {
             get { return _rangeMonitor; }
             set { SetProperty<IActiveCountermeasureRangeMonitor>(ref _rangeMonitor, value, "RangeMonitor"); }
-        }
-
-        public override string DebugName {
-            get {
-                return RangeMonitor != null ? DebugNameFormat.Inject(RangeMonitor.DebugName, Name) : Name;
-            }
         }
 
         private GameTimeDuration _reloadPeriod;
@@ -298,6 +298,10 @@ namespace CodeEnv.Master.GameContent {
                 _gameTime.DateMinder.Remove(_reloadedDate, this);
                 _reloadedDate = default(GameDate);
             }
+        }
+
+        public override bool AreSpecsEqual(AEquipmentStat otherStat) {
+            return Stat == otherStat as ActiveCountermeasureStat;
         }
 
         private void Cleanup() {

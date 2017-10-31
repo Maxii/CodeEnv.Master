@@ -37,6 +37,8 @@ namespace CodeEnv.Master.GameContent {
 
         bool IsOwnerChangeUnderway { get; }
 
+        string UnitName { get; }
+
     }
 }
 

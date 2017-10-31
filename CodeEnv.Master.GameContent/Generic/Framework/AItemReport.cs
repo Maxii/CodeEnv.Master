@@ -24,7 +24,9 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AItemReport {
 
-        public virtual string DebugName { get { return GetType().Name; } }
+        private const string DebugNameFormat = "{0}.{1}";
+
+        public virtual string DebugName { get { return DebugNameFormat.Inject(Name, GetType().Name); } }
 
         /// <summary>
         /// Debug. The position of the Item for reporting the camera distance.
@@ -55,13 +57,13 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Initializes a new instance of the <see cref="AItemReport" /> class.
         /// </summary>
+        /// <param name="data">The Item's data.</param>
         /// <param name="player">The player requesting the report.</param>
-        /// <param name="item">The item the report is about.</param>
-        public AItemReport(AItemData data, Player player, IOwnerItem_Ltd item) {
+        public AItemReport(AItemData data, Player player) {
             Player = player;
-            Item = item;
-            __PositionForCameraDistance = new Reference<Vector3>(() => item.Position);
-            AssignValues(data);
+            Item = data.Item as IOwnerItem_Ltd;
+            __PositionForCameraDistance = new Reference<Vector3>(() => Item.Position);
+            // 10.12.17 Moved AssignValues(data) to AIntelItemReport constructor to make sure IntelCoverage is initialized
         }
 
         protected abstract void AssignValues(AItemData data);

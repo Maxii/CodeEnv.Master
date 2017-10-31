@@ -27,12 +27,10 @@ namespace CodeEnv.Master.GameContent {
             get { return SectorDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
         }
 
-        private ISector_Ltd _item;
-
-        public SectorPublisher(SectorData data, ISector_Ltd item) : base(data) { _item = item; }
+        public SectorPublisher(SectorData data) : base(data) { }
 
         protected override SectorReport MakeReportInstance(Player player) {
-            return new SectorReport(_data, player, _item);
+            return new SectorReport(_data, player);
         }
 
     }

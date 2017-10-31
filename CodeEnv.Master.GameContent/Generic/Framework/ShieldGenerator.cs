@@ -274,6 +274,10 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        public override bool AreSpecsEqual(AEquipmentStat otherStat) {
+            return Stat == otherStat as ShieldGeneratorStat;
+        }
+
         // 8.12.16 Job pausing moved to JobManager to consolidate handling
 
         private void Cleanup() {

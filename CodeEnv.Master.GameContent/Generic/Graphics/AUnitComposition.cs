@@ -32,6 +32,14 @@ namespace CodeEnv.Master.GameContent {
 
         private static StringBuilder _stringBuilder = new StringBuilder();
 
+        private string _debugName;
+        public string DebugName {
+            get {
+                _debugName = _debugName ?? ConstructDebugName();
+                return _debugName;
+            }
+        }
+
         private IDictionary<ElementHullCategoryType, int> _categoryCountLookup;
 
         /// <summary>
@@ -74,7 +82,7 @@ namespace CodeEnv.Master.GameContent {
             return _categoryCountLookup.Values.Sum();
         }
 
-        private string ConstructStringRepresentation() {
+        private string ConstructDebugName() {
             _stringBuilder.Clear();
             var uniqueCategories = _categoryCountLookup.Keys.ToList();
             foreach (var cat in uniqueCategories) {
@@ -92,12 +100,8 @@ namespace CodeEnv.Master.GameContent {
 
         protected abstract string GetCategoryDescription(ElementHullCategoryType category);
 
-        private string _toString;
-        public override string ToString() {
-            if (_toString.IsNullOrEmpty()) {
-                _toString = ConstructStringRepresentation();
-            }
-            return _toString;
+        public sealed override string ToString() {
+            return DebugName;
         }
 
     }

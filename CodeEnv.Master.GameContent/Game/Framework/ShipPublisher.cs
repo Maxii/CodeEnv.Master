@@ -27,15 +27,10 @@ namespace CodeEnv.Master.GameContent {
             get { return ShipDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
         }
 
-        private IShip_Ltd _item;
-
-        public ShipPublisher(ShipData data, IShip_Ltd item)
-            : base(data) {
-            _item = item;
-        }
+        public ShipPublisher(ShipData data) : base(data) { }
 
         protected override ShipReport MakeReportInstance(Player player) {
-            return new ShipReport(_data, player, _item);
+            return new ShipReport(_data, player);
         }
 
     }

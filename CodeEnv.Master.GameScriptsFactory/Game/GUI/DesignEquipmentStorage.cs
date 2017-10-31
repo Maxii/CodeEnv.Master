@@ -114,7 +114,7 @@ public class DesignEquipmentStorage : AMonoBase {
         string iconGoName = storageIconPrefab.GetType().Name;
         EquipmentSlotID slotID;
         AEquipmentStat stat;
-        while (design.GetNextEquipmentStat(out slotID, out stat)) {
+        while (design.TryGetNextEquipmentStat(out slotID, out stat)) {
             GameObject storageIconGo = NGUITools.AddChild(_storageIconGrid.gameObject, storageIconPrefab.gameObject);
             storageIconGo.name = iconGoName;
             PopulateIcon(storageIconGo, iconSize, slotID, stat);

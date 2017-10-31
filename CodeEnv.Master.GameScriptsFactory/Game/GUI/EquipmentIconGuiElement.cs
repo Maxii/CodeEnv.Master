@@ -88,7 +88,7 @@ public class EquipmentIconGuiElement : AEquipmentIconGuiElement {
 
     #endregion
 
-    protected override void HandleIconHovered(bool isOver) {
+    protected override void HandleGuiElementHovered(bool isOver) {
         if (isOver) {
             HoveredHudWindow.Instance.Show(FormID.Equipment, EquipmentStat);
         }

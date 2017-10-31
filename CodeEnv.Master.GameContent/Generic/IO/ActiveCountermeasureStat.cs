@@ -75,14 +75,15 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="constructionCost">The production cost.</param>
         /// <param name="expense">The expense.</param>
         /// <param name="rangeCat">The range cat.</param>
+        /// <param name="refitBenefit">The refit benefit.</param>
         /// <param name="interceptStrengths">The intercept strengths.</param>
         /// <param name="interceptAccuracy">The intercept accuracy.</param>
         /// <param name="reloadPeriod">The reload period.</param>
         /// <param name="damageMitigation">The damage mitigation.</param>
         public ActiveCountermeasureStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass,
-            float pwrRqmt, float constructionCost, decimal expense, RangeCategory rangeCat, WDVStrength[] interceptStrengths, float interceptAccuracy, float reloadPeriod,
+            float pwrRqmt, float constructionCost, float expense, RangeCategory rangeCat, int refitBenefit, WDVStrength[] interceptStrengths, float interceptAccuracy, float reloadPeriod,
             DamageStrength damageMitigation)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, constructionCost, expense, rangeCat, isDamageable: true) {
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, constructionCost, expense, rangeCat, refitBenefit, isDamageable: true) {
             // confirm if more than one interceptStrength, that they each contain a unique WDVCategory
             D.AssertEqual(interceptStrengths.Length, interceptStrengths.Select(intS => intS.Category).Distinct().Count(), "Duplicate Categories found.");
             InterceptStrengths = interceptStrengths;

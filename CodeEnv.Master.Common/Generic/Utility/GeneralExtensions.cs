@@ -275,10 +275,10 @@ namespace CodeEnv.Master.Common {
         }
 
         /// <summary>
-        /// Constructs a string separated by the provided delimiter from the elements of the IEnumerable source.
+        /// Constructs a string separated by the provided delimiter from the elements of the IEnumerable&lt;T&gt; sequence.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="sequence">The source.</param>
+        /// <param name="sequence">The sequence.</param>
         /// <param name="delimiter">The delimiter string. Default is ",".</param>
         /// <returns></returns>
         public static string Concatenate<T>(this IEnumerable<T> sequence, string delimiter = Constants.Comma) {
@@ -305,6 +305,26 @@ namespace CodeEnv.Master.Common {
         /// <returns></returns>
         public static IEnumerable<T> Shuffle<T>(this IEnumerable<T> sequence) {
             return RandomExtended.Shuffle<T>(sequence.ToArray());
+        }
+
+        /// <summary>
+        /// Shuffles the specified source.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="sequence">The source.</param>
+        /// <returns></returns>
+        public static IEnumerable<T> Shuffle<T>(this IList<T> sequence) {
+            return RandomExtended.Shuffle<T>(sequence);
+        }
+
+        /// <summary>
+        /// Shuffles the specified source.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="sequence">The source.</param>
+        /// <returns></returns>
+        public static IEnumerable<T> Shuffle<T>(this T[] sequence) {
+            return RandomExtended.Shuffle<T>(sequence);
         }
 
         /// <summary>
@@ -342,11 +362,6 @@ namespace CodeEnv.Master.Common {
         [Obsolete("Avoid usage as creates garbage on the heap.")]
         public static bool EqualsAnyOf<T>(this T source, params T[] itemsToCompare) {
             //  'this' source can never be null without the CLR throwing a Null reference exception
-
-            // 1.23.17 This test can never fail as source is of type T and T if IEnumerable is IEnumerable<?>, not IEnumerable<T>
-            ////if(source is IEnumerable<T>) {
-            ////    throw new ArgumentException("Source argument cannot be IEnumerable.");
-            ////}
 
             // 1.23.17 This works if T is IEnumerable<?> but not if just IEnumerable. Don't know why.
             if (typeof(T).GetInterface("IEnumerable") != null) {
@@ -548,63 +563,6 @@ namespace CodeEnv.Master.Common {
             return result;
         }
 
-        /// <summary>
-        /// Aggregates the nullable values provided and returns their addition-based sum. If one or more of these
-        /// nullable values has no value (its null), it is excluded from the sum. If all values are null, the value returned is null.
-        /// </summary>
-        /// <param name="source">The source.</param>
-        /// <param name="args">The arguments.</param>
-        /// <returns></returns>
-        public static float? NullableSum(this float? source, params float?[] args) {
-            var argList = new List<float?>(args);
-            argList.Add(source);
-            return argList.NullableSum();
-        }
-
-        /// <summary>
-        /// Aggregates the nullable values provided and returns their addition-based sum. If one or more of these
-        /// nullable values has no value (its null), it is excluded from the sum. If all values are null, the value returned is null.
-        /// </summary>
-        /// <param name="sequence">The nullable values.</param>
-        /// <returns></returns>
-        public static float? NullableSum(this IEnumerable<float?> sequence) {
-            var result = sequence.Sum();
-            D.Assert(result.HasValue);  // Sum() will never return a null result
-            if (result.Value == Constants.ZeroF && !sequence.IsNullOrEmpty() && sequence.All(fVal => !fVal.HasValue)) {
-                // if the result is zero, then that result is not valid IFF the entire sequence is filled with null
-                result = null;
-            }
-            return result;
-        }
-
-        /// <summary>
-        /// Aggregates the nullable values provided and returns their addition-based sum. If one or more of these
-        /// nullable values has no value (its null), it is excluded from the sum. If all values are null, the value returned is null.
-        /// </summary>
-        /// <param name="source">The source.</param>
-        /// <param name="args">The arguments.</param>
-        /// <returns></returns>
-        public static int? NullableSum(this int? source, params int?[] args) {
-            var argList = new List<int?>(args);
-            argList.Add(source);
-            return argList.NullableSum();
-        }
-
-        /// <summary>
-        /// Aggregates the nullable values provided and returns their addition-based sum. If one or more of these
-        /// nullable values has no value (its null), it is excluded from the sum. If all values are null, the value returned is null.
-        /// </summary>
-        /// <param name="sequence">The nullable values.</param>
-        /// <returns></returns>
-        public static int? NullableSum(this IEnumerable<int?> sequence) {
-            var result = sequence.Sum();
-            D.Assert(result.HasValue);  // Sum() will never return a null result
-            if (result.Value == Constants.Zero && !sequence.IsNullOrEmpty() && sequence.All(fVal => !fVal.HasValue)) {
-                // if the result is zero, then that result is not valid IFF the entire sequence is filled with null
-                result = null;
-            }
-            return result;
-        }
 
         #region Generic INotifyPropertyChanged, INotifyPropertyChanging Extensions
 

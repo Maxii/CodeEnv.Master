@@ -44,7 +44,7 @@ namespace CodeEnv.Master.GameContent {
 
         public new IInteractiveWorldTrackingSprite TrackingIcon { get { return base.TrackingIcon as IInteractiveWorldTrackingSprite; } }
 
-        protected override int IconDepth { get { return 4; } }
+        protected override int TrackingIconDepth { get { return 4; } }
 
         private float _currentPrimaryMeshRadius;
         private MaterialPropertyBlock _primaryMeshMPB;
@@ -60,8 +60,13 @@ namespace CodeEnv.Master.GameContent {
             : base(trackedCmd, meshLayer) {
         }
 
+        /// <summary>
+        /// Initializes the primary mesh.
+        /// <remarks>The primary mesh of a UnitCmd is the sphere highlight that surrounds it and therefore the HQ Element.</remarks>
+        /// </summary>
+        /// <param name="itemGo">The item go.</param>
+        /// <returns></returns>
         protected override MeshRenderer InitializePrimaryMesh(GameObject itemGo) {
-            // The primary mesh of a UnitCmd is the sphere highlight that surrounds the HQ Element
             var primaryMeshRenderer = itemGo.GetSingleComponentInChildren<MeshRenderer>();
             _currentPrimaryMeshRadius = primaryMeshRenderer.bounds.size.x / 2F;
             primaryMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;

@@ -65,7 +65,7 @@ public class InteractiveWorldTrackingSprite_Independent : WorldTrackingSprite_In
 
     #endregion
 
-    protected override void SetDimensions(Vector2 size) {
+    protected override void SetDimensions(IntVector2 size) {
         base.SetDimensions(size);
         NGUITools.UpdateWidgetCollider(WidgetTransform.gameObject);
     }

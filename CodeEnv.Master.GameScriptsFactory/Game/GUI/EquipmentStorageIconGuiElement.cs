@@ -156,7 +156,7 @@ public class EquipmentStorageIconGuiElement : AEquipmentIconGuiElement {
 
     #endregion
 
-    protected override void HandleIconHovered(bool isOver) {
+    protected override void HandleGuiElementHovered(bool isOver) {
         if (isOver) {
             if (_currentStat != null) {
                 HoveredHudWindow.Instance.Show(FormID.Equipment, _currentStat);

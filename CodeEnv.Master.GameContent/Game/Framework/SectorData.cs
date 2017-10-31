@@ -52,6 +52,11 @@ namespace CodeEnv.Master.GameContent {
 
         public new SectorInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as SectorInfoAccessController; } }
 
+        private SectorPublisher _publisher;
+        public SectorPublisher Publisher {
+            get { return _publisher = _publisher ?? new SectorPublisher(this); }
+        }
+
         protected override IntelCoverage DefaultStartingIntelCoverage { get { return IntelCoverage.Basic; } }
 
         private IList<IDisposable> _systemDataSubscribers;
@@ -87,7 +92,7 @@ namespace CodeEnv.Master.GameContent {
             _systemDataSubscribers = new List<IDisposable>();
             _systemDataSubscribers.Add(SystemData.SubscribeToPropertyChanged<SystemData, Player>(sd => sd.Owner, SystemOwnerPropChangedHandler));
             _systemDataSubscribers.Add(SystemData.SubscribeToPropertyChanged<SystemData, int>(sd => sd.Capacity, SystemCapacityPropChangedHandler));
-            _systemDataSubscribers.Add(SystemData.SubscribeToPropertyChanged<SystemData, ResourcesYield>(sd => sd.Resources, SystemResourceYieldPropChangedHandler));
+            _systemDataSubscribers.Add(SystemData.SubscribeToPropertyChanged<SystemData, ResourcesYield>(sd => sd.Resources, SystemResourcesPropChangedHandler));
             SystemData.intelCoverageChanged += SystemIntelCoverageChangedEventHandler;
         }
 
@@ -154,6 +159,9 @@ namespace CodeEnv.Master.GameContent {
             return lowestCommonCoverage;
         }
 
+        public SectorReport GetReport(Player player) { return Publisher.GetReport(player); }
+
+
         #region Event and Property Change Handlers
 
         private void SystemDataPropSetHandler() {
@@ -192,7 +200,7 @@ namespace CodeEnv.Master.GameContent {
             UpdateCapacity();
         }
 
-        private void SystemResourceYieldPropChangedHandler() {
+        private void SystemResourcesPropChangedHandler() {
             UpdateResources();
         }
 

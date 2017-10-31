@@ -25,7 +25,6 @@ namespace CodeEnv.Master.GameContent {
     public class SensorStat : ARangedEquipmentStat {
 
         private const string DebugNameFormat = "{0}(Range[{1}]).";
-
         private const string BasicDescriptionFormat = "Basic {0} sensor.";
 
         #region Comparison Operators Override
@@ -71,10 +70,11 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="constructionCost">The cost to produce.</param>
         /// <param name="expense">The expense.</param>
         /// <param name="rangeCat">The range category of the sensor.</param>
+        /// <param name="refitBenefit">The refit benefit.</param>
         /// <param name="isDamageable">if set to <c>true</c> [is damageable].</param>
         public SensorStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass, float pwrRqmt,
-            float constructionCost, decimal expense, RangeCategory rangeCat, bool isDamageable)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, constructionCost, expense, rangeCat, isDamageable) {
+            float constructionCost, float expense, RangeCategory rangeCat, int refitBenefit, bool isDamageable)
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, constructionCost, expense, rangeCat, refitBenefit, isDamageable) {
         }
 
         /// <summary>
@@ -85,7 +85,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="isDamageable">if set to <c>true</c> [is damageable].</param>
         public SensorStat(string name, RangeCategory rangeCat, bool isDamageable)
             : this(name, AtlasID.MyGui, TempGameValues.AnImageFilename,
-                  BasicDescriptionFormat.Inject(rangeCat.GetEnumAttributeText()), 0F, 0F, 0F, 1F, Constants.ZeroCurrency, rangeCat, isDamageable) {
+                  BasicDescriptionFormat.Inject(rangeCat.GetEnumAttributeText()), 0F, 0F, 0F, 1F, Constants.ZeroF, rangeCat, 0, isDamageable) {
         }
 
         #region Object.Equals and GetHashCode Override

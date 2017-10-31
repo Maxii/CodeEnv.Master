@@ -332,6 +332,11 @@ namespace CodeEnv.Master.GameContent {
 
         // 12.6.16 Removed params to avoid heap memory allocations
 
+        public bool IsRelationshipWithUser(DiplomaticRelationship relationship) {
+            D.Assert(!IsUser);
+            return IsRelationshipWith(_gameMgr.UserPlayer, relationship);
+        }
+
         public bool IsRelationshipWith(Player player, DiplomaticRelationship relationship) {
             return GetCurrentRelations(player) == relationship;
         }

@@ -51,6 +51,11 @@ namespace CodeEnv.Master.GameContent {
 
         public new StarInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as StarInfoAccessController; } }
 
+        private StarPublisher _publisher;
+        public StarPublisher Publisher {
+            get { return _publisher = _publisher ?? new StarPublisher(this); }
+        }
+
         // No Mass as no Rigidbody
 
         protected override IntelCoverage DefaultStartingIntelCoverage { get { return IntelCoverage.Basic; } }
@@ -92,6 +97,9 @@ namespace CodeEnv.Master.GameContent {
         protected override AIntel MakeIntelInstance() {
             return new NonRegressibleIntel();
         }
+
+        public StarReport GetReport(Player player) { return Publisher.GetReport(player); }
+
 
     }
 }

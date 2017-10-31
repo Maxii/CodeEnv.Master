@@ -91,8 +91,9 @@ namespace CodeEnv.Master.Common {
         public const string FormatPercent_0Dp = "{0:P00}";
 
         // Common Numeric Formatting  see http://msdn.microsoft.com/en-us/library/dwhawy9k.aspx
-        public const string FormatCurrency_0Dp = "C0";
-        public const string FormatCurrency_2Dp = "C2";
+        public const string FormatCurrency_0Dp = "{0:C00}";
+        public const string FormatCurrency_2Dp = "{0:C02}";
+
         public const string PercentNumericFormat = "P00";
 
         // 3.25.16 Moved to GameTime

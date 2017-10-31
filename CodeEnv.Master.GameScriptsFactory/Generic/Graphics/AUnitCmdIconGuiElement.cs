@@ -91,7 +91,7 @@ public abstract class AUnitCmdIconGuiElement : AMultiSizeIconGuiElement {
         var compositionContainerGo = _topLevelIconWidget.GetComponentsInChildren<GuiElement>().Single(ge => ge.ElementID == GuiElementID.Composition).gameObject;
         _unitCompositionIcon = compositionContainerGo.GetSingleComponentInChildren<UISprite>();
         _unitCompositionLabel = compositionContainerGo.GetSingleComponentInChildren<UILabel>();
-        _iconImageNameLabel = _topLevelIconWidget.GetComponentsInChildren<GuiElement>().Single(ge => ge.ElementID == GuiElementID.NameLabel).GetComponent<UILabel>();
+        _iconImageNameLabel = _topLevelIconWidget.GetComponentsInChildren<GuiElement>().Single(ge => ge.ElementID == GuiElementID.Name).GetComponent<UILabel>();
     }
 
     #region Event and Property Change Handlers
@@ -111,7 +111,7 @@ public abstract class AUnitCmdIconGuiElement : AMultiSizeIconGuiElement {
     }
 
     private void UnitHealthPropChangedHandler() {
-        _healthBar.value = Unit.Data.UnitHealth;
+        PopulateHealthBarValues();
     }
 
     private void UnitIconInfoPropChangedHandler() {
@@ -130,7 +130,7 @@ public abstract class AUnitCmdIconGuiElement : AMultiSizeIconGuiElement {
 
     #endregion
 
-    protected override void HandleIconHovered(bool isOver) {
+    protected override void HandleGuiElementHovered(bool isOver) {
         Unit.ShowHoveredHud(isOver);
     }
 
@@ -143,8 +143,6 @@ public abstract class AUnitCmdIconGuiElement : AMultiSizeIconGuiElement {
 
     protected override void PopulateMemberWidgetValues() {
         base.PopulateMemberWidgetValues();
-        _healthBar.value = Unit.Data.UnitHealth;
-
         TrackingIconInfo unitIconInfo = Unit.DisplayMgr.IconInfo;
         _unitCompositionIcon.atlas = unitIconInfo.AtlasID.GetAtlas();
         _unitCompositionIcon.spriteName = unitIconInfo.Filename;
@@ -154,6 +152,8 @@ public abstract class AUnitCmdIconGuiElement : AMultiSizeIconGuiElement {
         _iconImageSprite.atlas = AtlasID.MyGui.GetAtlas();
         _iconImageSprite.spriteName = UnitImageFilename;
         _iconImageNameLabel.text = Unit.UnitName;
+
+        PopulateHealthBarValues();
     }
 
     private void HandleIsPickedChanged() {
@@ -173,13 +173,38 @@ public abstract class AUnitCmdIconGuiElement : AMultiSizeIconGuiElement {
         _unitCompositionLabel.text = UnitCompositionFormat.Inject(Unit.Elements.Count, MaxElementsPerUnit);
     }
 
+    private void PopulateHealthBarValues() {
+        float? health;
+        if (TryGetHealth(out health)) {
+            D.Assert(health.HasValue);
+            _healthBar.value = health.Value;
+        }
+        else {
+            _healthBar.value = Constants.OneHundredPercent;
+            _healthBar.foregroundWidget.color = TempGameValues.UnknownHealthColor.ToUnityColor();
+        }
+    }
+
+    private bool TryGetHealth(out float? health) {
+        if (Unit.Data.InfoAccessCntlr.HasIntelCoverageReqdToAccess(GameManager.Instance.UserPlayer, ItemInfoID.UnitHealth)) {
+            health = Unit.Data.UnitHealth;
+            return true;
+        }
+        health = null;
+        return false;
+    }
+
     public override void ResetForReuse() {
         base.ResetForReuse();
         Unsubscribe();
         _unit = null;
         _isUnitPropSet = false;
         _isPicked = false;
-        _healthBar = null;
+        if (_healthBar != null) {
+            _healthBar.value = Constants.ZeroPercent;
+            _healthBar.foregroundWidget.color = GameColor.Green.ToUnityColor();
+            _healthBar = null;
+        }
         _iconImageNameLabel = null;
         _unitCompositionIcon = null;
         _unitCompositionLabel = null;

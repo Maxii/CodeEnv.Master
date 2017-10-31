@@ -22,7 +22,7 @@ using CodeEnv.Master.Common;
 /// Singleton. Abstract Gui Window for showing customized Forms that act as HUDs at various locations on the screen. 
 /// AHudWindows have the ability to envelop their background around the Form they are displaying.
 /// 10.5.17 Current derived classes include dynamically positioned TooltipHudWindow, HoveredHudWindow 
-/// and the fixed InteractableHudWindow and UnitHudWindow.
+/// and the fixed InteractibleHudWindow and UnitHudWindow.
 /// </summary>
 public abstract class AHudWindow<T> : AFormWindow<T> where T : AHudWindow<T> {
 

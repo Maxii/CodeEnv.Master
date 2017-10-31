@@ -53,7 +53,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
     }
 
-    private static readonly Vector2 IconSize = new Vector2(24F, 24F);
+    private static readonly IntVector2 IconSize = new IntVector2(24, 24);
 
     public event EventHandler apTgtReached;
 
@@ -67,6 +67,10 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             return Data.CombatStance != ShipCombatStance.Disengage && Data.CombatStance != ShipCombatStance.Defensive
                 && Data.WeaponsRange.Max > Constants.ZeroF;
         }
+    }
+
+    public override bool IsConstructionUnderway {
+        get { return IsCurrentStateAnyOf(ShipState.Constructing, ShipState.Refitting); }
     }
 
     public ShipCombatStance CombatStance { get { return Data.CombatStance; } }
@@ -124,14 +128,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     public float CollisionDetectionZoneRadius { get { return _collisionDetectionMonitor.RangeDistance; } }
 
-    public ShipReport UserReport { get { return Publisher.GetUserReport(); } }
+    public ShipReport UserReport { get { return Data.Publisher.GetUserReport(); } }
 
     private bool IsAttacking { get { return CurrentState == ShipState.Attacking; } }
-
-    private ShipPublisher _publisher;
-    private ShipPublisher Publisher {
-        get { return _publisher = _publisher ?? new ShipPublisher(Data, this); }
-    }
 
     internal bool IsInOrbit { get { return ItemBeingOrbited != null; } }
 
@@ -188,8 +187,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         InitializeDebugShowCoursePlot();
     }
 
-    protected override ItemHoveredHudManager InitializeHudManager() {
-        return new ItemHoveredHudManager(Publisher);
+    protected override ItemHoveredHudManager InitializeHoveredHudManager() {
+        return new ItemHoveredHudManager(Data.Publisher);
     }
 
     protected override ADisplayManager MakeDisplayManagerInstance() {
@@ -223,15 +222,15 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     #endregion
 
-    public override void CommenceOperations() {
-        base.CommenceOperations();
+    public override void CommenceOperations(bool isInitialConstructionNeeded) {
+        base.CommenceOperations(isInitialConstructionNeeded);
         _collisionDetectionMonitor.IsOperational = true;
-        CurrentState = ShipState.Idling;
+        CurrentState = isInitialConstructionNeeded ? ShipState.Constructing : ShipState.Idling;
         ActivateSensors();
         SubscribeToSensorEvents();
     }
 
-    public ShipReport GetReport(Player player) { return Publisher.GetReport(player); }
+    public ShipReport GetReport(Player player) { return Data.Publisher.GetReport(player); }
 
     public void HandleFleetFullSpeedChanged() { _helm.HandleFleetFullSpeedValueChanged(); }
 
@@ -270,7 +269,12 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     }
 
     protected override void ShowSelectedItemHud() {
-        InteractableHudWindow.Instance.Show(FormID.UserShip, Data);
+        if (Owner.IsUser) {
+            InteractibleHudWindow.Instance.Show(FormID.UserShip, Data);
+        }
+        else {
+            InteractibleHudWindow.Instance.Show(FormID.AiShip, UserReport);
+        }
     }
 
     #region Event and Property Change Handlers
@@ -464,8 +468,10 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
         if (IsPaused) {
             if (!_ordersReceivedWhilePaused.Any()) {
-                // first order received while paused so record the CurrentOrder before recording the new order
-                _ordersReceivedWhilePaused.Push(CurrentOrder);
+                if (CurrentOrder != null) {
+                    // first order received while paused so record the CurrentOrder before recording the new order
+                    _ordersReceivedWhilePaused.Push(CurrentOrder);
+                }
             }
             _ordersReceivedWhilePaused.Push(order);
             // deal with multiple changes all while paused
@@ -507,11 +513,12 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         ShipOrder order;
         var lastOrderReceivedWhilePaused = _ordersReceivedWhilePaused.Pop();
         if (lastOrderReceivedWhilePaused.Directive == ShipDirective.Cancel) {
-            // if Cancel, then original order and canceled order at minimum must still be present
-            D.Assert(_ordersReceivedWhilePaused.Count > Constants.One);
-            D.Log(/*ShowDebugLog,*/ "{0} received the following order sequence from User during pause prior to Cancel: {1}.", DebugName,
-                _ordersReceivedWhilePaused.Select(o => o.DebugName).Concatenate());
-            order = _ordersReceivedWhilePaused.First();
+            // if Cancel, then order that was canceled at minimum must still be present
+            D.Assert(_ordersReceivedWhilePaused.Count >= Constants.One);
+            //D.Log(ShowDebugLog, "{0} received the following order sequence from User during pause prior to Cancel: {1}.", DebugName,
+            //    _ordersReceivedWhilePaused.Select(o => o.DebugName).Concatenate());
+            _ordersReceivedWhilePaused.Pop();   // remove the order that was canceled
+            order = _ordersReceivedWhilePaused.Any() ? _ordersReceivedWhilePaused.First() : null;
         }
         else {
             order = lastOrderReceivedWhilePaused;
@@ -603,6 +610,12 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
         if (CurrentOrder != null) {
             D.Assert(!IsDead);
+
+            if (IsConstructionUnderway && CurrentOrder.Directive != ShipDirective.Scuttle) {
+                D.Warn("{0} received new order {1} while {2}. Order ignored.", DebugName, CurrentOrder.DebugName, CurrentState.GetValueName());
+                return;
+            }
+
             // 4.8.17 If a non-Call()ed state is to notify Cmd of OrderOutcome, this is when notification of receiving a new order will happen. 
             // CalledStateReturnHandlers can't do it as the new order will change the state before the ReturnCause is processed.
             UponNewOrderReceived();
@@ -640,6 +653,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 case ShipDirective.Disengage:
                     CurrentState = ShipState.ExecuteDisengageOrder;
                     break;
+                case ShipDirective.Refit:
+                    CurrentState = ShipState.Refitting;
+                    break;
                 case ShipDirective.Repair:
                     CurrentState = ShipState.ExecuteRepairOrder;
                     break;
@@ -652,7 +668,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                     return; // CurrentOrder will be set to null as a result of death
                 case ShipDirective.Retreat:
                 case ShipDirective.Disband:
-                case ShipDirective.Refit:
                     D.Warn("{0}.{1} is not currently implemented.", typeof(ShipDirective).Name, directive.GetValueName());
                     break;
                 case ShipDirective.Cancel:
@@ -780,6 +795,11 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     void FinalInitialize_ExitState() {
         LogEvent();
     }
+
+    #endregion
+
+    #region Constructing
+
 
     #endregion
 
@@ -4607,7 +4627,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     #endregion
 
-    #region ShipItem Nested Classes
+    #region Nested Classes
 
     /// <summary>
     /// Enum defining the states a Ship can operate in.
@@ -4619,6 +4639,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         // Not Call()able
 
         FinalInitialize,
+        Constructing,
 
         Idling,
         ExecuteMoveOrder,
@@ -4652,502 +4673,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         Disengage,
         Repair
     }
-
-    /// <summary>
-    /// Handles a Return() from Repairing when Call()ed by ExecuteRepairOrder state.
-    /// </summary>
-    ////public class FsmReturnHandler_RepairingToExecuteRepair : AFsmCalledStateReturnHandler {
-
-    ////    public override string DebugName { get { return DebugNameFormat.Inject(_client.DebugName, typeof(FsmReturnHandler_RepairingToExecuteRepair).Name); } }
-
-    ////    public override bool ShowDebugLog { get { return _client.ShowDebugLog; } }
-
-    ////    private ShipItem _client;
-
-    ////    public FsmReturnHandler_RepairingToExecuteRepair(ShipItem client) {
-    ////        _client = client;
-    ////    }
-
-    ////    public override bool TryProcessAndFindReturnCause(out FsmElementOrderFailureCause returnCause) {
-    ////        bool didCalledStateReturnWithCause = false;
-    ////        returnCause = ReturnCause;
-    ////        if (ReturnCause != default(FsmElementOrderFailureCause)) {
-    ////            switch (ReturnCause) {
-    ////                case FsmElementOrderFailureCause.Death:
-    ////                    _client.HandleOrderOutcomeResponseToCmd(isSuccessful: false, failCause: ReturnCause);
-    ////                    // IFF order came from Cmd, Cmd will decrement the element count it is waiting for
-    ////                    // Dead state will follow
-    ////                    break;
-    ////                case FsmElementOrderFailureCause.TgtDeath:
-    ////                    _client.HandleOrderOutcomeResponseToCmd(isSuccessful: false, failCause: ReturnCause);
-    ////                    _client.CurrentState = ShipState.Idling;
-    ////                    // New repair destination from FleetCmd will follow // UNCLEAR with or without this response?
-    ////                    break;
-    ////                case FsmElementOrderFailureCause.TgtRelationship:
-    ////                case FsmElementOrderFailureCause.NeedsRepair:
-    ////                // Won't occur as Repairing will ignore in favor of Cmd handling or RepairInPlace won't care
-    ////                case FsmElementOrderFailureCause.NewOrderReceived:
-    ////                // Won't occur as the state change from the new order will occur before this Handler can process it
-    ////                case FsmElementOrderFailureCause.TgtUncatchable:
-    ////                case FsmElementOrderFailureCause.TgtUnreachable:
-    ////                case FsmElementOrderFailureCause.None:
-    ////                default:
-    ////                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(ReturnCause));
-    ////            }
-    ////            didCalledStateReturnWithCause = true;
-    ////            Clear();
-    ////        }
-    ////        return didCalledStateReturnWithCause;
-    ////    }
-    ////}
-
-    /// <summary>
-    /// Handles a Return() from AssumingCloseOrbit or AssumingHighOrbit when Call()ed by ExecuteRepairOrder state.
-    /// </summary>
-    ////public class FsmReturnHandler_AssumingOrbitToExecuteRepair : AFsmCalledStateReturnHandler {
-
-    ////    public override string DebugName { get { return DebugNameFormat.Inject(_client.DebugName, typeof(FsmReturnHandler_AssumingOrbitToExecuteRepair).Name); } }
-
-    ////    public override bool ShowDebugLog { get { return _client.ShowDebugLog; } }
-
-    ////    private ShipItem _client;
-
-    ////    public FsmReturnHandler_AssumingOrbitToExecuteRepair(ShipItem client) {
-    ////        _client = client;
-    ////    }
-
-    ////    public override bool TryProcessAndFindReturnCause(out FsmElementOrderFailureCause returnCause) {
-    ////        bool didCalledStateReturnWithCause = false;
-    ////        returnCause = ReturnCause;
-    ////        if (ReturnCause != default(FsmElementOrderFailureCause)) {
-    ////            switch (ReturnCause) {
-    ////                case FsmElementOrderFailureCause.Death:
-    ////                    _client.HandleOrderOutcomeResponseToCmd(isSuccessful: false, failCause: ReturnCause);
-    ////                    // Dead state will follow
-    ////                    break;
-    ////                case FsmElementOrderFailureCause.TgtDeath:
-    ////                case FsmElementOrderFailureCause.TgtRelationship:
-    ////                    _client.HandleOrderOutcomeResponseToCmd(isSuccessful: false, failCause: ReturnCause);
-    ////                    _client.CurrentState = ShipState.Idling;    // Idle while we wait for new Order from Cmd
-    ////                    break;
-    ////                case FsmElementOrderFailureCause.NeedsRepair:
-    ////                    // Cmd will ignore when reported, UNCLEAR so why report it?
-    ////                    _client.HandleOrderOutcomeResponseToCmd(isSuccessful: false, failCause: ReturnCause);
-    ////                    _client.RestartState();
-    ////                    break;
-    ////                case FsmElementOrderFailureCause.NewOrderReceived:
-    ////                // Won't occur as the state change from the new order will occur before this Handler can process it
-    ////                case FsmElementOrderFailureCause.TgtUncatchable:
-    ////                case FsmElementOrderFailureCause.TgtUnreachable:
-    ////                case FsmElementOrderFailureCause.None:
-    ////                default:
-    ////                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(ReturnCause));
-    ////            }
-    ////            didCalledStateReturnWithCause = true;
-    ////            Clear();
-    ////        }
-    ////        return didCalledStateReturnWithCause;
-    ////    }
-    ////}
-
-    /// <summary>
-    /// Handles a Return() from Moving when Call()ed by ExecuteRepairOrder state.
-    /// </summary>
-    ////public class FsmReturnHandler_MovingToExecuteRepair : AFsmCalledStateReturnHandler {
-
-    ////    public override string DebugName { get { return DebugNameFormat.Inject(_client.DebugName, typeof(FsmReturnHandler_MovingToExecuteRepair).Name); } }
-
-    ////    public override bool ShowDebugLog { get { return _client.ShowDebugLog; } }
-
-    ////    private ShipItem _client;
-
-    ////    public FsmReturnHandler_MovingToExecuteRepair(ShipItem client) {
-    ////        _client = client;
-    ////    }
-
-    ////    public override bool TryProcessAndFindReturnCause(out FsmElementOrderFailureCause returnCause) {
-    ////        bool didCalledStateReturnWithCause = false;
-    ////        returnCause = ReturnCause;
-    ////        if (ReturnCause != default(FsmElementOrderFailureCause)) {
-    ////            switch (ReturnCause) {
-    ////                case FsmElementOrderFailureCause.Death:
-    ////                    _client.HandleOrderOutcomeResponseToCmd(isSuccessful: false, failCause: ReturnCause);
-    ////                    // Dead state will follow
-    ////                    break;
-    ////                case FsmElementOrderFailureCause.TgtUncatchable:
-    ////                    // FIXME 4.9.17 report it to Cmd and see what its error says
-    ////                    _client.HandleOrderOutcomeResponseToCmd(isSuccessful: false, failCause: ReturnCause);
-    ////                    _client.IssueCaptainsRepairOrder_InFormation(retainSuperiorsOrder: false);
-    ////                    break;
-    ////                case FsmElementOrderFailureCause.TgtDeath:
-    ////                case FsmElementOrderFailureCause.TgtRelationship:   // UNCLEAR Relationship changes handled by Cmd?
-    ////                    _client.HandleOrderOutcomeResponseToCmd(isSuccessful: false, failCause: ReturnCause);
-    ////                    _client.CurrentState = ShipState.Idling;    // Idle while we wait for new Order from Cmd? TODO what if from Captain?
-    ////                    break;
-    ////                case FsmElementOrderFailureCause.NeedsRepair:
-    ////                    // Cmd will ignore when reported, UNCLEAR so why report it?
-    ////                    _client.HandleOrderOutcomeResponseToCmd(isSuccessful: false, failCause: ReturnCause);
-    ////                    _client.RestartState();
-    ////                    break;
-    ////                case FsmElementOrderFailureCause.NewOrderReceived:
-    ////                // Won't occur as the state change from the new order will occur before this Handler can process it
-    ////                case FsmElementOrderFailureCause.TgtUnreachable:
-    ////                case FsmElementOrderFailureCause.None:
-    ////                default:
-    ////                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(ReturnCause));
-    ////            }
-    ////            didCalledStateReturnWithCause = true;
-    ////            Clear();
-    ////        }
-    ////        return didCalledStateReturnWithCause;
-    ////    }
-    ////}
-
-
-    /// <summary>
-    /// Handles a Return() from Attacking when Call()ed by ExecuteAttackOrder state.
-    /// </summary>
-    ////public class FsmReturnHandler_AttackingToExecuteAttack : AFsmCalledStateReturnHandler {
-
-    ////    public override string DebugName { get { return DebugNameFormat.Inject(_client.DebugName, typeof(FsmReturnHandler_AttackingToExecuteAttack).Name); } }
-
-    ////    public override bool ShowDebugLog { get { return _client.ShowDebugLog; } }
-
-    ////    private ShipItem _client;
-
-    ////    public FsmReturnHandler_AttackingToExecuteAttack(ShipItem client) {
-    ////        _client = client;
-    ////    }
-
-    ////    public override bool TryProcessAndFindReturnCause(out FsmElementOrderFailureCause returnCause) {
-    ////        bool didCalledStateReturnWithCause = false;
-    ////        returnCause = ReturnCause;
-    ////        if (ReturnCause != default(FsmElementOrderFailureCause)) {
-    ////            switch (ReturnCause) {
-    ////                case FsmElementOrderFailureCause.TgtUncatchable:
-    ////                    // No need to inform Cmd as there is no failure, just pick another primary attack target
-    ////                    _client.RestartState();
-    ////                    break;
-    ////                case FsmElementOrderFailureCause.Death:
-    ////                    _client.HandleOrderOutcomeResponseToCmd(isSuccessful: false, failCause: ReturnCause);
-    ////                    // Dead state will follow
-    ////                    break;
-    ////                case FsmElementOrderFailureCause.TgtDeath:
-    ////                case FsmElementOrderFailureCause.TgtRelationship:   // UNCLEAR Relationship changes handled by Cmd?
-    ////                    _client.HandleOrderOutcomeResponseToCmd(isSuccessful: false, failCause: ReturnCause);
-    ////                    _client.CurrentState = ShipState.Idling;    // Idle while we wait for new Order from Cmd
-    ////                    break;
-    ////                case FsmElementOrderFailureCause.NeedsRepair:
-    ////                    _client.HandleOrderOutcomeResponseToCmd(isSuccessful: false, failCause: ReturnCause);
-    ////                    bool isFleeing = _client.IssueCaptainsRepairOrder_Flee();
-    ////                    if (isFleeing) {
-    ////                        // Idle while waiting for new orders from flee and repair fleet
-    ////                        _client.CurrentState = ShipState.Idling;
-    ////                    }
-    ////                    else {
-    ////                        // No place to flee too so repair in formation then continue attack
-    ////                        _client.IssueCaptainsRepairOrder_InFormation(retainSuperiorsOrder: true);
-    ////                    }
-    ////                    break;
-    ////                case FsmElementOrderFailureCause.NewOrderReceived:
-    ////                // Won't occur as the state change from the new order will occur before this Handler can process it
-    ////                case FsmElementOrderFailureCause.TgtUnreachable:
-    ////                case FsmElementOrderFailureCause.None:
-    ////                default:
-    ////                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(ReturnCause));
-    ////            }
-    ////            didCalledStateReturnWithCause = true;
-    ////            Clear();
-    ////        }
-    ////        return didCalledStateReturnWithCause;
-    ////    }
-    ////}
-
-
-    /// <summary>
-    /// Handles a Return() from Moving when Call()ed by ExecuteExploreOrder state.
-    /// </summary>
-    ////public class FsmReturnHandler_MovingToExecuteExplore : AFsmCalledStateReturnHandler {
-
-    ////    public override string DebugName { get { return DebugNameFormat.Inject(_client.DebugName, typeof(FsmReturnHandler_MovingToExecuteExplore).Name); } }
-
-    ////    public override bool ShowDebugLog { get { return _client.ShowDebugLog; } }
-
-    ////    private ShipItem _client;
-
-    ////    public FsmReturnHandler_MovingToExecuteExplore(ShipItem client) {
-    ////        _client = client;
-    ////    }
-
-    ////    public override bool TryProcessAndFindReturnCause(out FsmElementOrderFailureCause returnCause) {
-    ////        bool didCalledStateReturnWithCause = false;
-    ////        returnCause = ReturnCause;
-    ////        if (ReturnCause != default(FsmElementOrderFailureCause)) {
-    ////            switch (ReturnCause) {
-    ////                case FsmElementOrderFailureCause.Death:
-    ////                    _client.HandleOrderOutcomeResponseToCmd(isSuccessful: false, failCause: ReturnCause);
-    ////                    // Dead state will follow
-    ////                    break;
-    ////                case FsmElementOrderFailureCause.TgtUncatchable:
-    ////                    _client.HandleOrderOutcomeResponseToCmd(isSuccessful: false, failCause: ReturnCause);
-    ////                    _client.CurrentState = ShipState.Idling;    // Idle while we wait for new Order from Cmd
-    ////                    break;
-    ////                case FsmElementOrderFailureCause.TgtDeath:
-    ////                    _client.HandleOrderOutcomeResponseToCmd(isSuccessful: false, failCause: ReturnCause);
-    ////                    _client.CurrentState = ShipState.Idling;    // Idle while we wait for new Order from Cmd
-    ////                    break;
-    ////                case FsmElementOrderFailureCause.NeedsRepair:
-    ////                    // When reported to Cmd, Cmd will remove the ship from the list of available exploration ships
-    ////                    _client.HandleOrderOutcomeResponseToCmd(isSuccessful: false, failCause: ReturnCause);
-    ////                    // FIXME no point in judging whether to repair or continue on as Cmd will auto remove ship from exploring
-    ////                    _client.IssueCaptainsRepairOrder_InFormation(retainSuperiorsOrder: false);
-    ////                    break;
-    ////                case FsmElementOrderFailureCause.NewOrderReceived:
-    ////                // Won't occur as the state change from the new order will occur before this Handler can process it
-    ////                case FsmElementOrderFailureCause.TgtRelationship:
-    ////                case FsmElementOrderFailureCause.TgtUnreachable:
-    ////                case FsmElementOrderFailureCause.None:
-    ////                default:
-    ////                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(ReturnCause));
-    ////            }
-    ////            didCalledStateReturnWithCause = true;
-    ////            Clear();
-    ////        }
-    ////        return didCalledStateReturnWithCause;
-    ////    }
-    ////}
-
-    /// <summary>
-    /// Handles a Return() from AssumingCloseOrbit when Call()ed by ExecuteExploreOrder state.
-    /// </summary>
-    ////public class FsmReturnHandler_AssumingCloseOrbitToExecuteExplore : AFsmCalledStateReturnHandler {
-
-    ////    public override string DebugName { get { return DebugNameFormat.Inject(_client.DebugName, typeof(FsmReturnHandler_AssumingCloseOrbitToExecuteExplore).Name); } }
-
-    ////    public override bool ShowDebugLog { get { return _client.ShowDebugLog; } }
-
-    ////    private ShipItem _client;
-
-    ////    public FsmReturnHandler_AssumingCloseOrbitToExecuteExplore(ShipItem client) {
-    ////        _client = client;
-    ////    }
-
-    ////    public override bool TryProcessAndFindReturnCause(out FsmElementOrderFailureCause returnCause) {
-    ////        bool didCalledStateReturnWithCause = false;
-    ////        returnCause = ReturnCause;
-    ////        if (ReturnCause != default(FsmElementOrderFailureCause)) {
-    ////            switch (ReturnCause) {
-    ////                case FsmElementOrderFailureCause.TgtRelationship:
-    ////                    // When reported to Cmd, Cmd will recall all ships as exploration has failed
-    ////                    _client.HandleOrderOutcomeResponseToCmd(isSuccessful: false, failCause: ReturnCause);
-    ////                    _client.CurrentState = ShipState.Idling;    // Idle while we wait for new Order from Cmd
-    ////                    break;
-    ////                case FsmElementOrderFailureCause.TgtDeath:
-    ////                    // When reported to Cmd, Cmd will assign the ship to a new explore target or have it assume station
-    ////                    _client.HandleOrderOutcomeResponseToCmd(isSuccessful: false, failCause: ReturnCause);
-    ////                    _client.CurrentState = ShipState.Idling;    // Idle while we wait for new Order from Cmd
-    ////                    break;
-    ////                case FsmElementOrderFailureCause.Death:
-    ////                    _client.HandleOrderOutcomeResponseToCmd(isSuccessful: false, failCause: ReturnCause);
-    ////                    // Dead state will follow
-    ////                    break;
-    ////                case FsmElementOrderFailureCause.NeedsRepair:
-    ////                    // When reported to Cmd, Cmd will remove the ship from the list of available exploration ships
-    ////                    _client.HandleOrderOutcomeResponseToCmd(isSuccessful: false, failCause: ReturnCause);
-    ////                    // FIXME no point in judging whether to repair or continue on as Cmd will auto remove ship from exploring
-    ////                    _client.IssueCaptainsRepairOrder_InFormation(retainSuperiorsOrder: false);
-    ////                    break;
-    ////                case FsmElementOrderFailureCause.NewOrderReceived:
-    ////                // Won't occur as the state change from the new order will occur before this Handler can process it
-    ////                case FsmElementOrderFailureCause.TgtUncatchable:
-    ////                case FsmElementOrderFailureCause.TgtUnreachable:
-    ////                case FsmElementOrderFailureCause.None:
-    ////                default:
-    ////                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(ReturnCause));
-    ////            }
-    ////            didCalledStateReturnWithCause = true;
-    ////            Clear();
-    ////        }
-    ////        return didCalledStateReturnWithCause;
-    ////    }
-    ////}
-
-    /// <summary>
-    /// Handles a Return() from AssumingHighOrbit when Call()ed by ExecuteMoveOrder state.
-    /// </summary>
-    ////public class FsmReturnHandler_AssumingHighOrbitToExecuteMove : AFsmCalledStateReturnHandler {
-
-    ////    public override string DebugName { get { return DebugNameFormat.Inject(_client.DebugName, typeof(FsmReturnHandler_AssumingHighOrbitToExecuteMove).Name); } }
-
-    ////    public override bool ShowDebugLog { get { return _client.ShowDebugLog; } }
-
-    ////    private ShipItem _client;
-
-    ////    public FsmReturnHandler_AssumingHighOrbitToExecuteMove(ShipItem client) {
-    ////        _client = client;
-    ////    }
-
-    ////    public override bool TryProcessAndFindReturnCause(out FsmElementOrderFailureCause returnCause) {
-    ////        D.Assert(!_client.CurrentOrder.ToInformCmdOfOutcome);   // no need to inform Cmd of outcome
-    ////        bool didCalledStateReturnWithCause = false;
-    ////        returnCause = ReturnCause;
-    ////        if (ReturnCause != default(FsmElementOrderFailureCause)) {
-    ////            switch (ReturnCause) {
-    ////                case FsmElementOrderFailureCause.TgtRelationship:
-    ////                case FsmElementOrderFailureCause.TgtDeath:
-    ////                    _client.IssueCaptainsAssumeStationOrder();
-    ////                    break;
-    ////                case FsmElementOrderFailureCause.Death:
-    ////                    // Dead state will follow
-    ////                    break;
-    ////                case FsmElementOrderFailureCause.NeedsRepair:
-    ////                    if (_client.AssessNeedForRepair(GeneralSettings.Instance.HealthThreshold_CriticallyDamaged)) {
-    ////                        bool isFleeing = _client.IssueCaptainsRepairOrder_Flee();
-    ////                        if (isFleeing) {
-    ////                            // Idle while waiting for new orders from flee and repair fleet
-    ////                            _client.CurrentState = ShipState.Idling;
-    ////                        }
-    ////                        else {
-    ////                            // No place to flee too so continue on
-    ////                            _client.RestartState();
-    ////                        }
-    ////                    }
-    ////                    else {
-    ////                        // Damage not bad enough to abandon order
-    ////                        _client.RestartState();
-    ////                    }
-    ////                    break;
-    ////                case FsmElementOrderFailureCause.NewOrderReceived:
-    ////                // Won't occur as the state change from the new order will occur before this Handler can process it
-    ////                case FsmElementOrderFailureCause.TgtUncatchable:
-    ////                case FsmElementOrderFailureCause.TgtUnreachable:
-    ////                case FsmElementOrderFailureCause.None:
-    ////                default:
-    ////                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(ReturnCause));
-    ////            }
-    ////            didCalledStateReturnWithCause = true;
-    ////            Clear();
-    ////        }
-    ////        return didCalledStateReturnWithCause;
-    ////    }
-    ////}
-
-    /// <summary>
-    /// Handles a Return() from Moving when Call()ed by ExecuteMoveOrder state.
-    /// </summary>
-    ////public class FsmReturnHandler_MovingToExecuteMove : AFsmCalledStateReturnHandler {
-
-    ////    public override string DebugName { get { return DebugNameFormat.Inject(_client.DebugName, typeof(FsmReturnHandler_MovingToExecuteMove).Name); } }
-
-    ////    public override bool ShowDebugLog { get { return _client.ShowDebugLog; } }
-
-    ////    private ShipItem _client;
-
-    ////    public FsmReturnHandler_MovingToExecuteMove(ShipItem client) {
-    ////        _client = client;
-    ////    }
-
-    ////    public override bool TryProcessAndFindReturnCause(out FsmElementOrderFailureCause returnCause) {
-    ////        D.Assert(!_client.CurrentOrder.ToInformCmdOfOutcome);   // no need to inform Cmd of outcome
-    ////        bool didCalledStateReturnWithCause = false;
-    ////        returnCause = ReturnCause;
-    ////        if (ReturnCause != default(FsmElementOrderFailureCause)) {
-    ////            switch (ReturnCause) {
-    ////                case FsmElementOrderFailureCause.TgtUncatchable:
-    ////                case FsmElementOrderFailureCause.TgtDeath:
-    ////                    _client.IssueCaptainsAssumeStationOrder();
-    ////                    break;
-    ////                case FsmElementOrderFailureCause.Death:
-    ////                    // Dead state will follow
-    ////                    break;
-    ////                case FsmElementOrderFailureCause.NeedsRepair:
-    ////                    if (_client.AssessNeedForRepair(GeneralSettings.Instance.HealthThreshold_CriticallyDamaged)) {
-    ////                        bool isFleeing = _client.IssueCaptainsRepairOrder_Flee();
-    ////                        if (isFleeing) {
-    ////                            // Idle while waiting for new orders from flee and repair fleet
-    ////                            _client.CurrentState = ShipState.Idling;
-    ////                        }
-    ////                        else {
-    ////                            // No place to flee too so continue on
-    ////                            _client.RestartState();
-    ////                        }
-    ////                    }
-    ////                    else {
-    ////                        // Damage not bad enough to abandon order
-    ////                        _client.RestartState();
-    ////                    }
-    ////                    break;
-    ////                case FsmElementOrderFailureCause.NewOrderReceived:
-    ////                // Won't occur as the state change from the new order will occur before this Handler can process it
-    ////                case FsmElementOrderFailureCause.TgtRelationship:
-    ////                case FsmElementOrderFailureCause.TgtUnreachable:
-    ////                case FsmElementOrderFailureCause.None:
-    ////                default:
-    ////                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(ReturnCause));
-    ////            }
-    ////            didCalledStateReturnWithCause = true;
-    ////            Clear();
-    ////        }
-    ////        return didCalledStateReturnWithCause;
-    ////    }
-    ////}
-
-    /// <summary>
-    /// Handles a Return() from Moving when Call()ed by ExecuteAssumeStationOrder state.
-    /// </summary>
-    ////public class FsmReturnHandler_MovingToAssumeStation : AFsmCalledStateReturnHandler {
-
-    ////    public override string DebugName { get { return DebugNameFormat.Inject(_client.DebugName, typeof(FsmReturnHandler_MovingToAssumeStation).Name); } }
-
-    ////    public override bool ShowDebugLog { get { return _client.ShowDebugLog; } }
-
-    ////    private ShipItem _client;
-
-    ////    public FsmReturnHandler_MovingToAssumeStation(ShipItem client) {
-    ////        _client = client;
-    ////    }
-
-    ////    public override bool TryProcessAndFindReturnCause(out FsmElementOrderFailureCause returnCause) {
-    ////        bool didCalledStateReturnWithCause = false;
-    ////        returnCause = ReturnCause;
-    ////        if (ReturnCause != default(FsmElementOrderFailureCause)) {
-    ////            switch (ReturnCause) {
-    ////                case FsmElementOrderFailureCause.Death:
-    ////                    _client.HandleOrderOutcomeResponseToCmd(isSuccessful: false, failCause: FsmElementOrderFailureCause.Death);
-    ////                    // Dead state will follow
-    ////                    break;
-    ////                case FsmElementOrderFailureCause.NeedsRepair:
-    ////                    if (_client.AssessNeedForRepair(GeneralSettings.Instance.HealthThreshold_CriticallyDamaged)) {
-    ////                        _client.HandleOrderOutcomeResponseToCmd(isSuccessful: false, failCause: FsmElementOrderFailureCause.NeedsRepair);
-    ////                        _client.IssueCaptainsRepairOrder_InFormation(retainSuperiorsOrder: false);
-    ////                    }
-    ////                    else {
-    ////                        // Damage not bad enough to abandon order
-    ////                        _client.RestartState();
-    ////                    }
-    ////                    break;
-    ////                case FsmElementOrderFailureCause.TgtUncatchable:
-    ////                    // 4.9.17 Encountered this 'unexpected' ReturnCause
-    ////                    D.Assert(_client._fsmTgt == _client.FormationStation as IShipNavigableDestination);
-    ////                    D.Error("{0} TgtUncatchable fail cause encountered. CmdToStationDistance = {1:0.##}, ShipToStationDistance = {2:0.##}.",
-    ////                        DebugName, Vector3.Distance(_client.Command.Position, _client.FormationStation.Position),
-    ////                        Vector3.Distance(_client.Position, _client.FormationStation.Position));
-    ////                    break;
-    ////                case FsmElementOrderFailureCause.NewOrderReceived:
-    ////                // Won't occur as the state change from the new order will occur before this Handler can process it
-    ////                case FsmElementOrderFailureCause.TgtDeath:
-    ////                case FsmElementOrderFailureCause.TgtRelationship:
-    ////                case FsmElementOrderFailureCause.TgtUnreachable:
-    ////                case FsmElementOrderFailureCause.None:
-    ////                default:
-    ////                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(ReturnCause));
-    ////            }
-    ////            didCalledStateReturnWithCause = true;
-    ////            Clear();
-    ////        }
-    ////        return didCalledStateReturnWithCause;
-    ////    }
-    ////}
 
     #endregion
 

@@ -45,6 +45,7 @@ public class FleetCmdDesignWindow : AUnitDesignWindow {
         return _gameMgr.PlayersDesigns.GetAllUserFleetCmdDesigns(includeObsolete).Cast<AUnitMemberDesign>();
     }
 
+    [System.Obsolete]
     protected override bool IsDesignContentEqual(AUnitMemberDesign previousDesign, AUnitMemberDesign newDesign) {
         return GameUtility.IsDesignContentEqual(previousDesign as FleetCmdDesign, newDesign as FleetCmdDesign);
     }
@@ -55,8 +56,8 @@ public class FleetCmdDesignWindow : AUnitDesignWindow {
         return false;
     }
 
-    protected override AUnitMemberDesign GetEmptyTemplateDesign(string designNameHint) {
-        D.AssertNull(designNameHint);
+    protected override AUnitMemberDesign GetEmptyTemplateDesign(string emptyTemplateHint) {
+        D.AssertNull(emptyTemplateHint);
         return _gameMgr.PlayersDesigns.GetUserFleetCmdDesign(TempGameValues.EmptyFleetCmdTemplateDesignName);
     }
 

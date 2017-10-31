@@ -158,8 +158,8 @@ namespace CodeEnv.Master.GameContent {
             set { _tooltipHudWindow = value; }
         }
 
-        private static IInteractableHudWindow _interactableHudWindow;
-        public static IInteractableHudWindow InteractableHudWindow {
+        private static IInteractibleHudWindow _interactableHudWindow;
+        public static IInteractibleHudWindow InteractibleHudWindow {
             get {
                 D.AssertNotNull(_interactableHudWindow);
                 return _interactableHudWindow;

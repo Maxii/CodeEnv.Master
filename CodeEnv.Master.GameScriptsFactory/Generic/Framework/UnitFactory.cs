@@ -196,7 +196,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var passiveCMs = MakeCountermeasures(design);
         var sensors = MakeSensors(design, cmd);
         var ftlDampener = MakeFtlDampener(design.FtlDampenerStat, cmd);
-        FleetCmdData data = new FleetCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, design.ReqdCmdStat, design.DesignName) {
+        FleetCmdData data = new FleetCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, design.ReqdCmdStat, design) {
             // Name assignment must follow after Data assigned to Item so Item is subscribed to the change
             UnitFormation = formation
         };
@@ -236,27 +236,14 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     #region Ships
 
     /// <summary>
-    /// Makes an unenabled ship instance parented to unitContainer.
+    /// Makes and returns a ship instance from the provided design parented to unitContainer.
     /// </summary>
     /// <param name="owner">The owner.</param>
-    /// <param name="cameraStat">The camera stat.</param>
-    /// <param name="designName">Name of the design.</param>
-    /// <param name="unitContainer">The unit container.</param>
-    /// <returns></returns>
-    public ShipItem MakeShipInstance(Player owner, FollowableItemCameraStat cameraStat, string designName, GameObject unitContainer) {
-        ShipDesign design = GameManager.Instance.PlayersDesigns.GetShipDesign(owner, designName);
-        return MakeShipInstance(owner, cameraStat, design, unitContainer);
-    }
-
-    /// <summary>
-    /// Makes an unenabled ship instance parented to unitContainer.
-    /// </summary>
-    /// <param name="owner">The owner.</param>
-    /// <param name="cameraStat">The camera stat.</param>
     /// <param name="design">The design.</param>
+    /// <param name="name">The ship name.</param>
     /// <param name="unitContainer">The unit container.</param>
     /// <returns></returns>
-    public ShipItem MakeShipInstance(Player owner, FollowableItemCameraStat cameraStat, ShipDesign design, GameObject unitContainer) {
+    public ShipItem MakeShipInstance(Player owner, ShipDesign design, string name, GameObject unitContainer) {
         ShipHullCategory hullCategory = design.HullCategory;
 
         GameObject hullPrefabGo = _shipHullPrefabs.Single(sHull => sHull.HullCategory == hullCategory).gameObject;
@@ -265,16 +252,11 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         hullGoClone.layer = (int)Layers.Cull_200;   // hull layer gets set to item layer by AddChild
 
         ShipItem element = elementGoClone.GetSafeComponent<ShipItem>();
-        PopulateInstance(owner, cameraStat, design, ref element);
+        PopulateInstance(owner, design, name, ref element);
         return element;
     }
 
-    public void PopulateInstance(Player owner, FollowableItemCameraStat cameraStat, string designName, ref ShipItem element) {
-        ShipDesign design = GameManager.Instance.PlayersDesigns.GetShipDesign(owner, designName);
-        PopulateInstance(owner, cameraStat, design, ref element);
-    }
-
-    public void PopulateInstance(Player owner, FollowableItemCameraStat cameraStat, ShipDesign design, ref ShipItem element) {
+    public void PopulateInstance(Player owner, ShipDesign design, string name, ref ShipItem element) {
         D.AssertNotNull(element.transform.parent, element.DebugName);
         D.Assert(!element.IsOperational, element.DebugName);
         // Find Hull child of Item and attach it to newly made HullEquipment made from HullStat
@@ -296,7 +278,6 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var activeCMs = MakeCountermeasures(design, element);
         var sensors = MakeSensors(design, element);
         var shieldGenerators = MakeShieldGenerators(design, element);
-        Priority hqPriority = design.HQPriority;
 
         var stlEngine = MakeEngine(design.StlEngineStat, "StlEngine");
         FtlEngine ftlEngine = null;
@@ -304,14 +285,15 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             ftlEngine = MakeEngine(design.FtlEngineStat, "FtlEngine") as FtlEngine;
         }
 
-        ShipData data = new ShipData(element, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, hqPriority,
-            stlEngine, ftlEngine, design.CombatStance, design.ConstructionCost, design.DesignName) {
+        ShipData data = new ShipData(element, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, stlEngine, ftlEngine,
+            design) {
             // Name assignment must follow after Data assigned to Item so Item is subscribed to the change
         };
+
         element.GetComponent<Rigidbody>().mass = data.Mass; // 7.26.16 Set externally to keep the Rigidbody out of Data
-        element.CameraStat = cameraStat;
+        element.CameraStat = MakeElementCameraStat(design.HullStat);
         element.Data = data;
-        element.Data.Name = __GetUniqueShipName(design.DesignName);
+        element.Data.Name = name;
     }
 
     #endregion
@@ -406,7 +388,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var passiveCMs = MakeCountermeasures(design);
         var sensors = MakeSensors(design, cmd);
         var ftlDampener = MakeFtlDampener(design.FtlDampenerStat, cmd);
-        StarbaseCmdData data = new StarbaseCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, design.ReqdCmdStat, design.DesignName) {
+        StarbaseCmdData data = new StarbaseCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, design.ReqdCmdStat, design) {
             // Name assignment must follow after Data assigned to Item so Item is subscribed to the change
             UnitFormation = formation
         };
@@ -506,7 +488,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var passiveCMs = MakeCountermeasures(design);
         var sensors = MakeSensors(design, cmd);
         var ftlDampener = MakeFtlDampener(design.FtlDampenerStat, cmd);
-        SettlementCmdData data = new SettlementCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, design.ReqdCmdStat, design.DesignName) {
+        SettlementCmdData data = new SettlementCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, design.ReqdCmdStat, design) {
             // Name assignment must follow after Data assigned to Item so Item is subscribed to the change
             UnitFormation = formation
         };
@@ -520,48 +502,27 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     #region Facilities
 
     /// <summary>
-    /// Makes a facility instance parented to unitContainer.
+    /// Makes and returns a facility instance from design parented to unitContainer.
     /// </summary>
     /// <param name="owner">The owner.</param>
     /// <param name="topography">The topography.</param>
-    /// <param name="cameraStat">The camera stat.</param>
-    /// <param name="designName">Name of the design.</param>
-    /// <param name="unitContainer">The unit container.</param>
-    /// <returns></returns>
-    public FacilityItem MakeFacilityInstance(Player owner, Topography topography, FollowableItemCameraStat cameraStat, string designName, GameObject unitContainer) {
-        FacilityDesign design = GameManager.Instance.PlayersDesigns.GetFacilityDesign(owner, designName);
-        return MakeFacilityInstance(owner, topography, cameraStat, design, unitContainer);
-    }
-
-    /// <summary>
-    /// Makes a facility instance parented to unitContainer.
-    /// </summary>
-    /// <param name="owner">The owner.</param>
-    /// <param name="topography">The topography.</param>
-    /// <param name="cameraStat">The camera stat.</param>
     /// <param name="design">The design.</param>
+    /// <param name="name">The facility name.</param>
     /// <param name="unitContainer">The unit container.</param>
     /// <returns></returns>
-    public FacilityItem MakeFacilityInstance(Player owner, Topography topography, FollowableItemCameraStat cameraStat, FacilityDesign design, GameObject unitContainer) {
+    public FacilityItem MakeFacilityInstance(Player owner, Topography topography, FacilityDesign design, string name, GameObject unitContainer) {
         FacilityHullCategory hullCategory = design.HullCategory;
-
         GameObject hullPrefabGo = _facilityHullPrefabs.Single(fHull => fHull.HullCategory == hullCategory).gameObject;
         GameObject elementGoClone = UnityUtility.AddChild(unitContainer, _facilityItemPrefab.gameObject);
         GameObject hullGoClone = UnityUtility.AddChild(elementGoClone, hullPrefabGo);
         hullGoClone.layer = (int)Layers.Cull_400;   // hull layer gets set to item layer by AddChild
 
         FacilityItem element = elementGoClone.GetSafeComponent<FacilityItem>();
-        PopulateInstance(owner, topography, cameraStat, design, ref element);
+        PopulateInstance(owner, topography, design, name, ref element);
         return element;
     }
 
-    public void PopulateInstance(Player owner, Topography topography, FollowableItemCameraStat cameraStat, string designName, ref FacilityItem element) {
-        FacilityDesign design = GameManager.Instance.PlayersDesigns.GetFacilityDesign(owner, designName);
-        PopulateInstance(owner, topography, cameraStat, design, ref element);
-    }
-
-    public void PopulateInstance(Player owner, Topography topography, FollowableItemCameraStat cameraStat, FacilityDesign design,
-    ref FacilityItem element) {
+    public void PopulateInstance(Player owner, Topography topography, FacilityDesign design, string name, ref FacilityItem element) {
         D.Assert(!element.IsOperational, element.DebugName);
         if (element.transform.parent == null) {
             D.Error("{0} should already have a parent.", element.DebugName);
@@ -586,21 +547,82 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var activeCMs = MakeCountermeasures(design, element);
         var sensors = MakeSensors(design, element);
         var shieldGenerators = MakeShieldGenerators(design, element);
-        Priority hqPriority = design.HQPriority;
 
-        FacilityData data = new FacilityData(element, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators,
-            hqPriority, topography, design.ConstructionCost, design.DesignName) {
+        FacilityData data = new FacilityData(element, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, topography,
+            design) {
             // Name assignment must follow after Data assigned to Item so Item is subscribed to the change
         };
         element.GetComponent<Rigidbody>().mass = data.Mass; // 7.26.16 Set externally to keep the Rigidbody out of Data
-        element.CameraStat = cameraStat;
+        element.CameraStat = MakeElementCameraStat(design.HullStat);
         element.Data = data;
-        element.Data.Name = __GetUniqueFacilityName(design.DesignName);
+        element.Data.Name = name;
     }
 
     #endregion
 
     #region Support Members
+
+    private FollowableItemCameraStat MakeElementCameraStat(FacilityHullStat hullStat) {
+        FacilityHullCategory hullCat = hullStat.HullCategory;
+        float fov;
+        switch (hullCat) {
+            case FacilityHullCategory.CentralHub:
+            case FacilityHullCategory.Defense:
+                fov = 70F;
+                break;
+            case FacilityHullCategory.Economic:
+            case FacilityHullCategory.Factory:
+            case FacilityHullCategory.Laboratory:
+            case FacilityHullCategory.ColonyHab:
+            case FacilityHullCategory.Barracks:
+                fov = 60F;
+                break;
+            case FacilityHullCategory.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+        }
+        float radius = hullStat.HullDimensions.magnitude / 2F;
+        //D.Log(ShowDebugLog, "Radius of {0} is {1:0.##}.", hullCat.GetValueName(), radius);
+        float minViewDistance = radius * 2F;
+        float optViewDistance = radius * 3F;
+        return new FollowableItemCameraStat(minViewDistance, optViewDistance, fov);
+    }
+
+    private FollowableItemCameraStat MakeElementCameraStat(ShipHullStat hullStat) {
+        ShipHullCategory hullCat = hullStat.HullCategory;
+        float fov;
+        switch (hullCat) {
+            case ShipHullCategory.Dreadnought:
+            case ShipHullCategory.Carrier:
+            case ShipHullCategory.Troop:
+                fov = 70F;
+                break;
+            case ShipHullCategory.Cruiser:
+            case ShipHullCategory.Colonizer:
+            case ShipHullCategory.Investigator:
+                fov = 65F;
+                break;
+            case ShipHullCategory.Destroyer:
+            case ShipHullCategory.Support:
+                fov = 60F;
+                break;
+            case ShipHullCategory.Frigate:
+                fov = 55F;
+                break;
+            case ShipHullCategory.Fighter:
+            case ShipHullCategory.Scout:
+            case ShipHullCategory.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+        }
+        float radius = hullStat.HullDimensions.magnitude / 2F;
+        //D.Log(ShowDebugLog, "Radius of {0} is {1:0.##}.", hullCat.GetValueName(), radius);
+        float minViewDistance = radius * 2F;
+        float optViewDistance = radius * 3F;
+        float distanceDampener = 3F;    // default
+        float rotationDampener = 10F;   // ships can change direction pretty fast
+        return new FollowableItemCameraStat(minViewDistance, optViewDistance, fov, distanceDampener, rotationDampener);
+    }
 
     /// <summary>
     /// Makes an STL or FTL Engine, depending on the indicator in engineStat.
@@ -635,7 +657,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     private IEnumerable<PassiveCountermeasure> MakeCountermeasures(AUnitMemberDesign unitDesign) {
         var passiveCMs = new List<PassiveCountermeasure>();
         AEquipmentStat eStat;
-        while (unitDesign.GetNextEquipmentStat(EquipmentCategory.PassiveCountermeasure, out eStat)) {
+        while (unitDesign.TryGetNextEquipmentStat(EquipmentCategory.PassiveCountermeasure, out eStat)) {
             if (eStat != null) {
                 passiveCMs.Add(new PassiveCountermeasure(eStat as PassiveCountermeasureStat));
             }
@@ -649,7 +671,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var activeCMs = new List<ActiveCountermeasure>();
 
         AEquipmentStat eStat;
-        while (elementDesign.GetNextEquipmentStat(EquipmentCategory.ActiveCountermeasure, out eStat)) {
+        while (elementDesign.TryGetNextEquipmentStat(EquipmentCategory.ActiveCountermeasure, out eStat)) {
             if (eStat != null) {
                 string cmName = eStat.Name + nameCounter;
                 nameCounter++;
@@ -675,7 +697,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         AttachMonitor(reqdSRSensor, element);
 
         AEquipmentStat eStat;
-        while (elementDesign.GetNextEquipmentStat(EquipmentCategory.ElementSensor, out eStat)) {
+        while (elementDesign.TryGetNextEquipmentStat(EquipmentCategory.ElementSensor, out eStat)) {
             if (eStat != null) {
                 sName = eStat.Name + nameCounter;
                 nameCounter++;
@@ -701,7 +723,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         AttachMonitor(reqdMRSensor, cmd);
 
         AEquipmentStat eStat;
-        while (cmdDesign.GetNextEquipmentStat(EquipmentCategory.CommandSensor, out eStat)) {
+        while (cmdDesign.TryGetNextEquipmentStat(EquipmentCategory.CommandSensor, out eStat)) {
             if (eStat != null) {
                 sName = eStat.Name + nameCounter;
                 nameCounter++;
@@ -717,7 +739,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     private IEnumerable<ShieldGenerator> MakeShieldGenerators(AUnitElementDesign elementDesign, AUnitElementItem element) {
         var generators = new List<ShieldGenerator>();
         AEquipmentStat eStat;
-        while (elementDesign.GetNextEquipmentStat(EquipmentCategory.ShieldGenerator, out eStat)) {
+        while (elementDesign.TryGetNextEquipmentStat(EquipmentCategory.ShieldGenerator, out eStat)) {
             if (eStat != null) {
                 var generator = new ShieldGenerator(eStat as ShieldGeneratorStat);
                 generators.Add(generator);
@@ -736,7 +758,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         foreach (var eCat in equipCats) {
             EquipmentSlotID slotID;
             AEquipmentStat eStat;
-            while (elementDesign.GetNextEquipmentStat(eCat, out slotID, out eStat)) {
+            while (elementDesign.TryGetNextEquipmentStat(eCat, out slotID, out eStat)) {
                 if (eStat != null) {
                     //D.Log("{0} elementDesign = {1}, slotID = {2}, eStat = {3}.", DebugName, elementDesign.DebugName, slotID.DebugName, eStat.DebugName);
                     AWeaponStat wStat = eStat as AWeaponStat;
@@ -982,30 +1004,29 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
     #endregion
 
-
     #region Debug
 
-    private const string UnitElementNameFormat = "{0}_{1}";    // aka DesignName_Count
+    private const string __UnitElementUniqueNameFormat = "{0}_{1}";    // aka DesignName_Count
 
     private IDictionary<string, int> __facilityNameCountLookup = new Dictionary<string, int>();
     private IDictionary<string, int> __shipNameCountLookup = new Dictionary<string, int>();
 
-    private string __GetUniqueFacilityName(string designName) {
+    public string __GetUniqueFacilityName(string designName) {
         if (!__facilityNameCountLookup.ContainsKey(designName)) {
             __facilityNameCountLookup.Add(designName, 1);
         }
         int nameCount = __facilityNameCountLookup[designName];
-        string name = UnitElementNameFormat.Inject(designName, nameCount);
+        string name = __UnitElementUniqueNameFormat.Inject(designName, nameCount);
         __facilityNameCountLookup[designName] = ++nameCount;
         return name;
     }
 
-    private string __GetUniqueShipName(string designName) {
+    public string __GetUniqueShipName(string designName) {
         if (!__shipNameCountLookup.ContainsKey(designName)) {
             __shipNameCountLookup.Add(designName, 1);
         }
         int nameCount = __shipNameCountLookup[designName];
-        string name = UnitElementNameFormat.Inject(designName, nameCount);
+        string name = __UnitElementUniqueNameFormat.Inject(designName, nameCount);
         __shipNameCountLookup[designName] = ++nameCount;
         return name;
     }

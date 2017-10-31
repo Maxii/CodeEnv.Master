@@ -58,7 +58,7 @@ namespace CodeEnv.Master.GameContent {
         public float MaxSteeringInaccuracy { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="AssaultWeaponStat"/> class.
+        /// Initializes a new instance of the <see cref="AssaultWeaponStat" /> class.
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="imageAtlasID">The image atlas identifier.</param>
@@ -70,6 +70,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="constructionCost">The production cost.</param>
         /// <param name="expense">The expense.</param>
         /// <param name="rangeCat">The range category of the weapon.</param>
+        /// <param name="refitBenefit">The refit benefit.</param>
         /// <param name="deliveryVehicleStrength">The delivery strength.</param>
         /// <param name="reloadPeriod">The time it takes to reload the weapon in hours.</param>
         /// <param name="damagePotential">The damage potential.</param>
@@ -81,10 +82,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="maxSteeringInaccuracy">The maximum steering inaccuracy in degrees.</param>
         /// <param name="isDamageable">if set to <c>true</c> [is damageable].</param>
         public AssaultWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass,
-            float pwrRqmt, float constructionCost, decimal expense, RangeCategory rangeCat, WDVStrength deliveryVehicleStrength,
+            float pwrRqmt, float constructionCost, float expense, RangeCategory rangeCat, int refitBenefit, WDVStrength deliveryVehicleStrength,
             float reloadPeriod, DamageStrength damagePotential, float ordnanceMaxSpeed, float ordnanceMass, float ordnanceDrag,
             float turnRate, float courseUpdateFreq, float maxSteeringInaccuracy, bool isDamageable)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, constructionCost, expense, rangeCat,
+            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, constructionCost, expense, rangeCat, refitBenefit,
                   deliveryVehicleStrength, reloadPeriod, damagePotential, ordnanceMaxSpeed, ordnanceMass, ordnanceDrag, isDamageable) {
             D.Assert(turnRate > Constants.ZeroF);
             D.Assert(courseUpdateFreq > Constants.ZeroF);

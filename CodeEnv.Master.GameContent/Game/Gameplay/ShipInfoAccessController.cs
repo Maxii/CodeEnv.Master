@@ -29,9 +29,7 @@ namespace CodeEnv.Master.GameContent {
             switch (infoID) {
                 case ItemInfoID.Target:
                 case ItemInfoID.CombatStance:
-                case ItemInfoID.Culture:
-                case ItemInfoID.Science:
-                case ItemInfoID.NetIncome:
+                    // 10.18.17 Outputs now handled by Report without AccessCntlr
                     return true;
                 default:
                     return false;

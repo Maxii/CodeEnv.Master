@@ -749,18 +749,22 @@ public abstract class AMortalItemStateMachine : AMortalItem {
         private IEnumerator Run() {
             //Loop forever
             while (true) {
+                // 10.27.17 Moved pause wait before _enumerator null check as _enumerator will be changed to null (even while paused) when 
+                // a state with a IEnumerator Enter/Exit method changes to a state with a void EnterExit method (e.g. when changing to Dead)
+                while (_fsm.IsPaused) {
+                    // 5.3.17 My addition to pause FSM while Game is paused
+                    if (!__isPausedLogged) {
+                        D.Log(ShowDebugLog, "{0} is waiting while game is paused.", DebugName);
+                        __isPausedLogged = true;
+                    }
+                    yield return null;
+                }
+                __isPausedLogged = false;
+
+
                 //Check if we have a current coroutine
                 //D.Log(ShowDebugLog, "{0} beginning another while(true) pass during Frame {1}.", DebugName, Time.frameCount);
                 if (_enumerator != null) {
-
-                    while (_fsm.IsPaused) {  // 5.3.17 My addition to pause FSM while Game is paused
-                        if (!__isPausedLogged) {
-                            D.Log(ShowDebugLog, "{0} is waiting while game is paused.", DebugName);
-                            __isPausedLogged = true;
-                        }
-                        yield return null;
-                    }
-                    __isPausedLogged = false;
 
                     //D.Log(ShowDebugLog, "Updating {0}.Run() with non-null IEnumerator. State: {1}, Frame: {2}.", DebugName, ApplicableStateName, Time.frameCount);
                     //Make a copy of the enumerator in case it changes
@@ -768,7 +772,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
                     //Execute the next step of the coroutine    
                     //D.Log(ShowDebugLog, "{0} code block is about to execute. State: {1}, Frame: {2}.", DebugName, ApplicableStateName, Time.frameCount);
                     // MoveNext executes the code block up to the next yield or the end of the method. Returns true when it finds a yield at the end
-                    // of the code block, false if no yield indicating no more code remaining to execute
+                    // of the code block, false if no yield indicating no more code remaining to execute.
                     var valid = _enumerator.MoveNext();
                     //D.Log(ShowDebugLog, "{0} after MoveNext(). State: {1}, Valid = {2}, Frame: {3}.", DebugName, ApplicableStateName, valid, Time.frameCount);
                     // See if the enumerator has changed. This only happens as a result of the just executed code block changing state.

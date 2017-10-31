@@ -15,6 +15,7 @@
 ////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
+
     using System;
     using System.Collections.Generic;
     using System.Linq;
@@ -38,13 +39,17 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<int>(ref _capacity, value, "Capacity"); }
         }
 
-        private ResourcesYield _resources;
-        public ResourcesYield Resources {
-            get { return _resources; }
-            private set { SetProperty<ResourcesYield>(ref _resources, value, "Resources"); }
+        public new StarbaseInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as StarbaseInfoAccessController; } }
+
+        private StarbasePublisher _publisher;
+        public StarbasePublisher Publisher {
+            get { return _publisher = _publisher ?? new StarbasePublisher(this); }
         }
 
-        public new StarbaseInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as StarbaseInfoAccessController; } }
+        public new StarbaseCmdDesign CmdDesign {
+            get { return base.CmdDesign as StarbaseCmdDesign; }
+            set { base.CmdDesign = value; }
+        }
 
         #region Initialization 
 
@@ -57,10 +62,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="sensors">The MR and LR sensors for this UnitCmd.</param>
         /// <param name="ftlDampener">The FTL dampener.</param>
         /// <param name="cmdStat">The stat.</param>
-        /// <param name="designName">Name of the design.</param>
+        /// <param name="cmdDesign">The command design.</param>
         public StarbaseCmdData(IStarbaseCmd starbaseCmd, Player owner, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener,
-            StarbaseCmdModuleStat cmdStat, string designName)
-            : this(starbaseCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), sensors, ftlDampener, cmdStat, designName) {
+            StarbaseCmdModuleStat cmdStat, StarbaseCmdDesign cmdDesign)
+            : this(starbaseCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), sensors, ftlDampener, cmdStat, cmdDesign) {
         }
 
         /// <summary>
@@ -72,10 +77,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="sensors">The MR and LR sensors for this UnitCmd.</param>
         /// <param name="ftlDampener">The FTL dampener.</param>
         /// <param name="cmdStat">The stat.</param>
-        /// <param name="designName">Name of the design.</param>
+        /// <param name="cmdDesign">The command design.</param>
         public StarbaseCmdData(IStarbaseCmd starbaseCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs,
-            IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, StarbaseCmdModuleStat cmdStat, string designName)
-            : base(starbaseCmd, owner, passiveCMs, sensors, ftlDampener, cmdStat, designName) {
+            IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, StarbaseCmdModuleStat cmdStat, StarbaseCmdDesign cmdDesign)
+            : base(starbaseCmd, owner, passiveCMs, sensors, ftlDampener, cmdStat, cmdDesign) {
+            Population = cmdStat.StartingPopulation;
+            Approval = cmdStat.StartingApproval;
             __PopulateResourcesFromSector();
         }
 
@@ -116,20 +123,25 @@ namespace CodeEnv.Master.GameContent {
             return StarbaseCategory.None;
         }
 
+        public StarbaseCmdReport GetReport(Player player) { return Publisher.GetReport(player); }
+
+
         #region Event and Property Change Handlers
 
         #endregion
 
-        // UNDONE Acquire resource values this starbase has access too, ala SettlementCmdData approach
+        // UNDONE Acquire resource values this starbase has access too, ala SettlementCmdData approach.
+        // 10.15.17 Need to determine what other Resources besides a System's Resources can be present in
+        // a Sector. Then decide what Resources in a Sector a Starbase can have access too.
         private void __PopulateResourcesFromSector() {
             Capacity = 10;
-            var resources = new ResourcesYield.ResourcesValuePair[] {
-                new ResourcesYield.ResourcesValuePair(ResourceID.Organics, UnityEngine.Random.Range(0F, 0.3F)),
-                new ResourcesYield.ResourcesValuePair(ResourceID.Particulates, UnityEngine.Random.Range(0.2F, 0.6F)),
-                new ResourcesYield.ResourcesValuePair(ResourceID.Energy, UnityEngine.Random.Range(1F, 2F)),
-                new ResourcesYield.ResourcesValuePair(ResourceID.Titanium, UnityEngine.Random.Range(0F, 1F)),
-                new ResourcesYield.ResourcesValuePair(ResourceID.Duranium, UnityEngine.Random.Range(0F, 1F)),
-                new ResourcesYield.ResourcesValuePair(ResourceID.Unobtanium, UnityEngine.Random.Range(0F, 0.6F))
+            var resources = new ResourcesYield.ResourceValuePair[] {
+                new ResourcesYield.ResourceValuePair(ResourceID.Organics, UnityEngine.Random.Range(0F, 0.3F)),
+                new ResourcesYield.ResourceValuePair(ResourceID.Particulates, UnityEngine.Random.Range(0.2F, 0.6F)),
+                new ResourcesYield.ResourceValuePair(ResourceID.Energy, UnityEngine.Random.Range(1F, 2F)),
+                new ResourcesYield.ResourceValuePair(ResourceID.Titanium, UnityEngine.Random.Range(0F, 1F)),
+                new ResourcesYield.ResourceValuePair(ResourceID.Duranium, UnityEngine.Random.Range(0F, 1F)),
+                new ResourcesYield.ResourceValuePair(ResourceID.Unobtanium, UnityEngine.Random.Range(0F, 0.6F))
             };
             Resources = new ResourcesYield(resources);
         }

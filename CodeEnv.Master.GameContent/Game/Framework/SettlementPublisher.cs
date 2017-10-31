@@ -27,15 +27,10 @@ namespace CodeEnv.Master.GameContent {
             get { return SettlementDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
         }
 
-        private ISettlementCmd_Ltd _item;
-
-        public SettlementPublisher(SettlementCmdData data, ISettlementCmd_Ltd item)
-            : base(data) {
-            _item = item;
-        }
+        public SettlementPublisher(SettlementCmdData data) : base(data) { }
 
         protected override SettlementCmdReport MakeReportInstance(Player player) {
-            return new SettlementCmdReport(_data, player, _item);
+            return new SettlementCmdReport(_data, player);
         }
 
     }

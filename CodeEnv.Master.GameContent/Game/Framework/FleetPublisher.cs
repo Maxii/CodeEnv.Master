@@ -27,15 +27,10 @@ namespace CodeEnv.Master.GameContent {
             get { return FleetDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
         }
 
-        private IFleetCmd_Ltd _item;
-
-        public FleetPublisher(FleetCmdData data, IFleetCmd_Ltd item)
-            : base(data) {
-            _item = item;
-        }
+        public FleetPublisher(FleetCmdData data) : base(data) { }
 
         protected override FleetCmdReport MakeReportInstance(Player player) {
-            return new FleetCmdReport(_data, player, _item);
+            return new FleetCmdReport(_data, player);
         }
 
     }

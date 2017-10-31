@@ -30,7 +30,7 @@ using UnityEngine;
 ///  Abstract class for AUnitCmdItem's that are Base Commands.
 /// </summary>
 public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCmd_Ltd, IShipCloseOrbitable, IGuardable,
-    IPatrollable, IFacilityRepairCapable, IUnitCmdRepairCapable {
+    IPatrollable, IFacilityRepairCapable, IUnitCmdRepairCapable, IConstructionManagerClient {
 
     /// <summary>
     /// The multiplier to apply to the item radius value used when determining the
@@ -43,6 +43,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     /// distance of the surrounding guard stations from the item's position.
     /// </summary>
     private const float GuardStationDistanceMultiplier = 2F;
+
+    public event EventHandler resourcesChanged;
 
     private BaseOrder _currentOrder;
     public BaseOrder CurrentOrder {
@@ -57,7 +59,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     public override bool IsJoinable {
         get {
-            bool isJoinable = Elements.Count < TempGameValues.MaxFacilitiesPerBase;
+            bool isJoinable = Utility.IsInRange(Elements.Count, Constants.One, TempGameValues.MaxFacilitiesPerBase - Constants.One);
             if (isJoinable) {
                 D.Assert(FormationMgr.HasRoom);
             }
@@ -80,12 +82,16 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected override void InitializeOnData() {
         base.InitializeOnData();
-        ConstructionMgr = new ConstructionManager(Data);
-        ConstructionMgr.constructionCompleted += ConstructionCompletedEventHandler;
+        InitializeConstructionManager();
     }
 
     protected override bool InitializeDebugLog() {
         return DebugControls.Instance.ShowBaseCmdDebugLogs;
+    }
+
+    protected override void SubscribeToDataValueChanges() {
+        base.SubscribeToDataValueChanges();
+        _subscriptions.Add(Data.SubscribeToPropertyChanged<AUnitBaseCmdData, ResourcesYield>(d => d.Resources, ResourcesPropChangedHandler));
     }
 
     protected override ICtxControl InitializeContextMenu(Player owner) {
@@ -113,6 +119,10 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         return guardStations;
     }
 
+    private void InitializeConstructionManager() {
+        ConstructionMgr = new ConstructionManager(Data, this);
+    }
+
     public override void FinalInitialize() {
         base.FinalInitialize();
         CurrentState = BaseState.FinalInitialize;
@@ -133,6 +143,16 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         CurrentState = BaseState.Idling;
     }
 
+    public sealed override void AddElement(AUnitElementItem element) {
+        if (element.IsOperational) {
+            // 10.25.17 Can't add an operational facility to a non-operational BaseCmd. 
+            // Acceptable combos: Both not operational during starting construction and Cmd operational during runtime
+            // when adding FacilityUnderConstruction that is not yet operational.
+            D.Error("{0}: Adding element {1} with unexpected IsOperational state.", DebugName, element.DebugName);
+        }
+        base.AddElement(element);
+    }
+
     /// <summary>
     /// Removes the element from the Unit.
     /// <remarks>4.19.16 Just discovered I still had asserts in place that require that the Base's HQElement die last, 
@@ -140,7 +160,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     /// HQElement if it dies now until I determine how I want Base.HQELements to operate game play wise.</remarks>
     /// </summary>
     /// <param name="element">The element.</param>
-    public override void RemoveElement(AUnitElementItem element) {
+    public sealed override void RemoveElement(AUnitElementItem element) {
         base.RemoveElement(element);
 
         if (IsDead) {
@@ -231,14 +251,17 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         // UNDONE 9.21.17 order facilities to AssumeFormation if CurrentState allows it. See FleetCmd implementation.
     }
 
-    private void __HandleCompletedConstructionOf(AUnitElementDesign design) {
-        // UNDONE Instantiate the design as an element
-        D.Log("{0} has completed construction of {1} without instantiation.", DebugName, design.DebugName);
-        //D.Log("{0}: {1}.ConstructionCost = {2:0.#}, Prod/Hr = {3:0.#}.",
-        //    DebugName, design.DebugName, design.ConstructionCost, Data.UnitProduction);
+    #region Event and Property Change Handlers
+
+    private void ResourcesPropChangedHandler() {
+        OnResourcesChanged();
     }
 
-    #region Event and Property Change Handlers
+    private void OnResourcesChanged() {
+        if (resourcesChanged != null) {
+            resourcesChanged(this, EventArgs.Empty);
+        }
+    }
 
     protected void CurrentOrderPropChangedHandler() {
         HandleNewOrder();
@@ -247,11 +270,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     private void NewOrderReceivedWhilePausedUponResumeEventHandler(object sender, EventArgs e) {
         _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedUponResumeEventHandler;
         HandleNewOrderReceivedWhilePausedUponResume();
-    }
-
-    private void ConstructionCompletedEventHandler(object sender, ConstructionManager.ConstructionCompletedEventArgs e) {
-        D.AssertEqual(ConstructionMgr, sender as ConstructionManager);
-        __HandleCompletedConstructionOf(e.CompletedDesign);
     }
 
     #endregion
@@ -283,8 +301,10 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
         if (IsPaused) {
             if (!_ordersReceivedWhilePaused.Any()) {
-                // first order received while paused so record the CurrentOrder before recording the new order
-                _ordersReceivedWhilePaused.Push(CurrentOrder);
+                if (CurrentOrder != null) {
+                    // first order received while paused so record the CurrentOrder before recording the new order
+                    _ordersReceivedWhilePaused.Push(CurrentOrder);
+                }
             }
             _ordersReceivedWhilePaused.Push(order);
             // deal with multiple changes all while paused
@@ -326,11 +346,12 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         BaseOrder order;
         var lastOrderReceivedWhilePaused = _ordersReceivedWhilePaused.Pop();
         if (lastOrderReceivedWhilePaused.Directive == BaseDirective.Cancel) {
-            // if Cancel, then original order and canceled order at minimum must still be present
-            D.Assert(_ordersReceivedWhilePaused.Count > Constants.One);
-            D.Log(/*ShowDebugLog,*/ "{0} received the following order sequence from User during pause prior to Cancel: {1}.", DebugName,
-                _ordersReceivedWhilePaused.Select(o => o.DebugName).Concatenate());
-            order = _ordersReceivedWhilePaused.First();
+            // if Cancel, then order that was canceled at minimum must still be present
+            D.Assert(_ordersReceivedWhilePaused.Count >= Constants.One);
+            //D.Log(ShowDebugLog, "{0} received the following order sequence from User during pause prior to Cancel: {1}.", DebugName,
+            //    _ordersReceivedWhilePaused.Select(o => o.DebugName).Concatenate());
+            _ordersReceivedWhilePaused.Pop();   // remove the order that was canceled
+            order = _ordersReceivedWhilePaused.Any() ? _ordersReceivedWhilePaused.First() : null;
         }
         else {
             order = lastOrderReceivedWhilePaused;
@@ -1230,7 +1251,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected override void Unsubscribe() {
         base.Unsubscribe();
         _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedUponResumeEventHandler;
-        ConstructionMgr.constructionCompleted -= ConstructionCompletedEventHandler;
     }
 
     #endregion
@@ -1381,7 +1401,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     }
 
     public bool IsCloseOrbitAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner)) {
             return true;
         }
         return !Owner.IsEnemyOf(player);
@@ -1437,7 +1457,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     public Speed PatrolSpeed { get { return Speed.Slow; } }
 
     public bool IsPatrollingAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner)) {
             return true;
         }
         return !player.IsEnemyOf(Owner);
@@ -1458,7 +1478,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     }
 
     public bool IsGuardingAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner)) {
             return true;
         }
         return !player.IsEnemyOf(Owner);
@@ -1476,7 +1496,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     /// <param name="player">The player.</param>
     /// <returns></returns>
     public bool IsRepairingAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner)) {
             return true;
         }
         return !Owner.IsEnemyOf(player);
@@ -1527,6 +1547,46 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
             return basicValue * relationsFactor * orbitFactor;
         }
         return Constants.ZeroF;
+    }
+
+    #endregion
+
+    #region IUnitBaseCmd Members
+
+    ResourcesYield IUnitBaseCmd.Resources { get { return Data.Resources; } }
+
+    #endregion
+
+    #region IConstructionManagerClient Members
+
+    void IConstructionManagerClient.HandleConstructionAdded(ConstructionInfo construction) {
+        var unitFactory = UnitFactory.Instance;
+        if (construction.Design is FacilityDesign) {
+            RefitConstructionInfo refitConstruction = construction as RefitConstructionInfo;
+            if (refitConstruction != null) {
+                // nothing to do as Element's RefitState is already refitting
+            }
+            else {
+                // brand new construction
+                string name = unitFactory.__GetUniqueFacilityName(construction.Design.DesignName);
+                FacilityItem facilityUnderConstruction = unitFactory.MakeFacilityInstance(Owner, Data.Topography, construction.Design as FacilityDesign, name, UnitContainer.gameObject);
+                construction.Element = facilityUnderConstruction;
+                AddElement(facilityUnderConstruction);
+                facilityUnderConstruction.FinalInitialize();
+                facilityUnderConstruction.CommenceOperations(isInitialConstructionNeeded: true);
+            }
+        }
+        else {
+            string name = unitFactory.__GetUniqueShipName(construction.Design.DesignName);
+            ShipItem shipUnderConstruction = unitFactory.MakeShipInstance(Owner, construction.Design as ShipDesign, name, UnitContainer.gameObject);
+            // UNDONE
+        }
+    }
+
+    void IConstructionManagerClient.HandleUncompletedConstructionRemovedFromQueue(ConstructionInfo construction) {
+        D.Assert(!construction.IsCompleted);
+        var elementRemoved = construction.Element;
+        elementRemoved.HandleUncompletedRemovalFromConstructionQueue();
     }
 
     #endregion

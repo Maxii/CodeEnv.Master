@@ -44,7 +44,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The UIPanel depth of the icon. Higher values are drawn over lower values.
         /// </summary>
-        protected abstract int IconDepth { get; }
+        protected abstract int TrackingIconDepth { get; }
 
         protected bool _isIconInMainCameraLOS = true;
         protected IWidgetTrackable _trackedItem;
@@ -100,7 +100,7 @@ namespace CodeEnv.Master.GameContent {
         private IWorldTrackingSprite MakeIcon() {
             var icon = MakeIconInstance();
             if (icon is IWorldTrackingSprite_Independent) {
-                (icon as IWorldTrackingSprite_Independent).DrawDepth = IconDepth;
+                (icon as IWorldTrackingSprite_Independent).DrawDepth = TrackingIconDepth;
             }
             var iconCameraLosChgdListener = icon.CameraLosChangedListener;
             iconCameraLosChgdListener.inCameraLosChanged += IconInCameraLosChangedEventHandler;

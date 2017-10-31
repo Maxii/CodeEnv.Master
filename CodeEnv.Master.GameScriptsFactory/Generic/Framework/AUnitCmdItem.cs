@@ -33,6 +33,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     public event EventHandler isAvailableChanged;
 
+    public event EventHandler unitOutputsChanged;
+
     /// <summary>
     /// Occurs when IsOperational becomes true.
     /// <remarks>5.15.17 Not currently used.</remarks>
@@ -41,7 +43,10 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     public Formation UnitFormation { get { return Data.UnitFormation; } }
 
-    public string UnitName { get { return Data.UnitName; } }
+    public string UnitName {
+        get { return Data.UnitName; }
+        set { Data.UnitName = value; }
+    }
 
     /// <summary>
     /// The maximum radius of this Unit's current formation, independent of the number of elements currently assigned a
@@ -106,6 +111,10 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     private AUnitElementItem _hqElement;
+    /// <summary>
+    /// The HQ Element.
+    /// <remarks>Set this to initiate a change in the Commands HQ.</remarks>
+    /// </summary>
     public AUnitElementItem HQElement {
         get { return _hqElement; }
         set { SetProperty<AUnitElementItem>(ref _hqElement, value, "HQElement", HQElementPropChangedHandler, HQElementPropChangingHandler); }
@@ -139,7 +148,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     public new UnitCmdDisplayManager DisplayMgr { get { return base.DisplayMgr as UnitCmdDisplayManager; } }
 
-    protected override bool IsSelectable { get { return IsDiscernibleToUser; } }
     protected AFormationManager FormationMgr { get; private set; }
     protected FsmEventSubscriptionManager FsmEventSubscriptionMgr { get; private set; }
     protected override bool IsPaused { get { return _gameMgr.IsPaused; } }
@@ -174,6 +182,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         base.SubscribeToDataValueChanges();
         _subscriptions.Add(Data.SubscribeToPropertyChanged<AUnitCmdData, Formation>(d => d.UnitFormation, UnitFormationPropChangedHandler));
         _subscriptions.Add(Data.SubscribeToPropertyChanged<AUnitCmdData, AlertStatus>(d => d.AlertStatus, AlertStatusPropChangedHandler));
+        _subscriptions.Add(Data.SubscribeToPropertyChanged<AUnitCmdData, OutputsYield>(d => d.UnitOutputs, UnitOutputsPropChangedHandler));
     }
 
     // formations are now generated when an element is added and/or when a HQ element is assigned
@@ -324,11 +333,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         if (element.IsHQ) {
             D.Error("{0} adding element {1} already designated as the HQ Element.", DebugName, element.DebugName);
         }
-        if (IsOperational && !element.IsOperational) {
-            // 4.4.17 Acceptable combos: Both not operational during construction, both operational during runtime
-            // and non-operational Cmd with operational element when creating a ferryFleet using UnitFactory.
-            D.Error("{0}: Adding element {1} with unexpected IsOperational state.", DebugName, element.DebugName);
-        }
         if (IsOperational) {
             // 5.8.17 FormationMgr not yet initialized when adding during construction
             D.Assert(IsJoinable, DebugName);
@@ -342,7 +346,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         // 3.31.17 CmdSensor attachment to monitors now takes place when the sensor is built in UnitFactory.
 
         if (!IsOperational) {
-            // avoid the following extra work if adding during Cmd construction
+            // Cmd construction
             D.Assert(!IsDead);
             D.AssertNull(HQElement);    // During Cmd construction, HQElement will be designated AFTER all Elements are
             return;                         // added resulting in _formationMgr adding all elements into the formation at once
@@ -378,6 +382,44 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         if (!element.IsHQ) { // if IsHQ, restoring slot will be handled when HQElement changes
             FormationMgr.RestoreSlotToAvailable(element);
         }
+    }
+
+    /// <summary>
+    /// Replaces elementToReplace with replacingElement in this Unit.
+    /// <remarks>Handles adding, removing, cmd assignment, unifiedSRSensorMonitor, rotation, HQ state and 
+    /// formation assignment and position. Client must create the replacingElement, complete initialization,
+    /// commence operations and destroy elementToReplace.</remarks>
+    /// </summary>
+    /// <param name="elementToReplace">The element to replace.</param>
+    /// <param name="replacingElement">The replacing element.</param>
+    public void ReplaceElement(AUnitElementItem elementToReplace, AUnitElementItem replacingElement) {
+        // AddElement without dealing with Cmd death, HQ or FormationManager
+        Elements.Add(replacingElement);
+        Data.AddElement(replacingElement.Data);
+        replacingElement.Command = this;
+        replacingElement.AttachAsChildOf(UnitContainer);
+        UnifiedSRSensorMonitor.Add(replacingElement.SRSensorMonitor);
+
+        // RemoveElement without dealing with Cmd death, HQ or FormationManager
+        bool isRemoved = Elements.Remove(elementToReplace);
+        D.Assert(isRemoved);
+        Data.RemoveElement(elementToReplace.Data);
+        UnifiedSRSensorMonitor.Remove(elementToReplace.SRSensorMonitor);
+        // no need to null Command as elementToReplace will be destroyed
+        // if ship, no need to null FormationStation as elementToReplace will be destroyed
+
+        // no need to AssessIcon as replacingElement only has enhanced performance
+        // no need to worry about IsJoinable as there shouldn't be any checks when using this method
+        replacingElement.transform.rotation = elementToReplace.transform.rotation;
+
+        if (elementToReplace.IsHQ) {
+            // handle all HQ change here without firing HQ change handlers
+            _hqElement = replacingElement;
+            replacingElement.IsHQ = true;
+            Data.HQElementData = replacingElement.Data;
+            AttachCmdToHQElement(); // needs to occur before formation changed
+        }
+        FormationMgr.ReplaceElement(elementToReplace, replacingElement);
     }
 
     /// <summary>
@@ -518,7 +560,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     protected override void HideSelectedItemHud() {
-        D.Assert(!IsSelected);
+        base.HideSelectedItemHud();
         UnitHudWindow.Instance.Hide();
     }
 
@@ -566,6 +608,16 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     private void OnIsAvailable() {
         if (isAvailableChanged != null) {
             isAvailableChanged(this, EventArgs.Empty);
+        }
+    }
+
+    private void UnitOutputsPropChangedHandler() {
+        OnUnitOutputsChanged();
+    }
+
+    private void OnUnitOutputsChanged() {
+        if (unitOutputsChanged != null) {
+            unitOutputsChanged(this, EventArgs.Empty);
         }
     }
 
@@ -1288,6 +1340,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     #region IUnitCmd Members
 
     IUnitElement IUnitCmd.HQElement { get { return HQElement; } }
+
+    OutputsYield IUnitCmd.UnitOutputs { get { return Data.UnitOutputs; } }
 
     #endregion
 

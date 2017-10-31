@@ -30,10 +30,6 @@ public class ShipIconGuiElement : AUnitElementIconGuiElement {
         set { base.Element = value; }
     }
 
-    protected override AUnitElementDesign InitializeDesign() {
-        return GameManager.Instance.PlayersDesigns.GetUserShipDesign(Element.Data.DesignName);
-    }
-
     protected override void Cleanup() { }
 
 }

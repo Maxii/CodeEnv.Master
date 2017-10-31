@@ -107,6 +107,10 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(IsOperational);
         }
 
+        public override bool AreSpecsEqual(AEquipmentStat otherStat) {
+            return Stat == otherStat as MissileWeaponStat;
+        }
+
     }
 }
 

@@ -1,6 +1,6 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2015 Strategic Forge
+// Copyright © 2012 - 2017 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
@@ -17,9 +17,9 @@
 // default namespace
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
@@ -28,58 +28,114 @@ using UnityEngine;
 /// </summary>
 public class StrengthGuiElement : AGuiElement, IComparable<StrengthGuiElement> {
 
-    [Tooltip("The widgets that are present to display the content of this GuiElement.")]
+    private const string StrengthValueFormat_Label = Constants.FormatInt_1DMin;
+    private const string StrengthValueFormat_Tooltip = Constants.FormatFloat_1DpMax;
+    private const string TooltipFormat = "{0}[{1}]";
+    private const string UnknownTooltipFormat = "{0} Unknown";
+
+#pragma warning disable 0649
+
     [SerializeField]
-    private WidgetsPresent _widgetsPresent = WidgetsPresent.SumLabel;
+    private UIWidget[] _containers;
+
+#pragma warning restore 0649
+
+    [Tooltip("Check to show the distribution across WDVCategory in addition to the total strength")]
+    [SerializeField]
+    private bool _showDistribution = false;
+
+    [Tooltip("Check to show the icons in addition to the values")]
+    [SerializeField]
+    private bool _showIcons = true;
 
     [Tooltip("The unique ID of this Strength GuiElement")]
     [SerializeField]
     private GuiElementID _elementID = GuiElementID.None;
-
     public override GuiElementID ElementID { get { return _elementID; } }
 
-    private bool _isStrengthSet;
-    private CombatStrength? _strength;
+    private bool _isStrengthPropSet;
+    private CombatStrength? _strength;  // can be null (unknown), default (no strength) or has strength
     public CombatStrength? Strength {
         get { return _strength; }
         set {
-            D.Assert(!_isStrengthSet);  // only occurs once between Resets
+            D.Assert(!_isStrengthPropSet);  // only occurs once between Resets
             _strength = value;
             StrengthPropSetHandler();  // SetProperty() only calls handler when changed
         }
     }
 
-    private string _tooltipContent;
-    protected override string TooltipContent { get { return _tooltipContent; } }
+    protected override string TooltipContent { get { return ElementID.GetValueName(); } }
 
-    public override bool IsInitialized { get { return _isStrengthSet; } }
+    public override bool IsInitialized { get { return _isStrengthPropSet; } }
 
-    private UILabel _combinedValueLabel;
-    private UILabel _detailValuesLabel;
+    /// <summary>
+    /// Lookup for WDVCategory, keyed by the category container's gameObject. 
+    /// Used to show the right tooltip when the container is hovered over.
+    /// </summary>
+    private IDictionary<GameObject, WDVCategory> _wdvCategoryLookup;
+    private UILabel _unknownLabel;
 
     protected override void InitializeValuesAndReferences() {
-        var labels = gameObject.GetSafeComponentsInChildren<UILabel>();
-        switch (_widgetsPresent) {
-            case WidgetsPresent.SumLabel:
-                _combinedValueLabel = labels.Single();
-                NGUITools.AddWidgetCollider(gameObject);
-                break;
-            case WidgetsPresent.DetailsLabel:
-                _detailValuesLabel = labels.Single();
-                break;
-            case WidgetsPresent.Both:
-                _detailValuesLabel = labels.Single(l => l.maxLineCount == 3);
-                _combinedValueLabel = labels.Single(l => l != _detailValuesLabel);
-                break;
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_widgetsPresent));
+        _wdvCategoryLookup = new Dictionary<GameObject, WDVCategory>(_containers.Length);
+
+        _unknownLabel = gameObject.GetSingleComponentInImmediateChildren<UILabel>(includeInactive: true);
+        if (_unknownLabel.gameObject.activeSelf) {   // 10.21.17 If initially inactive, this usage can't result in unknown
+            MyEventListener.Get(_unknownLabel.gameObject).onTooltip += UnknownTooltipEventHandler;
+            NGUITools.SetActive(_unknownLabel.gameObject, false);
+        }
+        InitializeContainers();
+    }
+
+    private void InitializeContainers() {
+        bool isFirstContainer = true;
+        foreach (var container in _containers) {
+            if (isFirstContainer) {
+                MyEventListener.Get(container.gameObject).onTooltip += TotalContainerTooltipEventHandler;
+                isFirstContainer = false;
+            }
+            else {
+                if (_showDistribution) {
+                    MyEventListener.Get(container.gameObject).onTooltip += DistributionContainerTooltipEventHandler;
+                }
+            }
+            NGUITools.SetActive(container.gameObject, false);
         }
     }
 
     #region Event and Property Change Handlers
 
+    private void UnknownTooltipEventHandler(GameObject go, bool show) {
+        if (show) {
+            TooltipHudWindow.Instance.Show(UnknownTooltipFormat.Inject(ElementID.GetValueName()));
+        }
+        else {
+            TooltipHudWindow.Instance.Hide();
+        }
+    }
+
+    private void TotalContainerTooltipEventHandler(GameObject containerGo, bool show) {
+        if (show) {
+            string tooltipText = TooltipFormat.Inject("Total: ", StrengthValueFormat_Tooltip.Inject(Strength.Value.TotalDeliveryStrength));
+            TooltipHudWindow.Instance.Show(tooltipText);
+        }
+        else {
+            TooltipHudWindow.Instance.Hide();
+        }
+    }
+
+    private void DistributionContainerTooltipEventHandler(GameObject containerGo, bool show) {
+        if (show) {
+            var wdvCategory = _wdvCategoryLookup[containerGo];
+            string tooltipText = GetTooltipText(wdvCategory);
+            TooltipHudWindow.Instance.Show(tooltipText);
+        }
+        else {
+            TooltipHudWindow.Instance.Hide();
+        }
+    }
+
     private void StrengthPropSetHandler() {
-        _isStrengthSet = true;
+        _isStrengthPropSet = true;
         if (IsInitialized) {
             PopulateMemberWidgetValues();
         }
@@ -89,54 +145,118 @@ public class StrengthGuiElement : AGuiElement, IComparable<StrengthGuiElement> {
 
     protected override void PopulateMemberWidgetValues() {
         base.PopulateMemberWidgetValues();
-        string combinedValueLabelText = Unknown;
-        string detailValuesLabelText = Unknown;
-        string tooltipText = Unknown;
 
-        if (Strength.HasValue) {
-            combinedValueLabelText = Strength.Value.TotalDeliveryStrength.FormatValue();
-            detailValuesLabelText = __GetStrengthDetailText(Strength.Value);
-            tooltipText = detailValuesLabelText;
+        if (!Strength.HasValue) {
+            HandleValuesUnknown();
+            return;
         }
 
-        if (_widgetsPresent != WidgetsPresent.DetailsLabel) {
-            _combinedValueLabel.text = combinedValueLabelText;
+        UIWidget totalContainer = _containers[0];
+        NGUITools.SetActive(totalContainer.gameObject, true);
+        UISprite totalIconSprite = totalContainer.gameObject.GetSingleComponentInChildren<UISprite>();
+        if (_showIcons) {
+            totalIconSprite.atlas = Strength.Value.Mode.GetIconAtlasID().GetAtlas();
+            totalIconSprite.spriteName = Strength.Value.Mode.GetIconFilename();
         }
-        if (_widgetsPresent != WidgetsPresent.SumLabel) {
-            _detailValuesLabel.text = detailValuesLabelText;
+        else {
+            NGUITools.SetActive(totalIconSprite.gameObject, false);
         }
-        if (_widgetsPresent == WidgetsPresent.SumLabel) {
-            _tooltipContent = tooltipText;
+        UILabel totalIconLabel = totalContainer.gameObject.GetSingleComponentInChildren<UILabel>();
+        totalIconLabel.text = StrengthValueFormat_Label.Inject(Mathf.RoundToInt(Strength.Value.TotalDeliveryStrength));
+
+        if (_showDistribution) {
+            WDVCategory[] wdvCategoriesToShow = Enums<WDVCategory>.GetValues(excludeDefault: true).ToArray();
+
+            int showCount = wdvCategoriesToShow.Length;
+            D.Assert(_containers.Length >= showCount);
+            for (int i = Constants.One; i < showCount; i++) {
+                UIWidget container = _containers[i];
+                NGUITools.SetActive(container.gameObject, true);
+
+                UISprite iconSprite = container.gameObject.GetSingleComponentInChildren<UISprite>();
+                WDVCategory categoryToShow = wdvCategoriesToShow[i];
+                if (_showIcons) {
+                    iconSprite.atlas = categoryToShow.GetIconAtlasID().GetAtlas();
+                    iconSprite.spriteName = categoryToShow.GetIconFilename();
+                }
+                else {
+                    NGUITools.SetActive(iconSprite.gameObject, false);
+                }
+                _wdvCategoryLookup.Add(container.gameObject, categoryToShow);
+
+                var wdvCategoryStrength = Strength.Value.GetStrength(categoryToShow);
+
+                string strengthText = StrengthValueFormat_Label.Inject(Mathf.RoundToInt(wdvCategoryStrength.Value));
+                var strengthLabel = container.gameObject.GetSingleComponentInChildren<UILabel>();
+                strengthLabel.text = strengthText;
+            }
         }
     }
 
+    private string GetTooltipText(WDVCategory category) {
+        float wdvValue = Strength.Value.GetStrength(category).Value;
+        return TooltipFormat.Inject(category.GetValueName(), StrengthValueFormat_Tooltip.Inject(wdvValue));
+    }
+
+    private void HandleValuesUnknown() {
+        NGUITools.SetActive(_unknownLabel.gameObject, true);
+    }
+
+    /// <summary>
+    /// Resets this GuiElement instance so it can be reused.
+    /// </summary>
     public override void ResetForReuse() {
-        _isStrengthSet = false;
+        _containers.ForAll(container => {
+            NGUITools.SetActive(container.gameObject, false);
+        });
+        NGUITools.SetActive(_unknownLabel.gameObject, false);
+        _wdvCategoryLookup.Clear();
+        _isStrengthPropSet = false;
     }
 
-    protected override void Cleanup() { }
+    #region Cleanup
 
-    #region Debug
-
-    private string __GetStrengthDetailText(CombatStrength strength) {
-        return strength.BeamDeliveryStrength.ToLabel()
-            + Constants.NewLine + strength.ProjectileDeliveryStrength.ToLabel()
-            + Constants.NewLine + strength.MissileDeliveryStrength.ToLabel();
+    private void Unsubscribe() {
+        bool isFirstContainer = true;
+        foreach (var container in _containers) {
+            if (isFirstContainer) {
+                MyEventListener.Get(container.gameObject).onTooltip -= TotalContainerTooltipEventHandler;
+                isFirstContainer = false;
+            }
+            else {
+                if (_showDistribution) {
+                    MyEventListener.Get(container.gameObject).onTooltip -= DistributionContainerTooltipEventHandler;
+                }
+            }
+        }
+        MyEventListener.Get(_unknownLabel.gameObject).onTooltip -= UnknownTooltipEventHandler;
     }
 
-    protected override void __ValidateOnAwake() {
-        base.__ValidateOnAwake();
-        D.Assert(ElementID == GuiElementID.OffensiveStrength || ElementID == GuiElementID.DefensiveStrength, ElementID.GetValueName());
+    protected override void Cleanup() {
+        Unsubscribe();
     }
 
     #endregion
 
+    #region Debug
 
-    #region IComparable<StrengthGuiElement> Members
+    protected override void __ValidateOnAwake() {
+        base.__ValidateOnAwake();
+        D.Assert(ElementID == GuiElementID.OffensiveStrength || ElementID == GuiElementID.DefensiveStrength, ElementID.GetValueName());
+        Utility.ValidateNotNullOrEmpty<UIWidget>(_containers);
+        foreach (var container in _containers) {
+            D.AssertNotNull(container);
+        }
+        if (_showDistribution) {
+            D.Assert(_containers.Count() >= Constants.One + Enums<WDVCategory>.GetValues(excludeDefault: true).Count()); // 1 Total + 4 WDVCategories
+        }
+    }
+
+    #endregion
+
+    #region IComparable<StrengthGuiElement2> Members
 
     public int CompareTo(StrengthGuiElement other) {
-        D.AssertEqual(_elementID, other._elementID);
-
         int result;
         if (!Strength.HasValue) {
             result = !other.Strength.HasValue ? Constants.Zero : Constants.MinusOne;
@@ -148,31 +268,6 @@ public class StrengthGuiElement : AGuiElement, IComparable<StrengthGuiElement> {
     }
 
     #endregion
-
-    #region Nested Classes
-
-    /// <summary>
-    /// Enum that identifies the Widgets that are present in this GuiElement.
-    /// </summary>
-    public enum WidgetsPresent {
-
-        /// <summary>
-        /// A label for showing a single value to represent this GuiElement.
-        /// </summary>
-        SumLabel,
-
-        /// <summary>
-        /// A label for showing multiple detailed values to represent this GuiElement.
-        /// </summary>
-        DetailsLabel,
-
-        /// <summary>
-        /// Both widgets are present.
-        /// </summary>
-        Both
-    }
-
-    #endregion
-
 }
+
 

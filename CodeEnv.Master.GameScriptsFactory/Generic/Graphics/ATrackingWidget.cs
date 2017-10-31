@@ -216,19 +216,9 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     // widget currently needs Update(). Took this action as profiling showed an Update() call from every widget.
 
     /// <summary>
-    /// Clears the <see cref="ATrackingWidget"/> back to its base state:
-    /// No content, not highlighted and not showing.
-    /// </summary>
-    public void Clear() {
-        IsHighlighted = false;
-        Show(false);
-        Set(string.Empty);
-    }
-
-    /// <summary>
     /// Refreshes the widget's values derived from the target. Clients should use this
     /// when the offset value they make available associated with their selected placement changes.
-    /// Eg. SphericalHighlight creates a label with itself as the target, but then regularly changes its
+    /// e.g. SphericalHighlight creates a label with itself as the target, but then regularly changes its
     /// radius as its own target changes.
     /// </summary>
     public void RefreshWidgetValues() {
@@ -286,7 +276,7 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
 
     /// <summary>
     /// Base method does nothing. Derived classes should override this method if their widget has 
-    /// other settings to align to the placement value. eg. Text alignment for Labels.
+    /// other settings to align to the placement value. e.g. Text alignment for Labels.
     /// </summary>
     /// <param name="placement">The placement.</param>
     protected virtual void AlignWidgetOtherTo(WidgetPlacement placement) { }
@@ -296,6 +286,23 @@ public abstract class ATrackingWidget : AMonoBase, ITrackingWidget {
     /// is derived from the target's position and offset (obtained from IWidgetTrackable.GetOffset(placement).
     /// </summary>
     protected abstract void SetPosition();
+
+    /// <summary>
+    /// Clears the <see cref="ATrackingWidget"/> back to its base state:
+    /// No content, not highlighted and not showing.
+    /// </summary>
+    public void Clear() {
+        IsHighlighted = false;
+        Show(false);
+        Set(string.Empty);
+    }
+
+    /// <summary>
+    /// Destroys this ATrackingWidget.
+    /// </summary>
+    public void Destroy() {
+        GameObject.Destroy(WidgetTransform.gameObject);
+    }
 
     public sealed override string ToString() {
         return DebugName;

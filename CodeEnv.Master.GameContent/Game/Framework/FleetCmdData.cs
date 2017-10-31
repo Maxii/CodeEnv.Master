@@ -43,6 +43,8 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<FleetCategory>(ref _category, value, "Category"); }
         }
 
+        public override IEnumerable<Formation> AcceptableFormations { get { return TempGameValues.AcceptableFleetFormations; } }
+
         /// <summary>
         /// Read-only. The actual speed of the Flagship in Units per hour, normalized for game speed.
         /// </summary>
@@ -116,6 +118,16 @@ namespace CodeEnv.Master.GameContent {
 
         public new IEnumerable<ShipData> ElementsData { get { return base.ElementsData.Cast<ShipData>(); } }
 
+        private FleetPublisher _publisher;
+        public FleetPublisher Publisher {
+            get { return _publisher = _publisher ?? new FleetPublisher(this); }
+        }
+
+        public new FleetCmdDesign CmdDesign {
+            get { return base.CmdDesign as FleetCmdDesign; }
+            set { base.CmdDesign = value; }
+        }
+
         #region Initialization 
 
         /// <summary>
@@ -127,10 +139,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="sensors">The MR and LR sensors for this UnitCmd.</param>
         /// <param name="ftlDampener">The FTL dampener.</param>
         /// <param name="cmdStat">The stat.</param>
-        /// <param name="designName">Name of the design.</param>
+        /// <param name="cmdDesign">The command design.</param>
         public FleetCmdData(IFleetCmd fleetCmd, Player owner, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, FleetCmdModuleStat cmdStat,
-            string designName)
-            : this(fleetCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), sensors, ftlDampener, cmdStat, designName) {
+            FleetCmdDesign cmdDesign)
+            : this(fleetCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), sensors, ftlDampener, cmdStat, cmdDesign) {
         }
 
         /// <summary>
@@ -142,10 +154,11 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="sensors">The MR and LR sensors for this UnitCmd.</param>
         /// <param name="ftlDampener">The FTL dampener.</param>
         /// <param name="cmdStat">The stat.</param>
-        /// <param name="designName">Name of the design.</param>
+        /// <param name="cmdDesign">The command design.</param>
         public FleetCmdData(IFleetCmd fleetCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors,
-            FtlDampener ftlDampener, FleetCmdModuleStat cmdStat, string designName)
-            : base(fleetCmd, owner, passiveCMs, sensors, ftlDampener, cmdStat, designName) { }
+            FtlDampener ftlDampener, FleetCmdModuleStat cmdStat, FleetCmdDesign cmdDesign)
+            : base(fleetCmd, owner, passiveCMs, sensors, ftlDampener, cmdStat, cmdDesign) {
+        }
 
         protected override AIntel MakeIntelInstance() {
             return new RegressibleIntel(lowestRegressedCoverage: IntelCoverage.None);
@@ -166,6 +179,9 @@ namespace CodeEnv.Master.GameContent {
             base.RemoveElement(elementData);
             Category = GenerateCmdCategory(UnitComposition);
         }
+
+        public FleetCmdReport GetReport(Player player) { return Publisher.GetReport(player); }
+
 
         protected override void RefreshComposition() {
             var elementCategories = _elementsData.Cast<ShipData>().Select(sd => sd.HullCategory);

@@ -30,7 +30,7 @@ using UnityEngine.Profiling;
 /// Class for AUnitElementItems that are Facilities.
 public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidableObstacle {
 
-    private static readonly Vector2 IconSize = new Vector2(24F, 24F);
+    private static readonly IntVector2 IconSize = new IntVector2(24, 24);
 
     /// <summary>
     /// Indicates whether this facility is capable of firing on a target in an attack.
@@ -38,6 +38,10 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     /// (CombatStance is Defensive) or one with no operational weapons.</remarks>
     /// </summary>
     public override bool IsAttackCapable { get { return Data.WeaponsRange.Max > Constants.ZeroF; } }
+
+    public override bool IsConstructionUnderway {
+        get { return IsCurrentStateAnyOf(FacilityState.Constructing, FacilityState.ExecuteRefitOrder); }
+    }
 
     public new FacilityData Data {
         get { return base.Data as FacilityData; }
@@ -64,12 +68,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         private set { SetProperty<FacilityOrder>(ref _currentOrder, value, "CurrentOrder", CurrentOrderPropChangedHandler); }
     }
 
-    public FacilityReport UserReport { get { return Publisher.GetUserReport(); } }
-
-    private FacilityPublisher _publisher;
-    private FacilityPublisher Publisher {
-        get { return _publisher = _publisher ?? new FacilityPublisher(Data, this); }
-    }
+    public FacilityReport UserReport { get { return Data.Publisher.GetUserReport(); } }
 
     private FacilityDetourGenerator _obstacleDetourGenerator;
     private FacilityDetourGenerator ObstacleDetourGenerator {
@@ -93,8 +92,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         InitializeObstacleZone();
     }
 
-    protected override ItemHoveredHudManager InitializeHudManager() {
-        return new ItemHoveredHudManager(Publisher);
+    protected override ItemHoveredHudManager InitializeHoveredHudManager() {
+        return new ItemHoveredHudManager(Data.Publisher);
     }
 
     protected override ADisplayManager MakeDisplayManagerInstance() {
@@ -166,19 +165,23 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #endregion
 
-    public override void CommenceOperations() {
-        base.CommenceOperations();
+    public override void CommenceOperations(bool isInitialConstructionNeeded) {
+        base.CommenceOperations(isInitialConstructionNeeded);
         _obstacleZoneCollider.enabled = true;
-        CurrentState = FacilityState.Idling;
+        CurrentState = isInitialConstructionNeeded ? FacilityState.Constructing : FacilityState.Idling;
         ActivateSensors();
         SubscribeToSensorEvents();
     }
 
-    public FacilityReport GetReport(Player player) { return Publisher.GetReport(player); }
+    public FacilityReport GetReport(Player player) { return Data.Publisher.GetReport(player); }
 
     protected override void ShowSelectedItemHud() {
-        D.Assert(Owner.IsUser);
-        InteractableHudWindow.Instance.Show(FormID.UserFacility, Data);
+        if (Owner.IsUser) {
+            InteractibleHudWindow.Instance.Show(FormID.UserFacility, Data);
+        }
+        else {
+            InteractibleHudWindow.Instance.Show(FormID.AiFacility, UserReport);
+        }
     }
 
     protected override bool ShouldExistingCmdOwnerChange() {
@@ -279,13 +282,16 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     public bool InitiateNewOrder(FacilityOrder order) {
         D.Assert(order.Source > OrderSource.Captain);
         if (order.Directive == FacilityDirective.Cancel) {
+            //D.Log("{0} has received a Cancel order.", DebugName);
             D.Assert(_gameMgr.IsPaused && order.Source == OrderSource.User);
         }
 
         if (IsPaused) {
             if (!_ordersReceivedWhilePaused.Any()) {
                 // first order received while paused so record the CurrentOrder before recording the new order
-                _ordersReceivedWhilePaused.Push(CurrentOrder);
+                if (CurrentOrder != null) {
+                    _ordersReceivedWhilePaused.Push(CurrentOrder);
+                }
             }
             _ordersReceivedWhilePaused.Push(order);
             // deal with multiple changes all while paused
@@ -321,17 +327,18 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     private void HandleNewOrderReceivedWhilePausedUponResume() {
         D.Assert(!IsPaused);
         D.AssertNotEqual(Constants.Zero, _ordersReceivedWhilePaused.Count);
-        // If the last order received was Cancel, then the order that was current when the first order
+        // If the last order received was Cancel, then the order that was current, if any, when the first order
         // was issued during this pause should be reinstated, aka all the orders received while paused are
-        // not valid and the original order should continue.
+        // not valid and the original order, if any, should continue.
         FacilityOrder order;
         var lastOrderReceivedWhilePaused = _ordersReceivedWhilePaused.Pop();
         if (lastOrderReceivedWhilePaused.Directive == FacilityDirective.Cancel) {
-            // if Cancel, then original order and canceled order at minimum must still be present
-            D.Assert(_ordersReceivedWhilePaused.Count > Constants.One);
-            D.Log(/*ShowDebugLog,*/ "{0} received the following order sequence from User during pause prior to Cancel: {1}.", DebugName,
-                _ordersReceivedWhilePaused.Select(o => o.DebugName).Concatenate());
-            order = _ordersReceivedWhilePaused.First();
+            // if Cancel, then order that was canceled at minimum must still be present
+            D.Assert(_ordersReceivedWhilePaused.Count >= Constants.One);
+            //D.Log(ShowDebugLog, "{0} received the following order sequence from User during pause prior to Cancel: {1}.", DebugName,
+            //    _ordersReceivedWhilePaused.Select(o => o.DebugName).Concatenate());
+            _ordersReceivedWhilePaused.Pop();   // remove the order that was canceled
+            order = _ordersReceivedWhilePaused.Any() ? _ordersReceivedWhilePaused.First() : null;
         }
         else {
             order = lastOrderReceivedWhilePaused;
@@ -416,6 +423,11 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             D.Assert(!IsDead);
             //D.Log(ShowDebugLog, "{0} received new order {1}. Frame {2}.", DebugName, CurrentOrder.Directive.GetValueName(), Time.frameCount);
 
+            if (IsConstructionUnderway && CurrentOrder.Directive != FacilityDirective.Scuttle) {
+                D.Warn("{0} received new order {1} while {2}. Order ignored.", DebugName, CurrentOrder.DebugName, CurrentState.GetValueName());
+                return;
+            }
+
             // 4.8.17 If a non-Call()ed state is to notify Cmd of OrderOutcome, this is when notification of receiving a new order will happen. 
             // CalledStateReturnHandlers can't do it as the new order will change the state before the ReturnCause is processed.
             UponNewOrderReceived();
@@ -434,8 +446,10 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
                 case FacilityDirective.Scuttle:
                     IsOperational = false;
                     return; // CurrentOrder will be set to null as a result of death
-                case FacilityDirective.StopAttack:
                 case FacilityDirective.Refit:
+                    CurrentState = FacilityState.ExecuteRefitOrder;
+                    break;
+                case FacilityDirective.StopAttack:
                 case FacilityDirective.Disband:
                     D.Warn("{0}.{1} is not currently implemented.", typeof(FacilityDirective).Name, directive.GetValueName());
                     break;
@@ -545,6 +559,81 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void FinalInitialize_ExitState() {
         LogEvent();
+    }
+
+    #endregion
+
+    #region Constructing
+
+    void Constructing_UponPreconfigureState() {
+        LogEvent();
+        ValidateCommonNotCallableStateValues();
+    }
+
+    IEnumerator Constructing_EnterState() {
+        LogEvent();
+        D.Log(/*ShowDebugLog, */"{0} has begun initial construction.", DebugName);
+
+        Data.PrepareForInitialConstruction();
+
+        ConstructionInfo construction = Command.ConstructionMgr.GetConstructionFor(this);
+        while (!construction.IsCompleted) {
+            DisplayMgr.ShowConstructionUnderway(construction.CompletionPercentage);
+            yield return null;
+        }
+
+        Data.HandleConstructionComplete();
+        CurrentState = FacilityState.Idling;
+    }
+
+    void Constructing_UponNewOrderReceived() {
+        LogEvent();
+        D.Error("{0} should not see a new order during initial construction.", DebugName);
+    }
+
+    void Constructing_UponLosingOwnership() {
+        LogEvent();
+        // UNCLEAR nothing to do?
+    }
+
+    void Constructing_UponRelationsChangedWith(Player player) {
+        LogEvent();
+        // UNCLEAR nothing to do?
+    }
+
+    void Constructing_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
+        LogEvent();
+        // will only be called by operational weapons, many of which will be damaged during initial construction
+        var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
+        InitiateFiringSequence(selectedFiringSolution);
+    }
+
+    void Constructing_OnCollisionEnter(Collision collision) {
+        __ReportCollision(collision);
+    }
+
+    void Constructing_UponDamageIncurred() {
+        LogEvent();
+        // UNCLEAR nothing to do?
+    }
+
+    void Constructing_UponHQStatusChangeCompleted() {
+        LogEvent();
+        D.Error("{0} cannot be or become HQ during initial construction.", DebugName);
+    }
+
+    void Constructing_UponUncompletedRemovalFromConstructionQueue() {
+        IsOperational = false;
+    }
+
+    void Constructing_UponDeath() {
+        LogEvent();
+        // Should auto change to Dead state
+    }
+
+    void Constructing_ExitState() {
+        LogEvent();
+        DisplayMgr.HideConstructionUnderway();
     }
 
     #endregion
@@ -968,12 +1057,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         }
         KillRepairJob();
 
-        // HACK
-        Data.PassiveCountermeasures.Where(cm => cm.IsDamageable).ForAll(cm => cm.IsDamaged = false);
-        Data.ActiveCountermeasures.Where(cm => cm.IsDamageable).ForAll(cm => cm.IsDamaged = false);
-        Data.ShieldGenerators.Where(gen => gen.IsDamageable).ForAll(gen => gen.IsDamaged = false);
-        Data.Weapons.Where(w => w.IsDamageable).ForAll(w => w.IsDamaged = false);
-        Data.Sensors.Where(s => s.IsDamageable).ForAll(s => s.IsDamaged = false);
+        Data.RemoveDamageFromAllEquipment();
         D.Log(ShowDebugLog, "{0}'s repair is complete. Health = {1:P01}.", DebugName, Data.Health);
 
         StopEffectSequence(EffectSequenceID.Repairing);
@@ -1024,30 +1108,107 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #endregion
 
-    #region Refitting
+    #region ExecuteRefitOrder
 
-    //TODO Deactivate/Activate Equipment
+    #region ExecuteRefitOrder Support Members
 
-    IEnumerator Refitting_EnterState() {
-        // ShipView shows animation while in this state
-        //OnStartShow();
-        //while (true) {
-        //TODO refit until complete
-        yield return null;
-
-        //yield return new WaitForSeconds(2);
-        //}
-        //OnStopShow();   // must occur while still in target state
-        Return();
+    private float __CalcRefitCost(FacilityDesign refitDesign, FacilityDesign currentDesign) {
+        float refitCost = refitDesign.ConstructionCost - currentDesign.ConstructionCost;
+        if (refitCost < refitDesign.MinimumRefitCost) {
+            D.Warn("{0}.RefitCost {1:0.#} < Minimum {2:0.#}. RefitDesign: {3}.", DebugName, refitCost, refitDesign.MinimumRefitCost, refitDesign.DebugName);
+            refitCost = refitDesign.MinimumRefitCost;
+        }
+        return refitCost;
     }
 
-    void Refitting_UponDamageIncurred() {
+    #endregion
+
+    private AUnitElementData.RefitStorage _refitStorage;
+
+    void ExecuteRefitOrder_UponPreconfigureState() {
         LogEvent();
+        ValidateCommonNotCallableStateValues();
+        D.Assert(CurrentOrder is FacilityRefitOrder);
+        D.AssertNull(_refitStorage);
     }
 
-    void Refitting_ExitState() {
+    IEnumerator ExecuteRefitOrder_EnterState() {
         LogEvent();
-        //_fleet.OnRefittingComplete(this)?
+        IsAvailable = false;
+
+        var refitDesign = (CurrentOrder as FacilityRefitOrder).RefitDesign; ////__PickRefitDesign();
+        float refitCost = __CalcRefitCost(refitDesign, Data.Design);
+        D.Log(/*ShowDebugLog, */"{0} has begun refitting to {1}. Cost = {2:0.}.", DebugName, refitDesign.DebugName, refitCost);
+        Data.Design = refitDesign;
+
+        _refitStorage = Data.PrepareForRefit();
+
+        RefitConstructionInfo construction = Command.ConstructionMgr.AddToQueue(refitDesign, this, refitCost);
+        while (!construction.IsCompleted) {
+            DisplayMgr.ShowConstructionUnderway(construction.CompletionPercentage);
+            yield return null;
+        }
+
+        FacilityItem facilityReplacement = UnitFactory.Instance.MakeFacilityInstance(Owner, Topography, refitDesign, Name, Command.UnitContainer.gameObject);
+        Command.ReplaceElement(this, facilityReplacement);
+
+        facilityReplacement.FinalInitialize();
+        facilityReplacement.CommenceOperations(isInitialConstructionNeeded: false);
+        DestroyMe();
+    }
+
+    void ExecuteRefitOrder_UponNewOrderReceived() {
+        LogEvent();
+        D.Error("{0} should not see a new order while Refitting.", DebugName);
+    }
+
+    void ExecuteRefitOrder_UponLosingOwnership() {
+        LogEvent();
+        // UNCLEAR nothing to do?
+    }
+
+    void ExecuteRefitOrder_UponRelationsChangedWith(Player player) {
+        LogEvent();
+        // UNCLEAR nothing to do?
+    }
+
+    void ExecuteRefitOrder_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
+        LogEvent();
+        // will only be called by operational weapons, many of which will be damaged during refit
+        var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
+        InitiateFiringSequence(selectedFiringSolution);
+    }
+
+    void ExecuteRefitOrder_OnCollisionEnter(Collision collision) {
+        __ReportCollision(collision);
+    }
+
+    void ExecuteRefitOrder_UponDamageIncurred() {
+        LogEvent();
+        // UNCLEAR nothing to do?
+    }
+
+    void ExecuteRefitOrder_UponHQStatusChangeCompleted() {
+        LogEvent();
+        // TODO element can be refitting and already be HQ or become HQ
+    }
+
+    void ExecuteRefitOrder_UponUncompletedRemovalFromConstructionQueue() {
+        Data.HandleRefitCanceled(_refitStorage);
+        CurrentState = FacilityState.Idling;
+    }
+
+
+    void ExecuteRefitOrder_UponDeath() {
+        LogEvent();
+        // Should auto change to Dead state
+    }
+
+    void ExecuteRefitOrder_ExitState() {
+        LogEvent();
+        // Uncompleted Refit can be canceled and go to Idling by removal from ConstructionQueue
+        DisplayMgr.HideConstructionUnderway();
+        _refitStorage = null;
     }
 
     #endregion
@@ -1436,6 +1597,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
         FinalInitialize,
 
+        Constructing,
+
         Idling,
 
         ExecuteAttackOrder,
@@ -1444,7 +1607,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
         Repairing,
 
-        Refitting,
+        ExecuteRefitOrder,
 
         Disbanding,
 

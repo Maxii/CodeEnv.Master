@@ -14,14 +14,21 @@
 ////#define DEBUG_WARN
 ////#define DEBUG_ERROR
 
+
 namespace CodeEnv.Master.GameContent {
+
+    using System;
 
     /// <summary>
     /// Interface for easy access to MonoBehaviours that are AUnitBaseCmdItems.
     /// </summary>
     public interface IUnitBaseCmd : IUnitCmd {
 
+        event EventHandler resourcesChanged;
+
         BaseOrder CurrentOrder { get; }
+
+        ResourcesYield Resources { get; }
 
     }
 }

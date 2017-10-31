@@ -42,17 +42,8 @@ public class SystemsTableForm : ATableForm {
 
     protected override void ResumePreviousSortTopic(GuiElementID sortTopicToResume) {
         switch (sortTopicToResume) {
-            case GuiElementID.NameLabel:
+            case GuiElementID.Name:
                 SortOnName();
-                break;
-            case GuiElementID.OrganicsLabel:
-                SortOnOrganics();
-                break;
-            case GuiElementID.ParticulatesLabel:
-                SortOnParticulates();
-                break;
-            case GuiElementID.EnergyLabel:
-                SortOnEnergy();
                 break;
             case GuiElementID.Owner:
                 SortOnOwner();
@@ -60,13 +51,27 @@ public class SystemsTableForm : ATableForm {
             case GuiElementID.Location:
                 SortOnLocation();
                 break;
+            case GuiElementID.Organics:
+                SortOnOrganics();
+                break;
+            case GuiElementID.Particulates:
+                SortOnParticulates();
+                break;
+            case GuiElementID.Energy:
+                SortOnEnergy();
+                break;
             case GuiElementID.Resources:
                 SortOnResources();
                 break;
-            case GuiElementID.SpeedLabel:
-            case GuiElementID.ScienceLabel:
-            case GuiElementID.CultureLabel:
-            case GuiElementID.PopulationLabel:
+            case GuiElementID.Food:
+            case GuiElementID.Production:
+            case GuiElementID.Income:
+            case GuiElementID.Expense:
+            case GuiElementID.NetIncome:
+            case GuiElementID.Science:
+            case GuiElementID.Culture:
+            case GuiElementID.Speed:
+            case GuiElementID.Population:
             case GuiElementID.DefensiveStrength:
             case GuiElementID.OffensiveStrength:
             case GuiElementID.Health:
@@ -74,7 +79,6 @@ public class SystemsTableForm : ATableForm {
             case GuiElementID.Composition:
             case GuiElementID.Construction:
             case GuiElementID.Approval:
-            case GuiElementID.NetIncome:
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(sortTopicToResume.GetValueName()));
         }
@@ -82,27 +86,21 @@ public class SystemsTableForm : ATableForm {
 
     #region Sorting Elements
 
-    public void SortOnResources() {
-        _table.onCustomSort = CompareResources;
-        _sortDirection = DetermineSortDirection(GuiElementID.Resources);
-        _table.repositionNow = true;
-    }
-
     public void SortOnOrganics() {
         _table.onCustomSort = CompareOrganics;
-        _sortDirection = DetermineSortDirection(GuiElementID.OrganicsLabel);
+        _sortDirection = DetermineSortDirection(GuiElementID.Organics);
         _table.repositionNow = true;
     }
 
     public void SortOnParticulates() {
         _table.onCustomSort = CompareParticulates;
-        _sortDirection = DetermineSortDirection(GuiElementID.ParticulatesLabel);
+        _sortDirection = DetermineSortDirection(GuiElementID.Particulates);
         _table.repositionNow = true;
     }
 
     public void SortOnEnergy() {
         _table.onCustomSort = CompareEnergy;
-        _sortDirection = DetermineSortDirection(GuiElementID.EnergyLabel);
+        _sortDirection = DetermineSortDirection(GuiElementID.Energy);
         _table.repositionNow = true;
     }
 

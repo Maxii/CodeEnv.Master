@@ -27,15 +27,10 @@ namespace CodeEnv.Master.GameContent {
             get { return UniverseCenterDisplayInfoFactory.Instance.MakeInstance(GetUserReport()); }
         }
 
-        private IUniverseCenter_Ltd _item;
-
-        public UniverseCenterPublisher(UniverseCenterData data, IUniverseCenter_Ltd item)
-            : base(data) {
-            _item = item;
-        }
+        public UniverseCenterPublisher(UniverseCenterData data) : base(data) { }
 
         protected override UniverseCenterReport MakeReportInstance(Player player) {
-            return new UniverseCenterReport(_data, player, _item);
+            return new UniverseCenterReport(_data, player);
         }
 
     }

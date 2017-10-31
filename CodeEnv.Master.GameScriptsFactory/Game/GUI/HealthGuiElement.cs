@@ -133,7 +133,6 @@ public class HealthGuiElement : AProgressBarGuiElement, IComparable<HealthGuiEle
             currentHitPtsValueText.SurroundWith(healthColor), maxHitPtsValueText.SurroundWith(GameColor.Green));
 
         PopulateProgressBarValues(healthValue, healthColor, healthValuesText_Colored);
-
     }
 
     public override void ResetForReuse() {

@@ -39,7 +39,7 @@ namespace CodeEnv.Master.GameContent {
         protected override bool HasAccessToInfo_Broad(ItemInfoID infoID, Player player) {
             switch (infoID) {
                 case ItemInfoID.Capacity:
-                case ItemInfoID.Resources:
+                    // 10.13.17 Removed Resources as Report now handles Resources without AccessCntlr
                     return true;
                 default:
                     return false;
@@ -79,10 +79,10 @@ namespace CodeEnv.Master.GameContent {
                     }
 
                     SystemData sysData = _data as SystemData;
-                    hasBasicAccessToOwner = sysData.StarData.InfoAccessCntlr.HasAccessToInfo(player, infoID);
+                    hasBasicAccessToOwner = sysData.StarData.InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, infoID);
                     if (!hasBasicAccessToOwner) {
                         hasBasicAccessToOwner = sysData.AllPlanetoidData.Select(pData => pData.InfoAccessCntlr).
-                            Any(iac => iac.HasAccessToInfo(player, infoID));
+                            Any(iac => iac.HasIntelCoverageReqdToAccess(player, infoID));
                     }
                     _hasBasicAccessToOwnerLookup[player] = hasBasicAccessToOwner;   // Reqd assignment when the out is a ValueType
                     return hasBasicAccessToOwner;
@@ -111,7 +111,7 @@ namespace CodeEnv.Master.GameContent {
         //                return true;
         //            }
         //            else {
-        //                bool anyPlanetoidHasAccess = sysData.AllPlanetoidData.Select(pData => pData.InfoAccessCntlr).Any(iac => iac.HasAccessToInfo(player, infoID));
+        //                bool anyPlanetoidHasAccess = sysData.AllPlanetoidData.Select(pData => pData.InfoAccessCntlr).Any(ac => ac.HasAccessToInfo(player, infoID));
         //                if (anyPlanetoidHasAccess) {
         //                    return true;
         //                }
@@ -125,7 +125,7 @@ namespace CodeEnv.Master.GameContent {
         //            // if you know all member's values, you know the system's value
         //            starHasAccess = sysData.StarData.InfoAccessCntlr.HasAccessToInfo(player, infoID);
         //            if (starHasAccess) {
-        //                bool allPlanetoidsHaveAccess = sysData.AllPlanetoidData.Select(pData => pData.InfoAccessCntlr).All(iac => iac.HasAccessToInfo(player, infoID));
+        //                bool allPlanetoidsHaveAccess = sysData.AllPlanetoidData.Select(pData => pData.InfoAccessCntlr).All(ac => ac.HasAccessToInfo(player, infoID));
         //                if (allPlanetoidsHaveAccess) {
         //                    if (sysData.SettlementData == null || sysData.SettlementData.InfoAccessCntlr.HasAccessToInfo(player, infoID)) {
         //                        return true;

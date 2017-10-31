@@ -21,6 +21,9 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public enum ResourceCategory {
 
+        /// <summary>
+        /// Used for error detection.
+        /// </summary>
         None = 0,
 
         Common = 1,
@@ -28,6 +31,8 @@ namespace CodeEnv.Master.GameContent {
         Strategic = 2,
 
         Luxury = 3,
+
+        All = 4
 
     }
 }

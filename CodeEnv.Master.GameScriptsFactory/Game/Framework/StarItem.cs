@@ -31,7 +31,7 @@ using UnityEngine.Profiling;
 /// </summary>
 public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigableDestination, ISensorDetectable, IAvoidableObstacle, IShipExplorable {
 
-    private static readonly Vector2 IconSize = new Vector2(12F, 12F);
+    private static readonly IntVector2 IconSize = new IntVector2(12, 12);
 
     public StarCategory category = StarCategory.None;
 
@@ -44,18 +44,13 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigableDestination
 
     public override float ClearanceRadius { get { return Data.CloseOrbitOuterRadius * 2F; } }
 
-    public StarReport UserReport { get { return Publisher.GetUserReport(); } }
+    public StarReport UserReport { get { return Data.Publisher.GetUserReport(); } }
 
     public SystemItem ParentSystem { get; private set; }
 
     public IntVector3 SectorID { get { return Data.SectorID; } }
 
     protected new StarDisplayManager DisplayMgr { get { return base.DisplayMgr as StarDisplayManager; } }
-
-    private StarPublisher _publisher;
-    private StarPublisher Publisher {
-        get { return _publisher = _publisher ?? new StarPublisher(Data, this); }
-    }
 
     private DetourGenerator _obstacleDetourGenerator;
     private DetourGenerator ObstacleDetourGenerator {
@@ -125,8 +120,8 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigableDestination
         }
     }
 
-    protected override ItemHoveredHudManager InitializeHudManager() {
-        return new ItemHoveredHudManager(Publisher);
+    protected override ItemHoveredHudManager InitializeHoveredHudManager() {
+        return new ItemHoveredHudManager(Data.Publisher);
     }
 
     protected override ICtxControl InitializeContextMenu(Player owner) {
@@ -165,10 +160,15 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigableDestination
         _obstacleZoneCollider.enabled = true;
     }
 
-    public StarReport GetReport(Player player) { return Publisher.GetReport(player); }
+    public StarReport GetReport(Player player) { return Data.Publisher.GetReport(player); }
 
     protected override void ShowSelectedItemHud() {
-        InteractableHudWindow.Instance.Show(FormID.UserStar, Data);
+        if (Owner.IsUser) {
+            InteractibleHudWindow.Instance.Show(FormID.UserStar, Data);
+        }
+        else {
+            InteractibleHudWindow.Instance.Show(FormID.NonUserStar, UserReport);
+        }
     }
 
     protected override void HandleInfoAccessChangedFor(Player player) {
@@ -446,7 +446,7 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigableDestination
     #region IShipCloseOrbitable Members
 
     public bool IsCloseOrbitAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner)) {
             return true;
         }
         return !Owner.IsAtWarWith(player);
@@ -669,7 +669,7 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigableDestination
     }
 
     public bool IsExploringAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner)) {
             return true;
         }
         return !Owner.IsAtWarWith(player);

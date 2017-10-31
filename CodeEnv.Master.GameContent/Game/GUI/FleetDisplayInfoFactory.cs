@@ -43,9 +43,8 @@ namespace CodeEnv.Master.GameContent {
             ItemInfoID.UnitHealth,
             //ItemInfoID.UnitWeaponsRange,
             ItemInfoID.UnitSensorRange,
-            //ItemInfoID.UnitScience,
-            //ItemInfoID.UnitCulture,
-            //ItemInfoID.UnitNetIncome,
+
+            ItemInfoID.UnitOutputs,
 
             ItemInfoID.Target,
             ItemInfoID.TargetDistance,
@@ -65,11 +64,15 @@ namespace CodeEnv.Master.GameContent {
 
         protected override ItemInfoID[] OrderedInfoIDsToDisplay { get { return _infoIDsToDisplay; } }
 
+        private IGameManager _gameMgr;
+
         private FleetDisplayInfoFactory() {
             Initialize();
         }
 
-        protected sealed override void Initialize() { }
+        protected sealed override void Initialize() {
+            _gameMgr = GameReferences.GameManager;
+        }
 
         protected override bool TryMakeColorizedText(ItemInfoID infoID, FleetCmdReport report, out string colorizedText) {
             bool isSuccess = base.TryMakeColorizedText(infoID, report, out colorizedText);
@@ -85,17 +88,18 @@ namespace CodeEnv.Master.GameContent {
                         break;
                     case ItemInfoID.Target:
                         isSuccess = true;
-                        colorizedText = _lineTemplate.Inject(report.Target != null ? report.Target.DebugName : Unknown);
+                        colorizedText = _lineTemplate.Inject(GetTargetText(report.Target, report.Owner));
                         break;
                     case ItemInfoID.TargetDistance:
                         isSuccess = true;
-                        float? targetDistance = CalcTargetDistance(report.Target, report.Position);
-                        colorizedText = _lineTemplate.Inject(targetDistance.HasValue ? GetFormat(infoID).Inject(targetDistance.Value) : Unknown);
+                        string noTgtDistanceValueText;
+                        float? tgtDistance = CalcTargetDistance(report.Target, report.Position, report.Owner, out noTgtDistanceValueText);
+                        colorizedText = _lineTemplate.Inject(tgtDistance.HasValue ? GetFormat(infoID).Inject(tgtDistance.Value) : noTgtDistanceValueText);
                         break;
                     case ItemInfoID.CurrentSpeedSetting:
                         isSuccess = true;
-                        float? speedSettingValue = CalcSpeedSettingValue(report.CurrentSpeedSetting, report.UnitFullSpeed);
-                        string speedSettingText = report.CurrentSpeedSetting != Speed.None ? report.CurrentSpeedSetting.GetValueName() : Unknown;
+                        float? speedSettingValue = CalcSpeedSettingValue(report.CurrentSpeedSetting, report.UnitFullSpeed, report.Owner);
+                        string speedSettingText = GetSpeedSettingText(report.CurrentSpeedSetting, report.Owner);
                         colorizedText = _lineTemplate.Inject(speedSettingText, speedSettingValue.HasValue ? GetFormat(infoID).Inject(speedSettingValue.Value) : Unknown);
                         break;
                     case ItemInfoID.UnitFullSpeed:
@@ -106,7 +110,6 @@ namespace CodeEnv.Master.GameContent {
                         isSuccess = true;
                         colorizedText = _lineTemplate.Inject(report.UnitMaxTurnRate.HasValue ? GetFormat(infoID).Inject(report.UnitMaxTurnRate.Value) : Unknown);
                         break;
-
                     case ItemInfoID.ActualSpeed:
                         isSuccess = true;
                         colorizedText = _lineTemplate.Inject(GetFormat(infoID).Inject(report.__ActualSpeedValue.Value));
@@ -118,20 +121,57 @@ namespace CodeEnv.Master.GameContent {
             return isSuccess;
         }
 
-        private float? CalcSpeedSettingValue(Speed speedSetting, float? fullSpeedValue) {
-            if (speedSetting != Speed.None) {
-                if (fullSpeedValue.HasValue) {
-                    return speedSetting.GetUnitsPerHour(fullSpeedValue.Value);
+        private string GetTargetText(INavigableDestination target, Player owner) {
+            string tgtText = Unknown;
+            if (target != null) {
+                tgtText = target.DebugName;
+            }
+            else {
+                if (owner != null && (owner.IsUser || owner.IsRelationshipWithUser(DiplomaticRelationship.Alliance))) {
+                    tgtText = "None";
                 }
             }
-            return null;
+            return tgtText;
         }
 
-        private float? CalcTargetDistance(INavigableDestination target, Vector3? fleetPosition) {
+        private float? CalcTargetDistance(INavigableDestination target, Vector3? fleetPosition, Player owner, out string noTgtDistanceValueText) {
+            noTgtDistanceValueText = Unknown;
+            if (owner != null && (owner.IsUser || owner.IsRelationshipWithUser(DiplomaticRelationship.Alliance))) {
+                noTgtDistanceValueText = "N/A";
+            }
+
             if (target != null && fleetPosition.HasValue) {
                 return Vector3.Distance(target.Position, fleetPosition.Value);
             }
             return null;
+        }
+
+        private string GetSpeedSettingText(Speed speedSetting, Player owner) {
+            string text = Unknown;
+            if (speedSetting != Speed.None) {
+                text = speedSetting.GetValueName();
+            }
+            else {
+                if (owner != null && (owner.IsUser || owner.IsRelationshipWithUser(DiplomaticRelationship.Alliance))) {
+                    text = Speed.Stop.GetValueName();
+                }
+            }
+            return text;
+        }
+
+        private float? CalcSpeedSettingValue(Speed speedSetting, float? fullSpeedValue, Player owner) {
+            float? speedValue = null;
+            if (speedSetting != Speed.None) {
+                if (fullSpeedValue.HasValue) {
+                    speedValue = speedSetting.GetUnitsPerHour(fullSpeedValue.Value);
+                }
+            }
+            else {
+                if (owner != null && (owner.IsUser || owner.IsRelationshipWithUser(DiplomaticRelationship.Alliance))) {
+                    speedValue = Constants.ZeroF;
+                }
+            }
+            return speedValue;
         }
 
     }

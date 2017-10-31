@@ -23,16 +23,16 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FtlDampener : ARangedEquipment {
 
-        private IFtlDampenerRangeMonitor _rangeMonitor;
-        public IFtlDampenerRangeMonitor RangeMonitor {
-            get { return _rangeMonitor; }
-            set { SetProperty<IFtlDampenerRangeMonitor>(ref _rangeMonitor, value, "RangeMonitor"); }
-        }
-
         public override string DebugName {
             get {
                 return RangeMonitor != null ? DebugNameFormat.Inject(RangeMonitor.DebugName, Name) : Name;
             }
+        }
+
+        private IFtlDampenerRangeMonitor _rangeMonitor;
+        public IFtlDampenerRangeMonitor RangeMonitor {
+            get { return _rangeMonitor; }
+            set { SetProperty<IFtlDampenerRangeMonitor>(ref _rangeMonitor, value, "RangeMonitor"); }
         }
 
         protected bool ShowDebugLog { get { return RangeMonitor != null ? RangeMonitor.ShowDebugLog : true; } }
@@ -46,6 +46,9 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="name">The optional unique name for this equipment. If not provided, the name embedded in the stat will be used.</param>
         public FtlDampener(FtlDampenerStat stat, string name = null) : base(stat, name) { }
 
+        public override bool AreSpecsEqual(AEquipmentStat otherStat) {
+            return Stat == otherStat as FtlDampenerStat;
+        }
     }
 }
 

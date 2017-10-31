@@ -63,6 +63,8 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Framework\FacilityRefitOrder.cs" />
+    <Compile Include="Generic\Framework\CompletedConstruction.cs" />
     <Compile Include="Generic\Framework\ConstructionManager.cs" />
     <Compile Include="Generic\IO\AIconInfo.cs" />
     <Compile Include="Generic\IO\ACmdModuleStat.cs" />
@@ -353,7 +355,7 @@
     <Compile Include="Generic\IO\PlayerPrefsManager.cs" />
     <Compile Include="Generic\Interfaces\Access\IHoveredHudWindow.cs" />
     <Compile Include="Generic\Graphics\FormID.cs" />
-    <Compile Include="Generic\Interfaces\Access\IInteractableHudWindow.cs" />
+    <Compile Include="Generic\Interfaces\Access\IInteractibleHudWindow.cs" />
     <Compile Include="Generic\Interfaces\Access\ITooltipHudWindow.cs" />
     <Compile Include="Generic\IO\NewGamePreferenceSettings.cs" />
     <Compile Include="Generic\IO\LeaderStat.cs" />
@@ -518,8 +520,13 @@
     <Compile Include="Generic\IO\HeroStat.cs" />
     <Compile Include="Generic\Framework\NoHero.cs" />
     <Compile Include="Generic\Framework\NoConstruction.cs" />
-    <Compile Include="Game\Gameplay\OutputsID.cs" />
-    <Compile Include="ResourcesYield.cs" />
+    <Compile Include="Game\Gameplay\OutputID.cs" />
+    <Compile Include="Game\Gameplay\ResourcesYield.cs" />
+    <Compile Include="Generic\Math\OutputIDEqualityComparer.cs" />
+    <Compile Include="Game\Gameplay\OutputsYield.cs" />
+    <Compile Include="Generic\Interfaces\Client\IConstructionManagerClient.cs" />
+    <Compile Include="Generic\Framework\RefitConstructionInfo.cs" />
+    <Compile Include="Generic\Framework\ShipRefitOrder.cs" />
     <Compile Include="ThirdParty\ParticleScaler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\GUI\PlayerViewMode.cs" />

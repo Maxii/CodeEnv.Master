@@ -44,7 +44,7 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmd, ISettlementCm
         }
     }
 
-    public SettlementCmdReport UserReport { get { return Publisher.GetUserReport(); } }
+    public SettlementCmdReport UserReport { get { return Data.Publisher.GetUserReport(); } }
 
     private IOrbitSimulator _celestialOrbitSimulator;
     public IOrbitSimulator CelestialOrbitSimulator {
@@ -54,11 +54,6 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmd, ISettlementCm
             }
             return _celestialOrbitSimulator;
         }
-    }
-
-    private SettlementPublisher _publisher;
-    private SettlementPublisher Publisher {
-        get { return _publisher = _publisher ?? new SettlementPublisher(Data, this); }
     }
 
     private IList<Player> _playersWithInfoAccessToOwner;
@@ -74,8 +69,8 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmd, ISettlementCm
         return new SettlementFormationManager(this);
     }
 
-    protected override ItemHoveredHudManager InitializeHudManager() {
-        return new ItemHoveredHudManager(Publisher);
+    protected override ItemHoveredHudManager InitializeHoveredHudManager() {
+        return new ItemHoveredHudManager(Data.Publisher);
     }
 
     public override void FinalInitialize() {
@@ -85,7 +80,7 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmd, ISettlementCm
 
     #endregion
 
-    public SettlementCmdReport GetReport(Player player) { return Publisher.GetReport(player); }
+    public SettlementCmdReport GetReport(Player player) { return Data.Publisher.GetReport(player); }
 
     public FacilityReport[] GetElementReports(Player player) {
         return Elements.Cast<FacilityItem>().Select(e => e.GetReport(player)).ToArray();
@@ -112,7 +107,7 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmd, ISettlementCm
             // when its Star or any of its Planetoids provides access. They in turn provide access if their IntelCoverage
             // >= Essential. As IntelCoverage of Planetoids, Stars and Systems can't regress, once access is provided
             // it can't be lost which means access to a Settlement's Owner can't be lost either.
-            if (InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
+            if (InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner)) {
                 _playersWithInfoAccessToOwner.Add(player);
                 OnInfoAccessChanged(player);
             }
@@ -131,12 +126,12 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmd, ISettlementCm
     }
 
     protected override void ShowSelectedItemHud() {
+        // 9.10.17 UnitHudWindow's SettlementForm will auto show InteractibleHudWindow's SettlementForm
         if (Owner.IsUser) {
             UnitHudWindow.Instance.Show(FormID.UserSettlement, this);
-            // 9.10.17 UnitHudWindow's UserSettlementForm will auto show InteractableHudWindow's UserSettlementForm
         }
         else {
-            D.Warn("{0}: UnitHudWindow does not yet support showing AI-owned Cmds.", DebugName);
+            UnitHudWindow.Instance.Show(FormID.AiSettlement, this);
         }
     }
 

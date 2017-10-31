@@ -47,6 +47,11 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
         activeCM.RangeMonitor = this;
     }
 
+    [Obsolete("Not currently used")]
+    protected override void RemoveMonitorFrom(ActiveCountermeasure activeCM) {
+        activeCM.RangeMonitor = null;
+    }
+
     protected override void HandleDetectedObjectAdded(IInterceptableOrdnance newlyDetectedThreat) {
         if (ShowDebugLog) {
             //var distanceFromMonitor = Vector3.Distance(newlyDetectedThreat.Position, transform.position);

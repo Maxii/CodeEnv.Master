@@ -18,6 +18,7 @@ namespace CodeEnv.Master.GameContent {
 
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using CodeEnv.Master.Common;
     using Common.LocalResources;
     using UnityEngine;
@@ -135,6 +136,11 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float FullPropulsionPower { get { return IsFtlOperational ? _ftlEngine.FullPropulsionPower : _stlEngine.FullPropulsionPower; } }
 
+        private ShipPublisher _publisher;
+        public ShipPublisher Publisher {
+            get { return _publisher = _publisher ?? new ShipPublisher(this); }
+        }
+
         private Vector3 _intendedHeading;
         /// <summary>
         /// The ship's normalized requested/intended heading in worldspace coordinates.
@@ -169,6 +175,11 @@ namespace CodeEnv.Master.GameContent {
 
         public override IntVector3 SectorID { get { return GameReferences.SectorGrid.GetSectorIDThatContains(Position); } }
 
+        public new ShipDesign Design {
+            get { return base.Design as ShipDesign; }
+            set { base.Design = value; }
+        }
+
         public new ShipInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as ShipInfoAccessController; } }
 
         protected new IShip Item { get { return base.Item as IShip; } }
@@ -196,25 +207,17 @@ namespace CodeEnv.Master.GameContent {
 
         public ShipData(IShip ship, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, ShipHullEquipment hullEquipment,
             IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<ElementSensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators,
-            Priority hqPriority, Engine stlEngine, ShipCombatStance combatStance, float constructionCost, string designName)
-            : this(ship, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, hqPriority, stlEngine, null,
-                  combatStance, constructionCost, designName) {
-        }
-
-        public ShipData(IShip ship, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, ShipHullEquipment hullEquipment,
-            IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<ElementSensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators,
-            Priority hqPriority, Engine stlEngine, FtlEngine ftlEngine, ShipCombatStance combatStance, float constructionCost, string designName)
-            : base(ship, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, hqPriority, constructionCost, designName) {
-            Science = hullEquipment.Science;
-            Culture = hullEquipment.Culture;
-            Income = hullEquipment.Income;
+            Engine stlEngine, FtlEngine ftlEngine, ShipDesign design)
+            : base(ship, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, design) {
 
             _stlEngine = stlEngine;
             _ftlEngine = ftlEngine;
             if (ftlEngine != null) {
                 ftlEngine.isOperationalChanged += IsFtlOperationalChangedEventHandler;
             }
-            CombatStance = combatStance;
+
+            Outputs = MakeOutputs();
+            CombatStance = design.CombatStance;
             InitializeLocalValuesAndReferences();
         }
 
@@ -248,6 +251,9 @@ namespace CodeEnv.Master.GameContent {
             RefreshFullSpeedValue();
         }
 
+        public ShipReport GetReport(Player player) { return Publisher.GetReport(player); }
+
+
         #region Event and Property Change Handlers
 
         private void IsFtlOperationalChangedEventHandler(object sender, EventArgs e) {
@@ -269,6 +275,40 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
+
+        public override void HandleConstructionComplete() {
+            base.HandleConstructionComplete();
+            Outputs = MakeOutputs();
+        }
+
+        public override void HandleRefitCanceled(RefitStorage valuesBeforeRefit) {
+            base.HandleRefitCanceled(valuesBeforeRefit);
+            Outputs = MakeOutputs();
+        }
+
+        private OutputsYield MakeOutputs() {
+            IList<OutputsYield.OutputValuePair> outputPairs = new List<OutputsYield.OutputValuePair>(7);
+
+            float nonHullExpense = HullEquipment.Weapons.Sum(w => w.Expense) + PassiveCountermeasures.Sum(pcm => pcm.Expense)
+                + ActiveCountermeasures.Sum(acm => acm.Expense) + Sensors.Sum(s => s.Expense) + ShieldGenerators.Sum(gen => gen.Expense)
+                + _stlEngine.Expense;
+            nonHullExpense += _ftlEngine != null ? _ftlEngine.Expense : Constants.ZeroF;
+
+            var allOutputIDs = Enums<OutputID>.GetValues(excludeDefault: true);
+            foreach (var id in allOutputIDs) {
+                float yield;
+                if (HullEquipment.TryGetYield(id, out yield)) {
+                    if (id == OutputID.Expense) {
+                        yield += nonHullExpense;
+                    }
+                    else if (id == OutputID.NetIncome) {
+                        yield -= nonHullExpense;
+                    }
+                    outputPairs.Add(new OutputsYield.OutputValuePair(id, yield));
+                }
+            }
+            return new OutputsYield(outputPairs.ToArray());
+        }
 
         /// <summary>
         /// Refreshes the full speed value the ship is capable of achieving.

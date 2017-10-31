@@ -30,115 +30,53 @@ using UnityEngine;
 public class OutputsGuiElement : AGuiElement {
 
     private const string OutputValueFormat_Label = Constants.FormatInt_1DMin;
-
     private const string GeneralTooltipFormat = "{0}[{1}]";
-
-    private const string NetIncomeTooltipFormat = "{0}[{1}] ({2}-{3})";
-
+    private const string NetIncomeTooltipFormat = "{0}[{1}] {2}-{3}";   // ()'s cause tooltip to fade out
     private const string OutputValueFormat_Tooltip = Constants.FormatFloat_1DpMax;
-
-    private static IList<OutputsID> OutputsToShow_UseNetIncome = new OutputsID[] {
-        OutputsID.Food, OutputsID.Prodn, OutputsID.NetIncome, OutputsID.Science, OutputsID.Culture
-    };
-
-    private static IList<OutputsID> OutputsToShow_UseIncomeExpense = new OutputsID[] {
-        OutputsID.Food, OutputsID.Prodn, OutputsID.Income, OutputsID.Expense, OutputsID.Science, OutputsID.Culture
-    };
-
 
 #pragma warning disable 0649
 
     [SerializeField]
     private UIWidget[] _containers;
 
+#pragma warning restore 0649
+
     [Tooltip("Check to select between showing 'NetIncome' or 'Income and Expense'")]
     [SerializeField]
     private bool _useNetIncome = true;
 
-#pragma warning restore 0649
-
-    private bool _isFoodPropSet;   // can be a null if unknown
-    private float? _food;
-    public float? Food {
-        get { return _food; }
+    private bool _isOutputsPropSet;   // can be default(OutputsYield) if no access to Outputs
+    private OutputsYield _outputs;
+    public OutputsYield Outputs {
+        get { return _outputs; }
         set {
-            D.Assert(!_isFoodPropSet); // occurs only once between Resets
-            _food = value;
-            FoodPropSetHandler();
-        }
-    }
-
-    private bool _isProdnPropSet;   // can be a null if unknown
-    private float? _production;
-    public float? Production {
-        get { return _production; }
-        set {
-            D.Assert(!_isFoodPropSet); // occurs only once between Resets
-            _production = value;
-            ProductionPropSetHandler();
-        }
-    }
-
-    private bool _isIncomePropSet;   // can be a null if unknown
-    private float? _income;
-    public float? Income {
-        get { return _income; }
-        set {
-            D.Assert(!_isFoodPropSet); // occurs only once between Resets
-            _income = value;
-            IncomePropSetHandler();
-        }
-    }
-
-    private bool _isExpensePropSet;   // can be a null if unknown
-    private float? _expense;
-    public float? Expense {
-        get { return _expense; }
-        set {
-            D.Assert(!_isFoodPropSet); // occurs only once between Resets
-            _expense = value;
-            ExpensePropSetHandler();
-        }
-    }
-
-    private bool _isSciencePropSet;   // can be a null if unknown
-    private float? _science;
-    public float? Science {
-        get { return _science; }
-        set {
-            D.Assert(!_isFoodPropSet); // occurs only once between Resets
-            _science = value;
-            SciencePropSetHandler();
-        }
-    }
-
-    private bool _isCulturePropSet;   // can be a null if unknown
-    private float? _culture;
-    public float? Culture {
-        get { return _culture; }
-        set {
-            D.Assert(!_isFoodPropSet); // occurs only once between Resets
-            _culture = value;
-            CulturePropSetHandler();
+            D.Assert(!_isOutputsPropSet); // occurs only once between Resets
+            _outputs = value;
+            OutputsPropSetHandler();
         }
     }
 
     public override GuiElementID ElementID { get { return GuiElementID.Outputs; } }
 
-    public override bool IsInitialized {
-        get { return _isCulturePropSet && _isExpensePropSet && _isFoodPropSet && _isIncomePropSet && _isProdnPropSet && _isSciencePropSet; }
-    }
-
+    public override bool IsInitialized { get { return _isOutputsPropSet; } }
 
     /// <summary>
-    /// Lookup for ResourceIDs, keyed by the Resource container's gameObject. 
-    /// Used to show the right ResourceID tooltip when the container is hovered over.
+    /// Lookup for OutputID, keyed by the Output container's gameObject. 
+    /// Used to show the right OutputID tooltip when the container is hovered over.
     /// </summary>
-    private IDictionary<GameObject, OutputsID> _outputsIDLookup;
-    private float _totalOutputYield = Constants.ZeroF;
+    private IDictionary<GameObject, OutputID> _outputsIDLookup;
+    private float? _totalOutputsYield = null;
+    private UILabel _unknownLabel;
 
     protected override void InitializeValuesAndReferences() {
-        _outputsIDLookup = new Dictionary<GameObject, OutputsID>(_containers.Length);
+        _outputsIDLookup = new Dictionary<GameObject, OutputID>(_containers.Length);
+
+        _unknownLabel = gameObject.GetSingleComponentInImmediateChildren<UILabel>(includeInactive: true);
+        if (_unknownLabel.gameObject.activeSelf) {   // 10.21.17 If initially inactive, this usage can't result in unknown
+            MyEventListener.Get(_unknownLabel.gameObject).onTooltip += UnknownTooltipEventHandler;
+            NGUITools.SetActive(_unknownLabel.gameObject, false);
+        }
+
         InitializeContainers();
     }
 
@@ -151,6 +89,15 @@ public class OutputsGuiElement : AGuiElement {
 
     #region Event and Property Change Handlers
 
+    private void UnknownTooltipEventHandler(GameObject go, bool show) {
+        if (show) {
+            TooltipHudWindow.Instance.Show("Outputs unknown");
+        }
+        else {
+            TooltipHudWindow.Instance.Hide();
+        }
+    }
+
     private void OutputsContainerTooltipEventHandler(GameObject containerGo, bool show) {
         if (show) {
             var outputsID = _outputsIDLookup[containerGo];
@@ -162,44 +109,8 @@ public class OutputsGuiElement : AGuiElement {
         }
     }
 
-
-    private void FoodPropSetHandler() {
-        _isFoodPropSet = true;
-        if (IsInitialized) {
-            PopulateMemberWidgetValues();
-        }
-    }
-
-    private void ProductionPropSetHandler() {
-        _isProdnPropSet = true;
-        if (IsInitialized) {
-            PopulateMemberWidgetValues();
-        }
-    }
-
-    private void IncomePropSetHandler() {
-        _isIncomePropSet = true;
-        if (IsInitialized) {
-            PopulateMemberWidgetValues();
-        }
-    }
-
-    private void ExpensePropSetHandler() {
-        _isExpensePropSet = true;
-        if (IsInitialized) {
-            PopulateMemberWidgetValues();
-        }
-    }
-
-    private void SciencePropSetHandler() {
-        _isSciencePropSet = true;
-        if (IsInitialized) {
-            PopulateMemberWidgetValues();
-        }
-    }
-
-    private void CulturePropSetHandler() {
-        _isCulturePropSet = true;
+    private void OutputsPropSetHandler() {
+        _isOutputsPropSet = true;
         if (IsInitialized) {
             PopulateMemberWidgetValues();
         }
@@ -209,122 +120,108 @@ public class OutputsGuiElement : AGuiElement {
 
     protected override void PopulateMemberWidgetValues() {
         base.PopulateMemberWidgetValues();
-        IList<OutputsID> outputsToShow = _useNetIncome ? OutputsToShow_UseNetIncome : OutputsToShow_UseIncomeExpense;
-        int outputsToShowCount = outputsToShow.Count;
+
+        if (Outputs == default(OutputsYield)) {
+            HandleValuesUnknown();
+            return;
+        }
+
+        OutputID[] outputsToShow = _useNetIncome ? Outputs.OutputsPresent.Except(OutputID.Income, OutputID.Expense).ToArray()
+            : Outputs.OutputsPresent.Except(OutputID.NetIncome).ToArray();
+
+        int outputsToShowCount = outputsToShow.Length;
         D.Assert(_containers.Length >= outputsToShowCount);
-        float cumOutputYield = Constants.ZeroF;
+        float? cumOutputYield = null;
         for (int i = Constants.Zero; i < outputsToShowCount; i++) {
             UIWidget container = _containers[i];
             NGUITools.SetActive(container.gameObject, true);
 
             UISprite iconSprite = container.gameObject.GetSingleComponentInChildren<UISprite>();
-            var outputID = outputsToShow[i];
-            iconSprite.atlas = outputID.GetIconAtlasID().GetAtlas();
-            iconSprite.spriteName = outputID.GetIconFilename();
-            _outputsIDLookup.Add(container.gameObject, outputID);
+            OutputID outputToShow = outputsToShow[i];
+            iconSprite.atlas = outputToShow.GetIconAtlasID().GetAtlas();
+            iconSprite.spriteName = outputToShow.GetIconFilename();
+            _outputsIDLookup.Add(container.gameObject, outputToShow);
 
-            float yield = GetOutputYield(outputID);
-            cumOutputYield += yield;
+            float? yield = GetOutputYield(outputToShow);
+            cumOutputYield.NullableSum(yield);
+
+            GameColor yieldColor = GameColor.White;
+            if (yield.HasValue) {
+                if (outputToShow == OutputID.Income) {
+                    yieldColor = GameColor.Green;
+                }
+                else if (outputToShow == OutputID.Expense) {
+                    yieldColor = GameColor.Red;
+                }
+                else if (outputToShow == OutputID.NetIncome) {
+                    yieldColor = yield.Value < Constants.ZeroF ? GameColor.Red : GameColor.Green;
+                }
+            }
+            string yieldLabelText = yield.HasValue ? OutputValueFormat_Label.Inject(Mathf.RoundToInt(yield.Value)) : Unknown;
             var yieldLabel = container.gameObject.GetSingleComponentInChildren<UILabel>();
-            yieldLabel.text = OutputValueFormat_Label.Inject(Mathf.RoundToInt(yield));
+            yieldLabel.text = yieldLabelText.SurroundWith(yieldColor);
         }
-        _totalOutputYield = cumOutputYield;
-        D.Assert(_totalOutputYield >= Constants.ZeroF);
+        _totalOutputsYield = cumOutputYield;
     }
 
-    private float GetOutputYield(OutputsID outputID) {
-        float outputYield;
-        switch (outputID) {
-            case OutputsID.Food:
-                outputYield = Food.HasValue ? Food.Value : Constants.ZeroF;
-                break;
-            case OutputsID.Prodn:
-                outputYield = Production.HasValue ? Production.Value : Constants.ZeroF;
-                break;
-            case OutputsID.Income:
-                outputYield = Income.HasValue ? Income.Value : Constants.ZeroF;
-                break;
-            case OutputsID.Expense:
-                outputYield = Expense.HasValue ? Expense.Value : Constants.ZeroF;
-                break;
-            case OutputsID.NetIncome:
-                if (Income.HasValue) {
-                    outputYield = Expense.HasValue ? Income.Value - Expense.Value : Income.Value;
-                }
-                else {
-                    outputYield = Expense.HasValue ? -Expense.Value : Constants.ZeroF;
-                }
-                break;
-            case OutputsID.Science:
-                outputYield = Science.HasValue ? Science.Value : Constants.ZeroF;
-                break;
-            case OutputsID.Culture:
-                outputYield = Culture.HasValue ? Culture.Value : Constants.ZeroF;
-                break;
-            case OutputsID.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(outputID));
+    private void HandleValuesUnknown() {
+        NGUITools.SetActive(_unknownLabel.gameObject, true);
+    }
+
+    private float? GetOutputYield(OutputID outputToShow) {
+        D.AssertNotDefault((int)outputToShow);
+
+        float? outputYield = null;
+        if (Outputs.IsPresent(outputToShow)) {
+            outputYield = Outputs.GetYield(outputToShow);
         }
         return outputYield;
     }
 
-    private string GetTooltipText(OutputsID outputsID) {
+    private string GetTooltipText(OutputID outputID) {
         string valueText;
-        switch (outputsID) {
-            case OutputsID.Food:
-                valueText = Food.HasValue ? OutputValueFormat_Tooltip.Inject(Food) : Unknown;
+        float? outputValue = null;
+        switch (outputID) {
+            case OutputID.Food:
+                D.Assert(Outputs.IsPresent(OutputID.Food));
+                outputValue = Outputs.GetYield(OutputID.Food);
+                valueText = outputValue.HasValue ? OutputValueFormat_Tooltip.Inject(outputValue.Value) : Unknown;
                 break;
-            case OutputsID.Prodn:
-                valueText = Production.HasValue ? OutputValueFormat_Tooltip.Inject(Production) : Unknown;
+            case OutputID.Production:
+                D.Assert(Outputs.IsPresent(OutputID.Production));
+                outputValue = Outputs.GetYield(OutputID.Production);
+                valueText = outputValue.HasValue ? OutputValueFormat_Tooltip.Inject(outputValue.Value) : Unknown;
                 break;
-            case OutputsID.Income:
-                valueText = Income.HasValue ? OutputValueFormat_Tooltip.Inject(Income) : Unknown;
+            case OutputID.Income:
+                D.Assert(Outputs.IsPresent(OutputID.Income));
+                outputValue = Outputs.GetYield(OutputID.Income);
+                valueText = outputValue.HasValue ? OutputValueFormat_Tooltip.Inject(outputValue.Value) : Unknown;
                 break;
-            case OutputsID.Expense:
-                valueText = Expense.HasValue ? OutputValueFormat_Tooltip.Inject(Expense) : Unknown;
+            case OutputID.Expense:
+                D.Assert(Outputs.IsPresent(OutputID.Expense));
+                outputValue = Outputs.GetYield(OutputID.Expense);
+                valueText = outputValue.HasValue ? OutputValueFormat_Tooltip.Inject(outputValue.Value) : Unknown;
                 break;
-            case OutputsID.NetIncome:
-                return GetNetIncomeText();
-            case OutputsID.Science:
-                valueText = Science.HasValue ? OutputValueFormat_Tooltip.Inject(Science) : Unknown;
+            case OutputID.NetIncome:
+                D.Assert(Outputs.IsPresent(OutputID.NetIncome));
+                outputValue = Outputs.GetYield(OutputID.NetIncome);
+                valueText = outputValue.HasValue ? OutputValueFormat_Tooltip.Inject(outputValue.Value) : Unknown;
                 break;
-            case OutputsID.Culture:
-                valueText = Culture.HasValue ? OutputValueFormat_Tooltip.Inject(Culture) : Unknown;
+            case OutputID.Science:
+                D.Assert(Outputs.IsPresent(OutputID.Science));
+                outputValue = Outputs.GetYield(OutputID.Science);
+                valueText = outputValue.HasValue ? OutputValueFormat_Tooltip.Inject(outputValue.Value) : Unknown;
                 break;
-            case OutputsID.None:
+            case OutputID.Culture:
+                D.Assert(Outputs.IsPresent(OutputID.Culture));
+                outputValue = Outputs.GetYield(OutputID.Culture);
+                valueText = outputValue.HasValue ? OutputValueFormat_Tooltip.Inject(outputValue.Value) : Unknown;
+                break;
+            case OutputID.None:
             default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(outputsID));
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(outputID));
         }
-        return GeneralTooltipFormat.Inject(outputsID.GetValueName(), valueText);
-    }
-
-    private string GetNetIncomeText() {
-        string valueText;
-        string incomeText;
-        string expenseText;
-        if (Income.HasValue) {
-            incomeText = OutputValueFormat_Tooltip.Inject(Income);
-            if (Expense.HasValue) {
-                valueText = OutputValueFormat_Tooltip.Inject(Income - Expense);
-                expenseText = OutputValueFormat_Tooltip.Inject(Income);
-            }
-            else {
-                valueText = OutputValueFormat_Tooltip.Inject(Income);
-                expenseText = Unknown;
-            }
-        }
-        else {
-            incomeText = Unknown;
-            if (Expense.HasValue) {
-                valueText = OutputValueFormat_Tooltip.Inject(-Expense);
-                expenseText = OutputValueFormat_Tooltip.Inject(Expense);
-            }
-            else {
-                valueText = Unknown;
-                expenseText = Unknown;
-            }
-        }
-        return NetIncomeTooltipFormat.Inject(OutputsID.NetIncome.GetValueName(), valueText, incomeText, expenseText);
+        return GeneralTooltipFormat.Inject(outputID.GetValueName(), valueText);
     }
 
     /// <summary>
@@ -334,14 +231,10 @@ public class OutputsGuiElement : AGuiElement {
         _containers.ForAll(container => {
             NGUITools.SetActive(container.gameObject, false);
         });
+        NGUITools.SetActive(_unknownLabel.gameObject, false);
         _outputsIDLookup.Clear();
-        _isFoodPropSet = false;
-        _isProdnPropSet = false;
-        _isIncomePropSet = false;
-        _isExpensePropSet = false;
-        _isSciencePropSet = false;
-        _isCulturePropSet = false;
-        _totalOutputYield = Constants.ZeroF;
+        _totalOutputsYield = null;
+        _isOutputsPropSet = false;
     }
 
     #region Cleanup
@@ -350,6 +243,7 @@ public class OutputsGuiElement : AGuiElement {
         foreach (var container in _containers) {
             MyEventListener.Get(container.gameObject).onTooltip -= OutputsContainerTooltipEventHandler;
         }
+        MyEventListener.Get(_unknownLabel.gameObject).onTooltip -= UnknownTooltipEventHandler;
     }
 
     protected override void Cleanup() {
@@ -374,15 +268,11 @@ public class OutputsGuiElement : AGuiElement {
 
     public int CompareTo(OutputsGuiElement other) {
         int result;
-        if (_totalOutputYield == Constants.ZeroF) {
-            result = other._totalOutputYield == Constants.ZeroF ? Constants.Zero : Constants.MinusOne;
-        }
-        else if (Food == null) {
-            // an unknown yield (Resources == null) sorts higher than a yield that is Zero
-            result = other.Food == null ? Constants.Zero : (other._totalOutputYield == Constants.ZeroF) ? Constants.One : Constants.MinusOne;
+        if (!_totalOutputsYield.HasValue) {
+            result = !other._totalOutputsYield.HasValue ? Constants.Zero : Constants.MinusOne;
         }
         else {
-            result = (other._totalOutputYield == Constants.ZeroF || other.Food == null) ? Constants.One : _totalOutputYield.CompareTo(other._totalOutputYield);
+            result = !other._totalOutputsYield.HasValue ? Constants.One : _totalOutputsYield.Value.CompareTo(other._totalOutputsYield.Value);
         }
         return result;
     }

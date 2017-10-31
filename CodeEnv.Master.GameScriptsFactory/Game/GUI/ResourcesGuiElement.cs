@@ -34,7 +34,7 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
     /// The category of resources to be displayed. Use None if all resources present should be displayed.
     /// <remarks>This will cause these resources to be acquired from the provided ResourceYield.</remarks>
     /// </summary>
-    [Tooltip("The category of resources to be displayed. Use None if all resources present should be displayed.")]
+    [Tooltip("The category of resources to be displayed.")]
     [SerializeField]
     private ResourceCategory _resourceCategory = ResourceCategory.None;
 
@@ -55,16 +55,6 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
             ResourcesPropSetHandler();
         }
     }
-    ////private bool _isResourcesSet;   // can be a ResourceYield or null if unknown
-    ////private ResourceYield? _resources;
-    ////public ResourceYield? Resources {
-    ////    get { return _resources; }
-    ////    set {
-    ////        D.Assert(!_isResourcesSet); // occurs only once between Resets
-    ////        _resources = value;
-    ////        ResourcesPropSetHandler();
-    ////    }
-    ////}
 
     public override GuiElementID ElementID { get { return GuiElementID.Resources; } }
 
@@ -80,9 +70,11 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
 
     protected override void InitializeValuesAndReferences() {
         _resourceIDLookup = new Dictionary<GameObject, ResourceID>(_containers.Length);
-        _unknownLabel = gameObject.GetSingleComponentInImmediateChildren<UILabel>();
-        MyEventListener.Get(_unknownLabel.gameObject).onTooltip += UnknownTooltipEventHandler;
-        NGUITools.SetActive(_unknownLabel.gameObject, false);
+        _unknownLabel = gameObject.GetSingleComponentInImmediateChildren<UILabel>(includeInactive: true);
+        if (_unknownLabel.gameObject.activeSelf) {   // 10.21.17 If initially inactive, this usage can't result in unknown
+            MyEventListener.Get(_unknownLabel.gameObject).onTooltip += UnknownTooltipEventHandler;
+            NGUITools.SetActive(_unknownLabel.gameObject, false);
+        }
 
         InitializeContainers();
     }
@@ -131,22 +123,17 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
             return;
         }
 
-        IList<ResourceID> resourcesPresent;
-        if (_resourceCategory == ResourceCategory.None) {
-            resourcesPresent = Resources.ResourcesPresent.ToList();
-        }
-        else {
-            resourcesPresent = Resources.ResourcesPresent.Where(res => res.GetResourceCategory() == _resourceCategory).ToList();
-        }
-        int resourcesCount = resourcesPresent.Count;
+        IList<ResourceID> resourceIDsPresent = Resources.GetResourceIDs(_resourceCategory);
+        int resourcesCount = resourceIDsPresent.Count;
         D.Assert(_containers.Length >= resourcesCount);
+
         float? cumYield = Constants.ZeroF;
         for (int i = Constants.Zero; i < resourcesCount; i++) {
             UIWidget container = _containers[i];
             NGUITools.SetActive(container.gameObject, true);
 
             UISprite iconSprite = container.gameObject.GetSingleComponentInChildren<UISprite>();
-            var resourceID = resourcesPresent[i];
+            var resourceID = resourceIDsPresent[i];
             iconSprite.atlas = resourceID.GetIconAtlasID().GetAtlas();
             iconSprite.spriteName = resourceID.GetIconFilename();
             _resourceIDLookup.Add(container.gameObject, resourceID);
@@ -158,41 +145,6 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
         }
         _totalYield = cumYield;
     }
-    ////protected override void PopulateMemberWidgetValues() {
-    ////    base.PopulateMemberWidgetValues();
-    ////    if (!Resources.HasValue) {
-    ////        HandleValuesUnknown();
-    ////        return;
-    ////    }
-
-    ////    IList<ResourceID> resourcesPresent;
-    ////    if (_resourceCategory == ResourceCategory.None) {
-    ////        resourcesPresent = Resources.Value.ResourcesPresent.ToList();
-    ////    }
-    ////    else {
-    ////        resourcesPresent = Resources.Value.ResourcesPresent.Where(res => res.GetResourceCategory() == _resourceCategory).ToList();
-    ////    }
-    ////    int resourcesCount = resourcesPresent.Count;
-    ////    D.Assert(_containers.Length >= resourcesCount);
-    ////    float cumYield = Constants.ZeroF;
-    ////    for (int i = Constants.Zero; i < resourcesCount; i++) {
-    ////        UIWidget container = _containers[i];
-    ////        NGUITools.SetActive(container.gameObject, true);
-
-    ////        UISprite iconSprite = container.gameObject.GetSingleComponentInChildren<UISprite>();
-    ////        var resourceID = resourcesPresent[i];
-    ////        iconSprite.atlas = resourceID.GetIconAtlasID().GetAtlas();
-    ////        iconSprite.spriteName = resourceID.GetIconFilename();
-    ////        _resourceIDLookup.Add(container.gameObject, resourceID);
-
-    ////        float yield = Resources.Value.GetYield(resourceID);
-    ////        cumYield += yield;
-    ////        var yieldLabel = container.gameObject.GetSingleComponentInChildren<UILabel>();
-    ////        yieldLabel.text = ResourceYieldFormat_Label.Inject(Mathf.RoundToInt(yield));
-    ////    }
-    ////    _totalYield = cumYield;
-    ////    D.Assert(_totalYield >= Constants.ZeroF);
-    ////}
 
     private void HandleValuesUnknown() {
         NGUITools.SetActive(_unknownLabel.gameObject, true);
@@ -230,6 +182,7 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
 
     protected override void __ValidateOnAwake() {
         base.__ValidateOnAwake();
+        D.AssertNotDefault((int)_resourceCategory);
         Utility.ValidateNotNullOrEmpty<UIWidget>(_containers);
         foreach (var container in _containers) {
             D.AssertNotNull(container);
@@ -239,7 +192,6 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
     #endregion
 
     #region IComparable<ResourcesGuiElement> Members
-
 
     public int CompareTo(ResourcesGuiElement other) {
         int result;
@@ -251,21 +203,6 @@ public class ResourcesGuiElement : AGuiElement, IComparable<ResourcesGuiElement>
         }
         return result;
     }
-    ////public int CompareTo(ResourcesGuiElement other) {
-    ////    int result;
-    ////    if (_totalYield == Constants.ZeroF) {
-    ////        result = other._totalYield == Constants.ZeroF ? Constants.Zero : Constants.MinusOne;
-    ////    }
-    ////    else if (Resources == null) {
-    ////        // an unknown yield (Resources == null) sorts higher than a yield that is Zero
-    ////        result = other.Resources == null ? Constants.Zero : (other._totalYield == Constants.ZeroF) ? Constants.One : Constants.MinusOne;
-    ////    }
-    ////    else {
-    ////        result = (other._totalYield == Constants.ZeroF || other.Resources == null) ? Constants.One : _totalYield.CompareTo(other._totalYield);
-    ////    }
-    ////    Nullable.Compare<float>(_totalYield, other._totalYield);
-    ////    return result;
-    ////}
 
     #endregion
 

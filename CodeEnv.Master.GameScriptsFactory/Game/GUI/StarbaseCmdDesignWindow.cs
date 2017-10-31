@@ -45,18 +45,14 @@ public class StarbaseCmdDesignWindow : AUnitDesignWindow {
         return _gameMgr.PlayersDesigns.GetAllUserStarbaseCmdDesigns(includeObsolete).Cast<AUnitMemberDesign>();
     }
 
-    protected override bool IsDesignContentEqual(AUnitMemberDesign previousDesign, AUnitMemberDesign newDesign) {
-        return GameUtility.IsDesignContentEqual(previousDesign as StarbaseCmdDesign, newDesign as StarbaseCmdDesign);
-    }
-
     protected override bool TryGetCreateDesignPopupContent(out string popupTitle, out List<string> popupContent) {
         popupTitle = null;
         popupContent = null;
         return false;
     }
 
-    protected override AUnitMemberDesign GetEmptyTemplateDesign(string designNameHint) {
-        D.AssertNull(designNameHint);
+    protected override AUnitMemberDesign GetEmptyTemplateDesign(string emptyTemplateHint) {
+        D.AssertNull(emptyTemplateHint);
         return _gameMgr.PlayersDesigns.GetUserStarbaseCmdDesign(TempGameValues.EmptyStarbaseCmdTemplateDesignName);
     }
 

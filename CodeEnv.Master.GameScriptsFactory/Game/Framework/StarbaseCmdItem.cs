@@ -37,11 +37,6 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd,
 
     public StarbaseCmdReport UserReport { get { return GetReport(_gameMgr.UserPlayer); } }
 
-    private StarbasePublisher _publisher;
-    private StarbasePublisher Publisher {
-        get { return _publisher = _publisher ?? new StarbasePublisher(Data, this); }
-    }
-
     private Rigidbody _highOrbitRigidbody;
 
     #region Initialization
@@ -50,8 +45,8 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd,
         return new StarbaseFormationManager(this);
     }
 
-    protected override ItemHoveredHudManager InitializeHudManager() {
-        return new ItemHoveredHudManager(Publisher);
+    protected override ItemHoveredHudManager InitializeHoveredHudManager() {
+        return new ItemHoveredHudManager(Data.Publisher);
     }
 
     protected override SectorViewHighlightManager InitializeSectorViewHighlightMgr() {
@@ -65,7 +60,7 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd,
 
     #endregion
 
-    public StarbaseCmdReport GetReport(Player player) { return Publisher.GetReport(player); }
+    public StarbaseCmdReport GetReport(Player player) { return Data.Publisher.GetReport(player); }
 
     public FacilityReport[] GetElementReports(Player player) {
         return Elements.Cast<FacilityItem>().Select(e => e.GetReport(player)).ToArray();
@@ -76,12 +71,12 @@ public class StarbaseCmdItem : AUnitBaseCmdItem, IStarbaseCmd, IStarbaseCmd_Ltd,
     }
 
     protected override void ShowSelectedItemHud() {
+        // 9.10.17 UnitHudWindow's StarbaseForm will auto show InteractibleHudWindow's StarbaseForm
         if (Owner.IsUser) {
             UnitHudWindow.Instance.Show(FormID.UserStarbase, this);
-            // 9.10.17 UnitHudWindow's UserStarbaseForm will auto show InteractableHudWindow's UserStarbaseForm
         }
         else {
-            D.Warn("{0}: UnitHudWindow does not yet support showing AI-owned Cmds.", DebugName);
+            UnitHudWindow.Instance.Show(FormID.AiStarbase, this);
         }
     }
 

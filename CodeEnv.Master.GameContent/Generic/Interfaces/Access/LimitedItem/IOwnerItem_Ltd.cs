@@ -45,6 +45,11 @@ namespace CodeEnv.Master.GameContent {
         Player Owner_Debug { get; }
 
         /// <summary>
+        /// The display name of this item.
+        /// </summary>
+        string Name { get; }
+
+        /// <summary>
         /// Debug version of TryGetOwner without the validation that 
         /// requestingPlayer already knows owner when OwnerInfoAccess is available.
         /// <remarks>Used by PlayerAIMgr's discover new players process.</remarks>

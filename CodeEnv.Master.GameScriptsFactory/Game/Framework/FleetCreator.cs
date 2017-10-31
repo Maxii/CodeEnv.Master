@@ -41,8 +41,8 @@ public class FleetCreator : AAutoUnitCreator {
         _elements = new List<ShipItem>();
         foreach (var designName in Configuration.ElementDesignNames) {
             ShipDesign design = _gameMgr.PlayersDesigns.GetShipDesign(Owner, designName);
-            FollowableItemCameraStat cameraStat = MakeElementCameraStat(design.HullStat);
-            var ship = _factory.MakeShipInstance(Owner, cameraStat, design, gameObject);
+            string name = _factory.__GetUniqueShipName(design.DesignName);
+            var ship = _factory.MakeShipInstance(Owner, design, name, gameObject);
             _elements.Add(ship);
         }
     }
@@ -83,7 +83,7 @@ public class FleetCreator : AAutoUnitCreator {
 
     protected override void BeginElementsOperations() {
         LogEvent();
-        _elements.ForAll(e => e.CommenceOperations());
+        _elements.ForAll(e => e.CommenceOperations(isInitialConstructionNeeded: false));
     }
 
     protected override bool BeginCommandOperations() {
@@ -99,6 +99,7 @@ public class FleetCreator : AAutoUnitCreator {
         return new FleetCmdCameraStat(minViewDistance, optViewDistanceAdder, fov: 60F);
     }
 
+    [Obsolete("Moved to UnitFactory")]
     private FollowableItemCameraStat MakeElementCameraStat(ShipHullStat hullStat) {
         ShipHullCategory hullCat = hullStat.HullCategory;
         float fov;

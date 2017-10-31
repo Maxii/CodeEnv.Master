@@ -170,7 +170,7 @@ public class UniverseCreator {
 
     /// <summary>
     /// Deploys and configures all unit creators that should be placed before runtime begins.
-    /// <remarks>Handles GameSettings.__UseDebugCreatorsOnly and GameSettings.__DeployAdditionalAICreators.</remarks>
+    /// <remarks>Handles __UseDebugCreatorsOnly, __DeployAdditionalAICreators and __DeployAdditionalAICreators from GameSettings.</remarks>
     /// </summary>
     public void DeployAndConfigureInitialUnitCreators() {
         ADebugUnitCreator[] existingDebugCreators = UniverseFolder.Instance.GetComponentsInChildren<ADebugUnitCreator>();
@@ -194,7 +194,7 @@ public class UniverseCreator {
             return;
         }
 
-        // Handle the user first
+        // Handle the user first...
         var userPlayer = gameSettings.UserPlayer;
         var userPlayerStartLevel = gameSettings.UserStartLevel;
 
@@ -216,6 +216,33 @@ public class UniverseCreator {
         _unitCreators.AddRange(settlementCreatorsDeployed);
         var settlementDebugCreatorsDeployed = settlementCreatorsDeployed.Where(c => c is ADebugUnitCreator).Cast<ADebugUnitCreator>();
         settlementDebugCreators = settlementDebugCreators.Except(settlementDebugCreatorsDeployed);
+
+        // ... including any additional User creators to deploy
+        if (gameSettings.__DeployAdditionalUserCreators) {
+            int additionalDeployedCreatorCount = Constants.Zero;
+
+            fleetQty = gameSettings.__AdditionalFleetCreatorQty;
+            fleetCreatorsDeployed = DeployAndConfigureAdditionalFleetCreators(userPlayer, fleetDebugCreators, fleetQty);
+            additionalDeployedCreatorCount += fleetCreatorsDeployed.Count;
+            _unitCreators.AddRange(fleetCreatorsDeployed);
+            fleetDebugCreatorsDeployed = fleetCreatorsDeployed.Where(c => c is ADebugUnitCreator).Cast<ADebugUnitCreator>();
+            fleetDebugCreators = fleetDebugCreators.Except(fleetDebugCreatorsDeployed);
+
+            starbaseQty = gameSettings.__AdditionalStarbaseCreatorQty;
+            starbaseCreatorsDeployed = DeployAndConfigureAdditionalStarbaseCreators(userPlayer, starbaseDebugCreators, starbaseQty);
+            additionalDeployedCreatorCount += starbaseCreatorsDeployed.Count;
+            _unitCreators.AddRange(starbaseCreatorsDeployed);
+            starbaseDebugCreatorsDeployed = starbaseCreatorsDeployed.Where(c => c is ADebugUnitCreator).Cast<ADebugUnitCreator>();
+            starbaseDebugCreators = starbaseDebugCreators.Except(starbaseDebugCreatorsDeployed);
+
+            settlementQty = gameSettings.__AdditionalSettlementCreatorQty;
+            settlementCreatorsDeployed = DeployAndConfigureAdditionalSettlementCreators(userPlayer, settlementDebugCreators, settlementQty, ref usedSystems);
+            additionalDeployedCreatorCount += settlementCreatorsDeployed.Count;
+            _unitCreators.AddRange(settlementCreatorsDeployed);
+            settlementDebugCreatorsDeployed = settlementCreatorsDeployed.Where(c => c is ADebugUnitCreator).Cast<ADebugUnitCreator>();
+            settlementDebugCreators = settlementDebugCreators.Except(settlementDebugCreatorsDeployed);
+            D.Log(/*ShowDebugLog,*/ "{0} deployed an additional {1} User unit creators.", DebugName, additionalDeployedCreatorCount);
+        }
 
         // Handle the AIPlayers...
         var aiPlayers = gameSettings.AIPlayers;
@@ -250,33 +277,34 @@ public class UniverseCreator {
                 var aiPlayer = aiPlayers[i];
 
                 fleetQty = gameSettings.__AdditionalFleetCreatorQty;
-                additionalDeployedCreatorCount += fleetQty;
                 fleetCreatorsDeployed = DeployAndConfigureAdditionalFleetCreators(aiPlayer, fleetDebugCreators, fleetQty);
+                additionalDeployedCreatorCount += fleetCreatorsDeployed.Count;
                 _unitCreators.AddRange(fleetCreatorsDeployed);
                 fleetDebugCreatorsDeployed = fleetCreatorsDeployed.Where(c => c is ADebugUnitCreator).Cast<ADebugUnitCreator>();
                 fleetDebugCreators = fleetDebugCreators.Except(fleetDebugCreatorsDeployed);
 
                 starbaseQty = gameSettings.__AdditionalStarbaseCreatorQty;
-                additionalDeployedCreatorCount += starbaseQty;
                 starbaseCreatorsDeployed = DeployAndConfigureAdditionalStarbaseCreators(aiPlayer, starbaseDebugCreators, starbaseQty);
+                additionalDeployedCreatorCount += starbaseCreatorsDeployed.Count;
                 _unitCreators.AddRange(starbaseCreatorsDeployed);
                 starbaseDebugCreatorsDeployed = starbaseCreatorsDeployed.Where(c => c is ADebugUnitCreator).Cast<ADebugUnitCreator>();
                 starbaseDebugCreators = starbaseDebugCreators.Except(starbaseDebugCreatorsDeployed);
 
                 settlementQty = gameSettings.__AdditionalSettlementCreatorQty;
-                additionalDeployedCreatorCount += settlementQty;
                 settlementCreatorsDeployed = DeployAndConfigureAdditionalSettlementCreators(aiPlayer, settlementDebugCreators, settlementQty, ref usedSystems);
+                additionalDeployedCreatorCount += settlementCreatorsDeployed.Count;
                 _unitCreators.AddRange(settlementCreatorsDeployed);
                 settlementDebugCreatorsDeployed = settlementCreatorsDeployed.Where(c => c is ADebugUnitCreator).Cast<ADebugUnitCreator>();
                 settlementDebugCreators = settlementDebugCreators.Except(settlementDebugCreatorsDeployed);
             }
-            D.Log(ShowDebugLog, "{0} deployed an additional {1} AI unit creators.", DebugName, additionalDeployedCreatorCount);
+            D.Log(/*ShowDebugLog,*/ "{0} deployed an additional {1} AI unit creators.", DebugName, additionalDeployedCreatorCount);
         }
 
         List<ADebugUnitCreator> debugCreatorsToDestroy = new List<ADebugUnitCreator>();
         debugCreatorsToDestroy.AddRange(fleetDebugCreators);    // those that are left over, if any
         debugCreatorsToDestroy.AddRange(starbaseDebugCreators);
         debugCreatorsToDestroy.AddRange(settlementDebugCreators);
+        //D.Log(ShowDebugLog, "{0} is about to destroy {1} excess debug unit creators.", DebugName, debugCreatorsToDestroy.Count);
         debugCreatorsToDestroy.ForAll(c => {
             //D.Log(ShowDebugLog, "{0} is about to destroy excess {1}.", DebugName, c.DebugName);
             GameUtility.Destroy(c.gameObject);
@@ -384,8 +412,8 @@ public class UniverseCreator {
                 }
             }
             if (candidateSectorIDs.Count < qtyToDeploy) {
-                D.Warn(@"{0} only found {1} of the {2} sectors reqd to deploy all of {3}'s Starbases. /n
-                    Attempting to fix by expanding criteria to include sectors with systems.", DebugName, candidateSectorIDs.Count, qtyToDeploy, player);
+                D.Warn(@"{0} only found {1} of the {2} sectors reqd to deploy all of {3}'s Starbases.
+                    Fixing by expanding criteria to include sectors with systems.", DebugName, candidateSectorIDs.Count, qtyToDeploy, player);
                 candidateSectorIDs = homeNeighborSectorIDs.ToList();
                 if (candidateSectorIDs.Count < qtyToDeploy) {
                     D.Error("{0} only found {1} of the {2} sectors reqd to deploy all of {3}'s Starbases.", DebugName, candidateSectorIDs.Count, qtyToDeploy, player);
@@ -474,8 +502,8 @@ public class UniverseCreator {
                 }
 
                 if (sectorIDsToDeployTo.Count < qtyToDeploy) {
-                    D.Warn(@"{0} only found {1} of the {2} sectors reqd to deploy all of {3}'s Fleets. /n
-                        Attempting to fix by expanding criteria to include sectors with systems.", DebugName, sectorIDsToDeployTo.Count, qtyToDeploy, player);
+                    D.Warn(@"{0} only found {1} of the {2} sectors reqd to deploy all of {3}'s Fleets.
+                        Fixing by expanding criteria to include sectors with systems.", DebugName, sectorIDsToDeployTo.Count, qtyToDeploy, player);
                     foreach (var neighborSectorID in homeNeighborSectorIDs) {
                         if (gameKnowledge.TryGetSystem(neighborSectorID, out unused)) {
                             sectorIDsToDeployTo.Push(neighborSectorID);
@@ -653,7 +681,7 @@ public class UniverseCreator {
 
     /// <summary>
     /// Deploys and configures additional starbase creators for this player that deploy on a random date.
-    /// Returns all the Creators that were deployed.
+    /// Returns all the Creators that were deployed. Limit of 1 additional starbase deployed for this player per sector without a system.
     /// <remarks>The existing DebugUnitCreators provided are configured first. If those do not fill the quantity requirement
     /// then AutoUnitCreators are deployed and configured to fill in the rest.</remarks>
     /// </summary>
@@ -668,7 +696,7 @@ public class UniverseCreator {
             var gameKnowledge = _gameMgr.GameKnowledge;
 
             Stack<IntVector3> sectorIDsToDeployTo = new Stack<IntVector3>(qtyToDeploy);
-            IList<IntVector3> excludedSectorIDs = new List<IntVector3>();
+            HashSet<IntVector3> excludedSectorIDs = new HashSet<IntVector3>();
 
             ISystem unused;
             IntVector3 sectorID;
@@ -687,7 +715,7 @@ public class UniverseCreator {
             }
 
             if (sectorIDsToDeployTo.Count < qtyToDeploy) {
-                D.Log(ShowDebugLog, "{0} only found {1} rather than {2} available sectors without systems to deploy {3}'s additional Starbases.", DebugName, sectorIDsToDeployTo.Count, qtyToDeploy, player);
+                D.Warn("{0} only found {1} rather than {2} available sectors without systems to deploy {3}'s additional Starbases.", DebugName, sectorIDsToDeployTo.Count, qtyToDeploy, player);
                 qtyToDeploy = sectorIDsToDeployTo.Count;
             }
 
@@ -731,7 +759,7 @@ public class UniverseCreator {
 
     /// <summary>
     /// Deploys and configures additional fleet creators for this player that deploy on a random date.
-    /// Returns all of the Creators that were deployed.
+    /// Returns all of the Creators that were deployed. Limit of 1 additional fleet deployed for this player per sector.
     /// <remarks>The existing DebugUnitCreators provided are configured first. If those do not fill the quantity requirement
     /// then AutoUnitCreators are deployed and configured to fill in the rest.</remarks>
     /// </summary>
@@ -756,7 +784,7 @@ public class UniverseCreator {
             }
 
             if (sectorIDsToDeployTo.Count < qtyToDeploy) {
-                D.Log(ShowDebugLog, "{0} only found {1} rather than {2} available sectors to deploy {3}'s additional Fleets.", DebugName, sectorIDsToDeployTo.Count, qtyToDeploy, player);
+                D.Warn("{0} only found {1} rather than {2} available sectors to deploy {3}'s additional Fleets.", DebugName, sectorIDsToDeployTo.Count, qtyToDeploy, player);
                 qtyToDeploy = sectorIDsToDeployTo.Count;
             }
 
@@ -802,7 +830,7 @@ public class UniverseCreator {
 
     /// <summary>
     /// Deploys and configures additional settlement creators for this player that deploy on a random date.
-    /// Returns all of the Creators that were deployed.
+    /// Returns all of the Creators that were deployed. Limit of 1 settlement deployed for this player per unused system.
     /// <remarks>The existing DebugUnitCreators provided are configured first. If those do not fill the quantity requirement
     /// then AutoUnitCreators are deployed and configured to fill in the rest.</remarks>
     /// </summary>
@@ -832,7 +860,7 @@ public class UniverseCreator {
             }
 
             if (systemsToDeployTo.Count < qtyToDeploy) {
-                D.Log(ShowDebugLog, "{0} only found {1} rather than {2} available systems to deploy {3}'s additional Settlements.", DebugName, systemsToDeployTo.Count, qtyToDeploy, player);
+                D.Warn("{0} only found {1} rather than {2} available systems to deploy {3}'s additional Settlements.", DebugName, systemsToDeployTo.Count, qtyToDeploy, player);
                 qtyToDeploy = systemsToDeployTo.Count;
             }
 

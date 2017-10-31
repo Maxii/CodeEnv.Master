@@ -42,16 +42,31 @@ public class FleetsTableForm : ACommandsTableForm {
 
     protected override void ResumePreviousSortTopic(GuiElementID sortTopicToResume) {
         switch (sortTopicToResume) {
-            case GuiElementID.NameLabel:
+            case GuiElementID.Name:
                 SortOnName();
                 break;
-            case GuiElementID.SpeedLabel:
+            case GuiElementID.Speed:
                 SortOnSpeed();
                 break;
-            case GuiElementID.ScienceLabel:
+            case GuiElementID.Food:
+                SortOnFood();
+                break;
+            case GuiElementID.Production:
+                SortOnProduction();
+                break;
+            case GuiElementID.Income:
+                SortOnIncome();
+                break;
+            case GuiElementID.Expense:
+                SortOnExpense();
+                break;
+            case GuiElementID.NetIncome:
+                SortOnNetIncome();
+                break;
+            case GuiElementID.Science:
                 SortOnScience();
                 break;
-            case GuiElementID.CultureLabel:
+            case GuiElementID.Culture:
                 SortOnCulture();
                 break;
             case GuiElementID.DefensiveStrength:
@@ -77,13 +92,10 @@ public class FleetsTableForm : ACommandsTableForm {
                 break;
             case GuiElementID.Approval:
                 break;
-            case GuiElementID.NetIncome:
-                SortOnNetIncome();
-                break;
-            case GuiElementID.OrganicsLabel:
-            case GuiElementID.ParticulatesLabel:
-            case GuiElementID.EnergyLabel:
-            case GuiElementID.PopulationLabel:
+            case GuiElementID.Organics:
+            case GuiElementID.Particulates:
+            case GuiElementID.Energy:
+            case GuiElementID.Population:
             case GuiElementID.Resources:
             case GuiElementID.Construction:
             default:
@@ -95,7 +107,7 @@ public class FleetsTableForm : ACommandsTableForm {
 
     public void SortOnSpeed() {
         _table.onCustomSort = CompareSpeed;
-        _sortDirection = DetermineSortDirection(GuiElementID.SpeedLabel);
+        _sortDirection = DetermineSortDirection(GuiElementID.Speed);
         _table.repositionNow = true;
     }
 

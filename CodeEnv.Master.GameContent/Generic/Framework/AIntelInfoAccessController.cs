@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
 
         public AIntelInfoAccessController(AIntelItemData data) : base(data) { }
 
-        public sealed override bool HasAccessToInfo(Player player, ItemInfoID infoID) {
+        public sealed override bool HasIntelCoverageReqdToAccess(Player player, ItemInfoID infoID) {
             if (player == TempGameValues.NoPlayer) {
                 D.Error("{0}: NoPlayer used to attempt access to {1}.{2}.", _data.DebugName, typeof(ItemInfoID).Name, infoID.GetValueName());
             }

@@ -30,7 +30,7 @@ using UnityEngine;
 /// </summary>
 public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable, IShipRepairCapable {
 
-    private static readonly Vector2 IconSize = new Vector2(20F, 20F);
+    private static readonly IntVector2 IconSize = new IntVector2(20, 20);
 
     public new PlanetData Data {
         get { return base.Data as PlanetData; }
@@ -312,7 +312,7 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable,
     }
 
     public bool IsCloseOrbitAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner)) {
             return true;
         }
         return !Owner.IsAtWarWith(player);
@@ -390,7 +390,7 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable,
     }
 
     public bool IsExploringAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner)) {
             return true;
         }
         return !Owner.IsAtWarWith(player);
@@ -417,7 +417,7 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable,
     /// <param name="player">The player.</param>
     /// <returns></returns>
     public bool IsRepairingAllowedBy(Player player) {
-        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Owner)) {
+        if (!InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Owner)) {
             return true;
         }
         return !Owner.IsEnemyOf(player);

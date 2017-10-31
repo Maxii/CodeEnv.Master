@@ -61,6 +61,12 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// </summary>
     public abstract bool IsAttackCapable { get; }
 
+    /// <summary>
+    /// Indicates whether this element has construction underway.
+    /// <remarks>Currently underway construction is restricted to InitialConstruction or Refitting, not Repairing.</remarks>
+    /// </summary>
+    public abstract bool IsConstructionUnderway { get; }
+
     public new AUnitElementData Data {
         get { return base.Data as AUnitElementData; }
         set { base.Data = value; }
@@ -220,7 +226,11 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #endregion
 
-    public override void CommenceOperations() {
+    public virtual void CommenceOperations(bool isInitialConstructionNeeded) {
+        CommenceOperations();
+    }
+
+    public sealed override void CommenceOperations() {  // FIXME new does not hide this
         base.CommenceOperations();
         _primaryCollider.enabled = true;
     }
@@ -234,6 +244,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         if (transform.parent != unitContainer) {
             // In most cases, the element is already a child of the UnitContainer. Conditions where
             // this change is reqd include a ship 'joins' another fleet, a facility 'joins?' a base
+            D.Warn("{0} is not a child of {1}.", DebugName, unitContainer.name);
             transform.parent = unitContainer;
         }
     }
@@ -732,6 +743,13 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         UponRelationsChangedWith(player);
     }
 
+    /// <summary>
+    /// Called when this element is removed from the ConstructionQueue before its initial construction or refit is completed.
+    /// </summary>
+    public void HandleUncompletedRemovalFromConstructionQueue() {
+        UponUncompletedRemovalFromConstructionQueue();
+    }
+
     protected override void HandleIsVisualDetailDiscernibleToUserChanged() {
         base.HandleIsVisualDetailDiscernibleToUserChanged();
         Data.Weapons.ForAll(w => w.IsWeaponDiscernibleToUser = IsVisualDetailDiscernibleToUser);
@@ -914,6 +932,11 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         UponPreconfigureState();
     }
 
+    protected void PrepareForRefit() {
+        Data.DamageEquipment(Constants.OneHundredPercent);
+
+    }
+
     protected void Dead_ExitState() {
         LogEventWarning();
     }
@@ -963,10 +986,15 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     private void UponDamageIncurred() { RelayToCurrentState(); }
 
-    protected virtual void UponHQStatusChangeCompleted() {
-        // virtual to allow comments for ships on why this is important
-        RelayToCurrentState();
-    }
+    private void UponUncompletedRemovalFromConstructionQueue() { RelayToCurrentState(); }
+
+    /// <summary>
+    /// Called when the HQ status of this element changes.
+    /// <remarks>3.21.17 Upon receiving this event, this element either just became the HQ during runtime or is the 
+    /// old HQ going back to its normal duty.</remarks>
+    /// <remarks>Virtual to allow comments for ships on why this is important.</remarks>
+    /// </summary>
+    protected virtual void UponHQStatusChangeCompleted() { RelayToCurrentState(); }
 
     #endregion
 
@@ -1422,7 +1450,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         if (!IsAttackAllowedBy(player)) {
             return false;
         }
-        if (!InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Defense)) {
+        if (!InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Defense)) {
             return false;
         }
         // 5.18.17 Can't use dynamically changing factors where a WRM can't subscribe to 
@@ -1445,7 +1473,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         D.Assert(!IsPaused);
         if (!IsAssaultAllowedBy(player)) {
             D.Error("{0} erroneously assaulted by {1} in Frame {2}. IsAttackAllowedBy: {3}, HasAccessToDefense: {4}.",
-                DebugName, __assaulterName, Time.frameCount, IsAttackAllowedBy(player), InfoAccessCntlr.HasAccessToInfo(player, ItemInfoID.Defense));
+                DebugName, __assaulterName, Time.frameCount, IsAttackAllowedBy(player), InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Defense));
         }
         Utility.ValidateForRange(strength.Total, Constants.ZeroPercent, Constants.OneHundredPercent);
 

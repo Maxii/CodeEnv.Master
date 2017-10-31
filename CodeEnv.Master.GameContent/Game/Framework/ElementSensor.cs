@@ -32,6 +32,9 @@ namespace CodeEnv.Master.GameContent {
             D.AssertEqual(RangeCategory.Short, stat.RangeCategory);
         }
 
+        public override bool AreSpecsEqual(AEquipmentStat otherStat) {
+            return Stat == otherStat as SensorStat;
+        }
     }
 }
 

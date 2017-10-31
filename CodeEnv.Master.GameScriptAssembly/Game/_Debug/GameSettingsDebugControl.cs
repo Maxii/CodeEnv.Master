@@ -69,7 +69,11 @@ public class GameSettingsDebugControl : AMonoSingleton<GameSettingsDebugControl>
     [SerializeField]
     private DebugPlayerSeparation _aiPlayersSeparationFromUser = DebugPlayerSeparation.Normal;
 
-    [Tooltip("Check to deploy additional creators on random dates. Not valid when _useDebugCreatorsOnly is checked")]
+    [Tooltip("Check to deploy additional User creators on random dates. Not valid when _useDebugCreatorsOnly is checked")]
+    [SerializeField]
+    private bool _deployAdditionalUserCreators = false;
+
+    [Tooltip("Check to deploy additional AI creators on random dates. Not valid when _useDebugCreatorsOnly is checked")]
     [SerializeField]
     private bool _deployAdditionalAiCreators = false;
 
@@ -238,15 +242,17 @@ public class GameSettingsDebugControl : AMonoSingleton<GameSettingsDebugControl>
         var userPlayerLeaderStat = LeaderFactory.Instance.MakeInstance(userPlayerSpecies);
         var userPlayerColor = _playerPrefsMgr.UserPlayerColor;
         var userPlayerTeamID = _playerPrefsMgr.UserPlayerTeam;
+        bool toDeployAdditionalUserCreators = !_useDebugCreatorsOnly && _deployAdditionalUserCreators;
         bool toDeployAdditionalAiCreators = !_useDebugCreatorsOnly && _deployAdditionalAiCreators;
         Player userPlayer = new Player(userPlayerSpeciesStat, userPlayerLeaderStat, IQ.None, userPlayerTeamID, userPlayerColor, isUser: true);
         var gameSettings = new GameSettings {
             __IsStartup = isStartup,
             __UseDebugCreatorsOnly = _useDebugCreatorsOnly,
+            __DeployAdditionalUserCreators = toDeployAdditionalUserCreators,
             __DeployAdditionalAICreators = toDeployAdditionalAiCreators,
-            __AdditionalFleetCreatorQty = toDeployAdditionalAiCreators ? _additionalFleetCreatorQty : Constants.Zero,
-            __AdditionalStarbaseCreatorQty = toDeployAdditionalAiCreators ? _additionalStarbaseCreatorQty : Constants.Zero,
-            __AdditionalSettlementCreatorQty = toDeployAdditionalAiCreators ? _additionalSettlementCreatorQty : Constants.Zero,
+            __AdditionalFleetCreatorQty = toDeployAdditionalAiCreators || toDeployAdditionalUserCreators ? _additionalFleetCreatorQty : Constants.Zero,
+            __AdditionalStarbaseCreatorQty = toDeployAdditionalAiCreators || toDeployAdditionalUserCreators ? _additionalStarbaseCreatorQty : Constants.Zero,
+            __AdditionalSettlementCreatorQty = toDeployAdditionalAiCreators || toDeployAdditionalUserCreators ? _additionalSettlementCreatorQty : Constants.Zero,
             __ZoomOnUser = !_useDebugCreatorsOnly && _zoomOnUser,
             UniverseSize = _universeSize.Convert(),
             SystemDensity = _systemDensity.Convert(),
