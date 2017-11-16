@@ -23,7 +23,6 @@ namespace CodeEnv.Master.GameContent {
 
         IUnitElement ParentItem { get; }
 
-
     }
 }
 

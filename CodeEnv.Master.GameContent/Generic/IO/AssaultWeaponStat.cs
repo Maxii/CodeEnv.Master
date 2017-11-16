@@ -87,12 +87,12 @@ namespace CodeEnv.Master.GameContent {
             float turnRate, float courseUpdateFreq, float maxSteeringInaccuracy, bool isDamageable)
             : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, constructionCost, expense, rangeCat, refitBenefit,
                   deliveryVehicleStrength, reloadPeriod, damagePotential, ordnanceMaxSpeed, ordnanceMass, ordnanceDrag, isDamageable) {
+            D.Assert(damagePotential.GetValue(DamageCategory.Incursion) > Constants.ZeroF);
             D.Assert(turnRate > Constants.ZeroF);
             D.Assert(courseUpdateFreq > Constants.ZeroF);
             if (maxSteeringInaccuracy > 5F) {
                 D.Warn("{0} MaxSteeringInaccuracy of {1:0.#} is very high.", DebugName, MaxSteeringInaccuracy);
             }
-            Utility.ValidateForRange(damagePotential.Total, Constants.ZeroPercent, Constants.OneHundredPercent);
             TurnRate = turnRate;
             CourseUpdateFrequency = courseUpdateFreq;
             MaxSteeringInaccuracy = maxSteeringInaccuracy;

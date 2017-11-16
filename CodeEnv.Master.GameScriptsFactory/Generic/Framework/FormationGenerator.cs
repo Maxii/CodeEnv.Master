@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
@@ -35,6 +36,7 @@ public class FormationGenerator : AGenericSingleton<FormationGenerator>, IFormat
     private GameObject _planeFormation;
     private GameObject _diamondFormation;
     private GameObject _spreadFormation;
+    private GameObject _hangerFormation;
 
     #region Singleton Initialization
 
@@ -49,6 +51,7 @@ public class FormationGenerator : AGenericSingleton<FormationGenerator>, IFormat
         _planeFormation = RequiredPrefabs.Instance.planeFormation;
         _diamondFormation = RequiredPrefabs.Instance.diamondFormation;
         _spreadFormation = RequiredPrefabs.Instance.spreadFormation;
+        _hangerFormation = RequiredPrefabs.Instance.hangerFormation;
     }
 
     #endregion
@@ -62,9 +65,10 @@ public class FormationGenerator : AGenericSingleton<FormationGenerator>, IFormat
     /// <param name="cmdTransform">The command transform.</param>
     /// <param name="formationRadius">The resulting unit formation radius.</param>
     /// <returns></returns>
-    public IList<FormationStationSlotInfo> GenerateBaseFormation(Formation formation, Transform cmdTransform, out float formationRadius) {
+    public List<FormationStationSlotInfo> GenerateBaseFormation(Formation formation, Transform cmdTransform, out float formationRadius) {
         D.AssertNotDefault((int)formation);
         D.AssertNotEqual(Formation.Wedge, formation);
+        D.AssertNotEqual(Formation.Hanger, formation);
         return GenerateFormation(formation, cmdTransform, out formationRadius);
     }
 
@@ -77,9 +81,26 @@ public class FormationGenerator : AGenericSingleton<FormationGenerator>, IFormat
     /// <param name="cmdTransform">The command transform.</param>
     /// <param name="formationRadius">The resulting unit formation radius.</param>
     /// <returns></returns>
-    public IList<FormationStationSlotInfo> GenerateFleetFormation(Formation formation, Transform cmdTransform, out float formationRadius) {
+    public List<FormationStationSlotInfo> GenerateFleetFormation(Formation formation, Transform cmdTransform, out float formationRadius) {
         D.AssertNotDefault((int)formation);
+        D.AssertNotEqual(Formation.Hanger, formation);
         return GenerateFormation(formation, cmdTransform, out formationRadius);
+    }
+
+    /// <summary>
+    /// Generates a formation to hold ships that are resident in a Base's Hanger.
+    /// Returns a list of FormationStationSlotInfo instances containing the slotID and the local space relative
+    /// position (offset relative to the position of the followTransform) of each station slot in the formation which can,
+    /// but does not need to include a slot at the location of the followTransform.
+    /// <remarks>Use of formation allows future use of other hanger formations.</remarks>
+    /// </summary>
+    /// <param name="formation">The hanger formation to generate.</param>
+    /// <param name="followTransform">The transform this formation is to follow.</param>
+    /// <param name="formationRadius">The resulting unit formation radius.</param>
+    /// <returns></returns>
+    public List<FormationStationSlotInfo> GenerateHangerFormation(Formation formation, Transform followTransform, out float formationRadius) {
+        D.AssertEqual(Formation.Hanger, formation);
+        return GenerateFormation(_hangerFormation, followTransform, FormationStationSlotID.Slot_1_2_2, out formationRadius);
     }
 
     /// <summary>
@@ -88,12 +109,11 @@ public class FormationGenerator : AGenericSingleton<FormationGenerator>, IFormat
     /// including the HQElement's station.
     /// </summary>
     /// <param name="formation">The formation.</param>
-    /// <param name="cmdTransform">The command transform.</param>
+    /// <param name="followTransform">The command transform.</param>
     /// <param name="formationRadius">The resulting formation radius.</param>
     /// <returns></returns>
     /// <exception cref="System.NotImplementedException"></exception>
-    private IList<FormationStationSlotInfo> GenerateFormation(Formation formation, Transform cmdTransform, out float formationRadius) {
-        //System.DateTime startTime = System.DateTime.UtcNow;
+    private List<FormationStationSlotInfo> GenerateFormation(Formation formation, Transform cmdTransform, out float formationRadius) {
 
         GameObject formationGrid;
         switch (formation) {
@@ -112,46 +132,64 @@ public class FormationGenerator : AGenericSingleton<FormationGenerator>, IFormat
             case Formation.Spread:
                 formationGrid = _spreadFormation;
                 break;
+            case Formation.Hanger:
             case Formation.None:
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(formation));
         }
+        IList<FormationStationPlaceholder> allActiveStationPlaceholders =
+            formationGrid.GetComponentsInChildren<FormationStationPlaceholder>(includeInactive: false);
+        var hqStationPlaceholder = allActiveStationPlaceholders.Single(sp => sp.IsHQ);    // throws error if more than one or not present
+        var hqStationSlotID = hqStationPlaceholder.SlotID;
+        return GenerateFormation(formationGrid, cmdTransform, hqStationSlotID, out formationRadius);
+    }
+
+    private List<FormationStationSlotInfo> GenerateFormation(GameObject formationGrid, Transform followTransform,
+        FormationStationSlotID followSlotID, out float formationRadius) {
+        //System.DateTime startTime = System.DateTime.UtcNow;
+
         formationRadius = Constants.ZeroF;
-        IList<FormationStationPlaceholder> allStationPlaceholders = formationGrid.GetComponentsInChildren<FormationStationPlaceholder>();
+        IList<FormationStationPlaceholder> allStationPlaceholders =
+            formationGrid.GetComponentsInChildren<FormationStationPlaceholder>(includeInactive: true);
         int placeholderCount = allStationPlaceholders.Count;
 
-        IList<FormationStationSlotInfo> stationSlotInfos = new List<FormationStationSlotInfo>(placeholderCount);
-        var hqStationPlaceholder = allStationPlaceholders.Single(sp => sp.IsHQ);    // throws error if more than one or not present
-        Vector3 hqStationPosition = hqStationPlaceholder.transform.position;
-        stationSlotInfos.Add(new FormationStationSlotInfo(hqStationPlaceholder.SlotID, hqStationPlaceholder.IsReserve, Vector3.zero));
+        List<FormationStationSlotInfo> stationSlotInfos = new List<FormationStationSlotInfo>(placeholderCount);
+        // followStation does not need to be active to be followed as all we need is its position to calc relative positions of rest
+        FormationStationPlaceholder followStation = allStationPlaceholders.Single(sp => sp.SlotID == followSlotID);
+        Vector3 followStationPosition = followStation.transform.position;
         for (int i = 0; i < placeholderCount; i++) {
             var placeholder = allStationPlaceholders[i];
-            if (placeholder.IsHQ) {
+            if (!placeholder.gameObject.activeSelf) {
                 continue;
             }
             var stationSlotID = placeholder.SlotID;
             bool isReserve = placeholder.IsReserve;
-            Vector3 worldOffsetToHQ = placeholder.transform.position - hqStationPosition;
-            Vector3 localOffset = cmdTransform.InverseTransformDirection(worldOffsetToHQ);
-            stationSlotInfos.Add(new FormationStationSlotInfo(stationSlotID, isReserve, localOffset));
+            Vector3 worldOffsetToFollowStation = placeholder.transform.position - followStationPosition;
+            Vector3 localOffsetToFollowTransform = followTransform.InverseTransformDirection(worldOffsetToFollowStation);
+            stationSlotInfos.Add(new FormationStationSlotInfo(stationSlotID, isReserve, localOffsetToFollowTransform));
 
-            float distanceToHQ = worldOffsetToHQ.magnitude;
-            formationRadius = Mathf.Max(distanceToHQ, formationRadius);
+            float stationDistanceToFollowStation = worldOffsetToFollowStation.magnitude;
+            formationRadius = Mathf.Max(stationDistanceToFollowStation, formationRadius);
         }
-        // this value is from HQ to the outside element, so add that element's formation station radius
-        formationRadius += TempGameValues.FleetFormationStationRadius;
-        //D.Log("{0} generated a {1} Formation accommodating up to {2} elements with radius {3:0.#}.", DebugName, formation.GetValueName(), placeholderCount, formationRadius);
-        //D.Log("{0}: Generating a {1} Formation took {2:0.####} secs.", DebugName, formation.GetValueName(), (System.DateTime.UtcNow - startTime).TotalSeconds);
-        ValidateSlotIDs(stationSlotInfos);
+        // this value is from the followStation to the outside element, so add that element's formation station radius
+        formationRadius += TempGameValues.FleetFormationStationRadius;  // IMPROVE when Bases use movable FormationStations
+        //D.Log("{0} generated a Formation using {1}, accommodating up to {2} elements with radius {3:0.#}.", DebugName, formationGrid.name, placeholderCount, formationRadius);
+        //D.Log("{0}: Generating a Formation took {1:0.####} secs.", DebugName, (System.DateTime.UtcNow - startTime).TotalSeconds);
+        __ValidateSlotIDs(stationSlotInfos);
         return stationSlotInfos;
     }
 
-    private void ValidateSlotIDs(IList<FormationStationSlotInfo> slotInfos) {
+    private void Cleanup() { }
+
+    #region Debug
+
+    [Conditional("DEBUG")]
+    private void __ValidateSlotIDs(IList<FormationStationSlotInfo> slotInfos) {
         FormationStationSlotID duplicate;
         D.Assert(!slotInfos.Select(si => si.SlotID).ContainsDuplicates(out duplicate, FormationStationSlotIDEqualityComparer.Default), duplicate.GetValueName());
     }
 
-    private void Cleanup() { }
+    #endregion
 
     #region IDisposable
 

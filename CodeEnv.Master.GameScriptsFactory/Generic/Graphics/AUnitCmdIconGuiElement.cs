@@ -148,7 +148,7 @@ public abstract class AUnitCmdIconGuiElement : AMultiSizeIconGuiElement {
         _unitCompositionIcon.spriteName = unitIconInfo.Filename;
         _unitCompositionIcon.color = unitIconInfo.Color.ToUnityColor();
 
-        _unitCompositionLabel.text = UnitCompositionFormat.Inject(Unit.Elements.Count, MaxElementsPerUnit);
+        _unitCompositionLabel.text = UnitCompositionFormat.Inject(Unit.ElementCount, MaxElementsPerUnit);
         _iconImageSprite.atlas = AtlasID.MyGui.GetAtlas();
         _iconImageSprite.spriteName = UnitImageFilename;
         _iconImageNameLabel.text = Unit.UnitName;
@@ -170,7 +170,7 @@ public abstract class AUnitCmdIconGuiElement : AMultiSizeIconGuiElement {
     }
 
     protected void HandleCompositionChanged() {
-        _unitCompositionLabel.text = UnitCompositionFormat.Inject(Unit.Elements.Count, MaxElementsPerUnit);
+        _unitCompositionLabel.text = UnitCompositionFormat.Inject(Unit.ElementCount, MaxElementsPerUnit);
     }
 
     private void PopulateHealthBarValues() {

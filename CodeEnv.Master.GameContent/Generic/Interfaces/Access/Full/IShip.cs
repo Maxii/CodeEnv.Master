@@ -26,6 +26,8 @@ namespace CodeEnv.Master.GameContent {
 
         new IFleetCmd Command { get; }
 
+        ShipHullCategory HullCategory { get; }
+
         ShipOrder CurrentOrder { get; }
 
         Vector3 CurrentHeading { get; }
@@ -34,6 +36,8 @@ namespace CodeEnv.Master.GameContent {
 
         bool IsTurning { get; }
 
+        bool IsLocatedInHanger { get; }
+
         float MaxTurnRate { get; }
 
         float ActualSpeedValue { get; }
@@ -41,6 +45,10 @@ namespace CodeEnv.Master.GameContent {
         float CollisionDetectionZoneRadius { get; }
 
         IFleetFormationStation FormationStation { get; }
+
+        bool __HasCommand { get; }
+
+        AlertStatus AlertStatus { set; }
 
         void HandlePendingCollisionWith(IObstacle obstacle);
 

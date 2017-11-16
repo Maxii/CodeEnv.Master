@@ -64,10 +64,10 @@ public abstract class AMultiSizeIconGuiElement : AIconGuiElement {
         if (gridColumns == Constants.Zero) {
             D.Warn("Grid will not fully show even 1 small {0} icon from left to right.", cellIconPrefab.DebugName);
         }
-        if (desiredGridCells > gridRows * gridColumns) {
-            D.Log("Scrolling will be required. Only {0} {1} icons of the {2} desired can be accommodated in the grid without scrolling.",
-                gridRows * gridColumns, cellIconPrefab.DebugName, desiredGridCells);
-        }
+        //if (desiredGridCells > gridRows * gridColumns) {
+        //    D.Log("Scrolling will be required. Only {0} {1} icons of the {2} desired can be accommodated in the grid without scrolling.",
+        //        gridRows * gridColumns, cellIconPrefab.DebugName, desiredGridCells);
+        //}
         return IconSize.Small;
     }
 

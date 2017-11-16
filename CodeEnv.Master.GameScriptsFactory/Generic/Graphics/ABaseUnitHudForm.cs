@@ -33,6 +33,15 @@ public abstract class ABaseUnitHudForm : AForm {
     private const string ElementIconExtension = " ElementIcon";
     private const string TitleFormat = "Selected Base: {0}";
 
+    private static ReworkingMode[] AcceptableReworkUnderwayToCreateFleet = new ReworkingMode[] {
+                                                                                                ReworkingMode.None,
+                                                                                                ReworkingMode.Repairing
+                                                                                            };
+
+    private static bool IsShipAcceptableToCreateFleet(ShipItem ship) {
+        return AcceptableReworkUnderwayToCreateFleet.Contains(ship.ReworkUnderway);
+    }
+
     // 9.27.17 Management of ConstructibleElementDesigns and the ConstructionQueue moved to ConstructionGuiModule
 
     [SerializeField]
@@ -76,7 +85,7 @@ public abstract class ABaseUnitHudForm : AForm {
         get { return _selectedUnit; }
         set {
             D.AssertNull(_selectedUnit);
-            SetProperty<AUnitBaseCmdItem>(ref _selectedUnit, value, "SelectedUnit"/*, SelectedUnitPropSetHandler*/);
+            SetProperty<AUnitBaseCmdItem>(ref _selectedUnit, value, "SelectedUnit");
         }
     }
 
@@ -85,12 +94,12 @@ public abstract class ABaseUnitHudForm : AForm {
 
     private HashSet<MyNguiToggleButton> _toggleButtonsUsedThisSession;
     private IList<Transform> _sortedFacilityIconTransforms;
-    private IList<Transform> _sortedShipIconTransforms;
-    private HashSet<ShipIconGuiElement> _pickedShipIcons;
+    private IList<Transform> _sortedHangerShipIconTransforms;
+    private HashSet<ShipIconGuiElement> _pickedHangerShipIcons;
     private ConstructionGuiModule _elementConstructionModule;
     private UILabel _formTitleLabel;
     private UIGrid _facilityIconsGrid;
-    private UIGrid _shipIconsGrid;
+    private UIGrid _hangerShipIconsGrid;
 
     protected override void InitializeValuesAndReferences() {
         //D.Log("{0} is initializing.", DebugName);
@@ -104,17 +113,17 @@ public abstract class ABaseUnitHudForm : AForm {
         _facilityIconsGrid.sorting = UIGrid.Sorting.Custom;
         _facilityIconsGrid.onCustomSort = CompareFacilityIcons;
 
-        _shipIconsGrid = gameObject.GetSingleComponentInChildren<ShipIconGuiElement>().gameObject.GetSingleComponentInParents<UIGrid>();
-        _shipIconsGrid.arrangement = UIGrid.Arrangement.Horizontal;
-        _shipIconsGrid.sorting = UIGrid.Sorting.Custom;
-        _shipIconsGrid.onCustomSort = CompareShipIcons;
+        _hangerShipIconsGrid = gameObject.GetSingleComponentInChildren<ShipIconGuiElement>().gameObject.GetSingleComponentInParents<UIGrid>();
+        _hangerShipIconsGrid.arrangement = UIGrid.Arrangement.Horizontal;
+        _hangerShipIconsGrid.sorting = UIGrid.Sorting.Custom;
+        _hangerShipIconsGrid.onCustomSort = CompareShipIcons;
 
         _pickedFacilityIcons = new HashSet<FacilityIconGuiElement>();
-        _pickedShipIcons = new HashSet<ShipIconGuiElement>();
+        _pickedHangerShipIcons = new HashSet<ShipIconGuiElement>();
         _toggleButtonsUsedThisSession = new HashSet<MyNguiToggleButton>();
 
         _sortedFacilityIconTransforms = new List<Transform>();
-        _sortedShipIconTransforms = new List<Transform>();
+        _sortedHangerShipIconTransforms = new List<Transform>();
 
         _unitRepairButton.Initialize();
         _unitRefitButton.Initialize();
@@ -163,7 +172,7 @@ public abstract class ABaseUnitHudForm : AForm {
 
         InitializeConstructionModule();
         BuildUnitCompositionIcons();
-        BuildShipIconsInHanger();
+        BuildHangerShipIcons();
         AssessButtons();
     }
 
@@ -175,10 +184,15 @@ public abstract class ABaseUnitHudForm : AForm {
         _elementConstructionModule.__DisableButtons();
     }
 
-    #region Event and Property Change Handlers
-
     private void SubscribeToSelectedUnit() {
         SelectedUnit.deathOneShot += UnitDeathEventHandler;
+        SelectedUnit.ConstructionMgr.constructionQueueChanged += ConstructionQueueChangedEventHandler;
+    }
+
+    #region Event and Property Change Handlers
+
+    private void ConstructionQueueChangedEventHandler(object sender, EventArgs e) {
+        HandleConstructionQueueChanged();
     }
 
     private void UnitFocusButtonClickedEventHandler() {
@@ -247,7 +261,7 @@ public abstract class ABaseUnitHudForm : AForm {
         HandleDeathOf(unitFacility);
     }
 
-    private void ShipDeathEventHandler(object sender, EventArgs e) {
+    private void HangerShipDeathEventHandler(object sender, EventArgs e) {
         ShipItem hangerShip = sender as ShipItem;
         HandleDeathOf(hangerShip);
     }
@@ -271,7 +285,7 @@ public abstract class ABaseUnitHudForm : AForm {
         }
     }
 
-    private void ShipIconClickedEventHandler(GameObject go) {
+    private void HangerShipIconClickedEventHandler(GameObject go) {
         var inputHelper = GameInputHelper.Instance;
         ShipIconGuiElement iconClicked = go.GetComponent<ShipIconGuiElement>();
         if (inputHelper.IsLeftMouseButton) {
@@ -288,6 +302,11 @@ public abstract class ABaseUnitHudForm : AForm {
     }
 
     #endregion
+
+    private void HandleConstructionQueueChanged() {
+        BuildUnitCompositionIcons();
+        BuildHangerShipIcons();
+    }
 
     #region Unit Interaction
 
@@ -528,9 +547,9 @@ public abstract class ABaseUnitHudForm : AForm {
 
         var pickedElements = _pickedFacilityIcons.Select(icon => icon.Element);
 
-        bool isSelectedUnitSlatedToDie = !SelectedUnit.Elements.Cast<FacilityItem>().Except(pickedElements).Any();
+        bool isSelectedUnitSlatedToDie = (SelectedUnit.ElementCount - pickedElements.Count()) == Constants.Zero;
 
-        D.Log("{0} received an OnClick event telling it to scuttle {1}.", DebugName, pickedElements.First().DebugName);
+        //D.Log("{0} received an OnClick event telling it to scuttle {1}.", DebugName, pickedElements.Select(e => e.DebugName).Concatenate());
         var scuttleOrder = new FacilityOrder(FacilityDirective.Scuttle, OrderSource.User);
         pickedElements.ForAll(element => element.InitiateNewOrder(scuttleOrder));
 
@@ -549,12 +568,16 @@ public abstract class ABaseUnitHudForm : AForm {
         if (_pickedFacilityIcons.Count == Constants.One) {
             var pickedFacility = _pickedFacilityIcons.First().Element;
 
-            if (pickedFacility.IsConstructionUnderway) {
+            if (pickedFacility.ReworkUnderway != ReworkingMode.None) {
                 _facilityRepairButton.IsEnabled = false;
                 _facilityRefitButton.IsEnabled = false;
                 _facilityDisbandButton.IsEnabled = false;
             }
             else {
+                // 11.9.17 Note: isOrderedToXXX still needed even when we know from ReworkUnderway that there is no current XXX order. 
+                // This is because the order can be issued and then canceled within the same pause. While paused, the order
+                // will be held awaiting processing. Since it isn't processed, ReworkUnderway won't yet reflect the order so
+                // isOrderedToXXX is used to detect whether an order has been issued during this pause.
                 bool isOrderedToRepair = pickedFacility.IsCurrentOrderDirectiveAnyOf(FacilityDirective.Repair);
                 GameColor iconColor = isOrderedToRepair ? TempGameValues.SelectedColor : GameColor.White;
                 _facilityRepairButton.SetToggledState(isOrderedToRepair, iconColor);
@@ -577,7 +600,7 @@ public abstract class ABaseUnitHudForm : AForm {
         }
     }
 
-    private bool IsUpgradeAvailable(FacilityDesign design) {  // expensive
+    private bool IsUpgradeAvailable(FacilityDesign design) {  // OPTIMIZE expensive
         return _gameMgr.PlayersDesigns.AreUserUpgradeDesignsPresent(design);
     }
 
@@ -607,10 +630,10 @@ public abstract class ABaseUnitHudForm : AForm {
 
     private void HandleShipIconLeftClicked(ShipIconGuiElement icon) {
         if (icon.IsPicked) {
-            D.Assert(_pickedShipIcons.Contains(icon));
+            D.Assert(_pickedHangerShipIcons.Contains(icon));
             // user is unpicking this icon
             icon.IsPicked = false;
-            bool isRemoved = _pickedShipIcons.Remove(icon);
+            bool isRemoved = _pickedHangerShipIcons.Remove(icon);
             D.Assert(isRemoved);
         }
         else {
@@ -622,16 +645,16 @@ public abstract class ABaseUnitHudForm : AForm {
 
     private void HandleShipIconCntlLeftClicked(ShipIconGuiElement icon) {
         if (icon.IsPicked) {
-            D.Assert(_pickedShipIcons.Contains(icon));
+            D.Assert(_pickedHangerShipIcons.Contains(icon));
             // user is unpicking this icon
             icon.IsPicked = false;
-            bool isRemoved = _pickedShipIcons.Remove(icon);
+            bool isRemoved = _pickedHangerShipIcons.Remove(icon);
             D.Assert(isRemoved);
         }
         else {
-            D.Assert(!_pickedShipIcons.Contains(icon));
+            D.Assert(!_pickedHangerShipIcons.Contains(icon));
             icon.IsPicked = true;
-            _pickedShipIcons.Add(icon);
+            _pickedHangerShipIcons.Add(icon);
         }
         AssessInteractibleHud();
         AssessHangerButtons();
@@ -639,10 +662,10 @@ public abstract class ABaseUnitHudForm : AForm {
 
     private void HandleShipIconShiftLeftClicked(ShipIconGuiElement clickedIcon) {
         var iconsToPick = new List<ShipIconGuiElement>();
-        int clickedIconIndex = _sortedShipIconTransforms.IndexOf(clickedIcon.transform);
-        if (_pickedShipIcons.Any()) {
-            ShipIconGuiElement anchorIcon = _pickedShipIcons.Last();   // should be in order added
-            int anchorIconIndex = _sortedShipIconTransforms.IndexOf(anchorIcon.transform);
+        int clickedIconIndex = _sortedHangerShipIconTransforms.IndexOf(clickedIcon.transform);
+        if (_pickedHangerShipIcons.Any()) {
+            ShipIconGuiElement anchorIcon = _pickedHangerShipIcons.Last();   // should be in order added
+            int anchorIconIndex = _sortedHangerShipIconTransforms.IndexOf(anchorIcon.transform);
             if (anchorIconIndex == clickedIconIndex) {
                 // clicked on the already picked anchor icon so do nothing
                 return;
@@ -653,7 +676,7 @@ public abstract class ABaseUnitHudForm : AForm {
             // clickedIcon must always be the last icon added so it becomes the next anchorIcon
             if (anchorIconIndex < clickedIconIndex) {
                 for (int index = anchorIconIndex; index <= clickedIconIndex; index++) {
-                    Transform iconTransform = _sortedShipIconTransforms[index];
+                    Transform iconTransform = _sortedHangerShipIconTransforms[index];
                     ShipIconGuiElement icon = iconTransform.GetComponent<ShipIconGuiElement>();
                     if (icon != null) {
                         iconsToPick.Add(icon);
@@ -662,7 +685,7 @@ public abstract class ABaseUnitHudForm : AForm {
             }
             else {
                 for (int index = anchorIconIndex; index >= clickedIconIndex; index--) {
-                    Transform iconTransform = _sortedShipIconTransforms[index];
+                    Transform iconTransform = _sortedHangerShipIconTransforms[index];
                     ShipIconGuiElement icon = iconTransform.GetComponent<ShipIconGuiElement>();
                     if (icon != null) {
                         iconsToPick.Add(icon);
@@ -673,7 +696,7 @@ public abstract class ABaseUnitHudForm : AForm {
         else {
             // pick all icons from the first to this one
             for (int index = 0; index <= clickedIconIndex; index++) {
-                Transform iconTransform = _sortedShipIconTransforms[index];
+                Transform iconTransform = _sortedHangerShipIconTransforms[index];
                 ShipIconGuiElement icon = iconTransform.GetComponent<ShipIconGuiElement>();
                 if (icon != null) {
                     iconsToPick.Add(icon);
@@ -683,22 +706,25 @@ public abstract class ABaseUnitHudForm : AForm {
 
         iconsToPick.ForAll(icon => {
             icon.IsPicked = true;
-            _pickedShipIcons.Add(icon);
+            _pickedHangerShipIcons.Add(icon);
         });
         AssessInteractibleHud();
         AssessHangerButtons();
     }
 
     private void HandleShipCreateFleetButtonClicked() {
-        D.Warn("{0}.HandleShipCreateFleetButtonClicked() not yet implemented.", DebugName);
-        // UNCLEAR use UserFleetUnitHudForm approach to creating fleet? Should created fleet show up as a unit in orbit,
-        // in a UnitIcons module? // Should all fleets in orbit around base show up in a UnitIcons module?
+        D.Log("{0} is about to create a hanger fleet.", DebugName);
+        var pickedShips = _pickedHangerShipIcons.Select(icon => icon.Element);
+        var createFleetShips = pickedShips.Where(ship => IsShipAcceptableToCreateFleet(ship));
+
+        SelectedUnit.Hanger.FormFleetFrom("HangerFleet", Formation.Globe, createFleetShips);
+        BuildHangerShipIcons();
     }
 
     private void HandleShipRepairButtonToggleChanged() {
-        D.AssertEqual(Constants.One, _pickedShipIcons.Count);
+        D.AssertEqual(Constants.One, _pickedHangerShipIcons.Count);
         _toggleButtonsUsedThisSession.Add(_shipRepairButton);
-        var pickedShip = _pickedShipIcons.First().Element;
+        var pickedShip = _pickedHangerShipIcons.First().Element;
         ShipOrder order;
         if (_shipRepairButton.IsToggledIn) {
             order = new ShipOrder(ShipDirective.Repair, OrderSource.User);
@@ -711,13 +737,13 @@ public abstract class ABaseUnitHudForm : AForm {
     }
 
     private void HandleShipRefitButtonToggleChanged() {
-        D.AssertEqual(Constants.One, _pickedShipIcons.Count);
+        D.AssertEqual(Constants.One, _pickedHangerShipIcons.Count);
         _toggleButtonsUsedThisSession.Add(_shipRefitButton);
-        var pickedShip = _pickedShipIcons.First().Element;
+        var pickedShip = _pickedHangerShipIcons.First().Element;
         ShipOrder order;
         if (_shipRefitButton.IsToggledIn) {
             var refitDesign = __PickRandomRefitDesign(pickedShip.Data.Design);
-            order = new ShipRefitOrder(ShipDirective.Refit, OrderSource.User, refitDesign);
+            order = new ShipRefitOrder(ShipDirective.Refit, OrderSource.User, refitDesign, SelectedUnit);
         }
         else {
             order = new ShipOrder(ShipDirective.Cancel, OrderSource.User);
@@ -727,9 +753,9 @@ public abstract class ABaseUnitHudForm : AForm {
     }
 
     private void HandleShipDisbandButtonToggleChanged() {
-        D.AssertEqual(Constants.One, _pickedShipIcons.Count);
+        D.AssertEqual(Constants.One, _pickedHangerShipIcons.Count);
         _toggleButtonsUsedThisSession.Add(_shipDisbandButton);
-        var pickedShip = _pickedShipIcons.First().Element;
+        var pickedShip = _pickedHangerShipIcons.First().Element;
         ShipOrder order;
         if (_shipDisbandButton.IsToggledIn) {
             order = new ShipOrder(ShipDirective.Disband, OrderSource.User);
@@ -742,11 +768,11 @@ public abstract class ABaseUnitHudForm : AForm {
     }
 
     private void HandleShipScuttleButtonClicked() {
-        D.Assert(_pickedShipIcons.Any());
+        D.Assert(_pickedHangerShipIcons.Any());
         // 8.15.17 Resume must occur before scuttle order so it propagates to all subscribers before initiating death
         _gameMgr.RequestPauseStateChange(toPause: false);
 
-        var pickedShips = _pickedShipIcons.Select(icon => icon.Element);
+        var pickedShips = _pickedHangerShipIcons.Select(icon => icon.Element);
 
         var scuttleOrder = new ShipOrder(ShipDirective.Scuttle, OrderSource.User);
         pickedShips.ForAll(element => element.InitiateNewOrder(scuttleOrder));
@@ -757,36 +783,46 @@ public abstract class ABaseUnitHudForm : AForm {
 
     protected virtual void AssessHangerButtons() {
         bool isShipCreateFleetButtonEnabled = false;
-        int pickedShipCount = _pickedShipIcons.Count;
-        if (Utility.IsInRange(pickedShipCount, Constants.One, TempGameValues.MaxShipsPerFleet)) {
+        int createFleetShipCount = _pickedHangerShipIcons.Where(icon => IsShipAcceptableToCreateFleet(icon.Element)).Count();
+        if (Utility.IsInRange(createFleetShipCount, Constants.One, TempGameValues.MaxShipsPerFleet)) {
             isShipCreateFleetButtonEnabled = true;
         }
         _shipCreateFleetButton.isEnabled = isShipCreateFleetButtonEnabled;
 
-        if (_pickedShipIcons.Count == Constants.One) {
-            var pickedShip = _pickedShipIcons.First().Element;
+        if (_pickedHangerShipIcons.Count == Constants.One) {
+            var pickedShip = _pickedHangerShipIcons.First().Element;
+            if (pickedShip.ReworkUnderway != ReworkingMode.None) {
+                _shipRepairButton.IsEnabled = false;
+                _shipRefitButton.IsEnabled = false;
+                _shipDisbandButton.IsEnabled = false;
+            }
+            else {
+                // 11.9.17 Note: isOrderedToXXX still needed even when we know from ReworkUnderway that there is no current XXX order. 
+                // This is because the order can be issued and then canceled within the same pause. While paused, the order
+                // will be held awaiting processing. Since it isn't processed, ReworkUnderway won't yet reflect the order so
+                // isOrderedToXXX is used to detect whether an order has been issued during this pause.
+                bool isOrderedToRepair = pickedShip.IsCurrentOrderDirectiveAnyOf(ShipDirective.Repair);
+                GameColor iconColor = isOrderedToRepair ? TempGameValues.SelectedColor : GameColor.White;
+                _shipRepairButton.SetToggledState(isOrderedToRepair, iconColor);
+                bool isDamaged = pickedShip.Data.Health < Constants.OneHundredPercent;
+                _shipRepairButton.IsEnabled = (!HasBeenUsedThisSession(_shipRepairButton) && isOrderedToRepair) ? false : isDamaged;
 
-            bool isOrderedToRepair = pickedShip.IsCurrentOrderDirectiveAnyOf(ShipDirective.Repair);
-            GameColor iconColor = isOrderedToRepair ? TempGameValues.SelectedColor : GameColor.White;
-            _shipRepairButton.SetToggledState(isOrderedToRepair, iconColor);
-            bool isDamaged = pickedShip.Data.Health < Constants.OneHundredPercent;
-            _shipRepairButton.IsEnabled = (!HasBeenUsedThisSession(_shipRepairButton) && isOrderedToRepair) ? false : isDamaged;
+                bool isOrderedToRefit = pickedShip.IsCurrentOrderDirectiveAnyOf(ShipDirective.Refit);
+                iconColor = isOrderedToRefit ? TempGameValues.SelectedColor : GameColor.White;
+                _shipRefitButton.SetToggledState(isOrderedToRefit, iconColor);
+                _shipRefitButton.IsEnabled = (!HasBeenUsedThisSession(_shipRefitButton) && isOrderedToRefit) ? false : IsUpgradeAvailable(pickedShip.Data.Design);
 
-            bool isOrderedToRefit = pickedShip.IsCurrentOrderDirectiveAnyOf(ShipDirective.Refit);
-            iconColor = isOrderedToRefit ? TempGameValues.SelectedColor : GameColor.White;
-            _shipRefitButton.SetToggledState(isOrderedToRefit, iconColor);
-            _shipRefitButton.IsEnabled = (!HasBeenUsedThisSession(_shipRefitButton) && isOrderedToRefit) ? false : IsUpgradeAvailable(pickedShip.Data.Design);
-
-            bool isOrderedToDisband = pickedShip.IsCurrentOrderDirectiveAnyOf(ShipDirective.Disband);
-            iconColor = isOrderedToDisband ? TempGameValues.SelectedColor : GameColor.White;
-            _shipDisbandButton.SetToggledState(isOrderedToDisband, iconColor);
-            _shipDisbandButton.IsEnabled = (!HasBeenUsedThisSession(_shipDisbandButton) && isOrderedToDisband) ? false : true;
+                bool isOrderedToDisband = pickedShip.IsCurrentOrderDirectiveAnyOf(ShipDirective.Disband);
+                iconColor = isOrderedToDisband ? TempGameValues.SelectedColor : GameColor.White;
+                _shipDisbandButton.SetToggledState(isOrderedToDisband, iconColor);
+                _shipDisbandButton.IsEnabled = (!HasBeenUsedThisSession(_shipDisbandButton) && isOrderedToDisband) ? false : true;
+            }
         }
         else {
             ResetHangerToggleButtons();
         }
 
-        _shipScuttleButton.isEnabled = _pickedShipIcons.Any();
+        _shipScuttleButton.isEnabled = _pickedHangerShipIcons.Any();
     }
 
     private bool IsUpgradeAvailable(ShipDesign design) {  // expensive
@@ -804,14 +840,14 @@ public abstract class ABaseUnitHudForm : AForm {
     private void PickSingleShipIcon(ShipIconGuiElement icon) {
         UnpickAllShipIcons();
         icon.IsPicked = true;
-        _pickedShipIcons.Add(icon);
+        _pickedHangerShipIcons.Add(icon);
     }
 
     private void UnpickAllShipIcons() {
-        foreach (var icon in _pickedShipIcons) {
+        foreach (var icon in _pickedHangerShipIcons) {
             icon.IsPicked = false;
         }
-        _pickedShipIcons.Clear();
+        _pickedHangerShipIcons.Clear();
     }
 
     #endregion
@@ -825,12 +861,12 @@ public abstract class ABaseUnitHudForm : AForm {
         var gridContainerSize = _facilityIconsGrid.GetComponentInParent<UIPanel>().GetViewSize();
         IntVector2 gridContainerDimensions = new IntVector2((int)gridContainerSize.x, (int)gridContainerSize.y);
 
-        var selectedUnitElements = SelectedUnit.Elements.Where(e => e.IsOperational).Cast<FacilityItem>();
+        var selectedUnitElements = SelectedUnit.Elements.Where(e => !e.IsDead).Cast<FacilityItem>();
         int desiredGridCells = selectedUnitElements.Count();
 
         int gridColumns, unusedGridRows;
-        AMultiSizeIconGuiElement.IconSize iconSize = AMultiSizeIconGuiElement.DetermineGridIconSize(gridContainerDimensions, desiredGridCells, _facilityIconPrefab,
-            out unusedGridRows, out gridColumns);
+        AMultiSizeIconGuiElement.IconSize iconSize = AMultiSizeIconGuiElement.DetermineGridIconSize(gridContainerDimensions, desiredGridCells,
+            _facilityIconPrefab, out unusedGridRows, out gridColumns);
 
         // configure grid for icon size
         IntVector2 iconDimensions = _facilityIconPrefab.GetIconDimensions(iconSize);
@@ -852,34 +888,35 @@ public abstract class ABaseUnitHudForm : AForm {
     /// <summary>
     /// Build the collection of icons that represent the elements in the hanger.
     /// </summary>
-    protected virtual void BuildShipIconsInHanger() {
-        RemoveShipIconsInHanger();
+    protected virtual void BuildHangerShipIcons() {
+        RemoveHangerShipIcons();
 
-        var gridContainerSize = _shipIconsGrid.GetComponentInParent<UIPanel>().GetViewSize();
+        var gridContainerSize = _hangerShipIconsGrid.GetComponentInParent<UIPanel>().GetViewSize();
         IntVector2 gridContainerDimensions = new IntVector2((int)gridContainerSize.x, (int)gridContainerSize.y);
 
-        IEnumerable<ShipItem> hangerElements = __AcquireShipsInHanger();
-        int desiredGridCells = hangerElements.Count();
+        var baseHanger = SelectedUnit.Hanger;
+        int desiredGridCells = baseHanger.ShipCount;
 
         int gridColumns, unusedGridRows;
-        AMultiSizeIconGuiElement.IconSize iconSize = AMultiSizeIconGuiElement.DetermineGridIconSize(gridContainerDimensions, desiredGridCells, _shipIconPrefab,
-            out unusedGridRows, out gridColumns);
+        AMultiSizeIconGuiElement.IconSize iconSize = AMultiSizeIconGuiElement.DetermineGridIconSize(gridContainerDimensions, desiredGridCells,
+            _shipIconPrefab, out unusedGridRows, out gridColumns);
 
         // configure grid for icon size
         IntVector2 iconDimensions = _shipIconPrefab.GetIconDimensions(iconSize);
-        _shipIconsGrid.cellHeight = iconDimensions.y;
-        _shipIconsGrid.cellWidth = iconDimensions.x;
+        _hangerShipIconsGrid.cellHeight = iconDimensions.y;
+        _hangerShipIconsGrid.cellWidth = iconDimensions.x;
 
         // make grid gridColumns wide
-        D.AssertEqual(UIGrid.Arrangement.Horizontal, _shipIconsGrid.arrangement);
-        _shipIconsGrid.maxPerLine = gridColumns;
+        D.AssertEqual(UIGrid.Arrangement.Horizontal, _hangerShipIconsGrid.arrangement);
+        _hangerShipIconsGrid.maxPerLine = gridColumns;
 
-        foreach (var element in hangerElements) {
-            CreateAndAddIcon(element, iconSize);
+        IEnumerable<ShipItem> shipsInHanger = baseHanger.AllShips;
+        foreach (var ship in shipsInHanger) {
+            CreateAndAddIcon(ship, iconSize);
         }
 
-        //D.Log("{0}: ShipIcons in sequence: {1}.", DebugName, _sortedShipIconTransforms.Select(t => t.name).Concatenate());
-        _shipIconsGrid.repositionNow = true;
+        D.Log("{0}: Built ShipIcons in sequence: {1}.", DebugName, _sortedHangerShipIconTransforms.Select(t => t.name).Concatenate());
+        _hangerShipIconsGrid.repositionNow = true;
     }
 
     private void CreateAndAddIcon(FacilityItem element, AMultiSizeIconGuiElement.IconSize iconSize) {
@@ -895,15 +932,15 @@ public abstract class ABaseUnitHudForm : AForm {
     }
 
     private void CreateAndAddIcon(ShipItem element, AMultiSizeIconGuiElement.IconSize iconSize) {
-        GameObject elementIconGo = NGUITools.AddChild(_shipIconsGrid.gameObject, _shipIconPrefab.gameObject);
+        GameObject elementIconGo = NGUITools.AddChild(_hangerShipIconsGrid.gameObject, _shipIconPrefab.gameObject);
         elementIconGo.name = element.Name + ElementIconExtension;
         ShipIconGuiElement elementIcon = elementIconGo.GetSafeComponent<ShipIconGuiElement>();
         elementIcon.Size = iconSize;
         elementIcon.Element = element;
 
-        UIEventListener.Get(elementIconGo).onClick += ShipIconClickedEventHandler;
-        element.deathOneShot += ShipDeathEventHandler;
-        _sortedShipIconTransforms.Add(elementIconGo.transform);
+        UIEventListener.Get(elementIconGo).onClick += HangerShipIconClickedEventHandler;
+        element.deathOneShot += HangerShipDeathEventHandler;
+        _sortedHangerShipIconTransforms.Add(elementIconGo.transform);
     }
 
     protected void RemoveUnitCompositionIcons() {
@@ -914,8 +951,8 @@ public abstract class ABaseUnitHudForm : AForm {
         }
     }
 
-    protected void RemoveShipIconsInHanger() {
-        IList<Transform> iconTransforms = _shipIconsGrid.GetChildList();
+    protected void RemoveHangerShipIcons() {
+        IList<Transform> iconTransforms = _hangerShipIconsGrid.GetChildList();
         foreach (var it in iconTransforms) {
             var icon = it.GetComponent<ShipIconGuiElement>();
             RemoveIcon(icon);
@@ -944,13 +981,14 @@ public abstract class ABaseUnitHudForm : AForm {
     }
 
     private void RemoveIcon(ShipIconGuiElement icon) {
-        _pickedShipIcons.Remove(icon);   // may not be present
+        //D.Log("{0} is about to remove and destroy {1}.", DebugName, icon.DebugName);
+        _pickedHangerShipIcons.Remove(icon);   // may not be present
         if (icon.IsInitialized) {
             D.AssertNotNull(icon.Element, "{0}: {1}'s Element has been destroyed.".Inject(DebugName, icon.DebugName));
 
-            icon.Element.deathOneShot -= ShipDeathEventHandler;
+            icon.Element.deathOneShot -= HangerShipDeathEventHandler;
             //D.Log("{0} has removed the icon for {1}.", DebugName, icon.Element.DebugName);
-            bool isRemoved = _sortedShipIconTransforms.Remove(icon.transform);
+            bool isRemoved = _sortedHangerShipIconTransforms.Remove(icon.transform);
             D.Assert(isRemoved);
         }
         else {
@@ -958,7 +996,7 @@ public abstract class ABaseUnitHudForm : AForm {
             //D.Log("{0} not able to remove icon {1} from collections because it is not initialized.", DebugName, icon.DebugName);
         }
 
-        UIEventListener.Get(icon.gameObject).onClick -= ShipIconClickedEventHandler;
+        UIEventListener.Get(icon.gameObject).onClick -= HangerShipIconClickedEventHandler;
         // Note: DestroyImmediate() because Destroy() doesn't always get rid of the existing icon before Reposition occurs on LateUpdate
         // This results in an extra 'empty' icon that stays until another Reposition() call, usually from sorting something
         DestroyImmediate(icon.gameObject);
@@ -979,9 +1017,7 @@ public abstract class ABaseUnitHudForm : AForm {
     }
 
     private void HandleDeathOf(ShipItem hangerShip) {
-        D.Warn("{0}.HandleDeathOf({1}) not yet implemented.", DebugName, hangerShip.DebugName);
-        // UNDONE
-        BuildShipIconsInHanger();
+        BuildHangerShipIcons();
     }
 
     protected abstract void AssessInteractibleHud();
@@ -1007,8 +1043,8 @@ public abstract class ABaseUnitHudForm : AForm {
     }
 
     private int CompareShipIcons(Transform aIconTransform, Transform bIconTransform) {
-        int aIndex = _sortedShipIconTransforms.IndexOf(aIconTransform);
-        int bIndex = _sortedShipIconTransforms.IndexOf(bIconTransform);
+        int aIndex = _sortedHangerShipIconTransforms.IndexOf(aIconTransform);
+        int bIndex = _sortedHangerShipIconTransforms.IndexOf(bIconTransform);
         return aIndex.CompareTo(bIndex);
     }
 
@@ -1023,9 +1059,9 @@ public abstract class ABaseUnitHudForm : AForm {
         D.AssertEqual(Constants.Zero, _sortedFacilityIconTransforms.Count, _sortedFacilityIconTransforms.Concatenate());
         ResetUnitCompositionToggleButtons();
 
-        RemoveShipIconsInHanger();
-        D.AssertEqual(Constants.Zero, _pickedShipIcons.Count);
-        D.AssertEqual(Constants.Zero, _sortedShipIconTransforms.Count);
+        RemoveHangerShipIcons();
+        D.AssertEqual(Constants.Zero, _pickedHangerShipIcons.Count);
+        D.AssertEqual(Constants.Zero, _sortedHangerShipIconTransforms.Count);
         ResetHangerToggleButtons();
 
         UnsubscribeFromSelectedUnit();
@@ -1069,6 +1105,7 @@ public abstract class ABaseUnitHudForm : AForm {
     private void UnsubscribeFromSelectedUnit() {
         if (_selectedUnit != null) {
             _selectedUnit.deathOneShot -= UnitDeathEventHandler;
+            _selectedUnit.ConstructionMgr.constructionQueueChanged -= ConstructionQueueChangedEventHandler;
         }
     }
 
@@ -1093,7 +1130,7 @@ public abstract class ABaseUnitHudForm : AForm {
 
     protected override void Cleanup() {
         RemoveUnitCompositionIcons();
-        RemoveShipIconsInHanger();
+        RemoveHangerShipIcons();
         UnsubscribeFromSelectedUnit();
         DisconnectButtonEventHandlers();
     }
@@ -1112,11 +1149,6 @@ public abstract class ABaseUnitHudForm : AForm {
         bool isUpgradeDesignsFound = _gameMgr.PlayersDesigns.TryGetUserUpgradeDesigns(designToBeRefit, out upgradeDesigns);
         D.Assert(isUpgradeDesignsFound);    // refit button not enabled if no upgrade designs
         return RandomExtended.Choice(upgradeDesigns);
-    }
-
-
-    private IEnumerable<ShipItem> __AcquireShipsInHanger() {
-        return Enumerable.Empty<ShipItem>();
     }
 
     protected override void __ValidateOnAwake() {

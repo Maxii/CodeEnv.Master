@@ -113,9 +113,9 @@ namespace CodeEnv.Master.GameContent {
             designsByName.Add(designName, design);
 
             _facilityDesignsLookupByHull[player][design.HullCategory].Add(design);
-            if (player.IsUser) {
-                D.Log("{0} added {1} for {2}.", DebugName, design.DebugName, player.DebugName);
-            }
+            ////if (player.IsUser) {
+            //D.Log("{0} added {1} for {2}.", DebugName, design.DebugName, player.DebugName);
+            ////}
         }
 
         public void Add(StarbaseCmdDesign design) {

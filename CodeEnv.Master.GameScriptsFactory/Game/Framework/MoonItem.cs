@@ -42,12 +42,12 @@ public class MoonItem : APlanetoidItem, IMoon, IMoon_Ltd {
         return Radius + TempGameValues.MoonObstacleZoneRadiusAdder;
     }
 
-    protected override ADisplayManager MakeDisplayManagerInstance() {
+    protected override ADisplayManager MakeDisplayMgrInstance() {
         return new MoonDisplayManager(gameObject, TempGameValues.MoonMeshCullLayer);
     }
 
     protected override HoverHighlightManager InitializeHoverHighlightMgr() {
-        float highlightRadius = Radius * 3F;
+        float highlightRadius = Radius * 3F;   // HACK
         return new HoverHighlightManager(this, highlightRadius);
     }
 
@@ -68,8 +68,8 @@ public class MoonItem : APlanetoidItem, IMoon, IMoon_Ltd {
         // 11.13.16 MoonDisplayManager handles orbit around planet activation as orbiting is only eye candy
     }
 
-    protected override void AssignAlternativeFocusOnDeath() {
-        base.AssignAlternativeFocusOnDeath();
+    protected override void AssignAlternativeFocusAfterDeathEffect() {
+        base.AssignAlternativeFocusAfterDeathEffect();
         if (!_isParentPlanetDying) {
             (ParentPlanet as ICameraFocusable).IsFocus = true;
         }
@@ -82,14 +82,13 @@ public class MoonItem : APlanetoidItem, IMoon, IMoon_Ltd {
     /// </summary>
     public void HandlePlanetDying() {
         _isParentPlanetDying = true;
-        IsOperational = false;
+        IsDead = true;
     }
 
     protected override void PrepareForDeathEffect() {
         base.PrepareForDeathEffect();
-        // removing moon here when 2 moons both die at roughly same time makes ChildMoons.Count == 0 
+        // Warning: Removing moon here when 2 moons both die at roughly same time makes Planet's ChildMoons.Count == 0 
         // which causes planet to try to destroy itself twice
-        ////ParentPlanet.RemoveMoon(this);    
     }
 
     public override void HandleEffectSequenceFinished(EffectSequenceID effectID) {

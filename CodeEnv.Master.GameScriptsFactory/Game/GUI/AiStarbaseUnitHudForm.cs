@@ -81,10 +81,10 @@ public class AiStarbaseUnitHudForm : ABaseUnitHudForm {
         }
     }
 
-    protected override void BuildShipIconsInHanger() {
+    protected override void BuildHangerShipIcons() {
         bool isCompositionKnownToUser = SelectedUnit.UserReport.UnitComposition != null;
         if (isCompositionKnownToUser) {
-            base.BuildShipIconsInHanger();
+            base.BuildHangerShipIcons();
         }
     }
 

@@ -311,7 +311,7 @@ namespace CodeEnv.Master.GameContent {
                     return false;
                 }
             }
-            while (oDesign.TryGetNextEquipmentStat(out slotID, out aStat)) {
+            while (oDesign.TryGetNextEquipmentStat(out slotID, out aStat)) {    // OPTIMIZE avoid second pass by comparing slotID sequence
                 AEquipmentStat bStat = GetEquipmentStat(slotID);
                 if (aStat != bStat) {
                     oDesign.ResetIterators();

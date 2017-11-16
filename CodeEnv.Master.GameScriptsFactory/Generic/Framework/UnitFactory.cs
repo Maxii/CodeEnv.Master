@@ -31,9 +31,9 @@ using UnityEngine;
 public class UnitFactory : AGenericSingleton<UnitFactory> {
     // Note: no reason to dispose of _instance during scene transition as all its references persist across scenes
 
-    private FleetCreator _fleetCreatorPrefab;
-    private StarbaseCreator _starbaseCreatorPrefab;
-    private SettlementCreator _settlementCreatorPrefab;
+    private AutoFleetCreator _fleetCreatorPrefab;
+    private AutoStarbaseCreator _starbaseCreatorPrefab;
+    private AutoSettlementCreator _settlementCreatorPrefab;
 
     private ShipItem _shipItemPrefab;
     private ShipHull[] _shipHullPrefabs;
@@ -93,72 +93,97 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     #region Fleets
 
     /// <summary>
-    /// Makes an unnamed FleetCreator instance at the provided location, parented to the FleetsFolder.
+    /// Makes an unnamed AutoFleetCreator instance at the provided location, parented to the FleetsFolder.
     /// </summary>
     /// <param name="location">The world space location.</param>
     /// <param name="config">The configuration.</param>
     /// <returns></returns>
-    public FleetCreator MakeFleetCreatorInstance(Vector3 location, UnitCreatorConfiguration config) {
+    public AutoFleetCreator MakeFleetCreator(Vector3 location, UnitCreatorConfiguration config) {
         GameObject creatorPrefabGo = _fleetCreatorPrefab.gameObject;
         GameObject creatorGo = UnityUtility.AddChild(FleetsFolder.Instance.gameObject, creatorPrefabGo);
         if (creatorGo.isStatic) {
-            D.Error("{0}: {1} should not start static as it has yet to be positioned.", DebugName, typeof(FleetCreator).Name);
+            D.Error("{0}: {1} should not start static as it has yet to be positioned.", DebugName, typeof(AutoFleetCreator).Name);
         }
         creatorGo.transform.position = location;
         // UNCLEAR 1.17.17 what is the value of being static for this kind of object?
-        ////creatorGo.isStatic = true;
-        var creator = creatorGo.GetComponent<FleetCreator>();
+        var creator = creatorGo.GetComponent<AutoFleetCreator>();
         creator.Configuration = config;
         return creator;
     }
 
     /// <summary>
-    /// Makes an unnamed LoneFleetCreator instance at the provided location, parented to the FleetsFolder.
+    /// Makes a fleet instance parented to a new Creator from the provided ships.
     /// </summary>
-    /// <param name="location">The world space location.</param>
-    /// <param name="config">The configuration.</param>
+    /// <param name="creatorLocation">The creator location.</param>
+    /// <param name="ships">The ships.</param>
+    /// <param name="formation">The formation.</param>
+    /// <param name="optionalRootUnitName">Name of the optional root unit.</param>
     /// <returns></returns>
-    private LoneFleetCreator MakeLoneFleetCreatorInstance(Vector3 location, UnitCreatorConfiguration config) {
+    public FleetCmdItem MakeFleetInstance(Vector3 creatorLocation, IEnumerable<ShipItem> ships, Formation formation, string optionalRootUnitName = null) {
+        return MakeFleetInstance(creatorLocation, TempGameValues.__FleetCmdDesignName_Basic, ships, formation, optionalRootUnitName);
+    }
+
+    /// <summary>
+    /// Makes a fleet instance parented to a new Creator from the provided ships using a Cmd 
+    /// built from a CmdModule design acquired using the cmdDesignName.
+    /// </summary>
+    /// <param name="creatorLocation">The creator location.</param>
+    /// <param name="cmdDesignName">Name of the command design.</param>
+    /// <param name="ships">The ships.</param>
+    /// <param name="formation">The formation.</param>
+    /// <param name="optionalRootUnitName">Name of the optional root unit.</param>
+    /// <returns></returns>
+    public FleetCmdItem MakeFleetInstance(Vector3 creatorLocation, string cmdDesignName, IEnumerable<ShipItem> ships, Formation formation, string optionalRootUnitName = null) {
+        Player owner = ships.First().Owner;
+        var creator = MakeFleetCreator(creatorLocation, ships, cmdDesignName);
+        if (optionalRootUnitName != null) {
+            creator.RootUnitName = optionalRootUnitName;
+        }
+        creator.PrepareUnitForDeployment();
+        creator.AuthorizeDeployment();
+        FleetCmdItem cmd = creator.gameObject.GetSingleComponentInImmediateChildren<FleetCmdItem>();
+        cmd.Data.Formation = formation;
+        return cmd;
+    }
+
+    private FleetCreator MakeFleetCreator(Vector3 creatorLocation, IEnumerable<ShipItem> ships, string cmdDesignName) {
         GameObject creatorGo = new GameObject();
         UnityUtility.AttachChildToParent(creatorGo, FleetsFolder.Instance.gameObject);
-        creatorGo.transform.position = location;
-        var creator = creatorGo.AddComponent<LoneFleetCreator>();
-        creator.Configuration = config;
+        creatorGo.transform.position = creatorLocation;
+        var creator = creatorGo.AddComponent<FleetCreator>();
+        creator.Elements = ships;
+        creator.CmdDesignName = cmdDesignName;
         return creator;
     }
 
     /// <summary>
-    /// Makes an unenabled FleetCmd instance for the owner parented to unitContainer.
+    /// Makes an unenabled FleetCmd instance from the design acquired using the designName, parented to unitContainer.
     /// </summary>
     /// <param name="owner">The owner of the unit.</param>
-    /// <param name="cameraStat">The camera stat.</param>
-    /// <param name="designName">Name of the design.</param>
+    /// <param name="designName">Name of the CmdModule design.</param>
     /// <param name="unitContainer">The unit container.</param>
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
     /// <returns></returns>
-    public FleetCmdItem MakeFleetCmdInstance(Player owner, FleetCmdCameraStat cameraStat, string designName, GameObject unitContainer,
-        string unitName, Formation formation) {
+    public FleetCmdItem MakeFleetCmdInstance(Player owner, string designName, GameObject unitContainer, string unitName, Formation formation = Formation.Globe) {
         FleetCmdDesign design = GameManager.Instance.PlayersDesigns.GetFleetCmdDesign(owner, designName);
-        return MakeFleetCmdInstance(owner, cameraStat, design, unitContainer, unitName, formation);
+        return MakeFleetCmdInstance(owner, design, unitContainer, unitName, formation);
     }
 
     /// <summary>
-    /// Makes an unenabled FleetCmd instance for the owner parented to unitContainer.
+    /// Makes an unenabled FleetCmd instance from the provided design,  parented to unitContainer.
     /// </summary>
     /// <param name="owner">The owner of the unit.</param>
-    /// <param name="cameraStat">The camera stat.</param>
-    /// <param name="design">The design.</param>
+    /// <param name="design">The CmdModule design.</param>
     /// <param name="unitContainer">The unit container.</param>
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
     /// <returns></returns>
-    public FleetCmdItem MakeFleetCmdInstance(Player owner, FleetCmdCameraStat cameraStat, FleetCmdDesign design, GameObject unitContainer,
-        string unitName, Formation formation) {
+    public FleetCmdItem MakeFleetCmdInstance(Player owner, FleetCmdDesign design, GameObject unitContainer, string unitName, Formation formation = Formation.Globe) {
         GameObject cmdGo = UnityUtility.AddChild(unitContainer, _fleetCmdPrefab);
         D.AssertEqual((Layers)_fleetCmdPrefab.layer, (Layers)cmdGo.layer);
         FleetCmdItem cmd = cmdGo.GetSafeComponent<FleetCmdItem>();
-        PopulateInstance(owner, cameraStat, design, ref cmd, unitName, formation);
+        PopulateInstance(owner, design, ref cmd, unitName, formation);
         return cmd;
     }
 
@@ -166,28 +191,25 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// Populates the provided FleetCmd instance with data from the design. The item will not be enabled.
     /// </summary>
     /// <param name="owner">The owner.</param>
-    /// <param name="cameraStat">The camera stat.</param>
-    /// <param name="designName">Name of the design.</param>
+    /// <param name="designName">Name of the CmdModule design.</param>
     /// <param name="cmd">The item.</param>
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
-    public void PopulateInstance(Player owner, FleetCmdCameraStat cameraStat, string designName, ref FleetCmdItem cmd, string unitName,
-        Formation formation) {
+    public void PopulateInstance(Player owner, string designName, ref FleetCmdItem cmd, string unitName, Formation formation = Formation.Globe) {
         FleetCmdDesign design = GameManager.Instance.PlayersDesigns.GetFleetCmdDesign(owner, designName);
-        PopulateInstance(owner, cameraStat, design, ref cmd, unitName, formation);
+        PopulateInstance(owner, design, ref cmd, unitName, formation);
     }
 
     /// <summary>
     /// Populates the provided FleetCmd instance with data from the design. The item will not be enabled.
     /// </summary>
     /// <param name="owner">The owner.</param>
-    /// <param name="cameraStat">The camera stat.</param>
-    /// <param name="design">The design.</param>
+    /// <param name="design">The CmdModule design.</param>
     /// <param name="cmd">The item.</param>
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
-    public void PopulateInstance(Player owner, FleetCmdCameraStat cameraStat, FleetCmdDesign design, ref FleetCmdItem cmd, string unitName,
-    Formation formation) {
+    public void PopulateInstance(Player owner, FleetCmdDesign design, ref FleetCmdItem cmd, string unitName,
+        Formation formation = Formation.Globe) {
         D.Assert(!cmd.IsOperational, cmd.DebugName);
         D.AssertNotNull(unitName);
         if (cmd.transform.parent == null) {
@@ -198,37 +220,11 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var ftlDampener = MakeFtlDampener(design.FtlDampenerStat, cmd);
         FleetCmdData data = new FleetCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, design.ReqdCmdStat, design) {
             // Name assignment must follow after Data assigned to Item so Item is subscribed to the change
-            UnitFormation = formation
+            Formation = formation
         };
-        cmd.CameraStat = cameraStat;
+        cmd.CameraStat = MakeFleetCmdCameraStat(TempGameValues.MaxShipRadius);
         cmd.Data = data;
         cmd.Data.UnitName = unitName;
-    }
-
-    /// <summary>
-    /// Makes a standalone 'Lone' FleetCmd instance from a single element using a basic FleetCmdDesign.
-    /// The Cmd returned, along with the provided element is parented to an empty GameObject "unitRootName" which itself is parented to
-    /// the Scene's Fleets folder. The Cmd and element are or shortly will be operating when returned.
-    /// </summary>
-    /// <param name="element">The element which is designated the HQ Element.</param>
-    /// <param name="optionalRootUnitName">Optional root name of the unit. 
-    /// If not set, the root name of the unit will be set by the creator.</param>
-    /// <returns></returns>
-    public FleetCmdItem MakeLoneFleetInstance(ShipItem element, string optionalRootUnitName = null) {
-        D.Assert(element.IsOperational);
-
-        GameDate currentDate = GameTime.Instance.CurrentDate;
-        string cmdDesignName = TempGameValues.LoneFleetCmdDesignName;
-        UnitCreatorConfiguration config = new UnitCreatorConfiguration(element.Owner, currentDate, cmdDesignName, Enumerable.Empty<string>());
-        var creator = MakeLoneFleetCreatorInstance(element.Position, config);
-        if (optionalRootUnitName != null) {
-            creator.RootUnitName = optionalRootUnitName;
-        }
-        creator.LoneElement = element;
-        creator.BuildAndPositionUnit(); // 5.14.17 Makes LoneElement a child of UnitContainer (LoneFleetCreator.gameObject)
-        creator.AuthorizeDeployment();
-        FleetCmdItem cmd = creator.gameObject.GetSingleComponentInImmediateChildren<FleetCmdItem>();
-        return cmd;
     }
 
     #endregion
@@ -293,7 +289,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         element.GetComponent<Rigidbody>().mass = data.Mass; // 7.26.16 Set externally to keep the Rigidbody out of Data
         element.CameraStat = MakeElementCameraStat(design.HullStat);
         element.Data = data;
-        element.Data.Name = name;
+        element.Name = name;
     }
 
     #endregion
@@ -301,21 +297,20 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     #region Starbases
 
     /// <summary>
-    /// Makes an unnamed StarbaseCreator instance at the provided location, parented to the StarbasesFolder.
+    /// Makes an unnamed AutoStarbaseCreator instance at the provided location, parented to the StarbasesFolder.
     /// </summary>
     /// <param name="location">The world space location.</param>
     /// <param name="config">The configuration.</param>
     /// <returns></returns>
-    public StarbaseCreator MakeStarbaseCreatorInstance(Vector3 location, UnitCreatorConfiguration config) {
+    public AutoStarbaseCreator MakeStarbaseCreator(Vector3 location, UnitCreatorConfiguration config) {
         GameObject creatorPrefabGo = _starbaseCreatorPrefab.gameObject;
         GameObject creatorGo = UnityUtility.AddChild(StarbasesFolder.Instance.gameObject, creatorPrefabGo);
         if (creatorGo.isStatic) {
-            D.Error("{0}: {1} should not start static as it has yet to be positioned.", DebugName, typeof(StarbaseCreator).Name);
+            D.Error("{0}: {1} should not start static as it has yet to be positioned.", DebugName, typeof(AutoStarbaseCreator).Name);
         }
         creatorGo.transform.position = location;
         // UNCLEAR 1.17.17 what is the value of being static for this kind of object?
-        ////creatorGo.isStatic = true;
-        var creator = creatorGo.GetComponent<StarbaseCreator>();
+        var creator = creatorGo.GetComponent<AutoStarbaseCreator>();
         creator.Configuration = config;
         return creator;
     }
@@ -324,62 +319,58 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// Makes an unenabled StarbaseCmd instance for the owner parented to unitContainer.
     /// </summary>
     /// <param name="owner">The owner of the unit.</param>
-    /// <param name="cameraStat">The camera stat.</param>
-    /// <param name="designName">Name of the design.</param>
+    /// <param name="designName">Name of the CmdModule design.</param>
     /// <param name="unitContainer">The unit container.</param>
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
     /// <returns></returns>
-    public StarbaseCmdItem MakeStarbaseCmdInstance(Player owner, CmdCameraStat cameraStat, string designName, GameObject unitContainer,
-        string unitName, Formation formation) {
+    public StarbaseCmdItem MakeStarbaseCmdInstance(Player owner, string designName, GameObject unitContainer, string unitName,
+        Formation formation = Formation.Globe) {
         StarbaseCmdDesign design = GameManager.Instance.PlayersDesigns.GetStarbaseCmdDesign(owner, designName);
-        return MakeStarbaseCmdInstance(owner, cameraStat, design, unitContainer, unitName, formation);
+        return MakeStarbaseCmdInstance(owner, design, unitContainer, unitName, formation);
     }
+
 
     /// <summary>
     /// Makes an unenabled StarbaseCmd instance for the owner parented to unitContainer.
     /// </summary>
     /// <param name="owner">The owner of the unit.</param>
-    /// <param name="cameraStat">The camera stat.</param>
-    /// <param name="design">The design.</param>
+    /// <param name="design">The CmdModule design.</param>
     /// <param name="unitContainer">The unit container.</param>
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
     /// <returns></returns>
-    public StarbaseCmdItem MakeStarbaseCmdInstance(Player owner, CmdCameraStat cameraStat, StarbaseCmdDesign design, GameObject unitContainer,
-        string unitName, Formation formation) {
+    public StarbaseCmdItem MakeStarbaseCmdInstance(Player owner, StarbaseCmdDesign design, GameObject unitContainer, string unitName,
+        Formation formation = Formation.Globe) {
         GameObject cmdGo = UnityUtility.AddChild(unitContainer, _starbaseCmdPrefab);
         StarbaseCmdItem cmd = cmdGo.GetSafeComponent<StarbaseCmdItem>();
-        PopulateInstance(owner, cameraStat, design, ref cmd, unitName, formation);
+        PopulateInstance(owner, design, ref cmd, unitName, formation);
         return cmd;
     }
 
+
     /// <summary>
     /// Populates the provided StarbaseCmd instance with data from the design. The item will not be enabled.
     /// </summary>
     /// <param name="owner">The owner.</param>
-    /// <param name="cameraStat">The camera stat.</param>
-    /// <param name="designName">Name of the design.</param>
-    /// <param name="cmd">The item.</param>
+    /// <param name="designName">Name of the CmdModule design.</param>
+    /// <param name="cmd">The Cmd instance to populate.</param>
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
-    public void PopulateInstance(Player owner, CmdCameraStat cameraStat, string designName, ref StarbaseCmdItem cmd, string unitName,
-        Formation formation) {
+    public void PopulateInstance(Player owner, string designName, ref StarbaseCmdItem cmd, string unitName, Formation formation = Formation.Globe) {
         StarbaseCmdDesign design = GameManager.Instance.PlayersDesigns.GetStarbaseCmdDesign(owner, designName);
-        PopulateInstance(owner, cameraStat, design, ref cmd, unitName, formation);
+        PopulateInstance(owner, design, ref cmd, unitName, formation);
     }
 
     /// <summary>
     /// Populates the provided StarbaseCmd instance with data from the design. The item will not be enabled.
     /// </summary>
     /// <param name="owner">The owner.</param>
-    /// <param name="cameraStat">The camera stat.</param>
-    /// <param name="design">The design.</param>
-    /// <param name="cmd">The item.</param>
+    /// <param name="design">The CmdModule design.</param>
+    /// <param name="cmd">The Cmd instance to populate.</param>
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
-    public void PopulateInstance(Player owner, CmdCameraStat cameraStat, StarbaseCmdDesign design, ref StarbaseCmdItem cmd, string unitName,
-    Formation formation) {
+    public void PopulateInstance(Player owner, StarbaseCmdDesign design, ref StarbaseCmdItem cmd, string unitName, Formation formation = Formation.Globe) {
         D.Assert(!cmd.IsOperational, cmd.DebugName);
         D.AssertNotNull(unitName);
         if (cmd.transform.parent == null) {
@@ -390,9 +381,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var ftlDampener = MakeFtlDampener(design.FtlDampenerStat, cmd);
         StarbaseCmdData data = new StarbaseCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, design.ReqdCmdStat, design) {
             // Name assignment must follow after Data assigned to Item so Item is subscribed to the change
-            UnitFormation = formation
+            Formation = formation
         };
-        cmd.CameraStat = cameraStat;
+        cmd.CameraStat = MakeBaseCmdCameraStat(TempGameValues.MaxFacilityRadius);
         cmd.Data = data;
         cmd.Data.UnitName = unitName;
     }
@@ -407,14 +398,15 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="config">The configuration.</param>
     /// <param name="system">The system.</param>
     /// <returns></returns>
-    public SettlementCreator MakeSettlementCreatorInstance(UnitCreatorConfiguration config, SystemItem system) {
+    public AutoSettlementCreator MakeSettlementCreator(UnitCreatorConfiguration config, SystemItem system) {
         GameObject creatorPrefabGo = _settlementCreatorPrefab.gameObject;
         GameObject creatorGo = GameObject.Instantiate(creatorPrefabGo);
         if (creatorGo.isStatic) {
-            D.Error("{0}: {1} should not start static as it has yet to be positioned.", DebugName, typeof(SettlementCreator).Name);
+            D.Error("{0}: {1} should not start static as it has yet to be positioned.", DebugName, typeof(AutoSettlementCreator).Name);
         }
         SystemFactory.Instance.InstallCelestialItemInOrbit(creatorGo, system.SettlementOrbitData);
-        var creator = creatorGo.GetComponent<SettlementCreator>();
+        // UNCLEAR 1.17.17 what is the value of being static for this kind of object?
+        var creator = creatorGo.GetComponent<AutoSettlementCreator>();
         creator.Configuration = config;
         return creator;
     }
@@ -423,63 +415,58 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// Makes an unenabled SettlementCmd instance for the owner parented to unitContainer.
     /// </summary>
     /// <param name="owner">The owner of the unit.</param>
-    /// <param name="cameraStat">The camera stat.</param>
-    /// <param name="designName">Name of the design.</param>
+    /// <param name="designName">Name of the CmdModule design.</param>
     /// <param name="unitContainer">The unit container.</param>
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
     /// <returns></returns>
-    public SettlementCmdItem MakeSettlementCmdInstance(Player owner, CmdCameraStat cameraStat, string designName, GameObject unitContainer,
-        string unitName, Formation formation) {
+    public SettlementCmdItem MakeSettlementCmdInstance(Player owner, string designName, GameObject unitContainer, string unitName,
+        Formation formation = Formation.Globe) {
         SettlementCmdDesign design = GameManager.Instance.PlayersDesigns.GetSettlementCmdDesign(owner, designName);
-        return MakeSettlementCmdInstance(owner, cameraStat, design, unitContainer, unitName, formation);
+        return MakeSettlementCmdInstance(owner, design, unitContainer, unitName, formation);
     }
 
     /// <summary>
     /// Makes an unenabled SettlementCmd instance for the owner parented to unitContainer.
     /// </summary>
     /// <param name="owner">The owner of the unit.</param>
-    /// <param name="cameraStat">The camera stat.</param>
-    /// <param name="design">The design.</param>
+    /// <param name="design">The CmdModule design.</param>
     /// <param name="unitContainer">The unit container.</param>
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
     /// <returns></returns>
-    public SettlementCmdItem MakeSettlementCmdInstance(Player owner, CmdCameraStat cameraStat, SettlementCmdDesign design,
-        GameObject unitContainer, string unitName, Formation formation) {
+    public SettlementCmdItem MakeSettlementCmdInstance(Player owner, SettlementCmdDesign design, GameObject unitContainer, string unitName,
+        Formation formation = Formation.Globe) {
         GameObject cmdGo = UnityUtility.AddChild(unitContainer, _settlementCmdPrefab);
         //D.Log("{0}: {1}.localPosition = {2} after creation.", DebugName, design.CmdStat.UnitName, cmdGo.transform.localPosition);
         SettlementCmdItem cmd = cmdGo.GetSafeComponent<SettlementCmdItem>();
-        PopulateInstance(owner, cameraStat, design, ref cmd, unitName, formation);
+        PopulateInstance(owner, design, ref cmd, unitName, formation);
         return cmd;
     }
 
+
     /// <summary>
     /// Populates the provided SettlementCmd instance with data from the design. The item will not be enabled.
     /// </summary>
     /// <param name="owner">The owner.</param>
-    /// <param name="cameraStat">The camera stat.</param>
-    /// <param name="designName">Name of the design.</param>
+    /// <param name="designName">Name of the CmdModule design.</param>
     /// <param name="cmd">The item.</param>
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
-    public void PopulateInstance(Player owner, CmdCameraStat cameraStat, string designName, ref SettlementCmdItem cmd, string unitName,
-        Formation formation) {
+    public void PopulateInstance(Player owner, string designName, ref SettlementCmdItem cmd, string unitName, Formation formation = Formation.Globe) {
         SettlementCmdDesign design = GameManager.Instance.PlayersDesigns.GetSettlementCmdDesign(owner, designName);
-        PopulateInstance(owner, cameraStat, design, ref cmd, unitName, formation);
+        PopulateInstance(owner, design, ref cmd, unitName, formation);
     }
 
     /// <summary>
     /// Populates the provided SettlementCmd instance with data from the design. The item will not be enabled.
     /// </summary>
     /// <param name="owner">The owner.</param>
-    /// <param name="cameraStat">The camera stat.</param>
-    /// <param name="design">The design.</param>
+    /// <param name="design">The CmdModule design.</param>
     /// <param name="cmd">The item.</param>
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
-    public void PopulateInstance(Player owner, CmdCameraStat cameraStat, SettlementCmdDesign design, ref SettlementCmdItem cmd,
-    string unitName, Formation formation) {
+    public void PopulateInstance(Player owner, SettlementCmdDesign design, ref SettlementCmdItem cmd, string unitName, Formation formation = Formation.Globe) {
         D.Assert(!cmd.IsOperational, cmd.DebugName);
         D.AssertNotNull(unitName);
         if (cmd.transform.parent == null) {
@@ -490,9 +477,9 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var ftlDampener = MakeFtlDampener(design.FtlDampenerStat, cmd);
         SettlementCmdData data = new SettlementCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, design.ReqdCmdStat, design) {
             // Name assignment must follow after Data assigned to Item so Item is subscribed to the change
-            UnitFormation = formation
+            Formation = formation
         };
-        cmd.CameraStat = cameraStat;
+        cmd.CameraStat = MakeBaseCmdCameraStat(TempGameValues.MaxFacilityRadius);
         cmd.Data = data;
         cmd.Data.UnitName = unitName;
     }
@@ -555,7 +542,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         element.GetComponent<Rigidbody>().mass = data.Mass; // 7.26.16 Set externally to keep the Rigidbody out of Data
         element.CameraStat = MakeElementCameraStat(design.HullStat);
         element.Data = data;
-        element.Data.Name = name;
+        element.Name = name;
     }
 
     #endregion
@@ -622,6 +609,19 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         float distanceDampener = 3F;    // default
         float rotationDampener = 10F;   // ships can change direction pretty fast
         return new FollowableItemCameraStat(minViewDistance, optViewDistance, fov, distanceDampener, rotationDampener);
+    }
+
+    private FleetCmdCameraStat MakeFleetCmdCameraStat(float maxElementRadius) {
+        float minViewDistance = maxElementRadius + 1F;
+        float optViewDistanceAdder = 1F;    // the additional distance outside of the UnitRadius of the fleet
+        // there is no optViewDistance value for a FleetCmd CameraStat
+        return new FleetCmdCameraStat(minViewDistance, optViewDistanceAdder, fov: 60F);
+    }
+
+    private CmdCameraStat MakeBaseCmdCameraStat(float maxElementRadius) {
+        float minViewDistance = maxElementRadius + 1F; // close to the HQ Facility
+        float optViewDistanceAdder = Constants.ZeroF;
+        return new CmdCameraStat(minViewDistance, optViewDistanceAdder, fov: 60F);
     }
 
     /// <summary>

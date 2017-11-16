@@ -20,8 +20,6 @@ namespace CodeEnv.Master.GameContent {
     using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
-    using CodeEnv.Master.GameContent;
     using UnityEngine;
 
     /// <summary>
@@ -107,7 +105,7 @@ namespace CodeEnv.Master.GameContent {
         private IDictionary<IntVector3, IList<IStarbaseCmd>> _starbasesLookupBySectorID = new Dictionary<IntVector3, IList<IStarbaseCmd>>();
 
         private HashSet<IPlanetoid> _planetoids = new HashSet<IPlanetoid>();
-        private HashSet<IStar> _stars = new HashSet<IStar>();
+        private IList<IStar> _stars = new List<IStar>();
         private HashSet<IUnitElement> _elements = new HashSet<IUnitElement>();
         private HashSet<IUnitCmd> _commands = new HashSet<IUnitCmd>();
         private HashSet<IOwnerItem> _items = new HashSet<IOwnerItem>();
@@ -153,6 +151,12 @@ namespace CodeEnv.Master.GameContent {
             foreach (var element in unitElements) {
                 AddElement(element);
             }
+        }
+
+        public void AddInitialConstructionOrRefitReplacementElement(IUnitElement element) {
+            // IMPROVE need to Assert something here to confirm this is used properly. If a Ship it will be in a hanger
+            // and __HasCommand will return false. For a facility, no such easy check is present.
+            AddElement(element);
         }
 
         /// <summary>
@@ -244,8 +248,9 @@ namespace CodeEnv.Master.GameContent {
 
         private void AddStar(IStar star) {
             // A Star should only be added once when all players get Basic IntelCoverage of all stars
-            bool isAdded = _stars.Add(star);
-            isAdded = isAdded & _items.Add(star);
+            D.Assert(!_stars.Contains(star));
+            _stars.Add(star);
+            bool isAdded = _items.Add(star);
             D.Assert(isAdded, star.DebugName);
             AddSystem(star.ParentSystem);
         }
@@ -279,7 +284,7 @@ namespace CodeEnv.Master.GameContent {
                 }
                 else {
                     IPlanetoid deadPlanetoid = deadItem as IPlanetoid;
-                    D.AssertNotNull(deadPlanetoid); // UNCLEAR could this interface indicate null for dead(destroyed) Planetoid?
+                    D.AssertNotNull(deadPlanetoid);
                     RemoveDeadPlanetoid(deadPlanetoid);
                 }
             }
@@ -309,7 +314,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void RemoveDeadCommand(IUnitCmd deadCmd) {
-            D.Assert(!deadCmd.IsOperational);
+            D.Assert(deadCmd.IsDead);
             var isRemoved = _commands.Remove(deadCmd);
             isRemoved = isRemoved & _items.Remove(deadCmd);
             D.Assert(isRemoved);
@@ -341,7 +346,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="deadElement">The element.</param>
         private void RemoveDeadElement(IUnitElement deadElement) {
-            D.Assert(!deadElement.IsOperational);
+            D.Assert(deadElement.IsDead);
             var isRemoved = _elements.Remove(deadElement);
             isRemoved = isRemoved & _items.Remove(deadElement);
             D.Assert(isRemoved, deadElement.DebugName);
@@ -356,7 +361,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="deadPlanetoid">The dead planetoid.</param>
         private void RemoveDeadPlanetoid(IPlanetoid deadPlanetoid) {
-            D.Assert(!deadPlanetoid.IsOperational);
+            D.Assert(deadPlanetoid.IsDead);
             var isRemoved = _planetoids.Remove(deadPlanetoid);
             isRemoved = isRemoved & _items.Remove(deadPlanetoid);
             D.Assert(isRemoved, deadPlanetoid.DebugName);
@@ -396,6 +401,7 @@ namespace CodeEnv.Master.GameContent {
 
         #region Debug 
 
+        [System.Diagnostics.Conditional("DEBUG")]
         private void __InitializeValidateKnowledge() {
             GameReferences.DebugControls.validatePlayerKnowledgeNow += __ValidateKnowledgeNowEventHandler;
         }
@@ -404,15 +410,18 @@ namespace CodeEnv.Master.GameContent {
             __ValidateKnowledgeNow();
         }
 
+        [System.Diagnostics.Conditional("DEBUG")]
         private void __ValidateKnowledgeNow() {
             D.Log("{0} is validating all Knowledge.", DebugName);
             foreach (var item in _items) {
-                if (!item.IsOperational) {
+                var mortalItem = item as IMortalItem;
+                if (mortalItem != null && mortalItem.IsDead) {
                     D.Error("{0} has retained knowledge of dead {1}.", DebugName, item.DebugName);
                 }
             }
         }
 
+        [System.Diagnostics.Conditional("DEBUG")]
         private void __CleanupValidateKnowledge() {
             GameReferences.DebugControls.validatePlayerKnowledgeNow -= __ValidateKnowledgeNowEventHandler;
         }

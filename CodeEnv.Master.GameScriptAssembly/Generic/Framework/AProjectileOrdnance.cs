@@ -149,7 +149,7 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         if (distanceTraveled > _range) {
             //D.Log(ShowDebugLog, "{0} has exceeded range of {1:0.#}. Actual distanceTraveled = {2:0.#}.", DebugName, _range, distanceTraveled);
             // No self destruction effect
-            if (Target.IsOperational) {
+            if (!Target.IsDead) {
                 // reporting a miss after the target is dead will just muddy the combat report
                 ReportTargetMissed();
             }
@@ -314,8 +314,8 @@ public abstract class AProjectileOrdnance : AOrdnance, IInterceptableOrdnance, I
         _displayMgr.IsDisplayEnabled = false;
         _collider.enabled = false;  // UNCLEAR disabling the collider removes Physics.IgnoreCollision? 12.16.16 Probably not
         _toConductMovement = false;
-        if (Weapon.Element.IsOperational) {  // avoids trying to access Destroyed gameObject
-            Physics.IgnoreCollision(_collider, (Weapon.Element as Component).gameObject.GetSafeComponent<BoxCollider>(), ignore: false);   // HACK
+        if (!Weapon.Element.IsDead) {  // avoids trying to access Destroyed gameObject
+            Physics.IgnoreCollision(_collider, Weapon.Element.gameObject.GetSafeComponent<BoxCollider>(), ignore: false);   // HACK
         }
         //D.Log(ShowDebugLog, "{0} and {1} no longer ignoring collisions.", DebugName, Weapon.Element.DebugName);
     }

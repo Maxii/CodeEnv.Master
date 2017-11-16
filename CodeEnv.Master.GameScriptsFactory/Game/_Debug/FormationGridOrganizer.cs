@@ -32,7 +32,7 @@ using UnityEngine;
 /// of existing placeholders within a FormationGrid according to the index setting in <c>ElementIndexer</c>. 
 /// <remarks>The desired number of layers, rows and placeholders (under each row) must be present along with a ElementIndexer
 /// with its index value set for each layer, row and placeholder.</remarks>
-/// <remarks>It is safe to leave on a formation grid as it can only be activated from the ContextMenu.</remarks>
+/// <remarks>It is safe to leave this organizer on a formation grid GameObject as it can only be activated from the ContextMenu.</remarks>
 /// </summary>
 public class FormationGridOrganizer : AMonoBase {
 
@@ -47,18 +47,18 @@ public class FormationGridOrganizer : AMonoBase {
     private float _initialValue;
     private float _incrementValue;
 
-    [ContextMenu("Organize")]
+    [ContextMenu("Execute")]
     private void Organize() {
-        D.Log("{0}.Organize() called.", GetType().Name);
+        D.Log("{0}.Organize() called.", DebugName);
         ValidateValueSettings();
-        InitializeLocalReferences();
+        InitializeValuesAndReferences();
         InitializeGrid();
         PositionGridElements();
     }
 
     // 2.14.17 Not currently used. Good approach but already handled by EditModeController.EnableRenderers
     [System.Obsolete]
-    ////[ContextMenu("ToggleShowMesh")]
+    //[ContextMenu("ToggleShowMesh")]
     private void ToggleShowMesh() {
         var placeholderMeshRenderers = GetComponentsInChildren<MeshRenderer>();
         bool areRenderersEnabled = placeholderMeshRenderers.First().enabled;
@@ -77,7 +77,7 @@ public class FormationGridOrganizer : AMonoBase {
         ValidateAsInteger(gridDimensions.z);
     }
 
-    private void InitializeLocalReferences() {
+    private void InitializeValuesAndReferences() {
         // all cellSize values are the same
         _initialValue = cellSize.x / 2F;
         _incrementValue = cellSize.x;
@@ -87,33 +87,33 @@ public class FormationGridOrganizer : AMonoBase {
         var grid = GetComponent<RectGrid>();
         grid.Spacing = cellSize;
         var gridRenderer = GetComponent<Parallelepiped>();
-        // In version 2 RectGrid size is always relative //_grid.relativeSize = true;
+        // In GridFramework version 2 RectGrid size is always relative //_grid.relativeSize = true;
         gridRenderer.From = Vector3.zero;
         gridRenderer.To = gridDimensions;
     }
 
     private void PositionGridElements() {
-        var layerElements = gameObject.GetSafeComponentsInImmediateChildren<ElementIndexer>();
+        var layerElements = gameObject.GetSafeComponentsInImmediateChildren<ElementIndexer>(includeInactive: true);
         ValidateElements(layerElements);
         ElementIndexer[] orderedLayerElements = layerElements.OrderBy(le => le.index).ToArray();
         for (int i = 0; i < orderedLayerElements.Length; i++) {
             var layerTransform = orderedLayerElements[i].transform;
             layerTransform.SetLocalPositionY(_initialValue + i * _incrementValue);
 
-            var rowElements = layerTransform.gameObject.GetSafeComponentsInImmediateChildren<ElementIndexer>();
+            var rowElements = layerTransform.gameObject.GetSafeComponentsInImmediateChildren<ElementIndexer>(includeInactive: true);
             ValidateElements(rowElements);
             ElementIndexer[] orderedRowElements = rowElements.OrderBy(re => re.index).ToArray();
             for (int j = 0; j < orderedRowElements.Length; j++) {
                 var rowTransform = orderedRowElements[j].transform;
                 rowTransform.SetLocalPositionZ(_initialValue + j * _incrementValue);
 
-                var placeholderElements = rowTransform.gameObject.GetComponentsInImmediateChildren<ElementIndexer>();
+                var placeholderElements = rowTransform.gameObject.GetComponentsInImmediateChildren<ElementIndexer>(includeInactive: true);
                 ValidateElements(placeholderElements);
                 ElementIndexer[] orderedPlaceholderElements = placeholderElements.OrderBy(pe => pe.index).ToArray();
                 if (orderedPlaceholderElements.Any()) {
                     var orderedIndexes = orderedPlaceholderElements.Select(pe => pe.index).ToArray();
-                    for (int k = 0; k < orderedPlaceholderElements.Length; k++) {
-                        var placeholder = orderedPlaceholderElements[k].GetComponent<FormationStationPlaceholder>();
+                    for (int k = 0; k < orderedPlaceholderElements.Length; k++) {   // 11.5.17 was GetComponent but no inactive option
+                        var placeholder = orderedPlaceholderElements[k].GetComponentInChildren<FormationStationPlaceholder>(includeInactive: true);
                         int index = orderedIndexes[k];
                         placeholder.transform.SetLocalPositionX(_initialValue + index * _incrementValue);
                         string slotIdName = SlotIdNameFormat.Inject(i, j, index);
@@ -136,7 +136,7 @@ public class FormationGridOrganizer : AMonoBase {
             int index = e.index;
             D.AssertNotEqual(Constants.MinusOne, index, "{0}.{1} not set.".Inject(e.gameObject.name, typeof(ElementIndexer).Name));
             if (indexesFound.Contains(index)) {
-                D.Warn("Duplicate {0} index {1} found. Order will not be deterministic.", typeof(ElementIndexer).Name, index);
+                D.Warn("{0}: Duplicate {1} index {2} found. Order will not be deterministic.", DebugName, typeof(ElementIndexer).Name, index);
             }
             indexesFound.Add(index);
         });
@@ -146,15 +146,7 @@ public class FormationGridOrganizer : AMonoBase {
         D.Assert(Mathfx.Approx((value * 10F) % 10F, Constants.ZeroF, 0.01F));
     }
 
-    [System.Obsolete]
-    private void DisableAllPlaceholderRenderers() {
-        var placeholderMeshRenderers = GetComponentsInChildren<MeshRenderer>();
-        placeholderMeshRenderers.ForAll(pmr => pmr.enabled = false);
-    }
-
-    protected override void Cleanup() {
-        ////DisableAllPlaceholderRenderers();
-    }
+    protected override void Cleanup() { }
 
     public override string ToString() {
         return DebugName;

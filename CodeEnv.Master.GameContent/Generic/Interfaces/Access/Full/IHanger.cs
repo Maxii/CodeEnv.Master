@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2015 Strategic Forge
+// Copyright © 2012 - 2017 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IFacility.cs
-// Interface for easy access to MonoBehaviours that are FacilityItems.
+// File: IHanger.cs
+// Interface for easy access to the Hanger MonoBehaviour in Bases.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,11 +17,13 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Interface for easy access to MonoBehaviours that are FacilityItems.
+    /// Interface for easy access to the Hanger MonoBehaviour in Bases.
     /// </summary>
-    public interface IFacility : IUnitElement {
+    [System.Obsolete("Not currently used, pending Hanger becoming an AItem.")]
+    public interface IHanger {
 
-        FacilityOrder CurrentOrder { get; }
+        string DebugName { get; }
+
     }
 }
 

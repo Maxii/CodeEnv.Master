@@ -28,6 +28,14 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public static class GameExtensions {
 
+        public static Hero GetMostExperienced(this IEnumerable<Hero> heros) {
+            return GameUtility.SelectMostExperiencedHero(heros);
+        }
+
+        public static IFleetCmd GetMostEffective(this IEnumerable<IFleetCmd> fleetCmds) {
+            return GameUtility.SelectMostEffectiveCommand(fleetCmds);
+        }
+
         /// <summary>
         /// Subtracts right from left, returning the difference between left and right, aka left - right.
         /// <remarks>Only possible using Outputs from Data (no null yields) where right will always be a subset of left.</remarks>

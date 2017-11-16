@@ -48,7 +48,7 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
     public event EventHandler<InfoAccessChangedEventArgs> infoAccessChgd;
 
     private AItemData _data;
-    public AItemData Data {
+    protected AItemData Data {
         get { return _data; }
         set {
             D.AssertNull(_data, "Data can only be set once.");
@@ -74,7 +74,7 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
 
     /// <summary>
     /// Indicates whether this item has commenced operations, and if
-    /// it is a MortalItem, that it is not dead. Set to false to initiate death.
+    /// it is a MortalItem, that it is not dead.
     /// </summary>
     public bool IsOperational {
         get { return Data != null ? Data.IsOperational : false; }
@@ -113,10 +113,7 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
     /// </summary>
     public abstract float ClearanceRadius { get; }
 
-    public Player Owner {
-        get { return Data.Owner; }
-        protected set { Data.Owner = value; }
-    }
+    public Player Owner { get { return Data.Owner; } }
 
     /// <summary>
     /// The PlayerAIManager for the owner of this item. 
@@ -142,13 +139,13 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
 
     protected sealed override void Awake() {
         base.Awake();
-        InitializeOnAwake();
+        InitializeValuesAndReferences();
         ShowDebugLog = InitializeDebugLog();
         Subscribe();
         enabled = false;
     }
 
-    protected virtual void InitializeOnAwake() {
+    protected virtual void InitializeValuesAndReferences() {
         _inputMgr = GameReferences.InputManager;
         _gameMgr = GameReferences.GameManager;
         _jobMgr = GameReferences.JobManager;
@@ -178,7 +175,6 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
         _subscriptions.Add(Data.SubscribeToPropertyChanging<AItemData, Player>(d => d.Owner, OwnerPropChangingHandler));
         _subscriptions.Add(Data.SubscribeToPropertyChanged<AItemData, Player>(d => d.Owner, OwnerPropChangedHandler));
         _subscriptions.Add(Data.SubscribeToPropertyChanged<AItemData, bool>(d => d.IsOperational, IsOperationalPropChangedHandler));
-
         _subscriptions.Add(Data.SubscribeToPropertyChanged<AItemData, string>(d => d.Name, NamePropChangedHandler));
     }
 
@@ -281,7 +277,7 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
         transform.name = Name;
     }
 
-    protected virtual void HandleIsOperationalChanged() {
+    private void HandleIsOperationalChanged() {
         enabled = IsOperational;
     }
 

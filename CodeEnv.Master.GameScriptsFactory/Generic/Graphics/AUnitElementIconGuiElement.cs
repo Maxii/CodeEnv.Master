@@ -23,6 +23,7 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
 
+
 /// <summary>
 /// Abstract AMultiSizeIconGuiElement that represents an AUnitElement.
 /// <remarks>This is an icon used by the Gui, not the in game icon that tracks a UnitElement in space.</remarks>
@@ -31,6 +32,12 @@ public abstract class AUnitElementIconGuiElement : AMultiSizeIconGuiElement {
 
     private const string DebugNameFormat = "{0}[{1}]";
     private const string TooltipFormat = "{0}";
+
+    /// <summary>
+    /// Sprite that indicates the element is under construction, aka initial construction or refitting.
+    /// </summary>
+    [SerializeField]
+    private UISprite _reworkingSprite;
 
     public override GuiElementID ElementID { get { return GuiElementID.ElementIcon; } }
 
@@ -81,6 +88,22 @@ public abstract class AUnitElementIconGuiElement : AMultiSizeIconGuiElement {
         _iconImageNameLabel = _topLevelIconWidget.gameObject.GetSingleComponentInChildren<UILabel>();
     }
 
+    protected override void PopulateMemberWidgetValues() {
+        base.PopulateMemberWidgetValues();
+        var design = Element.Data.Design;
+        _iconImageSprite.atlas = design.ImageAtlasID.GetAtlas();
+        _iconImageSprite.spriteName = design.ImageFilename;
+        _iconImageNameLabel.text = Element.name;
+        PopulateHealthBarValues();
+        AssessReworkingSprite();
+    }
+
+    private void Subscribe() {
+        _subscriptions = _subscriptions ?? new List<IDisposable>();
+        _subscriptions.Add(Element.Data.SubscribeToPropertyChanged<AUnitElementData, float>(eData => eData.Health, ElementHealthPropChangedHandler));
+        _subscriptions.Add(Element.SubscribeToPropertyChanged<AUnitElementItem, ReworkingMode>(e => e.ReworkUnderway, ElementReworkUnderwayPropChangedHandler));
+    }
+
     #region Event and Property Change Handlers
 
     private void ElementPropSetHandler() {
@@ -100,24 +123,14 @@ public abstract class AUnitElementIconGuiElement : AMultiSizeIconGuiElement {
         PopulateHealthBarValues();
     }
 
+    private void ElementReworkUnderwayPropChangedHandler() {
+        AssessReworkingSprite();
+    }
+
     #endregion
 
     protected override void HandleGuiElementHovered(bool isOver) {
         Element.ShowHoveredHud(isOver);
-    }
-
-    private void Subscribe() {
-        _subscriptions = _subscriptions ?? new List<IDisposable>();
-        _subscriptions.Add(Element.Data.SubscribeToPropertyChanged<AUnitElementData, float>(eData => eData.Health, ElementHealthPropChangedHandler));
-    }
-
-    protected override void PopulateMemberWidgetValues() {
-        base.PopulateMemberWidgetValues();
-        var design = Element.Data.Design;
-        _iconImageSprite.atlas = design.ImageAtlasID.GetAtlas();
-        _iconImageSprite.spriteName = design.ImageFilename;
-        _iconImageNameLabel.text = Element.name;
-        PopulateHealthBarValues();
     }
 
     private void HandleIsPickedChanged() {
@@ -154,12 +167,17 @@ public abstract class AUnitElementIconGuiElement : AMultiSizeIconGuiElement {
         return false;
     }
 
+    private void AssessReworkingSprite() {
+        //D.Log("{0}.AssessReworkingSprite() called.", DebugName);
+        bool toActivate = Element.ReworkUnderway != ReworkingMode.None;
+        _reworkingSprite.gameObject.SetActive(toActivate);
+    }
+
     public override void ResetForReuse() {
         base.ResetForReuse();
         Unsubscribe();
         _element = null;
         _isElementPropSet = false;
-        ////_design = null;
         _isPicked = false;
         if (_healthBar != null) {
             _healthBar.value = Constants.ZeroPercent;
@@ -167,12 +185,14 @@ public abstract class AUnitElementIconGuiElement : AMultiSizeIconGuiElement {
             _healthBar = null;
         }
         _iconImageNameLabel = null;
+        _reworkingSprite.gameObject.SetActive(false);
     }
 
     #region Cleanup
 
     private void Unsubscribe() {
         if (_subscriptions != null) {    // can be null if destroyed before Element is assigned
+            //D.Log("{0} is unsubscribing.", DebugName);
             _subscriptions.ForAll(d => d.Dispose());
             _subscriptions.Clear();
         }
@@ -180,6 +200,16 @@ public abstract class AUnitElementIconGuiElement : AMultiSizeIconGuiElement {
 
     protected override void Cleanup() {
         Unsubscribe();
+    }
+
+    #endregion
+
+    #region Debug
+
+    protected override void __ValidateOnAwake() {
+        base.__ValidateOnAwake();
+        D.AssertNotNull(_reworkingSprite);
+        D.Assert(!_reworkingSprite.gameObject.activeSelf);
     }
 
     #endregion

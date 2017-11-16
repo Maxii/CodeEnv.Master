@@ -27,8 +27,6 @@ namespace CodeEnv.Master.GameContent {
 
         new Vector3 Position { get; }
 
-        new bool IsOperational { get; }
-
         bool IsVisualDetailDiscernibleToUser { get; }
 
         bool IsAssaultAllowedBy(Player player);

@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AElementDisplayManager : AIconDisplayManager, IMortalDisplayManager {
 
-        private static readonly IntVector2 ConstructionIconSize = new IntVector2(24, 24);
+        private static readonly IntVector2 ReworkIconSize = new IntVector2(24, 24);
 
         private GameColor _meshColor;
         /// <summary>
@@ -41,7 +41,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected override int TrackingIconDepth { get { return 1; } }
 
-        private IWorldTrackingSprite _constructionIcon;
+        private IWorldTrackingSprite _reworkIcon;
         private IEnumerable<MeshRenderer> _secondaryMeshRenderers;
         private MaterialPropertyBlock _primaryMeshMPB;
 
@@ -164,7 +164,7 @@ namespace CodeEnv.Master.GameContent {
                     //D.Log("{0} just changed {1}.renderer.enabled to {2}.", DebugName, r.gameObject.name, r.enabled);
                 });
             }
-            AssessConstructionIconShowing();
+            AssessReworkIconShowing();
         }
 
         #region Event and Property Change Handlers
@@ -178,44 +178,56 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        #region Show Construction Underway
+        #region Rework Icon
 
         /// <summary>
-        /// Controls showing of 'construction' visuals when display is enabled.
+        /// Initiates showing of 'rework' visuals when display is enabled.
+        /// <remarks>UNDONE make use of reworkMode.</remarks>
+        /// </summary>
+        /// <param name="reworkMode">The rework mode.</param>
+        public void BeginReworkingVisuals(ReworkingMode reworkMode) {
+            D.AssertNull(_reworkIcon);
+            _reworkIcon = InitializeReworkIcon();
+        }
+
+        /// <summary>
+        /// Refreshes 'rework' visuals when display is enabled.
+        /// <remarks>UNDONE make use of completionPercentage</remarks>
         /// </summary>
         /// <param name="completionPercentage">The completion percentage used when toShow is true.</param>
-        public void ShowConstructionUnderway(float completionPercentage) { // TODO make use of completionPercentage
-            _constructionIcon = _constructionIcon ?? InitializeConstructionIcon();
+        public void RefreshReworkingVisuals(float completionPercentage) {
+            D.AssertNotNull(_reworkIcon);
+            // TODO
         }
 
-        public void HideConstructionUnderway() {
-            D.AssertNotNull(_constructionIcon);
-            _constructionIcon.Destroy();
-            _constructionIcon = null;
-        }
-
-        private IWorldTrackingSprite InitializeConstructionIcon() {
-            TrackingIconInfo constructionIconInfo = MakeConstructionIconInfo();
-            IWorldTrackingSprite constructionIcon = GameReferences.TrackingWidgetFactory.MakeWorldTrackingSprite_Independent(_trackedItem, constructionIconInfo);
-            (constructionIcon as IWorldTrackingSprite_Independent).DrawDepth = TrackingIconDepth;
+        private IWorldTrackingSprite InitializeReworkIcon() {
+            TrackingIconInfo reworkIconInfo = MakeReworkIconInfo();
+            IWorldTrackingSprite reworkIcon = GameReferences.TrackingWidgetFactory.MakeWorldTrackingSprite_Independent(_trackedItem, reworkIconInfo);
+            (reworkIcon as IWorldTrackingSprite_Independent).DrawDepth = TrackingIconDepth;
 
             // listener not used except to acquire MeshRenderer for initialization. MeshRenderer rendering is determined by culling layer
-            ICameraLosChangedListener listener = constructionIcon.CameraLosChangedListener;
-            var constructionIconMeshRenderer = listener.transform.GetComponent<MeshRenderer>();
-            constructionIconMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            constructionIconMeshRenderer.receiveShadows = false;
-            __ValidateAndCorrectMeshLayer(constructionIconMeshRenderer.gameObject);
-            return constructionIcon;
+            ICameraLosChangedListener listener = reworkIcon.CameraLosChangedListener;
+            var reworkIconMeshRenderer = listener.transform.GetComponent<MeshRenderer>();
+            reworkIconMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            reworkIconMeshRenderer.receiveShadows = false;
+            __ValidateAndCorrectMeshLayer(reworkIconMeshRenderer.gameObject);
+            return reworkIcon;
         }
 
-        private TrackingIconInfo MakeConstructionIconInfo() {    // HACK
-            return new TrackingIconInfo(TempGameValues.ConstructionIconFilename, AtlasID.MyGui, GameColor.White, ConstructionIconSize, WidgetPlacement.AboveRight, _meshLayer);
+        private TrackingIconInfo MakeReworkIconInfo() {    // HACK
+            return new TrackingIconInfo(TempGameValues.ReworkIconFilename, AtlasID.MyGui, GameColor.White, ReworkIconSize, WidgetPlacement.AboveRight, _meshLayer);
         }
 
-        private void AssessConstructionIconShowing() {
-            if (_constructionIcon != null) {
+        public void HideReworkingVisuals() {
+            D.AssertNotNull(_reworkIcon);
+            _reworkIcon.Destroy();
+            _reworkIcon = null;
+        }
+
+        private void AssessReworkIconShowing() {
+            if (_reworkIcon != null) {
                 bool toShow = IsDisplayEnabled && IsPrimaryMeshInMainCameraLOS;
-                _constructionIcon.Show(toShow);
+                _reworkIcon.Show(toShow);
             }
         }
 

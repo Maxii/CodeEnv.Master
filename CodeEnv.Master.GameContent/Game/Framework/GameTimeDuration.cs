@@ -104,6 +104,18 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        public string DebugName {
+            get {
+                if (Years == Constants.Zero) {
+                    if (Days == Constants.Zero) {
+                        return HoursOnlyFormat.Inject(Hours);
+                    }
+                    return NoYearsFormat.Inject(Days, Hours);
+                }
+                return FullFormat.Inject(Years, Days, Hours);
+            }
+        }
+
         /// <summary>
         /// The years setting of this duration. Note: The total duration is acquired using totalInHours.
         /// </summary>
@@ -216,13 +228,7 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         public override string ToString() {
-            if (Years == Constants.Zero) {
-                if (Days == Constants.Zero) {
-                    return HoursOnlyFormat.Inject(Hours);
-                }
-                return NoYearsFormat.Inject(Days, Hours);
-            }
-            return FullFormat.Inject(Years, Days, Hours);
+            return DebugName;
         }
 
         #region IEquatable<GameTimeDuration> Members

@@ -29,6 +29,8 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         IList<StationaryLocation> LocalAssemblyStations { get; }
 
+        //IHanger_Ltd Hanger { get; }   11.8.17 IHanger_Ltd is currently obsolete
+
     }
 }
 

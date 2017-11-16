@@ -29,7 +29,6 @@ namespace CodeEnv.Master.GameContent {
         private static readonly ShipDirective[] DirectivesWithNullTarget = new ShipDirective[] {
                                                                                                     ShipDirective.AssumeStation,
                                                                                                     ShipDirective.Entrench,
-                                                                                                    ShipDirective.Refit,
                                                                                                     ShipDirective.Retreat,
                                                                                                     ShipDirective.Scuttle,
                                                                                                     ShipDirective.StopAttack,
@@ -99,7 +98,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected virtual void __Validate() {
             if (DirectivesWithNullTarget.Contains(Directive)) {
-                D.AssertNull(Target);   // Use of DebugName will NRE for RefitFacilityOrder
+                D.AssertNull(Target);
             }
         }
 

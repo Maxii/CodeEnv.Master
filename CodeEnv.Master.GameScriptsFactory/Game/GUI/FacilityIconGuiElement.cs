@@ -31,7 +31,5 @@ public class FacilityIconGuiElement : AUnitElementIconGuiElement {
         set { base.Element = value; }
     }
 
-    protected override void Cleanup() { }
-
 }
 

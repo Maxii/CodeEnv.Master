@@ -30,6 +30,8 @@ namespace CodeEnv.Master.GameContent {
 
         FleetOrder CurrentOrder { get; }
 
+        float CmdEffectiveness { get; }
+
         /// <summary>
         /// Attempts to initiate the immediate execution of the provided order, returning <c>true</c>
         /// if its execution was initiated, <c>false</c> if its execution was deferred until all of the 
@@ -39,7 +41,6 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="order">The order.</param>
         /// <returns></returns>
         bool InitiateNewOrder(FleetOrder order);
-
 
         bool IsCurrentOrderDirectiveAnyOf(FleetDirective directiveA);
 

@@ -25,11 +25,13 @@ namespace CodeEnv.Master.GameContent {
 
         None,
 
+        Constructing, 
+
         Attacking,
 
         Hit,
 
-        CmdHit,
+        CmdModuleHit,
 
         Refitting,
 
@@ -37,8 +39,7 @@ namespace CodeEnv.Master.GameContent {
 
         Disbanding,
 
-        Dying
-
+        Dying,
     }
 }
 

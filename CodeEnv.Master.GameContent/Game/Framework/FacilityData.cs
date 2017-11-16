@@ -16,11 +16,9 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
     using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common;
-    using UnityEngine;
 
     /// <summary>
     /// Data associated with a FacilityItem.
@@ -99,13 +97,13 @@ namespace CodeEnv.Master.GameContent {
 
         public FacilityReport GetReport(Player player) { return Publisher.GetReport(player); }
 
-        public override void HandleConstructionComplete() {
-            base.HandleConstructionComplete();
+        public override void RestoreInitialConstructionValues() {
+            base.RestoreInitialConstructionValues();
             Outputs = MakeOutputs();
         }
 
-        public override void HandleRefitCanceled(RefitStorage valuesBeforeRefit) {
-            base.HandleRefitCanceled(valuesBeforeRefit);
+        public override void RestoreRefitValues(RefitStorage valuesBeforeRefit) {
+            base.RestoreRefitValues(valuesBeforeRefit);
             Outputs = MakeOutputs();
         }
 

@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
 
         public FleetFormationManager(IFormationMgrClient fleetCmd) : base(fleetCmd) { }
 
-        protected override IList<FormationStationSlotInfo> GenerateFormationSlotInfo(Formation formation, Transform cmdTransform, out float formationRadius) {
+        protected override List<FormationStationSlotInfo> GenerateFormationSlotInfo(Formation formation, Transform cmdTransform, out float formationRadius) {
             return GameReferences.FormationGenerator.GenerateFleetFormation(formation, cmdTransform, out formationRadius);
         }
 

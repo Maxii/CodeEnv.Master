@@ -37,8 +37,7 @@ namespace CodeEnv.Master.GameContent {
 
         void HandleFsmTgtDeath(IMortalItem_Ltd deadFsmTgt);
 
-
-        void HandleAwarenessChgd(IOwnerItem_Ltd item);
+        void HandleAwarenessChgd(IMortalItem_Ltd item);
 
     }
 }

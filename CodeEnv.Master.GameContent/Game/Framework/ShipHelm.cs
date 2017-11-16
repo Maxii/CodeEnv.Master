@@ -98,7 +98,6 @@ namespace CodeEnv.Master.GameContent {
         private IShip _ship;
         private ShipData _shipData;
         private EngineRoom _engineRoom;
-        private Transform _shipTransform;
         private IGameManager _gameMgr;
 
         #region Initialization
@@ -108,17 +107,15 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="ship">The ship.</param>
         /// <param name="shipData">The ship data.</param>
-        /// <param name="shipTransform">The ship transform.</param>
         /// <param name="engineRoom">The engine room.</param>
-        public ShipHelm(IShip ship, ShipData shipData, Transform shipTransform, EngineRoom engineRoom) {
+        public ShipHelm(IShip ship, ShipData shipData, EngineRoom engineRoom) {
             ApCourse = new List<IShipNavigableDestination>();
             _gameMgr = GameReferences.GameManager;
             _gameTime = GameTime.Instance;
             _jobMgr = GameReferences.JobManager;
-            _autoPilot = new AutoPilot(this, engineRoom, ship, shipTransform);
+            _autoPilot = new AutoPilot(this, engineRoom, ship);
             _ship = ship;
             _shipData = shipData;
-            _shipTransform = shipTransform;
             _engineRoom = engineRoom;
             Subscribe();
         }
@@ -289,7 +286,7 @@ namespace CodeEnv.Master.GameContent {
         private IEnumerator ChangeHeading(Vector3 requestedHeading) {
             D.Assert(!_engineRoom.IsDriftCorrectionUnderway);
 
-            Profiler.BeginSample("Ship ChangeHeading Job Setup", _shipTransform);
+            Profiler.BeginSample("Ship ChangeHeading Job Setup", _ship.transform);
 
             bool isInformedOfDateLogging = false;
             bool isInformedOfDateWarning = false;
@@ -297,7 +294,7 @@ namespace CodeEnv.Master.GameContent {
             GameDate warnDate = DebugUtility.CalcWarningDateForRotation(_shipData.MaxTurnRate);
 
             //int startingFrame = Time.frameCount;
-            Quaternion startingRotation = _shipTransform.rotation;
+            Quaternion startingRotation = _ship.transform.rotation;
             Quaternion intendedHeadingRotation = Quaternion.LookRotation(requestedHeading);
             float desiredTurn = Quaternion.Angle(startingRotation, intendedHeadingRotation);
             D.Log(ShowDebugLog, "{0} initiating turn of {1:0.#} degrees at {2:0.} degrees/hour. AllowedHeadingDeviation = {3:0.##} degrees.",
@@ -315,18 +312,18 @@ namespace CodeEnv.Master.GameContent {
             while (!isRqstdHeadingReached) {
                 //D.Log(ShowDebugLog, "{0} continuing another turn step. LastDeviation = {1:0.#} degrees, AllowedDeviation = {2:0.#}.", DebugName, deviationInDegrees, SteeringInaccuracy);
 
-                Profiler.BeginSample("Ship ChangeHeading Job Execution", _shipTransform);
+                Profiler.BeginSample("Ship ChangeHeading Job Execution", _ship.transform);
                 deltaTime = _gameTime.DeltaTime;
                 float allowedTurn = _shipData.MaxTurnRate * _gameTime.GameSpeedAdjustedHoursPerSecond * deltaTime;
                 __allowedTurns.Add(allowedTurn);
 
-                Quaternion currentRotation = _shipTransform.rotation;
+                Quaternion currentRotation = _ship.transform.rotation;
                 Quaternion inprocessRotation = Quaternion.RotateTowards(currentRotation, intendedHeadingRotation, allowedTurn);
                 float actualTurn = Quaternion.Angle(currentRotation, inprocessRotation);
                 __actualTurns.Add(actualTurn);
 
                 //Vector3 headingBeforeRotation = _ship.CurrentHeading;
-                _shipTransform.rotation = inprocessRotation;
+                _ship.transform.rotation = inprocessRotation;
                 //D.Log(ShowDebugLog, "{0} BEFORE ROTATION heading: {1}, AFTER ROTATION heading: {2}, rotationApplied: {3}.",
                 //    DebugName, headingBeforeRotation.ToPreciseString(), _ship.CurrentHeading.ToPreciseString(), inprocessRotation);
 

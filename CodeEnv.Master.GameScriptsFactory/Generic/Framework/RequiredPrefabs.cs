@@ -79,6 +79,7 @@ public class RequiredPrefabs : AMonoSingleton<RequiredPrefabs> {
     public GameObject planeFormation;
     public GameObject diamondFormation;
     public GameObject spreadFormation;
+    public GameObject hangerFormation;
 
     [Header("Orbit Simulators")]
     public OrbitSimulator orbitSimulator;
@@ -88,9 +89,9 @@ public class RequiredPrefabs : AMonoSingleton<RequiredPrefabs> {
     public Rigidbody highOrbitAttachPoint;
 
     [Header("Creators")]
-    public FleetCreator fleetCreator;
-    public StarbaseCreator starbaseCreator;
-    public SettlementCreator settlementCreator;
+    public AutoFleetCreator fleetCreator;
+    public AutoStarbaseCreator starbaseCreator;
+    public AutoSettlementCreator settlementCreator;
     public SystemCreator systemCreator;
 
     [Header("Commands")]

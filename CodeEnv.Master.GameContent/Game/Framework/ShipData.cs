@@ -276,14 +276,30 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        public override void HandleConstructionComplete() {
-            base.HandleConstructionComplete();
+        public override void RestoreInitialConstructionValues() {
+            base.RestoreInitialConstructionValues();
             Outputs = MakeOutputs();
         }
 
-        public override void HandleRefitCanceled(RefitStorage valuesBeforeRefit) {
-            base.HandleRefitCanceled(valuesBeforeRefit);
+        public override void RestoreRefitValues(RefitStorage valuesBeforeRefit) {
+            base.RestoreRefitValues(valuesBeforeRefit);
             Outputs = MakeOutputs();
+        }
+
+        public override EquipmentDamagedFromRefit DamageEquipment(float damagePercent) {
+            var equipmentDamagedFromRefit = base.DamageEquipment(damagePercent);
+            if (IsFtlCapable) {
+                _ftlEngine.IsDamaged = RandomExtended.Chance(damagePercent);
+                equipmentDamagedFromRefit.FtlEngine = _ftlEngine;
+            }
+            return equipmentDamagedFromRefit;
+        }
+
+        public override void RemoveDamageFromAllEquipment() {
+            base.RemoveDamageFromAllEquipment();
+            if (IsFtlCapable) {
+                _ftlEngine.IsDamaged = false;
+            }
         }
 
         private OutputsYield MakeOutputs() {

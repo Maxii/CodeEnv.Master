@@ -98,9 +98,9 @@ public class NewGameUnitConfigurator {
     /// </summary>
     public void CreateAndRegisterRequiredDesigns() {
         foreach (var player in _gameMgr.AllPlayers) {
-            FleetCmdDesign loneFleetCmdDesign = MakeFleetCmdDesign(player, passiveCmQty: 0, sensorQty: 1, maxCmdStaffEffectiveness: 0.50F);
-            loneFleetCmdDesign.Status = AUnitMemberDesign.SourceAndStatus.System_CreationTemplate;
-            RegisterCmdDesign(loneFleetCmdDesign, optionalRootDesignName: TempGameValues.LoneFleetCmdDesignName);
+            FleetCmdDesign basicFleetCmdDesign = MakeFleetCmdDesign(player, passiveCmQty: 0, sensorQty: 1);
+            basicFleetCmdDesign.Status = AUnitMemberDesign.SourceAndStatus.System_CreationTemplate;
+            RegisterCmdDesign(basicFleetCmdDesign, optionalRootDesignName: TempGameValues.__FleetCmdDesignName_Basic);
 
             var emptyShipDesigns = MakeShipDesigns(player, _shipHullStatLookup.Values, DebugLosWeaponLoadout.None,
                 DebugLaunchedWeaponLoadout.None, DebugPassiveCMLoadout.None, DebugActiveCMLoadout.None, DebugSensorLoadout.One,
@@ -240,7 +240,8 @@ public class NewGameUnitConfigurator {
 
         int cmdPassiveCMQty = GetPassiveCMQty(editorSettings.CMsPerCommand, TempGameValues.MaxCmdPassiveCMs);
         int cmdSensorQty = GetSensorQty(editorSettings.SensorsPerCommand, TempGameValues.MaxCmdSensors);
-        FleetCmdDesign cmdDesign = MakeFleetCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty);
+        float maxCmdEffectiveness = UnityEngine.Random.Range(0.9F, Constants.OneHundredPercent);
+        FleetCmdDesign cmdDesign = MakeFleetCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty, maxCmdEffectiveness);
         string cmdDesignName = RegisterCmdDesign(cmdDesign);
 
         var hullStats = GetShipHullStats(editorSettings);
@@ -284,11 +285,12 @@ public class NewGameUnitConfigurator {
     /// <param name="location">The location.</param>
     /// <param name="deployDate">The deploy date.</param>
     /// <returns></returns>
-    public FleetCreator GeneratePresetAutoFleetCreator(Player owner, Vector3 location, GameDate deployDate) {
+    public AutoFleetCreator GeneratePresetAutoFleetCreator(Player owner, Vector3 location, GameDate deployDate) {
         D.AssertEqual(DebugControls.EquipmentLoadout.Preset, _debugCntls.EquipmentPlan);
         int cmdPassiveCMQty = GetPassiveCMQty(_debugCntls.CMsPerCmd, TempGameValues.MaxCmdPassiveCMs);
         int cmdSensorQty = GetSensorQty(_debugCntls.SensorsPerCmd, TempGameValues.MaxCmdSensors);
-        FleetCmdDesign cmdDesign = MakeFleetCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty);
+        float maxCmdEffectiveness = UnityEngine.Random.Range(0.9F, Constants.OneHundredPercent);
+        FleetCmdDesign cmdDesign = MakeFleetCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty, maxCmdEffectiveness);
         string cmdDesignName = RegisterCmdDesign(cmdDesign);
 
         int elementQty = RandomExtended.Range(1, TempGameValues.MaxShipsPerFleet);
@@ -311,8 +313,8 @@ public class NewGameUnitConfigurator {
         }
 
         UnitCreatorConfiguration config = new UnitCreatorConfiguration(owner, deployDate, cmdDesignName, elementDesignNames);
-        //D.Log(ShowDebugLog, "{0} has generated/placed a preset {1} for {2}.", DebugName, typeof(FleetCreator).Name, owner);
-        return UnitFactory.Instance.MakeFleetCreatorInstance(location, config);
+        //D.Log(ShowDebugLog, "{0} has generated/placed a preset {1} for {2}.", DebugName, typeof(AutoFleetCreator).Name, owner);
+        return UnitFactory.Instance.MakeFleetCreator(location, config);
     }
 
     /// <summary>
@@ -321,7 +323,7 @@ public class NewGameUnitConfigurator {
     /// <param name="owner">The owner.</param>
     /// <param name="location">The location.</param>
     /// <returns></returns>
-    public FleetCreator GeneratePresetAutoFleetCreator(Player owner, Vector3 location) {
+    public AutoFleetCreator GeneratePresetAutoFleetCreator(Player owner, Vector3 location) {
         GameTimeDuration deployDateDelay = new GameTimeDuration(UnityEngine.Random.Range(Constants.ZeroF, 3F));
         //GameTimeDuration deployDateDelay = new GameTimeDuration(0F);
         GameDate deployDate = GameTime.Instance.GenerateRandomFutureDate(deployDateDelay);
@@ -335,7 +337,7 @@ public class NewGameUnitConfigurator {
     /// <param name="location">The location.</param>
     /// <param name="deployDate">The deploy date.</param>
     /// <returns></returns>
-    public StarbaseCreator GeneratePresetAutoStarbaseCreator(Player owner, Vector3 location, GameDate deployDate) {
+    public AutoStarbaseCreator GeneratePresetAutoStarbaseCreator(Player owner, Vector3 location, GameDate deployDate) {
         D.AssertEqual(DebugControls.EquipmentLoadout.Preset, _debugCntls.EquipmentPlan);
         int cmdPassiveCMQty = GetPassiveCMQty(_debugCntls.CMsPerCmd, TempGameValues.MaxCmdPassiveCMs);
         int cmdSensorQty = GetSensorQty(_debugCntls.SensorsPerCmd, TempGameValues.MaxCmdSensors);
@@ -361,8 +363,8 @@ public class NewGameUnitConfigurator {
         }
 
         UnitCreatorConfiguration config = new UnitCreatorConfiguration(owner, deployDate, cmdDesignName, elementDesignNames);
-        //D.Log(ShowDebugLog, "{0} has generated/placed a preset {1} for {2}.", DebugName, typeof(StarbaseCreator).Name, owner);
-        return UnitFactory.Instance.MakeStarbaseCreatorInstance(location, config);
+        //D.Log(ShowDebugLog, "{0} has generated/placed a preset {1} for {2}.", DebugName, typeof(AutoStarbaseCreator).Name, owner);
+        return UnitFactory.Instance.MakeStarbaseCreator(location, config);
     }
 
     /// <summary>
@@ -371,7 +373,7 @@ public class NewGameUnitConfigurator {
     /// <param name="owner">The owner.</param>
     /// <param name="location">The location.</param>
     /// <returns></returns>
-    public StarbaseCreator GeneratePresetAutoStarbaseCreator(Player owner, Vector3 location) {
+    public AutoStarbaseCreator GeneratePresetAutoStarbaseCreator(Player owner, Vector3 location) {
         GameTimeDuration deployDateDelay = new GameTimeDuration(UnityEngine.Random.Range(Constants.ZeroF, 3F));
         //GameTimeDuration deployDateDelay = new GameTimeDuration(0.1F);
         GameDate deployDate = GameTime.Instance.GenerateRandomFutureDate(deployDateDelay);
@@ -385,7 +387,7 @@ public class NewGameUnitConfigurator {
     /// <param name="system">The system.</param>
     /// <param name="deployDate">The deploy date.</param>
     /// <returns></returns>
-    public SettlementCreator GeneratePresetAutoSettlementCreator(Player owner, SystemItem system, GameDate deployDate) {
+    public AutoSettlementCreator GeneratePresetAutoSettlementCreator(Player owner, SystemItem system, GameDate deployDate) {
         D.AssertEqual(DebugControls.EquipmentLoadout.Preset, _debugCntls.EquipmentPlan);
         int cmdPassiveCMQty = GetPassiveCMQty(_debugCntls.CMsPerCmd, TempGameValues.MaxCmdPassiveCMs);
         int cmdSensorQty = GetSensorQty(_debugCntls.SensorsPerCmd, TempGameValues.MaxCmdSensors);
@@ -410,8 +412,8 @@ public class NewGameUnitConfigurator {
             elementDesignNames.Add(registeredDesignName);
         }
         UnitCreatorConfiguration config = new UnitCreatorConfiguration(owner, deployDate, cmdDesignName, elementDesignNames);
-        D.Log(ShowDebugLog, "{0} has placed a preset {1} for {2} in orbit in System {3}.", DebugName, typeof(SettlementCreator).Name, owner, system.DebugName);
-        return UnitFactory.Instance.MakeSettlementCreatorInstance(config, system);
+        D.Log(ShowDebugLog, "{0} has placed a preset {1} for {2} in orbit in System {3}.", DebugName, typeof(AutoSettlementCreator).Name, owner, system.DebugName);
+        return UnitFactory.Instance.MakeSettlementCreator(config, system);
     }
 
     /// <summary>
@@ -420,7 +422,7 @@ public class NewGameUnitConfigurator {
     /// <param name="owner">The owner.</param>
     /// <param name="system">The system.</param>
     /// <returns></returns>
-    public SettlementCreator GeneratePresetAutoSettlementCreator(Player owner, SystemItem system) {
+    public AutoSettlementCreator GeneratePresetAutoSettlementCreator(Player owner, SystemItem system) {
         GameTimeDuration deployDateDelay = new GameTimeDuration(UnityEngine.Random.Range(Constants.ZeroF, 3F));
         //GameTimeDuration deployDateDelay = new GameTimeDuration(5F);
         GameDate deployDate = GameTime.Instance.GenerateRandomFutureDate(deployDateDelay);
@@ -438,10 +440,11 @@ public class NewGameUnitConfigurator {
     /// <param name="location">The location.</param>
     /// <param name="deployDate">The deploy date.</param>
     /// <returns></returns>
-    public FleetCreator GenerateRandomAutoFleetCreator(Player owner, Vector3 location, GameDate deployDate) {
+    public AutoFleetCreator GenerateRandomAutoFleetCreator(Player owner, Vector3 location, GameDate deployDate) {
         int cmdPassiveCMQty = GetPassiveCMQty(DebugPassiveCMLoadout.Random, TempGameValues.MaxCmdPassiveCMs);
         int cmdSensorQty = GetSensorQty(DebugSensorLoadout.Random, TempGameValues.MaxCmdSensors);
-        FleetCmdDesign cmdDesign = MakeFleetCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty);
+        float maxCmdEffectiveness = UnityEngine.Random.Range(0.9F, Constants.OneHundredPercent);
+        FleetCmdDesign cmdDesign = MakeFleetCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty, maxCmdEffectiveness);
         string cmdDesignName = RegisterCmdDesign(cmdDesign);
 
         int elementQty = RandomExtended.Range(1, TempGameValues.MaxShipsPerFleet);
@@ -464,8 +467,8 @@ public class NewGameUnitConfigurator {
         }
 
         UnitCreatorConfiguration config = new UnitCreatorConfiguration(owner, deployDate, cmdDesignName, elementDesignNames);
-        //D.Log(ShowDebugLog, "{0} has generated/placed a random {1} for {2}.", DebugName, typeof(FleetCreator).Name, owner);
-        return UnitFactory.Instance.MakeFleetCreatorInstance(location, config);
+        //D.Log(ShowDebugLog, "{0} has generated/placed a random {1} for {2}.", DebugName, typeof(AutoFleetCreator).Name, owner);
+        return UnitFactory.Instance.MakeFleetCreator(location, config);
     }
 
     /// <summary>
@@ -474,7 +477,7 @@ public class NewGameUnitConfigurator {
     /// <param name="owner">The owner.</param>
     /// <param name="location">The location.</param>
     /// <returns></returns>
-    public FleetCreator GenerateRandomAutoFleetCreator(Player owner, Vector3 location) {
+    public AutoFleetCreator GenerateRandomAutoFleetCreator(Player owner, Vector3 location) {
         GameTimeDuration deployDateDelay = new GameTimeDuration(UnityEngine.Random.Range(Constants.ZeroF, 3F));
         //GameTimeDuration deployDateDelay = new GameTimeDuration(0F);
         GameDate deployDate = GameTime.Instance.GenerateRandomFutureDate(deployDateDelay);
@@ -488,7 +491,7 @@ public class NewGameUnitConfigurator {
     /// <param name="location">The location.</param>
     /// <param name="deployDate">The deploy date.</param>
     /// <returns></returns>
-    public StarbaseCreator GenerateRandomAutoStarbaseCreator(Player owner, Vector3 location, GameDate deployDate) {
+    public AutoStarbaseCreator GenerateRandomAutoStarbaseCreator(Player owner, Vector3 location, GameDate deployDate) {
         int cmdPassiveCMQty = GetPassiveCMQty(DebugPassiveCMLoadout.Random, TempGameValues.MaxCmdPassiveCMs);
         int cmdSensorQty = GetSensorQty(DebugSensorLoadout.Random, TempGameValues.MaxCmdSensors);
         StarbaseCmdDesign cmdDesign = MakeStarbaseCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty);
@@ -513,8 +516,8 @@ public class NewGameUnitConfigurator {
         }
 
         UnitCreatorConfiguration config = new UnitCreatorConfiguration(owner, deployDate, cmdDesignName, elementDesignNames);
-        //D.Log(ShowDebugLog, "{0} has generated/placed a random {1} for {2}.", DebugName, typeof(StarbaseCreator).Name, owner);
-        return UnitFactory.Instance.MakeStarbaseCreatorInstance(location, config);
+        //D.Log(ShowDebugLog, "{0} has generated/placed a random {1} for {2}.", DebugName, typeof(AutoStarbaseCreator).Name, owner);
+        return UnitFactory.Instance.MakeStarbaseCreator(location, config);
     }
 
     /// <summary>
@@ -523,7 +526,7 @@ public class NewGameUnitConfigurator {
     /// <param name="owner">The owner.</param>
     /// <param name="location">The location.</param>
     /// <returns></returns>
-    public StarbaseCreator GenerateRandomAutoStarbaseCreator(Player owner, Vector3 location) {
+    public AutoStarbaseCreator GenerateRandomAutoStarbaseCreator(Player owner, Vector3 location) {
         GameTimeDuration deployDateDelay = new GameTimeDuration(UnityEngine.Random.Range(Constants.ZeroF, 3F));
         //GameTimeDuration deployDateDelay = new GameTimeDuration(0.1F);
         GameDate deployDate = GameTime.Instance.GenerateRandomFutureDate(deployDateDelay);
@@ -537,7 +540,7 @@ public class NewGameUnitConfigurator {
     /// <param name="system">The system.</param>
     /// <param name="deployDate">The deploy date.</param>
     /// <returns></returns>
-    public SettlementCreator GenerateRandomAutoSettlementCreator(Player owner, SystemItem system, GameDate deployDate) {
+    public AutoSettlementCreator GenerateRandomAutoSettlementCreator(Player owner, SystemItem system, GameDate deployDate) {
         int cmdPassiveCMQty = GetPassiveCMQty(DebugPassiveCMLoadout.Random, TempGameValues.MaxCmdPassiveCMs);
         int cmdSensorQty = GetSensorQty(DebugSensorLoadout.Random, TempGameValues.MaxCmdSensors);
         SettlementCmdDesign cmdDesign = MakeSettlementCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty);
@@ -562,9 +565,9 @@ public class NewGameUnitConfigurator {
         }
 
         UnitCreatorConfiguration config = new UnitCreatorConfiguration(owner, deployDate, cmdDesignName, elementDesignNames);
-        D.Log(ShowDebugLog, "{0} has placed a random {1} for {2} in orbit in System {3}.", DebugName, typeof(SettlementCreator).Name,
+        D.Log(ShowDebugLog, "{0} has placed a random {1} for {2} in orbit in System {3}.", DebugName, typeof(AutoSettlementCreator).Name,
             owner, system.DebugName);
-        return UnitFactory.Instance.MakeSettlementCreatorInstance(config, system);
+        return UnitFactory.Instance.MakeSettlementCreator(config, system);
     }
 
     /// <summary>
@@ -573,7 +576,7 @@ public class NewGameUnitConfigurator {
     /// <param name="owner">The owner.</param>
     /// <param name="system">The system.</param>
     /// <returns></returns>
-    public SettlementCreator GenerateRandomAutoSettlementCreator(Player owner, SystemItem system) {
+    public AutoSettlementCreator GenerateRandomAutoSettlementCreator(Player owner, SystemItem system) {
         GameTimeDuration deployDateDelay = new GameTimeDuration(UnityEngine.Random.Range(Constants.ZeroF, 3F));
         //GameTimeDuration deployDateDelay = new GameTimeDuration(5F);
         GameDate deployDate = GameTime.Instance.GenerateRandomFutureDate(deployDateDelay);
@@ -623,7 +626,7 @@ public class NewGameUnitConfigurator {
             float reloadPeriod = UnityEngine.Random.Range(15F, 18F);    // 10-15
             string name = "Torpedo Launcher";
             float deliveryStrengthValue = UnityEngine.Random.Range(6F, 8F);
-            var damageCategory = Enums<DamageCategory>.GetRandom(excludeDefault: true);
+            var damageCategory = DamageCategory.Structural;
             float damageValue = UnityEngine.Random.Range(6F, 16F);  // 3-8
             float ordTurnRate = 700F;   // degrees per hour
             float ordCourseUpdateFreq = 0.4F; // course updates per hour    // 3.18.17 0.5 got turn not complete warnings
@@ -654,8 +657,8 @@ public class NewGameUnitConfigurator {
             float reloadPeriod = UnityEngine.Random.Range(25F, 28F);
             string name = "Assault Launcher";
             float deliveryStrengthValue = UnityEngine.Random.Range(6F, 8F);
-            var damageCategory = Enums<DamageCategory>.GetRandom(excludeDefault: true);
-            float damageValue = UnityEngine.Random.Range(0.5F, 1F);
+            var damageCategory = DamageCategory.Incursion;
+            float damageValue = UnityEngine.Random.Range(3F, 8F);
             float ordTurnRate = 270F;   // degrees per hour
             float ordCourseUpdateFreq = 0.4F; // course updates per hour
             DamageStrength damagePotential = new DamageStrength(damageCategory, damageValue);
@@ -684,7 +687,7 @@ public class NewGameUnitConfigurator {
             float reloadPeriod = UnityEngine.Random.Range(4F, 6F);  // 2-4
             string name = "KineticKill Projector";
             float deliveryStrengthValue = UnityEngine.Random.Range(6F, 8F);
-            var damageCategory = Enums<DamageCategory>.GetRandom(excludeDefault: true);
+            var damageCategory = DamageCategory.Structural;
             float damageValue = UnityEngine.Random.Range(5F, 10F);   // 3-8
             DamageStrength damagePotential = new DamageStrength(damageCategory, damageValue);
             WDVCategory deliveryVehicleCategory = WDVCategory.Projectile;
@@ -713,7 +716,7 @@ public class NewGameUnitConfigurator {
             float duration = UnityEngine.Random.Range(2F, 3F);  //1-2
             string name = "Phaser Projector";
             float deliveryStrengthValue = UnityEngine.Random.Range(6F, 8F);
-            var damageCategory = Enums<DamageCategory>.GetRandom(excludeDefault: true);
+            var damageCategory = DamageCategory.Thermal;
             float damageValue = UnityEngine.Random.Range(6F, 16F);   // 3-8
             DamageStrength damagePotential = new DamageStrength(damageCategory, damageValue);
             WDVCategory deliveryVehicleCategory = WDVCategory.Beam;
@@ -741,12 +744,12 @@ public class NewGameUnitConfigurator {
                     name = "ThermalArmor";
                     damageMitigation = new DamageStrength(damageMitigationCategory, damageMitigationValue);
                     break;
-                case DamageCategory.Atomic:
-                    name = "AtomicArmor";
+                case DamageCategory.Structural:
+                    name = "ProjectileArmor";
                     damageMitigation = new DamageStrength(damageMitigationCategory, damageMitigationValue);
                     break;
-                case DamageCategory.Kinetic:
-                    name = "KineticArmor";
+                case DamageCategory.Incursion:
+                    name = "SecuritySystems";
                     damageMitigation = new DamageStrength(damageMitigationCategory, damageMitigationValue);
                     break;
                 case DamageCategory.None:
@@ -1073,8 +1076,11 @@ public class NewGameUnitConfigurator {
             design.Add(availCatSlotID, stat);
         }
         design.AssignPropertyValues();
-        D.Log("{0} has created {1} with {2}, {3}, {4}, {5}, {6} EquipmentStats.",
-            DebugName, design.DebugName, weaponStats.Count(), passiveCmStats.Count(), activeCmStats.Count(), sensorStats.Count(), shieldGenStats.Count());
+        //if (owner.IsUser) {
+        //    D.Log("{0} has created {1} with {2}, {3}, {4}, {5}, {6} EquipmentStats.",
+        //        DebugName, design.DebugName, weaponStats.Count(), passiveCmStats.Count(), activeCmStats.Count(), sensorStats.Count(), 
+        //        shieldGenStats.Count());
+        //}
         return design;
     }
 
@@ -1660,6 +1666,7 @@ public class NewGameUnitConfigurator {
         return allAvailableStats;
     }
 
+    [System.Diagnostics.Conditional("DEBUG")]
     private void __ValidateOwner(Player owner, AUnitCreatorEditorSettings editorSettings) {
         if (owner.IsUser) {
             D.Assert(editorSettings.IsOwnerUser);

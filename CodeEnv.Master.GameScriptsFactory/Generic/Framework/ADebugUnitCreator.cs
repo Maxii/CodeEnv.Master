@@ -80,6 +80,19 @@ public abstract class ADebugUnitCreator : AUnitCreator {
 
     #endregion
 
+    private UnitCreatorConfiguration _configuration;
+    public UnitCreatorConfiguration Configuration {
+        get { return _configuration; }
+        set {
+            D.AssertNull(_configuration);   // currently one time only
+            SetProperty<UnitCreatorConfiguration>(ref _configuration, value, "Configuration");
+        }
+    }
+
+    public sealed override GameDate DeployDate { get { return Configuration.DeployDate; } }
+
+    protected sealed override Player Owner { get { return Configuration.Owner; } }
+
     public abstract AUnitCreatorEditorSettings EditorSettings { get; }
 
     /// <summary>
@@ -90,7 +103,7 @@ public abstract class ADebugUnitCreator : AUnitCreator {
     /// creator is used as part of the initial creators reqd on the GameStart date. It will always be used
     /// if DebugControls.UseDebugCreatorsOnly is true.</remarks>
     /// </summary>
-    protected GameDate DateToDeploy {
+    protected GameDate EditorDeployDate {
         get {
             if (_toDelayOperations) {
                 return new GameDate(GameTime.GameStartDate, new GameTimeDuration(_hourDelay, _dayDelay, _yearDelay));
@@ -146,6 +159,31 @@ public abstract class ADebugUnitCreator : AUnitCreator {
 
     #endregion
 
+    public sealed override void PrepareUnitForDeployment() {
+        D.AssertNotNull(Configuration);    // would only be called with a Configuration
+        D.Log(ShowDebugLog, "{0} is building and positioning {1}. Targeted DeployDate = {2}.", DebugName, UnitName, DeployDate);
+        InitializeRootUnitName();
+        MakeUnit();
+    }
+
+    private void MakeUnit() {
+        LogEvent();
+        MakeElements();
+        MakeCommand();
+        AddElementsToCommand();
+        AssignHQElement();
+        PositionUnit();
+    }
+
+    protected abstract void MakeElements();
+
+    protected abstract void MakeCommand();
+
+    protected abstract void AddElementsToCommand();
+
+    protected abstract void AssignHQElement();
+
+    protected abstract void PositionUnit();
 
     /// <summary>
     /// Adjusts the serialized element qty field in the editor to the provided value.
@@ -154,79 +192,128 @@ public abstract class ADebugUnitCreator : AUnitCreator {
     /// <param name="qty">The qty.</param>
     protected abstract void __AdjustElementQtyFieldTo(int qty);
 
-    #region Owner selection Archive
+    #region Archive
 
-    //private Player ValidateAndInitializeOwner() {
-    //    Player userPlayer = _gameMgr.UserPlayer;
-    //    if (IsOwnedByUser) {
-    //        return userPlayer;
-    //    }
-    //    DiplomaticRelationship desiredUserRelations = DesiredRelationsWithUser;
+    //#region Serialized Editor fields
 
-    //    Player aiOwner = null;
-    //    IEnumerable<Player> aiOwnerCandidates;
-    //    if (_gameMgr.__TryGetAIPlayersWithUserRelationshipOf(desiredUserRelations, out aiOwnerCandidates)) {
-    //        // aiOwner has already been met and has the desired user relationship, 
-    //        // or is unmet but has already been assigned the desired relationship for when they meet
-    //        aiOwner = aiOwnerCandidates.Shuffle().First();
-    //    }
-    //    else if (_gameMgr.__TryGetAIPlayersWithNoCurrentOrAssignedUserRelationship(out aiOwnerCandidates)) {
-    //        // aiOwner has neither been met or assigned a user relationship for when they meet
-    //        aiOwner = aiOwnerCandidates.Shuffle().First();
-    //        _gameMgr.GetAIManagerFor(aiOwner).__AssignUserRelations(userPlayer, desiredUserRelations);
-    //        _gameMgr.UserAIManager.__AssignUserRelations(aiOwner, desiredUserRelations);
-    //    }
+    //[SerializeField]
+    //protected bool _isOwnerUser;
 
-    //    if (aiOwner != null) {
-    //        D.Log(ShowCmdHQDebugLog, "{0} picked AI Owner {1}. User relationship upon detection will be {2}.", DebugName, aiOwner.LeaderName, desiredUserRelations.GetValueName());
+    //[SerializeField]
+    //protected DebugDiploUserRelations _ownerRelationshipWithUser;
+
+    //[SerializeField]
+    //private bool _isCompositionPreset;
+
+    //[SerializeField]
+    //private bool _toDelayOperations;
+
+    //[Range(0, 19)]
+    //[SerializeField]
+    //private int _hourDelay = 0;
+
+    //[Range(0, 99)]
+    //[SerializeField]
+    //private int _dayDelay = 0;
+
+    //[Range(0, 10)]
+    //[SerializeField]
+    //private int _yearDelay = 0;
+
+    //[SerializeField]
+    //protected DebugLosWeaponLoadout _losWeaponsPerElement = DebugLosWeaponLoadout.Random;
+
+    //[SerializeField]
+    //protected DebugLaunchedWeaponLoadout _launchedWeaponsPerElement = DebugLaunchedWeaponLoadout.Random;
+
+    //[SerializeField]
+    //protected DebugActiveCMLoadout _activeCMsPerElement = DebugActiveCMLoadout.One;
+
+    //[SerializeField]
+    //protected DebugShieldGenLoadout _shieldGeneratorsPerElement = DebugShieldGenLoadout.One;
+
+    //[SerializeField]
+    //protected DebugPassiveCMLoadout _passiveCMsPerElement = DebugPassiveCMLoadout.One;
+
+    //[SerializeField]
+    //protected DebugSensorLoadout _srSensorsPerElement = DebugSensorLoadout.One;
+
+    //[SerializeField]
+    //protected DebugPassiveCMLoadout _countermeasuresPerCmd = DebugPassiveCMLoadout.One;
+
+    //[SerializeField]
+    //protected DebugSensorLoadout _sensorsPerCmd = DebugSensorLoadout.Random;
+
+    //#endregion
+
+    //public abstract AUnitCreatorEditorSettings EditorSettings { get; }
+
+    ///// <summary>
+    ///// The date to deploy the unit from this DebugCreator.
+    ///// <remarks>This value is used to construct an EditorSetting for this DebugCreator. That EditorSetting
+    ///// is used by the UniverseCreator and UnitConfigurator to create a Configuration for this DebugCreator.
+    ///// The Configuration may or may not use this DateToDeploy value. It will not use it if this 
+    ///// creator is used as part of the initial creators reqd on the GameStart date. It will always be used
+    ///// if DebugControls.UseDebugCreatorsOnly is true.</remarks>
+    ///// </summary>
+    //protected GameDate DateToDeploy {
+    //    get {
+    //        if (_toDelayOperations) {
+    //            return new GameDate(GameTime.GameStartDate, new GameTimeDuration(_hourDelay, _dayDelay, _yearDelay));
+    //        }
+    //        return GameTime.GameStartDate;
     //    }
-    //    return aiOwner;
     //}
-    //private Player ValidateAndInitializeOwner() {
-    //    Player userPlayer = _gameMgr.UserPlayer;
-    //    if (_isOwnerUser) {
-    //        return userPlayer;
-    //    }
-    //    DiplomaticRelationship desiredUserRelations;
-    //    switch (_ownerRelationshipWithUser) {
-    //        case __DiploStateWithUser.Alliance:
-    //            desiredUserRelations = DiplomaticRelationship.Alliance;
-    //            break;
-    //        case __DiploStateWithUser.Friendly:
-    //            desiredUserRelations = DiplomaticRelationship.Friendly;
-    //            break;
-    //        case __DiploStateWithUser.Neutral:
-    //            desiredUserRelations = DiplomaticRelationship.Neutral;
-    //            break;
-    //        case __DiploStateWithUser.ColdWar:
-    //            desiredUserRelations = DiplomaticRelationship.ColdWar;
-    //            break;
-    //        case __DiploStateWithUser.War:
-    //            desiredUserRelations = DiplomaticRelationship.War;
-    //            break;
-    //        default:
-    //            throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(_ownerRelationshipWithUser));
-    //    }
 
-    //    Player aiOwner = null;
-    //    IEnumerable<Player> aiOwnerCandidates;
-    //    if (_gameMgr.__TryGetAIPlayersWithUserRelationshipOf(desiredUserRelations, out aiOwnerCandidates)) {
-    //        // aiOwner has already been met and has the desired user relationship, 
-    //        // or is unmet but has already been assigned the desired relationship for when they meet
-    //        aiOwner = aiOwnerCandidates.Shuffle().First();
-    //    }
-    //    else if (_gameMgr.__TryGetAIPlayersWithNoCurrentOrAssignedUserRelationship(out aiOwnerCandidates)) {
-    //        // aiOwner has neither been met or assigned a user relationship for when they meet
-    //        aiOwner = aiOwnerCandidates.Shuffle().First();
-    //        _gameMgr.GetAIManagerFor(aiOwner).__AssignUserRelations(userPlayer, desiredUserRelations);
-    //        _gameMgr.UserAIManager.__AssignUserRelations(aiOwner, desiredUserRelations);
-    //    }
+    //protected bool IsCompositionPreset { get { return _isCompositionPreset; } }
 
-    //    if (aiOwner != null) {
-    //        D.Log(ShowCmdHQDebugLog, "{0} picked AI Owner {1}. User relationship upon detection will be {2}.", DebugName, aiOwner.LeaderName, desiredUserRelations.GetValueName());
+    //#region ExecuteInEditMode
+
+    //protected sealed override void Awake() {
+    //    if (!Application.isPlaying) {
+    //        return; // Uses ExecuteInEditMode
     //    }
-    //    return aiOwner;
+    //    base.Awake();
     //}
+
+    //protected sealed override void Start() {
+    //    if (!Application.isPlaying) {
+    //        return; // Uses ExecuteInEditMode
+    //    }
+    //    base.Start();
+    //}
+
+    //void Update() {
+    //    if (Application.isPlaying) {
+    //        enabled = false;    // Uses ExecuteInEditMode
+    //    }
+
+    //    int activeElementCount = GetComponentsInChildren<AUnitElementItem>().Count();
+    //    bool hasActiveElements = activeElementCount > Constants.Zero;
+    //    if (hasActiveElements != (transform.childCount > Constants.Zero)) {
+    //        D.Error("{0} elements not properly configured.", DebugName);
+    //    }
+    //    if (hasActiveElements) {
+    //        _isCompositionPreset = true;
+    //        __AdjustElementQtyFieldTo(activeElementCount);
+    //    }
+    //}
+
+    //protected sealed override void OnDestroy() {
+    //    if (!Application.isPlaying) {
+    //        return; // Uses ExecuteInEditMode
+    //    }
+    //    base.OnDestroy();
+    //}
+
+    //#endregion
+
+    ///// <summary>
+    ///// Adjusts the serialized element qty field in the editor to the provided value.
+    ///// <remarks>Makes the number of elements in a Preset Composition Unit visible in the editor.</remarks>
+    ///// </summary>
+    ///// <param name="qty">The qty.</param>
+    //protected abstract void __AdjustElementQtyFieldTo(int qty);
 
     #endregion
 

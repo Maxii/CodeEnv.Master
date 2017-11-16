@@ -31,7 +31,10 @@ namespace CodeEnv.Master.GameContent {
 
         Diamond,
 
-        Spread
+        Spread,
+
+
+        Hanger
 
     }
 }

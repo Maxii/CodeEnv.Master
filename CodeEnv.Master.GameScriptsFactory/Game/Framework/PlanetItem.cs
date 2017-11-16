@@ -68,12 +68,12 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable,
 
     #region Initialization
 
-    protected override ADisplayManager MakeDisplayManagerInstance() {
+    protected override ADisplayManager MakeDisplayMgrInstance() {
         return new PlanetDisplayManager(this, __DetermineCullingLayer());
     }
 
-    protected override void InitializeDisplayManager() {
-        base.InitializeDisplayManager();
+    protected override void InitializeDisplayMgr() {
+        base.InitializeDisplayMgr();
         InitializeIcon();
     }
 
@@ -82,7 +82,7 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable,
     }
 
     protected override HoverHighlightManager InitializeHoverHighlightMgr() {
-        float highlightRadius = Radius * 2F;
+        float highlightRadius = Radius * 2F;   // HACK
         return new HoverHighlightManager(this, highlightRadius);
     }
 
@@ -103,7 +103,7 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable,
     }
 
     internal void RemoveMoon(MoonItem moon) {
-        D.Assert(!moon.IsOperational);
+        D.Assert(moon.IsDead);
         bool isRemoved = ChildMoons.Remove(moon);
         D.Assert(isRemoved);
     }

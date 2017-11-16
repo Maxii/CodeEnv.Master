@@ -157,13 +157,14 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     /// </summary>
     /// <param name="detectedObject">The detected object.</param>
     protected void AddDetectedObject(IDetectableType detectedObject) {
-        D.Assert(detectedObject.IsOperational, detectedObject.DebugName);   // 4.6.17 Failed after resuming from pause. Added debug
-        if (_objectsDetected.Add(detectedObject)) {
-            //D.Log(ShowDebugLog, "{0} now tracking {1} {2}.", DebugName, typeof(IDetectableType).Name, detectedObject.DebugName);
+        if (__IsDetectedObjectValid(detectedObject)) {
+            if (_objectsDetected.Add(detectedObject)) {
+                //D.Log(ShowDebugLog, "{0} now tracking {1} {2}.", DebugName, typeof(IDetectableType).Name, detectedObject.DebugName);
 
-            Profiler.BeginSample("HandleDetectedObjectAdded", gameObject);
-            HandleDetectedObjectAdded(detectedObject);
-            Profiler.EndSample();
+                Profiler.BeginSample("HandleDetectedObjectAdded", gameObject);
+                HandleDetectedObjectAdded(detectedObject);
+                Profiler.EndSample();
+            }
         }
     }
 
@@ -177,13 +178,12 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     protected bool RemoveDetectedObject(IDetectableType prevDetectedObject) {
         bool isRemoved = _objectsDetected.Remove(prevDetectedObject);
         if (isRemoved) {
-            if (prevDetectedObject.IsOperational) {
-                //D.Log(ShowDebugLog, "{0} no longer tracking {1} at distance = {2:0.#}. Items remaining: {3}.",
-                //    DebugName, previouslyDetectedObject.DebugName, Vector3.Distance(previouslyDetectedObject.Position, transform.position), _objectsDetected.Select(i => i.DebugName).Concatenate());
+            if (ShowDebugLog) {
+                string deadText = prevDetectedObject.IsOperational ? string.Empty : "dead ";
+                D.Log("{0} no longer tracking {1}{2} at distance = {3:0.#}. Items remaining: {4}.", DebugName, deadText,
+                    prevDetectedObject.DebugName, Vector3.Distance(prevDetectedObject.Position, transform.position), _objectsDetected.Select(i => i.DebugName).Concatenate());
             }
-            else {
-                //D.Log(ShowDebugLog, "{0} no longer tracking dead {1}.", DebugName, previouslyDetectedObject.DebugName);
-            }
+
             HandleDetectedObjectRemoved(prevDetectedObject);
         }
         return isRemoved;
@@ -328,9 +328,7 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     private IList<IDetectableType> _exitingObjectsDetectedWhilePaused;
 
     private void RecordObjectEnteringWhilePaused(IDetectableType enteringObject) {
-        if (_enteringObjectsDetectedWhilePaused == null) {
-            _enteringObjectsDetectedWhilePaused = new List<IDetectableType>();
-        }
+        _enteringObjectsDetectedWhilePaused = _enteringObjectsDetectedWhilePaused ?? new List<IDetectableType>();
         if (CheckForPreviousPausedExitOf(enteringObject)) {
             // while paused, previously exited and now entered so record to take action when unpaused
             D.Warn("{0} removing entering object {1} already recorded as exited while paused.", DebugName, enteringObject.DebugName);
@@ -340,9 +338,7 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     }
 
     private void RecordObjectExitingWhilePaused(IDetectableType exitingObject) {
-        if (_exitingObjectsDetectedWhilePaused == null) {
-            _exitingObjectsDetectedWhilePaused = new List<IDetectableType>();
-        }
+        _exitingObjectsDetectedWhilePaused = _exitingObjectsDetectedWhilePaused ?? new List<IDetectableType>();
         if (CheckForPreviousPausedEntryOf(exitingObject)) {
             // while paused, previously entered and now exited so eliminate record as no action should be taken when unpaused
             D.Warn("{0} removing exiting object {1} already recorded as entered while paused.", DebugName, exitingObject.DebugName);
@@ -363,15 +359,6 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
             _exitingObjectsDetectedWhilePaused.ForAll(obj => RemoveDetectedObject(obj));
             _exitingObjectsDetectedWhilePaused.Clear();
         }
-    }
-
-    private void __ValidateObjectsDetectedWhilePaused() {
-        // there should be no obstacles that are present in both lists
-        if (_enteringObjectsDetectedWhilePaused.IsNullOrEmpty() || _exitingObjectsDetectedWhilePaused.IsNullOrEmpty()) {
-            return;
-        }
-        // 1.23.17 Previous test D.Assert(!_enteringObjectsDetectedWhilePaused.EqualsAnyOf(_exitingObjectsDetectedWhilePaused)); did not work
-        D.AssertEqual(Constants.Zero, _enteringObjectsDetectedWhilePaused.Intersect(_exitingObjectsDetectedWhilePaused).Count());
     }
 
     /// <summary>
@@ -451,6 +438,35 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
         }
     }
 
+    [System.Diagnostics.Conditional("DEBUG")]
+    private void __ValidateObjectsDetectedWhilePaused() {
+        // there should be no obstacles that are present in both lists
+        if (_enteringObjectsDetectedWhilePaused.IsNullOrEmpty() || _exitingObjectsDetectedWhilePaused.IsNullOrEmpty()) {
+            return;
+        }
+        // 1.23.17 Previous test D.Assert(!_enteringObjectsDetectedWhilePaused.EqualsAnyOf(_exitingObjectsDetectedWhilePaused)); did not work
+        D.AssertEqual(Constants.Zero, _enteringObjectsDetectedWhilePaused.Intersect(_exitingObjectsDetectedWhilePaused).Count());
+    }
+
+    /// <summary>
+    /// Determines whether the specified detected object is valid.
+    /// <remarks>11.9.17 A dead element can be detected during a pause when added to a construction queue 
+    /// (instantiating and making it operational) and then removed (resulting in its death) during the same pause.
+    /// This condition is found when attempting to add the detected object once the pause is resumed.</remarks>
+    /// </summary>
+    /// <param name="detectedObject">The detected object.</param>
+    /// <returns></returns>
+    private bool __IsDetectedObjectValid(IDetectableType detectedObject) {
+        bool isValid = detectedObject.IsOperational;
+        if (!isValid) {
+            var mortalDetectedObject = detectedObject as IMortalItem_Ltd;
+            if (mortalDetectedObject != null) {
+                D.Assert(mortalDetectedObject.IsDead);
+            }
+        }
+        return isValid;
+    }
+
     /// <summary>
     /// Flag indicating whether target reacquisition is underway.
     /// <remarks>Used to tell WRM.HandleDetectedObjectAdded to use _attackableEnemyTargetsMemoryPriorToReacquisition
@@ -473,8 +489,10 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     /// Hook for derived classes to validate the new RangeDistance value.
     /// Default does nothing.
     /// </summary>
+    [System.Diagnostics.Conditional("DEBUG")]
     protected virtual void __ValidateRangeDistance() { }
 
+    [System.Diagnostics.Conditional("DEBUG")]
     protected abstract void __WarnOnErroneousTriggerExit(IDetectableType lostDetectionObject);
 
     #endregion

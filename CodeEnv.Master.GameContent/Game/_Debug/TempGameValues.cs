@@ -156,7 +156,7 @@ namespace CodeEnv.Master.GameContent {
                                                                     Formation.Spread
                                                                 };
 
-        public const string LoneFleetCmdDesignName = "LoneFleetCmdDesign";
+        public const string __FleetCmdDesignName_Basic = "FleetCmdDesign_Basic";
 
         public const string EmptyFleetCmdTemplateDesignName = "EmptyFleetCmdTemplateDesign";
         public const string EmptyStarbaseCmdTemplateDesignName = "EmptyStarbaseCmdTemplateDesign";
@@ -190,7 +190,6 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-
         #region Close Orbit Values    
 
         /// <summary>
@@ -200,11 +199,6 @@ namespace CodeEnv.Master.GameContent {
         /// arrival depth forced ships to go too slow and couldn't catch moving planets.</remarks>
         /// </summary>
         public const float ShipCloseOrbitSlotDepth = 1.5F;
-
-        /// <summary>
-        /// Value to add to the Moon's Radius when setting the radius of the ObstacleZone surrounding the moon.
-        /// </summary>
-        public const float MoonObstacleZoneRadiusAdder = 1F;
 
         /// <summary>
         /// Value to add to the Planet's Radius when setting the CloseOrbitInnerRadius surrounding the moon.
@@ -239,19 +233,10 @@ namespace CodeEnv.Master.GameContent {
 
         public const int MaxShipsPerFleet = 25;
 
-        public const float LargestPlanetoidObstacleZoneRadius = 6.1F; // Gas Giant = 6.0
-
-        public const float LargestFacilityObstacleZoneRadius = 0.7F;  // Central Hub
-
-        public const float LargestShipCollisionDetectionZoneRadius = 0.35F; // Carrier  // Smallest = 0.06F Frigate
-
-        /// <summary>
-        /// The radius of each FormationStation in a fleet formation = 0.7.
-        /// <remarks>FormationPlaceholder cells have been adjusted to have edges of 1.5 to space formation
-        /// stations so they don't overlap.</remarks>
-        /// </summary>
-        public static readonly float FleetFormationStationRadius = LargestShipCollisionDetectionZoneRadius * 2F;    // 0.7
-
+        #region Radii
+        // Note on MaxRadius values. Use of a static dynamically generated MaxRadius on each Item type works, but it only gets populated 
+        // when a item is built. Some items like ships and facilities may not be built until runtime so the max value is zero. As CameraControl 
+        // needs these values during startup to set the layer culling distances, I had to return to these values for now.
 
         /// <summary>
         /// The length in world units of a sector side along any of the axis. As a sector
@@ -278,13 +263,80 @@ namespace CodeEnv.Master.GameContent {
 
         public const float StarRadius = 10F;
 
-        // Note on MaxRadius values. Use of a static dynamically generated MaxRadius on each Item type works, but it only gets populated 
-        // when a item is built. Some items like ships and facilities may not be built until runtime so the max value is zero. As CameraControl 
-        // needs these values during startup to set the layer culling distances, I had to return to these values for now.
+        [System.Obsolete("Not currently used")]
+        public const float MaxPlanetoidRadius = 5.0F;   // range is 0.2 (smallest moon) - 5.0 (Gas Giant)
 
-        public const float FacilityMaxRadius = 0.35F;  // range is 0.17 - 0.35
+        public const float LargestPlanetoidObstacleZoneRadius = 6.1F; // Gas Giant = 6.0, determined by closeOrbitInnerRadius
 
-        public const float ShipMaxRadius = 0.175F;   // range is 0.03 - 0.17
+        /// <summary>
+        /// Value to add to the Moon's Radius when setting the radius of the ObstacleZone surrounding the moon.
+        /// </summary>
+        public const float MoonObstacleZoneRadiusAdder = 1F;
+
+        public const float MaxFacilityRadius = 0.35F;  // range is 0.17 - 0.3465 CentralHub (half of HullDimension.magnitude of 0.693)
+
+        /// <summary>
+        /// The multiplier used to determine the radius of a Facility's ObstacleZoneColliderZone.
+        /// <remarks>Typically applied to a facility's radius.</remarks>
+        /// </summary>
+        public const float FacilityObstacleZoneRadiusMultiplier = 2.0F;
+
+        public static readonly float LargestFacilityObstacleZoneRadius   // Central Hub = 0.70
+            = MaxFacilityRadius * FacilityObstacleZoneRadiusMultiplier;
+
+        // 11.5.17 Primary use waiting on facilities ability to move
+        [System.Obsolete("Not currently used")]
+        public const float FacilityCollisionDetectionMonitorRangeMultiplier = 1.2F;
+
+        // 11.5.17 Primary use waiting on facilities ability to move
+        [System.Obsolete("Not currently used")]
+        public static readonly float LargestFacilityCollisionDetectionZoneRadius    // CentralHub = 0.84
+            = LargestFacilityObstacleZoneRadius * FacilityCollisionDetectionMonitorRangeMultiplier;
+
+        /// <summary>
+        /// The radius of each FormationStation in a starbase or settlement formation = 1.68.
+        /// <remarks>UNDONE FormationPlaceholder cells should be adjusted to have edges of more than double this value to space formation
+        /// stations so they don't overlap. 11.5.17 Currently 1.5 just like fleet.</remarks>
+        /// </summary>
+        [System.Obsolete("Not currently used")]
+        public static readonly float BaseFormationStationRadius = LargestFacilityCollisionDetectionZoneRadius * 2F; // CentralHub = 1.68
+
+        [System.Obsolete("Not currently used as FormationGridOrganizer cell size is set in editor")]    // 11.5.17 Currently using 1.5
+        public static readonly float MinBaseFormationGridSideLength = BaseFormationStationRadius * 2F;  // 3.36
+
+
+        [System.Obsolete("Not currently used as FormationGridOrganizer cell size is set in editor")]        // 11.5.17 Currently using 0.75
+        public static readonly float MinHangerFormationGridSizeLength = MaxFacilityRadius + MaxShipRadius;  // 0.525
+
+        public const float MaxShipRadius = 0.175F;   // range is 0.03 - 0.1705 Carrier (half of HullDimension.magnitude of 0.341)
+
+        /// <summary>
+        /// The multiplier used to determine the range of a Ship's CollisionDetectionMonitor.
+        /// <remarks>Typically applied to a ship's radius.</remarks>
+        /// </summary>
+        public const float ShipCollisionDetectionMonitorRangeMultiplier = 2.0F;
+
+        public static readonly float LargestShipCollisionDetectionZoneRadius      // Carrier = 0.35 // Smallest = Frigate 0.06
+            = MaxShipRadius * ShipCollisionDetectionMonitorRangeMultiplier;
+
+        /// <summary>
+        /// The radius of each FormationStation in a fleet formation = 0.7.
+        /// <remarks>FormationPlaceholder cells have been adjusted to have edges of more than double this value to space formation
+        /// stations so they don't overlap. 11.5.17 Currently 1.5.</remarks>
+        /// </summary>
+        public static readonly float FleetFormationStationRadius = LargestShipCollisionDetectionZoneRadius * 2F;    // Carrier = 0.70
+
+        [System.Obsolete("Not currently used as FormationGridOrganizer cell size is set in editor")]        // 11.5.17 Currently using 1.5
+        public static readonly float MinFleetFormationGridSideLength = FleetFormationStationRadius * 2F;    // 1.40
+
+        /// <summary>
+        /// The multiplier used to determine the ClearanceRadius around an Element.
+        /// <remarks>For a ship, the multiplier is applied to the CollisionDetectionZoneRadius.
+        /// For a facility, it is applied to the ObstacleZoneRadius.</remarks>
+        /// </summary>
+        public const float ElementClearanceRadiusMultiplier = 5F;
+
+        #endregion
 
         #region Culling distances and assignments
 
@@ -582,7 +634,7 @@ namespace CodeEnv.Master.GameContent {
         public const string CultureIconFilename = "Star1_12";
 
         public const string PopulationIconFilename = "Team1_12";
-        public const string ConstructionIconFilename = "Wrench1_12";    // shows on black space background
+        public const string ReworkIconFilename = "Wrench1_12";    // shows on black space background
 
         public const string DefensiveStrengthIconFilename = "shield94_12";
         public const string OffensiveStrengthIconFilename = "lightning24_12";

@@ -173,8 +173,8 @@ public abstract class AMortalItemStateMachine : AMortalItem {
         }
     }
 
-    protected override void InitializeOnAwake() {
-        base.InitializeOnAwake();
+    protected override void InitializeValuesAndReferences() {
+        base.InitializeValuesAndReferences();
         // I changed the order in which these are called. If left as it was, if ExitState() was IEnumerable
         // along with EnterState(), then the EnterState would be executed before ExitState. I never saw this as
         // a problem as all my ExitState()s return void.

@@ -182,6 +182,18 @@ namespace CodeEnv.Master.GameContent {
 
         public FleetCmdReport GetReport(Player player) { return Publisher.GetReport(player); }
 
+        /// <summary>
+        /// Activates all the ship sensors in the fleet. Does nothing if they are already activated.
+        /// <remarks>11.3.17 Handles case where ships added to a brand new, non-operational fleetCmd come from Hanger
+        /// with their sensors off. When Ship's Command property was changed to this non-operational FleetCmd, the ship
+        /// did not activate its sensors because there was no initialized UnifiedSRSensorRangeMonitor to receive the results.
+        /// Accordingly, when this FleetCmd CommencesOperations, it initializes the Monitor, then uses this method
+        /// to activate all ship sensors.</remarks>
+        /// </summary>
+        public void ActivateShipSensors() {
+            ElementsData.ForAll(sData => sData.ActivateSRSensors());
+            RecalcUnitSensorRange();
+        }
 
         protected override void RefreshComposition() {
             var elementCategories = _elementsData.Cast<ShipData>().Select(sd => sd.HullCategory);

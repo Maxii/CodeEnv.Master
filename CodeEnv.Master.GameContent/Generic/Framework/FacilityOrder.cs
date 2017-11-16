@@ -92,7 +92,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected virtual void __Validate() {
             if (DirectivesWithNullTarget.Contains(Directive)) {
-                D.AssertNull(Target);   // Use of DebugName will NRE for RefitFacilityOrder
+                D.AssertNull(Target);
             }
         }
 

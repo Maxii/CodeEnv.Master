@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for Items that can maneuver, aka have engines.
     /// </summary>
-    public interface IManeuverable : IDetectable, INavigableDestination /*IDetectable*/ {
+    public interface IManeuverable : IDetectable, INavigableDestination {
 
         event EventHandler deathOneShot;
 
@@ -37,7 +37,7 @@ namespace CodeEnv.Master.GameContent {
 
         new string DebugName { get; }
 
-        new bool IsOperational { get; }
+        bool IsDead { get; }
 
         bool IsFtlCapable { get; }
 

@@ -714,16 +714,12 @@ public class NewGameSystemConfigurator {
                     damageMitigationValue = UnityEngine.Random.Range(3F, 8F);
                     damageMitigation = new DamageStrength(damageMitigationCategory, damageMitigationValue);
                     break;
-                case DamageCategory.Atomic:
-                    name = "HighAcidAtmosphere";
-                    damageMitigationValue = UnityEngine.Random.Range(3F, 8F);
-                    damageMitigation = new DamageStrength(damageMitigationCategory, damageMitigationValue);
-                    break;
-                case DamageCategory.Kinetic:
+                case DamageCategory.Structural:
                     name = "HighParticulateAtmosphere";
                     damageMitigationValue = UnityEngine.Random.Range(3F, 8F);
                     damageMitigation = new DamageStrength(damageMitigationCategory, damageMitigationValue);
                     break;
+                case DamageCategory.Incursion:  // UNDONE
                 case DamageCategory.None:
                     name = "NoAtmosphere";
                     damageMitigation = new DamageStrength(1F, 1F, 1F);

@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2016 
+// Copyright © 2012 - 2015 Strategic Forge
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IMortalItem_Ltd.cs
-// limited InfoAccess Interface for easy access to MonoBehaviours that are AMortalItems.
+// File: IFacility.cs
+// Interface for easy access to MonoBehaviours that are FacilityItems.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,23 +16,14 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
-    using Common;
-
     /// <summary>
-    /// limited InfoAccess Interface for easy access to MonoBehaviours that are AMortalItems.
+    /// Interface for easy access to MonoBehaviours that are FacilityItems.
     /// </summary>
-    public interface IMortalItem_Ltd : IIntelItem_Ltd {
+    public interface IFacility : IUnitElement {
 
-        event EventHandler deathOneShot;
+        FacilityHullCategory HullCategory { get; }
 
-        event EventHandler __death;
-
-        IntVector3 SectorID { get; }
-
-        void __LogDeathEventSubscribers();
-
-
+        FacilityOrder CurrentOrder { get; }
     }
 }
 

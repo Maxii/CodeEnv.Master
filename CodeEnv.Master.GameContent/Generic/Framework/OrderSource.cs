@@ -34,12 +34,12 @@ namespace CodeEnv.Master.GameContent {
         CmdStaff = 2,
 
         /// <summary>
-        /// The AI of the player.
+        /// The AI of the player including the User's AI.
         /// </summary>
         PlayerAI = 3,
 
         /// <summary>
-        /// The User.
+        /// The User via the UI.
         /// </summary>
         User = 4
 

@@ -60,8 +60,8 @@ public class SettlementCmdItem : AUnitBaseCmdItem, ISettlementCmd, ISettlementCm
 
     #region Initialization
 
-    protected override void InitializeOnAwake() {
-        base.InitializeOnAwake();
+    protected override void InitializeValuesAndReferences() {
+        base.InitializeValuesAndReferences();
         _playersWithInfoAccessToOwner = new List<Player>(TempGameValues.MaxPlayers);
     }
 

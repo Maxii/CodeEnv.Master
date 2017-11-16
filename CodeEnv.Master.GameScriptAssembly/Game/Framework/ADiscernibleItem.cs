@@ -89,8 +89,8 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
 
     #region Initialization
 
-    protected override void InitializeOnAwake() {
-        base.InitializeOnAwake();
+    protected override void InitializeValuesAndReferences() {
+        base.InitializeValuesAndReferences();
         _inputHelper = GameReferences.InputHelper;
     }
 
@@ -103,8 +103,8 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
         D.Assert(IsOperational);
         _hoveredHudManager = InitializeHoveredHudManager();
 
-        DisplayMgr = MakeDisplayManagerInstance();
-        InitializeDisplayManager();
+        DisplayMgr = MakeDisplayMgrInstance();
+        InitializeDisplayMgr();
         // always start enabled as UserPlayerIntelCoverage must be > None for this method to be called,
         // or, in the case of SystemItem, its members coverage must be > their starting coverage
         DisplayMgr.IsDisplayEnabled = true;
@@ -115,9 +115,9 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
 
     protected abstract ItemHoveredHudManager InitializeHoveredHudManager();
 
-    protected abstract ADisplayManager MakeDisplayManagerInstance();
+    protected abstract ADisplayManager MakeDisplayMgrInstance();
 
-    protected virtual void InitializeDisplayManager() {
+    protected virtual void InitializeDisplayMgr() {
         DisplayMgr.Initialize();
         _subscriptions.Add(DisplayMgr.SubscribeToPropertyChanged(dm => dm.IsInMainCameraLOS, IsInMainCameraLosPropChangedHandler));
         _subscriptions.Add(DisplayMgr.SubscribeToPropertyChanged(dm => dm.IsPrimaryMeshInMainCameraLOS, IsVisualDetailDiscernibleToUserPropChangedHandler));
@@ -421,28 +421,27 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     }
 
     private void HandleClick() {
+        D.Assert(IsDiscernibleToUser);
         //D.Log(ShowDebugLog, "{0} is handling an OnClick event.", DebugName);
-        if (IsDiscernibleToUser) {
-            if (_inputHelper.IsLeftMouseButton) {
-                if (_inputHelper.IsAnyKeyHeldDown(KeyCode.LeftAlt, KeyCode.RightAlt)) {
-                    HandleAltLeftClick();
-                }
-                else if (_inputHelper.IsAnyKeyHeldDown(KeyCode.LeftControl, KeyCode.RightControl)) {
-                    HandleCntlLeftClick();
-                }
-                else {
-                    HandleLeftClick();
-                }
+        if (_inputHelper.IsLeftMouseButton) {
+            if (_inputHelper.IsAnyKeyHeldDown(KeyCode.LeftAlt, KeyCode.RightAlt)) {
+                HandleAltLeftClick();
             }
-            else if (_inputHelper.IsMiddleMouseButton) {
-                HandleMiddleClick();
-            }
-            else if (_inputHelper.IsRightMouseButton) {
-                HandleRightClick();
+            else if (_inputHelper.IsAnyKeyHeldDown(KeyCode.LeftControl, KeyCode.RightControl)) {
+                HandleCntlLeftClick();
             }
             else {
-                D.Error("{0}.OnClick() without a mouse button found.", DebugName);
+                HandleLeftClick();
             }
+        }
+        else if (_inputHelper.IsMiddleMouseButton) {
+            HandleMiddleClick();
+        }
+        else if (_inputHelper.IsRightMouseButton) {
+            HandleRightClick();
+        }
+        else {
+            D.Error("{0}.OnClick() without a mouse button found.", DebugName);
         }
     }
 

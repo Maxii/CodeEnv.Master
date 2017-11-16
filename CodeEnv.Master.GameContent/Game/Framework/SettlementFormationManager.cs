@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
 
         public SettlementFormationManager(IFormationMgrClient settlementCmd) : base(settlementCmd) { }
 
-        protected override IList<FormationStationSlotInfo> GenerateFormationSlotInfo(Formation formation, Transform cmdTransform, out float formationRadius) {
+        protected override List<FormationStationSlotInfo> GenerateFormationSlotInfo(Formation formation, Transform cmdTransform, out float formationRadius) {
             return GameReferences.FormationGenerator.GenerateBaseFormation(formation, cmdTransform, out formationRadius);
         }
 

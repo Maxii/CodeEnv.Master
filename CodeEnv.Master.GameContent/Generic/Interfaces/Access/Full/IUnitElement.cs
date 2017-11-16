@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IUnitElement : IMortalItem {
 
-        event EventHandler commandChanged;
+        bool IsOperational { get; }
 
         bool IsHQ { get; }
 
@@ -32,6 +32,8 @@ namespace CodeEnv.Master.GameContent {
         IUnitCmd Command { get; }
 
         IElementSensorRangeMonitor SRSensorMonitor { get; }
+
+        ReworkingMode ReworkUnderway { get; }
 
         void HandleUncompletedRemovalFromConstructionQueue();
 

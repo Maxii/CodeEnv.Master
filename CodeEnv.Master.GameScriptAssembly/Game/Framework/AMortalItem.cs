@@ -32,7 +32,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
 
     public event EventHandler __death;
 
-    public new AMortalItemData Data {
+    protected new AMortalItemData Data {
         get { return base.Data as AMortalItemData; }
         set { base.Data = value; }
     }
@@ -41,10 +41,12 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
 
     /// <summary>
     /// Indicates this Item is dieing and about to be dead.
-    /// <remarks>Used to internally differentiate between !IsOperational before CommenceOperations()
-    /// and !IsOperational when dead.</remarks>
+    /// <remarks>Set to <c>true</c> when the item should initiate dieing.</remarks>
     /// </summary>
-    protected bool IsDead { get; private set; }
+    public bool IsDead {
+        get { return Data.IsDead; }
+        protected set { Data.IsDead = value; }
+    }
 
     #region Initialization
 
@@ -56,6 +58,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
         _subscriptions.Add(Data.SubscribeToPropertyChanged<AMortalItemData, float>(d => d.Health, HealthPropChangedHandler));
+        _subscriptions.Add(Data.SubscribeToPropertyChanged<AMortalItemData, bool>(d => d.IsDead, IsDeadPropSetHandler));
     }
 
     protected override EffectsManager InitializeEffectsManager() {
@@ -82,22 +85,34 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
      ********************************************************************************************************************************/
 
     /// <summary>
-    /// Execute any preparation work that must occur prior to others hearing about this Item's death.
+    /// The first prep method called after IsDead becomes true.
     /// </summary>
-    protected virtual void PrepareForOnDeath() {
-        Data.PassiveCountermeasures.ForAll(cm => cm.IsActivated = false);
-    }
+    protected virtual void PrepareForDeathSequence() { }
 
+    /// <summary>
+    /// Hook for derived classes to prepare for firing the death event.
+    /// <remarks>The second prep method called after IsDead becomes true.</remarks>
+    /// </summary>
+    protected virtual void PrepareForOnDeath() { }
+
+    /// <summary>
+    /// Hook for derived classes to prepare for assigning the Dead State.
+    /// <remarks>The third prep method called after IsDead becomes true.</remarks>
+    /// </summary>
     protected virtual void PrepareForDeadState() { }
 
     /// <summary>
-    /// Hook for derived classes to initiate their DeadState.
+    /// Hook for derived classes to assign their Dead State.
     /// </summary>
-    protected abstract void InitiateDeadState();
+    protected abstract void AssignDeadState();
 
     /// <summary>
     /// Handles the death shutdown process prior to beginning the
     /// death effect. Called by the item's Dead state.
+    /// </summary>
+    /// <summary>
+    /// Hook for derived classes to prepare for any death visual and audio effects.
+    /// <remarks>The fourth prep method called after IsDead becomes true.</remarks>
     /// </summary>
     protected virtual void PrepareForDeathEffect() { }
 
@@ -108,7 +123,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
     /// which results in IsVisualDetailDiscernibleToUser returning false, aka 'nobody can see it so don't show it'.
     ///</remarks>
     /// </summary>
-    protected virtual void HandleDeathAfterBeginningDeathEffect() {
+    protected virtual void HandleDeathEffectBegun() {
         if (DisplayMgr != null) {
             (DisplayMgr as IMortalDisplayManager).HandleDeath();
         }
@@ -125,10 +140,10 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
         }
     }
 
-    protected virtual void HandleDeathAfterDeathEffectFinished() {
+    protected virtual void HandleDeathEffectFinished() {
         if (IsFocus) {
             GameReferences.MainCameraControl.CurrentFocus = null;
-            AssignAlternativeFocusOnDeath();
+            AssignAlternativeFocusAfterDeathEffect();
         }
         if (IsSelected) {
             SelectionManager.Instance.CurrentSelection = null;
@@ -144,15 +159,19 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
     /// Hook that allows derived classes to assign an alternative focus 
     /// when this mortal item dies while it is the focus.
     /// </summary>
-    protected virtual void AssignAlternativeFocusOnDeath() { }
+    protected virtual void AssignAlternativeFocusAfterDeathEffect() { }
 
     #region Event and Property Change Handlers
+
+    private void IsDeadPropSetHandler() {
+        HandleIsDeadPropSet();
+    }
 
     private void HealthPropChangedHandler() {
         HandleHealthChanged();
     }
 
-    private void OnDeath() {
+    protected void OnDeath() {
         if (deathOneShot != null) {
             deathOneShot(this, EventArgs.Empty);
             deathOneShot = null;
@@ -164,6 +183,16 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
 
     #endregion
 
+    private void HandleIsDeadPropSet() {
+        //D.Log(ShowDebugLog, "{0} is initiating death sequence.", DebugName);
+        PrepareForDeathSequence();
+        PrepareForOnDeath();
+        OnDeath();
+        PrepareForDeadState();
+        AssignDeadState();
+        // DeathEffect methods get called after this, from Dead_EnterState
+    }
+
     /// <summary>
     /// Called when the item's health has changed. 
     /// NOTE: Do not use this to initiate the death of an item. That is handled in MortalItems as damage is taken which
@@ -172,21 +201,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
     /// </summary>
     protected virtual void HandleHealthChanged() { }
 
-    protected override void HandleIsOperationalChanged() {
-        base.HandleIsOperationalChanged();
-        if (!IsOperational) {
-            // IsOperational only changes to false when this Item has been killed
-            IsDead = true;
-            //D.Log(ShowDebugLog, "{0} is initiating death sequence.", DebugName);
-            PrepareForOnDeath();
-            OnDeath();
-            PrepareForDeadState();
-            InitiateDeadState();
-            // DeathEffect methods get called after this, from Dead_EnterState
-        }
-    }
-
-    protected override void HandleAltLeftClick() {
+    protected sealed override void HandleAltLeftClick() {
         base.HandleAltLeftClick();
         if (!IsSelected) {
             D.Warn("{0} needs to be selected to Simulate Attack on itself.", DebugName);
@@ -234,15 +249,6 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
     #endregion
 
     #endregion
-
-    /// <summary>
-    /// Execute any cleanup work that must occur immediately after others hearing about this Item's death.
-    /// The normal death shutdown process is handled by HandleDeath() which is called by the 
-    /// Item's Dead_EnterState method up to a frame later.
-    /// <remarks>Obsoleted 5.5.16 and replaced by HandleDeath().</remarks>
-    /// </summary>
-    [Obsolete]
-    protected virtual void CleanupAfterDeathNotification() { }
 
     /// <summary>
     /// Destroys this GameObject.

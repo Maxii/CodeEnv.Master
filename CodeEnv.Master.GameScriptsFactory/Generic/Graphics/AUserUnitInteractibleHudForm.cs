@@ -55,7 +55,7 @@ public abstract class AUserUnitInteractibleHudForm : AUserItemInteractibleHudFor
 
     protected sealed override void AssignValueToFormationChangeGuiElement() {
         base.AssignValueToFormationChangeGuiElement();
-        _formationChgGuiElement.FormationReference = new Reference<Formation>(() => ItemData.UnitFormation, z => ItemData.UnitFormation = z);
+        _formationChgGuiElement.FormationReference = new Reference<Formation>(() => ItemData.Formation, z => ItemData.Formation = z);
         _formationChgGuiElement.AcceptableFormations = ItemData.AcceptableFormations;
     }
 

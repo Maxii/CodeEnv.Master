@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
     using System;
+    using System.Linq;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
@@ -25,6 +26,15 @@ namespace CodeEnv.Master.GameContent {
     public class FleetOrder {
 
         private const string DebugNameFormat = "[{0}: Directive = {1}, Source = {2}, Target = {3}, FollowonOrder = {4}, StandingOrder = {5}]";
+
+        private static readonly FleetDirective[] DirectivesWithNullTarget = new FleetDirective[] {
+                                                                                                    FleetDirective.Retreat,
+                                                                                                    FleetDirective.Scuttle,
+                                                                                                    FleetDirective.Withdraw,
+                                                                                                    FleetDirective.Disband,
+                                                                                                    FleetDirective.Refit,
+                                                                                                    FleetDirective.Cancel
+                                                                                                };
 
         public string DebugName {
             get {
@@ -78,6 +88,9 @@ namespace CodeEnv.Master.GameContent {
         #region Debug
 
         private void __Validate() {
+            if (DirectivesWithNullTarget.Contains(Directive)) {
+                D.AssertNull(Target);
+            }
             if (Directive == FleetDirective.Cancel) {
                 D.AssertEqual(OrderSource.User, Source);
             }

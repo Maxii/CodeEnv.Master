@@ -251,7 +251,9 @@ namespace CodeEnv.Master.GameContent {
                 __WarnIfGameNotRunning();
                 return _currentDate;
             }
-            private set { _currentDate = value; }
+            private set {
+                _currentDate = value;
+            }
         }
 
         /// <summary>
@@ -313,7 +315,6 @@ namespace CodeEnv.Master.GameContent {
             DateMinder = new DateMinder(this);
             RecurringDateMinder = new RecurringDateMinder();
             Subscribe();
-            ////PrepareToBeginNewGame();
         }
 
         private void Subscribe() {
@@ -369,7 +370,6 @@ namespace CodeEnv.Master.GameContent {
             // date that is saved is fine and should be accurate. It gets recalculated from currentDateTime every time it is used
             // the list of subscribers to onDateChanged should be fine as saved
         }
-
         /// <summary>
         /// Called whenever the clock is about to be enabled, aka CheckForDateChange() is about to start being called every Update.
         /// </summary>
@@ -511,6 +511,7 @@ namespace CodeEnv.Master.GameContent {
 
         #region Debug
 
+        [System.Diagnostics.Conditional("DEBUG")]
         private void __WarnIfGameNotRunning() {
             if (!_gameMgr.IsRunning && !_gameMgr.IsSceneLoading) {
                 D.Warn("{0}: {1} should be running. Frame = {2}.", GetType().Name, typeof(IGameManager).Name, Time.frameCount);

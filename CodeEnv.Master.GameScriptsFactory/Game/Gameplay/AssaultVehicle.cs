@@ -289,6 +289,8 @@ public class AssaultVehicle : APhysicsProjectileOrdnance, ITerminatableOrdnance,
                 ReportTargetHit();
                 //D.Log(ShowDebugLog, "{0} is assaulting {1} with value {2:0.00}.", DebugName, impactedTarget.DebugName, DamagePotential.Total);
                 string prevAssaultTgtName = impactedTarget.DebugName;
+
+                /******************* Debug *************************/
                 bool areAssaultsAlwaysSuccessful = DebugControls.Instance.AreAssaultsAlwaysSuccessful;
                 if (areAssaultsAlwaysSuccessful) {
                     if (__objectsEncounteredBeforeTarget > 0) {
@@ -301,6 +303,9 @@ public class AssaultVehicle : APhysicsProjectileOrdnance, ITerminatableOrdnance,
                     }
                 }
                 bool isAssaultSuccessful = impactedTarget.AttemptAssault(Owner, DamagePotential, DebugName);
+                if (areAssaultsAlwaysSuccessful) {
+                    D.Assert(isAssaultSuccessful);
+                }
                 if (!areAssaultsAlwaysSuccessful && isAssaultSuccessful) {
                     if (__objectsEncounteredBeforeTarget > 0) {
                         D.LogBold(/*ShowDebugLog, */"{0} has assaulted {1} in Frame {2} and taken it over, creating {3}. ObjectsPreviouslyEncountered = {4}.",
@@ -311,7 +316,9 @@ public class AssaultVehicle : APhysicsProjectileOrdnance, ITerminatableOrdnance,
                             DebugName, prevAssaultTgtName, Time.frameCount, impactedTarget.DebugName);
                     }
                 }
+                /******************** End Debug *******************/
             }
+
             if (impactedTarget.IsOperational) { // in case assaults inflict damage
                 if (impactedTarget.IsVisualDetailDiscernibleToUser) {
                     // target is being viewed by user so show impact effect

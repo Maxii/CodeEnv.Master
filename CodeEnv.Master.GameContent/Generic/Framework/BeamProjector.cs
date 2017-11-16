@@ -61,7 +61,7 @@ namespace CodeEnv.Master.GameContent {
         protected override void HandleTargetOutOfRange(IElementAttackable target) {
             // 5.21.17 Stop firing and start reloading as target is 'out of range'.
             if (_activeOrdnance != null && _activeOrdnance.Target == target) {
-                if (!target.IsOperational || !target.IsAttackAllowedBy(Owner)) {
+                if (target.IsDead || !target.IsAttackAllowedBy(Owner)) {
                     return; // CheckActiveOrdnanceTargeting will handle
                 }
                 _activeOrdnance.Terminate();    // target is alive and still an enemy but out of range

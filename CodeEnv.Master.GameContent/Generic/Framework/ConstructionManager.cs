@@ -84,8 +84,8 @@ namespace CodeEnv.Master.GameContent {
             _constructionQueue.AddLast(refitConstruction);
             RefreshCurrentConstructionProperty();
             // Adding to the end of the queue does not change any expected completion dates
-            OnConstructionQueueChanged();
             _baseClient.HandleConstructionAdded(refitConstruction);
+            OnConstructionQueueChanged();
             return refitConstruction;
         }
 
@@ -104,8 +104,8 @@ namespace CodeEnv.Master.GameContent {
             _constructionQueue.AddLast(construction);
             RefreshCurrentConstructionProperty();
             // Adding to the end of the queue does not change any expected completion dates
-            OnConstructionQueueChanged();
             _baseClient.HandleConstructionAdded(construction);
+            OnConstructionQueueChanged();
         }
 
         [Obsolete("Not currently used")]
@@ -147,7 +147,7 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(isRemoved);
             UpdateExpectedCompletionDates();
             RefreshCurrentConstructionProperty();
-            if (!construction.IsCompleted && construction.CompletionPercentage > Constants.ZeroPercent) {
+            if (!construction.IsCompleted) {
                 _baseClient.HandleUncompletedConstructionRemovedFromQueue(construction);
                 if (construction.CompletionPercentage > Constants.ZeroPercent) {
                     __HandlePartiallyCompletedConstructionBeingRemovedFromQueue(construction);
@@ -158,6 +158,11 @@ namespace CodeEnv.Master.GameContent {
 
         public IList<ConstructionInfo> GetQueue() {
             return new List<ConstructionInfo>(_constructionQueue);
+        }
+
+        public bool IsConstructionQueuedFor(IUnitElement element) {
+            var elementConstruction = _constructionQueue.SingleOrDefault(c => c.Element == element);
+            return elementConstruction != default(ConstructionInfo);
         }
 
         public ConstructionInfo GetConstructionFor(IUnitElement element) {
@@ -228,7 +233,19 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         public void HandleDeath() {
+            RemoveAllConstructionInQueue();
             _gameTime.RecurringDateMinder.Remove(_constructionQueueUpdateDuration);
+        }
+
+        public void HandleLosingOwnership() {
+            RemoveAllConstructionInQueue();
+        }
+
+        private void RemoveAllConstructionInQueue() {
+            var cQueueCopy = new List<ConstructionInfo>(_constructionQueue);
+            foreach (var c in cQueueCopy) {
+                RemoveFromQueue(c);
+            }
         }
 
         private void RefreshCurrentConstructionProperty() {
@@ -265,7 +282,7 @@ namespace CodeEnv.Master.GameContent {
         #region Debug
 
         private void __HandlePartiallyCompletedConstructionBeingRemovedFromQueue(ConstructionInfo construction) {
-            D.Warn("{0} is removing {1} from Queue that is partially completed.", DebugName, construction.DebugName);
+            D.Log("{0} is removing {1} from Queue that is partially completed.", DebugName, construction.DebugName);
             // TODO This question should be raised by the Gui click handler as a popup before sending to the ConstructionManager
         }
 

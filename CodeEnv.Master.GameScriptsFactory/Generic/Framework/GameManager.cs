@@ -1153,7 +1153,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
                 RequestPauseStateChange(toPause: true, toOverride: true);
             }
 
-            UniverseCreator.AttemptFocusOnPrimaryUserUnit();
+            UniverseCreator.AttemptFocusOnPrimaryUserCommand();
             RecordGameStateProgressionReadiness(Instance, GameState.Running, isReady: true);
         });
     }

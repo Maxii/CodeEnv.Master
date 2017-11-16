@@ -128,22 +128,22 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigableDestination
         return new StarCtxControl(this);
     }
 
-    protected override ADisplayManager MakeDisplayManagerInstance() {
+    protected override ADisplayManager MakeDisplayMgrInstance() {
         return new StarDisplayManager(this, TempGameValues.StarMeshCullLayer);
     }
 
-    protected override void InitializeDisplayManager() {
-        base.InitializeDisplayManager();
+    protected override void InitializeDisplayMgr() {
+        base.InitializeDisplayMgr();
         InitializeIcon();
     }
 
     protected override CircleHighlightManager InitializeCircleHighlightMgr() {
-        float circleRadius = Radius * Screen.height * 1.5F;
+        float circleRadius = Radius * Screen.height * 1.5F;   // HACK
         return new CircleHighlightManager(transform, circleRadius);
     }
 
     protected override HoverHighlightManager InitializeHoverHighlightMgr() {
-        float highlightRadius = Radius + 5F;
+        float highlightRadius = Radius + 5F;   // HACK
         return new HoverHighlightManager(this, highlightRadius);
     }
 
@@ -171,13 +171,18 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigableDestination
         }
     }
 
+    #region Event and Property Change Handlers
+
+    private void ShowStarIconsChangedEventHandler(object sender, EventArgs e) {
+        EnableIcon(_debugCntls.ShowStarIcons);
+    }
+
+    #endregion
+
     protected override void HandleInfoAccessChangedFor(Player player) {
         base.HandleInfoAccessChangedFor(player);
         ParentSystem.AssessWhetherToFireInfoAccessChangedEventFor(player);
     }
-
-    #region Event and Property Change Handlers
-
 
     protected override void HandleOwnerChanging(Player newOwner) {
         base.HandleOwnerChanging(newOwner);
@@ -205,45 +210,8 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigableDestination
             DisplayMgr.TrackingIcon.Color = Owner.Color;
         }
     }
-    ////protected override void HandleOwnerChanged() {
-    ////    base.HandleOwnerChanged();
-
-    ////    // 5.15.17 Moved to using _previousOwner in Changed as changing allies detection before Owner changes results in subsequent
-    ////    // 'smell' checks down the line using the Owner of this item that hasn't yet changed. Use of Owner like this is common
-    ////    // and will happen again, so I'm best to do this first thing after Owner is newOwner.
-
-    ////    if (_previousOwner != TempGameValues.NoPlayer) {
-    ////        // 5.15.17 Owner has lost ownership of item so reset owner and allies Coverage of item to what they should know using _previousOwner
-    ////        ResetBasedOnCurrentDetection(_previousOwner);
-
-    ////        IEnumerable<Player> prevOwnerAllies;
-    ////        if (TryGetAllies(_previousOwner, out prevOwnerAllies)) {
-    ////            prevOwnerAllies.ForAll(prevOwnerAlly => {
-    ////                D.AssertNotEqual(Owner, prevOwnerAlly);  // 5.16.17 prevOwnerAlly can't be new owner until trading between allies allowed
-    ////                if (!prevOwnerAlly.IsRelationshipWith(Owner, DiplomaticRelationship.Alliance)) {
-    ////                    // 5.15.17 don't reset as base.HandleOwnerChgd has already assigned Comprehensive if prevOwnerAlly is also ally of new owner
-    ////                    ResetBasedOnCurrentDetection(prevOwnerAlly);
-    ////                }
-    ////            });
-    ////        }
-    ////    }
-    ////    // Note: A System will assess its IntelCoverage for a player anytime a member's IntelCoverage changes for that player
-
-
-
-    ////    if (DisplayMgr != null && DisplayMgr.Icon != null) {
-    ////        DisplayMgr.Icon.Color = Owner.Color;
-    ////    }
-    ////}
-
-    protected sealed override void HandleIsOperationalChanged() {
-        base.HandleIsOperationalChanged();
-        // Warning: Avoid doing anything here as IsOperational's purpose is to indicate alive or dead
-    }
 
     // Selecting a Star used to select the System for convenience. Stars are now selectable.
-
-    #endregion
 
     #region Show Icon
 
@@ -306,10 +274,6 @@ public class StarItem : AIntelItem, IStar, IStar_Ltd, IFleetNavigableDestination
         var report = UserReport;
         GameColor iconColor = report.Owner != null ? report.Owner.Color : GameColor.White;
         return new TrackingIconInfo("Icon01", AtlasID.Contextual, iconColor, IconSize, WidgetPlacement.Over, TempGameValues.StarIconCullLayer);
-    }
-
-    private void ShowStarIconsChangedEventHandler(object sender, EventArgs e) {
-        EnableIcon(_debugCntls.ShowStarIcons);
     }
 
     /// <summary>

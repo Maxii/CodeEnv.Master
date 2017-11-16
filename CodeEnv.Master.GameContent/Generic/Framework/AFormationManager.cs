@@ -28,45 +28,41 @@ namespace CodeEnv.Master.GameContent {
     public abstract class AFormationManager {
 
         /// <summary>
-        /// Returns <c>true</c> if this FormationManager currently has more station slots available.
+        /// Returns <c>true</c> if this FormationManager currently has a station slot available for one element.
         /// </summary>
-        public bool HasRoom {
-            get {
-                D.AssertNotEqual(Constants.Zero, __maxFormationStationSlots);
-                return _occupiedStationSlotLookup.Count < __maxFormationStationSlots;
-            }
-        }
+        public bool HasRoom { get { return HasRoomFor(Constants.One); } }
 
-        public virtual string DebugName { get { return "{0}_{1}".Inject(_unitCmd.DebugName, GetType().Name); } }
+        public virtual string DebugName { get { return "{0}_{1}".Inject(_client.DebugName, GetType().Name); } }
 
-        private bool ShowDebugLog { get { return _unitCmd.ShowDebugLog; } }
+        private bool ShowDebugLog { get { return _client.ShowDebugLog; } }
 
         private IDictionary<IUnitElement, FormationStationSlotInfo> _occupiedStationSlotLookup;
-        private IList<FormationStationSlotInfo> _availableStationSlots;
+        private List<FormationStationSlotInfo> _availableStationSlots;
         private Formation _currentFormation;
-        private IFormationMgrClient _unitCmd;
+        private IFormationMgrClient _client;
 
-        public AFormationManager(IFormationMgrClient unitCmd) {
-            _unitCmd = unitCmd;
+        public AFormationManager(IFormationMgrClient client) {
+            _client = client;
             _occupiedStationSlotLookup = new Dictionary<IUnitElement, FormationStationSlotInfo>(40);    // HACK
         }
 
         /// <summary>
-        /// Repositions all the Unit elements in the formation designated by the Cmd.
-        /// Called when 1) a fleet is first formed, 2) the desired formation has changed, 3) the HQ Element has changed,
-        /// or 4) when another large fleet joins this one.
-        /// <remarks>Repositioning is accomplished by calling Cmd.PositionElementInFormation().</remarks>
+        /// Repositions all the Unit elements in the formation designated by the Client.
+        /// Called when 1) the desired formation has changed, 2) the Unit's HQElement has changed before
+        /// the Unit has become operational, and 3) a Hanger client has its first ship added.
+        /// <remarks>Repositioning is accomplished by calling Client.PositionElementInFormation().</remarks>
         /// </summary>
         /// <param name="allElements">All elements.</param>
         public void RepositionAllElementsInFormation(IEnumerable<IUnitElement> allElements) {
-            Formation formation = _unitCmd.UnitFormation;
+            Formation formation = _client.Formation;
             if (formation != _currentFormation) {
                 _occupiedStationSlotLookup.Clear();
                 float formationRadius;
-                _availableStationSlots = GenerateFormationSlotInfo(formation, _unitCmd.transform, out formationRadius);
-                __maxFormationStationSlots = _availableStationSlots.Count;
-                //D.Log(ShowDebugLog, "{0} generated {1} {2}s for Formation {3} => {4}.", DebugName, _availableStationSlots.Count, typeof(FormationStationSlotInfo).Name, formation.GetValueName(), _availableStationSlots.Concatenate());
-                _unitCmd.UnitMaxFormationRadius = formationRadius;
+                _availableStationSlots = GenerateFormationSlotInfo(formation, _client.transform, out formationRadius);
+                D.AssertEqual(formation.MaxFormationSlots(), _availableStationSlots.Count);
+                //D.Log(ShowDebugLog, "{0} generated {1} {2}s for Formation {3} => {4}.", DebugName, _availableStationSlots.Count, 
+                // typeof(FormationStationSlotInfo).Name, formation.GetValueName(), _availableStationSlots.Concatenate());
+                _client.HandleMaxFormationRadiusDetermined(formationRadius);
                 _currentFormation = formation;
             }
             else {
@@ -80,18 +76,18 @@ namespace CodeEnv.Master.GameContent {
                 }
                 AddAndPositionElement(e);
             });
-            D.AssertEqual(Constants.One, hqCount);
+            D.Assert(hqCount < 2);  // HACK allows 0 and 1. Future option to have more than 1 designated HQ slot?
         }
 
         private void ReturnAllOccupiedStationSlotsToAvailable() {
             var occupiedStationSlots = _occupiedStationSlotLookup.Values;
-            (_availableStationSlots as List<FormationStationSlotInfo>).AddRange(occupiedStationSlots);
-            D.Assert(_availableStationSlots.Count <= __maxFormationStationSlots, "{0}: {1} > Max {2}.".Inject(DebugName, _availableStationSlots.Count, __maxFormationStationSlots));
+            _availableStationSlots.AddRange(occupiedStationSlots);
+            D.AssertEqual(_currentFormation.MaxFormationSlots(), _availableStationSlots.Count, "{0}: {1} != Max {2}.".Inject(DebugName, _availableStationSlots.Count, _currentFormation.MaxFormationSlots()));
             //D.Log(ShowDebugLog, "{0}: available {1} count = {2} after {3} occupied slots returned.", DebugName, typeof(FormationStationSlotInfo).Name, _availableStationSlots.Count, occupiedStationSlots.Count);
             _occupiedStationSlotLookup.Clear(); // clear AFTER occupiedStationSlots no longer needed!
         }
 
-        protected abstract IList<FormationStationSlotInfo> GenerateFormationSlotInfo(Formation formation, Transform cmdTransform, out float formationRadius);
+        protected abstract List<FormationStationSlotInfo> GenerateFormationSlotInfo(Formation formation, Transform followTransform, out float formationRadius);
 
         /// <summary>
         /// Replaces an existing element in the formation with another.
@@ -107,7 +103,7 @@ namespace CodeEnv.Master.GameContent {
             _occupiedStationSlotLookup.Remove(elementToReplace);
 
             _occupiedStationSlotLookup.Add(replacingElement, slot); // throws exception if element already present
-            _unitCmd.PositionElementInFormation(replacingElement, slot);
+            _client.PositionElementInFormation(replacingElement, slot);
         }
 
         /// <summary>
@@ -129,7 +125,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="hqElement">The HQElement.</param>
         public void AddAndPositionHQElement(IUnitElement hqElement) {
-            D.Assert(hqElement.IsOperational, hqElement.DebugName); // 10.30.17 Should be operational to handle HQChange events
+            D.Assert(!hqElement.IsDead, hqElement.DebugName); // 10.30.17 Should be operational to handle HQChange events
             D.Assert(hqElement.IsHQ);
             AddAndPositionElement(hqElement);
         }
@@ -143,7 +139,7 @@ namespace CodeEnv.Master.GameContent {
         private void AddAndPositionElement(IUnitElement element, FormationStationSelectionCriteria selectionConstraint = default(FormationStationSelectionCriteria)) {
             D.Assert(HasRoom, "No room available to add element to formation.");
             var slot = SelectAndRecordSlotAsOccupied(element, selectionConstraint);
-            _unitCmd.PositionElementInFormation(element, slot);
+            _client.PositionElementInFormation(element, slot);
         }
 
         private FormationStationSlotInfo SelectAndRecordSlotAsOccupied(IUnitElement element, FormationStationSelectionCriteria selectionConstraint) {
@@ -154,13 +150,15 @@ namespace CodeEnv.Master.GameContent {
                 isRemoved = _occupiedStationSlotLookup.Remove(element);
                 D.Assert(isRemoved, element.DebugName);
                 _availableStationSlots.Add(slotInfo);
-                D.Assert(_availableStationSlots.Count <= __maxFormationStationSlots, "{0}: {1} > Max {2}.".Inject(DebugName, _availableStationSlots.Count, __maxFormationStationSlots));
+                D.Assert(_availableStationSlots.Count <= _currentFormation.MaxFormationSlots(),
+                    "{0}: {1} > Max {2}.".Inject(DebugName, _availableStationSlots.Count, _currentFormation.MaxFormationSlots()));
             }
             slotInfo = SelectSlotInfoFor(element, selectionConstraint);
             isRemoved = _availableStationSlots.Remove(slotInfo);
-            D.Assert(isRemoved, slotInfo.ToString());
+            D.Assert(isRemoved, slotInfo.DebugName);
             _occupiedStationSlotLookup.Add(element, slotInfo);
-            D.Assert(_occupiedStationSlotLookup.Count <= __maxFormationStationSlots, "{0}: {1} > Max {2}.".Inject(DebugName, _occupiedStationSlotLookup.Count, __maxFormationStationSlots));
+            D.Assert(_occupiedStationSlotLookup.Count <= _currentFormation.MaxFormationSlots(),
+                "{0}: {1} > Max {2}.".Inject(DebugName, _occupiedStationSlotLookup.Count, _currentFormation.MaxFormationSlots()));
             return slotInfo;
         }
 
@@ -214,14 +212,22 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(isStationSlotFound, element.DebugName);
             _occupiedStationSlotLookup.Remove(element);
             _availableStationSlots.Add(elementStationInfo);
-            D.Assert(_availableStationSlots.Count <= __maxFormationStationSlots, "{0}: {1} > Max {2}.".Inject(DebugName, _availableStationSlots.Count, __maxFormationStationSlots));
+            D.Assert(_availableStationSlots.Count <= _currentFormation.MaxFormationSlots(),
+                "{0}: {1} > Max {2}.".Inject(DebugName, _availableStationSlots.Count, _currentFormation.MaxFormationSlots()));
+        }
+
+        /// <summary>
+        /// Returns <c>true</c> if this FormationManager currently has station slots available for an additional <c>elementCount</c> elements.
+        /// </summary>
+        /// <param name="additionalElementCount">The additional element count.</param>
+        /// <returns></returns>
+        public bool HasRoomFor(int additionalElementCount) {
+            return _occupiedStationSlotLookup.Count + additionalElementCount <= _currentFormation.MaxFormationSlots();
         }
 
         #region Debug
 
-        // IMPROVE Turn this into a value for each Formation using a Formation enum ExtensionMethod
-        private int __maxFormationStationSlots;
-
+        [System.Diagnostics.Conditional("DEBUG")]
         private void __ValidateSingleHqSlotAvailable() {
             int count = _availableStationSlots.Where(sInfo => sInfo.IsHQSlot).Count();
             if (count != Constants.One) {

@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
 
         public StarbaseFormationManager(IFormationMgrClient starbaseCmd) : base(starbaseCmd) { }
 
-        protected override IList<FormationStationSlotInfo> GenerateFormationSlotInfo(Formation formation, Transform cmdTransform, out float formationRadius) {
+        protected override List<FormationStationSlotInfo> GenerateFormationSlotInfo(Formation formation, Transform cmdTransform, out float formationRadius) {
             return GameReferences.FormationGenerator.GenerateBaseFormation(formation, cmdTransform, out formationRadius);
         }
 

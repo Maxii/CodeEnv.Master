@@ -202,8 +202,9 @@ public class ConstructionGuiModule : AMonoBase {
 
     private void HandleViewAllConstructibleDesignsButtonToggledIn() {
         bool includeFacilities = ShouldFacilityDesignsBeIncludedInView();
-        var constructibleDesigns = GetConstructibleDesigns(includeFacilities, includeShips: true);
-        BuildConstructibleDesignIcons(constructibleDesigns);
+        bool includeShips = ShouldShipDesignsBeIncludedInView();
+        var constructibleDesignsToShow = GetConstructibleDesigns(includeFacilities, includeShips);
+        BuildConstructibleDesignIcons(constructibleDesignsToShow);
         _viewAllConstructibleDesignsButton.SetIconColor(TempGameValues.SelectedColor);
         _viewFacilityConstructibleDesignsButton.SetToggledState(toToggleIn: false);
         _viewShipConstructibleDesignsButton.SetToggledState(toToggleIn: false);
@@ -211,16 +212,19 @@ public class ConstructionGuiModule : AMonoBase {
 
     private void HandleViewFacilityConstructibleDesignsButtonToggleIn() {
         bool includeFacilities = ShouldFacilityDesignsBeIncludedInView();
-        var constructibleDesigns = GetConstructibleDesigns(includeFacilities, includeShips: false);
-        BuildConstructibleDesignIcons(constructibleDesigns);
+        bool includeShips = false;
+        var constructibleDesignsToShow = GetConstructibleDesigns(includeFacilities, includeShips);
+        BuildConstructibleDesignIcons(constructibleDesignsToShow);
         _viewFacilityConstructibleDesignsButton.SetIconColor(TempGameValues.SelectedColor);
         _viewAllConstructibleDesignsButton.SetToggledState(toToggleIn: false);
         _viewShipConstructibleDesignsButton.SetToggledState(toToggleIn: false);
     }
 
     private void HandleViewShipConstructibleDesignsButtonToggledIn() {
-        var constructibleDesigns = GetConstructibleDesigns(includeFacilities: false, includeShips: true);
-        BuildConstructibleDesignIcons(constructibleDesigns);
+        bool includeFacilities = false;
+        bool includeShips = ShouldShipDesignsBeIncludedInView();
+        var constructibleDesignsToShow = GetConstructibleDesigns(includeFacilities, includeShips);
+        BuildConstructibleDesignIcons(constructibleDesignsToShow);
         _viewShipConstructibleDesignsButton.SetIconColor(TempGameValues.SelectedColor);
         _viewAllConstructibleDesignsButton.SetToggledState(toToggleIn: false);
         _viewFacilityConstructibleDesignsButton.SetToggledState(toToggleIn: false);
@@ -228,14 +232,26 @@ public class ConstructionGuiModule : AMonoBase {
 
     private void HandleConstructibleDesignIconCntlLeftClicked(DesignIconGuiElement iconClicked) {
         _unitConstructionMgr.AddToQueue(iconClicked.Design as AUnitElementDesign);
+        RefreshConstructibleDesignView();
     }
 
     private void HandleConstructibleDesignIconLeftClicked(DesignIconGuiElement iconClicked) {
         _unitConstructionMgr.AddToQueue(iconClicked.Design as AUnitElementDesign);
+        RefreshConstructibleDesignView();
     }
 
     private void HandleConstructibleDesignIconShiftLeftClicked(DesignIconGuiElement iconClicked) {
         _unitConstructionMgr.AddToQueue(iconClicked.Design as AUnitElementDesign);
+        RefreshConstructibleDesignView();
+    }
+
+    private void RefreshConstructibleDesignView() {
+        bool includeFacilities = ShouldFacilityDesignsBeIncludedInView();
+        bool includeShips = ShouldShipDesignsBeIncludedInView();
+        if (!includeFacilities || !includeShips) {
+            var constructibleDesignsToShow = GetConstructibleDesigns(includeFacilities, includeShips);
+            BuildConstructibleDesignIcons(constructibleDesignsToShow);
+        }
     }
 
     #endregion
@@ -258,15 +274,6 @@ public class ConstructionGuiModule : AMonoBase {
         // a construction icon that is clicked is already present in the queue so remove it
         _unitConstructionMgr.RemoveFromQueue(clickedIcon.Construction);
         // No buttons to assess
-    }
-
-    [Obsolete("No designs are currently limited to 1 instance in a base.")]
-    private void AddDesignToAvailableConstructibleDesigns(AUnitElementDesign elementDesign) {
-        D.Warn("{0}.AddDesignToAvailableConstructibleDesigns() not yet implemented.", DebugName);
-        // TODO Add back a ConstructibleDesignIcon for this design to the grid of AvailableConstructibleDesignIcons
-        // to allow the design to be picked again. Only needed when the ConstructionQueueIcon for this design
-        // is clicked removing it from the queue AND only 1 instance of the design is allowed to be constructed.
-        // Most designs allow multiple instances of the design to be constructed.
     }
 
     private void HandleConstructionQueueIconBuyoutInitiated(ConstructionQueueIconGuiElement boughtIcon) {
@@ -314,6 +321,7 @@ public class ConstructionGuiModule : AMonoBase {
         foreach (var design in constructibleDesigns) {
             CreateAndAddIcon(design, iconSize);
         }
+        //D.Log("{0} just built {1} constructible design icons.", DebugName, desiredGridCells);
         _constructibleDesignIconsGrid.repositionNow = true;
     }
 
@@ -422,21 +430,20 @@ public class ConstructionGuiModule : AMonoBase {
     }
 
     private bool ShouldFacilityDesignsBeIncludedInView() {
-        if (!SelectedUnit.IsJoinable) {
-            return false;
-        }
-        int facilitiesUnderConstructionCount = _unitConstructionMgr.GetQueue().Select(c => c.Design).Where(design => design is FacilityDesign).Count();
-        if (facilitiesUnderConstructionCount == Constants.Zero) {
-            return true;
-        }
-        int instantiatedFacilityCount = SelectedUnit.Elements.Count();
-        return instantiatedFacilityCount + facilitiesUnderConstructionCount < TempGameValues.MaxFacilitiesPerBase;
+        // 11.6.17 No need to consider any facilities added to the construction queue during this pause as they are 
+        // instantiated and added to the Unit immediately upon being added to the ConstructionQueue.
+        bool isAFacilityViewShowing = _viewFacilityConstructibleDesignsButton.IsToggledIn || _viewAllConstructibleDesignsButton.IsToggledIn;
+        return isAFacilityViewShowing && SelectedUnit.IsJoinable;
+    }
+
+    private bool ShouldShipDesignsBeIncludedInView() {
+        // 11.6.17 No need to consider any ships added to the construction queue during this pause as they are 
+        // instantiated and added to the Hanger immediately upon being added to the ConstructionQueue.
+        bool isAShipViewShowing = _viewShipConstructibleDesignsButton.IsToggledIn || _viewAllConstructibleDesignsButton.IsToggledIn;
+        return isAShipViewShowing && SelectedUnit.Hanger.IsJoinable;
     }
 
     private IEnumerable<AUnitElementDesign> GetConstructibleDesigns(bool includeFacilities, bool includeShips) {
-        // 9.24.17 Both can be false if ViewConstructibleFacilities and Base already has max facilities
-        ////D.Assert(includeFacilities || includeShips);
-
         var playersDesigns = _gameMgr.PlayersDesigns;
         List<AUnitElementDesign> designs = new List<AUnitElementDesign>();
         if (includeFacilities) {

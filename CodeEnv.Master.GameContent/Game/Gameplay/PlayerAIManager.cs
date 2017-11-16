@@ -500,14 +500,14 @@ namespace CodeEnv.Master.GameContent {
                 if (ship != null) {
                     // intelCoverage = ship.GetIntelCoverage(Owner);            // TEMP
                     if (intelCoverage == IntelCoverage.None) {
-                        D.Assert(ship.IsOperational);   // 4.20.17 This is a revert to None so must be operational
+                        D.Assert(!ship.IsDead);   // 4.20.17 This is a revert to None so must be operational
                         Knowledge.RemoveElement(ship);
                         OnAwareChgd_Ship(ship);
                         return;
                     }
                 }
                 bool isNewlyAware = Knowledge.AddElement(element);
-                if (isNewlyAware && element.IsOperational) {
+                if (isNewlyAware && !element.IsDead) {
                     // 4.20.17 awareChgd events only raised when item is operational
                     if (ship != null) {
                         OnAwareChgd_Ship(ship);
@@ -522,7 +522,7 @@ namespace CodeEnv.Master.GameContent {
                 var planetoid = item as IPlanetoid_Ltd;
                 if (planetoid != null) {
                     bool isNewlyAware = Knowledge.AddPlanetoid(planetoid);
-                    if (isNewlyAware && planetoid.IsOperational) {
+                    if (isNewlyAware && !planetoid.IsDead) {
                         // 4.20.17 awareChgd events only raised when item is operational
                         var planet = planetoid as IPlanet_Ltd;
                         if (planet != null) {
@@ -537,7 +537,7 @@ namespace CodeEnv.Master.GameContent {
                         if (fleetCmd != null) {
                             // intelCoverage = fleetCmd.GetIntelCoverage(Owner);            // TEMP
                             if (intelCoverage == IntelCoverage.None) {
-                                D.Assert(fleetCmd.IsOperational);   // 4.20.17 This is a revert to None so must be operational
+                                D.Assert(!fleetCmd.IsDead);   // 4.20.17 This is a revert to None so must be operational
                                 Knowledge.RemoveCommand(fleetCmd);
                                 OnAwareChgd_Fleet(fleetCmd);
                                 OnAwareChgd_Cmd(cmd);
@@ -545,7 +545,7 @@ namespace CodeEnv.Master.GameContent {
                             }
                         }
                         bool isNewlyAware = Knowledge.AddCommand(cmd);
-                        if (isNewlyAware && cmd.IsOperational) {
+                        if (isNewlyAware && !cmd.IsDead) {
                             // 4.20.17 awareChgd events only raised when item is operational
                             if (fleetCmd != null) {
                                 OnAwareChgd_Fleet(fleetCmd);
@@ -668,7 +668,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void OnAwareChgd_Cmd(IUnitCmd_Ltd cmd) {
             if (awareChgd_Cmd != null) {
-                D.Assert(cmd.IsOperational, cmd.DebugName);
+                D.Assert(!cmd.IsDead, cmd.DebugName);
                 D.AssertNotEqual(cmd.Owner_Debug, Owner);
                 awareChgd_Cmd(this, new AwareChgdEventArgs(cmd));
             }
@@ -676,11 +676,11 @@ namespace CodeEnv.Master.GameContent {
 
         private void OnAwareChgd_Fleet(IFleetCmd_Ltd fleet) {
             if (awareChgd_Fleet != null) {
-                D.Assert(fleet.IsOperational, fleet.DebugName);
+                D.Assert(!fleet.IsDead, fleet.DebugName);
                 if (fleet.Owner_Debug == Owner) {
                     // 5.10.17 ship taken over changed Cmd owner. Intel got changed to None due to Sensor IsOperational recycle.
-                    D.Error("{0}: Awareness Chg of {1} owned by us. IsLoneCmd = {2}. HQElementOwner = {3}.",
-                        DebugName, fleet.DebugName, fleet.IsLoneCmd, (fleet as IUnitCmd).HQElement.Owner);
+                    D.Error("{0}: Awareness Chg of {1} owned by us. HQElementOwner = {2}.",
+                        DebugName, fleet.DebugName, (fleet as IUnitCmd).HQElement.Owner);
                 }
                 awareChgd_Fleet(this, new AwareChgdEventArgs(fleet));
             }
@@ -688,7 +688,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void OnAwareChgd_Base(IUnitBaseCmd_Ltd baseCmd) {
             if (awareChgd_Base != null) {
-                D.Assert(baseCmd.IsOperational, baseCmd.DebugName);
+                D.Assert(!baseCmd.IsDead, baseCmd.DebugName);
                 D.AssertNotEqual(baseCmd.Owner_Debug, Owner);
                 awareChgd_Base(this, new AwareChgdEventArgs(baseCmd));
             }
@@ -696,7 +696,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void OnAwareChgd_Ship(IShip_Ltd ship) {
             if (awareChgd_Ship != null) {
-                D.Assert(ship.IsOperational, ship.DebugName);
+                D.Assert(!ship.IsDead, ship.DebugName);
                 D.AssertNotEqual(ship.Owner_Debug, Owner);
                 awareChgd_Ship(this, new AwareChgdEventArgs(ship));
             }
@@ -704,7 +704,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void OnAwareChgd_Facility(IFacility_Ltd facility) {
             if (awareChgd_Facility != null) {
-                D.Assert(facility.IsOperational, facility.DebugName);
+                D.Assert(!facility.IsDead, facility.DebugName);
                 D.AssertNotEqual(facility.Owner_Debug, Owner);
                 awareChgd_Facility(this, new AwareChgdEventArgs(facility));
             }
@@ -712,7 +712,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void OnAwareChgd_Planet(IPlanet_Ltd planet) {
             if (awareChgd_Planet != null) {
-                D.Assert(planet.IsOperational, planet.DebugName);
+                D.Assert(!planet.IsDead, planet.DebugName);
                 D.AssertNotEqual(planet.Owner_Debug, Owner);
                 awareChgd_Planet(this, new AwareChgdEventArgs(planet));
             }
@@ -896,7 +896,6 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        ////private int __myActiveFleetCount;
         private IList<IFleetCmd> __myAttackingFleets;
 
         private void __MyAttackingFleetDeathEventHandler(object sender, EventArgs e) {
@@ -914,13 +913,14 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(_availableCmds.Contains(fleetCmd));
             D.Assert(!_unavailableCmds.Contains(fleetCmd));
 
-            if (fleetCmd.IsLoneCmd) {
+            // Replacement for IsLoneCmd
+            if (fleetCmd.ElementCount == Constants.One) {
                 IFleetNavigableDestination closestFleet = null;
 
                 IEnumerable<IFleetNavigableDestination> tgtFleets =
                 from cmd in _availableCmds
                 let fleet = cmd as IFleetCmd
-                where fleet != null && !fleet.IsLoneCmd && fleet.IsJoinable
+                where fleet != null && fleet.ElementCount > Constants.One && fleet.IsJoinable
                 let tgtFleet = fleet as IFleetNavigableDestination
                 select tgtFleet;
 
@@ -931,7 +931,7 @@ namespace CodeEnv.Master.GameContent {
                     tgtFleets =
                         from cmd in _unavailableCmds
                         let fleet = cmd as IFleetCmd
-                        where fleet != null && !fleet.IsLoneCmd && fleet.IsJoinable
+                        where fleet != null && fleet.ElementCount > Constants.One && fleet.IsJoinable
                         let tgtFleet = fleet as IFleetNavigableDestination
                         select tgtFleet;
                     if (tgtFleets.Any()) {
@@ -957,12 +957,7 @@ namespace CodeEnv.Master.GameContent {
                     return false;
                 }
 
-                if (__myAttackingFleets == null) {
-                    __myAttackingFleets = new List<IFleetCmd>();
-                }
-
-                ////__myActiveFleetCount = Knowledge.OwnerFleets.Count();
-
+                __myAttackingFleets = __myAttackingFleets ?? new List<IFleetCmd>();
                 if (__myAttackingFleets.Count < _debugControls.MaxAttackingFleetsPerPlayer) {
                     // room to assign another fleet to attack
                     if (__IssueFleetAttackOrder(fleetCmd, findFarthestTgt: false)) {
@@ -1314,11 +1309,12 @@ namespace CodeEnv.Master.GameContent {
         /// <seealso cref="System.EventArgs" />
         public class AwareChgdEventArgs : EventArgs {
 
-            public IOwnerItem_Ltd Item { get; private set; }
+            public IMortalItem_Ltd Item { get; private set; }
 
-            public AwareChgdEventArgs(IOwnerItem_Ltd item) {
+            public AwareChgdEventArgs(IMortalItem_Ltd item) {
                 Item = item;
             }
+
         }
 
         #endregion

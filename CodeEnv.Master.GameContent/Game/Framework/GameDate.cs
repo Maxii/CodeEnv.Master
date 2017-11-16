@@ -78,6 +78,8 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        public string DebugName { get { return FullDateFormat.Inject(Year, DayOfYear, HourOfDay); } }
+
         public float HourOfDay { get; private set; }
         public int DayOfYear { get; private set; }
         public int Year { get; private set; }
@@ -199,6 +201,9 @@ namespace CodeEnv.Master.GameContent {
             unchecked { // http://dobrzanski.net/2010/09/13/csharp-gethashcode-cause-overflowexception/
                 int hash = 17;
                 hash = hash * 31 + TotalHoursSinceGameStart.GetHashCode();
+                hash = hash * 31 + Year.GetHashCode();
+                hash = hash * 31 + DayOfYear.GetHashCode();
+                hash = hash * 31 + HourOfDay.GetHashCode();
                 return hash;
             }
         }
@@ -206,13 +211,14 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         public override string ToString() {
-            return FullDateFormat.Inject(Year, DayOfYear, HourOfDay);
+            return DebugName;
         }
 
         #region IEquatable<GameDate> Members
 
         public bool Equals(GameDate other) {
-            return TotalHoursSinceGameStart == other.TotalHoursSinceGameStart;  // Can't use Approx if comply with "If equal, HashCode must return same value"
+            // AHA! 11.10.17 Using just TotalHoursSinceGameStart means 2700.000.00.0 == 0000.000.00.0, aka GameStartDate == default(GameDate)
+            return TotalHoursSinceGameStart == other.TotalHoursSinceGameStart && Year == other.Year && DayOfYear == other.DayOfYear && HourOfDay == other.HourOfDay;
         }
 
         #endregion

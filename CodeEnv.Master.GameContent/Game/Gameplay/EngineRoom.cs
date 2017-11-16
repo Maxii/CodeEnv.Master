@@ -105,7 +105,7 @@ namespace CodeEnv.Master.GameContent {
         private float ActualForwardSpeedValue {
             get {
                 Vector3 velocityPerSec = _gameMgr.IsPaused ? _velocityToRestoreAfterPause : _shipRigidbody.velocity;
-                float value = _shipTransform.InverseTransformDirection(velocityPerSec).z / _gameTime.GameSpeedAdjustedHoursPerSecond;
+                float value = _ship.transform.InverseTransformDirection(velocityPerSec).z / _gameTime.GameSpeedAdjustedHoursPerSecond;
                 //D.Log(ShowDebugLog, "{0}.ActualForwardSpeedValue = {1:0.00}.", DebugName, value);
                 return value;
             }
@@ -138,25 +138,23 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         private Vector3 _velocityToRestoreAfterPause;
         private DriftCorrector _driftCorrector;
-        private bool _isVelocityToRestoreAfterPauseRecorded;
+        private bool _hasPauseEventBeenReceived;
         private IShip _ship;
         private ShipData _shipData;
         private Rigidbody _shipRigidbody;
-        private Transform _shipTransform;
         private IList<IDisposable> _subscriptions;
         private IGameManager _gameMgr;
         private GameTime _gameTime;
         private IJobManager _jobMgr;
 
-        public EngineRoom(IShip ship, ShipData shipData, Transform shipTransform, Rigidbody shipRigidbody) {
+        public EngineRoom(IShip ship, ShipData shipData, Rigidbody shipRigidbody) {
             _ship = ship;
             _shipData = shipData;
-            _shipTransform = shipTransform;
             _shipRigidbody = shipRigidbody;
             _gameMgr = GameReferences.GameManager;
             _gameTime = GameTime.Instance;
             _jobMgr = GameReferences.JobManager;
-            _driftCorrector = new DriftCorrector(shipTransform, shipRigidbody, DebugName);
+            _driftCorrector = new DriftCorrector(ship.transform, shipRigidbody, DebugName);
             Subscribe();
         }
 
@@ -457,7 +455,7 @@ namespace CodeEnv.Master.GameContent {
             }
             // the final thrust in reverse took us below our desired forward speed, so set it there
             float intendedForwardSpeed = IntendedCurrentSpeedValue * _gameTime.GameSpeedAdjustedHoursPerSecond;
-            _shipRigidbody.velocity = _shipTransform.TransformDirection(new Vector3(Constants.ZeroF, Constants.ZeroF, intendedForwardSpeed));
+            _shipRigidbody.velocity = _ship.transform.TransformDirection(new Vector3(Constants.ZeroF, Constants.ZeroF, intendedForwardSpeed));
             //D.Log(ShowDebugLog, "{0} has completed reverse propulsion. CurrentVelocity = {1}.", DebugName, _shipRigidbody.velocity);
         }
 
@@ -507,6 +505,13 @@ namespace CodeEnv.Master.GameContent {
 
         #region Collision Avoidance 
 
+        public void HandleIsCollisionAvoidanceOperationalChanged(bool isCollisionAvoidanceOperational) {
+            if (!isCollisionAvoidanceOperational && IsCollisionAvoidanceEngaged) {
+                DisengageAllCollisionAvoidancePropulsion();
+            }
+            // any other combo requires no action as Ship's CollisionDetectionMonitor is managed directly
+        }
+
         public void HandlePendingCollisionWith(IObstacle obstacle) {
             _caPropulsionJobs = _caPropulsionJobs ?? new Dictionary<IObstacle, Job>(2);
             DisengageForwardPropulsion();
@@ -516,43 +521,43 @@ namespace CodeEnv.Master.GameContent {
             var mortalObstacle = obstacle as IMortalItem_Ltd;
             if (mortalObstacle != null) {
                 // obstacle could die while we are avoiding collision
-                D.Assert(mortalObstacle.IsOperational, mortalObstacle.DebugName);
+                D.Assert(!mortalObstacle.IsDead, mortalObstacle.DebugName);
                 //mortalObstacle.deathOneShot += CollidingObstacleDeathEventHandler;
                 mortalObstacle.__death += CollidingObstacleDeathEventHandler;
             }
 
-            //D.Log(ShowDebugLog, "{0} engaging Collision Avoidance to avoid {1}.", DebugName, obstacle.DebugName);
+            D.Log(/*ShowDebugLog,*/ "{0} engaging Collision Avoidance to avoid {1}.", DebugName, obstacle.DebugName);
             EngageCollisionAvoidancePropulsionFor(obstacle);
         }
 
         public void HandlePendingCollisionAverted(IObstacle obstacle) {
             D.AssertNotNull(_caPropulsionJobs);
 
-            Profiler.BeginSample("Local Reference variable creation", _shipTransform);
+            Profiler.BeginSample("Local Reference variable creation", _ship.transform);
             var mortalObstacle = obstacle as IMortalItem_Ltd;
             Profiler.EndSample();
             if (mortalObstacle != null) {
-                Profiler.BeginSample("Unsubscribing to event", _shipTransform);
+                Profiler.BeginSample("Unsubscribing to event", _ship.transform);
                 //mortalObstacle.deathOneShot -= CollidingObstacleDeathEventHandler;
                 mortalObstacle.__death -= CollidingObstacleDeathEventHandler;
                 Profiler.EndSample();
             }
             //D.Log(ShowDebugLog, "{0} dis-engaging Collision Avoidance for {1} as collision has been averted.", DebugName, obstacle.DebugName);
 
-            Profiler.BeginSample("DisengageCA", _shipTransform);
+            Profiler.BeginSample("DisengageCA", _ship.transform);
             DisengageCollisionAvoidancePropulsionFor(obstacle);
             Profiler.EndSample();
 
             if (!IsCollisionAvoidanceEngaged) {
                 // last CA Propulsion Job has completed
-                Profiler.BeginSample("Resume Propulsion", _shipTransform);
+                Profiler.BeginSample("Resume Propulsion", _ship.transform);
                 EngageOrContinuePropulsion();   //ResumePropulsionAtIntendedSpeed(); // UNCLEAR resume propulsion while turning?
                 Profiler.EndSample();
                 if (_ship.IsTurning) {
                     // Turning so defer drift correction. Will engage when turn complete
                     return;
                 }
-                Profiler.BeginSample("Engage Drift Correction", _shipTransform);
+                Profiler.BeginSample("Engage Drift Correction", _ship.transform);
                 EngageDriftCorrection();
                 Profiler.EndSample();
             }
@@ -566,7 +571,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void EngageCollisionAvoidancePropulsionFor(IObstacle obstacle) {
             D.Assert(!_caPropulsionJobs.ContainsKey(obstacle));
-            Vector3 worldSpaceDirectionToAvoidCollision = (_shipData.Position - obstacle.Position).normalized;
+            Vector3 worldSpaceDirectionToAvoidCollision = (_ship.Position - obstacle.Position).normalized;
             if (worldSpaceDirectionToAvoidCollision == Vector3.zero) {
                 D.Error("{0}: Illegal Direction. Obstacle {1} and Ship are at same location!", DebugName, obstacle.DebugName);
             }
@@ -638,8 +643,9 @@ namespace CodeEnv.Master.GameContent {
             if (!_caPropulsionJobs.ContainsKey(obstacle)) {
                 D.Error("{0}: Obstacle {1} not found when disengaging CA. Obstacles currently being avoided: {2}.",
                     DebugName, obstacle.DebugName, _caPropulsionJobs.Keys.Select(k => k.DebugName).Concatenate());
-                if (!obstacle.IsOperational) {
-                    (obstacle as IMortalItem_Ltd).__LogDeathEventSubscribers();
+                var mortalObstacle = obstacle as IMortalItem_Ltd;
+                if (mortalObstacle != null && mortalObstacle.IsDead) {
+                    mortalObstacle.__LogDeathEventSubscribers();
                 }
             }
             _caPropulsionJobs[obstacle].Kill();
@@ -698,7 +704,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void IsPausedPropChangedHandler() {
-            PauseVelocity(_gameMgr.IsPaused);
+            HandlePauseChange(_gameMgr.IsPaused);
         }
 
         private void CurrentDragPropChangedHandler() {
@@ -711,39 +717,43 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        private void PauseVelocity(bool toPause) {
-            //D.Log(ShowDebugLog, "{0}.PauseVelocity({1}) called.", DebugName, toPause);
+        private void HandlePauseChange(bool toPause) {
             if (toPause) {
-                D.Assert(!_isVelocityToRestoreAfterPauseRecorded);
-                _velocityToRestoreAfterPause = _shipRigidbody.velocity;
-                _isVelocityToRestoreAfterPauseRecorded = true;
-                //D.Log(ShowDebugLog, "{0}.Rigidbody.velocity = {1} before setting IsKinematic to true. IsKinematic = {2}.", DebugName, _shipRigidbody.velocity.ToPreciseString(), _shipRigidbody.isKinematic);
-                _shipRigidbody.isKinematic = true;
-                //D.Log(ShowDebugLog, "{0}.Rigidbody.velocity = {1} after .isKinematic changed to true.", DebugName, _shipRigidbody.velocity.ToPreciseString());
-                //D.Log(ShowDebugLog, "{0}.Rigidbody.isSleeping = {1}.", DebugName, _shipRigidbody.IsSleeping());
+                D.Assert(!_hasPauseEventBeenReceived);
+                HandleMovementOnPauseChange(toPause: true);
+                _hasPauseEventBeenReceived = true;
             }
             else {
-                D.Assert(_isVelocityToRestoreAfterPauseRecorded);
+                if (_hasPauseEventBeenReceived) {
+                    HandleMovementOnPauseChange(toPause: false);
+                    _hasPauseEventBeenReceived = false;
+                }
+            }
+        }
+
+        private void HandleMovementOnPauseChange(bool toPause) {
+            if (toPause) {
+                _velocityToRestoreAfterPause = _shipRigidbody.velocity;
+                _shipRigidbody.isKinematic = true;
+            }
+            else {
                 _shipRigidbody.isKinematic = false;
                 _shipRigidbody.velocity = _velocityToRestoreAfterPause;
-                _velocityToRestoreAfterPause = Vector3.zero;
-                _shipRigidbody.WakeUp();    // OPTIMIZE superfluous?
-                _isVelocityToRestoreAfterPauseRecorded = false;
+                _velocityToRestoreAfterPause = default(Vector3);
+                _shipRigidbody.WakeUp();
             }
         }
 
         // 8.12.16 Job pausing moved to JobManager to consolidate handling
 
         /// <summary>
-        /// Adjusts the velocity and thrust of the ship to reflect the new GameSpeed setting. 
+        /// Adjusts the velocity and thrust of the ship to reflect the new GameSpeed setting.
         /// The reported speed and directional heading of the ship is not affected.
         /// </summary>
-        /// <param name="gameSpeed">The game speed.</param>
+        /// <param name="gameSpeedChangeRatio">The game speed change ratio.</param>
         private void AdjustForGameSpeed(float gameSpeedChangeRatio) {
-            // must immediately adjust velocity when game speed changes as just adjusting thrust takes
-            // a long time to get to increased/decreased velocity
             if (_gameMgr.IsPaused) {
-                D.Assert(_isVelocityToRestoreAfterPauseRecorded, DebugName);
+                D.Assert(_hasPauseEventBeenReceived, DebugName);
                 _velocityToRestoreAfterPause *= gameSpeedChangeRatio;
             }
             else {

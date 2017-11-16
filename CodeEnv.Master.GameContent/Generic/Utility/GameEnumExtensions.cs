@@ -24,8 +24,8 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Extensions for Enums specific to the game. Most values
-    /// are acquired from external XML files.
+    /// Extensions for Enums specific to the game. 
+    /// <remarks>TODO Externalize all to XML</remarks>
     /// </summary>
     public static class GameEnumExtensions {
 
@@ -876,7 +876,6 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        // TODO The following have not yet externalized to XML
 
         #region Unit Directive
 
@@ -1403,8 +1402,8 @@ namespace CodeEnv.Master.GameContent {
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
             }
             float radius = dimensions.magnitude / 2F;
-            if (radius > TempGameValues.ShipMaxRadius) {
-                D.Warn("Ship {0}.Radius {1:0.####} > MaxRadius {2:0.##}.", hullCat.GetValueName(), radius, TempGameValues.ShipMaxRadius);
+            if (radius > TempGameValues.MaxShipRadius) {
+                D.Warn("Ship {0}.Radius {1:0.####} > MaxRadius {2:0.##}.", hullCat.GetValueName(), radius, TempGameValues.MaxShipRadius);
             }
             return dimensions;
         }
@@ -1434,8 +1433,8 @@ namespace CodeEnv.Master.GameContent {
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
             }
             float radius = dimensions.magnitude / 2F;
-            if (radius > TempGameValues.FacilityMaxRadius) {
-                D.Warn("Facility {0}.Radius {1:0.####} > MaxRadius {2:0.##}.", hullCat.GetValueName(), radius, TempGameValues.FacilityMaxRadius);
+            if (radius > TempGameValues.MaxFacilityRadius) {
+                D.Warn("Facility {0}.Radius {1:0.####} > MaxRadius {2:0.##}.", hullCat.GetValueName(), radius, TempGameValues.MaxFacilityRadius);
             }
             return dimensions;
         }
@@ -2422,6 +2421,30 @@ namespace CodeEnv.Master.GameContent {
                 case SfxClipID.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(clipID));
+            }
+        }
+
+        #endregion
+
+        #region Formation
+
+        public static int MaxFormationSlots(this Formation formation) {
+            switch (formation) {
+                case Formation.Globe:
+                    return 35;
+                case Formation.Wedge:
+                    return 61;
+                case Formation.Plane:
+                    return 31;
+                case Formation.Diamond:
+                    return 31;
+                case Formation.Spread:
+                    return 39;
+                case Formation.Hanger:
+                    return 8;
+                case Formation.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(formation));
             }
         }
 

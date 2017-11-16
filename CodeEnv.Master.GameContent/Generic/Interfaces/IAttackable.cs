@@ -32,6 +32,8 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         event EventHandler<InfoAccessChangedEventArgs> infoAccessChgd;
 
+        bool IsDead { get; }
+
         /// <summary>
         /// Indicates whether the attackingPlayer is allowed to attack this item.
         /// A player is only allowed to attack this item if the player knows who the owner is, and 

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ISensorDetector.cs
-// Interface for Items that have the ability to detect ISensorDetectable Items.
+// Interface for UnitMemberItems that have the ability to detect ISensorDetectable Items.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,7 +17,7 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Interface for Items that have the ability to detect ISensorDetectable Items.
+    /// Interface for UnitMemberItems that have the ability to detect ISensorDetectable Items.
     /// </summary>
     public interface ISensorDetector {
 

@@ -29,11 +29,12 @@ using UnityEngine;
 /// </summary>
 public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
 
-    private static ShipDirective[] _userMenuOperatorDirectives = new ShipDirective[] {  ShipDirective.Join,
-                                                                                        ShipDirective.Disengage,
-                                                                                        ShipDirective.Disband,
-                                                                                        ShipDirective.Scuttle,
-    };
+    private static ShipDirective[] _userMenuOperatorDirectives = new ShipDirective[]    {
+                                                                                            ShipDirective.Join,
+                                                                                            ShipDirective.Disengage,
+                                                                                            ShipDirective.Disband,
+                                                                                            ShipDirective.Scuttle,
+                                                                                        };
 
     protected override IEnumerable<ShipDirective> UserMenuOperatorDirectives {
         get { return _userMenuOperatorDirectives; }
@@ -45,10 +46,11 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
 
     private bool IsShipDisengageOrderDisabled {
         get {
-            return _shipMenuOperator.Data.CombatStance == ShipCombatStance.Disengage
+            return _shipMenuOperator.IsLocatedInHanger
+                || _shipMenuOperator.Data.CombatStance == ShipCombatStance.Disengage
                 || _shipMenuOperator.IsCurrentOrderDirectiveAnyOf(ShipDirective.Disengage)
                 || _shipMenuOperator.IsHQ
-                || !_shipMenuOperator.Command.RequestPermissionToWithdraw(_shipMenuOperator, ShipItem.WithdrawPurpose.Disengage);
+                || !_shipMenuOperator.RequestPermissionOfCmdToWithdraw(ShipItem.WithdrawPurpose.Disengage);
         }
     }
 
@@ -73,11 +75,11 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
     protected override bool IsUserMenuOperatorMenuItemDisabledFor(ShipDirective directive) {
         switch (directive) {
             case ShipDirective.Scuttle:
-                return _shipMenuOperator.IsCurrentOrderDirectiveAnyOf(directive);
+                return _shipMenuOperator.IsCurrentOrderDirectiveAnyOf(ShipDirective.Scuttle);
             case ShipDirective.Disengage:
                 return IsShipDisengageOrderDisabled;
             case ShipDirective.Join:
-                return !_userKnowledge.OwnerFleets.Where(fCmd => fCmd.IsJoinable && !fCmd.IsLoneCmd).Except(_shipMenuOperator.Command).Any();
+                return _shipMenuOperator.IsLocatedInHanger || !_userKnowledge.AreAnyFleetsJoinableBy(_shipMenuOperator);
             case ShipDirective.Disband:
                 return false;
             default:
@@ -96,7 +98,10 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
     protected override bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(ShipDirective directive, out IEnumerable<INavigableDestination> targets) {
         switch (directive) {
             case ShipDirective.Join:
-                targets = _userKnowledge.OwnerFleets.Where(fCmd => fCmd.IsJoinable && !fCmd.IsLoneCmd).Except(_shipMenuOperator.Command).Cast<INavigableDestination>();
+                IEnumerable<IFleetCmd> joinableFleets;
+                bool hasJoinableFleets = _userKnowledge.TryGetJoinableFleetsFor(_shipMenuOperator, out joinableFleets);
+                D.Assert(hasJoinableFleets);
+                targets = joinableFleets.Cast<INavigableDestination>();
                 return true;
             case ShipDirective.Disband:
                 targets = _userKnowledge.OwnerBases.Cast<INavigableDestination>();
@@ -121,12 +126,9 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
 
     private void IssueUserShipMenuOperatorOrder(int itemID) {
         ShipDirective directive = (ShipDirective)_directiveLookup[itemID];
-        D.Assert(directive == ShipDirective.Disband || directive == ShipDirective.Join || directive == ShipDirective.Disengage
-            || directive == ShipDirective.Scuttle); // HACK
-
         INavigableDestination target;
-        bool isTarget = _unitTargetLookup.TryGetValue(itemID, out target);
-        string msg = isTarget ? target.DebugName : "[none]";
+        bool hasTarget = _unitTargetLookup.TryGetValue(itemID, out target);
+        string msg = hasTarget ? target.DebugName : "[none]";
         D.Log("{0} selected directive {1} and target {2} from context menu.", DebugName, directive.GetValueName(), msg);
         bool isOrderInitiated = _shipMenuOperator.InitiateNewOrder(new ShipOrder(directive, OrderSource.User, target: target as IShipNavigableDestination));
         D.Assert(isOrderInitiated);

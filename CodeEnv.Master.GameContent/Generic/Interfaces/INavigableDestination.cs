@@ -34,8 +34,6 @@ namespace CodeEnv.Master.GameContent {
 
         bool IsMobile { get; }
 
-        bool IsOperational { get; }
-
     }
 }
 

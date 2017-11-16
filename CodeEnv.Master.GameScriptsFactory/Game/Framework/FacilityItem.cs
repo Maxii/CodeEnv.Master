@@ -39,21 +39,19 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     /// </summary>
     public override bool IsAttackCapable { get { return Data.WeaponsRange.Max > Constants.ZeroF; } }
 
-    public override bool IsConstructionUnderway {
-        get { return IsCurrentStateAnyOf(FacilityState.Constructing, FacilityState.ExecuteRefitOrder); }
-    }
-
     public new FacilityData Data {
         get { return base.Data as FacilityData; }
         set { base.Data = value; }
     }
 
-    public override float ClearanceRadius { get { return _obstacleZoneCollider.radius * 5F; } }
+    public override float ClearanceRadius { get { return _obstacleZoneCollider.radius * TempGameValues.ElementClearanceRadiusMultiplier; } }
 
     public new AUnitBaseCmdItem Command {
-        get { return base.Command as AUnitBaseCmdItem; }
-        set { base.Command = value; }
+        protected get { return base.Command as AUnitBaseCmdItem; }
+        set { base.Command = value; }   // No need for handling Cmd changes as Facilities only change Cmd prior to construction and when dead
     }
+
+    public FacilityHullCategory HullCategory { get { return Data.HullCategory; } }
 
     private FacilityOrder _currentOrder;
     /// <summary>
@@ -79,6 +77,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             return _obstacleDetourGenerator;
         }
     }
+
     private SphereCollider _obstacleZoneCollider;
 
     #region Initialization
@@ -96,7 +95,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         return new ItemHoveredHudManager(Data.Publisher);
     }
 
-    protected override ADisplayManager MakeDisplayManagerInstance() {
+    protected override ADisplayManager MakeDisplayMgrInstance() {
         return new FacilityDisplayManager(this, __DetermineMeshCullingLayer());
     }
 
@@ -109,7 +108,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         _obstacleZoneCollider = gameObject.GetComponentsInChildren<SphereCollider>().Single(col => col.gameObject.layer == (int)Layers.AvoidableObstacleZone);
         _obstacleZoneCollider.enabled = false;
         _obstacleZoneCollider.isTrigger = true;
-        _obstacleZoneCollider.radius = Radius * 2F;
+        _obstacleZoneCollider.radius = Radius * TempGameValues.FacilityObstacleZoneRadiusMultiplier;
         //D.Log(ShowDebugLog, "{0} ObstacleZoneRadius = {1:0.##}.", DebugName, _obstacleZoneCollider.radius);
         if (_obstacleZoneCollider.radius > TempGameValues.LargestFacilityObstacleZoneRadius) {
             D.Warn("{0}: ObstacleZoneRadius {1:0.##} > {2:0.##}.", DebugName, _obstacleZoneCollider.radius, TempGameValues.LargestFacilityObstacleZoneRadius);
@@ -165,13 +164,15 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #endregion
 
-    public override void CommenceOperations(bool isInitialConstructionNeeded) {
-        base.CommenceOperations(isInitialConstructionNeeded);
+    public void CommenceOperations(bool isInitialConstructionNeeded) {
+        CommenceOperations();
         _obstacleZoneCollider.enabled = true;
         CurrentState = isInitialConstructionNeeded ? FacilityState.Constructing : FacilityState.Idling;
-        ActivateSensors();
-        SubscribeToSensorEvents();
+        Data.ActivateSRSensors();
+        __SubscribeToSensorEvents();
     }
+
+    // IMPROVE Hide base.CommenceOperations (new doesn't work)
 
     public FacilityReport GetReport(Player player) { return Data.Publisher.GetReport(player); }
 
@@ -182,17 +183,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         else {
             InteractibleHudWindow.Instance.Show(FormID.AiFacility, UserReport);
         }
-    }
-
-    protected override bool ShouldExistingCmdOwnerChange() {
-        return Command.Elements.Count == Constants.One;
-    }
-
-    protected override void HandleOwnerChanged() {
-        base.HandleOwnerChanged();
-        D.AssertEqual(Constants.One, Command.Elements.Count);
-        D.AssertEqual(Owner, Command.Owner);
-        D.Log(/*ShowDebugLog, */"{0} just seized its existing Cmd {1} in Frame {2}.", DebugName, Command.DebugName, Time.frameCount);
     }
 
     #region Event and Property Change Handlers
@@ -208,31 +198,17 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #endregion
 
-    protected override void PrepareToInformCmdOfSubordinateDeath() {
-        base.PrepareToInformCmdOfSubordinateDeath();
-        UponDeath();    // 4.19.17 Do any reqd Callback before exiting current non-Call()ed state
-        CurrentOrder = null;
-    }
-
-    protected override void InitiateDeadState() {
-        CurrentState = FacilityState.Dead;
-    }
-
-    protected override void PrepareForDeathEffect() {
-        base.PrepareForDeathEffect();
-        // Keep the obstacleZoneCollider enabled to keep ships from flying through this exploding facility
+    protected override void HandleOwnerChanged() {
+        base.HandleOwnerChanged();
+        D.AssertEqual(Constants.One, UnitElementCount);
+        D.AssertEqual(Owner, Command.Owner);
+        D.Log(/*ShowDebugLog, */"{0} just seized its existing Cmd {1} in Frame {2}.", DebugName, Command.DebugName, Time.frameCount);
     }
 
     protected override TrackingIconInfo MakeIconInfo() {
         var report = UserReport;
         GameColor iconColor = report.Owner != null ? report.Owner.Color : GameColor.White;
         return new TrackingIconInfo("FleetIcon_Unknown", AtlasID.Fleet, iconColor, IconSize, WidgetPlacement.Over, TempGameValues.FacilityIconCullLayer);
-    }
-
-    protected override void __ValidateRadius(float radius) {
-        if (radius > TempGameValues.FacilityMaxRadius) {
-            D.Error("{0} Radius {1:0.00} must be <= Max {2:0.00}.", DebugName, radius, TempGameValues.FacilityMaxRadius);
-        }
     }
 
     private Layers __DetermineMeshCullingLayer() {
@@ -249,6 +225,64 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             case FacilityHullCategory.None:
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(Data.HullCategory));
+        }
+    }
+
+    #region Highlighting
+
+    public override void AssessCircleHighlighting() {
+        if (!IsDead && IsDiscernibleToUser) {
+            if (IsFocus) {
+                if (IsSelected) {
+                    ShowCircleHighlights(CircleHighlightID.Focused, CircleHighlightID.Selected);
+                    return;
+                }
+                if (Command.IsSelected) {
+                    ShowCircleHighlights(CircleHighlightID.Focused, CircleHighlightID.UnitElement);
+                    return;
+                }
+                ShowCircleHighlights(CircleHighlightID.Focused);
+                return;
+            }
+            if (IsSelected) {
+                ShowCircleHighlights(CircleHighlightID.Selected);
+                return;
+            }
+            if (Command.IsSelected) {
+                ShowCircleHighlights(CircleHighlightID.UnitElement);
+                return;
+            }
+        }
+        ShowCircleHighlights(CircleHighlightID.None);
+    }
+
+    #endregion
+
+    protected override void PrepareForDeadState() {
+        base.PrepareForDeadState();
+        CurrentOrder = null;
+    }
+
+    protected override void AssignDeadState() {
+        CurrentState = FacilityState.Dead;
+    }
+
+    protected override void PrepareForDeathEffect() {
+        base.PrepareForDeathEffect();
+        // Keep the obstacleZoneCollider enabled to keep ships from flying through this exploding facility
+    }
+
+    /// <summary>
+    /// Assigns its Command as the focus to replace it. 
+    /// <remarks>If the last element to die then Command will shortly die after HandleSubordinateElementDeath() called.
+    /// This in turn will null the MainCameraControl.CurrentFocus property.
+    /// </remarks>
+    /// </summary>
+    protected override void AssignAlternativeFocusAfterDeathEffect() {
+        base.AssignAlternativeFocusAfterDeathEffect();
+        AUnitBaseCmdItem formerCmd = transform.parent.GetComponentInChildren<AUnitBaseCmdItem>();
+        if (!formerCmd.IsDead) {
+            formerCmd.IsFocus = true;
         }
     }
 
@@ -389,6 +423,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     /// <summary>
     /// The Captain uses this method to override orders already issued.
+    /// <remarks>Will throw an error if issued while paused.</remarks>
     /// </summary>
     /// <param name="captainsOverrideOrder">The Captain's override order.</param>
     /// <param name="retainSuperiorsOrder">if set to <c>true</c> [retain superiors order].</param>
@@ -396,6 +431,10 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         D.AssertEqual(OrderSource.Captain, captainsOverrideOrder.Source, captainsOverrideOrder.ToString());
         D.AssertNull(captainsOverrideOrder.StandingOrder, captainsOverrideOrder.ToString());
         D.Assert(!captainsOverrideOrder.ToCallback, captainsOverrideOrder.ToString());
+        // 11.14.17 Shouldn't be possible for Captain to issue an order via this route while paused. e.g. issuing a repair 
+        // order as a consequence of taking damage requires the damage to have been delivered while paused which shouldn't be possible.
+        D.Assert(!_gameMgr.IsPaused);
+
         // if the captain says to, and the current existing order is from his superior, then record it as a standing order
         FacilityOrder standingOrder = null;
         if (retainSuperiorsOrder && CurrentOrder != null) {
@@ -423,10 +462,13 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             D.Assert(!IsDead);
             //D.Log(ShowDebugLog, "{0} received new order {1}. Frame {2}.", DebugName, CurrentOrder.Directive.GetValueName(), Time.frameCount);
 
-            if (IsConstructionUnderway && CurrentOrder.Directive != FacilityDirective.Scuttle) {
-                D.Warn("{0} received new order {1} while {2}. Order ignored.", DebugName, CurrentOrder.DebugName, CurrentState.GetValueName());
+            if (__IsOrderBlocked(CurrentOrder.Directive)) {
+                // HACK TEMP until I can figure out a more elegant way of keeping InitialConstruction and Refitting from being interrupted
+                D.Warn("{0} received new order {1} while {2}. Order ignored.", DebugName, CurrentOrder.DebugName, ReworkUnderway.GetValueName());
                 return;
             }
+
+            __ValidateOrder(CurrentOrder);
 
             // 4.8.17 If a non-Call()ed state is to notify Cmd of OrderOutcome, this is when notification of receiving a new order will happen. 
             // CalledStateReturnHandlers can't do it as the new order will change the state before the ReturnCause is processed.
@@ -434,8 +476,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
             //D.Log(ShowDebugLog, "{0} is about to change state for new order {1}. Frame {2}.", DebugName, CurrentOrder.Directive.GetValueName(), Time.frameCount);
             FacilityDirective directive = CurrentOrder.Directive;
-            __ValidateKnowledgeOfOrderTarget(CurrentOrder.Target, directive);
-
             switch (directive) {
                 case FacilityDirective.Attack:
                     CurrentState = FacilityState.ExecuteAttackOrder;
@@ -444,7 +484,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
                     CurrentState = FacilityState.ExecuteRepairOrder;
                     break;
                 case FacilityDirective.Scuttle:
-                    IsOperational = false;
+                    IsDead = true;
                     return; // CurrentOrder will be set to null as a result of death
                 case FacilityDirective.Refit:
                     CurrentState = FacilityState.ExecuteRefitOrder;
@@ -531,6 +571,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     /// execution of the state Return()ed too, aka the new CurrentState.
     /// </summary>
     private void RestartState() {
+        D.Assert(CurrentState != FacilityState.Constructing && CurrentState != FacilityState.ExecuteRefitOrder);
         if (IsDead) {
             D.Warn("{0}.RestartState() called when dead.", DebugName);
             return;
@@ -568,6 +609,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     void Constructing_UponPreconfigureState() {
         LogEvent();
         ValidateCommonNotCallableStateValues();
+        D.AssertNotNull(Command);
+        ReworkUnderway = ReworkingMode.Constructing;
+        StartEffectSequence(EffectSequenceID.Constructing);
     }
 
     IEnumerator Constructing_EnterState() {
@@ -577,18 +621,19 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         Data.PrepareForInitialConstruction();
 
         ConstructionInfo construction = Command.ConstructionMgr.GetConstructionFor(this);
+        D.Assert(!construction.IsCompleted);
         while (!construction.IsCompleted) {
-            DisplayMgr.ShowConstructionUnderway(construction.CompletionPercentage);
+            DisplayMgr.RefreshReworkingVisuals(construction.CompletionPercentage);
             yield return null;
         }
 
-        Data.HandleConstructionComplete();
+        Data.RestoreInitialConstructionValues();
         CurrentState = FacilityState.Idling;
     }
 
     void Constructing_UponNewOrderReceived() {
         LogEvent();
-        D.Error("{0} should not see a new order during initial construction.", DebugName);
+        D.AssertEqual(FacilityDirective.Scuttle, CurrentOrder.Directive);
     }
 
     void Constructing_UponLosingOwnership() {
@@ -619,11 +664,11 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void Constructing_UponHQStatusChangeCompleted() {
         LogEvent();
-        D.Error("{0} cannot be or become HQ during initial construction.", DebugName);
+        // UNCLEAR allow to/from HQ change during initial construction?
     }
 
     void Constructing_UponUncompletedRemovalFromConstructionQueue() {
-        IsOperational = false;
+        IsDead = true;
     }
 
     void Constructing_UponDeath() {
@@ -633,7 +678,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void Constructing_ExitState() {
         LogEvent();
-        DisplayMgr.HideConstructionUnderway();
+        StopEffectSequence(EffectSequenceID.Constructing);
+        ReworkUnderway = ReworkingMode.None;
     }
 
     #endregion
@@ -645,6 +691,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     void Idling_UponPreconfigureState() {
         LogEvent();
         ValidateCommonNotCallableStateValues();
+        if (IsAvailable) {
+            D.Warn("{0} is already available starting Idling!", DebugName);
+        }
     }
 
     IEnumerator Idling_EnterState() {
@@ -752,7 +801,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         D.Assert(CurrentOrder.ToCallback);
         // The attack target acquired from the order. Should always be a Fleet
         IUnitAttackable unitAttackTgt = CurrentOrder.Target as IUnitAttackable;
-        D.Assert(unitAttackTgt.IsOperational);
+        D.Assert(!unitAttackTgt.IsDead);
         D.Assert(unitAttackTgt.IsAttackAllowedBy(Owner));
 
         _fsmTgt = unitAttackTgt as IElementNavigableDestination;
@@ -767,7 +816,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         yield return null;
 
         IUnitAttackable attackTgtFromOrder = _fsmTgt as IUnitAttackable;
-        while (attackTgtFromOrder.IsOperational) {
+        while (!attackTgtFromOrder.IsDead) {            ////while (attackTgtFromOrder.IsOperational) {
             //TODO Primary target needs to be picked, and if it dies, its death handled ala ShipItem
             // if a primaryTarget is inRange, primary target is not null so OnWeaponReady will attack it
             // if not in range, then primary target will be null, so UponWeaponReadyToFire will attack other targets of opportunity, if any
@@ -902,6 +951,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         ValidateCommonNotCallableStateValues();
         // 4.15.17 Can't Assert ToCallback as Captain can issue this order
         D.Assert(!_debugSettings.DisableRepair);
+        D.Assert(Data.Health < Constants.OneHundredPercent);
+
         D.AssertNull(CurrentOrder.Target);  // 4.3.17 For now as only current choices are this Facility's Cmd or the
                                             // Facility's future FormationStation which can both be chosen here
         var repairDest = DetermineRepairDest();
@@ -918,25 +969,16 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         LogEvent();
         //D.Log(ShowDebugLog, "{0} is beginning repair. Frame: {1}.", DebugName, Time.frameCount);
 
-        // 3.19.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
-        // I think it is because there is a rare scenario where no yield return is encountered. 
-        // See http://answers.unity3d.com/questions/158917/error-quotmcoroutineenumeratorgchandle-0quot.html
-        yield return null;
+        var returnHandler = GetInactiveReturnHandlerFor(FacilityState.Repairing, CurrentState);
+        Call(FacilityState.Repairing);
+        yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-        if (Data.Health < Constants.OneHundredPercent) {
-
-            var returnHandler = GetInactiveReturnHandlerFor(FacilityState.Repairing, CurrentState);
-            Call(FacilityState.Repairing);
-            yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
-                                //D.Log(ShowDebugLog, "{0}.ExecuteRepairOrder got a Return() from Call(Repairing) during Frame {1}.", DebugName, Time.frameCount);
-
-            if (!returnHandler.DidCallSuccessfullyComplete) {
-                yield return null;
-                D.Error("Shouldn't get here as the ReturnCause should generate a change of state.");
-            }
-
-            // IMPROVE Can't assert OneHundredPercent as more hits can occur after repairing completed
+        if (!returnHandler.DidCallSuccessfullyComplete) {
+            yield return null;
+            D.Error("Shouldn't get here as the ReturnCause should generate a change of state.");
         }
+
+        // Can't assert OneHundredPercent as more hits can occur after repairing completed
 
         _allowOrderFailureCallback = false;
         AttemptOrderOutcomeCallback(isSuccessful: true);
@@ -1027,6 +1069,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         D.Assert(!_debugSettings.DisableRepair);
         D.Assert(Data.Health < Constants.OneHundredPercent);
         D.AssertNotEqual(Constants.ZeroPercent, Data.Health);
+        ReworkUnderway = ReworkingMode.Repairing;
+        StartEffectSequence(EffectSequenceID.Repairing);
     }
 
     IEnumerator Repairing_EnterState() {
@@ -1041,13 +1085,12 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         // See http://answers.unity3d.com/questions/158917/error-quotmcoroutineenumeratorgchandle-0quot.html
         yield return null;
 
-        StartEffectSequence(EffectSequenceID.Repairing);
-
         float repairCapacityPerDay = repairDest.GetAvailableRepairCapacityFor(this, Owner);
         string jobName = "{0}.RepairJob".Inject(DebugName);
         _repairJob = _jobMgr.RecurringWaitForHours(GameTime.HoursPerDay, jobName, waitMilestone: () => {
             var repairedHitPts = repairCapacityPerDay;
             Data.CurrentHitPoints += repairedHitPts;
+            DisplayMgr.RefreshReworkingVisuals(Data.Health);
             //D.Log(ShowDebugLog, "{0} repaired {1:0.#} hit points.", DebugName, repairedHitPts);
         });
 
@@ -1060,7 +1103,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         Data.RemoveDamageFromAllEquipment();
         D.Log(ShowDebugLog, "{0}'s repair is complete. Health = {1:P01}.", DebugName, Data.Health);
 
-        StopEffectSequence(EffectSequenceID.Repairing);
         Return();
     }
 
@@ -1104,6 +1146,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     void Repairing_ExitState() {
         LogEvent();
         KillRepairJob();
+        StopEffectSequence(EffectSequenceID.Repairing);
+        ReworkUnderway = ReworkingMode.None;
     }
 
     #endregion
@@ -1111,6 +1155,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     #region ExecuteRefitOrder
 
     #region ExecuteRefitOrder Support Members
+
+    private AUnitElementData.RefitStorage _refitStorage;
 
     private float __CalcRefitCost(FacilityDesign refitDesign, FacilityDesign currentDesign) {
         float refitCost = refitDesign.ConstructionCost - currentDesign.ConstructionCost;
@@ -1123,43 +1169,46 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #endregion
 
-    private AUnitElementData.RefitStorage _refitStorage;
-
     void ExecuteRefitOrder_UponPreconfigureState() {
         LogEvent();
         ValidateCommonNotCallableStateValues();
+        D.AssertNotNull(Command);
         D.Assert(CurrentOrder is FacilityRefitOrder);
         D.AssertNull(_refitStorage);
+        ReworkUnderway = ReworkingMode.Refitting;
+        StartEffectSequence(EffectSequenceID.Refitting);
     }
 
     IEnumerator ExecuteRefitOrder_EnterState() {
         LogEvent();
-        IsAvailable = false;
 
-        var refitDesign = (CurrentOrder as FacilityRefitOrder).RefitDesign; ////__PickRefitDesign();
+        var refitDesign = (CurrentOrder as FacilityRefitOrder).RefitDesign;
         float refitCost = __CalcRefitCost(refitDesign, Data.Design);
         D.Log(/*ShowDebugLog, */"{0} has begun refitting to {1}. Cost = {2:0.}.", DebugName, refitDesign.DebugName, refitCost);
-        Data.Design = refitDesign;
 
         _refitStorage = Data.PrepareForRefit();
 
         RefitConstructionInfo construction = Command.ConstructionMgr.AddToQueue(refitDesign, this, refitCost);
+        D.Assert(!construction.IsCompleted);
         while (!construction.IsCompleted) {
-            DisplayMgr.ShowConstructionUnderway(construction.CompletionPercentage);
+            DisplayMgr.RefreshReworkingVisuals(construction.CompletionPercentage);
             yield return null;
         }
 
+        ReworkUnderway = ReworkingMode.None;
         FacilityItem facilityReplacement = UnitFactory.Instance.MakeFacilityInstance(Owner, Topography, refitDesign, Name, Command.UnitContainer.gameObject);
         Command.ReplaceElement(this, facilityReplacement);
 
         facilityReplacement.FinalInitialize();
+        AllKnowledge.Instance.AddInitialConstructionOrRefitReplacementElement(facilityReplacement);
         facilityReplacement.CommenceOperations(isInitialConstructionNeeded: false);
-        DestroyMe();
+
+        HandleRefitReplacementCompleted();
     }
 
     void ExecuteRefitOrder_UponNewOrderReceived() {
         LogEvent();
-        D.Error("{0} should not see a new order while Refitting.", DebugName);
+        D.AssertEqual(FacilityDirective.Scuttle, CurrentOrder.Directive);
     }
 
     void ExecuteRefitOrder_UponLosingOwnership() {
@@ -1190,11 +1239,11 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void ExecuteRefitOrder_UponHQStatusChangeCompleted() {
         LogEvent();
-        // TODO element can be refitting and already be HQ or become HQ
+        // TODO element can be refitting and lose or gain HQ status
     }
 
     void ExecuteRefitOrder_UponUncompletedRemovalFromConstructionQueue() {
-        Data.HandleRefitCanceled(_refitStorage);
+        Data.RestoreRefitValues(_refitStorage);
         CurrentState = FacilityState.Idling;
     }
 
@@ -1207,7 +1256,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     void ExecuteRefitOrder_ExitState() {
         LogEvent();
         // Uncompleted Refit can be canceled and go to Idling by removal from ConstructionQueue
-        DisplayMgr.HideConstructionUnderway();
+        StopEffectSequence(EffectSequenceID.Refitting);
+        ReworkUnderway = ReworkingMode.None;
         _refitStorage = null;
     }
 
@@ -1240,12 +1290,12 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
         PrepareForDeathEffect();
         StartEffectSequence(EffectSequenceID.Dying);
-        HandleDeathAfterBeginningDeathEffect();
+        HandleDeathEffectBegun();
     }
 
     void Dead_UponEffectSequenceFinished(EffectSequenceID effectSeqID) {
         LogEvent();
-        HandleDeathAfterDeathEffectFinished();
+        HandleDeathEffectFinished();
         DestroyMe();
     }
 
@@ -1311,10 +1361,10 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         return handler;
     }
 
-
     private FsmReturnHandler CreateFsmReturnHandlerFor(FacilityState calledState, FacilityState returnedState) {
         D.Assert(IsStateCalled(calledState));
-        if (calledState == FacilityState.Repairing && returnedState == FacilityState.ExecuteRepairOrder) {
+        if (calledState == FacilityState.Repairing) {
+            D.AssertEqual(FacilityState.ExecuteRepairOrder, returnedState);
             return CreateFsmReturnHandler_RepairingToRepair();
         }
         D.Error("{0}: No {1} found for CalledState {2} and ReturnedState {3}.",
@@ -1348,7 +1398,10 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     protected override void ValidateCommonCallableStateValues(string calledStateName) {
         base.ValidateCommonCallableStateValues(calledStateName);
         D.AssertNotNull(_fsmTgt);
-        D.Assert(_fsmTgt.IsOperational, _fsmTgt.DebugName);
+        var mortalFsmTgt = _fsmTgt as IMortalItem_Ltd;
+        if (mortalFsmTgt != null) {
+            D.Assert(!mortalFsmTgt.IsDead, _fsmTgt.DebugName);
+        }
     }
 
     public override void HandleEffectSequenceFinished(EffectSequenceID effectSeqID) {
@@ -1420,7 +1473,13 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #region Debug
 
-    public override void __HandleLocalPositionManuallyChanged() {
+    protected override void __ValidateRadius(float radius) {
+        if (radius > TempGameValues.MaxFacilityRadius) {
+            D.Error("{0} Radius {1:0.00} must be <= Max {2:0.00}.", DebugName, radius, TempGameValues.MaxFacilityRadius);
+        }
+    }
+
+    public void __HandleLocalPositionManuallyChanged() {
         // TEMP Facilities have their local position manually changed whenever there is a Formation change
         // even if operational. As a Facility has an obstacle detour generator which needs to know the (supposedly unmoving) 
         // facility's position, we have to regenerate that generator if manually relocated.
@@ -1432,23 +1491,44 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         D.AssertEqual(FacilityState.Idling, CurrentState);
     }
 
-    private void __ValidateKnowledgeOfOrderTarget(IElementNavigableDestination target, FacilityDirective directive) {
-        if (directive == FacilityDirective.Disband || directive == FacilityDirective.Refit || directive == FacilityDirective.StopAttack) {
-            // directives aren't yet implemented
-            return;
-        }
-
-        if (directive == FacilityDirective.Scuttle || directive == FacilityDirective.Repair) {
-            // 4.5.17 Current Repair destinations are Facility's Base and its (future) FormationStation. Neither are specified in orders
+    [System.Diagnostics.Conditional("DEBUG")]
+    private void __ValidateOrder(FacilityOrder order) {
+        var directive = order.Directive;
+        var target = order.Target;
+        if (directive == FacilityDirective.Scuttle) {
             D.AssertNull(target);
-            return;
         }
-
-        if (!OwnerAIMgr.HasKnowledgeOf(target as IOwnerItem_Ltd)) {
-            D.Warn("{0} received {1} order with Target {2} that {3} has no knowledge of.", DebugName, directive.GetValueName(), target.DebugName, Owner.LeaderName);
+        else {
+            if (ReworkUnderway == ReworkingMode.Constructing || ReworkUnderway == ReworkingMode.Refitting) {
+                D.Error("{0} received new order {1} while {2}.", DebugName, order.DebugName, ReworkUnderway.GetValueName());
+            }
+            else {
+                if (directive == FacilityDirective.Disband || directive == FacilityDirective.StopAttack) {
+                    // do nothing as directives aren't yet implemented
+                }
+                else if (directive == FacilityDirective.Repair) {
+                    // 4.5.17 Current Repair destinations are Facility's Base and its (future) FormationStation. Neither are specified in orders
+                    D.AssertNull(target);
+                }
+                else if (directive == FacilityDirective.Refit) {
+                    // 11.8.17 No need for refit destination for a facility. It does refitting in place
+                    D.AssertNull(target);
+                }
+                else if (!OwnerAIMgr.HasKnowledgeOf(target as IOwnerItem_Ltd)) {
+                    D.Warn("{0} received order {1} when {2} has no knowledge of target.", DebugName, order.DebugName, Owner.DebugName);
+                }
+            }
         }
     }
 
+    private bool __IsOrderBlocked(FacilityDirective orderDirective) {
+        if (orderDirective == FacilityDirective.Scuttle) {
+            return false;
+        }
+        return ReworkUnderway == ReworkingMode.Constructing || ReworkUnderway == ReworkingMode.Refitting;
+    }
+
+    [System.Diagnostics.Conditional("DEBUG")]
     private void __ReportCollision(Collision collision) {
         if (ShowDebugLog) {
             Profiler.BeginSample("Editor-only GC allocation (GetComponent returns null)");
@@ -1735,11 +1815,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     #region IAssaultable Members
 
     public override bool IsAssaultAllowedBy(Player player) {
-        if (base.IsAssaultAllowedBy(player)) {
-            // 5.5.17 Facilities may only be assaulted if they are the only facility in the Cmd
-            return Command.Elements.Count == Constants.One;
-        }
-        return false;
+        // 5.5.17 Facilities may only be assaulted if they are the only facility in the Cmd
+        return base.IsAssaultAllowedBy(player) && UnitElementCount == Constants.One;
     }
 
     #endregion

@@ -28,11 +28,14 @@ namespace CodeEnv.Master.GameContent {
         [EnumAttribute("T")]
         Thermal,
 
-        [EnumAttribute("A")]
-        Atomic,
+        //[EnumAttribute("RAD")]
+        //Radiation,
 
-        [EnumAttribute("K")]
-        Kinetic
+        [EnumAttribute("S")]
+        Structural,
+
+        [EnumAttribute("I")]
+        Incursion
 
     }
 }

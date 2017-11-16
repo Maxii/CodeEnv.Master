@@ -78,6 +78,7 @@ public abstract class AGuiElement : ATextTooltip {
 
     #region Debug
 
+    [System.Diagnostics.Conditional("DEBUG")]
     protected virtual void __ValidateOnAwake() {
         if (_widgetDepthIncrement < Constants.Zero) {
             D.ErrorContext(this, "{0}'s _widgetDepthIncrement should not be negative.", DebugName);

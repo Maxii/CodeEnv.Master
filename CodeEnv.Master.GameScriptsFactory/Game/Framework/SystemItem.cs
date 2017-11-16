@@ -100,8 +100,6 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
 
     public IntVector3 SectorID { get { return Data.SectorID; } }
 
-    ////protected override bool IsSelectable { get { return true; } }
-
     private IList<Player> _playersWithInfoAccessToOwner;
     private IList<APlanetoidItem> _planetoids;
     private IList<MoonItem> _moons;
@@ -111,8 +109,8 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
 
     #region Initialization
 
-    protected override void InitializeOnAwake() {
-        base.InitializeOnAwake();
+    protected override void InitializeValuesAndReferences() {
+        base.InitializeValuesAndReferences();
         _planetoids = new List<APlanetoidItem>();    // OPTIMIZE size of each of these lists
         _planets = new List<PlanetItem>();
         _moons = new List<MoonItem>();
@@ -161,7 +159,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         return ctxControl;
     }
 
-    protected override ADisplayManager MakeDisplayManagerInstance() {
+    protected override ADisplayManager MakeDisplayMgrInstance() {
         return new SystemDisplayManager(gameObject, TempGameValues.SystemMeshCullLayer);
     }
 
@@ -190,7 +188,7 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
     }
 
     protected override CircleHighlightManager InitializeCircleHighlightMgr() {
-        float circleRadius = Radius * Screen.height * 1F;
+        float circleRadius = Radius * Screen.height * 1F;   // HACK
         return new CircleHighlightManager(transform, circleRadius);
     }
 
@@ -225,20 +223,20 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         Data.AddPlanetoidData(planetoid.Data);
     }
 
-    public void RemovePlanetoid(IPlanetoid planetoid) {
-        D.Assert(!planetoid.IsOperational);
-        bool isRemoved = _planetoids.Remove(planetoid as APlanetoidItem);
+    public void RemovePlanetoid(IPlanetoid deadPlanetoid) {
+        D.Assert(deadPlanetoid.IsDead);
+        bool isRemoved = _planetoids.Remove(deadPlanetoid as APlanetoidItem);
         D.Assert(isRemoved);
-        var planet = planetoid as PlanetItem;
+        var planet = deadPlanetoid as PlanetItem;
         if (planet != null) {
             isRemoved = _planets.Remove(planet);
             D.Assert(isRemoved);
         }
         else {
-            isRemoved = _moons.Remove(planetoid as MoonItem);
+            isRemoved = _moons.Remove(deadPlanetoid as MoonItem);
             D.Assert(isRemoved);
         }
-        Data.RemovePlanetoidData((planetoid as APlanetoidItem).Data);
+        Data.RemovePlanetoidData((deadPlanetoid as APlanetoidItem).Data);
     }
 
     public SystemReport GetReport(Player player) { return Data.Publisher.GetReport(player); }
@@ -256,15 +254,6 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
     /// <returns></returns>
     public SettlementCmdReport GetSettlementReport(Player player) {
         return Settlement != null ? Settlement.GetReport(player) : null;
-    }
-
-    [Obsolete]
-    private void AttachSettlement(SettlementCmdItem settlementCmd) {
-        SystemFactory.Instance.InstallCelestialItemInOrbit(settlementCmd.UnitContainer.gameObject, SettlementOrbitData);
-        if (IsOperational) { // don't activate until operational, otherwise Assert(IsRunning) will fail in OrbitData
-            settlementCmd.CelestialOrbitSimulator.IsActivated = true;
-        }
-        D.Log(ShowDebugLog, "{0} has been deployed to {1}.", settlementCmd.DebugName, DebugName);
     }
 
     /// <summary>
@@ -302,23 +291,6 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         }
         else {
             InteractibleHudWindow.Instance.Show(FormID.NonUserSystem, UserReport);
-            ////D.Warn("{0}: InteractibleHudWindow does not yet support showing Systems not owned by the user.", DebugName);
-        }
-    }
-
-    protected override void HandleNameChanged() {
-        base.HandleNameChanged();
-        if (Star != null) {
-            Star.Data.Name = GameConstants.StarNameFormat.Inject(Name, CommonTerms.Star);
-        }
-        // Planets first so Moons will get the correctly updated parent planet name
-        foreach (var planet in _planets) {
-            int planetOrbitIndex = planet.CelestialOrbitSimulator.OrbitSlotIndex;
-            planet.Data.Name = GameConstants.PlanetNameFormat.Inject(Name, GameConstants.PlanetNumbers[planetOrbitIndex]);
-        }
-        foreach (var moon in _moons) {
-            int moonOrbitIndex = moon.CelestialOrbitSimulator.OrbitSlotIndex;
-            moon.Data.Name = GameConstants.MoonNameFormat.Inject(moon.ParentPlanet.Name, GameConstants.MoonLetters[moonOrbitIndex]);
         }
     }
 
@@ -331,6 +303,8 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
     private void SettlementPropChangedHandler() {
         HandleSettlementChanged();
     }
+
+    #endregion
 
     private void HandleSettlementChanged() {
         if (Settlement != null) {
@@ -362,12 +336,21 @@ public class SystemItem : AIntelItem, ISystem, ISystem_Ltd, IZoomToFurthest, IFl
         _orbitalPlaneCollider.enabled = IsDiscernibleToUser;
     }
 
-    protected sealed override void HandleIsOperationalChanged() {
-        base.HandleIsOperationalChanged();
-        // Warning: Avoid doing anything here as IsOperational's purpose is to indicate alive or dead
+    protected override void HandleNameChanged() {
+        base.HandleNameChanged();
+        if (Star != null) {
+            Star.Name = GameConstants.StarNameFormat.Inject(Name, CommonTerms.Star);
+        }
+        // Planets first so Moons will get the correctly updated parent planet name
+        foreach (var planet in _planets) {
+            int planetOrbitIndex = planet.CelestialOrbitSimulator.OrbitSlotIndex;
+            planet.Name = GameConstants.PlanetNameFormat.Inject(Name, GameConstants.PlanetNumbers[planetOrbitIndex]);
+        }
+        foreach (var moon in _moons) {
+            int moonOrbitIndex = moon.CelestialOrbitSimulator.OrbitSlotIndex;
+            moon.Name = GameConstants.MoonNameFormat.Inject(moon.ParentPlanet.Name, GameConstants.MoonLetters[moonOrbitIndex]);
+        }
     }
-
-    #endregion
 
     #region Show Tracking Label
 

@@ -38,8 +38,6 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         event EventHandler<InfoAccessChangedEventArgs> infoAccessChgd;
 
-        bool IsOperational { get; }
-
         Vector3 Position { get; }
 
         Player Owner_Debug { get; }

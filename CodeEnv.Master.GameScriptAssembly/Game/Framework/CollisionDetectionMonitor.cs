@@ -64,7 +64,8 @@ public class CollisionDetectionMonitor : AColliderMonitor {
         IObstacle obstacle = obstacleZoneCollider.gameObject.GetSafeFirstInterfaceInParents<IObstacle>(excludeSelf: true);
         if (obstacle.IsOperational) {
             if (_gameMgr.IsPaused) {
-                D.Warn("{0}.OnTriggerEnter() tripped by {1} while paused. ObstacleDistance: {2:0.#}, ZoneRangeDistance: {3:0.#}.",
+                // 11.12.17 Occurs when User creates a new fleet from ships in an existing fleet
+                D.Log("{0}.OnTriggerEnter() tripped by {1} while paused. ObstacleDistance: {2:0.#}, ZoneRangeDistance: {3:0.#}.",
                     DebugName, obstacle.DebugName, Vector3.Distance(transform.position, obstacle.Position), RangeDistance);
                 RecordObstacleEnteringWhilePaused(obstacle);
                 return;
@@ -102,7 +103,7 @@ public class CollisionDetectionMonitor : AColliderMonitor {
 
     protected override void HandleParentItemSet() {
         base.HandleParentItemSet();
-        RangeDistance = ParentItem.Radius * 2F;
+        RangeDistance = ParentItem.Radius * TempGameValues.ShipCollisionDetectionMonitorRangeMultiplier;
         if (RangeDistance > TempGameValues.LargestShipCollisionDetectionZoneRadius) {
             D.Warn("{0}: CollisionDetectionZoneRadius {1:0.##} > {2:0.##}.", DebugName, RangeDistance, TempGameValues.LargestShipCollisionDetectionZoneRadius);
         }

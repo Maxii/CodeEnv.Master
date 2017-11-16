@@ -374,7 +374,7 @@ public abstract class ASensorRangeMonitor : ADetectableRangeMonitor<ISensorDetec
         // The deathEvent results in the HQElement being removed along with the Cmd since its still the HQ. 
         // In addition, when a dead HQElement is removed this monitor is unsubscribed from the hqChanged event 
         // before it is fired. Accordingly, this method will never be called as the result of an element death.
-        D.Assert(element.IsOperational);
+        D.Assert(!element.IsDead);
 
         __IsMonitorHandlingADetectedElementIsHQChgdEvent = true;
 

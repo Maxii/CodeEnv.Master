@@ -67,7 +67,7 @@ public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IManeuverable, Ft
     }
 
     protected override void HandleDetectedObjectAdded(IManeuverable newlyDetectedManeuverable) {
-        D.Assert(newlyDetectedManeuverable.IsOperational);
+        D.Assert(!newlyDetectedManeuverable.IsDead);
         if (newlyDetectedManeuverable.IsFtlCapable) {
             //D.Log(ShowDebugLog, "{0} detected and added {1}.", DebugName, newlyDetectedManeuverable.DebugName);
 
@@ -128,7 +128,7 @@ public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IManeuverable, Ft
     #endregion
 
     private void HandleDetectedItemDeath(IManeuverable deadDetectedItem) {
-        D.Assert(!deadDetectedItem.IsOperational);
+        D.Assert(deadDetectedItem.IsDead);
         RemoveDetectedObject(deadDetectedItem);
     }
 
@@ -137,7 +137,7 @@ public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IManeuverable, Ft
     /// <remarks>Determines whether to dampen the FTL engine of this item, given its new owner.</remarks>
     /// </summary>
     private void HandleDetectedItemOwnerChanged(IManeuverable ownerChangedItem) {
-        D.Assert(ownerChangedItem.IsOperational);
+        D.Assert(!ownerChangedItem.IsDead);
 
         bool wasItemPreviouslyCategorizedAsDampenable = _trackedDampenableTargets.Contains(ownerChangedItem);
         D.Log(ShowDebugLog, "{0}.HandleDetectedItemOwnerChanged({1}) called in Frame {2}. WasPreviouslyDampenable = {3}.",
@@ -241,9 +241,9 @@ public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IManeuverable, Ft
             float sqrThreshold = RangeDistance * RangeDistance * 0.99F;
             // 5.20.17 Most warnings right on edge so use threshold
             if (Vector3.SqrMagnitude(lostDetectionItem.Position - ParentItem.Position).IsLessThan(sqrThreshold)) {
-                D.Warn("{0}.RemoveRecord({1}) found target owner unaccessible. TargetDistance: {2:0.}, TargetIsOperational: {3}, IsRemoved: {4}.",
+                D.Warn("{0}.RemoveRecord({1}) found target owner unaccessible. TargetDistance: {2:0.}, TargetIsDead: {3}, IsRemoved: {4}.",
                     DebugName, lostDetectionItem.DebugName, Vector3.Distance(transform.position, lostDetectionItem.Position),
-                    lostDetectionItem.IsOperational, ParentItem.IsOperational, isRemovedFromDampenableTgts);
+                    lostDetectionItem.IsDead, isRemovedFromDampenableTgts);
             }
         }
     }
@@ -279,7 +279,7 @@ public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IManeuverable, Ft
     private const float __acceptableThresholdMultiplierBase = 0.01F;
 
     protected override void __WarnOnErroneousTriggerExit(IManeuverable lostDetectionItem) {
-        if (lostDetectionItem.IsOperational) {
+        if (!lostDetectionItem.IsDead) {
             float gameSpeedMultiplier = __gameTime.GameSpeedMultiplier;  // 0.25 - 4.0
             float acceptableThresholdMultiplier = 1F - __acceptableThresholdMultiplierBase * gameSpeedMultiplier;   // ~1 - 0.99 - 0.96
             float acceptableThreshold = RangeDistance * acceptableThresholdMultiplier;

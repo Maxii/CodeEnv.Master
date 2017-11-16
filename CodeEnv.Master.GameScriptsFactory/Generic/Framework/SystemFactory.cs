@@ -178,7 +178,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         };
         star.CameraStat = cameraStat;
         star.Data = starData;
-        star.Data.Name = GameConstants.StarNameFormat.Inject(systemName, CommonTerms.Star);
+        star.Name = GameConstants.StarNameFormat.Inject(systemName, CommonTerms.Star);
     }
 
     #endregion
@@ -283,7 +283,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         planet.GetComponent<Rigidbody>().mass = data.Mass;  // 7.26.16 Not really needed as Planetoid Rigidbodies are kinematic
         planet.CameraStat = cameraStat;
         planet.Data = data;
-        planet.Data.Name = GameConstants.PlanetNameFormat.Inject(systemName, GameConstants.PlanetNumbers[orbitSlot.SlotIndex]);
+        planet.Name = GameConstants.PlanetNameFormat.Inject(systemName, GameConstants.PlanetNumbers[orbitSlot.SlotIndex]);
 
         GameObject planetsFolder = orbitSlot.OrbitedItem.GetComponentsInImmediateChildren<Transform>().Single(t => t.name == "Planets").gameObject;
         InstallCelestialItemInOrbit(planet.gameObject, orbitSlot, altParent: planetsFolder);
@@ -391,7 +391,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         moon.GetComponent<Rigidbody>().mass = data.Mass;    // 7.26.16 Not really needed as Planetoid Rigidbodies are kinematic
         moon.CameraStat = cameraStat;
         moon.Data = data;
-        moon.Data.Name = GameConstants.MoonNameFormat.Inject(parentPlanetName, GameConstants.MoonLetters[orbitSlot.SlotIndex]);
+        moon.Name = GameConstants.MoonNameFormat.Inject(parentPlanetName, GameConstants.MoonLetters[orbitSlot.SlotIndex]);
 
         InstallCelestialItemInOrbit(moon.gameObject, orbitSlot);
     }
@@ -433,7 +433,7 @@ public class SystemFactory : AGenericSingleton<SystemFactory> {
         };
         system.CameraStat = cameraStat;
         system.Data = data;
-        system.Data.Name = systemName;
+        system.Name = systemName;
     }
 
     /// <summary>

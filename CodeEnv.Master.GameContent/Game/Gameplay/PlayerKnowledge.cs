@@ -181,6 +181,9 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        //[Obsolete("Not currently used, pending Hanger becoming an AItem.")]
+        //public IEnumerable<IHanger> OwnerBaseHangers { get { return OwnerBases.Select(b => b.Hanger); } }
+
         public IEnumerable<IUnitElement> OwnerElements {
             get {
                 var ownerElements = new List<IUnitElement>();
@@ -296,6 +299,9 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public IEnumerable<IUnitBaseCmd_Ltd> Bases { get { return _commands.Where(cmd => cmd is IUnitBaseCmd_Ltd).Cast<IUnitBaseCmd_Ltd>(); } }
 
+        //[Obsolete("Not currently used, pending Hanger becoming an AItem.")]
+        //public IEnumerable<IHanger_Ltd> BaseHangers { get { return Bases.Select(b => b.Hanger); } }
+
         /// <summary>
         /// The Fleets this player has knowledge of.
         /// </summary>
@@ -339,7 +345,7 @@ namespace CodeEnv.Master.GameContent {
         private IDictionary<IntVector3, ISettlementCmd_Ltd> _settlementLookupBySectorID = new Dictionary<IntVector3, ISettlementCmd_Ltd>();
 
         private HashSet<IPlanetoid_Ltd> _planetoids = new HashSet<IPlanetoid_Ltd>();
-        private HashSet<IStar_Ltd> _stars = new HashSet<IStar_Ltd>();
+        private IList<IStar_Ltd> _stars = new List<IStar_Ltd>();
         private HashSet<IUnitElement_Ltd> _elements = new HashSet<IUnitElement_Ltd>();
         private HashSet<IUnitCmd_Ltd> _commands = new HashSet<IUnitCmd_Ltd>();
         private HashSet<IOwnerItem_Ltd> _items = new HashSet<IOwnerItem_Ltd>();
@@ -445,6 +451,30 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
+        public bool AreAnyFleetsJoinableBy(IShip ship) {
+            IEnumerable<IFleetCmd> unusedJoinableFleets;
+            return TryGetJoinableFleetsFor(ship, out unusedJoinableFleets);
+        }
+
+        public bool TryGetJoinableFleetsFor(IShip ship, out IEnumerable<IFleetCmd> joinableFleets) {
+            D.Assert(ship.__HasCommand);
+            D.AssertEqual(Owner, ship.Owner);
+            joinableFleets = OwnerFleets.Where(f => f.IsJoinable).Except(ship.Command);
+            return joinableFleets.Any();
+        }
+
+        public bool AreAnyFleetsJoinableBy(IFleetCmd potentialJoiningFleet) {
+            IEnumerable<IFleetCmd> unusedJoinableFleets;
+            return TryGetJoinableFleetsFor(potentialJoiningFleet, out unusedJoinableFleets);
+        }
+
+        public bool TryGetJoinableFleetsFor(IFleetCmd potentialJoiningFleet, out IEnumerable<IFleetCmd> joinableFleets) {
+            D.AssertEqual(Owner, potentialJoiningFleet.Owner);
+            int additionalElementCount = potentialJoiningFleet.ElementCount;
+            joinableFleets = OwnerFleets.Where(f => f.IsJoinableBy(additionalElementCount)).Except(potentialJoiningFleet);
+            return joinableFleets.Any();
+        }
+
         /// <summary>
         /// Indicates whether the Owner has knowledge of the provided item.
         /// </summary>
@@ -504,8 +534,9 @@ namespace CodeEnv.Master.GameContent {
 
         private void AddStar(IStar_Ltd star) {
             // A Star should only be added once when all players get Basic IntelCoverage of all stars
-            bool isAdded = _stars.Add(star);
-            isAdded = isAdded & _items.Add(star);
+            D.Assert(!_stars.Contains(star));
+            _stars.Add(star);
+            bool isAdded = _items.Add(star);
             D.Assert(isAdded, star.DebugName);
         }
 
@@ -558,7 +589,6 @@ namespace CodeEnv.Master.GameContent {
 
         private void ItemDeathEventHandler(object sender, EventArgs e) {
             IMortalItem_Ltd deadItem = sender as IMortalItem_Ltd;
-            D.AssertNotNull(deadItem);
             HandleItemDeath(deadItem);
         }
 
@@ -571,7 +601,8 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         private void HandleItemDeath(IMortalItem_Ltd deadItem) {
-            D.Assert(!deadItem.IsOperational, DebugName);
+            D.AssertNotNull(deadItem);
+            D.Assert(deadItem.IsDead, DebugName);
             IUnitElement_Ltd deadElement = deadItem as IUnitElement_Ltd;
             if (deadElement != null) {
                 RemoveElement(deadElement);
@@ -658,8 +689,7 @@ namespace CodeEnv.Master.GameContent {
 
 
         /// <summary>
-        /// Removes the provided command from this player's knowledge. Throws
-        /// an error if not present.
+        /// Removes the provided command from this player's knowledge. Throws an error if not present.
         /// </summary>
         /// <param name="command">The command.</param>
         internal void RemoveCommand(IUnitCmd_Ltd command) {
@@ -689,7 +719,7 @@ namespace CodeEnv.Master.GameContent {
                 }
             }
 
-            if (command.IsOperational) {
+            if (!command.IsDead) {
                 if (command.Owner_Debug.IsRelationshipWith(Owner, DiplomaticRelationship.Alliance)) {
                     if (!command.IsOwnerChangeUnderway) {
                         D.Error("{0}: {1} is alive and being removed while in Alliance!", DebugName, command.DebugName);
@@ -730,7 +760,7 @@ namespace CodeEnv.Master.GameContent {
             isRemoved = isRemoved & _items.Remove(element);
             D.Assert(isRemoved, element.DebugName);
 
-            if (element.IsOperational) {
+            if (!element.IsDead) {
                 if (element.Owner_Debug.IsRelationshipWith(Owner, DiplomaticRelationship.Alliance)) {
                     if (!element.IsOwnerChangeUnderway) {
                         D.Error("{0}: {1} is alive and being removed while in Alliance!", DebugName, element.DebugName);
@@ -751,7 +781,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="deadPlanetoid">The dead planetoid.</param>
         private void RemoveDeadPlanetoid(IPlanetoid_Ltd deadPlanetoid) {
-            D.Assert(!deadPlanetoid.IsOperational);
+            D.Assert(deadPlanetoid.IsDead);
             var isRemoved = _planetoids.Remove(deadPlanetoid);
             isRemoved = isRemoved & _items.Remove(deadPlanetoid);
             D.Assert(isRemoved, deadPlanetoid.DebugName);
@@ -798,6 +828,7 @@ namespace CodeEnv.Master.GameContent {
             return playerOwnedItems;
         }
 
+        [System.Diagnostics.Conditional("DEBUG")]
         private void __InitializeValidatePlayerKnowledge() {
             GameReferences.DebugControls.validatePlayerKnowledgeNow += __ValidatePlayerKnowledgeNowEventHandler;
         }
@@ -806,6 +837,7 @@ namespace CodeEnv.Master.GameContent {
             __ValidatePlayerKnowledgeNow();
         }
 
+        [System.Diagnostics.Conditional("DEBUG")]
         public void __ValidatePlayerKnowledgeNow() {
             //D.Log("{0} is validating its Knowledge.", DebugName);
             foreach (var item in OwnerItems) {
@@ -815,7 +847,10 @@ namespace CodeEnv.Master.GameContent {
 
             bool isAllIntelCoverageComprehensive = GameReferences.DebugControls.IsAllIntelCoverageComprehensive;
             foreach (var item in _items) {
-                D.Assert(item.IsOperational, item.DebugName);
+                var mortalItem = item as IMortalItem;
+                if (mortalItem != null) {
+                    D.Assert(!mortalItem.IsDead);
+                }
 
                 bool isIntelCoverageExpected = true;
                 var intelItem = item as IIntelItem;
@@ -833,6 +868,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        [System.Diagnostics.Conditional("DEBUG")]
         private void __CleanupValidatePlayerKnowledge() {
             GameReferences.DebugControls.validatePlayerKnowledgeNow -= __ValidatePlayerKnowledgeNowEventHandler;
         }

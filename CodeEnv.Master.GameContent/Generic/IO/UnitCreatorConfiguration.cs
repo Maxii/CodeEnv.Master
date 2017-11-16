@@ -57,6 +57,7 @@ namespace CodeEnv.Master.GameContent {
             else {
                 earliestDate = GameTime.Instance.CurrentDate;
             }
+            D.AssertNotDefault(earliestDate);
             if (DeployDate < earliestDate) {
                 D.Error("{0}.DeployDate {1} < {2}!", CmdDesignName, DeployDate, earliestDate);
             }

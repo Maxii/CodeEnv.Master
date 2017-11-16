@@ -27,9 +27,10 @@ namespace CodeEnv.Master.GameContent {
 
         public override string DebugName {
             get {
+                string designText = RefitDesign != null ? RefitDesign.DebugName : "not yet assigned";
                 string followonOrderText = FollowonOrder != null ? FollowonOrder.DebugName : "none";
                 string standingOrderText = StandingOrder != null ? StandingOrder.DebugName : "none";
-                return DebugNameFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), RefitDesign.DebugName, followonOrderText, standingOrderText);
+                return DebugNameFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), designText, followonOrderText, standingOrderText);
             }
         }
 

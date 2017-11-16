@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2015 Strategic Forge
+// Copyright © 2012 - 2016 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IUnitBaseCmd.cs
-// Interface for easy access to MonoBehaviours that are AUnitBaseCmdItems.
+// File: IMortalItem_Ltd.cs
+// limited InfoAccess Interface for easy access to MonoBehaviours that are AMortalItems.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -14,21 +14,26 @@
 ////#define DEBUG_WARN
 ////#define DEBUG_ERROR
 
-
 namespace CodeEnv.Master.GameContent {
 
     using System;
+    using Common;
 
     /// <summary>
-    /// Interface for easy access to MonoBehaviours that are AUnitBaseCmdItems.
+    /// limited InfoAccess Interface for easy access to MonoBehaviours that are AMortalItems.
     /// </summary>
-    public interface IUnitBaseCmd : IUnitCmd {
+    public interface IMortalItem_Ltd : IIntelItem_Ltd {
 
-        event EventHandler resourcesChanged;
+        event EventHandler deathOneShot;
 
-        BaseOrder CurrentOrder { get; }
+        event EventHandler __death;
 
-        ResourcesYield Resources { get; }
+        bool IsDead { get; }
+
+        IntVector3 SectorID { get; }
+
+        void __LogDeathEventSubscribers();
+
 
     }
 }

@@ -24,22 +24,28 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ShipRefitOrder : ShipOrder {
 
-        private const string DebugNameFormat = "[{0}: Directive = {1}, Source = {2}, Design = {3}, FollowonOrder = {4}, StandingOrder = {5}]";
+        private const string DebugNameFormat = "[{0}: Directive = {1}, Source = {2}, Design = {3}, Target = {4}, FollowonOrder = {5}, StandingOrder = {6}]";
 
         public override string DebugName {
             get {
+                string designText = RefitDesign != null ? RefitDesign.DebugName : "not yet assigned";
+                string targetText = Target != null ? Target.DebugName : "none";
                 string followonOrderText = FollowonOrder != null ? FollowonOrder.DebugName : "none";
                 string standingOrderText = StandingOrder != null ? StandingOrder.DebugName : "none";
-                return DebugNameFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), Design.DebugName, followonOrderText, standingOrderText);
+                return DebugNameFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), designText,
+                    targetText, followonOrderText, standingOrderText);
             }
         }
 
-        public ShipDesign Design { get; private set; }
+        public new IUnitBaseCmd Target { get { return base.Target as IUnitBaseCmd; } }
 
-        public ShipRefitOrder(ShipDirective directive, OrderSource source, ShipDesign design)
-            : base(directive, source) {
+        public ShipDesign RefitDesign { get; private set; }
+
+        public ShipRefitOrder(ShipDirective directive, OrderSource source, ShipDesign refitDesign, IShipNavigableDestination target)
+            : base(directive, source, default(Guid), target) {
             D.AssertEqual(ShipDirective.Refit, directive);
-            Design = design;
+            D.Assert(target is IUnitBaseCmd);
+            RefitDesign = refitDesign;
         }
 
 

@@ -119,7 +119,7 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
         return new UniverseCenterCtxControl(this);
     }
 
-    protected override ADisplayManager MakeDisplayManagerInstance() {
+    protected override ADisplayManager MakeDisplayMgrInstance() {
         return new UniverseCenterDisplayManager(gameObject, TempGameValues.UCenterMeshCullLayer);
     }
 
@@ -144,12 +144,12 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
     }
 
     protected override HoverHighlightManager InitializeHoverHighlightMgr() {
-        float highlightRadius = Radius + 10F;
+        float highlightRadius = Radius + 10F;   // HACK
         return new HoverHighlightManager(this, highlightRadius);
     }
 
     protected override CircleHighlightManager InitializeCircleHighlightMgr() {
-        float radius = Radius * Screen.height * 3F;
+        float radius = Radius * Screen.height * 3F;   // HACK
         return new CircleHighlightManager(transform, radius);
     }
 
@@ -178,11 +178,6 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
 
     protected override void HandleOwnerChanged() {
         throw new System.NotSupportedException("{0}.Owner is not allowed to change.".Inject(DebugName));
-    }
-
-    protected sealed override void HandleIsOperationalChanged() {
-        base.HandleIsOperationalChanged();
-        // Warning: Avoid doing anything here as IsOperational's purpose is to indicate alive or dead
     }
 
     #endregion

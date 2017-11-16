@@ -158,7 +158,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
     }
 
     protected sealed override CircleHighlightManager InitializeCircleHighlightMgr() {
-        float circleRadius = Radius * Screen.height * 3F;
+        float circleRadius = Radius * Screen.height * 3F;   // HACK
         return new CircleHighlightManager(transform, circleRadius);
     }
 
@@ -193,7 +193,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         ParentSystem.AssessWhetherToFireInfoAccessChangedEventFor(player);
     }
 
-    protected sealed override void InitiateDeadState() {
+    protected sealed override void AssignDeadState() {
         D.Log(ShowDebugLog, "{0} is setting Dead state.", DebugName);
         CurrentState = PlanetoidState.Dead;
     }
@@ -272,7 +272,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
             case PlanetoidState.Dead:
                 PrepareForDeathEffect();
                 StartEffectSequence(EffectSequenceID.Dying);
-                HandleDeathAfterBeginningDeathEffect();
+                HandleDeathEffectBegun();
                 break;
             case PlanetoidState.None:
             default:
@@ -315,7 +315,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
     /// Debug test method used by PlanetoidCtxControl to kill planets and moons.
     /// </summary>
     public void __Die() {
-        IsOperational = false;
+        IsDead = true;
     }
 
     #region Debug Show Obstacle Zones
@@ -407,7 +407,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         if (_debugSettings.AllPlayersInvulnerable) {
             return;
         }
-        D.Assert(IsOperational);
+        D.Assert(!IsDead);  ////D.Assert(IsOperational);
         LogEvent();
         DamageStrength damage = damagePotential - Data.DamageMitigation;
         if (damage.Total == Constants.ZeroF) {
@@ -419,7 +419,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         float unusedDamageSeverity;
         bool isAlive = ApplyDamage(damage, out unusedDamageSeverity);
         if (!isAlive) {
-            IsOperational = false;
+            IsDead = true;  ////IsOperational = false;
             return;
         }
         StartEffectSequence(EffectSequenceID.Hit);

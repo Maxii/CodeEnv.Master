@@ -69,7 +69,7 @@ public class UniverseCreator {
             FocusableItemCameraStat cameraStat = __MakeUCenterCameraStat(radius, closeOrbitInnerRadius);
             UniverseCenter.CameraStat = cameraStat;
             UniverseCenter.Data = data;
-            UniverseCenter.Data.Name = "UniverseCenter";
+            UniverseCenter.Name = "UniverseCenter";
             // UC will be enabled when CommenceOperations() called
         }
     }
@@ -194,10 +194,38 @@ public class UniverseCreator {
             return;
         }
 
-        // Handle the user first...
+        // Deploy HomeSystem Settlements for all players
+        HashSet<ISystem> usedSystems = new HashSet<ISystem>();
         var userPlayer = gameSettings.UserPlayer;
         var userPlayerStartLevel = gameSettings.UserStartLevel;
+        int settlementQty = userPlayerStartLevel.SettlementStartQty();
+        if (settlementQty > Constants.Zero) {
+            var deployedUserHomeSettlementCreator = DeployAndConfigureHomeSettlementCreator(userPlayer, settlementDebugCreators, ref usedSystems);
+            _unitCreators.Add(deployedUserHomeSettlementCreator);
+            var deployedUserHomeSettlementDebugCreator = deployedUserHomeSettlementCreator as ADebugUnitCreator;
+            if (deployedUserHomeSettlementDebugCreator != null) {
+                settlementDebugCreators = settlementDebugCreators.Except(deployedUserHomeSettlementDebugCreator);
+            }
+        }
 
+        var aiPlayers = gameSettings.AIPlayers;
+        int aiPlayerQty = aiPlayers.Length;
+        for (int i = 0; i < aiPlayerQty; i++) {
+            var aiPlayer = aiPlayers[i];
+            var aiPlayerStartLevel = gameSettings.AIPlayersStartLevels[i];
+
+            settlementQty = aiPlayerStartLevel.SettlementStartQty();
+            if (settlementQty > Constants.Zero) {
+                var deployedAiHomeSettlementCreator = DeployAndConfigureHomeSettlementCreator(aiPlayer, settlementDebugCreators, ref usedSystems);
+                _unitCreators.Add(deployedAiHomeSettlementCreator);
+                var deployedAiHomeSettlementDebugCreator = deployedAiHomeSettlementCreator as ADebugUnitCreator;
+                if (deployedAiHomeSettlementDebugCreator != null) {
+                    settlementDebugCreators = settlementDebugCreators.Except(deployedAiHomeSettlementDebugCreator);
+                }
+            }
+        }
+
+        // Handle the user's fleets, starbases and additional settlements ...
         int fleetQty = userPlayerStartLevel.FleetStartQty();
         var fleetCreatorsDeployed = DeployAndConfigureStartLevelFleetCreators(userPlayer, fleetDebugCreators, fleetQty);
         _unitCreators.AddRange(fleetCreatorsDeployed);
@@ -210,9 +238,8 @@ public class UniverseCreator {
         var starbaseDebugCreatorsDeployed = starbaseCreatorsDeployed.Where(c => c is ADebugUnitCreator).Cast<ADebugUnitCreator>();
         starbaseDebugCreators = starbaseDebugCreators.Except(starbaseDebugCreatorsDeployed);
 
-        HashSet<ISystem> usedSystems = new HashSet<ISystem>();
-        int settlementQty = userPlayerStartLevel.SettlementStartQty();
-        var settlementCreatorsDeployed = DeployAndConfigureStartLevelSettlementCreators(userPlayer, settlementDebugCreators, settlementQty, ref usedSystems);
+        settlementQty = userPlayerStartLevel.SettlementStartQty() - Constants.One;  // Home Settlement already deployed
+        var settlementCreatorsDeployed = DeployAndConfigureNonHomeStartLevelSettlementCreators(userPlayer, settlementDebugCreators, settlementQty, ref usedSystems);
         _unitCreators.AddRange(settlementCreatorsDeployed);
         var settlementDebugCreatorsDeployed = settlementCreatorsDeployed.Where(c => c is ADebugUnitCreator).Cast<ADebugUnitCreator>();
         settlementDebugCreators = settlementDebugCreators.Except(settlementDebugCreatorsDeployed);
@@ -244,9 +271,7 @@ public class UniverseCreator {
             D.Log(/*ShowDebugLog,*/ "{0} deployed an additional {1} User unit creators.", DebugName, additionalDeployedCreatorCount);
         }
 
-        // Handle the AIPlayers...
-        var aiPlayers = gameSettings.AIPlayers;
-        int aiPlayerQty = aiPlayers.Length;
+        // Handle the AIPlayer's fleets, starbases and additional settlements ...
         for (int i = 0; i < aiPlayerQty; i++) {
             var aiPlayer = aiPlayers[i];
             var aiPlayerStartLevel = gameSettings.AIPlayersStartLevels[i];
@@ -263,8 +288,8 @@ public class UniverseCreator {
             starbaseDebugCreatorsDeployed = starbaseCreatorsDeployed.Where(c => c is ADebugUnitCreator).Cast<ADebugUnitCreator>();
             starbaseDebugCreators = starbaseDebugCreators.Except(starbaseDebugCreatorsDeployed);
 
-            settlementQty = aiPlayerStartLevel.SettlementStartQty();
-            settlementCreatorsDeployed = DeployAndConfigureStartLevelSettlementCreators(aiPlayer, settlementDebugCreators, settlementQty, ref usedSystems);
+            settlementQty = aiPlayerStartLevel.SettlementStartQty() - Constants.One;  // Home Settlement already deployed
+            settlementCreatorsDeployed = DeployAndConfigureNonHomeStartLevelSettlementCreators(aiPlayer, settlementDebugCreators, settlementQty, ref usedSystems);
             _unitCreators.AddRange(settlementCreatorsDeployed);
             settlementDebugCreatorsDeployed = settlementCreatorsDeployed.Where(c => c is ADebugUnitCreator).Cast<ADebugUnitCreator>();
             settlementDebugCreators = settlementDebugCreators.Except(settlementDebugCreatorsDeployed);
@@ -447,7 +472,7 @@ public class UniverseCreator {
                 for (int deployedCount = creatorsDeployed.Count; deployedCount < qtyToDeploy; deployedCount++) {
                     deployedSectorID = RandomExtended.Choice(candidateSectorIDs);
                     deployedLocation = sectorGrid.GetSector(deployedSectorID).GetClearRandomPointInsideSector();
-                    StarbaseCreator autoCreator;
+                    AutoStarbaseCreator autoCreator;
                     if (_debugCntls.EquipmentPlan == DebugControls.EquipmentLoadout.Random) {
                         autoCreator = UnitConfigurator.GenerateRandomAutoStarbaseCreator(player, deployedLocation, deployDate);
                     }
@@ -460,7 +485,7 @@ public class UniverseCreator {
             }
         }
 
-        //__ReportDeployedUnitCreators(typeof(StarbaseCreator), player, creatorsDeployed);
+        //__ReportDeployedUnitCreators(typeof(AutoStarbaseCreator), player, creatorsDeployed);
         return creatorsDeployed;
     }
 
@@ -545,7 +570,7 @@ public class UniverseCreator {
                 for (int deployedCount = creatorsDeployed.Count; deployedCount < qtyToDeploy; deployedCount++) {
                     deployedSectorID = sectorIDsToDeployTo.Pop();
                     deployedLocation = sectorGrid.GetSector(deployedSectorID).GetClearRandomPointInsideSector();
-                    FleetCreator autoCreator;
+                    AutoFleetCreator autoCreator;
                     if (_debugCntls.EquipmentPlan == DebugControls.EquipmentLoadout.Random) {
                         autoCreator = UnitConfigurator.GenerateRandomAutoFleetCreator(player, deployedLocation, deployDate);
                     }
@@ -557,7 +582,148 @@ public class UniverseCreator {
             }
             D.AssertEqual(Constants.Zero, sectorIDsToDeployTo.Count);
         }
-        //__ReportDeployedUnitCreators(typeof(FleetCreator), player, creatorsDeployed);
+        //__ReportDeployedUnitCreators(typeof(AutoFleetCreator), player, creatorsDeployed);
+        return creatorsDeployed;
+    }
+
+    /// <summary>
+    /// Deploys and configures the Home settlement creator in the player's Home System. 
+    /// Returns the Creator that was deployed.
+    /// <remarks>The existing DebugUnitCreators provided are configured first. If those do not fill the requirement
+    /// then AutoUnitCreators are deployed and configured to fill in.</remarks>
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <param name="existingSettlementCreators">The existing settlement creators.</param>
+    /// <param name="usedSystems">Any systems that should not be used when selecting the system to deploy too.
+    /// Warning: This method adds to this list when it selects the system to deploy too. As List is passed by reference,
+    /// the list used by the caller will also be added too.</param>
+    /// <returns></returns>
+    private AUnitCreator DeployAndConfigureHomeSettlementCreator(Player player, IEnumerable<ADebugUnitCreator> existingSettlementCreators,
+        ref HashSet<ISystem> usedSystems) {  // OPTIMIZE ref not really necessary as List passed by Reference anyhow
+
+        var gameKnowledge = _gameMgr.GameKnowledge;
+        D.Assert(_playersHomeSectorLookup.ContainsKey(player), player.DebugName);
+        IntVector3 homeSectorID = _playersHomeSectorLookup[player];
+
+        AUnitCreator homeSystemCreator = null;
+        ISystem homeSystem;
+        if (!gameKnowledge.TryGetSystem(homeSectorID, out homeSystem)) {
+            D.Error("{0} couldn't find a system in {1}'s home sector.", DebugName, player);
+        }
+
+        //D.Log("GameStartDate = {0}.", GameTime.GameStartDate.DebugName);
+        GameDate deployDate = GameTime.GameStartDate;   // all startLevel creators always deploy on GameStartDate
+
+        bool toDeployAutoCreator = true;
+        foreach (var debugCreator in existingSettlementCreators) {
+            if (IsOwnerOfCreator(debugCreator.EditorSettings, player)) {
+                UnitConfigurator.AssignConfigurationToExistingCreator(debugCreator as DebugSettlementCreator, player, homeSystem as SystemItem, deployDate);
+                bool isAdded = usedSystems.Add(homeSystem);
+                D.Assert(isAdded);
+                homeSystemCreator = debugCreator;
+                toDeployAutoCreator = false;
+            }
+        }
+
+        if (toDeployAutoCreator) {
+            AutoSettlementCreator autoCreator;
+            if (_debugCntls.EquipmentPlan == DebugControls.EquipmentLoadout.Random) {
+                autoCreator = UnitConfigurator.GenerateRandomAutoSettlementCreator(player, homeSystem as SystemItem, deployDate);
+            }
+            else {
+                autoCreator = UnitConfigurator.GeneratePresetAutoSettlementCreator(player, homeSystem as SystemItem, deployDate);
+            }
+            bool isAdded = usedSystems.Add(homeSystem);
+            D.Assert(isAdded);
+            homeSystemCreator = autoCreator;
+        }
+
+        D.AssertNotNull(homeSystemCreator);
+        return homeSystemCreator;
+    }
+
+    /// <summary>
+    /// Deploys and configures the non-Home settlement creators specified by the start level for this player 
+    /// around the player's home Settlement that has already been deployed. 
+    /// Returns all of the Creators that were deployed.
+    /// <remarks>The existing DebugUnitCreators provided are configured first. If those do not fill the quantity requirement
+    /// then AutoUnitCreators are deployed and configured to fill in the rest.</remarks>
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <param name="existingSettlementCreators">The existing settlement creators.</param>
+    /// <param name="qtyToDeploy">The qty to deploy.</param>
+    /// <param name="usedSystems">Any systems that should not be used when selecting the system to deploy too.
+    /// Warning: This method adds to this list when it selects the system to deploy too. As List is passed by reference,
+    /// the list used by the caller will also be added too.</param>
+    /// <returns></returns>
+    private IList<AUnitCreator> DeployAndConfigureNonHomeStartLevelSettlementCreators(Player player, IEnumerable<ADebugUnitCreator> existingSettlementCreators,
+        int qtyToDeploy, ref HashSet<ISystem> usedSystems) {  // OPTIMIZE ref not really necessary as List passed by Reference anyhow
+
+        IList<AUnitCreator> creatorsDeployed = new List<AUnitCreator>(qtyToDeploy);
+        if (qtyToDeploy > Constants.Zero) { // there are additional settlements to deploy around the home system
+            var gameKnowledge = _gameMgr.GameKnowledge;
+            Stack<ISystem> systemsToDeployTo = new Stack<ISystem>(qtyToDeploy);
+            D.Assert(_playersHomeSectorLookup.ContainsKey(player), player.DebugName);
+            IntVector3 homeSectorID = _playersHomeSectorLookup[player];
+
+            ISystem system;
+            SectorGrid sectorGrid = SectorGrid.Instance;
+            IEnumerable<IntVector3> homeNeighborSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID, includePeriphery: false);
+            foreach (var neighborSectorID in homeNeighborSectorIDs) {
+                if (gameKnowledge.TryGetSystem(neighborSectorID, out system)) {
+                    if (!usedSystems.Contains(system)) {
+                        systemsToDeployTo.Push(system);
+                        if (systemsToDeployTo.Count == qtyToDeploy) {
+                            break;
+                        }
+                    }
+                }
+            }
+            // IMPROVE It seems theoretically possible that I won't be able to find enough systems...
+            if (systemsToDeployTo.Count != qtyToDeploy) {
+                D.Error("{0} only found {1} rather than {2} additional systems to deploy {3}'s Settlements.", DebugName, systemsToDeployTo.Count, qtyToDeploy, player);
+            }
+
+            GameDate deployDate = GameTime.GameStartDate;   // all startLevel creators always deploy on GameStartDate
+
+            bool toDeployAutoCreators = true;
+            foreach (var debugCreator in existingSettlementCreators) {
+                if (IsOwnerOfCreator(debugCreator.EditorSettings, player)) {
+                    system = systemsToDeployTo.Pop();
+                    UnitConfigurator.AssignConfigurationToExistingCreator(debugCreator as DebugSettlementCreator, player, system as SystemItem, deployDate);
+                    bool isAdded = usedSystems.Add(system);
+                    D.Assert(isAdded);
+
+                    creatorsDeployed.Add(debugCreator);
+                    if (creatorsDeployed.Count == qtyToDeploy) {
+                        toDeployAutoCreators = false;
+                        break;
+                    }
+                }
+            }
+
+            if (toDeployAutoCreators) {
+                D.Assert(creatorsDeployed.Count < qtyToDeploy);
+                D.Assert(systemsToDeployTo.Count > Constants.Zero);
+
+                for (int deployedCount = creatorsDeployed.Count; deployedCount < qtyToDeploy; deployedCount++) {
+                    system = systemsToDeployTo.Pop();
+                    AutoSettlementCreator autoCreator;
+                    if (_debugCntls.EquipmentPlan == DebugControls.EquipmentLoadout.Random) {
+                        autoCreator = UnitConfigurator.GenerateRandomAutoSettlementCreator(player, system as SystemItem, deployDate);
+                    }
+                    else {
+                        autoCreator = UnitConfigurator.GeneratePresetAutoSettlementCreator(player, system as SystemItem, deployDate);
+                    }
+                    creatorsDeployed.Add(autoCreator);
+                    bool isAdded = usedSystems.Add(system);
+                    D.Assert(isAdded);
+                }
+            }
+            D.AssertEqual(Constants.Zero, systemsToDeployTo.Count);
+        }
+
+        //__ReportDeployedUnitCreators(typeof(AutoSettlementCreator), player, creatorsDeployed);
         return creatorsDeployed;
     }
 
@@ -574,6 +740,7 @@ public class UniverseCreator {
     /// Warning: This method adds to this list when it selects the system to deploy too. As List is passed by reference,
     /// the list used by the caller will also be added too.</param>
     /// <returns></returns>
+    [Obsolete("Could deploy a prior player's additional settlements to a system reserved for an upcoming player's HomeSystem")]
     private IList<AUnitCreator> DeployAndConfigureStartLevelSettlementCreators(Player player, IEnumerable<ADebugUnitCreator> existingSettlementCreators,
         int qtyToDeploy, ref HashSet<ISystem> usedSystems) {  // OPTIMIZE ref not really necessary as List passed by Reference anyhow
 
@@ -633,7 +800,7 @@ public class UniverseCreator {
 
                 for (int deployedCount = creatorsDeployed.Count; deployedCount < qtyToDeploy; deployedCount++) {
                     system = systemsToDeployTo.Pop();
-                    SettlementCreator autoCreator;
+                    AutoSettlementCreator autoCreator;
                     if (_debugCntls.EquipmentPlan == DebugControls.EquipmentLoadout.Random) {
                         autoCreator = UnitConfigurator.GenerateRandomAutoSettlementCreator(player, system as SystemItem, deployDate);
                     }
@@ -648,7 +815,7 @@ public class UniverseCreator {
             D.AssertEqual(Constants.Zero, systemsToDeployTo.Count);
         }
 
-        //__ReportDeployedUnitCreators(typeof(SettlementCreator), player, creatorsDeployed);
+        //__ReportDeployedUnitCreators(typeof(AutoSettlementCreator), player, creatorsDeployed);
         return creatorsDeployed;
     }
 
@@ -741,7 +908,7 @@ public class UniverseCreator {
                 for (int deployedCount = creatorsDeployed.Count; deployedCount < qtyToDeploy; deployedCount++) {
                     sectorID = sectorIDsToDeployTo.Pop();
                     deployedLocation = sectorGrid.GetSector(sectorID).GetClearRandomPointInsideSector();
-                    StarbaseCreator autoCreator;
+                    AutoStarbaseCreator autoCreator;
                     if (_debugCntls.EquipmentPlan == DebugControls.EquipmentLoadout.Random) {
                         autoCreator = UnitConfigurator.GenerateRandomAutoStarbaseCreator(player, deployedLocation);
                     }
@@ -753,7 +920,7 @@ public class UniverseCreator {
             }
         }
 
-        //__ReportDeployedUnitCreators(typeof(StarbaseCreator), player, creatorsDeployed);
+        //__ReportDeployedUnitCreators(typeof(AutoStarbaseCreator), player, creatorsDeployed);
         return creatorsDeployed;
     }
 
@@ -812,7 +979,7 @@ public class UniverseCreator {
                 for (int deployedCount = creatorsDeployed.Count; deployedCount < qtyToDeploy; deployedCount++) {
                     deployedSectorID = sectorIDsToDeployTo.Pop();
                     deployedLocation = sectorGrid.GetSector(deployedSectorID).GetClearRandomPointInsideSector();
-                    FleetCreator autoCreator;
+                    AutoFleetCreator autoCreator;
                     if (_debugCntls.EquipmentPlan == DebugControls.EquipmentLoadout.Random) {
                         autoCreator = UnitConfigurator.GenerateRandomAutoFleetCreator(player, deployedLocation);
                     }
@@ -824,7 +991,7 @@ public class UniverseCreator {
             }
             D.AssertEqual(Constants.Zero, sectorIDsToDeployTo.Count);
         }
-        //__ReportDeployedUnitCreators(typeof(FleetCreator), player, creatorsDeployed);
+        //__ReportDeployedUnitCreators(typeof(AutoFleetCreator), player, creatorsDeployed);
         return creatorsDeployed;
     }
 
@@ -884,7 +1051,7 @@ public class UniverseCreator {
 
                 for (int deployedCount = creatorsDeployed.Count; deployedCount < qtyToDeploy; deployedCount++) {
                     system = systemsToDeployTo.Pop();
-                    SettlementCreator autoCreator;
+                    AutoSettlementCreator autoCreator;
                     if (_debugCntls.EquipmentPlan == DebugControls.EquipmentLoadout.Random) {
                         autoCreator = UnitConfigurator.GenerateRandomAutoSettlementCreator(player, system as SystemItem);
                     }
@@ -897,7 +1064,7 @@ public class UniverseCreator {
             D.AssertEqual(Constants.Zero, systemsToDeployTo.Count);
         }
 
-        //__ReportDeployedUnitCreators(typeof(SettlementCreator), player, creatorsDeployed);
+        //__ReportDeployedUnitCreators(typeof(AutoSettlementCreator), player, creatorsDeployed);
         return creatorsDeployed;
     }
 
@@ -920,7 +1087,7 @@ public class UniverseCreator {
     /// <remarks>The Unit will not be operational until CommenceUnitOperationsOnDeployDate() is called.</remarks>
     /// </summary>
     public void BuildAndPositionUnits() {
-        _unitCreators.ForAll(uc => uc.BuildAndPositionUnit());
+        _unitCreators.ForAll(uc => uc.PrepareUnitForDeployment());
     }
 
     /// <summary>
@@ -930,9 +1097,9 @@ public class UniverseCreator {
         // 10.15.16 Initiate deployment of Settlements first so system ownership can be established before fleet orders are issued.
         // TODO Currently it doesn't matter as all Creators have either 'editor set' or 'random' DeployDates assigned. For release,
         // initial Settlement DeployDates will be on the game start date.
-        var settlementCreators = _unitCreators.Where(creator => creator is SettlementCreator || creator is DebugSettlementCreator);
+        var settlementCreators = _unitCreators.Where(creator => creator is AutoSettlementCreator || creator is DebugSettlementCreator);
         settlementCreators.ForAll(sc => sc.AuthorizeDeployment());
-        var starbaseCreators = _unitCreators.Where(creator => creator is StarbaseCreator || creator is DebugStarbaseCreator);
+        var starbaseCreators = _unitCreators.Where(creator => creator is AutoStarbaseCreator || creator is DebugStarbaseCreator);
         starbaseCreators.ForAll(sc => sc.AuthorizeDeployment());
         var fleetCreators = _unitCreators.Except(settlementCreators).Except(starbaseCreators);
         fleetCreators.ForAll(fc => fc.AuthorizeDeployment());
@@ -947,7 +1114,7 @@ public class UniverseCreator {
     /// nothing since there is no User HomeSector to inspect for the user's starting units.
     /// </remarks>
     /// </summary>
-    public void AttemptFocusOnPrimaryUserUnit() {
+    public void AttemptFocusOnPrimaryUserCommand() {
         var gameSettings = _gameMgr.GameSettings;
         if (gameSettings.__UseDebugCreatorsOnly || !gameSettings.__ZoomOnUser) {
             return;
@@ -958,43 +1125,6 @@ public class UniverseCreator {
         bool isPrimaryUnitFound = TryFindPrimaryUserCommand(userHomeSectorID, out primaryUserCmd);
         D.Assert(isPrimaryUnitFound);
         (primaryUserCmd as ICameraFocusable).IsFocus = true;
-    }
-
-    /// <summary>
-    /// Attempts to focus the camera on the primary user command. 
-    /// If there is a User-owned settlement in the User's Home sector, it will become the
-    /// focus. If not, then one of the user-owned fleets in the sector will become the focus.
-    /// <remarks>
-    /// If GameSettings indicates that only debug creators can be used, then this method does 
-    /// nothing since there is no User HomeSector to inspect for the user's starting units.
-    /// </remarks>
-    /// <remarks>
-    /// OPTIMIZE, TEMP 10.19.16 Currently all Units deploy and begin operations on a DeployDate
-    /// beginning with the GameStartDate. As such, each User Unit has an early, but still random
-    /// DeployDate so this method may not immediately find a user unit to focus on. If it doesn't 
-    /// find one when called, it launches a Job to find one as soon as one appears. This Job is
-    /// expensive. I'm taking this approach for now to allow random DeployDate to uncover issues,
-    /// aka I'm using it to test scenarios.
-    /// </remarks>
-    /// </summary>
-    [Obsolete]
-    public void AttemptFocusOnPrimaryUserCommand() {
-        if (_gameMgr.GameSettings.__UseDebugCreatorsOnly) {
-            return;
-        }
-
-        IntVector3 userHomeSectorID = _playersHomeSectorLookup[_gameMgr.UserPlayer];
-        IUnitCmd_Ltd primaryUserCmd;
-        if (TryFindPrimaryUserCommand(userHomeSectorID, out primaryUserCmd)) {
-            (primaryUserCmd as ICameraFocusable).IsFocus = true;
-        }
-        else {
-            string jobName = "WaitWhileFindingPrimaryUserCmd";
-            JobManager.Instance.WaitWhile(() => !TryFindPrimaryUserCommand(userHomeSectorID, out primaryUserCmd), jobName, isPausable: true,
-                waitFinished: (jobWasKilled) => {
-                    (primaryUserCmd as ICameraFocusable).IsFocus = true;
-                });
-        }
     }
 
     private bool TryFindPrimaryUserCommand(IntVector3 userHomeSectorID, out IUnitCmd_Ltd primaryUserCmd) {

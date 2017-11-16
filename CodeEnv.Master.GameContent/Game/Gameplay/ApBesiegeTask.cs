@@ -56,7 +56,10 @@ namespace CodeEnv.Master.GameContent {
                 else {
                     // Out of position as target has moved.
                     _maintainPositionJob = null;
-                    D.Assert(TargetProxy.Destination.IsOperational);    // if target (and proxy) destroyed, Job would be killed
+                    var mortalDestination = TargetProxy.Destination as IMortalItem_Ltd;
+                    if (mortalDestination != null) {
+                        D.Assert(!mortalDestination.IsDead);    // if target (and proxy) destroyed, Job would be killed
+                    }
                     D.Log(ShowDebugLog, "{0} has naturally finished ApMaintainPositionJob and is resuming pursuit of {1}.",
                         DebugName, TargetProxy.DebugName);     // pursued enemy moved out of my pursuit window
                     _autoPilot.RefreshCourse(CourseRefreshMode.NewCourse);

@@ -67,7 +67,6 @@ namespace CodeEnv.Master.GameContent {
             get { return _publisher = _publisher ?? new PlanetoidPublisher(this); }
         }
 
-
         #region Initialization 
 
         /// <summary>

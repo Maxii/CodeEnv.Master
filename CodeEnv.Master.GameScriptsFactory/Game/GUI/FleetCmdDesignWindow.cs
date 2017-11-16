@@ -45,11 +45,6 @@ public class FleetCmdDesignWindow : AUnitDesignWindow {
         return _gameMgr.PlayersDesigns.GetAllUserFleetCmdDesigns(includeObsolete).Cast<AUnitMemberDesign>();
     }
 
-    [System.Obsolete]
-    protected override bool IsDesignContentEqual(AUnitMemberDesign previousDesign, AUnitMemberDesign newDesign) {
-        return GameUtility.IsDesignContentEqual(previousDesign as FleetCmdDesign, newDesign as FleetCmdDesign);
-    }
-
     protected override bool TryGetCreateDesignPopupContent(out string popupTitle, out List<string> popupContent) {
         popupTitle = null;
         popupContent = null;

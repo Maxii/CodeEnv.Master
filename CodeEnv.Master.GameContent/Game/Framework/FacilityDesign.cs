@@ -31,7 +31,8 @@ namespace CodeEnv.Master.GameContent {
         public override string DebugName {
             get {
                 string designNameText = DesignName.IsNullOrEmpty() ? "Not yet named" : DesignName;
-                return DebugNameFormat.Inject(GetType().Name, designNameText, Player.DebugName, HullCategory.GetValueName(), Status.GetValueName(), ConstructionCost, RefitBenefit);
+                return DebugNameFormat.Inject(GetType().Name, designNameText, Player.DebugName, HullCategory.GetValueName(),
+                    Status.GetValueName(), ConstructionCost, RefitBenefit);
             }
         }
 

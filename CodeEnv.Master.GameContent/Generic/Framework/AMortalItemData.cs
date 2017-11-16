@@ -68,6 +68,12 @@ namespace CodeEnv.Master.GameContent {
             protected set { SetProperty<DamageStrength>(ref _damageMitigation, value, "DamageMitigation"); }
         }
 
+        protected bool _isDead;
+        public bool IsDead {
+            get { return _isDead; }
+            set { SetProperty<bool>(ref _isDead, value, "IsDead", IsDeadPropSetHandler, IsDeadPropSettingHandler); }
+        }
+
         public abstract IntVector3 SectorID { get; }
 
         #region Initialization 
@@ -111,6 +117,19 @@ namespace CodeEnv.Master.GameContent {
 
         #region Event and Property Change Handlers
 
+        private void IsDeadPropSettingHandler(bool incomingIsDead) {
+            if (!IsOperational) {
+                // 11.13.17 Death before being operational occurs to FleetCmds when they are merged immediately after they are built
+                // in their creator. The creator defers CommenceOperations until the user pause (caused by the FleetUnitHudForm) resumes, 
+                // but GameScriptsUtility.Merge() transfers all ships to the best Cmd chosen to survive. The other Cmds die.
+                D.Warn("FYI. {0} is being destroyed before it becomes operational.", DebugName);
+            }
+        }
+
+        private void IsDeadPropSetHandler() {
+            HandleIsDeadPropSet();
+        }
+
         protected void CountermeasureIsDamagedChangedEventHandler(object sender, EventArgs e) {
             var cm = sender as AEquipment;
             HandleCountermeasureIsDamagedChanged(cm);
@@ -153,14 +172,21 @@ namespace CodeEnv.Master.GameContent {
         }
 
         protected sealed override void HandleIsOperationalChanged() {
-            // override the AItemData Assert as MortalItems set IsOperational to false when dieing
+            // override the AItemData Assert as AMortalItem sets IsDead which sets IsOperational to false when dieing
             if (!IsOperational) {
-                HandleDeath();
+                D.Assert(IsDead);
             }
         }
 
-        protected virtual void HandleDeath() {
+        private void HandleIsDeadPropSet() {
+            D.Assert(IsDead);
             // Can't assert CurrentHitPoints as LoneFleetCmds can 'die' when they transfer their LoneElement to another Fleet
+            IsOperational = false;
+            DeactivateAllEquipment();
+        }
+
+        protected virtual void DeactivateAllEquipment() {
+            PassiveCountermeasures.ForAll(cm => cm.IsActivated = false);
         }
 
         #region Cleanup

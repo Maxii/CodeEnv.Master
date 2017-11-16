@@ -31,15 +31,15 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     private const string __HQNameAddendum = "[HQ]";
 
-    /// <summary>
-    /// Occurs when the Command ref is changed.
-    /// <remarks>5.15.17 Not currently used.</remarks>
-    /// </summary>
-    public event EventHandler commandChanged;
-
     public event EventHandler isHQChanged;
 
     public event EventHandler isAvailableChanged;
+
+    public event EventHandler<SubordinateOwnerChangingEventArgs> subordinateOwnerChanging;
+
+    public event EventHandler<SubordinateDamageIncurredEventArgs> subordinateDamageIncurred;
+
+    public event EventHandler subordinateDeathOneShot;
 
     /// <summary>
     /// Indicates whether this element is available for a new assignment.
@@ -61,15 +61,17 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// </summary>
     public abstract bool IsAttackCapable { get; }
 
-    /// <summary>
-    /// Indicates whether this element has construction underway.
-    /// <remarks>Currently underway construction is restricted to InitialConstruction or Refitting, not Repairing.</remarks>
-    /// </summary>
-    public abstract bool IsConstructionUnderway { get; }
+    private ReworkingMode _reworkUnderway;
+    public ReworkingMode ReworkUnderway {
+        get { return _reworkUnderway; }
+        protected set { SetProperty<ReworkingMode>(ref _reworkUnderway, value, "ReworkUnderway", ReworkUnderwayPropChangedHandler); }
+    }
+
+    public int UnitElementCount { get { return Command.ElementCount; } }
 
     public new AUnitElementData Data {
         get { return base.Data as AUnitElementData; }
-        set { base.Data = value; }
+        protected set { base.Data = value; }
     }
 
     private float _radius;
@@ -90,16 +92,17 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         set { SetProperty<bool>(ref _isHQ, value, "IsHQ", IsHQPropChangedHandler); }
     }
 
-    private AUnitCmdItem _command;
-    public AUnitCmdItem Command {
-        get { return _command; }
-        set { SetProperty<AUnitCmdItem>(ref _command, value, "Command", CommandPropChangedHandler); }
-    }
+    public AUnitCmdItem Command { protected get; set; }
 
     // OPTIMIZE all elements followable for now to support facilities rotating around bases or stars
     public new FollowableItemCameraStat CameraStat {
         protected get { return base.CameraStat as FollowableItemCameraStat; }
         set { base.CameraStat = value; }
+    }
+
+    public AlertStatus AlertStatus {
+        get { return Data.AlertStatus; }
+        set { Data.AlertStatus = value; }
     }
 
     public IElementSensorRangeMonitor SRSensorMonitor { get; private set; }
@@ -122,8 +125,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #region Initialization
 
-    protected override void InitializeOnAwake() {
-        base.InitializeOnAwake();
+    protected override void InitializeValuesAndReferences() {
+        base.InitializeValuesAndReferences();
         WeaponRangeMonitors = new List<IWeaponRangeMonitor>();
         CountermeasureRangeMonitors = new List<IActiveCountermeasureRangeMonitor>();
         Shields = new List<IShield>();
@@ -164,20 +167,15 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         Data.Sensors.ForAll(s => Attach(s));
     }
 
-    protected override void SubscribeToDataValueChanges() {
-        base.SubscribeToDataValueChanges();
-        //TODO: Weapon values don't change but weapons do so I need to know when that happens
-    }
-
-    protected sealed override void InitializeDisplayManager() {
-        base.InitializeDisplayManager();
+    protected sealed override void InitializeDisplayMgr() {
+        base.InitializeDisplayMgr();
         // 1.16.17 TEMP Replaced User Option/Preference with easily accessible DebugControls setting
         InitializeIcon();
         DisplayMgr.MeshColor = Owner.Color;
     }
 
     protected sealed override CircleHighlightManager InitializeCircleHighlightMgr() {
-        float circleRadius = Radius * Screen.height * 1F;
+        float circleRadius = Radius * Screen.height * 1F;   // HACK
         return new CircleHighlightManager(transform, circleRadius);
     }
 
@@ -208,17 +206,13 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         FsmEventSubscriptionMgr = new FsmEventSubscriptionManager(this);
     }
 
-    protected void ActivateSensors() {
-        Data.ActivateSensors();
-    }
-
     /// <summary>
     /// Subscribes to sensor events.
     /// <remarks>Must be called after initial runtime state is set, aka Idling. 
     /// Otherwise events can arrive immediately as sensors activate.</remarks>
     /// <remarks>UNDONE 5.13.17 No use yet in Elements for responding to what their SRSensors detect.</remarks>
     /// </summary>
-    protected void SubscribeToSensorEvents() {
+    protected void __SubscribeToSensorEvents() {
         __ValidateStateForSensorEventSubscription();
     }
 
@@ -226,11 +220,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #endregion
 
-    public virtual void CommenceOperations(bool isInitialConstructionNeeded) {
-        CommenceOperations();
-    }
-
-    public sealed override void CommenceOperations() {  // FIXME new does not hide this
+    public override void CommenceOperations() {  // FIXME new does not hide this
         base.CommenceOperations();
         _primaryCollider.enabled = true;
     }
@@ -243,8 +233,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     internal void AttachAsChildOf(Transform unitContainer) {
         if (transform.parent != unitContainer) {
             // In most cases, the element is already a child of the UnitContainer. Conditions where
-            // this change is reqd include a ship 'joins' another fleet, a facility 'joins?' a base
-            D.Warn("{0} is not a child of {1}.", DebugName, unitContainer.name);
+            // this change is reqd include a ship joining another fleet, creating a fleet from another, etc.
+            //D.Log(ShowDebugLog, "{0} is not a child of {1}. Fixing.", DebugName, unitContainer.name);
             transform.parent = unitContainer;
         }
     }
@@ -259,15 +249,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         UponHQStatusChangeCompleted();
     }
 
-    /// <summary>
-    /// Called when the local position of this element has been manually changed by its Command.
-    /// <remarks>1.21.17 Currently called when the FormationMgr manually repositions
-    /// the element. For ships, manual repositioning only occurs when the formation is 
-    /// initially changed before it becomes operational. IMPROVE For facilities, manual repositioning
-    /// occurs even if operational which of course will have to be improved.</remarks>
-    /// </summary>
-    public abstract void __HandleLocalPositionManuallyChanged();
-
     private void ChangeOwnerAfterPause() {
         D.AssertNotNull(_newOwnerAfterPause);
         D.Assert(!IsPaused);
@@ -275,7 +256,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         Player newOwner = _newOwnerAfterPause;
         _newOwnerAfterPause = null;
         D.Log(/*ShowDebugLog,*/ "{0} is changing owner to {1} after resuming from pause.", DebugName, newOwner.DebugName);
-        Owner = newOwner;
+        Data.Owner = newOwner;
     }
 
     internal void HandleColdWarEnemyEngagementPolicyChanged() {
@@ -283,54 +264,37 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         WeaponRangeMonitors.ForAll(wrm => wrm.ToEngageColdWarEnemies = toEngageColdWarEnemies);
     }
 
-    protected override void PrepareForOnDeath() {
-        base.PrepareForOnDeath();
+    protected void HandleRefitReplacementCompleted() {
+        Data.HandleRefitReplacementCompleted();
+        PrepareForDeathSequence();
+        // Don't call PrepareForOnDeath() as it fires the subordinateDeath event which will attempt to remove the already removed element
+        OnDeath();  // fire the death event
+        PrepareForDeadState();
+        AssignDeadState();
+        // FIXME DeathEffect methods get called after this from Dead_EnterState which we don't want
+    }
+
+    protected override void PrepareForDeathSequence() {
+        base.PrepareForDeathSequence();
         Data.Weapons.ForAll(weap => weap.readytoFire -= WeaponReadyToFireEventHandler);
+        // equipment deactivation handled by Data
     }
 
-    protected sealed override void PrepareForDeadState() {
+    protected sealed override void PrepareForOnDeath() {
+        base.PrepareForOnDeath();
+        OnSubordinateDeath();
+    }
+
+    protected override void PrepareForDeadState() {
         base.PrepareForDeadState();
-        PrepareToInformCmdOfSubordinateDeath();
-        InformCmdOfSubordinateDeath();
-    }
-
-    /// <summary>
-    /// Hook to allow derived classes to prepare for Cmd being informed of this element's death.
-    /// <remarks>Allows elements to complete all activities that require the element's Cmd
-    /// reference before it is nulled.</remarks>
-    /// <remarks>this base implementation Return()s all FSM Call()ed states to their Call()ing state.</remarks>
-    /// </summary>
-    protected virtual void PrepareToInformCmdOfSubordinateDeath() {
-        // 4.15.17 Get state to a non-Called state before changing to Dead allowing that 
-        // non_Called state to callback with FsmOrderFailureCause.Death if callback is reqd
         ReturnFromCalledStates();
-    }
-
-    private void InformCmdOfSubordinateDeath() {
-        Command.HandleSubordinateElementDeath(this);
-        D.AssertNull(Command);
-    }
-
-    /// <summary>
-    /// Assigns its Command as the focus to replace it. 
-    /// <remarks>If the last element to die then Command will shortly die 
-    /// after HandleSubordinateElementDeath() called. This in turn
-    /// will null the MainCameraControl.CurrentFocus property.
-    /// </remarks>
-    /// </summary>
-    protected override void AssignAlternativeFocusOnDeath() {
-        base.AssignAlternativeFocusOnDeath();
-        Transform elementParent = transform.parent;
-        AUnitCmdItem formerCmd = elementParent.GetComponentInChildren<AUnitCmdItem>();
-        if (formerCmd.IsOperational) {
-            formerCmd.IsFocus = true;
-        }
+        UponDeath();    // 4.19.17 Do any reqd Callback before exiting current non-Call()ed state
     }
 
     /********************************************************************************************************************************************
-     * Equipment (Weapons, Sensors and Countermeasures) no longer added or removed while the item is operating. 
-     * Changes in an item's equipment can only occur during a refit where a new item is created to replace the item being refitted.
-     ********************************************************************************************************************************************/
+      * Equipment (Weapons, Sensors and Countermeasures) no longer added or removed while the item is operating. 
+      * Changes in an item's equipment can only occur during a refit where a new item is created to replace the item being refitted.
+      ********************************************************************************************************************************************/
 
     #region Weapons
 
@@ -468,7 +432,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         var target = firingSolution.EnemyTarget;
         var losWeapon = firingSolution.Weapon;
         D.Assert(losWeapon.IsOperational);  // weapon should not have completed aiming if it lost operation
-        if (target.IsOperational && target.IsAttackAllowedBy(Owner) && losWeapon.ConfirmInRangeForLaunch(target)) {
+        if (!target.IsDead && target.IsAttackAllowedBy(Owner) && losWeapon.ConfirmInRangeForLaunch(target)) {
             if (losWeapon.__CheckLineOfSight(target)) {
                 LaunchOrdnance(losWeapon, target);
             }
@@ -631,37 +595,30 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #endregion
 
-    #region Highlighting
+    #region Event and Property Change Handlers
 
-    public override void AssessCircleHighlighting() {
-        if (!IsDead && IsDiscernibleToUser) {
-            if (IsFocus) {
-                if (IsSelected) {
-                    ShowCircleHighlights(CircleHighlightID.Focused, CircleHighlightID.Selected);
-                    return;
-                }
-                if (Command.IsSelected) {
-                    ShowCircleHighlights(CircleHighlightID.Focused, CircleHighlightID.UnitElement);
-                    return;
-                }
-                ShowCircleHighlights(CircleHighlightID.Focused);
-                return;
-            }
-            if (IsSelected) {
-                ShowCircleHighlights(CircleHighlightID.Selected);
-                return;
-            }
-            if (Command.IsSelected) {
-                ShowCircleHighlights(CircleHighlightID.UnitElement);
-                return;
-            }
-        }
-        ShowCircleHighlights(CircleHighlightID.None);
+    private void ReworkUnderwayPropChangedHandler() {
+        HandleReworkUnderwayPropChanged();
     }
 
-    #endregion
+    private void OnSubordinateDamageIncurred(bool isAlive, DamageStrength damageIncurred, float damageSeverity) {
+        if (subordinateDamageIncurred != null) {
+            subordinateDamageIncurred(this, new SubordinateDamageIncurredEventArgs(isAlive, damageIncurred, damageSeverity));
+        }
+    }
 
-    #region Event and Property Change Handlers
+    private void OnSubordinateDeath() {
+        if (subordinateDeathOneShot != null) {
+            subordinateDeathOneShot(this, EventArgs.Empty);
+            subordinateDeathOneShot = null;
+        }
+    }
+
+    private void OnSubordinateOwnerChanging(Player incomingOwner) {
+        if (subordinateOwnerChanging != null) {
+            subordinateOwnerChanging(this, new SubordinateOwnerChangingEventArgs(incomingOwner));
+        }
+    }
 
     private void ChangeOwnerAfterPauseEventHandler(object sender, EventArgs e) {
         D.Log(ShowDebugLog, "{0}.ChangeOwnerAfterPauseEventHandler called.", DebugName);
@@ -680,10 +637,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         HandleIsHQChanged();
     }
 
-    private void CommandPropChangedHandler() {
-        OnCommandChanged();
-    }
-
     private void OnIsAvailable() {
         if (isAvailableChanged != null) {
             isAvailableChanged(this, EventArgs.Empty);
@@ -693,12 +646,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     private void OnIsHQChanged() {
         if (isHQChanged != null) {
             isHQChanged(this, EventArgs.Empty);
-        }
-    }
-
-    private void OnCommandChanged() {
-        if (commandChanged != null) {
-            commandChanged(this, EventArgs.Empty);
         }
     }
 
@@ -712,7 +659,16 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #endregion
 
-    protected override void HandleLeftDoubleClick() {
+    private void HandleReworkUnderwayPropChanged() {
+        if (ReworkUnderway == ReworkingMode.None) {
+            DisplayMgr.HideReworkingVisuals();
+        }
+        else {
+            DisplayMgr.BeginReworkingVisuals(ReworkUnderway);
+        }
+    }
+
+    protected sealed override void HandleLeftDoubleClick() {
         base.HandleLeftDoubleClick();
         if (IsSelectable) {   // IMPROVE clearer criteria would be element's (and therefore command's) owner is user
             Command.IsSelected = true;
@@ -720,7 +676,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     }
 
     protected virtual void HandleIsHQChanged() {
-        Data.Name = IsHQ ? Name + __HQNameAddendum : Name.Remove(__HQNameAddendum);
+        Name = IsHQ ? Name + __HQNameAddendum : Name.Remove(__HQNameAddendum);
         OnIsHQChanged();
     }
 
@@ -762,22 +718,12 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         }
     }
 
-    /// <summary>
-    /// Returns true if the owner of this element's existing Cmd should be changed as a result of this element's ownership change.
-    /// </summary>
-    /// <returns></returns>
-    protected abstract bool ShouldExistingCmdOwnerChange();
-
-    protected override void HandleOwnerChanging(Player newOwner) {
-        base.HandleOwnerChanging(newOwner);
+    protected override void HandleOwnerChanging(Player incomingOwner) {
+        base.HandleOwnerChanging(incomingOwner);
         D.AssertNotEqual(TempGameValues.NoPlayer, Owner);
-        D.Assert(IsAssaultAllowedBy(newOwner));
+        D.Assert(IsAssaultAllowedBy(incomingOwner));
 
-        if (ShouldExistingCmdOwnerChange()) {    // 5.17.17 Reqd BEFORE all these other changes propagate
-            D.Warn(@"FYI. {0} is about to change its Cmd {1}'s Owner from {2} to its own new Owner {3} in Frame {4}. Element and Cmd owner 
-                        will be 'out of sync'.", DebugName, Command.DebugName, Command.Owner, newOwner, Time.frameCount);
-            Command.Data.Owner = newOwner;
-        }
+        OnSubordinateOwnerChanging(incomingOwner);   // 5.17.17 If Cmd is going to chg owner, it must do it BEFORE all these other changes propagate
 
         // Owner is about to lose ownership of item so reset owner and allies IntelCoverage of item to what they should know
         ResetBasedOnCurrentDetection(Owner);
@@ -785,7 +731,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         IEnumerable<Player> allies;
         if (TryGetAllies(out allies)) {
             allies.ForAll(ally => {
-                if (ally != newOwner && !ally.IsRelationshipWith(newOwner, DiplomaticRelationship.Alliance)) {
+                if (ally != incomingOwner && !ally.IsRelationshipWith(incomingOwner, DiplomaticRelationship.Alliance)) {
                     // 5.18.17 no point assessing current detection for newOwner or a newOwner ally
                     // as HandleOwnerChgd will assign Comprehensive to them all. 
                     ResetBasedOnCurrentDetection(ally);
@@ -811,10 +757,9 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     #region Orders Support Members
 
     /// <summary>
-    /// Cancels the CurrentOrder unless its an override order from the Captain. Returns <c>true</c>
+    /// Cancels the CurrentOrder and (re)initiates Idling state unless its an override order from the Captain. Returns <c>true</c>
     /// if there was no CurrentOrder or the CurrentOrder was canceled, <c>false</c> if the CurrentOrder was not canceled
     /// due to it being issued by the Captain.
-    /// <remarks>Sets CurrentOrder to null and initiates Idling state.</remarks>
     /// <remarks>If CurrentOrder is from the Captain, then StandingOrder within the
     /// Captain's Order is canceled (nulled) as it is, by definition, from the Captain's Superior.
     /// </remarks>
@@ -1190,6 +1135,9 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #region Debug
 
+    public bool __HasCommand { get { return Command != null; } }
+
+    [System.Diagnostics.Conditional("DEBUG")]
     protected abstract void __ValidateCurrentOrderAndStateWhenAvailable();
 
     public override bool __IsPlayerEntitledToComprehensiveRelationship(Player player) {
@@ -1232,6 +1180,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         return false;
     }
 
+    [System.Diagnostics.Conditional("DEBUG")]
     protected abstract void __ValidateRadius(float radius);
 
     // 3.7.17 Moved __ReportCollision(Collision collision) to Facility and Ship as needs differ
@@ -1316,6 +1265,35 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #endregion
 
+    #region Nested Classes
+
+    public class SubordinateOwnerChangingEventArgs : EventArgs {
+
+        public Player IncomingOwner { get; private set; }
+
+        public SubordinateOwnerChangingEventArgs(Player incomingOwner) {
+            IncomingOwner = incomingOwner;
+        }
+
+    }
+
+    public class SubordinateDamageIncurredEventArgs : EventArgs {
+
+        public bool IsAlive { get; private set; }
+
+        public DamageStrength DamageIncurred { get; private set; }
+
+        public float DamageSeverity { get; private set; }
+
+        public SubordinateDamageIncurredEventArgs(bool isAlive, DamageStrength damageIncurred, float damageSeverity) {
+            IsAlive = isAlive;
+            DamageIncurred = damageIncurred;
+            DamageSeverity = damageSeverity;
+        }
+    }
+
+    #endregion
+
     #region IElementAttackable Members
 
     public override void TakeHit(DamageStrength damagePotential) {
@@ -1323,33 +1301,24 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         if (_debugSettings.AllPlayersInvulnerable) {
             return;
         }
-        D.Assert(IsOperational);
-        DamageStrength damage = damagePotential - Data.DamageMitigation;
-        if (damage.Total == Constants.ZeroF) {
+        D.Assert(!IsDead);
+        DamageStrength damageSustained = damagePotential - Data.DamageMitigation;
+        if (damageSustained.Total == Constants.ZeroF) {
             //D.Log(ShowDebugLog, "{0} has been hit but incurred no damage.", DebugName);
             return;
         }
-        D.Log(ShowDebugLog, "{0} has been hit. Taking {1:0.#} damage.", DebugName, damage.Total);
+        D.Log(ShowDebugLog, "{0} has been hit, taking {1:0.#} damage.", DebugName, damageSustained.Total);
 
         float damageSeverity;
-        bool isElementAlive = ApplyDamage(damage, out damageSeverity);
+        bool isElementAlive = ApplyDamage(damageSustained, out damageSeverity);
         if (isElementAlive) {
-            bool isCmdHit = false;
-            if (IsHQ) {
-                D.Assert(Command.IsOperational);
-                isCmdHit = Command.__CheckForDamage(isElementAlive, damage, damageSeverity);
-            }
-            var hitAnimation = isCmdHit ? EffectSequenceID.CmdHit : EffectSequenceID.Hit;
-            StartEffectSequence(hitAnimation);
+            StartEffectSequence(EffectSequenceID.Hit);
             UponDamageIncurred();
-            Command.HandleDamageIncurredBy(this);
         }
-        else {
-            AUnitCmdItem cmd = Command; // Killing element will immediately cause element to be removed from Cmd, nulling Command
-            IsOperational = false;  // should immediately propagate thru to Cmd's alive status
-            if (cmd.IsOperational) {
-                cmd.HandleDamageIncurredBy(this);
-            }
+
+        OnSubordinateDamageIncurred(isElementAlive, damageSustained, damageSeverity);
+        if (!isElementAlive) {
+            IsDead = true;
         }
     }
 
@@ -1440,7 +1409,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         UponFsmTgtDeath(deadFsmTgt);
     }
 
-    void IFsmEventSubscriptionMgrClient.HandleAwarenessChgd(IOwnerItem_Ltd item) { }
+    void IFsmEventSubscriptionMgrClient.HandleAwarenessChgd(IMortalItem_Ltd/*IOwnerItem_Ltd*/ item) { }
 
     #endregion
 
@@ -1464,18 +1433,16 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     /// <summary>
     /// Attempts to takeover this Element's ownership with player. Returns <c>true</c> if successful, <c>false</c> otherwise.
-    /// <remarks>4.20.17 Not currently used.</remarks>
     /// </summary>
     /// <param name="player">The player.</param>
-    /// <param name="strength">The takeover strength. A value between 0 and 1.0.</param>
+    /// <param name="damagePotential">The damage potential of the assault.</param>
     /// <returns></returns>
-    public bool AttemptAssault(Player player, DamageStrength strength, string __assaulterName) {
+    public bool AttemptAssault(Player player, DamageStrength damagePotential, string __assaulterName) {
         D.Assert(!IsPaused);
         if (!IsAssaultAllowedBy(player)) {
             D.Error("{0} erroneously assaulted by {1} in Frame {2}. IsAttackAllowedBy: {3}, HasAccessToDefense: {4}.",
                 DebugName, __assaulterName, Time.frameCount, IsAttackAllowedBy(player), InfoAccessCntlr.HasIntelCoverageReqdToAccess(player, ItemInfoID.Defense));
         }
-        Utility.ValidateForRange(strength.Total, Constants.ZeroPercent, Constants.OneHundredPercent);
 
         int currentFrame = Time.frameCount;
         if (IsOwnerChangeUnderway) {
@@ -1507,17 +1474,39 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         }
         __lastAssaultFrame = currentFrame;
 
-        if (IsHQ) {
-            Command.TakeHit(strength);
+        if (_debugSettings.AllPlayersInvulnerable) {
+            return false;
+        }
+        if (_debugCntls.AreAssaultsAlwaysSuccessful) {
+            Data.Owner = player;
+            return true;
         }
 
-        if (_debugCntls.AreAssaultsAlwaysSuccessful) {
-            Owner = player;
-            return true;
+        DamageStrength damageSustained = damagePotential - Data.DamageMitigation;
+        if (damageSustained.Total == Constants.ZeroF) {
+            //D.Log(ShowDebugLog, "{0} has been assaulted but incurred no damage.", DebugName);
+            return false;
         }
-        else if (strength.Total > Command.Data.CurrentCmdEffectiveness) {   // HACK takeoverStrength vs loyalty?
-            Owner = player;
-            return true;
+        D.Log(ShowDebugLog, "{0} has been assaulted, taking {1:0.#} damage.", DebugName, damageSustained.Total);
+
+        float damageSeverity;
+        bool isElementAlive = ApplyDamage(damageSustained, out damageSeverity);
+        if (isElementAlive) {
+            StartEffectSequence(EffectSequenceID.Hit);
+            UponDamageIncurred();
+        }
+        // 11.4.17 Eliminated Cmd 'taking hit' if this IsHQ. Can reinstate if desired in Cmd's SubordinateDamageIncurredHandler
+        OnSubordinateDamageIncurred(isElementAlive, damageSustained, damageSeverity);
+
+        if (isElementAlive) {
+            if (damageSustained.GetValue(DamageCategory.Incursion) > Constants.ZeroF) {
+                // assault was successful
+                Data.Owner = player;
+                return true;
+            }
+        }
+        else {
+            IsDead = true;
         }
         return false;
     }
@@ -1533,7 +1522,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         }
         else {
             D.AssertNull(_newOwnerAfterPause);
-            Owner = newOwner;
+            Data.Owner = newOwner;
         }
     }
 

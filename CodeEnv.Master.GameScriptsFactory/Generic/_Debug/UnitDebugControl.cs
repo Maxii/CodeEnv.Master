@@ -160,7 +160,6 @@ public class UnitDebugControl : AMonoBase {
             var tempNewOwnerUserRelationsChoice = _newOwnerUserRelationsChoice; // choice can be changed by owner change event
             D.LogBold("{0} has selected {1} as its new owner.", DebugName, newOwner);
             _unitCmd.Data.Owner = newOwner;  // generates an ownerChange event which will sync to current user relationship
-            ////_unitCmd.ChangeOwner(newOwner);
 
             if (_currentOwnerUserRelations == DiplomaticRelationship.None) {
                 // correct _newOwnerUserRelationsChoice to what was chosen

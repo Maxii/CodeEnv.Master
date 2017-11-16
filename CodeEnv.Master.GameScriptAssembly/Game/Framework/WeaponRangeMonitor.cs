@@ -156,12 +156,12 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementBlastable, AWe
     /// </summary>
     /// <param name="enemyTgt">The enemy target that is now in range.</param>
     private void NotifyWeaponsOfAttackableEnemyTargetInRange(IElementBlastable enemyTgt) {
-        D.Assert(enemyTgt.IsOperational);
+        D.Assert(!enemyTgt.IsDead);
         foreach (var weap in _equipmentList) {
-            // GOTCHA!! As each Weapon receives this inRange notice, it can attack and destroy the target
+            // GOTCHA!! As each Weapon receives this inRange notice, it can attack and kill the target
             // before the next EnemyTargetInRange notice is sent to the next Weapon. 
             // As a result, IsOperational must be checked after each notice.
-            if (enemyTgt.IsOperational) {
+            if (!enemyTgt.IsDead) {
                 weap.HandleAttackableEnemyTargetInRangeChanged(enemyTgt, isInRange: true);
             }
         }
@@ -216,7 +216,7 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementBlastable, AWe
     #endregion
 
     private void HandleDetectedItemDeath(IElementBlastable deadDetectedItem) {
-        D.Assert(!deadDetectedItem.IsOperational);
+        D.Assert(deadDetectedItem.IsDead);
         RemoveDetectedObject(deadDetectedItem);
     }
 
@@ -444,7 +444,7 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementBlastable, AWe
     private const float __acceptableThresholdSubtractorBase = 1.25F;
 
     protected override void __WarnOnErroneousTriggerExit(IElementBlastable exitingAttackableItem) {
-        if (exitingAttackableItem.IsOperational) {
+        if (!exitingAttackableItem.IsDead) {
             float gameSpeedMultiplier = __gameTime.GameSpeedMultiplier;  // 0.25 - 4.0
             float rangeDistanceSubtractor = __acceptableThresholdSubtractorBase * gameSpeedMultiplier;  // 0.3x - 1.25 - 5
 

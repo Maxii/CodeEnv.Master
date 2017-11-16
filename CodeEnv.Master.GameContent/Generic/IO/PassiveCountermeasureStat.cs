@@ -45,6 +45,14 @@ namespace CodeEnv.Master.GameContent {
         public DamageStrength DamageMitigation { get; private set; }
 
         /// <summary>
+        /// Initializes a new instance of the most basic <see cref="PassiveCountermeasureStat"/> class.
+        /// </summary>
+        public PassiveCountermeasureStat()
+            : this("BasicPassiveCM", AtlasID.MyGui, TempGameValues.AnImageFilename, "BasicDescription..", 0F, 0F, 0F, 1F,
+                  Constants.ZeroF, new DamageStrength(1F, 1F, 1F), 0) {
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="PassiveCountermeasureStat" /> class.
         /// </summary>
         /// <param name="name">The name.</param>
@@ -62,14 +70,6 @@ namespace CodeEnv.Master.GameContent {
             float pwrRqmt, float constructionCost, float expense, DamageStrength damageMitigation, int refitBenefit)
             : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, constructionCost, expense, refitBenefit, isDamageable: true) {
             DamageMitigation = damageMitigation;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the most basic <see cref="PassiveCountermeasureStat"/> class.
-        /// </summary>
-        public PassiveCountermeasureStat()
-            : this("BasicPassiveCM", AtlasID.MyGui, TempGameValues.AnImageFilename, "BasicDescription..", 0F, 0F, 0F, 1F,
-                  Constants.ZeroF, new DamageStrength(1F, 1F, 1F), 0) {
         }
 
         #region Object.Equals and GetHashCode Override

@@ -30,21 +30,21 @@ namespace CodeEnv.Master.GameContent {
 
         private const string DebugNameFormat = "{0}.{1}";
 
-        public string DebugName { get { return DebugNameFormat.Inject(_item.DebugName, typeof(DetectionHandler).Name); } }
+        public string DebugName { get { return DebugNameFormat.Inject(_itemClient.DebugName, typeof(DetectionHandler).Name); } }
 
-        private bool ShowDebugLog { get { return _item.ShowDebugLog; } }
+        private bool ShowDebugLog { get { return _itemClient.ShowDebugLog; } }
 
         /// <summary>
         /// Lookup that holds a list of the Cmds that have detected this Item, organized by the range
         /// of the sensor used and the owner of the Cmd.
         /// </summary>
         private IDictionary<Player, IDictionary<RangeCategory, IList<ISensorDetector>>> _detectionLookup;
-        private IDetectionHandlerClient _item;
+        private IDetectionHandlerClient _itemClient;
         private IGameManager _gameMgr;
         private IDebugControls _debugControls;
 
         public DetectionHandler(IDetectionHandlerClient item) {
-            _item = item;
+            _itemClient = item;
             _gameMgr = GameReferences.GameManager;
             _debugControls = GameReferences.DebugControls;
             _detectionLookup = new Dictionary<Player, IDictionary<RangeCategory, IList<ISensorDetector>>>(_gameMgr.AllPlayers.Count);
@@ -52,20 +52,20 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Handles detection by a ISensorDetector.
-        /// <remarks>2.6.17 Removed use of obsolete UpdatePlayerKnowledge(). Knowledge now updated as a result of IntelCoverage changes.</remarks>
-        /// </summary>
-        /// <param name="detector">The command item.</param>
+        /// <remarks>2.6.17 Removed use of obsolete UpdatePlayerKnowledge(). Knowledge now updated as a result of IntelCoverage changes.</remarks></summary>
+        /// <param name="detector">The UnitMemberItem 'detector'.</param>
         /// <param name="sensorRange">The sensor range.</param>
         public void HandleDetectionBy(ISensorDetector detector, RangeCategory sensorRange) {
-            if (!_item.IsOperational) {
-                D.Error("{0} should not be detected by {1} when dead!", _item.DebugName, detector.DebugName);
+            var mortalItemClient = _itemClient as IMortalItem;
+            if (mortalItemClient != null && mortalItemClient.IsDead) {
+                D.Error("{0} should not be detected by {1} when dead!", _itemClient.DebugName, detector.DebugName);
             }
             //D.Log(ShowDebugLog, "{0}.HandleDetectionBy called. Detector: {1}, SensorRange: {2}.", DebugName, detector.DebugName, sensorRange.GetValueName());
             Player detectingPlayer = detector.Owner;
             IDictionary<RangeCategory, IList<ISensorDetector>> rangeLookup;
             if (!_detectionLookup.TryGetValue(detectingPlayer, out rangeLookup)) {
 
-                Profiler.BeginSample("Proper Dictionary allocation", (_item as Component).gameObject);
+                Profiler.BeginSample("Proper Dictionary allocation", (_itemClient as Component).gameObject);
                 rangeLookup = new Dictionary<RangeCategory, IList<ISensorDetector>>(3, RangeCategoryEqualityComparer.Default); // OPTIMIZE check size
                 Profiler.EndSample();
 
@@ -75,7 +75,7 @@ namespace CodeEnv.Master.GameContent {
             IList<ISensorDetector> detectors;
             if (!rangeLookup.TryGetValue(sensorRange, out detectors)) {
 
-                Profiler.BeginSample("Proper List allocation", (_item as Component).gameObject);
+                Profiler.BeginSample("Proper List allocation", (_itemClient as Component).gameObject);
                 detectors = new List<ISensorDetector>();
                 Profiler.EndSample();
 
@@ -92,14 +92,14 @@ namespace CodeEnv.Master.GameContent {
                 return; // continuing could regress coverage on items that allow it
             }
 
-            if (_item.Owner.IsRelationshipWith(detectingPlayer, DiplomaticRelationship.Alliance, DiplomaticRelationship.Self)) {
+            if (_itemClient.Owner.IsRelationshipWith(detectingPlayer, DiplomaticRelationship.Alliance, DiplomaticRelationship.Self)) {
                 // Should already be set to comprehensive when became self or alliance took place
                 __ValidatePlayerIntelCoverageOfItemIsComprehensive(detectingPlayer);
                 __ValidatePlayerKnowledgeOfItem(detectingPlayer);
                 return; // continuing could regress coverage on items that allow it
             }
 
-            Profiler.BeginSample("AssignDetectingPlayerIntelCoverage", (_item as Component).gameObject);
+            Profiler.BeginSample("AssignDetectingPlayerIntelCoverage", (_itemClient as Component).gameObject);
             AssignDetectingPlayerIntelCoverage(detectingPlayer);
             Profiler.EndSample();
         }
@@ -108,12 +108,13 @@ namespace CodeEnv.Master.GameContent {
         /// Handles detection lost by a ISensorDetector.
         /// <remarks>2.6.17 Removed use of obsolete UpdatePlayerKnowledge(). Knowledge now updated as a result of IntelCoverage changes.</remarks>
         /// </summary>
-        /// <param name="detector">The detector item.</param>
+        /// <param name="detector">The UnitMemberItem 'detector'.</param>
         /// <param name="detectorOwner">The detector owner.</param>
         /// <param name="sensorRange">The sensor range.</param>
         public void HandleDetectionLostBy(ISensorDetector detector, Player detectorOwner, RangeCategory sensorRange) {
             D.AssertNotDefault((int)sensorRange);
-            if (!_item.IsOperational) {    // 7.20.16 detected items no longer notified of lost detection when they die
+            var mortalItemClient = _itemClient as IMortalItem;
+            if (mortalItemClient != null && mortalItemClient.IsDead) {    // 7.20.16 detected items no longer notified of lost detection when they die
                 D.Error("{0} should not be notified by {1} of detection lost when dead!", DebugName, detector.DebugName);
             }
             //D.Log(ShowDebugLog, "{0}.HandleDetectionLostBy called. Detector: {1}, SensorRange: {2}.", DebugName, detector.DebugName, sensorRange.GetValueName());
@@ -147,33 +148,33 @@ namespace CodeEnv.Master.GameContent {
                 return; // continuing could regress coverage on items that allow it
             }
 
-            if (_item.GetIntelCoverage(detectingPlayer) == IntelCoverage.Comprehensive) {
-                bool isComprehensiveExpected = (_item as IIntelItem).__IsPlayerEntitledToComprehensiveRelationship(detectingPlayer);
+            if (_itemClient.GetIntelCoverage(detectingPlayer) == IntelCoverage.Comprehensive) {
+                bool isComprehensiveExpected = (_itemClient as IIntelItem).__IsPlayerEntitledToComprehensiveRelationship(detectingPlayer);
 
                 if (!isComprehensiveExpected) {
                     D.Error("{0} found {1} has IntelCoverage.{2} with Relationship {3} in Frame {4}.", DebugName, detectingPlayer.DebugName,
-                        IntelCoverage.Comprehensive.GetValueName(), _item.Owner.GetCurrentRelations(detectingPlayer).GetValueName(), Time.frameCount);
+                        IntelCoverage.Comprehensive.GetValueName(), _itemClient.Owner.GetCurrentRelations(detectingPlayer).GetValueName(), Time.frameCount);
                 }
                 __ValidatePlayerKnowledgeOfItem(detectingPlayer);
                 return;
             }
 
             // IntelCoverage < Comprehensive
-            if (_item.Owner == detectingPlayer) {
+            if (_itemClient.Owner == detectingPlayer) {
                 // 4.22.17 The only way the owner and detectingPlayer could be the same with IntelCoverage < Comprehensive, 
                 // is when the ElementSensorMonitor attached to this same element is telling us of lost detection as part of 
                 // its reset and reacquire process when the element's owner is changing. Confirmed this path is used when changing owner.
-                D.Assert(_item is IUnitElement);
-                D.Assert((_item as IUnitElement).IsOwnerChangeUnderway);
+                D.Assert(_itemClient is IUnitElement);
+                D.Assert((_itemClient as IUnitElement).IsOwnerChangeUnderway);
                 // 4.22.17 ResetBasedOnCurrentDetection has already run (from xxxItem.HandleOwnerChanging) which is what reduced 
                 // IntelCoverage below Comprehensive. This current pass is from the SensorRangeMonitor of this same element. 
                 // If it is the only remaining monitor detecting this element and its telling it of lost detection, then it could 
                 // drop to None (if a ship). The previous ResetBasedOnCurrentDetection call could not result in None 
                 // as this Item is still detecting itself.
-                D.AssertNotEqual(IntelCoverage.None, _item.GetIntelCoverage(detectingPlayer));
+                D.AssertNotEqual(IntelCoverage.None, _itemClient.GetIntelCoverage(detectingPlayer));
                 AssignIntelCoverage(detectingPlayer);
-                if (_item.GetIntelCoverage(detectingPlayer) == IntelCoverage.None) {
-                    D.Assert(_item is IShip);   // Very rare I expect   
+                if (_itemClient.GetIntelCoverage(detectingPlayer) == IntelCoverage.None) {
+                    D.Assert(_itemClient is IShip);   // Very rare I expect   
                     // 5.19.17 Confirmed occurred without error!
                 }
                 return;
@@ -187,7 +188,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="detectingPlayer">The detecting player.</param>
         private void AssignDetectingPlayerIntelCoverage(Player detectingPlayer) {
-            D.AssertNotEqual(_item.Owner, detectingPlayer);
+            D.AssertNotEqual(_itemClient.Owner, detectingPlayer);
             AssignIntelCoverage(detectingPlayer);
         }
 
@@ -225,7 +226,7 @@ namespace CodeEnv.Master.GameContent {
             }
 
             IntelCoverage resultingCoverage;
-            if (_item.TrySetIntelCoverage(player, newCoverage, out resultingCoverage)) {
+            if (_itemClient.TrySetIntelCoverage(player, newCoverage, out resultingCoverage)) {
                 //D.Log(ShowDebugLog, "{0} set {1}'s IntelCoverage to {2}.", DebugName, player, resultingCoverage.GetValueName());
             }
         }
@@ -261,20 +262,20 @@ namespace CodeEnv.Master.GameContent {
         #region Debug
 
         private void __ValidatePlayerIntelCoverageOfItemIsComprehensive(Player player) {
-            if (_item.GetIntelCoverage(player) != IntelCoverage.Comprehensive) {
-                D.Error("{0}: {1}'s IntelCoverage of {2} should be Comprehensive rather than {3}.", DebugName, player, _item.DebugName, _item.GetIntelCoverage(player));
+            if (_itemClient.GetIntelCoverage(player) != IntelCoverage.Comprehensive) {
+                D.Error("{0}: {1}'s IntelCoverage of {2} should be Comprehensive rather than {3}.", DebugName, player, _itemClient.DebugName, _itemClient.GetIntelCoverage(player));
             }
         }
 
         private void __ValidatePlayerKnowledgeOfItem(Player player) {
-            if (_item is IStar || _item is IUniverseCenter) {
+            if (_itemClient is IStar || _itemClient is IUniverseCenter) {
                 // unnecessary check as all players have knowledge of these sensor detectable items
                 return;
             }
             var playerAIMgr = _gameMgr.GetAIManagerFor(player);
-            if (!playerAIMgr.HasKnowledgeOf(_item as IIntelItem_Ltd)) {
-                string itemsKnownText = playerAIMgr.__GetItemsOwnedBy(_item.Owner).Select(item => item.DebugName).Concatenate();
-                D.Error("{0}: {1} has no knowledge of {2}. IsOperational = {3}. Items known: {4}.", DebugName, player, _item.DebugName, _item.IsOperational, itemsKnownText);
+            if (!playerAIMgr.HasKnowledgeOf(_itemClient as IIntelItem_Ltd)) {
+                string itemsKnownText = playerAIMgr.__GetItemsOwnedBy(_itemClient.Owner).Select(item => item.DebugName).Concatenate();
+                D.Error("{0}: {1} has no knowledge of {2}. Items known: {3}.", DebugName, player, _itemClient.DebugName, itemsKnownText);
             }
         }
 

@@ -57,7 +57,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         internal Speed CurrentSpeedSetting { get { return _helm.CurrentSpeedSetting; } }
 
-        internal Quaternion ShipRotation { get { return _shipTransform.rotation; } }
+        internal Quaternion ShipRotation { get { return _ship.transform.rotation; } }
 
         internal float IntendedCurrentSpeedValue { get { return _engineRoom.IntendedCurrentSpeedValue; } }
 
@@ -97,13 +97,11 @@ namespace CodeEnv.Master.GameContent {
         private ShipHelm _helm;
 
         private IShip _ship;
-        private Transform _shipTransform;
 
-        public AutoPilot(ShipHelm helm, EngineRoom engineRoom, IShip ship, Transform shipTransform) {
+        public AutoPilot(ShipHelm helm, EngineRoom engineRoom, IShip ship) {
             _helm = helm;
             _engineRoom = engineRoom;
             _ship = ship;
-            _shipTransform = shipTransform;
         }
 
         /// <summary>

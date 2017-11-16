@@ -337,8 +337,19 @@ public abstract class AFleetUnitHudForm : AForm {
     }
 
     private void HandleUnitMergeButtonClicked() {
-        D.Warn("{0}.HandleUnitMergeButtonClicked not yet implemented.", DebugName);
-        // UNDONE
+        var pickedUnits = _pickedUnitIcons.Select(icon => icon.Unit);
+        var resultingFleet = GameScriptsUtility.Merge(pickedUnits);
+        D.Log("{0} has merged {1} to create {2}.", DebugName, pickedUnits.Concatenate(), resultingFleet.DebugName);
+        // all fleetCmds except resultingFleet will die, removing them from the display
+        //D.Log("{0} has selected {1} as the most effective Cmd with an effectiveness of {2:0.00}.", DebugName, resultingFleet.DebugName, resultingFleet.Data.CurrentCmdEffectiveness);
+        bool isSelectedUnitDead = SelectedUnit == null || SelectedUnit.IsDead;
+        if (isSelectedUnitDead) {
+            // SelectedUnit died and deselected itself which will result in this HUD hiding and being Reset. Both conditions are tested as 
+            // the form's reset won't necessarily happen immediately as GuiWindows don't necessarily complete their hide right away
+            D.Assert(!resultingFleet.IsSelected);
+            //D.Log("{0} is auto selecting {1} to reopen this HUD.", DebugName, resultingFleet.DebugName);
+            resultingFleet.IsSelected = true;
+        }
     }
 
     private void HandleUnitScuttleButtonClicked() {
@@ -486,7 +497,7 @@ public abstract class AFleetUnitHudForm : AForm {
         bool isUnitMergeButtonEnabled = false;
         if (_pickedUnitIcons.Count > Constants.One) {
             IEnumerable<FleetCmdItem> pickedUnits = _pickedUnitIcons.Select(icon => icon.Unit);
-            int pickedUnitsElementCount = pickedUnits.Sum(unit => unit.Elements.Count);
+            int pickedUnitsElementCount = pickedUnits.Sum(unit => unit.ElementCount);
             if (pickedUnitsElementCount <= TempGameValues.MaxShipsPerFleet) {
                 isUnitMergeButtonEnabled = true;
             }
@@ -661,11 +672,54 @@ public abstract class AFleetUnitHudForm : AForm {
         FocusOn(icon.Element);
     }
 
-    private void HandleShipCreateFleetButtonClicked() {  // IMPROVE ability to create a fleet of more than one ship
-        var newUnit = _pickedElementIcons.Select(icon => icon.Element).Single().__CreateSingleShipFleet();
-        var units = new List<FleetCmdItem>(_unitIconLookup.Keys);
-        units.Add(newUnit);
-        RebuildUnitIcons(units, newUnit);
+    private void HandleShipCreateFleetButtonClicked() {
+        Utility.ValidateForRange(_pickedElementIcons.Count, Constants.One, TempGameValues.MaxShipsPerFleet);
+
+        var pickedCmds = _pickedUnitIcons.Select(icon => icon.Unit);
+        var pickedShips = _pickedElementIcons.Select(icon => icon.Element);
+        IDictionary<FleetCmdItem, IList<ShipItem>> shipsByCmdLookup = new Dictionary<FleetCmdItem, IList<ShipItem>>(_pickedUnitIcons.Count);
+        // populate the lookup
+        foreach (var cmd in pickedCmds) {
+            foreach (var ship in pickedShips) {
+                if (cmd.Contains(ship)) {
+                    IList<ShipItem> cmdsShips;
+                    if (!shipsByCmdLookup.TryGetValue(cmd, out cmdsShips)) {
+                        cmdsShips = new List<ShipItem>();
+                        shipsByCmdLookup.Add(cmd, cmdsShips);
+                    }
+                    cmdsShips.Add(ship);
+                }
+            }
+        }
+
+        IList<FleetCmdItem> fleetsToMerge = new List<FleetCmdItem>(shipsByCmdLookup.Count);
+        foreach (var cmd in shipsByCmdLookup.Keys) {
+            var cmdsPickedShips = shipsByCmdLookup[cmd];
+            FleetCmdItem formedFleet = cmd.FormFleetFrom("UserCreatedFleet", cmdsPickedShips);
+            fleetsToMerge.Add(formedFleet);
+        }
+
+        FleetCmdItem finalFleet;
+        if (fleetsToMerge.Count > Constants.One) {
+            finalFleet = GameScriptsUtility.Merge(fleetsToMerge);
+        }
+        else {
+            finalFleet = fleetsToMerge.First();
+        }
+
+        // resume and re-pause to allow finalFleet to deploy and become operational before RebuildIcons needs its iconInfo
+        _gameMgr.RequestPauseStateChange(toPause: false);
+        _gameMgr.RequestPauseStateChange(toPause: true);
+
+        var allFleets = new HashSet<FleetCmdItem>(_unitIconLookup.Keys);
+        bool isAdded = allFleets.Add(finalFleet);
+        if (!isAdded) {
+            // 11.12.17 The same fleet instance can occur for multiple reasons: 1) a fleet that is formed from all of
+            // its existing ships is actually the same instance, and 2) a fleet that results from a merge will 
+            // always be one of the instances submitted for the merge.
+            D.Warn("FYI. {0}: No need to add {1} when it is already present.", DebugName, finalFleet.DebugName);
+        }
+        RebuildUnitIcons(allFleets, finalFleet);
     }
 
     private void HandleShipScuttleButtonClicked() {
@@ -702,12 +756,7 @@ public abstract class AFleetUnitHudForm : AForm {
     }
 
     protected virtual void AssessElementButtons() {
-        bool isCreateUnitButtonEnabled = false;  // IMPROVE when fleet can be created with more than one ship 
-        if (_pickedElementIcons.Count == Constants.One) {
-            var elementCmd = _pickedElementIcons.Select(icon => icon.Element).First().Command;
-            isCreateUnitButtonEnabled = elementCmd.Elements.Count > Constants.One;    // Criteria: 1 picked element in fleet of > 1 element
-        }
-        _shipCreateFleetButton.isEnabled = isCreateUnitButtonEnabled;
+        _shipCreateFleetButton.isEnabled = Utility.IsInRange(_pickedElementIcons.Count, Constants.One, TempGameValues.MaxShipsPerFleet);
         _shipScuttleButton.isEnabled = _pickedElementIcons.Any();
     }
 
@@ -722,7 +771,7 @@ public abstract class AFleetUnitHudForm : AForm {
         BuildPickedUnitsCompositionIcons();
     }
 
-    private void RebuildUnitIcons(IList<FleetCmdItem> units, FleetCmdItem unitToPick) {
+    private void RebuildUnitIcons(IEnumerable<FleetCmdItem> units, FleetCmdItem unitToPick) {
         BuildUnitIcons(units, unitToPick);
     }
 
@@ -804,7 +853,7 @@ public abstract class AFleetUnitHudForm : AForm {
         D.AssertNotEqual(Constants.Zero, _pickedUnitIcons.Count);
         IList<IList<ShipItem>> unitElementLists = new List<IList<ShipItem>>();
         foreach (var unitIcon in _pickedUnitIcons) {
-            var operationalElements = unitIcon.Unit.Elements.Where(e => e.IsOperational).Cast<ShipItem>();
+            var operationalElements = unitIcon.Unit.Elements.Where(e => !e.IsDead).Cast<ShipItem>();
             IList<ShipItem> elements = new List<ShipItem>(operationalElements);
             unitElementLists.Add(elements);
         }

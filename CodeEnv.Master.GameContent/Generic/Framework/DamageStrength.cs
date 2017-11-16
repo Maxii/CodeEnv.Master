@@ -30,13 +30,13 @@ namespace CodeEnv.Master.GameContent {
         private const string DebugNameFormat = "{0}({1},{2},{3})";
 
         private static readonly string LabelFormatWithTotal = "{0}" + Constants.NewLine
-                                             + "T: {1}" + Constants.NewLine
-                                             + "A: {2}" + Constants.NewLine
-                                             + "K: {3}";
+                                             + "{1}: {2}" + Constants.NewLine
+                                             + "{3}: {4}" + Constants.NewLine
+                                             + "{5}: {6}";
 
-        private static readonly string LabelFormatNoTotal = "T: {0}" + Constants.NewLine
-                                             + "A: {1}" + Constants.NewLine
-                                             + "K: {2}";
+        private static readonly string LabelFormatNoTotal = "{0}: {1}" + Constants.NewLine
+                                             + "{2}: {3}" + Constants.NewLine
+                                             + "{4}: {5}";
 
         #region Operators Override
 
@@ -51,10 +51,10 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public static DamageStrength operator +(DamageStrength left, DamageStrength right) {
-            var b = left.Thermal + right.Thermal;
-            var m = left.Atomic + right.Atomic;
-            var p = left.Kinetic + right.Kinetic;
-            return new DamageStrength(b, m, p);
+            var t = left.Thermal + right.Thermal;
+            var s = left.Structural + right.Structural;
+            var i = left.Incursion + right.Incursion;
+            return new DamageStrength(t, s, i);
         }
 
         /// <summary>
@@ -67,15 +67,12 @@ namespace CodeEnv.Master.GameContent {
         /// </returns>
         public static DamageStrength operator -(DamageStrength attacker, DamageStrength defender) {
             var t = attacker.Thermal - defender.Thermal;
-            //D.Log("Thermal result: " + t);
             if (t < Constants.ZeroF) { t = Constants.ZeroF; }
-            var a = attacker.Atomic - defender.Atomic;
-            //D.Log("Atomic result: " + a);
-            if (a < Constants.ZeroF) { a = Constants.ZeroF; }
-            var k = attacker.Kinetic - defender.Kinetic;
-            //D.Log("Kinetic result: " + k);
-            if (k < Constants.ZeroF) { k = Constants.ZeroF; }
-            return new DamageStrength(t, a, k);
+            var s = attacker.Structural - defender.Structural;
+            if (s < Constants.ZeroF) { s = Constants.ZeroF; }
+            var i = attacker.Incursion - defender.Incursion;
+            if (i < Constants.ZeroF) { i = Constants.ZeroF; }
+            return new DamageStrength(t, s, i);
         }
 
         /// <summary>
@@ -89,9 +86,9 @@ namespace CodeEnv.Master.GameContent {
         public static DamageStrength operator *(DamageStrength strength, float scaler) {
             Utility.ValidateNotNegative(scaler);
             var t = strength.Thermal * scaler;
-            var a = strength.Atomic * scaler;
-            var k = strength.Kinetic * scaler;
-            return new DamageStrength(t, a, k);
+            var s = strength.Structural * scaler;
+            var i = strength.Incursion * scaler;
+            return new DamageStrength(t, s, i);
         }
 
         /// <summary>
@@ -111,17 +108,17 @@ namespace CodeEnv.Master.GameContent {
 
         public string DebugName {
             get {
-                return DebugNameFormat.Inject(GetType().Name, Thermal.FormatValue(), Atomic.FormatValue(), Kinetic.FormatValue());
+                return DebugNameFormat.Inject(GetType().Name, Thermal.FormatValue(), Structural.FormatValue(), Incursion.FormatValue());
             }
         }
 
-        public float Total { get { return Thermal + Atomic + Kinetic; } }
+        public float Total { get { return Thermal + Structural + Incursion; } }
 
         public float Thermal { get; private set; }
 
-        public float Atomic { get; private set; }
+        public float Structural { get; private set; }
 
-        public float Kinetic { get; private set; }
+        public float Incursion { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DamageStrength" /> struct.
@@ -136,11 +133,11 @@ namespace CodeEnv.Master.GameContent {
                 case DamageCategory.Thermal:
                     Thermal = value;
                     break;
-                case DamageCategory.Atomic:
-                    Atomic = value;
+                case DamageCategory.Structural:
+                    Structural = value;
                     break;
-                case DamageCategory.Kinetic:
-                    Kinetic = value;
+                case DamageCategory.Incursion:
+                    Incursion = value;
                     break;
                 case DamageCategory.None:
                 default:
@@ -151,25 +148,25 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Initializes a new instance of the <see cref="DamageStrength" /> struct.
         /// </summary>
-        /// <param name="thermal"><c>DamageCategory.Thermal</c> value.</param>
-        /// <param name="atomic"><c>DamageCategory.Atomic</c> value.</param>
-        /// <param name="kinetic"><c>DamageCategory.Kinetic</c> value.</param>
-        public DamageStrength(float thermal, float atomic, float kinetic)
+        /// <param name="thermal">The thermal.</param>
+        /// <param name="structural">The structural.</param>
+        /// <param name="incursion">The incursion.</param>
+        public DamageStrength(float thermal, float structural, float incursion)
             : this() {
-            Utility.ValidateNotNegative(thermal, atomic, kinetic);
+            Utility.ValidateNotNegative(thermal, structural, incursion);
             Thermal = thermal;
-            Atomic = atomic;
-            Kinetic = kinetic;
+            Structural = structural;
+            Incursion = incursion;
         }
 
         public float GetValue(DamageCategory damageCat) {
             switch (damageCat) {
                 case DamageCategory.Thermal:
                     return Thermal;
-                case DamageCategory.Atomic:
-                    return Atomic;
-                case DamageCategory.Kinetic:
-                    return Kinetic;
+                case DamageCategory.Structural:
+                    return Structural;
+                case DamageCategory.Incursion:
+                    return Incursion;
                 case DamageCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(damageCat));
@@ -178,14 +175,16 @@ namespace CodeEnv.Master.GameContent {
 
         private string ConstructLabelOutput(bool includeTotalValue) {
             string thermal = Thermal.FormatValue();
-            string atomic = Atomic.FormatValue();
-            string kinetic = Kinetic.FormatValue();
+            string structural = Structural.FormatValue();
+            string incursion = Incursion.FormatValue();
 
             if (includeTotalValue) {
                 string total = Total.FormatValue();
-                return LabelFormatWithTotal.Inject(total, thermal, atomic, kinetic);
+                return LabelFormatWithTotal.Inject(total, DamageCategory.Thermal.GetEnumAttributeText(), thermal,
+                    DamageCategory.Structural.GetEnumAttributeText(), structural, DamageCategory.Incursion.GetEnumAttributeText(), incursion);
             }
-            return LabelFormatNoTotal.Inject(thermal, atomic, kinetic);
+            return LabelFormatNoTotal.Inject(DamageCategory.Thermal.GetEnumAttributeText(), thermal, DamageCategory.Structural.GetEnumAttributeText(),
+                structural, DamageCategory.Incursion.GetEnumAttributeText(), incursion);
         }
 
         #region Object.Equals and GetHashCode Override
@@ -206,8 +205,8 @@ namespace CodeEnv.Master.GameContent {
             unchecked { // http://dobrzanski.net/2010/09/13/csharp-gethashcode-cause-overflowexception/
                 int hash = 17;  // 17 = some prime number
                 hash = hash * 31 + Thermal.GetHashCode(); // 31 = another prime number
-                hash = hash * 31 + Atomic.GetHashCode();
-                hash = hash * 31 + Kinetic.GetHashCode();
+                hash = hash * 31 + Structural.GetHashCode();
+                hash = hash * 31 + Incursion.GetHashCode();
                 return hash;
             }
         }
@@ -221,7 +220,7 @@ namespace CodeEnv.Master.GameContent {
                 return string.Empty;
             }
             string totalText = includeTotal ? Total.FormatValue() : string.Empty;
-            return DebugNameFormat.Inject(totalText, Thermal.FormatValue(), Atomic.FormatValue(), Kinetic.FormatValue());
+            return DebugNameFormat.Inject(totalText, Thermal.FormatValue(), Structural.FormatValue(), Incursion.FormatValue());
         }
 
         public override string ToString() {
@@ -231,7 +230,7 @@ namespace CodeEnv.Master.GameContent {
         #region IEquatable<DamageStrength> Members
 
         public bool Equals(DamageStrength other) {
-            return Thermal == other.Thermal && Atomic == other.Atomic && Kinetic == other.Kinetic;
+            return Thermal == other.Thermal && Structural == other.Structural && Incursion == other.Incursion;
         }
 
         #endregion

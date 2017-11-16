@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="cmdTransform">The command transform.</param>
         /// <param name="formationRadius">The resulting unit formation radius.</param>
         /// <returns></returns>
-        IList<FormationStationSlotInfo> GenerateBaseFormation(Formation formation, Transform cmdTransform, out float formationRadius);
+        List<FormationStationSlotInfo> GenerateBaseFormation(Formation formation, Transform cmdTransform, out float formationRadius);
 
         /// <summary>
         /// Generates the specified formation for a Fleet.
@@ -44,7 +44,20 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="cmdTransform">The command transform.</param>
         /// <param name="formationRadius">The resulting unit formation radius.</param>
         /// <returns></returns>
-        IList<FormationStationSlotInfo> GenerateFleetFormation(Formation formation, Transform cmdTransform, out float formationRadius);
+        List<FormationStationSlotInfo> GenerateFleetFormation(Formation formation, Transform cmdTransform, out float formationRadius);
+
+        /// <summary>
+        /// Generates a formation to hold ships that are resident in a Base's Hanger.
+        /// Returns a list of FormationStationSlotInfo instances containing the slotID and the local space relative
+        /// position (offset relative to the position of the followTransform) of each station slot in the formation which can,
+        /// but does not need to include a slot at the location of the followTransform.
+        /// <remarks>Including 'formation' allows future use of other hanger formations.</remarks>
+        /// </summary>
+        /// <param name="formation">The hanger formation.</param>
+        /// <param name="followTransform">The transform this formation is to follow.</param>
+        /// <param name="formationRadius">The resulting hanger formation radius.</param>
+        /// <returns></returns>
+        List<FormationStationSlotInfo> GenerateHangerFormation(Formation formation, Transform followTransform, out float formationRadius);
 
     }
 }

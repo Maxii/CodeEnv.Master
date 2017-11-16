@@ -28,6 +28,7 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         bool IsAttacking(IUnitCmd_Ltd unitCmd);
 
+        [System.Obsolete]
         bool IsLoneCmd { get; }
 
         /// <summary>

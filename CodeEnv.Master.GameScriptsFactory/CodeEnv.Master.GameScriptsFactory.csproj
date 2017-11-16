@@ -66,6 +66,9 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Framework\AAutoUnitCreator.cs" />
+    <Compile Include="Game\Framework\FleetCreator.cs" />
+    <Compile Include="Generic\Utility\GameScriptsUtility.cs" />
     <Compile Include="Generic\Graphics\ABaseUnitHudForm.cs" />
     <Compile Include="Generic\Graphics\AFleetUnitHudForm.cs" />
     <Compile Include="Game\GUI\AiFacilityInteractibleHudForm.cs" />
@@ -104,9 +107,7 @@
     <Compile Include="Generic\Graphics\AEquipmentHoveredHudForm.cs" />
     <Compile Include="Generic\Graphics\ADesignHoveredHudForm.cs" />
     <Compile Include="Game\Gameplay\AssaultVehicle.cs" />
-    <Compile Include="Generic\Framework\ALoneUnitCreator.cs" />
     <Compile Include="Game\Framework\FleetNavigator.cs" />
-    <Compile Include="Game\Framework\LoneFleetCreator.cs" />
     <Compile Include="Game\Gameplay\KinematicProjectile.cs" />
     <Compile Include="Game\GUI\ShipDesignWindow.cs" />
     <Compile Include="Game\GUI\DesignEquipmentStorage.cs" />
@@ -133,6 +134,7 @@
     <Compile Include="Game\GUI\NonUserStarInteractibleHudForm.cs" />
     <Compile Include="Game\GUI\CombatStanceChangeGuiElement.cs" />
     <Compile Include="Game\GUI\StrengthGuiElement.cs" />
+    <Compile Include="Game\Framework\Hanger.cs" />
     <Compile Include="ThirdParty\MyDragDropItem.cs" />
     <Compile Include="ThirdParty\MyNGPathfindingGraph.cs" />
     <Compile Include="ThirdParty\MyPlaySFX.cs" />
@@ -142,11 +144,10 @@
     <Compile Include="Generic\Framework\NewGameSystemConfigurator.cs" />
     <Compile Include="Game\Framework\SystemCreator.cs" />
     <Compile Include="Generic\Graphics\AGuiMenuPopupListBase.cs" />
-    <Compile Include="Generic\Framework\AAutoUnitCreator.cs" />
     <Compile Include="Generic\Framework\ADebugUnitCreator.cs" />
-    <Compile Include="Game\Framework\FleetCreator.cs" />
-    <Compile Include="Game\Framework\SettlementCreator.cs" />
-    <Compile Include="Game\Framework\StarbaseCreator.cs" />
+    <Compile Include="Game\Framework\AutoFleetCreator.cs" />
+    <Compile Include="Game\Framework\AutoSettlementCreator.cs" />
+    <Compile Include="Game\Framework\AutoStarbaseCreator.cs" />
     <Compile Include="Generic\Framework\FormationGenerator.cs" />
     <Compile Include="Game\_Debug\FormationGridOrganizer.cs" />
     <Compile Include="Game\Gameplay\Beam.cs" />

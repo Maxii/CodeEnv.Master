@@ -75,13 +75,13 @@ namespace CodeEnv.Master.GameContent {
             set { SetProperty<AlertStatus>(ref _alertStatus, value, "AlertStatus", AlertStatusPropChangedHandler); }
         }
 
-        private Formation _unitFormation;
-        public Formation UnitFormation {
+        private Formation _formation;
+        public Formation Formation {
             get {
-                D.AssertNotDefault((int)_unitFormation, DebugName);
-                return _unitFormation;
+                D.AssertNotDefault((int)_formation, DebugName);
+                return _formation;
             }
-            set { SetProperty<Formation>(ref _unitFormation, value, "UnitFormation"); }
+            set { SetProperty<Formation>(ref _formation, value, "Formation"); }
         }
 
         private AUnitElementData _hqElementData;
@@ -97,10 +97,7 @@ namespace CodeEnv.Master.GameContent {
         private Hero _hero = TempGameValues.NoHero;
         public Hero Hero {
             get { return _hero; }
-            set {
-                D.AssertNotNull(value, DebugName); // Hero should never be changed to null
-                SetProperty<Hero>(ref _hero, value, "Hero", HeroPropChangedHandler);
-            }
+            set { SetProperty<Hero>(ref _hero, value, "Hero", HeroPropChangedHandler); }
         }
 
         private float _currentCmdEffectiveness;
@@ -253,7 +250,7 @@ namespace CodeEnv.Master.GameContent {
             // 3.30.17 Activation of FtlDampener handled by HandleAlertStatusChanged
         }
 
-        public void ActivateSensors() {
+        public void ActivateCmdSensors() {
             // 5.13.17 Moved from Data.CommenceOperations to allow Cmd.CommenceOperations to call when
             // it is prepared to detect and be detected - aka after it enters Idling state.
             if (!_debugCntls.DeactivateMRSensors) {
@@ -280,6 +277,7 @@ namespace CodeEnv.Master.GameContent {
         #region Event and Property Change Handlers
 
         private void HeroPropChangedHandler() {
+            D.AssertNotNull(Hero); // TempGameValues.NoHero but never null
             HandleHeroChanged();
         }
 
@@ -567,7 +565,7 @@ namespace CodeEnv.Master.GameContent {
             UnitWeaponsRange = new RangeDistance(shortRangeDistance, mediumRangeDistance, longRangeDistance);
         }
 
-        private void RecalcUnitSensorRange() {
+        protected void RecalcUnitSensorRange() {
             var shortRangeSensors = _elementsData.SelectMany(ed => ed.Sensors).Where(s => s.IsOperational);
             var mediumRangeSensors = Sensors.Where(s => s.RangeCategory == RangeCategory.Medium && s.IsOperational);
             var longRangeSensors = Sensors.Where(s => s.RangeCategory == RangeCategory.Long && s.IsOperational);
@@ -581,8 +579,8 @@ namespace CodeEnv.Master.GameContent {
             UnitOutputs = _elementsData.Select(ed => ed.Outputs).Sum();
         }
 
-        protected override void HandleDeath() {
-            base.HandleDeath();
+        protected sealed override void DeactivateAllEquipment() {
+            base.DeactivateAllEquipment();
             Sensors.ForAll(sens => sens.IsActivated = false);
             FtlDampener.IsActivated = false;
         }

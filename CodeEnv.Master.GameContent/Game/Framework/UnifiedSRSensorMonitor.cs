@@ -51,7 +51,7 @@ namespace CodeEnv.Master.GameContent {
 
         public bool ShowDebugLog { get { return _parentCmd.ShowDebugLog; } }
 
-        public bool IsOperational { get { return _parentCmd.IsOperational; } }
+        ////public bool IsOperational { get { return _parentCmd.IsOperational; } }
 
         /// <summary>
         /// Indicates whether there are any enemy UnitElements in range.
@@ -235,7 +235,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public void RemoveEnemyElement(IUnitElement_Ltd element, IElementSensorRangeMonitor monitor) {
-            D.Assert(IsOperational, DebugName);
+            D.Assert(!_parentCmd.IsDead);
             HashSet<IUnitElement_Ltd> elements;
             bool isKeyPresent = _enemyElementsByMonitorLookup.TryGetValue(monitor, out elements);
             D.Assert(isKeyPresent, "{0}: {1} not found when removing {2}.".Inject(DebugName, monitor.DebugName, element.DebugName));
@@ -270,7 +270,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public void RemoveWarEnemyElement(IUnitElement_Ltd element, IElementSensorRangeMonitor monitor) {
-            D.Assert(IsOperational, DebugName);
+            D.Assert(!_parentCmd.IsDead);
             HashSet<IUnitElement_Ltd> elements;
             bool isKeyPresent = _warEnemyElementsByMonitorLookup.TryGetValue(monitor, out elements);
             D.Assert(isKeyPresent);
@@ -305,7 +305,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public void RemoveEnemyCmd(IUnitCmd_Ltd cmd, IElementSensorRangeMonitor monitor) {
-            D.Assert(IsOperational, DebugName);
+            D.Assert(!_parentCmd.IsDead);
             HashSet<IUnitCmd_Ltd> cmds;
             bool isKeyPresent = _enemyCmdsByMonitorLookup.TryGetValue(monitor, out cmds);
             D.Assert(isKeyPresent, "{0}: {1} not present. Frame = {2}.".Inject(DebugName, monitor.DebugName, Time.frameCount));
@@ -342,7 +342,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public void RemoveWarEnemyCmd(IUnitCmd_Ltd cmd, IElementSensorRangeMonitor monitor) {
-            D.Assert(IsOperational, DebugName);
+            D.Assert(!_parentCmd.IsDead);
             HashSet<IUnitCmd_Ltd> cmds;
             bool isKeyPresent = _warEnemyCmdsByMonitorLookup.TryGetValue(monitor, out cmds);
             D.Assert(isKeyPresent);
@@ -417,7 +417,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="monitor">The monitor.</param>
         public void Remove(IElementSensorRangeMonitor monitor) {
-            D.Assert(IsOperational, DebugName);
+            D.Assert(!_parentCmd.IsDead);
             //D.Log(ShowDebugLog, "{0}.RemoveMonitor. Monitor = {1}. Frame = {2}.", DebugName, monitor.DebugName, Time.frameCount);
             HashSet<IUnitElement_Ltd> elements;
             bool isKeyPresent = _enemyElementsByMonitorLookup.TryGetValue(monitor, out elements);

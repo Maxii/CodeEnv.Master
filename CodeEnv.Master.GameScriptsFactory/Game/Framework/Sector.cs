@@ -60,12 +60,6 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     public event EventHandler<InfoAccessChangedEventArgs> infoAccessChgd;
 
     /// <summary>
-    /// Indicates whether this sector is on the outer periphery of the universe.
-    /// </summary>
-    [Obsolete]
-    public bool IsOnPeriphery { get; private set; }
-
-    /// <summary>
     /// The SectorCategory(Core, Peripheral or Rim) of this Sector.
     /// </summary>
     public SectorCategory Category { get; private set; }
@@ -153,14 +147,6 @@ public class Sector : APropertyChangeTracking, IDisposable, ISector, ISector_Ltd
     private DebugSettings _debugSettings;
 
     #region Initialization
-
-    [Obsolete]
-    public Sector(Vector3 position, bool isOnPeriphery) {
-        Position = position;
-        IsOnPeriphery = isOnPeriphery;
-        Initialize();
-        Subscribe();
-    }
 
     public Sector(Vector3 position, SectorCategory category) {
         Position = position;

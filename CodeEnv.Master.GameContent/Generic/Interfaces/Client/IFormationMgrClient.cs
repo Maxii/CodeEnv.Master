@@ -23,9 +23,9 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IFormationMgrClient : IDebugable {
 
-        Formation UnitFormation { get; }
+        Formation Formation { get; }
 
-        float UnitMaxFormationRadius { set; }
+        void HandleMaxFormationRadiusDetermined(float maxFormationRadius);
 
         Transform transform { get; }
 

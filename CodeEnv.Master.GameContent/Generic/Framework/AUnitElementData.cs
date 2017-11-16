@@ -187,10 +187,25 @@ namespace CodeEnv.Master.GameContent {
             RecalcWeaponsRange();
         }
 
-        public void ActivateSensors() {
-            // 5.13.17 Moved from Data.CommenceOperations to allow Element.CommenceOperations to call when
-            // it is prepared to detect and be detected - aka after it enters Idling state.
+        /// <summary>
+        /// Activates the Element's SRSensors.
+        /// <remarks>5.13.17 Moved from Data.CommenceOperations to allow Element.CommenceOperations to call when
+        /// it is prepared to detect and be detected - aka after it enters Idling state.</remarks>
+        /// </summary>
+        public void ActivateSRSensors() {
             Sensors.ForAll(s => s.IsActivated = true);
+            RecalcSensorRange();
+        }
+
+        /// <summary>
+        /// Deactivates the Element's SRSensors.
+        /// <remarks>11.3.17 Used primarily to allow Ship to deactivate its SRSensors when the Ship's
+        /// Command is nulled either temporarily (in transition from one command to another) or semi-permanently
+        /// when it is initially constructed or refitted at a BaseHanger. Otherwise, active SRSensors will try to
+        /// communicate with FleetCommand's UnifiedSRSensorMonitor which is not there.</remarks>
+        /// </summary>
+        public void DeactivateSensors() {
+            Sensors.ForAll(s => s.IsActivated = false);
             RecalcSensorRange();
         }
 
@@ -210,7 +225,7 @@ namespace CodeEnv.Master.GameContent {
             return outputsStorage;
         }
 
-        public virtual void HandleConstructionComplete() {
+        public virtual void RestoreInitialConstructionValues() {
             // Outputs regenerated from equipment in derived classes
             RemoveDamageFromAllEquipment();
             CurrentHitPoints = MaxHitPoints;
@@ -232,11 +247,11 @@ namespace CodeEnv.Master.GameContent {
             return refitStorage;
         }
 
-        public virtual void HandleRefitCanceled(RefitStorage valuesBeforeRefit) {
+        public virtual void RestoreRefitValues(RefitStorage valuesPriorToRefit) {
             // UNCLEAR currently restoring previous values, but consider leaving most as is requiring repair
-            Design = valuesBeforeRefit.Design;
-            CurrentHitPoints = valuesBeforeRefit.CurrentHitPts;
-            valuesBeforeRefit.EquipmentDamaged.RestoreUndamagedState();
+            Design = valuesPriorToRefit.Design;
+            CurrentHitPoints = valuesPriorToRefit.CurrentHitPts;
+            valuesPriorToRefit.EquipmentDamaged.RestoreUndamagedState();
             // Outputs regenerated from equipment in derived classes
         }
 
@@ -250,7 +265,7 @@ namespace CodeEnv.Master.GameContent {
         /// as refit proceeds and doesn't interfere with use of operational equipment when AlertLevel changes.</remarks>
         /// </summary>
         /// <param name="damagePercent">The damage percent.</param>
-        public EquipmentDamagedFromRefit DamageEquipment(float damagePercent) {
+        public virtual EquipmentDamagedFromRefit DamageEquipment(float damagePercent) {
             Utility.ValidateForRange(damagePercent, Constants.ZeroPercent, Constants.OneHundredPercent);
 
             var equipDamagedFromRefit = new EquipmentDamagedFromRefit();
@@ -284,7 +299,7 @@ namespace CodeEnv.Master.GameContent {
             return equipDamagedFromRefit;
         }
 
-        public void RemoveDamageFromAllEquipment() {
+        public virtual void RemoveDamageFromAllEquipment() {
             PassiveCountermeasures.Where(cm => cm.IsDamageable).ForAll(cm => cm.IsDamaged = false);
             ActiveCountermeasures.Where(cm => cm.IsDamageable).ForAll(cm => cm.IsDamaged = false);
             ShieldGenerators.Where(gen => gen.IsDamageable).ForAll(gen => gen.IsDamaged = false);
@@ -412,8 +427,14 @@ namespace CodeEnv.Master.GameContent {
             OffensiveStrength = new CombatStrength(Weapons);
         }
 
-        protected override void HandleDeath() {
-            base.HandleDeath();
+        public void HandleRefitReplacementCompleted() {
+            _isDead = true; // avoids firing any IsDead property change handlers
+            IsOperational = false;  // we want these property change handlers
+            DeactivateAllEquipment();
+        }
+
+        protected override void DeactivateAllEquipment() {
+            base.DeactivateAllEquipment();
             Weapons.ForAll(weap => weap.IsActivated = false);
             Sensors.ForAll(sens => sens.IsActivated = false);
             ActiveCountermeasures.ForAll(acm => acm.IsActivated = false);
@@ -437,6 +458,7 @@ namespace CodeEnv.Master.GameContent {
             public IEnumerable<ShieldGenerator> ShieldGenerators { get; set; }
             public IEnumerable<AWeapon> Weapons { get; set; }
             public IEnumerable<ElementSensor> Sensors { get; set; }
+            public Engine FtlEngine { get; set; }
 
             public EquipmentDamagedFromRefit() { }
 
@@ -446,6 +468,9 @@ namespace CodeEnv.Master.GameContent {
                 ShieldGenerators.ForAll(sg => sg.IsDamaged = false);
                 Weapons.ForAll(w => w.IsDamaged = false);
                 Sensors.ForAll(s => s.IsDamaged = false);
+                if (FtlEngine != null) {
+                    FtlEngine.IsDamaged = false;
+                }
             }
         }
 

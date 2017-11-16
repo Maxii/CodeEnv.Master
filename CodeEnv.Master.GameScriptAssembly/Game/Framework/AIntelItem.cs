@@ -29,7 +29,7 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem, IIntelItem_Ltd,
 
     public IntelCoverage UserIntelCoverage { get { return Data.GetIntelCoverage(_gameMgr.UserPlayer); } }
 
-    public new AIntelItemData Data {
+    protected new AIntelItemData Data {
         get { return base.Data as AIntelItemData; }
         set { base.Data = value; }
     }
@@ -73,7 +73,7 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem, IIntelItem_Ltd,
         return Data.TrySetIntelCoverage(player, newCoverage, out resultingCoverage);
     }
 
-    protected override void AssessIsDiscernibleToUser() {
+    protected sealed override void AssessIsDiscernibleToUser() {
         // 11.13.16 isInMainCameraLOS must start true to initialize DisplayMgr when UserIntelCoverage > None
         // as this assessment is only called from CommenceOperations, DisplayMgr or when UserIntelCoverage changes. 
         // Without starting true, if UserIntelCoverage starts > None (DebugControls.FullIntelOfDetectedItems or User-owned item), 
@@ -149,7 +149,6 @@ public abstract class AIntelItem : ADiscernibleItem, IIntelItem, IIntelItem_Ltd,
         base.HandleOwnerChanged();
         AssessAssigningComprehensiveIntelCoverage();
     }
-
 
     private void AssessAssigningComprehensiveIntelCoverage() {
         if (_debugCntls.IsAllIntelCoverageComprehensive) {

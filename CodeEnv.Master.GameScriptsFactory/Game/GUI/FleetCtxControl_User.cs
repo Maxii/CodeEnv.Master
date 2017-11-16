@@ -46,9 +46,8 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
 
     private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] {     FleetDirective.Join,
                                                                                             FleetDirective.Move,
-                                                                                            FleetDirective.FullSpeedMove };
-
-    private static ShipDirective[] _userRemoteShipDirectives = new ShipDirective[] { ShipDirective.Join };
+                                                                                            FleetDirective.FullSpeedMove
+                                                                                        };
 
     protected override IEnumerable<FleetDirective> UserMenuOperatorDirectives {
         get { return _userMenuOperatorDirectives; }
@@ -56,10 +55,6 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
 
     protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
         get { return _userRemoteFleetDirectives; }
-    }
-
-    protected override IEnumerable<ShipDirective> UserRemoteShipDirectives {
-        get { return _userRemoteShipDirectives; }
     }
 
     protected override Vector3 PositionForDistanceMeasurements { get { return _fleetMenuOperator.Position; } }
@@ -102,12 +97,11 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
                 return !_fleetMenuOperator.IsAttackCapable;
             case FleetDirective.AssumeFormation:
             case FleetDirective.Scuttle:
-                return _fleetMenuOperator.IsCurrentOrderDirectiveAnyOf(directive);
+                return _fleetMenuOperator.IsCurrentOrderDirectiveAnyOf(FleetDirective.Scuttle);
             case FleetDirective.ChangeHQ:
-                return _fleetMenuOperator.Elements.Count == Constants.One;
+                return _fleetMenuOperator.ElementCount == Constants.One;
             case FleetDirective.Join:
-                return _fleetMenuOperator.Elements.Count > 1 ||
-                    !_userKnowledge.OwnerFleets.Where(fCmd => fCmd.IsJoinable && !fCmd.IsLoneCmd).Except(_fleetMenuOperator).Any();
+                return !_userKnowledge.AreAnyFleetsJoinableBy(_fleetMenuOperator);
             case FleetDirective.Disband:
             case FleetDirective.Patrol:
             case FleetDirective.Guard:
@@ -131,7 +125,10 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
     protected override bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(FleetDirective directive, out IEnumerable<INavigableDestination> targets) {
         switch (directive) {
             case FleetDirective.Join:
-                targets = _userKnowledge.OwnerFleets.Where(fCmd => fCmd.IsJoinable && !fCmd.IsLoneCmd).Except(_fleetMenuOperator).Cast<INavigableDestination>();
+                IEnumerable<IFleetCmd> joinableFleets;
+                bool hasJoinableFleets = _userKnowledge.TryGetJoinableFleetsFor(_fleetMenuOperator, out joinableFleets);
+                D.Assert(hasJoinableFleets);
+                targets = joinableFleets.Cast<INavigableDestination>();
                 return true;
             case FleetDirective.Patrol:
                 // TODO: More selective of patrol friendly systems. Other patrol targets should be explicitly chosen by user
@@ -173,19 +170,11 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
             case FleetDirective.Join:
-                return (_remoteUserOwnedSelectedItem as FleetCmdItem).Elements.Count > 1 || !_fleetMenuOperator.IsJoinable;
+                int remoteFleetElementCount = (_remoteUserOwnedSelectedItem as FleetCmdItem).ElementCount;
+                return !_fleetMenuOperator.IsJoinableBy(remoteFleetElementCount);
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
                 return false;
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
-        }
-    }
-
-    protected override bool IsUserRemoteShipMenuItemDisabledFor(ShipDirective directive) {
-        switch (directive) {
-            case ShipDirective.Join:
-                return _fleetMenuOperator.IsLoneCmd || !_fleetMenuOperator.IsJoinable;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
@@ -203,11 +192,6 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
     protected override void HandleMenuPick_UserRemoteFleetIsSelected(int itemID) {
         base.HandleMenuPick_UserRemoteFleetIsSelected(itemID);
         IssueRemoteUserFleetOrder(itemID);
-    }
-
-    protected override void HandleMenuPick_UserRemoteShipIsSelected(int itemID) {
-        base.HandleMenuPick_UserRemoteShipIsSelected(itemID);
-        IssueRemoteUserShipOrder(itemID);
     }
 
     private void IssueUserFleetMenuOperatorOrder(int itemID) {
@@ -235,13 +219,39 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
         D.Assert(isOrderInitiated);
     }
 
-    private void IssueRemoteUserShipOrder(int itemID) {
-        var directive = (ShipDirective)_directiveLookup[itemID];
-        D.AssertEqual(ShipDirective.Join, directive);  // HACK
-        var remoteShip = _remoteUserOwnedSelectedItem as ShipItem;
-        bool isOrderInitiated = remoteShip.InitiateNewOrder(new ShipOrder(directive, OrderSource.User, target: _fleetMenuOperator));
-        D.Assert(isOrderInitiated);
-    }
+    #region Archive
+
+    // 11.10.17 Removed menu ability to right click a single ship in another fleet and tell it to join this one. Not interesting.
+
+    ////private static ShipDirective[] _userRemoteShipDirectives = new ShipDirective[] { ShipDirective.Join };
+
+    ////protected override IEnumerable<ShipDirective> UserRemoteShipDirectives {
+    ////    get { return _userRemoteShipDirectives; }
+    ////}
+
+    ////protected override bool IsUserRemoteShipMenuItemDisabledFor(ShipDirective directive) {
+    ////    switch (directive) {
+    ////        case ShipDirective.Join:
+    ////            return _fleetMenuOperator.IsLoneCmd || !_fleetMenuOperator.IsJoinable;
+    ////        default:
+    ////            throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
+    ////    }
+    ////}
+
+    ////protected override void HandleMenuPick_UserRemoteShipIsSelected(int itemID) {
+    ////    base.HandleMenuPick_UserRemoteShipIsSelected(itemID);
+    ////    IssueRemoteUserShipOrder(itemID);
+    ////}
+
+    ////private void IssueRemoteUserShipOrder(int itemID) {
+    ////    var directive = (ShipDirective)_directiveLookup[itemID];
+    ////    D.AssertEqual(ShipDirective.Join, directive);  // HACK
+    ////    var remoteShip = _remoteUserOwnedSelectedItem as ShipItem;
+    ////    bool isOrderInitiated = remoteShip.InitiateNewOrder(new ShipOrder(directive, OrderSource.User, target: _fleetMenuOperator));
+    ////    D.Assert(isOrderInitiated);
+    ////}
+
+    #endregion
 
 }
 

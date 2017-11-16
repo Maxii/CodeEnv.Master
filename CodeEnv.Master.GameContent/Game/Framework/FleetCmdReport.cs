@@ -130,7 +130,7 @@ namespace CodeEnv.Master.GameContent {
                 SectorID = fData.SectorID;
             }
             if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Formation)) {
-                Formation = fData.UnitFormation;
+                Formation = fData.Formation;
             }
             if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.Target)) {
                 Target = fData.Target;

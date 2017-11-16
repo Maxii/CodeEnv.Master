@@ -28,8 +28,6 @@ namespace CodeEnv.Master.GameContent {
 
         event EventHandler isAvailableChanged;
 
-        event EventHandler isOperationalOneshot;
-
         event EventHandler unitOutputsChanged;
 
         bool IsOwnerChangeUnderway { get; }
@@ -48,6 +46,7 @@ namespace CodeEnv.Master.GameContent {
         /// <remarks>Used by PlayerAIMgr to determine the orders to issue a LoneFleet once it becomes available.</remarks>
         /// <remarks>A FleetCmd with only 1 element is not necessarily a LoneFleetCmd.</remarks>
         /// </summary>
+        [Obsolete]
         bool IsLoneCmd { get; }
 
         /// <summary>
@@ -57,6 +56,10 @@ namespace CodeEnv.Master.GameContent {
         /// elements have been added during construction.</remarks>
         /// </summary>
         bool IsJoinable { get; }
+
+        bool IsJoinableBy(int additionalElementCount);
+
+        int ElementCount { get; }
 
         string UnitName { get; set; }
 

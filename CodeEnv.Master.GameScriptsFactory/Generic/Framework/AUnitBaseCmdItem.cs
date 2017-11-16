@@ -57,21 +57,13 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         set { base.Data = value; }
     }
 
-    public override bool IsJoinable {
-        get {
-            bool isJoinable = Utility.IsInRange(Elements.Count, Constants.One, TempGameValues.MaxFacilitiesPerBase - Constants.One);
-            if (isJoinable) {
-                D.Assert(FormationMgr.HasRoom);
-            }
-            return isJoinable;
-        }
-    }
-
     public ConstructionManager ConstructionMgr { get; private set; }
 
     public override float ClearanceRadius { get { return CloseOrbitOuterRadius * 2F; } }
 
     public float CloseOrbitOuterRadius { get { return CloseOrbitInnerRadius + TempGameValues.ShipCloseOrbitSlotDepth; } }
+
+    public Hanger Hanger { get; private set; }
 
     private float CloseOrbitInnerRadius { get { return UnitMaxFormationRadius; } }
 
@@ -79,6 +71,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     private IList<IShip_Ltd> _shipsInCloseOrbit;
 
     #region Initialization
+
+    protected override void InitializeValuesAndReferences() {
+        base.InitializeValuesAndReferences();
+        Hanger = gameObject.GetSingleComponentInChildren<Hanger>();
+    }
 
     protected override void InitializeOnData() {
         base.InitializeOnData();
@@ -132,25 +129,13 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     public override void CommenceOperations() {
         base.CommenceOperations();
+        CurrentState = BaseState.Idling;
+        RegisterForOrders();
         ConstructionMgr.InitiateProgressChecks();
-        ActivateSensors();
+        Data.ActivateCmdSensors();
         AssessAlertStatus();
         SubscribeToSensorEvents();
         __IsActivelyOperating = true;
-    }
-
-    protected override void DetermineInitialState() {
-        CurrentState = BaseState.Idling;
-    }
-
-    public sealed override void AddElement(AUnitElementItem element) {
-        if (element.IsOperational) {
-            // 10.25.17 Can't add an operational facility to a non-operational BaseCmd. 
-            // Acceptable combos: Both not operational during starting construction and Cmd operational during runtime
-            // when adding FacilityUnderConstruction that is not yet operational.
-            D.Error("{0}: Adding element {1} with unexpected IsOperational state.", DebugName, element.DebugName);
-        }
-        base.AddElement(element);
     }
 
     /// <summary>
@@ -164,9 +149,10 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         base.RemoveElement(element);
 
         if (IsDead) {
+            D.Assert(!element.IsHQ);
             // BaseCmd has died
             if (Data.UnitHealth > Constants.ZeroF) {
-                D.Error("{0} has UnitHealth of {1} remaining.", DebugName, Data.UnitHealth);
+                D.Error("{0} has UnitHealth of {1:0.00} remaining.", DebugName, Data.UnitHealth);
             }
             return;
         }
@@ -178,6 +164,52 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
             D.Log(ShowDebugLog, "{0} selected {1} as HQFacility after removal of {2}.", DebugName, HQElement.DebugName, removedFacility.DebugName);
         }
     }
+
+    /// <summary>
+    /// Replaces facilityToReplace with replacingFacility in this Base.
+    /// <remarks>Handles adding, removing, cmd assignment, unifiedSRSensorMonitor, rotation, HQ state and 
+    /// formation assignment and position. Client must create the replacingFacility, complete initialization,
+    /// commence operations and destroy facilityToReplace.</remarks>
+    /// </summary>
+    /// <param name="facilityToReplace">The facility to replace.</param>
+    /// <param name="replacingFacility">The replacing facility.</param>
+    public void ReplaceElement(FacilityItem facilityToReplace, FacilityItem replacingFacility) {
+        // AddElement without dealing with Cmd death, HQ or FormationManager
+        Elements.Add(replacingFacility);
+        Data.AddElement(replacingFacility.Data);
+        replacingFacility.Command = this;
+        replacingFacility.AttachAsChildOf(UnitContainer);
+        UnifiedSRSensorMonitor.Add(replacingFacility.SRSensorMonitor);
+
+        replacingFacility.subordinateDeathOneShot += SubordinateDeathEventHandler;
+        replacingFacility.subordinateOwnerChanging += SubordinateOwnerChangingEventHandler;
+        replacingFacility.subordinateDamageIncurred += SubordinateDamageIncurredEventHandler;
+
+        // RemoveElement without dealing with Cmd death, HQ or FormationManager
+        bool isRemoved = Elements.Remove(facilityToReplace);
+        D.Assert(isRemoved);
+        Data.RemoveElement(facilityToReplace.Data);
+        UnifiedSRSensorMonitor.Remove(facilityToReplace.SRSensorMonitor);
+
+        facilityToReplace.subordinateDeathOneShot -= SubordinateDeathEventHandler;
+        facilityToReplace.subordinateOwnerChanging -= SubordinateOwnerChangingEventHandler;
+        facilityToReplace.subordinateDamageIncurred -= SubordinateDamageIncurredEventHandler;
+        // no need to null Command as facilityToReplace will be destroyed
+
+        // no need to AssessIcon as replacingFacility only has enhanced performance
+        // no need to worry about IsJoinable as there shouldn't be any checks when using this method
+        replacingFacility.transform.rotation = facilityToReplace.transform.rotation;
+
+        if (facilityToReplace.IsHQ) {
+            // handle all HQ change here without firing HQ change handlers
+            _hqElement = replacingFacility;
+            replacingFacility.IsHQ = true;
+            Data.HQElementData = replacingFacility.Data;
+            AttachCmdToHQElement(); // needs to occur before formation changed
+        }
+        FormationMgr.ReplaceElement(facilityToReplace, replacingFacility);
+    }
+
     /// <summary>
     /// Selects and returns a new HQElement.
     /// <remarks>TEMP public to allow creator use.</remarks>
@@ -215,18 +247,26 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         return IsCurrentStateAnyOf(BaseState.ExecuteAttackOrder) && _fsmTgt == unitCmd;
     }
 
-    protected override void PrepareForOnDeath() {
-        base.PrepareForOnDeath();
-        ConstructionMgr.HandleDeath();
+    public override bool IsJoinableBy(int additionalElementCount) {
+        bool isJoinable = Utility.IsInRange(ElementCount + additionalElementCount, Constants.One, TempGameValues.MaxFacilitiesPerBase);
+        if (isJoinable) {
+            D.Assert(FormationMgr.HasRoomFor(additionalElementCount));
+        }
+        return isJoinable;
     }
 
-    protected override void PrepareForDeadState() {
+    protected override void PrepareForDeathSequence() {
+        base.PrepareForDeathSequence();
+        ConstructionMgr.HandleDeath();
+        Hanger.HandleDeath();
+    }
+
+    protected sealed override void PrepareForDeadState() {
         base.PrepareForDeadState();
-        UponDeath();    // 4.19.17 Do any reqd Callback before exiting current non-Call()ed state
         CurrentOrder = null;
     }
 
-    protected override void InitiateDeadState() {
+    protected override void AssignDeadState() {
         CurrentState = BaseState.Dead;
     }
 
@@ -245,11 +285,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected abstract void ConnectHighOrbitRigidbodyToShipOrbitJoint(FixedJoint shipOrbitJoint);
 
     protected abstract void AttemptHighOrbitRigidbodyDeactivation();
-
-    protected override void HandleFormationChanged() {
-        base.HandleFormationChanged();
-        // UNDONE 9.21.17 order facilities to AssumeFormation if CurrentState allows it. See FleetCmd implementation.
-    }
 
     #region Event and Property Change Handlers
 
@@ -273,6 +308,22 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     }
 
     #endregion
+
+    protected sealed override void HandleFormationChanged() {
+        base.HandleFormationChanged();
+        // UNDONE 9.21.17 order facilities to AssumeFormation if CurrentState allows it. See FleetCmd implementation.
+    }
+
+    protected sealed override void HandleAlertStatusChanged() {
+        base.HandleAlertStatusChanged();
+        Hanger.HandleAlertStatusChange(Data.AlertStatus);
+    }
+
+    protected sealed override void HandleOwnerChanging(Player newOwner) {
+        base.HandleOwnerChanging(newOwner);
+        ConstructionMgr.HandleLosingOwnership();
+        Hanger.HandleLosingOwnership();
+    }
 
     #region Orders
 
@@ -402,12 +453,16 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     /// <summary>
     /// The CmdStaff uses this method to override orders already issued.
+    /// <remarks>Will throw an error if issued while paused.</remarks>
     /// </summary>
     /// <param name="overrideOrder">The CmdStaff's override order.</param>
     /// <param name="retainSuperiorsOrder">if set to <c>true</c> [retain superiors order].</param>
     private void OverrideCurrentOrder(BaseOrder overrideOrder, bool retainSuperiorsOrder) {
         D.AssertEqual(OrderSource.CmdStaff, overrideOrder.Source);
         D.AssertNull(overrideOrder.StandingOrder);
+        // 11.14.17 Shouldn't be possible for CmdStaff to issue an order via this route while paused. e.g. issuing a repair 
+        // order as a consequence of taking damage requires the damage to have been delivered while paused which shouldn't be possible.
+        D.Assert(!_gameMgr.IsPaused);
 
         BaseOrder standingOrder = null;
         if (retainSuperiorsOrder && CurrentOrder != null) {
@@ -439,7 +494,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         ReturnFromCalledStates();
 
         if (CurrentOrder != null) {
-            D.Assert(CurrentOrder.Source > OrderSource.Captain);
+            __ValidateOrder(CurrentOrder);
 
             UponNewOrderReceived();
 
@@ -895,7 +950,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         IUnitCmdRepairCapable thisRepairCapableBase = _fsmTgt as IUnitCmdRepairCapable;
         D.Assert(thisRepairCapableBase.IsRepairingAllowedBy(Owner));
 
-        _fsmFacilityWaitForRepairCount = Elements.Count;
+        _fsmFacilityWaitForRepairCount = ElementCount;
     }
 
     protected IEnumerator Repairing_EnterState() {
@@ -1068,13 +1123,13 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         LogEvent();
         PrepareForDeathEffect();
         StartEffectSequence(EffectSequenceID.Dying);    // currently no death effect for a BaseCmd, just its elements
-        HandleDeathAfterBeginningDeathEffect();
+        HandleDeathEffectBegun();
     }
 
     protected void Dead_UponEffectSequenceFinished(EffectSequenceID effectSeqID) {
         LogEvent();
         D.AssertEqual(EffectSequenceID.Dying, effectSeqID);
-        HandleDeathAfterDeathEffectFinished();
+        HandleDeathEffectFinished();
         DestroyMe(onCompletion: () => DestroyApplicableParents(5F));  // HACK long wait so last element can play death effect
     }
 
@@ -1176,7 +1231,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected override void ValidateCommonCallableStateValues(string calledStateName) {
         base.ValidateCommonCallableStateValues(calledStateName);
         D.AssertNotNull(_fsmTgt);
-        D.Assert(_fsmTgt.IsOperational, _fsmTgt.DebugName);
+        D.Assert(!_fsmTgt.IsDead, _fsmTgt.DebugName);
     }
 
     protected override void ValidateCommonNotCallableStateValues() {
@@ -1256,6 +1311,21 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     #endregion
 
     #region Debug
+
+    protected override void __ValidateAddElement(AUnitElementItem element) {
+        base.__ValidateAddElement(element);
+        if (element.IsOperational) {
+            // 10.25.17 Can't add an operational facility to a non-operational BaseCmd. 
+            // Acceptable combos: Both not operational during starting construction and Cmd operational during runtime
+            // when adding FacilityUnderConstruction that is not yet operational.
+            D.Error("{0}: Adding element {1} with unexpected IsOperational state.", DebugName, element.DebugName);
+        }
+    }
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    private void __ValidateOrder(BaseOrder order) {
+        D.Assert(order.Source > OrderSource.Captain);
+    }
 
     protected override void __ValidateStateForSensorEventSubscription() {
         D.AssertNotEqual(BaseState.None, CurrentState);
@@ -1557,36 +1627,63 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     #endregion
 
+    #region IFormationMgrClient Members
+
+    /// <summary>
+    /// Positions the element in formation. This version simply 'teleports' the element to the designated offset location from the HQElement.
+    /// </summary>
+    /// <param name="element">The element.</param>
+    /// <param name="stationSlotInfo">The slot information.</param>
+    protected sealed override void PositionElementInFormation_Internal(IUnitElement element, FormationStationSlotInfo stationSlotInfo) {
+        FacilityItem facility = element as FacilityItem;
+        facility.transform.localPosition = stationSlotInfo.LocalOffset;
+        facility.__HandleLocalPositionManuallyChanged();
+        //D.Log(ShowDebugLog, "{0} positioned at {1}, offset by {2} from {3} at {4}.",
+        //  element.DebugName, element.Position, stationSlotInfo.LocalOffset, HQElement.DebugName, HQElement.Position);
+    }
+
+    #endregion
+
     #region IConstructionManagerClient Members
 
     void IConstructionManagerClient.HandleConstructionAdded(ConstructionInfo construction) {
         var unitFactory = UnitFactory.Instance;
-        if (construction.Design is FacilityDesign) {
-            RefitConstructionInfo refitConstruction = construction as RefitConstructionInfo;
-            if (refitConstruction != null) {
-                // nothing to do as Element's RefitState is already refitting
-            }
-            else {
+        FacilityDesign facilityDesign = construction.Design as FacilityDesign;
+        if (facilityDesign != null) {
+            if (!construction.IsRefitConstruction) {
                 // brand new construction
                 string name = unitFactory.__GetUniqueFacilityName(construction.Design.DesignName);
-                FacilityItem facilityUnderConstruction = unitFactory.MakeFacilityInstance(Owner, Data.Topography, construction.Design as FacilityDesign, name, UnitContainer.gameObject);
+                FacilityItem facilityUnderConstruction = unitFactory.MakeFacilityInstance(Owner, Data.Topography, facilityDesign, name, UnitContainer.gameObject);
                 construction.Element = facilityUnderConstruction;
                 AddElement(facilityUnderConstruction);
                 facilityUnderConstruction.FinalInitialize();
+                AllKnowledge.Instance.AddInitialConstructionOrRefitReplacementElement(facilityUnderConstruction);
                 facilityUnderConstruction.CommenceOperations(isInitialConstructionNeeded: true);
             }
+            // nothing to do if refitting as Element's RefitState is already handling
         }
         else {
-            string name = unitFactory.__GetUniqueShipName(construction.Design.DesignName);
-            ShipItem shipUnderConstruction = unitFactory.MakeShipInstance(Owner, construction.Design as ShipDesign, name, UnitContainer.gameObject);
-            // UNDONE
+            ShipDesign shipDesign = construction.Design as ShipDesign;
+            D.AssertNotNull(shipDesign);
+            if (!construction.IsRefitConstruction) {
+                // brand new construction
+                string name = unitFactory.__GetUniqueShipName(construction.Design.DesignName);
+                ShipItem shipUnderConstruction = unitFactory.MakeShipInstance(Owner, shipDesign, name, UnitContainer.gameObject);
+                construction.Element = shipUnderConstruction;
+                Hanger.AddShip(shipUnderConstruction);
+                shipUnderConstruction.FinalInitialize();
+                AllKnowledge.Instance.AddInitialConstructionOrRefitReplacementElement(shipUnderConstruction);
+                shipUnderConstruction.CommenceOperations();
+            }
+            // nothing to do if refitting as Element's RefitState is already handling
         }
     }
 
     void IConstructionManagerClient.HandleUncompletedConstructionRemovedFromQueue(ConstructionInfo construction) {
         D.Assert(!construction.IsCompleted);
-        var elementRemoved = construction.Element;
-        elementRemoved.HandleUncompletedRemovalFromConstructionQueue();
+        var removedElement = construction.Element;
+        // if element is ship during initial construction, it will be removed from the hanger when hanger detects its death
+        removedElement.HandleUncompletedRemovalFromConstructionQueue();
     }
 
     #endregion

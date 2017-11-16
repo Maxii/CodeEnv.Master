@@ -102,7 +102,7 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
             case BaseDirective.Repair:
                 return _baseMenuOperator.Data.Health == Constants.OneHundredPercent && _baseMenuOperator.Data.UnitHealth == Constants.OneHundredPercent;
             case BaseDirective.ChangeHQ:
-                return _baseMenuOperator.Elements.Count == Constants.One;
+                return _baseMenuOperator.ElementCount == Constants.One;
             case BaseDirective.Refit:
                 return false;
             default:

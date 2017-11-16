@@ -278,7 +278,7 @@ public abstract class AUnitMemberItem : AMortalItemStateMachine, ISensorDetector
     }
 
     // FIXME: Can't use a protected abstract method when explicitly implementing an interface
-    public abstract void HandleAwarenessChgd(IOwnerItem_Ltd item);
+    public abstract void HandleAwarenessChgd(IMortalItem_Ltd item);
 
     #endregion
 }

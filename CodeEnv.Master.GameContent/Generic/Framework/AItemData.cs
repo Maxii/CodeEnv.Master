@@ -54,8 +54,9 @@ namespace CodeEnv.Master.GameContent {
 
         private bool _isOperational;
         /// <summary>
-        /// Indicates whether this item has commenced operations, and if
-        /// it is a MortalItem, that it is not dead. Set to false to initiate death.
+        /// When <c>true</c> indicates this item has commenced operations, and if it
+        /// is a MortalItem, that it is not dead.
+        /// <remarks>Use IsDead to kill a MortalItem.</remarks>
         /// </summary>
         public bool IsOperational {
             get { return _isOperational; }
@@ -103,7 +104,7 @@ namespace CodeEnv.Master.GameContent {
         public virtual void FinalInitialize() {
             // 8.1.16 moved IsOperational = true here from CommenceOperations to allow all items to be IsOperational 
             // before the first Item.CommenceOperations is called.
-            // 2.6.17 moved IsOperational = true to last thing Item does in FinalInitialize. Its presence here was the first thing that happened.
+            // 2.6.17 moved IsOperational = true to last thing Item does in FinalInitialize.
         }
 
         #endregion
@@ -126,7 +127,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void OwnerPropChangedHandler() {
-            D.AssertNotNull(Owner, DebugName);  // owner can be NoPlayer but never null
+            D.AssertNotNull(Owner, DebugName);  // TempGameValues.NoPlayer but never null
             HandleOwnerChanged();
             // IsOwnerChangeUnderway = false; Handled from AItem when all change work completed
         }

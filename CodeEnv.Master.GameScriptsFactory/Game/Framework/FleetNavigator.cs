@@ -164,13 +164,13 @@ public class FleetNavigator : IDisposable {
     private FleetCmdData _fleetData;
     //private IList<IDisposable> _subscriptions;
 
-    public FleetNavigator(FleetCmdItem fleet, Seeker seeker) {
+    public FleetNavigator(FleetCmdItem fleet, FleetCmdData data, Seeker seeker) {
         ApCourse = new List<IFleetNavigableDestination>();
         _gameTime = GameTime.Instance;
         _gameMgr = GameManager.Instance;
         _jobMgr = JobManager.Instance;
         _fleet = fleet;
-        _fleetData = fleet.Data;
+        _fleetData = data;
         _seeker = InitializeSeeker(seeker);
         Subscribe();
     }

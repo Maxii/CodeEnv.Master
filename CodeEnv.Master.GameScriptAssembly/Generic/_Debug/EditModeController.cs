@@ -36,13 +36,11 @@ public class EditModeController : AMonoBase {
 
     private void UpdateRenderers() {
         var renderers = GetComponentsInChildren<Renderer>();
-        if (renderers.Any()) {
-            renderers.ForAll(r => {
-                r.enabled = enableRenderers;
-                r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                r.receiveShadows = false;
-            });
-        }
+        renderers.ForAll(r => {
+            r.enabled = enableRenderers;
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            r.receiveShadows = false;
+        });
         // OPTIMIZE Can disable GridFramework Renderer to not show grid if choose to customize
     }
 

@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2014 Strategic Forge
+// Copyright © 2012 - 2017 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: IMortalItem.cs
-// Interface for easy access to MonoBehaviours that are AMortalItems.
+// File: ReworkingMode.cs
+// Enum indicating the different kinds of rework that an element can undergo.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,20 +16,17 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
-    using CodeEnv.Master.Common;
-    using UnityEngine;
-
     /// <summary>
-    /// Interface for easy access to MonoBehaviours that are AMortalItems.
+    /// Enum indicating the different kinds of rework that an element can undergo.
+    /// <remarks>Used primarily for control of in-game graphics along with UI icons and buttons.</remarks>
     /// </summary>
-    public interface IMortalItem : IIntelItem {
+    public enum ReworkingMode {
 
-        event EventHandler deathOneShot;
-
-        IntVector3 SectorID { get; }
-
-        Transform transform { get; }
+        None, // not just for error detection
+        Constructing,
+        Disbanding,
+        Refitting,
+        Repairing
 
     }
 }

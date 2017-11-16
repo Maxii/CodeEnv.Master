@@ -95,8 +95,6 @@ public class ShipCloseOrbitSimulator : OrbitSimulator, IShipCloseOrbitSimulator,
 
     public bool IsMobile { get { return OrbitData.IsOrbitedItemMobile; } }
 
-    public bool IsOperational { get { return OrbitData.OrbitedItem.GetComponent<IShipCloseOrbitable>().IsOperational; } }
-
     #endregion
 
     #region IShipNavigableDestination Members

@@ -42,7 +42,6 @@ namespace CodeEnv.Master.GameContent {
         string Name { get; set; }
 
         Player Owner { get; }
-        bool IsOperational { get; }
         float Radius { get; }
         Vector3 Position { get; }
 
