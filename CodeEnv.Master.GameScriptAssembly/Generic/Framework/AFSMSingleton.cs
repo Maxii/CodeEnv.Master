@@ -37,6 +37,8 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
     where T : AMonoSingleton<T>
     where E : struct {
 
+    private const string ExitStateText = "ExitState";
+    private const string EnterStateText = "EnterState";
     private const string MethodNameFormat = "{0}_{1}";
 
     #region RelayToCurrentState
@@ -287,10 +289,10 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
         public IEnumerator enterStateEnumerator = null;
         public IEnumerator exitStateEnumerator = null;
 
-        ////public Action<bool> DoOnHover = DoNothingBoolean;
-        ////public Action<bool> DoOnPress = DoNothingBoolean;
-        ////public Action DoOnClick = DoNothing;
-        ////public Action DoOnDoubleClick = DoNothing;
+        //public Action<bool> DoOnHover = DoNothingBoolean;
+        ///public Action<bool> DoOnPress = DoNothingBoolean;
+        //public Action DoOnClick = DoNothing;
+        //public Action DoOnDoubleClick = DoNothing;
 
         public E currentState;
 
@@ -451,21 +453,19 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
     }
 
     /// <summary>
-    /// Configures the state machine for the current state
+    /// Configures the state machine for the current state.
+    /// <remarks>11.17.17 ExitState methods no longer allowed to return IEnumerator as next state's void PreconfigureCurrentState() will
+    /// always run before the following state's IEnumerator ExitState(). Error check occurs in ConfigureDelegate().</remarks>
     /// </summary>
     protected void ConfigureCurrentState() {
-        bool doesExitStateMethodReturnIEnumerator = false;
         if (state.exitState != null) {
             // runs the exitState of the PREVIOUS state as the state delegates haven't been changed yet
-            doesExitStateMethodReturnIEnumerator = state.exitState.Method.ReturnType == typeof(IEnumerator);
             exitStateCoroutine.Run(state.exitState());  // must call as null stops any prior IEnumerator still running
         }
 
         GetStateMethods();
 
         if (state.enterState != null) {
-            bool doesEnterStateMethodReturnVoid = state.enterState.Method.ReturnType != typeof(IEnumerator);
-            __ValidateMethodReturnTypes(doesExitStateMethodReturnIEnumerator, doesEnterStateMethodReturnVoid);
             PreconfigureCurrentState();
 
             state.enterStateEnumerator = state.enterState();    // a void enterState() method executes immediately here rather than wait until the enterCoroutine makes its next pass
@@ -477,7 +477,7 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
     private void GetStateMethods() {
         //Now we need to configure all of the methods
         state.DoUpdate = ConfigureDelegate<Action>("Update", DoNothing);
-        ////state.DoOccasionalUpdate = ConfigureDelegate<Action>("OccasionalUpdate", DoNothing);
+        //state.DoOccasionalUpdate = ConfigureDelegate<Action>("OccasionalUpdate", DoNothing);
         state.DoLateUpdate = ConfigureDelegate<Action>("LateUpdate", DoNothing);
         state.DoFixedUpdate = ConfigureDelegate<Action>("FixedUpdate", DoNothing);
         //state.DoOnTriggerEnter = ConfigureDelegate<Action<Collider>>("OnTriggerEnter", DoNothingCollider);
@@ -487,13 +487,13 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
         //state.DoOnCollisionExit = ConfigureDelegate<Action<Collision>>("OnCollisionExit", DoNothingCollision);
         //state.DoOnCollisionStay = ConfigureDelegate<Action<Collision>>("OnCollisionStay", DoNothingCollision);
 
-        ////state.DoOnHover = ConfigureDelegate<Action<bool>>("OnHover", DoNothingBoolean);
-        ////state.DoOnPress = ConfigureDelegate<Action<bool>>("OnPress", DoNothingBoolean);
-        ////state.DoOnClick = ConfigureDelegate<Action>("OnClick", DoNothing);
-        ////state.DoOnDoubleClick = ConfigureDelegate<Action>("OnDoubleClick", DoNothing);
+        //state.DoOnHover = ConfigureDelegate<Action<bool>>("OnHover", DoNothingBoolean);
+        //state.DoOnPress = ConfigureDelegate<Action<bool>>("OnPress", DoNothingBoolean);
+        //state.DoOnClick = ConfigureDelegate<Action>("OnClick", DoNothing);
+        //state.DoOnDoubleClick = ConfigureDelegate<Action>("OnDoubleClick", DoNothing);
 
-        state.enterState = ConfigureDelegate<Func<IEnumerator>>("EnterState", DoNothingCoroutine);
-        state.exitState = ConfigureDelegate<Func<IEnumerator>>("ExitState", DoNothingCoroutine);
+        state.enterState = ConfigureDelegate<Func<IEnumerator>>(EnterStateText, DoNothingCoroutine);
+        state.exitState = ConfigureDelegate<Func<IEnumerator>>(ExitStateText, DoNothingCoroutine);
     }
 
     /// <summary>
@@ -542,7 +542,16 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
                 | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.InvokeMethod);
 
             if (mtd != null) {
-                if (typeof(R) == typeof(Func<IEnumerator>) && mtd.ReturnType != typeof(IEnumerator)) {
+                // only enterState and exitState T delegates are of Type Func<IEnumerator> see GetStateMethods above
+                bool isEnterExitStateMethod = typeof(R) == typeof(Func<IEnumerator>);
+                bool isVoidReturnType = mtd.ReturnType != typeof(IEnumerator);
+                bool isExitStateMethod = isEnterExitStateMethod && methodRoot == ExitStateText;
+                if (isExitStateMethod && !isVoidReturnType) {
+                    D.Error("{0} Illegal exit state return type as nextState.PreconfigureState() will always run before lastState.ExitState()!", transform.name);
+                }
+
+                if (isEnterExitStateMethod && isVoidReturnType) {
+                    // the enter or exit method returns void, so adjust it to execute properly when placed in the IEnumerator delegate
                     Action a = Delegate.CreateDelegate(typeof(Action), this, mtd) as Action;
                     Func<IEnumerator> func = () => { a(); return null; };
                     returnValue = func;
@@ -553,27 +562,14 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
             }
             else {
                 returnValue = Default as Delegate;
-                if (methodRoot == _enterStateText || methodRoot == _exitStateText) {
-                    D.Warn("{0} did not find method {1}_{2}. Is it a private method in a base class?", transform.name, state.currentState.ToString(), methodRoot);
-                }
-                else {
-                    //D.Log("{0} did not find method {1}_{2}. Is it a private method in a base class?", transform.name, state.currentState.ToString(), methodRoot);
+                if (methodRoot == EnterStateText || methodRoot == ExitStateText) {
+                    D.Warn("{0} did not find method {1}_{2}. Is it a private method in a base class?",
+                        transform.name, state.currentState.ToString(), methodRoot);
                 }
             }
             lookup[methodRoot] = returnValue;
         }
         return returnValue as R;
-    }
-
-    private void __ValidateMethodReturnTypes(bool exitStateMethodReturnsIEnumerator, bool enterStateMethodReturnsVoid) {
-        if (exitStateMethodReturnsIEnumerator) {    // deadly as preConfigureState will execute before exitState
-            D.Warn("{0} Illegal exit state return type as nextState.PreconfigureState() will always run before lastState.ExitState()!", GetType());
-            if (enterStateMethodReturnsVoid) {
-                string lastStateMsg = LastState != null ? LastState.ToString() : "null";
-                string msg = "{0} Illegal Combination of return types. ExitState: {1}, EntryState: {2}.".Inject(GetType(), lastStateMsg, CurrentState.ToString());
-                throw new InvalidOperationException(msg);  // deadly combination as enter will execute before exit
-            }
-        }
     }
 
     #region Pass On Methods
@@ -639,9 +635,6 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
     #endregion
 
     #region Debug
-
-    private static string _exitStateText = "ExitState";
-    private static string _enterStateText = "EnterState";
 
     #endregion
 

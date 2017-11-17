@@ -194,7 +194,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
 
     private static void DoNothingCollision(Collision other) { }
 
-    ////private static void DoNothingBoolean(bool b) { }
+    //private static void DoNothingBoolean(bool b) { }
 
     #endregion
 
@@ -220,10 +220,10 @@ public abstract class AMortalItemStateMachine : AMortalItem {
         public IEnumerator enterStateEnumerator = null;
         public IEnumerator exitStateEnumerator = null;
 
-        ////public Action<bool> DoOnHover = DoNothingBoolean;
-        ////public Action<bool> DoOnPress = DoNothingBoolean;
-        ////public Action DoOnClick = DoNothing;
-        ////public Action DoOnDoubleClick = DoNothing;
+        //public Action<bool> DoOnHover = DoNothingBoolean;
+        //public Action<bool> DoOnPress = DoNothingBoolean;
+        //public Action DoOnClick = DoNothing;
+        //public Action DoOnDoubleClick = DoNothing;
 
         public object currentState;
 
@@ -397,27 +397,25 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     }
 
     /// <summary>
-    /// Configures the state machine for the current state
+    /// Configures the state machine for the current state.
+    /// <remarks>11.17.17 ExitState methods no longer allowed to return IEnumerator as next state's void PreconfigureCurrentState() will
+    /// always run before the following state's IEnumerator ExitState(). Error check occurs in ConfigureDelegate().</remarks>
     /// </summary>
     private void ConfigureCurrentState() {
         //D.Log(ShowDebugLog, "{0}.ConfigureCurrentState() called.", DebugName);
-        bool doesExitStateMethodReturnIEnumerator = false;
         if (state.exitState != null) {
-            if (LastState != null) {    // object null conditional test in D generates nullReferenceExceptions if object is used in the msg
+            if (LastState != null) {
                 //D.Log(ShowDebugLog, "{0} setting up {1}_ExitState() to run.", DebugName, LastState.ToString());
             }
 
             // runs the exitState of the PREVIOUS state as the state delegates haven't been changed yet
             state.exitStateEnumerator = state.exitState();
-            doesExitStateMethodReturnIEnumerator = state.exitState.Method.ReturnType == typeof(IEnumerator);
             exitStateCoroutine.Run(state.exitStateEnumerator);  // must call as null stops any prior IEnumerator still running
         }
 
         GetStateMethods();
 
         if (state.enterState != null) {
-            bool doesEnterStateMethodReturnVoid = state.enterState.Method.ReturnType != typeof(IEnumerator);
-            __ValidateMethodReturnTypes(doesExitStateMethodReturnIEnumerator, doesEnterStateMethodReturnVoid);
             PreconfigureCurrentState(); // 10.16.16 My addition
 
             //D.Log(ShowDebugLog, "{0} setting up {1}_EnterState() to run. MethodName: {2}.", DebugName, CurrentState.ToString(), state.enterState.Method.Name);
@@ -434,7 +432,7 @@ public abstract class AMortalItemStateMachine : AMortalItem {
         //D.Log(ShowDebugLog, "{0}.GetStateMethods() called.", DebugName);
         //Now we need to configure all of the methods
         state.DoUpdate = ConfigureDelegate<Action>("Update", DoNothing);
-        ////state.DoOccasionalUpdate = ConfigureDelegate<Action>("OccasionalUpdate", DoNothing);
+        //state.DoOccasionalUpdate = ConfigureDelegate<Action>("OccasionalUpdate", DoNothing);
         state.DoLateUpdate = ConfigureDelegate<Action>("LateUpdate", DoNothing);
         state.DoFixedUpdate = ConfigureDelegate<Action>("FixedUpdate", DoNothing);
         state.DoOnTriggerEnter = ConfigureDelegate<Action<Collider>>("OnTriggerEnter", DoNothingCollider);
@@ -444,10 +442,10 @@ public abstract class AMortalItemStateMachine : AMortalItem {
         state.DoOnCollisionExit = ConfigureDelegate<Action<Collision>>("OnCollisionExit", DoNothingCollision);
         state.DoOnCollisionStay = ConfigureDelegate<Action<Collision>>("OnCollisionStay", DoNothingCollision);
 
-        ////state.DoOnHover = ConfigureDelegate<Action<bool>>("OnHover", DoNothingBoolean);
-        ////state.DoOnPress = ConfigureDelegate<Action<bool>>("OnPress", DoNothingBoolean);
-        ////state.DoOnClick = ConfigureDelegate<Action>("OnClick", DoNothing);
-        ////state.DoOnDoubleClick = ConfigureDelegate<Action>("OnDoubleClick", DoNothing);
+        //state.DoOnHover = ConfigureDelegate<Action<bool>>("OnHover", DoNothingBoolean);
+        //state.DoOnPress = ConfigureDelegate<Action<bool>>("OnPress", DoNothingBoolean);
+        //state.DoOnClick = ConfigureDelegate<Action>("OnClick", DoNothing);
+        //state.DoOnDoubleClick = ConfigureDelegate<Action>("OnDoubleClick", DoNothing);
 
         state.enterState = ConfigureDelegate<Func<IEnumerator>>(EnterStateText, DoNothingCoroutine);
         state.exitState = ConfigureDelegate<Func<IEnumerator>>(ExitStateText, DoNothingCoroutine);
@@ -504,7 +502,14 @@ public abstract class AMortalItemStateMachine : AMortalItem {
 
             if (mtd != null) {
                 // only enterState and exitState T delegates are of Type Func<IEnumerator> see GetStateMethods above
-                if (typeof(T) == typeof(Func<IEnumerator>) && mtd.ReturnType != typeof(IEnumerator)) {
+                bool isEnterExitStateMethod = typeof(T) == typeof(Func<IEnumerator>);
+                bool isVoidReturnType = mtd.ReturnType != typeof(IEnumerator);
+                bool isExitStateMethod = isEnterExitStateMethod && methodRoot == ExitStateText;
+                if (isExitStateMethod && !isVoidReturnType) {
+                    D.Error("{0} Illegal exit state return type as nextState.PreconfigureState() will always run before lastState.ExitState()!", DebugName);
+                }
+
+                if (isEnterExitStateMethod && isVoidReturnType) {
                     // the enter or exit method returns void, so adjust it to execute properly when placed in the IEnumerator delegate
                     Action a = Delegate.CreateDelegate(typeof(Action), this, mtd) as Action;
                     Func<IEnumerator> func = () => { a(); return null; };
@@ -520,17 +525,15 @@ public abstract class AMortalItemStateMachine : AMortalItem {
                     D.Warn("{0} did not find method {1}_{2}. Is it a private method in a base class?",
                         DebugName, state.currentState.ToString(), methodRoot);
                 }
-                else {
-                    //                    D.Log(ShowDebugLog, @"{0} did not find method {1}_{2}. \n
-                    //                            This is probably because it is not present, but could it be a private method in a base class?",
-                    //                            DebugName, state.currentState.ToString(), methodRoot);
-                }
             }
             lookup[methodRoot] = returnValue;
         }
         return returnValue as T;
     }
 
+    #region Debug
+
+    [Obsolete]  // 11.17.17 didn't work as I can't determine the parameters since EnterState() and ExitState() are both Func<IEnumerator>
     private void __ValidateMethodReturnTypes(bool exitStateMethodReturnsIEnumerator, bool enterStateMethodReturnsVoid) {
         if (exitStateMethodReturnsIEnumerator) {    // deadly as preConfigureState will execute before exitState
             D.Warn("{0} Illegal exit state return type as nextState.PreconfigureState() will always run before lastState.ExitState()!", DebugName);
@@ -541,6 +544,9 @@ public abstract class AMortalItemStateMachine : AMortalItem {
             }
         }
     }
+
+    #endregion
+
 
     #region Pass On Methods
 
@@ -946,6 +952,51 @@ public abstract class AMortalItemStateMachine : AMortalItem {
 
         #endregion
     }
+
+    #endregion
+
+    #region ConfigureDelegate Archive
+
+    //private T ConfigureDelegate<T>(string methodRoot, T Default) where T : class {
+
+    //    Dictionary<string, Delegate> lookup;
+    //    if (!_cache.TryGetValue(state.currentState, out lookup)) {
+    //        _cache[state.currentState] = lookup = new Dictionary<string, Delegate>();
+    //    }
+    //    Delegate returnValue;
+    //    if (!lookup.TryGetValue(methodRoot, out returnValue)) {
+
+    //        var mtd = GetType().GetMethod(MethodNameFormat.Inject(state.currentState.ToString(), methodRoot), System.Reflection.BindingFlags.Instance
+    //            | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.InvokeMethod);
+
+    //        if (mtd != null) {
+    //            // only enterState and exitState T delegates are of Type Func<IEnumerator> see GetStateMethods above
+    //            if (typeof(T) == typeof(Func<IEnumerator>) && mtd.ReturnType != typeof(IEnumerator)) {
+    //                // the enter or exit method returns void, so adjust it to execute properly when placed in the IEnumerator delegate
+    //                Action a = Delegate.CreateDelegate(typeof(Action), this, mtd) as Action;
+    //                Func<IEnumerator> func = () => { a(); return null; };
+    //                returnValue = func;
+    //            }
+    //            else {
+    //                returnValue = Delegate.CreateDelegate(typeof(T), this, mtd);
+    //            }
+    //        }
+    //        else {
+    //            returnValue = Default as Delegate;
+    //            if (methodRoot == EnterStateText || methodRoot == ExitStateText) {
+    //                D.Warn("{0} did not find method {1}_{2}. Is it a private method in a base class?",
+    //                    DebugName, state.currentState.ToString(), methodRoot);
+    //            }
+    //            else {
+    //                //                    D.Log(ShowDebugLog, @"{0} did not find method {1}_{2}. \n
+    //                //                            This is probably because it is not present, but could it be a private method in a base class?",
+    //                //                            DebugName, state.currentState.ToString(), methodRoot);
+    //            }
+    //        }
+    //        lookup[methodRoot] = returnValue;
+    //    }
+    //    return returnValue as T;
+    //}
 
     #endregion
 
