@@ -430,23 +430,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     protected override void HandleOwnerChanged() {
         base.HandleOwnerChanged();
-
         string fleetRootname = "NewOwnerSingleShipFleet";
         AttemptCommandChange(fleetRootname);
-
-        ////if (UnitElementCount > Constants.One) {
-        ////    string priorCmdName = Command.DebugName;
-        ////    string fleetRootname = "NewOwnerSingleShipFleet";
-        ////    MakeCommandChange(fleetRootname);
-        ////    D.AssertEqual(Owner, Command.Owner);
-        ////    D.Log(ShowDebugLog, "{0} created Cmd {1} in Frame {2}.", DebugName, Command.DebugName, Time.frameCount);
-        ////}
-        ////else {
-        ////    // if only one, Cmd owner change has already been made
-        ////    D.AssertEqual(Constants.One, UnitElementCount);
-        ////    D.AssertEqual(Owner, Command.Owner);
-        ////    D.Log(ShowDebugLog, "{0} just seized its existing Cmd {1} in Frame {2}.", DebugName, Command.DebugName, Time.frameCount);
-        ////}
     }
 
     #region Highlighting
@@ -482,29 +467,17 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     #endregion
 
-    private void MakeCommandChange(string fleetRootname) {
-        D.Assert(UnitElementCount > Constants.One);
-        Command.FormFleetFrom(fleetRootname, this);
-        // This element is now properly parented with the proper Cmd Reference
-    }
-
-    //// <summary>
-    //// Attempts to make a new FleetCmd returning <c>true</c> if needed, aka there is more than one 
-    //// element remaining which will need the existing Cmd when this ship has left.
-    //// If not needed the existing FleetCmd is retained by this one remaining element returning <c>false</c>.
-    //// </summary>
-    //// <param name="fleetRootname">The fleet root name.</param>
-    //// <returns></returns>
     /// <summary>
     /// Attempts to make a new FleetCmd if needed. A new Cmd is needed if the composition of this ship's 
-    /// current Cmd is greater than just this ship.
+    /// current Cmd is greater than just this ship. If not needed, this ship retains its existing command.
     /// </summary>
     /// <param name="fleetRootname">The fleet root name.</param>
     /// <returns></returns>
     private void AttemptCommandChange(string fleetRootname) {
         if (UnitElementCount > Constants.One) {
             string previousCmdName = Command.DebugName;
-            MakeCommandChange(fleetRootname);
+            Command.FormFleetFrom(fleetRootname, this);
+            // This element is now properly parented with the proper Cmd Reference
             D.Log("{0} has split off from {1} by creating new Cmd {2}.", DebugName, previousCmdName, Command.DebugName);
         }
         else {
@@ -512,14 +485,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
         D.AssertEqual(Command.Owner, Owner);
     }
-    ////private bool AttemptCommandChange(string fleetRootname) {
-    ////    if (UnitElementCount > Constants.One) {
-    ////        MakeCommandChange(fleetRootname);
-    ////        return true;
-    ////    }
-    ////    D.AssertEqual(Command.Owner, Owner);
-    ////    return false;
-    ////}
 
     protected override void PrepareForDeathSequence() {
         base.PrepareForDeathSequence();
@@ -2963,27 +2928,20 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         LogEvent();
 
         TryBreakOrbit();
+        // 11.16.17 currently source is only User from ShipCtxMenu. Future should include PlayerAI or CmdStaff
+        var shipOrderSource = CurrentOrder.Source;
+        D.AssertEqual(OrderSource.User, shipOrderSource);
 
-        var shipOrderSource = CurrentOrder.Source;  // could be User, AIMgr or CmdStaff
         var fleetToJoin = CurrentOrder.Target as FleetCmdItem;
 
-        ////string priorCmdName = Command.DebugName;
-        string fleetRootname = "SingleXfrFleet";
-
+        string fleetRootname = "SingleShipXfrFleet";
         D.AssertNotNull(Command);
         AttemptCommandChange(fleetRootname);
-        ////bool isCmdChanged = AttemptCommandChange(fleetRootname);
         D.AssertNotNull(Command);
 
-        ////if (isCmdChanged) {
-        ////    D.LogBold("{0} created new Cmd {1}.", DebugName, Command.DebugName);
-        ////}
-        ////else {
-        ////    D.LogBold("{0} is using its existing Cmd {1}, renaming it {2}.", DebugName, priorCmdName, Command.DebugName);
-        ////}
-
-        Command.__IssueJoinFleetOrderFromShip(shipOrderSource, fleetToJoin);
-        // once joinFleetOrder takes, this ship state will be changed by its 'new' transferFleetCmd
+        FleetOrder joinFleetOrder = new FleetOrder(FleetDirective.Join, shipOrderSource, fleetToJoin);
+        Command.InitiateNewOrder(joinFleetOrder);
+        // once joinFleetOrder takes, this ship state will be changed by its new or existing FleetCmd
         _allowOrderFailureCallback = false;
     }
 
@@ -4308,8 +4266,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     /// This method does not issue an override order from the Captain.
     /// <remarks>Clients should consider what action they need to take wrt ship state if the ship's 
     /// state was not immediately changed.</remarks>
-    /// <remarks>No option to retainSuperiorsOrders here as that can't be accomplished when
-    /// issuing an order to a fleet that has no prior orders.</remarks>
+    /// <remarks>No option to retainSuperiorsOrders here as its N/A when issuing an order to a fleet that has no prior orders.</remarks>
     /// </summary>
     /// <returns></returns>
     /// <exception cref="System.NotImplementedException"></exception>
@@ -4323,20 +4280,10 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             return true;
         }
 
-        ////string priorCmdName = Command.DebugName;
         string fleetRootname = "SingleRepairFleet";
-
         D.AssertNotNull(Command);
-        ////bool isCmdChanged = AttemptCommandChange(fleetRootname);
         AttemptCommandChange(fleetRootname);
         D.AssertNotNull(Command);
-
-        ////if (isCmdChanged) {
-        ////    D.Log(/*ShowDebugLog,*/ "{0} created new Cmd {1}.", DebugName, Command.DebugName);
-        ////}
-        ////else {
-        ////    D.Log(/*ShowDebugLog,*/ "{0} is using its existing Cmd {1}, renaming it {2}.", DebugName, priorCmdName, Command.DebugName);
-        ////}
 
         int random = RandomExtended.Range(0, 1);
         switch (random) {
@@ -4345,9 +4292,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 if (planets.Any()) {
                     var repairPlanet = GameUtility.GetClosest(Position, planets.Cast<IFleetNavigableDestination>());
                     D.Log(ShowDebugLog, "Captain of {0}'s ship {1} is issuing a repair order to {2}. Destination is {3}.", Owner.DebugName, DebugName, Command.DebugName, repairPlanet.DebugName);
-                    ////Command.__IssueRepairFleetOrderFromShip(repairPlanet);
                     var repairAtPlanetOrder = new FleetOrder(FleetDirective.Repair, OrderSource.CmdStaff, repairPlanet);
-                    ////Command.InitiateNewOrder(repairAtPlanetOrder);
                     Command.InitiateExternalCmdStaffOverrideOrder(repairAtPlanetOrder);
                     return true;
                 }
@@ -4357,9 +4302,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 if (bases.Any()) {
                     var repairBase = GameUtility.GetClosest(Position, bases.Cast<IFleetNavigableDestination>());
                     D.Log(ShowDebugLog, "Captain of {0}'s ship {1} is issuing a repair order to {2}. Destination is {3}.", Owner.DebugName, DebugName, Command.DebugName, repairBase.DebugName);
-                    ////Command.__IssueRepairFleetOrderFromShip(repairBase);
                     var repairAtBaseOrder = new FleetOrder(FleetDirective.Repair, OrderSource.CmdStaff, repairBase);
-                    ////Command.InitiateNewOrder(repairAtBaseOrder);
                     Command.InitiateExternalCmdStaffOverrideOrder(repairAtBaseOrder);
                     return true;
                 }

@@ -1409,7 +1409,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         UponFsmTgtDeath(deadFsmTgt);
     }
 
-    void IFsmEventSubscriptionMgrClient.HandleAwarenessChgd(IMortalItem_Ltd/*IOwnerItem_Ltd*/ item) { }
+    void IFsmEventSubscriptionMgrClient.HandleAwarenessChgd(IMortalItem_Ltd item) { }
 
     #endregion
 

@@ -1300,10 +1300,10 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         UponFsmTgtDeath(deadFsmTgt);
     }
 
-    void IFsmEventSubscriptionMgrClient.HandleAwarenessChgd(IMortalItem_Ltd/*IOwnerItem_Ltd*/ item) {
+    void IFsmEventSubscriptionMgrClient.HandleAwarenessChgd(IMortalItem_Ltd item) {
         D.Assert(!IsDead);
         D.Assert(!item.IsDead, item.DebugName);  // awareness changes not used when item dies
-        D.AssertNotEqual(Owner, item.Owner_Debug, item.DebugName); // should never be an awareness change from one of our own
+        // 11.16.17 Can be owned by our owner when a new Cmd is created or Element Constructed or Refit
         UponAwarenessChgd(item);
     }
 

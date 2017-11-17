@@ -87,6 +87,14 @@ public class Hanger : AMonoBase, IFormationMgrClient /*,IHanger, IHanger_Ltd*/ {
         // no need to detach from HangerGo as ship will be destroyed
     }
 
+    /// <summary>
+    /// Forms a fleet from the provided ships from this hanger and orders them to AssumeFormation
+    /// at the closest Base LocalAssyStation.
+    /// </summary>
+    /// <param name="fleetRootname">The fleet root name.</param>
+    /// <param name="formation">The formation.</param>
+    /// <param name="ships">The ships.</param>
+    /// <returns></returns>
     public FleetCmdItem FormFleetFrom(string fleetRootname, Formation formation, IEnumerable<ShipItem> ships) {
         D.Assert(!GameManager.Instance.IsPaused);   // it uses fleet.InitiateExternalCmdStaffOverrideOrder which doesn't defer when paused
         Utility.ValidateNotNullOrEmpty<ShipItem>(ships);
@@ -95,7 +103,7 @@ public class Hanger : AMonoBase, IFormationMgrClient /*,IHanger, IHanger_Ltd*/ {
             Remove(ship);
         });
 
-        Vector3 fleetCreatorLocation = GetFormFleetCreatorLocation();
+        Vector3 fleetCreatorLocation = DetermineFormFleetCreatorLocation();
         var fleet = UnitFactory.Instance.MakeFleetInstance(fleetCreatorLocation, ships, formation, fleetRootname);
         D.Log("{0}: Location of formed fleet {1} is {2}, creator is {3}, {4:0.} units apart.",
             DebugName, fleet.DebugName, fleet.Position, fleetCreatorLocation, Vector3.Distance(fleet.Position, fleetCreatorLocation));
@@ -163,10 +171,6 @@ public class Hanger : AMonoBase, IFormationMgrClient /*,IHanger, IHanger_Ltd*/ {
         if (shipsForFleet.Any()) {
             shipsForFleet.ForAll(ship => D.Assert(!ConstructionMgr.IsConstructionQueuedFor(ship)));
             var fleet = FormFleetFrom("HangerDeathFleet", Formation.Globe, shipsForFleet);
-
-            ////var closestLocalAssyStation = GameUtility.GetClosest(fleet.Position, ParentBaseCmd.LocalAssemblyStations);
-            ////var assumeFormationAtAssyStationOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, closestLocalAssyStation);
-            ////fleet.InitiateExternalCmdStaffOverrideOrder(assumeFormationAtAssyStationOrder);
         }
     }
 
@@ -177,10 +181,6 @@ public class Hanger : AMonoBase, IFormationMgrClient /*,IHanger, IHanger_Ltd*/ {
         if (shipsForFleet.Any()) {
             shipsForFleet.ForAll(ship => D.Assert(!ConstructionMgr.IsConstructionQueuedFor(ship)));
             var fleet = FormFleetFrom("HangerTakenoverFleet", Formation.Globe, shipsForFleet);
-
-            ////var closestLocalAssyStation = GameUtility.GetClosest(fleet.Position, ParentBaseCmd.LocalAssemblyStations);
-            ////var assumeFormationAtAssyStationOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, closestLocalAssyStation);
-            ////fleet.InitiateExternalCmdStaffOverrideOrder(assumeFormationAtAssyStationOrder);
         }
     }
 
@@ -201,7 +201,13 @@ public class Hanger : AMonoBase, IFormationMgrClient /*,IHanger, IHanger_Ltd*/ {
 
     public bool ShowDebugLog { get { return ParentBaseCmd.ShowDebugLog; } }
 
-    private Vector3 GetFormFleetCreatorLocation() {
+    /// <summary>
+    /// Returns a safe location for the FleetCreator that will be used to deploy the formed fleet.
+    /// <remarks>This is not the location where the new FleetCmd will start. That location depends on where the
+    /// chosen HQElement is located, in this case on their hanger berth.</remarks>
+    /// </summary>
+    /// <returns></returns>
+    private Vector3 DetermineFormFleetCreatorLocation() {
         var universeSize = GameManager.Instance.GameSettings.UniverseSize;
         float baseOffsetDistance = ParentBaseCmd.HQElement.Radius + Constants.OneF;
         float randomOffsetDistance = UnityEngine.Random.Range(baseOffsetDistance, baseOffsetDistance * 1.1F);
@@ -216,13 +222,6 @@ public class Hanger : AMonoBase, IFormationMgrClient /*,IHanger, IHanger_Ltd*/ {
         return locationForCreator;
     }
 
-    /// <summary>
-    /// Returns a safe staring location for the newly formed fleet and its creator.
-    /// <remarks>FIXME Reliability. Trying to locate an already operating ship directly on top of another item will 
-    /// cause an error in the ship's CollisionAvoidance system as the direction derived to avoid the
-    /// collision will be Vector3.zero. I need a check for presence of another item.</remarks>
-    /// </summary>
-    /// <returns></returns>
     [Obsolete]
     private Vector3 GetFormFleetLocation() {
         var universeSize = GameManager.Instance.GameSettings.UniverseSize;

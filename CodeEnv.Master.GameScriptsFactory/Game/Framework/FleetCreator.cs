@@ -72,10 +72,6 @@ public class FleetCreator : AUnitCreator {
         Elements.ForAll(e => {
             D.Assert(e.IsOperational);
             bool isCanceled = e.CancelSuperiorsOrder();   // will restart Idling and thereby notify Cmd its available
-            ////if(!isCanceled) {
-            ////    // 11.15.17 Can occur when shipCaptain formed fleet to flee and repair, or a similar order
-            ////    D.Warn("FYI. {0} was not able to cancel {1}'s order {2} as it was issued by the Captain.", DebugName, e.DebugName, e.CurrentOrder.DebugName);
-            ////}
             D.Assert(isCanceled);   // 11.15.17 New fleets are not created via Ship Captain override orders, not even FleeAndRepair
         });
     }

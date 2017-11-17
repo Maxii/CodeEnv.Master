@@ -464,10 +464,10 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
         GetStateMethods();
 
         if (state.enterState != null) {
-            PreconfigureCurrentState();
-
             bool doesEnterStateMethodReturnVoid = state.enterState.Method.ReturnType != typeof(IEnumerator);
             __ValidateMethodReturnTypes(doesExitStateMethodReturnIEnumerator, doesEnterStateMethodReturnVoid);
+            PreconfigureCurrentState();
+
             state.enterStateEnumerator = state.enterState();    // a void enterState() method executes immediately here rather than wait until the enterCoroutine makes its next pass
             enterStateCoroutine.Run(state.enterStateEnumerator);    // must call as null stops any prior IEnumerator still running
         }
@@ -566,10 +566,13 @@ public abstract class AFSMSingleton<T, E> : AMonoSingleton<T>
     }
 
     private void __ValidateMethodReturnTypes(bool exitStateMethodReturnsIEnumerator, bool enterStateMethodReturnsVoid) {
-        if (exitStateMethodReturnsIEnumerator && enterStateMethodReturnsVoid) {
-            string lastStateMsg = LastState != null ? LastState.ToString() : "null";
-            string msg = "{0} Illegal Combination of return types. ExitState: {1}, EntryState: {2}.".Inject(GetType().Name, lastStateMsg, CurrentState.ToString());
-            throw new InvalidOperationException(msg);  // deadly combination as enter will execute before exit
+        if (exitStateMethodReturnsIEnumerator) {    // deadly as preConfigureState will execute before exitState
+            D.Warn("{0} Illegal exit state return type as nextState.PreconfigureState() will always run before lastState.ExitState()!", GetType());
+            if (enterStateMethodReturnsVoid) {
+                string lastStateMsg = LastState != null ? LastState.ToString() : "null";
+                string msg = "{0} Illegal Combination of return types. ExitState: {1}, EntryState: {2}.".Inject(GetType(), lastStateMsg, CurrentState.ToString());
+                throw new InvalidOperationException(msg);  // deadly combination as enter will execute before exit
+            }
         }
     }
 

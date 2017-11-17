@@ -33,10 +33,12 @@ using UnityEngine.Profiling;
 /// </summary>
 public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollowable, ISectorViewHighlightable {
 
-    private static ShipHullCategory[] _desiredExplorationShipCategories = { ShipHullCategory.Investigator,
-                                                                            ShipHullCategory.Scout,
-                                                                            ShipHullCategory.Frigate,
-                                                                            ShipHullCategory.Destroyer };
+    private static ShipHullCategory[] DesiredExplorationShipCategories =    {
+                                                                                ShipHullCategory.Investigator,
+                                                                                ShipHullCategory.Scout,
+                                                                                ShipHullCategory.Frigate,
+                                                                                ShipHullCategory.Destroyer
+                                                                            };
 
     public new FleetCmdData Data {
         get { return base.Data as FleetCmdData; }
@@ -227,7 +229,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         ships.ForAll(ship => RemoveElement(ship));
 
         // canceling any existing ship orders (like repair) will be handled by the AutoFleetCreator
-        Vector3 fleetCreatorLocation = GetFormedFleetLocation();
+        Vector3 fleetCreatorLocation = DetermineFormFleetCreatorLocation();
         var fleet = UnitFactory.Instance.MakeFleetInstance(fleetCreatorLocation, ships, Formation, fleetRootname);
         return fleet;
     }
@@ -389,13 +391,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         AssessDebugShowVelocityRay();
     }
 
-    /// <summary>
-    /// Returns a safe staring location for the newly formed fleet and its creator.
-    /// <remarks>FIXME Reliability. Trying to locate an already operating ship directly on top of another item will 
-    /// cause an error in the ship's CollisionAvoidance system as the direction derived to avoid the
-    /// collision will be Vector3.zero. I need a check for presence of another item.</remarks>
-    /// </summary>
-    /// <returns></returns>
     [Obsolete]
     private Vector3 GetFormedFleetLocation() {
         var universeSize = _gameMgr.GameSettings.UniverseSize;
@@ -409,7 +404,13 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         return locationToFormFleet;
     }
 
-    private Vector3 GetFormedFleetCreatorLocation() {
+    /// <summary>
+    /// Returns a safe location for the FleetCreator that will be used to deploy the formed fleet.
+    /// <remarks>This is not the location where the new FleetCmd will start. That location depends on where the
+    /// chosen HQElement is located.</remarks>
+    /// </summary>
+    /// <returns></returns>
+    private Vector3 DetermineFormFleetCreatorLocation() {
         var universeSize = _gameMgr.GameSettings.UniverseSize;
         float randomOffsetDistance = UnityEngine.Random.Range(TempGameValues.FleetFormationStationRadius, TempGameValues.FleetFormationStationRadius * 1.1F);
         Vector3 offset = Vector3.one * randomOffsetDistance;
@@ -438,60 +439,9 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     /// <remarks>If called while paused, the order will be deferred until unpaused and return the same value it would
     /// have returned if it hadn't been paused.</remarks>
     /// <remarks>5.4.17 I've chosen to hold orders here when paused, allowing the AI to issue orders even when paused.</remarks>
-    //// <remarks>11.14.17 This fleet version differs from other versions used in elements and baseCmds. It also allows
-    //// CmdStaff orders to be issued from outside so ships and hangers can give orders to brand new fleets.</remarks>
     /// </summary>
     /// <param name="order">The order.</param>
     /// <returns></returns>
-    ////public bool InitiateNewOrder(FleetOrder order) {
-    ////    D.Assert(order.Source > OrderSource.Captain);
-    ////    if (order.Directive == FleetDirective.Cancel) {
-    ////        D.Assert(_gameMgr.IsPaused && order.Source == OrderSource.User);
-    ////    }
-
-    ////    if (IsPaused) {
-    ////        // 11.14.17 A CmdStaff order using this route can be issued while paused. e.g. user using UnitBaseHud forms fleet from
-    ////        // hanger and hanger uses this route to tell fleet to go to AssyStation, all while paused. The fleet creator will not 
-    ////        // make the Cmd operational until unpaused, but that should happen before this order is processed. 
-    ////        // FIXME The reason is an implementation detail of the order in which event invocation lists are executed - i.e. the order
-    ////        // in which they were subscribed. Since this order was issued after the creator was told to authorize deployment, 
-    ////        // the fleet will become operational just before it processes the order.
-    ////        if (!_ordersReceivedWhilePaused.Any()) {
-    ////            if (CurrentOrder != null) {
-    ////                // first order received while paused so record the CurrentOrder before recording the new order
-    ////                _ordersReceivedWhilePaused.Push(CurrentOrder);
-    ////            }
-    ////        }
-    ////        _ordersReceivedWhilePaused.Push(order);
-    ////        // deal with multiple changes all while paused
-    ////        _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedUponResumeEventHandler;
-    ////        _gameMgr.isPausedChanged += NewOrderReceivedWhilePausedUponResumeEventHandler;
-    ////        bool willOrderExecutionImmediatelyFollowResume = IsCurrentOrderImmediatelyReplaceableBy(order);
-    ////        return willOrderExecutionImmediatelyFollowResume;
-    ////    }
-
-    ////    D.Assert(!IsPaused);
-    ////    D.AssertEqual(Constants.Zero, _ordersReceivedWhilePaused.Count);
-
-    ////    if (!IsCurrentOrderImmediatelyReplaceableBy(order)) {
-    ////        CurrentOrder.StandingOrder = order;
-    ////        return false;
-    ////    }
-
-    ////    if (order.Source == OrderSource.CmdStaff) {
-    ////        // 11.14.17 The only time this path is used for a CmdStaff override order is when a new fleet has been created from 
-    ////        // existing ship(s). If the order came from a ship, it is the only ship in the fleet. If the order didn't come from 
-    ////        // a ship, then it came from something like a hanger immediately after forming a fleet from the hanger's ship(s).
-    ////        // Either way, it will be the first order this fleet has received so CurrentOrder will be null.
-    ////        D.AssertNull(CurrentOrder);
-    ////        bool toRetainSuperiorsOrder = false;    // as CurrentOrder is null, there can't be any superior's orders to retain
-    ////        OverrideCurrentOrder(order, toRetainSuperiorsOrder);
-    ////    }
-    ////    else {
-    ////        CurrentOrder = order;
-    ////    }
-    ////    return true;
-    ////}
     public bool InitiateNewOrder(FleetOrder order) {
         D.Assert(order.Source > OrderSource.CmdStaff);
         if (order.Directive == FleetDirective.Cancel) {
@@ -534,22 +484,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     /// <returns></returns>
     private bool IsCurrentOrderImmediatelyReplaceableBy(FleetOrder order) {
         return order.Source == OrderSource.User || CurrentOrder == null || CurrentOrder.Source != OrderSource.CmdStaff;
-        ////if (order.Source == OrderSource.User) {
-        ////    // User order can override any other CurrentOrder.Source, including User or CmdStaff
-        ////    return true;
-        ////}
-        ////if (order.Source == OrderSource.CmdStaff) {
-        ////    // 11.14.17 The only time this path is used for a CmdStaff override order is when a new fleet has been created from 
-        ////    // existing ship(s). If the order came from a ship, it is the only ship in the fleet. If the order didn't come from 
-        ////    // a ship, then it came from something like a hanger immediately after forming a fleet from the hanger's ship(s).
-        ////    // Either way, it will be the first order this fleet has received so CurrentOrder will be null.
-        ////    D.AssertNull(CurrentOrder);
-        ////    return true;
-        ////}
-        ////if (CurrentOrder == null) {
-        ////    return true;
-        ////}
-        ////return CurrentOrder.Source != OrderSource.CmdStaff;
     }
 
     private void HandleNewOrderReceivedWhilePausedUponResume() {
@@ -587,8 +521,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     /// <remarks>Will throw an error if issued while paused.</remarks>
     /// </summary>
     /// <param name="order">The order.</param>
-    public void InitiateExternalCmdStaffOverrideOrder(FleetOrder order) {
-        ////D.Assert(!_gameMgr.IsPaused);
+    internal void InitiateExternalCmdStaffOverrideOrder(FleetOrder order) {
         D.AssertEqual(OrderSource.CmdStaff, order.Source);
         bool toRetainSuperiorsOrders = false;   // this path is only used when this fleet 
         OverrideCurrentOrder(order, toRetainSuperiorsOrders);
@@ -1943,7 +1876,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         //D.Log(ShowDebugLog, "{0} has added {1}'s newly discovered planet {2} to explore.", DebugName, systemTgt.DebugName, planetDiscovered.DebugName);
 
         IList<ShipItem> ships;
-        if (TryGetShips(out ships, availableOnly: true, avoidHQ: true, qty: 1, priorityCats: _desiredExplorationShipCategories)) {
+        if (TryGetShips(out ships, availableOnly: true, avoidHQ: true, qty: 1, priorityCats: DesiredExplorationShipCategories)) {
             ShipItem newExploreShip = ships.First();
             bool isShipAssigned = AssignShipToExploreSystemTgt(newExploreShip);
             D.Assert(isShipAssigned);
@@ -1976,7 +1909,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
         bool isNewShipAssigned;
         IList<ShipItem> ships;
-        if (TryGetShips(out ships, availableOnly: true, avoidHQ: true, qty: 1, priorityCats: _desiredExplorationShipCategories)) {
+        if (TryGetShips(out ships, availableOnly: true, avoidHQ: true, qty: 1, priorityCats: DesiredExplorationShipCategories)) {
             ShipItem newExploreShip = ships.First();
             if (isExploringSystem) {
                 AssignShipToExploreSystemTgt(newExploreShip);
@@ -2022,7 +1955,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
         int desiredExplorationShipQty = shipSystemTgtsToExplore.Count;
         IList<ShipItem> ships;
-        bool hasShips = TryGetShips(out ships, availableOnly: false, avoidHQ: true, qty: desiredExplorationShipQty, priorityCats: _desiredExplorationShipCategories);
+        bool hasShips = TryGetShips(out ships, availableOnly: false, avoidHQ: true, qty: desiredExplorationShipQty, priorityCats: DesiredExplorationShipCategories);
         D.Assert(hasShips); // must have ships if availableOnly = false
 
         Stack<ShipItem> explorationShips = new Stack<ShipItem>(ships);
@@ -2181,7 +2114,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                 IUniverseCenter_Ltd uCenterExploreTgt = fleetExploreTgt as IUniverseCenter_Ltd;
                 D.AssertNotNull(uCenterExploreTgt);
                 IList<ShipItem> exploreShips;
-                bool hasShips = TryGetShips(out exploreShips, availableOnly: false, avoidHQ: true, qty: 1, priorityCats: _desiredExplorationShipCategories);
+                bool hasShips = TryGetShips(out exploreShips, availableOnly: false, avoidHQ: true, qty: 1, priorityCats: DesiredExplorationShipCategories);
                 D.Assert(hasShips);
                 IShipExplorable uCenterShipExploreTgt = uCenterExploreTgt as IShipExplorable;
                 D.AssertNotNull(uCenterShipExploreTgt);
@@ -4810,8 +4743,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     /// <summary>
     /// Returns <c>true</c> if finds a IUnitCmdRepairCapable repair destination, aka a neutral,
-    /// friendly, allied or our own base, <c>false</c> otherwise.
-    /// <remarks>4.3.17 Currently only looks for our closest base.</remarks>
+    /// friendly, allied or our own base, <c>false</c> otherwise. If false, unitRepairDest is
+    /// null indicating RepairInPlace.
     /// </summary>
     /// <param name="unitRepairDest">The unit repair destination.</param>
     /// <returns></returns>
@@ -5274,6 +5207,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     /// to AssumeFormation. If this Cmd AND the ship are not yet operational, aka the Cmd and ship are being deployed 
     /// for the first time, the ship will be placed at the station's location and then have the FleetFormationStation 
     /// assigned so it is initially 'on station'.
+    /// <remarks>11.16.17 Criteria for a 'teleport' placement was Cmd not operational before operational ships could
+    /// be added to not yet operational Cmds.</remarks>
     /// </summary>
     /// <param name="element">The ship element.</param>
     /// <param name="stationSlotInfo">The station slot information.</param>
@@ -5302,30 +5237,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         station.AssignedShip = ship;
         ship.FormationStation = station;
     }
-    ////protected override void PositionElementInFormation_Internal(IUnitElement element, FormationStationSlotInfo stationSlotInfo) {
-    ////    ShipItem ship = element as ShipItem;
-    ////    if (!IsOperational) {
-    ////        // If not operational, this positioning is occurring during construction so place the ship now where it belongs
-    ////        ship.transform.localPosition = stationSlotInfo.LocalOffset;
-    ////        //D.Log(ShowDebugLog, "{0} positioned at {1}, offset by {2} from {3} at {4}.",
-    ////        //element.DebugName, element.Position, stationSlotInfo.LocalOffset, HQElement.DebugName, HQElement.Position);
-    ////    }
-
-    ////    FleetFormationStation station = ship.FormationStation;
-    ////    if (station != null) {
-    ////        // the ship already has a formation station so get rid of it
-    ////        D.Log(ShowDebugLog, "{0} is removing and despawning old {1}.", ship.DebugName, typeof(FleetFormationStation).Name);
-    ////        ship.FormationStation = null;
-    ////        station.AssignedShip = null;
-    ////        // FormationMgr will have already removed stationInfo from occupied list if present 
-    ////        GamePoolManager.Instance.DespawnFormationStation(station.transform);
-    ////    }
-    ////    //D.Log(ShowDebugLog, "{0} is adding a new {1} with SlotID {2}.", DebugName, typeof(FleetFormationStation).Name, stationSlotInfo.SlotID.GetValueName());
-    ////    station = GamePoolManager.Instance.SpawnFormationStation(Position, Quaternion.identity, transform);
-    ////    station.StationInfo = stationSlotInfo;
-    ////    station.AssignedShip = ship;
-    ////    ship.FormationStation = station;
-    ////}
 
     #endregion
 

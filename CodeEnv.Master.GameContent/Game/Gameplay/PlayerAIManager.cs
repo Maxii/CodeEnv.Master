@@ -546,7 +546,7 @@ namespace CodeEnv.Master.GameContent {
                         }
                         bool isNewlyAware = Knowledge.AddCommand(cmd);
                         if (isNewlyAware && !cmd.IsDead) {
-                            // 4.20.17 awareChgd events only raised when item is operational
+                            // 11.16.17 awareChgd events only raised when item is not dead
                             if (fleetCmd != null) {
                                 OnAwareChgd_Fleet(fleetCmd);
                             }
@@ -669,7 +669,7 @@ namespace CodeEnv.Master.GameContent {
         private void OnAwareChgd_Cmd(IUnitCmd_Ltd cmd) {
             if (awareChgd_Cmd != null) {
                 D.Assert(!cmd.IsDead, cmd.DebugName);
-                D.AssertNotEqual(cmd.Owner_Debug, Owner);
+                // 11.16.17 we can become aware of our own newly created Cmd
                 awareChgd_Cmd(this, new AwareChgdEventArgs(cmd));
             }
         }
@@ -677,11 +677,7 @@ namespace CodeEnv.Master.GameContent {
         private void OnAwareChgd_Fleet(IFleetCmd_Ltd fleet) {
             if (awareChgd_Fleet != null) {
                 D.Assert(!fleet.IsDead, fleet.DebugName);
-                if (fleet.Owner_Debug == Owner) {
-                    // 5.10.17 ship taken over changed Cmd owner. Intel got changed to None due to Sensor IsOperational recycle.
-                    D.Error("{0}: Awareness Chg of {1} owned by us. HQElementOwner = {2}.",
-                        DebugName, fleet.DebugName, (fleet as IUnitCmd).HQElement.Owner);
-                }
+                // 11.16.17 we can become aware of our own newly created Fleet
                 awareChgd_Fleet(this, new AwareChgdEventArgs(fleet));
             }
         }
@@ -689,7 +685,7 @@ namespace CodeEnv.Master.GameContent {
         private void OnAwareChgd_Base(IUnitBaseCmd_Ltd baseCmd) {
             if (awareChgd_Base != null) {
                 D.Assert(!baseCmd.IsDead, baseCmd.DebugName);
-                D.AssertNotEqual(baseCmd.Owner_Debug, Owner);
+                // 11.16.17 we can become aware of our own newly created Base (when bases can be constructed)
                 awareChgd_Base(this, new AwareChgdEventArgs(baseCmd));
             }
         }
@@ -697,7 +693,7 @@ namespace CodeEnv.Master.GameContent {
         private void OnAwareChgd_Ship(IShip_Ltd ship) {
             if (awareChgd_Ship != null) {
                 D.Assert(!ship.IsDead, ship.DebugName);
-                D.AssertNotEqual(ship.Owner_Debug, Owner);
+                // 11.16.17 we can become aware of our own newly constructed or refitted ship
                 awareChgd_Ship(this, new AwareChgdEventArgs(ship));
             }
         }
@@ -705,7 +701,7 @@ namespace CodeEnv.Master.GameContent {
         private void OnAwareChgd_Facility(IFacility_Ltd facility) {
             if (awareChgd_Facility != null) {
                 D.Assert(!facility.IsDead, facility.DebugName);
-                D.AssertNotEqual(facility.Owner_Debug, Owner);
+                // 11.16.17 we can become aware of our own newly constructed or refitted ship
                 awareChgd_Facility(this, new AwareChgdEventArgs(facility));
             }
         }
@@ -1088,7 +1084,7 @@ namespace CodeEnv.Master.GameContent {
             List<IUnitAttackable> attackTgts = Knowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsWarAttackAllowedBy(Owner)).ToList();
             attackTgts.AddRange(Knowledge.Starbases.Cast<IUnitAttackable>().Where(sb => sb.IsWarAttackAllowedBy(Owner)));
             attackTgts.AddRange(Knowledge.Settlements.Cast<IUnitAttackable>().Where(s => s.IsWarAttackAllowedBy(Owner)));
-            ////attackTgts.AddRange(Knowledge.Planets.Cast<IUnitAttackable>().Where(p => p.IsWarAttackByAllowed(Owner)));
+            //attackTgts.AddRange(Knowledge.Planets.Cast<IUnitAttackable>().Where(p => p.IsWarAttackByAllowed(Owner)));
             if (!attackTgts.Any()) {
                 return false;
             }
@@ -1121,7 +1117,7 @@ namespace CodeEnv.Master.GameContent {
             List<IFleetNavigableDestination> moveTgts = Knowledge.Starbases.Cast<IFleetNavigableDestination>().ToList();
             moveTgts.AddRange(Knowledge.Settlements.Cast<IFleetNavigableDestination>());
             moveTgts.AddRange(Knowledge.Planets.Cast<IFleetNavigableDestination>());
-            ////moveTgts.AddRange(Knowledge.Systems.Cast<IFleetNavigableDestination>());
+            //moveTgts.AddRange(Knowledge.Systems.Cast<IFleetNavigableDestination>());
             moveTgts.AddRange(Knowledge.Stars.Cast<IFleetNavigableDestination>());
             if (Knowledge.UniverseCenter != null) {
                 moveTgts.Add(Knowledge.UniverseCenter as IFleetNavigableDestination);

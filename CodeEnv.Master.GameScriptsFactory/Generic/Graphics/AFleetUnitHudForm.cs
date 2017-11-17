@@ -336,6 +336,10 @@ public abstract class AFleetUnitHudForm : AForm {
         FocusOn(_pickedUnitIcons.First().Unit);
     }
 
+    /// <summary>
+    /// Handles the unit merge button clicked.
+    /// <remarks>11.16.17 No need to cycle paused state as resultingFleet.InitiateExternalCmdStaffOverrideOrder is not used.</remarks>
+    /// </summary>
     private void HandleUnitMergeButtonClicked() {
         var pickedUnits = _pickedUnitIcons.Select(icon => icon.Unit);
         var resultingFleet = GameScriptsUtility.Merge(pickedUnits);
@@ -672,6 +676,12 @@ public abstract class AFleetUnitHudForm : AForm {
         FocusOn(icon.Element);
     }
 
+    /// <summary>
+    /// Handles the ship create fleet button clicked.
+    /// <remarks>11.16.17 Must cycle paused state to allow resultingFleet to become operational. RebuildUnitIcons
+    /// needs resultingFleet's iconInfo to make the icons. The icons aren't available until resultingFleet becomes operational.
+    /// resultingFleet.InitiateExternalCmdStaffOverrideOrder is not used.</remarks>
+    /// </summary>
     private void HandleShipCreateFleetButtonClicked() {
         Utility.ValidateForRange(_pickedElementIcons.Count, Constants.One, TempGameValues.MaxShipsPerFleet);
 
@@ -699,27 +709,26 @@ public abstract class AFleetUnitHudForm : AForm {
             fleetsToMerge.Add(formedFleet);
         }
 
-        FleetCmdItem finalFleet;
+        FleetCmdItem resultingFleet;
         if (fleetsToMerge.Count > Constants.One) {
-            finalFleet = GameScriptsUtility.Merge(fleetsToMerge);
+            resultingFleet = GameScriptsUtility.Merge(fleetsToMerge);
         }
         else {
-            finalFleet = fleetsToMerge.First();
+            resultingFleet = fleetsToMerge.First();
         }
 
-        // resume and re-pause to allow finalFleet to deploy and become operational before RebuildIcons needs its iconInfo
         _gameMgr.RequestPauseStateChange(toPause: false);
         _gameMgr.RequestPauseStateChange(toPause: true);
 
         var allFleets = new HashSet<FleetCmdItem>(_unitIconLookup.Keys);
-        bool isAdded = allFleets.Add(finalFleet);
+        bool isAdded = allFleets.Add(resultingFleet);
         if (!isAdded) {
             // 11.12.17 The same fleet instance can occur for multiple reasons: 1) a fleet that is formed from all of
             // its existing ships is actually the same instance, and 2) a fleet that results from a merge will 
             // always be one of the instances submitted for the merge.
-            D.Warn("FYI. {0}: No need to add {1} when it is already present.", DebugName, finalFleet.DebugName);
+            D.Warn("FYI. {0}: No need to add {1} when it is already present.", DebugName, resultingFleet.DebugName);
         }
-        RebuildUnitIcons(allFleets, finalFleet);
+        RebuildUnitIcons(allFleets, resultingFleet);
     }
 
     private void HandleShipScuttleButtonClicked() {

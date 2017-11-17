@@ -33,13 +33,18 @@ public abstract class ABaseUnitHudForm : AForm {
     private const string ElementIconExtension = " ElementIcon";
     private const string TitleFormat = "Selected Base: {0}";
 
-    private static ReworkingMode[] AcceptableReworkUnderwayToCreateFleet = new ReworkingMode[] {
-                                                                                                ReworkingMode.None,
-                                                                                                ReworkingMode.Repairing
-                                                                                            };
+    /// <summary>
+    /// The underway rework that keeps a ship from being part of a hanger fleet.
+    /// <remarks>IMPROVE Consider allowing Refitting.</remarks>
+    /// </summary>
+    private static ReworkingMode[] HangerFleetReworkUnderwayExclusions = new ReworkingMode[]    {
+                                                                                                    ReworkingMode.Constructing,
+                                                                                                    ReworkingMode.Refitting,
+                                                                                                    ReworkingMode.Disbanding
+                                                                                                };
 
-    private static bool IsShipAcceptableToCreateFleet(ShipItem ship) {
-        return AcceptableReworkUnderwayToCreateFleet.Contains(ship.ReworkUnderway);
+    private static bool IsShipExcludedFromHangerFleet(ShipItem ship) {
+        return HangerFleetReworkUnderwayExclusions.Contains(ship.ReworkUnderway);
     }
 
     // 9.27.17 Management of ConstructibleElementDesigns and the ConstructionQueue moved to ConstructionGuiModule
@@ -232,7 +237,7 @@ public abstract class ABaseUnitHudForm : AForm {
     }
 
     private void ShipCreateFleetButtonClickedEventHandler() {
-        HandleShipCreateFleetButtonClicked();
+        HandleShipCreateHangerFleetButtonClicked();
     }
 
     private void ShipRepairButtonToggleChangedEventHandler(object sender, EventArgs e) {
@@ -712,12 +717,20 @@ public abstract class ABaseUnitHudForm : AForm {
         AssessHangerButtons();
     }
 
-    private void HandleShipCreateFleetButtonClicked() {
+    /// <summary>
+    /// Handles the ship create hanger fleet button clicked.
+    /// <remarks>11.16.17 Briefly resuming allows the fleet to become operational and begin execution of the order
+    /// auto issued by the hanger to assume formation at the Base's closest LocalAssemblyStation. It is required
+    /// as hangerFleet.InitiateExternalCmdStaffOverrideOrder is used by the hanger to issue the order.</remarks>
+    /// </summary>
+    private void HandleShipCreateHangerFleetButtonClicked() {
         D.Log("{0} is about to create a hanger fleet.", DebugName);
         var pickedShips = _pickedHangerShipIcons.Select(icon => icon.Element);
-        var createFleetShips = pickedShips.Where(ship => IsShipAcceptableToCreateFleet(ship));
+        var createFleetShips = pickedShips.Where(ship => !IsShipExcludedFromHangerFleet(ship));
 
+        _gameMgr.RequestPauseStateChange(toPause: false);
         SelectedUnit.Hanger.FormFleetFrom("HangerFleet", Formation.Globe, createFleetShips);
+        _gameMgr.RequestPauseStateChange(toPause: true);
         BuildHangerShipIcons();
     }
 
@@ -783,7 +796,7 @@ public abstract class ABaseUnitHudForm : AForm {
 
     protected virtual void AssessHangerButtons() {
         bool isShipCreateFleetButtonEnabled = false;
-        int createFleetShipCount = _pickedHangerShipIcons.Where(icon => IsShipAcceptableToCreateFleet(icon.Element)).Count();
+        int createFleetShipCount = _pickedHangerShipIcons.Where(icon => !IsShipExcludedFromHangerFleet(icon.Element)).Count();
         if (Utility.IsInRange(createFleetShipCount, Constants.One, TempGameValues.MaxShipsPerFleet)) {
             isShipCreateFleetButtonEnabled = true;
         }

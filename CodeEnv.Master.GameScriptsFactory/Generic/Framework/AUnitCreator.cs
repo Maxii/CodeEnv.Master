@@ -149,10 +149,10 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
     /// <summary>
     /// Authorizes the creator to deploy and commence operations of the Unit on the DeployDate specified by the Configuration.
     /// <remarks>If this creator is present in the scene before the game IsRunning then UniverseCreator will call 
-    /// BuildAndPosition(). It will be followed by AuthorizeDeployment() when the game begins running but after all 
+    /// PrepareUnitForDeployment(). It will be followed by AuthorizeDeployment() when the game begins running but after all 
     /// CelestialObjects have commenced operations. This way, celestial objects are operational before they can be 
     /// detected by units. If this creator is placed in the scene during runtime, then it will wake, detect the game 
-    /// is already running and call BuildAndPosition() followed by AuthorizeDeployment() itself.</remarks>
+    /// is already running and call PrepareUnitForDeployment() followed by AuthorizeDeployment() itself.</remarks>
     /// </summary>
     public void AuthorizeDeployment() {
         D.AssertNotDefault(DeployDate, DebugName);

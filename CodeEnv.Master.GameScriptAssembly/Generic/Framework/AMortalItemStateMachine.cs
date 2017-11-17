@@ -416,10 +416,9 @@ public abstract class AMortalItemStateMachine : AMortalItem {
         GetStateMethods();
 
         if (state.enterState != null) {
-            PreconfigureCurrentState(); // 10.16.16 My addition
-
             bool doesEnterStateMethodReturnVoid = state.enterState.Method.ReturnType != typeof(IEnumerator);
             __ValidateMethodReturnTypes(doesExitStateMethodReturnIEnumerator, doesEnterStateMethodReturnVoid);
+            PreconfigureCurrentState(); // 10.16.16 My addition
 
             //D.Log(ShowDebugLog, "{0} setting up {1}_EnterState() to run. MethodName: {2}.", DebugName, CurrentState.ToString(), state.enterState.Method.Name);
             state.enterStateEnumerator = state.enterState();    // a void enterState() method executes immediately here rather than wait until the enterCoroutine makes its next pass
@@ -533,10 +532,13 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     }
 
     private void __ValidateMethodReturnTypes(bool exitStateMethodReturnsIEnumerator, bool enterStateMethodReturnsVoid) {
-        if (exitStateMethodReturnsIEnumerator && enterStateMethodReturnsVoid) {
-            string lastStateMsg = LastState != null ? LastState.ToString() : "null";
-            string msg = "{0} Illegal Combination of return types. ExitState: {1}, EntryState: {2}.".Inject(DebugName, lastStateMsg, CurrentState.ToString());
-            throw new InvalidOperationException(msg);  // deadly combination as enter will execute before exit
+        if (exitStateMethodReturnsIEnumerator) {    // deadly as preConfigureState will execute before exitState
+            D.Warn("{0} Illegal exit state return type as nextState.PreconfigureState() will always run before lastState.ExitState()!", DebugName);
+            if (enterStateMethodReturnsVoid) {
+                string lastStateMsg = LastState != null ? LastState.ToString() : "null";
+                string msg = "{0} Illegal Combination of return types. ExitState: {1}, EntryState: {2}.".Inject(DebugName, lastStateMsg, CurrentState.ToString());
+                throw new InvalidOperationException(msg);  // deadly combination as enter will execute before exit
+            }
         }
     }
 
