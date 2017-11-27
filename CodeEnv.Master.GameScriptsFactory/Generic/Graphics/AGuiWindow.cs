@@ -150,10 +150,14 @@ public abstract class AGuiWindow : AMonoBase {
     #region Event and Property Change Handlers
 
     private void HideCompleteEventHandler() {
-        ResetForReuse();
+        HandleHideComplete();
     }
 
     #endregion
+
+    protected virtual void HandleHideComplete() {
+        ResetForReuse();
+    }
 
     /// <summary>
     /// Show the window.

@@ -338,7 +338,7 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementBlastable, AWe
         // guaranteed to be operational on this monitor's element, UNLESS this is occurring during a TgtReacquisition cycle
         // caused by a ParentItemOwner change that resulted in a RangeDistance change. In that case, this monitor's ParentElement's
         // SRSensor monitor has not yet informed lostDetectionItem of its detection, as it also is going through an owner change
-        // caused TgtReacquition. Its relevant because the previous version of this method determined removal based on its 
+        // caused TgtReacquisition. Its relevant because the previous version of this method determined removal based on its 
         // access to lostDetectionItem's owner. This is what was causing left over items in the collections when shutdown.
         if (!lostDetectionItem.IsOwnerAccessibleTo(Owner)) {
             D.Assert(__IsTargetReacquisitionUnderway);
@@ -349,7 +349,10 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementBlastable, AWe
                 Player lostDetectionItemOwner;
                 bool isOwnerAccessible = lostDetectionItem.TryGetOwner(Owner, out lostDetectionItemOwner);
                 D.Assert(isOwnerAccessible);
-                D.Assert(lostDetectionItemOwner.IsEnemyOf(Owner));
+                // 11.19.17 An owner change of an element can create a new Cmd. That new Cmd will immediately assess its AlertStatus
+                // during CommenceOperations. That assessment can result in this WRM becoming non-operational (Yellow or Normal AlertStatus)
+                // which will remove all detected items, some of which used to be enemies. The fact they used to be enemies doesn't mean
+                // they are after the owner change, so an Assert here that lostDetectionItemOwner is an enemy will fail.
             }
         }
         if (IsRecordedAsUnknown(lostDetectionItem)) {
@@ -463,6 +466,7 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementBlastable, AWe
         }
     }
 
+    [System.Diagnostics.Conditional("DEBUG")]
     private void __WarnAsShouldntBeUnknown(IElementBlastable unknownTgt) {
         float distanceToUnknownTgt = Vector3.Distance(ParentItem.Position, unknownTgt.Position);
         float srSensorRange = ParentItem.SRSensorMonitor.RangeDistance; // 2.13.17 At least 1 SR sensor is mandatory, and the first is not damageable

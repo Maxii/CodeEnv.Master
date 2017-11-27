@@ -33,12 +33,12 @@ public class Hanger : AMonoBase, IFormationMgrClient /*,IHanger, IHanger_Ltd*/ {
 
     public string DebugName { get { return DebugNameFormat.Inject(ParentBaseCmd.DebugName, GetType().Name); } }
 
-    public bool IsJoinable { get { return _allShips.Count < Formation.Hanger.MaxFormationSlots(); } }
+    public bool IsJoinable { get { return IsJoinableBy(Constants.One); } }
 
     public ConstructionManager ConstructionMgr { get { return ParentBaseCmd.ConstructionMgr; } }
 
     private IList<ShipItem> _allShips;
-    public IEnumerable<ShipItem> AllShips { get { return _allShips; } }
+    public IList<ShipItem> AllShips { get { return new List<ShipItem>(_allShips); } }
 
     public int ShipCount { get { return _allShips.Count; } }
 
@@ -54,6 +54,10 @@ public class Hanger : AMonoBase, IFormationMgrClient /*,IHanger, IHanger_Ltd*/ {
     private void InitializeValuesAndReferences() {
         ParentBaseCmd = gameObject.GetSingleComponentInParents<AUnitBaseCmdItem>();
         _allShips = new List<ShipItem>();
+    }
+
+    public bool IsJoinableBy(int shipsToJoinCount) {
+        return _allShips.Count + shipsToJoinCount <= Formation.Hanger.MaxFormationSlots();
     }
 
     public void AddShip(ShipItem ship) {
@@ -88,6 +92,15 @@ public class Hanger : AMonoBase, IFormationMgrClient /*,IHanger, IHanger_Ltd*/ {
     }
 
     /// <summary>
+    /// Returns <c>true</c> if this hanger contains the provided ship.
+    /// </summary>
+    /// <param name="ship">The ship.</param>
+    /// <returns></returns>
+    public bool Contains(IShip_Ltd ship) {
+        return _allShips.Contains(ship as ShipItem);
+    }
+
+    /// <summary>
     /// Forms a fleet from the provided ships from this hanger and orders them to AssumeFormation
     /// at the closest Base LocalAssyStation.
     /// </summary>
@@ -96,12 +109,13 @@ public class Hanger : AMonoBase, IFormationMgrClient /*,IHanger, IHanger_Ltd*/ {
     /// <param name="ships">The ships.</param>
     /// <returns></returns>
     public FleetCmdItem FormFleetFrom(string fleetRootname, Formation formation, IEnumerable<ShipItem> ships) {
-        D.Assert(!GameManager.Instance.IsPaused);   // it uses fleet.InitiateExternalCmdStaffOverrideOrder which doesn't defer when paused
         Utility.ValidateNotNullOrEmpty<ShipItem>(ships);
+
         ships.ForAll(ship => {
-            // canceling any existing ship orders (like repair) will be handled by the AutoFleetCreator
+            // canceling any existing ship orders is handled below
             Remove(ship);
         });
+        Utility.ValidateNotNullOrEmpty<ShipItem>(ships);    // will fail if ships was ref to _allShips
 
         Vector3 fleetCreatorLocation = DetermineFormFleetCreatorLocation();
         var fleet = UnitFactory.Instance.MakeFleetInstance(fleetCreatorLocation, ships, formation, fleetRootname);
@@ -113,11 +127,12 @@ public class Hanger : AMonoBase, IFormationMgrClient /*,IHanger, IHanger_Ltd*/ {
             D.Assert(!ship.IsCollisionAvoidanceOperational);
             ship.IsCollisionAvoidanceOperational = true;
             ship.Data.ActivateSRSensors();
+            ship.CancelOrders();
         });
 
         var closestLocalAssyStation = GameUtility.GetClosest(fleet.Position, ParentBaseCmd.LocalAssemblyStations);
         var assumeFormationAtAssyStationOrder = new FleetOrder(FleetDirective.AssumeFormation, OrderSource.CmdStaff, closestLocalAssyStation);
-        fleet.InitiateExternalCmdStaffOverrideOrder(assumeFormationAtAssyStationOrder);
+        fleet.CurrentOrder = assumeFormationAtAssyStationOrder;
 
         return fleet;
     }
@@ -155,9 +170,13 @@ public class Hanger : AMonoBase, IFormationMgrClient /*,IHanger, IHanger_Ltd*/ {
 
     private void HandleHangerShipDeath(ShipItem deadHangerShip) {
         D.Assert(deadHangerShip.IsDead);
-        //D.Log("{0} is removing dead {1}.", DebugName, deadHangerShip.DebugName);
+        D.Log("{0} is removing dead {1}.", DebugName, deadHangerShip.DebugName);
         Remove(deadHangerShip);
         // no need to detach from HangerGo as ship will be destroyed
+        if (ConstructionMgr.IsConstructionQueuedFor(deadHangerShip)) {
+            var deadShipConstruction = ConstructionMgr.GetConstructionFor(deadHangerShip);
+            ConstructionMgr.RemoveFromQueue(deadShipConstruction);
+        }
     }
 
     public void HandleAlertStatusChange(AlertStatus alertStatus) {
@@ -167,39 +186,22 @@ public class Hanger : AMonoBase, IFormationMgrClient /*,IHanger, IHanger_Ltd*/ {
     public void HandleDeath() {
         // Make a fleet from all remaining ships. Base has already removed all construction from ConstructionMgr 
         // so there won't be any ships that have not yet completed initial construction
-        var shipsForFleet = _allShips;
-        if (shipsForFleet.Any()) {
-            shipsForFleet.ForAll(ship => D.Assert(!ConstructionMgr.IsConstructionQueuedFor(ship)));
-            var fleet = FormFleetFrom("HangerDeathFleet", Formation.Globe, shipsForFleet);
+        var shipsForFleetCopy = _allShips.ToList();
+        if (shipsForFleetCopy.Any()) {
+            shipsForFleetCopy.ForAll(ship => D.Assert(!ConstructionMgr.IsConstructionQueuedFor(ship)));
+            var fleet = FormFleetFrom("HangerDeathFleet", Formation.Globe, shipsForFleetCopy);
         }
     }
 
     public void HandleLosingOwnership() {
         // Make a fleet from all remaining ships. Base has already removed all construction from ConstructionMgr 
         // so there won't be any ships that have not yet completed initial construction
-        var shipsForFleet = _allShips;
-        if (shipsForFleet.Any()) {
-            shipsForFleet.ForAll(ship => D.Assert(!ConstructionMgr.IsConstructionQueuedFor(ship)));
-            var fleet = FormFleetFrom("HangerTakenoverFleet", Formation.Globe, shipsForFleet);
+        var shipsForFleetCopy = _allShips.ToList();
+        if (shipsForFleetCopy.Any()) {
+            shipsForFleetCopy.ForAll(ship => D.Assert(!ConstructionMgr.IsConstructionQueuedFor(ship)));
+            var fleet = FormFleetFrom("HangerTakenoverFleet", Formation.Globe, shipsForFleetCopy);
         }
     }
-
-    private void Remove(ShipItem ship) {
-        bool isRemoved = _allShips.Remove(ship);
-        D.Assert(isRemoved);
-        ship.subordinateDeathOneShot -= HangerShipDeathEventHandler;
-        _formationMgr.RestoreSlotToAvailable(ship);
-    }
-
-    protected override void Cleanup() { }
-
-    public override string ToString() {
-        return DebugName;
-    }
-
-    #region Debug
-
-    public bool ShowDebugLog { get { return ParentBaseCmd.ShowDebugLog; } }
 
     /// <summary>
     /// Returns a safe location for the FleetCreator that will be used to deploy the formed fleet.
@@ -222,22 +224,22 @@ public class Hanger : AMonoBase, IFormationMgrClient /*,IHanger, IHanger_Ltd*/ {
         return locationForCreator;
     }
 
-    [Obsolete]
-    private Vector3 GetFormFleetLocation() {
-        var universeSize = GameManager.Instance.GameSettings.UniverseSize;
-        float baseOffsetDistance = ParentBaseCmd.HQElement.Radius + TempGameValues.FleetFormationStationRadius;
-        float randomOffsetDistance = UnityEngine.Random.Range(baseOffsetDistance, baseOffsetDistance * 1.1F);
-        Vector3 offset = Vector3.one * randomOffsetDistance;
-
-        Vector3 hangerPosition = transform.position;
-        Vector3 locationToFormFleet = hangerPosition + offset;
-        if (!GameUtility.IsLocationContainedInUniverse(locationToFormFleet, universeSize)) {
-            locationToFormFleet = hangerPosition - offset;
-        }
-        D.Assert(GameUtility.IsLocationContainedInUniverse(locationToFormFleet, universeSize));
-        return locationToFormFleet;
-
+    private void Remove(ShipItem ship) {
+        bool isRemoved = _allShips.Remove(ship);
+        D.Assert(isRemoved);
+        ship.subordinateDeathOneShot -= HangerShipDeathEventHandler;
+        _formationMgr.RestoreSlotToAvailable(ship);
     }
+
+    protected override void Cleanup() { }
+
+    public override string ToString() {
+        return DebugName;
+    }
+
+    #region Debug
+
+    public bool ShowDebugLog { get { return ParentBaseCmd.ShowDebugLog; } }
 
     #endregion
 

@@ -364,7 +364,6 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         private void HandleAlertStatusChanged() {
-            ElementsData.ForAll(eData => eData.AlertStatus = AlertStatus);
             switch (AlertStatus) {
                 case AlertStatus.Normal:
                     D.Log(ShowDebugLog, "{0} {1} changed to {2}.", DebugName, typeof(AlertStatus).Name, AlertStatus.GetValueName());
@@ -375,13 +374,14 @@ namespace CodeEnv.Master.GameContent {
                     FtlDampener.IsActivated = false;
                     break;
                 case AlertStatus.Red:
-                    D.Log(/*ShowDebugLog, */"{0} {1} changed to {2}.", DebugName, typeof(AlertStatus).Name, AlertStatus.GetValueName());
+                    D.LogBold(/*ShowDebugLog, */"{0} {1} changed to {2}.", DebugName, typeof(AlertStatus).Name, AlertStatus.GetValueName());
                     FtlDampener.IsActivated = true;
                     break;
                 case AlertStatus.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(AlertStatus));
             }
+            ElementsData.ForAll(eData => eData.AlertStatus = AlertStatus);
         }
 
         protected virtual void HandleHQElementDataChanging(AUnitElementData newHQElementData) {
@@ -504,8 +504,8 @@ namespace CodeEnv.Master.GameContent {
             bool isRemoved = _elementsData.Remove(elementData);
             D.Assert(isRemoved, elementData.DebugName);
 
-            RefreshComposition();
             Unsubscribe(elementData);
+            RefreshComposition();
             RecalcPropertiesDerivedFromCombinedElements();
         }
 
@@ -532,7 +532,7 @@ namespace CodeEnv.Master.GameContent {
             RecalcUnitCurrentHitPoints();
             RecalcUnitWeaponsRange();
             RecalcUnitSensorRange();
-            RecalcUnitOutputs();
+            UnitOutputs = RecalcUnitOutputs();
         }
 
         private void RecalcUnitOffensiveStrength() {
@@ -575,8 +575,15 @@ namespace CodeEnv.Master.GameContent {
             UnitSensorRange = new RangeDistance(shortRangeDistance, mediumRangeDistance, longRangeDistance);
         }
 
-        private void RecalcUnitOutputs() {
-            UnitOutputs = _elementsData.Select(ed => ed.Outputs).Sum();
+        protected abstract OutputsYield RecalcUnitOutputs();    // abstract to allow BaseData to make sure production output > 0
+
+        /// <summary>
+        /// Removes the damage from all of the CmdModule's equipment.
+        /// </summary>
+        public void RemoveDamageFromAllEquipment() {
+            PassiveCountermeasures.Where(cm => cm.IsDamageable).ForAll(cm => cm.IsDamaged = false);
+            Sensors.Where(s => s.IsDamageable).ForAll(s => s.IsDamaged = false);
+            // 11.21.17 FtlDampener is currently not damageable
         }
 
         protected sealed override void DeactivateAllEquipment() {

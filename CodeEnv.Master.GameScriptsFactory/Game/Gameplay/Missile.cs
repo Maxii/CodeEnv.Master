@@ -282,7 +282,7 @@ public class Missile : APhysicsProjectileOrdnance, ITerminatableOrdnance, IRecur
                 ReportTargetHit();
                 impactedTarget.TakeHit(DamagePotential);
                 if (__objectsEncounteredBeforeTarget > 0) {
-                    D.LogBold(/*ShowDebugLog, */"{0} has hit {1} in Frame {2}. ObjectsPreviouslyEncountered = {3}.",
+                    D.LogBold(ShowDebugLog, "{0} has hit {1} in Frame {2}. ObjectsPreviouslyEncountered = {3}.",
                         DebugName, impactedTarget.DebugName, Time.frameCount, __objectsEncounteredBeforeTarget);
                 }
                 else {

@@ -67,7 +67,23 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public virtual GameTimeDuration TimeToCompletion { get { return ExpectedCompletionDate - GameTime.Instance.CurrentDate; } }
+        /// <summary>
+        /// The remaining time to completion.
+        /// <remarks>11.27.17 As TryCompleteConstruction is only attempted once per game hour, ExpectedCompletionDate can
+        /// be earlier than CurrentDate which will throw an error when GameDate.operator- is used. Accordingly, if earlier than
+        /// CurrentDate, this method returns default(GameTimeDuration), aka no time left to completion.</remarks>
+        /// </summary>
+        public virtual GameTimeDuration TimeToCompletion {
+            get {
+                GameDate currentDate = GameTime.Instance.CurrentDate;
+                if (ExpectedCompletionDate < currentDate) {
+                    //D.Log("{0}.ExpectedCompletionDate {1} < CurrentDate {2}, so returning 0 remaining TimeToCompletion.",
+                    //    DebugName, ExpectedCompletionDate, currentDate);
+                    return default(GameTimeDuration);
+                }
+                return ExpectedCompletionDate - GameTime.Instance.CurrentDate;
+            }
+        }
 
         public virtual float CompletionPercentage { get { return Mathf.Clamp01(CumProductionApplied / CostToConstruct); } }
 
@@ -78,6 +94,8 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Returns the cost in units of production to construct what is being constructed.
         /// Can construct an Element from scratch or refit an existing Element to a new Design.
+        /// <remarks>Default implementation returns the 'from scratch' Design.ConstructionCost. RefitConstructionInfo overrides 
+        /// this and returns the cost to 'refit' to this Design from a prior design.</remarks>
         /// </summary>
         public virtual float CostToConstruct { get { return Design.ConstructionCost; } }
 
@@ -95,8 +113,8 @@ namespace CodeEnv.Master.GameContent {
 
         public virtual bool TryCompleteConstruction(float productionToApply, out float unconsumedProduction) {
             CumProductionApplied += productionToApply;
-            if (CumProductionApplied >= Design.ConstructionCost) {
-                unconsumedProduction = CumProductionApplied - Design.ConstructionCost;
+            if (CumProductionApplied >= CostToConstruct) {
+                unconsumedProduction = CumProductionApplied - CostToConstruct;
                 IsCompleted = true;
                 return true;
             }
@@ -118,7 +136,10 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        private void __HandleExpectedCompletionDateChanged() { }
+        private void __HandleExpectedCompletionDateChanged() {
+            //D.Log("{0} has changed ExpectedCompletionDate to {1}. CurrentDate = {2}.",
+            //    DebugName, ExpectedCompletionDate, GameTime.Instance.CurrentDate);
+        }
 
         public sealed override string ToString() {
             return DebugName;

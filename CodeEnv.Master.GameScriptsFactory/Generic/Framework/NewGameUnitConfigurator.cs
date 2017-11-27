@@ -942,7 +942,8 @@ public class NewGameUnitConfigurator {
         float constructionCost = hullCat.ConstructionCost();
         Vector3 hullDimensions = hullCat.Dimensions();
         return new ShipHullStat(hullCat, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F,
-            hullMass, drag, 0F, constructionCost, expense, 50F, new DamageStrength(2F, 2F, 2F), hullDimensions, __GetRandomRefitBenefit(), science, culture, income);
+            hullMass, drag, 0F, constructionCost, expense, 50F, new DamageStrength(2F, 2F, 2F), hullDimensions, __GetRandomRefitBenefit(),
+            science, culture, income);
     }
 
     private FacilityHullStat CreateElementHullStat(FacilityHullCategory hullCat) {
@@ -956,7 +957,8 @@ public class NewGameUnitConfigurator {
         float constructionCost = hullCat.ConstructionCost();
         Vector3 hullDimensions = hullCat.Dimensions();
         return new FacilityHullStat(hullCat, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F,
-            hullMass, 0F, constructionCost, expense, 50F, new DamageStrength(2F, 2F, 2F), hullDimensions, __GetRandomRefitBenefit(), science, culture, income, food, production);
+            hullMass, 0F, constructionCost, expense, 50F, new DamageStrength(2F, 2F, 2F), hullDimensions, __GetRandomRefitBenefit(),
+            science, culture, income, food, production);
     }
 
     private FtlDampenerStat CreateReqdCmdFtlDampenerStat() { return new FtlDampenerStat("ReqdSRFtlDampener", RangeCategory.Short); }

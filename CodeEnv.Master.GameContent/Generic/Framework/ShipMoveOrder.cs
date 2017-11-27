@@ -25,15 +25,14 @@ namespace CodeEnv.Master.GameContent {
     public class ShipMoveOrder : ShipOrder {
 
         private const string DebugNameFormat = @"{0}: Directive = {1}, Source = {2}, Target = {3}, Speed = {4}, Fleetwide = {5}, 
-            FollowonOrder = {6}, StandingOrder = {7}, Standoff = {8:0.#}.";
+            FollowonOrder = {6}, Standoff = {7:0.#}.";
 
         public override string DebugName {
             get {
                 string targetText = Target != null ? Target.DebugName : "none";
                 string followonOrderText = FollowonOrder != null ? FollowonOrder.ToString() : "none";
-                string standingOrderText = StandingOrder != null ? StandingOrder.ToString() : "none";
                 return DebugNameFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), targetText, Speed.GetValueName(),
-                    IsFleetwide, followonOrderText, standingOrderText, TargetStandoffDistance);
+                    IsFleetwide, followonOrderText, TargetStandoffDistance);
             }
         }
 
@@ -54,13 +53,15 @@ namespace CodeEnv.Master.GameContent {
         /// Initializes a new instance of the <see cref="ShipMoveOrder" /> class.
         /// </summary>
         /// <param name="source">The source of the order.</param>
+        /// <param name="cmdOrderID">The unique ID of the CmdOrder that caused this element order to be generated.</param>
         /// <param name="target">The move target.</param>
         /// <param name="speed">The move speed.</param>
         /// <param name="isFleetwide">if set to <c>true</c> the move should be coordinated as a fleet.</param>
         /// <param name="targetStandoffDistance">When the ship arrives at the target, this is the distance
         /// from the target it should strive to achieve.</param>
-        public ShipMoveOrder(OrderSource source, IShipNavigableDestination target, Speed speed, bool isFleetwide, float targetStandoffDistance)
-            : base(ShipDirective.Move, source, default(Guid), target) {
+        [Obsolete("Ship.ExecuteMoveOrder does not expect an order outcome callback")]
+        public ShipMoveOrder(OrderSource source, Guid cmdOrderID, IShipNavigableDestination target, Speed speed, bool isFleetwide, float targetStandoffDistance)
+            : base(ShipDirective.Move, source, cmdOrderID, target) {
             Utility.ValidateNotNull(target);
             D.AssertNotDefault((int)speed);
             Utility.ValidateNotNegative(targetStandoffDistance);
@@ -68,6 +69,27 @@ namespace CodeEnv.Master.GameContent {
             IsFleetwide = isFleetwide;
             TargetStandoffDistance = targetStandoffDistance;
         }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ShipMoveOrder" /> class.
+        /// <remarks>A ship's ExecuteMoveOrder state does not expect a order outcome callback.</remarks>
+        /// </summary>
+        /// <param name="source">The source of the order.</param>
+        /// <param name="target">The move target.</param>
+        /// <param name="speed">The move speed.</param>
+        /// <param name="isFleetwide">if set to <c>true</c> the move should be coordinated as a fleet.</param>
+        /// <param name="targetStandoffDistance">When the ship arrives at the target, this is the distance
+        /// from the target it should strive to achieve.</param>
+        public ShipMoveOrder(OrderSource source, IShipNavigableDestination target, Speed speed, bool isFleetwide, float targetStandoffDistance)
+            : base(ShipDirective.Move, source, target) {
+            Utility.ValidateNotNull(target);
+            D.AssertNotDefault((int)speed);
+            Utility.ValidateNotNegative(targetStandoffDistance);
+            Speed = speed;
+            IsFleetwide = isFleetwide;
+            TargetStandoffDistance = targetStandoffDistance;
+        }
+
 
     }
 }

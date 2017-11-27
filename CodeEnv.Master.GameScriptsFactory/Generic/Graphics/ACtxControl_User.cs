@@ -51,12 +51,14 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
 
     protected override bool SelectedItemMenuHasContent { get { return UserMenuOperatorDirectives.Any(); } }
 
-    protected PlayerKnowledge _userKnowledge;
+    protected UserPlayerKnowledge _userKnowledge;
+    protected UserPlayerAIManager _userAIMgr;
     private Stack<CtxMenu> _unusedSubMenus;
 
     public ACtxControl_User(GameObject ctxObjectGO, int uniqueSubmenusReqd, MenuPositionMode menuPosition)
         : base(ctxObjectGO, uniqueSubmenusReqd, menuPosition) {
-        _userKnowledge = _gameMgr.UserAIManager.Knowledge;
+        _userAIMgr = _gameMgr.UserAIManager;
+        _userKnowledge = _userAIMgr.Knowledge;
         D.AssertNotNull(_userKnowledge);
     }
 
@@ -146,13 +148,16 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
     /// <summary>
     /// Returns <c>true</c> if the menu item associated with this directive supports a submenu for listing target choices,
     /// <c>false</c> otherwise. If false, upon return the top level menu item will be disabled. Default implementation is false with no targets.
+    /// <remarks>The return value answers the question "Does the directive support submenus?" It does not mean "Are there any targets 
+    /// in the submenu?" so don't return targets.Any()!</remarks>
     /// </summary>
     /// <param name="directive">The directive.</param>
     /// <param name="targets">The targets for the submenu if any were found. Can be empty.</param>
     /// <returns></returns>
     protected virtual bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(T directive, out IEnumerable<INavigableDestination> targets) {
         targets = Enumerable.Empty<INavigableDestination>();
-        return false;
+        bool doesDirectiveSupportSubmenus = false;
+        return doesDirectiveSupportSubmenus;
     }
 
     protected override void HandleHideCtxMenu() {

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: InteractibleHudWindow.cs
-// Fixed position HudWindow displaying interactable info and controls. 
+// Fixed position HudWindow displaying interactible info and controls. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,6 +17,7 @@
 // default namespace
 
 using System;
+using System.Collections.Generic;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -27,6 +28,17 @@ using UnityEngine;
 /// <remarks>The current version is located on the bottom left of the screen and appears when called to Show().</remarks>
 /// </summary>
 public class InteractibleHudWindow : AHudWindow<InteractibleHudWindow>, IInteractibleHudWindow {
+
+#pragma warning disable 0649
+
+    /// <summary>
+    /// The UIPanels that should not be hidden.
+    /// </summary>
+    [Tooltip("Drag/Drop panels that should not be hidden when this window shows")]
+    [SerializeField]
+    private List<UIPanel> _hideExceptions;
+
+#pragma warning restore 0649
 
     /// <summary>
     /// The local-space corners of this window. Order is bottom-left, top-left, top-right, bottom-right.
@@ -59,6 +71,16 @@ public class InteractibleHudWindow : AHudWindow<InteractibleHudWindow>, IInterac
     }
 
     protected override void PositionWindow() { }
+
+    protected override void HandleShowBegin() {
+        base.HandleShowBegin();
+        GuiManager.Instance.HideShowingPanels(_hideExceptions);
+    }
+
+    protected override void HandleHideComplete() {
+        base.HandleHideComplete();
+        GuiManager.Instance.ShowHiddenPanels();
+    }
 
     protected override void Cleanup() {
         base.Cleanup();

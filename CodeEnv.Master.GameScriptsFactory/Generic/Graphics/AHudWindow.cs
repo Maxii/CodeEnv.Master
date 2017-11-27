@@ -37,9 +37,20 @@ public abstract class AHudWindow<T> : AFormWindow<T> where T : AHudWindow<T> {
         _backgroundWidget = _backgroundEnvelopContent.gameObject.GetSafeComponent<UIWidget>();
     }
 
+    protected override void Subscribe() {
+        base.Subscribe();
+        EventDelegate.Add(onShowBegin, ShowBeginEventHandler);
+    }
+
     #region Event and Property Change Handlers
 
+    private void ShowBeginEventHandler() {
+        HandleShowBegin();
+    }
+
     #endregion
+
+    protected virtual void HandleShowBegin() { }
 
     private void EncompassFormWithBackground(AForm form) {
         _backgroundEnvelopContent.targetRoot = form.transform;
@@ -57,6 +68,11 @@ public abstract class AHudWindow<T> : AFormWindow<T> where T : AHudWindow<T> {
     }
 
     protected abstract void PositionWindow();
+
+    protected override void Unsubscribe() {
+        base.Unsubscribe();
+        EventDelegate.Remove(onShowBegin, ShowBeginEventHandler);
+    }
 
 }
 

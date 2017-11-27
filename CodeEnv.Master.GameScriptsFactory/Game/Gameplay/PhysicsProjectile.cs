@@ -194,16 +194,16 @@ public class PhysicsProjectile : APhysicsProjectileOrdnance {
         if (impactedTarget != null) {
             // hit an attackableTarget
             if (impactedTarget == Target) {
-                D.LogBold(/*ShowDebugLog,*/ "{0} collided with its Target {1}.", DebugName, Target.DebugName);
+                D.Log(ShowDebugLog, "{0} collided with its Target {1}.", DebugName, Target.DebugName);
             }
             else {
                 if (Target.IsOperational) {
-                    D.Log(/*ShowDebugLog,*/ "{0} collided with {1} rather than its target. TgtDistance = {2:0.#}, TgtBearingError = {3:0.#}.",
+                    D.Log(ShowDebugLog, "{0} collided with {1} rather than its target. TgtDistance = {2:0.#}, TgtBearingError = {3:0.#}.",
                         DebugName, impactedTarget.DebugName, Vector3.Distance(transform.position, Target.Position),
                         Vector3.Angle(CurrentHeading, Target.Position - Position));
                 }
                 else {
-                    D.Log(/*ShowDebugLog,*/ "{0} collided with {1} rather than its dead target {2}.", DebugName, impactedTarget.DebugName, Target.DebugName);
+                    D.Log(ShowDebugLog, "{0} collided with {1} rather than its dead target {2}.", DebugName, impactedTarget.DebugName, Target.DebugName);
                 }
             }
             // The application of impact force is already handled by the physics engine when regular rigidbodies collide

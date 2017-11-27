@@ -167,7 +167,7 @@ public class UniverseCenterItem : AIntelItem, IUniverseCenter, IUniverseCenter_L
     }
 
     protected override void ShowSelectedItemHud() {
-        throw new NotSupportedException("{0}".Inject(DebugName));   // should not be called as can't be owned
+        D.Warn("{0}.ShowSelectedItemHud is not currently supported.", DebugName);  // UNCLEAR should not be called as can't be owned?
     }
 
     #region Event and Property Change Handlers

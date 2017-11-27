@@ -15,6 +15,7 @@
 ////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
+
     using System;
     using System.Linq;
     using CodeEnv.Master.Common;
@@ -24,7 +25,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ShipOrder {
 
-        private const string DebugNameFormat = "[{0}: Directive = {1}, Source = {2}, ToNotify = {3}, Target = {4}, FollowonOrder = {5}, StandingOrder = {6}]";
+        private const string DebugNameFormat = "[{0}: Directive = {1}, Source = {2}, Target = {3}, FollowonOrder = {4}]";
 
         private static readonly ShipDirective[] DirectivesWithNullTarget = new ShipDirective[] {
                                                                                                     ShipDirective.AssumeStation,
@@ -39,22 +40,24 @@ namespace CodeEnv.Master.GameContent {
             get {
                 string targetText = Target != null ? Target.DebugName : "none";
                 string followonOrderText = FollowonOrder != null ? FollowonOrder.ToString() : "none";
-                string standingOrderText = StandingOrder != null ? StandingOrder.ToString() : "none";
-                return DebugNameFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), ToCallback, targetText, followonOrderText, standingOrderText);
+                return DebugNameFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), targetText, followonOrderText);
             }
         }
 
         /// <summary>
-        /// The Unique OrderID of the CmdOrder that originated this ElementOrder. If default value this element order
-        /// does not require an order outcome callback from this element to the Cmd, either because the order isn't 
-        /// from Cmd, or the CmdOrder does not require a callback.
-        /// <remarks>Used to determine whether the element receiving this order should respond to Cmd with the outcome 
-        /// of the order's execution. If the element calls back with the outcome, the Cmd uses the ID to determine whether the
-        /// callback it received is still relevant, aka the current CmdOrder has the same ID as the ID returned from the element.
+        /// The Unique OrderID of the CmdOrder that originated this ElementOrder.
+        /// <remarks>Used by an Element to determine whether an order outcome callback should occur. If default, the order was not issued
+        /// by the element's Cmd so no order outcome callback will occur.
         /// </remarks>
+        /// <remarks>Also used by the Cmd to determine whether the order outcome callback it has just received should be passed onto 
+        /// the executing state. If this OrderID is the same as the OrderID returned in the callback, then the callback is
+        /// intended for the currently executing state and will be passed onto it. This accounts for the condition where the Cmd's
+        /// CurrentOrder has just changed and concurrently it is receiving an order callback from one or more elements intended for
+        /// the previous state.</remarks>
         /// </summary>
         public Guid CmdOrderID { get; private set; }
 
+        [Obsolete]
         public ShipOrder StandingOrder { get; set; }
 
         public ShipOrder FollowonOrder { get; set; }
@@ -72,22 +75,29 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ShipOrder" /> class.
+        /// <remarks>11.24.17 For use when an order outcome callback is expected.</remarks>
         /// </summary>
         /// <param name="directive">The order directive.</param>
         /// <param name="source">The source of this order.</param>
-        /// <param name="cmdOrderID">The unique ID of the CmdOrder that caused this element order to be generated. If assigned
-        /// it indicates that the element receiving this order should callback to Cmd with the outcome of the order's execution.</param>
+        /// <param name="cmdOrderID">The unique ID of the CmdOrder that caused this element order to be generated.</param>
         /// <param name="target">The target of this order. No need for FormationStation. Default is null.</param>
-        public ShipOrder(ShipDirective directive, OrderSource source, Guid cmdOrderID = default(Guid), IShipNavigableDestination target = null) {
-            if (directive == ShipDirective.Move) {
-                D.AssertEqual(typeof(ShipMoveOrder), GetType());
-                D.AssertDefault(cmdOrderID);
-            }
+        public ShipOrder(ShipDirective directive, OrderSource source, Guid cmdOrderID, IShipNavigableDestination target = null) {
             Directive = directive;
             Source = source;
             CmdOrderID = cmdOrderID;
             Target = target;
             __Validate();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ShipOrder" /> class.
+        /// <remarks>11.24.17 For use when an order outcome callback is not expected.</remarks>
+        /// </summary>
+        /// <param name="directive">The order directive.</param>
+        /// <param name="source">The source of this order.</param>
+        /// <param name="target">The target of this order. No need for FormationStation. Default is null.</param>
+        public ShipOrder(ShipDirective directive, OrderSource source, IShipNavigableDestination target = null)
+            : this(directive, source, default(Guid), target) {
         }
 
         public sealed override string ToString() {
@@ -96,9 +106,16 @@ namespace CodeEnv.Master.GameContent {
 
         #region Debug
 
-        protected virtual void __Validate() {
+        [System.Diagnostics.Conditional("DEBUG")]
+        private void __Validate() {
             if (DirectivesWithNullTarget.Contains(Directive)) {
                 D.AssertNull(Target);
+            }
+            if (Source == OrderSource.Captain) {
+                D.Assert(!ToCallback);
+            }
+            if (Directive == ShipDirective.Cancel) {
+                D.AssertEqual(OrderSource.User, Source);
             }
         }
 

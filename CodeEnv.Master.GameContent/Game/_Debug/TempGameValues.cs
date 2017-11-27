@@ -211,16 +211,12 @@ namespace CodeEnv.Master.GameContent {
         #region Repair Capacity Values
 
         public const float RepairCapacityBasic_FleetCmd = 1F;
-
         public const float RepairCapacityBasic_FormationStation = 1F;
-
         public const float RepairCapacityBasic_Planet = 2F;
-
         public const float RepairCapacityBasic_Base = 3F;
-
         public const float RepairCapacityFactor_HighOrbit = 1.5F;
-
         public const float RepairCapacityFactor_CloseOrbit = 2F;
+        public const float RepairCapacityFactor_Hanger = 3F;
 
         #endregion
 

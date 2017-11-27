@@ -192,7 +192,7 @@ public abstract class AMonoSingleton<T> : AMonoBaseSingleton, IInstanceCount whe
     /// Logs a warning statement that the method that calls this has been called. Includes the instance counter to ID the caller.
     /// <remarks>Typically used to ID method calls that I don't expect to occur.</remarks>
     /// </summary>
-    public override void LogEventWarning() {
+    public sealed override void LogEventWarning() {
         string methodName = GetCallingMethodName();
         string fullMethodName = AMonoSingletonDebugLogEventMethodNameFormat.Inject(transform.name, GetType().Name, InstanceCount, methodName);
         Debug.LogWarning("Unclear why {0} was called.".Inject(fullMethodName));
@@ -202,7 +202,7 @@ public abstract class AMonoSingleton<T> : AMonoBaseSingleton, IInstanceCount whe
     /// Logs a statement that the method that calls this has been called. Includes the instance counter to ID the caller.
     /// Logging only occurs if DebugSettings.EnableEventLogging is true.
     /// </summary>
-    public override void LogEvent() {
+    public sealed override void LogEvent() {
         if (_debugSettings.EnableEventLogging) {
             string methodName = GetCallingMethodName();
             string fullMethodName = AMonoSingletonDebugLogEventMethodNameFormat.Inject(transform.name, GetType().Name, InstanceCount, methodName);

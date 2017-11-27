@@ -58,6 +58,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
     protected override void SubscribeToDataValueChanges() {
         base.SubscribeToDataValueChanges();
         _subscriptions.Add(Data.SubscribeToPropertyChanged<AMortalItemData, float>(d => d.Health, HealthPropChangedHandler));
+        _subscriptions.Add(Data.SubscribeToPropertyChanging<AMortalItemData, bool>(d => d.IsDead, IsDeadPropSettingHandler));
         _subscriptions.Add(Data.SubscribeToPropertyChanged<AMortalItemData, bool>(d => d.IsDead, IsDeadPropSetHandler));
     }
 
@@ -83,6 +84,13 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
      * The previous implementation had IsOperational being set when the Dead EnterState ran, which could be a whole 
      * frame later, given the way the state machine works. This approach keeps IsOperational and Dead in sync.
      ********************************************************************************************************************************/
+
+    /// <summary>
+    /// Called just before IsDead becomes true.
+    /// </summary>
+    protected virtual void PrepareForDeath() {
+        D.Assert(!IsDead);
+    }
 
     /// <summary>
     /// The first prep method called after IsDead becomes true.
@@ -163,6 +171,10 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
 
     #region Event and Property Change Handlers
 
+    private void IsDeadPropSettingHandler(bool incomingIsDead) {
+        HandleIsDeadPropSetting(incomingIsDead);
+    }
+
     private void IsDeadPropSetHandler() {
         HandleIsDeadPropSet();
     }
@@ -182,6 +194,11 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
     }
 
     #endregion
+
+    private void HandleIsDeadPropSetting(bool incomingIsDead) {
+        D.Assert(incomingIsDead);
+        PrepareForDeath();
+    }
 
     private void HandleIsDeadPropSet() {
         //D.Log(ShowDebugLog, "{0} is initiating death sequence.", DebugName);

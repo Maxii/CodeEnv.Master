@@ -71,12 +71,15 @@ public class FleetCreator : AUnitCreator {
     protected override void BeginElementsOperations() {
         Elements.ForAll(e => {
             D.Assert(e.IsOperational);
-            bool isCanceled = e.CancelSuperiorsOrder();   // will restart Idling and thereby notify Cmd its available
-            D.Assert(isCanceled);   // 11.15.17 New fleets are not created via Ship Captain override orders, not even FleeAndRepair
+            // 11.19.17 Can't cancel element's superiors orders as Ship.Join order could have caused this fleet's creation
         });
     }
 
     protected override bool BeginCommandOperations() {
+        if (_command.IsOwnerChangeUnderway) {
+            D.Warn("{0}: {1}.CommenceOperations() called while an owner change is underway.", DebugName, _command.DebugName);
+            // 11.18.17 Added to see if this is still an issue. UNCLEAR what I did with LoneFleetCreator if owner change was underway?
+        }
         _command.CommenceOperations();
         return true;
     }

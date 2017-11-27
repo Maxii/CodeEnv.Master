@@ -29,14 +29,16 @@ using UnityEngine;
 /// </summary>
 public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
 
-    private static BaseDirective[] _userMenuOperatorDirectives = new BaseDirective[] {  BaseDirective.Repair,
+    private static BaseDirective[] _userMenuOperatorDirectives = new BaseDirective[] {
+                                                                                        BaseDirective.Repair,
                                                                                         BaseDirective.Disband,
                                                                                         BaseDirective.Scuttle,
                                                                                         BaseDirective.Refit,
                                                                                         BaseDirective.Attack
                                                                                      };
 
-    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] { FleetDirective.Disband,
+    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] {
+                                                                                        FleetDirective.Disband,
                                                                                         FleetDirective.Refit,
                                                                                         FleetDirective.Repair,
                                                                                         FleetDirective.Move,
@@ -114,26 +116,31 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
     /// <summary>
     /// Returns <c>true</c> if the menu item associated with this directive supports a submenu for listing target choices,
     /// <c>false</c> otherwise. If false, upon return the top level menu item will be disabled. Default implementation is false with no targets.
+    /// <remarks>The return value answers the question "Does the directive support submenus?" It does not mean "Are there any targets
+    /// in the submenu?" so don't return targets.Any()!</remarks>
     /// </summary>
     /// <param name="directive">The directive.</param>
     /// <param name="targets">The targets for the submenu if any were found. Can be empty.</param>
     /// <returns></returns>
     /// <exception cref="System.NotImplementedException"></exception>
     protected override bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(BaseDirective directive, out IEnumerable<INavigableDestination> targets) {
+        bool doesDirectiveSupportSubmenus = false;
         switch (directive) {
             case BaseDirective.Attack:
                 // TODO: incorporate distance from settlement
                 targets = _userKnowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsWarAttackAllowedBy(_user)).Cast<INavigableDestination>();
-                return true;
+                doesDirectiveSupportSubmenus = true;
+                break;
             case BaseDirective.Repair:
             case BaseDirective.Refit:
             case BaseDirective.Disband:
             case BaseDirective.Scuttle:
                 targets = Enumerable.Empty<INavigableDestination>();
-                return false;
+                break;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
+        return doesDirectiveSupportSubmenus;
     }
 
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
@@ -190,8 +197,7 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
         string msg = isTarget ? target.DebugName : "[none]";
         D.Log("{0} selected directive {1} and target {2} from context menu.", DebugName, directive.GetValueName(), msg);
         var order = new BaseOrder(directive, OrderSource.User, target as IUnitAttackable);
-        bool isOrderInitiated = _settlement.InitiateNewOrder(order);
-        D.Assert(isOrderInitiated);
+        _settlement.CurrentOrder = order;
     }
 
     private void IssueRemoteUserFleetOrder(int itemID) {
@@ -202,16 +208,14 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
         }
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         var order = new FleetOrder(directive, OrderSource.User, target);
-        bool isOrderInitiated = remoteFleet.InitiateNewOrder(order);
-        D.Assert(isOrderInitiated);
+        remoteFleet.CurrentOrder = order;
     }
 
     private void IssueRemoteUserShipOrder(int itemID) {
         var directive = (ShipDirective)_directiveLookup[itemID];
         D.AssertEqual(ShipDirective.Disband, directive);   // HACK
         var remoteShip = _remoteUserOwnedSelectedItem as ShipItem;
-        bool isOrderInitiated = remoteShip.InitiateNewOrder(new ShipOrder(directive, OrderSource.User, target: _settlement));
-        D.Assert(isOrderInitiated);
+        remoteShip.CurrentOrder = new ShipOrder(directive, OrderSource.User, target: _settlement);
     }
 
 }

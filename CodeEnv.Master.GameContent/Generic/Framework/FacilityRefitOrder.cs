@@ -16,6 +16,7 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
     using CodeEnv.Master.Common;
 
     /// <summary>
@@ -23,23 +24,38 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FacilityRefitOrder : FacilityOrder {
 
-        private const string DebugNameFormat = "[{0}: Directive = {1}, Source = {2}, Design = {3}, FollowonOrder = {4}, StandingOrder = {5}]";
+        private const string DebugNameFormat = "[{0}: Directive = {1}, Source = {2}, Design = {3}, FollowonOrder = {4}]";
 
         public override string DebugName {
             get {
                 string designText = RefitDesign != null ? RefitDesign.DebugName : "not yet assigned";
                 string followonOrderText = FollowonOrder != null ? FollowonOrder.DebugName : "none";
-                string standingOrderText = StandingOrder != null ? StandingOrder.DebugName : "none";
-                return DebugNameFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), designText, followonOrderText, standingOrderText);
+                return DebugNameFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), designText, followonOrderText);
             }
         }
 
         public FacilityDesign RefitDesign { get; private set; }
 
-        public FacilityRefitOrder(FacilityDirective directive, OrderSource source, FacilityDesign refitDesign)
-            : base(directive, source) {
-            D.AssertEqual(FacilityDirective.Refit, directive);
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FacilityRefitOrder" /> class.
+        /// <remarks>11.24.17 For use when an order outcome callback is expected.</remarks>
+        /// </summary>
+        /// <param name="source">The source of this order.</param>
+        /// <param name="cmdOrderID">The unique ID of the CmdOrder that caused this element order to be generated.</param>
+        /// <param name="refitDesign">The design to use for the refit.</param>
+        public FacilityRefitOrder(OrderSource source, Guid cmdOrderID, FacilityDesign refitDesign)
+            : base(FacilityDirective.Refit, source, cmdOrderID) {
             RefitDesign = refitDesign;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FacilityRefitOrder" /> class.
+        /// <remarks>11.24.17 For use when an order outcome callback is not expected.</remarks>
+        /// </summary>
+        /// <param name="source">The source of this order.</param>
+        /// <param name="refitDesign">The design to use for the refit.</param>
+        public FacilityRefitOrder(OrderSource source, FacilityDesign refitDesign)
+            : this(source, default(Guid), refitDesign) {
         }
 
     }

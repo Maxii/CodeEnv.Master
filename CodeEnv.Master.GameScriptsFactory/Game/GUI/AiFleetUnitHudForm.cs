@@ -91,6 +91,10 @@ public class AiFleetUnitHudForm : AFleetUnitHudForm {
         return OwnerAiMgr.TryFindClosestFleetRepairBase(currentFleetPosition, out closestRepairBase);
     }
 
+    protected override bool TryFindClosestFleetRefitBase(Vector3 currentFleetPosition, out IUnitBaseCmd closestRefitBase) {
+        return OwnerAiMgr.TryFindClosestRefitBase(currentFleetPosition, out closestRefitBase);
+    }
+
     #region Debug
 
     protected override IEnumerable<FleetCmdItem> __AcquireLocalUnits() {

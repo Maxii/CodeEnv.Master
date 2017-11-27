@@ -41,15 +41,6 @@ namespace CodeEnv.Master.GameContent {
         bool IsAvailable { get; }
 
         /// <summary>
-        /// Indicates this Cmd is a 'Lone' Cmd, a basic Cmd designed to support a single element. OPTIMIZE Not currently used for bases.
-        /// <remarks>A LoneFleetCmd's purpose is to 'ferry' a single ship executing a single mission, aka FleeAndRepair, JoinFleet, etc.</remarks>
-        /// <remarks>Used by PlayerAIMgr to determine the orders to issue a LoneFleet once it becomes available.</remarks>
-        /// <remarks>A FleetCmd with only 1 element is not necessarily a LoneFleetCmd.</remarks>
-        /// </summary>
-        [Obsolete]
-        bool IsLoneCmd { get; }
-
-        /// <summary>
         /// Returns <c>true</c> if there is currently room in this Cmd to join it.
         /// <remarks>For use only during operations (IsOperational == true) as it 
         /// utilizes the FormationManager which is not initialized until after all

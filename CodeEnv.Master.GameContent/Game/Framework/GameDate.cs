@@ -72,7 +72,7 @@ namespace CodeEnv.Master.GameContent {
         #region Arithmetic Operators Override
 
         public static GameTimeDuration operator -(GameDate left, GameDate right) {
-            D.Assert(left >= right);
+            D.Assert(left >= right, "{0} should be >= {1}!".Inject(left, right));
             return new GameTimeDuration(right, left);
         }
 

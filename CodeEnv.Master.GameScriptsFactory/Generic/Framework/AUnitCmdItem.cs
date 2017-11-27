@@ -89,15 +89,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     public bool IsHeroPresent { get { return Data.Hero != TempGameValues.NoHero; } }
 
-    /// <summary>
-    /// Indicates this Cmd is a 'Lone' Cmd, a basic Cmd designed to support a single element. OPTIMIZE Not currently used for bases.
-    /// <remarks>A LoneFleetCmd's purpose is to 'ferry' a single ship executing a single mission, aka FleeAndRepair, JoinFleet, etc.</remarks>
-    /// <remarks>Used by PlayerAIMgr to determine the orders to issue a LoneFleet once it becomes available.</remarks>
-    /// <remarks>A FleetCmd with only 1 element is not necessarily a LoneFleetCmd.</remarks>
-    /// </summary>
-    [Obsolete]
-    public bool IsLoneCmd { get; internal set; }
-
     public new bool IsOwnerChangeUnderway { get { return base.IsOwnerChangeUnderway; } }
 
     public override float Radius { get { return Data.Radius; } }
@@ -149,7 +140,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     protected AFormationManager FormationMgr { get; private set; }
     protected FsmEventSubscriptionManager FsmEventSubscriptionMgr { get; private set; }
-    protected override bool IsPaused { get { return _gameMgr.IsPaused; } }
+    protected sealed override bool IsPaused { get { return _gameMgr.IsPaused; } }
 
     protected Job _repairJob;
 
@@ -292,8 +283,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     /// <summary>
     /// Subscribes to sensor events including events from the UnifiedSRSensorMonitor.
-    /// <remarks>Must be called after initial runtime state is set. 
-    /// Otherwise events can arrive immediately as sensors activate.</remarks>
+    /// <remarks>Must be called after initial runtime state is set, otherwise events can arrive immediately as sensors activate.</remarks>
     /// </summary>
     protected void SubscribeToSensorEvents() {
         __ValidateStateForSensorEventSubscription();
@@ -323,6 +313,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         element.subordinateDeathOneShot += SubordinateDeathEventHandler;
         element.subordinateOwnerChanging += SubordinateOwnerChangingEventHandler;
         element.subordinateDamageIncurred += SubordinateDamageIncurredEventHandler;
+        element.isAvailableChanged += SubordinateIsAvailableChangedEventHandler;
+        element.subordinateOrderOutcome += SubordinateOrderOutcomeEventHandler;
 
         // 3.31.17 CmdSensor attachment to monitors now takes place when the sensor is built in UnitFactory.
 
@@ -336,6 +328,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         UnifiedSRSensorMonitor.Add(element.SRSensorMonitor);   // HACK added it to FinalInitialize, like AssessIcon
         AssessIcon();
         FormationMgr.AddAndPositionNonHQElement(element);
+        UponSubordinateAdded(element);
     }
 
     public virtual void RemoveElement(AUnitElementItem element) {
@@ -348,12 +341,14 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         element.subordinateDeathOneShot -= SubordinateDeathEventHandler;
         element.subordinateOwnerChanging -= SubordinateOwnerChangingEventHandler;
         element.subordinateDamageIncurred -= SubordinateDamageIncurredEventHandler;
+        element.isAvailableChanged -= SubordinateIsAvailableChangedEventHandler;
+        element.subordinateOrderOutcome -= SubordinateOrderOutcomeEventHandler;
 
         if (ElementCount == Constants.Zero) {
             D.Assert(element.IsHQ); // last element must be HQ
             element.IsHQ = false;
             IsDead = true;  // tell Cmd its dead
-            D.LogBold(/*ShowDebugLog,*/ "{0} has lost its last element and is dead.", DebugName);
+            D.LogBold("{0} has lost its last element and is dead.", DebugName);
             return;
         }
 
@@ -386,7 +381,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         }
     }
 
-    private void HandleSubordinateDeath(AUnitElementItem deadSubordinateElement) {
+    protected virtual void HandleSubordinateDeath(AUnitElementItem deadSubordinateElement) {
         // No ShowDebugLog as I always want this to report except when it doesn't compile
         if (deadSubordinateElement.IsHQ) {
             D.LogBold("{0} acknowledging {1} has been killed.", DebugName, deadSubordinateElement.DebugName);
@@ -396,10 +391,10 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         }
         RemoveElement(deadSubordinateElement);
         // state machine notification is after removal so attempts to acquire a replacement don't come up with same element
-        if (IsDead) {
-            return;    // no point in notifying Cmd's Dead state of the subordinate element's death that killed it
-        }
-        UponSubordinateElementDeath(deadSubordinateElement);
+        //if (!IsDead) {
+        //    // no point in notifying Cmd's Dead state of the subordinate element's death that killed it
+        //    UponSubordinateElementDeath(deadSubordinateElement);
+        //}
     }
 
     protected void AttachCmdToHQElement() {
@@ -521,6 +516,12 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         UnitHudWindow.Instance.Hide();
     }
 
+    protected override void PrepareForDeath() {
+        base.PrepareForDeath();
+        // 11.19.17 Must occur before Data.IsDead is set which deactivates all equipment generating events from SensorRangeMonitors
+        UnsubscribeFromSensorEvents();
+    }
+
     protected override void PrepareForDeathSequence() {
         base.PrepareForDeathSequence();
         __IsActivelyOperating = false;
@@ -531,7 +532,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     protected override void PrepareForDeadState() {
         base.PrepareForDeadState();
         // 4.15.17 Get state to a non-Called state before changing to Dead allowing that 
-        // non_Called state to callback with FsmOrderFailureCause.Death if callback is reqd
+        // non_Called state to callback with FsmCallReturnCause.Death if callback is reqd
         ReturnFromCalledStates();
         UponDeath();    // 4.19.17 Do any reqd Callback before exiting current non-Call()ed state
     }
@@ -544,6 +545,13 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     // Coverage changes. Icon needs to be assessed when any of Cmd's elements has its coverage changed as that can change which icon to show
 
     #region Event and Property Change Handlers
+
+    protected abstract void SubordinateOrderOutcomeEventHandler(object sender, AUnitElementItem.OrderOutcomeEventArgs e);
+
+
+    protected void SubordinateIsAvailableChangedEventHandler(object sender, EventArgs e) {
+        HandleSubordinateIsAvailableChanged(sender as AUnitElementItem);
+    }
 
     protected void SubordinateDamageIncurredEventHandler(object sender, AUnitElementItem.SubordinateDamageIncurredEventArgs e) {
         HandleDamageIncurredBy(sender as AUnitElementItem, e.IsAlive, e.DamageIncurred, e.DamageSeverity);
@@ -609,6 +617,10 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     #endregion
+
+    private void HandleSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) {
+        // UNDONE
+    }
 
     protected virtual void HandleAlertStatusChanged() {
         UponAlertStatusChanged();
@@ -746,12 +758,12 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     /// <summary>
-    /// Cancels each Element's CurrentOrder if not issued by the Element's Captain as an override order.
+    /// Cancels each Element's CurrentOrder.
     /// <remarks>Each element that has its CurrentOrder canceled will immediately Idle.</remarks>
     /// </summary>
-    protected void CancelElementOrders() {
+    protected void CancelElementsOrders() {
         //D.Log(ShowDebugLog, "{0} is canceling any element orders it previously issued.", DebugName);
-        Elements.ForAll(e => e.CancelSuperiorsOrder());
+        Elements.ForAll(e => e.CancelOrders());
     }
 
     protected abstract void ResetOrderAndState();
@@ -762,7 +774,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     protected abstract bool IsCurrentStateCalled { get; }
 
-    #region FsmReturnHandler and Callback System
+    #region FsmReturnHandler System
 
     /// <summary>
     /// Stack of FsmReturnHandlers that are currently in use. 
@@ -842,6 +854,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         D.Assert(!IsCurrentStateCalled);
     }
 
+    [Obsolete("Use WaitYieldInstruction in Repair_EnterState instead")]
     protected void KillRepairJob() {
         if (_repairJob != null) {
             _repairJob.Kill();
@@ -943,7 +956,12 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     protected void UponNewOrderReceived() { RelayToCurrentState(); }
 
+    [Obsolete("Use UponSubordinateRemoved and test for death")]
     private void UponSubordinateElementDeath(AUnitElementItem deadSubordinateElement) { RelayToCurrentState(deadSubordinateElement); }
+
+    protected void UponSubordinateAdded(AUnitElementItem subordinateElement) { RelayToCurrentState(subordinateElement); }
+
+    protected void UponSubordinateRemoved(AUnitElementItem subordinateElement) { RelayToCurrentState(subordinateElement); }
 
     private void UponEnemyDetected() { RelayToCurrentState(); }
 
@@ -994,8 +1012,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     /// Initiates repair.
     /// <remarks>Abstract to simply remind of need for functionality.</remarks>
     /// </summary>
-    /// <param name="retainSuperiorsOrders">if set to <c>true</c> [retain superiors orders].</param>
-    protected abstract void InitiateRepair(bool retainSuperiorsOrders);
+    protected abstract void InitiateRepair();
 
     #endregion
 
@@ -1152,10 +1169,10 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
                 UnsubscribeToIconEvents(icon);
             }
         }
-        UnsubscribeToSensorEvents();
+        UnsubscribeFromSensorEvents();
     }
 
-    private void UnsubscribeToSensorEvents() {
+    private void UnsubscribeFromSensorEvents() {
         // Cmds can be destroyed before being initialized
         if (MRSensorMonitor != null) {
             MRSensorMonitor.isOperationalChanged -= MRSensorMonitorIsOperationalChangedEventHandler;

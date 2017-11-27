@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
@@ -47,6 +48,10 @@ public class UserFleetUnitHudForm : AFleetUnitHudForm {
 
     protected override bool TryFindClosestFleetRepairBase(Vector3 currentFleetPosition, out IUnitBaseCmd_Ltd closestRepairBase) {
         return UserAiMgr.TryFindClosestFleetRepairBase(currentFleetPosition, out closestRepairBase);
+    }
+
+    protected override bool TryFindClosestFleetRefitBase(Vector3 currentFleetPosition, out IUnitBaseCmd closestRefitBase) {
+        return UserAiMgr.TryFindClosestRefitBase(currentFleetPosition, out closestRefitBase);
     }
 
     protected override void AssessInteractibleHud() {

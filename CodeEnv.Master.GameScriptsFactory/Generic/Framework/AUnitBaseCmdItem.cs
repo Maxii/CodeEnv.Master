@@ -49,7 +49,14 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     private BaseOrder _currentOrder;
     public BaseOrder CurrentOrder {
         get { return _currentOrder; }
-        private set { SetProperty<BaseOrder>(ref _currentOrder, value, "CurrentOrder", CurrentOrderPropChangedHandler); }
+        /*private*/
+        set {
+            if (_currentOrder != value) {
+                CurrentOrderPropChangingHandler(value);
+                _currentOrder = value;
+                CurrentOrderPropChangedHandler();
+            }
+        }
     }
 
     public new AUnitBaseCmdData Data {
@@ -163,17 +170,20 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
             HQElement = SelectHQElement();
             D.Log(ShowDebugLog, "{0} selected {1} as HQFacility after removal of {2}.", DebugName, HQElement.DebugName, removedFacility.DebugName);
         }
+        UponSubordinateRemoved(element);
     }
 
     /// <summary>
     /// Replaces facilityToReplace with replacingFacility in this Base.
+    /// <remarks>Only called after a facility refit has successfully completed.</remarks>
     /// <remarks>Handles adding, removing, cmd assignment, unifiedSRSensorMonitor, rotation, HQ state and 
     /// formation assignment and position. Client must create the replacingFacility, complete initialization,
     /// commence operations and destroy facilityToReplace.</remarks>
     /// </summary>
     /// <param name="facilityToReplace">The facility to replace.</param>
     /// <param name="replacingFacility">The replacing facility.</param>
-    public void ReplaceElement(FacilityItem facilityToReplace, FacilityItem replacingFacility) {
+    public void ReplaceRefittedElement(FacilityItem facilityToReplace, FacilityItem replacingFacility) {
+        D.Assert(facilityToReplace.IsCurrentOrderDirectiveAnyOf(FacilityDirective.Refit));
         // AddElement without dealing with Cmd death, HQ or FormationManager
         Elements.Add(replacingFacility);
         Data.AddElement(replacingFacility.Data);
@@ -184,16 +194,21 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         replacingFacility.subordinateDeathOneShot += SubordinateDeathEventHandler;
         replacingFacility.subordinateOwnerChanging += SubordinateOwnerChangingEventHandler;
         replacingFacility.subordinateDamageIncurred += SubordinateDamageIncurredEventHandler;
+        replacingFacility.isAvailableChanged += SubordinateIsAvailableChangedEventHandler;
+        replacingFacility.subordinateOrderOutcome += SubordinateOrderOutcomeEventHandler;
 
         // RemoveElement without dealing with Cmd death, HQ or FormationManager
         bool isRemoved = Elements.Remove(facilityToReplace);
         D.Assert(isRemoved);
         Data.RemoveElement(facilityToReplace.Data);
+
         UnifiedSRSensorMonitor.Remove(facilityToReplace.SRSensorMonitor);
 
         facilityToReplace.subordinateDeathOneShot -= SubordinateDeathEventHandler;
         facilityToReplace.subordinateOwnerChanging -= SubordinateOwnerChangingEventHandler;
         facilityToReplace.subordinateDamageIncurred -= SubordinateDamageIncurredEventHandler;
+        facilityToReplace.isAvailableChanged -= SubordinateIsAvailableChangedEventHandler;
+        facilityToReplace.subordinateOrderOutcome -= SubordinateOrderOutcomeEventHandler;
         // no need to null Command as facilityToReplace will be destroyed
 
         // no need to AssessIcon as replacingFacility only has enhanced performance
@@ -208,6 +223,10 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
             AttachCmdToHQElement(); // needs to occur before formation changed
         }
         FormationMgr.ReplaceElement(facilityToReplace, replacingFacility);
+
+        // 11.26.17 Don't communicate removal/addition to FSM as this only occurs after a Facility refit has been successful.
+        // ReplacingFacility has already been refit so doesn't need to try it again, and facilityToReplace has already 
+        // called back with success so base is not waiting for it.
     }
 
     /// <summary>
@@ -257,8 +276,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected override void PrepareForDeathSequence() {
         base.PrepareForDeathSequence();
-        ConstructionMgr.HandleDeath();
+        ConstructionMgr.HandleDeath();  // must occur before hanger as hanger relies on construction canceled
         Hanger.HandleDeath();
+        if (IsPaused) {
+            _gameMgr.isPausedChanged -= CurrentOrderChangedWhilePausedUponResumeEventHandler;
+        }
     }
 
     protected sealed override void PrepareForDeadState() {
@@ -278,8 +300,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     private void ScuttleUnit(OrderSource orderSource) {
         var elementScuttleOrder = new FacilityOrder(FacilityDirective.Scuttle, orderSource);
         // Scuttle HQElement last to avoid multiple selections of new HQElement
-        Elements.Except(HQElement).ForAll(e => (e as FacilityItem).InitiateNewOrder(elementScuttleOrder));
-        (HQElement as FacilityItem).InitiateNewOrder(elementScuttleOrder);
+        NonHQElements.ForAll(e => (e as FacilityItem).CurrentOrder = elementScuttleOrder);
+        (HQElement as FacilityItem).CurrentOrder = elementScuttleOrder;
     }
 
     protected abstract void ConnectHighOrbitRigidbodyToShipOrbitJoint(FixedJoint shipOrbitJoint);
@@ -298,16 +320,33 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         }
     }
 
-    protected void CurrentOrderPropChangedHandler() {
-        HandleNewOrder();
+    private void CurrentOrderPropChangingHandler(BaseOrder incomingOrder) {
+        HandleCurrentOrderPropChanging(incomingOrder);
     }
 
-    private void NewOrderReceivedWhilePausedUponResumeEventHandler(object sender, EventArgs e) {
-        _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedUponResumeEventHandler;
-        HandleNewOrderReceivedWhilePausedUponResume();
+    private void CurrentOrderPropChangedHandler() {
+        HandleCurrentOrderPropChanged();
     }
 
+    private void CurrentOrderChangedWhilePausedUponResumeEventHandler(object sender, EventArgs e) {
+        _gameMgr.isPausedChanged -= CurrentOrderChangedWhilePausedUponResumeEventHandler;
+        HandleCurrentOrderChangedWhilePausedUponResume();
+    }
+
+    protected sealed override void SubordinateOrderOutcomeEventHandler(object sender, AUnitElementItem.OrderOutcomeEventArgs e) {
+        HandleSubordinateOrderOutcome(sender as FacilityItem, e.IsOrderSuccessfullyCompleted, e.Target, e.FailureCause, e.CmdOrderID);
+    }
     #endregion
+
+    protected override void HandleSubordinateDeath(AUnitElementItem deadSubordinateElement) {
+        base.HandleSubordinateDeath(deadSubordinateElement);
+        if (!IsDead) {
+            if (ConstructionMgr.IsConstructionQueuedFor(deadSubordinateElement)) {
+                var deadElementConstruction = ConstructionMgr.GetConstructionFor(deadSubordinateElement);
+                ConstructionMgr.RemoveFromQueue(deadElementConstruction);
+            }
+        }
+    }
 
     protected sealed override void HandleFormationChanged() {
         base.HandleFormationChanged();
@@ -333,67 +372,44 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     /// </summary>
     private Stack<BaseOrder> _ordersReceivedWhilePaused = new Stack<BaseOrder>();
 
-    /// <summary>
-    /// Attempts to initiate the execution of the provided order, returning <c>true</c>
-    /// if its execution was initiated, <c>false</c> if its execution was deferred until all of the 
-    /// override orders issued by the CmdStaff have executed. 
-    /// <remarks>If order.Source is User, even the CmdStaff's orders will be overridden, returning <c>true</c>.</remarks>
-    /// <remarks>If called while paused, the order will be deferred until unpaused and return the same value it would
-    /// have returned if it hadn't been paused.</remarks>
-    /// <remarks>5.4.17 I've chosen to hold orders here when paused, allowing the AI to issue orders even when paused.</remarks>
-    /// </summary>
-    /// <param name="order">The order.</param>
-    /// <returns></returns>
-    public bool InitiateNewOrder(BaseOrder order) {
-        D.Assert(order.Source > OrderSource.CmdStaff);
-        if (order.Directive == BaseDirective.Cancel) {
-            D.Assert(_gameMgr.IsPaused && order.Source == OrderSource.User);
-        }
-
+    private void HandleCurrentOrderPropChanging(BaseOrder incomingOrder) {
         if (IsPaused) {
             if (!_ordersReceivedWhilePaused.Any()) {
                 if (CurrentOrder != null) {
-                    // first order received while paused so record the CurrentOrder before recording the new order
+                    // first order received while paused so record the CurrentOrder before recording the incomingOrder
                     _ordersReceivedWhilePaused.Push(CurrentOrder);
                 }
             }
-            _ordersReceivedWhilePaused.Push(order);
-            // deal with multiple changes all while paused
-            _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedUponResumeEventHandler;
-            _gameMgr.isPausedChanged += NewOrderReceivedWhilePausedUponResumeEventHandler;
-            bool willOrderExecutionImmediatelyFollowResume = IsCurrentOrderImmediatelyReplaceableBy(order);
-            return willOrderExecutionImmediatelyFollowResume;
         }
-
-        D.Assert(!IsPaused);
-        D.AssertEqual(Constants.Zero, _ordersReceivedWhilePaused.Count);
-
-        if (!IsCurrentOrderImmediatelyReplaceableBy(order)) {
-            CurrentOrder.StandingOrder = order;
-            return false;
-        }
-        CurrentOrder = order;
-        return true;
     }
 
-    /// <summary>
-    /// Returns <c>true</c> if CurrentOrder can immediately be replaced by order, <c>false</c> otherwise.
-    /// <remarks>CurrentOrder can immediately be replaced by order if order was issued by the User, OR
-    /// CurrentOrder is null OR CurrentOrder isn't an override order issued by CmdStaff.</remarks>
-    /// <remarks>A CmdStaff-issued override order can only be immediately replaced by a User-issued order.</remarks>
-    /// </summary>
-    /// <param name="order">The order.</param>
-    /// <returns></returns>
-    private bool IsCurrentOrderImmediatelyReplaceableBy(BaseOrder order) {
-        return order.Source == OrderSource.User || CurrentOrder == null || CurrentOrder.Source != OrderSource.CmdStaff;
+    private void HandleCurrentOrderPropChanged() {
+        if (IsPaused) {
+            // previous CurrentOrder already recorded in _ordersReceivedWhilePaused if not null
+            if (CurrentOrder != null) {
+                if (CurrentOrder.Directive == BaseDirective.Scuttle) {
+                    // allow a Scuttle order to proceed while paused
+                    HandleNewOrder();
+                    return;
+                }
+                _ordersReceivedWhilePaused.Push(CurrentOrder);
+                // deal with multiple changes all while paused
+                _gameMgr.isPausedChanged -= CurrentOrderChangedWhilePausedUponResumeEventHandler;
+                _gameMgr.isPausedChanged += CurrentOrderChangedWhilePausedUponResumeEventHandler;
+                return;
+            }
+            // CurrentOrder is internally nulled for a number of reasons, including while paused
+            _ordersReceivedWhilePaused.Clear(); // PropChanging will have recorded any previous order
+        }
+        HandleNewOrder();
     }
 
-    private void HandleNewOrderReceivedWhilePausedUponResume() {
+    private void HandleCurrentOrderChangedWhilePausedUponResume() {
         D.Assert(!IsPaused);
+        D.AssertNotNull(CurrentOrder);
         D.AssertNotEqual(Constants.Zero, _ordersReceivedWhilePaused.Count);
-        // If the last order received was Cancel, then the order that was current when the first order
-        // was issued during this pause should be reinstated, aka all the orders received while paused are
-        // not valid and the original order should continue.
+        // If the last order received was Cancel, then the order that was current when the first order was issued during this pause
+        // should be reinstated, aka all the orders received while paused are not valid and the original order should continue.
         BaseOrder order;
         var lastOrderReceivedWhilePaused = _ordersReceivedWhilePaused.Pop();
         if (lastOrderReceivedWhilePaused.Directive == BaseDirective.Cancel) {
@@ -408,9 +424,16 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
             order = lastOrderReceivedWhilePaused;
         }
         _ordersReceivedWhilePaused.Clear();
-        if (order != null) { // can be null if lastOrderReceivedWhilePaused is Cancel and there was no original order
-            D.Log(/*ShowDebugLog, */"{0} is changing or re-instating order to {1} after resuming from pause.", DebugName, order.DebugName);
-            InitiateNewOrder(order);
+        // order can be null if lastOrderReceivedWhilePaused is Cancel and there was no original order
+        if (order != null) {
+            D.Log("{0} is changing or re-instating order to {1} after resuming from pause.", DebugName, order.DebugName);
+        }
+
+        if (CurrentOrder != order) {
+            CurrentOrder = order;
+        }
+        else {
+            HandleNewOrder();
         }
     }
 
@@ -424,10 +447,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         if (IsPaused && _ordersReceivedWhilePaused.Any()) {
             // paused with a pending order replacement
             BaseOrder newOrder = _ordersReceivedWhilePaused.Peek();
-            if (IsCurrentOrderImmediatelyReplaceableBy(newOrder)) {
-                // newOrder will immediately replace CurrentOrder as soon as unpaused
-                return newOrder.Directive == directiveA;
-            }
+            // newOrder will immediately replace CurrentOrder as soon as unpaused
+            return newOrder.Directive == directiveA;
         }
         return CurrentOrder != null && CurrentOrder.Directive == directiveA;
     }
@@ -443,47 +464,10 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         if (IsPaused && _ordersReceivedWhilePaused.Any()) {
             // paused with a pending order replacement
             BaseOrder newOrder = _ordersReceivedWhilePaused.Peek();
-            if (IsCurrentOrderImmediatelyReplaceableBy(newOrder)) {
-                // newOrder will immediately replace CurrentOrder as soon as unpaused
-                return newOrder.Directive == directiveA || newOrder.Directive == directiveB;
-            }
+            // newOrder will immediately replace CurrentOrder as soon as unpaused
+            return newOrder.Directive == directiveA || newOrder.Directive == directiveB;
         }
         return CurrentOrder != null && (CurrentOrder.Directive == directiveA || CurrentOrder.Directive == directiveB);
-    }
-
-    /// <summary>
-    /// The CmdStaff uses this method to override orders already issued.
-    /// <remarks>Will throw an error if issued while paused.</remarks>
-    /// </summary>
-    /// <param name="overrideOrder">The CmdStaff's override order.</param>
-    /// <param name="retainSuperiorsOrder">if set to <c>true</c> [retain superiors order].</param>
-    private void OverrideCurrentOrder(BaseOrder overrideOrder, bool retainSuperiorsOrder) {
-        D.AssertEqual(OrderSource.CmdStaff, overrideOrder.Source);
-        D.AssertNull(overrideOrder.StandingOrder);
-        // 11.14.17 Shouldn't be possible for CmdStaff to issue an order via this route while paused. e.g. issuing a repair 
-        // order as a consequence of taking damage requires the damage to have been delivered while paused which shouldn't be possible.
-        D.Assert(!_gameMgr.IsPaused);
-
-        BaseOrder standingOrder = null;
-        if (retainSuperiorsOrder && CurrentOrder != null) {
-            if (CurrentOrder.Source > OrderSource.CmdStaff) {
-                D.AssertNull(CurrentOrder.FollowonOrder, CurrentOrder.ToString());
-                // the current order is from the CmdStaff's superior so retain it
-                standingOrder = CurrentOrder;
-            }
-            else {
-                // the current order is from the CmdStaff, so it or its FollowonOrder's standing order, if any, should be retained
-                standingOrder = CurrentOrder.FollowonOrder != null ? CurrentOrder.FollowonOrder.StandingOrder : CurrentOrder.StandingOrder;
-            }
-        }
-        // assign the standingOrder, if any, to the last order to be executed in the overrideOrder
-        if (overrideOrder.FollowonOrder != null) {
-            overrideOrder.FollowonOrder.StandingOrder = standingOrder;
-        }
-        else {
-            overrideOrder.StandingOrder = standingOrder;
-        }
-        CurrentOrder = overrideOrder;
     }
 
     private void HandleNewOrder() {
@@ -511,13 +495,15 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
                     ScuttleUnit(CurrentOrder.Source);
                     break;
                 case BaseDirective.Refit:
+                    CurrentState = BaseState.ExecuteRefitOrder;
+                    break;
                 case BaseDirective.Disband:
                     D.Warn("{0}.{1} is not currently implemented.", typeof(BaseDirective).Name, directive.GetValueName());
                     break;
                 case BaseDirective.ChangeHQ:   // 3.16.17 implemented by assigning HQElement, not as an order
                 case BaseDirective.Cancel:
                 // 9.13.17 Cancel should never be processed here as it is only issued by User while paused and is 
-                // handled by HandleNewOrderReceivedWhilePausedUponResume(). 
+                // handled by HandleCurrentOrderChangedWhilePausedUponResume(). 
                 case BaseDirective.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
@@ -538,7 +524,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     #region StateMachine
 
     protected new BaseState CurrentState {
-        get { return (BaseState)base.CurrentState; }
+        get { return (BaseState)base.CurrentState; }   // NRE means base.CurrentState is null -> not yet set
         set { base.CurrentState = value; }
     }
 
@@ -546,9 +532,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         get { return base.LastState != null ? (BaseState)base.LastState : default(BaseState); }
     }
 
-    protected override bool IsCurrentStateCalled { get { return IsStateCalled(CurrentState); } }
+    protected override bool IsCurrentStateCalled { get { return IsCallableState(CurrentState); } }
 
-    private bool IsStateCalled(BaseState state) {
+    private bool IsCallableState(BaseState state) {
         return state == BaseState.Repairing;
     }
 
@@ -571,7 +557,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         }
         var stateWhenCalled = CurrentState;
         ReturnFromCalledStates();
-        D.LogBold(/*ShowDebugLog, */"{0}.RestartState called from {1}.{2}. RestartedState = {3}.",
+        D.Log(/*ShowDebugLog, */"{0}.RestartState called from {1}.{2}. RestartedState = {3}.",
             DebugName, typeof(BaseState).Name, stateWhenCalled.GetValueName(), CurrentState.GetValueName());
         CurrentState = CurrentState;
     }
@@ -586,9 +572,16 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         LogEvent();
     }
 
+    protected void FinalInitialize_UponNewOrderReceived() {
+        D.Error("{0} received FinalInitialize_UponNewOrderReceived().", DebugName);
+    }
+
     protected void FinalInitialize_UponRelationsChangedWith(Player player) {
         LogEvent();
-        // can be received when activation of sensors immediately finds another player
+        // 5.19.17 Creators have elements CommenceOperations before Cmds do. Reversing won't work as
+        // Cmds have Sensors too. Its the sensors that come up and detect things before all Cmd is ready
+        // 5.30.17 IMPROVE No real harm as will change to Idling immediately afterward
+        D.Warn("{0} received FinalInitialize_UponRelationsChangedWith({1}).", DebugName, player);
     }
 
     protected void FinalInitialize_ExitState() {
@@ -619,23 +612,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
                 yield return null;
                 D.Error("{0} should never get here as CurrentOrder was changed to {1}.", DebugName, CurrentOrder);
             }
-            // If we got here, there is no FollowonOrder, so now check for any StandingOrder
-            if (CurrentOrder.StandingOrder != null) {
-                D.LogBold(ShowDebugLog, "{0} returning to execution of standing order {1}.", DebugName, CurrentOrder.StandingOrder);
-
-                OrderSource standingOrderSource = CurrentOrder.StandingOrder.Source;
-                if (standingOrderSource < OrderSource.CmdStaff) {
-                    D.Error("{0} StandingOrder {1} source can't be {2}.", DebugName, CurrentOrder.StandingOrder, standingOrderSource.GetValueName());
-                }
-
-                CurrentOrder = CurrentOrder.StandingOrder;
-                yield return null;
-                D.Error("{0} should never get here as CurrentOrder was changed to {1}.", DebugName, CurrentOrder);
-            }
-            //D.Log(ShowDebugLog, "{0} has completed {1} with no follow-on or standing order queued.", DebugName, CurrentOrder);
+            //D.Log(ShowDebugLog, "{0} has completed {1} with no follow-on order queued.", DebugName, CurrentOrder);
             CurrentOrder = null;
         }
-        D.AssertNull(CurrentOrder);
 
         IsAvailable = true; // 10.3.16 this can instantly generate a new Order (and thus a state change). Accordingly, this EnterState
                             // cannot return void as that causes the FSM to fail its 'no state change from void EnterState' test.
@@ -645,6 +624,15 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected void Idling_UponNewOrderReceived() {
         LogEvent();
         // TODO
+    }
+
+    protected void Idling_UponSubordinateAdded(AUnitElementItem subordinateElement) {
+        LogEvent();
+        // do nothing. No orders currently being executed
+    }
+
+    protected void Idling_UponSubordinateRemoved(AUnitElementItem subordinateElement) {
+        LogEvent();
     }
 
     protected void Idling_UponRelationsChangedWith(Player player) {
@@ -671,10 +659,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected void Idling_UponUnitDamageIncurred() {
         LogEvent();
         if (AssessNeedForRepair(GeneralSettings.Instance.HealthThreshold_BadlyDamaged)) {
-            InitiateRepair(retainSuperiorsOrders: false);
+            InitiateRepair();
         }
     }
 
+    [Obsolete]
     protected void Idling_UponSubordinateElementDeath(AUnitElementItem deadSubordinateElement) {
         LogEvent();
     }
@@ -721,19 +710,28 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         LogEvent();
 
         IUnitAttackable unitAttackTgt = _fsmTgt;
-        var elementAttackOrder = new FacilityOrder(FacilityDirective.Attack, CurrentOrder.Source, CurrentOrder.OrderID, target: unitAttackTgt as IElementNavigableDestination);
-        Elements.ForAll(e => (e as FacilityItem).InitiateNewOrder(elementAttackOrder));
+        var elementAttackOrder = new FacilityOrder(FacilityDirective.Attack, CurrentOrder.Source, CurrentOrder.OrderID, unitAttackTgt as IElementNavigableDestination);
+        Elements.ForAll(e => (e as FacilityItem).CurrentOrder = elementAttackOrder);
     }
 
-    protected void ExecuteAttackOrder_UponOrderOutcomeCallback(FacilityItem facility, bool isSuccess, IElementNavigableDestination target, FsmOrderFailureCause failCause) {
+    protected void ExecuteAttackOrder_UponOrderOutcomeCallback(FacilityItem facility, bool isSuccess, IElementNavigableDestination target, OrderFailureCause failCause) {
         LogEvent();
-        D.Warn("{0}.ExecuteAttackOrder_UponOrderOutcomeCallback() not implemented.", DebugName);
+        D.Warn("FYI. {0}.ExecuteAttackOrder_UponOrderOutcomeCallback() called!", DebugName);
         // TODO 9.21.17 Once the attack on the UnitAttackTarget has been naturally completed -> Idle
     }
+
 
     protected void ExecuteAttackOrder_UponNewOrderReceived() {
         LogEvent();
         // TODO
+    }
+
+    protected void ExecuteAttackOrder_UponSubordinateAdded(AUnitElementItem subordinateElement) {
+        LogEventWarning();
+    }
+
+    protected void ExecuteAttackOrder_UponSubordinateRemoved(AUnitElementItem subordinateElement) {
+        LogEvent();
     }
 
     protected void ExecuteAttackOrder_UponRelationsChangedWith(Player player) {
@@ -768,7 +766,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected void ExecuteAttackOrder_UponUnitDamageIncurred() {
         LogEvent();
         if (AssessNeedForRepair(GeneralSettings.Instance.HealthThreshold_BadlyDamaged)) {
-            InitiateRepair(retainSuperiorsOrders: true);
+            InitiateRepair();
         }
     }
 
@@ -814,7 +812,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         D.Assert(isUnsubscribed);
 
         _fsmTgt = null;
-        CancelElementOrders();
+        CancelElementsOrders();
     }
 
     #endregion
@@ -824,7 +822,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     #region ExecuteRepairOrder Support Members
 
     private FsmReturnHandler CreateFsmReturnHandler_RepairingToRepair() {
-        IDictionary<FsmOrderFailureCause, Action> taskLookup = new Dictionary<FsmOrderFailureCause, Action>() {
+        IDictionary<FsmCallReturnCause, Action> taskLookup = new Dictionary<FsmCallReturnCause, Action>() {
             // Death: 4.14.17 No longer a ReturnCause as InitiateDeadState auto Return()s out of Call()ed states
             // NeedsRepair won't occur as Repairing won't signal need for repair while repairing
             // TgtDeath not subscribed
@@ -840,11 +838,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         ValidateCommonNotCallableStateValues();
         D.Assert(!_debugSettings.DisableRepair);
         D.AssertNull(CurrentOrder.Target);  // 4.4.17 Currently no target as only repair destination for a base is itself
-        // TgtUncatchable
         _fsmTgt = this;
-        // No FsmInfoAccessChgd or FsmTgtDeath EventHandlers needed for our own base
-        bool isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, _fsmTgt);
-        D.Assert(isSubscribed);
+        // No FsmInfoAccessChgd, FsmTgtDeath or FsmTgtOwnerChg EventHandlers needed for our own base
     }
 
     protected IEnumerator ExecuteRepairOrder_EnterState() {
@@ -859,16 +854,25 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
             D.Error("Shouldn't get here as the ReturnCause should generate a change of state.");
         }
 
+        // Can't assert OneHundredPercent as more hits can occur after repairing completed
         CurrentState = BaseState.Idling;
     }
 
-    protected void ExecuteRepairOrder_UponOrderOutcomeCallback(FacilityItem facility, bool isSuccess, IElementNavigableDestination target, FsmOrderFailureCause failCause) {
-        LogEventWarning();  // UNCLEAR there is a 1 frame gap where this can still be called?
+    protected void ExecuteRepairOrder_UponOrderOutcomeCallback(FacilityItem facility, bool isSuccess, IElementNavigableDestination target, OrderFailureCause failCause) {
+        D.Warn("FYI. {0}.ExecuteRepairOrder_UponOrderOutcomeCallback() called!", DebugName);
     }
 
     protected void ExecuteRepairOrder_UponNewOrderReceived() {
         LogEvent();
         // TODO
+    }
+
+    protected void ExecuteRepairOrder_UponSubordinateAdded(AUnitElementItem subordinateElement) {
+        LogEventWarning();
+    }
+
+    protected void ExecuteRepairOrder_UponSubordinateRemoved(AUnitElementItem subordinateElement) {
+        LogEvent();
     }
 
     protected void ExecuteRepairOrder_UponAlertStatusChanged() {
@@ -888,7 +892,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void ExecuteRepairOrder_UponUnitDamageIncurred() {
         LogEvent();
-        // No need to AssessNeedForRepair() as already Repairing
+        // do nothing. Completion will repair all damage
     }
 
     protected void ExecuteRepairOrder_UponRelationsChangedWith(Player player) {
@@ -896,13 +900,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         // Can't be relevant as our Base is all we care about
     }
 
+    [Obsolete]
     protected void ExecuteRepairOrder_UponSubordinateElementDeath(AUnitElementItem deadSubordinateElement) {
         LogEvent();
-    }
-
-    protected void ExecuteRepairOrder_UponFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) {
-        LogEvent();
-        // UNCLEAR we are no longer the owner of this base
     }
 
     protected void ExecuteRepairOrder_UponLosingOwnership() {
@@ -917,13 +917,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected void ExecuteRepairOrder_ExitState() {
         LogEvent();
 
-        // No FsmInfoAccessChgd or FsmTgtDeath EventHandlers needed for our own base
-        bool isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, _fsmTgt);
-        D.Assert(isUnsubscribed);
-
         _activeFsmReturnHandlers.Clear();
         _fsmTgt = null;
-        CancelElementOrders();
+        CancelElementsOrders();
     }
 
     #endregion
@@ -935,7 +931,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     #region Repairing Support Members
 
     /// <summary>
-    /// The current number of ships the fleet is waiting for to complete repairs.
+    /// The current number of elements the cmd is waiting for to complete repairs.
     /// </summary>
     private int _fsmFacilityWaitForRepairCount;
 
@@ -959,9 +955,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         IUnitCmdRepairCapable thisRepairCapableBase = _fsmTgt as IUnitCmdRepairCapable;
 
         // 4.3.17 Facilities will choose their own repairDestination, either thisRepairCapableBase or their future FormationStation
-        // 4.8.17 By assigning the CmdOrderID, this Cmd is indicating it expects a response containing the outcome of the order's execution.
-        FacilityOrder facilityRepairOrder = new FacilityOrder(FacilityDirective.Repair, OrderSource.CmdStaff, CurrentOrder.OrderID);
-        Elements.ForAll(e => (e as FacilityItem).InitiateNewOrder(facilityRepairOrder));
+        FacilityOrder facilityRepairOrder = new FacilityOrder(FacilityDirective.Repair, CurrentOrder.Source, CurrentOrder.OrderID);
+        Elements.ForAll(e => (e as FacilityItem).CurrentOrder = facilityRepairOrder);
 
         // 3.19.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
         // I think it is because there is a rare scenario where no yield return is encountered below this. 
@@ -971,38 +966,30 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         StartEffectSequence(EffectSequenceID.Repairing);
 
         float cmdRepairCapacityPerDay = thisRepairCapableBase.GetAvailableRepairCapacityFor(this, HQElement, Owner);
-        string jobName = "{0}.RepairJob".Inject(DebugName);
-        _repairJob = _jobMgr.RecurringWaitForHours(GameTime.HoursPerDay, jobName, waitMilestone: () => {
+
+        WaitForHours waitYieldInstruction = new WaitForHours(GameTime.HoursPerDay);
+        while (Data.Health < Constants.OneHundredPercent) {
             var repairedHitPts = cmdRepairCapacityPerDay;
             Data.CurrentHitPoints += repairedHitPts;
             //D.Log(ShowDebugLog, "{0} repaired {1:0.#} hit points.", DebugName, repairedHitPts);
-        });
-
-        while (Data.Health < Constants.OneHundredPercent) {
-            // Wait here until repair finishes
-            yield return null;
+            yield return waitYieldInstruction;
         }
-        KillRepairJob();
 
-        // HACK
-        Data.PassiveCountermeasures.Where(cm => cm.IsDamageable).ForAll(cm => cm.IsDamaged = false);
-        Data.Sensors.Where(s => s.IsDamageable).ForAll(s => s.IsDamaged = false);
-        // FtlDampener is not damageable
-
+        Data.RemoveDamageFromAllEquipment();
         StopEffectSequence(EffectSequenceID.Repairing);
 
         while (_fsmFacilityWaitForRepairCount > Constants.Zero) {
             // Wait here until facilities are all repaired
             yield return null;
         }
-        D.LogBold(ShowDebugLog, "{0}'s has completed repair of Cmd and all Facilities. Health = {1:P01}.", DebugName, Data.Health);
+        D.Log(ShowDebugLog, "{0}'s has completed repair of Cmd and all Elements. Health = {1:P01}.", DebugName, Data.Health);
         Return();
     }
 
-    protected void Repairing_UponOrderOutcomeCallback(FacilityItem ship, bool isSuccess, IElementNavigableDestination target, FsmOrderFailureCause failCause) {
+    protected void Repairing_UponOrderOutcomeCallback(FacilityItem facility, bool isSuccess, IElementNavigableDestination target, OrderFailureCause failCause) {
         LogEvent();
         D.Log(ShowDebugLog, "{0}.Repairing_UponOrderOutcomeCallback() called from {1}. FailCause = {2}. Frame: {3}.",
-            DebugName, ship.DebugName, failCause.GetValueName(), Time.frameCount);
+            DebugName, facility.DebugName, failCause.GetValueName(), Time.frameCount);
 
         D.AssertNotNull(target);
         if (isSuccess) {
@@ -1010,28 +997,51 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         }
         else {
             switch (failCause) {
-                case FsmOrderFailureCause.Death:
-                case FsmOrderFailureCause.NewOrderReceived:
-                case FsmOrderFailureCause.Ownership:
+                case OrderFailureCause.Death:
+                case OrderFailureCause.NewOrderReceived:
+                case OrderFailureCause.Ownership:
                     _fsmFacilityWaitForRepairCount--;
                     break;
-                case FsmOrderFailureCause.NeedsRepair:
+                case OrderFailureCause.NeedsRepair:
                     // Ignore it as facility will RestartState if it encounters this from another Call()ed state
                     break;
-                case FsmOrderFailureCause.TgtUnreachable:
-                    D.Error("{0}: {1}.{2} not currently handled.", DebugName, typeof(FsmOrderFailureCause).Name,
-                        FsmOrderFailureCause.TgtUnreachable.GetValueName());
+                case OrderFailureCause.TgtUnreachable:
+                    D.Error("{0}: {1}.{2} not currently handled.", DebugName, typeof(OrderFailureCause).Name,
+                        OrderFailureCause.TgtUnreachable.GetValueName());
                     break;
-                case FsmOrderFailureCause.TgtDeath:
+                case OrderFailureCause.TgtDeath:
                 // UNCLEAR this base is dead
-                case FsmOrderFailureCause.TgtRelationship:
+                case OrderFailureCause.TgtRelationship:
                 // UNCLEAR this base's owner just changed
-                case FsmOrderFailureCause.TgtUncatchable:
-                case FsmOrderFailureCause.None:
+                case OrderFailureCause.TgtUnjoinable:
+                case OrderFailureCause.TgtUncatchable:
+                case OrderFailureCause.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(failCause));
             }
         }
+    }
+
+    protected void Repairing_UponSubordinateAdded(AUnitElementItem subordinateElement) {
+        LogEvent();
+        bool toIssueOrder = false;
+        if (_fsmFacilityWaitForRepairCount > Constants.Zero) {
+            _fsmFacilityWaitForRepairCount++;
+            toIssueOrder = true;
+        }
+        // 11.25.17 If some facilities still repairing issue a Repair order with a callback
+        if (toIssueOrder) {
+            // 4.3.17 Facilities will choose their own repairDestination, either thisRepairCapableBase or their future FormationStation
+            D.LogBold("{0} will {1} after joining {2} during State {3}.", subordinateElement.DebugName, FacilityDirective.Repair.GetValueName(),
+                DebugName, CurrentState.GetValueName());
+            FacilityOrder facilityRepairOrder = new FacilityOrder(FacilityDirective.Repair, CurrentOrder.Source, CurrentOrder.OrderID);
+            (subordinateElement as FacilityItem).CurrentOrder = facilityRepairOrder;
+        }
+    }
+
+    protected void Repairing_UponSubordinateRemoved(AUnitElementItem subordinateElement) {
+        LogEvent();
+        // do nothing. Will be handled by order outcome callback
     }
 
     protected void Repairing_UponAlertStatusChanged() {
@@ -1050,9 +1060,10 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void Repairing_UponUnitDamageIncurred() {
         LogEvent();
-        // No need to AssessNeedForRepair() as already Repairing
+        // do nothing. Completion will repair all damage
     }
 
+    [Obsolete]
     protected void Repairing_UponSubordinateElementDeath(AUnitElementItem deadSubordinateElement) {
         LogEvent();
     }
@@ -1062,33 +1073,199 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         // Not relevant as this base is owned by us
     }
 
-    protected void Repairing_UponFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) {
-        LogEvent();
-        // UNCLEAR we just lost ownership of this base
-    }
-
-    // 4.7.17 No FsmInfoAccessChgd or FsmTgtDeath EventHandlers needed for our own base
+    // 4.7.17 No FsmInfoAccessChgd, FsmTgtDeath  or FsmTgtOwnerChg EventHandlers needed for our own base
 
     // 4.15.17 Call()ed state _UponDeath eliminated as InitiateDeadState now uses Call()ed state Return() pattern
 
     protected void Repairing_ExitState() {
         LogEvent();
-        KillRepairJob();
         _fsmFacilityWaitForRepairCount = Constants.Zero;
     }
 
     #endregion
 
-    #region Refitting
+    #region ExecuteRefitOrder
 
-    protected void Refitting_EnterState() {
+    #region ExecuteRefitOrder Support Members
+
+    private IDictionary<FacilityItem, FacilityDesign> _fsmFacilityRefitDesignLookup;
+
+    private void PopulateFacilityRefitDesignLookup() {
+        _fsmFacilityRefitDesignLookup = _fsmFacilityRefitDesignLookup ?? new Dictionary<FacilityItem, FacilityDesign>();
+        D.AssertEqual(Constants.Zero, _fsmFacilityRefitDesignLookup.Count);
+
+        var playerDesigns = _gameMgr.PlayersDesigns;
+        IList<FacilityDesign> designs;
+        foreach (var element in Elements) {
+            FacilityItem facility = element as FacilityItem;
+            if (playerDesigns.TryGetUpgradeDesigns(Owner, facility.Data.Design, out designs)) {
+                FacilityDesign refitDesign = RandomExtended.Choice(designs);
+                _fsmFacilityRefitDesignLookup.Add(facility, refitDesign);
+            }
+        }
+        D.Assert(_fsmFacilityRefitDesignLookup.Any());  // Should not have been called if no upgrades available
+    }
+
+    #endregion
+
+    protected void ExecuteRefitOrder_UponPreconfigureState() {
+        LogEvent();
+
+        ValidateCommonNotCallableStateValues();
+        D.AssertNull(CurrentOrder.Target);  // 4.4.17 Currently no target as only refit destination for a base is itself
+        _fsmTgt = this;
+        // No FsmInfoAccessChgd, FsmTgtDeath or FsmTgtOwnerChg EventHandlers needed for our own base
+        bool areRefitDesignsPresent = _gameMgr.PlayersDesigns.AreUnitUpgradeDesignsPresent(Owner, Data);
+        D.Assert(areRefitDesignsPresent);
+
+        PopulateFacilityRefitDesignLookup();
+    }
+
+    protected IEnumerator ExecuteRefitOrder_EnterState() {
+        LogEvent();
+
+        foreach (var facility in _fsmFacilityRefitDesignLookup.Keys) {
+            var refitOrder = new FacilityRefitOrder(CurrentOrder.Source, CurrentOrder.OrderID, _fsmFacilityRefitDesignLookup[facility]);
+            facility.CurrentOrder = refitOrder;
+        }
+
+        // 3.19.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
+        // I think it is because there is a rare scenario where no yield return is encountered below this. 
+        // See http://answers.unity3d.com/questions/158917/error-quotmcoroutineenumeratorgchandle-0quot.html
+        yield return null;
+
+        // 11.26.17 Placeholder for refitting the CmdModule which is not currently supported
+        StartEffectSequence(EffectSequenceID.Refitting);
+        Data.RemoveDamageFromAllEquipment();
+        StopEffectSequence(EffectSequenceID.Refitting);
+
+        while (_fsmFacilityRefitDesignLookup.Count > Constants.Zero) {
+            // Wait here until facilities are all repaired
+            yield return null;
+        }
+        D.LogBold(/*ShowDebugLog, */"{0}'s has completed refit of all Elements.", DebugName);
+        CurrentState = BaseState.Idling;
+    }
+
+    protected void ExecuteRefitOrder_UponOrderOutcomeCallback(FacilityItem facility, bool isSuccess, IElementNavigableDestination target, OrderFailureCause failCause) {
+        LogEvent();
+        D.Log(ShowDebugLog, "{0}.ExecuteRefitOrder_UponOrderOutcomeCallback() called from {1}. FailCause = {2}. Frame: {3}.",
+            DebugName, facility.DebugName, failCause.GetValueName(), Time.frameCount);
+
+        D.AssertEqual(this, target);
+        if (isSuccess) {
+            bool isRemoved = _fsmFacilityRefitDesignLookup.Remove(facility);
+            D.Assert(isRemoved);
+        }
+        else {
+            switch (failCause) {
+                case OrderFailureCause.Death:
+                case OrderFailureCause.NewOrderReceived:
+                case OrderFailureCause.Ownership:
+                case OrderFailureCause.ConstructionCanceled:
+                    bool isRemoved = _fsmFacilityRefitDesignLookup.Remove(facility);
+                    D.Assert(isRemoved);
+                    break;
+                case OrderFailureCause.TgtUnreachable:
+                    D.Error("{0}: {1}.{2} not currently handled.", DebugName, typeof(OrderFailureCause).Name,
+                        OrderFailureCause.TgtUnreachable.GetValueName());
+                    break;
+                case OrderFailureCause.TgtDeath:
+                // Should not occur as Tgt is this base and last facility will have already informed us of death
+                case OrderFailureCause.TgtRelationship:
+                // Should not occur as Tgt is this base and last facility will have already informed us of loss of ownership
+                case OrderFailureCause.NeedsRepair:
+                // Should not occur as Facility knows finishing refit repairs all damage
+                case OrderFailureCause.TgtUnjoinable:
+                case OrderFailureCause.TgtUncatchable:
+                case OrderFailureCause.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(failCause));
+            }
+        }
+    }
+
+    protected void ExecuteRefitOrder_UponNewOrderReceived() {
+        LogEvent();
+        // do nothing as state change will follow
+    }
+
+    protected void ExecuteRefitOrder_UponSubordinateAdded(AUnitElementItem subordinateElement) {
+        LogEvent();
+
+        FacilityItem subordinateFacility = subordinateElement as FacilityItem;
+        IList<FacilityDesign> refitDesigns;
+        if (_gameMgr.PlayersDesigns.TryGetUpgradeDesigns(Owner, subordinateFacility.Data.Design, out refitDesigns)) {
+            // refit design available for this subordinateElement
+            FacilityDesign refitDesign = RandomExtended.Choice(refitDesigns);
+
+            bool toCallback = false;
+            if (_fsmFacilityRefitDesignLookup.Any()) {
+                _fsmFacilityRefitDesignLookup.Add(subordinateFacility, refitDesign);
+                toCallback = true;
+            }
+
+            D.LogBold("{0} will {1} after joining {2} during State {3}.", subordinateElement.DebugName, FacilityDirective.Refit.GetValueName(),
+                DebugName, CurrentState.GetValueName());
+
+            // 11.26.17 Facilities will choose their own refitDestination, aka this base
+            FacilityRefitOrder refitOrder;
+            if (toCallback) {
+                refitOrder = new FacilityRefitOrder(CurrentOrder.Source, CurrentOrder.OrderID, refitDesign);
+            }
+            else {
+                refitOrder = new FacilityRefitOrder(CurrentOrder.Source, refitDesign);
+            }
+            subordinateFacility.CurrentOrder = refitOrder;
+        }
+    }
+
+    protected void ExecuteRefitOrder_UponSubordinateRemoved(AUnitElementItem subordinateElement) {
+        LogEvent();
+        // do nothing. Will be handled by order outcome callback
+    }
+
+    protected void ExecuteRefitOrder_UponAlertStatusChanged() {
+        LogEvent();
+        // nothing to do. All facilities will be notified
+    }
+
+    protected void ExecuteRefitOrder_UponHQElementChanged() {
+        LogEvent();
+        // nothing to do. Affected facilities will be notified
+    }
+
+    protected void ExecuteRefitOrder_UponEnemyDetected() {
         LogEvent();
         // TODO
     }
 
-    protected void Refitting_UponOwnerChanged() {
+    protected void ExecuteRefitOrder_UponUnitDamageIncurred() {
         LogEvent();
-        // TODO
+        // do nothing. Completion will repair all damage
+    }
+
+    protected void ExecuteRefitOrder_UponRelationsChangedWith(Player player) {
+        LogEvent();
+        // Not relevant as this base is owned by us
+    }
+
+    protected void ExecuteRefitOrder_UponLosingOwnership() {
+        LogEvent();
+        // TODO Notify superiors
+    }
+
+    protected void ExecuteRefitOrder_UponDeath() {
+        LogEvent();
+    }
+
+    // 4.7.17 No FsmInfoAccessChgd, FsmTgtDeath or FsmTgtOwnerChg EventHandlers needed for our own base
+
+    protected void ExecuteRefitOrder_ExitState() {
+        LogEvent();
+        _fsmFacilityRefitDesignLookup.Clear();
+        _fsmTgt = null;
+        CancelElementsOrders();
     }
 
     #endregion
@@ -1137,7 +1314,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     #region StateMachine Support Members
 
-    #region FsmReturnHandler and Callback System
+    #region FsmReturnHandler System
 
     /// <summary>
     /// Lookup table for FsmReturnHandlers keyed by the state Call()ed and the state Return()ed too.
@@ -1154,7 +1331,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     /// <param name="returnedState">The state Return()ed too.</param>
     /// <returns></returns>
     private FsmReturnHandler GetInactiveReturnHandlerFor(BaseState calledState, BaseState returnedState) {
-        D.Assert(IsStateCalled(calledState));   // Can't validate returnedState as not Call()able due to nested Call()ed states
+        D.Assert(IsCallableState(calledState));   // Can't validate returnedState as not Call()able due to nested Call()ed states
         IDictionary<BaseState, FsmReturnHandler> returnedStateLookup;
         if (!_fsmReturnHandlerLookup.TryGetValue(calledState, out returnedStateLookup)) {
             returnedStateLookup = new Dictionary<BaseState, FsmReturnHandler>();
@@ -1180,7 +1357,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     /// <param name="returnedState">The state Return()ed too.</param>
     /// <returns></returns>
     private FsmReturnHandler GetActiveReturnHandlerFor(BaseState calledState, BaseState returnedState) {
-        D.Assert(IsStateCalled(calledState));   // Can't validate returnedState as not Call()able due to nested Call()ed states
+        D.Assert(IsCallableState(calledState));   // Can't validate returnedState as not Call()able due to nested Call()ed states
         IDictionary<BaseState, FsmReturnHandler> returnedStateLookup;
         if (!_fsmReturnHandlerLookup.TryGetValue(calledState, out returnedStateLookup)) {
             returnedStateLookup = new Dictionary<BaseState, FsmReturnHandler>();
@@ -1196,7 +1373,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     }
 
     private FsmReturnHandler CreateFsmReturnHandlerFor(BaseState calledState, BaseState returnedState) {
-        D.Assert(IsStateCalled(calledState));
+        D.Assert(IsCallableState(calledState));
         if (calledState == BaseState.Repairing && returnedState == BaseState.ExecuteRepairOrder) {
             return CreateFsmReturnHandler_RepairingToRepair();
         }
@@ -1205,24 +1382,15 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         return null;
     }
 
-    /// <summary>
-    /// Handles the results of the facility's attempt to execute the CmdOrder identified by
-    /// the unique <c>orderID</c>.
-    /// </summary>
-    /// <param name="orderID">The unique CmdOrder ID used to determine whether to relay this outcome.</param>
-    /// <param name="facility">The facility.</param>
-    /// <param name="isSuccessful">if set to <c>true</c> [is successful].</param>
-    /// <param name="target">The target. Can be null.</param>
-    /// <param name="failCause">The failure cause if not successful.</param>
-    internal void HandleOrderOutcomeCallback(Guid orderID, FacilityItem facility, bool isSuccessful, IElementNavigableDestination target, FsmOrderFailureCause failCause) {
-        D.AssertNotDefault(orderID);
-        if (CurrentOrder != null && CurrentOrder.OrderID == orderID) {
-            // outcome is relevant to CurrentOrder and State
-            UponOrderOutcomeCallback(facility, isSuccessful, target, failCause);
-        }
-        else {
-            // 4.9.17 Perfectly normal. CurrentOrder has been nulled or changed just before this arrived
-            D.Log(ShowDebugLog, "{0}.HandleOrderOutcomeCallback received without matching OrderID.", DebugName);
+    #endregion
+
+    #region Order Outcome Callback System
+
+    private void HandleSubordinateOrderOutcome(FacilityItem facility, bool isOrderSuccessfullyCompleted, IElementNavigableDestination target,
+        OrderFailureCause failureCause, Guid cmdOrderID) {
+        if (CurrentOrder != null && CurrentOrder.OrderID == cmdOrderID) {
+            // callback is intended for current state(s) executing the current order
+            UponOrderOutcomeCallback(facility, isOrderSuccessfullyCompleted, target, failureCause);
         }
     }
 
@@ -1250,8 +1418,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     #region Relays
 
-    private void UponOrderOutcomeCallback(FacilityItem facility, bool isSuccess, IElementNavigableDestination target, FsmOrderFailureCause failCause) {
-        RelayToCurrentState(facility, isSuccess, target, failCause);
+    private void UponOrderOutcomeCallback(FacilityItem facility, bool isOrderSuccessfullyCompleted, IElementNavigableDestination target,
+        OrderFailureCause failCause) {
+        RelayToCurrentState(facility, isOrderSuccessfullyCompleted, target, failCause);
     }
 
     #endregion
@@ -1266,7 +1435,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         if (_debugSettings.RepairAnyDamage) {
             healthThreshold = Constants.OneHundredPercent;
         }
-        if (Data.Health < healthThreshold) {
+        // IMPROVE currently only deals with Cmd's health, not UnitHealth
+        if (Data.Health > Constants.ZeroPercent && Data.Health < healthThreshold) {
             // TODO We don't want to reassess if any Repair order is queued as a followOrder
             //D.Log(ShowDebugLog, "{0} has determined it needs Repair.", DebugName);
             return true;
@@ -1274,7 +1444,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         return false;
     }
 
-    protected override void InitiateRepair(bool retainSuperiorsOrders) {
+    protected override void InitiateRepair() {
         D.Assert(!IsCurrentStateAnyOf(BaseState.ExecuteRepairOrder, BaseState.Repairing));
         D.Assert(!_debugSettings.DisableRepair);
         D.Assert(Data.Health < Constants.OneHundredPercent);
@@ -1282,7 +1452,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
         // TODO Consider issuing RepairOrder as a followonOrder to some initial order, ala Ship
         BaseOrder repairOrder = new BaseOrder(BaseDirective.Repair, OrderSource.CmdStaff);
-        OverrideCurrentOrder(repairOrder, retainSuperiorsOrders);
+        CurrentOrder = repairOrder;
     }
 
     #endregion
@@ -1305,7 +1475,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected override void Unsubscribe() {
         base.Unsubscribe();
-        _gameMgr.isPausedChanged -= NewOrderReceivedWhilePausedUponResumeEventHandler;
+        _gameMgr.isPausedChanged -= CurrentOrderChangedWhilePausedUponResumeEventHandler;
     }
 
     #endregion
@@ -1344,7 +1514,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     /// <summary>
     /// Enum defining the states a Base (Starbase or Settlement) can operate in.
     /// </summary>
-    public enum BaseState {
+    protected enum BaseState {
 
         None,
 
@@ -1355,11 +1525,16 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         ExecuteRepairOrder,
         Repairing,
 
-        Refitting,
+        ExecuteRefitOrder,
+
         Disbanding,
         Dead
 
     }
+
+    #endregion
+
+    #region Archive
 
     #endregion
 
@@ -1580,10 +1755,17 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         if (IsRepairingAllowedBy(elementOwner)) {
             float basicValue = TempGameValues.RepairCapacityBasic_Base;
             float relationsFactor = Owner.GetCurrentRelations(elementOwner).RepairCapacityFactor(); // 0.5 - 2
-            float orbitFactor = IsInCloseOrbit(ship) ? TempGameValues.RepairCapacityFactor_CloseOrbit
-                : IsInHighOrbit(ship) ? TempGameValues.RepairCapacityFactor_HighOrbit : 1F; // 1 - 2
-            return basicValue * relationsFactor * orbitFactor;
-
+            float locationFactor = 1F;  // 1 - 3
+            if (Hanger.Contains(ship)) {
+                locationFactor = TempGameValues.RepairCapacityFactor_Hanger;
+            }
+            else if (IsInCloseOrbit(ship)) {
+                locationFactor = TempGameValues.RepairCapacityFactor_CloseOrbit;
+            }
+            else if (IsInHighOrbit(ship)) {
+                locationFactor = TempGameValues.RepairCapacityFactor_HighOrbit;
+            }
+            return basicValue * relationsFactor * locationFactor;
         }
         return Constants.ZeroF;
     }

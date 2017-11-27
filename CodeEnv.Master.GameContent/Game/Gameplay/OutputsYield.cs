@@ -32,6 +32,9 @@ namespace CodeEnv.Master.GameContent {
     public struct OutputsYield : IEquatable<OutputsYield> {
 
         private const string Unknown = Constants.QuestionMark;
+        private const string DebugNameFormat = "{0}.{1}";
+        private const string FirstOutputStringBuilderFormat = "{0}({1})"; // use of [ ] causes Ngui label problems
+        private const string ContinuingStringBuilderFormat = ", {0}({1})";
 
         #region Operators Override
 
@@ -105,11 +108,9 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        private const string DebugNameFormat = "{0}.{1}";
-        private const string FirstOutputStringBuilderFormat = "{0}({1})"; // use of [ ] causes Ngui label problems
-        private const string ContinuingStringBuilderFormat = ", {0}({1})";
-
         private static StringBuilder _stringBuilder = new StringBuilder();
+
+        public static OutputsYield OneProduction = new OutputsYield(OutputID.Production, Constants.OneF);   // after _stringBuilder
 
         private string _debugName;
         public string DebugName {

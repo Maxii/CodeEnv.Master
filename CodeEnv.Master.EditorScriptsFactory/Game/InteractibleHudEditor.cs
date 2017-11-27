@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: InteractableHudEditor.cs
+// File: InteractibleHudEditor.cs
 // Custom editor for the InteractibleHudWindow.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -23,8 +23,12 @@ using UnityEditor;
 /// Custom editor for the InteractibleHudWindow.
 /// </summary>
 [CustomEditor(typeof(InteractibleHudWindow))]
-public class InteractableHudEditor : AGuiWindowEditor<InteractibleHudWindow> {
+public class InteractibleHudEditor : AGuiWindowEditor<InteractibleHudWindow> {
 
+    protected override void DrawDerivedClassProperties() {
+        base.DrawDerivedClassProperties();
+        NGUIEditorTools.DrawProperty("Hide Exceptions", serializedObject, "_hideExceptions");
+    }
 
 }
 

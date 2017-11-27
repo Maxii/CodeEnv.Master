@@ -358,19 +358,10 @@ public abstract class AFleetUnitHudForm : AForm {
 
     private void HandleUnitScuttleButtonClicked() {
         D.AssertEqual(Constants.One, _pickedUnitIcons.Count);
-        // 8.15.17 Resume must occur before scuttle order so it propagates to all subscribers before initiating death
-        _gameMgr.RequestPauseStateChange(toPause: false);
 
         var scuttleOrder = new FleetOrder(FleetDirective.Scuttle, OrderSource.User);
         var pickedUnit = _pickedUnitIcons.First().Unit;
-        bool isSelectedUnitSlatedToDie = pickedUnit == SelectedUnit;
-
-        pickedUnit.InitiateNewOrder(scuttleOrder);
-        if (isSelectedUnitSlatedToDie) {
-            // if SelectedUnit dies, there will be no CurrentSelection so game will resume and shouldn't be re-paused
-            return;
-        }
-        _gameMgr.RequestPauseStateChange(toPause: true);
+        pickedUnit.CurrentOrder = scuttleOrder;
     }
 
     private void HandleUnitGuardButtonToggleChanged() {
@@ -382,7 +373,7 @@ public abstract class AFleetUnitHudForm : AForm {
             IGuardable closestItemAllowedToGuard;
             if (TryFindClosestGuardableItem(pickedUnit.Position, out closestItemAllowedToGuard)) {
                 FleetOrder guardOrder = new FleetOrder(FleetDirective.Guard, OrderSource.User, closestItemAllowedToGuard as IFleetNavigableDestination);
-                pickedUnit.InitiateNewOrder(guardOrder);
+                pickedUnit.CurrentOrder = guardOrder;
                 //D.Log("{0} is issuing an order to {1} to Guard {2}.", DebugName, pickedUnit.DebugName, closestItemAllowedToGuard.DebugName);
                 _unitGuardButton.SetIconColor(TempGameValues.SelectedColor);
                 AssessUnitButtons();
@@ -394,7 +385,7 @@ public abstract class AFleetUnitHudForm : AForm {
         }
         else {
             FleetOrder cancelOrder = new FleetOrder(FleetDirective.Cancel, OrderSource.User);
-            pickedUnit.InitiateNewOrder(cancelOrder);
+            pickedUnit.CurrentOrder = cancelOrder;
             _unitGuardButton.SetIconColor(GameColor.White);
         }
     }
@@ -410,7 +401,7 @@ public abstract class AFleetUnitHudForm : AForm {
             IPatrollable closestItemAllowedToPatrol;
             if (TryFindClosestPatrollableItem(pickedUnit.Position, out closestItemAllowedToPatrol)) {
                 FleetOrder patrolOrder = new FleetOrder(FleetDirective.Patrol, OrderSource.User, closestItemAllowedToPatrol as IFleetNavigableDestination);
-                pickedUnit.InitiateNewOrder(patrolOrder);
+                pickedUnit.CurrentOrder = patrolOrder;
                 //D.Log("{0} is issuing an order to {1} to Patrol {2}.", DebugName, pickedUnit.DebugName, closestItemAllowedToPatrol.DebugName);
                 _unitPatrolButton.SetIconColor(TempGameValues.SelectedColor);
                 AssessUnitButtons();
@@ -422,7 +413,7 @@ public abstract class AFleetUnitHudForm : AForm {
         }
         else {
             FleetOrder cancelOrder = new FleetOrder(FleetDirective.Cancel, OrderSource.User);
-            pickedUnit.InitiateNewOrder(cancelOrder);
+            pickedUnit.CurrentOrder = cancelOrder;
             _unitPatrolButton.SetIconColor(GameColor.White);
         }
     }
@@ -438,7 +429,7 @@ public abstract class AFleetUnitHudForm : AForm {
             IUnitBaseCmd_Ltd closestRepairBase;
             if (TryFindClosestFleetRepairBase(pickedUnit.Position, out closestRepairBase)) {
                 FleetOrder repairOrder = new FleetOrder(FleetDirective.Repair, OrderSource.User, closestRepairBase as IFleetNavigableDestination);
-                pickedUnit.InitiateNewOrder(repairOrder);
+                pickedUnit.CurrentOrder = repairOrder;
                 //D.Log("{0} is issuing an order to {1} to Repair at {2}.", DebugName, pickedUnit.DebugName, closestRepairBase.DebugName);
                 _unitRepairButton.SetIconColor(TempGameValues.SelectedColor);
                 AssessUnitButtons();
@@ -450,7 +441,7 @@ public abstract class AFleetUnitHudForm : AForm {
         }
         else {
             FleetOrder cancelOrder = new FleetOrder(FleetDirective.Cancel, OrderSource.User);
-            pickedUnit.InitiateNewOrder(cancelOrder);
+            pickedUnit.CurrentOrder = cancelOrder;
             _unitRepairButton.SetIconColor(GameColor.White);
         }
     }
@@ -458,11 +449,32 @@ public abstract class AFleetUnitHudForm : AForm {
     protected abstract bool TryFindClosestFleetRepairBase(Vector3 currentFleetPosition, out IUnitBaseCmd_Ltd closestRepairBase);
 
     private void HandleUnitRefitButtonToggleChanged() {
-        D.Warn("{0}.HandleUnitRefitButtonToggleChanged not yet implemented.", DebugName);
+        D.AssertEqual(Constants.One, _pickedUnitIcons.Count);
         _toggleButtonsUsedThisSession.Add(_unitRefitButton);
-        _unitRefitButton.SetToggledState(false); // TEMP release the button
-        // UNDONE
+        var pickedUnit = _pickedUnitIcons.First().Unit;
+        bool isButtonToggledIn = _unitRefitButton.IsToggledIn;
+        if (isButtonToggledIn) {
+            IUnitBaseCmd closestRefitBase;
+            if (TryFindClosestFleetRefitBase(pickedUnit.Position, out closestRefitBase)) {
+                FleetOrder refitOrder = new FleetOrder(FleetDirective.Refit, OrderSource.User, closestRefitBase as IFleetNavigableDestination);
+                pickedUnit.CurrentOrder = refitOrder;
+                D.LogBold("{0} is issuing an order to {1} to Refit at {2}.", DebugName, pickedUnit.DebugName, closestRefitBase.DebugName);
+                _unitRefitButton.SetIconColor(TempGameValues.SelectedColor);
+                AssessUnitButtons();
+            }
+            else {
+                D.Warn("{0} found no Base for {1} to refit at.", DebugName, pickedUnit.DebugName);
+                _unitRefitButton.SetToggledState(false);    // release the button
+            }
+        }
+        else {
+            FleetOrder cancelOrder = new FleetOrder(FleetDirective.Cancel, OrderSource.User);
+            pickedUnit.CurrentOrder = cancelOrder;
+            _unitRefitButton.SetIconColor(GameColor.White);
+        }
     }
+
+    protected abstract bool TryFindClosestFleetRefitBase(Vector3 currentFleetPosition, out IUnitBaseCmd closestRefitBase);
 
     private void HandleUnitDisbandButtonToggleChanged() {
         D.Warn("{0}.HandleUnitDisbandButtonToggleChanged not yet implemented.", DebugName);
@@ -511,7 +523,7 @@ public abstract class AFleetUnitHudForm : AForm {
         _unitScuttleButton.isEnabled = _pickedUnitIcons.Count == Constants.One;
 
         if (_pickedUnitIcons.Count == Constants.One) {
-            // if 1 picked, set toggle state without notify and enable all. If order initiated, it will find closest item to execute on
+            // 11.18.17 picked units are limited to one to make cancel order practical to implement
             var pickedUnit = _pickedUnitIcons.First().Unit;
 
             bool isOrderedToRepair = pickedUnit.IsCurrentOrderDirectiveAnyOf(FleetDirective.Repair);
@@ -717,38 +729,23 @@ public abstract class AFleetUnitHudForm : AForm {
             resultingFleet = fleetsToMerge.First();
         }
 
-        _gameMgr.RequestPauseStateChange(toPause: false);
-        _gameMgr.RequestPauseStateChange(toPause: true);
-
         var allFleets = new HashSet<FleetCmdItem>(_unitIconLookup.Keys);
         bool isAdded = allFleets.Add(resultingFleet);
         if (!isAdded) {
             // 11.12.17 The same fleet instance can occur for multiple reasons: 1) a fleet that is formed from all of
             // its existing ships is actually the same instance, and 2) a fleet that results from a merge will 
             // always be one of the instances submitted for the merge.
-            D.Warn("FYI. {0}: No need to add {1} when it is already present.", DebugName, resultingFleet.DebugName);
+            D.Log("{0}: No need to add {1} when it is already present.", DebugName, resultingFleet.DebugName);
         }
         RebuildUnitIcons(allFleets, resultingFleet);
     }
 
     private void HandleShipScuttleButtonClicked() {
         D.Assert(_pickedElementIcons.Any());
-        // 8.15.17 Resume must occur before scuttle order so it propagates to all subscribers before initiating death
-        _gameMgr.RequestPauseStateChange(toPause: false);
 
         var pickedElements = _pickedElementIcons.Select(icon => icon.Element);
-
-        bool isSelectedUnitSlatedToDie = !SelectedUnit.Elements.Cast<ShipItem>().Except(pickedElements).Any();
-
         var scuttleOrder = new ShipOrder(ShipDirective.Scuttle, OrderSource.User);
-        pickedElements.ForAll(element => element.InitiateNewOrder(scuttleOrder));
-
-        if (isSelectedUnitSlatedToDie) {
-            // if SelectedUnit dies, there will be no CurrentSelection so game will resume and shouldn't be re-paused
-            return;
-        }
-
-        _gameMgr.RequestPauseStateChange(toPause: true);
+        pickedElements.ForAll(e => e.CurrentOrder = scuttleOrder);
     }
 
     private void PickSingleElementIcon(ShipIconGuiElement icon) {
@@ -926,7 +923,7 @@ public abstract class AFleetUnitHudForm : AForm {
     private void RemoveIcon(FleetIconGuiElement icon) {
         _pickedUnitIcons.Remove(icon);  // may not be present
         if (icon.IsInitialized) {
-            D.AssertNotNull(icon.Unit, "{0}: {1}'s Unit has been destroyed.".Inject(DebugName, icon.DebugName));
+            D.AssertNotNull(icon.Unit, "{0}: {1}'s Unit has been destroyed?".Inject(DebugName, icon.DebugName));
             FleetIconGuiElement unitIcon;
             bool isIconFound = _unitIconLookup.TryGetValue(icon.Unit, out unitIcon);
             D.Assert(isIconFound);
@@ -988,7 +985,17 @@ public abstract class AFleetUnitHudForm : AForm {
     }
 
     private void HandleDeathOf(ShipItem element) {
-        BuildPickedUnitsCompositionIcons();    // Rebuild from scratch as may need more blanks        
+        // 11.18.17 If deadElement is last ship in fleet to die, then fleet is already dead and its icon has been removed.
+        // BuildPickedUnitsCompositionIcons() requires that there be one or more picked unit icons
+        if (_pickedUnitIcons.Any()) {
+            BuildPickedUnitsCompositionIcons();    // Rebuild from scratch as may need more blanks        
+        }
+        else {
+            // No remaining picked unit icons so HUD will hide and reset the form. Unfortunately, the form's reset won't 
+            // necessarily happen right away as GuiWindows don't necessarily complete their hide right away. 
+            // Remove the icon now so it doesn't persist in the short time before the HUD hides.
+            RemoveAllUnitCompositionIcons();
+        }
     }
 
     protected abstract void AssessInteractibleHud();

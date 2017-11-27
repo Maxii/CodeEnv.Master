@@ -323,22 +323,30 @@ public abstract class ABaseUnitHudForm : AForm {
         bool isButtonToggledIn = _unitRepairButton.IsToggledIn;
         if (isButtonToggledIn) {
             BaseOrder repairOrder = new BaseOrder(BaseDirective.Repair, OrderSource.User);
-            SelectedUnit.InitiateNewOrder(repairOrder);
+            SelectedUnit.CurrentOrder = repairOrder;
             //D.Log("{0} is issuing an order to {1} to Repair.", DebugName, SelectedUnit.DebugName);
         }
         else {
             BaseOrder cancelOrder = new BaseOrder(BaseDirective.Cancel, OrderSource.User);
-            SelectedUnit.InitiateNewOrder(cancelOrder);
+            SelectedUnit.CurrentOrder = cancelOrder;
         }
         _toggleButtonsUsedThisSession.Add(_unitRepairButton);
         AssessUnitButtons();
     }
 
     private void HandleUnitRefitButtonToggleChanged() {
-        D.Warn("{0}.HandleUnitRefitButtonToggleChanged not yet implemented.", DebugName);
+        bool isButtonToggledIn = _unitRefitButton.IsToggledIn;
+        if (isButtonToggledIn) {
+            BaseOrder refitOrder = new BaseOrder(BaseDirective.Refit, OrderSource.User);
+            SelectedUnit.CurrentOrder = refitOrder;
+            //D.Log("{0} is issuing an order to {1} to Refit.", DebugName, SelectedUnit.DebugName);
+        }
+        else {
+            BaseOrder cancelOrder = new BaseOrder(BaseDirective.Cancel, OrderSource.User);
+            SelectedUnit.CurrentOrder = cancelOrder;
+        }
         _toggleButtonsUsedThisSession.Add(_unitRefitButton);
         AssessUnitButtons();
-        // UNDONE
     }
 
     private void HandleUnitDisbandButtonToggleChanged() {
@@ -349,11 +357,8 @@ public abstract class ABaseUnitHudForm : AForm {
     }
 
     private void HandleUnitScuttleButtonClicked() {
-        // 8.15.17 Resume must occur before scuttle order so it propagates to all subscribers before initiating death
-        _gameMgr.RequestPauseStateChange(toPause: false);
-
         var scuttleOrder = new BaseOrder(BaseDirective.Scuttle, OrderSource.User);
-        SelectedUnit.InitiateNewOrder(scuttleOrder);
+        SelectedUnit.CurrentOrder = scuttleOrder;
         // as SelectedUnit dies, there will be no CurrentSelection so game will resume and shouldn't be re-paused
     }
 
@@ -511,7 +516,7 @@ public abstract class ABaseUnitHudForm : AForm {
         else {
             order = new FacilityOrder(FacilityDirective.Cancel, OrderSource.User);
         }
-        _pickedFacilityIcons.First().Element.InitiateNewOrder(order);
+        _pickedFacilityIcons.First().Element.CurrentOrder = order;
         // buttons already assessed
     }
 
@@ -522,12 +527,12 @@ public abstract class ABaseUnitHudForm : AForm {
         FacilityOrder order;
         if (_facilityRefitButton.IsToggledIn) {
             FacilityDesign refitDesign = __PickRandomRefitDesign(pickedFacility.Data.Design);
-            order = new FacilityRefitOrder(FacilityDirective.Refit, OrderSource.User, refitDesign);
+            order = new FacilityRefitOrder(OrderSource.User, refitDesign);
         }
         else {
             order = new FacilityOrder(FacilityDirective.Cancel, OrderSource.User);
         }
-        pickedFacility.InitiateNewOrder(order);
+        pickedFacility.CurrentOrder = order;
         // buttons already assessed
     }
 
@@ -541,29 +546,17 @@ public abstract class ABaseUnitHudForm : AForm {
         else {
             order = new FacilityOrder(FacilityDirective.Cancel, OrderSource.User);
         }
-        _pickedFacilityIcons.First().Element.InitiateNewOrder(order);
+        _pickedFacilityIcons.First().Element.CurrentOrder = order;
         // buttons already assessed
     }
 
     private void HandleFacilityScuttleButtonClicked() {
         D.Assert(_pickedFacilityIcons.Any());
-        // 8.15.17 Resume must occur before scuttle order so it propagates to all subscribers before initiating death
-        _gameMgr.RequestPauseStateChange(toPause: false);
-
         var pickedElements = _pickedFacilityIcons.Select(icon => icon.Element);
-
-        bool isSelectedUnitSlatedToDie = (SelectedUnit.ElementCount - pickedElements.Count()) == Constants.Zero;
 
         //D.Log("{0} received an OnClick event telling it to scuttle {1}.", DebugName, pickedElements.Select(e => e.DebugName).Concatenate());
         var scuttleOrder = new FacilityOrder(FacilityDirective.Scuttle, OrderSource.User);
-        pickedElements.ForAll(element => element.InitiateNewOrder(scuttleOrder));
-
-        if (isSelectedUnitSlatedToDie) {
-            // if SelectedUnit dies, there will be no CurrentSelection so game will resume and shouldn't be re-paused
-            return;
-        }
-
-        _gameMgr.RequestPauseStateChange(toPause: true);
+        pickedElements.ForAll(e => e.CurrentOrder = scuttleOrder);
         // buttons already assessed
     }
 
@@ -571,6 +564,7 @@ public abstract class ABaseUnitHudForm : AForm {
         _facilityScuttleButton.isEnabled = _pickedFacilityIcons.Any();
 
         if (_pickedFacilityIcons.Count == Constants.One) {
+            // 11.18.17 picked elements are limited to one to make cancel order practical to implement
             var pickedFacility = _pickedFacilityIcons.First().Element;
 
             if (pickedFacility.ReworkUnderway != ReworkingMode.None) {
@@ -728,9 +722,7 @@ public abstract class ABaseUnitHudForm : AForm {
         var pickedShips = _pickedHangerShipIcons.Select(icon => icon.Element);
         var createFleetShips = pickedShips.Where(ship => !IsShipExcludedFromHangerFleet(ship));
 
-        _gameMgr.RequestPauseStateChange(toPause: false);
         SelectedUnit.Hanger.FormFleetFrom("HangerFleet", Formation.Globe, createFleetShips);
-        _gameMgr.RequestPauseStateChange(toPause: true);
         BuildHangerShipIcons();
     }
 
@@ -745,7 +737,7 @@ public abstract class ABaseUnitHudForm : AForm {
         else {
             order = new ShipOrder(ShipDirective.Cancel, OrderSource.User);
         }
-        pickedShip.InitiateNewOrder(order);
+        pickedShip.CurrentOrder = order;
         // buttons already assessed
     }
 
@@ -756,12 +748,12 @@ public abstract class ABaseUnitHudForm : AForm {
         ShipOrder order;
         if (_shipRefitButton.IsToggledIn) {
             var refitDesign = __PickRandomRefitDesign(pickedShip.Data.Design);
-            order = new ShipRefitOrder(ShipDirective.Refit, OrderSource.User, refitDesign, SelectedUnit);
+            order = new ShipRefitOrder(OrderSource.User, refitDesign, SelectedUnit);
         }
         else {
             order = new ShipOrder(ShipDirective.Cancel, OrderSource.User);
         }
-        pickedShip.InitiateNewOrder(order);
+        pickedShip.CurrentOrder = order;
         // buttons already assessed
     }
 
@@ -776,21 +768,16 @@ public abstract class ABaseUnitHudForm : AForm {
         else {
             order = new ShipOrder(ShipDirective.Cancel, OrderSource.User);
         }
-        pickedShip.InitiateNewOrder(order);
+        pickedShip.CurrentOrder = order;
         // buttons already assessed
     }
 
     private void HandleShipScuttleButtonClicked() {
         D.Assert(_pickedHangerShipIcons.Any());
-        // 8.15.17 Resume must occur before scuttle order so it propagates to all subscribers before initiating death
-        _gameMgr.RequestPauseStateChange(toPause: false);
 
         var pickedShips = _pickedHangerShipIcons.Select(icon => icon.Element);
-
         var scuttleOrder = new ShipOrder(ShipDirective.Scuttle, OrderSource.User);
-        pickedShips.ForAll(element => element.InitiateNewOrder(scuttleOrder));
-
-        _gameMgr.RequestPauseStateChange(toPause: true);
+        pickedShips.ForAll(e => e.CurrentOrder = scuttleOrder);
         // buttons already assessed
     }
 
@@ -803,6 +790,7 @@ public abstract class ABaseUnitHudForm : AForm {
         _shipCreateFleetButton.isEnabled = isShipCreateFleetButtonEnabled;
 
         if (_pickedHangerShipIcons.Count == Constants.One) {
+            // 11.18.17 picked elements are limited to one to make cancel order practical to implement
             var pickedShip = _pickedHangerShipIcons.First().Element;
             if (pickedShip.ReworkUnderway != ReworkingMode.None) {
                 _shipRepairButton.IsEnabled = false;
@@ -928,7 +916,7 @@ public abstract class ABaseUnitHudForm : AForm {
             CreateAndAddIcon(ship, iconSize);
         }
 
-        D.Log("{0}: Built ShipIcons in sequence: {1}.", DebugName, _sortedHangerShipIconTransforms.Select(t => t.name).Concatenate());
+        //D.Log("{0}: Built ShipIcons in sequence: {1}.", DebugName, _sortedHangerShipIconTransforms.Select(t => t.name).Concatenate());
         _hangerShipIconsGrid.repositionNow = true;
     }
 

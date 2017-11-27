@@ -294,11 +294,11 @@ public class AssaultVehicle : APhysicsProjectileOrdnance, ITerminatableOrdnance,
                 bool areAssaultsAlwaysSuccessful = DebugControls.Instance.AreAssaultsAlwaysSuccessful;
                 if (areAssaultsAlwaysSuccessful) {
                     if (__objectsEncounteredBeforeTarget > 0) {
-                        D.LogBold(/*ShowDebugLog, */"{0} is about to successfully assault and take over {1} in Frame {2}. ObjectsPreviouslyEncountered = {3}.",
+                        D.Log(/*ShowDebugLog, */"{0} is about to successfully assault and take over {1} in Frame {2}. ObjectsPreviouslyEncountered = {3}.",
                             DebugName, prevAssaultTgtName, Time.frameCount, __objectsEncounteredBeforeTarget);
                     }
                     else {
-                        D.Log(ShowDebugLog, "{0} is about to successfully assault and take over {1} in Frame {2}. No previous objects encountered.",
+                        D.Log(/*ShowDebugLog, */"{0} is about to successfully assault and take over {1} in Frame {2}. No previous objects encountered.",
                             DebugName, prevAssaultTgtName, Time.frameCount);
                     }
                 }

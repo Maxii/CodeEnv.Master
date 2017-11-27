@@ -219,6 +219,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public void HideReworkingVisuals() {
+            // 11.25.17 Debugging null _reworkIcon found in RefreshReworkingVisuals from element repair job
+            D.Log("{0} is nulling {1}.", DebugName, _reworkIcon.DebugName);
             D.AssertNotNull(_reworkIcon);
             _reworkIcon.Destroy();
             _reworkIcon = null;

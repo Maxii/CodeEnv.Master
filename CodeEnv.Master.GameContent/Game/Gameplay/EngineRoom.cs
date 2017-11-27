@@ -526,7 +526,7 @@ namespace CodeEnv.Master.GameContent {
                 mortalObstacle.__death += CollidingObstacleDeathEventHandler;
             }
 
-            D.Log(/*ShowDebugLog,*/ "{0} engaging Collision Avoidance to avoid {1}.", DebugName, obstacle.DebugName);
+            //D.Log("{0} engaging Collision Avoidance to avoid {1}.", DebugName, obstacle.DebugName);
             EngageCollisionAvoidancePropulsionFor(obstacle);
         }
 

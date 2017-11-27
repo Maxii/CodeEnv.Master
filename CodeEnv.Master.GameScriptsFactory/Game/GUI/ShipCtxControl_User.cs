@@ -75,13 +75,12 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
     protected override bool IsUserMenuOperatorMenuItemDisabledFor(ShipDirective directive) {
         switch (directive) {
             case ShipDirective.Scuttle:
-                return _shipMenuOperator.IsCurrentOrderDirectiveAnyOf(ShipDirective.Scuttle);
+            case ShipDirective.Disband:
+                return _shipMenuOperator.IsCurrentOrderDirectiveAnyOf(directive);
             case ShipDirective.Disengage:
                 return IsShipDisengageOrderDisabled;
             case ShipDirective.Join:
                 return _shipMenuOperator.IsLocatedInHanger || !_userKnowledge.AreAnyFleetsJoinableBy(_shipMenuOperator);
-            case ShipDirective.Disband:
-                return false;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
@@ -90,29 +89,35 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
     /// <summary>
     /// Returns <c>true</c> if the menu item associated with this directive supports a submenu for listing target choices,
     /// <c>false</c> otherwise. If false, upon return the top level menu item will be disabled. Default implementation is false with no targets.
+    /// <remarks>The return value answers the question "Does the directive support submenus?" It does not mean "Are there any targets
+    /// in the submenu?" so don't return targets.Any()!</remarks>
     /// </summary>
     /// <param name="directive">The directive.</param>
     /// <param name="targets">The targets for the submenu if any were found. Can be empty.</param>
     /// <returns></returns>
     /// <exception cref="System.NotImplementedException"></exception>
     protected override bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(ShipDirective directive, out IEnumerable<INavigableDestination> targets) {
+        bool doesDirectiveSupportSubmenus = false;
         switch (directive) {
             case ShipDirective.Join:
                 IEnumerable<IFleetCmd> joinableFleets;
                 bool hasJoinableFleets = _userKnowledge.TryGetJoinableFleetsFor(_shipMenuOperator, out joinableFleets);
                 D.Assert(hasJoinableFleets);
                 targets = joinableFleets.Cast<INavigableDestination>();
-                return true;
+                doesDirectiveSupportSubmenus = true;
+                break;
             case ShipDirective.Disband:
                 targets = _userKnowledge.OwnerBases.Cast<INavigableDestination>();
-                return true;
+                doesDirectiveSupportSubmenus = true;
+                break;
             case ShipDirective.Disengage:
             case ShipDirective.Scuttle:
                 targets = Enumerable.Empty<INavigableDestination>();
-                return false;
+                break;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
+        return doesDirectiveSupportSubmenus;
     }
 
     protected override void HandleMenuPick_OptimalFocusDistance() {
@@ -130,8 +135,7 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
         bool hasTarget = _unitTargetLookup.TryGetValue(itemID, out target);
         string msg = hasTarget ? target.DebugName : "[none]";
         D.Log("{0} selected directive {1} and target {2} from context menu.", DebugName, directive.GetValueName(), msg);
-        bool isOrderInitiated = _shipMenuOperator.InitiateNewOrder(new ShipOrder(directive, OrderSource.User, target: target as IShipNavigableDestination));
-        D.Assert(isOrderInitiated);
+        _shipMenuOperator.CurrentOrder = new ShipOrder(directive, OrderSource.User, target as IShipNavigableDestination);
     }
 
 }

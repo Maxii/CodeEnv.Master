@@ -119,10 +119,11 @@ namespace CodeEnv.Master.GameContent {
 
         private void IsDeadPropSettingHandler(bool incomingIsDead) {
             if (!IsOperational) {
-                // 11.13.17 Death before being operational occurs to FleetCmds when they are merged immediately after they are built
-                // in their creator. The creator defers CommenceOperations until the user pause (caused by the FleetUnitHudForm) resumes, 
-                // but GameScriptsUtility.Merge() transfers all ships to the best Cmd chosen to survive. The other Cmds die.
-                D.Warn("FYI. {0} is being destroyed before it becomes operational.", DebugName);
+                // 11.19.17 Death before being operational used to occur to FleetCmds when they were merged immediately after they were built
+                // in their creator. This was when the creator would defer CommenceOperations when paused and GameScriptsUtility.Merge() 
+                // would transfer all ships to the best Cmd chosen to survive and the other Cmds would die before they were operational.
+                // This is no longer the case as creators no longer defer CommenceOperations when paused.
+                D.Error("{0} is being destroyed before it becomes operational.", DebugName);
             }
         }
 

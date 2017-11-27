@@ -28,9 +28,6 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         bool IsAttacking(IUnitCmd_Ltd unitCmd);
 
-        [System.Obsolete]
-        bool IsLoneCmd { get; }
-
         /// <summary>
         /// Indicates whether this operational Cmd has commenced operations.
         /// </summary>

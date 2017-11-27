@@ -320,20 +320,18 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
+        [System.Obsolete("Upgrades for Cmd Designs not yet implemented")]
         public bool AreUpgradeDesignsPresent(Player player, FleetCmdDesign design) {
             IList<FleetCmdDesign> unusedUpgradeDesigns;
             return TryGetUpgradeDesigns(player, design, out unusedUpgradeDesigns);
         }
 
+        [System.Obsolete("Upgrades for Cmd Designs not yet implemented")]
         public bool AreUserUpgradeDesignsPresent(FleetCmdDesign design) {
             return AreUpgradeDesignsPresent(_userPlayer, design);
         }
 
         public bool AreUnitUpgradeDesignsPresent(Player player, FleetCmdData cmdData) {
-            if (AreUpgradeDesignsPresent(player, cmdData.CmdDesign)) {
-                return true;
-            }
-
             var elementDesigns = cmdData.ElementsData.Select(eData => eData.Design);
             foreach (var design in elementDesigns) {
                 if (AreUpgradeDesignsPresent(player, design)) {
@@ -368,31 +366,15 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
+        [System.Obsolete("Upgrades for Cmd Designs not yet implemented")]
         public bool AreUpgradeDesignsPresent(Player player, StarbaseCmdDesign design) {
             IList<StarbaseCmdDesign> unusedUpgradeDesigns;
             return TryGetUpgradeDesigns(player, design, out unusedUpgradeDesigns);
         }
 
+        [System.Obsolete("Upgrades for Cmd Designs not yet implemented")]
         public bool AreUserUpgradeDesignsPresent(StarbaseCmdDesign design) {
             return AreUpgradeDesignsPresent(_userPlayer, design);
-        }
-
-        public bool AreUnitUpgradeDesignsPresent(Player player, StarbaseCmdData cmdData) {
-            if (AreUpgradeDesignsPresent(player, cmdData.CmdDesign)) {
-                return true;
-            }
-
-            var elementDesigns = cmdData.ElementsData.Select(eData => eData.Design);
-            foreach (var design in elementDesigns) {
-                if (AreUpgradeDesignsPresent(player, design)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        public bool AreUserUnitUpgradeDesignsPresent(StarbaseCmdData cmdData) {
-            return AreUnitUpgradeDesignsPresent(_userPlayer, cmdData);
         }
 
         /// <summary>
@@ -416,20 +398,18 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
+        [System.Obsolete("Upgrades for Cmd Designs not yet implemented")]
         public bool AreUpgradeDesignsPresent(Player player, SettlementCmdDesign design) {
             IList<SettlementCmdDesign> unusedUpgradeDesigns;
             return TryGetUpgradeDesigns(player, design, out unusedUpgradeDesigns);
         }
 
+        [System.Obsolete("Upgrades for Cmd Designs not yet implemented")]
         public bool AreUserUpgradeDesignsPresent(SettlementCmdDesign design) {
             return AreUpgradeDesignsPresent(_userPlayer, design);
         }
 
-        public bool AreUnitUpgradeDesignsPresent(Player player, SettlementCmdData cmdData) {
-            if (AreUpgradeDesignsPresent(player, cmdData.CmdDesign)) {
-                return true;
-            }
-
+        public bool AreUnitUpgradeDesignsPresent(Player player, AUnitBaseCmdData cmdData) {
             var elementDesigns = cmdData.ElementsData.Select(eData => eData.Design);
             foreach (var design in elementDesigns) {
                 if (AreUpgradeDesignsPresent(player, design)) {
@@ -439,7 +419,7 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
-        public bool AreUserUnitUpgradeDesignsPresent(SettlementCmdData cmdData) {
+        public bool AreUserUnitUpgradeDesignsPresent(AUnitBaseCmdData cmdData) {
             return AreUnitUpgradeDesignsPresent(_userPlayer, cmdData);
         }
 
@@ -505,8 +485,8 @@ namespace CodeEnv.Master.GameContent {
                     upgradeDesigns = candidateDesigns.Where(d => d.RefitBenefit > designToUpgrade.RefitBenefit).ToList();
                     bool hasUpgradeDesigns = upgradeDesigns.Any();
                     if (!hasUpgradeDesigns) {
-                        D.Log("{0} has found no upgrade designs better than {1}. Designs considered = {2}.",
-                            DebugName, designToUpgrade.DebugName, candidateDesigns.Select(d => d.DebugName).Concatenate());
+                        //D.Log("{0} has found no upgrade designs better than {1}. Designs considered = {2}.",
+                        //    DebugName, designToUpgrade.DebugName, candidateDesigns.Select(d => d.DebugName).Concatenate());
                     }
                     return hasUpgradeDesigns;
                 }
@@ -577,8 +557,8 @@ namespace CodeEnv.Master.GameContent {
                     upgradeDesigns = candidateDesigns.Where(d => d.RefitBenefit > designToUpgrade.RefitBenefit).ToList();
                     bool hasUpgradeDesigns = upgradeDesigns.Any();
                     if (!hasUpgradeDesigns) {
-                        D.Log("{0} has found no upgrade designs better than {1}. Designs considered = {2}.",
-                            DebugName, designToUpgrade.DebugName, candidateDesigns.Select(d => d.DebugName).Concatenate());
+                        //D.Log("{0} has found no upgrade designs better than {1}. Designs considered = {2}.",
+                        //    DebugName, designToUpgrade.DebugName, candidateDesigns.Select(d => d.DebugName).Concatenate());
                     }
                     return hasUpgradeDesigns;
                 }
@@ -623,6 +603,7 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
+        [System.Obsolete("Upgrades for Cmd Designs not yet implemented")]
         public bool TryGetUpgradeDesigns(Player player, StarbaseCmdDesign designToUpgrade, out IList<StarbaseCmdDesign> upgradeDesigns) {
             if (player == designToUpgrade.Player) {
                 var candidateDesigns = _starbaseCmdDesignLookupByName[player].Values.Where(d => d.Status == AUnitMemberDesign.SourceAndStatus.Player_Current).Except(designToUpgrade);
@@ -637,6 +618,7 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
+        [System.Obsolete("Upgrades for Cmd Designs not yet implemented")]
         public bool TryGetUserUpgradeDesigns(StarbaseCmdDesign designToUpgrade, out IList<StarbaseCmdDesign> upgradeDesigns) {
             return TryGetUpgradeDesigns(_userPlayer, designToUpgrade, out upgradeDesigns);
         }
@@ -672,6 +654,7 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
+        [System.Obsolete("Upgrades for Cmd Designs not yet implemented")]
         public bool TryGetUpgradeDesigns(Player player, FleetCmdDesign designToUpgrade, out IList<FleetCmdDesign> upgradeDesigns) {
             if (player == designToUpgrade.Player) {
                 var candidateDesigns = _fleetCmdDesignLookupByName[player].Values.Where(des => des.Status == AUnitMemberDesign.SourceAndStatus.Player_Current).Except(designToUpgrade);
@@ -686,6 +669,7 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
+        [System.Obsolete("Upgrades for Cmd Designs not yet implemented")]
         public bool TryGetUserUpgradeDesigns(FleetCmdDesign designToUpgrade, out IList<FleetCmdDesign> upgradeDesigns) {
             return TryGetUpgradeDesigns(_userPlayer, designToUpgrade, out upgradeDesigns);
         }
@@ -721,6 +705,7 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
+        [System.Obsolete("Upgrades for Cmd Designs not yet implemented")]
         public bool TryGetUpgradeDesigns(Player player, SettlementCmdDesign designToUpgrade, out IList<SettlementCmdDesign> upgradeDesigns) {
             if (player == designToUpgrade.Player) {
                 var candidateDesigns = _settlementCmdDesignLookupByName[player].Values.Where(des => des.Status == AUnitMemberDesign.SourceAndStatus.Player_Current).Except(designToUpgrade);
@@ -735,6 +720,7 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
+        [System.Obsolete("Upgrades for Cmd Designs not yet implemented")]
         public bool TryGetUserUpgradeDesigns(SettlementCmdDesign designToUpgrade, out IList<SettlementCmdDesign> upgradeDesigns) {
             return TryGetUpgradeDesigns(_userPlayer, designToUpgrade, out upgradeDesigns);
         }

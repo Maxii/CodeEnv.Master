@@ -105,8 +105,7 @@ public class SystemCtxControl_AI : ACtxControl {
         IFleetNavigableDestination target = directive == FleetDirective.Attack ? _settlement as IFleetNavigableDestination : _systemMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         var order = new FleetOrder(directive, OrderSource.User, target);
-        bool isOrderInitiated = remoteFleet.InitiateNewOrder(order);
-        D.Assert(isOrderInitiated);
+        remoteFleet.CurrentOrder = order;
     }
 
 }

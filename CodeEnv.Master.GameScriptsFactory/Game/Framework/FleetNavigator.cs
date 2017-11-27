@@ -616,7 +616,7 @@ public class FleetNavigator : IDisposable {
             // 4.7.17 Occurred when ship in Moving state RestartedState. Should be able to add while Job is running since
             // removing while Job is running clearly works. UNCLEAR what happens if Job completes after removal but before 
             // re-addition? Seems like it would start another Job to align.
-            D.Warn("{0}: Adding {1}, albeit late during WaitForFleetToAlign Job execution.", DebugName, ship.DebugName);
+            D.Log("{0}: Adding {1}, albeit late during WaitForFleetToAlign Job execution.", DebugName, ship.DebugName);
         }
         _fleetIsAlignedCallbacks += fleetIsAlignedCallback;
         bool isAdded = _shipsWaitingForFleetAlignment.Add(ship);
@@ -833,11 +833,10 @@ public class FleetNavigator : IDisposable {
 
     /// <summary>
     /// Handles any modifier settings prior to post processing the path.
-    /// <remarks> When inside a system with target outside, if first node is also outside then use that
-    /// node in the course. If first node is inside system, then it should always be replaced by
-    /// the fleet's location. Default modifier behaviour is to replace the closest (first) node 
-    /// with the current position. If that closest node is outside, then replacement could result 
-    /// in traveling inside the system more than is necessary.
+    /// <remarks> When inside a system with target outside, if first node is also outside then use that node in the course. 
+    /// If first node is inside system, then it should always be replaced by the fleet's location. Default modifier behaviour
+    /// is to replace the closest (first) node with the current position. If that closest node is outside, then replacement
+    /// could result in traveling inside the system more than is necessary.
     ///</remarks>
     /// </summary>
     /// <param name="path">The path.</param>
@@ -855,21 +854,26 @@ public class FleetNavigator : IDisposable {
             ISystem_Ltd fleetSystem;
             bool isFleetSystemFound = ownerKnowledge.TryGetSystem(_fleet.SectorID, out fleetSystem);
             if (!isFleetSystemFound) {
-                D.Error("{0} should find a System in its current Sector {1}. SectorCheck = {2}.", DebugName, _fleet.SectorID, SectorGrid.Instance.GetSectorIDThatContains(Position));
-                // 8.18.16 Failure of this assert has been caused in the past by a missed Topography change when leaving a System
+                D.Warn("{0} should find a System in its current Sector {1}. SectorCheck = {2}.", DebugName, _fleet.SectorID, SectorGrid.Instance.GetSectorIDThatContains(Position));
+                // 8.18.16 Failure of Assert here has been caused in the past by a missed Topography change when leaving a System
+                return; // 11.26.17 Occurred again so since not 'really' in system, simply return
             }
 
             if (ApTarget.Topography == Topography.System) {
                 IntVector3 tgtSectorID = SectorGrid.Instance.GetSectorIDThatContains(ApTarget.Position);
                 ISystem_Ltd tgtSystem;
                 bool isTgtSystemFound = ownerKnowledge.TryGetSystem(tgtSectorID, out tgtSystem);
-                D.Assert(isTgtSystemFound);
+                if (!isTgtSystemFound) {
+                    // 11.27.17 Occurred so since not 'really' in system, simply return
+                    D.Warn("{0}'s target {1} should be in a System in Sector {2}.", DebugName, ApTarget.DebugName, tgtSectorID);
+                    return;
+                }
                 if (fleetSystem == tgtSystem) {
                     // fleet and target are in same system so whichever first node is found should be replaced by fleet location
                     return;
                 }
             }
-            Topography firstNodeTopography = _gameMgr.GameKnowledge.GetSpaceTopography(firstNodeLocation);  //SectorGrid.Instance.GetSpaceTopography(firstNodeLocation);
+            Topography firstNodeTopography = _gameMgr.GameKnowledge.GetSpaceTopography(firstNodeLocation);
             if (firstNodeTopography == Topography.OpenSpace) {
                 // first node outside of system so keep node
                 modifier.addPoints = true;
@@ -913,13 +917,10 @@ public class FleetNavigator : IDisposable {
 
     private void IssueMoveOrderToAllShips(IFleetNavigableDestination fleetTgt, float tgtStandoffDistance) {
         bool isFleetwideMove = true;
-        var shipMoveToOrder = new ShipMoveOrder(_fleet.CurrentOrder.Source, fleetTgt as IShipNavigableDestination, ApSpeedSetting, isFleetwideMove, tgtStandoffDistance);
-        _fleet.Elements.ForAll(e => {
-            var ship = e as ShipItem;
-            //D.Log(ShowDebugLog, "{0} issuing Move order to {1}. Target: {2}, Speed: {3}, StandoffDistance: {4:0.#}.", 
-            //Name, ship.DebugName, fleetTgt.DebugName, _apMoveSpeed.GetValueName(), tgtStandoffDistance);
-            ship.InitiateNewOrder(shipMoveToOrder);
-        });
+        var fleetOrderSource = _fleet.CurrentOrder.Source;
+        var shipMoveToOrder = new ShipMoveOrder(fleetOrderSource, fleetTgt as IShipNavigableDestination, ApSpeedSetting,
+            isFleetwideMove, tgtStandoffDistance);
+        _fleet.Elements.ForAll(e => (e as ShipItem).CurrentOrder = shipMoveToOrder);
         _fleetData.CurrentHeading = (fleetTgt.Position - Position).normalized;
     }
 

@@ -95,8 +95,7 @@ public class SectorCtxControl : ACtxControl {
         IFleetNavigableDestination target = _sector;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         var order = new FleetOrder(directive, OrderSource.User, target);
-        bool isOrderInitiated = remoteFleet.InitiateNewOrder(order);
-        D.Assert(isOrderInitiated);
+        remoteFleet.CurrentOrder = order;
     }
 
 }

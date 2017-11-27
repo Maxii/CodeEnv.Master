@@ -370,10 +370,8 @@ public abstract class ASensorRangeMonitor : ADetectableRangeMonitor<ISensorDetec
     }
 
     private void HandleElementIsHQChanged(IUnitElement_Ltd element) {
-        // When a HQElement dies, its deathEvent fires before IsHQ is changed to false.
-        // The deathEvent results in the HQElement being removed along with the Cmd since its still the HQ. 
-        // In addition, when a dead HQElement is removed this monitor is unsubscribed from the hqChanged event 
-        // before it is fired. Accordingly, this method will never be called as the result of an element death.
+        // 11.18.17 When a HQElement assignment changes, the isHqChanged event doesn't fire if the change is because the HQElement
+        // has just died. There is no need for it as this Monitor's subscription to the element's death event will cleanup for it.
         D.Assert(!element.IsDead);
 
         __IsMonitorHandlingADetectedElementIsHQChgdEvent = true;

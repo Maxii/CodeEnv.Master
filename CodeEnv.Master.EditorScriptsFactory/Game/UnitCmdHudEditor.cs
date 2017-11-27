@@ -24,6 +24,10 @@ using UnityEditor;
 [CustomEditor(typeof(UnitHudWindow))]
 public class UnitCmdHudEditor : AGuiWindowEditor<UnitHudWindow> {
 
+    protected override void DrawDerivedClassProperties() {
+        base.DrawDerivedClassProperties();
+        NGUIEditorTools.DrawProperty("Hide Exceptions", serializedObject, "_hideExceptions");
+    }
 
 }
 

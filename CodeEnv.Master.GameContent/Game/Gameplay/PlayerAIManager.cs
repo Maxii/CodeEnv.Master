@@ -288,9 +288,6 @@ namespace CodeEnv.Master.GameContent {
             else if (tType == typeof(IStar_Ltd)) {
                 itemCandidates = Knowledge.Stars.Cast<T>();
             }
-            ////else if (tType == typeof(IUniverseCenter_Ltd)) {
-            ////    itemCandidates = new IUniverseCenter_Ltd[] { Knowledge.UniverseCenter }.Cast<T>();
-            ////}
             else {
                 D.Error("Unanticipated Type {0}.", tType.Name);
             }
@@ -334,9 +331,6 @@ namespace CodeEnv.Master.GameContent {
             else if (tType == typeof(IStar_Ltd)) {
                 itemCandidates = Knowledge.Stars.Cast<T>();
             }
-            ////else if (tType == typeof(IUniverseCenter_Ltd)) {
-            ////    itemCandidates = new IUniverseCenter_Ltd[] { Knowledge.UniverseCenter }.Cast<T>();
-            ////}
             else {
                 D.Error("Unanticipated Type {0}.", tType.Name);
             }
@@ -389,20 +383,15 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Returns <c>true</c> if a base is found that will refit both the fleet's ships and its Cmd, <c>false</c> otherwise.
-        /// <remarks>8.13.17 HACK Should be implemented using an IRefitCapable interface.</remarks>
+        /// <remarks>8.13.17 IMPROVE Should be implemented using an IRefitCapable interface?</remarks>
+        /// <remarks>IMPROVE Should Allied bases be able to refit fleet?</remarks>
         /// </summary>
         /// <param name="worldPosition">The world position.</param>
         /// <param name="closestBase">The closest base.</param>
         /// <param name="excludedBases">The excluded bases.</param>
         /// <returns></returns>
-        public bool TryFindClosestRefitBase(Vector3 worldPosition, out IUnitBaseCmd_Ltd closestBase, params IUnitBaseCmd_Ltd[] excludedBases) {
-            var baseCandidates = Knowledge.Bases.Except(excludedBases).Where(bItem => {
-                Player baseOwner;
-                if (bItem.TryGetOwner(Owner, out baseOwner)) {
-                    return baseOwner.IsRelationshipWith(Owner, DiplomaticRelationship.Self, DiplomaticRelationship.Alliance);
-                }
-                return false;
-            });
+        public bool TryFindClosestRefitBase(Vector3 worldPosition, out IUnitBaseCmd closestBase, params IUnitBaseCmd[] excludedBases) {
+            var baseCandidates = Knowledge.OwnerBases.Except(excludedBases);
             if (baseCandidates.Any()) {
                 closestBase = baseCandidates.MinBy(cand => Vector3.SqrMagnitude(cand.Position - worldPosition));
                 return true;
@@ -413,7 +402,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Returns <c>true</c> if a base is found that will disband both the fleet's ships and its Cmd, <c>false</c> otherwise.
-        /// <remarks>8.13.17 HACK Should be implemented using an IDisbandCapable interface.</remarks>
+        /// <remarks>8.13.17 IMPROVE Should be implemented using an IDisbandCapable interface?</remarks>
         /// </summary>
         /// <param name="worldPosition">The world position.</param>
         /// <param name="closestBase">The closest base.</param>
@@ -421,11 +410,12 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         public bool TryFindClosestDisbandBase(Vector3 worldPosition, out IUnitBaseCmd_Ltd closestBase, params IUnitBaseCmd_Ltd[] excludedBases) {
             var baseCandidates = Knowledge.Bases.Except(excludedBases).Where(bItem => {
+                bool isCandidate = false;
                 Player baseOwner;
                 if (bItem.TryGetOwner(Owner, out baseOwner)) {
-                    return baseOwner.IsRelationshipWith(Owner, DiplomaticRelationship.Self, DiplomaticRelationship.Alliance);
+                    isCandidate = baseOwner.IsRelationshipWith(Owner, DiplomaticRelationship.Self, DiplomaticRelationship.Alliance);
                 }
-                return false;
+                return isCandidate;
             });
             if (baseCandidates.Any()) {
                 closestBase = baseCandidates.MinBy(cand => Vector3.SqrMagnitude(cand.Position - worldPosition));
@@ -444,7 +434,8 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         public bool TryFindClosestFleetRepairBase(Vector3 worldPosition, out IUnitBaseCmd_Ltd closestBase, params IUnitBaseCmd_Ltd[] excludedBases) {
             var baseCandidates = Knowledge.Bases.Except(excludedBases).Where(bItem => {
-                return (bItem as IShipRepairCapable).IsRepairingAllowedBy(Owner) && (bItem as IUnitCmdRepairCapable).IsRepairingAllowedBy(Owner);
+                bool isCandidate = (bItem as IShipRepairCapable).IsRepairingAllowedBy(Owner) && (bItem as IUnitCmdRepairCapable).IsRepairingAllowedBy(Owner);
+                return isCandidate;
             });
             if (baseCandidates.Any()) {
                 closestBase = baseCandidates.MinBy(cand => Vector3.SqrMagnitude(cand.Position - worldPosition));
@@ -937,12 +928,7 @@ namespace CodeEnv.Master.GameContent {
                 if (closestFleet != null) {
                     //D.Log("{0} is issuing an order to {1} to JOIN {2}.", DebugName, fleetCmd.DebugName, closestFleet.DebugName);
                     FleetOrder order = new FleetOrder(FleetDirective.Join, OrderSource.PlayerAI, closestFleet);
-                    bool isOrderInitiated = fleetCmd.InitiateNewOrder(order);
-                    if (!isOrderInitiated) {
-                        D.Warn("{0} was unable to immediately initiate {1} due to CmdStaff's Override order {2}.",
-                            DebugName, order.DebugName, fleetCmd.CurrentOrder.DebugName);
-                        return false;
-                    }
+                    fleetCmd.CurrentOrder = order;
                     return true;
                 }
                 return false;
@@ -1098,11 +1084,7 @@ namespace CodeEnv.Master.GameContent {
             D.LogBold("{0} is issuing {1} an ATTACK order against {2} in Frame {3}. FPS = {4:0.#}.",
                 DebugName, fleetCmd.DebugName, attackTgt.DebugName, Time.frameCount, _fpsReadout.FramesPerSecond);
             FleetOrder order = new FleetOrder(FleetDirective.Attack, OrderSource.PlayerAI, attackTgt);
-            bool isOrderInitiated = fleetCmd.InitiateNewOrder(order);
-            if (!isOrderInitiated) {
-                D.Warn("{0} was unable to immediately initiate {1} due to CmdStaff's Override order {2}.",
-                    DebugName, order.DebugName, fleetCmd.CurrentOrder.DebugName);
-            }
+            fleetCmd.CurrentOrder = order;
             return true;
         }
 
@@ -1136,11 +1118,7 @@ namespace CodeEnv.Master.GameContent {
             D.Log("{0} is issuing {1} a MOVE order to {2} in Frame {3}. FPS = {4:0.#}.",
                 DebugName, fleetCmd.DebugName, destination.DebugName, Time.frameCount, _fpsReadout.FramesPerSecond);
             var order = new FleetOrder(FleetDirective.Move, OrderSource.PlayerAI, destination);
-            bool isOrderInitiated = fleetCmd.InitiateNewOrder(order);
-            if (!isOrderInitiated) {
-                D.Warn("{0} was unable to immediately initiate {1} due to CmdStaff's Override order {2}.",
-                    DebugName, order.DebugName, fleetCmd.CurrentOrder.DebugName);
-            }
+            fleetCmd.CurrentOrder = order;
             return true;
         }
 
@@ -1156,21 +1134,13 @@ namespace CodeEnv.Master.GameContent {
                 D.Log("{0} is issuing {1} an EXPLORE order to {2} in Frame {3}. FPS = {4:0.#}. IsOwnerAccessible = {5}.",
                     DebugName, fleetCmd.DebugName, closestUnexploredSystem.DebugName, Time.frameCount, _fpsReadout.FramesPerSecond, closestUnexploredSystem.IsOwnerAccessibleTo(Owner));
                 var order = new FleetOrder(FleetDirective.Explore, OrderSource.PlayerAI, closestUnexploredSystem);
-                bool isOrderInitiated = fleetCmd.InitiateNewOrder(order);
-                if (!isOrderInitiated) {
-                    D.Warn("{0} was unable to immediately initiate {1} due to CmdStaff's Override order {2}.",
-                        DebugName, order.DebugName, fleetCmd.CurrentOrder.DebugName);
-                }
+                fleetCmd.CurrentOrder = order;
             }
             else {
                 IFleetExplorable uCenter = Knowledge.UniverseCenter as IFleetExplorable;
                 if (!uCenter.IsFullyExploredBy(Owner)) {
                     var order = new FleetOrder(FleetDirective.Explore, OrderSource.PlayerAI, uCenter);
-                    bool isOrderInitiated = fleetCmd.InitiateNewOrder(order);
-                    if (!isOrderInitiated) {
-                        D.Warn("{0} was unable to immediately initiate {1} due to CmdStaff's Override order {2}.",
-                            DebugName, order.DebugName, fleetCmd.CurrentOrder.DebugName);
-                    }
+                    fleetCmd.CurrentOrder = order;
                 }
                 else {
                     D.LogBold("{0}: Fleet {1} has completed {2}'s exploration of explorable universe.",
@@ -1194,11 +1164,7 @@ namespace CodeEnv.Master.GameContent {
                 D.Log("{0} is issuing {1} a MOVE order to {2} in Frame {3}. FPS = {4:0.#}.",
                     DebugName, fleetCmd.DebugName, closestVisitableBase.DebugName, Time.frameCount, _fpsReadout.FramesPerSecond);
                 var order = new FleetOrder(FleetDirective.Move, OrderSource.PlayerAI, closestVisitableBase as IFleetNavigableDestination);
-                bool isOrderInitiated = fleetCmd.InitiateNewOrder(order);
-                if (!isOrderInitiated) {
-                    D.Warn("{0} was unable to immediately initiate {1} due to CmdStaff's Override order {2}.",
-                        DebugName, order.DebugName, fleetCmd.CurrentOrder.DebugName);
-                }
+                fleetCmd.CurrentOrder = order;
             }
             else {
                 D.LogBold("{0}: Fleet {1} has completed {2}'s visits to all visitable unvisited bases in known universe.",

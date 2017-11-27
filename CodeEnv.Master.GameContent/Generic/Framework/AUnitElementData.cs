@@ -427,6 +427,10 @@ namespace CodeEnv.Master.GameContent {
             OffensiveStrength = new CombatStrength(Weapons);
         }
 
+        /// <summary>
+        /// Called on the element that was refitted and therefore replaced.
+        /// <remarks>Initiates death without firing IsDead property change events.</remarks>
+        /// </summary>
         public void HandleRefitReplacementCompleted() {
             _isDead = true; // avoids firing any IsDead property change handlers
             IsOperational = false;  // we want these property change handlers

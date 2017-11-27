@@ -23,26 +23,30 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class BaseOrder {
 
-        private const string DebugNameFormat = "[{0}: Directive = {1}, Source = {2}, Target = {3}, FollowonOrder = {4}, StandingOrder = {5}]";
+        private const string DebugNameFormat = "[{0}: Directive = {1}, Source = {2}, Target = {3}, FollowonOrder = {4}]";
 
         public string DebugName {
             get {
                 string targetText = Target != null ? Target.DebugName : "none";
                 string followonOrderText = FollowonOrder != null ? FollowonOrder.ToString() : "none";
-                string standingOrderText = StandingOrder != null ? StandingOrder.ToString() : "none";
-                return DebugNameFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), targetText, followonOrderText, standingOrderText);
+                return DebugNameFormat.Inject(GetType().Name, Directive.GetValueName(), Source.GetValueName(), targetText, followonOrderText);
             }
         }
 
         /// <summary>
         /// The Unique OrderID of this CmdOrder.
-        /// <remarks>If used in ElementOrders it tells the element receiving the order to callback to Cmd with the outcome 
-        /// of the order's execution. If the element calls back with the outcome, the Cmd uses the returned OrderID to determine whether the
-        /// callback it received is still relevant, aka the returned OrderID matches this Orders ID.
+        /// <remarks>Can be used by Cmd to construct an Element order. If used, it indicates to the element that 1) the element order 
+        /// originated from its Cmd, and 2) the Cmd expects an order outcome callback. 
         /// </remarks>
+        /// <remarks>Also used by the Cmd to determine whether the order outcome callback it has just received should be passed onto 
+        /// the executing state. If this OrderID is the same as the OrderID returned in the callback, then the callback is
+        /// intended for the currently executing state and will be passed onto it. This accounts for the condition where the Cmd's
+        /// CurrentOrder has just changed and concurrently it is receiving an order callback from one or more elements intended for
+        /// the previous state.</remarks>
         /// </summary>
         public Guid OrderID { get; private set; }
 
+        [Obsolete]
         public BaseOrder StandingOrder { get; set; }
 
         public BaseOrder FollowonOrder { get; set; }
@@ -63,7 +67,6 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="source">The source of this order.</param>
         /// <param name="target">The target of this order. Default is null.</param>
         public BaseOrder(BaseDirective directive, OrderSource source, IUnitAttackable target = null) {
-            D.AssertNotEqual(OrderSource.Captain, source);
             Directive = directive;
             Source = source;
             Target = target;
@@ -77,7 +80,9 @@ namespace CodeEnv.Master.GameContent {
 
         #region Debug
 
+        [System.Diagnostics.Conditional("DEBUG")]
         private void __Validate() {
+            D.AssertNotEqual(OrderSource.Captain, Source);
             if (Directive == BaseDirective.Cancel) {
                 D.AssertEqual(OrderSource.User, Source);
             }

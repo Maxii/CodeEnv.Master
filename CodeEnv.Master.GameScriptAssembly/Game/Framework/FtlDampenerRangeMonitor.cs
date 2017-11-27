@@ -213,10 +213,10 @@ public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IManeuverable, Ft
                 D.Warn("{0} unexpectedly found {1} in DampenableTgts. Removing.", DebugName, maneuverableItem.DebugName);
             }
             else if (IsOperational) {
-                float sqrThreshold = RangeDistance * RangeDistance * 0.99F;
+                float sqrThreshold = RangeDistance * RangeDistance * 0.97F; // was 0.99 but got 148/149 distance warnings
                 // 5.22.17 Most warnings right on edge so use threshold
                 if (Vector3.SqrMagnitude(maneuverableItem.Position - ParentItem.Position).IsLessThan(sqrThreshold)) {
-                    D.Warn("{0} found {1} within range without access to owner and not present to be removed. TargetDistance: {2:0.}.",
+                    D.Warn("{0} found {1} within range without access to owner and not present to be removed. TargetDistance: {2:0.#}.",
                         DebugName, maneuverableItem.DebugName, Vector3.Distance(maneuverableItem.Position, ParentItem.Position));
                 }
             }

@@ -427,6 +427,7 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     /// </summary>
     private List<IDetectableType> __reacquisitionTgtsAdded;
 
+    [System.Diagnostics.Conditional("DEBUG")]
     private void __ReportReacquisitionChanges() {
         if (__reacquisitionTgtsRemoved.Any()) {
             D.Log("{0} removed {1} targets during RangeDistanceChg Reacquisition process. TargetsRemoved: {2}.",

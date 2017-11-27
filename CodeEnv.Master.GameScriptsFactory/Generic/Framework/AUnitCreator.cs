@@ -131,13 +131,6 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
         InitializeUnitName();
     }
 
-    private void DeployAfterPauseEventHandler(object sender, EventArgs e) {
-        D.Assert(!_gameMgr.IsPaused);
-        _gameMgr.isPausedChanged -= DeployAfterPauseEventHandler;
-        D.Log(ShowDebugLog, "{0} is deploying now after resuming from pause.", DebugName);
-        Deploy();
-    }
-
     #endregion
 
     /// <summary>
@@ -160,14 +153,7 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
         var currentDate = GameTime.Instance.CurrentDate;
         D.Assert(currentDate >= GameTime.GameStartDate);
         if (currentDate >= DeployDate) {
-            if (_gameMgr.IsPaused) {
-                // defer deployment until unpaused
-                D.Log("{0} is deferring deployment until unpaused.", DebugName);
-                _gameMgr.isPausedChanged += DeployAfterPauseEventHandler;
-            }
-            else {
-                Deploy();
-            }
+            Deploy();
         }
         else {
             DeployOnDeployDate();
@@ -180,7 +166,6 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
     }
 
     private void Deploy() { // 3.25.16 wait approach changed from dateChanged event handler to WaitForDate utility method
-        D.Assert(!_gameMgr.IsPaused);
         GameDate currentDate = GameTime.Instance.CurrentDate;
         if (currentDate < DeployDate) {
             D.Error("{0}: {1} should not be < {2}.", DebugName, currentDate, DeployDate);
@@ -195,7 +180,6 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
         }
         PrepareForUnitOperations();
 
-        // 5.3.17 Added bool return to avoid clearing element ref if beginning CmdOperations was deferred
         BeginElementsOperations();
         var isCmdOperationsBegun = BeginCommandOperations();
         if (isCmdOperationsBegun) {
@@ -224,6 +208,9 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
     /// <summary>
     /// Starts the state machine of this Unit's Command. Returns <c>true</c> if CmdOperations was begun,
     /// <c>false</c> if it was deferred because an owner change was still underway.
+    /// <remarks>5.3.17 Added bool return to avoid clearing LoneFleetCreator element ref if beginning CmdOperations was deferred. 
+    /// 11.18.17 FIXME currently false is never returned now that LoneFleetCreator replaced by multi-ship FleetCreator.
+    /// Added warning in FleetCreator if owner change is actually underway.</remarks>
     /// </summary>
     /// <returns></returns>
     protected abstract bool BeginCommandOperations();
@@ -235,7 +222,6 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
     }
 
     protected virtual void Unsubscribe() {
-        _gameMgr.isPausedChanged -= DeployAfterPauseEventHandler;
         _gameMgr.sceneLoading -= SceneLoadingEventHandler;
     }
 
@@ -260,6 +246,37 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
     }
 
     #region Archive
+
+    #region Deploy After Pause Archive
+
+    ////public void AuthorizeDeployment() {
+    ////    D.AssertNotDefault(DeployDate, DebugName);
+    ////    D.Log(ShowDebugLog, "{0} is authorizing deployment of {1}. Targeted DeployDate = {2}.", DebugName, UnitName, DeployDate);
+    ////    var currentDate = GameTime.Instance.CurrentDate;
+    ////    D.Assert(currentDate >= GameTime.GameStartDate);
+    ////    if (currentDate >= DeployDate) {
+    ////        if (_gameMgr.IsPaused) {
+    ////            // defer deployment until unpaused
+    ////            D.Log("{0} is deferring deployment until unpaused.", DebugName);
+    ////            _gameMgr.isPausedChanged += DeployAfterPauseEventHandler;
+    ////        }
+    ////        else {
+    ////            Deploy();
+    ////        }
+    ////    }
+    ////    else {
+    ////        DeployOnDeployDate();
+    ////    }
+    ////}
+
+    ////private void DeployAfterPauseEventHandler(object sender, EventArgs e) {
+    ////    D.Assert(!_gameMgr.IsPaused);
+    ////    _gameMgr.isPausedChanged -= DeployAfterPauseEventHandler;
+    ////    D.Log(ShowDebugLog, "{0} is deploying now after resuming from pause.", DebugName);
+    ////    Deploy();
+    ////}
+
+    #endregion
 
     #region Static Member Management in non-persistent MonoBehaviours Archive
 
@@ -346,19 +363,6 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
     //}
 
     #endregion
-
-    #endregion
-
-    #region IDateMinderClient Members
-
-    void IDateMinderClient.HandleDateReached(GameDate date) {
-        D.AssertEqual(DeployDate, date);
-        Deploy();
-    }
-
-    #endregion
-
-    #region Archive
 
     //private const string DebugNameFormat = "{0}.{1}";
     //private const string UnitNameFormat = "{0}{1}";
@@ -672,93 +676,17 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
 
     //#endregion
 
-    #region Static Member Management in non-persistent MonoBehaviours Archive
+    #endregion
 
-    // By definition, static members are persistent even if their MonoBehaviours are not.
-    // When the MonoBehaviour is created again in a new game instance, the static members from
-    // the previous instance of the MonoBehaviour will still retain its previous values
-    // thereby requiring careful management (clearing and repopulating).
+    #region IDateMinderClient Members
 
-    //private static IEnumerable<IUnitCmd> _allUnitCommands;
-
-    //private void Subscribe() {
-    //    ...
-    //    SubscribeStaticallyOnce();
-    //}
-
-    /// <summary>
-    /// Allows a one time static subscription to event publishers from this class.
-    /// </summary>
-    //private static bool _isStaticallySubscribed;
-
-    /// <summary>
-    /// Subscribes this class using static event handler(s) to instance events exactly one time.
-    /// </summary>
-    //private void SubscribeStaticallyOnce() {
-    //    if (!_isStaticallySubscribed) {
-    //        //D.Log("{0} is subscribing statically to {1}.", DebugName, _gameMgr.GetType().Name);
-    //        _gameMgr.sceneLoaded += SceneLoadedEventHandler;
-    //        _isStaticallySubscribed = true;
-    //    }
-    //}
-
-    //private static void UnitDeathHandler(object sender, EventArgs e) {
-    //    CommandType command = sender as CommandType;
-    //    _allUnitCommands.Remove(command);
-    //}
-
-    //private void SceneLoadedEventHandler(object sender, EventArgs e) {
-    //    CleanupStaticMembers();
-    //}
-
-    /// <summary>
-    /// Records the Command in its static collection holding all instances.
-    /// Note: The Assert tests are here to make sure instances from a prior scene are not still present, as the collections
-    /// these items are stored in are static and persist across scenes.
-    /// </summary>
-    //private void RecordCommandInStaticCollections() {
-    //    _command.deathOneShot += UnitDeathHandler;
-    //    var cmdNamesStored = _allUnitCommands.Select(cmd => cmd.DisplayName);
-    //    // Can't use a Contains(item) test as the new item instance will never equal the old instance from the previous scene, even with the same name
-    //    D.Assert(!cmdNamesStored.Contains(_command.DisplayName), "{0}.{1} reports {2} already present.".Inject(UnitName, GetType().Name, _command.DisplayName));
-    //    _allUnitCommands.Add(_command);
-    //}
-
-    //protected override void Cleanup() {
-    //    Unsubscribe();
-    //    if (IsApplicationQuiting) {
-    //        CleanupStaticMembers();
-    //        UnsubscribeStaticallyOnceOnQuit();
-    //    }
-    //}
-
-    /// <summary>
-    /// Cleans up static members of this class whose value should not persist across scenes or after quiting.
-    /// UNCLEAR This is called whether the scene loaded is from a saved game or a new game. 
-    /// Should static values be reset on a scene change from a saved game? 1) do the static members
-    /// retain their value after deserialization, and/or 2) can static members even be serialized? 
-    /// </summary>
-    //private static void CleanupStaticMembers() {
-    //    _allUnitCommands.ForAll(cmd => cmd.deathOneShot -= UnitDeathHandler);
-    //    _allUnitCommands.Clear();
-    //    _elementInstanceIDCounter = Constants.One;
-    //}
-
-    /// <summary>
-    /// Unsubscribe this class from all events that use a static event handler on Quit.
-    /// </summary>
-    //private void UnsubscribeStaticallyOnceOnQuit() {
-    //    if (_isStaticallySubscribed) {
-    //        if (_gameMgr != null) {
-    //            _gameMgr.sceneLoaded -= SceneLoadedEventHandler;
-    //        }
-    //        _isStaticallySubscribed = false;
-    //    }
-    //}
+    void IDateMinderClient.HandleDateReached(GameDate date) {
+        D.AssertEqual(DeployDate, date);
+        Deploy();
+    }
 
     #endregion
 
-    #endregion
 }
 
 

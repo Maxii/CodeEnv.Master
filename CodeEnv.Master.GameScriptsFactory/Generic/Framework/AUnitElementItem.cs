@@ -41,6 +41,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     public event EventHandler subordinateDeathOneShot;
 
+    public event EventHandler<OrderOutcomeEventArgs> subordinateOrderOutcome;
+
     /// <summary>
     /// Indicates whether this element is available for a new assignment.
     /// <remarks>Typically, an element that is available is Idling.</remarks>
@@ -115,7 +117,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     protected IList<IShield> Shields { get; private set; }
     protected Rigidbody Rigidbody { get; private set; }
     protected FsmEventSubscriptionManager FsmEventSubscriptionMgr { get; private set; }
-    protected override bool IsPaused { get { return _gameMgr.IsPaused; } }
+    protected sealed override bool IsPaused { get { return _gameMgr.IsPaused; } }
 
     protected Job _repairJob;
 
@@ -220,7 +222,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #endregion
 
-    public override void CommenceOperations() {  // FIXME new does not hide this
+    public override void CommenceOperations() {
         base.CommenceOperations();
         _primaryCollider.enabled = true;
     }
@@ -264,7 +266,12 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         WeaponRangeMonitors.ForAll(wrm => wrm.ToEngageColdWarEnemies = toEngageColdWarEnemies);
     }
 
+    /// <summary>
+    /// Called on the element that was refitted and therefore replaced.
+    /// <remarks>Initiates death without firing IsDead property change events.</remarks>
+    /// </summary>
     protected void HandleRefitReplacementCompleted() {
+        PrepareForDeath();
         Data.HandleRefitReplacementCompleted();
         PrepareForDeathSequence();
         // Don't call PrepareForOnDeath() as it fires the subordinateDeath event which will attempt to remove the already removed element
@@ -272,6 +279,12 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         PrepareForDeadState();
         AssignDeadState();
         // FIXME DeathEffect methods get called after this from Dead_EnterState which we don't want
+    }
+
+    protected override void PrepareForDeath() {
+        base.PrepareForDeath();
+        // 11.19.17 Must occur before Data.IsDead is set which deactivates all equipment generating events from SensorRangeMonitors
+        __UnsubscribeFromSensorEvents();
     }
 
     protected override void PrepareForDeathSequence() {
@@ -437,7 +450,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
                 LaunchOrdnance(losWeapon, target);
             }
             else {
-                D.Warn("{0} no longer has a bead on Target {1}. Canceling firing solution!", losWeapon.DebugName, target.DebugName);
+                D.Log("{0} no longer has a bead on Target {1}. Canceling firing solution.", losWeapon.DebugName, target.DebugName);
                 losWeapon.HandleElementDeclinedToFire();
             }
         }
@@ -621,7 +634,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     }
 
     private void ChangeOwnerAfterPauseEventHandler(object sender, EventArgs e) {
-        D.Log(ShowDebugLog, "{0}.ChangeOwnerAfterPauseEventHandler called.", DebugName);
+        //D.Log(ShowDebugLog, "{0}.ChangeOwnerAfterPauseEventHandler called.", DebugName);
         _gameMgr.isPausedChanged -= ChangeOwnerAfterPauseEventHandler;
         ChangeOwnerAfterPause();
     }
@@ -657,14 +670,21 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         HandleLosWeaponAimed(e.FiringSolution);
     }
 
+    protected void OnSubordinateOrderOutcome(IElementNavigableDestination target, OrderFailureCause failureCause) {
+        D.AssertNotNull(subordinateOrderOutcome);
+        subordinateOrderOutcome(this, new OrderOutcomeEventArgs(target, failureCause, _lastCmdOrderID));
+    }
+
     #endregion
 
     private void HandleReworkUnderwayPropChanged() {
-        if (ReworkUnderway == ReworkingMode.None) {
-            DisplayMgr.HideReworkingVisuals();
-        }
-        else {
-            DisplayMgr.BeginReworkingVisuals(ReworkUnderway);
+        if (DisplayMgr != null) {
+            if (ReworkUnderway == ReworkingMode.None) {
+                DisplayMgr.HideReworkingVisuals();
+            }
+            else {
+                DisplayMgr.BeginReworkingVisuals(ReworkUnderway);
+            }
         }
     }
 
@@ -677,7 +697,9 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     protected virtual void HandleIsHQChanged() {
         Name = IsHQ ? Name + __HQNameAddendum : Name.Remove(__HQNameAddendum);
-        OnIsHQChanged();
+        if (!IsDead) {
+            OnIsHQChanged();
+        }
     }
 
     /// <summary>
@@ -757,15 +779,13 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     #region Orders Support Members
 
     /// <summary>
-    /// Cancels the CurrentOrder and (re)initiates Idling state unless its an override order from the Captain. Returns <c>true</c>
-    /// if there was no CurrentOrder or the CurrentOrder was canceled, <c>false</c> if the CurrentOrder was not canceled
-    /// due to it being issued by the Captain.
-    /// <remarks>If CurrentOrder is from the Captain, then StandingOrder within the
-    /// Captain's Order is canceled (nulled) as it is, by definition, from the Captain's Superior.
-    /// </remarks>
+    /// Cancels the CurrentOrder and (re)initiates Idling state.
+    /// <remarks>11.25.17 TEMP Virtual to allow ShipItem to manage its __warnWhenIdlingReceivesFsmTgtEvents flag.</remarks>
     /// </summary>
-    /// <returns></returns>
-    internal abstract bool CancelSuperiorsOrder();
+    internal virtual void CancelOrders() {
+        ReturnFromCalledStates();
+        ResetOrderAndState();
+    }
 
     protected abstract void ResetOrderAndState();
 
@@ -775,17 +795,13 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     protected abstract bool IsCurrentStateCalled { get; }
 
-    #region FsmReturnHandler and Callback System
+    protected void RefreshReworkingVisuals(float percentCompletion) {
+        if (DisplayMgr != null) {
+            DisplayMgr.RefreshReworkingVisuals(percentCompletion);
+        }
+    }
 
-    /// <summary>
-    /// Indicates whether an order outcome failure callback to Cmd is allowed.
-    /// <remarks>Typically, an order outcome failure callback is allowed until the ExecuteXXXOrder_EnterState
-    /// successfully finishes executing, aka it wasn't interrupted by an event.</remarks>
-    /// <remarks>4.9.17 Used to filter which OrderOutcome callbacks to events (e.g. XXX_UponNewOrderReceived()) 
-    /// should be allowed. Typically, a callback will not occur from an event once the order has 
-    /// successfully finished executing.</remarks>
-    /// </summary>
-    protected bool _allowOrderFailureCallback = true;
+    #region FsmReturnHandler System
 
     /// <summary>
     /// Stack of FsmReturnHandlers that are currently in use. 
@@ -829,6 +845,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// </summary>
     /// <param name="calledStateName">Name of the Call()ed state.</param>
     /// <returns></returns>
+    [Obsolete("Not currently used")]
     protected FsmReturnHandler __GetCalledStateReturnHandlerFor(string calledStateName) {
         D.AssertException(_activeFsmReturnHandlers.Count != Constants.Zero);
         var peekHandler = _activeFsmReturnHandlers.Peek();
@@ -840,6 +857,36 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         }
         return peekHandler;
     }
+
+    #endregion
+
+    #region Order Outcome Callback System
+
+    /// <summary>
+    /// The last CmdOrderID to be received. If default value the last order received does not require an order outcome callback 
+    /// from this element, either because the order wasn't from Cmd, or the CmdOrder does not require a response.
+    /// <remarks>Used to determine whether this element should respond to Cmd with the outcome of the last order.</remarks>
+    /// <remarks>Also used by Cmd when callback occurs to determine whether the callback should be handled as Cmd's state could have changed.</remarks>
+    /// </summary>
+    protected Guid _lastCmdOrderID;
+
+    /// <summary>
+    /// Flag indicating whether an order outcome callback attempt has already occurred for the current state.
+    /// <remarks>11.25.17 Used to keep additional callbacks from occurring when the FSM remains in the same state after a callback.</remarks>
+    /// </summary>
+    protected bool _hasOrderOutcomeCallbackAttemptOccurred = false;
+
+    protected void AttemptOrderOutcomeCallback(OrderFailureCause failureCause) {
+        bool toAllowOrderOutcomeCallbackAttempt = !_hasOrderOutcomeCallbackAttemptOccurred && _lastCmdOrderID != default(Guid);
+        if (toAllowOrderOutcomeCallbackAttempt) {
+            _hasOrderOutcomeCallbackAttemptOccurred = true;
+            if (subordinateOrderOutcome != null) {
+                DispatchOrderOutcomeCallback(failureCause);
+            }
+        }
+    }
+
+    protected abstract void DispatchOrderOutcomeCallback(OrderFailureCause failureCause);
 
     #endregion
 
@@ -856,6 +903,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// </summary>
     protected virtual void ValidateCommonNotCallableStateValues() {
         D.AssertEqual(Constants.Zero, _activeFsmReturnHandlers.Count);
+
+        D.Assert(!_hasOrderOutcomeCallbackAttemptOccurred);
     }
 
     protected void ReturnFromCalledStates() {
@@ -865,6 +914,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         D.Assert(!IsCurrentStateCalled);
     }
 
+    [Obsolete("Use WaitYieldInstruction in Repair_EnterState instead")]
     protected void KillRepairJob() {
         if (_repairJob != null) {
             _repairJob.Kill();
@@ -1133,6 +1183,31 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #endregion
 
+    #region Cleanup
+
+    protected override void Cleanup() {
+        base.Cleanup();
+        if (_detectionHandler != null) {
+            _detectionHandler.Dispose();
+        }
+    }
+
+    protected override void Unsubscribe() {
+        base.Unsubscribe();
+        CleanupIconSubscriptions();
+        _gameMgr.isPausedChanged -= ChangeOwnerAfterPauseEventHandler;
+        __UnsubscribeFromSensorEvents();
+    }
+
+    /// <summary>
+    /// Unsubscribes from SRSensor events.
+    /// <remarks>UNDONE 11.19.17 __SubscribeToSensorEvents() currently does nothing as elements 
+    /// don't do anything yet when their SRSensors detect anything.</remarks>
+    /// </summary>
+    private void __UnsubscribeFromSensorEvents() { }
+
+    #endregion
+
     #region Debug
 
     public bool __HasCommand { get { return Command != null; } }
@@ -1153,23 +1228,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         }
         return isEntitled;
     }
-
-    /// <summary>
-    /// Debug flag used to decide when to warn or not warn about Idling state
-    /// receiving _fsmTgt-related events like FsmInfoAccessChgd, FsmOwnerChgd and FsmDeath.
-    /// <remarks>4.18.17 Idling can receive these events even though it has not subscribed to 
-    /// them in some circumstances. When Cmd and its elements have subscribed to a FsmInfoAccessChgd
-    /// event for a System, and the event is raised, Cmd is the first to receive the event. Upon
-    /// receiving the event, Cmd may decide to exit its current state which will immediately cancel
-    /// all element orders and change their state to Idling. Even though each element will 
-    /// remove its subscription to the event upon exiting its current state, the event will still
-    /// show up in Idling. This flag allows me to ignore events 
-    /// arriving in Idling when I expect them, and to warn me when I don't expect them.</remarks>
-    /// <remarks>4.18.17 My Theory was this is because the event's InvocationList has been copied to keep
-    /// it from being modified while it is iterating. 5.19.17 I now know that the InvocationList is a linked
-    /// list so shouldn't need the iteration copy?</remarks>
-    /// </summary>
-    protected bool __warnWhenIdlingReceivesFsmTgtEvents = true;
 
     public bool __TryGetIsHQChangedEventSubscribers(out string targetNames) {
         if (isHQChanged != null) {
@@ -1196,23 +1254,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
             //D.Log(ShowDebugLog, "{0}.ActualSpeedValue = {1:0.00}.", DebugName, value);
             return value;
         }
-    }
-
-    #endregion
-
-    #region Cleanup
-
-    protected override void Cleanup() {
-        base.Cleanup();
-        if (_detectionHandler != null) {
-            _detectionHandler.Dispose();
-        }
-    }
-
-    protected override void Unsubscribe() {
-        base.Unsubscribe();
-        CleanupIconSubscriptions();
-        _gameMgr.isPausedChanged -= ChangeOwnerAfterPauseEventHandler;
     }
 
     #endregion
@@ -1274,7 +1315,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         public SubordinateOwnerChangingEventArgs(Player incomingOwner) {
             IncomingOwner = incomingOwner;
         }
-
     }
 
     public class SubordinateDamageIncurredEventArgs : EventArgs {
@@ -1290,6 +1330,33 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
             DamageIncurred = damageIncurred;
             DamageSeverity = damageSeverity;
         }
+    }
+
+    public class OrderOutcomeEventArgs : EventArgs {
+
+        public IElementNavigableDestination Target { get; private set; }
+
+        public OrderFailureCause FailureCause { get; private set; }
+
+        public Guid CmdOrderID { get; private set; }
+
+        public bool IsOrderSuccessfullyCompleted { get { return FailureCause == OrderFailureCause.None; } }
+
+        public OrderOutcomeEventArgs(IElementNavigableDestination target, OrderFailureCause failureCause, Guid cmdOrderID) {
+            Target = target;
+            FailureCause = failureCause;
+            CmdOrderID = cmdOrderID;
+            __Validate();
+        }
+
+        #region Debug
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        private void __Validate() {
+            D.AssertNotDefault(CmdOrderID);
+        }
+
+        #endregion
     }
 
     #endregion

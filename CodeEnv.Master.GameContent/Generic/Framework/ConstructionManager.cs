@@ -173,8 +173,12 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(!GameReferences.GameManager.IsPaused);
             if (_constructionQueue.Any()) {
                 var firstConstruction = _constructionQueue.First.Value;
+                //D.Log("{0} is checking {1} for completion. ExpectedCompletionDate = {2}, CurrentDate = {3}.",
+                //    DebugName, firstConstruction.DebugName, firstConstruction.ExpectedCompletionDate, _gameTime.CurrentDate);
                 float unconsumedProduction;
                 if (firstConstruction.TryCompleteConstruction(availableProduction, out unconsumedProduction)) {
+                    //D.Log("{0} has completed construction of {1}. ExpectedCompletionDate = {2}, CurrentDate = {3}.",
+                    //    DebugName, firstConstruction.DebugName, firstConstruction.ExpectedCompletionDate, _gameTime.CurrentDate);
                     RemoveFromQueue(firstConstruction);
                     OnConstructionCompleted(firstConstruction);
                     ProgressConstruction(unconsumedProduction);
@@ -191,8 +195,8 @@ namespace CodeEnv.Master.GameContent {
                     GameTimeDuration remainingDurationToCompletion = new GameTimeDuration(remainingHoursToCompletion);
                     GameDate updatedCompletionDate = new GameDate(dateConstructionResumes, remainingDurationToCompletion);
                     if (updatedCompletionDate != construction.ExpectedCompletionDate) {
-                        D.Log("{0}: {1}'s CompletionDate changed from {2} to {3}.",
-                            DebugName, construction.DebugName, construction.ExpectedCompletionDate, updatedCompletionDate);
+                        //D.Log("{0}: {1}'s CompletionDate changed from {2} to {3}.",
+                        //    DebugName, construction.DebugName, construction.ExpectedCompletionDate, updatedCompletionDate);
                         construction.ExpectedCompletionDate = updatedCompletionDate;
                     }
                     dateConstructionResumes = construction.ExpectedCompletionDate;
@@ -287,7 +291,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void __ReduceBankBalanceByBuyoutCost(decimal buyoutCost) {
-            D.Log("{0}.__ReduceBankBalanceByBuyoutCost({1:0.}) not yet implemented.", DebugName, buyoutCost);
+            D.Warn("{0}.__ReduceBankBalanceByBuyoutCost({1:0.}) not yet implemented.", DebugName, buyoutCost);
         }
 
         #endregion

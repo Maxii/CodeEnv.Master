@@ -195,6 +195,11 @@ namespace CodeEnv.Master.GameContent {
             RecalcUnitSensorRange();
         }
 
+        protected override OutputsYield RecalcUnitOutputs() {
+            var unitOutputs = _elementsData.Select(ed => ed.Outputs).Sum();
+            return unitOutputs;
+        }
+
         protected override void RefreshComposition() {
             var elementCategories = _elementsData.Cast<ShipData>().Select(sd => sd.HullCategory);
             UnitComposition = new FleetComposition(elementCategories);

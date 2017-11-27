@@ -87,7 +87,7 @@ public class AutoSettlementCreator : AAutoUnitCreator {
     protected override void BeginElementsOperations() {
         LogEvent();
         foreach (var element in _elements) {
-            element.CommenceOperations();
+            element.CommenceOperations(isInitialConstructionNeeded: false);
         }
     }
 

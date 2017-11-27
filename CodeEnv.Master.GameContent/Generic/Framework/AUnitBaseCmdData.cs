@@ -113,6 +113,23 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        protected sealed override OutputsYield RecalcUnitOutputs() {
+            var unitOutputs = _elementsData.Select(ed => ed.Outputs).Sum();
+            // 11.20.17 Zero unit production in a Base will result in Base ConstructionMgr attempting to divide by zero when 
+            // recalculating expected completion dates.
+            if (unitOutputs == default(OutputsYield)) {
+                // 11.20.17 Occurs when Base loses last facility and is about to die (IsDead not yet set). 
+                //D.Log("{0} not allowed UnitOutput with zero production. Fixing.", DebugName);
+                unitOutputs += OutputsYield.OneProduction;
+            }
+            else if (!unitOutputs.IsPresent(OutputID.Production) || unitOutputs.GetYield(OutputID.Production) == Constants.ZeroF) {
+                // 11.20.17 Occurs if no facility has any production. TODO I need to make sure that doesn't happen during game setup.
+                D.Warn("{0} not allowed UnitOutput with zero production. Fixing.", DebugName);
+                unitOutputs += OutputsYield.OneProduction;
+            }
+            return unitOutputs;
+        }
+
         protected override void HandleUnitWeaponsRangeChanged() {
             if (UnitWeaponsRange.Max > TempGameValues.__MaxBaseWeaponsRangeDistance) {
                 D.Warn("{0} max UnitWeaponsRange {1:0.#} > {2:0.#}.", DebugName, UnitWeaponsRange.Max, TempGameValues.__MaxBaseWeaponsRangeDistance);

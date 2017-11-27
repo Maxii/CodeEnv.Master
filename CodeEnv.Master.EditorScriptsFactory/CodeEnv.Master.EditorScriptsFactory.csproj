@@ -75,7 +75,7 @@
     <Compile Include="Game\DebugSystemCreatorEditor.cs" />
     <Compile Include="Game\GuiWindowEditor.cs" />
     <Compile Include="Game\HoveredHudEditor.cs" />
-    <Compile Include="Game\InteractableHudEditor.cs" />
+    <Compile Include="Game\InteractibleHudEditor.cs" />
     <Compile Include="Game\GuiShowModeControlButtonEditor.cs" />
     <Compile Include="Game\SectorGridEditor.cs" />
     <Compile Include="Game\PooledSphericalHighlightEditor.cs" />

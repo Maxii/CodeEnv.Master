@@ -24,6 +24,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface ITrackingWidget {
 
+        string DebugName { get; }
+
         bool IsShowing { get; }
 
         /// <summary>

@@ -119,8 +119,7 @@ public class FleetCtxControl_AI : ACtxControl {
         IFleetNavigableDestination target = _fleetMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         var order = new FleetOrder(directive, OrderSource.User, target);
-        bool isOrderInitiated = remoteFleet.InitiateNewOrder(order);
-        D.Assert(isOrderInitiated);
+        remoteFleet.CurrentOrder = order;
     }
 
     private void IssueRemoteUserBaseOrder(int itemID) {
@@ -128,8 +127,7 @@ public class FleetCtxControl_AI : ACtxControl {
         IUnitAttackable target = _fleetMenuOperator;
         var remoteBase = _remoteUserOwnedSelectedItem as AUnitBaseCmdItem;
         var order = new BaseOrder(directive, OrderSource.User, target);
-        bool isOrderInitiated = remoteBase.InitiateNewOrder(order);
-        D.Assert(isOrderInitiated);
+        remoteBase.CurrentOrder = order;
     }
 
 }

@@ -115,6 +115,10 @@ public class GuiManager : AMonoSingleton<GuiManager> {
     }
 
     public void ShowHiddenPanels() {
+        if (!_hiddenPanelLookup.Any()) {    // 11.25.17 Allow duplicate calls from UnitHudWindow and InteractibleHudWindow
+            //D.Log("{0}.ShowHiddenPanels called while none are hidden. Ignoring.", DebugName);
+            return;
+        }
         foreach (var panel in _hiddenPanelLookup.Keys) {
             bool restorePanelToShowing = _hiddenPanelLookup[panel];
             if (restorePanelToShowing) {
@@ -125,7 +129,10 @@ public class GuiManager : AMonoSingleton<GuiManager> {
     }
 
     public void HideShowingPanels(IList<UIPanel> exceptions) {
-        D.Assert(!_hiddenPanelLookup.Any());
+        if (_hiddenPanelLookup.Any()) {    // 11.25.17 Allow duplicate calls from UnitHudWindow and InteractibleHudWindow
+            //D.Log("{0}.HideShowingPanels called while already hiding. Ignoring.", DebugName);
+            return;
+        }
         __WarnIfExceptionNotNeeded(exceptions);
         var panelsToConsiderHiding = _panelsToConsiderHiding.Except(exceptions);
         foreach (var panel in panelsToConsiderHiding) {
