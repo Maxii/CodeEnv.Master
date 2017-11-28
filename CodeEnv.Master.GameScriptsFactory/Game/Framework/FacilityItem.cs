@@ -56,14 +56,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     private FacilityOrder _currentOrder;
     /// <summary>
     /// The last order this facility was instructed to execute.
-    /// Note: Orders from UnitCommands and the Player can become standing orders until superseded by another order
-    /// from either the UnitCmd or the Player. They may not be lost when the Captain overrides one of these orders. 
-    /// Instead, the Captain can direct that his superior's order be recorded in the 'StandingOrder' property of his override order so 
-    /// the element may return to it after the Captain's order has been executed. 
     /// </summary>
     public FacilityOrder CurrentOrder {
         get { return _currentOrder; }
-        /*private*/
         set {
             if (_currentOrder != value) {
                 CurrentOrderPropChangingHandler(value);
@@ -681,7 +676,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         LogEvent();
 
         if (CurrentOrder != null) {
-            // FollowonOrders should always be executed before any StandingOrder is considered
             if (CurrentOrder.FollowonOrder != null) {
                 D.Log(ShowDebugLog, "{0} is executing follow-on order {1}.", DebugName, CurrentOrder.FollowonOrder);
 

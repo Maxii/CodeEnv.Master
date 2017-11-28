@@ -26,11 +26,16 @@ using UnityEngine;
 /// </summary>
 public abstract class AProgressBarGuiElement : AGuiElement {
 
+#pragma warning disable 0649
+
     [SerializeField]
     private UILabel _unknownLabel;    // contains "?"
 
     [SerializeField]
     private string _tooltipContent;
+
+#pragma warning restore 0649
+
     protected sealed override string TooltipContent { get { return _tooltipContent; } }
 
     private UILabel _progressBarValueTextLabel;

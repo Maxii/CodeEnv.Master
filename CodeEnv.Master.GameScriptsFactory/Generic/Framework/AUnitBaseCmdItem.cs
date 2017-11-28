@@ -49,7 +49,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     private BaseOrder _currentOrder;
     public BaseOrder CurrentOrder {
         get { return _currentOrder; }
-        /*private*/
         set {
             if (_currentOrder != value) {
                 CurrentOrderPropChangingHandler(value);
@@ -601,7 +600,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         LogEvent();
 
         if (CurrentOrder != null) {
-            // FollowonOrders should always be executed before any StandingOrder is considered
             if (CurrentOrder.FollowonOrder != null) {
                 D.Log(ShowDebugLog, "{0} is executing follow-on order {1}.", DebugName, CurrentOrder.FollowonOrder);
 
@@ -812,7 +810,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         D.Assert(isUnsubscribed);
 
         _fsmTgt = null;
-        CancelElementsOrders();
+        ClearElementsOrders();
     }
 
     #endregion
@@ -919,7 +917,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
         _activeFsmReturnHandlers.Clear();
         _fsmTgt = null;
-        CancelElementsOrders();
+        ClearElementsOrders();
     }
 
     #endregion
@@ -1265,7 +1263,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         LogEvent();
         _fsmFacilityRefitDesignLookup.Clear();
         _fsmTgt = null;
-        CancelElementsOrders();
+        ClearElementsOrders();
     }
 
     #endregion

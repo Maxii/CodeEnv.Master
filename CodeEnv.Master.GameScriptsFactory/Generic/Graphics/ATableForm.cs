@@ -32,8 +32,12 @@ public abstract class ATableForm : AForm {
     protected const string Unknown = Constants.QuestionMark;
     private const string RowNameExtension = " Row";
 
+#pragma warning disable 0649
+
     [SerializeField]
     private ATableRowForm _rowPrefab;
+
+#pragma warning restore 0649
 
     protected abstract FormID RowFormID { get; }
 

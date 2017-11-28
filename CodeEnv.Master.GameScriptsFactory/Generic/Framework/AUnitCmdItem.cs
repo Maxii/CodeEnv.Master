@@ -758,12 +758,11 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     /// <summary>
-    /// Cancels each Element's CurrentOrder.
-    /// <remarks>Each element that has its CurrentOrder canceled will immediately Idle.</remarks>
+    /// Clears each Element's CurrentOrder and causes them to Idle.
     /// </summary>
-    protected void CancelElementsOrders() {
-        //D.Log(ShowDebugLog, "{0} is canceling any element orders it previously issued.", DebugName);
-        Elements.ForAll(e => e.CancelOrders());
+    protected void ClearElementsOrders() {
+        //D.Log(ShowDebugLog, "{0} is canceling all element orders.", DebugName);
+        Elements.ForAll(e => e.ClearOrders());
     }
 
     protected abstract void ResetOrderAndState();

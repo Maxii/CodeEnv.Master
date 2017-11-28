@@ -127,7 +127,7 @@ public class Hanger : AMonoBase, IFormationMgrClient /*,IHanger, IHanger_Ltd*/ {
             D.Assert(!ship.IsCollisionAvoidanceOperational);
             ship.IsCollisionAvoidanceOperational = true;
             ship.Data.ActivateSRSensors();
-            ship.CancelOrders();
+            ship.ClearOrders();
         });
 
         var closestLocalAssyStation = GameUtility.GetClosest(fleet.Position, ParentBaseCmd.LocalAssemblyStations);

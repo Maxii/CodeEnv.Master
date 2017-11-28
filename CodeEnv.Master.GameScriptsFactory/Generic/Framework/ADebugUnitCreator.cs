@@ -31,16 +31,16 @@ public abstract class ADebugUnitCreator : AUnitCreator {
     #region Serialized Editor fields
 
     [SerializeField]
-    protected bool _isOwnerUser;
+    protected bool _isOwnerUser = false;
 
     [SerializeField]
-    protected DebugDiploUserRelations _ownerRelationshipWithUser;
+    protected DebugDiploUserRelations _ownerRelationshipWithUser = DebugDiploUserRelations.Neutral;
 
     [SerializeField]
-    private bool _isCompositionPreset;
+    private bool _isCompositionPreset;  // setting auto detected by ExecuteInEditMode
 
     [SerializeField]
-    private bool _toDelayOperations;
+    private bool _toDelayOperations = false;
 
     [Range(0, 19)]
     [SerializeField]

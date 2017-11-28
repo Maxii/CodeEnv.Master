@@ -779,10 +779,10 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     #region Orders Support Members
 
     /// <summary>
-    /// Cancels the CurrentOrder and (re)initiates Idling state.
+    /// Nulls the CurrentOrder and (re)initiates Idling state.
     /// <remarks>11.25.17 TEMP Virtual to allow ShipItem to manage its __warnWhenIdlingReceivesFsmTgtEvents flag.</remarks>
     /// </summary>
-    internal virtual void CancelOrders() {
+    internal virtual void ClearOrders() {
         ReturnFromCalledStates();
         ResetOrderAndState();
     }

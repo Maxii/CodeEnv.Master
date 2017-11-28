@@ -33,11 +33,15 @@ public abstract class AUnitElementIconGuiElement : AMultiSizeIconGuiElement {
     private const string DebugNameFormat = "{0}[{1}]";
     private const string TooltipFormat = "{0}";
 
+#pragma warning disable 0649
+
     /// <summary>
     /// Sprite that indicates the element is under construction, aka initial construction or refitting.
     /// </summary>
     [SerializeField]
     private UISprite _reworkingSprite;
+
+#pragma warning restore 0649
 
     public override GuiElementID ElementID { get { return GuiElementID.ElementIcon; } }
 

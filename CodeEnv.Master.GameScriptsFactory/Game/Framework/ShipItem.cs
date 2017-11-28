@@ -87,14 +87,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     private ShipOrder _currentOrder;
     /// <summary>
     /// The last order this ship was instructed to execute.
-    /// Note: Orders from UnitCommands and the Player can become standing orders until superseded by another order
-    /// from either the UnitCmd or the Player. They may not be lost when the Captain overrides one of these orders. 
-    /// Instead, the Captain can direct that his superior's order be recorded in the 'StandingOrder' property of his override order so 
-    /// the element may return to it after the Captain's order has been executed. 
     /// </summary>
     public ShipOrder CurrentOrder {
         get { return _currentOrder; }
-        /*private*/
         set {
             if (_currentOrder != value) {
                 CurrentOrderPropChangingHandler(value);
@@ -992,7 +987,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
 
         if (CurrentOrder != null) {
-            // FollowonOrders should always be executed before any StandingOrder is considered
             if (CurrentOrder.FollowonOrder != null) {
                 D.Log(ShowDebugLog, "{0} is executing follow-on order {1}.", DebugName, CurrentOrder.FollowonOrder);
 
@@ -4944,13 +4938,17 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     /// arriving in Idling when I expect them, and to warn me when I don't expect them.</remarks>
     /// <remarks>4.18.17 My Theory was this is because the event's InvocationList has been copied to keep
     /// it from being modified while it is iterating. 5.19.17 I now know that the InvocationList is a linked
-    /// list so shouldn't need the iteration copy?</remarks>
+    /// list so doesn't use an iteration copy.</remarks>
+    /// <remarks>11.27.17 Warnings still occur without this and I don't understand why.</remarks>
     /// </summary>
     private bool __warnWhenIdlingReceivesFsmTgtEvents = true;
 
-    internal sealed override void CancelOrders() {
+    /// <summary>
+    /// Nulls the CurrentOrder and (re)initiates Idling state.
+    /// </summary>
+    internal sealed override void ClearOrders() {
         __warnWhenIdlingReceivesFsmTgtEvents = false;
-        base.CancelOrders();
+        base.ClearOrders();
     }
 
     [Conditional("DEBUG")]

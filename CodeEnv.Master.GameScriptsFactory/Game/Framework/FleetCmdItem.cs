@@ -55,7 +55,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     private FleetOrder _currentOrder;
     public FleetOrder CurrentOrder {
         get { return _currentOrder; }
-        /*private*/
         set {
             if (_currentOrder != value) {
                 CurrentOrderPropChangingHandler(value);
@@ -754,7 +753,6 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         }
 
         if (CurrentOrder != null) {
-            // FollowonOrders should always be executed before any StandingOrder is considered
             if (CurrentOrder.FollowonOrder != null) {
                 D.Log(ShowDebugLog, "{0} is executing follow-on order {1}.", DebugName, CurrentOrder.FollowonOrder);
 
@@ -1496,7 +1494,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         LogEvent();
         _fsmTgt = null;
         _activeFsmReturnHandlers.Clear();
-        CancelElementsOrders();
+        ClearElementsOrders();
     }
 
     #endregion
@@ -1897,7 +1895,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
         _fsmTgt = null;
         _activeFsmReturnHandlers.Clear();
-        CancelElementsOrders();
+        ClearElementsOrders();
     }
 
     #endregion
@@ -2472,7 +2470,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         _fsmTgt = null;
         _activeFsmReturnHandlers.Clear();
         _shipSystemExploreTgtAssignments.Clear();
-        CancelElementsOrders();
+        ClearElementsOrders();
     }
 
     #endregion
@@ -2654,7 +2652,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
         _fsmTgt = null;
         _activeFsmReturnHandlers.Clear();
-        CancelElementsOrders();
+        ClearElementsOrders();
     }
 
     #endregion
@@ -3002,7 +3000,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
         _fsmTgt = null;
         _activeFsmReturnHandlers.Clear();
-        CancelElementsOrders();
+        ClearElementsOrders();
     }
 
     #endregion
@@ -3418,7 +3416,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
         _fsmTgt = null;
         _activeFsmReturnHandlers.Clear();
-        CancelElementsOrders();
+        ClearElementsOrders();
     }
 
     #endregion
@@ -3694,7 +3692,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
         _fsmTgt = null;
         _activeFsmReturnHandlers.Clear();
-        CancelElementsOrders();
+        ClearElementsOrders();
     }
 
     #endregion
@@ -3859,7 +3857,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
         _fsmTgt = null;
         _activeFsmReturnHandlers.Clear();
-        CancelElementsOrders();
+        ClearElementsOrders();
     }
 
     #endregion
@@ -4051,7 +4049,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
             _fsmTgt = null;
         }
         _activeFsmReturnHandlers.Clear();
-        CancelElementsOrders();
+        ClearElementsOrders();
     }
 
     #endregion
@@ -4502,7 +4500,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         _fsmTgt = null;
         _activeFsmReturnHandlers.Clear();
         _fsmShipRefitDesignLookup.Clear();
-        CancelElementsOrders();
+        ClearElementsOrders();
     }
 
     #endregion
