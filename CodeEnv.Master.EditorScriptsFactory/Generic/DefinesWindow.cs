@@ -62,22 +62,24 @@ public class DefinesWindow : EditorWindow {
     [SerializeField]
     private bool _isDebugPropChangeEnabled;
 
-    ////[SerializeField]
-    ////private bool _isProfilerEnabled;
+    //[SerializeField]
+    //private bool _isProfilerEnabled;
 
     private bool _previousDebugLogEnabledValue = true;  // most of the time I have it enabled
     private bool _previousDebugPropChangeEnabledValue = true;
-    ////private bool _previousProfilerEnabledValue = true;
+    //private bool _previousProfilerEnabledValue = true;
     private bool _isGuiEnabled = true;
 
     #region Event and Property Change Handlers
 
     void OnEnable() {
-        EditorApplication.playmodeStateChanged += PlayModeStateChangedEventHandler;
+        //EditorApplication.playmodeStateChanged += PlaymodeStateChangedEventHandler;   // deprecated by Unity 2017.2
+        EditorApplication.playModeStateChanged += PlayModeStateChangedEventHandler;
     }
 
     void OnDisable() {
-        EditorApplication.playmodeStateChanged -= PlayModeStateChangedEventHandler;
+        //EditorApplication.playmodeStateChanged -= PlaymodeStateChangedEventHandler;   // deprecated by Unity 2017.2
+        EditorApplication.playModeStateChanged -= PlayModeStateChangedEventHandler;
     }
 
     void OnGUI() {
@@ -85,7 +87,7 @@ public class DefinesWindow : EditorWindow {
         GUI.enabled = _isGuiEnabled;
         _isDebugLogEnabled = GUILayout.Toggle(_isDebugLogEnabled, new GUIContent("Scripts Debug Log Enabled", "Check to compile D.Logs for all my loose scripts."));
         _isDebugPropChangeEnabled = GUILayout.Toggle(_isDebugPropChangeEnabled, new GUIContent("Scripts Property Validation Enabled", "Check to compile Property change name checks and equals warnings for all my loose scripts."));
-        ////_isProfilerEnabled = GUILayout.Toggle(_isProfilerEnabled, new GUIContent("Scripts Profiler Enabled", "Check to compile Profiler code for all my loose scripts."));
+        //_isProfilerEnabled = GUILayout.Toggle(_isProfilerEnabled, new GUIContent("Scripts Profiler Enabled", "Check to compile Profiler code for all my loose scripts."));
 
         GUI.enabled = true;
         if (_isGuiEnabled && _isDebugLogEnabled != _previousDebugLogEnabledValue) {
@@ -96,13 +98,19 @@ public class DefinesWindow : EditorWindow {
             _previousDebugPropChangeEnabledValue = _isDebugPropChangeEnabled;
             DebugPropEnabledChangedHandler();
         }
-        ////if (_isGuiEnabled && _isProfilerEnabled != _previousProfilerEnabledValue) {
-        ////    _previousProfilerEnabledValue = _isProfilerEnabled;
-        ////    DebugProfilerEnabledChangedHandler();
-        ////}
+        //if (_isGuiEnabled && _isProfilerEnabled != _previousProfilerEnabledValue) {
+        //    _previousProfilerEnabledValue = _isProfilerEnabled;
+        //    DebugProfilerEnabledChangedHandler();
+        //}
     }
 
-    private void PlayModeStateChangedEventHandler() {
+    private void PlayModeStateChangedEventHandler(PlayModeStateChange playMode) {
+        _isGuiEnabled = playMode == PlayModeStateChange.ExitingPlayMode;
+        Repaint();
+    }
+
+    [Obsolete("Deprecated by Unity 2017.2")]
+    private void PlaymodeStateChangedEventHandler() {
         _isGuiEnabled = !EditorApplication.isPlaying;
         Repaint();
         // Debug.Log(string.Format("OnPlayModeStateChanged(). Gui.enabled = {0}.", _isGuiEnabled));
