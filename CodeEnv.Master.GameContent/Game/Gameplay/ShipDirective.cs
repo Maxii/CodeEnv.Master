@@ -30,6 +30,8 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         Cancel,
 
+        Construct,
+
         /// <summary>
         /// Ships can attempt to assume their station in the fleet formation at any time and any location. When this order is given, 
         /// the ship attempts to move to its station within the formation. Only Fleet Cmd or the Ship's Captain may order a ship to assume

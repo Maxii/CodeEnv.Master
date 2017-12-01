@@ -60,8 +60,8 @@ namespace CodeEnv.Master.GameContent {
 
         public new IEnumerable<FacilityData> ElementsData { get { return base.ElementsData.Cast<FacilityData>(); } }
 
-        private ConstructionInfo _currentConstruction = TempGameValues.NoConstruction;
-        public ConstructionInfo CurrentConstruction {
+        private Construction _currentConstruction = TempGameValues.NoConstruction;
+        public Construction CurrentConstruction {
             get { return _currentConstruction; }
             set {
                 D.AssertNotNull(value, DebugName); // CurrentConstruction should never be changed to null

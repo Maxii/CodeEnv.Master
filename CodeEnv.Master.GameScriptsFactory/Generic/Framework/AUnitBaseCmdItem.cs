@@ -1826,6 +1826,56 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     #region IConstructionManagerClient Members
 
+    public void InitiateConstructionOf(AUnitElementDesign design, OrderSource source) {
+        FacilityDesign fDesign = design as FacilityDesign;
+        if (fDesign != null) {
+            InitiateConstructionOf(fDesign, source);
+        }
+        else {
+            ShipDesign sDesign = design as ShipDesign;
+            D.AssertNotNull(sDesign);
+            InitiateConstructionOf(sDesign, source);
+        }
+    }
+
+    private void InitiateConstructionOf(FacilityDesign design, OrderSource source) {
+        var unitFactory = UnitFactory.Instance;
+        string name = unitFactory.__GetUniqueFacilityName(design.DesignName);
+        FacilityItem facilityToConstruct = unitFactory.MakeFacilityInstance(Owner, Data.Topography, design, name, UnitContainer.gameObject);
+
+        // 11.30.17 Must be added to queue here rather than when order executes as order is deferred while paused and won't show in UnitHud
+        ConstructionMgr.AddToQueue(design, facilityToConstruct);
+
+        AddElement(facilityToConstruct);
+        facilityToConstruct.FinalInitialize();
+        AllKnowledge.Instance.AddInitialConstructionOrRefitReplacementElement(facilityToConstruct);
+        facilityToConstruct.CommenceOperations();
+
+        FacilityOrder initialConstructionOrder = new FacilityOrder(FacilityDirective.Construct, source);
+        D.Assert(!facilityToConstruct.__IsOrderBlocked(initialConstructionOrder));
+        facilityToConstruct.CurrentOrder = initialConstructionOrder;
+    }
+
+    private void InitiateConstructionOf(ShipDesign design, OrderSource source) {
+        var unitFactory = UnitFactory.Instance;
+        string name = unitFactory.__GetUniqueShipName(design.DesignName);
+        ShipItem shipToConstruct = unitFactory.MakeShipInstance(Owner, design, name, UnitContainer.gameObject);
+
+        // 11.30.17 Must be added to queue here rather than when order executes as order is deferred while paused and won't show in UnitHud
+        ConstructionMgr.AddToQueue(design, shipToConstruct);
+
+        Hanger.AddShip(shipToConstruct);
+        shipToConstruct.FinalInitialize();
+        AllKnowledge.Instance.AddInitialConstructionOrRefitReplacementElement(shipToConstruct);
+        shipToConstruct.CommenceOperations();
+
+        ShipOrder initialConstructionOrder = new ShipOrder(ShipDirective.Construct, source);
+        D.Assert(!shipToConstruct.__IsOrderBlocked(initialConstructionOrder));
+        shipToConstruct.CurrentOrder = initialConstructionOrder;
+    }
+
+
+    [Obsolete]
     void IConstructionManagerClient.HandleConstructionAdded(ConstructionInfo construction) {
         var unitFactory = UnitFactory.Instance;
         FacilityDesign facilityDesign = construction.Design as FacilityDesign;
@@ -1859,7 +1909,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         }
     }
 
-    void IConstructionManagerClient.HandleUncompletedConstructionRemovedFromQueue(ConstructionInfo construction) {
+    void IConstructionManagerClient.HandleUncompletedConstructionRemovedFromQueue(Construction construction) {
         D.Assert(!construction.IsCompleted);
         var removedElement = construction.Element;
         // if element is ship during initial construction, it will be removed from the hanger when hanger detects its death

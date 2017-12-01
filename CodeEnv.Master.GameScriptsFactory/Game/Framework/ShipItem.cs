@@ -252,18 +252,27 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     public override void CommenceOperations() {
         base.CommenceOperations();
-        if (IsLocatedInHanger) {
-            CurrentState = ShipState.Constructing;
-            // No Cmd so keep sensors deactivated until Cmd is assigned
-            // In/around hanger so don't enable collision avoidance until Cmd is assigned
-        }
-        else {
-            CurrentState = ShipState.Idling;
+        CurrentState = ShipState.Idling;
+        if (!IsLocatedInHanger) {
             IsCollisionAvoidanceOperational = true;
             Data.ActivateSRSensors();
             __SubscribeToSensorEvents();
         }
     }
+    ////public override void CommenceOperations() {
+    ////    base.CommenceOperations();
+    ////    if (IsLocatedInHanger) {
+    ////        CurrentState = ShipState.Constructing;
+    ////        // No Cmd so keep sensors deactivated until Cmd is assigned
+    ////        // In/around hanger so don't enable collision avoidance until Cmd is assigned
+    ////    }
+    ////    else {
+    ////        CurrentState = ShipState.Idling;
+    ////        IsCollisionAvoidanceOperational = true;
+    ////        Data.ActivateSRSensors();
+    ////        __SubscribeToSensorEvents();
+    ////    }
+    ////}
 
     public ShipReport GetReport(Player player) { return Data.Publisher.GetReport(player); }
 
@@ -717,6 +726,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
             ShipDirective directive = CurrentOrder.Directive;
             switch (directive) {
+                case ShipDirective.Construct:
+                    CurrentState = ShipState.Constructing;
+                    break;
                 case ShipDirective.Move:
                     CurrentState = ShipState.ExecuteMoveOrder;
                     break;
@@ -769,6 +781,14 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         else {
             _lastCmdOrderID = default(Guid);
         }
+    }
+
+    /// <summary>
+    /// Nulls the CurrentOrder and (re)initiates Idling state.
+    /// </summary>
+    internal sealed override void ClearOrders() {
+        __warnWhenIdlingReceivesFsmTgtEvents = false;
+        base.ClearOrders();
     }
 
     protected override void ResetOrderAndState() {
@@ -888,7 +908,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
         Data.PrepareForInitialConstruction();
 
-        ConstructionInfo construction = gameObject.GetSingleComponentInParents<Hanger>().ConstructionMgr.GetConstructionFor(this);
+        Construction construction = gameObject.GetSingleComponentInParents<Hanger>().ConstructionMgr.GetConstructionFor(this);
+        ////Construction construction = gameObject.GetSingleComponentInParents<Hanger>().ConstructionMgr.AddToQueue(Data.Design, this);
         D.Assert(!construction.IsCompleted);
         while (!construction.IsCompleted) {
             RefreshReworkingVisuals(construction.CompletionPercentage);
@@ -3727,7 +3748,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         _refitStorage = Data.PrepareForRefit();
 
         Hanger baseHanger = (_fsmTgt as AUnitBaseCmdItem).Hanger;
-        RefitConstructionInfo construction = baseHanger.ConstructionMgr.AddToQueue(refitDesign, this, refitCost);
+        ////RefitConstructionInfo construction = baseHanger.ConstructionMgr.AddToQueue(refitDesign, this, refitCost);
+        RefitConstruction construction = baseHanger.ConstructionMgr.AddToQueue(refitDesign, this, refitCost);
         D.Assert(!construction.IsCompleted);
         while (!construction.IsCompleted) {
             RefreshReworkingVisuals(construction.CompletionPercentage);
@@ -4943,12 +4965,10 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     /// </summary>
     private bool __warnWhenIdlingReceivesFsmTgtEvents = true;
 
-    /// <summary>
-    /// Nulls the CurrentOrder and (re)initiates Idling state.
-    /// </summary>
-    internal sealed override void ClearOrders() {
-        __warnWhenIdlingReceivesFsmTgtEvents = false;
-        base.ClearOrders();
+    protected override void __LogOrderClearedByCmd() {
+        if (CurrentOrder != null) {
+            D.Log("{0} is clearing {1} as ordered by Cmd.", DebugName, CurrentOrder.DebugName);
+        }
     }
 
     [Conditional("DEBUG")]
@@ -4970,13 +4990,16 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
     }
 
-    private bool __IsOrderBlocked(ShipOrder order) {
+    public bool __IsOrderBlocked(ShipOrder order) {
         var directive = order.Directive;
         if (directive == ShipDirective.Scuttle) {
             // Scuttle orders always allowed no matter where located
             return false;
         }
         if (IsLocatedInHanger) {
+            if (directive == ShipDirective.Construct) {
+                return false;
+            }
             if (ReworkUnderway == ReworkingMode.Constructing || ReworkUnderway == ReworkingMode.Refitting) {
                 // no orders allowed to interrupt Constructing or Refitting, by definition in hanger
                 return true;
@@ -5004,7 +5027,11 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             D.AssertNull(target);
         }
         else {
-            if (ReworkUnderway == ReworkingMode.Constructing || ReworkUnderway == ReworkingMode.Refitting) {
+            if (directive == ShipDirective.Construct) {
+                D.Assert(IsLocatedInHanger);
+                D.AssertNull(target);
+            }
+            else if (ReworkUnderway == ReworkingMode.Constructing || ReworkUnderway == ReworkingMode.Refitting) {
                 D.Error("{0} received new order {1} while {2}.", DebugName, order.DebugName, ReworkUnderway.GetValueName());
             }
             else {

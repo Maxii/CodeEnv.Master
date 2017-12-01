@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ConstructionIconGuiElement.cs
-// AIconGuiElement that represents a Base's CurrentConstruction, including NoConstruction and Unknown.
+// AIconGuiElement that represents a Base's CurrentConstruction, including NoConstructionInfo and Unknown.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,7 +23,7 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// AIconGuiElement that represents a Base's CurrentConstruction, including NoConstruction and Unknown.
+/// AIconGuiElement that represents a Base's CurrentConstruction, including NoConstructionInfo and Unknown.
 /// </summary>
 public class ConstructionIconGuiElement : AIconGuiElement, IComparable<ConstructionIconGuiElement> {
 
@@ -43,9 +43,9 @@ public class ConstructionIconGuiElement : AIconGuiElement, IComparable<Construct
 
     public override bool IsInitialized { get { return _isConstructionPropSet; } }
 
-    private bool _isConstructionPropSet;  // reqd as Construction can be ConstructionInfo, NoConstruction or null (unknown)
-    private ConstructionInfo _construction;
-    public ConstructionInfo Construction {
+    private bool _isConstructionPropSet;  // reqd as Construction can be Construction, NoConstruction or null (unknown)
+    private Construction _construction;
+    public Construction Construction {
         get { return _construction; }
         set {
             D.Assert(!_isConstructionPropSet);   // occurs only once between Resets
@@ -193,7 +193,7 @@ public class ConstructionIconGuiElement : AIconGuiElement, IComparable<Construct
             result = other.Construction == noConstruction ? Constants.Zero : Constants.MinusOne;
         }
         else if (Construction == null) {
-            // unknown Construction (Construction == null) sorts higher than NoConstruction
+            // unknown Construction (Construction == null) sorts higher than NoConstructionInfo
             result = other.Construction == null ? Constants.Zero : (other.Construction == noConstruction) ? Constants.One : Constants.MinusOne;
         }
         else {

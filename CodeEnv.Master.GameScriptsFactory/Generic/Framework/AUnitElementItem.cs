@@ -784,6 +784,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// </summary>
     internal virtual void ClearOrders() {
         ReturnFromCalledStates();
+        __LogOrderClearedByCmd();
         ResetOrderAndState();
     }
 
@@ -1209,6 +1210,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     #endregion
 
     #region Debug
+
+    protected abstract void __LogOrderClearedByCmd();
 
     public bool __HasCommand { get { return Command != null; } }
 

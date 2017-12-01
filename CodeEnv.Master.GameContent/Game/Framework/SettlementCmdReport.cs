@@ -42,7 +42,7 @@ namespace CodeEnv.Master.GameContent {
 
         public float? Approval { get; private set; }
 
-        public ConstructionInfo CurrentConstruction { get; private set; }
+        public Construction CurrentConstruction { get; private set; }
 
         public int? Capacity { get; private set; }
 

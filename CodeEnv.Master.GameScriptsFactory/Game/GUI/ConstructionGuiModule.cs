@@ -231,17 +231,20 @@ public class ConstructionGuiModule : AMonoBase {
     }
 
     private void HandleConstructibleDesignIconCntlLeftClicked(DesignIconGuiElement iconClicked) {
-        _unitConstructionMgr.AddToQueue(iconClicked.Design as AUnitElementDesign);
+        ////_unitConstructionMgr.AddToQueue(iconClicked.Design as AUnitElementDesign);
+        SelectedUnit.InitiateConstructionOf(iconClicked.Design as AUnitElementDesign, OrderSource.User);
         RefreshConstructibleDesignView();
     }
 
     private void HandleConstructibleDesignIconLeftClicked(DesignIconGuiElement iconClicked) {
-        _unitConstructionMgr.AddToQueue(iconClicked.Design as AUnitElementDesign);
+        ////_unitConstructionMgr.AddToQueue(iconClicked.Design as AUnitElementDesign);
+        SelectedUnit.InitiateConstructionOf(iconClicked.Design as AUnitElementDesign, OrderSource.User);
         RefreshConstructibleDesignView();
     }
 
     private void HandleConstructibleDesignIconShiftLeftClicked(DesignIconGuiElement iconClicked) {
-        _unitConstructionMgr.AddToQueue(iconClicked.Design as AUnitElementDesign);
+        ////_unitConstructionMgr.AddToQueue(iconClicked.Design as AUnitElementDesign);
+        SelectedUnit.InitiateConstructionOf(iconClicked.Design as AUnitElementDesign, OrderSource.User);
         RefreshConstructibleDesignView();
     }
 
@@ -281,7 +284,7 @@ public class ConstructionGuiModule : AMonoBase {
     }
 
     private void HandleConstructionQueueIconDragDropEnded() {
-        IList<ConstructionInfo> unitConstructionQueue = _unitConstructionMgr.GetQueue();
+        IList<Construction> unitConstructionQueue = _unitConstructionMgr.GetQueue();
 
         var verticallySortedConstructionItemsInIcons = _constructionQueueIconsGrid.GetChildList()
             .Select(t => t.GetComponent<ConstructionQueueIconGuiElement>()).Select(icon => icon.Construction);
@@ -325,7 +328,7 @@ public class ConstructionGuiModule : AMonoBase {
         _constructibleDesignIconsGrid.repositionNow = true;
     }
 
-    private void BuildConstructionQueueIcons(IEnumerable<ConstructionInfo> constructionQueue) {
+    private void BuildConstructionQueueIcons(IEnumerable<Construction> constructionQueue) {
         RemoveConstructionQueueIcons();
 
         var gridContainerSize = _constructionQueueIconsGrid.GetComponentInParent<UIPanel>().GetViewSize();
@@ -370,7 +373,7 @@ public class ConstructionGuiModule : AMonoBase {
     /// <param name="itemUnderConstruction">The item under construction.</param>
     /// <param name="iconSize">Size of the icon.</param>
     /// <param name="topToBottomVerticalOffset">The top to bottom vertical offset needed to vertically sort.</param>
-    private void CreateAndAddIcon(ConstructionInfo itemUnderConstruction, AMultiSizeIconGuiElement.IconSize iconSize, int topToBottomVerticalOffset) {
+    private void CreateAndAddIcon(Construction itemUnderConstruction, AMultiSizeIconGuiElement.IconSize iconSize, int topToBottomVerticalOffset) {
         GameObject constructionQueueIconGo = NGUITools.AddChild(_constructionQueueIconsGrid.gameObject, _constructionQueueIconPrefab.gameObject);
         constructionQueueIconGo.name = itemUnderConstruction.Name + ConstructionQueueIconExtension;
         constructionQueueIconGo.transform.SetLocalPositionY(topToBottomVerticalOffset); // initial position set for proper vertical sort

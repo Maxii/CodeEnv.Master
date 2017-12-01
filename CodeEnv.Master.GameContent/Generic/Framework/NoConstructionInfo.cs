@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: NoConstruction.cs
+// File: NoConstructionInfo.cs
 // ConstructionInfo for use with UnitBaseCmds that have no construction underway.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -22,7 +22,8 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// ConstructionInfo for use with UnitBaseCmds that have no construction underway.
     /// </summary>
-    public class NoConstruction : ConstructionInfo {
+    [Obsolete]
+    public class NoConstructionInfo : ConstructionInfo {
 
         public override string Name { get { return GetType().Name; } }
 
@@ -43,7 +44,7 @@ namespace CodeEnv.Master.GameContent {
 
         public override string ImageFilename { get { return TempGameValues.EmptyImageFilename; } }
 
-        public NoConstruction() : base(null) { }
+        public NoConstructionInfo() : base(null) { }
 
         public override bool TryCompleteConstruction(float productionToApply, out float unconsumedProduction) {
             throw new NotImplementedException("TryCompleteConstruction() is not implemented in {0}.".Inject(DebugName));

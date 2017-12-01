@@ -30,6 +30,8 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         Cancel,
 
+        Construct,
+
         /// <summary>
         /// Facilities can attack Ships in range owned by enemies of the Facility's owner.
         /// Only Base Cmd may order a Facility to attack.

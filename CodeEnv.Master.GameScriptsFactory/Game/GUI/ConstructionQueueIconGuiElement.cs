@@ -48,8 +48,8 @@ public class ConstructionQueueIconGuiElement : AMultiSizeIconGuiElement {
 
     public override bool IsInitialized { get { return Size != default(IconSize) && Construction != null; } }
 
-    private ConstructionInfo _construction;
-    public ConstructionInfo Construction {
+    private Construction _construction;
+    public Construction Construction {
         get { return _construction; }
         set {
             D.AssertNotEqual(TempGameValues.NoConstruction, _construction);

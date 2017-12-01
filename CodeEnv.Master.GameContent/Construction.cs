@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ConstructionInfo.cs
-// Tracks progress of an element design under construction.
+// File: Construction.cs
+// Tracks progress of an element design under initial construction.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -16,15 +16,13 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
     using CodeEnv.Master.Common;
     using UnityEngine;
 
     /// <summary>
-    /// Tracks progress of an element design under construction.
+    /// Tracks progress of an element design under initial construction.
     /// </summary>
-    [Obsolete]
-    public class ConstructionInfo : APropertyChangeTracking {
+    public class Construction : APropertyChangeTracking {
 
         private const string DebugNameFormat = "{0}[{1}]";
 
@@ -33,13 +31,6 @@ namespace CodeEnv.Master.GameContent {
         public virtual string Name { get { return Design.DesignName; } }
 
         public virtual bool IsRefitConstruction { get { return false; } }
-
-        /// <summary>
-        /// The element being constructed or refit.
-        /// <remarks>Public set as elements being initially constructed cannot be assigned in the constructor
-        /// as they haven't been instantiated yet.</remarks>
-        /// </summary>
-        public IUnitElement Element { get; set; }
 
         private bool _isCompleted = false;
         public virtual bool IsCompleted {
@@ -95,7 +86,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Returns the cost in units of production to construct what is being constructed.
         /// Can construct an Element from scratch or refit an existing Element to a new Design.
-        /// <remarks>Default implementation returns the 'from scratch' Design.ConstructionCost. RefitConstructionInfo overrides 
+        /// <remarks>Default implementation returns the 'from scratch' Design.ConstructionCost. RefitConstruction overrides 
         /// this and returns the cost to 'refit' to this Design from a prior design.</remarks>
         /// </summary>
         public virtual float CostToConstruct { get { return Design.ConstructionCost; } }
@@ -108,8 +99,14 @@ namespace CodeEnv.Master.GameContent {
 
         public float CumProductionApplied { get; private set; }
 
-        public ConstructionInfo(AUnitElementDesign design) {
+        /// <summary>
+        /// The element being constructed or refit.
+        /// </summary>
+        public IUnitElement Element { get; private set; }
+
+        public Construction(AUnitElementDesign design, IUnitElement element) {
             Design = design;
+            Element = element;
         }
 
         public virtual bool TryCompleteConstruction(float productionToApply, out float unconsumedProduction) {
@@ -149,6 +146,7 @@ namespace CodeEnv.Master.GameContent {
         #region Debug
 
         #endregion
+
 
     }
 }

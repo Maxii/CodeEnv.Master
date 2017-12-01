@@ -21,6 +21,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Tracks progress of a element construction during a refit.
     /// </summary>
+    [System.Obsolete]
     public class RefitConstructionInfo : ConstructionInfo {
 
         public override bool IsRefitConstruction { get { return true; } }

@@ -34,7 +34,7 @@ namespace CodeEnv.Master.GameContent {
 
         public int? Capacity { get; private set; }
 
-        public ConstructionInfo CurrentConstruction { get; private set; }
+        public Construction CurrentConstruction { get; private set; }
 
         public ResourcesYield Resources { get; private set; }
 

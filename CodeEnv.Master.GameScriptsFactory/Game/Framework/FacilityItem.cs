@@ -166,6 +166,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #endregion
 
+    [Obsolete]
     public void CommenceOperations(bool isInitialConstructionNeeded) {
         CommenceOperations();
         _obstacleZoneCollider.enabled = true;
@@ -174,7 +175,15 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         __SubscribeToSensorEvents();
     }
 
-    // IMPROVE Hide base.CommenceOperations (new doesn't work)
+    public override void CommenceOperations() {
+        base.CommenceOperations();
+        _obstacleZoneCollider.enabled = true;
+        CurrentState = FacilityState.Idling;
+        Data.ActivateSRSensors();
+        __SubscribeToSensorEvents();
+    }
+
+    //// IMPROVE Hide base.CommenceOperations (new doesn't work)
 
     public FacilityReport GetReport(Player player) { return Data.Publisher.GetReport(player); }
 
@@ -458,6 +467,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             //D.Log(ShowDebugLog, "{0} is about to change state for new order {1}. Frame {2}.", DebugName, CurrentOrder.Directive.GetValueName(), Time.frameCount);
             FacilityDirective directive = CurrentOrder.Directive;
             switch (directive) {
+                case FacilityDirective.Construct:
+                    CurrentState = FacilityState.Constructing;
+                    break;
                 case FacilityDirective.Attack:
                     CurrentState = FacilityState.ExecuteAttackOrder;
                     break;
@@ -595,7 +607,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
         Data.PrepareForInitialConstruction();
 
-        ConstructionInfo construction = Command.ConstructionMgr.GetConstructionFor(this);
+        Construction construction = Command.ConstructionMgr.GetConstructionFor(this);
+        ////Construction construction = Command.ConstructionMgr.AddToQueue(Data.Design, this);
         D.Assert(!construction.IsCompleted);
         while (!construction.IsCompleted) {
             RefreshReworkingVisuals(construction.CompletionPercentage);
@@ -1139,7 +1152,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
         _refitStorage = Data.PrepareForRefit();
 
-        RefitConstructionInfo construction = Command.ConstructionMgr.AddToQueue(refitDesign, this, refitCost);
+        ////RefitConstructionInfo construction = Command.ConstructionMgr.AddToQueue(refitDesign, this, refitCost);
+        RefitConstruction construction = Command.ConstructionMgr.AddToQueue(refitDesign, this, refitCost);
         D.Assert(!construction.IsCompleted);
         while (!construction.IsCompleted) {
             RefreshReworkingVisuals(construction.CompletionPercentage);
@@ -1155,7 +1169,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
         facilityReplacement.FinalInitialize();
         AllKnowledge.Instance.AddInitialConstructionOrRefitReplacementElement(facilityReplacement);
-        facilityReplacement.CommenceOperations(isInitialConstructionNeeded: false);
+        ////facilityReplacement.CommenceOperations(isInitialConstructionNeeded: false);
+        facilityReplacement.CommenceOperations();
 
         HandleRefitReplacementCompleted();
     }
@@ -1435,6 +1450,12 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #region Debug
 
+    protected override void __LogOrderClearedByCmd() {
+        if (CurrentOrder != null) {
+            D.Log("{0} is clearing {1} as ordered by Cmd.", DebugName, CurrentOrder.DebugName);
+        }
+    }
+
     protected override void __ValidateRadius(float radius) {
         if (radius > TempGameValues.MaxFacilityRadius) {
             D.Error("{0} Radius {1:0.00} must be <= Max {2:0.00}.", DebugName, radius, TempGameValues.MaxFacilityRadius);
@@ -1457,7 +1478,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     private void __ValidateOrder(FacilityOrder order) {
         var directive = order.Directive;
         var target = order.Target;
-        if (directive == FacilityDirective.Scuttle) {
+        if (directive == FacilityDirective.Scuttle || directive == FacilityDirective.Construct) {
             D.AssertNull(target);
         }
         else {
@@ -1483,7 +1504,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         }
     }
 
-    private bool __IsOrderBlocked(FacilityOrder order) {
+    public bool __IsOrderBlocked(FacilityOrder order) {
         var directive = order.Directive;
         if (directive == FacilityDirective.Scuttle) {
             return false;

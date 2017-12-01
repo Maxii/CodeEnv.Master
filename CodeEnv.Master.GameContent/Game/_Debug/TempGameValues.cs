@@ -557,8 +557,8 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private static ConstructionInfo _noConstruction;
-        public static ConstructionInfo NoConstruction {
+        private static Construction _noConstruction;
+        public static Construction NoConstruction {
             get {
                 _noConstruction = _noConstruction ?? new NoConstruction();
                 return _noConstruction;
