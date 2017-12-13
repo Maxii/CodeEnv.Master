@@ -97,7 +97,7 @@ namespace CodeEnv.Master.GameContent {
         private float _outerRadiusSqrd;
 
         public AApDestinationProxy(IShipNavigableDestination destination, IShip ship, Vector3 destOffset, float innerRadius, float outerRadius) {
-            Utility.ValidateNotNull(destination);
+            D.AssertNotNull(destination);
             Utility.ValidateNotNegative(innerRadius);
             Utility.ValidateForRange(outerRadius, innerRadius, Mathf.Infinity); // HACK
             Destination = destination;

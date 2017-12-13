@@ -26,6 +26,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Cancels any unit orders issued while in the CURRENT pause. Orders issued in a prior pause will not be canceled.
         /// <remarks>8.14.17 Must be issued by OrderSource.User and only during pause.</remarks>
+        /// <remarks>12.12.17 Requires a null target.</remarks>
         /// </summary>
         Cancel,
 
@@ -37,6 +38,7 @@ namespace CodeEnv.Master.GameContent {
         /// If a system or sector is designated as the move target and the fleet is currently outside of the system/sector, 
         /// the fleet will move to just outside the radius of the system/sector. If the fleet is currently inside the 
         /// system/sector, the fleet will move to the closest patrol point within the system/sector. 
+        /// <remarks>12.12.17 Requires a non-null target.</remarks>
         /// </summary>
         Move,
 
@@ -47,6 +49,7 @@ namespace CodeEnv.Master.GameContent {
         /// If a system or sector is designated as the move target and the fleet is currently outside of the system/sector, 
         /// the fleet will move to just outside the radius of the system/sector. If the fleet is currently inside the 
         /// system/sector, the fleet will move to the closest patrol point within the system/sector. 
+        /// <remarks>12.12.17 Requires a non-null target.</remarks>
         /// </summary>
         FullSpeedMove,
 
@@ -54,7 +57,6 @@ namespace CodeEnv.Master.GameContent {
         /// Fleets can go into close orbit around Bases, Stars, Planets and the UniverseCenter. 
         /// Diplomatic state with the owner, if any, cannot be at war, and with Bases cannot be an enemy.
         /// </summary>
-        ////[System.Obsolete]
         ////CloseOrbit,
 
         /// <summary>
@@ -62,6 +64,7 @@ namespace CodeEnv.Master.GameContent {
         /// Diplomatic state with the owner, if any, cannot be an enemy. When a fleet is ordered to patrol the 
         /// fleet will move to the target's closest patrol station and initiate a patrol pattern encompassing 
         /// the other patrol stations of the target. 
+        /// <remarks>12.12.17 Requires a non-null target.</remarks>
         /// </summary>
         Patrol,
 
@@ -69,6 +72,7 @@ namespace CodeEnv.Master.GameContent {
         /// Fleets can guard any IGuardable target including Bases, Systems, Sectors and the UniverseCenter. 
         /// Diplomatic state with the owner, if any, cannot be an enemy. When a fleet is ordered to guard a target, the fleet
         /// will move to the target's closest guard station and reside there waiting for an enemy to be detected.
+        /// <remarks>12.12.17 Requires a non-null target.</remarks>
         /// </summary>
         Guard,
 
@@ -76,6 +80,7 @@ namespace CodeEnv.Master.GameContent {
         /// Fleets can explore Systems, Sectors and the UniverseCenter. Planets and the Star are explored by ships executing
         /// a Explore order from the fleet. This occurs automatically when a fleet is ordered to explore a system. 
         /// Diplomatic state with the owner, if any, cannot be at war.
+        /// <remarks>12.12.17 Requires a non-null target.</remarks>
         /// </summary>
         Explore,
 
@@ -83,67 +88,74 @@ namespace CodeEnv.Master.GameContent {
         /// Fleets can attack Units (Fleets and Bases), Planetoids and Systems owned by enemies of the fleet owner.
         /// If an enemy System is designated as the attack target, the fleet attacks the Settlement. Diplomatic state 
         /// with the owner must be an enemy.
+        /// <remarks>12.12.17 Requires a non-null target.</remarks>
         /// </summary>
         Attack,
 
         /// <summary>
         /// Fleets can refit at Bases owned by the Fleet owner.
         /// UNCLEAR should fleets be able to refit at ally bases? What about when base is under attack?
+        /// <remarks>12.12.17 Requires a non-null (Base) target.</remarks>
         /// </summary>
         Refit,
 
         /// <summary>
-        /// Fleets can repair at Bases owned by the Fleet owner.
-        /// UNCLEAR where else can repairs take place and to what degree?
+        /// Fleets can repair at Bases owned by the Fleet owner, friendly planets and in place.
+        //// UNCLEAR where else can repairs take place and to what degree?
+        //// <remarks>12.12.17 No requirements for Target.</remarks>
+        /// <remarks>12.12.17 Requires a non-null target which can be a base, planet or itself (FleetCmd). If the target is
+        /// itself, the fleet's ships will repair in place on their formation stations.</remarks>
         /// </summary>
         Repair,
 
         /// <summary>
         /// Fleets can disband at Bases owned by the Fleet owner.
         /// When a fleet is disbanded, the owner of the fleet retains a percentage of the resources used to build it.
+        /// <remarks>12.12.17 Requires a non-null (Base) target.</remarks>
         /// </summary>
         Disband,
 
         /// <summary>
-        /// Fleets can assume their chosen formation at any time and any location although they must be stationary??? to
-        /// do so. When this order is given, the ships of the fleet attempt to move to their stations within the formation. 
-        /// When ships have idle time, they automatically move to their formation station if the FleetCmd is stationary
-        /// and the ship is not in orbit. If this order is received by a ship in orbit, it will immediately break orbit 
-        /// and move to their formation station.
+        /// Fleets can assume their chosen formation at any time and any location. When this order is given, 
+        /// the ships of the fleet attempt to move to their stations within the formation. 
+        /// <remarks>12.12.17 No requirements for Target.</remarks>
         /// </summary>
         AssumeFormation,
 
+        [System.Obsolete("Not currently used")]
         Regroup,
 
         /// <summary>
         /// Fleets can join other fleets owned by the Fleet owner.
+        /// <remarks>12.12.17 Requires a non-null target.</remarks>
         /// </summary>
         Join,
 
         /// <summary>
-        /// Fleets can execute a covered retreat. Healthier ships in the fleet stay in 
-        /// line and provide cover fire to keep the enemy from pursuing while seriously damaged ships retreat. 
-        /// </summary>
-        Withdraw,
-
-        /// <summary>
-        /// Each ship in the fleet retreats at best speed.
-        /// </summary>
-        Retreat,
-
-        ////StopAttack,
-
-        /// <summary>
-        /// Fleets can be scuttled anywhere. No resources are retained by the owner. Scuttle orders are only 
-        /// issuable by the User???
+        /// Fleets can be scuttled anywhere. No resources are retained by the owner.
+        /// <remarks>12.12.17 Requires a null target.</remarks>
         /// </summary>
         Scuttle,
 
         /// <summary>
         /// Fleet's can be instructed to assign a new ship as the HQElement.
-        /// <remarks>Implemented directly by changing the Cmd's HQElement.</remarks>
+        /// <remarks>Implemented directly by changing the Cmd's HQElement, not as an order.</remarks>
         /// </summary>
-        ChangeHQ
+        ChangeHQ,
+
+        /// <summary>
+        /// Fleets can execute a covered retreat. Healthier ships in the fleet stay in 
+        /// line and provide cover fire to keep the enemy from pursuing while seriously damaged ships retreat. 
+        /// <remarks>12.12.17 Not yet implemented.</remarks>
+        /// </summary>
+        Withdraw,
+
+        /// <summary>
+        /// Each ship in the fleet retreats at best speed.
+        /// <remarks>12.12.17 Not yet implemented.</remarks>
+        /// </summary>
+        Retreat
+
 
         /************************************ Possible Directives *****************************************/
         /***************************************************************************************************

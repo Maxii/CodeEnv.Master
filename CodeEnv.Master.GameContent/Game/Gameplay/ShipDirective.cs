@@ -26,10 +26,16 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Cancels any unit orders issued while in the CURRENT pause. Orders issued in a prior pause will not be canceled.
         /// <remarks>8.14.17 Must be issued by the User and only during pause.</remarks>
-        /// <remarks>11.8.17 No requirements for Target.</remarks>
+        /// <remarks>12.12.17 Requires a null target.</remarks>
         /// </summary>
         Cancel,
 
+        /// <summary>
+        /// Ships 'manage' their own initial construction in a Base Hanger. When they receive this order, they are of course already
+        /// instantiated and operational and have an existing Construction present (with no progress having occurred yet) in the 
+        /// Base's ConstructionManager.
+        /// <remarks>12.1.17 Requires a null Target.</remarks>
+        /// </summary>
         Construct,
 
         /// <summary>
@@ -69,7 +75,9 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Ships can repair where they are currently located, including in space and at planets and Bases they are allowed to orbit. 
         /// Only Fleet Cmd, the Ship's Captain or the User may order a ship to repair.
-        /// <remarks>11.8.17 Target can be null. If null, the ship's FormationStation is used to repair in place.</remarks>
+        //// <remarks>11.8.17 Target can be null. If null, the ship's FormationStation is used to repair in place.</remarks>
+        /// <remarks>12.13.17 Requires a non-null Target which can be a Base, Planet or the ship's own FleetCmd. If the target
+        /// is the ship's own FleetCmd, the ship's FormationStation will be used to repair in place.</remarks>
         /// </summary>
         Repair,
 
@@ -129,9 +137,8 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         Scuttle,
 
+        [System.Obsolete("Not needed as only implemented in AiShip/Facility CtxMenus for debug and not as an order")]
         ChgOwner,
-
-        StopAttack
 
 
     }

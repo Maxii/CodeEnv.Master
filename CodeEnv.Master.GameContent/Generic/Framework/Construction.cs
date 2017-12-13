@@ -30,14 +30,15 @@ namespace CodeEnv.Master.GameContent {
 
         public virtual string Name { get { return Design.DesignName; } }
 
-        public virtual bool IsRefitConstruction { get { return false; } }
-
         private bool _isCompleted = false;
         public virtual bool IsCompleted {
             get { return _isCompleted; }
             private set {
-                D.Assert(!_isCompleted);    // not allowed to be set false
-                SetProperty<bool>(ref _isCompleted, value, "IsCompleted");  // provides access to IsCompletedChanged
+                if (_isCompleted != value) {
+                    D.Assert(value);       // not allowed to be set false
+                    _isCompleted = value;
+                }
+                // No SetProperty to avoid subscribing to IsCompleted. Use ConstructionManager.isConstructionCompleted instead.
             }
         }
 

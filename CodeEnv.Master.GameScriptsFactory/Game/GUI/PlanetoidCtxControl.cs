@@ -30,9 +30,11 @@ using UnityEngine;
 public class PlanetoidCtxControl : ACtxControl {
 
     // No Explore available as Fleets only explore Systems, Sectors and UniverseCenter
-    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] { FleetDirective.FullSpeedMove,
-                                                                                        FleetDirective.Move };
     // 3.27.17 TEMP removed until planetoids become IUnitAttackable again           //FleetDirective.Attack };
+    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[]   {
+                                                                                            FleetDirective.FullSpeedMove,
+                                                                                            FleetDirective.Move
+                                                                                        };
 
     protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
         get { return _userRemoteFleetDirectives; }
@@ -79,6 +81,9 @@ public class PlanetoidCtxControl : ACtxControl {
     }
 
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
+        FleetCmdItem userRemoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
+        bool isOrderAuthorizedByUserRemoteFleet = userRemoteFleet.IsAuthorizedForNewOrder(directive);
+        // userRemoteFleet.IsCurrentOrderDirectiveAnyOf() not used in criteria as target in current order may not be this Planetoid
         switch (directive) {
             case FleetDirective.Attack:
                 // 3.27.17 TEMP modified until planetoids become IUnitAttackable again
@@ -87,7 +92,7 @@ public class PlanetoidCtxControl : ACtxControl {
                 return true;
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
-                return false;
+                return !isOrderAuthorizedByUserRemoteFleet;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }

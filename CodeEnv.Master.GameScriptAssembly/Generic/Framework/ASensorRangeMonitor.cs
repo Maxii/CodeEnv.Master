@@ -867,7 +867,7 @@ public abstract class ASensorRangeMonitor : ADetectableRangeMonitor<ISensorDetec
     /// <param name="toSubscribe">if set to <c>true</c> subscribe, otherwise unsubscribe.</param>
     /// <returns></returns>
     protected bool __AttemptElementIsHqChgdSubscription(IUnitElement_Ltd element, bool toSubscribe) {
-        Utility.ValidateNotNull(element);
+        D.AssertNotNull(element);
         bool isSubscribeActionTaken = false;
         bool isDuplicateSubscriptionAttempted = false;
         bool isSubscribed = __subscribedElements.Contains(element);

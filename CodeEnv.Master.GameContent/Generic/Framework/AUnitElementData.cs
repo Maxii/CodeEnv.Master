@@ -257,6 +257,17 @@ namespace CodeEnv.Master.GameContent {
 
         // Refit completion is handled by creating an upgraded UnitElementItem
 
+        public void PrepareForDisband() {
+            // damage the equipment
+            DamageEquipment(Constants.OneHundredPercent);
+
+            // change the values to what they should be during Disband
+            Outputs *= TempGameValues.UnderConstructionValuesScaler;
+            // All other Element-specific Properties are changed as a result of DamageEquipment
+            float maxAllowedCurrentHitPts = MaxHitPoints * TempGameValues.UnderConstructionValuesScaler;
+            CurrentHitPoints = CurrentHitPoints < maxAllowedCurrentHitPts ? CurrentHitPoints : maxAllowedCurrentHitPts;
+        }
+
         /// <summary>
         /// Damages non-hull equipment including CMs, ShieldGenerators, Weapons and Sensors. 
         /// The equipment damaged is determined by 1) whether its damageable, 2) how many of each type are kept 
@@ -434,11 +445,11 @@ namespace CodeEnv.Master.GameContent {
         public void HandleRefitReplacementCompleted() {
             _isDead = true; // avoids firing any IsDead property change handlers
             IsOperational = false;  // we want these property change handlers
-            DeactivateAllEquipment();
+            DeactivateAllCmdModuleEquipment();
         }
 
-        protected override void DeactivateAllEquipment() {
-            base.DeactivateAllEquipment();
+        protected override void DeactivateAllCmdModuleEquipment() {
+            base.DeactivateAllCmdModuleEquipment();
             Weapons.ForAll(weap => weap.IsActivated = false);
             Sensors.ForAll(sens => sens.IsActivated = false);
             ActiveCountermeasures.ForAll(acm => acm.IsActivated = false);

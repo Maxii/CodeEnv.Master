@@ -28,12 +28,11 @@ using UnityEngine;
 /// Context Menu Control for <see cref="ShipItem"/>s owned by the User.
 /// </summary>
 public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
-
     private static ShipDirective[] _userMenuOperatorDirectives = new ShipDirective[]    {
                                                                                             ShipDirective.Join,
                                                                                             ShipDirective.Disengage,
-                                                                                            ShipDirective.Disband,
-                                                                                            ShipDirective.Scuttle,
+                                                                                            ShipDirective.Scuttle
+        // 12.12.17 Removed disband as ship doesn't know whether to split from fleet
                                                                                         };
 
     protected override IEnumerable<ShipDirective> UserMenuOperatorDirectives {
@@ -43,16 +42,6 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
     protected override Vector3 PositionForDistanceMeasurements { get { return _shipMenuOperator.Position; } }
 
     protected override string OperatorName { get { return _shipMenuOperator != null ? _shipMenuOperator.DebugName : "NotYetAssigned"; } }
-
-    private bool IsShipDisengageOrderDisabled {
-        get {
-            return _shipMenuOperator.IsLocatedInHanger
-                || _shipMenuOperator.Data.CombatStance == ShipCombatStance.Disengage
-                || _shipMenuOperator.IsCurrentOrderDirectiveAnyOf(ShipDirective.Disengage)
-                || _shipMenuOperator.IsHQ
-                || !_shipMenuOperator.RequestPermissionOfCmdToWithdraw(ShipItem.WithdrawPurpose.Disengage);
-        }
-    }
 
     protected override bool IsItemMenuOperatorTheCameraFocus { get { return _shipMenuOperator.IsFocus; } }
 
@@ -73,14 +62,14 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
     }
 
     protected override bool IsUserMenuOperatorMenuItemDisabledFor(ShipDirective directive) {
+        // IsCurrentOrderDirectiveAnyOf() not used in criteria as target in current order may not be the same
         switch (directive) {
             case ShipDirective.Scuttle:
-            case ShipDirective.Disband:
-                return _shipMenuOperator.IsCurrentOrderDirectiveAnyOf(directive);
             case ShipDirective.Disengage:
-                return IsShipDisengageOrderDisabled;
             case ShipDirective.Join:
-                return _shipMenuOperator.IsLocatedInHanger || !_userKnowledge.AreAnyFleetsJoinableBy(_shipMenuOperator);
+                ////case ShipDirective.Disband:
+                // 12.5.17 Currently no CtxMenu orders allowed for ships in hangers
+                return _shipMenuOperator.IsLocatedInHanger || !_shipMenuOperator.IsAuthorizedForNewOrder(directive);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
@@ -106,10 +95,10 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
                 targets = joinableFleets.Cast<INavigableDestination>();
                 doesDirectiveSupportSubmenus = true;
                 break;
-            case ShipDirective.Disband:
-                targets = _userKnowledge.OwnerBases.Cast<INavigableDestination>();
-                doesDirectiveSupportSubmenus = true;
-                break;
+            ////case ShipDirective.Disband:
+            ////    targets = _userKnowledge.OwnerBases.Cast<INavigableDestination>();
+            ////    doesDirectiveSupportSubmenus = true;
+            ////    break;
             case ShipDirective.Disengage:
             case ShipDirective.Scuttle:
                 targets = Enumerable.Empty<INavigableDestination>();

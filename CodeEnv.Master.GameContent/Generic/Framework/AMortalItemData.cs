@@ -183,10 +183,10 @@ namespace CodeEnv.Master.GameContent {
             D.Assert(IsDead);
             // Can't assert CurrentHitPoints as LoneFleetCmds can 'die' when they transfer their LoneElement to another Fleet
             IsOperational = false;
-            DeactivateAllEquipment();
+            DeactivateAllCmdModuleEquipment();
         }
 
-        protected virtual void DeactivateAllEquipment() {
+        protected virtual void DeactivateAllCmdModuleEquipment() {
             PassiveCountermeasures.ForAll(cm => cm.IsActivated = false);
         }
 

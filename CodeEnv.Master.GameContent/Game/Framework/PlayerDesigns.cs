@@ -320,31 +320,6 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
-        [System.Obsolete("Upgrades for Cmd Designs not yet implemented")]
-        public bool AreUpgradeDesignsPresent(Player player, FleetCmdDesign design) {
-            IList<FleetCmdDesign> unusedUpgradeDesigns;
-            return TryGetUpgradeDesigns(player, design, out unusedUpgradeDesigns);
-        }
-
-        [System.Obsolete("Upgrades for Cmd Designs not yet implemented")]
-        public bool AreUserUpgradeDesignsPresent(FleetCmdDesign design) {
-            return AreUpgradeDesignsPresent(_userPlayer, design);
-        }
-
-        public bool AreUnitUpgradeDesignsPresent(Player player, FleetCmdData cmdData) {
-            var elementDesigns = cmdData.ElementsData.Select(eData => eData.Design);
-            foreach (var design in elementDesigns) {
-                if (AreUpgradeDesignsPresent(player, design)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        public bool AreUserUnitUpgradeDesignsPresent(FleetCmdData cmdData) {
-            return AreUnitUpgradeDesignsPresent(_userPlayer, cmdData);
-        }
-
         /// <summary>
         /// Determines whether the content of the provided design is already present in active designs.
         /// <remarks>Design content comparison does not pay attention to the design name or the status of the design.</remarks>
@@ -364,17 +339,6 @@ namespace CodeEnv.Master.GameContent {
             }
             designName = null;
             return false;
-        }
-
-        [System.Obsolete("Upgrades for Cmd Designs not yet implemented")]
-        public bool AreUpgradeDesignsPresent(Player player, StarbaseCmdDesign design) {
-            IList<StarbaseCmdDesign> unusedUpgradeDesigns;
-            return TryGetUpgradeDesigns(player, design, out unusedUpgradeDesigns);
-        }
-
-        [System.Obsolete("Upgrades for Cmd Designs not yet implemented")]
-        public bool AreUserUpgradeDesignsPresent(StarbaseCmdDesign design) {
-            return AreUpgradeDesignsPresent(_userPlayer, design);
         }
 
         /// <summary>
@@ -398,6 +362,46 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
+        #region Deprecated Design Presence
+
+        [System.Obsolete("Upgrades for Cmd Designs not yet implemented")]
+        public bool AreUpgradeDesignsPresent(Player player, FleetCmdDesign design) {
+            IList<FleetCmdDesign> unusedUpgradeDesigns;
+            return TryGetUpgradeDesigns(player, design, out unusedUpgradeDesigns);
+        }
+
+        [System.Obsolete("Upgrades for Cmd Designs not yet implemented")]
+        public bool AreUserUpgradeDesignsPresent(FleetCmdDesign design) {
+            return AreUpgradeDesignsPresent(_userPlayer, design);
+        }
+
+        [System.Obsolete("Some ships of FleetCmd may not be candidates for a Refit")]
+        public bool AreUnitUpgradeDesignsPresent(Player player, FleetCmdData cmdData) {
+            var elementDesigns = cmdData.ElementsData.Select(eData => eData.Design);
+            foreach (var design in elementDesigns) {
+                if (AreUpgradeDesignsPresent(player, design)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        [System.Obsolete("Some ships of FleetCmd may not be candidates for a Refit")]
+        public bool AreUserUnitUpgradeDesignsPresent(FleetCmdData cmdData) {
+            return AreUnitUpgradeDesignsPresent(_userPlayer, cmdData);
+        }
+
+        [System.Obsolete("Upgrades for Cmd Designs not yet implemented")]
+        public bool AreUpgradeDesignsPresent(Player player, StarbaseCmdDesign design) {
+            IList<StarbaseCmdDesign> unusedUpgradeDesigns;
+            return TryGetUpgradeDesigns(player, design, out unusedUpgradeDesigns);
+        }
+
+        [System.Obsolete("Upgrades for Cmd Designs not yet implemented")]
+        public bool AreUserUpgradeDesignsPresent(StarbaseCmdDesign design) {
+            return AreUpgradeDesignsPresent(_userPlayer, design);
+        }
+
         [System.Obsolete("Upgrades for Cmd Designs not yet implemented")]
         public bool AreUpgradeDesignsPresent(Player player, SettlementCmdDesign design) {
             IList<SettlementCmdDesign> unusedUpgradeDesigns;
@@ -409,6 +413,7 @@ namespace CodeEnv.Master.GameContent {
             return AreUpgradeDesignsPresent(_userPlayer, design);
         }
 
+        [System.Obsolete("Some facilities of BaseCmd may not be candidates for a Refit")]
         public bool AreUnitUpgradeDesignsPresent(Player player, AUnitBaseCmdData cmdData) {
             var elementDesigns = cmdData.ElementsData.Select(eData => eData.Design);
             foreach (var design in elementDesigns) {
@@ -419,9 +424,12 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
+        [System.Obsolete("Some facilities of BaseCmd may not be candidates for a Refit")]
         public bool AreUserUnitUpgradeDesignsPresent(AUnitBaseCmdData cmdData) {
             return AreUnitUpgradeDesignsPresent(_userPlayer, cmdData);
         }
+
+        #endregion
 
         #endregion
 

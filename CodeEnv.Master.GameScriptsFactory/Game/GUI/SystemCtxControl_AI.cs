@@ -72,20 +72,22 @@ public class SystemCtxControl_AI : ACtxControl {
     }
 
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
+        FleetCmdItem userRemoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
+        bool isOrderAuthorizedByUserRemoteFleet = userRemoteFleet.IsAuthorizedForNewOrder(directive);
+        // userRemoteFleet.IsCurrentOrderDirectiveAnyOf() not used in criteria as target in current order may not be this AIBase
         switch (directive) {
-            case FleetDirective.Attack:
-                return !(_settlement as IUnitAttackable).IsAttackAllowedBy(_user)
-                    || !(_remoteUserOwnedSelectedItem as AUnitCmdItem).IsAttackCapable;
-            case FleetDirective.Explore:
-                var explorableSystem = _systemMenuOperator as IFleetExplorable;
-                return !explorableSystem.IsExploringAllowedBy(_user) || explorableSystem.IsFullyExploredBy(_user);
-            case FleetDirective.Patrol:
-                return !(_systemMenuOperator as IPatrollable).IsPatrollingAllowedBy(_user);
-            case FleetDirective.Guard:
-                return !(_systemMenuOperator as IGuardable).IsGuardingAllowedBy(_user);
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
-                return false;
+                return !isOrderAuthorizedByUserRemoteFleet;
+            case FleetDirective.Attack:
+                return !isOrderAuthorizedByUserRemoteFleet || !(_settlement as IUnitAttackable).IsAttackAllowedBy(_user);
+            case FleetDirective.Patrol:
+                return !isOrderAuthorizedByUserRemoteFleet || !(_settlement as IPatrollable).IsPatrollingAllowedBy(_user);
+            case FleetDirective.Guard:
+                return !isOrderAuthorizedByUserRemoteFleet || !(_settlement as IGuardable).IsGuardingAllowedBy(_user);
+            case FleetDirective.Explore:
+                var explorableSystem = _systemMenuOperator as IFleetExplorable;
+                return !isOrderAuthorizedByUserRemoteFleet || !explorableSystem.IsExploringAllowedBy(_user) || explorableSystem.IsFullyExploredBy(_user);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }

@@ -33,20 +33,6 @@ public abstract class ABaseUnitHudForm : AForm {
     private const string ElementIconExtension = " ElementIcon";
     private const string TitleFormat = "Selected Base: {0}";
 
-    /// <summary>
-    /// The underway rework that keeps a ship from being part of a hanger fleet.
-    /// <remarks>IMPROVE Consider allowing Refitting.</remarks>
-    /// </summary>
-    private static ReworkingMode[] HangerFleetReworkUnderwayExclusions = new ReworkingMode[]    {
-                                                                                                    ReworkingMode.Constructing,
-                                                                                                    ReworkingMode.Refitting,
-                                                                                                    ReworkingMode.Disbanding
-                                                                                                };
-
-    private static bool IsShipExcludedFromHangerFleet(ShipItem ship) {
-        return HangerFleetReworkUnderwayExclusions.Contains(ship.ReworkUnderway);
-    }
-
     // 9.27.17 Management of ConstructibleElementDesigns and the ConstructionQueue moved to ConstructionGuiModule
 
     [SerializeField]
@@ -320,40 +306,52 @@ public abstract class ABaseUnitHudForm : AForm {
     }
 
     private void HandleUnitRepairButtonToggleChanged() {
+        BaseOrder order;
         bool isButtonToggledIn = _unitRepairButton.IsToggledIn;
         if (isButtonToggledIn) {
-            BaseOrder repairOrder = new BaseOrder(BaseDirective.Repair, OrderSource.User);
-            SelectedUnit.CurrentOrder = repairOrder;
+            order = new BaseOrder(BaseDirective.Repair, OrderSource.User, SelectedUnit);
             //D.Log("{0} is issuing an order to {1} to Repair.", DebugName, SelectedUnit.DebugName);
         }
         else {
-            BaseOrder cancelOrder = new BaseOrder(BaseDirective.Cancel, OrderSource.User);
-            SelectedUnit.CurrentOrder = cancelOrder;
+            order = new BaseOrder(BaseDirective.Cancel, OrderSource.User);
         }
+        SelectedUnit.CurrentOrder = order;
         _toggleButtonsUsedThisSession.Add(_unitRepairButton);
         AssessUnitButtons();
     }
 
     private void HandleUnitRefitButtonToggleChanged() {
+        BaseOrder order;
         bool isButtonToggledIn = _unitRefitButton.IsToggledIn;
         if (isButtonToggledIn) {
-            BaseOrder refitOrder = new BaseOrder(BaseDirective.Refit, OrderSource.User);
-            SelectedUnit.CurrentOrder = refitOrder;
+            order = new BaseOrder(BaseDirective.Refit, OrderSource.User, SelectedUnit);
             //D.Log("{0} is issuing an order to {1} to Refit.", DebugName, SelectedUnit.DebugName);
         }
         else {
-            BaseOrder cancelOrder = new BaseOrder(BaseDirective.Cancel, OrderSource.User);
-            SelectedUnit.CurrentOrder = cancelOrder;
+            order = new BaseOrder(BaseDirective.Cancel, OrderSource.User);
         }
+        SelectedUnit.CurrentOrder = order;
         _toggleButtonsUsedThisSession.Add(_unitRefitButton);
         AssessUnitButtons();
     }
 
     private void HandleUnitDisbandButtonToggleChanged() {
-        D.Warn("{0}.HandleUnitDisbandButtonToggleChanged not yet implemented.", DebugName);
+        ////D.Warn("{0}.HandleUnitDisbandButtonToggleChanged not yet implemented.", DebugName);
+        ////_toggleButtonsUsedThisSession.Add(_unitDisbandButton);
+        ////AssessUnitButtons();
+        //// UNDONE
+        BaseOrder order;
+        bool isButtonToggledIn = _unitDisbandButton.IsToggledIn;
+        if (isButtonToggledIn) {
+            order = new BaseOrder(BaseDirective.Disband, OrderSource.User, SelectedUnit);
+            //D.Log("{0} is issuing an order to {1} to Disband.", DebugName, SelectedUnit.DebugName);
+        }
+        else {
+            order = new BaseOrder(BaseDirective.Cancel, OrderSource.User);
+        }
+        SelectedUnit.CurrentOrder = order;
         _toggleButtonsUsedThisSession.Add(_unitDisbandButton);
         AssessUnitButtons();
-        // UNDONE
     }
 
     private void HandleUnitScuttleButtonClicked() {
@@ -371,37 +369,45 @@ public abstract class ABaseUnitHudForm : AForm {
         bool isOrderedToRepair = SelectedUnit.IsCurrentOrderDirectiveAnyOf(BaseDirective.Repair);
         GameColor iconColor = isOrderedToRepair ? TempGameValues.SelectedColor : GameColor.White;
         _unitRepairButton.SetToggledState(isOrderedToRepair, iconColor);
-        if (!HasBeenUsedThisSession(_unitRepairButton) && isOrderedToRepair) {
-            // Button not yet used during this session (pause) and order already exists so it is from a previous session (pause).
-            // Accordingly, button should not be available as cancel only works during same session (pause) order was issued. 
-            _unitRepairButton.IsEnabled = false;
+        if (HasBeenUsedThisSession(_unitRepairButton)) {
+            // 1) already used this session && if isOrderedToRepair -> button should be enabled to allow cancel
+            // 2) already used this session && if !isOrderedToRepair -> cancel already used so button should allow for more pushes
+            _unitRepairButton.IsEnabled = true;
         }
         else {
-            // Either button has been used this session (pause) or there is no existing order. Either way, the button should
-            // be available if there is damage to repair.
-            bool isDamaged = SelectedUnit.Data.UnitHealth < Constants.OneHundredPercent || SelectedUnit.Data.Health < Constants.OneHundredPercent;
-            _unitRepairButton.IsEnabled = isDamaged;
+            // button not used this session
+            if (isOrderedToRepair) {
+                // already ordered to repair from some other source prior to this session so disable button as cancel won't work
+                _unitRepairButton.IsEnabled = false;
+            }
+            else {
+                // button not yet used this session so let SelectedUnit tell us whether Repair is an authorized order
+                _unitRepairButton.IsEnabled = SelectedUnit.IsAuthorizedForNewOrder(BaseDirective.Repair);
+            }
         }
 
         bool isOrderedToRefit = SelectedUnit.IsCurrentOrderDirectiveAnyOf(BaseDirective.Refit);
         iconColor = isOrderedToRefit ? TempGameValues.SelectedColor : GameColor.White;
         _unitRefitButton.SetToggledState(isOrderedToRefit, iconColor);
-        if (!HasBeenUsedThisSession(_unitRefitButton) && isOrderedToRefit) {
-            _unitRefitButton.IsEnabled = false;
+        if (HasBeenUsedThisSession(_unitRefitButton)) {
+            _unitRefitButton.IsEnabled = true;
         }
         else {
-            _unitRefitButton.IsEnabled = IsUnitUpgradeAvailable();
+            _unitRefitButton.IsEnabled = isOrderedToRefit ? false : SelectedUnit.IsAuthorizedForNewOrder(BaseDirective.Refit);
         }
 
         bool isOrderedToDisband = SelectedUnit.IsCurrentOrderDirectiveAnyOf(BaseDirective.Disband);
         iconColor = isOrderedToDisband ? TempGameValues.SelectedColor : GameColor.White;
         _unitDisbandButton.SetToggledState(isOrderedToDisband, iconColor);
-        _unitDisbandButton.IsEnabled = (!HasBeenUsedThisSession(_unitDisbandButton) && isOrderedToDisband) ? false : true;
+        if (HasBeenUsedThisSession(_unitDisbandButton)) {
+            _unitDisbandButton.IsEnabled = true;
+        }
+        else {
+            _unitDisbandButton.IsEnabled = isOrderedToDisband ? false : SelectedUnit.IsAuthorizedForNewOrder(BaseDirective.Disband);
+        }
 
-        _unitScuttleButton.isEnabled = true;
+        _unitScuttleButton.isEnabled = SelectedUnit.IsAuthorizedForNewOrder(BaseDirective.Scuttle);
     }
-
-    protected abstract bool IsUnitUpgradeAvailable();  // expensive
 
     protected void AssessUnitFocusButton() {
         _unitFocusButton.isEnabled = true;
@@ -511,7 +517,7 @@ public abstract class ABaseUnitHudForm : AForm {
         _toggleButtonsUsedThisSession.Add(_facilityRepairButton);
         FacilityOrder order;
         if (_facilityRepairButton.IsToggledIn) {
-            order = new FacilityOrder(FacilityDirective.Repair, OrderSource.User);
+            order = new FacilityOrder(FacilityDirective.Repair, OrderSource.User, SelectedUnit);
         }
         else {
             order = new FacilityOrder(FacilityDirective.Cancel, OrderSource.User);
@@ -527,7 +533,7 @@ public abstract class ABaseUnitHudForm : AForm {
         FacilityOrder order;
         if (_facilityRefitButton.IsToggledIn) {
             FacilityDesign refitDesign = __PickRandomRefitDesign(pickedFacility.Data.Design);
-            order = new FacilityRefitOrder(OrderSource.User, refitDesign);
+            order = new FacilityRefitOrder(OrderSource.User, refitDesign, SelectedUnit);
         }
         else {
             order = new FacilityOrder(FacilityDirective.Cancel, OrderSource.User);
@@ -539,14 +545,16 @@ public abstract class ABaseUnitHudForm : AForm {
     private void HandleFacilityDisbandButtonToggleChanged() {
         D.AssertEqual(Constants.One, _pickedFacilityIcons.Count);
         _toggleButtonsUsedThisSession.Add(_facilityDisbandButton);
+        var pickedFacility = _pickedFacilityIcons.First().Element;
         FacilityOrder order;
         if (_facilityDisbandButton.IsToggledIn) {
-            order = new FacilityOrder(FacilityDirective.Disband, OrderSource.User);
+            ////FacilityDesign emptyTemplateDesign = __GetEmptyTemplateDesign(pickedFacility.Data.Design);
+            order = new FacilityOrder(FacilityDirective.Disband, OrderSource.User, SelectedUnit);
         }
         else {
             order = new FacilityOrder(FacilityDirective.Cancel, OrderSource.User);
         }
-        _pickedFacilityIcons.First().Element.CurrentOrder = order;
+        pickedFacility.CurrentOrder = order;
         // buttons already assessed
     }
 
@@ -561,46 +569,60 @@ public abstract class ABaseUnitHudForm : AForm {
     }
 
     protected virtual void AssessUnitCompositionButtons() {
-        _facilityScuttleButton.isEnabled = _pickedFacilityIcons.Any();
+
+        bool isFacilityScuttleButtonEnabled = false;
+        if (_pickedFacilityIcons.Any()) {
+            isFacilityScuttleButtonEnabled = _pickedFacilityIcons.Select(icon => icon.Element).All(e => e.IsAuthorizedForNewOrder(FacilityDirective.Scuttle));
+        }
+        _facilityScuttleButton.isEnabled = isFacilityScuttleButtonEnabled;
 
         if (_pickedFacilityIcons.Count == Constants.One) {
             // 11.18.17 picked elements are limited to one to make cancel order practical to implement
             var pickedFacility = _pickedFacilityIcons.First().Element;
 
-            if (pickedFacility.ReworkUnderway != ReworkingMode.None) {
-                _facilityRepairButton.IsEnabled = false;
-                _facilityRefitButton.IsEnabled = false;
-                _facilityDisbandButton.IsEnabled = false;
+            bool isOrderedToRepair = pickedFacility.IsCurrentOrderDirectiveAnyOf(FacilityDirective.Repair);
+            GameColor iconColor = isOrderedToRepair ? TempGameValues.SelectedColor : GameColor.White;
+            _facilityRepairButton.SetToggledState(isOrderedToRepair, iconColor);
+            if (HasBeenUsedThisSession(_facilityRepairButton)) {
+                // 1) already used this session && if isOrderedToRepair -> button should be enabled to allow cancel
+                // 2) already used this session && if !isOrderedToRepair -> cancel already used so button should allow for more pushes
+                _facilityRepairButton.IsEnabled = true;
             }
             else {
-                // 11.9.17 Note: isOrderedToXXX still needed even when we know from ReworkUnderway that there is no current XXX order. 
-                // This is because the order can be issued and then canceled within the same pause. While paused, the order
-                // will be held awaiting processing. Since it isn't processed, ReworkUnderway won't yet reflect the order so
-                // isOrderedToXXX is used to detect whether an order has been issued during this pause.
-                bool isOrderedToRepair = pickedFacility.IsCurrentOrderDirectiveAnyOf(FacilityDirective.Repair);
-                GameColor iconColor = isOrderedToRepair ? TempGameValues.SelectedColor : GameColor.White;
-                _facilityRepairButton.SetToggledState(isOrderedToRepair, iconColor);
-                bool isDamaged = pickedFacility.Data.Health < Constants.OneHundredPercent;
-                _facilityRepairButton.IsEnabled = (!HasBeenUsedThisSession(_facilityRepairButton) && isOrderedToRepair) ? false : isDamaged;
+                // button not used this session
+                if (isOrderedToRepair) {
+                    // already ordered to repair from some other source prior to this session so disable button as cancel won't work
+                    _facilityRepairButton.IsEnabled = false;
+                }
+                else {
+                    // button not yet used this session so let pickedFacility tell us whether Repair is an authorized order
+                    _facilityRepairButton.IsEnabled = pickedFacility.IsAuthorizedForNewOrder(FacilityDirective.Repair);
+                }
+            }
 
-                bool isOrderedToRefit = pickedFacility.IsCurrentOrderDirectiveAnyOf(FacilityDirective.Refit);
-                iconColor = isOrderedToRefit ? TempGameValues.SelectedColor : GameColor.White;
-                _facilityRefitButton.SetToggledState(isOrderedToRefit, iconColor);
-                _facilityRefitButton.IsEnabled = (!HasBeenUsedThisSession(_facilityRefitButton) && isOrderedToRefit) ? false : IsUpgradeAvailable(pickedFacility.Data.Design);
+            bool isOrderedToRefit = pickedFacility.IsCurrentOrderDirectiveAnyOf(FacilityDirective.Refit);
+            iconColor = isOrderedToRefit ? TempGameValues.SelectedColor : GameColor.White;
+            _facilityRefitButton.SetToggledState(isOrderedToRefit, iconColor);
+            if (HasBeenUsedThisSession(_facilityRefitButton)) {
+                _facilityRefitButton.IsEnabled = true;
+            }
+            else {
+                _facilityRefitButton.IsEnabled = isOrderedToRefit ? false : pickedFacility.IsAuthorizedForNewOrder(FacilityDirective.Refit);
+            }
 
-                bool isOrderedToDisband = pickedFacility.IsCurrentOrderDirectiveAnyOf(FacilityDirective.Disband);
-                iconColor = isOrderedToDisband ? TempGameValues.SelectedColor : GameColor.White;
-                _facilityDisbandButton.SetToggledState(isOrderedToDisband, iconColor);
-                _facilityDisbandButton.IsEnabled = (!HasBeenUsedThisSession(_facilityDisbandButton) && isOrderedToDisband) ? false : true;
+            bool isOrderedToDisband = pickedFacility.IsCurrentOrderDirectiveAnyOf(FacilityDirective.Disband);
+            iconColor = isOrderedToDisband ? TempGameValues.SelectedColor : GameColor.White;
+            _facilityDisbandButton.SetToggledState(isOrderedToDisband, iconColor);
+            if (HasBeenUsedThisSession(_facilityDisbandButton)) {
+                _facilityDisbandButton.IsEnabled = true;
+            }
+            else {
+                _facilityDisbandButton.IsEnabled = isOrderedToDisband ? false : pickedFacility.IsAuthorizedForNewOrder(FacilityDirective.Disband);
             }
         }
         else {
             ResetUnitCompositionToggleButtons();
         }
-    }
-
-    private bool IsUpgradeAvailable(FacilityDesign design) {  // OPTIMIZE expensive
-        return _gameMgr.PlayersDesigns.AreUserUpgradeDesignsPresent(design);
     }
 
     protected void DisableUnitCompositionButtons() {
@@ -711,16 +733,11 @@ public abstract class ABaseUnitHudForm : AForm {
         AssessHangerButtons();
     }
 
-    /// <summary>
-    /// Handles the ship create hanger fleet button clicked.
-    /// <remarks>11.16.17 Briefly resuming allows the fleet to become operational and begin execution of the order
-    /// auto issued by the hanger to assume formation at the Base's closest LocalAssemblyStation. It is required
-    /// as hangerFleet.InitiateExternalCmdStaffOverrideOrder is used by the hanger to issue the order.</remarks>
-    /// </summary>
     private void HandleShipCreateHangerFleetButtonClicked() {
-        D.Log("{0} is about to create a hanger fleet.", DebugName);
+        D.Log("{0} is about to create a fleet from a hanger.", DebugName);
         var pickedShips = _pickedHangerShipIcons.Select(icon => icon.Element);
-        var createFleetShips = pickedShips.Where(ship => !IsShipExcludedFromHangerFleet(ship));
+        var createFleetShips = pickedShips.Where(ship => ship.Availability != NewOrderAvailability.Unavailable);
+        D.Assert(createFleetShips.Any());
 
         SelectedUnit.Hanger.FormFleetFrom("HangerFleet", Formation.Globe, createFleetShips);
         BuildHangerShipIcons();
@@ -732,7 +749,7 @@ public abstract class ABaseUnitHudForm : AForm {
         var pickedShip = _pickedHangerShipIcons.First().Element;
         ShipOrder order;
         if (_shipRepairButton.IsToggledIn) {
-            order = new ShipOrder(ShipDirective.Repair, OrderSource.User);
+            order = new ShipOrder(ShipDirective.Repair, OrderSource.User, SelectedUnit);
         }
         else {
             order = new ShipOrder(ShipDirective.Cancel, OrderSource.User);
@@ -763,7 +780,7 @@ public abstract class ABaseUnitHudForm : AForm {
         var pickedShip = _pickedHangerShipIcons.First().Element;
         ShipOrder order;
         if (_shipDisbandButton.IsToggledIn) {
-            order = new ShipOrder(ShipDirective.Disband, OrderSource.User);
+            order = new ShipOrder(ShipDirective.Disband, OrderSource.User, SelectedUnit);
         }
         else {
             order = new ShipOrder(ShipDirective.Cancel, OrderSource.User);
@@ -783,7 +800,7 @@ public abstract class ABaseUnitHudForm : AForm {
 
     protected virtual void AssessHangerButtons() {
         bool isShipCreateFleetButtonEnabled = false;
-        int createFleetShipCount = _pickedHangerShipIcons.Where(icon => !IsShipExcludedFromHangerFleet(icon.Element)).Count();
+        int createFleetShipCount = _pickedHangerShipIcons.Where(icon => icon.Element.Availability != NewOrderAvailability.Unavailable).Count();
         if (Utility.IsInRange(createFleetShipCount, Constants.One, TempGameValues.MaxShipsPerFleet)) {
             isShipCreateFleetButtonEnabled = true;
         }
@@ -792,42 +809,56 @@ public abstract class ABaseUnitHudForm : AForm {
         if (_pickedHangerShipIcons.Count == Constants.One) {
             // 11.18.17 picked elements are limited to one to make cancel order practical to implement
             var pickedShip = _pickedHangerShipIcons.First().Element;
-            if (pickedShip.ReworkUnderway != ReworkingMode.None) {
-                _shipRepairButton.IsEnabled = false;
-                _shipRefitButton.IsEnabled = false;
-                _shipDisbandButton.IsEnabled = false;
+
+            bool isOrderedToRepair = pickedShip.IsCurrentOrderDirectiveAnyOf(ShipDirective.Repair);
+            GameColor iconColor = isOrderedToRepair ? TempGameValues.SelectedColor : GameColor.White;
+            _shipRepairButton.SetToggledState(isOrderedToRepair, iconColor);
+            if (HasBeenUsedThisSession(_shipRepairButton)) {
+                // 1) already used this session && if isOrderedToRepair -> button should be enabled to allow cancel
+                // 2) already used this session && if !isOrderedToRepair -> cancel already used so button should allow for more pushes
+                _shipRepairButton.IsEnabled = true;
             }
             else {
-                // 11.9.17 Note: isOrderedToXXX still needed even when we know from ReworkUnderway that there is no current XXX order. 
-                // This is because the order can be issued and then canceled within the same pause. While paused, the order
-                // will be held awaiting processing. Since it isn't processed, ReworkUnderway won't yet reflect the order so
-                // isOrderedToXXX is used to detect whether an order has been issued during this pause.
-                bool isOrderedToRepair = pickedShip.IsCurrentOrderDirectiveAnyOf(ShipDirective.Repair);
-                GameColor iconColor = isOrderedToRepair ? TempGameValues.SelectedColor : GameColor.White;
-                _shipRepairButton.SetToggledState(isOrderedToRepair, iconColor);
-                bool isDamaged = pickedShip.Data.Health < Constants.OneHundredPercent;
-                _shipRepairButton.IsEnabled = (!HasBeenUsedThisSession(_shipRepairButton) && isOrderedToRepair) ? false : isDamaged;
+                // button not used this session
+                if (isOrderedToRepair) {
+                    // already ordered to repair from some other source prior to this session so disable button as cancel won't work
+                    _shipRepairButton.IsEnabled = false;
+                }
+                else {
+                    // button not yet used this session so let pickedShip us whether Repair is an authorized order
+                    _shipRepairButton.IsEnabled = pickedShip.IsAuthorizedForNewOrder(ShipDirective.Repair);
+                }
+            }
 
-                bool isOrderedToRefit = pickedShip.IsCurrentOrderDirectiveAnyOf(ShipDirective.Refit);
-                iconColor = isOrderedToRefit ? TempGameValues.SelectedColor : GameColor.White;
-                _shipRefitButton.SetToggledState(isOrderedToRefit, iconColor);
-                _shipRefitButton.IsEnabled = (!HasBeenUsedThisSession(_shipRefitButton) && isOrderedToRefit) ? false : IsUpgradeAvailable(pickedShip.Data.Design);
+            bool isOrderedToRefit = pickedShip.IsCurrentOrderDirectiveAnyOf(ShipDirective.Refit);
+            iconColor = isOrderedToRefit ? TempGameValues.SelectedColor : GameColor.White;
+            _shipRefitButton.SetToggledState(isOrderedToRefit, iconColor);
+            if (HasBeenUsedThisSession(_shipRefitButton)) {
+                _shipRefitButton.IsEnabled = true;
+            }
+            else {
+                _shipRefitButton.IsEnabled = isOrderedToRefit ? false : pickedShip.IsAuthorizedForNewOrder(ShipDirective.Refit);
+            }
 
-                bool isOrderedToDisband = pickedShip.IsCurrentOrderDirectiveAnyOf(ShipDirective.Disband);
-                iconColor = isOrderedToDisband ? TempGameValues.SelectedColor : GameColor.White;
-                _shipDisbandButton.SetToggledState(isOrderedToDisband, iconColor);
-                _shipDisbandButton.IsEnabled = (!HasBeenUsedThisSession(_shipDisbandButton) && isOrderedToDisband) ? false : true;
+            bool isOrderedToDisband = pickedShip.IsCurrentOrderDirectiveAnyOf(ShipDirective.Disband);
+            iconColor = isOrderedToDisband ? TempGameValues.SelectedColor : GameColor.White;
+            _shipDisbandButton.SetToggledState(isOrderedToDisband, iconColor);
+            if (HasBeenUsedThisSession(_shipDisbandButton)) {
+                _shipDisbandButton.IsEnabled = true;
+            }
+            else {
+                _shipDisbandButton.IsEnabled = isOrderedToDisband ? false : pickedShip.IsAuthorizedForNewOrder(ShipDirective.Disband);
             }
         }
         else {
             ResetHangerToggleButtons();
         }
 
-        _shipScuttleButton.isEnabled = _pickedHangerShipIcons.Any();
-    }
-
-    private bool IsUpgradeAvailable(ShipDesign design) {  // expensive
-        return _gameMgr.PlayersDesigns.AreUserUpgradeDesignsPresent(design);
+        bool isShipScuttleButtonEnabled = false;
+        if (_pickedHangerShipIcons.Any()) {
+            isShipScuttleButtonEnabled = _pickedHangerShipIcons.Select(icon => icon.Element).All(e => e.IsAuthorizedForNewOrder(ShipDirective.Scuttle));
+        }
+        _shipScuttleButton.isEnabled = isShipScuttleButtonEnabled;
     }
 
     protected void DisableHangerButtons() {
@@ -1138,16 +1169,32 @@ public abstract class ABaseUnitHudForm : AForm {
 
     #region Debug
 
+    [Obsolete]
+    private FacilityDesign __GetEmptyTemplateDesign(FacilityDesign designToBeDisbanded) {
+        Player designOwner = designToBeDisbanded.Player;
+        string emptyTemplateDesignName = designToBeDisbanded.HullCategory.GetEmptyTemplateDesignName();
+        return _gameMgr.PlayersDesigns.GetFacilityDesign(designOwner, emptyTemplateDesignName);
+    }
+
+    [Obsolete]
+    private ShipDesign __GetEmptyTemplateDesign(ShipDesign designToBeDisbanded) {
+        Player designOwner = designToBeDisbanded.Player;
+        string emptyTemplateDesignName = designToBeDisbanded.HullCategory.GetEmptyTemplateDesignName();
+        return _gameMgr.PlayersDesigns.GetShipDesign(designOwner, emptyTemplateDesignName);
+    }
+
     private FacilityDesign __PickRandomRefitDesign(FacilityDesign designToBeRefit) {
         IList<FacilityDesign> upgradeDesigns;
-        bool isUpgradeDesignsFound = _gameMgr.PlayersDesigns.TryGetUserUpgradeDesigns(designToBeRefit, out upgradeDesigns);
+        ////bool isUpgradeDesignsFound = _gameMgr.PlayersDesigns.TryGetUserUpgradeDesigns(designToBeRefit, out upgradeDesigns);
+        bool isUpgradeDesignsFound = _gameMgr.PlayersDesigns.TryGetUpgradeDesigns(designToBeRefit.Player, designToBeRefit, out upgradeDesigns);
         D.Assert(isUpgradeDesignsFound);    // refit button not enabled if no upgrade designs
         return RandomExtended.Choice(upgradeDesigns);
     }
 
     private ShipDesign __PickRandomRefitDesign(ShipDesign designToBeRefit) {
         IList<ShipDesign> upgradeDesigns;
-        bool isUpgradeDesignsFound = _gameMgr.PlayersDesigns.TryGetUserUpgradeDesigns(designToBeRefit, out upgradeDesigns);
+        ////bool isUpgradeDesignsFound = _gameMgr.PlayersDesigns.TryGetUserUpgradeDesigns(designToBeRefit, out upgradeDesigns);
+        bool isUpgradeDesignsFound = _gameMgr.PlayersDesigns.TryGetUpgradeDesigns(designToBeRefit.Player, designToBeRefit, out upgradeDesigns);
         D.Assert(isUpgradeDesignsFound);    // refit button not enabled if no upgrade designs
         return RandomExtended.Choice(upgradeDesigns);
     }

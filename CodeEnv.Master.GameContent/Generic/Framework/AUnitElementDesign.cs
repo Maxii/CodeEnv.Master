@@ -84,7 +84,16 @@ namespace CodeEnv.Master.GameContent {
         /// a refit cost below this minimum. Typically used when refitting an Element to an older
         /// and/or obsolete Design whose cost is significantly less than what the current Element costs.</remarks>
         /// </summary>
-        public float MinimumRefitCost { get { return ConstructionCost * TempGameValues.RefitMinConstructionCostFactor; } }
+        public float MinimumRefitCost { get { return ConstructionCost * TempGameValues.MinRefitConstructionCostFactor; } }
+
+        /// <summary>
+        /// The minimum cost in units of production required to disband an Element from this Design.
+        /// <remarks>The actual production cost required to disband an Element using this Design is
+        /// determined separately. This value is present so the algorithm used won't assign
+        /// a disband cost below this minimum.</remarks>
+        /// </summary>
+        public float MinimumDisbandCost { get { return ConstructionCost * TempGameValues.MinDisbandConstructionCostFactor; } }
+
 
         protected sealed override EquipmentCategory[] SupportedEquipmentCategories { get { return SupportedEquipCategories; } }
 

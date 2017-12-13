@@ -16,11 +16,6 @@
 
 // default namespace
 
-using System;
-using System.Collections.Generic;
-using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
-using CodeEnv.Master.GameContent;
 
 /// <summary>
 /// Context Menu Control for <see cref="PlanetItem"/>s. 

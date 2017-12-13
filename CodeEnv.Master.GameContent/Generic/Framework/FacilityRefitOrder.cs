@@ -43,7 +43,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="source">The source of this order.</param>
         /// <param name="cmdOrderID">The unique ID of the CmdOrder that caused this element order to be generated.</param>
         /// <param name="refitDesign">The design to use for the refit.</param>
-        public FacilityRefitOrder(OrderSource source, Guid cmdOrderID, FacilityDesign refitDesign)
+        /// <param name="target">The target.</param>
+        public FacilityRefitOrder(OrderSource source, Guid cmdOrderID, FacilityDesign refitDesign, IElementNavigableDestination target)
             : base(FacilityDirective.Refit, source, cmdOrderID) {
             RefitDesign = refitDesign;
         }
@@ -54,8 +55,9 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="source">The source of this order.</param>
         /// <param name="refitDesign">The design to use for the refit.</param>
-        public FacilityRefitOrder(OrderSource source, FacilityDesign refitDesign)
-            : this(source, default(Guid), refitDesign) {
+        /// <param name="target">The target.</param>
+        public FacilityRefitOrder(OrderSource source, FacilityDesign refitDesign, IElementNavigableDestination target)
+            : this(source, default(Guid), refitDesign, target) {
         }
 
     }

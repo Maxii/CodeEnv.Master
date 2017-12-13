@@ -408,6 +408,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="closestBase">The closest base.</param>
         /// <param name="excludedBases">The excluded bases.</param>
         /// <returns></returns>
+        [Obsolete]
         public bool TryFindClosestDisbandBase(Vector3 worldPosition, out IUnitBaseCmd_Ltd closestBase, params IUnitBaseCmd_Ltd[] excludedBases) {
             var baseCandidates = Knowledge.Bases.Except(excludedBases).Where(bItem => {
                 bool isCandidate = false;
@@ -426,7 +427,25 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Returns <c>true</c> if a base is found that will repair both the fleet's ships and its Cmd, <c>false</c> otherwise.
+        /// Returns <c>true</c> if a base is found that will disband both the fleet's ships and its Cmd, <c>false</c> otherwise.
+        /// <remarks>8.13.17 IMPROVE Should be implemented using an IDisbandCapable interface?</remarks>
+        /// </summary>
+        /// <param name="worldPosition">The world position.</param>
+        /// <param name="closestBase">The closest base.</param>
+        /// <param name="excludedBases">The excluded bases.</param>
+        /// <returns></returns>
+        public bool TryFindClosestDisbandBase(Vector3 worldPosition, out IUnitBaseCmd closestBase, params IUnitBaseCmd[] excludedBases) {
+            var baseCandidates = Knowledge.OwnerBases.Except(excludedBases);
+            if (baseCandidates.Any()) {
+                closestBase = baseCandidates.MinBy(cand => Vector3.SqrMagnitude(cand.Position - worldPosition));
+                return true;
+            }
+            closestBase = null;
+            return false;
+        }
+
+        /// <summary>
+        /// Returns <c>true</c> if a base is found that will repair both the fleet's ships and its CmdModule, <c>false</c> otherwise.
         /// </summary>
         /// <param name="worldPosition">The world position.</param>
         /// <param name="closestBase">The closest base.</param>
@@ -434,7 +453,7 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         public bool TryFindClosestFleetRepairBase(Vector3 worldPosition, out IUnitBaseCmd_Ltd closestBase, params IUnitBaseCmd_Ltd[] excludedBases) {
             var baseCandidates = Knowledge.Bases.Except(excludedBases).Where(bItem => {
-                bool isCandidate = (bItem as IShipRepairCapable).IsRepairingAllowedBy(Owner) && (bItem as IUnitCmdRepairCapable).IsRepairingAllowedBy(Owner);
+                bool isCandidate = (bItem as IShipRepairCapable).IsRepairingAllowedBy(Owner) && (bItem as IUnitRepairCapable).IsRepairingAllowedBy(Owner);
                 return isCandidate;
             });
             if (baseCandidates.Any()) {
@@ -596,42 +615,39 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Makes Owner's provided UnitCommand available for orders whenever isAvailableChanged fires.
+        /// Makes Owner's provided <c>myUnitCmd</c> available for orders whenever myUnitCmd.isAvailableChanged fires
+        /// and myUnitCmd.Availability == Available.
         /// <remarks>Called in 2 scenarios: when commencing operation and after gaining ownership.</remarks>
         /// </summary>
         /// <param name="myUnitCmd">My unit command.</param>
         public void RegisterForOrders(IUnitCmd myUnitCmd) {
             D.AssertEqual(Owner, myUnitCmd.Owner);
-            D.Assert(IsOperational || !myUnitCmd.IsAvailable);
             if (!HasKnowledgeOf(myUnitCmd as IUnitCmd_Ltd)) {
                 D.Warn("{0} is unaware of {1} when registering for orders in Frame {2}.", DebugName, myUnitCmd.DebugName, Time.frameCount);
             }
-            //D.Log("{0} is registering {1} as {2} for orders in Frame {3}.",
-            //    DebugName, myUnitCmd.DebugName, myUnitCmd.IsAvailable ? "available" : "unavailable", Time.frameCount);
+            D.Log("{0} is registering {1} as {2} for orders in Frame {3}.",
+                DebugName, myUnitCmd.DebugName, myUnitCmd.Availability.GetValueName(), Time.frameCount);
             D.Assert(!_unavailableCmds.Contains(myUnitCmd));
             D.Assert(!_availableCmds.Contains(myUnitCmd));
-            if (myUnitCmd.IsAvailable) {
+
+            // 12.10.17 Must subscribe to availability change before issuing an order that will result in an availability change.
+            // If subscribe after, _availableCmds and _unavailableCmds will throw errors when content unexpected
+            myUnitCmd.isAvailableChanged += MyCmdIsAvailableChgdEventHandler;
+
+            if (myUnitCmd.Availability == NewOrderAvailability.Available) {
+                _availableCmds.Add(myUnitCmd);
                 var myFleetCmd = myUnitCmd as IFleetCmd;
                 if (myFleetCmd != null && IsOperational) {
-                    if (__IssueFleetOrder(myFleetCmd)) {
-                        _unavailableCmds.Add(myUnitCmd);
-                    }
-                    else {
-                        _availableCmds.Add(myUnitCmd);
-                    }
-                }
-                else {
-                    _availableCmds.Add(myUnitCmd);
+                    __IssueFleetOrder(myFleetCmd);
                 }
             }
             else {
                 _unavailableCmds.Add(myUnitCmd);
             }
-            myUnitCmd.isAvailableChanged += MyCmdIsAvailableChgdEventHandler;
         }
 
         /// <summary>
-        /// Deregisters Owner's provided UnitCommand from receiving orders whenever isAvailableChanged fires.
+        /// Deregisters Owner's provided UnitCommand from receiving orders whenever availabilityChanged fires.
         /// <remarks>Called in 2 scenarios: death and just before losing ownership.</remarks>
         /// </summary>
         /// <param name="myUnitCmd">My unit command.</param>
@@ -714,12 +730,12 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         private void HandleMyCmdIsAvailableChanged(IUnitCmd myCmd) {
-            UpdateCmdAvailability(myCmd);
+            RefreshTrackedCmdAvailability(myCmd);
 
             if (IsOperational) {
                 IFleetCmd fleetCmd = myCmd as IFleetCmd;
                 if (fleetCmd != null) {
-                    if (fleetCmd.IsAvailable) {
+                    if (fleetCmd.Availability == NewOrderAvailability.Available) {
                         __IssueFleetOrder(fleetCmd);
                     }
                     else {
@@ -729,15 +745,15 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private void UpdateCmdAvailability(IUnitCmd myCmd) {
-            if (myCmd.IsAvailable) {
+        private void RefreshTrackedCmdAvailability(IUnitCmd myCmd) {
+            if (myCmd.Availability == NewOrderAvailability.Available) {
                 bool isRemoved = _unavailableCmds.Remove(myCmd);
-                D.Assert(isRemoved);
+                D.Assert(isRemoved, myCmd.DebugName);
                 _availableCmds.Add(myCmd);
             }
             else {
                 bool isRemoved = _availableCmds.Remove(myCmd);
-                D.Assert(isRemoved);
+                D.Assert(isRemoved, myCmd.DebugName);
                 _unavailableCmds.Add(myCmd);
             }
         }
@@ -896,7 +912,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="fleetCmd">The fleet command.</param>
         /// <returns></returns>
         private bool __IssueFleetOrder(IFleetCmd fleetCmd) {
-            D.Assert(fleetCmd.IsAvailable);
+            D.AssertEqual(NewOrderAvailability.Available, fleetCmd.Availability);
             D.Assert(_availableCmds.Contains(fleetCmd));
             D.Assert(!_unavailableCmds.Contains(fleetCmd));
 
@@ -927,6 +943,7 @@ namespace CodeEnv.Master.GameContent {
                 }
                 if (closestFleet != null) {
                     //D.Log("{0} is issuing an order to {1} to JOIN {2}.", DebugName, fleetCmd.DebugName, closestFleet.DebugName);
+                    D.Assert(fleetCmd.IsAuthorizedForNewOrder(FleetDirective.Join));
                     FleetOrder order = new FleetOrder(FleetDirective.Join, OrderSource.PlayerAI, closestFleet);
                     fleetCmd.CurrentOrder = order;
                     return true;
@@ -1083,6 +1100,7 @@ namespace CodeEnv.Master.GameContent {
             }
             D.LogBold("{0} is issuing {1} an ATTACK order against {2} in Frame {3}. FPS = {4:0.#}.",
                 DebugName, fleetCmd.DebugName, attackTgt.DebugName, Time.frameCount, _fpsReadout.FramesPerSecond);
+            D.Assert(fleetCmd.IsAuthorizedForNewOrder(FleetDirective.Attack));
             FleetOrder order = new FleetOrder(FleetDirective.Attack, OrderSource.PlayerAI, attackTgt);
             fleetCmd.CurrentOrder = order;
             return true;
@@ -1117,6 +1135,7 @@ namespace CodeEnv.Master.GameContent {
             }
             D.Log("{0} is issuing {1} a MOVE order to {2} in Frame {3}. FPS = {4:0.#}.",
                 DebugName, fleetCmd.DebugName, destination.DebugName, Time.frameCount, _fpsReadout.FramesPerSecond);
+            D.Assert(fleetCmd.IsAuthorizedForNewOrder(FleetDirective.Move));
             var order = new FleetOrder(FleetDirective.Move, OrderSource.PlayerAI, destination);
             fleetCmd.CurrentOrder = order;
             return true;
@@ -1133,12 +1152,14 @@ namespace CodeEnv.Master.GameContent {
                 var closestUnexploredSystem = explorableUnexploredSystems.MinBy(sys => Vector3.SqrMagnitude(fleetCmd.Position - sys.Position));
                 D.Log("{0} is issuing {1} an EXPLORE order to {2} in Frame {3}. FPS = {4:0.#}. IsOwnerAccessible = {5}.",
                     DebugName, fleetCmd.DebugName, closestUnexploredSystem.DebugName, Time.frameCount, _fpsReadout.FramesPerSecond, closestUnexploredSystem.IsOwnerAccessibleTo(Owner));
+                D.Assert(fleetCmd.IsAuthorizedForNewOrder(FleetDirective.Explore));
                 var order = new FleetOrder(FleetDirective.Explore, OrderSource.PlayerAI, closestUnexploredSystem);
                 fleetCmd.CurrentOrder = order;
             }
             else {
                 IFleetExplorable uCenter = Knowledge.UniverseCenter as IFleetExplorable;
                 if (!uCenter.IsFullyExploredBy(Owner)) {
+                    D.Assert(fleetCmd.IsAuthorizedForNewOrder(FleetDirective.Explore));
                     var order = new FleetOrder(FleetDirective.Explore, OrderSource.PlayerAI, uCenter);
                     fleetCmd.CurrentOrder = order;
                 }
@@ -1163,6 +1184,7 @@ namespace CodeEnv.Master.GameContent {
                 var closestVisitableBase = visitableUnvisitedBases.MinBy(vBase => Vector3.SqrMagnitude(fleetCmd.Position - vBase.Position));
                 D.Log("{0} is issuing {1} a MOVE order to {2} in Frame {3}. FPS = {4:0.#}.",
                     DebugName, fleetCmd.DebugName, closestVisitableBase.DebugName, Time.frameCount, _fpsReadout.FramesPerSecond);
+                D.Assert(fleetCmd.IsAuthorizedForNewOrder(FleetDirective.Move));
                 var order = new FleetOrder(FleetDirective.Move, OrderSource.PlayerAI, closestVisitableBase as IFleetNavigableDestination);
                 fleetCmd.CurrentOrder = order;
             }

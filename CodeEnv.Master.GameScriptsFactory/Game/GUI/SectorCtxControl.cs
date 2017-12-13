@@ -29,12 +29,13 @@ using UnityEngine;
 /// </summary>
 public class SectorCtxControl : ACtxControl {
 
-    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[] {    FleetDirective.Patrol,
-                                                                                           FleetDirective.Move,
-                                                                                           FleetDirective.FullSpeedMove,
-                                                                                           FleetDirective.Explore,
-                                                                                           FleetDirective.Guard
-                                                                                      };
+    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[]   {
+                                                                                            FleetDirective.Patrol,
+                                                                                            FleetDirective.Move,
+                                                                                            FleetDirective.FullSpeedMove,
+                                                                                            FleetDirective.Explore,
+                                                                                            FleetDirective.Guard
+                                                                                        };
 
     protected override IEnumerable<FleetDirective> UserRemoteFleetDirectives {
         get { return _userRemoteFleetDirectives; }
@@ -65,17 +66,21 @@ public class SectorCtxControl : ACtxControl {
     }
 
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
+        FleetCmdItem userRemoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
+        bool isOrderAuthorizedByUserRemoteFleet = userRemoteFleet.IsAuthorizedForNewOrder(directive);
+        // userRemoteFleet.IsCurrentOrderDirectiveAnyOf() not used in criteria as target in current order may not be this Sector
         switch (directive) {
-            case FleetDirective.Explore:
-                var explorableSector = _sector as IFleetExplorable;
-                return !explorableSector.IsExploringAllowedBy(_user) || explorableSector.IsFullyExploredBy(_user);
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
-                return false;
+                return !isOrderAuthorizedByUserRemoteFleet;
+            case FleetDirective.Explore:
+                // FIXME: Knowledge does not yet track sectors as explorable items
+                var explorableSector = _sector as IFleetExplorable;
+                return !isOrderAuthorizedByUserRemoteFleet || !explorableSector.IsExploringAllowedBy(_user) || explorableSector.IsFullyExploredBy(_user);
             case FleetDirective.Patrol:
-                return !(_sector as IPatrollable).IsPatrollingAllowedBy(_user);
+                return !isOrderAuthorizedByUserRemoteFleet || !(_sector as IPatrollable).IsPatrollingAllowedBy(_user);
             case FleetDirective.Guard:
-                return !(_sector as IGuardable).IsGuardingAllowedBy(_user);
+                return !isOrderAuthorizedByUserRemoteFleet || !(_sector as IGuardable).IsGuardingAllowedBy(_user);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }

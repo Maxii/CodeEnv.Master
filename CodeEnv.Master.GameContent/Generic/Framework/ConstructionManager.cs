@@ -66,14 +66,14 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Adds the provided refit design to the ConstructionQueue.
+        /// Adds the provided item to the ConstructionQueue for refitting to <c>refitDesign</c>.
         /// </summary>
-        /// <param name="designToRefit">The design to refit.</param>
+        /// <param name="refitDesign">The design to refit too.</param>
         /// <param name="item">The item to be refitted.</param>
         /// <param name="refitCost">The refit cost.</param>
         /// <returns></returns>
-        public RefitConstruction AddToQueue(AUnitElementDesign designToRefit, IUnitElement item, float refitCost) {
-            var refitConstruction = new RefitConstruction(designToRefit, item, refitCost);
+        public RefitConstruction AddToRefitQueue(AUnitElementDesign refitDesign, IUnitElement item, float refitCost) {
+            var refitConstruction = new RefitConstruction(refitDesign, item, refitCost);
 
             var expectedStartDate = _constructionQueue.Any() ? _constructionQueue.Last.Value.ExpectedCompletionDate : _gameTime.CurrentDate;
             float refitConstructionCost = refitConstruction.CostToConstruct;
@@ -87,28 +87,37 @@ namespace CodeEnv.Master.GameContent {
             OnConstructionQueueChanged();
             return refitConstruction;
         }
-        ////public RefitConstructionInfo AddToQueue(AUnitElementDesign designToRefit, IUnitElement item, float refitCost) {
-        ////    var refitConstruction = new RefitConstructionInfo(designToRefit, item, refitCost);
-
-        ////    var expectedStartDate = _constructionQueue.Any() ? _constructionQueue.Last.Value.ExpectedCompletionDate : _gameTime.CurrentDate;
-        ////    float refitConstructionCost = refitConstruction.CostToConstruct;
-        ////    GameTimeDuration expectedConstructionDuration = new GameTimeDuration(refitConstructionCost / _unitProduction);
-        ////    GameDate expectedCompletionDate = new GameDate(expectedStartDate, expectedConstructionDuration);
-        ////    refitConstruction.ExpectedCompletionDate = expectedCompletionDate;
-
-        ////    _constructionQueue.AddLast(refitConstruction);
-        ////    RefreshCurrentConstructionProperty();
-        ////    // Adding to the end of the queue does not change any expected completion dates
-        ////    _baseClient.HandleConstructionAdded(refitConstruction);
-        ////    OnConstructionQueueChanged();
-        ////    return refitConstruction;
-        ////}
 
         /// <summary>
-        /// Adds the provided new construction design to the ConstructionQueue.
+        /// Adds the provided item to the ConstructionQueue for disbanding.
+        /// </summary>
+        /// <param name="designToDisband">The design we are disbanding.</param>
+        /// <param name="item">The item to be disbanded.</param>
+        /// <param name="disbandCost">The disband cost.</param>
+        /// <returns></returns>
+        public DisbandConstruction AddToDisbandQueue(AUnitElementDesign designToDisband, IUnitElement item, float disbandCost) {
+            var disbandConstruction = new DisbandConstruction(designToDisband, item, disbandCost);
+
+            var expectedStartDate = _constructionQueue.Any() ? _constructionQueue.Last.Value.ExpectedCompletionDate : _gameTime.CurrentDate;
+            float disbandConstructionCost = disbandConstruction.CostToConstruct;
+            GameTimeDuration expectedConstructionDuration = new GameTimeDuration(disbandConstructionCost / _unitProduction);
+            GameDate expectedCompletionDate = new GameDate(expectedStartDate, expectedConstructionDuration);
+            disbandConstruction.ExpectedCompletionDate = expectedCompletionDate;
+
+            _constructionQueue.AddLast(disbandConstruction);
+            RefreshCurrentConstructionProperty();
+            // Adding to the end of the queue does not change any expected completion dates
+            OnConstructionQueueChanged();
+            return disbandConstruction;
+        }
+
+        /// <summary>
+        /// Adds the provided item to the ConstructionQueue for its initial construction implementing <c>designToConstruct</c>.
+        /// <remarks>The provided item must of course be instantiated beforehand using designToConstruct. However, it is 
+        /// Unavailable for use until construction is completed.</remarks>
         /// </summary>
         /// <param name="designToConstruct">The design to construct.</param>
-        /// <param name="item">The item.</param>
+        /// <param name="item">The item to be 'constructed'.</param>
         /// <returns></returns>
         public Construction AddToQueue(AUnitElementDesign designToConstruct, IUnitElement item) {
             var construction = new Construction(designToConstruct, item);
@@ -125,50 +134,29 @@ namespace CodeEnv.Master.GameContent {
             return construction;
         }
 
+        [Obsolete("Not currently used")]
+        public void MoveQueuedConstructionAfter(Construction constructionBefore, Construction constructionMoving) {
+            D.AssertNotEqual(constructionBefore, constructionMoving);
+            var beforeItemNode = _constructionQueue.Find(constructionBefore);
+            bool isRemoved = _constructionQueue.Remove(constructionMoving);
+            D.Assert(isRemoved);
+            _constructionQueue.AddAfter(beforeItemNode, constructionMoving);
+            RefreshCurrentConstructionProperty();
+            UpdateExpectedCompletionDates();
+            OnConstructionQueueChanged();
+        }
 
-        /// <summary>
-        /// Adds the provided new construction design to the ConstructionQueue.
-        /// </summary>
-        /// <param name="designToConstruct">The design to construct.</param>
-        ////[Obsolete]
-        ////public void AddToQueue(AUnitElementDesign designToConstruct) {
-        ////    var expectedStartDate = _constructionQueue.Any() ? _constructionQueue.Last.Value.ExpectedCompletionDate : _gameTime.CurrentDate;
-        ////    GameTimeDuration expectedConstructionDuration = new GameTimeDuration(designToConstruct.ConstructionCost / _unitProduction);
-        ////    GameDate expectedCompletionDate = new GameDate(expectedStartDate, expectedConstructionDuration);
-        ////    var construction = new ConstructionInfo(designToConstruct) {
-        ////        ExpectedCompletionDate = expectedCompletionDate
-        ////    };
-
-        ////    _constructionQueue.AddLast(construction);
-        ////    RefreshCurrentConstructionProperty();
-        ////    // Adding to the end of the queue does not change any expected completion dates
-        ////    _baseClient.HandleConstructionAdded(construction);
-        ////    OnConstructionQueueChanged();
-        ////}
-
-        ////[Obsolete("Not currently used")]
-        ////public void MoveQueueItemAfter(ConstructionInfo beforeItem, ConstructionInfo movingItem) {
-        ////    D.AssertNotEqual(beforeItem, movingItem);
-        ////    var beforeItemNode = _constructionQueue.Find(beforeItem);
-        ////    bool isRemoved = _constructionQueue.Remove(movingItem);
-        ////    D.Assert(isRemoved);
-        ////    _constructionQueue.AddAfter(beforeItemNode, movingItem);
-        ////    RefreshCurrentConstructionProperty();
-        ////    UpdateExpectedCompletionDates();
-        ////    OnConstructionQueueChanged();
-        ////}
-
-        ////[Obsolete("Not currently used")]
-        ////public void MoveQueueItemBefore(ConstructionInfo afterItem, ConstructionInfo movingItem) {
-        ////    D.AssertNotEqual(afterItem, movingItem);
-        ////    var afterItemNode = _constructionQueue.Find(afterItem);
-        ////    bool isRemoved = _constructionQueue.Remove(movingItem);
-        ////    D.Assert(isRemoved);
-        ////    _constructionQueue.AddBefore(afterItemNode, movingItem);
-        ////    RefreshCurrentConstructionProperty();
-        ////    UpdateExpectedCompletionDates();
-        ////    OnConstructionQueueChanged();
-        ////}
+        [Obsolete("Not currently used")]
+        public void MoveQueuedConstructionBefore(Construction constructionAfter, Construction constructionMoving) {
+            D.AssertNotEqual(constructionAfter, constructionMoving);
+            var afterItemNode = _constructionQueue.Find(constructionAfter);
+            bool isRemoved = _constructionQueue.Remove(constructionMoving);
+            D.Assert(isRemoved);
+            _constructionQueue.AddBefore(afterItemNode, constructionMoving);
+            RefreshCurrentConstructionProperty();
+            UpdateExpectedCompletionDates();
+            OnConstructionQueueChanged();
+        }
 
         public void RegenerateQueue(IList<Construction> orderedQueue) {
             _constructionQueue.Clear();
@@ -218,6 +206,7 @@ namespace CodeEnv.Master.GameContent {
                     //D.Log("{0} has completed construction of {1}. ExpectedCompletionDate = {2}, CurrentDate = {3}.",
                     //    DebugName, firstConstruction.DebugName, firstConstruction.ExpectedCompletionDate, _gameTime.CurrentDate);
                     RemoveFromQueue(firstConstruction);
+                    _baseClient.HandleConstructionCompleted(firstConstruction);
                     OnConstructionCompleted(firstConstruction);
                     ProgressConstruction(unconsumedProduction);
                 }

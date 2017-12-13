@@ -171,6 +171,7 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
     /// Validates that the unique submenus Qty reqd value submitted equals the number of subMenus actually required
     /// as determined by TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected().
     /// </summary>
+    [System.Diagnostics.Conditional("DEBUG")]
     protected void __ValidateUniqueSubmenuQtyReqd() {
         IEnumerable<INavigableDestination> unusedTgts;
         int submenusReqd = Constants.Zero;

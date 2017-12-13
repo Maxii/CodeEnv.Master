@@ -16,26 +16,18 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using CodeEnv.Master.Common;
-    using CodeEnv.Master.Common.LocalResources;
-    using CodeEnv.Master.GameContent;
-    using UnityEngine;
 
     /// <summary>
     /// Tracks progress of an element construction during a refit.
     /// </summary>
     public class RefitConstruction : Construction {
 
-        public override bool IsRefitConstruction { get { return true; } }
-
         private float _refitCost;
         public override float CostToConstruct { get { return _refitCost; } }
 
-        public RefitConstruction(AUnitElementDesign design, IUnitElement element, float refitCost)
-            : base(design, element) {
+        public RefitConstruction(AUnitElementDesign refitDesign, IUnitElement element, float refitCost)
+            : base(refitDesign, element) {
             _refitCost = refitCost;
             __Validate();
         }

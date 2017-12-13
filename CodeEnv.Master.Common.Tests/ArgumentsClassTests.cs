@@ -85,13 +85,13 @@ namespace CodeEnv.Master.Common {
             [TestMethod]
             [ExpectedException(typeof(ArgumentNullException))]
             public void NullException() {
-                Utility.ValidateNotNull(null);
+                D.AssertNotNull(null);
             }
 
             [TestMethod]
             public void NotNull() {
                 try {
-                    Utility.ValidateNotNull(string.Empty);
+                    D.AssertNotNull(string.Empty);
                 }
                 catch (ArgumentNullException e) {
                     Assert.Fail(ErrorMessages.NoExceptionExpected.Inject(e.Message));

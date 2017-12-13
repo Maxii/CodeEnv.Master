@@ -120,7 +120,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="delimiter">The delimiter. Default is ",".</param>
         /// <returns></returns>
         public static IEnumerable<string> AddDelimiter(this IEnumerable<string> sequence, string delimiter = Constants.Comma) {
-            Utility.ValidateNotNull(sequence);
+            D.AssertNotNull(sequence);
             IList<string> delimitedList = new List<string>();
             foreach (string item in sequence) {
                 delimitedList.Add(item + Constants.NewLine);
@@ -206,8 +206,8 @@ namespace CodeEnv.Master.Common {
         /// <param name="sequence">The Sequence of Type T calling the extension.</param>
         /// <param name="actionToExecute">The work to perform on the sequence, usually expressed in lambda form.</param>
         public static void ForAll<T>(this IEnumerable<T> sequence, Action<T> actionToExecute) {
-            Utility.ValidateNotNull(sequence);
-            Utility.ValidateNotNull(actionToExecute);
+            D.AssertNotNull(sequence);
+            D.AssertNotNull(actionToExecute);
             sequence.ToList<T>().ForEach(actionToExecute);
             // Warning: Per Microsoft, modifying the underlying collection in the body of the action is not supported and causes undefined behaviour.
             // Starting in .Net 4.5, an InvalidOperationException will be thrown if this occurs. Prior to this no exception is thrown.
@@ -576,9 +576,9 @@ namespace CodeEnv.Master.Common {
         /// <param name="propertySelector">The lambda property selector: pub => pub.Property</param>
         /// <param name="onChanged">The subscriber's no parameter/no return method to call when the property changed.</param>
         public static IDisposable SubscribeToPropertyChanged<TSource, TProp>(this TSource source, Expression<Func<TSource, TProp>> propertySelector, Action onChanged) where TSource : INotifyPropertyChanged {
-            Utility.ValidateNotNull(source);
-            Utility.ValidateNotNull(propertySelector);
-            Utility.ValidateNotNull(onChanged);
+            D.Assert(source != null);
+            D.AssertNotNull(propertySelector);
+            D.AssertNotNull(onChanged);
 
             var subscribedPropertyName = GetPropertyName<TSource, TProp>(propertySelector);
             PropertyChangedEventHandler handler = (s, e) => {
@@ -606,9 +606,9 @@ namespace CodeEnv.Master.Common {
         /// <param name="onChanging">The subscriber's one parameter/no return method to call when the property is in the process of changing.</param>
         /// <returns>IDisposable for unsubscribing</returns>
         public static IDisposable SubscribeToPropertyChanging<TSource, TProp>(this TSource source, Expression<Func<TSource, TProp>> propertySelector, Action<TProp> onChanging) where TSource : INotifyPropertyChanging {
-            Utility.ValidateNotNull(source);
-            Utility.ValidateNotNull(propertySelector);
-            Utility.ValidateNotNull(onChanging);
+            D.Assert(source != null);
+            D.AssertNotNull(propertySelector);
+            D.AssertNotNull(onChanging);
 
             var subscribedPropertyName = GetPropertyName<TSource, TProp>(propertySelector);
             PropertyChangingEventHandler handler = (s, e) => {

@@ -173,7 +173,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Engage_Internal(ApMoveDestinationProxy tgtProxy, Speed speed, bool isMoveFleetwide) {
-            Utility.ValidateNotNull(tgtProxy);
+            D.AssertNotNull(tgtProxy);
             D.Assert(!InvalidApSpeeds.Contains(speed), speed.GetValueName());
             D.Assert(!IsEngaged);
 

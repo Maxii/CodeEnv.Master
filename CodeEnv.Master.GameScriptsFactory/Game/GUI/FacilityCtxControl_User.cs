@@ -61,8 +61,10 @@ public class FacilityCtxControl_User : ACtxControl_User<FacilityDirective> {
     protected override bool IsUserMenuOperatorMenuItemDisabledFor(FacilityDirective directive) {
         switch (directive) {
             case FacilityDirective.Disband:
+            // IsCurrentOrderDirectiveAnyOf not needed as IsAuthorizedForNewOrder will correctly respond once order processed
+            ////return !_facilityMenuOperator.IsAuthorizedForNewOrder(directive); //// || _facilityMenuOperator.IsCurrentOrderDirectiveAnyOf(directive);
             case FacilityDirective.Scuttle:
-                return _facilityMenuOperator.IsCurrentOrderDirectiveAnyOf(directive);
+                return !_facilityMenuOperator.IsAuthorizedForNewOrder(directive);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }

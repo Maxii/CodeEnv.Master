@@ -2137,6 +2137,33 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        #region New Order Availability
+
+        public static bool TryGetLessRestrictiveAvailability(this NewOrderAvailability availability, out NewOrderAvailability lessRestrictiveAvailability) {
+            switch (availability) {
+                case NewOrderAvailability.Unavailable:
+                    lessRestrictiveAvailability = NewOrderAvailability.None;
+                    return false;
+                case NewOrderAvailability.BarelyAvailable:
+                    lessRestrictiveAvailability = NewOrderAvailability.Unavailable;
+                    return true;
+                case NewOrderAvailability.FairlyAvailable:
+                    lessRestrictiveAvailability = NewOrderAvailability.BarelyAvailable;
+                    return true;
+                case NewOrderAvailability.EasilyAvailable:
+                    lessRestrictiveAvailability = NewOrderAvailability.FairlyAvailable;
+                    return true;
+                case NewOrderAvailability.Available:
+                    lessRestrictiveAvailability = NewOrderAvailability.EasilyAvailable;
+                    return true;
+                case NewOrderAvailability.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(availability));
+            }
+        }
+
+        #endregion
+
         #region Ship and Fleet Speed 
 
         /// <summary>

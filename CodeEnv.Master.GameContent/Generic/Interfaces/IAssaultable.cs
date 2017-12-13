@@ -29,6 +29,11 @@ namespace CodeEnv.Master.GameContent {
 
         bool IsVisualDetailDiscernibleToUser { get; }
 
+        /// <summary>
+        /// Returns <c>true</c> if an attempt to takeover this item is allowed by <c>player</c>.
+        /// </summary>
+        /// <param name="player">The player.</param>
+        /// <returns></returns>
         bool IsAssaultAllowedBy(Player player);
 
         bool AttemptAssault(Player player, DamageStrength strength, string __assaulterName);

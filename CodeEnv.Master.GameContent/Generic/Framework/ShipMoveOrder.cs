@@ -82,7 +82,7 @@ namespace CodeEnv.Master.GameContent {
         /// from the target it should strive to achieve.</param>
         public ShipMoveOrder(OrderSource source, IShipNavigableDestination target, Speed speed, bool isFleetwide, float targetStandoffDistance)
             : base(ShipDirective.Move, source, target) {
-            Utility.ValidateNotNull(target);
+            D.AssertNotNull(target);
             D.AssertNotDefault((int)speed);
             Utility.ValidateNotNegative(targetStandoffDistance);
             Speed = speed;

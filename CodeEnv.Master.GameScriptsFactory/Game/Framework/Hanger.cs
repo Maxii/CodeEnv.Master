@@ -27,7 +27,7 @@ using UnityEngine;
 /// <summary>
 /// A hanger attached to a Settlement or Starbase Cmd that holds ships.
 /// </summary>
-public class Hanger : AMonoBase, IFormationMgrClient /*,IHanger, IHanger_Ltd*/ {
+public class Hanger : AMonoBase, IFormationMgrClient/*, IHanger, IHanger_Ltd*/ {
 
     private const string DebugNameFormat = "{0}.{1}";
 
@@ -189,7 +189,7 @@ public class Hanger : AMonoBase, IFormationMgrClient /*,IHanger, IHanger_Ltd*/ {
         var shipsForFleetCopy = _allShips.ToList();
         if (shipsForFleetCopy.Any()) {
             shipsForFleetCopy.ForAll(ship => D.Assert(!ConstructionMgr.IsConstructionQueuedFor(ship)));
-            var fleet = FormFleetFrom("HangerDeathFleet", Formation.Globe, shipsForFleetCopy);
+            FormFleetFrom("HangerDeathFleet", Formation.Globe, shipsForFleetCopy);
         }
     }
 
@@ -199,7 +199,7 @@ public class Hanger : AMonoBase, IFormationMgrClient /*,IHanger, IHanger_Ltd*/ {
         var shipsForFleetCopy = _allShips.ToList();
         if (shipsForFleetCopy.Any()) {
             shipsForFleetCopy.ForAll(ship => D.Assert(!ConstructionMgr.IsConstructionQueuedFor(ship)));
-            var fleet = FormFleetFrom("HangerTakenoverFleet", Formation.Globe, shipsForFleetCopy);
+            FormFleetFrom("HangerTakenoverFleet", Formation.Globe, shipsForFleetCopy);
         }
     }
 

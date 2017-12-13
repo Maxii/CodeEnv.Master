@@ -68,17 +68,21 @@ public class SystemCtxControl : ACtxControl {
     }
 
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
+        // Note: Systems without an owner are by definition explorable, guardable and patrollable
+        FleetCmdItem userRemoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
+        bool isOrderAuthorizedByUserRemoteFleet = userRemoteFleet.IsAuthorizedForNewOrder(directive);
+        // userRemoteFleet.IsCurrentOrderDirectiveAnyOf() not used in criteria as target in current order may not be this system
         switch (directive) {
-            // Note: Systems without an owner are by definition explorable, guardable and patrollable
-            case FleetDirective.Explore:
-                var explorableSystem = _systemMenuOperator as IFleetExplorable;
-                return explorableSystem.IsFullyExploredBy(_user) || !explorableSystem.IsExploringAllowedBy(_user);
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
+                return !isOrderAuthorizedByUserRemoteFleet;
             case FleetDirective.Patrol:
-                return !(_systemMenuOperator as IPatrollable).IsPatrollingAllowedBy(_user);
+                return !isOrderAuthorizedByUserRemoteFleet || !(_systemMenuOperator as IPatrollable).IsPatrollingAllowedBy(_user);
             case FleetDirective.Guard:
-                return !(_systemMenuOperator as IGuardable).IsGuardingAllowedBy(_user);
+                return !isOrderAuthorizedByUserRemoteFleet || !(_systemMenuOperator as IGuardable).IsGuardingAllowedBy(_user);
+            case FleetDirective.Explore:
+                var explorableSystem = _systemMenuOperator as IFleetExplorable;
+                return !isOrderAuthorizedByUserRemoteFleet || !explorableSystem.IsExploringAllowedBy(_user) || explorableSystem.IsFullyExploredBy(_user);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }

@@ -477,11 +477,36 @@ public abstract class AFleetUnitHudForm : AForm {
     protected abstract bool TryFindClosestFleetRefitBase(Vector3 currentFleetPosition, out IUnitBaseCmd closestRefitBase);
 
     private void HandleUnitDisbandButtonToggleChanged() {
-        D.Warn("{0}.HandleUnitDisbandButtonToggleChanged not yet implemented.", DebugName);
+        ////D.Warn("{0}.HandleUnitDisbandButtonToggleChanged not yet implemented.", DebugName);
+        ////_toggleButtonsUsedThisSession.Add(_unitDisbandButton);
+        ////_unitDisbandButton.SetToggledState(false); // TEMP release the button
+        //// UNDONE
+        D.AssertEqual(Constants.One, _pickedUnitIcons.Count);
         _toggleButtonsUsedThisSession.Add(_unitDisbandButton);
-        _unitDisbandButton.SetToggledState(false); // TEMP release the button
-        // UNDONE
+        var pickedUnit = _pickedUnitIcons.First().Unit;
+        bool isButtonToggledIn = _unitDisbandButton.IsToggledIn;
+        if (isButtonToggledIn) {
+            IUnitBaseCmd closestDisbandBase;
+            if (TryFindClosestFleetDisbandBase(pickedUnit.Position, out closestDisbandBase)) {
+                FleetOrder disbandOrder = new FleetOrder(FleetDirective.Disband, OrderSource.User, closestDisbandBase as IFleetNavigableDestination);
+                pickedUnit.CurrentOrder = disbandOrder;
+                D.LogBold("{0} is issuing an order to {1} to Disband at {2}.", DebugName, pickedUnit.DebugName, closestDisbandBase.DebugName);
+                _unitDisbandButton.SetIconColor(TempGameValues.SelectedColor);
+                AssessUnitButtons();
+            }
+            else {
+                D.Warn("{0} found no Base for {1} to disband at.", DebugName, pickedUnit.DebugName);
+                _unitDisbandButton.SetToggledState(false);    // release the button
+            }
+        }
+        else {
+            FleetOrder cancelOrder = new FleetOrder(FleetDirective.Cancel, OrderSource.User);
+            pickedUnit.CurrentOrder = cancelOrder;
+            _unitDisbandButton.SetIconColor(GameColor.White);
+        }
     }
+
+    protected abstract bool TryFindClosestFleetDisbandBase(Vector3 currentFleetPosition, out IUnitBaseCmd closestDisbandBase);
 
     private void HandleUnitExploreButtonToggleChanged() {
         D.Warn("{0}.HandleUnitExploreButtonToggleChanged not yet implemented.", DebugName);
@@ -520,65 +545,90 @@ public abstract class AFleetUnitHudForm : AForm {
         }
         _unitMergeButton.isEnabled = isUnitMergeButtonEnabled;
 
-        _unitScuttleButton.isEnabled = _pickedUnitIcons.Count == Constants.One;
+        bool isUnitScuttleButtonEnabled = false;
 
         if (_pickedUnitIcons.Count == Constants.One) {
             // 11.18.17 picked units are limited to one to make cancel order practical to implement
             var pickedUnit = _pickedUnitIcons.First().Unit;
 
+            isUnitScuttleButtonEnabled = pickedUnit.IsAuthorizedForNewOrder(FleetDirective.Scuttle);
+
             bool isOrderedToRepair = pickedUnit.IsCurrentOrderDirectiveAnyOf(FleetDirective.Repair);
             GameColor iconColor = isOrderedToRepair ? TempGameValues.SelectedColor : GameColor.White;
             _unitRepairButton.SetToggledState(isOrderedToRepair, iconColor);
-            if (!HasBeenUsedThisSession(_unitRepairButton) && isOrderedToRepair) {
-                // Button not yet used during this session (pause) and order already exists so it is from a previous session (pause).
-                // Accordingly, button should not be available as cancel only works during same session (pause) order was issued. 
-                _unitRepairButton.IsEnabled = false;
+            if (HasBeenUsedThisSession(_unitRepairButton)) {
+                // 1) already used this session && if isOrderedToRepair -> button should be enabled to allow cancel
+                // 2) already used this session && if !isOrderedToRepair -> cancel already used so button should allow for more pushes
+                _unitRepairButton.IsEnabled = true;
             }
             else {
-                // Either button has been used this session (pause) or there is no existing order. Either way, the button should
-                // be available if there is damage to repair.
-                bool isDamaged = pickedUnit.Data.UnitHealth < Constants.OneHundredPercent || pickedUnit.Data.Health < Constants.OneHundredPercent;
-                _unitRepairButton.IsEnabled = isDamaged;
+                // button not used this session
+                if (isOrderedToRepair) {
+                    // already ordered to repair from some other source prior to this session so disable button as cancel won't work
+                    _unitRepairButton.IsEnabled = false;
+                }
+                else {
+                    // button not yet used this session so let pickedUnit tell us whether Repair is an authorized order
+                    _unitRepairButton.IsEnabled = pickedUnit.IsAuthorizedForNewOrder(FleetDirective.Repair);
+                }
             }
 
             bool isOrderedToRefit = pickedUnit.IsCurrentOrderDirectiveAnyOf(FleetDirective.Refit);
             iconColor = isOrderedToRefit ? TempGameValues.SelectedColor : GameColor.White;
             _unitRefitButton.SetToggledState(isOrderedToRefit, iconColor);
-            if (!HasBeenUsedThisSession(_unitRefitButton) && isOrderedToRefit) {
-                _unitRefitButton.IsEnabled = false;
+            if (HasBeenUsedThisSession(_unitRefitButton)) {
+                _unitRefitButton.IsEnabled = true;
             }
             else {
-                _unitRefitButton.IsEnabled = IsUnitUpgradeAvailable(pickedUnit);
+                _unitRefitButton.IsEnabled = isOrderedToRefit ? false : pickedUnit.IsAuthorizedForNewOrder(FleetDirective.Refit);
             }
 
             bool isOrderedToDisband = pickedUnit.IsCurrentOrderDirectiveAnyOf(FleetDirective.Disband);
             iconColor = isOrderedToDisband ? TempGameValues.SelectedColor : GameColor.White;
             _unitDisbandButton.SetToggledState(isOrderedToDisband, iconColor);
-            _unitDisbandButton.IsEnabled = (!HasBeenUsedThisSession(_unitDisbandButton) && isOrderedToDisband) ? false : true;
+            if (HasBeenUsedThisSession(_unitDisbandButton)) {
+                _unitDisbandButton.IsEnabled = true;
+            }
+            else {
+                _unitDisbandButton.IsEnabled = isOrderedToDisband ? false : pickedUnit.IsAuthorizedForNewOrder(FleetDirective.Disband);
+            }
 
             bool isOrderedToGuard = pickedUnit.IsCurrentOrderDirectiveAnyOf(FleetDirective.Guard);
             iconColor = isOrderedToGuard ? TempGameValues.SelectedColor : GameColor.White;
             _unitGuardButton.SetToggledState(isOrderedToGuard, iconColor);
-            _unitGuardButton.IsEnabled = (!HasBeenUsedThisSession(_unitGuardButton) && isOrderedToGuard) ? false : true;
+            if (HasBeenUsedThisSession(_unitGuardButton)) {
+                _unitGuardButton.IsEnabled = true;
+            }
+            else {
+                _unitGuardButton.IsEnabled = isOrderedToGuard ? false : pickedUnit.IsAuthorizedForNewOrder(FleetDirective.Guard);
+            }
 
             bool isOrderedToPatrol = pickedUnit.IsCurrentOrderDirectiveAnyOf(FleetDirective.Patrol);
             iconColor = isOrderedToPatrol ? TempGameValues.SelectedColor : GameColor.White;
             _unitPatrolButton.SetToggledState(isOrderedToPatrol, iconColor);
-            _unitPatrolButton.IsEnabled = (!HasBeenUsedThisSession(_unitPatrolButton) && isOrderedToPatrol) ? false : true;
+            if (HasBeenUsedThisSession(_unitPatrolButton)) {
+                _unitPatrolButton.IsEnabled = true;
+            }
+            else {
+                _unitPatrolButton.IsEnabled = isOrderedToPatrol ? false : pickedUnit.IsAuthorizedForNewOrder(FleetDirective.Patrol);
+            }
 
             bool isOrderedToExplore = pickedUnit.IsCurrentOrderDirectiveAnyOf(FleetDirective.Explore);
             iconColor = isOrderedToExplore ? TempGameValues.SelectedColor : GameColor.White;
             _unitExploreButton.SetToggledState(isOrderedToExplore, iconColor);
-            _unitExploreButton.IsEnabled = (!HasBeenUsedThisSession(_unitExploreButton) && isOrderedToExplore) ? false : true;
+            if (HasBeenUsedThisSession(_unitExploreButton)) {
+                _unitExploreButton.IsEnabled = true;
+            }
+            else {
+                _unitExploreButton.IsEnabled = isOrderedToExplore ? false : pickedUnit.IsAuthorizedForNewOrder(FleetDirective.Explore);
+            }
         }
         else {
             // if more than 1 picked unit, un-toggle without notify and disable all
             ResetUnitOrderToggleButtons();
         }
-    }
+        _unitScuttleButton.isEnabled = isUnitScuttleButtonEnabled;
 
-    private bool IsUnitUpgradeAvailable(FleetCmdItem pickedUnit) {  // expensive
-        return _gameMgr.PlayersDesigns.AreUnitUpgradeDesignsPresent(pickedUnit.Owner, pickedUnit.Data);
     }
 
     protected void AssessUnitFocusButton() {
@@ -688,12 +738,6 @@ public abstract class AFleetUnitHudForm : AForm {
         FocusOn(icon.Element);
     }
 
-    /// <summary>
-    /// Handles the ship create fleet button clicked.
-    /// <remarks>11.16.17 Must cycle paused state to allow resultingFleet to become operational. RebuildUnitIcons
-    /// needs resultingFleet's iconInfo to make the icons. The icons aren't available until resultingFleet becomes operational.
-    /// resultingFleet.InitiateExternalCmdStaffOverrideOrder is not used.</remarks>
-    /// </summary>
     private void HandleShipCreateFleetButtonClicked() {
         Utility.ValidateForRange(_pickedElementIcons.Count, Constants.One, TempGameValues.MaxShipsPerFleet);
 
@@ -762,8 +806,15 @@ public abstract class AFleetUnitHudForm : AForm {
     }
 
     protected virtual void AssessElementButtons() {
-        _shipCreateFleetButton.isEnabled = Utility.IsInRange(_pickedElementIcons.Count, Constants.One, TempGameValues.MaxShipsPerFleet);
-        _shipScuttleButton.isEnabled = _pickedElementIcons.Any();
+        bool isShipCreateFleetButtonEnabled = false;
+        bool isShipScuttleButtonEnabled = false;
+        if (_pickedElementIcons.Any()) {
+            // OPTIMIZE 12.11.17 ships in fleet cannot be Unavailable
+            isShipCreateFleetButtonEnabled = _pickedElementIcons.All(icon => icon.Element.Availability != NewOrderAvailability.Unavailable);
+            isShipScuttleButtonEnabled = _pickedElementIcons.All(icon => icon.Element.IsAuthorizedForNewOrder(ShipDirective.Scuttle));
+        }
+        _shipCreateFleetButton.isEnabled = isShipCreateFleetButtonEnabled;
+        _shipScuttleButton.isEnabled = isShipScuttleButtonEnabled;
     }
 
     protected void DisableElementButtons() {

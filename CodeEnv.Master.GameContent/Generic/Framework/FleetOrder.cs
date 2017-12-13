@@ -28,11 +28,21 @@ namespace CodeEnv.Master.GameContent {
         private const string DebugNameFormat = "[{0}: Directive = {1}, Source = {2}, Target = {3}, FollowonOrder = {4}]";
 
         private static readonly FleetDirective[] DirectivesWithNullTarget = new FleetDirective[]    {
-                                                                                                        FleetDirective.Retreat,
                                                                                                         FleetDirective.Scuttle,
-                                                                                                        FleetDirective.Withdraw,
-                                                                                                        FleetDirective.Disband,
                                                                                                         FleetDirective.Cancel
+                                                                                                    };
+
+        private static readonly FleetDirective[] DirectivesWithNonNullTarget = new FleetDirective[] {
+                                                                                                        FleetDirective.Attack,
+                                                                                                        FleetDirective.Disband,
+                                                                                                        FleetDirective.Explore,
+                                                                                                        FleetDirective.FullSpeedMove,
+                                                                                                        FleetDirective.Guard,
+                                                                                                        FleetDirective.Join,
+                                                                                                        FleetDirective.Move,
+                                                                                                        FleetDirective.Patrol,
+                                                                                                        FleetDirective.Refit,
+                                                                                                        FleetDirective.Repair
                                                                                                     };
 
         public string DebugName {
@@ -95,8 +105,14 @@ namespace CodeEnv.Master.GameContent {
             if (DirectivesWithNullTarget.Contains(Directive)) {
                 D.AssertNull(Target);
             }
+            if (DirectivesWithNonNullTarget.Contains(Directive)) {
+                D.AssertNotNull(Target);
+            }
             if (Directive == FleetDirective.Cancel) {
                 D.AssertEqual(OrderSource.User, Source);
+            }
+            if (Directive == FleetDirective.ChangeHQ) {
+                D.Error("{0}: {1} not implemented as an order.", DebugName, Directive.GetValueName());
             }
         }
 

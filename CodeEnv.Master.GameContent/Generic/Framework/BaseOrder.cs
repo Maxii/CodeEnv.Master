@@ -15,7 +15,9 @@
 ////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
+
     using System;
+    using System.Linq;
     using CodeEnv.Master.Common;
 
     /// <summary>
@@ -25,6 +27,20 @@ namespace CodeEnv.Master.GameContent {
 
         private const string DebugNameFormat = "[{0}: Directive = {1}, Source = {2}, Target = {3}, FollowonOrder = {4}]";
 
+        private static readonly BaseDirective[] DirectivesWithNullTarget = new BaseDirective[]  {
+                                                                                                    BaseDirective.Cancel,
+                                                                                                    ////BaseDirective.Disband,
+                                                                                                    BaseDirective.Scuttle,
+                                                                                                    ////BaseDirective.Refit,
+                                                                                                    ////BaseDirective.Repair
+                                                                                                };
+
+        private static readonly BaseDirective[] DirectivesWithNonNullTarget = new BaseDirective[]   {
+                                                                                                        BaseDirective.Attack,
+                                                                                                        BaseDirective.Disband,
+                                                                                                        BaseDirective.Refit,
+                                                                                                        BaseDirective.Repair
+                                                                                                    };
         public string DebugName {
             get {
                 string targetText = Target != null ? Target.DebugName : "none";
@@ -82,14 +98,22 @@ namespace CodeEnv.Master.GameContent {
 
         [System.Diagnostics.Conditional("DEBUG")]
         private void __Validate() {
-            D.AssertNotEqual(OrderSource.Captain, Source);
+            if (DirectivesWithNullTarget.Contains(Directive)) {
+                D.AssertNull(Target);
+            }
+            if (DirectivesWithNonNullTarget.Contains(Directive)) {
+                D.AssertNotNull(Target);
+            }
             if (Directive == BaseDirective.Cancel) {
                 D.AssertEqual(OrderSource.User, Source);
             }
+            if (Directive == BaseDirective.ChangeHQ) {
+                D.Error("{0}: {1} not implemented as an order.", DebugName, Directive.GetValueName());
+            }
         }
-
-        #endregion
-
     }
+
+    #endregion
+
 }
 

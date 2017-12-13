@@ -71,19 +71,21 @@ public class StarCtxControl : ACtxControl {
     }
 
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
+        FleetCmdItem userRemoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
+        bool isOrderAuthorizedByUserRemoteFleet = userRemoteFleet.IsAuthorizedForNewOrder(directive);
+        // userRemoteFleet.IsCurrentOrderDirectiveAnyOf() not used in criteria as target in current order may not be this Star
         switch (directive) {
+            case FleetDirective.Move:
+            case FleetDirective.FullSpeedMove:
+                return !isOrderAuthorizedByUserRemoteFleet;
             case FleetDirective.Explore:
                 // A fleet may explore a star(system) if not at war and not already explored
                 var explorableSystem = _starMenuOperator.ParentSystem as IFleetExplorable;
-                return explorableSystem.IsFullyExploredBy(_user) || !explorableSystem.IsExploringAllowedBy(_user);
-            case FleetDirective.Move:
-            case FleetDirective.FullSpeedMove:
-                // A fleet may move to any star without regard to Diplo state
-                return false;
+                return !isOrderAuthorizedByUserRemoteFleet || !explorableSystem.IsExploringAllowedBy(_user) || explorableSystem.IsFullyExploredBy(_user);
             case FleetDirective.Patrol:
-                return !(_starMenuOperator.ParentSystem as IPatrollable).IsPatrollingAllowedBy(_user);
+                return !isOrderAuthorizedByUserRemoteFleet || !(_starMenuOperator.ParentSystem as IPatrollable).IsPatrollingAllowedBy(_user);
             case FleetDirective.Guard:
-                return !(_starMenuOperator.ParentSystem as IGuardable).IsGuardingAllowedBy(_user);
+                return !isOrderAuthorizedByUserRemoteFleet || !(_starMenuOperator.ParentSystem as IGuardable).IsGuardingAllowedBy(_user);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }

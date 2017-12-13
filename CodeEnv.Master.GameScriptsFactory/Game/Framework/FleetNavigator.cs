@@ -207,7 +207,7 @@ public class FleetNavigator : IDisposable {
     /// <param name="apSpeed">The speed the autopilot should travel at.</param>
     /// <param name="apTgtStandoffDistance">The target standoff distance.</param>
     internal void PlotPilotCourse(IFleetNavigableDestination apTgt, Speed apSpeed, float apTgtStandoffDistance) {
-        Utility.ValidateNotNull(apTgt);
+        D.AssertNotNull(apTgt);
         D.Assert(!InvalidApSpeeds.Contains(apSpeed), apSpeed.GetValueName());
         ApTarget = apTgt;
         ApSpeedSetting = apSpeed;

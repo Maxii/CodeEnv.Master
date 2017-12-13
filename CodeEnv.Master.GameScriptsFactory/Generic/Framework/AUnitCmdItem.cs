@@ -31,6 +31,12 @@ using UnityEngine.Profiling;
 public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd_Ltd, IFleetNavigableDestination, IUnitAttackable,
     IFormationMgrClient, ISensorDetector, IFsmEventSubscriptionMgrClient {
 
+    /// <summary>
+    /// Fired when the receptiveness of this Unit to receiving new orders changes.
+    /// </summary>
+    [Obsolete]
+    public event EventHandler availabilityChanged;
+
     public event EventHandler isAvailableChanged;
 
     public event EventHandler unitOutputsChanged;
@@ -62,18 +68,15 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         private set { SetProperty<Transform>(ref _unitContainer, value, "UnitContainer"); }
     }
 
+    private NewOrderAvailability _availability = NewOrderAvailability.Available;
     /// <summary>
-    /// Indicates whether this element is available for a new assignment.
-    /// <remarks>Typically, an element that is available is Idling.</remarks>
+    /// Indicates how 'available' this Unit is to receiving new orders.
     /// </summary>
-    private bool _isAvailable;
-    public bool IsAvailable {
-        get { return _isAvailable; }
-        protected set {
-            if (_isAvailable != value) {
-                _isAvailable = value;
-                IsAvailablePropChangedHandler();
-            }
+    public NewOrderAvailability Availability {
+        get { return _availability; }
+        private set {
+            D.AssertNotEqual(_availability, value);     // filtering Availability_set values handled by ChangeAvailabilityTo()
+            _availability = value;
         }
     }
 
@@ -85,6 +88,11 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     public bool IsAttackCapable { get { return Elements.Where(e => e.IsAttackCapable).Any(); } }
 
+    /// <summary>
+    /// Returns <c>true</c> if there is currently room in this Cmd for 1 element to join it.
+    /// <remarks>For use only during operations (IsOperational == true) as it utilizes the FormationManager
+    /// which is not initialized until after all elements have been added during construction.</remarks>
+    /// </summary>
     public bool IsJoinable { get { return IsJoinableBy(Constants.One); } }
 
     public bool IsHeroPresent { get { return Data.Hero != TempGameValues.NoHero; } }
@@ -98,6 +106,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         protected set { base.Data = value; }
     }
 
+    public float CmdModuleHealth { get { return Data.CmdModuleHealth; } }
+
     public int ElementCount { get { return Elements.Count; } }
 
     protected AUnitElementItem _hqElement;
@@ -110,11 +120,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         set { SetProperty<AUnitElementItem>(ref _hqElement, value, "HQElement", HQElementPropChangedHandler, HQElementPropChangingHandler); }
     }
 
-    public IList<AUnitElementItem> AvailableNonHQElements { get { return NonHQElements.Where(e => e.IsAvailable).ToList(); } }
-
-    public IList<AUnitElementItem> AvailableElements { get { return Elements.Where(e => e.IsAvailable).ToList(); } }
-
-    public IList<AUnitElementItem> NonHQElements { get { return Elements.Except(HQElement).ToList(); } }    // OPTIMIZE
+    public IEnumerable<AUnitElementItem> NonHQElements { get { return Elements.Except(HQElement); } }
 
     public IList<AUnitElementItem> Elements { get; private set; }
 
@@ -141,8 +147,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     protected AFormationManager FormationMgr { get; private set; }
     protected FsmEventSubscriptionManager FsmEventSubscriptionMgr { get; private set; }
     protected sealed override bool IsPaused { get { return _gameMgr.IsPaused; } }
-
-    protected Job _repairJob;
 
     private IFtlDampenerRangeMonitor _ftlDampenerRangeMonitor;
     private ITrackingWidget _trackingLabel;
@@ -328,7 +332,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         UnifiedSRSensorMonitor.Add(element.SRSensorMonitor);   // HACK added it to FinalInitialize, like AssessIcon
         AssessIcon();
         FormationMgr.AddAndPositionNonHQElement(element);
-        UponSubordinateAdded(element);
     }
 
     public virtual void RemoveElement(AUnitElementItem element) {
@@ -366,13 +369,45 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     /// <summary>
+    /// Returns the elements that meet or exceed the minimum availability specified.
+    /// </summary>
+    /// <param name="minAvailability">The minimum availability.</param>
+    /// <returns></returns>
+    public IEnumerable<AUnitElementItem> GetElements(NewOrderAvailability minAvailability) {
+        D.AssertNotDefault((int)minAvailability);
+        return Elements.Where(e => e.Availability >= minAvailability);
+    }
+
+    /// <summary>
     /// Indicates whether this Unit is in the process of attacking <c>unit</c>.
     /// </summary>
     /// <param name="unitCmd">The unit command potentially under attack by this Unit.</param>
     /// <returns></returns>
     public abstract bool IsAttacking(IUnitCmd_Ltd unitCmd);
 
+    /// <summary>
+    /// Returns <c>true</c> if there is currently room in this Cmd for <c>elementCount</c> elements to join it.
+    /// <remarks>For use only during operations (IsOperational == true) as it utilizes the FormationManager
+    /// which is not initialized until after all elements have been added during construction.</remarks>
+    /// </summary>
+    /// <param name="elementCount">The element count.</param>
+    /// <returns></returns>
     public abstract bool IsJoinableBy(int elementCount);
+
+    /// <summary>
+    /// Repairs the command module using the provided hit points and returns
+    /// <c>true</c> if the command module has completed its repair.
+    /// </summary>
+    /// <param name="repairHitPts">The repair hit points.</param>
+    /// <returns></returns>
+    public bool RepairCmdModule(float repairHitPts) {
+        Data.CmdModuleCurrentHitPoints += repairHitPts;
+        bool isRprCompleted = Data.CmdModuleHealth == Constants.OneHundredPercent;
+        if (isRprCompleted) {
+            Data.RemoveDamageFromAllCmdModuleEquipment();
+        }
+        return isRprCompleted;
+    }
 
     private void HandleSubordinateOwnerChanging(AUnitElementItem subordinateElement, Player incomingOwner) {
         if (ElementCount == Constants.One) {
@@ -391,10 +426,10 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         }
         RemoveElement(deadSubordinateElement);
         // state machine notification is after removal so attempts to acquire a replacement don't come up with same element
-        //if (!IsDead) {
-        //    // no point in notifying Cmd's Dead state of the subordinate element's death that killed it
-        //    UponSubordinateElementDeath(deadSubordinateElement);
-        //}
+        if (!IsDead) {
+            // no point in notifying Cmd's Dead state of the subordinate element's death that killed it
+            // UponSubordinateElementDeath(deadSubordinateElement);
+        }
     }
 
     protected void AttachCmdToHQElement() {
@@ -548,7 +583,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     protected abstract void SubordinateOrderOutcomeEventHandler(object sender, AUnitElementItem.OrderOutcomeEventArgs e);
 
-
     protected void SubordinateIsAvailableChangedEventHandler(object sender, EventArgs e) {
         HandleSubordinateIsAvailableChanged(sender as AUnitElementItem);
     }
@@ -577,14 +611,14 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         HandleWarEnemyElementsInSensorRangeChanged();
     }
 
-    private void IsAvailablePropChangedHandler() {
-        if (IsAvailable) {
-            __ValidateCurrentOrderAndStateWhenAvailable();
+    [Obsolete]
+    private void OnAvailabilityChanged() {
+        if (availabilityChanged != null) {
+            availabilityChanged(this, EventArgs.Empty);
         }
-        OnIsAvailable();
     }
 
-    private void OnIsAvailable() {
+    private void OnIsAvailableChanged() {
         if (isAvailableChanged != null) {
             isAvailableChanged(this, EventArgs.Empty);
         }
@@ -618,8 +652,33 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     #endregion
 
+    /// <summary>
+    /// Changes Availability to the provided value and selectively raises the isAvailableChanged event.
+    /// <remarks>12.9.17 Handled this way to restrict firing availability changed events to only those times when Availability
+    /// changes to/from Available. Otherwise, other Availability changes could atomically generate new orders which
+    /// would fail the FSM condition that states can't be changed from void EnterState methods. Currently, changing 
+    /// to Available is the only known generator of new orders and the IEnumerable Idling_EnterState method generates that change.
+    /// All other states set Availability in their void PreconfigureState method so it occurs atomically after a new order is
+    /// received following Idling changing to Available. This atomic change in Availability is necessary when a new order
+    /// is received as that order can result in searches for elements or cmds that are 'Available'. If the value does not 
+    /// atomically change, those searches will find candidates it thinks are available when in fact they are in the process
+    /// of changing to another Availability value, creating errors. Accordingly, the other states can't use their IEnumerable
+    /// EnterState to make the change as it wouldn't be atomic.</remarks>
+    /// </summary>
+    /// <param name="incomingAvailability">The availability value to change too.</param>
+    protected void ChangeAvailabilityTo(NewOrderAvailability incomingAvailability) {
+        if (Availability == incomingAvailability) {
+            return;
+        }
+        bool toRaiseIsAvailableChgdEvent = Availability == NewOrderAvailability.Available || incomingAvailability == NewOrderAvailability.Available;
+        Availability = incomingAvailability;
+        if (toRaiseIsAvailableChgdEvent) {
+            OnIsAvailableChanged();
+        }
+    }
+
     private void HandleSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) {
-        // UNDONE
+        UponSubordinateIsAvailableChanged(subordinateElement);
     }
 
     protected virtual void HandleAlertStatusChanged() {
@@ -761,7 +820,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     /// Clears each Element's CurrentOrder and causes them to Idle.
     /// </summary>
     protected void ClearElementsOrders() {
-        //D.Log(ShowDebugLog, "{0} is canceling all element orders.", DebugName);
+        // D.Log(ShowDebugLog, "{0} is clearing all element orders.", DebugName);
         Elements.ForAll(e => e.ClearOrders());
     }
 
@@ -837,6 +896,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     protected virtual void ValidateCommonCallableStateValues(string calledStateName) {
         D.AssertNotEqual(Constants.Zero, _activeFsmReturnHandlers.Count);
         _activeFsmReturnHandlers.Peek().__Validate(calledStateName);
+        D.Assert(!IsDead);
     }
 
     /// <summary>
@@ -844,6 +904,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     /// </summary>
     protected virtual void ValidateCommonNotCallableStateValues() {
         D.AssertEqual(Constants.Zero, _activeFsmReturnHandlers.Count);
+        D.Assert(!IsDead);
     }
 
     protected void ReturnFromCalledStates() {
@@ -851,14 +912,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
             Return();
         }
         D.Assert(!IsCurrentStateCalled);
-    }
-
-    [Obsolete("Use WaitYieldInstruction in Repair_EnterState instead")]
-    protected void KillRepairJob() {
-        if (_repairJob != null) {
-            _repairJob.Kill();
-            _repairJob = null;
-        }
     }
 
     protected sealed override void PreconfigureCurrentState() {
@@ -955,12 +1008,10 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     protected void UponNewOrderReceived() { RelayToCurrentState(); }
 
-    [Obsolete("Use UponSubordinateRemoved and test for death")]
-    private void UponSubordinateElementDeath(AUnitElementItem deadSubordinateElement) { RelayToCurrentState(deadSubordinateElement); }
+    [Obsolete("Not currently used")]
+    private void UponSubordinateDeath(AUnitElementItem deadSubordinateElement) { RelayToCurrentState(deadSubordinateElement); }
 
-    protected void UponSubordinateAdded(AUnitElementItem subordinateElement) { RelayToCurrentState(subordinateElement); }
-
-    protected void UponSubordinateRemoved(AUnitElementItem subordinateElement) { RelayToCurrentState(subordinateElement); }
+    protected void UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) { RelayToCurrentState(subordinateElement); }
 
     private void UponEnemyDetected() { RelayToCurrentState(); }
 
@@ -1001,17 +1052,44 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     /// <summary>
     /// Assesses this Cmd's need for repair, returning <c>true</c> if immediate repairs are needed, <c>false</c> otherwise.
-    /// <remarks>Abstract to simply remind of need for functionality.</remarks>
     /// </summary>
-    /// <param name="healthThreshold">The health threshold.</param>
+    /// <param name="unitHealthThreshold">The health threshold.</param>
     /// <returns></returns>
-    protected abstract bool AssessNeedForRepair(float healthThreshold);
+    protected virtual bool AssessNeedForRepair(float unitHealthThreshold) {
+        __ValidateCurrentStateWhenAssessingNeedForRepair();
+        if (_debugSettings.DisableRepair) {
+            return false;
+        }
+        // 12.9.17 No need for _debugSettings.AllPlayersInvulnerable as its role is to keep damage from being taken
+        if (_debugSettings.RepairAnyDamage) {
+            unitHealthThreshold = Constants.OneHundredPercent;
+        }
+        if (Data.UnitHealth < unitHealthThreshold) {
+            D.Log(ShowDebugLog, "{0} has determined it needs Repair.", DebugName);
+            return true;
+        }
+        return false;
+    }
 
-    /// <summary>
-    /// Initiates repair.
-    /// <remarks>Abstract to simply remind of need for functionality.</remarks>
-    /// </summary>
-    protected abstract void InitiateRepair();
+    protected abstract void IssueCmdStaffsRepairOrder();
+
+    protected void AssessAvailabilityStatus_Repair() {
+        __ValidateCurrentStateWhenAssessingAvailabilityStatus_Repair();
+        NewOrderAvailability orderAvailabilityStatus;
+        var unitHealth = Data.UnitHealth;
+        D.AssertNotEqual(Constants.OneHundredPercent, unitHealth);
+
+        if (Utility.IsInRange(unitHealth, GeneralSettings.Instance.UnitHealthThreshold_Damaged, Constants.OneHundredPercent)) {
+            orderAvailabilityStatus = NewOrderAvailability.EasilyAvailable;
+        }
+        else if (Utility.IsInRange(unitHealth, GeneralSettings.Instance.UnitHealthThreshold_BadlyDamaged, GeneralSettings.Instance.UnitHealthThreshold_Damaged)) {
+            orderAvailabilityStatus = NewOrderAvailability.FairlyAvailable;
+        }
+        else {
+            orderAvailabilityStatus = NewOrderAvailability.BarelyAvailable;
+        }
+        ChangeAvailabilityTo(orderAvailabilityStatus);
+    }
 
     #endregion
 
@@ -1045,26 +1123,26 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     /// <summary>
-    /// Applies the damage to the command and returns true if the command survived the hit.
+    /// Applies the damage to the command module returning true as the command module will always survive the hit.
     /// </summary>
-    /// <param name="damageToCmd">The damage sustained.</param>
+    /// <param name="damageToCmdModule">The damage sustained by the CmdModule.</param>
     /// <param name="damageSeverity">The damage severity.</param>
     /// <returns>
     ///   <c>true</c> if the command survived.
     /// </returns>
-    protected override bool ApplyDamage(DamageStrength damageToCmd, out float damageSeverity) {
-        var __combinedDmgToCmd = damageToCmd.Total;
-        var minAllowedCurrentHitPoints = 0.5F * Data.MaxHitPoints;
-        var proposedCurrentHitPts = Data.CurrentHitPoints - __combinedDmgToCmd;
+    protected override bool ApplyDamage(DamageStrength damageToCmdModule, out float damageSeverity) {
+        var __combinedDmgToCmdModule = damageToCmdModule.Total;
+        var minAllowedCurrentHitPoints = 0.5F * Data.CmdModuleMaxHitPoints;
+        var proposedCurrentHitPts = Data.CmdModuleCurrentHitPoints - __combinedDmgToCmdModule;
         if (proposedCurrentHitPts < minAllowedCurrentHitPoints) {
-            Data.CurrentHitPoints = minAllowedCurrentHitPoints;
+            Data.CmdModuleCurrentHitPoints = minAllowedCurrentHitPoints;
         }
         else {
-            Data.CurrentHitPoints -= __combinedDmgToCmd;
+            Data.CmdModuleCurrentHitPoints -= __combinedDmgToCmdModule;
         }
-        D.Assert(Data.Health > Constants.ZeroPercent, "Should never fail as Commands can't die directly from a hit on the command");
+        D.Assert(Data.CmdModuleHealth > Constants.ZeroPercent, "Should never fail as CmdModules can't die directly from a hit.");
 
-        damageSeverity = Mathf.Clamp01(__combinedDmgToCmd / Data.CurrentHitPoints);
+        damageSeverity = Mathf.Clamp01(__combinedDmgToCmdModule / Data.CmdModuleCurrentHitPoints);
         AssessCripplingDamageToEquipment(damageSeverity);
         return true;
     }
@@ -1201,8 +1279,16 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     #region Debug
 
     [System.Diagnostics.Conditional("DEBUG")]
+    protected abstract void __ValidateCurrentStateWhenAssessingNeedForRepair();
+
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    protected abstract void __ValidateCurrentStateWhenAssessingAvailabilityStatus_Repair();
+
+
+    [System.Diagnostics.Conditional("DEBUG")]
     private void __ValidateHQElementChanging(AUnitElementItem incomingHQElement) {
-        Utility.ValidateNotNull(incomingHQElement);
+        D.AssertNotNull(incomingHQElement);
         if (!Elements.Contains(incomingHQElement)) {
             // the player will typically select/change the HQ element of a Unit from the elements already present in the unit
             D.Error("{0} assigned HQElement {1} that is not already present in Unit.", DebugName, incomingHQElement.DebugName);
@@ -1230,9 +1316,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     [System.Diagnostics.Conditional("DEBUG")]
     protected abstract void __ValidateStateForSensorEventSubscription();
-
-    [System.Diagnostics.Conditional("DEBUG")]
-    protected abstract void __ValidateCurrentOrderAndStateWhenAvailable();
 
     public override bool __IsPlayerEntitledToComprehensiveRelationship(Player player) {
         if (_debugCntls.IsAllIntelCoverageComprehensive) {

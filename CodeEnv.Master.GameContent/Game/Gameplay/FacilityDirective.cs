@@ -26,10 +26,16 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Cancels any unit orders issued while in the CURRENT pause. Orders issued in a prior pause will not be canceled.
         /// <remarks>8.14.17 Must be issued by the User and only during pause.</remarks>
-        /// <remarks>11.8.17 No requirements for Target.</remarks>
+        /// <remarks>12.12.17 Requires a null target.</remarks>
         /// </summary>
         Cancel,
 
+        /// <summary>
+        /// Facilities 'manage' their own initial construction in a Base. When they receive this order, they are of course already
+        /// instantiated and operational and have an existing Construction present (with no progress having occurred yet) in the Base's 
+        /// ConstructionManager.
+        /// <remarks>12.1.17 Requires a null Target.</remarks>
+        /// </summary>
         Construct,
 
         /// <summary>
@@ -65,9 +71,11 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         Scuttle,
 
+        [System.Obsolete("Not needed as only implemented in AiShip/Facility CtxMenus for debug and not as an order")]
         ChgOwner,
 
-        StopAttack
+        ////[System.Obsolete]
+        ////StopAttack
 
     }
 }

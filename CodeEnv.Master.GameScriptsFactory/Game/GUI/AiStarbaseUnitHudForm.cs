@@ -52,10 +52,6 @@ public class AiStarbaseUnitHudForm : ABaseUnitHudForm {
         }
     }
 
-    protected override bool IsUnitUpgradeAvailable() {
-        return _gameMgr.PlayersDesigns.AreUnitUpgradeDesignsPresent(SelectedUnit.Owner, SelectedUnit.Data);
-    }
-
     protected override void AssessUnitCompositionButtons() {
         if (DebugControls.Instance.AreAiUnitHudButtonsFunctional) {
             base.AssessUnitCompositionButtons();

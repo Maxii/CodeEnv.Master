@@ -23,10 +23,9 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public interface IConstructionManagerClient {
 
-    [System.Obsolete]
-    void HandleConstructionAdded(ConstructionInfo construction);
-
     void HandleUncompletedConstructionRemovedFromQueue(Construction construction);
+
+    void HandleConstructionCompleted(Construction construction);
 
 }
 

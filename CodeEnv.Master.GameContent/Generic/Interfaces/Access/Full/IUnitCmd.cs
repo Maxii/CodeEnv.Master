@@ -26,29 +26,38 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IUnitCmd : IMortalItem {
 
+        /// <summary>
+        /// Fired when Availability changes to/from Available.
+        /// </summary>
         event EventHandler isAvailableChanged;
+
+        /// <summary>
+        /// Fired when the receptiveness of this Unit to receiving new orders changes.
+        /// </summary>
+        [Obsolete]
+        event EventHandler availabilityChanged;
 
         event EventHandler unitOutputsChanged;
 
         bool IsOwnerChangeUnderway { get; }
 
-        /// <summary>
-        /// Indicates whether this operational Cmd has commenced operations.
-        /// <remarks>5.20.17 Currently used to filter</remarks>
-        /// </summary>
-        bool __IsActivelyOperating { get; }
-
-        bool IsAvailable { get; }
+        NewOrderAvailability Availability { get; }
 
         /// <summary>
-        /// Returns <c>true</c> if there is currently room in this Cmd to join it.
-        /// <remarks>For use only during operations (IsOperational == true) as it 
-        /// utilizes the FormationManager which is not initialized until after all
-        /// elements have been added during construction.</remarks>
+        /// Returns <c>true</c> if there is currently room in this Cmd for 1 element to join it.
+        /// <remarks>For use only during operations (IsOperational == true) as it utilizes the FormationManager
+        /// which is not initialized until after all elements have been added during construction.</remarks>
         /// </summary>
         bool IsJoinable { get; }
 
-        bool IsJoinableBy(int additionalElementCount);
+        /// <summary>
+        /// Returns <c>true</c> if there is currently room in this Cmd for <c>elementCount</c> elements to join it.
+        /// <remarks>For use only during operations (IsOperational == true) as it utilizes the FormationManager
+        /// which is not initialized until after all elements have been added during construction.</remarks>
+        /// </summary>
+        /// <param name="elementCount">The element count.</param>
+        /// <returns></returns>
+        bool IsJoinableBy(int elementCount);
 
         int ElementCount { get; }
 

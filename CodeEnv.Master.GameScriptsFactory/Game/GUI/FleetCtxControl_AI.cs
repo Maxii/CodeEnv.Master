@@ -28,7 +28,8 @@ using UnityEngine;
 /// </summary>
 public class FleetCtxControl_AI : ACtxControl {
 
-    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[]   {   FleetDirective.Attack,
+    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[]   {
+                                                                                            FleetDirective.Attack,
                                                                                             FleetDirective.Move,
                                                                                             FleetDirective.FullSpeedMove
                                                                                         };
@@ -79,22 +80,26 @@ public class FleetCtxControl_AI : ACtxControl {
     }
 
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
+        FleetCmdItem userRemoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
+        bool isOrderAuthorizedByUserRemoteFleet = userRemoteFleet.IsAuthorizedForNewOrder(directive);
+        // userRemoteFleet.IsCurrentOrderDirectiveAnyOf() not used in criteria as target in current order may not be this AIFleet
         switch (directive) {
-            case FleetDirective.Attack:
-                return !(_fleetMenuOperator as IUnitAttackable).IsAttackAllowedBy(_user)
-                    || !(_remoteUserOwnedSelectedItem as AUnitCmdItem).IsAttackCapable;
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
-                return false;
+                return !isOrderAuthorizedByUserRemoteFleet;
+            case FleetDirective.Attack:
+                return !isOrderAuthorizedByUserRemoteFleet || !(_fleetMenuOperator as IUnitAttackable).IsAttackAllowedBy(_user);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
     }
 
     protected override bool IsUserRemoteBaseMenuItemDisabledFor(BaseDirective directive) {
+        bool isOrderAuthorizedByUserRemoteBase = (_remoteUserOwnedSelectedItem as AUnitBaseCmdItem).IsAuthorizedForNewOrder(directive);
+        // reissuing an already issued executing order shouldn't cause any problems
         switch (directive) {
             case BaseDirective.Attack:
-                return !(_fleetMenuOperator as IUnitAttackable).IsAttackAllowedBy(_user);
+                return !isOrderAuthorizedByUserRemoteBase || !(_fleetMenuOperator as IUnitAttackable).IsAttackAllowedBy(_user);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }

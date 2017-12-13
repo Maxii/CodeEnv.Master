@@ -181,9 +181,6 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        //[Obsolete("Not currently used, pending Hanger becoming an AItem.")]
-        //public IEnumerable<IHanger> OwnerBaseHangers { get { return OwnerBases.Select(b => b.Hanger); } }
-
         public IEnumerable<IUnitElement> OwnerElements {
             get {
                 var ownerElements = new List<IUnitElement>();
@@ -232,22 +229,143 @@ namespace CodeEnv.Master.GameContent {
             get { return OwnerItems.Where(myItem => (myItem is ISensorDetectable)).Cast<ISensorDetectable>(); }
         }
 
+        public bool AreAnyKnownItemsGuardableByOwner { get { return KnownItemsGuardableByOwner.Any(); } }
+
+        public IEnumerable<IGuardable> KnownBasesGuardableByOwner {
+            get {
+                return Bases.Select(b => new { guardableBase = b as IGuardable, b })
+                            .Where(x => x.guardableBase.IsGuardingAllowedBy(Owner))
+                            .Select(x => x.guardableBase);
+            }
+        }
+
+        public IEnumerable<IGuardable> SystemsGuardableByOwner {
+            get {
+                return Systems.Select(system => new { guardableSystem = system as IGuardable, system })
+                              .Where(x => x.guardableSystem.IsGuardingAllowedBy(Owner))
+                              .Select(x => x.guardableSystem);
+            }
+        }
+
+        /// <summary>
+        /// Returns all known Items that are currently guardable by Owner.
+        /// </summary>
+        public IEnumerable<IGuardable> KnownItemsGuardableByOwner {
+            get { return KnownGuardableItems.Where(guardableItem => guardableItem.IsGuardingAllowedBy(Owner)); }
+        }
+
         /// <summary>
         /// Returns all known Items that implement IGuardable.
         /// <remarks>The items returned may or may not allow the client owner to guard them.</remarks>
         /// </summary>
         public IEnumerable<IGuardable> KnownGuardableItems {
-            get { return _items.Where(item => (item is IGuardable)).Cast<IGuardable>(); }
+            get {
+                return _items.Select(item => new { guardableItem = item as IGuardable, item })
+                             .Where(x => x.guardableItem != null)
+                             .Select(x => x.guardableItem);
+            }
+        }
+
+        public bool AreAnyKnownItemsPatrollableByOwner { get { return KnownItemsPatrollableByOwner.Any(); } }
+
+        public IEnumerable<IPatrollable> KnownBasesPatrollableByOwner {
+            get {
+                return Bases.Select(b => new { patrollableBase = b as IPatrollable, b })
+                            .Where(x => x.patrollableBase.IsPatrollingAllowedBy(Owner))
+                            .Select(x => x.patrollableBase);
+            }
+        }
+
+        public IEnumerable<IPatrollable> SystemsPatrollableByOwner {
+            get {
+                return Systems.Select(system => new { patrollableSystem = system as IPatrollable, system })
+                              .Where(x => x.patrollableSystem.IsPatrollingAllowedBy(Owner))
+                              .Select(x => x.patrollableSystem);
+            }
+        }
+
+        /// <summary>
+        /// Returns all known Items that are currently patrollable by Owner.
+        /// </summary>
+        public IEnumerable<IPatrollable> KnownItemsPatrollableByOwner {
+            get { return KnownPatrollableItems.Where(patrollableItem => patrollableItem.IsPatrollingAllowedBy(Owner)); }
         }
 
         /// <summary>
         /// Returns all known Items that implement IPatrollable.
         /// <remarks>The items returned may or may not allow the client owner to patrol them.</remarks>
+        /// <remarks>OPTIMIZE be more selective than _items.</remarks>
         /// </summary>
         public IEnumerable<IPatrollable> KnownPatrollableItems {
-            get { return _items.Where(item => (item is IPatrollable)).Cast<IPatrollable>(); }
+            get {
+                return _items.Select(item => new { patrollableItem = item as IPatrollable, item })
+                             .Where(x => x.patrollableItem != null)
+                             .Select(x => x.patrollableItem);
+            }
         }
 
+        /// <summary>
+        /// Returns <c>true</c> if any known items remain unexplored by Owner fleets.
+        /// </summary>
+        public bool AreAnyKnownItemsUnexploredByOwnerFleets { get { return KnownItemsUnexploredByOwnerFleets.Any(); } }
+
+        /// <summary>
+        /// Returns all known Items that are currently explorable that remain unexplored by Owner fleets.
+        /// </summary>
+        public IEnumerable<IFleetExplorable> KnownItemsUnexploredByOwnerFleets {
+            get {
+                return KnownFleetExplorableItems.Where(explorableItem => explorableItem.IsExploringAllowedBy(Owner)
+                    && !explorableItem.IsFullyExploredBy(Owner));
+            }
+        }
+
+        /// <summary>
+        /// Returns all known Items that implement IFleetExplorable.
+        /// <remarks>The items returned may or may not allow the client owner to explore them.</remarks>
+        /// <remarks>OPTIMIZE be more selective than _items.</remarks>
+        /// </summary>
+        public IEnumerable<IFleetExplorable> KnownFleetExplorableItems {
+            get {
+                return _items.Select(item => new { explorableItem = item as IFleetExplorable, item })
+                             .Where(x => x.explorableItem != null)
+                             .Select(x => x.explorableItem);
+            }
+        }
+
+        /// <summary>
+        /// Returns <c>true</c> if any known fleets are attackable by Owner Units.
+        /// </summary>
+        public bool AreAnyKnownFleetsAttackableByOwnerUnits { get { return KnownFleetsAttackableByOwnerUnits.Any(); } }
+
+
+        public IEnumerable<IUnitAttackable> KnownFleetsAttackableByOwnerUnits {
+            get { return Fleets.Cast<IUnitAttackable>().Where(fleet => fleet.IsAttackAllowedBy(Owner)); }
+        }
+
+        /// <summary>
+        /// Returns <c>true</c> if any known items are attackable by Owner Units.
+        /// </summary>
+        public bool AreAnyKnownItemsAttackableByOwnerUnits { get { return KnownItemsAttackableByOwnerUnits.Any(); } }
+
+        /// <summary>
+        /// Returns all known Items that are currently attackable by Owner Units.
+        /// </summary>
+        public IEnumerable<IUnitAttackable> KnownItemsAttackableByOwnerUnits {
+            get { return KnownUnitAttackableItems.Where(attackableItem => attackableItem.IsAttackAllowedBy(Owner)); }
+        }
+
+        /// <summary>
+        /// Returns all known Items that implement IUnitAttackable.
+        /// <remarks>The items returned may or may not allow the client owner to attack them.</remarks>
+        /// <remarks>OPTIMIZE be more selective than _items.</remarks>
+        /// </summary>
+        public IEnumerable<IUnitAttackable> KnownUnitAttackableItems {
+            get {
+                return _items.Select(item => new { attackableItem = item as IUnitAttackable, item })
+                             .Where(x => x.attackableItem != null)
+                             .Select(x => x.attackableItem);
+            }
+        }
 
         /// <summary>
         /// The Moons this player has knowledge of.
@@ -481,7 +599,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="item">The item.</param>
         /// <returns></returns>
         public bool HasKnowledgeOf(IOwnerItem_Ltd item) {
-            Utility.ValidateNotNull(item);
+            D.AssertNotNull(item);
             if (item is IPlanetoid_Ltd) {
                 return _planetoids.Contains(item as IPlanetoid_Ltd);
             }

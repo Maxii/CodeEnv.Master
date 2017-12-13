@@ -67,17 +67,19 @@ public class BaseCtxControl_AI : ACtxControl {
     }
 
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
+        FleetCmdItem userRemoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
+        bool isOrderAuthorizedByUserRemoteFleet = userRemoteFleet.IsAuthorizedForNewOrder(directive);
+        // userRemoteFleet.IsCurrentOrderDirectiveAnyOf() not used in criteria as target in current order may not be this AIBase
         switch (directive) {
-            case FleetDirective.Attack:
-                return !(_baseMenuOperator as IUnitAttackable).IsAttackAllowedBy(_user)
-                    || !(_remoteUserOwnedSelectedItem as AUnitCmdItem).IsAttackCapable;
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
-                return false;
+                return !isOrderAuthorizedByUserRemoteFleet;
+            case FleetDirective.Attack:
+                return !isOrderAuthorizedByUserRemoteFleet || !(_baseMenuOperator as IUnitAttackable).IsAttackAllowedBy(_user);
             case FleetDirective.Patrol:
-                return !(_baseMenuOperator as IPatrollable).IsPatrollingAllowedBy(_user);
+                return !isOrderAuthorizedByUserRemoteFleet || !(_baseMenuOperator as IPatrollable).IsPatrollingAllowedBy(_user);
             case FleetDirective.Guard:
-                return !(_baseMenuOperator as IGuardable).IsGuardingAllowedBy(_user);
+                return !isOrderAuthorizedByUserRemoteFleet || !(_baseMenuOperator as IGuardable).IsGuardingAllowedBy(_user);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }

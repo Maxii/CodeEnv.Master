@@ -100,31 +100,31 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
     /// <exception cref="System.NotImplementedException"></exception>
     protected override bool IsUserMenuOperatorMenuItemDisabledFor(FleetDirective directive) {
         switch (directive) {
-            case FleetDirective.Repair:
-                return _fleetMenuOperator.Data.Health == Constants.OneHundredPercent && _fleetMenuOperator.Data.UnitHealth == Constants.OneHundredPercent;
-            case FleetDirective.Attack:
-                return !_fleetMenuOperator.IsAttackCapable;
-            case FleetDirective.Scuttle:
-                return _fleetMenuOperator.IsCurrentOrderDirectiveAnyOf(FleetDirective.Scuttle);
-            case FleetDirective.ChangeHQ:
-                return _fleetMenuOperator.ElementCount == Constants.One;
-            case FleetDirective.Join:
-                return !_userKnowledge.AreAnyFleetsJoinableBy(_fleetMenuOperator);
+            case FleetDirective.Disband:
             case FleetDirective.Refit:
-                return !_gameMgr.PlayersDesigns.AreUserUnitUpgradeDesignsPresent(_fleetMenuOperator.Data);
-            case FleetDirective.AssumeFormation:
+            // Insufficient hanger capacity handled by fleet when trying to transfer to hanger
+            case FleetDirective.Repair:
+            case FleetDirective.Attack:
+            case FleetDirective.Scuttle:
+            case FleetDirective.ChangeHQ:
+            case FleetDirective.Join:
             case FleetDirective.Patrol:
             case FleetDirective.Guard:
             case FleetDirective.Explore:
-            case FleetDirective.Disband:
-                return false;
-            case FleetDirective.Withdraw:   // TODO should be in battle
-            case FleetDirective.Retreat:    // TODO should be in battle
-                return true;
+            case FleetDirective.Withdraw:
+            // TODO should be in battle
+            case FleetDirective.Retreat:
+                // TODO should be in battle
+                // IsCurrentOrderDirectiveAnyOf() not used in criteria as target in current order may not be the same
+                return !_fleetMenuOperator.IsAuthorizedForNewOrder(directive);
+            case FleetDirective.AssumeFormation:
+                // 12.10.17 IsAuthorizedForNewOrder without provided target is correct as no AssumeFormation targets will be offered
+                return !_fleetMenuOperator.IsAuthorizedForNewOrder(directive) || _fleetMenuOperator.IsCurrentOrderDirectiveAnyOf(directive);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
     }
+
     /// <summary>
     /// Returns <c>true</c> if the menu item associated with this directive supports a submenu for listing target choices,
     /// <c>false</c> otherwise. If false, upon return the top level menu item will be disabled. Default implementation is false with no targets.
@@ -147,29 +147,29 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
                 break;
             case FleetDirective.Patrol:
                 // TODO: More selective of patrol friendly systems. Other patrol targets should be explicitly chosen by user
-                targets = _userKnowledge.Systems.Cast<IPatrollable>().Where(sys => sys.IsPatrollingAllowedBy(_user)).Cast<INavigableDestination>();
+                targets = _userKnowledge.SystemsPatrollableByOwner.Cast<INavigableDestination>();
                 doesDirectiveSupportSubmenus = true;
                 break;
             case FleetDirective.Guard:
-                // TODO: Broaden selection of guard friendly systems. Other guard targets should be explicitly chosen by user
-                targets = _userKnowledge.OwnerSystems.Cast<INavigableDestination>().Union(_userKnowledge.OwnerBases.Cast<INavigableDestination>());
+                // TODO: More selective of guard friendly systems. Other guard targets should be explicitly chosen by user
+                targets = _userKnowledge.SystemsGuardableByOwner.Cast<INavigableDestination>();
                 doesDirectiveSupportSubmenus = true;
                 break;
             case FleetDirective.Explore:
-                // Note: Easy access to explore systems allowing exploration that need it. Other exploration targets should be explicitly chosen by user
-                var systems = _userKnowledge.Systems.Cast<IFleetExplorable>();
-                var systemsAllowingExploration = systems.Where(sys => sys.IsExploringAllowedBy(_user));
-                var systemsNeedingExploration = systemsAllowingExploration.Where(sys => !sys.IsFullyExploredBy(_user)).Cast<INavigableDestination>();
-                targets = systemsNeedingExploration;
+                targets = _userKnowledge.KnownItemsUnexploredByOwnerFleets.Cast<INavigableDestination>();
                 doesDirectiveSupportSubmenus = true;
                 break;
             case FleetDirective.Attack:
-                targets = _userKnowledge.Commands.Cast<IUnitAttackable>().Where(cmd => cmd.IsWarAttackAllowedBy(_user)).Cast<INavigableDestination>();
+                targets = _userKnowledge.KnownItemsAttackableByOwnerUnits.Cast<INavigableDestination>();
                 doesDirectiveSupportSubmenus = true;
                 break;
             case FleetDirective.Repair:
+                targets = _userKnowledge.OwnerBases.Cast<INavigableDestination>();
+                doesDirectiveSupportSubmenus = true;
+                break;
             case FleetDirective.Refit:
             case FleetDirective.Disband:
+                // Insufficient hanger capacity handled by fleet when trying to transfer to hanger
                 targets = _userKnowledge.OwnerBases.Cast<INavigableDestination>();
                 doesDirectiveSupportSubmenus = true;
                 break;
@@ -190,13 +190,15 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
     }
 
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
+        FleetCmdItem userRemoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
+        bool isOrderAuthorizedByUserRemoteFleet = userRemoteFleet.IsAuthorizedForNewOrder(directive);
+        // userRemoteFleet.IsCurrentOrderDirectiveAnyOf() not used in criteria as target in current order may not be this fleet
         switch (directive) {
-            case FleetDirective.Join:
-                int remoteFleetElementCount = (_remoteUserOwnedSelectedItem as FleetCmdItem).ElementCount;
-                return !_fleetMenuOperator.IsJoinableBy(remoteFleetElementCount);
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
-                return false;
+                return !isOrderAuthorizedByUserRemoteFleet;
+            case FleetDirective.Join:
+                return !isOrderAuthorizedByUserRemoteFleet || !_fleetMenuOperator.IsJoinableBy(userRemoteFleet.ElementCount);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }

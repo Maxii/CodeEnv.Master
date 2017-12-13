@@ -231,19 +231,16 @@ public class ConstructionGuiModule : AMonoBase {
     }
 
     private void HandleConstructibleDesignIconCntlLeftClicked(DesignIconGuiElement iconClicked) {
-        ////_unitConstructionMgr.AddToQueue(iconClicked.Design as AUnitElementDesign);
         SelectedUnit.InitiateConstructionOf(iconClicked.Design as AUnitElementDesign, OrderSource.User);
         RefreshConstructibleDesignView();
     }
 
     private void HandleConstructibleDesignIconLeftClicked(DesignIconGuiElement iconClicked) {
-        ////_unitConstructionMgr.AddToQueue(iconClicked.Design as AUnitElementDesign);
         SelectedUnit.InitiateConstructionOf(iconClicked.Design as AUnitElementDesign, OrderSource.User);
         RefreshConstructibleDesignView();
     }
 
     private void HandleConstructibleDesignIconShiftLeftClicked(DesignIconGuiElement iconClicked) {
-        ////_unitConstructionMgr.AddToQueue(iconClicked.Design as AUnitElementDesign);
         SelectedUnit.InitiateConstructionOf(iconClicked.Design as AUnitElementDesign, OrderSource.User);
         RefreshConstructibleDesignView();
     }

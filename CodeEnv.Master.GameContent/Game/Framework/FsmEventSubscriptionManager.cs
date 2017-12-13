@@ -94,7 +94,7 @@ namespace CodeEnv.Master.GameContent {
             bool isSubscribed = _eventSubscriptionStatusLookup[subscriptionMode];
             switch (subscriptionMode) {
                 case FsmEventSubscriptionMode.FsmTgtDeath:
-                    Utility.ValidateNotNull(fsmTgt);
+                    D.AssertNotNull(fsmTgt);
                     var mortalFsmTgt = fsmTgt as IMortalItem_Ltd;
                     if (mortalFsmTgt != null) {
                         if (!toSubscribe) {
@@ -111,7 +111,7 @@ namespace CodeEnv.Master.GameContent {
                     }
                     break;
                 case FsmEventSubscriptionMode.FsmTgtInfoAccessChg:
-                    Utility.ValidateNotNull(fsmTgt);
+                    D.AssertNotNull(fsmTgt);
                     itemFsmTgt = fsmTgt as IOwnerItem_Ltd;
                     if (itemFsmTgt != null) {    // fsmTgt can be a StationaryLocation
                         if (!toSubscribe) {
@@ -128,7 +128,7 @@ namespace CodeEnv.Master.GameContent {
                     }
                     break;
                 case FsmEventSubscriptionMode.FsmTgtOwnerChg:
-                    Utility.ValidateNotNull(fsmTgt);
+                    D.AssertNotNull(fsmTgt);
                     itemFsmTgt = fsmTgt as IOwnerItem_Ltd;
                     if (itemFsmTgt != null) {    // fsmTgt can be a StationaryLocation
                         if (!toSubscribe) {

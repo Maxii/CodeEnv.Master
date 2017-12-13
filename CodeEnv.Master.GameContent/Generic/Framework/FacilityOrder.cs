@@ -15,6 +15,7 @@
 ////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
+
     using System;
     using System.Linq;
     using CodeEnv.Master.Common;
@@ -26,14 +27,21 @@ namespace CodeEnv.Master.GameContent {
 
         private const string DebugNameFormat = "[{0}: Directive = {1}, Source = {2}, Target = {3}, FollowonOrder = {4}]";
 
-        private static readonly FacilityDirective[] DirectivesWithNullTarget = new FacilityDirective[] {
-                                                                                                    FacilityDirective.Refit,
-                                                                                                    FacilityDirective.Repair,
-                                                                                                    FacilityDirective.Disband,
-                                                                                                    FacilityDirective.Scuttle,
-                                                                                                    FacilityDirective.StopAttack,
-                                                                                                };
+        private static readonly FacilityDirective[] DirectivesWithNullTarget = new FacilityDirective[]  {
+                                                                                                            FacilityDirective.Cancel,
+                                                                                                            FacilityDirective.Construct,
+                                                                                                            ////FacilityDirective.Disband,
+                                                                                                            ////FacilityDirective.Refit,
+                                                                                                            ////FacilityDirective.Repair,
+                                                                                                            FacilityDirective.Scuttle,
+                                                                                                        };
 
+        private static readonly FacilityDirective[] DirectivesWithNonNullTarget = new FacilityDirective[]   {
+                                                                                                                FacilityDirective.Attack,
+                                                                                                                FacilityDirective.Disband,
+                                                                                                                FacilityDirective.Refit,
+                                                                                                                FacilityDirective.Repair
+                                                                                                            };
         public virtual string DebugName {
             get {
                 string targetText = Target != null ? Target.DebugName : "none";
@@ -108,6 +116,9 @@ namespace CodeEnv.Master.GameContent {
         private void __Validate() {
             if (DirectivesWithNullTarget.Contains(Directive)) {
                 D.AssertNull(Target);
+            }
+            if (DirectivesWithNonNullTarget.Contains(Directive)) {
+                D.AssertNotNull(Target);
             }
             if (Source == OrderSource.Captain) {
                 D.Assert(!ToCallback);

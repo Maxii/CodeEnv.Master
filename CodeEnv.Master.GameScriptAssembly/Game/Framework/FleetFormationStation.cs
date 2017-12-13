@@ -32,7 +32,8 @@ using UnityEngine.Profiling;
 /// Without it, a reused instance appears to be equal to another reused instance if from the same instance. Probably doesn't matter
 /// as only 1 reused instance from an instance can exist at the same time, but...</remarks>
 /// </summary>
-public class FleetFormationStation : AFormationStation, IFleetFormationStation, IShipNavigableDestination, IFacilityRepairCapable, IEquatable<FleetFormationStation> {
+public class FleetFormationStation : AFormationStation, IFleetFormationStation, IShipNavigableDestination, IFacilityRepairCapable,
+    IEquatable<FleetFormationStation> {
 
     private const string NameFormat = "{0}.{1}";
 
@@ -317,7 +318,7 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
 
     public float GetAvailableRepairCapacityFor(IShip_Ltd ship, Player elementOwner) {
         D.AssertEqual(Owner, elementOwner);
-        float basicValue = TempGameValues.RepairCapacityBasic_FormationStation;
+        float basicValue = TempGameValues.RepairCapacityBaseline_FormationStation;
         return basicValue;
     }
 
@@ -327,7 +328,7 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
 
     public float GetAvailableRepairCapacityFor(IFacility_Ltd facility, Player elementOwner) {
         D.AssertEqual(Owner, elementOwner);
-        float basicValue = TempGameValues.RepairCapacityBasic_FormationStation;
+        float basicValue = TempGameValues.RepairCapacityBaseline_FormationStation;
         return basicValue;
     }
 

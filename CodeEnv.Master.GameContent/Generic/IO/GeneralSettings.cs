@@ -85,32 +85,60 @@ namespace CodeEnv.Master.GameContent {
             private set { _hoursPerSecond = value; }
         }
 
-        private float _healthThreshold_Damaged;
-        public float HealthThreshold_Damaged {
+        private float _elementHealthThreshold_Damaged;
+        public float ElementHealthThreshold_Damaged {
             get {
                 CheckValuesInitialized();
-                return _healthThreshold_Damaged;
+                return _elementHealthThreshold_Damaged;
             }
-            private set { _healthThreshold_Damaged = value; }
+            private set { _elementHealthThreshold_Damaged = value; }
         }
 
-        private float _healthThreshold_BadlyDamaged;
-        public float HealthThreshold_BadlyDamaged {
+        private float _elementHealthThreshold_BadlyDamaged;
+        public float ElementHealthThreshold_BadlyDamaged {
             get {
                 CheckValuesInitialized();
-                return _healthThreshold_BadlyDamaged;
+                return _elementHealthThreshold_BadlyDamaged;
             }
-            private set { _healthThreshold_BadlyDamaged = value; }
+            private set { _elementHealthThreshold_BadlyDamaged = value; }
         }
 
-        private float _healthThreshold_CriticallyDamaged;
-        public float HealthThreshold_CriticallyDamaged {
+        private float _elementHealthThreshold_CriticallyDamaged;
+        public float ElementHealthThreshold_CriticallyDamaged {
             get {
                 CheckValuesInitialized();
-                return _healthThreshold_CriticallyDamaged;
+                return _elementHealthThreshold_CriticallyDamaged;
             }
-            private set { _healthThreshold_CriticallyDamaged = value; }
+            private set { _elementHealthThreshold_CriticallyDamaged = value; }
         }
+
+        private float _unitHealthThreshold_Damaged;
+        public float UnitHealthThreshold_Damaged {
+            get {
+                CheckValuesInitialized();
+                return _unitHealthThreshold_Damaged;
+            }
+            private set { _unitHealthThreshold_Damaged = value; }
+        }
+
+        private float _unitHealthThreshold_BadlyDamaged;
+        public float UnitHealthThreshold_BadlyDamaged {
+            get {
+                CheckValuesInitialized();
+                return _unitHealthThreshold_BadlyDamaged;
+            }
+            private set { _unitHealthThreshold_BadlyDamaged = value; }
+        }
+
+        private float _unitHealthThreshold_CriticallyDamaged;
+        public float UnitHealthThreshold_CriticallyDamaged {
+            get {
+                CheckValuesInitialized();
+                return _unitHealthThreshold_CriticallyDamaged;
+            }
+            private set { _unitHealthThreshold_CriticallyDamaged = value; }
+        }
+
 
         private float _contentApprovalThreshold;
         public float ContentApprovalThreshold {

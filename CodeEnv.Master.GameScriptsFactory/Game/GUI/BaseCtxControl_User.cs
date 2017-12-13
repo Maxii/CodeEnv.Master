@@ -96,17 +96,16 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
 
     protected override bool IsUserMenuOperatorMenuItemDisabledFor(BaseDirective directive) {
         switch (directive) {
-            case BaseDirective.Attack:
-                return !_baseMenuOperator.IsAttackCapable;
             case BaseDirective.Disband:
-            case BaseDirective.Scuttle:
-                return _baseMenuOperator.IsCurrentOrderDirectiveAnyOf(directive);
-            case BaseDirective.Repair:
-                return _baseMenuOperator.Data.Health == Constants.OneHundredPercent && _baseMenuOperator.Data.UnitHealth == Constants.OneHundredPercent;
-            case BaseDirective.ChangeHQ:
-                return _baseMenuOperator.ElementCount == Constants.One;
             case BaseDirective.Refit:
-                return !_gameMgr.PlayersDesigns.AreUserUnitUpgradeDesignsPresent(_baseMenuOperator.Data);
+            case BaseDirective.Repair:
+            // IsCurrentOrderDirectiveAnyOf not needed as IsAuthorizedForNewOrder will correctly respond once order processed
+            //// IsCurrentOrderDirectiveAnyOf() used in criteria as target in current order must be this Base
+            ////return !_baseMenuOperator.IsAuthorizedForNewOrder(directive) || _baseMenuOperator.IsCurrentOrderDirectiveAnyOf(directive);
+            case BaseDirective.Attack:
+            case BaseDirective.Scuttle:
+            case BaseDirective.ChangeHQ:
+                return !_baseMenuOperator.IsAuthorizedForNewOrder(directive);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
@@ -126,18 +125,17 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
         bool doesDirectiveSupportSubmenus = false;
         switch (directive) {
             case BaseDirective.Attack:
-                targets = _userKnowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsWarAttackAllowedBy(_user)).Cast<INavigableDestination>();
-                // TODO InRange?
+                targets = _userKnowledge.KnownFleetsAttackableByOwnerUnits.Cast<INavigableDestination>();   // TODO add InRange
                 doesDirectiveSupportSubmenus = true;
                 break;
             case BaseDirective.ChangeHQ:
                 targets = _baseMenuOperator.NonHQElements.Cast<INavigableDestination>();
                 doesDirectiveSupportSubmenus = true;
                 break;
+            case BaseDirective.Scuttle:
             case BaseDirective.Repair:
             case BaseDirective.Refit:
             case BaseDirective.Disband:
-            case BaseDirective.Scuttle:
                 targets = Enumerable.Empty<INavigableDestination>();
                 break;
             default:
@@ -148,26 +146,33 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
 
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         FleetCmdItem userRemoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
+        bool isOrderAuthorizedByUserRemoteFleet = userRemoteFleet.IsAuthorizedForNewOrder(directive);
+        // userRemoteFleet.IsCurrentOrderDirectiveAnyOf() not used in criteria as target in current order may not be this Base
         switch (directive) {
-            case FleetDirective.Repair:
-                return userRemoteFleet.Data.UnitHealth == Constants.OneHundredPercent && userRemoteFleet.Data.Health == Constants.OneHundredPercent;
             case FleetDirective.Refit:
             case FleetDirective.Disband:
-                return !_baseMenuOperator.Hanger.IsJoinableBy(userRemoteFleet.ElementCount);
+                // only allows order if this specific Base hanger has room
+                return !isOrderAuthorizedByUserRemoteFleet || !_baseMenuOperator.Hanger.IsJoinableBy(userRemoteFleet.ElementCount);
+            case FleetDirective.Repair:
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
             case FleetDirective.Patrol:
             case FleetDirective.Guard:
-                return false;
+                // reissuing an already issued executing order shouldn't cause any problems
+                return !isOrderAuthorizedByUserRemoteFleet;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
     }
 
     protected override bool IsUserRemoteShipMenuItemDisabledFor(ShipDirective directive) {
+        ShipItem userRemoteShip = _remoteUserOwnedSelectedItem as ShipItem;
+        // userRemoteShip.IsCurrentOrderDirectiveAnyOf() not used in criteria as target in current order may not be this Base
         switch (directive) {
             case ShipDirective.Disband:
-                return false;
+                // 12.5.17 Currently no CtxMenu orders allowed for ships in hangers
+                return userRemoteShip.IsLocatedInHanger || !userRemoteShip.IsAuthorizedForNewOrder(directive)
+                    || !_baseMenuOperator.Hanger.IsJoinable;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }

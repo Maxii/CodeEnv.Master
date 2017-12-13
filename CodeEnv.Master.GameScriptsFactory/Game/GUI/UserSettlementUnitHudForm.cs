@@ -30,10 +30,6 @@ public class UserSettlementUnitHudForm : ABaseUnitHudForm {
 
     public new SettlementCmdItem SelectedUnit { get { return base.SelectedUnit as SettlementCmdItem; } }
 
-    protected override bool IsUnitUpgradeAvailable() {
-        return _gameMgr.PlayersDesigns.AreUserUnitUpgradeDesignsPresent(SelectedUnit.Data);
-    }
-
     protected override void AssessInteractibleHud() {
         if (_pickedFacilityIcons.Count == Constants.One) {
             InteractibleHudWindow.Instance.Show(FormID.UserFacility, _pickedFacilityIcons.First().Element.Data);

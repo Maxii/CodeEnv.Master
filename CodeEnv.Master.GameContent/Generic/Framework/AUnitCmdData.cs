@@ -194,6 +194,35 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<OutputsYield>(ref _unitOutputs, value, "UnitOutputs"); }
         }
 
+        public float CmdModuleMaxHitPoints {
+            get { return base.MaxHitPoints; }
+            set { base.MaxHitPoints = value; }
+        }
+
+        [Obsolete("Use CmdModuleMaxHitPoints")]
+        public new float MaxHitPoints {
+            get { return base.MaxHitPoints; }
+            set { base.MaxHitPoints = value; }
+        }
+
+        public float CmdModuleCurrentHitPoints {
+            get { return base.CurrentHitPoints; }
+            set { base.CurrentHitPoints = value; }
+        }
+
+        [Obsolete("Use CmdModuleCurrentHitPoints")]
+        public new float CurrentHitPoints {
+            get { return base.CurrentHitPoints; }
+            set { base.CurrentHitPoints = value; }
+        }
+
+        public float CmdModuleHealth { get { return base.Health; } }
+
+        [Obsolete("Use CmdModuleHealth")]
+        public new float Health {
+            get { return base.Health; }
+        }
+
         public IEnumerable<AUnitElementData> ElementsData { get { return _elementsData; } }
 
         public IEnumerable<CmdSensor> Sensors { get; private set; }
@@ -449,8 +478,8 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         private void HandleUnitHealthChanged() {
             //D.Log(ShowDebugLog, "{0}: UnitHealth {1}, UnitCurrentHitPoints {2}, UnitMaxHitPoints {3}.", DebugName, _unitHealth, UnitCurrentHitPoints, UnitMaxHitPoints);
-            if (UnitHealth <= Constants.ZeroF) {
-                CurrentHitPoints -= MaxHitPoints;
+            if (UnitHealth <= Constants.ZeroPercent) {
+                CmdModuleCurrentHitPoints -= CmdModuleMaxHitPoints;
             }
         }
 
@@ -479,7 +508,7 @@ namespace CodeEnv.Master.GameContent {
         private void RefreshCurrentCmdEffectiveness() {
             // concept: staff and equipment are hurt as health of the Cmd declines
             // as Health of a Cmd cannot decline below 50% due to CurrentHitPoints override, neither can CmdEffectiveness, until the Unit is destroyed
-            CurrentCmdEffectiveness = (MaxCmdStaffEffectiveness * Health) + Hero.CmdEffectiveness;
+            CurrentCmdEffectiveness = (MaxCmdStaffEffectiveness * CmdModuleHealth) + Hero.CmdEffectiveness;
         }
 
         public virtual void AddElement(AUnitElementData elementData) {
@@ -580,14 +609,14 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Removes the damage from all of the CmdModule's equipment.
         /// </summary>
-        public void RemoveDamageFromAllEquipment() {
+        public void RemoveDamageFromAllCmdModuleEquipment() {
             PassiveCountermeasures.Where(cm => cm.IsDamageable).ForAll(cm => cm.IsDamaged = false);
             Sensors.Where(s => s.IsDamageable).ForAll(s => s.IsDamaged = false);
             // 11.21.17 FtlDampener is currently not damageable
         }
 
-        protected sealed override void DeactivateAllEquipment() {
-            base.DeactivateAllEquipment();
+        protected sealed override void DeactivateAllCmdModuleEquipment() {
+            base.DeactivateAllCmdModuleEquipment();
             Sensors.ForAll(sens => sens.IsActivated = false);
             FtlDampener.IsActivated = false;
         }

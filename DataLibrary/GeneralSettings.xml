@@ -43,16 +43,31 @@
 
   <Float>
     <Setting>
-      <PropertyName>HealthThreshold_Damaged</PropertyName>
+      <PropertyName>ElementHealthThreshold_Damaged</PropertyName>
       <PropertyValue>0.80</PropertyValue>
     </Setting>
     <Setting>
-      <PropertyName>HealthThreshold_BadlyDamaged</PropertyName>
+      <PropertyName>ElementHealthThreshold_BadlyDamaged</PropertyName>
       <PropertyValue>0.50</PropertyValue>
     </Setting>
     <Setting>
-      <PropertyName>HealthThreshold_CriticallyDamaged</PropertyName>
+      <PropertyName>ElementHealthThreshold_CriticallyDamaged</PropertyName>
       <PropertyValue>0.20</PropertyValue>
+    </Setting>
+  </Float>
+
+  <Float>
+    <Setting>
+      <PropertyName>UnitHealthThreshold_Damaged</PropertyName>
+      <PropertyValue>0.90</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>UnitHealthThreshold_BadlyDamaged</PropertyName>
+      <PropertyValue>0.80</PropertyValue>
+    </Setting>
+    <Setting>
+      <PropertyName>UnitHealthThreshold_CriticallyDamaged</PropertyName>
+      <PropertyValue>0.60</PropertyValue>
     </Setting>
   </Float>
 

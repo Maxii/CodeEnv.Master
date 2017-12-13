@@ -429,7 +429,7 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable,
 
     public float GetAvailableRepairCapacityFor(IShip_Ltd ship, Player elementOwner) {
         if (IsRepairingAllowedBy(elementOwner)) {
-            float basicValue = TempGameValues.RepairCapacityBasic_Planet;
+            float basicValue = TempGameValues.RepairCapacityBaseline_Planet;
             float relationsFactor = Owner.GetCurrentRelations(elementOwner).RepairCapacityFactor(); // 0.5 - 2
             float orbitFactor = IsInCloseOrbit(ship) ? TempGameValues.RepairCapacityFactor_CloseOrbit
                 : IsInHighOrbit(ship) ? TempGameValues.RepairCapacityFactor_HighOrbit : 1F; // 1 - 2

@@ -33,6 +33,12 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     public event EventHandler isHQChanged;
 
+    /// <summary>
+    /// Fired when the receptiveness of this element to receiving new orders changes.
+    /// </summary>
+    [Obsolete]
+    public event EventHandler availabilityChanged;
+
     public event EventHandler isAvailableChanged;
 
     public event EventHandler<SubordinateOwnerChangingEventArgs> subordinateOwnerChanging;
@@ -43,18 +49,15 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     public event EventHandler<OrderOutcomeEventArgs> subordinateOrderOutcome;
 
+    private NewOrderAvailability _availability = NewOrderAvailability.Available;
     /// <summary>
-    /// Indicates whether this element is available for a new assignment.
-    /// <remarks>Typically, an element that is available is Idling.</remarks>
+    /// Indicates how 'available' this element is to receiving new orders.
     /// </summary>
-    private bool _isAvailable;
-    public bool IsAvailable {
-        get { return _isAvailable; }
-        protected set {
-            if (_isAvailable != value) {
-                _isAvailable = value;
-                IsAvailablePropChangedHandler();
-            }
+    public NewOrderAvailability Availability {
+        get { return _availability; }
+        private set {
+            D.AssertNotEqual(_availability, value);    // filtering Availability_set values handled by ChangeAvailabilityTo()
+            _availability = value;
         }
     }
 
@@ -64,6 +67,10 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     public abstract bool IsAttackCapable { get; }
 
     private ReworkingMode _reworkUnderway;
+    /// <summary>
+    /// Indicates any rework currently underway.
+    /// <remarks>12.11.17 Currently can't call it ConstructionUnderway as Repair is Rework but not handled by using Construction.</remarks>
+    /// </summary>
     public ReworkingMode ReworkUnderway {
         get { return _reworkUnderway; }
         protected set { SetProperty<ReworkingMode>(ref _reworkUnderway, value, "ReworkUnderway", ReworkUnderwayPropChangedHandler); }
@@ -118,8 +125,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     protected Rigidbody Rigidbody { get; private set; }
     protected FsmEventSubscriptionManager FsmEventSubscriptionMgr { get; private set; }
     protected sealed override bool IsPaused { get { return _gameMgr.IsPaused; } }
-
-    protected Job _repairJob;
 
     private DetectionHandler _detectionHandler;
     private BoxCollider _primaryCollider;
@@ -239,6 +244,16 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
             //D.Log(ShowDebugLog, "{0} is not a child of {1}. Fixing.", DebugName, unitContainer.name);
             transform.parent = unitContainer;
         }
+    }
+
+    [Obsolete("Not currently used")]
+    public bool IsReworkUnderwayAnyOf(ReworkingMode reworkModeA, ReworkingMode reworkModeB) {
+        return ReworkUnderway == reworkModeA || ReworkUnderway == reworkModeB;
+    }
+
+    //[Obsolete("Not currently used")]
+    public bool IsReworkUnderwayAnyOf(ReworkingMode reworkModeA, ReworkingMode reworkModeB, ReworkingMode reworkModeC) {
+        return ReworkUnderway == reworkModeA || ReworkUnderway == reworkModeB || ReworkUnderway == reworkModeC;
     }
 
     /// <summary>
@@ -639,18 +654,18 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         ChangeOwnerAfterPause();
     }
 
-    private void IsAvailablePropChangedHandler() {
-        if (IsAvailable) {
-            __ValidateCurrentOrderAndStateWhenAvailable();
-        }
-        OnIsAvailable();
-    }
-
     private void IsHQPropChangedHandler() {
         HandleIsHQChanged();
     }
 
-    private void OnIsAvailable() {
+    [Obsolete]
+    private void OnAvailabilityChanged() {
+        if (availabilityChanged != null) {
+            availabilityChanged(this, EventArgs.Empty);
+        }
+    }
+
+    private void OnIsAvailableChanged() {
         if (isAvailableChanged != null) {
             isAvailableChanged(this, EventArgs.Empty);
         }
@@ -676,6 +691,32 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     }
 
     #endregion
+
+    /// <summary>
+    /// Changes Availability to the provided value and selectively raises the isAvailableChanged event.
+    /// <remarks>12.9.17 Handled this way to restrict firing availability changed events to only those times when Availability
+    /// changes to/from Available. Otherwise, other Availability changes could atomically generate new orders which
+    /// would fail the FSM condition that states can't be changed from void EnterState methods. Currently, changing 
+    /// to Available is the only known generator of new orders and the IEnumerable Idling_EnterState method generates that change.
+    /// All other states set Availability in their void PreconfigureState method so it occurs atomically after a new order is
+    /// received following Idling changing to Available. This atomic change in Availability is necessary when a new order
+    /// is received as that order can result in searches for elements or cmds that are 'Available'. If the value does not 
+    /// atomically change, those searches will find candidates it thinks are available when in fact they are in the process
+    /// of changing to another Availability value, creating errors. Accordingly, the other states can't use their IEnumerable
+    /// EnterState to make the change as it wouldn't be atomic.</remarks>
+    /// </summary>
+    /// <param name="incomingAvailability">The availability value to change too.</param>
+    protected void ChangeAvailabilityTo(NewOrderAvailability incomingAvailability) {
+        if (Availability == incomingAvailability) {
+            return;
+        }
+        bool toRaiseIsAvailableChgdEvent = Availability == NewOrderAvailability.Available || incomingAvailability == NewOrderAvailability.Available;
+
+        Availability = incomingAvailability;
+        if (toRaiseIsAvailableChgdEvent) {
+            OnIsAvailableChanged();
+        }
+    }
 
     private void HandleReworkUnderwayPropChanged() {
         if (DisplayMgr != null) {
@@ -897,6 +938,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     protected virtual void ValidateCommonCallableStateValues(string calledStateName) {
         D.AssertNotEqual(Constants.Zero, _activeFsmReturnHandlers.Count);
         _activeFsmReturnHandlers.Peek().__Validate(calledStateName);
+        D.Assert(!IsDead);
     }
 
     /// <summary>
@@ -904,8 +946,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// </summary>
     protected virtual void ValidateCommonNotCallableStateValues() {
         D.AssertEqual(Constants.Zero, _activeFsmReturnHandlers.Count);
-
         D.Assert(!_hasOrderOutcomeCallbackAttemptOccurred);
+        D.Assert(!IsDead);
     }
 
     protected void ReturnFromCalledStates() {
@@ -915,14 +957,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         D.Assert(!IsCurrentStateCalled);
     }
 
-    [Obsolete("Use WaitYieldInstruction in Repair_EnterState instead")]
-    protected void KillRepairJob() {
-        if (_repairJob != null) {
-            _repairJob.Kill();
-            _repairJob = null;
-        }
-    }
-
     protected sealed override void PreconfigureCurrentState() {
         base.PreconfigureCurrentState();
         UponPreconfigureState();
@@ -930,7 +964,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     protected void PrepareForRefit() {
         Data.DamageEquipment(Constants.OneHundredPercent);
-
     }
 
     protected void Dead_ExitState() {
@@ -998,11 +1031,41 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     /// <summary>
     /// Assesses this element's need for repair, returning <c>true</c> if immediate repairs are needed, <c>false</c> otherwise.
-    /// <remarks>Abstract to simply remind of need for functionality.</remarks>
     /// </summary>
-    /// <param name="healthThreshold">The health threshold.</param>
+    /// <param name="elementHealthThreshold">The health threshold.</param>
     /// <returns></returns>
-    protected abstract bool AssessNeedForRepair(float healthThreshold);
+    protected virtual bool AssessNeedForRepair(float elementHealthThreshold) {
+        __ValidateCurrentStateWhenAssessingNeedForRepair();
+        if (_debugSettings.DisableRepair) { // 12.9.17 _debugSettings.AllPlayersInvulnerable keeps damage from being taken
+            return false;
+        }
+        if (_debugSettings.RepairAnyDamage) {
+            elementHealthThreshold = Constants.OneHundredPercent;
+        }
+        if (Data.Health < elementHealthThreshold) {
+            D.Log(ShowDebugLog, "{0} has determined it needs Repair.", DebugName);
+            return true;
+        }
+        return false;
+    }
+
+    protected void AssessAvailabilityStatus_Repair() {
+        __ValidateCurrentStateWhenAssessingAvailabilityStatus_Repair();
+        NewOrderAvailability orderAvailabilityStatus;
+        var health = Data.Health;
+        D.AssertNotEqual(Constants.OneHundredPercent, health);
+        if (Utility.IsInRange(health, GeneralSettings.Instance.ElementHealthThreshold_Damaged, Constants.OneHundredPercent)) {
+            orderAvailabilityStatus = NewOrderAvailability.EasilyAvailable;
+        }
+        else if (Utility.IsInRange(health, GeneralSettings.Instance.ElementHealthThreshold_BadlyDamaged, GeneralSettings.Instance.ElementHealthThreshold_Damaged)) {
+            orderAvailabilityStatus = NewOrderAvailability.FairlyAvailable;
+        }
+        else {
+            orderAvailabilityStatus = NewOrderAvailability.BarelyAvailable;
+        }
+        ChangeAvailabilityTo(orderAvailabilityStatus);
+    }
+
 
     #endregion
 
@@ -1211,12 +1274,16 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #region Debug
 
+    [System.Diagnostics.Conditional("DEBUG")]
+    protected abstract void __ValidateCurrentStateWhenAssessingNeedForRepair();
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    protected abstract void __ValidateCurrentStateWhenAssessingAvailabilityStatus_Repair();
+
+    [System.Diagnostics.Conditional("DEBUG")]
     protected abstract void __LogOrderClearedByCmd();
 
     public bool __HasCommand { get { return Command != null; } }
-
-    [System.Diagnostics.Conditional("DEBUG")]
-    protected abstract void __ValidateCurrentOrderAndStateWhenAvailable();
 
     public override bool __IsPlayerEntitledToComprehensiveRelationship(Player player) {
         if (_debugCntls.IsAllIntelCoverageComprehensive) {
@@ -1485,6 +1552,11 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #region IAssaultable Members
 
+    /// <summary>
+    /// Returns <c>true</c> if an attempt to takeover this item is allowed by <c>player</c>.
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <returns></returns>
     public virtual bool IsAssaultAllowedBy(Player player) {
         if (!IsAttackAllowedBy(player)) {
             return false;

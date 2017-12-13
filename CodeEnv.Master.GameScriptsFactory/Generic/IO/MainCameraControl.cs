@@ -224,8 +224,12 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     public Settings settings = new Settings {
         smallMovementThreshold = 2F,
-        focusingDistanceDampener = 2.0F, focusingRotationDampener = 1.0F, focusedDistanceDampener = 4.0F,
-        focusedRotationDampener = 2.0F, freeformDistanceDampener = 3.0F, freeformRotationDampener = 2.0F
+        focusingDistanceDampener = 2.0F,
+        focusingRotationDampener = 1.0F,
+        focusedDistanceDampener = 4.0F,
+        focusedRotationDampener = 2.0F,
+        freeformDistanceDampener = 3.0F,
+        freeformRotationDampener = 2.0F
     };
 
     /// <summary>
@@ -688,7 +692,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     void Focusing_EnterState() {
         LogEvent();
-        Utility.ValidateNotNull(_targetPoint);
+        D.AssertNotEqual(default(Vector3), _targetPoint);
 
         _distanceFromTarget = Vector3.Distance(_targetPoint, Position);
         _requestedDistanceFromTarget = _optimalDistanceFromTarget;
@@ -750,7 +754,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     void Focused_EnterState() {
         LogEvent();
-        Utility.ValidateNotNull(_targetPoint);
+        D.AssertNotEqual(default(Vector3), _targetPoint);
         // entered via OnFocusSelected AND IsResetOnFocusEnabled, OR after Focusing has completed
         _distanceFromTarget = Vector3.Distance(_targetPoint, Position);
         _requestedDistanceFromTarget = _optimalDistanceFromTarget;
@@ -953,7 +957,7 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     void Freeform_EnterState() {
         LogEvent();
-        Utility.ValidateNotNull(_targetPoint);
+        D.AssertNotEqual(default(Vector3), _targetPoint);
         _distanceFromTarget = Vector3.Distance(_targetPoint, Position);
         _requestedDistanceFromTarget = _distanceFromTarget;
         // no facing change

@@ -52,14 +52,6 @@ public class ShipCtxControl_AI : ACtxControl {
         __PopulateChgOwnerMenu();
     }
 
-    private void __PopulateChgOwnerMenu() {
-        _ctxObject.menuItems = new CtxMenu.Item[] { new CtxMenu.Item() {
-            text = "ChgOwner",
-            id = Constants.MinusOne,
-            isDisabled = !_shipMenuOperator.IsAssaultAllowedBy(_user)
-        }};
-    }
-
     protected override void HandleMenuPick_MenuOperatorIsSelected(int itemID) {
         base.HandleMenuPick_MenuOperatorIsSelected(itemID);
         D.AssertEqual(Constants.MinusOne, itemID);
@@ -69,6 +61,18 @@ public class ShipCtxControl_AI : ACtxControl {
     protected override void HandleMenuPick_OptimalFocusDistance() {
         _shipMenuOperator.OptimalCameraViewingDistance = _shipMenuOperator.Position.DistanceToCamera();
     }
+
+    #region Debug
+
+    private void __PopulateChgOwnerMenu() {
+        _ctxObject.menuItems = new CtxMenu.Item[] { new CtxMenu.Item() {
+            text = "ChgOwner",
+            id = Constants.MinusOne,
+            isDisabled = !_shipMenuOperator.IsAssaultAllowedBy(_user)
+        }};
+    }
+
+    #endregion
 
 }
 

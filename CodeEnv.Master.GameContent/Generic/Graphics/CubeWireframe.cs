@@ -47,7 +47,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="color">The color.</param>
         public CubeWireframe(string name, Transform target, Vector3 cubeSize, float width = 1F, GameColor color = GameColor.White)
             : base(name, new List<Vector3>(24), target, GameReferences.DynamicObjectsFolder.Folder, LineType.Discrete, width, color) {
-            Utility.ValidateNotNull(target);
+            D.AssertNotNull(target);
             _size = cubeSize;
         }
 

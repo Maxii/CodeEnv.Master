@@ -81,7 +81,6 @@ public class AutoStarbaseCreator : AAutoUnitCreator {
 
     protected override void BeginElementsOperations() {
         LogEvent();
-       //// _elements.ForAll(e => e.CommenceOperations(isInitialConstructionNeeded: false));
         _elements.ForAll(e => e.CommenceOperations());
     }
 

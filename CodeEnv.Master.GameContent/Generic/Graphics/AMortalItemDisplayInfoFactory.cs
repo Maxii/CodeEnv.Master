@@ -58,9 +58,9 @@ namespace CodeEnv.Master.GameContent {
             GameColor healthColor = GameColor.White;
             string colorizedHealthText = Constants.QuestionMark;
             if (health.HasValue) {
-                healthColor = (health.Value > GeneralSettings.Instance.HealthThreshold_Damaged) ? GameColor.Green :
-                            (health.Value > GeneralSettings.Instance.HealthThreshold_BadlyDamaged) ? GameColor.Yellow :
-                            (health.Value > GeneralSettings.Instance.HealthThreshold_CriticallyDamaged) ? GameColor.Orange : GameColor.Red; ;
+                healthColor = (health.Value > GeneralSettings.Instance.ElementHealthThreshold_Damaged) ? GameColor.Green :
+                            (health.Value > GeneralSettings.Instance.ElementHealthThreshold_BadlyDamaged) ? GameColor.Yellow :
+                            (health.Value > GeneralSettings.Instance.ElementHealthThreshold_CriticallyDamaged) ? GameColor.Orange : GameColor.Red; ;
                 colorizedHealthText = Constants.FormatPercent_0Dp.Inject(health.Value).SurroundWith(healthColor);
             }
 

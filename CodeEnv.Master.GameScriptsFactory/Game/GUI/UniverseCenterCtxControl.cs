@@ -30,7 +30,8 @@ using UnityEngine;
 /// </summary>
 public class UniverseCenterCtxControl : ACtxControl {
 
-    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[]   {   FleetDirective.Move,
+    private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[]   {
+                                                                                            FleetDirective.Move,
                                                                                             FleetDirective.FullSpeedMove,
                                                                                             FleetDirective.Patrol,
                                                                                             FleetDirective.Guard,
@@ -67,18 +68,19 @@ public class UniverseCenterCtxControl : ACtxControl {
     }
 
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
+        FleetCmdItem userRemoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
+        bool isOrderAuthorizedByUserRemoteFleet = userRemoteFleet.IsAuthorizedForNewOrder(directive);
+        // userRemoteFleet.IsCurrentOrderDirectiveAnyOf() not used in criteria as target in current order may not be UCenter
         switch (directive) {
-            // Note: UCenter has no owner and therefore by definition is explorable, guardable and patrollable
+            // Note: UCenter has no owner and therefore by definition exploring, guarding and patrolling is allowed
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
-                return false;
             case FleetDirective.Patrol:
-                return !(_universeCenterMenuOperator as IPatrollable).IsPatrollingAllowedBy(_user);
             case FleetDirective.Guard:
-                return !(_universeCenterMenuOperator as IGuardable).IsGuardingAllowedBy(_user);
+                return !isOrderAuthorizedByUserRemoteFleet;
             case FleetDirective.Explore:
                 var explorableUCenter = _universeCenterMenuOperator as IFleetExplorable;
-                return explorableUCenter.IsFullyExploredBy(_user) || !explorableUCenter.IsExploringAllowedBy(_user);
+                return !isOrderAuthorizedByUserRemoteFleet || explorableUCenter.IsFullyExploredBy(_user);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }

@@ -56,7 +56,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="course">The course.</param>
         public void UpdateCourse(IList<INavigableDestination> course) {
-            Utility.ValidateNotNull(course);
+            D.AssertNotNull(course);
             List<Vector3> waypointLocations = new List<Vector3>(course.Count);
             for (int i = 0; i < course.Count; i++) {
                 INavigableDestination waypoint = course[i];

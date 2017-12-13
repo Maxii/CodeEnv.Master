@@ -182,7 +182,7 @@ namespace CodeEnv.Master.Common {
         /// <param name="child">The child.</param>
         /// <param name="parent">The parent. If null, child becomes a root GameObject.</param>
         public static void AttachChildToParent(GameObject child, GameObject parent) {
-            Utility.ValidateNotNull(child);
+            D.AssertNotNull(child);
             Transform childTransform = child.transform;
             childTransform.parent = (parent != null) ? parent.transform : null;
             childTransform.localPosition = Vector3.zero;

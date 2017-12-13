@@ -99,15 +99,13 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
     protected override bool IsUserMenuOperatorMenuItemDisabledFor(BaseDirective directive) {
         switch (directive) {
             case BaseDirective.Disband:
-            case BaseDirective.Scuttle:
-                return _settlement.IsCurrentOrderDirectiveAnyOf(directive);
-            case BaseDirective.Repair:
-                return _settlement.Data.Health == Constants.OneHundredPercent && _settlement.Data.UnitHealth == Constants.OneHundredPercent;
             case BaseDirective.Refit:
-                //TODO under attack?
-                return true;
+            case BaseDirective.Repair:
+            // IsCurrentOrderDirectiveAnyOf not needed as IsAuthorizedForNewOrder will correctly respond once order processed
+            ////return !_settlement.IsAuthorizedForNewOrder(directive) || _settlement.IsCurrentOrderDirectiveAnyOf(directive);
+            case BaseDirective.Scuttle:
             case BaseDirective.Attack:
-                return !_settlement.IsAttackCapable;
+                return !_settlement.IsAuthorizedForNewOrder(directive);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
@@ -127,8 +125,7 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
         bool doesDirectiveSupportSubmenus = false;
         switch (directive) {
             case BaseDirective.Attack:
-                // TODO: incorporate distance from settlement
-                targets = _userKnowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsWarAttackAllowedBy(_user)).Cast<INavigableDestination>();
+                targets = _userKnowledge.KnownFleetsAttackableByOwnerUnits.Cast<INavigableDestination>();   // TODO add InRange
                 doesDirectiveSupportSubmenus = true;
                 break;
             case BaseDirective.Repair:
@@ -144,28 +141,32 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
     }
 
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
+        FleetCmdItem userRemoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
+        bool isOrderAuthorizedByUserRemoteFleet = userRemoteFleet.IsAuthorizedForNewOrder(directive);
+        // userRemoteFleet.IsCurrentOrderDirectiveAnyOf() not used in criteria as target in current order may not be this Base
         switch (directive) {
-            case FleetDirective.Repair:
-                var fleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
-                return fleet.Data.UnitHealth == Constants.OneHundredPercent && fleet.Data.Health == Constants.OneHundredPercent;
-            case FleetDirective.Disband:
             case FleetDirective.Refit:
+            case FleetDirective.Disband:
+                // only allows order if this specific Base hanger has room
+                return !isOrderAuthorizedByUserRemoteFleet || !_settlement.Hanger.IsJoinableBy(userRemoteFleet.ElementCount);
+            case FleetDirective.Repair:
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
-                return false;
             case FleetDirective.Patrol:
-                return !(_systemMenuOperator as IPatrollable).IsPatrollingAllowedBy(_user);
             case FleetDirective.Guard:
-                return !(_systemMenuOperator as IGuardable).IsGuardingAllowedBy(_user);
+                return !isOrderAuthorizedByUserRemoteFleet;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }
     }
 
     protected override bool IsUserRemoteShipMenuItemDisabledFor(ShipDirective directive) {
+        ShipItem userRemoteShip = _remoteUserOwnedSelectedItem as ShipItem;
+        // userRemoteShip.IsCurrentOrderDirectiveAnyOf() not used in criteria as target in current order may not be this Base
         switch (directive) {
             case ShipDirective.Disband:
-                return false;
+                // 12.5.17 Currently no CtxMenu orders allowed for ships in hangers
+                return userRemoteShip.IsLocatedInHanger || !userRemoteShip.IsAuthorizedForNewOrder(directive) || !_settlement.Hanger.IsJoinable;
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
         }

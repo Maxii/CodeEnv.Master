@@ -158,7 +158,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="orbitPeriod">The orbit period.</param>
         /// <param name="toOrbit">if set to <c>true</c> the orbitSimulator will rotate if activated.</param>
         public OrbitData(GameObject orbitedItem, float innerRadius, float outerRadius, bool isOrbitedItemMobile, GameTimeDuration orbitPeriod, bool toOrbit) {
-            Utility.ValidateNotNull(orbitedItem);
+            D.AssertNotNull(orbitedItem);
             Utility.Validate(innerRadius != outerRadius);
             Utility.ValidateForRange(innerRadius, Constants.ZeroF, outerRadius);
             Utility.ValidateForRange(outerRadius, innerRadius, Mathf.Infinity);

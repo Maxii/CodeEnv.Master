@@ -16,13 +16,9 @@
 
 // default namespace
 
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using CodeEnv.Master.Common;
-using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
-using UnityEngine;
 
 /// <summary>
 /// Form used by the UnitHudWindow to display info and allow changes when a AI-owned Settlement is selected.
@@ -55,10 +51,6 @@ public class AiSettlementUnitHudForm : ABaseUnitHudForm {
             DisableUnitButtons();
             AssessUnitFocusButton();
         }
-    }
-
-    protected override bool IsUnitUpgradeAvailable() {
-        return _gameMgr.PlayersDesigns.AreUnitUpgradeDesignsPresent(SelectedUnit.Owner, SelectedUnit.Data);
     }
 
     protected override void AssessUnitCompositionButtons() {

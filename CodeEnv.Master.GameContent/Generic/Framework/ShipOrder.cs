@@ -29,13 +29,21 @@ namespace CodeEnv.Master.GameContent {
 
         private static readonly ShipDirective[] DirectivesWithNullTarget = new ShipDirective[] {
                                                                                                     ShipDirective.AssumeStation,
+                                                                                                    ShipDirective.Construct,
+                                                                                                    ShipDirective.Disengage,
                                                                                                     ShipDirective.Entrench,
-                                                                                                    ShipDirective.Retreat,
-                                                                                                    ShipDirective.Scuttle,
-                                                                                                    ShipDirective.StopAttack,
-                                                                                                    ShipDirective.Disengage
+                                                                                                    ShipDirective.Scuttle
                                                                                                 };
 
+        private static readonly ShipDirective[] DirectivesWithNonNullTarget = new ShipDirective[] {
+                                                                                                    ShipDirective.Attack,
+                                                                                                    ShipDirective.Disband,
+                                                                                                    ShipDirective.Explore,
+                                                                                                    ShipDirective.Join,
+                                                                                                    ShipDirective.Move,
+                                                                                                    ShipDirective.Refit,
+                                                                                                    ShipDirective.Repair
+                                                                                                };
         public virtual string DebugName {
             get {
                 string targetText = Target != null ? Target.DebugName : "none";
@@ -111,6 +119,9 @@ namespace CodeEnv.Master.GameContent {
             if (DirectivesWithNullTarget.Contains(Directive)) {
                 D.AssertNull(Target);
             }
+            if (DirectivesWithNonNullTarget.Contains(Directive)) {
+                D.AssertNotNull(Target);
+            }
             if (Source == OrderSource.Captain) {
                 D.Assert(!ToCallback);
             }
@@ -118,9 +129,9 @@ namespace CodeEnv.Master.GameContent {
                 D.AssertEqual(OrderSource.User, Source);
             }
         }
-
-        #endregion
-
     }
+
+    #endregion
+
 }
 

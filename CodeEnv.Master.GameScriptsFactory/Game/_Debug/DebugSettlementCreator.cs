@@ -150,7 +150,6 @@ public class DebugSettlementCreator : ADebugUnitCreator {
 
     protected override void BeginElementsOperations() {
         LogEvent();
-        ////_elements.ForAll(e => e.CommenceOperations(isInitialConstructionNeeded: false));
         _elements.ForAll(e => e.CommenceOperations());
     }
 
@@ -159,7 +158,6 @@ public class DebugSettlementCreator : ADebugUnitCreator {
         _command.CommenceOperations();
         return true;
     }
-
 
     protected override void __AdjustElementQtyFieldTo(int qty) {
         _elementQty = qty;

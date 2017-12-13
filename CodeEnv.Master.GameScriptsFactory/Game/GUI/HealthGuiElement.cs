@@ -105,13 +105,13 @@ public class HealthGuiElement : AProgressBarGuiElement, IComparable<HealthGuiEle
         GeneralSettings generalSettings = GeneralSettings.Instance;
         GameColor healthColor;
         float healthValue = Health.Value;
-        if (healthValue > generalSettings.HealthThreshold_Damaged) {
+        if (healthValue > generalSettings.ElementHealthThreshold_Damaged) {
             healthColor = GameColor.Green;
         }
-        else if (healthValue > generalSettings.HealthThreshold_BadlyDamaged) {
+        else if (healthValue > generalSettings.ElementHealthThreshold_BadlyDamaged) {
             healthColor = GameColor.Yellow;
         }
-        else if (healthValue > generalSettings.HealthThreshold_CriticallyDamaged) {
+        else if (healthValue > generalSettings.ElementHealthThreshold_CriticallyDamaged) {
             healthColor = GameColor.Orange;
         }
         else {

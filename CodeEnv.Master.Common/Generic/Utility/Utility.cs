@@ -37,6 +37,7 @@ namespace CodeEnv.Master.Common {
         /// </summary>
         /// <param name="arg">The argument.</param>
         /// <exception cref="ArgumentNullException"></exception>
+        [Obsolete("Use D.AssertNotNull() instead")]
         public static void ValidateNotNull(object arg) {
             if (arg == null) {
                 string callingMethodName = new StackTrace().GetFrame(1).GetMethod().Name;

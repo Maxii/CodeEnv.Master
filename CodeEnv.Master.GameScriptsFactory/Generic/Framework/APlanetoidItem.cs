@@ -407,7 +407,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         if (_debugSettings.AllPlayersInvulnerable) {
             return;
         }
-        D.Assert(!IsDead);  ////D.Assert(IsOperational);
+        D.Assert(!IsDead);
         LogEvent();
         DamageStrength damage = damagePotential - Data.DamageMitigation;
         if (damage.Total == Constants.ZeroF) {
@@ -419,7 +419,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         float unusedDamageSeverity;
         bool isAlive = ApplyDamage(damage, out unusedDamageSeverity);
         if (!isAlive) {
-            IsDead = true;  ////IsOperational = false;
+            IsDead = true;
             return;
         }
         StartEffectSequence(EffectSequenceID.Hit);

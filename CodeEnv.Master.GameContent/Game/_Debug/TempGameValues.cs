@@ -36,7 +36,13 @@ namespace CodeEnv.Master.GameContent {
         /// The multiplier to use with a Design's ConstructionCost when calculating the minimum
         /// allowed ConstructionCost for an Element Refit.
         /// </summary>
-        public const float RefitMinConstructionCostFactor = 0.25F;
+        public const float MinRefitConstructionCostFactor = 0.25F;
+
+        /// <summary>
+        /// The multiplier to use with a Design's ConstructionCost when calculating the minimum
+        /// allowed ConstructionCost for an Element Disband.
+        /// </summary>
+        public const float MinDisbandConstructionCostFactor = 0.25F;
 
         /// <summary>
         /// The maximum range of any weapon in a base.
@@ -156,6 +162,13 @@ namespace CodeEnv.Master.GameContent {
                                                                     Formation.Spread
                                                                 };
 
+        public static ShipHullCategory[] DesiredExplorationShipCategories = {
+                                                                                ShipHullCategory.Investigator,
+                                                                                ShipHullCategory.Scout,
+                                                                                ShipHullCategory.Frigate,
+                                                                                ShipHullCategory.Destroyer
+                                                                            };
+
         public const string __FleetCmdDesignName_Basic = "FleetCmdDesign_Basic";
 
         public const string EmptyFleetCmdTemplateDesignName = "EmptyFleetCmdTemplateDesign";
@@ -210,10 +223,10 @@ namespace CodeEnv.Master.GameContent {
 
         #region Repair Capacity Values
 
-        public const float RepairCapacityBasic_FleetCmd = 1F;
-        public const float RepairCapacityBasic_FormationStation = 1F;
-        public const float RepairCapacityBasic_Planet = 2F;
-        public const float RepairCapacityBasic_Base = 3F;
+        public const float RepairCapacityBaseline_FleetCmdModule = 1F;
+        public const float RepairCapacityBaseline_FormationStation = 1F;
+        public const float RepairCapacityBaseline_Planet = 2F;
+        public const float RepairCapacityBaseline_Base = 3F;
         public const float RepairCapacityFactor_HighOrbit = 1.5F;
         public const float RepairCapacityFactor_CloseOrbit = 2F;
         public const float RepairCapacityFactor_Hanger = 3F;
