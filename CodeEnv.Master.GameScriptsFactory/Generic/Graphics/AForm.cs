@@ -83,6 +83,7 @@ public abstract class AForm : AMonoBase {
 
     #region Debug
 
+    [System.Diagnostics.Conditional("DEBUG")]
     protected virtual void __ValidateOnAwake() {
         D.AssertNotDefault((int)FormID);
     }

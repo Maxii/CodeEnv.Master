@@ -41,8 +41,9 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Ships can attempt to assume their station in the fleet formation at any time and any location. When this order is given, 
         /// the ship attempts to move to its station within the formation. Only Fleet Cmd or the Ship's Captain may order a ship to assume
-        /// its station. Ships in orbit do not pay attention to formations. If this order is received 
-        /// by a ship in orbit, the ship will immediately break orbit and move to their formation station.
+        /// its station. If this order is received by a ship in orbit, the ship will break orbit and move to their formation station. 
+        /// <remarks> 12.17.17 If the ship is the Flagship and in close orbit, it will move to the closest local assembly station so that 
+        /// other ships assuming station (if any) will not find their station within the item being close orbited.</remarks>
         /// <remarks>11.8.17 Requires a null Target.</remarks>
         /// </summary>
         AssumeStation,
@@ -75,7 +76,6 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Ships can repair where they are currently located, including in space and at planets and Bases they are allowed to orbit. 
         /// Only Fleet Cmd, the Ship's Captain or the User may order a ship to repair.
-        //// <remarks>11.8.17 Target can be null. If null, the ship's FormationStation is used to repair in place.</remarks>
         /// <remarks>12.13.17 Requires a non-null Target which can be a Base, Planet or the ship's own FleetCmd. If the target
         /// is the ship's own FleetCmd, the ship's FormationStation will be used to repair in place.</remarks>
         /// </summary>
@@ -96,17 +96,19 @@ namespace CodeEnv.Master.GameContent {
         Join,
 
         /// <summary>
-        /// Ships can entrench where they are currently located, diverting engine power from creating movement into protecting itself.
-        /// An entrench order can be issued by Fleet Cmd or the Ship's Captain.
+        /// Ships can entrench on their FormationStation, diverting engine power from creating movement into protecting itself.
+        /// An entrench order can be issued by Fleet Cmd or the Ship's Captain and will cause the ship to relocate to its
+        /// FormationStation (if not already there) and then entrench. While entrenched, it will automatically repair itself
+        /// while entrenched if damaged.
         /// <remarks>11.8.17 Requires a null Target.</remarks>
         /// </summary>
         Entrench,
 
         /// <summary>
-        /// Ships disengage from active or potential combat with the enemy by redeploying to a more protected station 
-        /// of the formation, if any are available. Ships whose CombatStance is Disengage will automatically be issued a
-        /// Disengage order by the Captain when ordered to Attack. A Disengage order can be issued by the User, 
-        /// Fleet Cmd or the Ship's Captain.
+        /// Ships disengage from active or potential combat with the enemy by attempting to redeploy to a more protected station 
+        /// of the formation if any are available. Ships that are disengaged will automatically repair if needed while they are disengaged.
+        /// Ships whose CombatStance is Disengage will automatically be issued a Disengage order by the Captain when ordered to Attack. 
+        /// A Disengage order can be issued by the User, Fleet Cmd or the Ship's Captain.
         /// <remarks>11.8.17 Requires a null Target.</remarks>
         /// </summary>
         Disengage,
@@ -127,7 +129,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Ships can disband at Bases owned by the ship's owner. Ships can only be ordered to Disband by Fleet Cmd or
         /// the User/PlayerAi. When a ship is disbanded, the owner of the ship retains a percentage of the resources used to build it.
-        /// <remarks>11.8.17 Requires a non-null (Base) Target.</remarks>
+        /// <remarks>12.13.17 Requires a non-null (Base) Target.</remarks>
         /// </summary>
         Disband,
 

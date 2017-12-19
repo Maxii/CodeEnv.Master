@@ -96,7 +96,7 @@ public abstract class AMultiSizeIconGuiElement : AIconGuiElement {
 
     protected override void Awake() {    // 10.2.17 Handled this way to avoid calling InitializeValuesAndReferences before Size set
         useGUILayout = false;
-        _debugSettings = DebugSettings.Instance;
+        __debugSettings = DebugSettings.Instance;
         __ValidateOnAwake();
         // adjust any existing child widgets present before Size is chosen
         AdjustWidgetDepths(gameObject);

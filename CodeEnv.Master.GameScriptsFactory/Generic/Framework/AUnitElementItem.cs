@@ -31,15 +31,45 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     private const string __HQNameAddendum = "[HQ]";
 
+    private static float _healthThreshold_Damaged;
+    protected static float HealthThreshold_Damaged {
+        get {
+            if (_healthThreshold_Damaged == Constants.ZeroF) {
+                _healthThreshold_Damaged = GeneralSettings.Instance.ElementHealthThreshold_Damaged;
+            }
+            return _healthThreshold_Damaged;
+        }
+    }
+
+    private static float _healthThreshold_BadlyDamaged;
+    protected static float HealthThreshold_BadlyDamaged {
+        get {
+            if (_healthThreshold_BadlyDamaged == Constants.ZeroF) {
+                _healthThreshold_BadlyDamaged = GeneralSettings.Instance.ElementHealthThreshold_BadlyDamaged;
+            }
+            return _healthThreshold_BadlyDamaged;
+        }
+    }
+
+    private static float _healthThreshold_CriticallyDamaged;
+    protected static float HealthThreshold_CriticallyDamaged {
+        get {
+            if (_healthThreshold_CriticallyDamaged == Constants.ZeroF) {
+                _healthThreshold_CriticallyDamaged = GeneralSettings.Instance.ElementHealthThreshold_CriticallyDamaged;
+            }
+            return _healthThreshold_CriticallyDamaged;
+        }
+    }
+
     public event EventHandler isHQChanged;
+
+    public event EventHandler isAvailableChanged;
 
     /// <summary>
     /// Fired when the receptiveness of this element to receiving new orders changes.
     /// </summary>
-    [Obsolete]
+    [Obsolete("Use isAvailableChanged")]
     public event EventHandler availabilityChanged;
-
-    public event EventHandler isAvailableChanged;
 
     public event EventHandler<SubordinateOwnerChangingEventArgs> subordinateOwnerChanging;
 
@@ -251,7 +281,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         return ReworkUnderway == reworkModeA || ReworkUnderway == reworkModeB;
     }
 
-    //[Obsolete("Not currently used")]
     public bool IsReworkUnderwayAnyOf(ReworkingMode reworkModeA, ReworkingMode reworkModeB, ReworkingMode reworkModeC) {
         return ReworkUnderway == reworkModeA || ReworkUnderway == reworkModeB || ReworkUnderway == reworkModeC;
     }
@@ -272,7 +301,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
         Player newOwner = _newOwnerAfterPause;
         _newOwnerAfterPause = null;
-        D.Log(/*ShowDebugLog,*/ "{0} is changing owner to {1} after resuming from pause.", DebugName, newOwner.DebugName);
+        D.Warn("FYI. {0} is changing owner to {1} after resuming from pause.", DebugName, newOwner.DebugName);
         Data.Owner = newOwner;
     }
 
@@ -918,17 +947,28 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// </summary>
     protected bool _hasOrderOutcomeCallbackAttemptOccurred = false;
 
-    protected void AttemptOrderOutcomeCallback(OrderFailureCause failureCause) {
+    /// <summary>
+    /// Attempts to make an order outcome callback to the Cmd that sent the order. A callback is made if
+    /// 1) element's Cmd sent the order, 2) element's Cmd is subscribed to the event callback and 3) an 
+    /// outcome callback has not already been made.
+    /// <remarks>Even if the callback is made and received, it will only be processed by Cmd if Cmd is still executing
+    /// the order that requested the callback.</remarks>
+    /// <remarks>The fsmTgt default value is null as it only is needed by the Cmd when the Cmd has issued individual orders
+    /// to the element with a unique target, e.g. the unique explore target a ship receives from Cmd.</remarks>
+    /// </summary>
+    /// <param name="failureCause">The failure cause.</param>
+    /// <param name="fsmTgt">The target used by the FSM. Default is null.</param>
+    protected void AttemptOrderOutcomeCallback(OrderFailureCause failureCause, IElementNavigableDestination fsmTgt = null) {
         bool toAllowOrderOutcomeCallbackAttempt = !_hasOrderOutcomeCallbackAttemptOccurred && _lastCmdOrderID != default(Guid);
         if (toAllowOrderOutcomeCallbackAttempt) {
             _hasOrderOutcomeCallbackAttemptOccurred = true;
             if (subordinateOrderOutcome != null) {
-                DispatchOrderOutcomeCallback(failureCause);
+                DispatchOrderOutcomeCallback(failureCause, fsmTgt);
             }
         }
     }
 
-    protected abstract void DispatchOrderOutcomeCallback(OrderFailureCause failureCause);
+    protected abstract void DispatchOrderOutcomeCallback(OrderFailureCause failureCause, IElementNavigableDestination fsmTgt);
 
     #endregion
 
@@ -944,10 +984,15 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// <summary>
     /// Validates the common starting values of a State that is not Call()able.
     /// </summary>
-    protected virtual void ValidateCommonNotCallableStateValues() {
+    protected virtual void ValidateCommonNonCallableStateValues() {
         D.AssertEqual(Constants.Zero, _activeFsmReturnHandlers.Count);
         D.Assert(!_hasOrderOutcomeCallbackAttemptOccurred);
         D.Assert(!IsDead);
+    }
+
+    protected virtual void ResetCommonNonCallableStateValues() {
+        _activeFsmReturnHandlers.Clear();
+        _hasOrderOutcomeCallbackAttemptOccurred = false;
     }
 
     protected void ReturnFromCalledStates() {
@@ -1036,10 +1081,10 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// <returns></returns>
     protected virtual bool AssessNeedForRepair(float elementHealthThreshold) {
         __ValidateCurrentStateWhenAssessingNeedForRepair();
-        if (_debugSettings.DisableRepair) { // 12.9.17 _debugSettings.AllPlayersInvulnerable keeps damage from being taken
+        if (__debugSettings.DisableRepair) { // 12.9.17 _debugSettings.AllPlayersInvulnerable keeps damage from being taken
             return false;
         }
-        if (_debugSettings.RepairAnyDamage) {
+        if (__debugSettings.RepairAnyDamage) {
             elementHealthThreshold = Constants.OneHundredPercent;
         }
         if (Data.Health < elementHealthThreshold) {
@@ -1053,11 +1098,11 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         __ValidateCurrentStateWhenAssessingAvailabilityStatus_Repair();
         NewOrderAvailability orderAvailabilityStatus;
         var health = Data.Health;
-        D.AssertNotEqual(Constants.OneHundredPercent, health);
-        if (Utility.IsInRange(health, GeneralSettings.Instance.ElementHealthThreshold_Damaged, Constants.OneHundredPercent)) {
+        // Can't Assert health < OneHundredPercent as possible to complete repair in 1 frame gaps
+        if (Utility.IsInRange(health, HealthThreshold_Damaged, Constants.OneHundredPercent)) {
             orderAvailabilityStatus = NewOrderAvailability.EasilyAvailable;
         }
-        else if (Utility.IsInRange(health, GeneralSettings.Instance.ElementHealthThreshold_BadlyDamaged, GeneralSettings.Instance.ElementHealthThreshold_Damaged)) {
+        else if (Utility.IsInRange(health, HealthThreshold_BadlyDamaged, HealthThreshold_Damaged)) {
             orderAvailabilityStatus = NewOrderAvailability.FairlyAvailable;
         }
         else {
@@ -1065,7 +1110,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         }
         ChangeAvailabilityTo(orderAvailabilityStatus);
     }
-
 
     #endregion
 
@@ -1435,7 +1479,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     public override void TakeHit(DamageStrength damagePotential) {
         LogEvent();
-        if (_debugSettings.AllPlayersInvulnerable) {
+        if (__debugSettings.AllPlayersInvulnerable) {
             return;
         }
         D.Assert(!IsDead);
@@ -1616,7 +1660,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         }
         __lastAssaultFrame = currentFrame;
 
-        if (_debugSettings.AllPlayersInvulnerable) {
+        if (__debugSettings.AllPlayersInvulnerable) {
             return false;
         }
         if (_debugCntls.AreAssaultsAlwaysSuccessful) {

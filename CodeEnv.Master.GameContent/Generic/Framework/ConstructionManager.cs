@@ -112,7 +112,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Adds the provided item to the ConstructionQueue for its initial construction implementing <c>designToConstruct</c>.
+        /// Adds the provided item to the ConstructionQueue for its initial construction of <c>designToConstruct</c>.
         /// <remarks>The provided item must of course be instantiated beforehand using designToConstruct. However, it is 
         /// Unavailable for use until construction is completed.</remarks>
         /// </summary>

@@ -507,7 +507,6 @@
     <Compile Include="Generic\Interfaces\IFacilityRepairCapable.cs" />
     <Compile Include="Generic\Interfaces\IRepairCapable.cs" />
     <Compile Include="Generic\Interfaces\IShipRepairCapable.cs" />
-    <Compile Include="Generic\Interfaces\IUnitRepairCapable.cs" />
     <Compile Include="Game\Gameplay\FsmCallReturnCause.cs" />
     <Compile Include="Generic\Interfaces\IAssemblySupported.cs" />
     <Compile Include="Generic\Interfaces\Client\IFsmEventSubscriptionMgrClient.cs" />

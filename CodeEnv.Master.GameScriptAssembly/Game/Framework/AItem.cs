@@ -347,7 +347,7 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
     /// Logging only occurs if DebugSettings.EnableEventLogging and ShowDebugLog are true.
     /// </summary>
     public override void LogEvent() {
-        if ((_debugSettings.EnableEventLogging && ShowDebugLog)) {
+        if ((__debugSettings.EnableEventLogging && ShowDebugLog)) {
             string methodName = GetCallingMethodName();
             string fullMethodName = AItemDebugLogEventMethodNameFormat.Inject(DebugName, methodName);
             Debug.Log("{0} beginning execution.".Inject(fullMethodName));

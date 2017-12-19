@@ -32,6 +32,8 @@ namespace CodeEnv.Master.GameContent {
 
         public event EventHandler topographyChanged;
 
+        public event EventHandler<WeaponsRangeChangingEventArgs> weaponsRangeChanging;
+
         public Priority HQPriority { get { return Design.HQPriority; } }
 
         public IList<AWeapon> Weapons { get { return HullEquipment.Weapons; } }
@@ -70,7 +72,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public RangeDistance WeaponsRange {
             get { return _weaponsRange; }
-            private set { SetProperty<RangeDistance>(ref _weaponsRange, value, "WeaponsRange"); }
+            private set { SetProperty<RangeDistance>(ref _weaponsRange, value, "WeaponsRange", onChanging: WeaponsRangePropChangingHandler); }
         }
 
         private RangeDistance _sensorRange;
@@ -204,7 +206,7 @@ namespace CodeEnv.Master.GameContent {
         /// when it is initially constructed or refitted at a BaseHanger. Otherwise, active SRSensors will try to
         /// communicate with FleetCommand's UnifiedSRSensorMonitor which is not there.</remarks>
         /// </summary>
-        public void DeactivateSensors() {
+        public void DeactivateSRSensors() {
             Sensors.ForAll(s => s.IsActivated = false);
             RecalcSensorRange();
         }
@@ -338,9 +340,19 @@ namespace CodeEnv.Master.GameContent {
             HandleShieldGeneratorIsDamagedChanged(sender as ShieldGenerator);
         }
 
+        private void WeaponsRangePropChangingHandler(RangeDistance incomingWeaponsRange) {
+            OnWeaponsRangeChanging(incomingWeaponsRange);
+        }
+
         private void OnTopographyChanged() {
             if (topographyChanged != null) {
                 topographyChanged(this, EventArgs.Empty);
+            }
+        }
+
+        private void OnWeaponsRangeChanging(RangeDistance incomingWeaponsRange) {
+            if (weaponsRangeChanging != null) {
+                weaponsRangeChanging(this, new WeaponsRangeChangingEventArgs(incomingWeaponsRange));
             }
         }
 
@@ -502,6 +514,15 @@ namespace CodeEnv.Master.GameContent {
             public RefitStorage(AUnitElementDesign design, float currentHitPts) {
                 Design = design;
                 CurrentHitPts = currentHitPts;
+            }
+        }
+
+        public class WeaponsRangeChangingEventArgs : EventArgs {
+
+            public RangeDistance IncomingWeaponsRange { get; private set; }
+
+            public WeaponsRangeChangingEventArgs(RangeDistance incomingWeaponsRange) {
+                IncomingWeaponsRange = incomingWeaponsRange;
             }
         }
 

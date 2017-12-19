@@ -36,7 +36,8 @@ public class CameraLosChangedListener : AMonoBase, ICameraLosChangedListener {
 
     private static readonly Vector2 DefaultMeshSize = new Vector2(4F, 4F);
 
-    private static readonly Vector3[] DefaultMeshLocalCorners = new Vector3[] { new Vector3(-2F, -2F),
+    private static readonly Vector3[] DefaultMeshLocalCorners = new Vector3[] {
+                                                                                new Vector3(-2F, -2F),
                                                                                 new Vector3(-2F, 2F),
                                                                                 new Vector3(2F, 2F),
                                                                                 new Vector3(2F, -2F)

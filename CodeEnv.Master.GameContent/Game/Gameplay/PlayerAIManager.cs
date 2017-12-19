@@ -408,32 +408,6 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="closestBase">The closest base.</param>
         /// <param name="excludedBases">The excluded bases.</param>
         /// <returns></returns>
-        [Obsolete]
-        public bool TryFindClosestDisbandBase(Vector3 worldPosition, out IUnitBaseCmd_Ltd closestBase, params IUnitBaseCmd_Ltd[] excludedBases) {
-            var baseCandidates = Knowledge.Bases.Except(excludedBases).Where(bItem => {
-                bool isCandidate = false;
-                Player baseOwner;
-                if (bItem.TryGetOwner(Owner, out baseOwner)) {
-                    isCandidate = baseOwner.IsRelationshipWith(Owner, DiplomaticRelationship.Self, DiplomaticRelationship.Alliance);
-                }
-                return isCandidate;
-            });
-            if (baseCandidates.Any()) {
-                closestBase = baseCandidates.MinBy(cand => Vector3.SqrMagnitude(cand.Position - worldPosition));
-                return true;
-            }
-            closestBase = null;
-            return false;
-        }
-
-        /// <summary>
-        /// Returns <c>true</c> if a base is found that will disband both the fleet's ships and its Cmd, <c>false</c> otherwise.
-        /// <remarks>8.13.17 IMPROVE Should be implemented using an IDisbandCapable interface?</remarks>
-        /// </summary>
-        /// <param name="worldPosition">The world position.</param>
-        /// <param name="closestBase">The closest base.</param>
-        /// <param name="excludedBases">The excluded bases.</param>
-        /// <returns></returns>
         public bool TryFindClosestDisbandBase(Vector3 worldPosition, out IUnitBaseCmd closestBase, params IUnitBaseCmd[] excludedBases) {
             var baseCandidates = Knowledge.OwnerBases.Except(excludedBases);
             if (baseCandidates.Any()) {
@@ -453,7 +427,7 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         public bool TryFindClosestFleetRepairBase(Vector3 worldPosition, out IUnitBaseCmd_Ltd closestBase, params IUnitBaseCmd_Ltd[] excludedBases) {
             var baseCandidates = Knowledge.Bases.Except(excludedBases).Where(bItem => {
-                bool isCandidate = (bItem as IShipRepairCapable).IsRepairingAllowedBy(Owner) && (bItem as IUnitRepairCapable).IsRepairingAllowedBy(Owner);
+                bool isCandidate = (bItem as IShipRepairCapable).IsRepairingAllowedBy(Owner);
                 return isCandidate;
             });
             if (baseCandidates.Any()) {
@@ -943,7 +917,6 @@ namespace CodeEnv.Master.GameContent {
                 }
                 if (closestFleet != null) {
                     //D.Log("{0} is issuing an order to {1} to JOIN {2}.", DebugName, fleetCmd.DebugName, closestFleet.DebugName);
-                    D.Assert(fleetCmd.IsAuthorizedForNewOrder(FleetDirective.Join));
                     FleetOrder order = new FleetOrder(FleetDirective.Join, OrderSource.PlayerAI, closestFleet);
                     fleetCmd.CurrentOrder = order;
                     return true;
@@ -1088,22 +1061,23 @@ namespace CodeEnv.Master.GameContent {
             attackTgts.AddRange(Knowledge.Starbases.Cast<IUnitAttackable>().Where(sb => sb.IsWarAttackAllowedBy(Owner)));
             attackTgts.AddRange(Knowledge.Settlements.Cast<IUnitAttackable>().Where(s => s.IsWarAttackAllowedBy(Owner)));
             //attackTgts.AddRange(Knowledge.Planets.Cast<IUnitAttackable>().Where(p => p.IsWarAttackByAllowed(Owner)));
-            if (!attackTgts.Any()) {
-                return false;
+            if (attackTgts.Any()) {
+                IUnitAttackable attackTgt;
+                if (findFarthestTgt) {
+                    attackTgt = attackTgts.MaxBy(t => Vector3.SqrMagnitude(t.Position - fleetCmd.Position));
+                }
+                else {
+                    attackTgt = attackTgts.MinBy(t => Vector3.SqrMagnitude(t.Position - fleetCmd.Position));
+                }
+                D.LogBold("{0} is issuing {1} an ATTACK order against {2} in Frame {3}. FPS = {4:0.#}.",
+                    DebugName, fleetCmd.DebugName, attackTgt.DebugName, Time.frameCount, _fpsReadout.FramesPerSecond);
+                if (fleetCmd.IsAuthorizedForNewOrder(FleetDirective.Attack)) {
+                    FleetOrder order = new FleetOrder(FleetDirective.Attack, OrderSource.PlayerAI, attackTgt);
+                    fleetCmd.CurrentOrder = order;
+                    return true;
+                }
             }
-            IUnitAttackable attackTgt;
-            if (findFarthestTgt) {
-                attackTgt = attackTgts.MaxBy(t => Vector3.SqrMagnitude(t.Position - fleetCmd.Position));
-            }
-            else {
-                attackTgt = attackTgts.MinBy(t => Vector3.SqrMagnitude(t.Position - fleetCmd.Position));
-            }
-            D.LogBold("{0} is issuing {1} an ATTACK order against {2} in Frame {3}. FPS = {4:0.#}.",
-                DebugName, fleetCmd.DebugName, attackTgt.DebugName, Time.frameCount, _fpsReadout.FramesPerSecond);
-            D.Assert(fleetCmd.IsAuthorizedForNewOrder(FleetDirective.Attack));
-            FleetOrder order = new FleetOrder(FleetDirective.Attack, OrderSource.PlayerAI, attackTgt);
-            fleetCmd.CurrentOrder = order;
-            return true;
+            return false;
         }
 
         /// <summary>
@@ -1123,22 +1097,21 @@ namespace CodeEnv.Master.GameContent {
                 moveTgts.Add(Knowledge.UniverseCenter as IFleetNavigableDestination);
             }
 
-            if (!moveTgts.Any()) {
-                return false;
+            if (moveTgts.Any()) {
+                IFleetNavigableDestination destination;
+                if (findFarthestTgt) {
+                    destination = moveTgts.MaxBy(mt => Vector3.SqrMagnitude(mt.Position - fleetCmd.Position));
+                }
+                else {
+                    destination = moveTgts.MinBy(mt => Vector3.SqrMagnitude(mt.Position - fleetCmd.Position));
+                }
+                D.Log("{0} is issuing {1} a MOVE order to {2} in Frame {3}. FPS = {4:0.#}.",
+                    DebugName, fleetCmd.DebugName, destination.DebugName, Time.frameCount, _fpsReadout.FramesPerSecond);
+                var order = new FleetOrder(FleetDirective.Move, OrderSource.PlayerAI, destination);
+                fleetCmd.CurrentOrder = order;
+                return true;
             }
-            IFleetNavigableDestination destination;
-            if (findFarthestTgt) {
-                destination = moveTgts.MaxBy(mt => Vector3.SqrMagnitude(mt.Position - fleetCmd.Position));
-            }
-            else {
-                destination = moveTgts.MinBy(mt => Vector3.SqrMagnitude(mt.Position - fleetCmd.Position));
-            }
-            D.Log("{0} is issuing {1} a MOVE order to {2} in Frame {3}. FPS = {4:0.#}.",
-                DebugName, fleetCmd.DebugName, destination.DebugName, Time.frameCount, _fpsReadout.FramesPerSecond);
-            D.Assert(fleetCmd.IsAuthorizedForNewOrder(FleetDirective.Move));
-            var order = new FleetOrder(FleetDirective.Move, OrderSource.PlayerAI, destination);
-            fleetCmd.CurrentOrder = order;
-            return true;
+            return false;
         }
 
         private bool __IssueFleetExploreOrder(IFleetCmd fleetCmd) {
@@ -1150,16 +1123,15 @@ namespace CodeEnv.Master.GameContent {
                 select eSys;
             if (explorableUnexploredSystems.Any()) {
                 var closestUnexploredSystem = explorableUnexploredSystems.MinBy(sys => Vector3.SqrMagnitude(fleetCmd.Position - sys.Position));
-                D.Log("{0} is issuing {1} an EXPLORE order to {2} in Frame {3}. FPS = {4:0.#}. IsOwnerAccessible = {5}.",
-                    DebugName, fleetCmd.DebugName, closestUnexploredSystem.DebugName, Time.frameCount, _fpsReadout.FramesPerSecond, closestUnexploredSystem.IsOwnerAccessibleTo(Owner));
-                D.Assert(fleetCmd.IsAuthorizedForNewOrder(FleetDirective.Explore));
+                D.Log("{0} is issuing {1} an EXPLORE order to {2} in Frame {3}. FPS = {4:0.#}. IsExploreTgtOwnerAccessible = {5}.",
+                    DebugName, fleetCmd.DebugName, closestUnexploredSystem.DebugName, Time.frameCount, _fpsReadout.FramesPerSecond,
+                    closestUnexploredSystem.IsOwnerAccessibleTo(Owner));
                 var order = new FleetOrder(FleetDirective.Explore, OrderSource.PlayerAI, closestUnexploredSystem);
                 fleetCmd.CurrentOrder = order;
             }
             else {
                 IFleetExplorable uCenter = Knowledge.UniverseCenter as IFleetExplorable;
                 if (!uCenter.IsFullyExploredBy(Owner)) {
-                    D.Assert(fleetCmd.IsAuthorizedForNewOrder(FleetDirective.Explore));
                     var order = new FleetOrder(FleetDirective.Explore, OrderSource.PlayerAI, uCenter);
                     fleetCmd.CurrentOrder = order;
                 }
@@ -1184,7 +1156,6 @@ namespace CodeEnv.Master.GameContent {
                 var closestVisitableBase = visitableUnvisitedBases.MinBy(vBase => Vector3.SqrMagnitude(fleetCmd.Position - vBase.Position));
                 D.Log("{0} is issuing {1} a MOVE order to {2} in Frame {3}. FPS = {4:0.#}.",
                     DebugName, fleetCmd.DebugName, closestVisitableBase.DebugName, Time.frameCount, _fpsReadout.FramesPerSecond);
-                D.Assert(fleetCmd.IsAuthorizedForNewOrder(FleetDirective.Move));
                 var order = new FleetOrder(FleetDirective.Move, OrderSource.PlayerAI, closestVisitableBase as IFleetNavigableDestination);
                 fleetCmd.CurrentOrder = order;
             }

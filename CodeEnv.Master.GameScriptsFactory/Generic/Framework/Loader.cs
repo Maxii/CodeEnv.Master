@@ -206,7 +206,7 @@ public class Loader : AMonoSingleton<Loader> {
     }
 
     private void CheckQualityDebugSettings() {
-        if (_debugSettings.ForceFpsToTarget) {
+        if (__debugSettings.ForceFpsToTarget) {
             QualitySettings.vSyncCount = 0;
             Application.targetFrameRate = _targetFPS;
         }

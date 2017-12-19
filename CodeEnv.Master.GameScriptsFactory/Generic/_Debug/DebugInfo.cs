@@ -102,7 +102,7 @@ public class DebugInfo : AMonoSingleton<DebugInfo> {
     }
 
     private string ConstructQualityText() {
-        string forceFpsToTargetMsg = _debugSettings.ForceFpsToTarget ? ", FpsForcedToTarget" : string.Empty;
+        string forceFpsToTargetMsg = __debugSettings.ForceFpsToTarget ? ", FpsForcedToTarget" : string.Empty;
         return "Quality: " + PlayerPrefsManager.Instance.QualitySetting + forceFpsToTargetMsg;
     }
 

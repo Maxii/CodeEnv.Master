@@ -101,8 +101,6 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Fleets can repair at Bases owned by the Fleet owner, friendly planets and in place.
-        //// UNCLEAR where else can repairs take place and to what degree?
-        //// <remarks>12.12.17 No requirements for Target.</remarks>
         /// <remarks>12.12.17 Requires a non-null target which can be a base, planet or itself (FleetCmd). If the target is
         /// itself, the fleet's ships will repair in place on their formation stations.</remarks>
         /// </summary>
@@ -127,7 +125,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Fleets can join other fleets owned by the Fleet owner.
-        /// <remarks>12.12.17 Requires a non-null target.</remarks>
+        /// <remarks>12.12.17 Requires a non-null (fleet) target.</remarks>
         /// </summary>
         Join,
 

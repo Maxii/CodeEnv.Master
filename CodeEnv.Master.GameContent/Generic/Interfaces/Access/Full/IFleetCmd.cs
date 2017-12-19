@@ -36,7 +36,7 @@ namespace CodeEnv.Master.GameContent {
 
         bool IsCurrentOrderDirectiveAnyOf(FleetDirective directiveA, FleetDirective directiveB);
 
-        bool IsAuthorizedForNewOrder(FleetDirective orderDirective, IFleetNavigableDestination target = null);
+        bool IsAuthorizedForNewOrder(FleetDirective orderDirective);
 
         FleetCmdReport GetReport(Player player);
 

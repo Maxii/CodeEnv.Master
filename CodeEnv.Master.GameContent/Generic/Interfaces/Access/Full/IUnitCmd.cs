@@ -34,7 +34,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Fired when the receptiveness of this Unit to receiving new orders changes.
         /// </summary>
-        [Obsolete]
+        [Obsolete("Use isAvailableChanged")]
         event EventHandler availabilityChanged;
 
         event EventHandler unitOutputsChanged;

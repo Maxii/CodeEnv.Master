@@ -30,10 +30,7 @@ namespace CodeEnv.Master.GameContent {
         private static readonly FacilityDirective[] DirectivesWithNullTarget = new FacilityDirective[]  {
                                                                                                             FacilityDirective.Cancel,
                                                                                                             FacilityDirective.Construct,
-                                                                                                            ////FacilityDirective.Disband,
-                                                                                                            ////FacilityDirective.Refit,
-                                                                                                            ////FacilityDirective.Repair,
-                                                                                                            FacilityDirective.Scuttle,
+                                                                                                            FacilityDirective.Scuttle
                                                                                                         };
 
         private static readonly FacilityDirective[] DirectivesWithNonNullTarget = new FacilityDirective[]   {

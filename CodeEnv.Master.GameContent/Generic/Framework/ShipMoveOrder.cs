@@ -59,7 +59,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="isFleetwide">if set to <c>true</c> the move should be coordinated as a fleet.</param>
         /// <param name="targetStandoffDistance">When the ship arrives at the target, this is the distance
         /// from the target it should strive to achieve.</param>
-        [Obsolete("Ship.ExecuteMoveOrder does not expect an order outcome callback")]
+        [Obsolete("12.14.17 Currently, Ship.ExecuteMoveOrder does not expect an order outcome callback")]
         public ShipMoveOrder(OrderSource source, Guid cmdOrderID, IShipNavigableDestination target, Speed speed, bool isFleetwide, float targetStandoffDistance)
             : base(ShipDirective.Move, source, cmdOrderID, target) {
             Utility.ValidateNotNull(target);

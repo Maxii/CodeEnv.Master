@@ -664,7 +664,7 @@ public class InputManager : AMonoSingleton<InputManager>, IInputManager {
     #region Debug
 
     private void LogEventArg(string arg = "") {
-        if (_debugSettings.EnableEventLogging) {
+        if (__debugSettings.EnableEventLogging) {
             var stackFrame = new System.Diagnostics.StackFrame(1);
             NguiMouseButton? button = Enums<NguiMouseButton>.CastOrNull(UICamera.currentTouchID);
             string touchID = (button ?? NguiMouseButton.None).GetValueName();

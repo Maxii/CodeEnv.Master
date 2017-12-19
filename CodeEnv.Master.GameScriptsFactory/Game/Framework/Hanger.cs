@@ -76,6 +76,8 @@ public class Hanger : AMonoBase, IFormationMgrClient/*, IHanger, IHanger_Ltd*/ {
         _allShips.Add(ship);
         UnityUtility.AttachChildToParent(ship.gameObject, gameObject);
         ship.subordinateDeathOneShot += HangerShipDeathEventHandler;
+        ship.IsCollisionAvoidanceOperational = false;
+        ship.Data.DeactivateSRSensors();
 
         if (isFirstShip) {
             _formationMgr.RepositionAllElementsInFormation(_allShips.Cast<IUnitElement>());
@@ -150,13 +152,15 @@ public class Hanger : AMonoBase, IFormationMgrClient/*, IHanger, IHanger_Ltd*/ {
         UnityUtility.AttachChildToParent(replacingShip.gameObject, gameObject);
         replacingShip.subordinateDeathOneShot += HangerShipDeathEventHandler;
 
-        // RemoveElement without dealing with Cmd death, HQ or FormationManager
+        // Remove(ship) without dealing with Cmd death, HQ or FormationManager
         bool isRemoved = _allShips.Remove(shipToReplace);
         D.Assert(isRemoved);
         shipToReplace.subordinateDeathOneShot -= HangerShipDeathEventHandler;
 
         // no need to worry about IsJoinable as there shouldn't be any checks when using this method
         _formationMgr.ReplaceElement(shipToReplace, replacingShip);
+        isRemoved = RemoveAndRecycleFormationStation(shipToReplace);
+        D.Assert(isRemoved);
     }
 
     #region Event and Property Change Handlers
@@ -231,6 +235,24 @@ public class Hanger : AMonoBase, IFormationMgrClient/*, IHanger, IHanger_Ltd*/ {
         _formationMgr.RestoreSlotToAvailable(ship);
     }
 
+    /// <summary>
+    /// Removes and recycles the provided ship's FormationStation if it is
+    /// present, returning <c>true</c> if it was removed, <c>false</c> if it 
+    /// did not need to be removed since it wasn't present.
+    /// </summary>
+    /// <param name="ship">The ship.</param>
+    /// <returns></returns>
+    private bool RemoveAndRecycleFormationStation(ShipItem ship) {
+        var station = ship.FormationStation;
+        if (station != null) {
+            ship.FormationStation = null;
+            station.AssignedShip = null;
+            GamePoolManager.Instance.DespawnFormationStation(station.transform);
+            return true;
+        }
+        return false;
+    }
+
     protected override void Cleanup() { }
 
     public override string ToString() {
@@ -267,17 +289,12 @@ public class Hanger : AMonoBase, IFormationMgrClient/*, IHanger, IHanger_Ltd*/ {
         Quaternion faceHangerRotation = Quaternion.LookRotation(faceHangerDirection);
         ship.transform.localRotation = faceHangerRotation;
 
-        FleetFormationStation station = ship.FormationStation;
-        if (station != null) {
-            // the ship already has a formation station so get rid of it
-            D.Warn("{0} still has its old {1}. Fixing.", ship.DebugName, typeof(FleetFormationStation).Name);
-            ship.FormationStation = null;
-            station.AssignedShip = null;
-            // FormationMgr will have already removed stationInfo from occupied list if present 
-            GamePoolManager.Instance.DespawnFormationStation(station.transform);
+        if (RemoveAndRecycleFormationStation(ship)) {
+            D.Warn("{0} had to remove and despawn {1}'s old {2}.", DebugName, ship.DebugName, typeof(FleetFormationStation).Name);
         }
+
         //D.Log(ShowDebugLog, "{0} is adding a new {1} with SlotID {2}.", DebugName, typeof(FleetFormationStation).Name, stationSlotInfo.SlotID.GetValueName());
-        station = GamePoolManager.Instance.SpawnFormationStation(hangerPosition, faceHangerRotation, transform);
+        FleetFormationStation station = GamePoolManager.Instance.SpawnFormationStation(hangerPosition, faceHangerRotation, transform);
         station.StationInfo = stationSlotInfo;  // modifies position by localOffset
         station.AssignedShip = ship;
         ship.FormationStation = station;

@@ -25,7 +25,6 @@ using UnityEngine;
 
 /// <summary>
 /// Context Menu Control for <see cref="SystemItem"/>s with no owner (and therefore no settlement).
-/// <remarks>OPTIMIZE 8.7.17 these non-user-owned Items aren't selectable.</remarks>
 /// </summary>
 public class SystemCtxControl : ACtxControl {
 

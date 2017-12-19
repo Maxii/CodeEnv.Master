@@ -477,10 +477,6 @@ public abstract class AFleetUnitHudForm : AForm {
     protected abstract bool TryFindClosestFleetRefitBase(Vector3 currentFleetPosition, out IUnitBaseCmd closestRefitBase);
 
     private void HandleUnitDisbandButtonToggleChanged() {
-        ////D.Warn("{0}.HandleUnitDisbandButtonToggleChanged not yet implemented.", DebugName);
-        ////_toggleButtonsUsedThisSession.Add(_unitDisbandButton);
-        ////_unitDisbandButton.SetToggledState(false); // TEMP release the button
-        //// UNDONE
         D.AssertEqual(Constants.One, _pickedUnitIcons.Count);
         _toggleButtonsUsedThisSession.Add(_unitDisbandButton);
         var pickedUnit = _pickedUnitIcons.First().Unit;

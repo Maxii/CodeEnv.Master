@@ -203,7 +203,7 @@ public abstract class AMonoSingleton<T> : AMonoBaseSingleton, IInstanceCount whe
     /// Logging only occurs if DebugSettings.EnableEventLogging is true.
     /// </summary>
     public sealed override void LogEvent() {
-        if (_debugSettings.EnableEventLogging) {
+        if (__debugSettings.EnableEventLogging) {
             string methodName = GetCallingMethodName();
             string fullMethodName = AMonoSingletonDebugLogEventMethodNameFormat.Inject(transform.name, GetType().Name, InstanceCount, methodName);
             Debug.Log("{0} beginning execution. Frame {1}, UnityTime {2:0.0}.".Inject(fullMethodName, Time.frameCount, Time.time));

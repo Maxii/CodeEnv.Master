@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IShipRepairCapable.cs
-// Interface for Items or stations that can repair Ships.
+// Interface for Items or stations that can repair Ships and CmdModules.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,7 +17,7 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Interface for Items or stations that can repair Ships.
+    /// Interface for Items or stations that can repair Ships and CmdModules.
     /// <remarks>Planets, Bases and FormationStations.</remarks>
     /// </summary>
     public interface IShipRepairCapable : IRepairCapable, IShipNavigableDestination {

@@ -102,7 +102,6 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
             case BaseDirective.Refit:
             case BaseDirective.Repair:
             // IsCurrentOrderDirectiveAnyOf not needed as IsAuthorizedForNewOrder will correctly respond once order processed
-            ////return !_settlement.IsAuthorizedForNewOrder(directive) || _settlement.IsCurrentOrderDirectiveAnyOf(directive);
             case BaseDirective.Scuttle:
             case BaseDirective.Attack:
                 return !_settlement.IsAuthorizedForNewOrder(directive);
@@ -193,11 +192,11 @@ public class SystemCtxControl_User : ACtxControl_User<BaseDirective> {
 
     private void IssueUserSystemMenuOperatorOrder(int itemID) {
         BaseDirective directive = (BaseDirective)_directiveLookup[itemID];
-        INavigableDestination target;
-        bool isTarget = _unitTargetLookup.TryGetValue(itemID, out target);
-        string msg = isTarget ? target.DebugName : "[none]";
-        D.Log("{0} selected directive {1} and target {2} from context menu.", DebugName, directive.GetValueName(), msg);
-        var order = new BaseOrder(directive, OrderSource.User, target as IUnitAttackable);
+        INavigableDestination submenuTgt;
+        bool isSubmenuTgt = _unitSubmenuTgtLookup.TryGetValue(itemID, out submenuTgt);
+        string submenuTgtMsg = isSubmenuTgt ? submenuTgt.DebugName : "[none]";
+        D.Log("{0} selected directive {1} and target {2} from context menu.", DebugName, directive.GetValueName(), submenuTgtMsg);
+        var order = new BaseOrder(directive, OrderSource.User, submenuTgt as IUnitAttackable);
         _settlement.CurrentOrder = order;
     }
 

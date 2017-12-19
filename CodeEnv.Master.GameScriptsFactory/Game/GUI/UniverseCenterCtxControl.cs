@@ -26,7 +26,6 @@ using UnityEngine;
 /// <summary>
 /// Context Menu Control for <see cref="UniverseCenterItem"/>.
 /// No distinction between AI and User owned.    
-/// <remarks>OPTIMIZE 8.7.17 these non-user-owned Items aren't selectable.</remarks>
 /// </summary>
 public class UniverseCenterCtxControl : ACtxControl {
 

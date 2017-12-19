@@ -24,11 +24,12 @@ using UnityEngine;
 
 /// <summary>
 /// Context Menu Control for <see cref="FacilityItem"/>s owned by the User.
+/// <remarks>12.13.17 Removed Disband from choices as it requires access to _facilityMenuOperator.Command
+/// to designate the target.</remarks>
 /// </summary>
 public class FacilityCtxControl_User : ACtxControl_User<FacilityDirective> {
 
     private static FacilityDirective[] _userMenuOperatorDirectives = new FacilityDirective[]    {
-                                                                                                    FacilityDirective.Disband,
                                                                                                     FacilityDirective.Scuttle,
                                                                                                 };
 
@@ -60,9 +61,6 @@ public class FacilityCtxControl_User : ACtxControl_User<FacilityDirective> {
 
     protected override bool IsUserMenuOperatorMenuItemDisabledFor(FacilityDirective directive) {
         switch (directive) {
-            case FacilityDirective.Disband:
-            // IsCurrentOrderDirectiveAnyOf not needed as IsAuthorizedForNewOrder will correctly respond once order processed
-            ////return !_facilityMenuOperator.IsAuthorizedForNewOrder(directive); //// || _facilityMenuOperator.IsCurrentOrderDirectiveAnyOf(directive);
             case FacilityDirective.Scuttle:
                 return !_facilityMenuOperator.IsAuthorizedForNewOrder(directive);
             default:

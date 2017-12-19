@@ -692,7 +692,6 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     void Focusing_EnterState() {
         LogEvent();
-        D.AssertNotEqual(default(Vector3), _targetPoint);
 
         _distanceFromTarget = Vector3.Distance(_targetPoint, Position);
         _requestedDistanceFromTarget = _optimalDistanceFromTarget;
@@ -754,7 +753,6 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     void Focused_EnterState() {
         LogEvent();
-        D.AssertNotEqual(default(Vector3), _targetPoint);
         // entered via OnFocusSelected AND IsResetOnFocusEnabled, OR after Focusing has completed
         _distanceFromTarget = Vector3.Distance(_targetPoint, Position);
         _requestedDistanceFromTarget = _optimalDistanceFromTarget;
@@ -957,7 +955,6 @@ public class MainCameraControl : AFSMSingleton_NoCall<MainCameraControl, MainCam
 
     void Freeform_EnterState() {
         LogEvent();
-        D.AssertNotEqual(default(Vector3), _targetPoint);
         _distanceFromTarget = Vector3.Distance(_targetPoint, Position);
         _requestedDistanceFromTarget = _distanceFromTarget;
         // no facing change

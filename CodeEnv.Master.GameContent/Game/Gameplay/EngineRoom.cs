@@ -577,13 +577,13 @@ namespace CodeEnv.Master.GameContent {
             }
 
             string jobName = "{0}.CollisionAvoidanceJob".Inject(DebugName);
-            Job caJob = _jobMgr.StartGameplayJob(OperateCollisionAvoidancePropulsionIn(worldSpaceDirectionToAvoidCollision), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
+            Job caJob = _jobMgr.StartGameplayJob(OperateCollisionAvoidancePropulsionIn(worldSpaceDirectionToAvoidCollision, obstacle), jobName, isPausable: true, jobCompleted: (jobWasKilled) => {
                 D.Assert(jobWasKilled); // CA Jobs never complete naturally
             });
             _caPropulsionJobs.Add(obstacle, caJob);
         }
 
-        private IEnumerator OperateCollisionAvoidancePropulsionIn(Vector3 worldSpaceDirectionToAvoidCollision) {
+        private IEnumerator OperateCollisionAvoidancePropulsionIn(Vector3 worldSpaceDirectionToAvoidCollision, IObstacle obstacle) {
             worldSpaceDirectionToAvoidCollision.ValidateNormalized();
 
             bool isInformedOfLogging = false;
@@ -596,8 +596,8 @@ namespace CodeEnv.Master.GameContent {
                 ApplyCollisionAvoidancePropulsionIn(worldSpaceDirectionToAvoidCollision);
                 if ((currentDate = _gameTime.CurrentDate) > logDate) {
                     if (!isInformedOfLogging) {
-                        D.Log(ShowDebugLog, "{0}: CurrentDate {1} > LogDate {2} while avoiding collision. IsFtlDamped = {3}.",
-                            DebugName, currentDate, logDate, _shipData.IsFtlDampedByField);
+                        D.Log(ShowDebugLog, "{0}: CurrentDate {1} > LogDate {2} while avoiding collision with {3}. IsFtlDamped = {4}.",
+                            DebugName, currentDate, logDate, obstacle.DebugName, _shipData.IsFtlDampedByField);
                         isInformedOfLogging = true;
                     }
 
@@ -606,8 +606,8 @@ namespace CodeEnv.Master.GameContent {
                     }
                     if (currentDate > warnDate) {
                         if (!isInformedOfWarning) {
-                            D.Warn("{0}: CurrentDate {1} > WarnDate {2} while avoiding collision. IsFtlDamped = {3}.",
-                                DebugName, currentDate, warnDate, _shipData.IsFtlDampedByField);
+                            D.Warn("{0}: CurrentDate {1} > WarnDate {2} while avoiding collision with {3}. IsFtlDamped = {4}.",
+                                DebugName, currentDate, warnDate, obstacle.DebugName, _shipData.IsFtlDampedByField);
                             isInformedOfWarning = true;
                         }
 
@@ -615,7 +615,7 @@ namespace CodeEnv.Master.GameContent {
                             errorDate = new GameDate(warnDate, GameTimeDuration.TwoDays);
                         }
                         if (currentDate > errorDate) {
-                            D.Error("{0}.OperateCollisionAvoidancePropulsion has timed out.", DebugName);
+                            D.Error("{0}.OperateCollisionAvoidancePropulsion has timed out avoiding collision with {1}.", DebugName, obstacle.DebugName);
                         }
                     }
                 }

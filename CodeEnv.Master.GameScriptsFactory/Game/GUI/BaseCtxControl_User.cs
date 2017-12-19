@@ -100,8 +100,6 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
             case BaseDirective.Refit:
             case BaseDirective.Repair:
             // IsCurrentOrderDirectiveAnyOf not needed as IsAuthorizedForNewOrder will correctly respond once order processed
-            //// IsCurrentOrderDirectiveAnyOf() used in criteria as target in current order must be this Base
-            ////return !_baseMenuOperator.IsAuthorizedForNewOrder(directive) || _baseMenuOperator.IsCurrentOrderDirectiveAnyOf(directive);
             case BaseDirective.Attack:
             case BaseDirective.Scuttle:
             case BaseDirective.ChangeHQ:
@@ -199,15 +197,20 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
 
     private void IssueUserBaseMenuOperatorOrder(int itemID) {
         BaseDirective directive = (BaseDirective)_directiveLookup[itemID];
-        INavigableDestination target;
-        bool isTarget = _unitTargetLookup.TryGetValue(itemID, out target);
-        string tgtMsg = isTarget ? target.DebugName : "[none]";
-        D.Log("{0} selected directive {1} and target {2} from context menu.", DebugName, directive.GetValueName(), tgtMsg);
+        INavigableDestination submenuTgt;
+        bool hasSubmenuTgt = _unitSubmenuTgtLookup.TryGetValue(itemID, out submenuTgt);
+        string submenuTgtMsg = hasSubmenuTgt ? submenuTgt.DebugName : "[none]";
+        D.Log("{0} selected directive {1} and target {2} from context menu.", DebugName, directive.GetValueName(), submenuTgtMsg);
         if (directive == BaseDirective.ChangeHQ) {
-            _baseMenuOperator.HQElement = target as AUnitElementItem;
+            _baseMenuOperator.HQElement = submenuTgt as AUnitElementItem;
         }
         else {
-            var order = new BaseOrder(directive, OrderSource.User, target as IUnitAttackable);
+            IUnitAttackable orderTgt = submenuTgt as IUnitAttackable;
+            if (directive == BaseDirective.Disband || directive == BaseDirective.Refit || directive == BaseDirective.Repair) {
+                D.AssertNull(orderTgt);
+                orderTgt = _baseMenuOperator;
+            }
+            var order = new BaseOrder(directive, OrderSource.User, orderTgt);
             _baseMenuOperator.CurrentOrder = order;
         }
     }

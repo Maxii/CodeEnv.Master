@@ -40,9 +40,9 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
     private const string SubmenuItemTextFormat_Target = "{0}({1:0.})";
 
     /// <summary>
-    /// Lookup table for IUnitTargets for this item, keyed by the ID of the item selected.
+    /// Lookup table for IUnitTargets for this item, keyed by the ID of the submenu item selected.
     /// </summary>
-    protected static IDictionary<int, INavigableDestination> _unitTargetLookup = new Dictionary<int, INavigableDestination>();
+    protected static IDictionary<int, INavigableDestination> _unitSubmenuTgtLookup = new Dictionary<int, INavigableDestination>();
 
     /// <summary>
     /// The directives available for execution when the user operator of the menu is the Item selected.
@@ -129,7 +129,7 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
                         text = textFormat.Inject(target.DebugName, GetDistanceTo(target)),
                         id = subMenuItemId
                     };
-                    _unitTargetLookup.Add(subMenuItemId, target);
+                    _unitSubmenuTgtLookup.Add(subMenuItemId, target);
                     _directiveLookup.Add(subMenuItemId, directive);
                 }
                 topLevelItem.isSubmenu = true;
@@ -162,7 +162,7 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
 
     protected override void HandleHideCtxMenu() {
         base.HandleHideCtxMenu();
-        _unitTargetLookup.Clear();
+        _unitSubmenuTgtLookup.Clear();
     }
 
     #region Debug

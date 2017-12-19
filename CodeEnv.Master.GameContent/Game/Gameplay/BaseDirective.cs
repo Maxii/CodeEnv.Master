@@ -42,13 +42,13 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Like Fleets, Bases can repair in place. This in place repair occurs much faster than a fleet due to the
         /// larger amount of infrastructure and resources available to the base. Only Base Cmd can issue a Repair order.
-        /// <remarks>12.12.17 Requires a non-null target.</remarks>
+        /// <remarks>12.12.17 Requires a non-null (self) target.</remarks>
         /// </summary>
         Repair,
 
         /// <summary>
         /// Bases can be refit in place when not under attack by an enemy fleet. Only Base Cmd or the User can issue a Refit order.
-        /// <remarks>12.12.17 Requires a non-null target.</remarks>
+        /// <remarks>12.12.17 Requires a non-null (self) target.</remarks>
         /// </summary>
         Refit,
 
@@ -56,7 +56,7 @@ namespace CodeEnv.Master.GameContent {
         /// Bases can be disbanded in place when not under attack by an enemy fleet.
         /// Similar effect to scuttling except the owner of the base retains a percentage of the resources used to build it.
         /// Only Base Cmd or the User can issue a Disband order.
-        /// <remarks>12.12.17 Requires a non-null target.</remarks>
+        /// <remarks>12.12.17 Requires a non-null (self) target.</remarks>
         /// </summary>
         Disband,
 

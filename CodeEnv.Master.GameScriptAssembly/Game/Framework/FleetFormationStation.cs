@@ -112,7 +112,7 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
     }
 
     private void AssignedShipPropChangedHandler() {
-        ValidateShipSize();
+        __ValidateShipSize();
         CalcMaxStationToOnStationDistanceValues();
     }
 
@@ -181,17 +181,48 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
         }
     }
 
-    private void ValidateShipSize() {
+    protected override void Cleanup() {
+        CleanupDebugShowFleetFormationStation();
+    }
+
+    #region Object.Equals and GetHashCode Override
+
+    public override bool Equals(object obj) {
+        if (!(obj is FleetFormationStation)) { return false; }
+        return Equals((FleetFormationStation)obj);
+    }
+
+    /// <summary>
+    /// Returns a hash code for this instance.
+    /// See "Page 254, C# 4.0 in a Nutshell."
+    /// </summary>
+    /// <returns>
+    /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
+    /// </returns>
+    public override int GetHashCode() {
+        unchecked { // http://dobrzanski.net/2010/09/13/csharp-gethashcode-cause-overflowexception/
+            int hash = base.GetHashCode();
+            hash = hash * 31 + _uniqueID.GetHashCode(); // 31 = another prime number
+            return hash;
+        }
+    }
+
+    #endregion
+
+    public override string ToString() {
+        return DebugName;
+    }
+
+    #region Debug
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    private void __ValidateShipSize() {
         if (AssignedShip != null) {
             if (AssignedShip.CollisionDetectionZoneRadius * 1.5F > Radius) {
                 D.Warn("{0}.CollisionDetectionZoneRadius {1:0.00} is too large for {2}.Radius of {3:0.00}.",
                     DebugName, AssignedShip.CollisionDetectionZoneRadius, typeof(FleetFormationStation).Name, Radius);
             }
         }
-    }
-
-    protected override void Cleanup() {
-        CleanupDebugShowFleetFormationStation();
     }
 
     #region Debug Show Formation Station
@@ -231,33 +262,7 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
 
     #endregion
 
-    #region Object.Equals and GetHashCode Override
-
-    public override bool Equals(object obj) {
-        if (!(obj is FleetFormationStation)) { return false; }
-        return Equals((FleetFormationStation)obj);
-    }
-
-    /// <summary>
-    /// Returns a hash code for this instance.
-    /// See "Page 254, C# 4.0 in a Nutshell."
-    /// </summary>
-    /// <returns>
-    /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
-    /// </returns>
-    public override int GetHashCode() {
-        unchecked { // http://dobrzanski.net/2010/09/13/csharp-gethashcode-cause-overflowexception/
-            int hash = base.GetHashCode();
-            hash = hash * 31 + _uniqueID.GetHashCode(); // 31 = another prime number
-            return hash;
-        }
-    }
-
     #endregion
-
-    public override string ToString() {
-        return DebugName;
-    }
 
     #region IEquatable<FleetFormationStation> Members
 
@@ -267,7 +272,6 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
     }
 
     #endregion
-
 
     #region INavigableDestination Members
 
@@ -312,13 +316,26 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
         return Owner == player;
     }
 
+    /// <summary>
+    /// Gets the repair capacity available for this Unit's CmdModule in hitPts per day.
+    /// </summary>
+    /// <param name="unitCmd">The unit command module.</param>
+    /// <param name="hqElement">The HQElement.</param>
+    /// <param name="cmdOwner">The command owner.</param>
+    /// <returns></returns>
+    public float GetAvailableRepairCapacityFor(IUnitCmd_Ltd unitCmd, IUnitElement_Ltd hqElement, Player cmdOwner) {
+        D.AssertEqual(Owner, cmdOwner);
+        float basicValue = TempGameValues.RepairCapacityBaseline_FormationStation_CmdModule;
+        return basicValue;
+    }
+
     #endregion
 
     #region IShipRepairCapable Members
 
     public float GetAvailableRepairCapacityFor(IShip_Ltd ship, Player elementOwner) {
         D.AssertEqual(Owner, elementOwner);
-        float basicValue = TempGameValues.RepairCapacityBaseline_FormationStation;
+        float basicValue = TempGameValues.RepairCapacityBaseline_FormationStation_Element;
         return basicValue;
     }
 
@@ -328,7 +345,7 @@ public class FleetFormationStation : AFormationStation, IFleetFormationStation, 
 
     public float GetAvailableRepairCapacityFor(IFacility_Ltd facility, Player elementOwner) {
         D.AssertEqual(Owner, elementOwner);
-        float basicValue = TempGameValues.RepairCapacityBaseline_FormationStation;
+        float basicValue = TempGameValues.RepairCapacityBaseline_FormationStation_Element;
         return basicValue;
     }
 

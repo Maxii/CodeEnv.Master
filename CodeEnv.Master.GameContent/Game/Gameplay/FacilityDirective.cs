@@ -47,20 +47,20 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Facilities can repair in place. Only Base Cmd, Captain or the User may order a Facility to repair.
-        /// <remarks>11.8.17 Requires a null Target.</remarks>
+        /// <remarks>12.14.17 Requires a non-null (facility's base) Target.</remarks>
         /// </summary>
         Repair,
 
         /// <summary>
         /// Facilities refit in place. Only Base Cmd or the User/PlayerAI may order a Facility to refit.
-        /// <remarks>11.8.17 Requires a null Target.</remarks>
+        /// <remarks>12.14.17 Requires a non-null (facility's base) Target.</remarks>
         /// </summary>
         Refit,
 
         /// <summary>
         /// Facilities disband in place. Only Base Cmd or the User/AIPlayer may order a Facility to disband.
         /// When a Facility is disbanded, the owner of the Facility retains a percentage of the resources used to build it.
-        /// <remarks>11.8.17 Requires a null Target.</remarks>
+        /// <remarks>12.14.17 Requires a non-null (facility's base) Target.</remarks>
         /// </summary>
         Disband,
 
@@ -74,8 +74,6 @@ namespace CodeEnv.Master.GameContent {
         [System.Obsolete("Not needed as only implemented in AiShip/Facility CtxMenus for debug and not as an order")]
         ChgOwner,
 
-        ////[System.Obsolete]
-        ////StopAttack
 
     }
 }

@@ -196,7 +196,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="selectionConstraint">The selection constraint.</param>
         /// <returns></returns>
         public bool IsSlotAvailable(FormationStationSelectionCriteria selectionConstraint) {
-            D.Assert(_availableStationSlots.Where(sInfo => sInfo.IsHQSlot).IsNullOrEmpty());    // HQ slot should never be available here
+            D.Assert(!_availableStationSlots.Where(sInfo => sInfo.IsHQSlot).Any());    // HQ slot should never be available here
             return _availableStationSlots.Where(sInfo => sInfo.IsReserve == selectionConstraint.IsReserveReqd).Any();
         }
 

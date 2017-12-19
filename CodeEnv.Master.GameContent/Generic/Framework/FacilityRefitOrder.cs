@@ -45,7 +45,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="refitDesign">The design to use for the refit.</param>
         /// <param name="target">The target.</param>
         public FacilityRefitOrder(OrderSource source, Guid cmdOrderID, FacilityDesign refitDesign, IElementNavigableDestination target)
-            : base(FacilityDirective.Refit, source, cmdOrderID) {
+            : base(FacilityDirective.Refit, source, cmdOrderID, target) {
+            D.Assert(target is IUnitBaseCmd);
             RefitDesign = refitDesign;
         }
 

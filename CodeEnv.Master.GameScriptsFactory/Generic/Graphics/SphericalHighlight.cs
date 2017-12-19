@@ -26,8 +26,6 @@ using UnityEngine;
 /// </summary>
 public class SphericalHighlight : AMonoBase, ISphericalHighlight {
 
-    public string DebugName { get { return GetType().Name; } }
-
     [Tooltip("Shows a label that tracks the highlight")]
     [SerializeField]
     private bool _enableTrackingLabel = false;
@@ -36,7 +34,6 @@ public class SphericalHighlight : AMonoBase, ISphericalHighlight {
     [SerializeField]
     private bool _enableEditorAlphaControl = false;
 
-    public bool IsShowing { get { return enabled; } }
 
     [Tooltip("Adjust to change transparency of highlight during Edit")]
     [Range(0F, 1.0F)]
@@ -58,6 +55,10 @@ public class SphericalHighlight : AMonoBase, ISphericalHighlight {
             SetProperty<float>(ref _alpha, value, "Alpha", AlphaPropChangedEventHandler);
         }
     }
+
+    public string DebugName { get { return GetType().Name; } }
+
+    public bool IsShowing { get { return enabled; } }
 
     private GameColor _color;
     public GameColor Color {

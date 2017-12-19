@@ -35,8 +35,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     /// <summary>
     /// Indicates whether this facility is capable of firing on a target in an attack.
-    /// <remarks>A facility that is not capable of attacking is usually a facility that is under orders not to attack 
-    /// (CombatStance is Defensive) or one with no operational weapons.</remarks>
+    /// <remarks>A facility that is not capable of attacking is usually a facility that has no operational weapons.</remarks>
     /// </summary>
     public override bool IsAttackCapable { get { return Data.WeaponsRange.Max > Constants.ZeroF; } }
 
@@ -187,7 +186,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     }
 
     #region Event and Property Change Handlers
-
 
     private void CurrentOrderPropChangingHandler(FacilityOrder incomingOrder) {
         HandleCurrentOrderPropChanging(incomingOrder);
@@ -442,46 +440,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     /// </summary>
     /// <param name="orderDirective">The order directive.</param>
     /// <returns></returns>
-    /// <exception cref="System.NotImplementedException"></exception>
     public bool IsAuthorizedForNewOrder(FacilityDirective orderDirective) {
-        if (orderDirective == FacilityDirective.Scuttle) {
-            return true;    // Scuttle orders never deferred while paused so no need for IsCurrentOrderDirective check
-        }
-        if (Availability == NewOrderAvailability.Unavailable) {
-            D.AssertNotEqual(FacilityDirective.Cancel, orderDirective);
-            return false;
-        }
-        if (orderDirective == FacilityDirective.Cancel) {
-            D.Assert(IsPaused);
-            return true;
-        }
-        if (orderDirective == FacilityDirective.Attack) {
-            // Can be ordered to attack even if already attacking
-            return IsAttackCapable; // IMPROVE
-        }
-
-        if (orderDirective == FacilityDirective.Refit) {
-            return _gameMgr.PlayersDesigns.AreUpgradeDesignsPresent(Owner, Data.Design);
-        }
-        if (orderDirective == FacilityDirective.Disband) {
-            // Can disband at any time as long as not Constructing, Refitting or already Disbanding
-            return true;
-        }
-        if (orderDirective == FacilityDirective.Repair) {
-            if (_debugSettings.DisableRepair) {
-                return false;
-            }
-            // 12.9.17 _debugSettings.AllPlayersInvulnerable not needed as it keeps damage from being taken
-            return Data.Health < Constants.OneHundredPercent;
-        }
-        if (orderDirective == FacilityDirective.Construct) {
-            if (CurrentOrder != null) {
-                // 12.5.17 if this occurs, the method was probably called after Construct was assigned as the CurrentOrder
-                D.Error("{0}.CurrentOrder {1} should be null.", DebugName, CurrentOrder.DebugName);
-            }
-            return true;
-        }
-        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(orderDirective));
+        string unusedFailCause;
+        return __TryAuthorizeNewOrder(orderDirective, out unusedFailCause);
     }
 
     private void HandleNewOrder() {
@@ -495,7 +456,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             D.Assert(!IsDead);
             //D.Log(ShowDebugLog, "{0} received new order {1}. Frame {2}.", DebugName, CurrentOrder.Directive.GetValueName(), Time.frameCount);
 
-            ////__ValidateOrder(CurrentOrder);
             __ValidateKnowledgeOfOrderTarget(CurrentOrder);
 
             // 4.8.17 If a non-Call()ed state is to notify Cmd of OrderOutcome, this is when notification of receiving a new order will happen. 
@@ -521,7 +481,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
                     CurrentState = FacilityState.ExecuteRefitOrder;
                     break;
                 case FacilityDirective.Disband:
-                    ////D.Warn("{0}.{1} is not currently implemented.", typeof(FacilityDirective).Name, directive.GetValueName());
                     CurrentState = FacilityState.ExecuteDisbandOrder;
                     break;
                 case FacilityDirective.Cancel:
@@ -633,8 +592,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void ExecuteConstructOrder_UponPreconfigureState() {
         LogEvent();
-        ValidateCommonNotCallableStateValues();
-        D.AssertNotNull(Command);
+        ValidateCommonNonCallableStateValues();
 
         ReworkUnderway = ReworkingMode.Constructing;
         StartEffectSequence(EffectSequenceID.Constructing);
@@ -644,7 +602,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     IEnumerator ExecuteConstructOrder_EnterState() {
         LogEvent();
-        D.Log(/*ShowDebugLog, */"{0} has begun initial construction.", DebugName);
+        //D.Log(ShowDebugLog, "{0} has begun initial construction.", DebugName);
 
         Data.PrepareForInitialConstruction();
 
@@ -706,9 +664,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void ExecuteConstructOrder_ExitState() {
         LogEvent();
+        ResetCommonNonCallableStateValues();
         StopEffectSequence(EffectSequenceID.Constructing);
         ReworkUnderway = ReworkingMode.None;
-        _hasOrderOutcomeCallbackAttemptOccurred = false;
     }
 
     #endregion
@@ -719,7 +677,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void Idling_UponPreconfigureState() {
         LogEvent();
-        ValidateCommonNotCallableStateValues();
+        ValidateCommonNonCallableStateValues();
     }
 
     IEnumerator Idling_EnterState() {
@@ -797,7 +755,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void Idling_ExitState() {
         LogEvent();
-        _hasOrderOutcomeCallbackAttemptOccurred = false;
+        ResetCommonNonCallableStateValues();
     }
 
     #endregion
@@ -806,12 +764,25 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     private IElementNavigableDestination _fsmTgt;
 
+    #region ExecuteAttackOrder Support Members
+
     private IElementBlastable _fsmPrimaryAttackTgt;    // UNDONE
+
+    private FsmReturnHandler CreateFsmReturnHandler_RepairingToAttack() {
+        IDictionary<FsmCallReturnCause, Action> taskLookup = new Dictionary<FsmCallReturnCause, Action>() {
+
+            // Death: 4.14.17 No longer a ReturnCause as InitiateDeadState auto Return()s out of Call()ed states
+        };
+        return new FsmReturnHandler(taskLookup, FacilityState.Repairing.GetValueName());
+    }
+
+
+    #endregion
 
     void ExecuteAttackOrder_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonNotCallableStateValues();
+        ValidateCommonNonCallableStateValues();
         D.Assert(CurrentOrder.ToCallback);
 
         // The attack target acquired from the order. Should always be a Fleet
@@ -845,9 +816,25 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
             //TODO Implement communication of results to BaseCmd ala Ship -> FleetCmd
             // Command.HandleOrderOutcom(this, _fsmPrimaryAttackTgt, isSuccessful, failureCause);
+
+            if (AssessNeedForRepair(HealthThreshold_Damaged)) {
+                var unitAttackTgt = _fsmTgt;
+                _fsmTgt = Command;
+                FsmReturnHandler returnHandler = GetInactiveReturnHandlerFor(FacilityState.Repairing, CurrentState);
+                Call(FacilityState.Repairing);
+                yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
+
+                if (!returnHandler.DidCallSuccessfullyComplete) {
+                    yield return null;
+                    D.Error("Shouldn't get here as the ReturnCause should generate a change of state.");
+                }
+                _fsmTgt = unitAttackTgt;
+            }
+            // Remain in ExecuteAttackOrder state until target is dead. If serious damage incurred, state will restart
+
             yield return null;
         }
-        AttemptOrderOutcomeCallback(OrderFailureCause.None);
+        AttemptOrderOutcomeCallback(OrderFailureCause.None, _fsmTgt);
         CurrentState = FacilityState.Idling;
     }
 
@@ -863,14 +850,13 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void ExecuteAttackOrder_UponNewOrderReceived() {
         LogEvent();
-        AttemptOrderOutcomeCallback(OrderFailureCause.NewOrderReceived);
+        AttemptOrderOutcomeCallback(OrderFailureCause.NewOrderReceived, _fsmTgt);
     }
 
     void ExecuteAttackOrder_UponDamageIncurred() {
         LogEvent();
-        if (AssessNeedForRepair(GeneralSettings.Instance.ElementHealthThreshold_BadlyDamaged)) {
-            AttemptOrderOutcomeCallback(OrderFailureCause.NeedsRepair);
-            IssueCaptainsRepairOrder();
+        if (AssessNeedForRepair(HealthThreshold_BadlyDamaged)) {
+            RestartState();
         }
     }
 
@@ -903,7 +889,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         LogEvent();
         // 12.12.17 Nothing to do. Facility can only lose ownership if last element in base. Base will have already 
         // changed its owner and ResetOrderAndState before this gets called so base will not process order callback.
-        ////AttemptOrderOutcomeCallback(OrderFailureCause.Ownership);
     }
 
     void ExecuteAttackOrder_UponDeath() {
@@ -917,9 +902,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         //D.Assert(isUnsubscribed);
         //isUnsubscribed = __AttemptFsmTgtSubscriptionChg(FsmTgtEventSubscriptionMode.InfoAccessChg, _fsmPrimaryAttackTgt, toSubscribe: false);
         //D.Assert(isUnsubscribed);
+        ResetCommonNonCallableStateValues();
         _fsmPrimaryAttackTgt = null;
-        _fsmTgt = null;
-        _hasOrderOutcomeCallbackAttemptOccurred = false;
     }
 
     #endregion
@@ -937,23 +921,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         return new FsmReturnHandler(taskLookup, FacilityState.Repairing.GetValueName());
     }
 
-    /// <summary>
-    /// Returns the recommended Repair Destination.
-    /// </summary>
-    /// <returns></returns>
-    [Obsolete]
-    private IFacilityRepairCapable DetermineRepairDest() {
-        D.AssertNotEqual(Constants.ZeroPercent, Data.Health);
-        // TODO When FormationStation gets added to facilities
-        //if (Data.Health > GeneralSettings.Instance.HealthThreshold_Damaged) {
-        //    return FormationStation;
-        //}
-        //else {
-        //    return Command;
-        //}
-        return Command;
-    }
-
     #endregion
 
     // 4.2.17 Repair at IFacilityRepairCapable (a base or future FormationStation)
@@ -961,21 +928,14 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     void ExecuteRepairOrder_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonNotCallableStateValues();
-        // 4.15.17 Can't Assert CurrentOrder.ToCallback as Captain can issue this order
-        ////D.AssertNull(CurrentOrder.Target);  // 4.3.17 For now as only current choices are this Facility's Cmd or the
-        //// Facility's future FormationStation which can both be chosen here
+        ValidateCommonNonCallableStateValues();
         D.AssertEqual(Command, CurrentOrder.Target);
         D.AssertNotEqual(Constants.OneHundredPercent, Data.Health);
-        ////var repairDest = ////DetermineRepairDest();
-        ////D.AssertEqual(Command, repairDest); // When not Cmd, won't need subscriptions?
+        // 4.15.17 Can't Assert CurrentOrder.ToCallback as Captain can issue this order
         _fsmTgt = CurrentOrder.Target;
 
         // No TargetDeathEventHandler and TargetOwnerChgdEventHandler needed for our own base with _UponLosingOwnership and _UponDeath
         // No infoAccessChgdEventHandlers needed for our own base
-        ////bool isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, repairDest);
-        ////D.Assert(isSubscribed);
-        ////_fsmTgt = repairDest;
 
         AssessAvailabilityStatus_Repair();
     }
@@ -1029,21 +989,10 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         // Cmd will handle. Can't be relevant as our Cmd is all we care about
     }
 
-    ////void ExecuteRepairOrder_UponFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) {
-    ////    LogEvent();
-    ////    // 5.22.17 Continue to repair. fstTgt is our own Cmd. If its owner changed it means that it was initiated
-    ////    // by us as we are the last remaining element, although our Owner hasn't completed its change yet.
-    ////    D.AssertEqual(Command, fsmTgt);
-    ////    D.Assert(IsOwnerChangeUnderway);
-    ////    D.AssertNotEqual(Command.Owner, Owner);
-    ////    D.Assert(IsHQ);
-    ////}
-
     void ExecuteRepairOrder_UponLosingOwnership() {
         LogEvent();
         // 12.12.17 Nothing to do. Facility can only lose ownership if last element in base. Base will have already 
         // changed its owner and ResetOrderAndState before this gets called so base will not process order callback.
-        ////AttemptOrderOutcomeCallback(OrderFailureCause.Ownership);
         D.Assert(IsOwnerChangeUnderway);
         D.AssertNotEqual(Command.Owner, Owner);
         D.Assert(IsHQ);
@@ -1056,16 +1005,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void ExecuteRepairOrder_ExitState() {
         LogEvent();
-
-        ////var repairDest = _fsmTgt as IFacilityRepairCapable;
+        ResetCommonNonCallableStateValues();
         // No TargetDeathEventHandler and TargetOwnerChgdEventHandler needed for our own base with _UponLosingOwnership and _UponDeath
         // No infoAccessChgdEventHandlers needed for our own base
-        ////bool isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, repairDest);
-        ////D.Assert(isUnsubscribed);
-
-        _activeFsmReturnHandlers.Clear();
-        _fsmTgt = null;
-        _hasOrderOutcomeCallbackAttemptOccurred = false;
     }
 
     #endregion
@@ -1092,7 +1034,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         WaitForHours waitYieldInstruction = new WaitForHours(GameTime.HoursPerDay);
 
         if (IsHQ && Command.CmdModuleHealth < Constants.OneHundredPercent) {
-            IUnitRepairCapable cmdModuleRepairDest = _fsmTgt as IUnitRepairCapable;
+            IRepairCapable cmdModuleRepairDest = _fsmTgt as IRepairCapable;
 
             //  IMPROVE should be some max repair level if repairing in place
             float cmdModuleRepairCapacityPerDay = cmdModuleRepairDest.GetAvailableRepairCapacityFor(Command, this, Owner);
@@ -1164,16 +1106,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         // TODO
     }
 
-    ////void Repairing_UponFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) {
-    ////    LogEvent();
-    ////    // 5.22.17 Continue to repair. fstTgt is our own Cmd. If its owner changed it means that it was initiated
-    ////    // by us as we are the last remaining element, although our Owner hasn't completed its change yet.
-    ////    D.AssertEqual(Command, fsmTgt);
-    ////    D.Assert(IsOwnerChangeUnderway);
-    ////    D.AssertNotEqual(Command.Owner, Owner);
-    ////    D.Assert(IsHQ);
-    ////}
-
     // 4.8.17 Call()ed state _UponNewOrderReceived() eliminated as auto Return()ed prior to _UponNewOrderReceived()
     // 4.15.17 Call()ed state _UponDeath eliminated as auto Return()ed as part of death sequence
     // 4.15.17 Call()ed state _UponLosingOwnership eliminated as auto Return()ed prior to _UponLosingOwnership()
@@ -1205,13 +1137,13 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void ExecuteRefitOrder_UponPreconfigureState() {
         LogEvent();
-        ValidateCommonNotCallableStateValues();
+        ValidateCommonNonCallableStateValues();
         D.Assert(CurrentOrder is FacilityRefitOrder);
         D.AssertEqual(Command, CurrentOrder.Target);
-        // Cannot Assert CurrentOrder.ToCallback as can be issued by user
         D.AssertNull(_refitStorage);
+        // Cannot Assert CurrentOrder.ToCallback as can be issued by user
 
-        _fsmTgt = CurrentOrder.Target;  ////Command;  // Cmd expects returned order outcome target to be this itself
+        _fsmTgt = CurrentOrder.Target;
         ReworkUnderway = ReworkingMode.Refitting;
         StartEffectSequence(EffectSequenceID.Refitting);
 
@@ -1223,7 +1155,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
         var refitDesign = (CurrentOrder as FacilityRefitOrder).RefitDesign;
         float refitCost = __CalcRefitCost(refitDesign, Data.Design);
-        D.Log(/*ShowDebugLog, */"{0} is being added to the construction queue to refit to {1}. Cost = {2:0.}.",
+        D.Log(ShowDebugLog, "{0} is being added to the construction queue to refit to {1}. Cost = {2:0.}.",
             DebugName, refitDesign.DebugName, refitCost);
 
         _refitStorage = Data.PrepareForRefit();
@@ -1259,7 +1191,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         LogEvent();
         // 12.12.17 Nothing to do. Facility can only lose ownership if last element in base. Base will have already 
         // changed its owner and ResetOrderAndState before this gets called so base will not process order callback.
-        ////AttemptOrderOutcomeCallback(OrderFailureCause.Ownership);
         D.Assert(IsOwnerChangeUnderway);
         D.AssertNotEqual(Command.Owner, Owner);
         D.Assert(IsHQ);
@@ -1307,16 +1238,13 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     void ExecuteRefitOrder_ExitState() {
         LogEvent();
         // Uncompleted Refit can be canceled and go to Idling by removal from ConstructionQueue
+        ResetCommonNonCallableStateValues();
         StopEffectSequence(EffectSequenceID.Refitting);
         ReworkUnderway = ReworkingMode.None;
         _refitStorage = null;
-        _fsmTgt = null;
-        _hasOrderOutcomeCallbackAttemptOccurred = false;
     }
 
     #endregion
-
-
 
     #region ExecuteDisbandOrder
 
@@ -1326,8 +1254,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         FacilityDesign emptyDisbandDesign = _gameMgr.PlayersDesigns.GetFacilityDesign(currentDesign.Player, currentDesign.HullCategory.GetEmptyTemplateDesignName());
         float disbandCost = currentDesign.ConstructionCost - emptyDisbandDesign.ConstructionCost;
         if (disbandCost < currentDesign.MinimumDisbandCost) {
-            D.Log("{0}.DisbandCost {1:0.#} < Minimum {2:0.#}. Fixing. DisbandDesign: {3}.",
-                DebugName, disbandCost, currentDesign.MinimumDisbandCost, emptyDisbandDesign.DebugName);
+            //D.Log("{0}.DisbandCost {1:0.#} < Minimum {2:0.#}. Fixing. DisbandDesign: {3}.",
+            //    DebugName, disbandCost, currentDesign.MinimumDisbandCost, emptyDisbandDesign.DebugName);
             disbandCost = emptyDisbandDesign.MinimumDisbandCost;
         }
         return disbandCost;
@@ -1337,11 +1265,11 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void ExecuteDisbandOrder_UponPreconfigureState() {
         LogEvent();
-        ValidateCommonNotCallableStateValues();
+        ValidateCommonNonCallableStateValues();
         // Cannot Assert CurrentOrder.ToCallback as can be issued by user
         D.AssertEqual(Command, CurrentOrder.Target);
 
-        _fsmTgt = CurrentOrder.Target;  ////Command;  // Cmd expects returned order outcome target to be itself
+        _fsmTgt = CurrentOrder.Target;
         ReworkUnderway = ReworkingMode.Disbanding;
         StartEffectSequence(EffectSequenceID.Disbanding);
 
@@ -1351,9 +1279,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     IEnumerator ExecuteDisbandOrder_EnterState() {
         LogEvent();
 
-        ////var disbandDesign = (CurrentOrder as FacilityDisbandOrder).EmptyDisbandDesign;
         float disbandCost = __CalcDisbandCost(Data.Design);
-        D.Log(/*ShowDebugLog, */"{0} is being added to the construction queue to disband. Cost = {1:0.}.",
+        D.Log(ShowDebugLog, "{0} is being added to the construction queue to disband. Cost = {1:0.}.",
             DebugName, disbandCost);
 
         Data.PrepareForDisband();
@@ -1428,10 +1355,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void ExecuteDisbandOrder_ExitState() {
         LogEvent();
+        ResetCommonNonCallableStateValues();
         StopEffectSequence(EffectSequenceID.Disbanding);
         ReworkUnderway = ReworkingMode.None;
-        _fsmTgt = null;
-        _hasOrderOutcomeCallbackAttemptOccurred = false;
     }
 
     #endregion
@@ -1522,8 +1448,12 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     private FsmReturnHandler CreateFsmReturnHandlerFor(FacilityState calledState, FacilityState returnedState) {
         D.Assert(IsCallableState(calledState));
         if (calledState == FacilityState.Repairing) {
-            D.AssertEqual(FacilityState.ExecuteRepairOrder, returnedState);
-            return CreateFsmReturnHandler_RepairingToRepair();
+            if (returnedState == FacilityState.ExecuteRepairOrder) {
+                return CreateFsmReturnHandler_RepairingToRepair();
+            }
+            if (returnedState == FacilityState.ExecuteAttackOrder) {
+                return CreateFsmReturnHandler_RepairingToAttack();
+            }
         }
         D.Error("{0}: No {1} found for CalledState {2} and ReturnedState {3}.",
             DebugName, typeof(FsmReturnHandler).Name, calledState.GetValueName(), returnedState.GetValueName());
@@ -1534,10 +1464,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #region Order Outcome Callback System
 
-    protected override void DispatchOrderOutcomeCallback(OrderFailureCause failureCause) {
-        ////D.Assert(ToNotifyCmdOfOrderOutcome);
+    protected override void DispatchOrderOutcomeCallback(OrderFailureCause failureCause, IElementNavigableDestination fsmTgt) {
         FacilityState stateBeforeNotification = CurrentState;
-        OnSubordinateOrderOutcome(_fsmTgt, failureCause);
+        OnSubordinateOrderOutcome(fsmTgt, failureCause);
         if (CurrentState != stateBeforeNotification) {
             D.Warn("{0}: Informing Cmd of OrderOutcome has resulted in an immediate state change from {1} to {2}.",
                 DebugName, stateBeforeNotification.GetValueName(), CurrentState.GetValueName());
@@ -1546,8 +1475,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #endregion
 
-    protected override void ValidateCommonNotCallableStateValues() {
-        base.ValidateCommonNotCallableStateValues();
+    protected override void ValidateCommonNonCallableStateValues() {
+        base.ValidateCommonNonCallableStateValues();
         if (_fsmTgt != null) {
             D.Error("{0} _fsmTgt {1} should not already be assigned.", DebugName, _fsmTgt.DebugName);
         }
@@ -1560,6 +1489,11 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         if (mortalFsmTgt != null) {
             D.Assert(!mortalFsmTgt.IsDead, _fsmTgt.DebugName);
         }
+    }
+
+    protected override void ResetCommonNonCallableStateValues() {
+        base.ResetCommonNonCallableStateValues();
+        _fsmTgt = null;
     }
 
     public override void HandleEffectSequenceFinished(EffectSequenceID effectSeqID) {
@@ -1641,6 +1575,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     protected override void __LogOrderClearedByCmd() {
         if (CurrentOrder != null) {
+            if (Availability == NewOrderAvailability.Unavailable) {
+                D.Warn("{0} is clearing {1} while unavailable as ordered by Cmd.", DebugName, CurrentOrder.DebugName);
+            }
             D.Log("{0} is clearing {1} as ordered by Cmd.", DebugName, CurrentOrder.DebugName);
         }
     }
@@ -1661,45 +1598,11 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     [System.Diagnostics.Conditional("DEBUG")]
     private void __ValidateIncomingOrder(FacilityOrder incomingOrder) {
         if (incomingOrder != null) {
-            if (!IsAuthorizedForNewOrder(incomingOrder.Directive)) {
-                D.Error("{0}'s incoming order {1} is not valid. CurrentState = {2}.", DebugName, incomingOrder.DebugName, CurrentState.GetValueName());
+            string failCause;
+            if (!__TryAuthorizeNewOrder(incomingOrder.Directive, out failCause)) {
+                D.Error("{0}'s incoming order {1} is not valid. FailCause = {2}, CurrentState = {3}.",
+                    DebugName, incomingOrder.DebugName, failCause, CurrentState.GetValueName());
             }
-        }
-    }
-
-    [System.Diagnostics.Conditional("DEBUG")]
-    [Obsolete]
-    private void __ValidateOrder(FacilityOrder order) {
-        var directive = order.Directive;
-        var target = order.Target;
-        if (Availability == NewOrderAvailability.Unavailable) {
-            D.AssertEqual(FacilityDirective.Scuttle, directive);
-        }
-
-        if (directive == FacilityDirective.Scuttle || directive == FacilityDirective.Construct) {
-            D.AssertNull(target);
-        }
-        else {
-            if (ReworkUnderway == ReworkingMode.Constructing || ReworkUnderway == ReworkingMode.Refitting) {
-                D.Error("{0} received new order {1} while {2}.", DebugName, order.DebugName, ReworkUnderway.GetValueName());
-            }
-            else {
-                if (directive == FacilityDirective.Disband) {
-                    // do nothing as directives aren't yet implemented
-                }
-                else if (directive == FacilityDirective.Repair) {
-                    // 4.5.17 Current Repair destinations are Facility's Base and its (future) FormationStation. Neither are specified in orders
-                    D.AssertNull(target);
-                }
-                else if (directive == FacilityDirective.Refit) {
-                    // 11.8.17 No need for refit destination for a facility. It does refitting in place
-                    D.AssertNull(target);
-                }
-                else if (!OwnerAIMgr.HasKnowledgeOf(target as IOwnerItem_Ltd)) {
-                    D.Warn("{0} received order {1} when {2} has no knowledge of target.", DebugName, order.DebugName, Owner.DebugName);
-                }
-            }
-            // 12.4.17 deprecated StopAttack
         }
     }
 
@@ -1711,6 +1614,63 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
                 D.Warn("{0} received order {1} when {2} has no knowledge of target.", DebugName, order.DebugName, Owner.DebugName);
             }
         }
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if the provided directive is authorized for use in a new order about to be issued.
+    /// <remarks>Does not take into account whether consecutive order directives of the same value are allowed.
+    /// If this criteria should be included, the client will need to include it manually.</remarks>
+    /// <remarks>Warning: Do not use to Assert once CurrentOrder has changed and unpaused as order directives that
+    /// result in Availability.Unavailable will fail the assert.</remarks>
+    /// </summary>
+    /// <param name="orderDirective">The order directive.</param>
+    /// <param name="failCause">The fail cause.</param>
+    /// <returns></returns>
+    /// <exception cref="System.NotImplementedException"></exception>
+    internal bool __TryAuthorizeNewOrder(FacilityDirective orderDirective, out string failCause) {
+        failCause = "None";
+        if (orderDirective == FacilityDirective.Scuttle) {
+            return true;    // Scuttle orders never deferred while paused so no need for IsCurrentOrderDirective check
+        }
+        if (Availability == NewOrderAvailability.Unavailable) {
+            D.AssertNotEqual(FacilityDirective.Cancel, orderDirective);
+            failCause = "Unavailable";
+            return false;
+        }
+        if (orderDirective == FacilityDirective.Cancel) {
+            D.Assert(IsPaused);
+            return true;
+        }
+        if (orderDirective == FacilityDirective.Attack) {
+            // Can be ordered to attack even if already attacking
+            return true;    // Facilities can always be ordered to attack although they might not have any operational weapons
+        }
+
+        if (orderDirective == FacilityDirective.Refit) {
+            failCause = "No refit designs";
+            return _gameMgr.PlayersDesigns.AreUpgradeDesignsPresent(Owner, Data.Design);
+        }
+        if (orderDirective == FacilityDirective.Disband) {
+            // Can disband at any time as long as not Constructing, Refitting or already Disbanding
+            return true;
+        }
+        if (orderDirective == FacilityDirective.Repair) {
+            if (__debugSettings.DisableRepair) {
+                failCause = "Repair disabled";
+                return false;
+            }
+            // 12.9.17 _debugSettings.AllPlayersInvulnerable not needed as it keeps damage from being taken
+            failCause = "Perfect health";
+            return Data.Health < Constants.OneHundredPercent;
+        }
+        if (orderDirective == FacilityDirective.Construct) {
+            if (CurrentOrder != null) {
+                // 12.5.17 if this occurs, the method was probably called after Construct was assigned as the CurrentOrder
+                D.Error("{0}.CurrentOrder {1} should be null.", DebugName, CurrentOrder.DebugName);
+            }
+            return true;
+        }
+        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(orderDirective));
     }
 
     [System.Diagnostics.Conditional("DEBUG")]

@@ -29,10 +29,7 @@ namespace CodeEnv.Master.GameContent {
 
         private static readonly BaseDirective[] DirectivesWithNullTarget = new BaseDirective[]  {
                                                                                                     BaseDirective.Cancel,
-                                                                                                    ////BaseDirective.Disband,
-                                                                                                    BaseDirective.Scuttle,
-                                                                                                    ////BaseDirective.Refit,
-                                                                                                    ////BaseDirective.Repair
+                                                                                                    BaseDirective.Scuttle
                                                                                                 };
 
         private static readonly BaseDirective[] DirectivesWithNonNullTarget = new BaseDirective[]   {

@@ -351,7 +351,7 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable,
                 ship.DebugName, arrivingLeavingMsg, DebugName, shipDistance - insideOrbitSlotThreshold);
             float halfOutsideOrbitSlotThreshold = Data.CloseOrbitOuterRadius;
             if (shipDistance > halfOutsideOrbitSlotThreshold) {
-                D.Warn("{0} is {1} close orbit of {2} but collision detection zone is half or more outside of orbit slot.", ship.DebugName, arrivingLeavingMsg, DebugName);
+                D.Log("{0} is {1} close orbit of {2} but collision detection zone is half or more outside of orbit slot.", ship.DebugName, arrivingLeavingMsg, DebugName);
                 if (isArriving) {
                     float distanceMovedWhileWaitingForArrival = shipDistance - __distanceUponInitialArrival;
                     string distanceMsg = distanceMovedWhileWaitingForArrival < 0F ? "closer in toward" : "further out from";
@@ -423,13 +423,28 @@ public class PlanetItem : APlanetoidItem, IPlanet, IPlanet_Ltd, IShipExplorable,
         return !Owner.IsEnemyOf(player);
     }
 
+    public float GetAvailableRepairCapacityFor(IUnitCmd_Ltd unitCmd, IUnitElement_Ltd hqElement, Player cmdOwner) {
+        if (IsRepairingAllowedBy(cmdOwner)) {
+            float orbitFactor = 1F;
+            IShip_Ltd ship = hqElement as IShip_Ltd;
+            if (ship != null) {
+                orbitFactor = IsInCloseOrbit(ship) ? TempGameValues.RepairCapacityFactor_CloseOrbit
+                    : IsInHighOrbit(ship) ? TempGameValues.RepairCapacityFactor_HighOrbit : 1F; // 1 - 2
+            }
+            float basicValue = TempGameValues.RepairCapacityBaseline_Planet_CmdModule;
+            float relationsFactor = Owner.GetCurrentRelations(cmdOwner).RepairCapacityFactor(); // 0.5 - 2
+            return basicValue * relationsFactor * orbitFactor;
+        }
+        return Constants.ZeroF;
+    }
+
     #endregion
 
     #region IShipRepairCapable Members
 
     public float GetAvailableRepairCapacityFor(IShip_Ltd ship, Player elementOwner) {
         if (IsRepairingAllowedBy(elementOwner)) {
-            float basicValue = TempGameValues.RepairCapacityBaseline_Planet;
+            float basicValue = TempGameValues.RepairCapacityBaseline_Planet_Element;
             float relationsFactor = Owner.GetCurrentRelations(elementOwner).RepairCapacityFactor(); // 0.5 - 2
             float orbitFactor = IsInCloseOrbit(ship) ? TempGameValues.RepairCapacityFactor_CloseOrbit
                 : IsInHighOrbit(ship) ? TempGameValues.RepairCapacityFactor_HighOrbit : 1F; // 1 - 2

@@ -336,10 +336,6 @@ public abstract class ABaseUnitHudForm : AForm {
     }
 
     private void HandleUnitDisbandButtonToggleChanged() {
-        ////D.Warn("{0}.HandleUnitDisbandButtonToggleChanged not yet implemented.", DebugName);
-        ////_toggleButtonsUsedThisSession.Add(_unitDisbandButton);
-        ////AssessUnitButtons();
-        //// UNDONE
         BaseOrder order;
         bool isButtonToggledIn = _unitDisbandButton.IsToggledIn;
         if (isButtonToggledIn) {
@@ -548,7 +544,6 @@ public abstract class ABaseUnitHudForm : AForm {
         var pickedFacility = _pickedFacilityIcons.First().Element;
         FacilityOrder order;
         if (_facilityDisbandButton.IsToggledIn) {
-            ////FacilityDesign emptyTemplateDesign = __GetEmptyTemplateDesign(pickedFacility.Data.Design);
             order = new FacilityOrder(FacilityDirective.Disband, OrderSource.User, SelectedUnit);
         }
         else {
@@ -1169,23 +1164,8 @@ public abstract class ABaseUnitHudForm : AForm {
 
     #region Debug
 
-    [Obsolete]
-    private FacilityDesign __GetEmptyTemplateDesign(FacilityDesign designToBeDisbanded) {
-        Player designOwner = designToBeDisbanded.Player;
-        string emptyTemplateDesignName = designToBeDisbanded.HullCategory.GetEmptyTemplateDesignName();
-        return _gameMgr.PlayersDesigns.GetFacilityDesign(designOwner, emptyTemplateDesignName);
-    }
-
-    [Obsolete]
-    private ShipDesign __GetEmptyTemplateDesign(ShipDesign designToBeDisbanded) {
-        Player designOwner = designToBeDisbanded.Player;
-        string emptyTemplateDesignName = designToBeDisbanded.HullCategory.GetEmptyTemplateDesignName();
-        return _gameMgr.PlayersDesigns.GetShipDesign(designOwner, emptyTemplateDesignName);
-    }
-
     private FacilityDesign __PickRandomRefitDesign(FacilityDesign designToBeRefit) {
         IList<FacilityDesign> upgradeDesigns;
-        ////bool isUpgradeDesignsFound = _gameMgr.PlayersDesigns.TryGetUserUpgradeDesigns(designToBeRefit, out upgradeDesigns);
         bool isUpgradeDesignsFound = _gameMgr.PlayersDesigns.TryGetUpgradeDesigns(designToBeRefit.Player, designToBeRefit, out upgradeDesigns);
         D.Assert(isUpgradeDesignsFound);    // refit button not enabled if no upgrade designs
         return RandomExtended.Choice(upgradeDesigns);
@@ -1193,7 +1173,6 @@ public abstract class ABaseUnitHudForm : AForm {
 
     private ShipDesign __PickRandomRefitDesign(ShipDesign designToBeRefit) {
         IList<ShipDesign> upgradeDesigns;
-        ////bool isUpgradeDesignsFound = _gameMgr.PlayersDesigns.TryGetUserUpgradeDesigns(designToBeRefit, out upgradeDesigns);
         bool isUpgradeDesignsFound = _gameMgr.PlayersDesigns.TryGetUpgradeDesigns(designToBeRefit.Player, designToBeRefit, out upgradeDesigns);
         D.Assert(isUpgradeDesignsFound);    // refit button not enabled if no upgrade designs
         return RandomExtended.Choice(upgradeDesigns);

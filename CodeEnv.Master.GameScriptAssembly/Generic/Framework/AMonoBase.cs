@@ -41,9 +41,9 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     // even if the derived class doesn't declare them and call base.Event()
 
     protected virtual void Awake() {
-        useGUILayout = false;    // OPTIMIZE docs suggest = false for better performance
-        _debugSettings = DebugSettings.Instance;
         //LogEvent();
+        useGUILayout = false;    // OPTIMIZE docs suggest = false for better performance
+        __debugSettings = DebugSettings.Instance;
     }
 
     protected virtual void Start() {
@@ -145,6 +145,15 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     protected abstract void Cleanup();
 
     #endregion
+
+    /// <summary>
+    /// Hook for initializing static values during Awake().
+    /// <remarks>Only required when trying to initialize static values acquired from disk, aka values externally specified in XML. 
+    /// Attempting to initialize these values in a static initializer will result in the "get_dataPath not allowed to be called 
+    /// from a MonoBehaviour constructor (or instance field initializer)." Unity error.</remarks>
+    /// </summary>
+    [Obsolete("Instead, use lazy initialization.")]
+    protected virtual void InitializeStaticValuesOnAwake() { }
 
     #region UnitySerializer Archive
 
@@ -493,7 +502,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     // WARNING: KeyDuplication compile error in Unity with overriding optional parameters in MonoBehaviours   
 
     private const string AMonoBaseDebugLogEventMethodNameFormat = "{0}(from transform).{1}.{2}()";
-    protected DebugSettings _debugSettings;
+    protected DebugSettings __debugSettings;
 
     protected System.DateTime __durationStartTime;
 
@@ -512,7 +521,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     /// </summary>
     /// <param name="introText">The intro text.</param>
     protected void __LogDuration(string introText = null) {
-        if (_debugSettings.EnableDurationLogging) {
+        if (__debugSettings.EnableDurationLogging) {
             string text = !introText.IsNullOrEmpty() ? introText : __DurationLogIntroText;
             Debug.Log("{0} took {1:0.##} seconds to execute.".Inject(text, (Utility.SystemTime - __durationStartTime).TotalSeconds));
         }
@@ -533,7 +542,7 @@ public abstract class AMonoBase : MonoBehaviour, IChangeTracking, INotifyPropert
     /// Logging only occurs if DebugSettings.EnableEventLogging is true.
     /// </summary>
     public virtual void LogEvent() {
-        if (_debugSettings.EnableEventLogging) {
+        if (__debugSettings.EnableEventLogging) {
             string methodName = GetCallingMethodName();
             string fullMethodName = AMonoBaseDebugLogEventMethodNameFormat.Inject(transform.name, GetType().Name, methodName);
             Debug.Log("{0} beginning execution. Frame {1}, UnityTime {2:0.0}.".Inject(fullMethodName, Time.frameCount, Time.time));

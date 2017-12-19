@@ -168,10 +168,10 @@ public class GuiManager : AMonoSingleton<GuiManager> {
     }
 
     private void __CheckDebugSettings() {
-        if (_debugSettings.DisableGui) {
+        if (__debugSettings.DisableGui) {
             GuiCameraControl.Instance.GuiCamera.enabled = false;
         }
-        if (!_debugSettings.EnableFpsReadout) {
+        if (!__debugSettings.EnableFpsReadout) {
             gameObject.GetSingleComponentInChildren<FpsReadout>().gameObject.SetActive(false);
         }
     }

@@ -130,6 +130,8 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
     /// <c>false</c> otherwise. If false, upon return the top level menu item will be disabled. Default implementation is false with no targets.
     /// <remarks>The return value answers the question "Does the directive support submenus?" It does not mean "Are there any targets
     /// in the submenu?" so don't return targets.Any()!</remarks>
+    /// <remarks>12.13.17 Avoid asserting anything here based off of the assumption that IsUserMenuOperatorMenuItemDisabledFor will 
+    /// have already disabled the selection if the assert would fail. This method is also used to count the number of reqd submenus.</remarks>
     /// </summary>
     /// <param name="directive">The directive.</param>
     /// <param name="targets">The targets for the submenu if any were found. Can be empty.</param>
@@ -140,8 +142,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
         switch (directive) {
             case FleetDirective.Join:
                 IEnumerable<IFleetCmd> joinableFleets;
-                bool hasJoinableFleets = _userKnowledge.TryGetJoinableFleetsFor(_fleetMenuOperator, out joinableFleets);
-                D.Assert(hasJoinableFleets);
+                _userKnowledge.TryGetJoinableFleetsFor(_fleetMenuOperator, out joinableFleets);
                 targets = joinableFleets.Cast<INavigableDestination>();
                 doesDirectiveSupportSubmenus = true;
                 break;
@@ -220,15 +221,15 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
 
     private void IssueUserFleetMenuOperatorOrder(int itemID) {
         FleetDirective directive = (FleetDirective)_directiveLookup[itemID];
-        INavigableDestination target;
-        bool isTarget = _unitTargetLookup.TryGetValue(itemID, out target);
-        string msg = isTarget ? target.DebugName : "[none]";
-        D.Log("{0} selected directive {1} and target {2} from context menu.", DebugName, directive.GetValueName(), msg);
+        INavigableDestination subMenuTarget;
+        bool isSubmenuTarget = _unitSubmenuTgtLookup.TryGetValue(itemID, out subMenuTarget);
+        string submenuTgtMsg = isSubmenuTarget ? subMenuTarget.DebugName : "[none]";
+        D.Log("{0} selected directive {1} and submenu target {2} from context menu.", DebugName, directive.GetValueName(), submenuTgtMsg);
         if (directive == FleetDirective.ChangeHQ) {
-            _fleetMenuOperator.HQElement = target as ShipItem;
+            _fleetMenuOperator.HQElement = subMenuTarget as ShipItem;
         }
         else {
-            var order = new FleetOrder(directive, OrderSource.User, target as IFleetNavigableDestination);
+            var order = new FleetOrder(directive, OrderSource.User, subMenuTarget as IFleetNavigableDestination);
             _fleetMenuOperator.CurrentOrder = order;
         }
     }

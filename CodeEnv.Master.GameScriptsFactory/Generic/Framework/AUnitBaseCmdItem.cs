@@ -30,7 +30,7 @@ using UnityEngine;
 ///  Abstract class for AUnitCmdItem's that are Base Commands.
 /// </summary>
 public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCmd_Ltd, IShipCloseOrbitable, IGuardable,
-    IPatrollable, IFacilityRepairCapable, IUnitRepairCapable, IConstructionManagerClient {
+    IPatrollable, IFacilityRepairCapable, IConstructionManagerClient {
 
     /// <summary>
     /// The multiplier to apply to the item radius value used when determining the
@@ -154,21 +154,19 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     public sealed override void RemoveElement(AUnitElementItem element) {
         base.RemoveElement(element);
 
-        if (IsDead) {
-            D.Assert(!element.IsHQ);
-            // BaseCmd has died
-            if (Data.UnitHealth > Constants.ZeroPercent) {
-                D.Error("{0} has UnitHealth of {1:0.00} remaining.", DebugName, Data.UnitHealth);
-            }
-            return;
-        }
-
         var removedFacility = element as FacilityItem;
-        if (removedFacility == HQElement) {
-            // HQ Element has been removed
-            HQElement = SelectHQElement();
-            D.Log(ShowDebugLog, "{0} selected {1} as HQFacility after removal of {2}.", DebugName, HQElement.DebugName, removedFacility.DebugName);
+        if (!IsDead) {
+            if (removedFacility == HQElement) {
+                // 12.13.17 The facility that was just removed is the HQ, so select another. As HQElement changes to a new facility, the
+                // removedHQFacility will have its FormationStation slot restored to available in the FormationManager. 
+                // It can't be done here now as the FormationManager needs to know it is the HQ to restore the right slot. 
+                HQElement = SelectHQElement();
+                D.Log(ShowDebugLog, "{0} selected {1} as HQ after removal of {2}.", DebugName, HQElement.DebugName, removedFacility.DebugName);
+                return;
+            }
         }
+        // TODO: Whether Cmd is alive or dead, we still need to remove and recycle the FormationStation from the removed non-HQ facility
+        // once Facilities have FormationStations.
     }
 
     /// <summary>
@@ -420,6 +418,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         Hanger.HandleLosingOwnership();
     }
 
+    protected override void HandleHQElementChanging(AUnitElementItem incomingHQElement) {
+        base.HandleHQElementChanging(incomingHQElement);
+        // TODO Remove/ recycle the removedHQFacility's FormationStation once Facilities have them
+    }
+
     #region Orders
 
     /// <summary>
@@ -537,48 +540,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     /// </summary>
     /// <param name="orderDirective">The order directive.</param>
     /// <returns></returns>
-    /// <exception cref="System.NotImplementedException"></exception>
     public bool IsAuthorizedForNewOrder(BaseDirective orderDirective) {
-        if (orderDirective == BaseDirective.Scuttle) {
-            D.Assert(Elements.All(e => (e as FacilityItem).IsAuthorizedForNewOrder(FacilityDirective.Scuttle)));
-            return true;    // Scuttle orders never deferred while paused so no need for IsCurrentOrderDirective check
-        }
-        if (orderDirective == BaseDirective.ChangeHQ) {
-            // Can be ordered to change HQ even if unavailable
-            return ElementCount > Constants.One;
-        }
-
-        if (Availability == NewOrderAvailability.Unavailable) {
-            D.AssertNotEqual(BaseDirective.Cancel, orderDirective);
-            return false;
-        }
-        if (orderDirective == BaseDirective.Cancel) {
-            D.Assert(IsPaused);
-            return true;
-        }
-        if (orderDirective == BaseDirective.Attack) {
-            // Can be ordered to attack even if already attacking
-            return IsAttackCapable && OwnerAIMgr.Knowledge.AreAnyKnownFleetsAttackableByOwnerUnits; // IMPROVE within range
-        }
-
-        if (orderDirective == BaseDirective.Refit) {
-            return Elements.Any(e => (e as FacilityItem).IsAuthorizedForNewOrder(FacilityDirective.Refit));
-        }
-        if (orderDirective == BaseDirective.Disband) {
-            return Elements.Any(e => (e as FacilityItem).IsAuthorizedForNewOrder(FacilityDirective.Disband));
-        }
-        if (orderDirective == BaseDirective.Repair) {
-            if (_debugSettings.DisableRepair) {
-                return false;
-            }
-            // 12.9.17 _debugSettings.AllPlayersInvulnerable not needed as it keeps damage from being taken
-            if (Data.UnitHealth < Constants.OneHundredPercent) {
-                // one or more elements are damaged but element(s) could be unavailable
-                return Elements.Any(e => (e as FacilityItem).IsAuthorizedForNewOrder(FacilityDirective.Repair));
-            }
-            return false;
-        }
-        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(orderDirective));
+        string unusedFailCause;
+        return __TryAuthorizeNewOrder(orderDirective, out unusedFailCause);
     }
 
     private void HandleNewOrder() {
@@ -589,7 +553,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         ReturnFromCalledStates();
 
         if (CurrentOrder != null) {
-            ////__ValidateOrder(CurrentOrder);
             __ValidateKnowledgeOfOrderTarget(CurrentOrder);
 
             UponNewOrderReceived();
@@ -610,7 +573,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
                     CurrentState = BaseState.ExecuteRefitOrder;
                     break;
                 case BaseDirective.Disband:
-                    ////D.Warn("{0}.{1} is not currently implemented.", typeof(BaseDirective).Name, directive.GetValueName());
                     CurrentState = BaseState.ExecuteDisbandOrder;
                     break;
                 case BaseDirective.ChangeHQ:
@@ -708,7 +670,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void Idling_UponPreconfigureState() {
         LogEvent();
-        ValidateCommonNotCallableStateValues();
+        ValidateCommonNonCallableStateValues();
         // 12.4.17 Can't set availability here as can violate FSM rule: no state change in void EnterStates
     }
 
@@ -783,7 +745,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void Idling_UponUnitDamageIncurred() {
         LogEvent();
-        if (AssessNeedForRepair(GeneralSettings.Instance.UnitHealthThreshold_BadlyDamaged)) {
+        if (AssessNeedForRepair(HealthThreshold_BadlyDamaged)) {
             IssueCmdStaffsRepairOrder();
         }
     }
@@ -804,6 +766,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void Idling_ExitState() {
         LogEvent();
+        ResetCommonNonCallableStateValues();
     }
 
     #endregion
@@ -814,7 +777,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void ExecuteAttackOrder_UponPreconfigureState() {
         LogEvent();
-        ValidateCommonNotCallableStateValues();
+        ValidateCommonNonCallableStateValues();
 
         IUnitAttackable unitAttackTgt = CurrentOrder.Target;
         _fsmTgt = unitAttackTgt;
@@ -894,7 +857,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void ExecuteAttackOrder_UponUnitDamageIncurred() {
         LogEvent();
-        if (AssessNeedForRepair(GeneralSettings.Instance.UnitHealthThreshold_BadlyDamaged)) {
+        if (AssessNeedForRepair(HealthThreshold_BadlyDamaged)) {
             IssueCmdStaffsRepairOrder();
         }
     }
@@ -945,7 +908,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.OwnerAwareChg_Fleet);
         D.Assert(isUnsubscribed);
 
-        _fsmTgt = null;
+        ResetCommonNonCallableStateValues();
         ClearElementsOrders();
     }
 
@@ -969,11 +932,10 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected void ExecuteRepairOrder_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonNotCallableStateValues();
-        ////D.AssertNull(CurrentOrder.Target);  // 4.4.17 Currently no target as only repair destination for a base is itself
+        ValidateCommonNonCallableStateValues();
         D.AssertEqual(this, CurrentOrder.Target);
         D.AssertNotEqual(Constants.OneHundredPercent, Data.UnitHealth);
-        _fsmTgt = CurrentOrder.Target;  //// = this;
+        _fsmTgt = CurrentOrder.Target;
         // No FsmInfoAccessChgd, FsmTgtDeath or FsmTgtOwnerChg EventHandlers needed for our own base
         AssessAvailabilityStatus_Repair();
     }
@@ -1054,9 +1016,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void ExecuteRepairOrder_ExitState() {
         LogEvent();
-
-        _activeFsmReturnHandlers.Clear();
-        _fsmTgt = null;
+        ResetCommonNonCallableStateValues();
         ClearElementsOrders();
     }
 
@@ -1089,7 +1049,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
         ValidateCommonCallableStateValues(CurrentState.GetValueName());
 
-        IUnitRepairCapable thisRepairCapableBase = _fsmTgt as IUnitRepairCapable;
+        IRepairCapable thisRepairCapableBase = _fsmTgt as IRepairCapable;
         D.Assert(thisRepairCapableBase.IsRepairingAllowedBy(Owner));
 
         PopulateFsmFacilityRepairList();
@@ -1098,8 +1058,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected IEnumerator Repairing_EnterState() {
         LogEvent();
 
-        //// 4.3.17 Facilities will choose their own repairDestination, either thisRepairCapableBase or their future FormationStation
-        FacilityOrder facilityRepairOrder = new FacilityOrder(FacilityDirective.Repair, CurrentOrder.Source, CurrentOrder.OrderID, _fsmTgt as IElementNavigableDestination);
+        FacilityOrder facilityRepairOrder = new FacilityOrder(FacilityDirective.Repair, CurrentOrder.Source, CurrentOrder.OrderID,
+            _fsmTgt as IElementNavigableDestination);
         _fsmFacilityRepairList.ForAll(f => f.CurrentOrder = facilityRepairOrder);
 
         // 12.11.17 HQElement now handles CmdModule repair
@@ -1114,7 +1074,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         // See http://answers.unity3d.com/questions/158917/error-quotmcoroutineenumeratorgchandle-0quot.html
         yield return null;
 
-        D.Log(ShowDebugLog, "{0}'s has completed repair of CmdModule and all Elements. UnitHealth = {1:P01}.", DebugName, Data.UnitHealth);
+        D.Log(ShowDebugLog, "{0}'s has completed repair of all Elements. UnitHealth = {1:P01}.", DebugName, Data.UnitHealth);
         Return();
     }
 
@@ -1123,7 +1083,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         D.Log(ShowDebugLog, "{0}.Repairing_UponOrderOutcomeCallback() called from {1}. FailCause = {2}. Frame: {3}.",
             DebugName, facility.DebugName, failCause.GetValueName(), Time.frameCount);
 
-        D.AssertNotNull(target);
         if (isSuccess) {
             bool isRemoved = _fsmFacilityRepairList.Remove(facility);
             D.Assert(isRemoved);
@@ -1240,10 +1199,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected void ExecuteRefitOrder_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonNotCallableStateValues();
-        ////D.AssertNull(CurrentOrder.Target);  // 4.4.17 Currently no target as only refit destination for a base is itself
+        ValidateCommonNonCallableStateValues();
         D.AssertEqual(this, CurrentOrder.Target);
-        _fsmTgt = CurrentOrder.Target;  ////= this;
+        _fsmTgt = CurrentOrder.Target;
         // No FsmInfoAccessChgd, FsmTgtDeath or FsmTgtOwnerChg EventHandlers needed for our own base
 
         PopulateFsmFacilityRefitLookup();
@@ -1282,7 +1240,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         D.Log(ShowDebugLog, "{0}.ExecuteRefitOrder_UponOrderOutcomeCallback() called from {1}. FailCause = {2}. Frame: {3}.",
             DebugName, facility.DebugName, failCause.GetValueName(), Time.frameCount);
 
-        D.AssertEqual(this, target);
         if (isSuccess) {
             bool isRemoved = _fsmFacilityRefitLookup.Remove(facility);
             D.Assert(isRemoved);
@@ -1400,8 +1357,10 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void ExecuteRefitOrder_ExitState() {
         LogEvent();
+        ResetCommonNonCallableStateValues();
         _fsmFacilityRefitLookup.Clear();
-        _fsmTgt = null;
+        ////_activeFsmReturnHandlers.Clear();
+        ////_fsmTgt = null;
         ClearElementsOrders();
     }
 
@@ -1411,7 +1370,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     #region ExecuteDisbandOrder Support Members
 
-    ////private IDictionary<FacilityItem, FacilityDesign> _fsmFacilityRefitLookup;
     /// <summary>
     /// The current number of facilities the base is waiting on to complete disbanding.
     /// <remarks>The base does not wait for facilities that can't be ordered to disband 
@@ -1419,36 +1377,16 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     /// </summary>
     private int _fsmFacilityWaitForDisbandedCount;
 
-    ////private void PopulateFsmFacilityRefitLookup() {
-    ////    _fsmFacilityRefitLookup = _fsmFacilityRefitLookup ?? new Dictionary<FacilityItem, FacilityDesign>();
-    ////    D.Assert(!_fsmFacilityRefitLookup.Any());
-
-    ////    foreach (var e in Elements) {
-    ////        var f = e as FacilityItem;
-    ////        if (f.IsAuthorizedForNewOrder(FacilityDirective.Refit)) {
-
-    ////            IList<FacilityDesign> refitDesigns;
-    ////            bool isDesignAvailable = _gameMgr.PlayersDesigns.TryGetUpgradeDesigns(Owner, f.Data.Design, out refitDesigns);
-    ////            D.Assert(isDesignAvailable);
-    ////            FacilityDesign refitDesign = RandomExtended.Choice(refitDesigns);
-
-    ////            _fsmFacilityRefitLookup.Add(f, refitDesign);
-    ////        }
-    ////    }
-    ////    D.Assert(_fsmFacilityRefitLookup.Any());  // Should not have been called if no elements can be refit
-    ////}
-
     #endregion
 
     protected void ExecuteDisbandOrder_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonNotCallableStateValues();
-        ////D.AssertNull(CurrentOrder.Target);  // 4.4.17 Currently no target as only disband destination for a base is itself
+        ValidateCommonNonCallableStateValues();
         D.AssertEqual(this, CurrentOrder.Target);
         D.AssertEqual(Constants.Zero, _fsmFacilityWaitForDisbandedCount);
 
-        _fsmTgt = CurrentOrder.Target;  ////= this;
+        _fsmTgt = CurrentOrder.Target;
         // No FsmInfoAccessChgd, FsmTgtDeath or FsmTgtOwnerChg EventHandlers needed for our own base
         ChangeAvailabilityTo(NewOrderAvailability.Unavailable);
     }
@@ -1480,7 +1418,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
         // 11.26.17 Placeholder for disbanding the CmdModule which is not currently supported
         StartEffectSequence(EffectSequenceID.Disbanding);
-        ////Data.RemoveDamageFromAllCmdModuleEquipment();
         StopEffectSequence(EffectSequenceID.Disbanding);
 
         while (_fsmFacilityWaitForDisbandedCount > Constants.Zero) {
@@ -1489,8 +1426,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         }
 
         D.Error("{0} should be dead and never get here?", DebugName);
-        ////D.LogBold(/*ShowDebugLog, */"{0}'s has completed disbanding of all Elements.", DebugName);
-        ////D.Assert(IsDead);
     }
 
     protected void ExecuteDisbandOrder_UponOrderOutcomeCallback(FacilityItem facility, bool isSuccess, IElementNavigableDestination target, OrderFailureCause failCause) {
@@ -1498,7 +1433,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         D.Log(ShowDebugLog, "{0}.ExecuteDisbandOrder_UponOrderOutcomeCallback() called from {1}. FailCause = {2}. Frame: {3}.",
             DebugName, facility.DebugName, failCause.GetValueName(), Time.frameCount);
 
-        D.AssertEqual(this, target);
         if (isSuccess) {
             _fsmFacilityWaitForDisbandedCount--;
         }
@@ -1596,9 +1530,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void ExecuteDisbandOrder_ExitState() {
         LogEvent();
-        ////_fsmFacilityRefitLookup.Clear();
+        ResetCommonNonCallableStateValues();
         _fsmFacilityWaitForDisbandedCount = Constants.Zero;
-        _fsmTgt = null;
         ClearElementsOrders();
     }
 
@@ -1721,11 +1654,16 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         D.Assert(!_fsmTgt.IsDead, _fsmTgt.DebugName);
     }
 
-    protected override void ValidateCommonNotCallableStateValues() {
-        base.ValidateCommonNotCallableStateValues();
+    protected override void ValidateCommonNonCallableStateValues() {
+        base.ValidateCommonNonCallableStateValues();
         if (_fsmTgt != null) {
             D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", DebugName, _fsmTgt.DebugName);
         }
+    }
+
+    protected override void ResetCommonNonCallableStateValues() {
+        base.ResetCommonNonCallableStateValues();
+        _fsmTgt = null;
     }
 
     public override void HandleEffectSequenceFinished(EffectSequenceID effectID) {
@@ -1771,7 +1709,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected sealed override void IssueCmdStaffsRepairOrder() {
         D.Assert(!IsCurrentStateAnyOf(BaseState.ExecuteRepairOrder, BaseState.Repairing));
-        D.Assert(IsAuthorizedForNewOrder(BaseDirective.Repair));
+        ////D.Assert(IsAuthorizedForNewOrder(BaseDirective.Repair));
 
         // TODO Consider issuing RepairOrder as a followonOrder to some initial order, ala Ship
         BaseOrder repairOrder = new BaseOrder(BaseDirective.Repair, OrderSource.CmdStaff, this);
@@ -1827,17 +1765,14 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     [System.Diagnostics.Conditional("DEBUG")]
     private void __ValidateIncomingOrder(BaseOrder incomingOrder) {
         if (incomingOrder != null) {
-            if (!IsAuthorizedForNewOrder(incomingOrder.Directive)) {
-                D.Error("{0}'s incoming order {1} is not valid. CurrentState = {2}.", DebugName, incomingOrder.DebugName, CurrentState.GetValueName());
+            string failCause;
+            if (!__TryAuthorizeNewOrder(incomingOrder.Directive, out failCause)) {
+                D.Error("{0}'s incoming order {1} is not valid. FailCause = {2}, CurrentState = {3}.",
+                    DebugName, incomingOrder.DebugName, failCause, CurrentState.GetValueName());
             }
         }
     }
 
-    [System.Diagnostics.Conditional("DEBUG")]
-    [Obsolete]
-    private void __ValidateOrder(BaseOrder order) {
-        D.Assert(order.Source > OrderSource.Captain);
-    }
 
     [System.Diagnostics.Conditional("DEBUG")]
     private void __ValidateKnowledgeOfOrderTarget(BaseOrder order) {
@@ -1849,7 +1784,119 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         }
     }
 
-    protected override void __ValidateStateForSensorEventSubscription() {
+    /// <summary>
+    /// Returns <c>true</c> if the provided directive is authorized for use in a new order about to be issued.
+    /// <remarks>Does not take into account whether consecutive order directives of the same value are allowed.
+    /// If this criteria should be included, the client will need to include it manually.</remarks>
+    /// <remarks>Warning: Do not use to Assert once CurrentOrder has changed and unpaused as order directives that
+    /// result in Availability.Unavailable will fail the assert.</remarks>
+    /// </summary>
+    /// <param name="orderDirective">The order directive.</param>
+    /// <param name="failCause">The fail cause.</param>
+    /// <returns></returns>
+    /// <exception cref="System.NotImplementedException"></exception>
+    protected bool __TryAuthorizeNewOrder(BaseDirective orderDirective, out string failCause) {
+        failCause = "None";
+        if (orderDirective == BaseDirective.Scuttle) {
+            D.Assert(Elements.All(e => (e as FacilityItem).IsAuthorizedForNewOrder(FacilityDirective.Scuttle)));
+            return true;    // Scuttle orders never deferred while paused so no need for IsCurrentOrderDirective check
+        }
+        if (orderDirective == BaseDirective.ChangeHQ) {
+            // Can be ordered to change HQ even if unavailable
+            failCause = "ElementCount";
+            return ElementCount > Constants.One;
+        }
+
+        if (Availability == NewOrderAvailability.Unavailable) {
+            D.AssertNotEqual(BaseDirective.Cancel, orderDirective);
+            failCause = "Unavailable";
+            return false;
+        }
+        if (orderDirective == BaseDirective.Cancel) {
+            D.Assert(IsPaused);
+            return true;
+        }
+        if (orderDirective == BaseDirective.Attack) {                 // IMPROVE within range
+            // Can be ordered to attack even if already attacking as can change target
+            failCause = "No attackables";
+            if (!OwnerAIMgr.Knowledge.AreAnyKnownFleetsAttackableByOwnerUnits) {
+                return false;
+            }
+
+            IList<string> elementFailCauses = new List<string>();
+            elementFailCauses.Add("No Authorized Elements: ");
+            foreach (var e in Elements) {
+                string eFailCause;
+                if ((e as FacilityItem).__TryAuthorizeNewOrder(FacilityDirective.Attack, out eFailCause)) {
+                    return true;
+                }
+                else {
+                    elementFailCauses.Add(eFailCause);
+                }
+            }
+            failCause = elementFailCauses.Concatenate();
+            return false;
+        }
+
+        if (orderDirective == BaseDirective.Refit) {
+            IList<string> elementFailCauses = new List<string>();
+            elementFailCauses.Add("No Authorized Elements: ");
+            foreach (var e in Elements) {
+                string eFailCause;
+                if ((e as FacilityItem).__TryAuthorizeNewOrder(FacilityDirective.Refit, out eFailCause)) {
+                    return true;
+                }
+                else {
+                    elementFailCauses.Add(eFailCause);
+                }
+            }
+            failCause = elementFailCauses.Concatenate();
+            return false;
+        }
+        if (orderDirective == BaseDirective.Disband) {
+            IList<string> elementFailCauses = new List<string>();
+            elementFailCauses.Add("No Authorized Elements: ");
+            foreach (var e in Elements) {
+                string eFailCause;
+                if ((e as FacilityItem).__TryAuthorizeNewOrder(FacilityDirective.Disband, out eFailCause)) {
+                    return true;
+                }
+                else {
+                    elementFailCauses.Add(eFailCause);
+                }
+            }
+            failCause = elementFailCauses.Concatenate();
+            return false;
+        }
+        if (orderDirective == BaseDirective.Repair) {
+            if (__debugSettings.DisableRepair) {
+                failCause = "Repair disabled";
+                return false;
+            }
+            // 12.9.17 _debugSettings.AllPlayersInvulnerable not needed as it keeps damage from being taken
+            if (Data.UnitHealth < Constants.OneHundredPercent) {
+                // one or more elements are damaged but element(s) could be unavailable
+                IList<string> elementFailCauses = new List<string>();
+                elementFailCauses.Add("No Authorized Elements: ");
+                foreach (var e in Elements) {
+                    string eFailCause;
+                    if ((e as FacilityItem).__TryAuthorizeNewOrder(FacilityDirective.Repair, out eFailCause)) {
+                        return true;
+                    }
+                    else {
+                        elementFailCauses.Add(eFailCause);
+                    }
+                }
+                failCause = elementFailCauses.Concatenate();
+                return false;
+            }
+            failCause = "Perfect health";
+            return false;
+        }
+        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(orderDirective));
+    }
+
+    protected sealed override void __ValidateStateForSensorEventSubscription() {
         D.AssertNotEqual(BaseState.None, CurrentState);
         D.AssertNotEqual(BaseState.FinalInitialize, CurrentState);
     }
@@ -1950,7 +1997,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
                 ship.DebugName, arrivingLeavingMsg, DebugName, shipDistance - insideOrbitSlotThreshold);
             float halfOutsideOrbitSlotThreshold = CloseOrbitOuterRadius;
             if (shipDistance > halfOutsideOrbitSlotThreshold) {
-                D.Warn("{0} is {1} close orbit of {2} but collision detection zone is half or more outside of orbit slot.", ship.DebugName, arrivingLeavingMsg, DebugName);
+                D.Log("{0} is {1} close orbit of {2} but collision detection zone is half or more outside of orbit slot.", ship.DebugName, arrivingLeavingMsg, DebugName);
                 if (isArriving) {
                     float distanceMovedWhileWaitingForArrival = shipDistance - __distanceUponInitialArrival;
                     string distanceMsg = distanceMovedWhileWaitingForArrival < 0F ? "closer in toward" : "further out from";
@@ -2094,13 +2141,28 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         return !Owner.IsEnemyOf(player);
     }
 
+    public float GetAvailableRepairCapacityFor(IUnitCmd_Ltd unitCmd, IUnitElement_Ltd hqElement, Player cmdOwner) {
+        if (IsRepairingAllowedBy(cmdOwner)) {
+            float orbitFactor = 1F;
+            IShip_Ltd ship = hqElement as IShip_Ltd;
+            if (ship != null) {
+                orbitFactor = IsInCloseOrbit(ship) ? TempGameValues.RepairCapacityFactor_CloseOrbit
+                    : IsInHighOrbit(ship) ? TempGameValues.RepairCapacityFactor_HighOrbit : 1F; // 1 - 2
+            }
+            float basicValue = TempGameValues.RepairCapacityBaseline_Base_CmdModule;
+            float relationsFactor = Owner.GetCurrentRelations(cmdOwner).RepairCapacityFactor(); // 0.5 - 2
+            return basicValue * relationsFactor * orbitFactor;
+        }
+        return Constants.ZeroF;
+    }
+
     #endregion
 
     #region IShipRepairCapable Members
 
     public float GetAvailableRepairCapacityFor(IShip_Ltd ship, Player elementOwner) {
         if (IsRepairingAllowedBy(elementOwner)) {
-            float basicValue = TempGameValues.RepairCapacityBaseline_Base;
+            float basicValue = TempGameValues.RepairCapacityBaseline_Base_Element;
             float relationsFactor = Owner.GetCurrentRelations(elementOwner).RepairCapacityFactor(); // 0.5 - 2
             float locationFactor = 1F;  // 1 - 3
             if (Hanger.Contains(ship)) {
@@ -2123,29 +2185,10 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     public float GetAvailableRepairCapacityFor(IFacility_Ltd facility, Player elementOwner) {
         D.AssertEqual(Owner, elementOwner); // IMPROVE Repair at another base???
-        float basicValue = TempGameValues.RepairCapacityBaseline_Base;
+        float basicValue = TempGameValues.RepairCapacityBaseline_Base_Element;
         // TODO if in base defensive/repair formation and facility onStation, then 'orbit' bonuses
         float relationsFactor = Owner.GetCurrentRelations(elementOwner).RepairCapacityFactor(); // always self 2
         return basicValue * relationsFactor;
-    }
-
-    #endregion
-
-    #region IUnitCmdRepairCapable Members
-
-    public float GetAvailableRepairCapacityFor(IUnitCmd_Ltd unitCmd, IUnitElement_Ltd hqElement, Player cmdOwner) {
-        if (IsRepairingAllowedBy(cmdOwner)) {
-            float orbitFactor = 1F;
-            IShip_Ltd ship = hqElement as IShip_Ltd;
-            if (ship != null) {
-                orbitFactor = IsInCloseOrbit(ship) ? TempGameValues.RepairCapacityFactor_CloseOrbit
-                    : IsInHighOrbit(ship) ? TempGameValues.RepairCapacityFactor_HighOrbit : 1F; // 1 - 2
-            }
-            float basicValue = TempGameValues.RepairCapacityBaseline_Base;
-            float relationsFactor = Owner.GetCurrentRelations(cmdOwner).RepairCapacityFactor(); // 0.5 - 2
-            return basicValue * relationsFactor * orbitFactor;
-        }
-        return Constants.ZeroF;
     }
 
     #endregion

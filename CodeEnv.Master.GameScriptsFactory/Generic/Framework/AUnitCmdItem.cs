@@ -31,13 +31,43 @@ using UnityEngine.Profiling;
 public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd_Ltd, IFleetNavigableDestination, IUnitAttackable,
     IFormationMgrClient, ISensorDetector, IFsmEventSubscriptionMgrClient {
 
+    private static float _healthThreshold_Damaged;
+    protected static float HealthThreshold_Damaged {
+        get {
+            if (_healthThreshold_Damaged == Constants.ZeroF) {
+                _healthThreshold_Damaged = GeneralSettings.Instance.UnitHealthThreshold_Damaged;
+            }
+            return _healthThreshold_Damaged;
+        }
+    }
+
+    private static float _healthThreshold_BadlyDamaged;
+    protected static float HealthThreshold_BadlyDamaged {
+        get {
+            if (_healthThreshold_BadlyDamaged == Constants.ZeroF) {
+                _healthThreshold_BadlyDamaged = GeneralSettings.Instance.UnitHealthThreshold_BadlyDamaged;
+            }
+            return _healthThreshold_BadlyDamaged;
+        }
+    }
+
+    private static float _healthThreshold_CriticallyDamaged;
+    protected static float HealthThreshold_CriticallyDamaged {
+        get {
+            if (_healthThreshold_CriticallyDamaged == Constants.ZeroF) {
+                _healthThreshold_CriticallyDamaged = GeneralSettings.Instance.UnitHealthThreshold_CriticallyDamaged;
+            }
+            return _healthThreshold_CriticallyDamaged;
+        }
+    }
+
+    public event EventHandler isAvailableChanged;
+
     /// <summary>
     /// Fired when the receptiveness of this Unit to receiving new orders changes.
     /// </summary>
-    [Obsolete]
+    [Obsolete("Use isAvailableChanged")]
     public event EventHandler availabilityChanged;
-
-    public event EventHandler isAvailableChanged;
 
     public event EventHandler unitOutputsChanged;
 
@@ -744,7 +774,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
             if (previousHQElement.IsDead) {
                 return; // no reason to proceed further if previousHQElement is dead
             }
-            FormationMgr.AddAndPositionNonHQElement(previousHQElement);
+            FormationMgr.AddAndPositionNonHQElement(previousHQElement); // assign new non-HQ slot
             previousHQElement.HandleChangeOfHQStatusCompleted();
         }
     }
@@ -902,9 +932,13 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     /// <summary>
     /// Validates the common starting values of a State that is not Call()able.
     /// </summary>
-    protected virtual void ValidateCommonNotCallableStateValues() {
+    protected virtual void ValidateCommonNonCallableStateValues() {
         D.AssertEqual(Constants.Zero, _activeFsmReturnHandlers.Count);
         D.Assert(!IsDead);
+    }
+
+    protected virtual void ResetCommonNonCallableStateValues() {
+        _activeFsmReturnHandlers.Clear();
     }
 
     protected void ReturnFromCalledStates() {
@@ -920,7 +954,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     private void HandleDamageIncurredBy(AUnitElementItem subordinateElement, bool isSubordinateAlive, DamageStrength damageIncurred, float damageSeverity) {
-        D.Assert(!_debugSettings.AllPlayersInvulnerable);
+        D.Assert(!__debugSettings.AllPlayersInvulnerable);
         D.Assert(!IsDead);  // if subordinateElement didn't survive and its the last element, this Cmd should already have unsubscribed
         if (isSubordinateAlive && subordinateElement.IsHQ) {
             // check for damage to CmdModule
@@ -1057,11 +1091,11 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     /// <returns></returns>
     protected virtual bool AssessNeedForRepair(float unitHealthThreshold) {
         __ValidateCurrentStateWhenAssessingNeedForRepair();
-        if (_debugSettings.DisableRepair) {
+        if (__debugSettings.DisableRepair) {
             return false;
         }
         // 12.9.17 No need for _debugSettings.AllPlayersInvulnerable as its role is to keep damage from being taken
-        if (_debugSettings.RepairAnyDamage) {
+        if (__debugSettings.RepairAnyDamage) {
             unitHealthThreshold = Constants.OneHundredPercent;
         }
         if (Data.UnitHealth < unitHealthThreshold) {
@@ -1077,12 +1111,12 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         __ValidateCurrentStateWhenAssessingAvailabilityStatus_Repair();
         NewOrderAvailability orderAvailabilityStatus;
         var unitHealth = Data.UnitHealth;
-        D.AssertNotEqual(Constants.OneHundredPercent, unitHealth);
+        // Can't Assert unitHealth < OneHundredPercent as possible for element to complete repair in 1 frame gaps
 
-        if (Utility.IsInRange(unitHealth, GeneralSettings.Instance.UnitHealthThreshold_Damaged, Constants.OneHundredPercent)) {
+        if (Utility.IsInRange(unitHealth, HealthThreshold_Damaged, Constants.OneHundredPercent)) {
             orderAvailabilityStatus = NewOrderAvailability.EasilyAvailable;
         }
-        else if (Utility.IsInRange(unitHealth, GeneralSettings.Instance.UnitHealthThreshold_BadlyDamaged, GeneralSettings.Instance.UnitHealthThreshold_Damaged)) {
+        else if (Utility.IsInRange(unitHealth, HealthThreshold_BadlyDamaged, HealthThreshold_Damaged)) {
             orderAvailabilityStatus = NewOrderAvailability.FairlyAvailable;
         }
         else {

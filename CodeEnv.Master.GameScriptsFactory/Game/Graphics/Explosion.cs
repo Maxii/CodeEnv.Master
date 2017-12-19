@@ -34,7 +34,7 @@ public class Explosion : AMonoBase, IEffect {
     /// The fixed factor that allows variation in the radius of an item to properly size
     /// the effect (most common is explosion).
     /// </summary>
-    private const float _radiusToScaleNormalizeFactor = 0.2F;
+    private const float RadiusToScaleNormalizeFactor = 0.2F;
 
     public event EventHandler effectFinishedOneShot;
 
@@ -61,7 +61,7 @@ public class Explosion : AMonoBase, IEffect {
 
     public void Play(float itemRadius) {
         D.Assert(itemRadius > Constants.ZeroF);
-        float currentScale = itemRadius * _radiusToScaleNormalizeFactor;
+        float currentScale = itemRadius * RadiusToScaleNormalizeFactor;
         if (currentScale != _prevScale) {
             float relativeScale = currentScale / _prevScale;
             ScaleParticleSystem(_primaryParticleSystem, relativeScale);

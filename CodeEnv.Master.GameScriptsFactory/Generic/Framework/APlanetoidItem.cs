@@ -404,7 +404,7 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
     #region IElementAttackable Members
 
     public override void TakeHit(DamageStrength damagePotential) {
-        if (_debugSettings.AllPlayersInvulnerable) {
+        if (__debugSettings.AllPlayersInvulnerable) {
             return;
         }
         D.Assert(!IsDead);

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IFacilityRepairCapable.cs
-// Interface for Items or stations that can repair Facilities.
+// Interface for Items or stations that can repair Facilities and CmdModules.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,7 +17,7 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Interface for Items or stations that can repair Facilities.
+    /// Interface for Items or stations that can repair Facilities and CmdModules.
     /// <remarks>Bases and FormationStations.</remarks>
     /// <remarks>Anything that can repair a facility can repair a ship.</remarks>
     /// </summary>

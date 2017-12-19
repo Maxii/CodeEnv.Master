@@ -15,6 +15,7 @@
 ////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
+
     using System;
     using System.Linq;
     using CodeEnv.Master.Common;

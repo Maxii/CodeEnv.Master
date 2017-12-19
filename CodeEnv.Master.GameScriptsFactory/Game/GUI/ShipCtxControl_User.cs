@@ -26,13 +26,14 @@ using UnityEngine;
 
 /// <summary>
 /// Context Menu Control for <see cref="ShipItem"/>s owned by the User.
+/// <remarks>12.13.17 Removed Disband as ship doesn't know whether it is to split from fleet.</remarks>
 /// </summary>
 public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
+
     private static ShipDirective[] _userMenuOperatorDirectives = new ShipDirective[]    {
                                                                                             ShipDirective.Join,
                                                                                             ShipDirective.Disengage,
                                                                                             ShipDirective.Scuttle
-        // 12.12.17 Removed disband as ship doesn't know whether to split from fleet
                                                                                         };
 
     protected override IEnumerable<ShipDirective> UserMenuOperatorDirectives {
@@ -67,7 +68,6 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
             case ShipDirective.Scuttle:
             case ShipDirective.Disengage:
             case ShipDirective.Join:
-                ////case ShipDirective.Disband:
                 // 12.5.17 Currently no CtxMenu orders allowed for ships in hangers
                 return _shipMenuOperator.IsLocatedInHanger || !_shipMenuOperator.IsAuthorizedForNewOrder(directive);
             default:
@@ -80,6 +80,8 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
     /// <c>false</c> otherwise. If false, upon return the top level menu item will be disabled. Default implementation is false with no targets.
     /// <remarks>The return value answers the question "Does the directive support submenus?" It does not mean "Are there any targets
     /// in the submenu?" so don't return targets.Any()!</remarks>
+    /// <remarks>12.13.17 Avoid asserting anything here based off of the assumption that IsUserMenuOperatorMenuItemDisabledFor will 
+    /// have already disabled the selection if the assert would fail. This method is also used to count the number of reqd submenus.</remarks>
     /// </summary>
     /// <param name="directive">The directive.</param>
     /// <param name="targets">The targets for the submenu if any were found. Can be empty.</param>
@@ -90,15 +92,10 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
         switch (directive) {
             case ShipDirective.Join:
                 IEnumerable<IFleetCmd> joinableFleets;
-                bool hasJoinableFleets = _userKnowledge.TryGetJoinableFleetsFor(_shipMenuOperator, out joinableFleets);
-                D.Assert(hasJoinableFleets);
+                _userKnowledge.TryGetJoinableFleetsFor(_shipMenuOperator, out joinableFleets);
                 targets = joinableFleets.Cast<INavigableDestination>();
                 doesDirectiveSupportSubmenus = true;
                 break;
-            ////case ShipDirective.Disband:
-            ////    targets = _userKnowledge.OwnerBases.Cast<INavigableDestination>();
-            ////    doesDirectiveSupportSubmenus = true;
-            ////    break;
             case ShipDirective.Disengage:
             case ShipDirective.Scuttle:
                 targets = Enumerable.Empty<INavigableDestination>();
@@ -120,11 +117,11 @@ public class ShipCtxControl_User : ACtxControl_User<ShipDirective> {
 
     private void IssueUserShipMenuOperatorOrder(int itemID) {
         ShipDirective directive = (ShipDirective)_directiveLookup[itemID];
-        INavigableDestination target;
-        bool hasTarget = _unitTargetLookup.TryGetValue(itemID, out target);
-        string msg = hasTarget ? target.DebugName : "[none]";
-        D.Log("{0} selected directive {1} and target {2} from context menu.", DebugName, directive.GetValueName(), msg);
-        _shipMenuOperator.CurrentOrder = new ShipOrder(directive, OrderSource.User, target as IShipNavigableDestination);
+        INavigableDestination submenuTgt;
+        bool hasSubmenuTgt = _unitSubmenuTgtLookup.TryGetValue(itemID, out submenuTgt);
+        string submenuTgtMsg = hasSubmenuTgt ? submenuTgt.DebugName : "[none]";
+        D.Log("{0} selected directive {1} and submenu target {2} from context menu.", DebugName, directive.GetValueName(), submenuTgtMsg);
+        _shipMenuOperator.CurrentOrder = new ShipOrder(directive, OrderSource.User, submenuTgt as IShipNavigableDestination);
     }
 
 }

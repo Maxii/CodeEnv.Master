@@ -63,6 +63,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     /// <remarks>A ship that is not capable of attacking is usually a ship that is under orders not to attack 
     /// (CombatStance is Disengage or Defensive) or one with no operational weapons.</remarks>
     /// </summary>
+    ////[Obsolete("Instead, use IsNewOrderAuthorized")]  // IMPROVE could be useful once element attack orders issued by Cmds
     public override bool IsAttackCapable {
         get {
             return Data.CombatStance != ShipCombatStance.Disengage && Data.CombatStance != ShipCombatStance.Defensive
@@ -262,10 +263,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     public ShipReport GetReport(Player player) { return Data.Publisher.GetReport(player); }
 
-    public bool RequestPermissionOfCmdToWithdraw(ShipItem.WithdrawPurpose purpose) {
-        return Command.__RequestPermissionToWithdraw(this, purpose);
-    }
-
     protected override TrackingIconInfo MakeIconInfo() {
         var report = UserReport;
         GameColor iconColor = report.Owner != null ? report.Owner.Color : GameColor.White;
@@ -332,7 +329,28 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         HandleCurrentOrderChangedWhilePausedUponResume();
     }
 
+    private void WeaponsRangeChangingEventHandler(object sender, AUnitElementData.WeaponsRangeChangingEventArgs e) {
+        __HandleWeaponsRangeChanging(e.IncomingWeaponsRange);
+    }
+
     #endregion
+
+    /// <summary>
+    /// Changes the CombatStance of this ship during ExecuteAttackOrder to a stance allowing
+    /// attack when its weapons range changes from zero to something positive.
+    /// <remarks>HACK Subscribed only during ExecuteAttackOrder.</remarks>
+    /// </summary>
+    /// <param name="incomingWeaponsRange">The incoming weapons range.</param>
+    private void __HandleWeaponsRangeChanging(RangeDistance incomingWeaponsRange) {
+        RangeDistance currentWeaponsRange = Data.WeaponsRange;
+        if (currentWeaponsRange.Max == Constants.ZeroF && incomingWeaponsRange.Max > Constants.ZeroF) {
+            // we have operational weapons again so change CombatStance to allow attack
+            var previousStance = Data.CombatStance;
+            Data.CombatStance = __PickRandomAttackingCombatStance();
+            D.Warn("FYI. {0} has changed its {1} from {2} to {3} as a result of regaining operational weapons.",
+                DebugName, typeof(ShipCombatStance).Name, previousStance.GetValueName(), Data.CombatStance.GetValueName());
+        }
+    }
 
     public void HandleFleetFullSpeedChanged() { _helm.HandleFleetFullSpeedValueChanged(); }
 
@@ -372,7 +390,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             if (IsDead) {
                 return; // already handled if dead
             }
-            Data.DeactivateSensors();   // will remove IDetectables from UnifiedMonitor while still correct Cmd
+            Data.DeactivateSRSensors();   // will remove IDetectables from UnifiedMonitor while still correct Cmd
         }
     }
 
@@ -691,83 +709,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     /// </summary>
     /// <param name="orderDirective">The order directive.</param>
     /// <returns></returns>
-    /// <exception cref="System.NotImplementedException"></exception>
     public bool IsAuthorizedForNewOrder(ShipDirective orderDirective) {
-        if (orderDirective == ShipDirective.Scuttle) {
-            return true;    // Scuttle orders never deferred while paused so no need for IsCurrentOrderDirectiveAnyOf check
-        }
-        if (Availability == NewOrderAvailability.Unavailable) {
-            D.AssertNotEqual(ShipDirective.Cancel, orderDirective);
-            return false;
-        }
-        if (orderDirective == ShipDirective.Cancel) {
-            D.Assert(IsPaused);
-            return true;
-        }
-        if (orderDirective == ShipDirective.Refit) {
-            // Can be ordered to refit even if already ordered to refit as fleet can change destination before hanger arrival
-            // Can be ordered to refit in final stages of getting to hanger
-            return _gameMgr.PlayersDesigns.AreUpgradeDesignsPresent(Owner, Data.Design);
-        }
-        if (orderDirective == ShipDirective.Disband) {
-            // Can be ordered to disband even if already ordered to disband as fleet can change destination before hanger arrival
-            // Can be ordered to disband in final stages of getting to hanger
-            return true;
-        }
-        if (orderDirective == ShipDirective.Repair) {
-            // Can be ordered to repair even if already ordered to repair as fleet can change destination before hanger arrival
-            // Can be ordered to repair in final stages of getting to hanger
-            // No need to check for repair destinations as a ship can repair in place, albeit slowly on their formation station
-            if (_debugSettings.DisableRepair) {
-                return false;
-            }
-            // 12.9.17 _debugSettings.AllPlayersInvulnerable not needed as it keeps damage from being taken
-            return Data.Health < Constants.OneHundredPercent;
-        }
-        if (orderDirective == ShipDirective.Construct) {
-            D.Assert(IsLocatedInHanger);
-            if (CurrentOrder != null) {
-                // 12.5.17 if this occurs, this method was probably called after Construct was assigned as the CurrentOrder
-                D.Error("{0}.CurrentOrder {1} should be null.", DebugName, CurrentOrder.DebugName);
-            }
-            return true;
-        }
-
-        if (IsLocatedInHanger) {
-            return false;
-        }
-
-        // Orders that follow are only valid in space
-
-        if (orderDirective == ShipDirective.Attack) {
-            // Can be ordered to attack even if already attacking
-            return IsAttackCapable;            // IMPROVE
-        }
-        if (orderDirective == ShipDirective.Explore) {
-            // Can be ordered to explore even if already exploring
-            return true;
-        }
-        if (orderDirective == ShipDirective.Move) {
-            // Can be ordered to move even if already moving
-            return true;
-        }
-        if (orderDirective == ShipDirective.Join) {
-            // Can be ordered to join even if already joining
-            return OwnerAIMgr.Knowledge.AreAnyFleetsJoinableBy(this);
-        }
-
-        if (orderDirective == ShipDirective.Disengage) {
-            return RequestPermissionOfCmdToWithdraw(ShipItem.WithdrawPurpose.Disengage);
-        }
-
-        if (orderDirective == ShipDirective.AssumeStation) {
-            return true;
-        }
-        if (orderDirective == ShipDirective.Entrench) {
-            return true;
-        }
-        // Retreat (not implemented)
-        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(orderDirective));
+        string unusedFailCause;
+        return __TryAuthorizeNewOrder(orderDirective, out unusedFailCause);
     }
 
     private void HandleNewOrder() {
@@ -779,8 +723,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
         if (CurrentOrder != null) {
             D.Assert(!IsDead);
-
-            ////__ValidateOrder(CurrentOrder);
             __ValidateKnowledgeOfOrderTarget(CurrentOrder);
 
             // 4.8.17 If a non-Call()ed state is to notify Cmd of OrderOutcome, this is when notification of receiving a new order will happen. 
@@ -902,7 +844,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     private bool IsCallableState(ShipState state) {
         return state == ShipState.Moving || state == ShipState.Attacking || state == ShipState.AssumingCloseOrbit
             || state == ShipState.Repairing || state == ShipState.AssumingHighOrbit || state == ShipState.Refitting
-            || state == ShipState.Disbanding;
+            || state == ShipState.Disbanding || state == ShipState.AssumingStation;
     }
 
     private bool IsCurrentStateAnyOf(ShipState state) {
@@ -962,7 +904,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void ExecuteConstructOrder_UponPreconfigureState() {
         LogEvent();
-        ValidateCommonNotCallableStateValues();
+        ValidateCommonNonCallableStateValues();
         D.Assert(IsLocatedInHanger);
         D.Assert(!IsCollisionAvoidanceOperational);
         D.Assert(Data.Sensors.All(s => !s.IsActivated));
@@ -1037,9 +979,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void ExecuteConstructOrder_ExitState() {
         LogEvent();
+        ResetCommonNonCallableStateValues();
         ReworkUnderway = ReworkingMode.None;
         StopEffectSequence(EffectSequenceID.Constructing);
-        _hasOrderOutcomeCallbackAttemptOccurred = false;
     }
 
     #endregion
@@ -1051,7 +993,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     void Idling_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonNotCallableStateValues();
+        ValidateCommonNonCallableStateValues();
         Data.Target = null; // temp to remove target from data after order has been completed or failed
     }
 
@@ -1073,7 +1015,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             CurrentOrder = null;
         }
 
-        if (AssessNeedForRepair(healthThreshold: Constants.OneHundredPercent)) {
+        if (AssessNeedForRepair(Constants.OneHundredPercent)) {
             if (IsLocatedInHanger) {
                 IssueCaptainsRepairOrder_InHanger();
             }
@@ -1112,7 +1054,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void Idling_UponDamageIncurred() {
         LogEvent();
-        if (AssessNeedForRepair(GeneralSettings.Instance.ElementHealthThreshold_Damaged)) {
+        if (AssessNeedForRepair(HealthThreshold_Damaged)) {
             if (IsLocatedInHanger) {
                 IssueCaptainsRepairOrder_InHanger();
             }
@@ -1165,8 +1107,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void Idling_ExitState() {
         LogEvent();
+        ResetCommonNonCallableStateValues();
         __warnWhenIdlingReceivesFsmTgtEvents = true;
-        _hasOrderOutcomeCallbackAttemptOccurred = false;
     }
 
     #endregion
@@ -1234,19 +1176,19 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         ValidateCommonCallableStateValues(CurrentState.GetValueName());
         D.Assert(!IsLocatedInHanger);
         D.Assert(!IsInOrbit);
-        D.AssertNotDefault((int)_apMoveSpeed);
+        D.AssertNotDefault((int)_apMoveSpeed, "You forgot to set _apMoveSpeed.");
         D.Assert(!(_fsmTgt is IShipCloseOrbitSimulator));
-        // 12.4.17 Can't set availability here as can violate FSM rule: no state change in void EnterStates
+        // 12.17.17 OPTIMIZE AssumingStation now handles own movement although Moving still has capability to handle it
+        D.Assert(!(_fsmTgt is FleetFormationStation));
+        // 12.7.17 Don't set Availability in states that can be Call()ed by more than one ExecuteXXXOrder state
     }
 
     void Moving_EnterState() {
         LogEvent();
 
-        // 12.7.17 Don't set Availability in states that can be Call()ed by more than one ExecuteOrder state
-
         bool isFleetwideMove = false;
         Vector3 apTgtOffset = Vector3.zero;
-        float apTgtStandoffDistance = CollisionDetectionZoneRadius;
+        float apTgtStandoffDistance = CollisionDetectionZoneRadius; // 12.17.17 Reqd minimum value
         ShipMoveOrder moveOrder = CurrentOrder as ShipMoveOrder;
         if (moveOrder != null) {
             if (moveOrder.IsFleetwide) {
@@ -1266,6 +1208,13 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         Return();
     }
 
+    void Moving_UponApTargetUncatchable() {
+        LogEvent();
+        var returnHandler = GetCurrentCalledStateReturnHandler();
+        returnHandler.ReturnCause = FsmCallReturnCause.TgtUncatchable;
+        Return();
+    }
+
     void Moving_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         LogEvent();
         var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
@@ -1276,16 +1225,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         __ReportCollision(collision);
     }
 
-    void Moving_UponApTargetUncatchable() {
-        LogEvent();
-        var returnHandler = GetCurrentCalledStateReturnHandler();
-        returnHandler.ReturnCause = FsmCallReturnCause.TgtUncatchable;
-        Return();
-    }
-
     void Moving_UponDamageIncurred() {
         LogEvent();
-        if (AssessNeedForRepair(healthThreshold: GeneralSettings.Instance.ElementHealthThreshold_Damaged)) {
+        if (AssessNeedForRepair(HealthThreshold_Damaged)) {
             var returnHandler = GetCurrentCalledStateReturnHandler();
             returnHandler.ReturnCause = FsmCallReturnCause.NeedsRepair;
             Return();
@@ -1342,6 +1284,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     // 4.8.17 Call()ed state _UponNewOrderReceived() eliminated as auto Return()ed prior to _UponNewOrderReceived()
     // 4.15.17 Call()ed state _UponDeath eliminated as auto Return()ed as part of death sequence
     // 4.15.17 Call()ed state _UponLosingOwnership eliminated as auto Return()ed prior to _UponLosingOwnership()
+
     void Moving_ExitState() {
         LogEvent();
         _apMoveSpeed = Speed.None;
@@ -1358,7 +1301,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         IDictionary<FsmCallReturnCause, Action> taskLookup = new Dictionary<FsmCallReturnCause, Action>() {
 
             {FsmCallReturnCause.NeedsRepair, () =>    {
-                if(AssessNeedForRepair(GeneralSettings.Instance.ElementHealthThreshold_CriticallyDamaged)) {
+                if(AssessNeedForRepair(HealthThreshold_CriticallyDamaged)) {
                     bool isFleeing = IssueRepairOrder_Flee();
                     if(isFleeing) {
                         CurrentState = ShipState.Idling;    // Idle while waiting for new orders from flee and repair fleet
@@ -1383,7 +1326,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         IDictionary<FsmCallReturnCause, Action> taskLookup = new Dictionary<FsmCallReturnCause, Action>() {
 
             {FsmCallReturnCause.NeedsRepair, () =>    {
-                if(AssessNeedForRepair(GeneralSettings.Instance.ElementHealthThreshold_CriticallyDamaged)) {
+                if(AssessNeedForRepair(HealthThreshold_CriticallyDamaged)) {
                     bool isFleeing = IssueRepairOrder_Flee();
                     if(isFleeing) {
                         CurrentState = ShipState.Idling;    // Idle while waiting for new orders from flee and repair fleet
@@ -1409,7 +1352,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     void ExecuteMoveOrder_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonNotCallableStateValues();
+        ValidateCommonNonCallableStateValues();
         D.Assert(!IsLocatedInHanger);
         var currentShipMoveOrder = CurrentOrder as ShipMoveOrder;
         D.AssertNotNull(currentShipMoveOrder);
@@ -1496,7 +1439,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void ExecuteMoveOrder_UponDamageIncurred() {
         LogEvent();
-        if (AssessNeedForRepair(GeneralSettings.Instance.ElementHealthThreshold_CriticallyDamaged)) {
+        if (AssessNeedForRepair(HealthThreshold_CriticallyDamaged)) {
             IssueRepairOrder_Flee();
         }
         // Outcomes: 1) damage not bad enough to abandon order, 2) unable to flee or 3) waiting for new order from flee fleet.
@@ -1526,9 +1469,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtDeath, _fsmTgt);
         FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtInfoAccessChg, _fsmTgt);
         FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, _fsmTgt);
-        _fsmTgt = null;
-        _activeFsmReturnHandlers.Clear();
-        _hasOrderOutcomeCallbackAttemptOccurred = false;
+        ResetCommonNonCallableStateValues();
     }
 
     #endregion
@@ -1544,9 +1485,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         IDictionary<FsmCallReturnCause, Action> taskLookup = new Dictionary<FsmCallReturnCause, Action>() {
 
             {FsmCallReturnCause.NeedsRepair, () =>    {
-                if(AssessNeedForRepair(GeneralSettings.Instance.ElementHealthThreshold_CriticallyDamaged)) {
+                if(AssessNeedForRepair(HealthThreshold_CriticallyDamaged)) {
                     AttemptOrderOutcomeCallback(OrderFailureCause.NeedsRepair);
-                    // IMPROVE currently won't handle relocating HQ away from formation obstructions
                     IssueCaptainsRepairOrder_InFormation();
                 }
                 else {
@@ -1564,14 +1504,23 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         return new FsmReturnHandler(taskLookup, ShipState.Moving.GetValueName());
     }
 
+    private FsmReturnHandler CreateFsmReturnHandler_AssumingStationToAssumeStation() { // OPTIMIZE?
+        IDictionary<FsmCallReturnCause, Action> taskLookup = new Dictionary<FsmCallReturnCause, Action>() {
+
+            // Death: 4.14.17 No longer a ReturnCause as InitiateDeadState auto Return()s out of Call()ed states
+        };
+        return new FsmReturnHandler(taskLookup, ShipState.AssumingStation.GetValueName());
+    }
+
     #endregion
 
     void ExecuteAssumeStationOrder_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonNotCallableStateValues();
+        ValidateCommonNonCallableStateValues();
         D.Assert(!IsLocatedInHanger);
         // 4.15.17 Can't Assert CurrentOrder.ToCallback as Captain can also issue this order
+        D.AssertNull(CurrentOrder.Target);  // OPTIMIZE ShipOrder already validates null
 
         _fsmTgt = FormationStation;
         ChangeAvailabilityTo(NewOrderAvailability.EasilyAvailable);
@@ -1606,6 +1555,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                     yield return null;
                     D.Error("Shouldn't get here as the ReturnCause should generate a change of state.");
                 }
+                D.Assert(FormationStation.IsOnStation);
             }
         }
         else {
@@ -1618,8 +1568,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                     DebugName, speedMsg, FormationStation.__DistanceToOnStation);
             }
 
-            var returnHandler = GetInactiveReturnHandlerFor(ShipState.Moving, CurrentState);
-            Call(ShipState.Moving);
+            var returnHandler = GetInactiveReturnHandlerFor(ShipState.AssumingStation, CurrentState);
+            Call(ShipState.AssumingStation);
             yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
             if (!returnHandler.DidCallSuccessfullyComplete) {
@@ -1669,8 +1619,14 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void ExecuteAssumeStationOrder_UponDamageIncurred() {
         LogEvent();
-        if (AssessNeedForRepair(GeneralSettings.Instance.ElementHealthThreshold_BadlyDamaged)) {
+        if (AssessNeedForRepair(HealthThreshold_BadlyDamaged)) {
             AttemptOrderOutcomeCallback(OrderFailureCause.NeedsRepair);
+            if (AssessNeedForRepair(HealthThreshold_CriticallyDamaged)) {
+                bool isFleeing = IssueRepairOrder_Flee();
+                if (isFleeing) {
+                    return;
+                }
+            }
             IssueCaptainsRepairOrder_InFormation();
         }
     }
@@ -1686,7 +1642,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         // TODO
     }
 
-    // No need for _fsmTgt-related event handlers as the _fsmTgt is a FormationStation
+    // No need for _fsmTgt-related event handlers as the _fsmTgt is a FormationStation or LocalAssyStation
 
     void ExecuteAssumeStationOrder_UponLosingOwnership() {
         LogEvent();
@@ -1700,8 +1656,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void ExecuteAssumeStationOrder_ExitState() {
         LogEvent();
-        _activeFsmReturnHandlers.Clear();
-        _fsmTgt = null;
+        ResetCommonNonCallableStateValues();
         // 3.28.17 Added DisengageAutoPilot. ExitState could execute (from a new Order for instance) before alignment turn at 
         // end of EnterState is complete.  That turn has an anonymous method that is executed on completion, including 
         // Cmd.HandleOrderOutcome and CurrentState = Idling which WILL execute even with a state change without this Disengage. 
@@ -1709,7 +1664,85 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         // follow the one that just caused ExitState to execute, and if it doesn't, setting state to Idling certainly will. 
         // DisengageAutoPilot will terminate the turn and keep the anonymous method from executing.
         _helm.DisengageAutoPilot();
-        _hasOrderOutcomeCallbackAttemptOccurred = false;
+    }
+
+    #endregion
+
+    #region AssumingStation
+
+    // 12.16.17: Currently a Call()ed state by ExecuteAssumeStationOrder, ExecuteDisengageOrder, ExecuteEntrenchOrder, ExecuteRepairOrder
+    // Existence of this state allows it to be Call()ed by other states without needing to issue
+    // an AssumeStation order. It also means Return() goes back to the state that Call()ed it.
+
+    void AssumingStation_UponPreconfigureState() {
+        LogEvent();
+
+        ValidateCommonCallableStateValues(CurrentState.GetValueName());
+        D.AssertEqual(FormationStation, _fsmTgt); // force Call()ing state to set _fsmTgt to FleetFormationStation
+        D.Assert(!IsLocatedInHanger);
+        D.Assert(!IsInOrbit);
+        D.AssertNotDefault((int)_apMoveSpeed, "Forget to set _apMoveSpeed?");
+        // 12.16.17 No need for _fsmTgt subscriptions as FormationStation can't die, chg owner or lose access.
+        // However, if the Call()ing state has these subscriptions and it changes _fsmTgt to FormationStation, 
+        // it must unsubscribe before Call()ing.
+        // 12.7.17 Don't set Availability in states that can be Call()ed by more than one ExecuteOrder state
+    }
+
+    void AssumingStation_EnterState() {
+        LogEvent();
+
+        Vector3 apTgtOffset = Vector3.zero;
+        float apTgtStandoffDistance = CollisionDetectionZoneRadius; // 12.17.17 Reqd minimum value
+        IShipNavigableDestination apTgt = _fsmTgt;
+        ApMoveDestinationProxy apFormationStationTgtProxy = apTgt.GetApMoveTgtProxy(apTgtOffset, apTgtStandoffDistance, this);
+        _helm.EngageAutoPilot(apFormationStationTgtProxy, _apMoveSpeed, isFleetwideMove: false);
+    }
+
+    void AssumingStation_UponApTargetReached() {
+        LogEvent();
+        D.Log(ShowDebugLog, "{0} has reached {1}.", DebugName, _fsmTgt.DebugName);
+        Return();
+    }
+
+    void AssumingStation_UponApTargetUncatchable() {
+        LogEvent();
+        D.Error("{0} cannot catch {1}?", DebugName, _fsmTgt.DebugName);
+    }
+
+    void AssumingStation_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
+        LogEvent();
+        var selectedFiringSolution = PickBestFiringSolution(firingSolutions);
+        InitiateFiringSequence(selectedFiringSolution);
+    }
+
+    void AssumingStation_OnCollisionEnter(Collision collision) {
+        __ReportCollision(collision);
+    }
+
+    void AssumingStation_UponDamageIncurred() {
+        LogEvent();
+        // do nothing as need to be on station to repair
+    }
+
+    void AssumingStation_UponHQStatusChangeCompleted() {
+        LogEvent();
+        // 3.21.17 See Comments under Ship.UponHQStatusChangeCompleted
+        RestartState(); // UNCLEAR
+    }
+
+    void AssumingStation_UponRelationsChangedWith(Player player) {
+        LogEvent();
+        // do nothing as irrelevant
+    }
+
+    // 4.8.17 Call()ed state _UponNewOrderReceived() eliminated as auto Return()ed prior to _UponNewOrderReceived()
+    // 4.15.17 Call()ed state _UponDeath eliminated as auto Return()ed as part of death sequence
+    // 4.15.17 Call()ed state _UponLosingOwnership eliminated as auto Return()ed prior to _UponLosingOwnership()
+
+    void AssumingStation_ExitState() {
+        LogEvent();
+        _apMoveSpeed = Speed.None;
+        _helm.ChangeSpeed(Speed.Stop);
     }
 
     #endregion
@@ -1725,12 +1758,12 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         IDictionary<FsmCallReturnCause, Action> taskLookup = new Dictionary<FsmCallReturnCause, Action>() {
 
             {FsmCallReturnCause.NeedsRepair, () =>    {
-                AttemptOrderOutcomeCallback(OrderFailureCause.NeedsRepair);
+                AttemptOrderOutcomeCallback(OrderFailureCause.NeedsRepair, _fsmTgt);
                 // FIXME no point in judging whether to repair or continue on as Cmd will auto remove ship from exploring
                 IssueCaptainsRepairOrder_InFormation();
             }                                                                                           },
             {FsmCallReturnCause.TgtDeath, () =>   {
-                AttemptOrderOutcomeCallback(OrderFailureCause.TgtDeath);
+                AttemptOrderOutcomeCallback(OrderFailureCause.TgtDeath, _fsmTgt);
                 CurrentState = ShipState.Idling;    // Idle while we wait for new Order from Cmd
             }                                                                                           },
             {FsmCallReturnCause.TgtUncatchable, () => {
@@ -1746,18 +1779,18 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
             {FsmCallReturnCause.NeedsRepair, () =>    {
                 // When reported to Cmd, Cmd will remove the ship from the list of available exploration ships
-                AttemptOrderOutcomeCallback(OrderFailureCause.NeedsRepair);
+                AttemptOrderOutcomeCallback(OrderFailureCause.NeedsRepair, _fsmTgt);
                 // FIXME no point in judging whether to repair or continue on as Cmd will auto remove ship from exploring
                 IssueCaptainsRepairOrder_InFormation();
             }                                                                                           },
             {FsmCallReturnCause.TgtRelationship, () =>    {
                 // When reported to Cmd, Cmd will recall all ships as exploration has failed
-                AttemptOrderOutcomeCallback(OrderFailureCause.TgtRelationship);
+                AttemptOrderOutcomeCallback(OrderFailureCause.TgtRelationship, _fsmTgt);
                 CurrentState = ShipState.Idling;    // Idle while we wait for new order from Cmd
             }                                                                                           },
             {FsmCallReturnCause.TgtDeath, () =>   {
                 // When reported to Cmd, Cmd will assign the ship to a new explore target or have it assume station
-                AttemptOrderOutcomeCallback(OrderFailureCause.TgtRelationship);
+                AttemptOrderOutcomeCallback(OrderFailureCause.TgtRelationship, _fsmTgt);
                 CurrentState = ShipState.Idling;    // Idle while we wait for new order from Cmd 
             }                                                                                           },
             // Death: 4.14.17 No longer a ReturnCause as InitiateDeadState auto Return()s out of Call()ed states
@@ -1770,7 +1803,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     void ExecuteExploreOrder_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonNotCallableStateValues();
+        ValidateCommonNonCallableStateValues();
         D.Assert(!IsLocatedInHanger);
         var exploreTgt = CurrentOrder.Target as IShipExplorable;
         D.Assert(exploreTgt != null);   // individual ships only explore Planets, Stars and UCenter
@@ -1826,7 +1859,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         // fleets either concurrently or previously exploring this target. Either way, we report it as successfully explored.
 
         exploreTgt.RecordExplorationCompletedBy(Owner);
-        AttemptOrderOutcomeCallback(OrderFailureCause.None);
+        AttemptOrderOutcomeCallback(OrderFailureCause.None, _fsmTgt);
     }
 
     void ExecuteExploreOrder_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
@@ -1842,14 +1875,14 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     void ExecuteExploreOrder_UponNewOrderReceived() {
         LogEvent();
         //D.Log(ShowDebugLog, "{0} just received new order {1} while exploring.", DebugName, CurrentOrder.DebugName);
-        AttemptOrderOutcomeCallback(OrderFailureCause.NewOrderReceived);
+        AttemptOrderOutcomeCallback(OrderFailureCause.NewOrderReceived, _fsmTgt);
     }
 
     void ExecuteExploreOrder_UponDamageIncurred() {
         LogEvent();
-        if (AssessNeedForRepair(healthThreshold: GeneralSettings.Instance.ElementHealthThreshold_Damaged)) {
+        if (AssessNeedForRepair(HealthThreshold_Damaged)) {
             //D.Log(ShowDebugLog, "{0} is abandoning exploration of {1} as it has incurred damage that needs repair.", DebugName, _fsmTgt.DebugName);
-            AttemptOrderOutcomeCallback(OrderFailureCause.NeedsRepair);
+            AttemptOrderOutcomeCallback(OrderFailureCause.NeedsRepair, _fsmTgt);
             IssueCaptainsRepairOrder_InFormation();
         }
     }
@@ -1879,17 +1912,17 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         if (_fsmTgt != deadFsmTgt) {
             D.Error("{0}.target {1} is not dead target {2}.", DebugName, _fsmTgt.DebugName, deadFsmTgt.DebugName);
         }
-        AttemptOrderOutcomeCallback(OrderFailureCause.TgtDeath);
+        AttemptOrderOutcomeCallback(OrderFailureCause.TgtDeath, _fsmTgt);
     }
 
     void ExecuteExploreOrder_UponLosingOwnership() {
         LogEvent();
-        AttemptOrderOutcomeCallback(OrderFailureCause.Ownership);
+        AttemptOrderOutcomeCallback(OrderFailureCause.Ownership, _fsmTgt);
     }
 
     void ExecuteExploreOrder_UponDeath() {
         LogEvent();
-        AttemptOrderOutcomeCallback(OrderFailureCause.Death);
+        AttemptOrderOutcomeCallback(OrderFailureCause.Death, _fsmTgt);
     }
 
     void ExecuteExploreOrder_ExitState() {
@@ -1901,9 +1934,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, _fsmTgt);
         D.Assert(isUnsubscribed);
 
-        _fsmTgt = null;
-        _activeFsmReturnHandlers.Clear();
-        _hasOrderOutcomeCallbackAttemptOccurred = false;
+        ResetCommonNonCallableStateValues();
     }
 
     #endregion
@@ -2016,7 +2047,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void AssumingHighOrbit_UponDamageIncurred() {
         LogEvent();
-        if (AssessNeedForRepair(GeneralSettings.Instance.ElementHealthThreshold_Damaged)) {
+        if (AssessNeedForRepair(HealthThreshold_Damaged)) {
             var returnHandler = GetCurrentCalledStateReturnHandler();
             returnHandler.ReturnCause = FsmCallReturnCause.NeedsRepair;
             Return();
@@ -2131,20 +2162,18 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         D.Assert(!IsInOrbit);
         IShipCloseOrbitable closeOrbitTgt = _fsmTgt as IShipCloseOrbitable;
         D.AssertNotNull(closeOrbitTgt);
-        // 12.4.17 Can't set availability here as can violate FSM rule: no state change in void EnterStates
+        // 12.7.17 Don't set Availability in states that can be Call()ed by more than one ExecuteOrder state
     }
 
     IEnumerator AssumingCloseOrbit_EnterState() {
         LogEvent();
-
-        // 12.7.17 Don't set Availability in states that can be Call()ed by more than one ExecuteOrder state
 
         IShipCloseOrbitable closeOrbitTgt = _fsmTgt as IShipCloseOrbitable;
         // use autopilot to move into close orbit whether inside or outside slot
         IShipNavigableDestination closeOrbitApTgt = closeOrbitTgt.CloseOrbitSimulator as IShipNavigableDestination;
 
         Vector3 apTgtOffset = Vector3.zero;
-        float apTgtStandoffDistance = CollisionDetectionZoneRadius;
+        float apTgtStandoffDistance = CollisionDetectionZoneRadius; // 12.17.17 Reqd minimum value
         ApMoveDestinationProxy closeOrbitApTgtProxy = closeOrbitApTgt.GetApMoveTgtProxy(apTgtOffset, apTgtStandoffDistance, this);
         _helm.EngageAutoPilot(closeOrbitApTgtProxy, Speed.Slow, isFleetwideMove: false);
         // 2.8.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
@@ -2179,7 +2208,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                         errorDate = new GameDate(warnDate, GameTimeDuration.FiveDays);
                     }
                     if (currentDate > errorDate) {
-                        D.Error("{0} wait while moving to close orbit slot has timed out.", DebugName);
+                        D.Error("{0} wait while moving to close orbit slot has timed out. LastState = {1}.", DebugName, LastState.GetValueName());
                     }
                 }
             }
@@ -2187,7 +2216,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
         if (!closeOrbitApTgtProxy.HasArrived) {
             if (closeOrbitApTgtProxy.__ShipDistanceFromArrived > CollisionDetectionZoneRadius / 5F) {
-                D.Warn("{0} has finished moving into position for close orbit of {1} but is {2} away from 'arrived'.",
+                D.Log("{0} has finished moving into position for close orbit of {1} but is {2} away from 'arrived'.",
                     DebugName, closeOrbitApTgt.DebugName, closeOrbitApTgtProxy.__ShipDistanceFromArrived);
             }
         }
@@ -2219,7 +2248,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                         errorDate = new GameDate(warnDate, GameTimeDuration.TwoDays);    // HACK // 3.2.17 Error at OneDay after FtlDampener introduced
                     }
                     if (currentDate > errorDate) {
-                        D.Error("{0} wait while assuming close orbit has timed out.", DebugName);
+                        D.Error("{0} wait while assuming close orbit has timed out. LastState = {1}.", DebugName, LastState.GetValueName());
                     }
                 }
             }
@@ -2229,7 +2258,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             D.Log(ShowDebugLog, "{0} has attained close orbit of {1} but is {2:0.00} away from 'arrived'.",
                 DebugName, closeOrbitApTgt.DebugName, closeOrbitApTgtProxy.__ShipDistanceFromArrived);
             if (closeOrbitApTgtProxy.__ShipDistanceFromArrived > CollisionDetectionZoneRadius / 5F) {
-                D.Warn("{0} has attained close orbit of {1} but is {2:0.00} away from 'arrived'.",
+                D.Log("{0} has attained close orbit of {1} but is {2:0.00} away from 'arrived'.",
                     DebugName, closeOrbitApTgt.DebugName, closeOrbitApTgtProxy.__ShipDistanceFromArrived);
             }
         }
@@ -2266,7 +2295,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void AssumingCloseOrbit_UponDamageIncurred() {
         LogEvent();
-        if (AssessNeedForRepair(GeneralSettings.Instance.ElementHealthThreshold_Damaged)) {
+        if (AssessNeedForRepair(HealthThreshold_Damaged)) {
             var returnHandler = GetCurrentCalledStateReturnHandler();
             returnHandler.ReturnCause = FsmCallReturnCause.NeedsRepair;
             Return();
@@ -2359,7 +2388,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         IDictionary<FsmCallReturnCause, Action> taskLookup = new Dictionary<FsmCallReturnCause, Action>() {
 
             {FsmCallReturnCause.NeedsRepair, () =>    {
-                AttemptOrderOutcomeCallback(OrderFailureCause.NeedsRepair);
+                AttemptOrderOutcomeCallback(OrderFailureCause.NeedsRepair, _fsmTgt);
                 bool isFleeing = IssueRepairOrder_Flee();
                 if(isFleeing) {
                     // Idle while waiting for new orders from flee and repair fleet
@@ -2372,11 +2401,11 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             }                                                                                       },
             {FsmCallReturnCause.TgtRelationship, () =>    {
                 // UNCLEAR Relationship changes handled by Cmd?
-                AttemptOrderOutcomeCallback(OrderFailureCause.TgtRelationship);
+                AttemptOrderOutcomeCallback(OrderFailureCause.TgtRelationship, _fsmTgt);
                 CurrentState = ShipState.Idling;    // Idle while we wait for new Order from Cmd
             }                                                                                       },
             {FsmCallReturnCause.TgtDeath, () =>   {
-                AttemptOrderOutcomeCallback(OrderFailureCause.TgtDeath);
+                AttemptOrderOutcomeCallback(OrderFailureCause.TgtDeath, _fsmTgt);
                 CurrentState = ShipState.Idling;    // Idle while we wait for new Order from Cmd
             }                                                                                       },
             {FsmCallReturnCause.TgtUncatchable, () => {
@@ -2406,8 +2435,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         D.AssertNotEqual(ShipCombatStance.Disengage, Data.CombatStance, DebugName);
 
         if (Data.WeaponsRange.Max == Constants.ZeroF) {
-            if (ShowDebugLog && allowLogging) {
-                D.Log("{0} is declining to engage with target {1} as it has no operational weapons.", DebugName, unitAttackTgt.DebugName);
+            if (allowLogging) {
+                D.Log("{0} is declining to pick one of {1}s elements to attack as it has no operational weapons.", DebugName, unitAttackTgt.DebugName);
             }
             shipPrimaryAttackTgt = null;
             return false;
@@ -2495,7 +2524,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     void ExecuteAttackOrder_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonNotCallableStateValues();
+        ValidateCommonNonCallableStateValues();
         D.Assert(!IsLocatedInHanger);
         // The attack target acquired from the order. Can be a Command (3.30.17 NOT a Planetoid)
         IUnitAttackable unitAttackTgt = CurrentOrder.Target as IUnitAttackable;
@@ -2524,35 +2553,43 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         // Other unitAttackTgt condition changes (owner, relationship, infoAccess) handled by FleetCmd
 
         ShipCombatStance stance = Data.CombatStance;
+        if (IsHQ && stance != ShipCombatStance.Defensive) {
+            D.Warn("{0} as HQ cannot have {1} of {2}. Changing to {3}.", DebugName, typeof(ShipCombatStance).Name,
+                stance.GetValueName(), ShipCombatStance.Defensive.GetValueName());
+            Data.CombatStance = ShipCombatStance.Defensive;
+        }
+
+        if (Data.WeaponsRange.Max == Constants.ZeroF && stance != ShipCombatStance.Disengage) {
+            D.LogBold("{0} has no operational weapons with a {1} of {2}. Changing to {3}.", DebugName, typeof(ShipCombatStance).Name,
+                stance.GetValueName(), ShipCombatStance.Disengage.GetValueName());
+            Data.weaponsRangeChanging += WeaponsRangeChangingEventHandler;
+            Data.CombatStance = ShipCombatStance.Disengage;
+        }
+
+
         if (stance == ShipCombatStance.Disengage) {
-            if (IsHQ) {
-                D.Warn("{0} as HQ cannot have {1} of {2}. Changing to {3}.", DebugName, typeof(ShipCombatStance).Name,
-                    ShipCombatStance.Disengage.GetValueName(), ShipCombatStance.Defensive.GetValueName());
-                Data.CombatStance = ShipCombatStance.Defensive;
+            // no Cmd order outcome reqd as this is 'normal' attack behaviour for CombatStance.Disengage
+            if (IsThereANeedForAFormationStationChangeToDisengage()) {
+                D.Log("{0} has {1} of {2} but is not on the proper FormationStation. Will attempt to change station.", DebugName, typeof(ShipCombatStance).Name, stance.GetValueName());
+                // 12.17.17 The change of FormationStation will be attempted in ExecuteDisengageOrder.EnterState
+                ShipOrder disengageOrder = new ShipOrder(ShipDirective.Disengage, OrderSource.Captain);
+                CurrentOrder = disengageOrder;   // order outcome callback sent by _UponNewOrderReceived
             }
             else {
-                // no Cmd order outcome reqd as this is 'normal' attack behaviour for CombatStance.Disengage
-                if (IsThereNeedForAFormationStationChangeTo(WithdrawPurpose.Disengage)) {
-                    ShipOrder disengageOrder = new ShipOrder(ShipDirective.Disengage, OrderSource.Captain);
-                    CurrentOrder = disengageOrder;
-                }
-                else {
-                    D.Log(ShowDebugLog, "{0} is already {1}d as the current FormationStation meets that need. Canceling Attack Order.",
-                        DebugName, ShipDirective.Disengage.GetValueName());
-                    CurrentState = ShipState.Idling;
-                }
-                yield return null;
+                D.Log(ShowDebugLog, "{0} is already {1}d as the current FormationStation meets that need. Canceling Attack Order.",
+                    DebugName, ShipDirective.Disengage.GetValueName());
+                ////CurrentState = ShipState.Idling;
+                IssueCaptainsAssumeStationOrder();
             }
+            yield return null;
         }
 
         if (stance == ShipCombatStance.Defensive) {
             // no Cmd order outcome reqd as this is 'normal' attack behaviour for CombatStance.Defensive
             D.Log(ShowDebugLog, "{0}'s {1} is {2}. Changing Attack order to AssumeStationAndEntrench.",
                 DebugName, typeof(ShipCombatStance).Name, ShipCombatStance.Defensive.GetValueName());
-            ShipOrder assumeStationAndEntrenchOrder = new ShipOrder(ShipDirective.AssumeStation, OrderSource.Captain) {
-                FollowonOrder = new ShipOrder(ShipDirective.Entrench, OrderSource.Captain)
-            };
-            CurrentOrder = assumeStationAndEntrenchOrder;
+            ShipOrder assumeStationAndEntrenchOrder = new ShipOrder(ShipDirective.Entrench, OrderSource.Captain);
+            CurrentOrder = assumeStationAndEntrenchOrder;   // order outcome callback sent by _UponNewOrderReceived
             yield return null;
         }
 
@@ -2575,9 +2612,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                     yield return null;
                     D.Error("Shouldn't get here as the ReturnCause should generate a change of state.");
                 }
-                else {
+                else {  // UNCLEAR else needed?
                     D.Assert(primaryAttackTgt.IsDead);
-                    AttemptOrderOutcomeCallback(OrderFailureCause.None);
+                    AttemptOrderOutcomeCallback(OrderFailureCause.None, _fsmTgt);
                     yield return null;
                 }
 
@@ -2636,14 +2673,14 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void ExecuteAttackOrder_UponNewOrderReceived() {
         LogEvent();
-        AttemptOrderOutcomeCallback(OrderFailureCause.NewOrderReceived);
+        AttemptOrderOutcomeCallback(OrderFailureCause.NewOrderReceived, _fsmTgt);
     }
 
     void ExecuteAttackOrder_UponDamageIncurred() {
         LogEvent();
-        if (AssessNeedForRepair(healthThreshold: GeneralSettings.Instance.ElementHealthThreshold_BadlyDamaged)) {
-            if (RequestPermissionOfCmdToWithdraw(WithdrawPurpose.Repair)) {
-                AttemptOrderOutcomeCallback(OrderFailureCause.NeedsRepair);
+        if (AssessNeedForRepair(HealthThreshold_BadlyDamaged)) {
+            if (Command.__RequestPermissionToWithdraw(this)) {
+                AttemptOrderOutcomeCallback(OrderFailureCause.NeedsRepair, _fsmTgt);
                 IssueCaptainsRepairOrder_InFormation();
             }
         }
@@ -2670,20 +2707,20 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void ExecuteAttackOrder_UponLosingOwnership() {
         LogEvent();
-        AttemptOrderOutcomeCallback(OrderFailureCause.Ownership);
+        AttemptOrderOutcomeCallback(OrderFailureCause.Ownership, _fsmTgt);
     }
 
     void ExecuteAttackOrder_UponDeath() {
         LogEvent();
-        AttemptOrderOutcomeCallback(OrderFailureCause.Death);
+        AttemptOrderOutcomeCallback(OrderFailureCause.Death, _fsmTgt);
     }
 
     void ExecuteAttackOrder_ExitState() {
         LogEvent();
+        ResetCommonNonCallableStateValues();
+        Data.weaponsRangeChanging -= WeaponsRangeChangingEventHandler;
+
         _helm.ChangeSpeed(Speed.Stop);
-        _fsmTgt = null;
-        _activeFsmReturnHandlers.Clear();
-        _hasOrderOutcomeCallbackAttemptOccurred = false;
     }
 
     #endregion
@@ -2809,7 +2846,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         D.Assert(isSubscribed);
         isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, _fsmTgt);
         D.Assert(isSubscribed);
-        // 12.4.17 Can't set availability here as can violate FSM rule: no state change in void EnterStates
     }
 
     void Attacking_EnterState() {
@@ -2845,8 +2881,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void Attacking_UponDamageIncurred() {
         LogEvent();
-        if (AssessNeedForRepair(healthThreshold: GeneralSettings.Instance.ElementHealthThreshold_CriticallyDamaged)) {
-            if (RequestPermissionOfCmdToWithdraw(WithdrawPurpose.Repair)) {
+        if (AssessNeedForRepair(HealthThreshold_CriticallyDamaged)) {
+            if (Command.__RequestPermissionToWithdraw(this)) {
                 var returnHandler = GetCurrentCalledStateReturnHandler();
                 returnHandler.ReturnCause = FsmCallReturnCause.NeedsRepair;
                 Return();
@@ -2933,7 +2969,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     void ExecuteJoinFleetOrder_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonNotCallableStateValues();
+        ValidateCommonNonCallableStateValues();
         D.Assert(!IsLocatedInHanger);
         D.Assert(!CurrentOrder.ToCallback);
 
@@ -2979,24 +3015,67 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     #region ExecuteEntrenchOrder
 
+    #region ExecuteEntrenchOrder Support Members
+
+    private FsmReturnHandler CreateFsmReturnHandler_AssumingStationToEntrench() { // OPTIMIZE?
+        IDictionary<FsmCallReturnCause, Action> taskLookup = new Dictionary<FsmCallReturnCause, Action>() {
+
+            // Death: 4.14.17 No longer a ReturnCause as InitiateDeadState auto Return()s out of Call()ed states
+        };
+        return new FsmReturnHandler(taskLookup, ShipState.AssumingStation.GetValueName());
+    }
+
+    private FsmReturnHandler CreateFsmReturnHandler_RepairingToEntrench() {
+        IDictionary<FsmCallReturnCause, Action> taskLookup = new Dictionary<FsmCallReturnCause, Action>() {
+
+            // NeedsRepair: won't occur as Repairing RepairInPlace won't care
+            // Death: 4.14.17 No longer a ReturnCause as InitiateDeadState auto Return()s out of Call()ed states
+        };
+        return new FsmReturnHandler(taskLookup, ShipState.Repairing.GetValueName());
+    }
+
+    #endregion
+
     void ExecuteEntrenchOrder_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonNotCallableStateValues();
+        ValidateCommonNonCallableStateValues();
         D.Assert(!IsLocatedInHanger);
         D.Assert(!CurrentOrder.ToCallback);
-        // 12.4.17 Can't set availability here as can violate FSM rule: no state change in void EnterStates
+
+        _fsmTgt = FormationStation;
+        // No need for _fsmTgt-related event handlers as _fsmTgt is FormationStation
+        ChangeAvailabilityTo(NewOrderAvailability.FairlyAvailable);
     }
 
-    void ExecuteEntrenchOrder_EnterState() {
+    IEnumerator ExecuteEntrenchOrder_EnterState() {
         LogEvent();
-
-        // 12.2.17 No Availability property assignment as this is usually part of attacking
-        // UNCLEAR if this should even be a state
 
         TryBreakOrbit();
         _helm.ChangeSpeed(Speed.HardStop);
         // TODO increase defensive values
+
+        _apMoveSpeed = Speed.Standard;
+        var returnHandler = GetInactiveReturnHandlerFor(ShipState.AssumingStation, CurrentState);
+        Call(ShipState.AssumingStation);
+        yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
+
+        if (!returnHandler.DidCallSuccessfullyComplete) {
+            yield return null;
+            D.Error("Shouldn't get here as the ReturnCause should generate a change of state.");
+        }
+
+        if (AssessNeedForRepair(HealthThreshold_Damaged)) {
+            returnHandler = GetInactiveReturnHandlerFor(ShipState.Repairing, CurrentState);
+            Call(ShipState.Repairing);
+            yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
+
+            if (!returnHandler.DidCallSuccessfullyComplete) {
+                yield return null;
+                D.Error("Shouldn't get here as the ReturnCause should generate a change of state.");
+            }
+        }
+        // Remain in entrenched state pending a new order. If serious damage incurred, state will restart
     }
 
     void ExecuteEntrenchOrder_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
@@ -3015,14 +3094,14 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void ExecuteEntrenchOrder_UponDamageIncurred() {
         LogEvent();
-        if (AssessNeedForRepair(healthThreshold: GeneralSettings.Instance.ElementHealthThreshold_CriticallyDamaged)) {
+        if (AssessNeedForRepair(HealthThreshold_CriticallyDamaged)) {
             bool isFleeing = IssueRepairOrder_Flee();
             if (isFleeing) {
                 return;
             }
         }
-        if (AssessNeedForRepair(Constants.OneHundredPercent)) {
-            IssueCaptainsRepairOrder_InFormation();
+        if (AssessNeedForRepair(HealthThreshold_BadlyDamaged)) {
+            RestartState();            ////IssueCaptainsRepairOrder_InFormation();
         }
     }
 
@@ -3034,10 +3113,10 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void ExecuteEntrenchOrder_UponRelationsChangedWith(Player player) {
         LogEvent();
-        // TODO
+        // do nothing
     }
 
-    // No need for _fsmTgt-related event handlers as there is no _fsmTgt
+    // No need for _fsmTgt-related event handlers as _fsmTgt is FormationStation
 
     void ExecuteEntrenchOrder_UponLosingOwnership() {
         LogEvent();
@@ -3050,7 +3129,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void ExecuteEntrenchOrder_ExitState() {
         LogEvent();
-        _hasOrderOutcomeCallbackAttemptOccurred = false;
+        ResetCommonNonCallableStateValues();
     }
 
     #endregion
@@ -3060,6 +3139,14 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     // 4.2.17 Repair at IElementRepairCapable (planet, base or FormationStation)
 
     #region ExecuteRepairOrder Support Members
+
+    private FsmReturnHandler CreateFsmReturnHandler_AssumingStationToRepair() { // OPTIMIZE?
+        IDictionary<FsmCallReturnCause, Action> taskLookup = new Dictionary<FsmCallReturnCause, Action>() {
+
+            // Death: 4.14.17 No longer a ReturnCause as InitiateDeadState auto Return()s out of Call()ed states
+        };
+        return new FsmReturnHandler(taskLookup, ShipState.AssumingStation.GetValueName());
+    }
 
     private FsmReturnHandler CreateFsmReturnHandler_MovingToRepair() {
         IDictionary<FsmCallReturnCause, Action> taskLookup = new Dictionary<FsmCallReturnCause, Action>() {
@@ -3138,81 +3225,42 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         return new FsmReturnHandler(taskLookup, ShipState.Repairing.GetValueName());
     }
 
-    /// <summary>
-    /// Returns <c>true</c> if this ship should assume orbit, <c>false</c> otherwise.
-    /// If true, the type of orbit to assume will be indicated by the destination returned that is not null.
-    /// </summary>
-    /// <param name="repairDest">The repair destination.</param>
-    /// <param name="highOrbitDest">The resulting high orbit destination. Can be null.</param>
-    /// <param name="closeOrbitDest">The resulting close orbit destination. Can be null.</param>
-    /// <returns></returns>
-    private bool TryDetermineOrbitToAssume(IShipRepairCapable repairDest, out IShipOrbitable highOrbitDest, out IShipCloseOrbitable closeOrbitDest) {
-        D.Assert(Data.Health < Constants.OneHundredPercent);
-        D.AssertNotEqual(Constants.ZeroPercent, Data.Health);
-        highOrbitDest = null;
-        closeOrbitDest = null;
-
-        if (repairDest is FleetFormationStation) {
-            return false;
-        }
-
-        if (Data.Health > GeneralSettings.Instance.ElementHealthThreshold_CriticallyDamaged) {
-            highOrbitDest = repairDest as IShipOrbitable;
-            D.AssertNotNull(highOrbitDest);
-        }
-        else {
-            closeOrbitDest = repairDest as IShipCloseOrbitable;
-            D.AssertNotNull(closeOrbitDest);
-        }
-        return true;
-    }
-
     #endregion
 
     void ExecuteRepairOrder_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonNotCallableStateValues();
+        ValidateCommonNonCallableStateValues();
         D.AssertNotEqual(Constants.OneHundredPercent, Data.Health);
+        D.AssertNotNull(CurrentOrder.Target);   // Target can be a Planet, Base or the ship's FleetCmd (will use its FormationStation)
         // 11.21.17 Can't Assert CurrentOrder.ToCallback as Captain and User can also issue this order
 
-        ////if (CurrentOrder.Target != null) {
-        ////    // 4.1.17 If a target for executing the repair is assigned it will be either a Planet or a Base
-        ////    IShipRepairCapable repairDest = CurrentOrder.Target as IShipRepairCapable;
-        ////    D.AssertNotNull(repairDest);
-        ////    _fsmTgt = repairDest;
-        ////    bool isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtDeath, _fsmTgt);
-        ////    D.Assert(isSubscribed);
-        ////    isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtInfoAccessChg, _fsmTgt);
-        ////    D.Assert(isSubscribed);
-        ////    isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, _fsmTgt);
-        ////    D.Assert(isSubscribed);
-        ////}
-        ////else {
-        ////    _fsmTgt = FormationStation;
-        ////}
-
-        D.AssertNotNull(CurrentOrder.Target);   // Target can be a Planet, Base or the ship's FleetCmd (will use its FormationStation)
         IShipRepairCapable repairDest;
-        D.Assert(Command == null || Command is IShipNavigableDestination);  // TEMP
-        if (CurrentOrder.Target == Command as IShipNavigableDestination) {
-            // repair in place
-            repairDest = FormationStation;
+        if (IsLocatedInHanger) {
+            // No reason for FsmTgt subscriptions if located in hanger as Base/Hanger will handle death or losingOwnership
+            repairDest = CurrentOrder.Target as IShipRepairCapable;
+            var hangerBase = gameObject.GetSingleComponentInParents<AUnitBaseCmdItem>();
+            D.AssertEqual(hangerBase, repairDest);
         }
         else {
-            repairDest = CurrentOrder.Target as IShipRepairCapable;
+            bool toRepairInPlace = CurrentOrder.Target == Command as IShipNavigableDestination;
+            if (toRepairInPlace) {
+                repairDest = FormationStation;
+            }
+            else {
+                repairDest = CurrentOrder.Target as IShipRepairCapable;
+
+                bool isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtDeath, repairDest);
+                D.Assert(isSubscribed);
+                isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtInfoAccessChg, repairDest);
+                D.Assert(isSubscribed);
+                isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, repairDest);
+                D.Assert(isSubscribed);
+            }
         }
         D.AssertNotNull(repairDest);
-        if (repairDest != FormationStation as IShipRepairCapable) { // FormationStations can't die, etc...
-            bool isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtDeath, repairDest);
-            D.Assert(isSubscribed);
-            isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtInfoAccessChg, repairDest);
-            D.Assert(isSubscribed);
-            isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, repairDest);
-            D.Assert(isSubscribed);
-        }
-        _fsmTgt = repairDest;
 
+        _fsmTgt = repairDest;
         AssessAvailabilityStatus_Repair();
     }
 
@@ -3223,24 +3271,36 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         if (!IsLocatedInHanger) {
 
             TryBreakOrbit();    // 4.7.17 Reqd as a previous ExecuteMoveOrder can auto put in high orbit
-
             _apMoveSpeed = Speed.Standard;
-            returnHandler = GetInactiveReturnHandlerFor(ShipState.Moving, CurrentState);
-            // Complete move to the repairDest if needed, or move to our FormationStation
-            Call(ShipState.Moving);
-            yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-            if (!returnHandler.DidCallSuccessfullyComplete) {
-                yield return null;
-                D.Error("Shouldn't get here as the ReturnCause should generate a change of state.");
+            bool isRepairInPlace = _fsmTgt == FormationStation as IShipNavigableDestination;
+            if (isRepairInPlace) {
+                returnHandler = GetInactiveReturnHandlerFor(ShipState.AssumingStation, CurrentState);
+                // move to our FormationStation
+                Call(ShipState.AssumingStation);
+                yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
+
+                if (!returnHandler.DidCallSuccessfullyComplete) {
+                    yield return null;
+                    D.Error("Shouldn't get here as the ReturnCause should generate a change of state.");
+                }
+                // OnStation and ready to repair
             }
+            else {
+                returnHandler = GetInactiveReturnHandlerFor(ShipState.Moving, CurrentState);
+                // Complete move to the repairDest if needed
+                Call(ShipState.Moving);
+                yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-            var repairDest = _fsmTgt as IShipRepairCapable;
-            IShipOrbitable highOrbitDest;
-            IShipCloseOrbitable closeOrbitDest;
-            if (TryDetermineOrbitToAssume(repairDest, out highOrbitDest, out closeOrbitDest)) {
-                if (highOrbitDest != null) {
-                    D.AssertNull(closeOrbitDest);
+                if (!returnHandler.DidCallSuccessfullyComplete) {
+                    yield return null;
+                    D.Error("Shouldn't get here as the ReturnCause should generate a change of state.");
+                }
+
+                // Assume orbit around repairDest based on damage assessment
+                if (Data.Health > HealthThreshold_CriticallyDamaged) {
+                    IShipOrbitable highOrbitDest = _fsmTgt as IShipOrbitable;
+                    D.AssertNotNull(highOrbitDest);
 
                     returnHandler = GetInactiveReturnHandlerFor(ShipState.AssumingHighOrbit, CurrentState);
                     Call(ShipState.AssumingHighOrbit);
@@ -3254,6 +3314,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                     D.Assert(IsInHighOrbit);
                 }
                 else {
+                    // Critically Damaged
+                    IShipCloseOrbitable closeOrbitDest = _fsmTgt as IShipCloseOrbitable;
                     D.AssertNotNull(closeOrbitDest);
 
                     returnHandler = GetInactiveReturnHandlerFor(ShipState.AssumingCloseOrbit, CurrentState);
@@ -3267,6 +3329,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
                     D.Assert(IsInCloseOrbit);
                 }
+                // in orbit and ready to repair
             }
         }
 
@@ -3319,14 +3382,16 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void ExecuteRepairOrder_UponFsmTgtInfoAccessChgd(IOwnerItem_Ltd fsmTgt) {
         LogEvent();
-        // 4.1.17 Currently if this occurs it is an order from FleetCmd, so Cmd will handle
-        // TODO If/when ship gets separate repairDest from Cmd, then will need to inform Cmd
+        // 4.1.17 Currently if this occurs it is an order from FleetCmd, so Cmd will handle. 12.14.17 OPTIMIZE if Cmd will always handle, why subscribe?
+        D.Assert(!IsLocatedInHanger);
+        D.AssertNotEqual(Command, CurrentOrder.Target);
     }
 
     void ExecuteRepairOrder_UponFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) {
         LogEvent();
-        // 4.1.17 Currently if this occurs it is an order from FleetCmd, so Cmd will handle
-        // TODO If/when ship gets separate repairDest from Cmd, then will need to inform Cmd
+        // 4.1.17 Currently if this occurs it is an order from FleetCmd, so Cmd will handle. 12.14.17 OPTIMIZE if Cmd will always handle, why subscribe?
+        D.Assert(!IsLocatedInHanger);
+        D.AssertNotEqual(Command, CurrentOrder.Target);
     }
 
     void ExecuteRepairOrder_UponFsmTgtDeath(IMortalItem_Ltd deadFsmTgt) {
@@ -3334,10 +3399,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         if (_fsmTgt != deadFsmTgt) {
             D.Error("{0}.target {1} is not dead target {2}.", DebugName, _fsmTgt.DebugName, deadFsmTgt.DebugName);
         }
-        // 4.1.17 Currently if this occurs it is an order from FleetCmd, so Cmd will handle
-        // TODO If/when ship gets separate repairDest from Cmd, then will need to inform Cmd
-        AttemptOrderOutcomeCallback(OrderFailureCause.TgtDeath);
-        CurrentState = ShipState.Idling;    // 4.8.17 FIXME If I get the state change warning, this will override it
+        // 4.1.17 Currently if this occurs it is an order from FleetCmd, so Cmd will handle. 12.14.17 OPTIMIZE if Cmd will always handle, why subscribe?
+        D.Assert(!IsLocatedInHanger);
+        D.AssertNotEqual(Command, CurrentOrder.Target);
     }
 
     void ExecuteRepairOrder_UponLosingOwnership() {
@@ -3352,18 +3416,14 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void ExecuteRepairOrder_ExitState() {
         LogEvent();
-        if (!(_fsmTgt is FleetFormationStation)) {
-            // 4.1.17 If a target for executing the repair is assigned it will be either a Planet or a BaseCmd
-            bool isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtDeath, _fsmTgt);
-            D.Assert(isUnsubscribed);
-            isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtInfoAccessChg, _fsmTgt);
-            D.Assert(isUnsubscribed);
-            isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, _fsmTgt);
-            D.Assert(isUnsubscribed);
-        }
-        _activeFsmReturnHandlers.Clear();
-        _fsmTgt = null;
-        _hasOrderOutcomeCallbackAttemptOccurred = false;
+
+        // 12.14.17 Can't Assert unsubscribed as no subscriptions if start in hanger or repair in place. 
+        // Can't test for in hanger here as very likely to be in hanger now even if didn't start there.
+        FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtDeath, _fsmTgt);
+        FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtInfoAccessChg, _fsmTgt);
+        FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, _fsmTgt);
+
+        ResetCommonNonCallableStateValues();
     }
 
     #endregion
@@ -3393,7 +3453,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         WaitForHours waitYieldInstruction = new WaitForHours(GameTime.HoursPerDay);
 
         if (IsHQ && Command.CmdModuleHealth < Constants.OneHundredPercent) {
-            IUnitRepairCapable cmdModuleRepairDest = _fsmTgt as IUnitRepairCapable;
+            IRepairCapable cmdModuleRepairDest = _fsmTgt as IRepairCapable;
 
             //  IMPROVE should be some max repair level if repairing in place
             float cmdModuleRepairCapacityPerDay = cmdModuleRepairDest.GetAvailableRepairCapacityFor(Command, this, Owner);
@@ -3458,7 +3518,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     void Repairing_UponHQStatusChangeCompleted() {
         LogEvent();
         // 3.21.17 See Comments under Ship.UponHQStatusChangeCompleted
-        RestartState(); // 12.10.17 Added to accommodate CmdModule repair
+        RestartState(); // 12.10.17 Added to accommodate HQShip's CmdModule repair responsibility
     }
 
     void Repairing_UponRelationsChangedWith(Player player) {
@@ -3468,14 +3528,18 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void Repairing_UponFsmTgtInfoAccessChgd(IOwnerItem_Ltd fsmTgt) {
         LogEvent();
-        // 4.1.17 Currently if this occurs it is an order from FleetCmd with a non-ship-specific repairDest, so Cmd will handle
-        // TODO If/when ship gets a ship-specific repairDest from Cmd, then will need to inform Cmd
+        // 4.1.17 Currently if this occurs it is an order from FleetCmd, so Cmd will handle
+        D.Assert(!IsLocatedInHanger);
+        D.AssertNotEqual(Command, CurrentOrder.Target);
+        // 12.14.17 OPTIMIZE if Cmd will always handle, why subscribe?
     }
 
     void Repairing_UponFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) {
         LogEvent();
-        // 4.1.17 Currently if this occurs it is an order from FleetCmd with a non-ship-specific repairDest, so Cmd will handle
-        // TODO If/when ship gets a ship-specific repairDest from Cmd, then will need to inform Cmd
+        // 4.1.17 Currently if this occurs it is an order from FleetCmd, so Cmd will handle
+        D.Assert(!IsLocatedInHanger);
+        D.AssertNotEqual(Command, CurrentOrder.Target);
+        // 12.14.17 OPTIMIZE if Cmd will always handle, why subscribe?
     }
 
     void Repairing_UponFsmTgtDeath(IMortalItem_Ltd deadFsmTgt) {
@@ -3483,17 +3547,18 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         if (_fsmTgt != deadFsmTgt) {
             D.Error("{0}.target {1} is not dead target {2}.", DebugName, _fsmTgt.DebugName, deadFsmTgt.DebugName);
         }
-        var returnHandler = GetCurrentCalledStateReturnHandler();
-        returnHandler.ReturnCause = FsmCallReturnCause.TgtDeath;
-        Return();
+        // 4.1.17 Currently if this occurs it is an order from FleetCmd, so Cmd will handle
+        D.Assert(!IsLocatedInHanger);
+        D.AssertNotEqual(Command, CurrentOrder.Target);
+        // 12.14.17 OPTIMIZE if Cmd will always handle, why subscribe?
     }
 
     void Repairing_UponOrbitedObjectDeath(IShipOrbitable deadOrbitedObject) {
         LogEvent();
-        BreakOrbit();
         if (_fsmTgt != deadOrbitedObject) {
             D.Error("{0}.target {1} is not dead orbitedObject {2}.", DebugName, _fsmTgt.DebugName, deadOrbitedObject.DebugName);
         }
+        BreakOrbit();
         var returnHandler = GetCurrentCalledStateReturnHandler();
         returnHandler.ReturnCause = FsmCallReturnCause.TgtDeath;
         Return();
@@ -3513,10 +3578,31 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     #region ExecuteDisengageOrder
 
+    #region ExecuteDisengageOrder Support Members
+
+    private FsmReturnHandler CreateFsmReturnHandler_AssumingStationToDisengage() { // OPTIMIZE?
+        IDictionary<FsmCallReturnCause, Action> taskLookup = new Dictionary<FsmCallReturnCause, Action>() {
+
+            // Death: 4.14.17 No longer a ReturnCause as InitiateDeadState auto Return()s out of Call()ed states
+        };
+        return new FsmReturnHandler(taskLookup, ShipState.AssumingStation.GetValueName());
+    }
+
+    private FsmReturnHandler CreateFsmReturnHandler_RepairingToDisengage() {
+        IDictionary<FsmCallReturnCause, Action> taskLookup = new Dictionary<FsmCallReturnCause, Action>() {
+
+            // NeedsRepair: won't occur as Repairing RepairInPlace won't care
+            // Death: 4.14.17 No longer a ReturnCause as InitiateDeadState auto Return()s out of Call()ed states
+        };
+        return new FsmReturnHandler(taskLookup, ShipState.Repairing.GetValueName());
+    }
+
+    #endregion
+
     void ExecuteDisengageOrder_UponPreconfigureState() {
         LogEvent();
 
-        ValidateCommonNotCallableStateValues();
+        ValidateCommonNonCallableStateValues();
         D.Assert(!IsLocatedInHanger);
         if (IsHQ) {
             D.Error("{0} as HQ cannot initiate {1}.{2}.", DebugName, typeof(ShipState).Name, ShipState.ExecuteDisengageOrder.GetValueName());
@@ -3525,42 +3611,62 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             D.Error("Only {0} Captain can order {1} (to a more protected FormationStation).", DebugName, ShipDirective.Disengage.GetValueName());
         }
         D.Assert(!CurrentOrder.ToCallback);
-        // 12.4.17 Can't set availability here as can violate FSM rule: no state change in void EnterStates
+
+        _fsmTgt = FormationStation;
+        // No need for _fsmTgt-related event handlers as _fsmTgt is FormationStation
+        ChangeAvailabilityTo(NewOrderAvailability.FairlyAvailable);
     }
 
     IEnumerator ExecuteDisengageOrder_EnterState() {
         LogEvent();
 
-        // UNCLEAR why this is a state as no time is spent here before going to AssumeStation
-        // No Availability property assignment as no time is spent here
-
-        // 3.19.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
-        // I think it is because there is a rare scenario where no yield return is encountered below this. 
-        // See http://answers.unity3d.com/questions/158917/error-quotmcoroutineenumeratorgchandle-0quot.html
-        yield return null;
+        // 12.16.17 Can't be handled by a method as it would preclude the ability to callback with an order outcome
 
         AFormationManager.FormationStationSelectionCriteria stationSelectionCriteria;
-        WithdrawPurpose disengagePurpose = WithdrawPurpose.Disengage;
-
-        D.AssertEqual(ShipDirective.Disengage, CurrentOrder.Directive);
-        if (CurrentOrder.FollowonOrder != null) {
-            // 4.6.17 Only follow-on order to a disengage order currently is a repair order
-            D.AssertEqual(ShipDirective.Repair, CurrentOrder.FollowonOrder.Directive);
-            disengagePurpose = WithdrawPurpose.Repair;
-        }
-        bool isStationChangeNeeded = TryDetermineNeedForFormationStationChange(disengagePurpose, out stationSelectionCriteria);
+        bool isStationChangeNeeded = TryDetermineNeedForFormationStationChangeToDisengage(out stationSelectionCriteria);
         if (!isStationChangeNeeded) {
-            // 11.26.17 Assert failed so added debug info
-            D.Error("{0}'s need for a formation station change to {1} should already be confirmed.", DebugName, disengagePurpose.GetValueName());
+            // 11.26.17 Assert failed so added debug info. 12.18.17 Again so eliminated WithdrawPurpose
+            D.Error("{0}'s need for a formation station change should already be confirmed.", DebugName);
         }
 
         bool isDifferentStationAssigned = Command.RequestFormationStationChange(this, stationSelectionCriteria);
+        if (isDifferentStationAssigned) {
+            // 12.17.17 OPTIMIZE Making sure FormationStation was changed and recycling completed
+            D.AssertNotEqual(_fsmTgt, FormationStation);
+            D.AssertNotNull(FormationStation);
+            D.AssertNotNull(FormationStation.AssignedShip);
+
+            _fsmTgt = FormationStation;
+        }
+
         if (ShowDebugLog) {
             string msg = isDifferentStationAssigned ? "has been assigned a different" : "will use its existing";
             D.Log("{0} {1} {2} to {3}.", DebugName, msg, typeof(FleetFormationStation).Name, ShipDirective.Disengage.GetValueName());
         }
 
-        IssueCaptainsAssumeStationOrder();
+        TryBreakOrbit();
+
+        _apMoveSpeed = Speed.Standard;
+        var returnHandler = GetInactiveReturnHandlerFor(ShipState.AssumingStation, CurrentState);
+        Call(ShipState.AssumingStation);
+        yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
+
+        if (!returnHandler.DidCallSuccessfullyComplete) {
+            yield return null;
+            D.Error("Shouldn't get here as the ReturnCause should generate a change of state.");
+        }
+
+        if (AssessNeedForRepair(HealthThreshold_Damaged)) {
+            returnHandler = GetInactiveReturnHandlerFor(ShipState.Repairing, CurrentState);
+            Call(ShipState.Repairing);
+            yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
+
+            if (!returnHandler.DidCallSuccessfullyComplete) {
+                yield return null;
+                D.Error("Shouldn't get here as the ReturnCause should generate a change of state.");
+            }
+        }
+        // Remain in disengaged state pending a new order. If serious damage incurred, state will restart
     }
 
     void ExecuteDisengageOrder_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
@@ -3579,14 +3685,14 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void ExecuteDisengageOrder_UponDamageIncurred() {
         LogEvent();
-        if (AssessNeedForRepair(GeneralSettings.Instance.ElementHealthThreshold_CriticallyDamaged)) {
+        if (AssessNeedForRepair(HealthThreshold_CriticallyDamaged)) {
             bool isFleeing = IssueRepairOrder_Flee();
             if (isFleeing) {
                 return;
             }
         }
-        if (AssessNeedForRepair(Constants.OneHundredPercent)) {
-            IssueCaptainsRepairOrder_InFormation();
+        if (AssessNeedForRepair(HealthThreshold_BadlyDamaged)) {
+            RestartState();
         }
     }
 
@@ -3600,7 +3706,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         // Continue
     }
 
-    // No need for _fsmTgt-related event handlers as there is no _fsmTgt
+    // No need for _fsmTgt-related event handlers as _fsmTgt is FormationStation
 
     void ExecuteDisengageOrder_UponLosingOwnership() {
         LogEvent();
@@ -3613,7 +3719,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void ExecuteDisengageOrder_ExitState() {
         LogEvent();
-        _hasOrderOutcomeCallbackAttemptOccurred = false;
+        ResetCommonNonCallableStateValues();
     }
 
     #endregion
@@ -3688,17 +3794,24 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void ExecuteRefitOrder_UponPreconfigureState() {
         LogEvent();
-        ValidateCommonNotCallableStateValues();
-        //// 12.3.17 Can't assert IsRefitAllowed as this order can be issued outside of a hanger
+        ValidateCommonNonCallableStateValues();
         D.Assert(CurrentOrder is ShipRefitOrder);
         D.Assert(CurrentOrder.Target is AUnitBaseCmdItem);
-        _fsmTgt = CurrentOrder.Target;
-        bool isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtDeath, _fsmTgt);
-        D.Assert(isSubscribed);
-        // no need to subscribe to info access changes at our own base
-        isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, _fsmTgt);
-        D.Assert(isSubscribed);
         // 11.21.17 Can't Assert CurrentOrder.ToCallback as User can also issue this order while in hanger
+
+        if (IsLocatedInHanger) {
+            // No reason for FsmTgt subscriptions if located in hanger as Base/Hanger will handle death or losingOwnership
+            var hangerBase = gameObject.GetSingleComponentInParents<AUnitBaseCmdItem>();
+            D.AssertEqual(hangerBase, CurrentOrder.Target);
+        }
+        else {
+            bool isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtDeath, CurrentOrder.Target);
+            D.Assert(isSubscribed);
+            // no need to subscribe to info access changes at our own base
+            isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, CurrentOrder.Target);
+            D.Assert(isSubscribed);
+        }
+        _fsmTgt = CurrentOrder.Target;
 
         ChangeAvailabilityTo(NewOrderAvailability.FairlyAvailable);
     }
@@ -3806,14 +3919,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void ExecuteRefitOrder_UponFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) {
         LogEvent();
-        // 11.21.17 won't callback if already in hanger
-        AttemptOrderOutcomeCallback(OrderFailureCause.TgtRelationship);
-        CurrentState = ShipState.Idling;
-    }
 
-    void ExecuteRefitOrder_UponLosingOwnership() {
-        LogEvent();
-        AttemptOrderOutcomeCallback(OrderFailureCause.Ownership);
+        // 12.14.17 Currently if this occurs it is an order from FleetCmd, so Cmd will handle. OPTIMIZE if Cmd will always handle, why subscribe?
+        D.Assert(!IsLocatedInHanger);
     }
 
     void ExecuteRefitOrder_UponFsmTgtDeath(IMortalItem_Ltd deadFsmTgt) {
@@ -3821,9 +3929,14 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         if (_fsmTgt != deadFsmTgt) {
             D.Error("{0}.target {1} is not dead target {2}.", DebugName, _fsmTgt.DebugName, deadFsmTgt.DebugName);
         }
-        // 11.21.17 won't callback if already in hanger
-        AttemptOrderOutcomeCallback(OrderFailureCause.TgtDeath);
-        CurrentState = ShipState.Idling;
+
+        // 12.14.17 Currently if this occurs it is an order from FleetCmd, so Cmd will handle. OPTIMIZE if Cmd will always handle, why subscribe?
+        D.Assert(!IsLocatedInHanger);
+    }
+
+    void ExecuteRefitOrder_UponLosingOwnership() {
+        LogEvent();
+        AttemptOrderOutcomeCallback(OrderFailureCause.Ownership);
     }
 
     void ExecuteRefitOrder_UponDeath() {
@@ -3833,13 +3946,12 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void ExecuteRefitOrder_ExitState() {
         LogEvent();
-        bool isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtDeath, _fsmTgt);
-        D.Assert(isUnsubscribed);
-        isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, _fsmTgt);
-        D.Assert(isUnsubscribed);
-        _activeFsmReturnHandlers.Clear();
-        _fsmTgt = null;
-        _hasOrderOutcomeCallbackAttemptOccurred = false;
+
+        FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtDeath, _fsmTgt);
+        FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, _fsmTgt);
+        // 12.14.17 Can't Assert unsubscribed as no subscriptions if start in hanger. 
+        // Can't test for in hanger here as very likely to be in hanger now even if didn't start there.
+        ResetCommonNonCallableStateValues();
     }
 
     #endregion
@@ -3855,7 +3967,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     private float __CalcRefitCost(ShipDesign refitDesign, ShipDesign currentDesign) {
         float refitCost = refitDesign.ConstructionCost - currentDesign.ConstructionCost;
         if (refitCost < refitDesign.MinimumRefitCost) {
-            D.Warn("{0}.RefitCost {1:0.#} < Minimum {2:0.#}. RefitDesign: {3}.", DebugName, refitCost, refitDesign.MinimumRefitCost, refitDesign.DebugName);
+            //D.Log("{0}.RefitCost {1:0.#} < Minimum {2:0.#}. Fixing. RefitDesign: {3}.", DebugName, refitCost, refitDesign.MinimumRefitCost,
+            //    refitDesign.DebugName);
             refitCost = refitDesign.MinimumRefitCost;
         }
         return refitCost;
@@ -3880,7 +3993,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         var refitOrder = CurrentOrder as ShipRefitOrder;
         var refitDesign = refitOrder.RefitDesign;
         float refitCost = __CalcRefitCost(refitDesign, Data.Design);
-        D.Log(/*ShowDebugLog, */"{0} is being added to the construction queue to refit to {1}. Cost = {2:0.}.",
+        D.Log(ShowDebugLog, "{0} is being added to the construction queue to refit to {1}. Cost = {2:0.}.",
             DebugName, refitDesign.DebugName, refitCost);
 
         _refitStorage = Data.PrepareForRefit();
@@ -3904,11 +4017,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         // Refit completed with a replacement ship in place so Return() for destruction
         Return();
     }
-
-    ////void Refitting_UponNewOrderReceived() {
-    ////    LogEvent();
-    ////    D.AssertEqual(ShipDirective.Scuttle, CurrentOrder.Directive);
-    ////}
 
     void Refitting_UponRelationsChangedWith(Player player) {
         LogEvent();
@@ -3946,7 +4054,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void Refitting_UponFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) {
         LogEvent();
-        D.AssertEqual(Owner, fsmTgt.Owner_Debug);   // fsmTgt is base with same owner as ship
         D.Error("{0} should not happen as Hanger should handle before this occurs.", DebugName);
     }
 
@@ -4036,24 +4143,26 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             }                                                                                   },
             // Death: 4.14.17 No longer a ReturnCause as InitiateDeadState auto Return()s out of Call()ed states
         };
-        return new FsmReturnHandler(taskLookup, ShipState.Refitting.GetValueName());
+        return new FsmReturnHandler(taskLookup, ShipState.Disbanding.GetValueName());
     }
 
     #endregion
 
     void ExecuteDisbandOrder_UponPreconfigureState() {
         LogEvent();
-        ValidateCommonNotCallableStateValues();
-        //// 12.3.17 Can't assert IsRefitAllowed as this order can be issued outside of a hanger
-        ////D.Assert(CurrentOrder is ShipRefitOrder);
+        ValidateCommonNonCallableStateValues();
         D.Assert(CurrentOrder.Target is AUnitBaseCmdItem);
-        _fsmTgt = CurrentOrder.Target;
-        bool isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtDeath, _fsmTgt);
-        D.Assert(isSubscribed);
-        // no need to subscribe to info access changes at our own base
-        isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, _fsmTgt);
-        D.Assert(isSubscribed);
         // 11.21.17 Can't Assert CurrentOrder.ToCallback as User can also issue this order while in hanger
+
+        if (!IsLocatedInHanger) {
+            bool isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtDeath, CurrentOrder.Target);
+            D.Assert(isSubscribed);
+            // no need to subscribe to info access changes at our own base
+            isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, CurrentOrder.Target);
+            D.Assert(isSubscribed);
+        }
+        // else no reason for FsmTgt subscriptions if located in hanger as Base/Hanger will handle death or losingOwnership
+        _fsmTgt = CurrentOrder.Target;
 
         ChangeAvailabilityTo(NewOrderAvailability.FairlyAvailable);
     }
@@ -4167,9 +4276,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void ExecuteDisbandOrder_UponFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) {
         LogEvent();
-        // 12.12.17 won't callback if already in hanger
-        AttemptOrderOutcomeCallback(OrderFailureCause.TgtRelationship);
-        CurrentState = ShipState.Idling;
+
+        // 12.14.17 Currently if this occurs it is an order from FleetCmd, so Cmd will handle. OPTIMIZE if Cmd will always handle, why subscribe?
+        D.Assert(!IsLocatedInHanger);
     }
 
     void ExecuteDisbandOrder_UponFsmTgtDeath(IMortalItem_Ltd deadFsmTgt) {
@@ -4177,9 +4286,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         if (_fsmTgt != deadFsmTgt) {
             D.Error("{0}.target {1} is not dead target {2}.", DebugName, _fsmTgt.DebugName, deadFsmTgt.DebugName);
         }
-        // 12.12.17 won't callback if already in hanger
-        AttemptOrderOutcomeCallback(OrderFailureCause.TgtDeath);
-        CurrentState = ShipState.Idling;
+        // 12.14.17 Currently if this occurs it is an order from FleetCmd, so Cmd will handle. OPTIMIZE if Cmd will always handle, why subscribe?
+        D.Assert(!IsLocatedInHanger);
     }
 
     void ExecuteDisbandOrder_UponUncompletedRemovalFromConstructionQueue() {
@@ -4197,14 +4305,12 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void ExecuteDisbandOrder_ExitState() {
         LogEvent();
-        bool isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtDeath, _fsmTgt);
-        D.Assert(isUnsubscribed);
-        isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, _fsmTgt);
-        D.Assert(isUnsubscribed);
 
-        _activeFsmReturnHandlers.Clear();
-        _fsmTgt = null;
-        _hasOrderOutcomeCallbackAttemptOccurred = false;
+        FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtDeath, _fsmTgt);
+        FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtOwnerChg, _fsmTgt);
+        // 12.14.17 Can't Assert unsubscribed as no subscriptions if start in hanger. 
+        // Can't test for in hanger here as very likely to be in hanger now even if didn't start there.
+        ResetCommonNonCallableStateValues();
     }
 
     #endregion
@@ -4215,14 +4321,12 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     #region Disbanding Support Members
 
-    ////private AUnitElementData.RefitStorage _refitStorage;
-
     private float __CalcDisbandCost(ShipDesign currentDesign) {
         ShipDesign emptyDisbandDesign = _gameMgr.PlayersDesigns.GetShipDesign(currentDesign.Player, currentDesign.HullCategory.GetEmptyTemplateDesignName());
         float disbandCost = currentDesign.ConstructionCost - emptyDisbandDesign.ConstructionCost;
         if (disbandCost < currentDesign.MinimumDisbandCost) {
-            D.Log("{0}.DisbandCost {1:0.#} < Minimum {2:0.#}. Fixing. DisbandDesign: {3}.",
-                DebugName, disbandCost, currentDesign.MinimumDisbandCost, emptyDisbandDesign.DebugName);
+            //D.Log("{0}.DisbandCost {1:0.#} < Minimum {2:0.#}. Fixing. DisbandDesign: {3}.",
+            //    DebugName, disbandCost, currentDesign.MinimumDisbandCost, emptyDisbandDesign.DebugName);
             disbandCost = emptyDisbandDesign.MinimumDisbandCost;
         }
         return disbandCost;
@@ -4244,7 +4348,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         LogEvent();
 
         float disbandCost = __CalcDisbandCost(Data.Design);
-        D.Log(/*ShowDebugLog, */"{0} is being added to the construction queue to disband. Cost = {1:0.}.",
+        D.Log(ShowDebugLog, "{0} is being added to the construction queue to disband. Cost = {1:0.}.",
             DebugName, disbandCost);
 
         Data.PrepareForDisband();
@@ -4295,7 +4399,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void Disbanding_UponFsmTgtOwnerChgd(IOwnerItem_Ltd fsmTgt) {
         LogEvent();
-        D.AssertEqual(Owner, fsmTgt.Owner_Debug);   // fsmTgt is base with same owner as ship
         D.Error("{0} should not happen as Hanger should handle before this occurs.", DebugName);
     }
 
@@ -4307,11 +4410,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         D.Error("{0} should not happen as Hanger should handle before this occurs.", DebugName);
     }
 
-    ////void Disbanding_UponLosingOwnership() {
-    ////    LogEvent();
-    ////    D.Error("{0} cannot be taken over while in hanger.", DebugName);
-    ////}
-
     // 4.8.17 Call()ed state _UponNewOrderReceived() eliminated as auto Return()ed prior to _UponNewOrderReceived()
     // 4.15.17 Call()ed state _UponDeath eliminated as auto Return()ed as part of death sequence
     // 4.15.17 Call()ed state _UponLosingOwnership eliminated as auto Return()ed prior to _UponLosingOwnership()
@@ -4321,7 +4419,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         // Disbanding can be interrupted resulting in Return() for a number of reasons including cancellation of disband construction
         ReworkUnderway = ReworkingMode.None;
         StopEffectSequence(EffectSequenceID.Disbanding);
-        ////_refitStorage = null;
     }
 
     #endregion
@@ -4456,10 +4553,33 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             }
         }
 
-        if (calledState == ShipState.Repairing) {
-            D.AssertEqual(ShipState.ExecuteRepairOrder, returnedState);
-            return CreateFsmReturnHandler_RepairingToRepair();
+        if (calledState == ShipState.AssumingStation) {
+            if (returnedState == ShipState.ExecuteAssumeStationOrder) {
+                return CreateFsmReturnHandler_AssumingStationToAssumeStation();
+            }
+            if (returnedState == ShipState.ExecuteDisengageOrder) {
+                return CreateFsmReturnHandler_AssumingStationToDisengage();
+            }
+            if (returnedState == ShipState.ExecuteEntrenchOrder) {
+                return CreateFsmReturnHandler_AssumingStationToEntrench();
+            }
+            if (returnedState == ShipState.ExecuteRepairOrder) {
+                return CreateFsmReturnHandler_AssumingStationToRepair();
+            }
         }
+
+        if (calledState == ShipState.Repairing) {
+            if (returnedState == ShipState.ExecuteRepairOrder) {
+                return CreateFsmReturnHandler_RepairingToRepair();
+            }
+            if (returnedState == ShipState.ExecuteEntrenchOrder) {
+                return CreateFsmReturnHandler_RepairingToEntrench();
+            }
+            if (returnedState == ShipState.ExecuteDisengageOrder) {
+                return CreateFsmReturnHandler_RepairingToDisengage();
+            }
+        }
+
         if (calledState == ShipState.Attacking) {
             D.AssertEqual(ShipState.ExecuteAttackOrder, returnedState);
             return CreateFsmReturnHandler_AttackingToAttack();
@@ -4482,9 +4602,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     #region Order Outcome Callback System
 
-    protected override void DispatchOrderOutcomeCallback(OrderFailureCause failureCause) {
+    protected override void DispatchOrderOutcomeCallback(OrderFailureCause failureCause, IElementNavigableDestination fsmTgt) {
         ShipState stateBeforeNotification = CurrentState;
-        OnSubordinateOrderOutcome(_fsmTgt, failureCause);
+        OnSubordinateOrderOutcome(fsmTgt, failureCause);
         if (CurrentState != stateBeforeNotification) {
             if (stateBeforeNotification == ShipState.ExecuteExploreOrder) {
                 if (CurrentState == ShipState.ExecuteAssumeStationOrder || CurrentState == ShipState.ExecuteMoveOrder) {
@@ -4520,11 +4640,16 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
     }
 
-    protected override void ValidateCommonNotCallableStateValues() {
-        base.ValidateCommonNotCallableStateValues();
+    protected override void ValidateCommonNonCallableStateValues() {
+        base.ValidateCommonNonCallableStateValues();
         if (_fsmTgt != null) {
             D.Error("{0} _fsmTgt {1} should not already be assigned.", DebugName, _fsmTgt.DebugName);
         }
+    }
+
+    protected override void ResetCommonNonCallableStateValues() {
+        base.ResetCommonNonCallableStateValues();
+        _fsmTgt = null;
     }
 
     #region Orbit Support
@@ -4649,21 +4774,16 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     private void IssueCaptainsRepairOrder_InFormation() {
         D.Assert(!IsCurrentStateAnyOf(ShipState.ExecuteRepairOrder, ShipState.Repairing));
         D.Assert(!IsLocatedInHanger);
-        D.Assert(IsAuthorizedForNewOrder(ShipDirective.Repair));    // 12.11.17 UNCLEAR how follow-on order is authorized
 
         //D.Log(ShowDebugLog, "{0} is investigating whether to Disengage or AssumeStation before Repairing.", DebugName);
         ShipOrder goToStationAndRepairOrder;
-        if (IsThereNeedForAFormationStationChangeTo(WithdrawPurpose.Repair)) {
-            // there is a need for a station change to repair
-            goToStationAndRepairOrder = new ShipOrder(ShipDirective.Disengage, OrderSource.Captain) {
-                ////FollowonOrder = new ShipOrder(ShipDirective.Repair, OrderSource.Captain)
-                FollowonOrder = new ShipOrder(ShipDirective.Repair, OrderSource.Captain, Command)
-            };
+        if (IsThereANeedForAFormationStationChangeToDisengage()) {
+            // there is a need for a station change to allow safe disengage and repair
+            goToStationAndRepairOrder = new ShipOrder(ShipDirective.Disengage, OrderSource.Captain);
         }
         else {
             // there is no need to change FormationStation because either ship is HQ or it is already assigned a reserve station
             goToStationAndRepairOrder = new ShipOrder(ShipDirective.AssumeStation, OrderSource.Captain) {
-                ////FollowonOrder = new ShipOrder(ShipDirective.Repair, OrderSource.Captain)
                 FollowonOrder = new ShipOrder(ShipDirective.Repair, OrderSource.Captain, Command)
             };
         }
@@ -4677,22 +4797,18 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     /// This method does not issue an override order from the Captain.
     /// <remarks>Clients should consider what action they need to take wrt ship state if the ship's 
     /// state was not immediately changed.</remarks>
-    //// <remarks>No option to retainSuperiorsOrders here as its N/A when issuing an order to a fleet that has no prior orders.</remarks>
     /// </summary>
     /// <returns></returns>
     /// <exception cref="System.NotImplementedException"></exception>
     private bool IssueRepairOrder_Flee() {
         D.Assert(!IsCurrentStateAnyOf(ShipState.ExecuteRepairOrder, ShipState.Repairing));
         D.Assert(!IsLocatedInHanger);
-        ////D.Assert(IsAuthorizedForNewOrder(ShipDirective.Repair));
 
         if (Command.IsCurrentOrderDirectiveAnyOf(FleetDirective.Repair)) {
-            ////if (Command.CurrentOrder.Target != null) {
             if (Command.CurrentOrder.Target != Command as IFleetNavigableDestination) {
                 // Already a fleet on a Repair mission to a repair destination so no need to create another
                 return true;
             }
-            //// if target is null, fleet is repairing in place so change it to flee
             // else fleet is repairing in place so change it to flee
         }
 
@@ -4750,6 +4866,10 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
     }
 
+    private ShipCombatStance __PickRandomAttackingCombatStance() {
+        return Enums<ShipCombatStance>.GetRandomExcept(ShipCombatStance.None, ShipCombatStance.Disengage, ShipCombatStance.Defensive);
+    }
+
     #endregion
 
     #region Relays
@@ -4783,14 +4903,13 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     /// <summary>
     /// Returns <c>true</c> and provides valid <c>stationSelectionCriteria</c> if the current FormationStation doesn't meet the needs
-    /// implied by the provided <c>purpose</c>, <c>false</c> if the current station already meets those needs. If valid, the
+    /// of a disengage order, <c>false</c> if the current station already meets those needs. If valid, the
     /// stationSelectionCritera will allow Command to determine whether a FormationStation is available that meets those needs.
     /// </summary>
-    /// <param name="purpose">The purpose of the station change.</param>
     /// <param name="stationSelectionCriteria">The resulting station selection criteria needed by Cmd to determine station availability.</param>
     /// <returns></returns>
-    private bool TryDetermineNeedForFormationStationChange(WithdrawPurpose purpose, out AFormationManager.FormationStationSelectionCriteria stationSelectionCriteria) {
-        if (IsThereNeedForAFormationStationChangeTo(purpose)) {
+    private bool TryDetermineNeedForFormationStationChangeToDisengage(out AFormationManager.FormationStationSelectionCriteria stationSelectionCriteria) {
+        if (IsThereANeedForAFormationStationChangeToDisengage()) {
             stationSelectionCriteria = new AFormationManager.FormationStationSelectionCriteria() { IsReserveReqd = true };
             return true;
         }
@@ -4799,31 +4918,17 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     }
 
     /// <summary>
-    /// Returns<c>true</c> if the current FormationStation doesn't meet the needs implied by the provided <c>purpose</c>, 
+    /// Returns<c>true</c> if the current FormationStation doesn't meet the needs of a disengage order, 
     /// <c>false</c> if the current station already meets those needs.    
     /// </summary>
-    /// <param name="purpose">The purpose of the station change.</param>
     /// <returns></returns>
     /// <exception cref="System.NotImplementedException"></exception>
-    private bool IsThereNeedForAFormationStationChangeTo(WithdrawPurpose purpose) {
+    private bool IsThereANeedForAFormationStationChangeToDisengage() {
         var currentStationInfo = FormationStation.StationInfo;
-        switch (purpose) {
-            case WithdrawPurpose.Disengage:
-                D.Assert(!IsHQ, purpose.GetValueName());
-                if (currentStationInfo.IsReserve) {
-                    // current station already meets desired needs
-                    return false;
-                }
-                return true;
-            case WithdrawPurpose.Repair:
-                if (IsHQ || currentStationInfo.IsReserve) {
-                    return false;
-                }
-                return true;
-            case WithdrawPurpose.None:
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(purpose));
+        if (IsHQ || currentStationInfo.IsReserve) {
+            return false;
         }
+        return true;
     }
 
     public override void HandleEffectSequenceFinished(EffectSequenceID effectID) {
@@ -5473,6 +5578,9 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     protected override void __LogOrderClearedByCmd() {
         if (CurrentOrder != null) {
+            if (Availability == NewOrderAvailability.Unavailable) {
+                D.Warn("{0} is clearing {1} while unavailable as ordered by Cmd.", DebugName, CurrentOrder.DebugName);
+            }
             D.Log("{0} is clearing {1} as ordered by Cmd.", DebugName, CurrentOrder.DebugName);
         }
     }
@@ -5494,66 +5602,15 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     [Conditional("DEBUG")]
     private void __ValidateIncomingOrder(ShipOrder incomingOrder) {
         if (incomingOrder != null) {
-            if (!IsAuthorizedForNewOrder(incomingOrder.Directive)) {
-                D.Error("{0}'s incoming order {1} is not valid. CurrentState = {2}.", DebugName, incomingOrder.DebugName, CurrentState.GetValueName());
+            string failCause;
+            if (!__TryAuthorizeNewOrder(incomingOrder.Directive, out failCause)) {
+                D.Error("{0}'s incoming order {1} is not valid. FailCause = {2}, CurrentState = {3}.",
+                    DebugName, incomingOrder.DebugName, failCause, CurrentState.GetValueName());
             }
         }
     }
 
     [Conditional("DEBUG")]
-    [Obsolete]
-    private void __ValidateOrder(ShipOrder order) {
-        var directive = order.Directive;
-        var target = order.Target;
-        if (Availability == NewOrderAvailability.Unavailable) {
-            D.AssertEqual(ShipDirective.Scuttle, directive);
-        }
-
-        if (directive == ShipDirective.Scuttle) {
-            D.AssertNull(target);
-        }
-        else {
-            if (directive == ShipDirective.Construct) {
-                D.Assert(IsLocatedInHanger);
-                D.AssertNull(target);
-            }
-            else if (directive == ShipDirective.Refit) {
-                D.Assert(IsLocatedInHanger);
-                D.AssertNotNull(target);
-            }
-            else if (IsLocatedInHanger && order.Source == OrderSource.Captain) {
-                D.AssertEqual(ShipDirective.Repair, directive); // no orders allowed from Captain except Repair while in hanger
-            }
-            else {
-                if (directive == ShipDirective.Disband || directive == ShipDirective.Retreat) {
-                    return; // directives aren't yet implemented
-                }
-                if (target is StarItem || target is SystemItem || target is UniverseCenterItem) {
-                    return; // unnecessary knowledge check as all players have knowledge of these targets
-                }
-                if (directive == ShipDirective.AssumeStation || directive == ShipDirective.Entrench || directive == ShipDirective.Disengage) {
-                    D.AssertNull(target);
-                    return;
-                }
-                if (directive == ShipDirective.Move) {
-                    if (target is StationaryLocation || target is MobileLocation || target is ISector) {
-                        return; // acceptable targets for a Move
-                    }
-                }
-                if (directive == ShipDirective.Repair && target == null) {
-                    return; // will use its formation station as its destination
-                }
-
-                //12.4.17 deprecated StopAttack
-                if (!OwnerAIMgr.HasKnowledgeOf(target as IOwnerItem_Ltd)) {
-                    // 3.5.17 Typically occurs when receiving an order to explore a planet that is not yet in sensor range
-                    D.Warn("{0} received order {1} when {2} has no knowledge of target.", DebugName, order.DebugName, Owner.DebugName);
-                }
-            }
-        }
-    }
-
-    [System.Diagnostics.Conditional("DEBUG")]
     private void __ValidateKnowledgeOfOrderTarget(ShipOrder order) {
         var target = order.Target;
         if (target != null && !(target is StationaryLocation) && !(target is MobileLocation)) {
@@ -5564,6 +5621,103 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 D.Warn("{0} received order {1} when {2} has no knowledge of target.", DebugName, order.DebugName, Owner.DebugName);
             }
         }
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if the provided directive is authorized for use in a new order about to be issued.
+    /// <remarks>Does not take into account whether consecutive order directives of the same value are allowed.
+    /// If this criteria should be included, the client will need to include it manually.</remarks>
+    /// <remarks>Warning: Do not use to Assert once CurrentOrder has changed and unpaused as order directives that
+    /// result in Availability.Unavailable will fail the assert.</remarks>
+    /// </summary>
+    /// <param name="orderDirective">The order directive.</param>
+    /// <param name="failCause">The fail cause.</param>
+    /// <returns></returns>
+    /// <exception cref="System.NotImplementedException"></exception>
+    internal bool __TryAuthorizeNewOrder(ShipDirective orderDirective, out string failCause) {
+        failCause = "None";
+        if (orderDirective == ShipDirective.Scuttle) {
+            return true;    // Scuttle orders never deferred while paused so no need for IsCurrentOrderDirectiveAnyOf check
+        }
+        if (Availability == NewOrderAvailability.Unavailable) {
+            D.AssertNotEqual(ShipDirective.Cancel, orderDirective);
+            failCause = "Unavailable";
+            return false;
+        }
+        if (orderDirective == ShipDirective.Cancel) {
+            D.Assert(IsPaused);
+            return true;
+        }
+        if (orderDirective == ShipDirective.Refit) {
+            // Can be ordered to refit even if already ordered to refit as fleet can change destination before hanger arrival
+            // Can be ordered to refit in final stages of getting to hanger
+            failCause = "No refit designs";
+            return _gameMgr.PlayersDesigns.AreUpgradeDesignsPresent(Owner, Data.Design);
+        }
+        if (orderDirective == ShipDirective.Disband) {
+            // Can be ordered to disband even if already ordered to disband as fleet can change destination before hanger arrival
+            // Can be ordered to disband in final stages of getting to hanger
+            return true;
+        }
+        if (orderDirective == ShipDirective.Repair) {
+            // Can be ordered to repair even if already ordered to repair as fleet can change destination before hanger arrival
+            // Can be ordered to repair in final stages of getting to hanger
+            // No need to check for repair destinations as a ship can repair in place, albeit slowly on their formation station
+            if (__debugSettings.DisableRepair) {
+                failCause = "Repair disabled";
+                return false;
+            }
+            // 12.9.17 _debugSettings.AllPlayersInvulnerable not needed as it keeps damage from being taken
+            failCause = "Perfect health";
+            return Data.Health < Constants.OneHundredPercent;
+        }
+        if (orderDirective == ShipDirective.Construct) {
+            D.Assert(IsLocatedInHanger);
+            if (CurrentOrder != null) {
+                // 12.5.17 if this occurs, this method was probably called after Construct was assigned as the CurrentOrder
+                D.Error("{0}.CurrentOrder {1} should be null.", DebugName, CurrentOrder.DebugName);
+            }
+            return true;
+        }
+
+        if (IsLocatedInHanger) {
+            failCause = "In hanger";
+            return false;
+        }
+
+        // Orders that follow are only valid in space
+
+        if (orderDirective == ShipDirective.Attack) {
+            // Can be ordered to attack even if already attacking
+            return true;    // Ships can always be ordered to attack although they might choose to disengage or defend
+        }
+        if (orderDirective == ShipDirective.Explore) {
+            // Can be ordered to explore even if already exploring
+            return true;
+        }
+        if (orderDirective == ShipDirective.Move) {
+            // Can be ordered to move even if already moving
+            return true;
+        }
+        if (orderDirective == ShipDirective.Join) {
+            // Can be ordered to join even if already joining
+            failCause = "No joinable fleets";
+            return OwnerAIMgr.Knowledge.AreAnyFleetsJoinableBy(this);
+        }
+
+        if (orderDirective == ShipDirective.Disengage) {
+            failCause = "No need for FormationStation change";
+            return IsThereANeedForAFormationStationChangeToDisengage(); // 12.18.17 UNCLEAR
+        }
+
+        if (orderDirective == ShipDirective.AssumeStation) {
+            return true;
+        }
+        if (orderDirective == ShipDirective.Entrench) {
+            return true;
+        }
+        // Retreat (not implemented)
+        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(orderDirective));
     }
 
     protected override void __ValidateRadius(float radius) {
@@ -5644,6 +5798,12 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         ExecuteJoinFleetOrder,
         ExecuteAssumeStationOrder,
         ExecuteAssumeCloseOrbitOrder,
+        /// <summary>
+        /// Ships can entrench on their FormationStation, diverting engine power from creating movement into protecting itself.
+        /// An entrench order can be issued by Fleet Cmd or the Ship's Captain and will cause the ship to relocate to its
+        /// FormationStation (if not already there) and then entrench. While entrenched, it will automatically repair itself
+        /// while entrenched if damaged.
+        /// </summary>
         ExecuteEntrenchOrder,
         ExecuteDisengageOrder,
         ExecuteRefitOrder,
@@ -5659,16 +5819,11 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         AssumingHighOrbit,
         Refitting,
         Disbanding,
+        AssumingStation,
 
         // Not yet implemented
 
         Retreating,
-    }
-
-    public enum WithdrawPurpose {
-        None,
-        Disengage,
-        Repair
     }
 
     #endregion
