@@ -42,12 +42,14 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        private static string _toStringFormat = "S({0:0.}), M({1:0.}), L({2:0.})";
+        private const string DebugNameFormat = "S({0:0.}), M({1:0.}), L({2:0.})";
 
         private static string _labelFormat = GameConstants.IconMarker_Distance + Constants.NewLine
                                              + "S: {0}" + Constants.NewLine
                                              + "M: {1}" + Constants.NewLine
                                              + "L: {2}";
+
+        public string DebugName { get { return DebugNameFormat.Inject(Short, Medium, Long); } }
 
         /// <summary>
         /// Returns the maximum positive distance or zero if none.
@@ -165,7 +167,7 @@ namespace CodeEnv.Master.GameContent {
 
         public string ToLabel() { return _labelFormat.Inject(Short.FormatValue(false), Medium.FormatValue(false), Long.FormatValue(false)); }
 
-        public override string ToString() { return _toStringFormat.Inject(Short, Medium, Long); }
+        public override string ToString() { return DebugName; }
 
         #region IEquatable<RangeDistance> Members
 

@@ -39,11 +39,13 @@ namespace CodeEnv.Master.GameContent {
                                                                                                         FleetDirective.Explore,
                                                                                                         FleetDirective.FullSpeedMove,
                                                                                                         FleetDirective.Guard,
-                                                                                                        FleetDirective.Join,
+                                                                                                        FleetDirective.JoinFleet,
+                                                                                                        FleetDirective.JoinHanger,
                                                                                                         FleetDirective.Move,
                                                                                                         FleetDirective.Patrol,
                                                                                                         FleetDirective.Refit,
-                                                                                                        FleetDirective.Repair
+                                                                                                        FleetDirective.Repair,
+                                                                                                        FleetDirective.ChangeHQ
                                                                                                     };
 
         public string DebugName {
@@ -72,7 +74,7 @@ namespace CodeEnv.Master.GameContent {
 
         public FleetOrder FollowonOrder { get; set; }
 
-        public IFleetNavigableDestination Target { get; private set; }
+        public INavigableDestination Target { get; private set; }
 
         /// <summary>
         /// The source of this order. 
@@ -87,7 +89,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="directive">The order directive.</param>
         /// <param name="source">The source of this order.</param>
         /// <param name="target">The target of this order. Default is null.</param>
-        public FleetOrder(FleetDirective directive, OrderSource source, IFleetNavigableDestination target = null) {
+        public FleetOrder(FleetDirective directive, OrderSource source, INavigableDestination target = null) {
             Directive = directive;
             Source = source;
             Target = target;
@@ -111,9 +113,6 @@ namespace CodeEnv.Master.GameContent {
             }
             if (Directive == FleetDirective.Cancel) {
                 D.AssertEqual(OrderSource.User, Source);
-            }
-            if (Directive == FleetDirective.ChangeHQ) {
-                D.Error("{0}: {1} not implemented as an order.", DebugName, Directive.GetValueName());
             }
         }
 

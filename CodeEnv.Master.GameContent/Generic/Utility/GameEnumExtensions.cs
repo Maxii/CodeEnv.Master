@@ -894,7 +894,7 @@ namespace CodeEnv.Master.GameContent {
                 case FleetDirective.Disband:
                 case FleetDirective.AssumeFormation:
                 case FleetDirective.Regroup:
-                case FleetDirective.Join:
+                case FleetDirective.JoinFleet:
                 case FleetDirective.Withdraw:
                 case FleetDirective.Retreat:
                 case FleetDirective.Scuttle:
@@ -921,7 +921,7 @@ namespace CodeEnv.Master.GameContent {
                 case FleetDirective.Disband:
                 case FleetDirective.AssumeFormation:
                 case FleetDirective.Regroup:
-                case FleetDirective.Join:
+                case FleetDirective.JoinFleet:
                 case FleetDirective.Withdraw:
                 case FleetDirective.Retreat:
                 case FleetDirective.Scuttle:

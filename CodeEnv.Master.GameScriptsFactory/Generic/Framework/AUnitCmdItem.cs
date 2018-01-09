@@ -365,6 +365,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     public virtual void RemoveElement(AUnitElementItem element) {
+        element.PrepareForRemovalFromCmd();
         element.Command = null; // 4.21.17 Added to uncover issues before AddElement assigns new Cmd, if it occurs
 
         bool isRemoved = Elements.Remove(element);
@@ -787,7 +788,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         }
         HQElement.IsHQ = true;
         Data.HQElementData = HQElement.Data;    // CmdData.Radius now returns Radius of new HQElement
-        D.Log(ShowDebugLog, "{0}'s HQElement is now {1}. Radius = {2:0.00}.", UnitName, HQElement.Name, Radius);
+        //D.Log(/*ShowDebugLog, */"{0}'s HQElement is now {1}. Radius = {2:0.00}.", UnitName, HQElement.Name, Radius);
         AttachCmdToHQElement(); // needs to occur before formation changed
 
         if (DisplayMgr != null) {
@@ -838,6 +839,17 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     #region Orders Support Members
 
+    /// <summary>
+    /// The last OrderID to be received. 
+    /// <remarks>Used when this Cmd wishes to selectively clear the orders of its subordinate elements.</remarks>
+    /// <remarks>This value represents the OrderID of the previous order when the CurrentOrder has just changed until 
+    /// HandleNewOrder has completed processing the change to the FSM's state. Accordingly, the previous state's
+    /// UponNewOrderReceived() and ExitState() methods, as well as the new state's UponPreconfigureState()
+    /// methods can all rely on this value representing the OrderID of the previous order. Once HandleNewOrder has
+    /// completed its processing, this value will be updated to become the ID of the CurrentOrder. </remarks>
+    /// </summary>
+    protected Guid _lastOrderID;
+
     protected void RegisterForOrders() {
         OwnerAIMgr.RegisterForOrders(this);
     }
@@ -847,14 +859,33 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     /// <summary>
-    /// Clears each Element's CurrentOrder and causes them to Idle.
+    /// Clears each Element's CurrentOrder and causes them to Idle if the Element's CurrentOrder has the provided cmdOrderID. 
+    /// If cmdOrderID is the default, each Element's CurrentOrder will be cleared no matter what its cmdOrderID.
     /// </summary>
-    protected void ClearElementsOrders() {
-        // D.Log(ShowDebugLog, "{0} is clearing all element orders.", DebugName);
-        Elements.ForAll(e => e.ClearOrders());
+    protected void ClearElementsOrders(Guid cmdOrderID = default(Guid)) {
+        IList<string> clearedOrderElementNames = new List<string>(Elements.Count);
+        foreach (var e in Elements) {
+            bool isCleared = e.ClearOrder(cmdOrderID);
+            if (isCleared) {
+                clearedOrderElementNames.Add(e.DebugName);
+            }
+        }
+        D.Log("{0}.ClearElementsOrders() cleared {1} element's orders. Elements: {1}.",
+            DebugName, clearedOrderElementNames.Count, clearedOrderElementNames.Concatenate());
+        if (!clearedOrderElementNames.Any()) {
+            D.Warn("{0} was unable to clear any element orders.", DebugName);
+        }
     }
 
-    protected abstract void ResetOrderAndState();
+    protected virtual void ResetOrderAndState() {
+        if (IsPaused) {
+            D.Log("{0}.ResetOrderAndState called while paused.", DebugName);
+        }
+        __ValidateCurrentStateNotACalledState();
+        ResetOrdersReceivedWhilePausedSystem();
+    }
+
+    protected abstract void ResetOrdersReceivedWhilePausedSystem();
 
     #endregion
 
@@ -873,6 +904,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     /// <summary>
     /// Removes the FsmReturnHandler from the top of _activeFsmReturnHandlers. 
     /// Throws an error if not on top.
+    /// <remarks>4.12.17 Use when a Call()ed state Call()s another state to avoid warning in GetCurrentReturnHandler.</remarks>
     /// </summary>
     /// <param name="handlerToRemove">The handler to remove.</param>
     protected void RemoveReturnHandlerFromTopOfStack(FsmReturnHandler handlerToRemove) {
@@ -1105,8 +1137,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         return false;
     }
 
-    protected abstract void IssueCmdStaffsRepairOrder();
-
     protected void AssessAvailabilityStatus_Repair() {
         __ValidateCurrentStateWhenAssessingAvailabilityStatus_Repair();
         NewOrderAvailability orderAvailabilityStatus;
@@ -1311,6 +1341,22 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     #endregion
 
     #region Debug
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    protected void __ValidateNotUnavailable() {
+        if (Availability == NewOrderAvailability.Unavailable) {
+            D.Error("{0} has changed state to {1} when Unavailable.", DebugName, CurrentState.ToString());
+        }
+    }
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    private void __ValidateCurrentStateNotACalledState() {
+        if (IsCurrentStateCalled) {
+            System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(1);
+            string callerIdMessage = "{0}.{1}().".Inject(stackFrame.GetFileName(), stackFrame.GetMethod().Name);
+            D.Error("{0}.{1} should not be called while in Call()ed state {2}.", DebugName, callerIdMessage, CurrentState.ToString());
+        }
+    }
 
     [System.Diagnostics.Conditional("DEBUG")]
     protected abstract void __ValidateCurrentStateWhenAssessingNeedForRepair();

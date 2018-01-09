@@ -425,9 +425,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     #region Orders
 
+    #region Orders Received While Paused System
+
     /// <summary>
     /// The sequence of orders received while paused. If any are present, the bottom of the stack will
-    /// contain the order that was current when the first order was received while paused.
+    /// contain the order that was current (including null) when the first order was received while paused.
     /// </summary>
     private Stack<BaseOrder> _ordersReceivedWhilePaused = new Stack<BaseOrder>();
 
@@ -435,20 +437,19 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         __ValidateIncomingOrder(incomingOrder);
         if (IsPaused) {
             if (!_ordersReceivedWhilePaused.Any()) {
-                if (CurrentOrder != null) {
-                    // first order received while paused so record the CurrentOrder before recording the incomingOrder
-                    _ordersReceivedWhilePaused.Push(CurrentOrder);
-                }
+                // incomingOrder is the first order received while paused so record the CurrentOrder (including null) before recording it
+                _ordersReceivedWhilePaused.Push(CurrentOrder);
             }
         }
     }
 
     private void HandleCurrentOrderPropChanged() {
         if (IsPaused) {
-            // previous CurrentOrder already recorded in _ordersReceivedWhilePaused if not null
+            // previous CurrentOrder already recorded in _ordersReceivedWhilePaused including null
             if (CurrentOrder != null) {
                 if (CurrentOrder.Directive == BaseDirective.Scuttle) {
                     // allow a Scuttle order to proceed while paused
+                    _ordersReceivedWhilePaused.Clear(); // for completeness. Doesn't really matter since about to be dead
                     HandleNewOrder();
                     return;
                 }
@@ -473,22 +474,21 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         BaseOrder order;
         var lastOrderReceivedWhilePaused = _ordersReceivedWhilePaused.Pop();
         if (lastOrderReceivedWhilePaused.Directive == BaseDirective.Cancel) {
-            // if Cancel, then order that was canceled at minimum must still be present
-            D.Assert(_ordersReceivedWhilePaused.Count >= Constants.One);
+            // if Cancel, then order that was canceled and original order (including null) at minimum must still be present
+            D.Assert(_ordersReceivedWhilePaused.Count >= 2);
             //D.Log(ShowDebugLog, "{0} received the following order sequence from User during pause prior to Cancel: {1}.", DebugName,
-            //    _ordersReceivedWhilePaused.Select(o => o.DebugName).Concatenate());
-            _ordersReceivedWhilePaused.Pop();   // remove the order that was canceled
-            order = _ordersReceivedWhilePaused.Any() ? _ordersReceivedWhilePaused.First() : null;
+            //_ordersReceivedWhilePaused.Where(o => o != null).Select(o => o.DebugName).Concatenate());
+            order = _ordersReceivedWhilePaused.First(); // restore original order which can be null
         }
         else {
             order = lastOrderReceivedWhilePaused;
         }
         _ordersReceivedWhilePaused.Clear();
-        // order can be null if lastOrderReceivedWhilePaused is Cancel and there was no original order
         if (order != null) {
             D.AssertNotEqual(BaseDirective.Cancel, order.Directive);
-            D.Log("{0} is changing or re-instating order to {1} after resuming from pause.", DebugName, order.DebugName);
         }
+        string orderMsg = order != null ? order.DebugName : "None";
+        D.Log("{0} is changing or re-instating order to {1} after resuming from pause.", DebugName, orderMsg);
 
         if (CurrentOrder != order) {
             CurrentOrder = order;
@@ -497,6 +497,13 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
             HandleNewOrder();
         }
     }
+
+    protected sealed override void ResetOrdersReceivedWhilePausedSystem() {
+        _ordersReceivedWhilePaused.Clear();
+        _gameMgr.isPausedChanged -= CurrentOrderChangedWhilePausedUponResumeEventHandler;
+    }
+
+    #endregion
 
     /// <summary>
     /// Returns <c>true</c> if the directive of the CurrentOrder or if paused, a pending order 
@@ -576,7 +583,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
                     CurrentState = BaseState.ExecuteDisbandOrder;
                     break;
                 case BaseDirective.ChangeHQ:
-                // 3.16.17 implemented by assigning HQElement, not as an order
+                    HQElement = CurrentOrder.Target as FacilityItem;
+                    break;
                 case BaseDirective.Cancel:
                 // 9.13.17 Cancel should never be processed here as it is only issued by User while paused and is 
                 // handled by HandleCurrentOrderChangedWhilePausedUponResume(). 
@@ -584,20 +592,25 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
             }
+            _lastOrderID = CurrentOrder.OrderID;
+        }
+        else {
+            _lastOrderID = default(Guid);
         }
     }
 
     protected override void ResetOrderAndState() {
-        D.Assert(!IsPaused);    // 8.13.17 ResetOrderAndState doesn't account for _newOrderReceivedWhilePaused
-        CurrentOrder = null;
-        D.Assert(!IsCurrentStateCalled);
+        base.ResetOrderAndState();
+        _currentOrder = null;   // avoid order changed while paused system
+        _lastOrderID = default(Guid);    // reqd as HandleNewOrder not called when using _currentOrder
         CurrentState = BaseState.Idling;    // 4.20.17 Will unsubscribe from any FsmEvents when exiting the Current non-Call()ed state
-        // 4.20.17 Notifying elements of loss not needed as Cmd losing ownership is the result of last element losing ownership
     }
 
     #endregion
 
     #region StateMachine
+
+    private INavigableDestination _fsmTgt;
 
     protected new BaseState CurrentState {
         get { return (BaseState)base.CurrentState; }   // NRE means base.CurrentState is null -> not yet set
@@ -671,6 +684,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected void Idling_UponPreconfigureState() {
         LogEvent();
         ValidateCommonNonCallableStateValues();
+        __ValidateNotUnavailable();
         // 12.4.17 Can't set availability here as can violate FSM rule: no state change in void EnterStates
     }
 
@@ -773,13 +787,14 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     #region ExecuteAttackOrder
 
-    private IUnitAttackable _fsmTgt; // UNCLEAR is there an _fsmTgt for other states?
+    // TODO: Model implementation after FleetCmd
 
     protected void ExecuteAttackOrder_UponPreconfigureState() {
         LogEvent();
         ValidateCommonNonCallableStateValues();
 
-        IUnitAttackable unitAttackTgt = CurrentOrder.Target;
+        IUnitAttackable unitAttackTgt = CurrentOrder.Target as IUnitAttackable;
+        D.AssertNotNull(unitAttackTgt);
         _fsmTgt = unitAttackTgt;
 
         bool isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtDeath, _fsmTgt);
@@ -798,7 +813,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected void ExecuteAttackOrder_EnterState() {
         LogEvent();
 
-        IUnitAttackable unitAttackTgt = _fsmTgt;
+        IUnitAttackable unitAttackTgt = _fsmTgt as IUnitAttackable;
         var elementAttackOrder = new FacilityOrder(FacilityDirective.Attack, CurrentOrder.Source, CurrentOrder.OrderID, unitAttackTgt as IElementNavigableDestination);
 
         var elementsAvailableToAttack = GetElements(NewOrderAvailability.FairlyAvailable);
@@ -810,7 +825,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         D.Warn("FYI. {0}.ExecuteAttackOrder_UponOrderOutcomeCallback() called!", DebugName);
         // TODO 9.21.17 Once the attack on the UnitAttackTarget has been naturally completed -> Idle
     }
-
 
     protected void ExecuteAttackOrder_UponNewOrderReceived() {
         LogEvent();
@@ -860,14 +874,17 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         if (AssessNeedForRepair(HealthThreshold_BadlyDamaged)) {
             IssueCmdStaffsRepairOrder();
         }
+        else if (!IsAttackCapable) {
+            IssueCmdStaffsRepairOrder();
+        }
     }
 
     protected void ExecuteAttackOrder_UponAwarenessChgd(IOwnerItem_Ltd item) {
         LogEvent();
         D.Assert(item is IFleetCmd_Ltd);
         if (item == _fsmTgt) {
+            // our attack target is the fleet we've lost awareness of
             D.Assert(!OwnerAIMgr.HasKnowledgeOf(item)); // can't become newly aware of a fleet we are attacking without first losing awareness
-                                                        // our attack target is the fleet we've lost awareness of
             CurrentState = BaseState.Idling;
         }
     }
@@ -909,7 +926,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         D.Assert(isUnsubscribed);
 
         ResetCommonNonCallableStateValues();
-        ClearElementsOrders();
+
+        D.AssertNotDefault(_lastOrderID);
+        ClearElementsOrders(_lastOrderID);  // stop the attacks and callbacks of those elements attacking
     }
 
     #endregion
@@ -1017,7 +1036,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected void ExecuteRepairOrder_ExitState() {
         LogEvent();
         ResetCommonNonCallableStateValues();
-        ClearElementsOrders();
     }
 
     #endregion
@@ -1359,9 +1377,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         LogEvent();
         ResetCommonNonCallableStateValues();
         _fsmFacilityRefitLookup.Clear();
-        ////_activeFsmReturnHandlers.Clear();
-        ////_fsmTgt = null;
-        ClearElementsOrders();
     }
 
     #endregion
@@ -1532,7 +1547,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         LogEvent();
         ResetCommonNonCallableStateValues();
         _fsmFacilityWaitForDisbandedCount = Constants.Zero;
-        ClearElementsOrders();
     }
 
     #endregion
@@ -1651,7 +1665,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected override void ValidateCommonCallableStateValues(string calledStateName) {
         base.ValidateCommonCallableStateValues(calledStateName);
         D.AssertNotNull(_fsmTgt);
-        D.Assert(!_fsmTgt.IsDead, _fsmTgt.DebugName);
     }
 
     protected override void ValidateCommonNonCallableStateValues() {
@@ -1707,9 +1720,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         return isNeedForRepair;
     }
 
-    protected sealed override void IssueCmdStaffsRepairOrder() {
+    /// <summary>
+    /// Issues a repair order from the CmdStaff. Repair target will be this Command indicating repair in place.
+    /// </summary>
+    private void IssueCmdStaffsRepairOrder() {
         D.Assert(!IsCurrentStateAnyOf(BaseState.ExecuteRepairOrder, BaseState.Repairing));
-        ////D.Assert(IsAuthorizedForNewOrder(BaseDirective.Repair));
 
         // TODO Consider issuing RepairOrder as a followonOrder to some initial order, ala Ship
         BaseOrder repairOrder = new BaseOrder(BaseDirective.Repair, OrderSource.CmdStaff, this);
@@ -1820,6 +1835,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
             // Can be ordered to attack even if already attacking as can change target
             failCause = "No attackables";
             if (!OwnerAIMgr.Knowledge.AreAnyKnownFleetsAttackableByOwnerUnits) {
+                return false;
+            }
+
+            failCause = "Not attack capable";
+            if (!IsAttackCapable) {
                 return false;
             }
 
@@ -2196,6 +2216,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     #region IUnitBaseCmd Members
 
     ResourcesYield IUnitBaseCmd.Resources { get { return Data.Resources; } }
+
+    IHanger IUnitBaseCmd.Hanger { get { return Hanger; } }
 
     #endregion
 

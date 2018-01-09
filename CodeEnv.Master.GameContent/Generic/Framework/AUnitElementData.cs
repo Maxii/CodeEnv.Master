@@ -213,18 +213,13 @@ namespace CodeEnv.Master.GameContent {
 
         #region Initial Construction and Refitting
 
-        public OutputsYield PrepareForInitialConstruction() {
-            // store the values that will need to be restored upon completion
-            var outputsStorage = Outputs;
-
+        public void PrepareForInitialConstruction() {
             // change the values to what they should be during construction
             DamageEquipment(Constants.OneHundredPercent);
             Outputs *= TempGameValues.UnderConstructionValuesScaler;
             // All other Element-specific Properties are changed as a result of DamageEquipment
             float maxAllowedCurrentHitPts = MaxHitPoints * TempGameValues.UnderConstructionValuesScaler;
             CurrentHitPoints = CurrentHitPoints < maxAllowedCurrentHitPts ? CurrentHitPoints : maxAllowedCurrentHitPts;
-
-            return outputsStorage;
         }
 
         public virtual void RestoreInitialConstructionValues() {

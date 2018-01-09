@@ -30,7 +30,8 @@ using UnityEngine;
 public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
 
     private static FleetDirective[] _userMenuOperatorDirectives = new FleetDirective[]  {
-                                                                                            FleetDirective.Join,
+                                                                                            FleetDirective.JoinFleet,
+                                                                                            FleetDirective.JoinHanger,
                                                                                             FleetDirective.AssumeFormation,
                                                                                             FleetDirective.Patrol,
                                                                                             FleetDirective.Guard,
@@ -46,7 +47,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
                                                                                         };
 
     private static FleetDirective[] _userRemoteFleetDirectives = new FleetDirective[]   {
-                                                                                            FleetDirective.Join,
+                                                                                            FleetDirective.JoinFleet,
                                                                                             FleetDirective.Move,
                                                                                             FleetDirective.FullSpeedMove
                                                                                         };
@@ -68,7 +69,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
     private FleetCmdItem _fleetMenuOperator;
 
     public FleetCtxControl_User(FleetCmdItem fleetCmd)
-        : base(fleetCmd.gameObject, uniqueSubmenusReqd: 9, menuPosition: MenuPositionMode.Over) {
+        : base(fleetCmd.gameObject, uniqueSubmenusReqd: 10, menuPosition: MenuPositionMode.Over) {
         _fleetMenuOperator = fleetCmd;
         __ValidateUniqueSubmenuQtyReqd();
     }
@@ -107,7 +108,8 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
             case FleetDirective.Attack:
             case FleetDirective.Scuttle:
             case FleetDirective.ChangeHQ:
-            case FleetDirective.Join:
+            case FleetDirective.JoinFleet:
+            case FleetDirective.JoinHanger:
             case FleetDirective.Patrol:
             case FleetDirective.Guard:
             case FleetDirective.Explore:
@@ -119,6 +121,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
                 return !_fleetMenuOperator.IsAuthorizedForNewOrder(directive);
             case FleetDirective.AssumeFormation:
                 // 12.10.17 IsAuthorizedForNewOrder without provided target is correct as no AssumeFormation targets will be offered
+                // IMPROVE Shouldn't order be issuable even if already assuming formation? Previous order could have tgt we no longer want
                 return !_fleetMenuOperator.IsAuthorizedForNewOrder(directive) || _fleetMenuOperator.IsCurrentOrderDirectiveAnyOf(directive);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
@@ -140,10 +143,16 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
     protected override bool TryGetSubMenuUnitTargets_UserMenuOperatorIsSelected(FleetDirective directive, out IEnumerable<INavigableDestination> targets) {
         bool doesDirectiveSupportSubmenus = false;
         switch (directive) {
-            case FleetDirective.Join:
+            case FleetDirective.JoinFleet:
                 IEnumerable<IFleetCmd> joinableFleets;
                 _userKnowledge.TryGetJoinableFleetsFor(_fleetMenuOperator, out joinableFleets);
                 targets = joinableFleets.Cast<INavigableDestination>();
+                doesDirectiveSupportSubmenus = true;
+                break;
+            case FleetDirective.JoinHanger:
+                IEnumerable<IUnitBaseCmd> joinableHangerBases;
+                _userKnowledge.TryGetJoinableHangerBasesFor(_fleetMenuOperator, out joinableHangerBases);
+                targets = joinableHangerBases.Cast<INavigableDestination>();
                 doesDirectiveSupportSubmenus = true;
                 break;
             case FleetDirective.Patrol:
@@ -198,7 +207,7 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
             case FleetDirective.Move:
             case FleetDirective.FullSpeedMove:
                 return !isOrderAuthorizedByUserRemoteFleet;
-            case FleetDirective.Join:
+            case FleetDirective.JoinFleet:
                 return !isOrderAuthorizedByUserRemoteFleet || !_fleetMenuOperator.IsJoinableBy(userRemoteFleet.ElementCount);
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
@@ -224,14 +233,9 @@ public class FleetCtxControl_User : ACtxControl_User<FleetDirective> {
         INavigableDestination subMenuTarget;
         bool isSubmenuTarget = _unitSubmenuTgtLookup.TryGetValue(itemID, out subMenuTarget);
         string submenuTgtMsg = isSubmenuTarget ? subMenuTarget.DebugName : "[none]";
-        D.Log("{0} selected directive {1} and submenu target {2} from context menu.", DebugName, directive.GetValueName(), submenuTgtMsg);
-        if (directive == FleetDirective.ChangeHQ) {
-            _fleetMenuOperator.HQElement = subMenuTarget as ShipItem;
-        }
-        else {
-            var order = new FleetOrder(directive, OrderSource.User, subMenuTarget as IFleetNavigableDestination);
-            _fleetMenuOperator.CurrentOrder = order;
-        }
+        D.LogBold("{0} selected directive {1} and submenu target {2} from context menu.", DebugName, directive.GetValueName(), submenuTgtMsg);
+        var order = new FleetOrder(directive, OrderSource.User, subMenuTarget);
+        _fleetMenuOperator.CurrentOrder = order;
     }
 
     private void IssueRemoteUserFleetOrder(int itemID) {

@@ -112,7 +112,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     /// <summary>
-    /// Makes a fleet instance parented to a new Creator from the provided ships.
+    /// Immediately makes and commences operations of a fleet instance parented to a new Creator from the provided ships.
     /// </summary>
     /// <param name="creatorLocation">The creator location.</param>
     /// <param name="ships">The ships.</param>
@@ -124,7 +124,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     }
 
     /// <summary>
-    /// Makes a fleet instance parented to a new Creator from the provided ships using a Cmd 
+    /// Immediately makes and commences operations of a fleet instance parented to a new Creator from the provided ships using a Cmd 
     /// built from a CmdModule design acquired using the cmdDesignName.
     /// </summary>
     /// <param name="creatorLocation">The creator location.</param>

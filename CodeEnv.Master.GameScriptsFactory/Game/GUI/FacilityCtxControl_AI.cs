@@ -55,7 +55,8 @@ public class FacilityCtxControl_AI : ACtxControl {
     protected override void HandleMenuPick_MenuOperatorIsSelected(int itemID) {
         base.HandleMenuPick_MenuOperatorIsSelected(itemID);
         D.AssertEqual(Constants.MinusOne, itemID);
-        _facilityMenuOperator.__ChangeOwner(_user);
+        FacilityOrder chgOwnerOrder = new FacilityOrder(FacilityDirective.__ChgOwner, OrderSource.User);
+        _facilityMenuOperator.CurrentOrder = chgOwnerOrder;
     }
 
     protected override void HandleMenuPick_OptimalFocusDistance() {
@@ -66,7 +67,7 @@ public class FacilityCtxControl_AI : ACtxControl {
 
     private void __PopulateChgOwnerMenu() {
         _ctxObject.menuItems = new CtxMenu.Item[] { new CtxMenu.Item() {
-            text = "ChgOwner",
+            text = "__ChgOwner",
             id = Constants.MinusOne,
             isDisabled = !_facilityMenuOperator.IsAssaultAllowedBy(_user)
         }};

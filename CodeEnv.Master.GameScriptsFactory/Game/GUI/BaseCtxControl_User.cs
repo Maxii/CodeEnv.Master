@@ -148,6 +148,8 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
         // userRemoteFleet.IsCurrentOrderDirectiveAnyOf() not used in criteria as target in current order may not be this Base
         switch (directive) {
             case FleetDirective.Refit:
+                // only allows order if this specific Base hanger has room
+                return !isOrderAuthorizedByUserRemoteFleet || !_baseMenuOperator.Hanger.IsJoinableBy(userRemoteFleet.GetRefittableShipCount());
             case FleetDirective.Disband:
                 // only allows order if this specific Base hanger has room
                 return !isOrderAuthorizedByUserRemoteFleet || !_baseMenuOperator.Hanger.IsJoinableBy(userRemoteFleet.ElementCount);
@@ -199,25 +201,20 @@ public class BaseCtxControl_User : ACtxControl_User<BaseDirective> {
         BaseDirective directive = (BaseDirective)_directiveLookup[itemID];
         INavigableDestination submenuTgt;
         bool hasSubmenuTgt = _unitSubmenuTgtLookup.TryGetValue(itemID, out submenuTgt);
+
+        if (directive == BaseDirective.Disband || directive == BaseDirective.Refit || directive == BaseDirective.Repair) {
+            hasSubmenuTgt = true;
+            submenuTgt = _baseMenuOperator;
+        }
         string submenuTgtMsg = hasSubmenuTgt ? submenuTgt.DebugName : "[none]";
-        D.Log("{0} selected directive {1} and target {2} from context menu.", DebugName, directive.GetValueName(), submenuTgtMsg);
-        if (directive == BaseDirective.ChangeHQ) {
-            _baseMenuOperator.HQElement = submenuTgt as AUnitElementItem;
-        }
-        else {
-            IUnitAttackable orderTgt = submenuTgt as IUnitAttackable;
-            if (directive == BaseDirective.Disband || directive == BaseDirective.Refit || directive == BaseDirective.Repair) {
-                D.AssertNull(orderTgt);
-                orderTgt = _baseMenuOperator;
-            }
-            var order = new BaseOrder(directive, OrderSource.User, orderTgt);
-            _baseMenuOperator.CurrentOrder = order;
-        }
+        D.LogBold("{0} selected directive {1} and target {2} from context menu.", DebugName, directive.GetValueName(), submenuTgtMsg);
+        var order = new BaseOrder(directive, OrderSource.User, submenuTgt);
+        _baseMenuOperator.CurrentOrder = order;
     }
 
     private void IssueRemoteUserFleetOrder(int itemID) {
         var directive = (FleetDirective)_directiveLookup[itemID];
-        IFleetNavigableDestination target = _baseMenuOperator;
+        INavigableDestination target = _baseMenuOperator;
         var remoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         var order = new FleetOrder(directive, OrderSource.User, target);
         remoteFleet.CurrentOrder = order;

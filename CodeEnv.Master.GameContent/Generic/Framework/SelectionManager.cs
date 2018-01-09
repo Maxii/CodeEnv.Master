@@ -65,6 +65,7 @@ namespace CodeEnv.Master.GameContent {
         private void CurrentSelectionPropChangingHandler(ISelectable incomingSelection) {
             if (CurrentSelection != null) {
                 CurrentSelection.IsSelected = false;
+                _gameMgr.RequestPauseStateChange(false);
                 // 8.2.17 ISelectables now auto hide the HUD they show in when DeSelect()ed
             }
         }
@@ -75,8 +76,11 @@ namespace CodeEnv.Master.GameContent {
                 _gameMgr.RequestPauseStateChange(true);
             }
             else {
+
+                // 1.1.18 Only occurs from UnconsumedPress
                 _sfxMgr.PlaySFX(SfxClipID.UnSelect);
                 _gameMgr.RequestPauseStateChange(false);
+
             }
         }
 
@@ -84,8 +88,8 @@ namespace CodeEnv.Master.GameContent {
             if (_inputHelper.IsLeftMouseButton) {
                 //D.Log("{0} is de-selecting any current selection due to an unconsumed press.", DebugName);
                 if (_inputHelper.IsOverUI) {
-                    // 8.15.17 UNCLEAR whether this occurs
-                    D.Warn("{0} has blocked de-selecting any current selection as the click was over the UI.", DebugName);
+                    // 1.1.18 Shouldn't happen as UI should block ability to select
+                    D.Error("{0} has blocked de-selecting any current selection as the click was over the UI.", DebugName);
                     return;
                 }
                 CurrentSelection = null;

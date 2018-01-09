@@ -593,6 +593,38 @@ namespace CodeEnv.Master.GameContent {
             return joinableFleets.Any();
         }
 
+        public bool AreAnyBaseHangersJoinableBy(IShip ship) {
+            IEnumerable<IUnitBaseCmd> unusedJoinableHangerBases;
+            return TryGetJoinableHangerBasesFor(ship, out unusedJoinableHangerBases);
+        }
+
+        public bool TryGetJoinableHangerBasesFor(IShip ship, out IEnumerable<IUnitBaseCmd> joinableHangerBases) {
+            D.Assert(ship.__HasCommand);
+            D.AssertEqual(Owner, ship.Owner);
+            joinableHangerBases = OwnerBases.Where(b => b.Hanger.IsJoinable);
+            return joinableHangerBases.Any();
+        }
+
+        public bool AreAnyBaseHangersJoinableBy(IFleetCmd potentialJoiningFleet) {
+            D.AssertEqual(Owner, potentialJoiningFleet.Owner);
+            return AreAnyBaseHangersJoinable(potentialJoiningFleet.ElementCount);
+        }
+
+        public bool TryGetJoinableHangerBasesFor(IFleetCmd potentialJoiningFleet, out IEnumerable<IUnitBaseCmd> joinableHangerBases) {
+            D.AssertEqual(Owner, potentialJoiningFleet.Owner);
+            return TryGetJoinableHangerBases(potentialJoiningFleet.ElementCount, out joinableHangerBases);
+        }
+
+        public bool AreAnyBaseHangersJoinable(int reqdHangerSlots) {
+            IEnumerable<IUnitBaseCmd> unusedJoinableHangerBases;
+            return TryGetJoinableHangerBases(reqdHangerSlots, out unusedJoinableHangerBases);
+        }
+
+        public bool TryGetJoinableHangerBases(int reqdHangerSlots, out IEnumerable<IUnitBaseCmd> joinableHangerBases) {
+            joinableHangerBases = OwnerBases.Where(b => b.Hanger.IsJoinableBy(reqdHangerSlots));
+            return joinableHangerBases.Any();
+        }
+
         /// <summary>
         /// Indicates whether the Owner has knowledge of the provided item.
         /// </summary>

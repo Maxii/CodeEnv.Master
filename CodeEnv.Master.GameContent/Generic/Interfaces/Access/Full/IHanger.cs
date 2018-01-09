@@ -19,10 +19,13 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Interface for easy access to the Hanger MonoBehaviour in Bases.
     /// </summary>
-    [System.Obsolete("Not currently used, pending Hanger becoming an AItem.")]
     public interface IHanger {
 
         string DebugName { get; }
+
+        bool IsJoinable { get; }
+
+        bool IsJoinableBy(int shipsToJoinCount);
 
     }
 }

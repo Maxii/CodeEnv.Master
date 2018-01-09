@@ -56,14 +56,14 @@ namespace CodeEnv.Master.GameContent {
         TgtDeath,
 
         /// <summary>
-        /// This Unit Cmd or Element needs repair.  
+        /// This Unit or Element needs repair.  
         /// </summary>
         NeedsRepair,
 
         /// <summary>
         /// This Unit Element had construction rework occurring on it canceled.
         /// </summary>
-        ConstructionCanceled,
+        ConstructionCanceled
 
 
     }

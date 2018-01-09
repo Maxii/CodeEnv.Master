@@ -158,7 +158,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     private DetectionHandler _detectionHandler;
     private BoxCollider _primaryCollider;
-    private Player _newOwnerAfterPause;
 
     #region Initialization
 
@@ -295,16 +294,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         UponHQStatusChangeCompleted();
     }
 
-    private void ChangeOwnerAfterPause() {
-        D.AssertNotNull(_newOwnerAfterPause);
-        D.Assert(!IsPaused);
-
-        Player newOwner = _newOwnerAfterPause;
-        _newOwnerAfterPause = null;
-        D.Warn("FYI. {0} is changing owner to {1} after resuming from pause.", DebugName, newOwner.DebugName);
-        Data.Owner = newOwner;
-    }
-
     internal void HandleColdWarEnemyEngagementPolicyChanged() {
         bool toEngageColdWarEnemies = OwnerAIMgr.IsPolicyToEngageColdWarEnemies;
         WeaponRangeMonitors.ForAll(wrm => wrm.ToEngageColdWarEnemies = toEngageColdWarEnemies);
@@ -324,6 +313,11 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         AssignDeadState();
         // FIXME DeathEffect methods get called after this from Dead_EnterState which we don't want
     }
+
+    /// <summary>
+    /// Prepares this element for removal from its current Cmd.
+    /// </summary>
+    internal abstract void PrepareForRemovalFromCmd();
 
     protected override void PrepareForDeath() {
         base.PrepareForDeath();
@@ -677,12 +671,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         }
     }
 
-    private void ChangeOwnerAfterPauseEventHandler(object sender, EventArgs e) {
-        //D.Log(ShowDebugLog, "{0}.ChangeOwnerAfterPauseEventHandler called.", DebugName);
-        _gameMgr.isPausedChanged -= ChangeOwnerAfterPauseEventHandler;
-        ChangeOwnerAfterPause();
-    }
-
     private void IsHQPropChangedHandler() {
         HandleIsHQChanged();
     }
@@ -849,16 +837,40 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     #region Orders Support Members
 
     /// <summary>
-    /// Nulls the CurrentOrder and (re)initiates Idling state.
+    /// Clears the CurrentOrder and initiates Idling state when the CurrentOrder has the provided <c>cmdOrderID</c>.
+    /// If the cmdOrderID provided is the default, the CurrentOrder will be cleared and Idling state
+    /// initiated no matter what CurrentOrder's CmdOrderID is.
+    /// <remarks>Primarily for debugging, returns <c>true</c> if the CurrentOrder was cleared (and Idled), <c>false</c> otherwise.</remarks>
+    /// </summary>
+    /// <param name="cmdOrderID">The command order identifier. Default is default(Guid).</param>
+    /// <returns></returns>
+    internal bool ClearOrder(Guid cmdOrderID = default(Guid)) {
+        bool toClear = cmdOrderID == default(Guid) ? true : cmdOrderID == _lastCmdOrderID;
+        if (toClear) {
+            ClearOrder();
+        }
+        return toClear;
+    }
+
+    /// <summary>
+    /// Clears the CurrentOrder and (re)initiates Idling state.
     /// <remarks>11.25.17 TEMP Virtual to allow ShipItem to manage its __warnWhenIdlingReceivesFsmTgtEvents flag.</remarks>
     /// </summary>
-    internal virtual void ClearOrders() {
+    protected virtual void ClearOrder() {
         ReturnFromCalledStates();
-        __LogOrderClearedByCmd();
         ResetOrderAndState();
     }
 
-    protected abstract void ResetOrderAndState();
+    protected virtual void ResetOrderAndState() {
+        __ValidateCurrentStateNotACalledState();
+        if (IsPaused) {
+            // 1.7.18 e.g. occurs when creating new fleet from UnitHud
+            D.Log(ShowDebugLog, "{0}.ResetOrderAndState called while paused.", DebugName);
+        }
+        ResetOrdersReceivedWhilePausedSystem();
+    }
+
+    protected abstract void ResetOrdersReceivedWhilePausedSystem();
 
     #endregion
 
@@ -934,10 +946,16 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     #region Order Outcome Callback System
 
     /// <summary>
-    /// The last CmdOrderID to be received. If default value the last order received does not require an order outcome callback 
-    /// from this element, either because the order wasn't from Cmd, or the CmdOrder does not require a response.
-    /// <remarks>Used to determine whether this element should respond to Cmd with the outcome of the last order.</remarks>
+    /// The last CmdOrderID to be received. 
+    /// <remarks>Used to determine whether this element should callback to Cmd with the outcome of the last order.
+    /// If default value the last order received does not require an order outcome callback from this element, 
+    /// either because the order wasn't from Cmd, or the CmdOrder does not require a response.</remarks>
     /// <remarks>Also used by Cmd when callback occurs to determine whether the callback should be handled as Cmd's state could have changed.</remarks>
+    /// <remarks>This value represents the OrderID of the previous order when the CurrentOrder has just changed until 
+    /// HandleNewOrder has completed processing the change to the FSM's state. Accordingly, the previous state's
+    /// UponNewOrderReceived() and ExitState() methods, as well as the new state's UponPreconfigureState()
+    /// methods can all rely on this value representing the OrderID of the previous order. Once HandleNewOrder has
+    /// completed its processing, this value will be updated to become the ID of the CurrentOrder.</remarks>
     /// </summary>
     protected Guid _lastCmdOrderID;
 
@@ -1303,7 +1321,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     protected override void Unsubscribe() {
         base.Unsubscribe();
         CleanupIconSubscriptions();
-        _gameMgr.isPausedChanged -= ChangeOwnerAfterPauseEventHandler;
         __UnsubscribeFromSensorEvents();
     }
 
@@ -1319,13 +1336,26 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     #region Debug
 
     [System.Diagnostics.Conditional("DEBUG")]
+    protected void __ValidateNotUnavailable() {
+        if (Availability == NewOrderAvailability.Unavailable) {
+            D.Error("{0} has changed state to {1} when Unavailable.", DebugName, CurrentState.ToString());
+        }
+    }
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    private void __ValidateCurrentStateNotACalledState() {
+        if (IsCurrentStateCalled) {
+            System.Diagnostics.StackFrame stackFrame = new System.Diagnostics.StackTrace().GetFrame(1);
+            string callerIdMessage = "{0}.{1}().".Inject(stackFrame.GetFileName(), stackFrame.GetMethod().Name);
+            D.Error("{0}.{1} should not be called while in Call()ed state {2}.", DebugName, callerIdMessage, CurrentState.ToString());
+        }
+    }
+
+    [System.Diagnostics.Conditional("DEBUG")]
     protected abstract void __ValidateCurrentStateWhenAssessingNeedForRepair();
 
     [System.Diagnostics.Conditional("DEBUG")]
     protected abstract void __ValidateCurrentStateWhenAssessingAvailabilityStatus_Repair();
-
-    [System.Diagnostics.Conditional("DEBUG")]
-    protected abstract void __LogOrderClearedByCmd();
 
     public bool __HasCommand { get { return Command != null; } }
 
@@ -1355,8 +1385,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     [System.Diagnostics.Conditional("DEBUG")]
     protected abstract void __ValidateRadius(float radius);
 
-    // 3.7.17 Moved __ReportCollision(Collision collision) to Facility and Ship as needs differ
-
     /// <summary>
     /// The current speed of the element in Units per hour including any current drift velocity. 
     /// <remarks>For debug. Uses Rigidbody.velocity. Not valid while paused.</remarks>
@@ -1368,6 +1396,12 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
             //D.Log(ShowDebugLog, "{0}.ActualSpeedValue = {1:0.00}.", DebugName, value);
             return value;
         }
+    }
+
+    protected void __ChangeOwner(Player newOwner) { // OPTIMIZE
+        D.AssertNotEqual(Owner, newOwner, DebugName);
+        D.Assert(!IsPaused);
+        Data.Owner = newOwner;
     }
 
     #endregion
@@ -1695,21 +1729,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
             IsDead = true;
         }
         return false;
-    }
-
-    public void __ChangeOwner(Player newOwner) {
-        D.AssertNotEqual(Owner, newOwner, DebugName);
-        if (IsPaused) {
-            _newOwnerAfterPause = newOwner;
-            // deal with multiple changes all while paused
-            _gameMgr.isPausedChanged -= ChangeOwnerAfterPauseEventHandler;
-            _gameMgr.isPausedChanged += ChangeOwnerAfterPauseEventHandler;
-            D.Log(/*ShowDebugLog, */"{0}.__ChangeOwner({1}) called while paused.", DebugName, newOwner.DebugName);
-        }
-        else {
-            D.AssertNull(_newOwnerAfterPause);
-            Data.Owner = newOwner;
-        }
     }
 
     #endregion

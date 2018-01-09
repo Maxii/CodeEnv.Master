@@ -73,13 +73,6 @@ public class PlanetoidCtxControl : ACtxControl {
         __PopulateDieMenu();
     }
 
-    private void __PopulateDieMenu() {
-        _ctxObject.menuItems = new CtxMenu.Item[] { new CtxMenu.Item() {
-            text = "Die",
-            id = -1
-        }};
-    }
-
     protected override bool IsUserRemoteFleetMenuItemDisabledFor(FleetDirective directive) {
         FleetCmdItem userRemoteFleet = _remoteUserOwnedSelectedItem as FleetCmdItem;
         bool isOrderAuthorizedByUserRemoteFleet = userRemoteFleet.IsAuthorizedForNewOrder(directive);
@@ -100,7 +93,8 @@ public class PlanetoidCtxControl : ACtxControl {
 
     protected sealed override void HandleMenuPick_MenuOperatorIsSelected(int itemID) {
         base.HandleMenuPick_MenuOperatorIsSelected(itemID);
-        __TellPlanetoidToDie();
+        D.AssertEqual(Constants.MinusOne, itemID);
+        _planetoidMenuOperator.__Die();
     }
 
     protected sealed override void HandleMenuPick_OptimalFocusDistance() {
@@ -120,9 +114,16 @@ public class PlanetoidCtxControl : ACtxControl {
         remoteFleet.CurrentOrder = order;
     }
 
-    private void __TellPlanetoidToDie() {
-        _planetoidMenuOperator.__Die();
+    #region Debug
+
+    private void __PopulateDieMenu() {
+        _ctxObject.menuItems = new CtxMenu.Item[] { new CtxMenu.Item() {
+            text = "__Die",
+            id = Constants.MinusOne,
+            isDisabled = false
+        }};
     }
 
+    #endregion
 }
 

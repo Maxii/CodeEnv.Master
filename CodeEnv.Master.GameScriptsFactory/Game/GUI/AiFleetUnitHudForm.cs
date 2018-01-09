@@ -53,13 +53,13 @@ public class AiFleetUnitHudForm : AFleetUnitHudForm {
             base.AssessElementButtons();
         }
         else {
-            DisableElementButtons();
+            DisableShipButtons();
         }
     }
 
     protected override void AssessInteractibleHud() {
-        if (_pickedElementIcons.Count == Constants.One) {
-            InteractibleHudWindow.Instance.Show(FormID.AiShip, _pickedElementIcons.First().Element.UserReport);
+        if (_pickedShipIcons.Count == Constants.One) {
+            InteractibleHudWindow.Instance.Show(FormID.AiShip, _pickedShipIcons.First().Element.UserReport);
         }
         else if (_pickedUnitIcons.Count == Constants.One) {
             InteractibleHudWindow.Instance.Show(FormID.AiFleet, _pickedUnitIcons.First().Unit.UserReport);
@@ -91,13 +91,10 @@ public class AiFleetUnitHudForm : AFleetUnitHudForm {
         return OwnerAiMgr.TryFindClosestFleetRepairBase(currentFleetPosition, out closestRepairBase);
     }
 
-    protected override bool TryFindClosestFleetRefitBase(Vector3 currentFleetPosition, out IUnitBaseCmd closestRefitBase) {
-        return OwnerAiMgr.TryFindClosestRefitBase(currentFleetPosition, out closestRefitBase);
+    protected override bool TryFindClosestBase(Vector3 currentFleetPosition, int reqdHangerSlots, out IUnitBaseCmd closestBase) {
+        return OwnerAiMgr.TryFindClosestBase(currentFleetPosition, reqdHangerSlots, out closestBase);
     }
 
-    protected override bool TryFindClosestFleetDisbandBase(Vector3 currentFleetPosition, out IUnitBaseCmd closestDisbandBase) {
-        return OwnerAiMgr.TryFindClosestDisbandBase(currentFleetPosition, out closestDisbandBase);
-    }
 
     #region Debug
 

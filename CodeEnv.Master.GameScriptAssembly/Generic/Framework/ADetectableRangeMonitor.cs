@@ -398,7 +398,7 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
 
     protected override void __CleanupOnApplicationQuit() {
         base.__CleanupOnApplicationQuit();
-        IsOperational = false;
+        IsOperational = false;  // 1.8.18 Without this I get lots of warnings from RangeMonitors about remaining detectables
     }
 
     protected override void Cleanup() {

@@ -66,6 +66,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Game\Framework\FleetMoveHelper.cs" />
     <Compile Include="Generic\Framework\AAutoUnitCreator.cs" />
     <Compile Include="Game\Framework\FleetCreator.cs" />
     <Compile Include="Generic\Utility\GameScriptsUtility.cs" />

@@ -56,6 +56,8 @@ public abstract class AFleetUnitHudForm : AForm {
     private MyNguiToggleButton _unitDisbandButton = null;
     [SerializeField]
     private MyNguiToggleButton _unitExploreButton = null;
+    [SerializeField]
+    private MyNguiToggleButton _unitHangerButton = null;
 
     [SerializeField]
     private UIButton _shipCreateFleetButton = null;
@@ -72,12 +74,12 @@ public abstract class AFleetUnitHudForm : AForm {
     }
 
     protected HashSet<FleetIconGuiElement> _pickedUnitIcons;
-    protected HashSet<ShipIconGuiElement> _pickedElementIcons;
+    protected HashSet<ShipIconGuiElement> _pickedShipIcons;
     protected GameManager _gameMgr;
 
     private HashSet<MyNguiToggleButton> _toggleButtonsUsedThisSession;
     private IList<Transform> _sortedUnitIconTransforms;
-    private IList<Transform> _sortedElementIconTransforms;
+    private IList<Transform> _sortedShipIconTransforms;
     /// <summary>
     /// The unit icons that are showing keyed by their unit. 
     /// The icons of all the units that populate this form will always be showing.
@@ -103,9 +105,9 @@ public abstract class AFleetUnitHudForm : AForm {
 
         _unitIconLookup = new Dictionary<FleetCmdItem, FleetIconGuiElement>();
         _pickedUnitIcons = new HashSet<FleetIconGuiElement>();
-        _pickedElementIcons = new HashSet<ShipIconGuiElement>();
+        _pickedShipIcons = new HashSet<ShipIconGuiElement>();
         _sortedUnitIconTransforms = new List<Transform>();
-        _sortedElementIconTransforms = new List<Transform>();
+        _sortedShipIconTransforms = new List<Transform>();
         _toggleButtonsUsedThisSession = new HashSet<MyNguiToggleButton>();
 
         _unitGuardButton.Initialize();
@@ -114,6 +116,7 @@ public abstract class AFleetUnitHudForm : AForm {
         _unitRefitButton.Initialize();
         _unitDisbandButton.Initialize();
         _unitExploreButton.Initialize();
+        _unitHangerButton.Initialize();
 
         ConnectButtonEventHandlers();
     }
@@ -128,6 +131,7 @@ public abstract class AFleetUnitHudForm : AForm {
         _unitRefitButton.toggleStateChanged += UnitRefitButtonToggleChangedEventHandler;
         _unitDisbandButton.toggleStateChanged += UnitDisbandButtonToggleChangedEventHandler;
         _unitExploreButton.toggleStateChanged += UnitExploreButtonToggleChangedEventHandler;
+        _unitHangerButton.toggleStateChanged += UnitHangerButtonToggleChangedEventHandler;
 
         EventDelegate.Add(_shipCreateFleetButton.onClick, ShipCreateFleetButtonClickedEventHandler);
         EventDelegate.Add(_shipScuttleButton.onClick, ShipScuttleButtonClickedEventHandler);
@@ -173,6 +177,10 @@ public abstract class AFleetUnitHudForm : AForm {
 
     private void UnitExploreButtonToggleChangedEventHandler(object sender, EventArgs e) {
         HandleUnitExploreButtonToggleChanged();
+    }
+
+    private void UnitHangerButtonToggleChangedEventHandler(object sender, EventArgs e) {
+        HandleUnitJoinHangerButtonToggleChanged();
     }
 
     private void UnitFocusButtonClickedEventHandler() {
@@ -454,18 +462,16 @@ public abstract class AFleetUnitHudForm : AForm {
         var pickedUnit = _pickedUnitIcons.First().Unit;
         bool isButtonToggledIn = _unitRefitButton.IsToggledIn;
         if (isButtonToggledIn) {
+            int reqdHangerSlots = pickedUnit.GetRefittableShipCount();
             IUnitBaseCmd closestRefitBase;
-            if (TryFindClosestFleetRefitBase(pickedUnit.Position, out closestRefitBase)) {
-                FleetOrder refitOrder = new FleetOrder(FleetDirective.Refit, OrderSource.User, closestRefitBase as IFleetNavigableDestination);
-                pickedUnit.CurrentOrder = refitOrder;
-                D.LogBold("{0} is issuing an order to {1} to Refit at {2}.", DebugName, pickedUnit.DebugName, closestRefitBase.DebugName);
-                _unitRefitButton.SetIconColor(TempGameValues.SelectedColor);
-                AssessUnitButtons();
-            }
-            else {
-                D.Warn("{0} found no Base for {1} to refit at.", DebugName, pickedUnit.DebugName);
-                _unitRefitButton.SetToggledState(false);    // release the button
-            }
+            bool isBaseFound = TryFindClosestBase(pickedUnit.Position, reqdHangerSlots, out closestRefitBase);
+            D.Assert(isBaseFound);  // 1.1.18 Button should not be enabled if no base available to accommodate reqdHangerSlots
+
+            FleetOrder refitOrder = new FleetOrder(FleetDirective.Refit, OrderSource.User, closestRefitBase as IFleetNavigableDestination);
+            pickedUnit.CurrentOrder = refitOrder;
+            D.LogBold("{0} is issuing an order to {1} to Refit at {2}.", DebugName, pickedUnit.DebugName, closestRefitBase.DebugName);
+            _unitRefitButton.SetIconColor(TempGameValues.SelectedColor);
+            AssessUnitButtons();
         }
         else {
             FleetOrder cancelOrder = new FleetOrder(FleetDirective.Cancel, OrderSource.User);
@@ -474,26 +480,23 @@ public abstract class AFleetUnitHudForm : AForm {
         }
     }
 
-    protected abstract bool TryFindClosestFleetRefitBase(Vector3 currentFleetPosition, out IUnitBaseCmd closestRefitBase);
-
     private void HandleUnitDisbandButtonToggleChanged() {
         D.AssertEqual(Constants.One, _pickedUnitIcons.Count);
         _toggleButtonsUsedThisSession.Add(_unitDisbandButton);
         var pickedUnit = _pickedUnitIcons.First().Unit;
         bool isButtonToggledIn = _unitDisbandButton.IsToggledIn;
         if (isButtonToggledIn) {
+            // OPTIMIZE reqdHangerSlots = pickedUnit.ElementCount?
+            int reqdHangerSlots = pickedUnit.Elements.Where(e => (e as ShipItem).IsAuthorizedForNewOrder(ShipDirective.Disband)).Count();
             IUnitBaseCmd closestDisbandBase;
-            if (TryFindClosestFleetDisbandBase(pickedUnit.Position, out closestDisbandBase)) {
-                FleetOrder disbandOrder = new FleetOrder(FleetDirective.Disband, OrderSource.User, closestDisbandBase as IFleetNavigableDestination);
-                pickedUnit.CurrentOrder = disbandOrder;
-                D.LogBold("{0} is issuing an order to {1} to Disband at {2}.", DebugName, pickedUnit.DebugName, closestDisbandBase.DebugName);
-                _unitDisbandButton.SetIconColor(TempGameValues.SelectedColor);
-                AssessUnitButtons();
-            }
-            else {
-                D.Warn("{0} found no Base for {1} to disband at.", DebugName, pickedUnit.DebugName);
-                _unitDisbandButton.SetToggledState(false);    // release the button
-            }
+            bool isBaseFound = TryFindClosestBase(pickedUnit.Position, reqdHangerSlots, out closestDisbandBase);
+            D.Assert(isBaseFound);  // 1.1.18 Button should not be enabled if no base available to accommodate reqdHangerSlots
+
+            FleetOrder disbandOrder = new FleetOrder(FleetDirective.Disband, OrderSource.User, closestDisbandBase as IFleetNavigableDestination);
+            pickedUnit.CurrentOrder = disbandOrder;
+            D.LogBold("{0} is issuing an order to {1} to Disband at {2}.", DebugName, pickedUnit.DebugName, closestDisbandBase.DebugName);
+            _unitDisbandButton.SetIconColor(TempGameValues.SelectedColor);
+            AssessUnitButtons();
         }
         else {
             FleetOrder cancelOrder = new FleetOrder(FleetDirective.Cancel, OrderSource.User);
@@ -502,14 +505,37 @@ public abstract class AFleetUnitHudForm : AForm {
         }
     }
 
-    protected abstract bool TryFindClosestFleetDisbandBase(Vector3 currentFleetPosition, out IUnitBaseCmd closestDisbandBase);
-
     private void HandleUnitExploreButtonToggleChanged() {
         D.Warn("{0}.HandleUnitExploreButtonToggleChanged not yet implemented.", DebugName);
         _toggleButtonsUsedThisSession.Add(_unitExploreButton);
         _unitExploreButton.SetToggledState(false); // TEMP release the button
         // UNDONE
     }
+
+    private void HandleUnitJoinHangerButtonToggleChanged() {
+        D.AssertEqual(Constants.One, _pickedUnitIcons.Count);
+        _toggleButtonsUsedThisSession.Add(_unitHangerButton);
+        var pickedUnit = _pickedUnitIcons.First().Unit;
+        bool isButtonToggledIn = _unitHangerButton.IsToggledIn;
+        if (isButtonToggledIn) {
+            IUnitBaseCmd closestBase;
+            bool isBaseFound = TryFindClosestBase(pickedUnit.Position, pickedUnit.ElementCount, out closestBase);
+            D.Assert(isBaseFound);  // 1.1.18 Button should not be enabled if no base available to accommodate fleet
+
+            FleetOrder joinHangerOrder = new FleetOrder(FleetDirective.JoinHanger, OrderSource.User, closestBase as IFleetNavigableDestination);
+            pickedUnit.CurrentOrder = joinHangerOrder;
+            D.LogBold("{0} is issuing an order to {1} to JoinHanger at {2}.", DebugName, pickedUnit.DebugName, closestBase.DebugName);
+            _unitHangerButton.SetIconColor(TempGameValues.SelectedColor);
+            AssessUnitButtons();
+        }
+        else {
+            FleetOrder cancelOrder = new FleetOrder(FleetDirective.Cancel, OrderSource.User);
+            pickedUnit.CurrentOrder = cancelOrder;
+            _unitHangerButton.SetIconColor(GameColor.White);
+        }
+    }
+
+    protected abstract bool TryFindClosestBase(Vector3 currentFleetPosition, int reqdHangerSlots, out IUnitBaseCmd closestDisbandBase);
 
     private void PickSingleUnitIcon(FleetIconGuiElement icon) {
         UnpickAllUnitIcons();
@@ -618,6 +644,16 @@ public abstract class AFleetUnitHudForm : AForm {
             else {
                 _unitExploreButton.IsEnabled = isOrderedToExplore ? false : pickedUnit.IsAuthorizedForNewOrder(FleetDirective.Explore);
             }
+
+            bool isOrderedToJoinHanger = pickedUnit.IsCurrentOrderDirectiveAnyOf(FleetDirective.JoinHanger);
+            iconColor = isOrderedToJoinHanger ? TempGameValues.SelectedColor : GameColor.White;
+            _unitHangerButton.SetToggledState(isOrderedToJoinHanger, iconColor);
+            if (HasBeenUsedThisSession(_unitHangerButton)) {
+                _unitHangerButton.IsEnabled = true;
+            }
+            else {
+                _unitHangerButton.IsEnabled = isOrderedToJoinHanger ? false : pickedUnit.IsAuthorizedForNewOrder(FleetDirective.JoinHanger);
+            }
         }
         else {
             // if more than 1 picked unit, un-toggle without notify and disable all
@@ -640,6 +676,7 @@ public abstract class AFleetUnitHudForm : AForm {
         _unitRefitButton.IsEnabled = false;
         _unitDisbandButton.IsEnabled = false;
         _unitExploreButton.IsEnabled = false;
+        _unitHangerButton.IsEnabled = false;
     }
 
     #endregion
@@ -648,10 +685,10 @@ public abstract class AFleetUnitHudForm : AForm {
 
     private void HandleElementIconLeftClicked(ShipIconGuiElement icon) {
         if (icon.IsPicked) {
-            D.Assert(_pickedElementIcons.Contains(icon));
+            D.Assert(_pickedShipIcons.Contains(icon));
             // user is unpicking this icon
             icon.IsPicked = false;
-            bool isRemoved = _pickedElementIcons.Remove(icon);
+            bool isRemoved = _pickedShipIcons.Remove(icon);
             D.Assert(isRemoved);
         }
         else {
@@ -663,16 +700,16 @@ public abstract class AFleetUnitHudForm : AForm {
 
     private void HandleElementIconCntlLeftClicked(ShipIconGuiElement icon) {
         if (icon.IsPicked) {
-            D.Assert(_pickedElementIcons.Contains(icon));
+            D.Assert(_pickedShipIcons.Contains(icon));
             // user is unpicking this icon
             icon.IsPicked = false;
-            bool isRemoved = _pickedElementIcons.Remove(icon);
+            bool isRemoved = _pickedShipIcons.Remove(icon);
             D.Assert(isRemoved);
         }
         else {
-            D.Assert(!_pickedElementIcons.Contains(icon));
+            D.Assert(!_pickedShipIcons.Contains(icon));
             icon.IsPicked = true;
-            _pickedElementIcons.Add(icon);
+            _pickedShipIcons.Add(icon);
         }
         AssessInteractibleHud();
         AssessElementButtons();
@@ -680,10 +717,10 @@ public abstract class AFleetUnitHudForm : AForm {
 
     private void HandleElementIconShiftLeftClicked(ShipIconGuiElement clickedIcon) {
         var iconsToPick = new List<ShipIconGuiElement>();
-        int clickedIconIndex = _sortedElementIconTransforms.IndexOf(clickedIcon.transform);
-        if (_pickedElementIcons.Any()) {
-            ShipIconGuiElement anchorIcon = _pickedElementIcons.Last();   // should be in order added
-            int anchorIconIndex = _sortedElementIconTransforms.IndexOf(anchorIcon.transform);
+        int clickedIconIndex = _sortedShipIconTransforms.IndexOf(clickedIcon.transform);
+        if (_pickedShipIcons.Any()) {
+            ShipIconGuiElement anchorIcon = _pickedShipIcons.Last();   // should be in order added
+            int anchorIconIndex = _sortedShipIconTransforms.IndexOf(anchorIcon.transform);
             if (anchorIconIndex == clickedIconIndex) {
                 // clicked on the already picked anchor icon so do nothing
                 return;
@@ -694,7 +731,7 @@ public abstract class AFleetUnitHudForm : AForm {
             // clickedIcon must always be the last icon added so it becomes the next anchorIcon
             if (anchorIconIndex < clickedIconIndex) {
                 for (int index = anchorIconIndex; index <= clickedIconIndex; index++) {
-                    Transform iconTransform = _sortedElementIconTransforms[index];
+                    Transform iconTransform = _sortedShipIconTransforms[index];
                     ShipIconGuiElement icon = iconTransform.GetComponent<ShipIconGuiElement>();
                     if (icon != null) {
                         iconsToPick.Add(icon);
@@ -703,7 +740,7 @@ public abstract class AFleetUnitHudForm : AForm {
             }
             else {
                 for (int index = anchorIconIndex; index >= clickedIconIndex; index--) {
-                    Transform iconTransform = _sortedElementIconTransforms[index];
+                    Transform iconTransform = _sortedShipIconTransforms[index];
                     ShipIconGuiElement icon = iconTransform.GetComponent<ShipIconGuiElement>();
                     if (icon != null) {
                         iconsToPick.Add(icon);
@@ -714,7 +751,7 @@ public abstract class AFleetUnitHudForm : AForm {
         else {
             // pick all icons from the first to this one
             for (int index = 0; index <= clickedIconIndex; index++) {
-                Transform iconTransform = _sortedElementIconTransforms[index];
+                Transform iconTransform = _sortedShipIconTransforms[index];
                 ShipIconGuiElement icon = iconTransform.GetComponent<ShipIconGuiElement>();
                 if (icon != null) {
                     iconsToPick.Add(icon);
@@ -724,7 +761,7 @@ public abstract class AFleetUnitHudForm : AForm {
 
         iconsToPick.ForAll(icon => {
             icon.IsPicked = true;
-            _pickedElementIcons.Add(icon);
+            _pickedShipIcons.Add(icon);
         });
         AssessInteractibleHud();
         AssessElementButtons();
@@ -735,10 +772,10 @@ public abstract class AFleetUnitHudForm : AForm {
     }
 
     private void HandleShipCreateFleetButtonClicked() {
-        Utility.ValidateForRange(_pickedElementIcons.Count, Constants.One, TempGameValues.MaxShipsPerFleet);
+        Utility.ValidateForRange(_pickedShipIcons.Count, Constants.One, TempGameValues.MaxShipsPerFleet);
 
         var pickedCmds = _pickedUnitIcons.Select(icon => icon.Unit);
-        var pickedShips = _pickedElementIcons.Select(icon => icon.Element);
+        var pickedShips = _pickedShipIcons.Select(icon => icon.Element);
         IDictionary<FleetCmdItem, IList<ShipItem>> shipsByCmdLookup = new Dictionary<FleetCmdItem, IList<ShipItem>>(_pickedUnitIcons.Count);
         // populate the lookup
         foreach (var cmd in pickedCmds) {
@@ -781,9 +818,9 @@ public abstract class AFleetUnitHudForm : AForm {
     }
 
     private void HandleShipScuttleButtonClicked() {
-        D.Assert(_pickedElementIcons.Any());
+        D.Assert(_pickedShipIcons.Any());
 
-        var pickedElements = _pickedElementIcons.Select(icon => icon.Element);
+        var pickedElements = _pickedShipIcons.Select(icon => icon.Element);
         var scuttleOrder = new ShipOrder(ShipDirective.Scuttle, OrderSource.User);
         pickedElements.ForAll(e => e.CurrentOrder = scuttleOrder);
     }
@@ -791,29 +828,29 @@ public abstract class AFleetUnitHudForm : AForm {
     private void PickSingleElementIcon(ShipIconGuiElement icon) {
         UnpickAllElementIcons();
         icon.IsPicked = true;
-        _pickedElementIcons.Add(icon);
+        _pickedShipIcons.Add(icon);
     }
 
     private void UnpickAllElementIcons() {
-        foreach (var icon in _pickedElementIcons) {
+        foreach (var icon in _pickedShipIcons) {
             icon.IsPicked = false;
         }
-        _pickedElementIcons.Clear();
+        _pickedShipIcons.Clear();
     }
 
     protected virtual void AssessElementButtons() {
         bool isShipCreateFleetButtonEnabled = false;
         bool isShipScuttleButtonEnabled = false;
-        if (_pickedElementIcons.Any()) {
+        if (_pickedShipIcons.Any()) {
             // OPTIMIZE 12.11.17 ships in fleet cannot be Unavailable
-            isShipCreateFleetButtonEnabled = _pickedElementIcons.All(icon => icon.Element.Availability != NewOrderAvailability.Unavailable);
-            isShipScuttleButtonEnabled = _pickedElementIcons.All(icon => icon.Element.IsAuthorizedForNewOrder(ShipDirective.Scuttle));
+            isShipCreateFleetButtonEnabled = _pickedShipIcons.All(icon => icon.Element.Availability != NewOrderAvailability.Unavailable);
+            isShipScuttleButtonEnabled = _pickedShipIcons.All(icon => icon.Element.IsAuthorizedForNewOrder(ShipDirective.Scuttle));
         }
         _shipCreateFleetButton.isEnabled = isShipCreateFleetButtonEnabled;
         _shipScuttleButton.isEnabled = isShipScuttleButtonEnabled;
     }
 
-    protected void DisableElementButtons() {
+    protected void DisableShipButtons() {
         _shipCreateFleetButton.isEnabled = false;
         _shipScuttleButton.isEnabled = false;
     }
@@ -894,7 +931,7 @@ public abstract class AFleetUnitHudForm : AForm {
                 for (int i = 0; i < currentBlankIconsNeeded; i++) {
                     GameObject blankIconGo = NGUITools.AddChild(_elementIconsGrid.gameObject, blankIconPrefab);
                     blankIconGo.name = "Blank Element Icon";
-                    _sortedElementIconTransforms.Add(blankIconGo.transform);
+                    _sortedShipIconTransforms.Add(blankIconGo.transform);
                 }
             }
         }
@@ -936,7 +973,7 @@ public abstract class AFleetUnitHudForm : AForm {
 
         UIEventListener.Get(elementIconGo).onClick += ElementIconClickedEventHandler;
         element.deathOneShot += ElementDeathEventHandler;
-        _sortedElementIconTransforms.Add(elementIconGo.transform);
+        _sortedShipIconTransforms.Add(elementIconGo.transform);
     }
 
     private void RemoveUnitIcons() {
@@ -959,7 +996,7 @@ public abstract class AFleetUnitHudForm : AForm {
                 }
                 else {
                     // its a blank icon
-                    bool isRemoved = _sortedElementIconTransforms.Remove(it);
+                    bool isRemoved = _sortedShipIconTransforms.Remove(it);
                     D.Assert(isRemoved);
                     DestroyImmediate(it.gameObject);
                 }
@@ -995,13 +1032,13 @@ public abstract class AFleetUnitHudForm : AForm {
     }
 
     private void RemoveIcon(ShipIconGuiElement icon) {
-        _pickedElementIcons.Remove(icon);   // may not be present
+        _pickedShipIcons.Remove(icon);   // may not be present
         if (icon.IsInitialized) {
             D.AssertNotNull(icon.Element, "{0}: {1}'s Element has been destroyed.".Inject(DebugName, icon.DebugName));
 
             icon.Element.deathOneShot -= ElementDeathEventHandler;
             //D.Log("{0} has removed the icon for {1}.", DebugName, icon.Element.DebugName);
-            bool isRemoved = _sortedElementIconTransforms.Remove(icon.transform);
+            bool isRemoved = _sortedShipIconTransforms.Remove(icon.transform);
             D.Assert(isRemoved);
         }
         else {
@@ -1064,8 +1101,8 @@ public abstract class AFleetUnitHudForm : AForm {
     }
 
     private int CompareElementIcons(Transform aIconTransform, Transform bIconTransform) {
-        int aIndex = _sortedElementIconTransforms.IndexOf(aIconTransform);
-        int bIndex = _sortedElementIconTransforms.IndexOf(bIconTransform);
+        int aIndex = _sortedShipIconTransforms.IndexOf(aIconTransform);
+        int bIndex = _sortedShipIconTransforms.IndexOf(bIconTransform);
         return aIndex.CompareTo(bIndex);
     }
 
@@ -1073,8 +1110,8 @@ public abstract class AFleetUnitHudForm : AForm {
         _toggleButtonsUsedThisSession.Clear();
 
         RemoveAllUnitCompositionIcons();
-        D.AssertEqual(Constants.Zero, _pickedElementIcons.Count, _pickedElementIcons.Concatenate());
-        D.AssertEqual(Constants.Zero, _sortedElementIconTransforms.Count, _sortedElementIconTransforms.Concatenate());
+        D.AssertEqual(Constants.Zero, _pickedShipIcons.Count, _pickedShipIcons.Concatenate());
+        D.AssertEqual(Constants.Zero, _sortedShipIconTransforms.Count, _sortedShipIconTransforms.Concatenate());
 
         RemoveUnitIcons();
         D.AssertEqual(Constants.Zero, _pickedUnitIcons.Count, _pickedUnitIcons.Concatenate());
@@ -1105,21 +1142,25 @@ public abstract class AFleetUnitHudForm : AForm {
 
         _unitExploreButton.SetToggledState(false);
         _unitExploreButton.IsEnabled = false;
+
+        _unitHangerButton.SetToggledState(false);
+        _unitHangerButton.IsEnabled = false;
     }
 
     private void DisconnectButtonEventHandlers() {
         EventDelegate.Remove(_unitFocusButton.onClick, UnitFocusButtonClickedEventHandler);
         EventDelegate.Remove(_unitMergeButton.onClick, UnitMergeButtonClickedEventHandler);
         EventDelegate.Remove(_unitScuttleButton.onClick, UnitScuttleButtonClickedEventHandler);
-        EventDelegate.Remove(_shipCreateFleetButton.onClick, ShipCreateFleetButtonClickedEventHandler);
-        EventDelegate.Remove(_shipScuttleButton.onClick, ShipScuttleButtonClickedEventHandler);
-
         _unitGuardButton.toggleStateChanged -= UnitGuardButtonToggleChangedEventHandler;
         _unitPatrolButton.toggleStateChanged -= UnitPatrolButtonToggleChangedEventHandler;
         _unitRepairButton.toggleStateChanged -= UnitRepairButtonToggleChangedEventHandler;
         _unitRefitButton.toggleStateChanged -= UnitRefitButtonToggleChangedEventHandler;
         _unitDisbandButton.toggleStateChanged -= UnitDisbandButtonToggleChangedEventHandler;
         _unitExploreButton.toggleStateChanged -= UnitExploreButtonToggleChangedEventHandler;
+        _unitHangerButton.toggleStateChanged -= UnitHangerButtonToggleChangedEventHandler;
+
+        EventDelegate.Remove(_shipCreateFleetButton.onClick, ShipCreateFleetButtonClickedEventHandler);
+        EventDelegate.Remove(_shipScuttleButton.onClick, ShipScuttleButtonClickedEventHandler);
     }
 
     protected override void Cleanup() {

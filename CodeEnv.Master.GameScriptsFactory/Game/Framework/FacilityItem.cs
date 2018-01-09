@@ -262,6 +262,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #endregion
 
+    internal override void PrepareForRemovalFromCmd() { }
+
     protected override void PrepareForDeathSequence() {
         base.PrepareForDeathSequence();
         if (IsPaused) {
@@ -299,30 +301,33 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #region Orders
 
+    #region Orders Received While Paused System
+
+
     /// <summary>
     /// The sequence of orders received while paused. If any are present, the bottom of the stack will
-    /// contain the order that was current when the first order was received while paused.
+    /// contain the order that was current (including null) when the first order was received while paused.
     /// </summary>
     private Stack<FacilityOrder> _ordersReceivedWhilePaused = new Stack<FacilityOrder>();
 
     private void HandleCurrentOrderPropChanging(FacilityOrder incomingOrder) {
         __ValidateIncomingOrder(incomingOrder);
+        __LogOrderChanging(incomingOrder);
         if (IsPaused) {
             if (!_ordersReceivedWhilePaused.Any()) {
-                if (CurrentOrder != null) {
-                    // first order received while paused so record the CurrentOrder before recording the incomingOrder
-                    _ordersReceivedWhilePaused.Push(CurrentOrder);
-                }
+                // incomingOrder is the first order received while paused so record the CurrentOrder (including null) before recording it
+                _ordersReceivedWhilePaused.Push(CurrentOrder);
             }
         }
     }
 
     private void HandleCurrentOrderPropChanged() {
         if (IsPaused) {
-            // previous CurrentOrder already recorded in _ordersReceivedWhilePaused if not null
+            // previous CurrentOrder already recorded in _ordersReceivedWhilePaused including null
             if (CurrentOrder != null) {
                 if (CurrentOrder.Directive == FacilityDirective.Scuttle) {
                     // allow a Scuttle order to proceed while paused
+                    _ordersReceivedWhilePaused.Clear(); // for completeness. Doesn't really matter since about to be dead
                     HandleNewOrder();
                     return;
                 }
@@ -347,22 +352,21 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         FacilityOrder order;
         var lastOrderReceivedWhilePaused = _ordersReceivedWhilePaused.Pop();
         if (lastOrderReceivedWhilePaused.Directive == FacilityDirective.Cancel) {
-            // if Cancel, then order that was canceled at minimum must still be present
-            D.Assert(_ordersReceivedWhilePaused.Count >= Constants.One);
+            // if Cancel, then order that was canceled and original order (including null) at minimum must still be present
+            D.Assert(_ordersReceivedWhilePaused.Count >= 2);
             //D.Log(ShowDebugLog, "{0} received the following order sequence from User during pause prior to Cancel: {1}.", DebugName,
-            //    _ordersReceivedWhilePaused.Select(o => o.DebugName).Concatenate());
-            _ordersReceivedWhilePaused.Pop();   // remove the order that was canceled
-            order = _ordersReceivedWhilePaused.Any() ? _ordersReceivedWhilePaused.First() : null;
+            //_ordersReceivedWhilePaused.Where(o => o != null).Select(o => o.DebugName).Concatenate());
+            order = _ordersReceivedWhilePaused.First(); // restore original order which can be null
         }
         else {
             order = lastOrderReceivedWhilePaused;
         }
         _ordersReceivedWhilePaused.Clear();
-        // order can be null if lastOrderReceivedWhilePaused is Cancel and there was no original order
         if (order != null) {
             D.AssertNotEqual(FacilityDirective.Cancel, order.Directive);
-            D.Log("{0} is changing or re-instating order to {1} after resuming from pause.", DebugName, order.DebugName);
         }
+        string orderMsg = order != null ? order.DebugName : "None";
+        D.Log("{0} is changing or re-instating order to {1} after resuming from pause.", DebugName, orderMsg);
 
         if (CurrentOrder != order) {
             CurrentOrder = order;
@@ -371,6 +375,13 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             HandleNewOrder();
         }
     }
+
+    protected override void ResetOrdersReceivedWhilePausedSystem() {
+        _ordersReceivedWhilePaused.Clear();
+        _gameMgr.isPausedChanged -= CurrentOrderChangedWhilePausedUponResumeEventHandler;
+    }
+
+    #endregion
 
     /// <summary>
     /// Returns <c>true</c> if the directive of the CurrentOrder or if paused, a pending order 
@@ -483,6 +494,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
                 case FacilityDirective.Disband:
                     CurrentState = FacilityState.ExecuteDisbandOrder;
                     break;
+                case FacilityDirective.__ChgOwner:
+                    __ChangeOwner(_gameMgr.UserPlayer);
+                    break;
                 case FacilityDirective.Cancel:
                 // 9.13.17 Cancel should never be processed here as it is only issued by User while paused and is 
                 // handled by HandleCurrentOrderChangedWhilePausedUponResume(). 
@@ -498,9 +512,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     }
 
     protected override void ResetOrderAndState() {
-        D.Assert(!IsPaused);    // 8.13.17 ResetOrderAndState doesn't account for _newOrderReceivedWhilePaused
-        CurrentOrder = null;
-        D.Assert(!IsCurrentStateCalled);
+        base.ResetOrderAndState();
+        _currentOrder = null;   // avoid order changed while paused system
+        _lastCmdOrderID = default(Guid);    // reqd as HandleNewOrder not called when using _currentOrder
         CurrentState = FacilityState.Idling;    // 4.20.17 Will unsubscribe from any FsmEvents when exiting the Current non-Call()ed state
     }
 
@@ -678,6 +692,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     void Idling_UponPreconfigureState() {
         LogEvent();
         ValidateCommonNonCallableStateValues();
+        __ValidateNotUnavailable();
     }
 
     IEnumerator Idling_EnterState() {
@@ -762,6 +777,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #region ExecuteAttackOrder
 
+    // TODO Model implementation after Ship
+
     private IElementNavigableDestination _fsmTgt;
 
     #region ExecuteAttackOrder Support Members
@@ -775,7 +792,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         };
         return new FsmReturnHandler(taskLookup, FacilityState.Repairing.GetValueName());
     }
-
 
     #endregion
 
@@ -930,7 +946,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
         ValidateCommonNonCallableStateValues();
         D.AssertEqual(Command, CurrentOrder.Target);
-        D.AssertNotEqual(Constants.OneHundredPercent, Data.Health);
+        // 1.7.18 Can't Assert < 100% as RestartState can occur immediately after all damage repaired
         // 4.15.17 Can't Assert CurrentOrder.ToCallback as Captain can issue this order
         _fsmTgt = CurrentOrder.Target;
 
@@ -943,16 +959,22 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     IEnumerator ExecuteRepairOrder_EnterState() {
         LogEvent();
         //D.Log(ShowDebugLog, "{0} is beginning repair. Frame: {1}.", DebugName, Time.frameCount);
-        var returnHandler = GetInactiveReturnHandlerFor(FacilityState.Repairing, CurrentState);
-        Call(FacilityState.Repairing);
-        yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
+        if (Data.Health < Constants.OneHundredPercent) {
+            FsmReturnHandler returnHandler = GetInactiveReturnHandlerFor(FacilityState.Repairing, CurrentState);
+            Call(FacilityState.Repairing);
+            yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-        if (!returnHandler.DidCallSuccessfullyComplete) {
-            yield return null;
-            D.Error("Shouldn't get here as the ReturnCause should generate a change of state.");
+            if (!returnHandler.DidCallSuccessfullyComplete) {
+                yield return null;
+                D.Error("Shouldn't get here as the ReturnCause should generate a change of state.");
+            }
+            // Can't assert OneHundredPercent as more hits can occur after repairing completed
         }
 
-        // Can't assert OneHundredPercent as more hits can occur after repairing completed
+        // 3.19.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
+        // I think it is because there is a rare scenario where no yield return is encountered below this. 
+        // See http://answers.unity3d.com/questions/158917/error-quotmcoroutineenumeratorgchandle-0quot.html
+        yield return null;
 
         AttemptOrderOutcomeCallback(OrderFailureCause.None);
         CurrentState = FacilityState.Idling;
@@ -1153,6 +1175,11 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     IEnumerator ExecuteRefitOrder_EnterState() {
         LogEvent();
 
+        // 3.19.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
+        // I think it is because there is a rare scenario where no yield return is encountered below this. 
+        // See http://answers.unity3d.com/questions/158917/error-quotmcoroutineenumeratorgchandle-0quot.html
+        yield return null;
+
         var refitDesign = (CurrentOrder as FacilityRefitOrder).RefitDesign;
         float refitCost = __CalcRefitCost(refitDesign, Data.Design);
         D.Log(ShowDebugLog, "{0} is being added to the construction queue to refit to {1}. Cost = {2:0.}.",
@@ -1283,6 +1310,11 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         D.Log(ShowDebugLog, "{0} is being added to the construction queue to disband. Cost = {1:0.}.",
             DebugName, disbandCost);
 
+        // 3.19.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
+        // I think it is because there is a rare scenario where no yield return is encountered below this. 
+        // See http://answers.unity3d.com/questions/158917/error-quotmcoroutineenumeratorgchandle-0quot.html
+        yield return null;
+
         Data.PrepareForDisband();
 
         DisbandConstruction construction = Command.ConstructionMgr.AddToDisbandQueue(Data.Design, this, disbandCost);
@@ -1294,6 +1326,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
         // disband completed so try to inform Cmd and kill the element
         AttemptOrderOutcomeCallback(OrderFailureCause.None);
+
 
         ReworkUnderway = ReworkingMode.None;
         IsDead = true;
@@ -1468,8 +1501,10 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         FacilityState stateBeforeNotification = CurrentState;
         OnSubordinateOrderOutcome(fsmTgt, failureCause);
         if (CurrentState != stateBeforeNotification) {
-            D.Warn("{0}: Informing Cmd of OrderOutcome has resulted in an immediate state change from {1} to {2}.",
-                DebugName, stateBeforeNotification.GetValueName(), CurrentState.GetValueName());
+            // 1.7.18 If this occurs when successful (fail cause = None), yield return null; is needed after Callback in EnterState
+            // to keep subsequent Idling assignment afterward from overwriting the changed state
+            D.Warn("{0}: Informing Cmd of OrderOutcome has resulted in an immediate state change from {1} to {2}. FailureCause = {3}.",
+                DebugName, stateBeforeNotification.GetValueName(), CurrentState.GetValueName(), failureCause.GetValueName());
         }
     }
 
@@ -1573,12 +1608,28 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         D.AssertEqual(FacilityState.ExecuteRepairOrder, CurrentState);
     }
 
-    protected override void __LogOrderClearedByCmd() {
-        if (CurrentOrder != null) {
-            if (Availability == NewOrderAvailability.Unavailable) {
-                D.Warn("{0} is clearing {1} while unavailable as ordered by Cmd.", DebugName, CurrentOrder.DebugName);
+    [Obsolete("Already handled by DispatchOrderOutcomeCallback")]
+    [System.Diagnostics.Conditional("DEBUG")]
+    private void __WarnIfSuccessfulOrderOutcomeCallbackResultsInDifferentState(FacilityState state) {
+        if (state != CurrentState) {
+            // 1.7.18 If this occurs, yield return null; is reqd after successful order outcome callback as subsequent in line
+            // code will still be executed without it
+            D.Warn("{0} changed state from {1} to {2} after successful order outcome callback.",
+                DebugName, state.GetValueName(), CurrentState.GetValueName());
+        }
+    }
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    private void __LogOrderChanging(FacilityOrder incomingOrder) {
+        if (incomingOrder != null && incomingOrder.Source != OrderSource.User) {
+            // User initiated orders are likely to interrupt existing orders
+            if (CurrentOrder != null) {
+                D.Log("Frame {0}: {1} is interrupting ExistingOrder {2} in favor of IncomingOrder {3}.",
+                    Time.frameCount, DebugName, CurrentOrder.DebugName, incomingOrder.DebugName);
+                if (CurrentOrder.FollowonOrder != null) {
+                    D.Warn("FYI. {0} interrupted ExistingOrder has FollowonOrder {1}.", DebugName, CurrentOrder.FollowonOrder.DebugName);
+                }
             }
-            D.Log("{0} is clearing {1} as ordered by Cmd.", DebugName, CurrentOrder.DebugName);
         }
     }
 

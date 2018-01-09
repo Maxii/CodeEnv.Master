@@ -30,7 +30,7 @@ namespace CodeEnv.Master.GameContent {
 
         ResourcesYield Resources { get; }
 
-        //IHanger Hanger { get; }   11.8.17 IHanger is currently obsolete
+        IHanger Hanger { get; }
 
     }
 }

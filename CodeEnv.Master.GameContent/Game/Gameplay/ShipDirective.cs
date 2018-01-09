@@ -74,32 +74,48 @@ namespace CodeEnv.Master.GameContent {
         Attack,
 
         /// <summary>
-        /// Ships can repair where they are currently located, including in space and at planets and Bases they are allowed to orbit. 
-        /// Only Fleet Cmd, the Ship's Captain or the User may order a ship to repair.
+        /// Ships can repair where they are currently located, including in place on their formation station, at planets and Bases 
+        /// they are allowed to orbit, and within a base's hanger.
         /// <remarks>12.13.17 Requires a non-null Target which can be a Base, Planet or the ship's own FleetCmd. If the target
         /// is the ship's own FleetCmd, the ship's FormationStation will be used to repair in place.</remarks>
         /// </summary>
         Repair,
 
         /// <summary>
-        /// Ships can refit at Bases owned by the ship's owner. Only Fleet Cmd or the User/PlayerAI may order a ship to refit.
-        /// UNCLEAR should ships be able to refit at ally bases? What about when base is under attack?
+        /// Instructs the ship to refit in the hanger of the target base. If already located in the hanger of the target
+        /// base, the ship will initiate refitting. If not, it will attempt to transfer from its existing fleet and enter the
+        /// target base's hanger and then initiate refitting.
+        /// <remarks>UNCLEAR should ships be able to refit at ally bases? What about when base is under attack?</remarks>
         /// <remarks>11.8.17 Requires a non-null (Base) Target.</remarks>
         /// </summary>
         Refit,
 
         /// <summary>
-        /// Ships can leave one fleet and join another owned by the ship's owner. A Join order is only issuable
-        /// by Fleet Cmd or the User/PlayerAI.
-        /// <remarks>11.8.17 Requires a non-null (Fleet) Target.</remarks>
+        /// A convenience 'short cut' directive for the user that implements the Fleet.JoinFleet directive for a single ship.
+        /// It causes a separate 'transfer' fleet to be formed (if needed) and instructs that fleet to
+        /// join a designated fleet owned by the same owner. Only available from a ship UserCtxMenu.
+        /// <remarks>12.30.17 Requires a non-null (Fleet) Target.</remarks>
         /// </summary>
-        Join,
+        JoinFleet,
+
+        /// <summary>
+        /// A convenience 'short cut' directive for the user that implements the Fleet.JoinHanger directive for a single ship.
+        /// It causes a separate 'transfer' fleet to be formed (if needed) and instructs that fleet to
+        /// join a designated Base Hanger owned by the same owner. Only available from a ship UserCtxMenu.
+        /// <remarks>12.30.17 Requires a non-null (Base) Target.</remarks>
+        /// </summary>
+        JoinHanger,
+
+        /// <summary>
+        /// Instructs the ship to attempt to transfer from its existing fleet and enter the hanger of the target base. 
+        /// <remarks>12.31.17 Requires a non-null (Base) Target.</remarks>
+        /// </summary>
+        EnterHanger,
 
         /// <summary>
         /// Ships can entrench on their FormationStation, diverting engine power from creating movement into protecting itself.
-        /// An entrench order can be issued by Fleet Cmd or the Ship's Captain and will cause the ship to relocate to its
-        /// FormationStation (if not already there) and then entrench. While entrenched, it will automatically repair itself
-        /// while entrenched if damaged.
+        /// An entrench order will cause the ship to relocate to its FormationStation (if not already there) and then entrench. 
+        /// While entrenched, it will automatically repair itself if damaged.
         /// <remarks>11.8.17 Requires a null Target.</remarks>
         /// </summary>
         Entrench,
@@ -108,13 +124,12 @@ namespace CodeEnv.Master.GameContent {
         /// Ships disengage from active or potential combat with the enemy by attempting to redeploy to a more protected station 
         /// of the formation if any are available. Ships that are disengaged will automatically repair if needed while they are disengaged.
         /// Ships whose CombatStance is Disengage will automatically be issued a Disengage order by the Captain when ordered to Attack. 
-        /// A Disengage order can be issued by the User, Fleet Cmd or the Ship's Captain.
         /// <remarks>11.8.17 Requires a null Target.</remarks>
         /// </summary>
         Disengage,
 
         /// <summary>
-        /// The ship retreats away from the enemy at best speed. Only Fleet Cmd or the User may order the ship to retreat.
+        /// The ship retreats away from the enemy at best speed. 
         /// <remarks>11.8.17 Target requirements not yet determined.</remarks>
         /// </summary>
         Retreat,
@@ -127,20 +142,21 @@ namespace CodeEnv.Master.GameContent {
         Explore,
 
         /// <summary>
-        /// Ships can disband at Bases owned by the ship's owner. Ships can only be ordered to Disband by Fleet Cmd or
-        /// the User/PlayerAi. When a ship is disbanded, the owner of the ship retains a percentage of the resources used to build it.
+        /// Instructs the ship to disband in the hanger of the target base. If already located in the hanger of the target
+        /// base, the ship will initiate disbanding. If not, it will attempt to transfer from its existing fleet and enter the
+        /// target base's hanger and then initiate disbanding.
+        /// When a ship is disbanded, the owner of the ship retains a percentage of the resources used to build it.
         /// <remarks>12.13.17 Requires a non-null (Base) Target.</remarks>
         /// </summary>
         Disband,
 
         /// <summary>
-        /// Ships can be scuttled anywhere. No resources are retained by the owner. Scuttle orders are only issuable by the User.
+        /// Ships can be scuttled anywhere. No resources are retained by the owner.
         /// <remarks>11.8.17 Requires a null Target.</remarks>
         /// </summary>
         Scuttle,
 
-        [System.Obsolete("Not needed as only implemented in AiShip/Facility CtxMenus for debug and not as an order")]
-        ChgOwner,
+        __ChgOwner,
 
 
     }

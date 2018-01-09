@@ -703,9 +703,8 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     /// of a game instance.
     /// </summary>
     private void ResetConditionsToBeginLoadingNewGame() {
-        if (IsPaused) {
-            RequestPauseStateChange(toPause: false, toOverride: true);
-        }
+        RequestPauseStateChange(toPause: false, toOverride: true);
+
         if (_playerAiMgrLookup != null) {
             _playerAiMgrLookup.Values.ForAll(pAiMgr => pAiMgr.Dispose());
         }
@@ -723,20 +722,44 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         LastSceneID = CurrentSceneID;
     }
 
+    #region Pausing System
+
+    private int _autoPauseCount;
+
     /// <summary>
-    /// Requests a pause state change. A request to resume [!toPause] from a pause without 
-    /// overriding may not be accommodated if the current pause was set without overriding.
+    /// Requests a pause state change. A request to resume [!toPause] from a pause without using
+    /// override will not occur if the pause was set with an override. Also, a request to resume from
+    /// a pause without using override will not occur if there are still outstanding requests to pause.
+    /// <remarks>12.31.17 Use of override will always set PauseState to that requested.</remarks>
+    /// <remarks>12.31.17 If not using override, _autoPauseCount must be zero to resume from AutoPaused.</remarks>
     /// </summary>
     /// <param name="toPause">if set to <c>true</c> [to pause].</param>
     /// <param name="toOverride">if set to <c>true</c> [to override].</param>
     public void RequestPauseStateChange(bool toPause, bool toOverride = false) {
         if (toOverride) {
+            _autoPauseCount = Constants.Zero;
             PauseState = toPause ? PauseState.Paused : PauseState.NotPaused;
         }
-        else if (PauseState != PauseState.Paused) {
-            PauseState = toPause ? PauseState.AutoPaused : PauseState.NotPaused;
+        else {
+            if (toPause) {
+                D.Assert(_autoPauseCount >= Constants.Zero);
+                D.Log("{0} is increasing autoPauseRequestCount from {1} to {2}.", DebugName, _autoPauseCount, _autoPauseCount + 1);
+                _autoPauseCount++;
+            }
+            else {
+                if (_autoPauseCount > Constants.Zero) {
+                    D.Log("{0} is decreasing autoPauseRequestCount from {1} to {2}.", DebugName, _autoPauseCount, _autoPauseCount - 1);
+                    _autoPauseCount--;
+                }
+            }
+
+            if (PauseState != PauseState.Paused) {
+                PauseState = _autoPauseCount > Constants.Zero ? PauseState.AutoPaused : PauseState.NotPaused;
+            }
         }
     }
+
+    #endregion
 
     #region GameState State Machine
 

@@ -130,7 +130,7 @@ namespace CodeEnv.Master.GameContent {
         private Action _actionToExecuteWhenFleetIsAligned;
 
         /// <summary>
-        /// Proxy used by the Obstacle Checking process for the enroute destination that is currently getting checked for obstacles.
+        /// Proxy used by the Obstacle Checking process for the en-route destination that is currently getting checked for obstacles.
         /// <remarks>This field is reqd as a result of changing from using a Job (with an embedded Action) to using RecurringDateMinder
         /// which uses a client interface. It allows communication between the interface's callback and the methods it needs to call.</remarks>
         /// </summary>
@@ -441,7 +441,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Checks whether the destination represented by destProxy cannot be caught.
         /// Returns <c>true</c> if destination is uncatchable, <c>false</c> if it can be caught.
-        /// <remarks>4.15.17 ProxyTgts that are potentially uncatchable can now only be ships.</remarks>
+        /// <remarks>4.15.17 Currently, ProxyTgts that are potentially uncatchable can only be ships.</remarks>
         /// </summary>
         /// <param name="destProxy">The destination proxy.</param>
         /// <returns></returns>

@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2017 
+// Copyright © 2012 - 2018 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: FleetNavigator.cs
-// Navigator for a FleetCmd.
+// File: FleetMoveHelper.cs
+// Helper class that assists a Fleet in Moving. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,7 +19,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
@@ -28,10 +27,16 @@ using Pathfinding;
 using UnityEngine;
 
 /// <summary>
-/// Navigator for a FleetCmd.
+/// Helper class that assists a Fleet in Moving. 
+/// <remarks>There are 4 sections: 
+/// 1) An AStar waypoint course generator for the fleet to follow in reaching a final destination.
+/// 2) An AutoPilot that issues orders to the ships in the fleet to move to the course waypoints. The
+/// AutoPilot determines when to initiate the next leg of the course when all ships have arrived at the
+/// previous waypoint.
+/// 3) A manager that changes the course being displayed to the user anytime the course changes.
+/// 4) A service that tells each subscribed ship when it is aligned for departure when moving as a fleet.</remarks>
 /// </summary>
-[Obsolete]
-public class FleetNavigator : IDisposable {
+public class FleetMoveHelper : IDisposable {
 
     private const string DebugNameFormat = "{0}.{1}";
 
@@ -64,22 +69,49 @@ public class FleetNavigator : IDisposable {
         }
     }
 
+    internal string DebugName { get { return DebugNameFormat.Inject(_fleet.DebugName, typeof(FleetMoveHelper).Name); } }
+
     internal bool IsPilotEngaged { get; private set; }
+
+    /// <summary>
+    /// The current destination. Can either be 1) a StationaryLocation if a waypoint on a multi-waypoint
+    /// course or 2) the ApTarget, aka final destination.
+    /// </summary>
+    internal IFleetNavigableDestination CurrentDestination {
+        get {
+            D.Assert(IsPilotEngaged);
+            return ApCourse[_currentApCourseIndex];
+        }
+    }
 
     /// <summary>
     /// The course this AutoPilot will follow when engaged. 
     /// </summary>
     internal IList<IFleetNavigableDestination> ApCourse { get; private set; }
 
-    internal string DebugName { get { return DebugNameFormat.Inject(_fleet.DebugName, typeof(FleetNavigator).Name); } }
+    internal bool AreAnyShipsStillExpectedToArrive { get { return _shipsExpectedToArrive.Any(); } }
 
     /// <summary>
-    /// Indicates whether the Target could be uncatchable.
-    /// <remarks>A target that is potentially uncatchable is another fleet, owned by another player.
-    /// StationaryLocations, Celestial Objects and all things owned by the owner of this fleet
-    /// are by definition catchable.</remarks>
+    /// The current target this AutoPilot is engaged to reach.
+    /// <remarks>Can be a StationaryLocation if moving to guard, patrol or assume formation or if
+    /// a Move order to a System or Sector where the fleet is already located.</remarks>
     /// </summary>
-    private bool IsTargetPotentiallyUncatchable { get; set; }
+    internal IFleetNavigableDestination ApTarget { get; private set; }
+
+    /// <summary>
+    /// The speed setting the autopilot should travel at. 
+    /// </summary>
+    internal Speed ApSpeedSetting {
+        get { return _fleetData.CurrentSpeedSetting; }
+        private set { _fleetData.CurrentSpeedSetting = value; }
+    }
+
+    internal float ApTargetStandoffDistance {
+        get {
+            D.Assert(IsPilotEngaged);
+            return _apTgtStandoffDistance;
+        }
+    }
 
     private Vector3 Position { get { return _fleet.Position; } }
 
@@ -105,28 +137,31 @@ public class FleetNavigator : IDisposable {
 
     private bool ShowDebugLog { get { return _fleet.ShowDebugLog; } }
 
-    internal IFleetNavigableDestination __ApTarget { get { return ApTarget; } }
-
-    /// <summary>
-    /// The current target this AutoPilot is engaged to reach.
-    /// <remarks>Can be a StationaryLocation if moving to guard, patrol or assume formation or if
-    /// a Move order to a System or Sector where the fleet is already located.</remarks>
-    /// </summary>
-    private IFleetNavigableDestination ApTarget { get; set; }
-
-    /// <summary>
-    /// The speed setting the autopilot should travel at. 
-    /// </summary>
-    private Speed ApSpeedSetting {
-        get { return _fleetData.CurrentSpeedSetting; }
-        set { _fleetData.CurrentSpeedSetting = value; }
-    }
-
     private float ApTgtReplotThresholdDistanceSqrd {
         get {
             return ApTarget is IFleetCmd_Ltd ? 90000F : 10000F; // Fleet: 300, Planetoid: 100 units
         }
     }
+
+    /******************************************************************************************************/
+    // These two fields support the fleet's ships use of WaitForFleetToAlign.
+    // They should NOT be reset when the Fleet's AutoPilot is disengaged as ships may still be turning.
+    private Action _fleetIsAlignedCallbacks;
+    private Job _waitForFleetToAlignJob;
+    /******************************************************************************************************/
+
+    /// <summary>
+    /// The ships that have not yet arrived at the next waypoint, aka CurrentDestination.
+    /// </summary>
+    private HashSet<AUnitElementItem> _shipsExpectedToArrive = new HashSet<AUnitElementItem>();
+
+    /// <summary>
+    /// Indicates whether the Target could be uncatchable.
+    /// <remarks>A target that is potentially uncatchable is another fleet, owned by another player.
+    /// StationaryLocations, Celestial Objects and all things owned by the owner of this fleet
+    /// are by definition catchable.</remarks>
+    /// </summary>
+    private bool _isApTargetPotentiallyUncatchable;
 
     /// <summary>
     /// The last recorded square distance to an ApTarget that is a fleet.
@@ -139,25 +174,11 @@ public class FleetNavigator : IDisposable {
     /// If <c>false</c> the course is a direct course to the target.
     /// </summary>
     private bool _isApCourseFromPath;
-
-    /// <summary>
-    /// If <c>true </c> the flagship has reached its current destination. In most cases, this
-    /// "destination" is an interim waypoint provided by this fleet navigator, but it can also be the
-    /// 'final' destination, aka ApTarget.
-    /// </summary>
-    private bool _hasFlagshipReachedApDestination;
     private bool _isAStarPathReplotting;
     private Vector3 _apTgtPositionAtLastPathPlot;
     private float _apTgtStandoffDistance;
     private int _currentApCourseIndex;
     private Job _apNavJob;
-
-    /******************************************************************************************************/
-    // These two fields support the fleet's ships use of WaitForFleetToAlign.
-    // They should NOT be reset when the Fleet's AutoPilot is disengaged as ships may still be turning.
-    private Action _fleetIsAlignedCallbacks;
-    private Job _waitForFleetToAlignJob;
-    /******************************************************************************************************/
 
     private Seeker _seeker;
     private GameTime _gameTime;
@@ -165,9 +186,8 @@ public class FleetNavigator : IDisposable {
     private JobManager _jobMgr;
     private FleetCmdItem _fleet;
     private FleetCmdData _fleetData;
-    //private IList<IDisposable> _subscriptions;
 
-    public FleetNavigator(FleetCmdItem fleet, FleetCmdData data, Seeker seeker) {
+    public FleetMoveHelper(FleetCmdItem fleet, FleetCmdData data, Seeker seeker) {
         ApCourse = new List<IFleetNavigableDestination>();
         _gameTime = GameTime.Instance;
         _gameMgr = GameManager.Instance;
@@ -197,7 +217,6 @@ public class FleetNavigator : IDisposable {
     }
 
     private void Subscribe() {
-        //_subscriptions = new List<IDisposable>();
         _seeker.pathCallback += PathPlotCompletedEventHandler;
         _seeker.postProcessPath += PathPostProcessingEventHandler;
         // No subscription to changes in a target's maxWeaponsRange as a fleet should not automatically get an enemy target's maxWeaponRange update when it changes
@@ -216,7 +235,7 @@ public class FleetNavigator : IDisposable {
         ApSpeedSetting = apSpeed;
         _apTgtStandoffDistance = apTgtStandoffDistance;
 
-        IsTargetPotentiallyUncatchable = InitializePotentiallyUncatchable();
+        _isApTargetPotentiallyUncatchable = InitializePotentiallyUncatchable();
 
         IList<Vector3> directCourse;
         if (TryDirectCourse(out directCourse)) {
@@ -302,9 +321,10 @@ public class FleetNavigator : IDisposable {
     /// <summary>
     /// Primary exposed control for engaging the Navigator's AutoPilot to handle movement.
     /// </summary>
-    internal void EngagePilot() {
-        _fleet.HQElement.apTgtReached += FlagshipReachedDestinationEventHandler;
+    internal void EngagePilot(IEnumerable<AUnitElementItem> shipsToMove) {
+        D.AssertEqual(Constants.Zero, _shipsExpectedToArrive.Count);
         //D.Log(ShowDebugLog, "{0} Pilot engaging.", DebugName);
+        _shipsExpectedToArrive.UnionWith(shipsToMove);
         IsPilotEngaged = true;
         EngagePilot_Internal();
     }
@@ -319,13 +339,14 @@ public class FleetNavigator : IDisposable {
     /// Primary exposed control for disengaging the AutoPilot from handling movement.
     /// </summary>
     internal void DisengagePilot() {
-        _fleet.HQElement.apTgtReached -= FlagshipReachedDestinationEventHandler;
         //D.Log(ShowDebugLog, "{0} Pilot disengaging.", DebugName);
         IsPilotEngaged = false;
         CleanupAnyRemainingApJobs();
         RefreshApCourse(CourseRefreshMode.ClearCourse);
-        ApSpeedSetting = Speed.Stop;        // Speed.None;
-        _hasFlagshipReachedApDestination = false;
+        ApSpeedSetting = Speed.Stop;
+
+        _shipsExpectedToArrive.Clear();
+
         _fleetData.CurrentHeading = default(Vector3);
         _apTgtStandoffDistance = Constants.ZeroF;
         _isAStarPathReplotting = false;
@@ -333,15 +354,55 @@ public class FleetNavigator : IDisposable {
         _isApCourseFromPath = false;
         _currentApCourseIndex = Constants.Zero;
         ApTarget = null;
-        IsTargetPotentiallyUncatchable = false;
+        _isApTargetPotentiallyUncatchable = false;
         __previousSqrDistanceToApTgtFleet = Constants.ZeroF;
+    }
+
+    internal void HandleOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigableDestination target, OrderFailureCause failCause) {
+        D.Assert(IsPilotEngaged, ship.DebugName);
+
+        if (isSuccess) {
+            bool isRemoved = _shipsExpectedToArrive.Remove(ship);
+            D.Assert(isRemoved, ship.DebugName);
+        }
+        else {
+            switch (failCause) {
+                case OrderFailureCause.NeedsRepair:
+                case OrderFailureCause.Death:
+                case OrderFailureCause.Ownership:
+                    bool isRemoved = _shipsExpectedToArrive.Remove(ship);
+                    D.Assert(isRemoved, ship.DebugName);
+                    break;
+                case OrderFailureCause.NewOrderReceived:
+                    // 1.7.18  UNCLEAR Occurred while ship attacking in response to Move orders issued by this helper
+                    // 1.7.18 Properly occurs when individual order (scuttle) issued by user to ship so added filter
+                    if (!ship.IsCurrentOrderDirectiveAnyOf(ShipDirective.Scuttle)) {
+                        D.Warn("{0} received {1}.{2} from {3} but UNCLEAR why. Target: {4}.", DebugName, typeof(OrderFailureCause).Name,
+                            failCause.GetValueName(), ship.DebugName, target.DebugName);
+                    }
+                    isRemoved = _shipsExpectedToArrive.Remove(ship);
+                    D.Assert(isRemoved, ship.DebugName);
+                    break;
+                case OrderFailureCause.TgtUncatchable:
+                // 1.6.18 One of our ships reported it can't catch another ship. Should never occur as only time our ships pursue other
+                // ships is when Attacking and then they don't report it but instead simply RestartState to find another target.
+                case OrderFailureCause.TgtUnreachable:
+                case OrderFailureCause.TgtUnjoinable:
+                case OrderFailureCause.TgtRelationship:
+                case OrderFailureCause.TgtDeath:
+                case OrderFailureCause.ConstructionCanceled:
+                case OrderFailureCause.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(failCause));
+            }
+        }
     }
 
     #region Course Execution
 
     private void InitiateApCourseToTarget() {
         D.AssertNull(_apNavJob);
-        D.Assert(!_hasFlagshipReachedApDestination);
+        D.AssertNotEqual(Constants.Zero, _shipsExpectedToArrive.Count);
         if (ShowDebugLog) {
             //string courseText = _isApCourseFromPath ? "multiple waypoint" : "direct";
             //D.Log("{0} initiating a {1} course to target {2}. Distance: {3:0.#}, Speed: {4}({5:0.##}).",
@@ -405,8 +466,9 @@ public class FleetNavigator : IDisposable {
 
         IFleetNavigableDestination detour;
         while (_currentApCourseIndex <= apTgtCourseIndex) {
-            if (_hasFlagshipReachedApDestination) {
-                _hasFlagshipReachedApDestination = false;
+            if (_shipsExpectedToArrive.Count == Constants.Zero) {
+                // Fleet move leg complete
+                _shipsExpectedToArrive.UnionWith(_fleet.Elements);
 
                 __RecordWaypointTransitStart(toCalcLastTransitDuration: true, lastTransitDistanceSqrd: waypointTransitDistanceSqrd);
 
@@ -420,7 +482,7 @@ public class FleetNavigator : IDisposable {
                 //D.Log(ShowDebugLog, "{0} has reached Waypoint_{1} {2}. Current destination is now Waypoint_{3} {4}.", Name,
                 //_currentApCourseIndex - 1, currentWaypoint.DebugName, _currentApCourseIndex, ApCourse[_currentApCourseIndex].DebugName);
 
-                if (IsTargetPotentiallyUncatchable) {
+                if (_isApTargetPotentiallyUncatchable) {
                     bool isUncatchable = __IsFleetTgtUncatchable(ref fleetTgtRecedingWaypointCount);
                     if (isUncatchable) {
                         HandleApTgtUncatchable();
@@ -447,6 +509,20 @@ public class FleetNavigator : IDisposable {
                                 // IMPROVE use ProgressCheckDistance to derive
         }
         // we've reached the target
+    }
+
+    /// <summary>
+    /// Adds the ship to the collection of expected arrivals.
+    /// <remarks>Primarily used to add a ship that Joins a fleet during a move
+    /// when that ship is issued a move order to 'catch up'.</remarks>
+    /// </summary>
+    /// <param name="ship">The ship.</param>
+    internal void AddShipToExpectedArrivals(AUnitElementItem ship) {
+        D.AssertNotEqual(Constants.Zero, _shipsExpectedToArrive.Count);
+        bool isAdded = _shipsExpectedToArrive.Add(ship);
+        if (!isAdded) {
+            D.Error("{0} was not able to add {1} to shipsExpectedToArrive.", DebugName, ship.DebugName);
+        }
     }
 
     /// <summary>
@@ -477,16 +553,12 @@ public class FleetNavigator : IDisposable {
 
     #region Obstacle Checking
 
-    internal bool __TryCheckForObstacleEnrouteTo(IFleetNavigableDestination destination, out IFleetNavigableDestination detour) {
-        return TryCheckForObstacleEnrouteTo(destination, out detour);
-    }
-
     /// <summary>
     /// Checks for an obstacle en-route to the provided <c>destination</c>. Returns true if one
     /// is found that requires immediate action and provides the detour to avoid it, false otherwise.
     /// </summary>
     /// <param name="destination">The current destination. May be the ApTarget or an obstacle detour.</param>
-    /// <param name="detour">The obstacle detour.</param>
+    /// <param name="detour">The resulting obstacle detour.</param>
     /// <returns>
     ///   <c>true</c> if an obstacle was found and a detour generated, false if the way is effectively clear.
     /// </returns>
@@ -744,21 +816,6 @@ public class FleetNavigator : IDisposable {
 
     #region Event and Property Change Handlers
 
-    private int __lastFrameReachedDestination;
-    // OPTIMIZE
-    private void FlagshipReachedDestinationEventHandler(object sender, EventArgs e) {
-        /*************** 1.26.17 Debug Obstacle Checking where Detour generated is on same location as Fleet ************/
-        int frame = Time.frameCount;
-        if (__lastFrameReachedDestination == frame || __lastFrameReachedDestination + 1 == frame) {
-            // 5.17.17 Confirming this did occur on _lastFrame + 1
-            D.Warn("FYI. {0} reporting that Flagship {1} immediately reached destination on Frame {2}. Used +1 = {3}.",
-                DebugName, _fleet.HQElement.DebugName, frame, frame == __lastFrameReachedDestination + 1);
-        }
-        __lastFrameReachedDestination = frame;
-        /****************************************************************************************************************/
-        _hasFlagshipReachedApDestination = true;
-    }
-
     /// <summary>
     /// Called after the new course path has been completed but before 
     /// the StartEndModifier has been called. Allows changes to the modifier's
@@ -816,20 +873,6 @@ public class FleetNavigator : IDisposable {
         else {
             D.Log(ShowDebugLog, "{0} received a successfully plotted path when no longer needed.", DebugName);   // 3.5.17 rare
             path.Release(this);
-        }
-    }
-
-    /// <summary>
-    /// Refreshes which element will tell the navigator when a target is reached.
-    /// </summary>
-    /// <param name="oldHQElement">The old HQElement.</param>
-    /// <param name="newHQElement">The new HQElement.</param>
-    internal void RefreshTargetReachedEventHandlers(ShipItem oldHQElement, ShipItem newHQElement) {
-        if (oldHQElement != null) {
-            oldHQElement.apTgtReached -= FlagshipReachedDestinationEventHandler;
-        }
-        if (_apNavJob != null) {   // if not engaged, this connection will be established when next engaged
-            newHQElement.apTgtReached += FlagshipReachedDestinationEventHandler;
         }
     }
 
@@ -899,17 +942,8 @@ public class FleetNavigator : IDisposable {
         _fleet.UponApTargetReached();
     }
 
-    /// <summary>
-    /// Handles the case when the ApTarget is not reachable.
-    /// <remarks>Not currently used.</remarks>
-    /// </summary>
-    private void HandleApTgtUnreachable() {
-        RefreshApCourse(CourseRefreshMode.ClearCourse);
-        //_fleet.UponApTargetUnreachable();
-    }
-
     private void HandleApTgtUncatchable() {
-        D.LogBold(/*ShowDebugLog,*/ "{0} is continuing to fall behind {1} and is now deemed uncatchable.", DebugName, ApTarget.DebugName);
+        D.Warn("FYI. {0} is continuing to fall behind {1} and is now deemed uncatchable.", DebugName, ApTarget.DebugName);
         RefreshApCourse(CourseRefreshMode.ClearCourse);
         _fleet.UponApTargetUncatchable();
     }
@@ -918,13 +952,25 @@ public class FleetNavigator : IDisposable {
         if (_isAStarPathReplotting) {
             D.Warn("{0}'s course to {1} couldn't be replotted.", DebugName, ApTarget.DebugName);
         }
-        //_fleet.UponApCoursePlotFailure();
+        // _fleet.UponApFailure(FleetMoveFailureMode.PlotFailure);
+        D.Error("{0}: Course to {1} cannot be plotted/re-plotted.", DebugName, ApTarget.DebugName);
+    }
+
+    /// <summary>
+    /// Handles the case when the ApTarget is not reachable.
+    /// <remarks>Not currently used.</remarks>
+    /// </summary>
+    private void HandleApTgtUnreachable() {
+        RefreshApCourse(CourseRefreshMode.ClearCourse);
+        // _fleet.UponApFailure(FleetMoveFailureMode.TgtUnreachable);
+        D.Error("{0}: Target {1} is unreachable.", DebugName, ApTarget.DebugName);
     }
 
     private void IssueMoveOrderToAllShips(IFleetNavigableDestination fleetTgt, float tgtStandoffDistance) {
         bool isFleetwideMove = true;
         var fleetOrderSource = _fleet.CurrentOrder.Source;
-        var shipMoveToOrder = new ShipMoveOrder(fleetOrderSource, fleetTgt as IShipNavigableDestination, ApSpeedSetting,
+        var fleetOrderID = _fleet.CurrentOrder.OrderID;
+        var shipMoveToOrder = new ShipMoveOrder(fleetOrderSource, fleetOrderID, fleetTgt as IShipNavigableDestination, ApSpeedSetting,
             isFleetwideMove, tgtStandoffDistance);
         _fleet.Elements.ForAll(e => (e as ShipItem).CurrentOrder = shipMoveToOrder);
         _fleetData.CurrentHeading = (fleetTgt.Position - Position).normalized;
@@ -949,42 +995,6 @@ public class FleetNavigator : IDisposable {
         ApCourse.Add(ApTarget); // places it at course[destinationIndex]
         HandleApCourseChanged();
     }
-
-    internal void __RefreshApCourse(CourseRefreshMode mode, ref int currentApCourseIndex, IFleetNavigableDestination waypoint = null) {
-        //D.Log(ShowDebugLog, "{0}.RefreshCourse() called. Mode = {1}. CourseCountBefore = {2}.", DebugName, mode.GetValueName(), ApCourse.Count);
-        switch (mode) {
-            case CourseRefreshMode.NewCourse:
-                D.AssertNull(waypoint);
-                // A fleet course is constructed by ConstructCourse
-                D.Error("{0}: Illegal {1}.{2}.", DebugName, typeof(CourseRefreshMode).Name, mode.GetValueName());
-                break;
-            case CourseRefreshMode.AddWaypoint:
-                D.Assert(waypoint is StationaryLocation);
-                ApCourse.Insert(currentApCourseIndex, waypoint);    // changes Course.Count
-                break;
-            case CourseRefreshMode.ReplaceObstacleDetour:
-                D.Assert(waypoint is StationaryLocation);
-                ApCourse.RemoveAt(currentApCourseIndex);          // changes Course.Count
-                ApCourse.Insert(currentApCourseIndex, waypoint);    // changes Course.Count
-                break;
-            case CourseRefreshMode.RemoveWaypoint:
-                D.Assert(waypoint is StationaryLocation);
-                D.AssertEqual(ApCourse[currentApCourseIndex], waypoint);
-                bool isRemoved = ApCourse.Remove(waypoint);         // changes Course.Count
-                D.Assert(isRemoved);
-                currentApCourseIndex--;
-                break;
-            case CourseRefreshMode.ClearCourse:
-                D.AssertNull(waypoint);
-                ApCourse.Clear();
-                break;
-            default:
-                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(mode));
-        }
-        //D.Log(ShowDebugLog, "CourseCountAfter = {0}.", ApCourse.Count);
-        HandleApCourseChanged();
-    }
-
 
     /// <summary>
     /// Refreshes the course.
@@ -1029,9 +1039,12 @@ public class FleetNavigator : IDisposable {
 
     private void PlotPath() {
         Vector3 start = Position;
-        if (ShowDebugLog) {
-            string replot = _isAStarPathReplotting ? "RE-plotting" : "plotting";
-            D.Log("{0} is {1} path to {2}. Start = {3}, Destination = {4}.", DebugName, replot, ApTarget.DebugName, start, ApTarget.Position);
+        if (_isAStarPathReplotting) {
+            // 1.7.18 Routinely occurs when attempting to attack, join or move to a fleet, especially when far away
+            D.Log("{0} is re-plotting path to {1}. Start = {2}, Destination = {3}.", DebugName, ApTarget.DebugName, start, ApTarget.Position);
+        }
+        else {
+            D.Log(ShowDebugLog, "{0} is plotting path to {1}. Start = {2}, Destination = {3}.", DebugName, ApTarget.DebugName, start, ApTarget.Position);
         }
         //Debug.DrawLine(start, Destination, Color.yellow, 20F, false);
         //Path p = new Path(startPosition, targetPosition, null);    // Path is now abstract
@@ -1096,8 +1109,6 @@ public class FleetNavigator : IDisposable {
     }
 
     private void Unsubscribe() {
-        //_subscriptions.ForAll(s => s.Dispose());
-        //_subscriptions.Clear();
         _seeker.pathCallback -= PathPlotCompletedEventHandler;
         _seeker.postProcessPath -= PathPostProcessingEventHandler;
     }
@@ -1218,6 +1229,19 @@ public class FleetNavigator : IDisposable {
 
     #endregion
 
+    #region Nested Classes
+
+    public enum FleetMoveFailureMode {
+
+        None,
+
+        PlotFailure,
+        TgtUnreachable
+
+    }
+
+    #endregion
+
     #region Potential improvements from Pathfinding AIPath
 
     /// <summary>
@@ -1317,7 +1341,6 @@ public class FleetNavigator : IDisposable {
     }
 
     #endregion
-
 
 }
 

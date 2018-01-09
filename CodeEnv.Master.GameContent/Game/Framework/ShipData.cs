@@ -78,7 +78,7 @@ namespace CodeEnv.Master.GameContent {
         public INavigableDestination Target {
             get { return _target; }
             set {
-                if (_target == value) { return; }   // eliminates equality warning when targets are the same
+                if (_target != null && _target.Equals(value)) { return; }   // OPTIMIZE eliminates equality warning. 1.1.18 using == allowed a warning
                 SetProperty<INavigableDestination>(ref _target, value, "Target");
             }
         }

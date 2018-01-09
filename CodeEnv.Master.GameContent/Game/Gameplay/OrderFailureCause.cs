@@ -72,6 +72,11 @@ namespace CodeEnv.Master.GameContent {
         NeedsRepair,
 
         /// <summary>
+        /// This Unit Cmd or Element lacks capability to execute the assignment.
+        /// </summary>
+        Capability,
+
+        /// <summary>
         /// This Unit Element had construction rework occurring on it canceled.
         /// </summary>
         ConstructionCanceled,

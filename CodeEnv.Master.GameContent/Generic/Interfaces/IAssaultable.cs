@@ -38,8 +38,6 @@ namespace CodeEnv.Master.GameContent {
 
         bool AttemptAssault(Player player, DamageStrength strength, string __assaulterName);
 
-        void __ChangeOwner(Player newOwner);
-
     }
 }
 

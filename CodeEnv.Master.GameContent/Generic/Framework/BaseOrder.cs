@@ -36,7 +36,8 @@ namespace CodeEnv.Master.GameContent {
                                                                                                         BaseDirective.Attack,
                                                                                                         BaseDirective.Disband,
                                                                                                         BaseDirective.Refit,
-                                                                                                        BaseDirective.Repair
+                                                                                                        BaseDirective.Repair,
+                                                                                                        BaseDirective.ChangeHQ
                                                                                                     };
         public string DebugName {
             get {
@@ -64,7 +65,7 @@ namespace CodeEnv.Master.GameContent {
 
         public BaseOrder FollowonOrder { get; set; }
 
-        public IUnitAttackable Target { get; private set; }
+        public INavigableDestination Target { get; private set; }
 
         /// <summary>
         /// The source of this order.
@@ -79,7 +80,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="directive">The order directive.</param>
         /// <param name="source">The source of this order.</param>
         /// <param name="target">The target of this order. Default is null.</param>
-        public BaseOrder(BaseDirective directive, OrderSource source, IUnitAttackable target = null) {
+        public BaseOrder(BaseDirective directive, OrderSource source, INavigableDestination target = null) {
             Directive = directive;
             Source = source;
             Target = target;
@@ -103,9 +104,6 @@ namespace CodeEnv.Master.GameContent {
             }
             if (Directive == BaseDirective.Cancel) {
                 D.AssertEqual(OrderSource.User, Source);
-            }
-            if (Directive == BaseDirective.ChangeHQ) {
-                D.Error("{0}: {1} not implemented as an order.", DebugName, Directive.GetValueName());
             }
         }
     }

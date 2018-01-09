@@ -125,9 +125,17 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Fleets can join other fleets owned by the Fleet owner.
-        /// <remarks>12.12.17 Requires a non-null (fleet) target.</remarks>
+        /// <remarks>12.12.17 Requires a non-null (Fleet) target.</remarks>
         /// </summary>
-        Join,
+        JoinFleet,
+
+        /// <summary>
+        /// Fleets can join Base Hangers owned by the Fleet owner. All the ships of the fleet that the Hanger
+        /// can accommodate are removed from the Fleet and join the Hanger. Any ships the hanger cannot accommodate
+        /// remain in the fleet. If the fleet has no remaining ships, it dies.
+        /// <remarks>12.12.17 Requires a non-null (Base) target.</remarks>
+        /// </summary>
+        JoinHanger,
 
         /// <summary>
         /// Fleets can be scuttled anywhere. No resources are retained by the owner.

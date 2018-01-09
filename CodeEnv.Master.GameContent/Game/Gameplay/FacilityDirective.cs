@@ -71,8 +71,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         Scuttle,
 
-        [System.Obsolete("Not needed as only implemented in AiShip/Facility CtxMenus for debug and not as an order")]
-        ChgOwner,
+        __ChgOwner,
 
 
     }

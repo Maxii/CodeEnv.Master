@@ -50,17 +50,13 @@ public class UserFleetUnitHudForm : AFleetUnitHudForm {
         return UserAiMgr.TryFindClosestFleetRepairBase(currentFleetPosition, out closestRepairBase);
     }
 
-    protected override bool TryFindClosestFleetRefitBase(Vector3 currentFleetPosition, out IUnitBaseCmd closestRefitBase) {
-        return UserAiMgr.TryFindClosestRefitBase(currentFleetPosition, out closestRefitBase);
-    }
-
-    protected override bool TryFindClosestFleetDisbandBase(Vector3 currentFleetPosition, out IUnitBaseCmd closestDisbandBase) {
-        return UserAiMgr.TryFindClosestDisbandBase(currentFleetPosition, out closestDisbandBase);
+    protected override bool TryFindClosestBase(Vector3 currentFleetPosition, int reqdHangerSlots, out IUnitBaseCmd closestBase) {
+        return UserAiMgr.TryFindClosestBase(currentFleetPosition, reqdHangerSlots, out closestBase);
     }
 
     protected override void AssessInteractibleHud() {
-        if (_pickedElementIcons.Count == Constants.One) {
-            InteractibleHudWindow.Instance.Show(FormID.UserShip, _pickedElementIcons.First().Element.Data);
+        if (_pickedShipIcons.Count == Constants.One) {
+            InteractibleHudWindow.Instance.Show(FormID.UserShip, _pickedShipIcons.First().Element.Data);
         }
         else if (_pickedUnitIcons.Count == Constants.One) {
             InteractibleHudWindow.Instance.Show(FormID.UserFleet, _pickedUnitIcons.First().Unit.Data);

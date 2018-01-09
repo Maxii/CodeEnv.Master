@@ -6,7 +6,8 @@
 // </copyright> 
 // <summary> 
 // File: FleetCreator.cs
-// Unit Creator that deploys a fleet from the operational ships provided at its current location in the scene.
+// Unit Creator that immediately deploys and commences operations of a fleet from the operational ships provided 
+/// at its current location in the scene.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -25,7 +26,8 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Unit Creator that deploys a fleet from the operational ships provided at its current location in the scene.
+/// Unit Creator that immediately deploys and commences operations of a fleet from the operational ships provided 
+/// at its current location in the scene.
 /// </summary>
 public class FleetCreator : AUnitCreator {
 

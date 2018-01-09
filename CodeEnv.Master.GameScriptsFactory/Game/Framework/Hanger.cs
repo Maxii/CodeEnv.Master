@@ -27,7 +27,7 @@ using UnityEngine;
 /// <summary>
 /// A hanger attached to a Settlement or Starbase Cmd that holds ships.
 /// </summary>
-public class Hanger : AMonoBase, IFormationMgrClient/*, IHanger, IHanger_Ltd*/ {
+public class Hanger : AMonoBase, IFormationMgrClient, IHanger/*, IHanger_Ltd*/ {
 
     private const string DebugNameFormat = "{0}.{1}";
 
@@ -129,7 +129,7 @@ public class Hanger : AMonoBase, IFormationMgrClient/*, IHanger, IHanger_Ltd*/ {
             D.Assert(!ship.IsCollisionAvoidanceOperational);
             ship.IsCollisionAvoidanceOperational = true;
             ship.Data.ActivateSRSensors();
-            ship.ClearOrders();
+            // 1.6.18 Fleet will clear orders of ships during CommenceOperations
         });
 
         var closestLocalAssyStation = GameUtility.GetClosest(fleet.Position, ParentBaseCmd.LocalAssemblyStations);

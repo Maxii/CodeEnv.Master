@@ -79,7 +79,10 @@ public class FacilityCtxControl_User : ACtxControl_User<FacilityDirective> {
 
     private void IssueUserFacilityMenuOperatorOrder(int itemID) {
         FacilityDirective directive = (FacilityDirective)_directiveLookup[itemID];
-        D.Log("{0} selected directive {1} from context menu.", DebugName, directive.GetValueName());
+        INavigableDestination submenuTgt;
+        bool hasSubmenuTgt = _unitSubmenuTgtLookup.TryGetValue(itemID, out submenuTgt);
+        string submenuTgtMsg = hasSubmenuTgt ? submenuTgt.DebugName : "[none]";
+        D.LogBold("{0} selected directive {1} and submenu target {2} from context menu.", DebugName, directive.GetValueName(), submenuTgtMsg);
         _facilityMenuOperator.CurrentOrder = new FacilityOrder(directive, OrderSource.User);
     }
 

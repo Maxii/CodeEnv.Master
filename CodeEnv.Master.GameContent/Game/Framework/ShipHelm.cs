@@ -36,7 +36,6 @@ namespace CodeEnv.Master.GameContent {
 
         private const string DebugNameFormat = "{0}.{1}";
 
-
         private static readonly Speed[] __ValidExternalChangeSpeeds = {
                                                                     Speed.HardStop,
                                                                     Speed.Stop,

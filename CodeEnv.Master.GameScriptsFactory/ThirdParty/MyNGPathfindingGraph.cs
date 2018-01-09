@@ -632,7 +632,7 @@ namespace Pathfinding {
 
             var makeConnectionsWorkItem = new AstarWorkItem(update: (forceCompletion) => {
                 MakeConnections();
-                D.Log("{0} has completed making node connections for {1}.", DebugName, baseCmd.DebugName);
+                //D.Log("{0} has completed making node connections for {1}.", DebugName, baseCmd.DebugName);
                 return true;
             });
             active.AddWorkItem(makeConnectionsWorkItem);

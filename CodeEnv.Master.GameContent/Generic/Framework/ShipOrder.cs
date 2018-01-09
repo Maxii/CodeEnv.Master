@@ -39,7 +39,9 @@ namespace CodeEnv.Master.GameContent {
                                                                                                     ShipDirective.Attack,
                                                                                                     ShipDirective.Disband,
                                                                                                     ShipDirective.Explore,
-                                                                                                    ShipDirective.Join,
+                                                                                                    ShipDirective.JoinFleet,
+                                                                                                    ShipDirective.JoinHanger,
+                                                                                                    ShipDirective.EnterHanger,
                                                                                                     ShipDirective.Move,
                                                                                                     ShipDirective.Refit,
                                                                                                     ShipDirective.Repair
