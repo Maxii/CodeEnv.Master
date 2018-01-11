@@ -592,17 +592,17 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
             }
-            _lastOrderID = CurrentOrder.OrderID;
+            _executingOrderID = CurrentOrder.OrderID;
         }
         else {
-            _lastOrderID = default(Guid);
+            _executingOrderID = default(Guid);
         }
     }
 
     protected override void ResetOrderAndState() {
         base.ResetOrderAndState();
         _currentOrder = null;   // avoid order changed while paused system
-        _lastOrderID = default(Guid);    // reqd as HandleNewOrder not called when using _currentOrder
+        _executingOrderID = default(Guid);    // reqd as HandleNewOrder not called when using _currentOrder
         CurrentState = BaseState.Idling;    // 4.20.17 Will unsubscribe from any FsmEvents when exiting the Current non-Call()ed state
     }
 
@@ -611,6 +611,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     #region StateMachine
 
     private INavigableDestination _fsmTgt;
+
+    /// <summary>
+    /// The ships expected to callback with an order outcome.
+    /// </summary>
+    private HashSet<FacilityItem> _fsmFacilitiesExpectedToCallbackWithOrderOutcome = new HashSet<FacilityItem>();
 
     protected new BaseState CurrentState {
         get { return (BaseState)base.CurrentState; }   // NRE means base.CurrentState is null -> not yet set
@@ -655,6 +660,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void FinalInitialize_UponPreconfigureState() {
         LogEvent();
+        ValidateCommonNonCallableStateValues();
     }
 
     protected void FinalInitialize_EnterState() {
@@ -675,6 +681,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void FinalInitialize_ExitState() {
         LogEvent();
+        ResetCommonNonCallableStateValues();
     }
 
     #endregion
@@ -706,7 +713,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
             CurrentOrder = null;
         }
 
-        if (AssessNeedForRepair(healthThreshold: Constants.OneHundredPercent)) {
+        if (AssessNeedForRepair()) {
             IssueCmdStaffsRepairOrder();
             yield return null;
             D.Error("{0} should never get here as CurrentOrder was changed to {1}.", DebugName, CurrentOrder);
@@ -814,7 +821,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         LogEvent();
 
         IUnitAttackable unitAttackTgt = _fsmTgt as IUnitAttackable;
-        var elementAttackOrder = new FacilityOrder(FacilityDirective.Attack, CurrentOrder.Source, CurrentOrder.OrderID, unitAttackTgt as IElementNavigableDestination);
+        var elementAttackOrder = new FacilityOrder(FacilityDirective.Attack, CurrentOrder.Source, _executingOrderID, unitAttackTgt as IElementNavigableDestination);
 
         var elementsAvailableToAttack = GetElements(NewOrderAvailability.FairlyAvailable);
         elementsAvailableToAttack.ForAll(e => (e as FacilityItem).CurrentOrder = elementAttackOrder);
@@ -871,10 +878,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void ExecuteAttackOrder_UponUnitDamageIncurred() {
         LogEvent();
-        if (AssessNeedForRepair(HealthThreshold_BadlyDamaged)) {
+        if (AssessNeedForRepair(HealthThreshold_CriticallyDamaged)) {
             IssueCmdStaffsRepairOrder();
         }
         else if (!IsAttackCapable) {
+            // not critically damaged but weapons knocked out
             IssueCmdStaffsRepairOrder();
         }
     }
@@ -924,11 +932,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
         isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.OwnerAwareChg_Fleet);
         D.Assert(isUnsubscribed);
-
         ResetCommonNonCallableStateValues();
 
-        D.AssertNotDefault(_lastOrderID);
-        ClearElementsOrders(_lastOrderID);  // stop the attacks and callbacks of those elements attacking
+        ClearAnyRemainingElementOrdersIssuedBy(_executingOrderID);
     }
 
     #endregion
@@ -1036,6 +1042,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected void ExecuteRepairOrder_ExitState() {
         LogEvent();
         ResetCommonNonCallableStateValues();
+        // 1.11.18 No reason to clear Facility Repair Orders if exiting without completing
     }
 
     #endregion
@@ -1046,16 +1053,12 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     #region Repairing Support Members
 
-    private IList<FacilityItem> _fsmFacilityRepairList;
-
-    private void PopulateFsmFacilityRepairList() {
-        _fsmFacilityRepairList = _fsmFacilityRepairList ?? new List<FacilityItem>();
-        D.Assert(!_fsmFacilityRepairList.Any());
-
+    private void DetermineFacilitiesToReceiveRepairOrder() {
         foreach (var e in Elements) {
-            var f = e as FacilityItem;
-            if (f.IsAuthorizedForNewOrder(FacilityDirective.Repair)) {
-                _fsmFacilityRepairList.Add(f);
+            var facility = e as FacilityItem;
+            if (facility.IsAuthorizedForNewOrder(FacilityDirective.Repair) && !facility.IsRepairing) {
+                // 1.10.18 If facility already repairing, it can complete repairing before order is issued and become unauthorized
+                _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Add(facility);
             }
         }
     }
@@ -1066,23 +1069,22 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         LogEvent();
 
         ValidateCommonCallableStateValues(CurrentState.GetValueName());
-
         IRepairCapable thisRepairCapableBase = _fsmTgt as IRepairCapable;
         D.Assert(thisRepairCapableBase.IsRepairingAllowedBy(Owner));
 
-        PopulateFsmFacilityRepairList();
+        DetermineFacilitiesToReceiveRepairOrder();
     }
 
     protected IEnumerator Repairing_EnterState() {
         LogEvent();
 
-        FacilityOrder facilityRepairOrder = new FacilityOrder(FacilityDirective.Repair, CurrentOrder.Source, CurrentOrder.OrderID,
+        FacilityOrder facilityRepairOrder = new FacilityOrder(FacilityDirective.Repair, CurrentOrder.Source, _executingOrderID,
             _fsmTgt as IElementNavigableDestination);
-        _fsmFacilityRepairList.ForAll(f => f.CurrentOrder = facilityRepairOrder);
+        _fsmFacilitiesExpectedToCallbackWithOrderOutcome.ForAll(f => f.CurrentOrder = facilityRepairOrder);
 
         // 12.11.17 HQElement now handles CmdModule repair
 
-        while (_fsmFacilityRepairList.Any()) {
+        while (_fsmFacilitiesExpectedToCallbackWithOrderOutcome.Any()) {
             // Wait here until facilities are all repaired
             yield return null;
         }
@@ -1102,14 +1104,14 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
             DebugName, facility.DebugName, failCause.GetValueName(), Time.frameCount);
 
         if (isSuccess) {
-            bool isRemoved = _fsmFacilityRepairList.Remove(facility);
+            bool isRemoved = _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Remove(facility);
             D.Assert(isRemoved);
         }
         else {
             switch (failCause) {
                 case OrderFailureCause.Death:
                 case OrderFailureCause.NewOrderReceived:
-                    bool isRemoved = _fsmFacilityRepairList.Remove(facility);
+                    bool isRemoved = _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Remove(facility);
                     D.Assert(isRemoved);
                     break;
                 case OrderFailureCause.NeedsRepair:
@@ -1182,7 +1184,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void Repairing_ExitState() {
         LogEvent();
-        _fsmFacilityRepairList.Clear();
+        ResetCommonCallableStateValues();
     }
 
     #endregion
@@ -1191,25 +1193,14 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     #region ExecuteRefitOrder Support Members
 
-    private IDictionary<FacilityItem, FacilityDesign> _fsmFacilityRefitLookup;
-
-    private void PopulateFsmFacilityRefitLookup() {
-        _fsmFacilityRefitLookup = _fsmFacilityRefitLookup ?? new Dictionary<FacilityItem, FacilityDesign>();
-        D.Assert(!_fsmFacilityRefitLookup.Any());
-
+    private void DetermineFacilitiesToReceiveRefitOrder() {
         foreach (var e in Elements) {
             var f = e as FacilityItem;
             if (f.IsAuthorizedForNewOrder(FacilityDirective.Refit)) {
-
-                IList<FacilityDesign> refitDesigns;
-                bool isDesignAvailable = _gameMgr.PlayersDesigns.TryGetUpgradeDesigns(Owner, f.Data.Design, out refitDesigns);
-                D.Assert(isDesignAvailable);
-                FacilityDesign refitDesign = RandomExtended.Choice(refitDesigns);
-
-                _fsmFacilityRefitLookup.Add(f, refitDesign);
+                _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Add(f);
             }
         }
-        D.Assert(_fsmFacilityRefitLookup.Any());  // Should not have been called if no elements can be refit
+        D.Assert(_fsmFacilitiesExpectedToCallbackWithOrderOutcome.Any());  // Should not have been called if no elements can be refit
     }
 
     #endregion
@@ -1219,19 +1210,23 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
         ValidateCommonNonCallableStateValues();
         D.AssertEqual(this, CurrentOrder.Target);
+
         _fsmTgt = CurrentOrder.Target;
         // No FsmInfoAccessChgd, FsmTgtDeath or FsmTgtOwnerChg EventHandlers needed for our own base
-
-        PopulateFsmFacilityRefitLookup();
+        DetermineFacilitiesToReceiveRefitOrder();
         ChangeAvailabilityTo(NewOrderAvailability.Unavailable);
     }
 
     protected IEnumerator ExecuteRefitOrder_EnterState() {
         LogEvent();
 
-        foreach (var facility in _fsmFacilityRefitLookup.Keys) {
-            var refitOrder = new FacilityRefitOrder(CurrentOrder.Source, CurrentOrder.OrderID, _fsmFacilityRefitLookup[facility],
-                _fsmTgt as IElementNavigableDestination);
+        foreach (var facility in _fsmFacilitiesExpectedToCallbackWithOrderOutcome) {
+            IList<FacilityDesign> refitDesigns;
+            bool isDesignAvailable = _gameMgr.PlayersDesigns.TryGetUpgradeDesigns(Owner, facility.Data.Design, out refitDesigns);
+            D.Assert(isDesignAvailable);
+            FacilityDesign refitDesign = RandomExtended.Choice(refitDesigns);
+
+            var refitOrder = new FacilityRefitOrder(CurrentOrder.Source, _executingOrderID, refitDesign, _fsmTgt as IElementNavigableDestination);
             facility.CurrentOrder = refitOrder;
         }
 
@@ -1245,8 +1240,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         Data.RemoveDamageFromAllCmdModuleEquipment();
         StopEffectSequence(EffectSequenceID.Refitting);
 
-        while (_fsmFacilityRefitLookup.Count > Constants.Zero) {
-            // Wait here until facilities are all repaired
+        while (_fsmFacilitiesExpectedToCallbackWithOrderOutcome.Any()) {
+            // Wait here until facilities are all refitted
             yield return null;
         }
         D.LogBold(/*ShowDebugLog, */"{0}'s has completed refit of all Elements.", DebugName);
@@ -1259,19 +1254,15 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
             DebugName, facility.DebugName, failCause.GetValueName(), Time.frameCount);
 
         if (isSuccess) {
-            bool isRemoved = _fsmFacilityRefitLookup.Remove(facility);
+            bool isRemoved = _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Remove(facility);
             D.Assert(isRemoved);
         }
         else {
             switch (failCause) {
                 case OrderFailureCause.Death:
                 case OrderFailureCause.ConstructionCanceled:
-                    bool isRemoved = _fsmFacilityRefitLookup.Remove(facility);
+                    bool isRemoved = _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Remove(facility);
                     D.Assert(isRemoved);
-                    break;
-                case OrderFailureCause.TgtUnreachable:
-                    D.Error("{0}: {1}.{2} not currently handled.", DebugName, typeof(OrderFailureCause).Name,
-                        OrderFailureCause.TgtUnreachable.GetValueName());
                     break;
                 case OrderFailureCause.NewOrderReceived:
                 // Should not occur as facility cannot receive new orders (except Scuttle) while unavailable. 
@@ -1286,6 +1277,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
                 case OrderFailureCause.NeedsRepair:
                 // Should not occur as Facility knows finishing refit repairs all damage
                 case OrderFailureCause.TgtUnjoinable:
+                case OrderFailureCause.TgtUnreachable:
                 case OrderFailureCause.TgtUncatchable:
                 case OrderFailureCause.None:
                 default:
@@ -1296,7 +1288,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void ExecuteRefitOrder_UponNewOrderReceived() {
         LogEvent();
-        // do nothing as state change will follow
+        if (!IsCurrentOrderDirectiveAnyOf(BaseDirective.Scuttle)) {
+            D.Error("{0}: New order {1} received during {2}?", DebugName, CurrentOrder.DebugName, CurrentState.GetValueName());
+        }
     }
 
     protected void ExecuteRefitOrder_UponSubordinateConstructionCompleted(FacilityItem subordinateFacility) {
@@ -1309,23 +1303,26 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         LogEvent();
         if (subordinateElement.Availability == NewOrderAvailability.Available) {
             // newly available
-            // 12.11.17 confirms availability changed after reworking changed
+            // 12.11.17 OPTIMIZE confirms availability changed after reworking changed
             D.Assert(!subordinateElement.IsReworkUnderwayAnyOf(ReworkingMode.Constructing, ReworkingMode.Refitting, ReworkingMode.Disbanding));
 
             var facility = subordinateElement as FacilityItem;
             if (facility.IsAuthorizedForNewOrder(FacilityDirective.Refit)) {
                 // facility could use refit
-                if (_fsmFacilityRefitLookup.Any()) {
+                if (_fsmFacilitiesExpectedToCallbackWithOrderOutcome.Any()) {
                     // elements refit is still underway so issue order to refit
+                    bool isAdded = _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Add(facility);
+                    D.Assert(isAdded);
+
                     IList<FacilityDesign> refitDesigns;
                     bool isDesignAvailable = _gameMgr.PlayersDesigns.TryGetUpgradeDesigns(Owner, facility.Data.Design, out refitDesigns);
                     D.Assert(isDesignAvailable);
                     FacilityDesign refitDesign = RandomExtended.Choice(refitDesigns);
 
-                    _fsmFacilityRefitLookup.Add(facility, refitDesign);
-                    D.LogBold("{0} will {1} after becoming available to {2} during state {3}.", facility.DebugName, FacilityDirective.Refit.GetValueName(),
-                        DebugName, CurrentState.GetValueName());
-                    FacilityRefitOrder facilityRefitOrder = new FacilityRefitOrder(CurrentOrder.Source, CurrentOrder.OrderID, refitDesign, _fsmTgt as IElementNavigableDestination);
+                    D.LogBold("{0} will {1} after becoming available to {2} during state {3}.", facility.DebugName,
+                        FacilityDirective.Refit.GetValueName(), DebugName, CurrentState.GetValueName());
+                    FacilityRefitOrder facilityRefitOrder = new FacilityRefitOrder(CurrentOrder.Source, _executingOrderID, refitDesign,
+                        _fsmTgt as IElementNavigableDestination);
                     facility.CurrentOrder = facilityRefitOrder;
                 }
             }
@@ -1344,7 +1341,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void ExecuteRefitOrder_UponEnemyDetected() {
         LogEvent();
-        // TODO
+        // do nothing as we are refitting
     }
 
     protected void ExecuteRefitOrder_UponUnitDamageIncurred() {
@@ -1376,7 +1373,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected void ExecuteRefitOrder_ExitState() {
         LogEvent();
         ResetCommonNonCallableStateValues();
-        _fsmFacilityRefitLookup.Clear();
+        // 1.11.18 No need to cancel orders in case not completed as will always be completed unless taken over or dead
     }
 
     #endregion
@@ -1385,12 +1382,15 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     #region ExecuteDisbandOrder Support Members
 
-    /// <summary>
-    /// The current number of facilities the base is waiting on to complete disbanding.
-    /// <remarks>The base does not wait for facilities that can't be ordered to disband 
-    /// (already disbanding, refitting or constructing), it simply scuttles them.</remarks>
-    /// </summary>
-    private int _fsmFacilityWaitForDisbandedCount;
+    private void DetermineFacilitiesToReceiveDisbandOrder() {
+        foreach (var e in Elements) {
+            var facility = e as FacilityItem;
+            if (facility.IsAuthorizedForNewOrder(FacilityDirective.Disband)) {
+                _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Add(facility);
+            }
+        }
+        D.Assert(_fsmFacilitiesExpectedToCallbackWithOrderOutcome.Any());   // Should not have been called if no elements can be disbanded
+    }
 
     #endregion
 
@@ -1399,47 +1399,40 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
         ValidateCommonNonCallableStateValues();
         D.AssertEqual(this, CurrentOrder.Target);
-        D.AssertEqual(Constants.Zero, _fsmFacilityWaitForDisbandedCount);
 
         _fsmTgt = CurrentOrder.Target;
         // No FsmInfoAccessChgd, FsmTgtDeath or FsmTgtOwnerChg EventHandlers needed for our own base
+        DetermineFacilitiesToReceiveDisbandOrder();
         ChangeAvailabilityTo(NewOrderAvailability.Unavailable);
     }
 
     protected IEnumerator ExecuteDisbandOrder_EnterState() {
         LogEvent();
 
-        foreach (var e in Elements) {
-            var f = e as FacilityItem;
-            FacilityOrder order;
-            if (f.IsAuthorizedForNewOrder(FacilityDirective.Disband)) {
-                _fsmFacilityWaitForDisbandedCount++;
-                order = new FacilityOrder(FacilityDirective.Disband, CurrentOrder.Source, CurrentOrder.OrderID, _fsmTgt as IElementNavigableDestination);
-            }
-            else {
-                order = new FacilityOrder(FacilityDirective.Scuttle, CurrentOrder.Source);
-            }
-            f.CurrentOrder = order;
+        // Some facilities may already be Disbanding, Constructing or Refitting so will be unauthorized to Disband -> scuttle them
+        IEnumerable<FacilityItem> unavailableFacilitiesToScuttle = Elements.Cast<FacilityItem>().Except(_fsmFacilitiesExpectedToCallbackWithOrderOutcome);
+        if (unavailableFacilitiesToScuttle.Any()) {
+            FacilityOrder scuttleOrder = new FacilityOrder(FacilityDirective.Scuttle, CurrentOrder.Source); // no callback
+            unavailableFacilitiesToScuttle.ForAll(f => f.CurrentOrder = scuttleOrder);
         }
 
-        if (_fsmFacilityWaitForDisbandedCount == Constants.Zero) {
-            D.Warn("{0} found no facilities to disband. How did its disband order get issued?", DebugName);
+        FacilityOrder disbandOrder = new FacilityOrder(FacilityDirective.Disband, CurrentOrder.Source, _executingOrderID,
+            _fsmTgt as IElementNavigableDestination);
+        _fsmFacilitiesExpectedToCallbackWithOrderOutcome.ForAll(f => f.CurrentOrder = disbandOrder);
+
+        // 11.26.17 Placeholder for disbanding the CmdModule which is not currently supported
+        StartEffectSequence(EffectSequenceID.Disbanding);
+        StopEffectSequence(EffectSequenceID.Disbanding);
+
+        while (_fsmFacilitiesExpectedToCallbackWithOrderOutcome.Any()) {
+            // Wait here until facilities are all disbanded
+            yield return null;
         }
 
         // 3.19.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
         // I think it is because there is a rare scenario where no yield return is encountered below this. 
         // See http://answers.unity3d.com/questions/158917/error-quotmcoroutineenumeratorgchandle-0quot.html
         yield return null;
-
-        // 11.26.17 Placeholder for disbanding the CmdModule which is not currently supported
-        StartEffectSequence(EffectSequenceID.Disbanding);
-        StopEffectSequence(EffectSequenceID.Disbanding);
-
-        while (_fsmFacilityWaitForDisbandedCount > Constants.Zero) {
-            // Wait here until facilities are all disbanded
-            yield return null;
-        }
-
         D.Error("{0} should be dead and never get here?", DebugName);
     }
 
@@ -1449,16 +1442,14 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
             DebugName, facility.DebugName, failCause.GetValueName(), Time.frameCount);
 
         if (isSuccess) {
-            _fsmFacilityWaitForDisbandedCount--;
+            bool isRemoved = _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Remove(facility);
+            D.Assert(isRemoved);
         }
         else {
             switch (failCause) {
                 case OrderFailureCause.Death:
-                    _fsmFacilityWaitForDisbandedCount--;
-                    break;
-                case OrderFailureCause.TgtUnreachable:
-                    D.Error("{0}: {1}.{2} not currently handled.", DebugName, typeof(OrderFailureCause).Name,
-                        OrderFailureCause.TgtUnreachable.GetValueName());
+                    bool isRemoved = _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Remove(facility);
+                    D.Assert(isRemoved);
                     break;
                 case OrderFailureCause.Ownership:
                 // Should not occur as facility can only change owner if last element. 
@@ -1475,6 +1466,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
                 case OrderFailureCause.NeedsRepair:
                 // Should not occur as Facility knows finishing disband negates need for repairs
                 case OrderFailureCause.TgtUnjoinable:
+                case OrderFailureCause.TgtUnreachable:
                 case OrderFailureCause.TgtUncatchable:
                 case OrderFailureCause.None:
                 default:
@@ -1485,7 +1477,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void ExecuteDisbandOrder_UponNewOrderReceived() {
         LogEvent();
-        // do nothing as state change will follow
+        if (!IsCurrentOrderDirectiveAnyOf(BaseDirective.Scuttle)) {
+            D.Error("{0}: New order {1} received during {2}?", DebugName, CurrentOrder.DebugName, CurrentState.GetValueName());
+        }
     }
 
     protected void ExecuteDisbandOrder_UponSubordinateConstructionCompleted(FacilityItem subordinateFacility) {
@@ -1514,7 +1508,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void ExecuteDisbandOrder_UponEnemyDetected() {
         LogEvent();
-        // TODO
+        // do nothing as we are disbanding
     }
 
     protected void ExecuteDisbandOrder_UponUnitDamageIncurred() {
@@ -1546,7 +1540,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected void ExecuteDisbandOrder_ExitState() {
         LogEvent();
         ResetCommonNonCallableStateValues();
-        _fsmFacilityWaitForDisbandedCount = Constants.Zero;
+        // 1.11.18 No need to cancel orders in case not completed as will always be completed unless taken over or dead
     }
 
     #endregion
@@ -1654,7 +1648,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     private void HandleSubordinateOrderOutcome(FacilityItem facility, bool isOrderSuccessfullyCompleted, IElementNavigableDestination target,
         OrderFailureCause failureCause, Guid cmdOrderID) {
-        if (CurrentOrder != null && CurrentOrder.OrderID == cmdOrderID) {
+        if (_executingOrderID == cmdOrderID) {
             // callback is intended for current state(s) executing the current order
             UponOrderOutcomeCallback(facility, isOrderSuccessfullyCompleted, target, failureCause);
         }
@@ -1665,6 +1659,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected override void ValidateCommonCallableStateValues(string calledStateName) {
         base.ValidateCommonCallableStateValues(calledStateName);
         D.AssertNotNull(_fsmTgt);
+        D.Assert(!_fsmFacilitiesExpectedToCallbackWithOrderOutcome.Any());
     }
 
     protected override void ValidateCommonNonCallableStateValues() {
@@ -1672,11 +1667,18 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         if (_fsmTgt != null) {
             D.Error("{0} _fsmMoveTgt {1} should not already be assigned.", DebugName, _fsmTgt.DebugName);
         }
+        D.Assert(!_fsmFacilitiesExpectedToCallbackWithOrderOutcome.Any());
+    }
+
+    protected override void ResetCommonCallableStateValues() {
+        base.ResetCommonCallableStateValues();
+        _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Clear();
     }
 
     protected override void ResetCommonNonCallableStateValues() {
         base.ResetCommonNonCallableStateValues();
         _fsmTgt = null;
+        _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Clear();
     }
 
     public override void HandleEffectSequenceFinished(EffectSequenceID effectID) {
@@ -1705,8 +1707,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     #region Repair Support
 
-    protected sealed override bool AssessNeedForRepair(float healthThreshold) {
-        bool isNeedForRepair = base.AssessNeedForRepair(healthThreshold);
+    protected sealed override bool AssessNeedForRepair(float unitHealthThreshold = Constants.OneHundredPercent) {
+        bool isNeedForRepair = base.AssessNeedForRepair(unitHealthThreshold);
         if (isNeedForRepair) {
             // We don't want to reassess if there is a follow-on order to repair
             if (CurrentOrder != null) {
@@ -1718,6 +1720,26 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
             }
         }
         return isNeedForRepair;
+    }
+
+    /// <summary>
+    /// Attempts to issue a repair order from the CmdStaff, returning <c>true</c> if successful, <c>false</c> otherwise.
+    /// If successful, repair target will be either
+    /// 1) IRepairCabable planet, 2) IRepairCapable base or 3) this Command indicating repair in place.
+    /// <remarks>The only reason it can't issue a repair order is if the order is not authorized.</remarks>
+    /// </summary>
+    /// <returns></returns>
+    [Obsolete("Use AssessNeedForRepair and IssueCmdStaffsRepairOrder instead")]
+    private bool AttemptToIssueCmdStaffsRepairOrder() {
+        D.Assert(!IsCurrentStateAnyOf(BaseState.ExecuteRepairOrder, BaseState.Repairing));
+
+        string failCause;
+        if (__TryAuthorizeNewOrder(BaseDirective.Repair, out failCause)) {
+            IssueCmdStaffsRepairOrder();
+            return true;
+        }
+        D.Warn("FYI. {0} could not issue a RepairOrder. FailCause: {1}.", DebugName, failCause);
+        return false;
     }
 
     /// <summary>

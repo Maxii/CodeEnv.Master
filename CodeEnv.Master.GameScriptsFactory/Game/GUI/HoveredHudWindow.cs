@@ -24,14 +24,14 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// HudWindow displaying non-interactable info about the object the mouse is hovering over.
+/// HudWindow displaying non-interactible info about the object the mouse is hovering over.
 /// <remarks>The current version is located on the left side of the screen and moves itself to avoid interference 
 /// with the fixed InteractibleHudWindow.</remarks>
 /// </summary>
 public class HoveredHudWindow : AHudWindow<HoveredHudWindow>, IHoveredHudWindow {
 
     [SerializeField]
-    private bool _showAboveInteractableHud = false;
+    private bool _showAboveInteractibleHud = false;
 
     private Vector3 _startingLocalPosition;
     private IList<IDisposable> _subscriptions;
@@ -53,7 +53,7 @@ public class HoveredHudWindow : AHudWindow<HoveredHudWindow>, IHoveredHudWindow 
     protected override void Subscribe() {
         base.Subscribe();
         _subscriptions = new List<IDisposable>();
-        _subscriptions.Add(InteractibleHudWindow.Instance.SubscribeToPropertyChanged<InteractibleHudWindow, bool>(iHud => iHud.IsShowing, InteractableHudIsShowingPropChangedHandler));
+        _subscriptions.Add(InteractibleHudWindow.Instance.SubscribeToPropertyChanged<InteractibleHudWindow, bool>(iHud => iHud.IsShowing, InteractibleHudIsShowingPropChangedHandler));
     }
 
     public void Show(StringBuilder sb) {
@@ -93,12 +93,12 @@ public class HoveredHudWindow : AHudWindow<HoveredHudWindow>, IHoveredHudWindow 
     protected override void PositionWindow() {
         //D.Log("{0}.PositionWindow() called.", DebugName);
         Vector3 intendedLocalPosition = _startingLocalPosition;
-        if (_showAboveInteractableHud) {
+        if (_showAboveInteractibleHud) {
             if (InteractibleHudWindow.Instance.IsShowing) {
-                var visibleInteractableHudLocalCorners = InteractibleHudWindow.Instance.LocalCorners;
-                //D.Log("{0} local corners: {1}.", typeof(InteractibleHudWindow).Name, visibleInteractableHudLocalCorners.Concatenate());
-                Vector3 visibleInteractableHudTopLeftCornerLocalPosition = visibleInteractableHudLocalCorners[1];
-                intendedLocalPosition = _startingLocalPosition + visibleInteractableHudTopLeftCornerLocalPosition;
+                var visibleInteractibleHudLocalCorners = InteractibleHudWindow.Instance.LocalCorners;
+                //D.Log("{0} local corners: {1}.", typeof(InteractibleHudWindow).Name, visibleInteractibleHudLocalCorners.Concatenate());
+                Vector3 visibleInteractibleHudTopLeftCornerLocalPosition = visibleInteractibleHudLocalCorners[1];
+                intendedLocalPosition = _startingLocalPosition + visibleInteractibleHudTopLeftCornerLocalPosition;
             }
         }
         transform.localPosition = intendedLocalPosition;
@@ -106,8 +106,8 @@ public class HoveredHudWindow : AHudWindow<HoveredHudWindow>, IHoveredHudWindow 
 
     #region Event and Property Change Handlers
 
-    private void InteractableHudIsShowingPropChangedHandler() {
-        //D.Log("{0}.InteractableHudIsShowingPropChangedHandler() called.", DebugName);
+    private void InteractibleHudIsShowingPropChangedHandler() {
+        //D.Log("{0}.InteractibleHudIsShowingPropChangedHandler() called.", DebugName);
         if (IsShowing) {
             PositionWindow();
         }

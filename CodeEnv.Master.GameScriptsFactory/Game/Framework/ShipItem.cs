@@ -70,12 +70,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         }
     }
 
-    public bool IsLocatedInHanger {
-        get {
-            bool isInHanger = GetComponentInParent<Hanger>() != null;
-            return isInHanger;
-        }
-    }
+    public bool IsLocatedInHanger { get { return GetComponentInParent<Hanger>() != null; } }
 
     public ShipHullCategory HullCategory { get { return Data.HullCategory; } }
 
@@ -144,6 +139,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     public ShipReport UserReport { get { return Data.Publisher.GetUserReport(); } }
 
+    internal override bool IsRepairing { get { return IsCurrentStateAnyOf(ShipState.Repairing); } }
+
     internal bool IsInOrbit { get { return ItemBeingOrbited != null; } }
 
     internal bool IsInHighOrbit { get { return IsInOrbit && ItemBeingOrbited.IsInHighOrbit(this); } }
@@ -162,7 +159,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     internal IShipOrbitable ItemBeingOrbited { get; private set; }
 
-    private bool IsAttacking { get { return CurrentState == ShipState.Attacking; } }
+    ////private bool IsAttacking { get { return CurrentState == ShipState.Attacking; } }
 
     private bool _isCollisionAvoidanceOperational;
     public bool IsCollisionAvoidanceOperational {
@@ -1061,7 +1058,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             CurrentOrder = null;
         }
 
-        if (AssessNeedForRepair(Constants.OneHundredPercent)) {
+        if (AssessNeedForRepair()) {
             if (IsLocatedInHanger) {
                 IssueCaptainsInHangerRepairOrder();
             }
@@ -2032,13 +2029,11 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         D.Assert(!IsInOrbit);
         IShipOrbitable highOrbitTgt = _fsmTgt as IShipOrbitable;
         D.AssertNotNull(highOrbitTgt);
-        // 12.4.17 Can't set availability here as can violate FSM rule: no state change in void EnterStates
+        // 12.7.17 Don't set Availability in states that can be Call()ed by more than one ExecuteOrder state
     }
 
     IEnumerator AssumingHighOrbit_EnterState() {
         LogEvent();
-
-        // 12.7.17 Don't set Availability in states that can be Call()ed by more than one ExecuteOrder state
 
         IShipOrbitable highOrbitTgt = _fsmTgt as IShipOrbitable;
         // 2.8.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
@@ -3420,8 +3415,10 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         IShipRepairCapable repairDest = _fsmTgt as IShipRepairCapable;
         D.AssertNotNull(repairDest);
         D.Assert(repairDest.IsRepairingAllowedBy(Owner));
+        D.AssertNull(_repairWaitYI);
         ReworkUnderway = ReworkingMode.Repairing;
         StartEffectSequence(EffectSequenceID.Repairing);
+        _repairWaitYI = new RecurringWaitForHours(GameTime.HoursPerDay);
     }
 
     IEnumerator Repairing_EnterState() {
@@ -3431,7 +3428,6 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
         D.Log(ShowDebugLog, "{0} has begun repairs using {1}.", DebugName, shipRepairDest.DebugName);
 
         float shipRepairCapacityPerDay = shipRepairDest.GetAvailableRepairCapacityFor(this, Owner);
-        WaitForHours waitYieldInstruction = new WaitForHours(GameTime.HoursPerDay);
 
         if (IsHQ && Command.CmdModuleHealth < Constants.OneHundredPercent) {
             IRepairCapable cmdModuleRepairDest = _fsmTgt as IRepairCapable;
@@ -3457,7 +3453,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                         isShipRepairComplete = true;
                     }
                 }
-                yield return waitYieldInstruction;
+                yield return _repairWaitYI;
             }
             D.Log(ShowDebugLog, "{0}'s repair of itself and Unit's CmdModule is complete. Health = {1:P01}.", DebugName, Data.Health);
         }
@@ -3466,12 +3462,14 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
                 Data.CurrentHitPoints += shipRepairCapacityPerDay;
                 RefreshReworkingVisuals(Data.Health);
                 //D.Log(ShowDebugLog, "{0} repaired {1:0.#} hit points.", DebugName, shipRepairCapacityPerDay);
-                yield return waitYieldInstruction;
+                yield return _repairWaitYI;
             }
 
             Data.RemoveDamageFromAllEquipment();
             D.Log(ShowDebugLog, "{0}'s repair is complete. Health = {1:P01}.", DebugName, Data.Health);
         }
+
+        KillRepairWait();
 
         // 3.19.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
         // I think it is because there is a rare scenario where no yield return is encountered below this. 
@@ -3551,6 +3549,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     void Repairing_ExitState() {
         LogEvent();
+        KillRepairWait();
         ReworkUnderway = ReworkingMode.None;
         StopEffectSequence(EffectSequenceID.Repairing);
     }
@@ -4922,8 +4921,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     #region Repair Support
 
-    protected override bool AssessNeedForRepair(float healthThreshold) {
-        bool isNeedForRepair = base.AssessNeedForRepair(healthThreshold);
+    protected override bool AssessNeedForRepair(float elementHealthThreshold = Constants.OneHundredPercent) {
+        bool isNeedForRepair = base.AssessNeedForRepair(elementHealthThreshold);
         if (isNeedForRepair) {
             // We don't want to reassess if there is a follow-on order to repair
             if (CurrentOrder != null) {

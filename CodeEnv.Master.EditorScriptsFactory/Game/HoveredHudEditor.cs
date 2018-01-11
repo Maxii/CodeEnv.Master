@@ -31,7 +31,7 @@ public class HoveredHudEditor : AGuiWindowEditor<HoveredHudWindow> {
         EditorGUI.BeginDisabledGroup(EditorApplication.isPlaying);
         {
             NGUIEditorTools.SetLabelWidth(140F);
-            NGUIEditorTools.DrawProperty("Avoid HUD interference", serializedObject, "_showAboveInteractableHud");
+            NGUIEditorTools.DrawProperty("Avoid HUD interference", serializedObject, "_showAboveInteractibleHud");
         }
         EditorGUI.EndDisabledGroup();
 

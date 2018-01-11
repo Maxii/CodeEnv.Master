@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: WaitForHours.cs
-// YieldInstruction that waits a specific number of hours.
+// CustomYieldInstruction that waits one time for a specific number of hours. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,7 +20,7 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// CustomYieldInstruction that waits a specific number of hours. 
+    /// CustomYieldInstruction that waits one time for a specific number of hours. 
     /// Accommodates changes in GameSpeed during use.
     /// <remarks>Use JobManager.WaitForHours() instead of making a new instance
     /// as JobManager handles IsRunning and IsPaused changes.</remarks>

@@ -840,15 +840,30 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     #region Orders Support Members
 
     /// <summary>
-    /// The last OrderID to be received. 
-    /// <remarks>Used when this Cmd wishes to selectively clear the orders of its subordinate elements.</remarks>
-    /// <remarks>This value represents the OrderID of the previous order when the CurrentOrder has just changed until 
-    /// HandleNewOrder has completed processing the change to the FSM's state. Accordingly, the previous state's
-    /// UponNewOrderReceived() and ExitState() methods, as well as the new state's UponPreconfigureState()
-    /// methods can all rely on this value representing the OrderID of the previous order. Once HandleNewOrder has
-    /// completed its processing, this value will be updated to become the ID of the CurrentOrder. </remarks>
+    /// Clears any element orders issued by the state(s) executing the order with the ID executingOrderID.
     /// </summary>
-    protected Guid _lastOrderID;
+    protected void ClearAnyRemainingElementOrdersIssuedBy(Guid executingOrderID) {
+        if (!IsDead) {  // if dead, _executingOrderID already set to default by 
+            D.AssertNotDefault(executingOrderID);
+            ClearElementsOrders(executingOrderID);
+        }
+    }
+
+    /// <summary>
+    /// The ID of the order currently being executed. Will be default(Guid) if no order is being executed.
+    /// <remarks>This value represents the ID of the order currently being executed in the FSM. It is valid for that
+    /// purpose until HandleNewOrder() has completed processing the change to the FSM's state. Accordingly, the current 
+    /// state's _UponNewOrderReceived() and _ExitState() methods can all rely on it representing the order they have been 
+    /// executing. It is not valid in the new state's _UponPreconfigureState() method as it is not updated until after 
+    /// this method completes. Accordingly, it should not be used in any _UponPreconfigureState() methods. 
+    /// After this, the value will be changed to represent either the order that has just arrived or default(Guid) 
+    /// if CurrentOrder is null.</remarks>
+    /// <remarks>The value is needed as CurrentOrder (with a different CmdOrderID) can change before the previous order
+    /// finishes executing. It is used to support communication with this Cmd's elements, both incoming 
+    /// cmd_UponOrderOutcomeCallbacks and outgoing element.CancelOrders() instructions.</remarks>
+    /// <remarks>IMPROVE Update this value at the beginning of each _UponPreconfigureState() method to make it valid?</remarks>
+    /// </summary>
+    protected Guid _executingOrderID;
 
     protected void RegisterForOrders() {
         OwnerAIMgr.RegisterForOrders(this);
@@ -872,9 +887,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         }
         D.Log("{0}.ClearElementsOrders() cleared {1} element's orders. Elements: {1}.",
             DebugName, clearedOrderElementNames.Count, clearedOrderElementNames.Concatenate());
-        if (!clearedOrderElementNames.Any()) {
-            D.Warn("{0} was unable to clear any element orders.", DebugName);
-        }
     }
 
     protected virtual void ResetOrderAndState() {
@@ -968,6 +980,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         D.AssertEqual(Constants.Zero, _activeFsmReturnHandlers.Count);
         D.Assert(!IsDead);
     }
+
+    protected virtual void ResetCommonCallableStateValues() { }
 
     protected virtual void ResetCommonNonCallableStateValues() {
         _activeFsmReturnHandlers.Clear();
@@ -1079,14 +1093,14 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     protected void UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) { RelayToCurrentState(subordinateElement); }
 
+    [Obsolete("Not currently used")]
     private void UponEnemyDetected() { RelayToCurrentState(); }
 
     /// <summary>
-    /// Called from the StateMachine just after a state
-    /// change and just before state_EnterState() is called. When EnterState
-    /// is a coroutine method (returns IEnumerator), the relayed version
-    /// of this method provides an opportunity to configure the state
-    /// before any other event relay methods can be called during the state.
+    /// Called from the FSM just after a state change and just before state_EnterState() is called. 
+    /// It atomically follows previousState.ExitState(). When EnterState is a coroutine method (returns IEnumerator), 
+    /// the relayed version of this method provides an opportunity to configure the state before any other event relay 
+    /// methods can be called during the state.
     /// </summary>
     private void UponPreconfigureState() { RelayToCurrentState(); }
 
@@ -1117,11 +1131,12 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     #region Repair Support
 
     /// <summary>
-    /// Assesses this Cmd's need for repair, returning <c>true</c> if immediate repairs are needed, <c>false</c> otherwise.
+    /// Assesses this Cmd's need for repair, returning <c>true</c> if repairs are needed, <c>false</c> otherwise.
+    /// Default unitHealthThreshold is 100%.
     /// </summary>
     /// <param name="unitHealthThreshold">The health threshold.</param>
     /// <returns></returns>
-    protected virtual bool AssessNeedForRepair(float unitHealthThreshold) {
+    protected virtual bool AssessNeedForRepair(float unitHealthThreshold = Constants.OneHundredPercent) {
         __ValidateCurrentStateWhenAssessingNeedForRepair();
         if (__debugSettings.DisableRepair) {
             return false;

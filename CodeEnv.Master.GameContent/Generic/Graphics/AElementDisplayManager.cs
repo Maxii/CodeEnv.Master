@@ -196,7 +196,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="completionPercentage">The completion percentage used when toShow is true.</param>
         public void RefreshReworkingVisuals(float completionPercentage) {
-            D.AssertNotNull(_reworkIcon);
+            D.AssertNotNull(_reworkIcon, DebugName);
             // TODO
         }
 

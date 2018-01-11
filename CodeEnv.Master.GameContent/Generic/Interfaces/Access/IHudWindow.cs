@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IHudWindow.cs
-// Interface for easy access to HudWindows - Tooltips, HoveredHud and InteractableHud Windows.
+// Interface for easy access to HudWindows - Tooltips, HoveredHud and InteractibleHud Windows.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,7 +19,7 @@ namespace CodeEnv.Master.GameContent {
     using System.Text;
 
     /// <summary>
-    /// Interface for easy access to HudWindows - Tooltips, HoveredHud and InteractableHud Windows.
+    /// Interface for easy access to HudWindows - Tooltips, HoveredHud and InteractibleHud Windows.
     /// </summary>
     public interface IHudWindow {
 

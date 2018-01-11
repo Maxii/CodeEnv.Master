@@ -159,7 +159,7 @@ public abstract class ACtxMenuItemInspector : Editor {
         item.isSelected = EditorGUILayout.Toggle(item.isSelected, GUILayout.Width(12f));
 
         EditorGUIUtility.labelWidth = 64f;
-        CtxMenu.ItemStyle itemStyle = (CtxMenu.ItemStyle)EditorGUILayout.EnumMaskField("Style", item.style,
+        CtxMenu.ItemStyle itemStyle = (CtxMenu.ItemStyle)EditorGUILayout.EnumFlagsField("Style", item.style,
             GUILayout.Width(188f));
 
         if (item.style != itemStyle) {

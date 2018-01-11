@@ -148,6 +148,13 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     public new bool IsOwnerChangeUnderway { get { return base.IsOwnerChangeUnderway; } }
 
+    /// <summary>
+    /// Indicates whether this element is actively repairing. An element that
+    /// is on its way to initiate repairs is not yet actively repairing.
+    /// <remarks>1.10.18 Important distinction as Cmd uses it to assess the possibility that repair completion might be imminent.</remarks>
+    /// </summary>
+    internal abstract bool IsRepairing { get; }
+
     protected new AElementDisplayManager DisplayMgr { get { return base.DisplayMgr as AElementDisplayManager; } }
     protected IList<IWeaponRangeMonitor> WeaponRangeMonitors { get; private set; }
     protected IList<IActiveCountermeasureRangeMonitor> CountermeasureRangeMonitors { get; private set; }
@@ -1054,11 +1061,10 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     protected void UponNewOrderReceived() { RelayToCurrentState(); }
 
     /// <summary>
-    /// Called from the StateMachine just after a state
-    /// change and just before state_EnterState() is called. When EnterState
-    /// is a coroutine method (returns IEnumerator), the relayed version
-    /// of this method provides an opportunity to configure the state
-    /// before any other event relay methods can be called during the state.
+    /// Called from the FSM just after a state change and just before state_EnterState() is called. 
+    /// It atomically follows previousState.ExitState(). When EnterState is a coroutine method (returns IEnumerator), 
+    /// the relayed version of this method provides an opportunity to configure the state before any other event relay 
+    /// methods can be called during the state.
     /// </summary>
     private void UponPreconfigureState() { RelayToCurrentState(); }
 
@@ -1092,12 +1098,22 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #region Repair Support
 
+    protected RecurringWaitForHours _repairWaitYI;
+
+    protected void KillRepairWait() {
+        if (_repairWaitYI != null) {
+            _repairWaitYI.Kill();
+            _repairWaitYI = null;
+        }
+    }
+
     /// <summary>
     /// Assesses this element's need for repair, returning <c>true</c> if immediate repairs are needed, <c>false</c> otherwise.
+    /// Default elementHealthThreshold is 100%.
     /// </summary>
     /// <param name="elementHealthThreshold">The health threshold.</param>
     /// <returns></returns>
-    protected virtual bool AssessNeedForRepair(float elementHealthThreshold) {
+    protected virtual bool AssessNeedForRepair(float elementHealthThreshold = Constants.OneHundredPercent) {
         __ValidateCurrentStateWhenAssessingNeedForRepair();
         if (__debugSettings.DisableRepair) { // 12.9.17 _debugSettings.AllPlayersInvulnerable keeps damage from being taken
             return false;

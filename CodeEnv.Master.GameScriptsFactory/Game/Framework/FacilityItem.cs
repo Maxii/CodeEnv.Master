@@ -70,6 +70,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     public FacilityReport UserReport { get { return Data.Publisher.GetUserReport(); } }
 
+    internal override bool IsRepairing { get { return IsCurrentStateAnyOf(FacilityState.Repairing); } }
+
     private FacilityDetourGenerator _obstacleDetourGenerator;
     private FacilityDetourGenerator ObstacleDetourGenerator {
         get {
@@ -713,7 +715,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             CurrentOrder = null;
         }
 
-        if (AssessNeedForRepair(healthThreshold: Constants.OneHundredPercent)) {
+        if (AssessNeedForRepair()) {
             IssueCaptainsRepairOrder();
             yield return null;
             D.Error("{0} should never get here as CurrentOrder was changed to {1}.", DebugName, CurrentOrder);
@@ -743,7 +745,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void Idling_UponDamageIncurred() {
         LogEvent();
-        if (AssessNeedForRepair(Constants.OneHundredPercent)) {
+        if (AssessNeedForRepair()) {
             IssueCaptainsRepairOrder();
         }
     }
@@ -1042,8 +1044,10 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         LogEvent();
 
         ValidateCommonCallableStateValues(CurrentState.GetValueName());
+        D.AssertNull(_repairWaitYI);
         ReworkUnderway = ReworkingMode.Repairing;
         StartEffectSequence(EffectSequenceID.Repairing);
+        _repairWaitYI = new RecurringWaitForHours(GameTime.HoursPerDay);
     }
 
     IEnumerator Repairing_EnterState() {
@@ -1053,7 +1057,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         D.Log(ShowDebugLog, "{0} has begun repairs using {1}.", DebugName, facilityRepairDest.DebugName);
 
         float facilityRepairCapacityPerDay = facilityRepairDest.GetAvailableRepairCapacityFor(this, Owner);
-        WaitForHours waitYieldInstruction = new WaitForHours(GameTime.HoursPerDay);
 
         if (IsHQ && Command.CmdModuleHealth < Constants.OneHundredPercent) {
             IRepairCapable cmdModuleRepairDest = _fsmTgt as IRepairCapable;
@@ -1079,7 +1082,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
                         isFacilityRepairComplete = true;
                     }
                 }
-                yield return waitYieldInstruction;
+                yield return _repairWaitYI;
             }
             D.Log(ShowDebugLog, "{0}'s repair of itself and Unit's CmdModule is complete. Health = {1:P01}.", DebugName, Data.Health);
         }
@@ -1088,12 +1091,14 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
                 Data.CurrentHitPoints += facilityRepairCapacityPerDay;
                 RefreshReworkingVisuals(Data.Health);
                 //D.Log(ShowDebugLog, "{0} repaired {1:0.#} hit points.", DebugName, facilityRepairCapacityPerDay);
-                yield return waitYieldInstruction;
+                yield return _repairWaitYI;
             }
 
             Data.RemoveDamageFromAllEquipment();
             D.Log(ShowDebugLog, "{0}'s repair is complete. Health = {1:P01}.", DebugName, Data.Health);
         }
+
+        KillRepairWait();
 
         // 3.19.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
         // I think it is because there is a rare scenario where no yield return is encountered below this. 
@@ -1134,6 +1139,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void Repairing_ExitState() {
         LogEvent();
+        KillRepairWait();
         StopEffectSequence(EffectSequenceID.Repairing);
         ReworkUnderway = ReworkingMode.None;
     }
@@ -1545,13 +1551,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #region Repair Support
 
-    /// <summary>
-    /// Assesses this element's need for repair, returning <c>true</c> if immediate repairs are needed, <c>false</c> otherwise.
-    /// </summary>
-    /// <param name="healthThreshold">The health threshold.</param>
-    /// <returns></returns>
-    protected override bool AssessNeedForRepair(float healthThreshold) {
-        bool isNeedForRepair = base.AssessNeedForRepair(healthThreshold);
+    protected override bool AssessNeedForRepair(float elementHealthThreshold = Constants.OneHundredPercent) {
+        bool isNeedForRepair = base.AssessNeedForRepair(elementHealthThreshold);
         if (isNeedForRepair) {
             // We don't want to reassess if there is a follow-on order to repair
             if (CurrentOrder != null) {
