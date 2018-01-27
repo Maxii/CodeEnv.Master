@@ -305,7 +305,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #region Orders Received While Paused System
 
-
     /// <summary>
     /// The sequence of orders received while paused. If any are present, the bottom of the stack will
     /// contain the order that was current (including null) when the first order was received while paused.
@@ -329,7 +328,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             if (CurrentOrder != null) {
                 if (CurrentOrder.Directive == FacilityDirective.Scuttle) {
                     // allow a Scuttle order to proceed while paused
-                    _ordersReceivedWhilePaused.Clear(); // for completeness. Doesn't really matter since about to be dead
+                    ResetOrdersReceivedWhilePausedSystem();
                     HandleNewOrder();
                     return;
                 }
@@ -487,9 +486,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
                 case FacilityDirective.Repair:
                     CurrentState = FacilityState.ExecuteRepairOrder;
                     break;
-                case FacilityDirective.Scuttle:
-                    IsDead = true;
-                    return; // CurrentOrder will be set to null as a result of death
                 case FacilityDirective.Refit:
                     CurrentState = FacilityState.ExecuteRefitOrder;
                     break;
@@ -499,6 +495,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
                 case FacilityDirective.__ChgOwner:
                     __ChangeOwner(_gameMgr.UserPlayer);
                     break;
+                case FacilityDirective.Scuttle:
+                    IsDead = true;
+                    return; // CurrentOrder will be set to null as a result of death
                 case FacilityDirective.Cancel:
                 // 9.13.17 Cancel should never be processed here as it is only issued by User while paused and is 
                 // handled by HandleCurrentOrderChangedWhilePausedUponResume(). 
@@ -506,18 +505,16 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
             }
-            _lastCmdOrderID = CurrentOrder.CmdOrderID;
-        }
-        else {
-            _lastCmdOrderID = default(Guid);
         }
     }
 
     protected override void ResetOrderAndState() {
         base.ResetOrderAndState();
         _currentOrder = null;   // avoid order changed while paused system
-        _lastCmdOrderID = default(Guid);    // reqd as HandleNewOrder not called when using _currentOrder
-        CurrentState = FacilityState.Idling;    // 4.20.17 Will unsubscribe from any FsmEvents when exiting the Current non-Call()ed state
+        if (!IsDead) {
+            CurrentState = FacilityState.Idling;    // 4.20.17 Will unsubscribe from any FsmEvents when exiting the Current non-Call()ed state
+        }
+        D.AssertDefault(_lastCmdOrderID);   // 1.22.18 ExitState methods set this to default
     }
 
     #endregion
@@ -582,16 +579,17 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void FinalInitialize_UponPreconfigureState() {
         LogEvent();
+        ValidateCommonNonCallableStateValues();
     }
 
     void FinalInitialize_EnterState() {
         LogEvent();
     }
 
-    void FinalInitialize_UponRelationsChangedWith(Player player) {
-        LogEvent();
-        // can be received when activation of sensors immediately finds another player
-    }
+    ////void FinalInitialize_UponRelationsChangedWith(Player player) {
+    ////    LogEvent();
+    ////    // can be received when activation of sensors immediately finds another player
+    ////}
 
     protected void FinalInitialize_UponDamageIncurred() {
         LogEvent();
@@ -600,6 +598,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void FinalInitialize_ExitState() {
         LogEvent();
+        ResetCommonNonCallableStateValues();
     }
 
     #endregion
@@ -610,6 +609,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         LogEvent();
         ValidateCommonNonCallableStateValues();
 
+        _lastCmdOrderID = CurrentOrder.CmdOrderID;
         ReworkUnderway = ReworkingMode.Constructing;
         StartEffectSequence(EffectSequenceID.Constructing);
 
@@ -643,10 +643,10 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         // UNCLEAR nothing to do?
     }
 
-    void ExecuteConstructOrder_UponRelationsChangedWith(Player player) {
-        LogEvent();
-        // UNCLEAR nothing to do?
-    }
+    ////void ExecuteConstructOrder_UponRelationsChangedWith(Player player) {
+    ////    LogEvent();
+    ////    // UNCLEAR nothing to do?
+    ////}
 
     void ExecuteConstructOrder_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         LogEvent();
@@ -669,8 +669,16 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         // UNCLEAR allow to/from HQ change during initial construction?
     }
 
-    void ExecuteConstructOrder_UponUncompletedRemovalFromConstructionQueue() {
+    void ExecuteConstructOrder_UponUncompletedRemovalFromConstructionQueue(float completionPercentage) {
+        LogEvent();
         IsDead = true;
+    }
+
+    void ExecuteConstructOrder_UponResetOrderAndState() {
+        LogEvent();
+        var construction = Command.ConstructionMgr.GetConstructionFor(this);
+        Command.ConstructionMgr.RemoveFromQueue(construction);
+        // 1.13.18 Results in ExecuteConstructOrder_UponUncompletedRemovalFromConstructionQueue() call
     }
 
     void ExecuteConstructOrder_UponDeath() {
@@ -689,12 +697,14 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #region Idling
 
-    // Idling is entered upon completion of an order or when the item initially commences operations
-
     void Idling_UponPreconfigureState() {
         LogEvent();
         ValidateCommonNonCallableStateValues();
-        __ValidateNotUnavailable();
+        if (Availability == NewOrderAvailability.Unavailable) {  // 1.13.18 follow-on or repair order likely to be unauthorized if Unavailable
+            ChangeAvailabilityTo(NewOrderAvailability.BarelyAvailable);
+        }
+        // 12.4.17 Can't ChangeAvailabilityTo(Available) here as can atomically cause a new order to be received 
+        // which would violate FSM rule: no state change in void EnterStates
     }
 
     IEnumerator Idling_EnterState() {
@@ -702,7 +712,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
         if (CurrentOrder != null) {
             if (CurrentOrder.FollowonOrder != null) {
-                D.Log(ShowDebugLog, "{0} is executing follow-on order {1}.", DebugName, CurrentOrder.FollowonOrder);
+                D.Log(ShowDebugLog, "{0} is about to execute follow-on order {1}.", DebugName, CurrentOrder.FollowonOrder);
 
                 OrderSource followonOrderSource = CurrentOrder.FollowonOrder.Source;
                 D.AssertEqual(OrderSource.Captain, followonOrderSource, CurrentOrder.ToString());
@@ -726,6 +736,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         // See http://answers.unity3d.com/questions/158917/error-quotmcoroutineenumeratorgchandle-0quot.html
         yield return null;
 
+        // Set after repair check so if going to repair, repair assesses availability
+        // Set after 1 frame delay so if Construct Order is coming, it arrives before we declare availability
         ChangeAvailabilityTo(NewOrderAvailability.Available); // Can atomically cause a new order to be received
     }
 
@@ -755,15 +767,20 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         // TODO
     }
 
-    void Idling_UponRelationsChangedWith(Player player) {
-        LogEvent();
-    }
+    ////void Idling_UponRelationsChangedWith(Player player) {
+    ////    LogEvent();
+    ////}
 
     // No need for _fsmTgt-related event handlers as there is no _fsmTgt
 
     void Idling_UponLosingOwnership() {
         LogEvent();
         // Do nothing as no callback to send
+    }
+
+    void Idling_UponResetOrderAndState() {
+        LogEvent();
+        // TODO
     }
 
     void Idling_UponDeath() {
@@ -808,6 +825,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         D.Assert(!unitAttackTgt.IsDead);
         D.Assert(unitAttackTgt.IsAttackAllowedBy(Owner));
 
+        _lastCmdOrderID = CurrentOrder.CmdOrderID;
         _fsmTgt = unitAttackTgt as IElementNavigableDestination;
 
         ChangeAvailabilityTo(NewOrderAvailability.FairlyAvailable);
@@ -883,10 +901,10 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         // TODO
     }
 
-    void ExecuteAttackOrder_UponRelationsChangedWith(Player player) {
-        LogEvent();
-        // TODO
-    }
+    ////void ExecuteAttackOrder_UponRelationsChangedWith(Player player) {
+    ////    LogEvent();
+    ////    // TODO
+    ////}
 
     void ExecuteAttackOrder_UponFsmTgtInfoAccessChgd(IOwnerItem_Ltd fsmTgt) {
         LogEvent();
@@ -907,6 +925,10 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         LogEvent();
         // 12.12.17 Nothing to do. Facility can only lose ownership if last element in base. Base will have already 
         // changed its owner and ResetOrderAndState before this gets called so base will not process order callback.
+    }
+
+    void ExecuteAttackOrder_UponResetOrderAndState() {
+        LogEvent();
     }
 
     void ExecuteAttackOrder_UponDeath() {
@@ -950,6 +972,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         D.AssertEqual(Command, CurrentOrder.Target);
         // 1.7.18 Can't Assert < 100% as RestartState can occur immediately after all damage repaired
         // 4.15.17 Can't Assert CurrentOrder.ToCallback as Captain can issue this order
+        _lastCmdOrderID = CurrentOrder.CmdOrderID;
         _fsmTgt = CurrentOrder.Target;
 
         // No TargetDeathEventHandler and TargetOwnerChgdEventHandler needed for our own base with _UponLosingOwnership and _UponDeath
@@ -1008,10 +1031,10 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         // TODO
     }
 
-    void ExecuteRepairOrder_UponRelationsChangedWith(Player player) {
-        LogEvent();
-        // Cmd will handle. Can't be relevant as our Cmd is all we care about
-    }
+    ////void ExecuteRepairOrder_UponRelationsChangedWith(Player player) {
+    ////    LogEvent();
+    ////    // Cmd will handle. Can't be relevant as our Cmd is all we care about
+    ////}
 
     void ExecuteRepairOrder_UponLosingOwnership() {
         LogEvent();
@@ -1020,6 +1043,11 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         D.Assert(IsOwnerChangeUnderway);
         D.AssertNotEqual(Command.Owner, Owner);
         D.Assert(IsHQ);
+    }
+
+    void ExecuteRepairOrder_UponResetOrderAndState() {
+        LogEvent();
+        // TODO
     }
 
     void ExecuteRepairOrder_UponDeath() {
@@ -1038,7 +1066,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #region Repairing
 
-    // 7.2.16 Call()ed State
+    // 7.2.16 Currently a Call()ed State from ExecuteRepairOrder and ExecuteAttackOrder
 
     void Repairing_UponPreconfigureState() {
         LogEvent();
@@ -1048,6 +1076,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         ReworkUnderway = ReworkingMode.Repairing;
         StartEffectSequence(EffectSequenceID.Repairing);
         _repairWaitYI = new RecurringWaitForHours(GameTime.HoursPerDay);
+        // 12.7.17 Don't ChangeAvailabilityTo() in states that can be Call()ed by more than one ExecuteOrder state
     }
 
     IEnumerator Repairing_EnterState() {
@@ -1128,10 +1157,10 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         RestartState(); // 12.10.17 Added to accommodate CmdModule repair
     }
 
-    void Repairing_UponRelationsChangedWith(Player player) {
-        LogEvent();
-        // TODO
-    }
+    ////void Repairing_UponRelationsChangedWith(Player player) {
+    ////    LogEvent();
+    ////    // TODO
+    ////}
 
     // 4.8.17 Call()ed state _UponNewOrderReceived() eliminated as auto Return()ed prior to _UponNewOrderReceived()
     // 4.15.17 Call()ed state _UponDeath eliminated as auto Return()ed as part of death sequence
@@ -1150,8 +1179,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #region ExecuteRefitOrder Support Members
 
-    private AUnitElementData.RefitStorage _refitStorage;
-
     private float __CalcRefitCost(FacilityDesign refitDesign, FacilityDesign currentDesign) {
         float refitCost = refitDesign.ConstructionCost - currentDesign.ConstructionCost;
         if (refitCost < refitDesign.MinimumRefitCost) {
@@ -1168,9 +1195,10 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         ValidateCommonNonCallableStateValues();
         D.Assert(CurrentOrder is FacilityRefitOrder);
         D.AssertEqual(Command, CurrentOrder.Target);
-        D.AssertNull(_refitStorage);
+        D.AssertNull(_preReworkValues);
         // Cannot Assert CurrentOrder.ToCallback as can be issued by user
 
+        _lastCmdOrderID = CurrentOrder.CmdOrderID;
         _fsmTgt = CurrentOrder.Target;
         ReworkUnderway = ReworkingMode.Refitting;
         StartEffectSequence(EffectSequenceID.Refitting);
@@ -1191,7 +1219,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         D.Log(ShowDebugLog, "{0} is being added to the construction queue to refit to {1}. Cost = {2:0.}.",
             DebugName, refitDesign.DebugName, refitCost);
 
-        _refitStorage = Data.PrepareForRefit();
+        _preReworkValues = Data.PrepareForRework();
 
         RefitConstruction construction = Command.ConstructionMgr.AddToRefitQueue(refitDesign, this, refitCost);
         D.Assert(!construction.IsCompleted);
@@ -1229,10 +1257,10 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         D.Assert(IsHQ);
     }
 
-    void ExecuteRefitOrder_UponRelationsChangedWith(Player player) {
-        LogEvent();
-        // nothing to do as refitting in own base
-    }
+    ////void ExecuteRefitOrder_UponRelationsChangedWith(Player player) {
+    ////    LogEvent();
+    ////    // nothing to do as refitting in own base
+    ////}
 
     void ExecuteRefitOrder_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         LogEvent();
@@ -1255,10 +1283,22 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         // TODO element can be refitting and lose or gain HQ status
     }
 
-    void ExecuteRefitOrder_UponUncompletedRemovalFromConstructionQueue() {
-        Data.RestoreRefitValues(_refitStorage);
-        AttemptOrderOutcomeCallback(OrderFailureCause.ConstructionCanceled);
-        CurrentState = FacilityState.Idling;
+    void ExecuteRefitOrder_UponUncompletedRemovalFromConstructionQueue(float completionPercentage) {
+        LogEvent();
+        if (!IsDead) {   // 1.13.18 Killed while Refitting so allow death sequence to handle
+            if (completionPercentage == Constants.ZeroPercent) {
+                Data.RestorePreReworkValues(_preReworkValues);
+            }
+            AttemptOrderOutcomeCallback(OrderFailureCause.ConstructionCanceled);
+            CurrentState = FacilityState.Idling;
+        }
+    }
+
+    void ExecuteRefitOrder_UponResetOrderAndState() {
+        LogEvent();
+        var refitConstruction = Command.ConstructionMgr.GetConstructionFor(this);
+        Command.ConstructionMgr.RemoveFromQueue(refitConstruction);
+        // 1.13.18 Results in ExecuteRefitOrder_UponUncompletedRemovalFromConstructionQueue() call
     }
 
     void ExecuteRefitOrder_UponDeath() {
@@ -1274,7 +1314,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         ResetCommonNonCallableStateValues();
         StopEffectSequence(EffectSequenceID.Refitting);
         ReworkUnderway = ReworkingMode.None;
-        _refitStorage = null;
+        _preReworkValues = null;
     }
 
     #endregion
@@ -1301,7 +1341,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         ValidateCommonNonCallableStateValues();
         // Cannot Assert CurrentOrder.ToCallback as can be issued by user
         D.AssertEqual(Command, CurrentOrder.Target);
+        D.AssertNull(_preReworkValues);
 
+        _lastCmdOrderID = CurrentOrder.CmdOrderID;
         _fsmTgt = CurrentOrder.Target;
         ReworkUnderway = ReworkingMode.Disbanding;
         StartEffectSequence(EffectSequenceID.Disbanding);
@@ -1321,7 +1363,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         // See http://answers.unity3d.com/questions/158917/error-quotmcoroutineenumeratorgchandle-0quot.html
         yield return null;
 
-        Data.PrepareForDisband();
+        _preReworkValues = Data.PrepareForRework();
 
         DisbandConstruction construction = Command.ConstructionMgr.AddToDisbandQueue(Data.Design, this, disbandCost);
         D.Assert(!construction.IsCompleted);
@@ -1332,7 +1374,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
         // disband completed so try to inform Cmd and kill the element
         AttemptOrderOutcomeCallback(OrderFailureCause.None);
-
 
         ReworkUnderway = ReworkingMode.None;
         IsDead = true;
@@ -1353,10 +1394,10 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         D.Assert(IsHQ);
     }
 
-    void ExecuteDisbandOrder_UponRelationsChangedWith(Player player) {
-        LogEvent();
-        // nothing to do as disbanding in own base
-    }
+    ////void ExecuteDisbandOrder_UponRelationsChangedWith(Player player) {
+    ////    LogEvent();
+    ////    // nothing to do as disbanding in own base
+    ////}
 
     void ExecuteDisbandOrder_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         LogEvent();
@@ -1379,10 +1420,51 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         // TODO element can be disbanding and lose or gain HQ status
     }
 
-    void ExecuteDisbandOrder_UponUncompletedRemovalFromConstructionQueue() {
+    /// <summary>
+    /// Called when this Facility's construction is removed from BaseCmd's ConstructionManager's construction queue before it is completed.
+    /// <remarks>1.23.18 This version can delay setting IsDead by 1 frame. It is necessary to allow BaseCmd's ExecuteDisbandOrder_ExitState() 
+    /// to clear the order and state of its disbanding elements. 
+    /// The issue: When a base is disbanding and then has its orders cleared, it clears the orders of all its disbanding elements 
+    /// from ExecuteDisbandOrder_ExitState using the Element's ResetOrderAndState() method. When the element's 
+    /// ExecuteDisbandOrder_UponResetOrderAndState() method is called it removes the disband construction from the Cmd's ConstructionManager 
+    /// which normally atomically kills the element. When all elements are killed and removed from BaseCmd's list of elements in the same
+    /// frame, BaseCmd also immediately dies changing its state to Dead. This state change violates the FSM 'changing state during 
+    /// ConfigureCurrentState' test. Accordingly, I delay setting IsDead here to allow BaseCmd's FSM to finish processing 
+    /// ConfigureCurrentState() before BaseCmd's IsDead is triggered by removal of its last element.</remarks>
+    /// </summary>
+    void ExecuteDisbandOrder_UponUncompletedRemovalFromConstructionQueue(float completionPercentage) {
         LogEvent();
-        IsDead = true;
-        // Rely on Death callback
+
+        if (!IsDead) {
+            if (completionPercentage == Constants.ZeroPercent) {
+                Data.RestorePreReworkValues(_preReworkValues);
+                AttemptOrderOutcomeCallback(OrderFailureCause.ConstructionCanceled);
+                CurrentState = FacilityState.Idling;
+            }
+            else {
+                // Disbanding already underway so kill it
+                if (UnitElementCount > Constants.One) {
+                    IsDead = true;
+                }
+                else {
+                    // We are the last element so Cmd will die when removed. 1.23.18 In case this was initiated by a Cmd ExitState canceling
+                    // element orders, we delay IsDead by 1 frame to avoid FSM's illegal 'changing state during ConfigureCurrentState' test
+                    _jobMgr.WaitForNextUpdate("FacilityIsDeadDelayJob", (jobWasKilled) => {
+                        D.Log("{0} is killing itself 1 frame after its uncompleted construction was removed from the construction queue. Completion: {1:P02}.",
+                            DebugName, completionPercentage);
+                        IsDead = true;
+                    });
+                }
+            }
+        }
+        // else death sequence will handle
+    }
+
+    void ExecuteDisbandOrder_UponResetOrderAndState() {
+        LogEvent();
+        var disbandConstruction = Command.ConstructionMgr.GetConstructionFor(this);
+        Command.ConstructionMgr.RemoveFromQueue(disbandConstruction);
+        // 1.13.18 Results in ExecuteDisbandOrder_UponUncompletedRemovalFromConstructionQueue() call
     }
 
     void ExecuteDisbandOrder_UponDeath() {
@@ -1395,6 +1477,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     void ExecuteDisbandOrder_ExitState() {
         LogEvent();
         ResetCommonNonCallableStateValues();
+        _preReworkValues = null;
         StopEffectSequence(EffectSequenceID.Disbanding);
         ReworkUnderway = ReworkingMode.None;
     }

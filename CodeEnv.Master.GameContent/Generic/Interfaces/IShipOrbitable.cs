@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Determines whether assuming high orbit is allowed by [the specified player].
-        /// <remarks>7.15.16 Currently always true.</remarks>
+        /// <remarks>7.15.16 Currently always true as being in high orbit is an easy way of avoiding moving celestial objects.</remarks>
         /// </summary>
         /// <param name="player">The player.</param>
         /// <returns></returns>

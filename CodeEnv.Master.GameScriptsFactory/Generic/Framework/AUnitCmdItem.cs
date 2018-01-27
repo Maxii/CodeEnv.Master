@@ -110,12 +110,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         }
     }
 
-    /// <summary>
-    /// Indicates whether this operational Cmd has commenced operations.
-    /// </summary>
-    [Obsolete]
-    public bool __IsActivelyOperating { get; protected set; }
-
     public bool IsAttackCapable { get { return Elements.Where(e => e.IsAttackCapable).Any(); } }
 
     /// <summary>
@@ -840,30 +834,83 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     #region Orders Support Members
 
     /// <summary>
-    /// Clears any element orders issued by the state(s) executing the order with the ID executingOrderID.
-    /// </summary>
-    protected void ClearAnyRemainingElementOrdersIssuedBy(Guid executingOrderID) {
-        if (!IsDead) {  // if dead, _executingOrderID already set to default by 
-            D.AssertNotDefault(executingOrderID);
-            ClearElementsOrders(executingOrderID);
-        }
-    }
-
-    /// <summary>
     /// The ID of the order currently being executed. Will be default(Guid) if no order is being executed.
     /// <remarks>This value represents the ID of the order currently being executed in the FSM. It is valid for that
-    /// purpose until HandleNewOrder() has completed processing the change to the FSM's state. Accordingly, the current 
+    /// purpose from the time it is set in the new state's PreconfigureState() method until it is reset to default(Guid)
+    /// in the state's ExitState() method. Accordingly, the current 
     /// state's _UponNewOrderReceived() and _ExitState() methods can all rely on it representing the order they have been 
-    /// executing. It is not valid in the new state's _UponPreconfigureState() method as it is not updated until after 
-    /// this method completes. Accordingly, it should not be used in any _UponPreconfigureState() methods. 
-    /// After this, the value will be changed to represent either the order that has just arrived or default(Guid) 
-    /// if CurrentOrder is null.</remarks>
+    /// executing.</remarks>
     /// <remarks>The value is needed as CurrentOrder (with a different CmdOrderID) can change before the previous order
     /// finishes executing. It is used to support communication with this Cmd's elements, both incoming 
     /// cmd_UponOrderOutcomeCallbacks and outgoing element.CancelOrders() instructions.</remarks>
-    /// <remarks>IMPROVE Update this value at the beginning of each _UponPreconfigureState() method to make it valid?</remarks>
     /// </summary>
     protected Guid _executingOrderID;
+
+    /// <summary>
+    /// External access to ResetOrderAndState().
+    /// Clears CurrentOrder (as well as any deferred order waiting for a pause to resume) and sets CurrentState to Idling. 
+    /// If currently executing an order, each Element that was issued an order by the currently executing order may have that order cleared
+    /// depending on this Cmd's executing order.
+    /// <remarks>Used primarily by AUnitHud to allow easy cancellation of previously issued orders.</remarks>
+    /// </summary>
+    public void ClearOrdersAndIdle() {
+        ReturnFromCalledStates();
+        ResetOrderAndState();
+    }
+
+    /// <summary>
+    /// Clears CurrentOrder (as well as any deferred order waiting for a pause to resume) and sets CurrentState to Idling. 
+    /// If currently executing an order, each Element that was issued an order by the currently executing order will have that order cleared.
+    /// </summary>
+    protected virtual void ResetOrderAndState() {
+        D.Assert(!IsDead);  // 1.25.18 Test to see if this can be called when already dead
+        __ValidateCurrentStateNotACalledState();
+        if (IsPaused) {
+            D.Log("{0}.ResetOrderAndState called while paused.", DebugName);
+        }
+        // UponResetOrderAndState();
+        ResetOrdersReceivedWhilePausedSystem();
+    }
+
+    protected abstract void ResetOrdersReceivedWhilePausedSystem();
+
+    protected void ClearAllElementsOrders() {
+        ClearElementsOrders(default(Guid));
+    }
+
+    /// <summary>
+    /// Clears any element orders issued by the state(s) executing the order with the ID executingOrderID.
+    /// <remarks>Will throw an error if executingOrderID doesn't represent an order, aka is default(Guid).</remarks>
+    /// </summary>
+    /// <param name="executingOrderID">The ID of the executing order.</param>
+    protected void ClearAnyRemainingElementOrdersIssuedBy(Guid executingOrderID) {
+        if (IsDead || IsOwnerChangeUnderway) {
+            // _executingOrderID already set to default by ResetOrderAndState
+            return;
+        }
+        D.AssertNotDefault(executingOrderID);
+        ClearElementsOrders(executingOrderID);
+    }
+
+    /// <summary>
+    /// Clears each Element's CurrentOrder and causes them to Idle if the Element's CurrentOrder has the provided cmdOrderID. 
+    /// If cmdOrderID is the default, each Element's CurrentOrder will be cleared no matter what its cmdOrderID.
+    /// </summary>
+    private void ClearElementsOrders(Guid cmdOrderID) {
+        IList<string> clearedOrderElementNames = new List<string>(Elements.Count);
+        var elementsCopy = new List<AUnitElementItem>(Elements);    // e.ClearOrder() can result in death -> list modified while iterating exception
+        foreach (var e in elementsCopy) {
+            bool isCleared = e.ClearOrder(cmdOrderID);
+            if (isCleared) {
+                clearedOrderElementNames.Add(e.DebugName);
+            }
+        }
+
+        if (clearedOrderElementNames.Any()) {
+            D.Log("{0}.ClearElementsOrders() cleared {1} element's orders. Elements: {2}.",
+                DebugName, clearedOrderElementNames.Count, clearedOrderElementNames.Concatenate());
+        }
+    }
 
     protected void RegisterForOrders() {
         OwnerAIMgr.RegisterForOrders(this);
@@ -872,32 +919,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     private void DeregisterForOrders() {
         OwnerAIMgr.DeregisterForOrders(this);
     }
-
-    /// <summary>
-    /// Clears each Element's CurrentOrder and causes them to Idle if the Element's CurrentOrder has the provided cmdOrderID. 
-    /// If cmdOrderID is the default, each Element's CurrentOrder will be cleared no matter what its cmdOrderID.
-    /// </summary>
-    protected void ClearElementsOrders(Guid cmdOrderID = default(Guid)) {
-        IList<string> clearedOrderElementNames = new List<string>(Elements.Count);
-        foreach (var e in Elements) {
-            bool isCleared = e.ClearOrder(cmdOrderID);
-            if (isCleared) {
-                clearedOrderElementNames.Add(e.DebugName);
-            }
-        }
-        D.Log("{0}.ClearElementsOrders() cleared {1} element's orders. Elements: {1}.",
-            DebugName, clearedOrderElementNames.Count, clearedOrderElementNames.Concatenate());
-    }
-
-    protected virtual void ResetOrderAndState() {
-        if (IsPaused) {
-            D.Log("{0}.ResetOrderAndState called while paused.", DebugName);
-        }
-        __ValidateCurrentStateNotACalledState();
-        ResetOrdersReceivedWhilePausedSystem();
-    }
-
-    protected abstract void ResetOrdersReceivedWhilePausedSystem();
 
     #endregion
 
@@ -978,6 +999,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     /// </summary>
     protected virtual void ValidateCommonNonCallableStateValues() {
         D.AssertEqual(Constants.Zero, _activeFsmReturnHandlers.Count);
+        D.AssertDefault(_executingOrderID);
         D.Assert(!IsDead);
     }
 
@@ -985,6 +1007,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     protected virtual void ResetCommonNonCallableStateValues() {
         _activeFsmReturnHandlers.Clear();
+        _executingOrderID = default(Guid);
     }
 
     protected void ReturnFromCalledStates() {
@@ -1071,18 +1094,26 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     #region Relays
 
     /// <summary>
+    /// Called prior to nulling _currentOrder and setting CurrentState to Idling.
+    /// Allows states to prepare themselves before their ExitState() method is called.
+    /// <remarks>Not currently used as elements with construction underway is handled by the element's UponResetOrderAndState.</remarks>
+    /// </summary>
+    [Obsolete("Not currently used")]
+    private void UponResetOrderAndState() { RelayToCurrentState(); }
+
+    /// <summary>
     /// Called prior to entering the Dead state, this method notifies the current
     /// state that the unit is dying, allowing any current state housekeeping
     /// required before entering the Dead state.
     /// </summary>
-    protected void UponDeath() { RelayToCurrentState(); }
+    private void UponDeath() { RelayToCurrentState(); }
 
     /// <summary>
     /// Called prior to the Owner changing, this method notifies the current
     /// state that the unit is losing ownership, allowing any current state housekeeping
     /// required before the Owner is changed.
     /// </summary>
-    protected void UponLosingOwnership() { RelayToCurrentState(); }
+    private void UponLosingOwnership() { RelayToCurrentState(); }
 
     protected void UponEffectSequenceFinished(EffectSequenceID effectSeqID) { RelayToCurrentState(effectSeqID); }
 
@@ -1091,9 +1122,9 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     [Obsolete("Not currently used")]
     private void UponSubordinateDeath(AUnitElementItem deadSubordinateElement) { RelayToCurrentState(deadSubordinateElement); }
 
-    protected void UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) { RelayToCurrentState(subordinateElement); }
+    private void UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) { RelayToCurrentState(subordinateElement); }
 
-    [Obsolete("Not currently used")]
+    [Obsolete("Not yet used")]
     private void UponEnemyDetected() { RelayToCurrentState(); }
 
     /// <summary>
@@ -1121,8 +1152,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     private void UponAlertStatusChanged() { RelayToCurrentState(); }
 
     /// <summary>
-    /// Called whenever damage is incurred by this Unit, whether by a subordinate
-    /// element or by the Cmd itself.
+    /// Called whenever damage is incurred by this Unit, whether by a subordinate element or by the Cmd itself.
     /// </summary>
     private void UponUnitDamageIncurred() { RelayToCurrentState(); }
 
@@ -1133,11 +1163,12 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     /// <summary>
     /// Assesses this Cmd's need for repair, returning <c>true</c> if repairs are needed, <c>false</c> otherwise.
     /// Default unitHealthThreshold is 100%.
+    /// <remarks>1.12.18 Now OK to use from Repair-related states as RestartState and/or FsmReturnHandlers need it.</remarks>
     /// </summary>
     /// <param name="unitHealthThreshold">The health threshold.</param>
     /// <returns></returns>
     protected virtual bool AssessNeedForRepair(float unitHealthThreshold = Constants.OneHundredPercent) {
-        __ValidateCurrentStateWhenAssessingNeedForRepair();
+        D.Assert(!IsDead);
         if (__debugSettings.DisableRepair) {
             return false;
         }
@@ -1154,20 +1185,20 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     protected void AssessAvailabilityStatus_Repair() {
         __ValidateCurrentStateWhenAssessingAvailabilityStatus_Repair();
-        NewOrderAvailability orderAvailabilityStatus;
+        NewOrderAvailability repairAvailabilityStatus;
         var unitHealth = Data.UnitHealth;
         // Can't Assert unitHealth < OneHundredPercent as possible for element to complete repair in 1 frame gaps
 
         if (Utility.IsInRange(unitHealth, HealthThreshold_Damaged, Constants.OneHundredPercent)) {
-            orderAvailabilityStatus = NewOrderAvailability.EasilyAvailable;
+            repairAvailabilityStatus = NewOrderAvailability.EasilyAvailable;
         }
         else if (Utility.IsInRange(unitHealth, HealthThreshold_BadlyDamaged, HealthThreshold_Damaged)) {
-            orderAvailabilityStatus = NewOrderAvailability.FairlyAvailable;
+            repairAvailabilityStatus = NewOrderAvailability.FairlyAvailable;
         }
         else {
-            orderAvailabilityStatus = NewOrderAvailability.BarelyAvailable;
+            repairAvailabilityStatus = NewOrderAvailability.BarelyAvailable;
         }
-        ChangeAvailabilityTo(orderAvailabilityStatus);
+        ChangeAvailabilityTo(repairAvailabilityStatus);
     }
 
     #endregion
@@ -1357,12 +1388,11 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     #region Debug
 
-    [System.Diagnostics.Conditional("DEBUG")]
-    protected void __ValidateNotUnavailable() {
-        if (Availability == NewOrderAvailability.Unavailable) {
-            D.Error("{0} has changed state to {1} when Unavailable.", DebugName, CurrentState.ToString());
-        }
-    }
+    /// <summary>
+    /// Indicates whether this operational Cmd has commenced operations.
+    /// <remarks> 1.12.18 OPTIMIZE Can be removed as Element's test for error during assault has never occurred.</remarks>
+    /// </summary>
+    public bool __IsActivelyOperating { get; protected set; }
 
     [System.Diagnostics.Conditional("DEBUG")]
     private void __ValidateCurrentStateNotACalledState() {
@@ -1372,10 +1402,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
             D.Error("{0}.{1} should not be called while in Call()ed state {2}.", DebugName, callerIdMessage, CurrentState.ToString());
         }
     }
-
-    [System.Diagnostics.Conditional("DEBUG")]
-    protected abstract void __ValidateCurrentStateWhenAssessingNeedForRepair();
-
 
     [System.Diagnostics.Conditional("DEBUG")]
     protected abstract void __ValidateCurrentStateWhenAssessingAvailabilityStatus_Repair();

@@ -256,7 +256,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Returns all known Items that implement IGuardable.
-        /// <remarks>The items returned may or may not allow the client owner to guard them.</remarks>
+        /// <remarks>The items returned may or may not allow Owner to guard them.</remarks>
         /// </summary>
         public IEnumerable<IGuardable> KnownGuardableItems {
             get {
@@ -293,7 +293,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Returns all known Items that implement IPatrollable.
-        /// <remarks>The items returned may or may not allow the client owner to patrol them.</remarks>
+        /// <remarks>The items returned may or may not allow Owner to patrol them.</remarks>
         /// <remarks>OPTIMIZE be more selective than _items.</remarks>
         /// </summary>
         public IEnumerable<IPatrollable> KnownPatrollableItems {
@@ -305,12 +305,12 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Returns <c>true</c> if any known items remain unexplored by Owner fleets.
+        /// Returns <c>true</c> if any known items that Owner is allowed to explore remain unexplored by Owner fleets.
         /// </summary>
         public bool AreAnyKnownItemsUnexploredByOwnerFleets { get { return KnownItemsUnexploredByOwnerFleets.Any(); } }
 
         /// <summary>
-        /// Returns all known Items that are currently explorable that remain unexplored by Owner fleets.
+        /// Returns all known Items that Owner is allowed to explore yet remain unexplored by Owner fleets.
         /// </summary>
         public IEnumerable<IFleetExplorable> KnownItemsUnexploredByOwnerFleets {
             get {
@@ -321,7 +321,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Returns all known Items that implement IFleetExplorable.
-        /// <remarks>The items returned may or may not allow the client owner to explore them.</remarks>
+        /// <remarks>The items returned may or may not allow Owner to explore them.</remarks>
         /// <remarks>OPTIMIZE be more selective than _items.</remarks>
         /// </summary>
         public IEnumerable<IFleetExplorable> KnownFleetExplorableItems {
@@ -356,7 +356,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Returns all known Items that implement IUnitAttackable.
-        /// <remarks>The items returned may or may not allow the client owner to attack them.</remarks>
+        /// <remarks>The items returned may or may not allow Owner to attack them.</remarks>
         /// <remarks>OPTIMIZE be more selective than _items.</remarks>
         /// </summary>
         public IEnumerable<IUnitAttackable> KnownUnitAttackableItems {

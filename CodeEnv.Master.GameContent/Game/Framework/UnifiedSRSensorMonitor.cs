@@ -51,8 +51,6 @@ namespace CodeEnv.Master.GameContent {
 
         public bool ShowDebugLog { get { return _parentCmd.ShowDebugLog; } }
 
-        ////public bool IsOperational { get { return _parentCmd.IsOperational; } }
-
         /// <summary>
         /// Indicates whether there are any enemy UnitElements in range.
         /// <remarks>Not subscribable.</remarks>

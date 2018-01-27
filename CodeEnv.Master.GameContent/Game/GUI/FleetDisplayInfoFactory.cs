@@ -43,6 +43,7 @@ namespace CodeEnv.Master.GameContent {
             ItemInfoID.UnitHealth,
             //ItemInfoID.UnitWeaponsRange,
             ItemInfoID.UnitSensorRange,
+            ItemInfoID.OrderDirective,
 
             ItemInfoID.UnitOutputs,
 
@@ -113,6 +114,10 @@ namespace CodeEnv.Master.GameContent {
                     case ItemInfoID.ActualSpeed:
                         isSuccess = true;
                         colorizedText = _lineTemplate.Inject(GetFormat(infoID).Inject(report.__ActualSpeedValue.Value));
+                        break;
+                    case ItemInfoID.OrderDirective:
+                        isSuccess = true;
+                        colorizedText = _lineTemplate.Inject(report.__OrderDirective.GetValueName());
                         break;
                     default:
                         throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(infoID));

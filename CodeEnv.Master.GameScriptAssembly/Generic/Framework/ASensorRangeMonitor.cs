@@ -802,18 +802,6 @@ public abstract class ASensorRangeMonitor : ADetectableRangeMonitor<ISensorDetec
 
     #region Cleanup
 
-    protected sealed override void __CleanupOnApplicationQuit() {
-        base.__CleanupOnApplicationQuit();
-        if (_unknownTargetsDetected.Any()) {
-            D.Warn("{0} has {1} detected targets of Type {2} remaining after cleanup. Targets: {3}.",
-                DebugName, _unknownTargetsDetected.Count, typeof(ISensorDetectable).Name, _unknownTargetsDetected.Select(tgt => tgt.DebugName).Concatenate());
-        }
-        if (_enemyTargetsDetected.Any()) {
-            D.Warn("{0} has {1} detected targets of Type {2} remaining after cleanup. Targets: {3}.",
-                DebugName, _enemyTargetsDetected.Count, typeof(ISensorDetectable).Name, _enemyTargetsDetected.Select(tgt => tgt.DebugName).Concatenate());
-        }
-    }
-
     protected override void Cleanup() {
         base.Cleanup();
         CleanupDebugShowSensor();

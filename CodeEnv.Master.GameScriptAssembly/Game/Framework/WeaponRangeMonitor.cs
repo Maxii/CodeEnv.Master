@@ -419,27 +419,6 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementBlastable, AWe
         D.Warn("{0} is being reset for future reuse. Check implementation for completeness before relying on it.", DebugName);
     }
 
-    #region Cleanup
-
-    protected override void __CleanupOnApplicationQuit() {
-        base.__CleanupOnApplicationQuit();
-        if (_unknownTargetsDetected != null && _unknownTargetsDetected.Any()) {
-            D.Warn("{0} has {1} detected UnknownTargets of Type {2} remaining after cleanup. Targets: {3}.",
-                DebugName, _unknownTargetsDetected.Count, typeof(IElementBlastable).Name, _unknownTargetsDetected.Select(tgt => tgt.DebugName).Concatenate());
-        }
-        if (_attackableEnemyTargetsDetected.Any()) {
-            D.Warn("{0} has {1} detected EnemyTargets of Type {2} remaining after cleanup. Targets: {3}.",
-                DebugName, _attackableEnemyTargetsDetected.Count, typeof(IElementBlastable).Name, _attackableEnemyTargetsDetected.Select(tgt => tgt.DebugName).Concatenate());
-            if (!IsOperational) {
-                // 5.11.17 Not sure what this means or what to do
-                D.Log("{0} is not operational (collider is disabled) during cleanup.", DebugName); // 5.11.17 also occurring
-            }
-        }
-    }
-
-
-    #endregion
-
     #region Debug
 
     protected override bool __ToReportTargetReacquisitionChanges { get { return false; } }

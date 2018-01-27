@@ -111,6 +111,8 @@ namespace CodeEnv.Master.GameContent {
         private IDebugControls _debugControls;
         private IJobManager _jobMgr;
 
+        #region Initialization
+
         public PlayerAIManager(Player owner, PlayerKnowledge knowledge) {
             Owner = owner;
             Knowledge = knowledge;
@@ -141,6 +143,8 @@ namespace CodeEnv.Master.GameContent {
             }
             __SpreadInitialFleetOrders(myAvailableFleetCmds);
         }
+
+        #endregion
 
         /// <summary>
         /// Indicates whether the PlayerAIMgr Owner has knowledge of the provided item.
@@ -422,6 +426,22 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
+        /// <summary>
+        /// Returns <c>true</c> if a IFleetExplorable item is found, <c>false</c> otherwise.
+        /// </summary>
+        /// <param name="worldPosition">The world position.</param>
+        /// <param name="closestExplorableItem">The closest explorable item.</param>
+        /// <param name="excludedExplorables">The excluded explorables.</param>
+        /// <returns></returns>
+        public bool TryFindClosestFleetExplorableItem(Vector3 worldPosition, out IFleetExplorable closestExplorableItem, params IFleetExplorable[] excludedExplorables) {
+            var exploreCandidates = Knowledge.KnownItemsUnexploredByOwnerFleets.Except(excludedExplorables);
+            if (exploreCandidates.Any()) {
+                closestExplorableItem = exploreCandidates.MinBy(cand => Vector3.SqrMagnitude(cand.Position - worldPosition));
+                return true;
+            }
+            closestExplorableItem = null;
+            return false;
+        }
 
         #endregion
 
@@ -1138,35 +1158,55 @@ namespace CodeEnv.Master.GameContent {
         private bool __IssueFleetExploreOrder(IFleetCmd fleetCmd) {
             bool isExploreOrderIssued = false;
             if (fleetCmd.IsAuthorizedForNewOrder(FleetDirective.Explore)) {
-                var explorableUnexploredSystems =
-                    from sys in Knowledge.Systems
-                    let eSys = sys as IFleetExplorable
-                    where eSys.IsExploringAllowedBy(Owner) && !eSys.IsFullyExploredBy(Owner)
-                    select eSys;
-                if (explorableUnexploredSystems.Any()) {
-                    var closestUnexploredSystem = explorableUnexploredSystems.MinBy(sys => Vector3.SqrMagnitude(fleetCmd.Position - sys.Position));
+                var knownItemsUnexploredByOwnerFleets = Knowledge.KnownItemsUnexploredByOwnerFleets;
+                if (knownItemsUnexploredByOwnerFleets.Any()) {
+                    var closestUnexploredItem = knownItemsUnexploredByOwnerFleets.MinBy(item => Vector3.SqrMagnitude(fleetCmd.Position - item.Position));
                     D.Log("{0} is issuing {1} an EXPLORE order to {2} in Frame {3}. FPS = {4:0.#}. IsExploreTgtOwnerAccessible = {5}.",
-                        DebugName, fleetCmd.DebugName, closestUnexploredSystem.DebugName, Time.frameCount, _fpsReadout.FramesPerSecond,
-                        closestUnexploredSystem.IsOwnerAccessibleTo(Owner));
-                    var order = new FleetOrder(FleetDirective.Explore, OrderSource.PlayerAI, closestUnexploredSystem);
+                        DebugName, fleetCmd.DebugName, closestUnexploredItem.DebugName, Time.frameCount, _fpsReadout.FramesPerSecond,
+                        closestUnexploredItem.IsOwnerAccessibleTo(Owner));
+                    var order = new FleetOrder(FleetDirective.Explore, OrderSource.PlayerAI, closestUnexploredItem);
                     fleetCmd.CurrentOrder = order;
                     isExploreOrderIssued = true;
                 }
                 else {
-                    IFleetExplorable uCenter = Knowledge.UniverseCenter as IFleetExplorable;
-                    if (!uCenter.IsFullyExploredBy(Owner)) {
-                        var order = new FleetOrder(FleetDirective.Explore, OrderSource.PlayerAI, uCenter);
-                        fleetCmd.CurrentOrder = order;
-                        isExploreOrderIssued = true;
-                    }
-                    else {
-                        D.LogBold("{0}: Fleet {1} has completed {2}'s exploration of explorable universe.",
-                            DebugName, fleetCmd.DebugName, Owner.DebugName);
-                    }
+                    D.LogBold("{0}: Fleet {1} has completed exploration of known universe that {2} is allowed to explore.",
+                        DebugName, fleetCmd.DebugName, Owner.DebugName);
                 }
             }
             return isExploreOrderIssued;
         }
+        ////private bool __IssueFleetExploreOrder(IFleetCmd fleetCmd) {
+        ////    bool isExploreOrderIssued = false;
+        ////    if (fleetCmd.IsAuthorizedForNewOrder(FleetDirective.Explore)) {
+        ////        var explorableUnexploredSystems =
+        ////            from sys in Knowledge.Systems
+        ////            let eSys = sys as IFleetExplorable
+        ////            where eSys.IsExploringAllowedBy(Owner) && !eSys.IsFullyExploredBy(Owner)
+        ////            select eSys;
+        ////        if (explorableUnexploredSystems.Any()) {
+        ////            var closestUnexploredSystem = explorableUnexploredSystems.MinBy(sys => Vector3.SqrMagnitude(fleetCmd.Position - sys.Position));
+        ////            D.Log("{0} is issuing {1} an EXPLORE order to {2} in Frame {3}. FPS = {4:0.#}. IsExploreTgtOwnerAccessible = {5}.",
+        ////                DebugName, fleetCmd.DebugName, closestUnexploredSystem.DebugName, Time.frameCount, _fpsReadout.FramesPerSecond,
+        ////                closestUnexploredSystem.IsOwnerAccessibleTo(Owner));
+        ////            var order = new FleetOrder(FleetDirective.Explore, OrderSource.PlayerAI, closestUnexploredSystem);
+        ////            fleetCmd.CurrentOrder = order;
+        ////            isExploreOrderIssued = true;
+        ////        }
+        ////        else {
+        ////            IFleetExplorable uCenter = Knowledge.UniverseCenter as IFleetExplorable;
+        ////            if (!uCenter.IsFullyExploredBy(Owner)) {
+        ////                var order = new FleetOrder(FleetDirective.Explore, OrderSource.PlayerAI, uCenter);
+        ////                fleetCmd.CurrentOrder = order;
+        ////                isExploreOrderIssued = true;
+        ////            }
+        ////            else {
+        ////                D.LogBold("{0}: Fleet {1} has completed {2}'s exploration of explorable universe.",
+        ////                    DebugName, fleetCmd.DebugName, Owner.DebugName);
+        ////            }
+        ////        }
+        ////    }
+        ////    return isExploreOrderIssued;
+        ////}
 
         private bool __IssueFleetBaseMoveOrder(IFleetCmd fleetCmd) {
             bool isMoveOrderIssued = false;

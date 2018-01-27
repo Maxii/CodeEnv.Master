@@ -281,18 +281,18 @@ namespace CodeEnv.Master.GameContent {
             Outputs = MakeOutputs();
         }
 
-        public override void RestoreRefitValues(RefitStorage valuesBeforeRefit) {
-            base.RestoreRefitValues(valuesBeforeRefit);
+        public override void RestorePreReworkValues(PreReworkValuesStorage valuesBeforeRework) {
+            base.RestorePreReworkValues(valuesBeforeRework);
             Outputs = MakeOutputs();
         }
 
-        public override EquipmentDamagedFromRefit DamageEquipment(float damagePercent) {
-            var equipmentDamagedFromRefit = base.DamageEquipment(damagePercent);
+        public override EquipmentDamagedFromRework DamageNonHullEquipment(float damagePercent) {
+            var equipmentDamagedFromRework = base.DamageNonHullEquipment(damagePercent);
             if (IsFtlCapable) {
                 _ftlEngine.IsDamaged = RandomExtended.Chance(damagePercent);
-                equipmentDamagedFromRefit.FtlEngine = _ftlEngine;
+                equipmentDamagedFromRework.FtlEngine = _ftlEngine;
             }
-            return equipmentDamagedFromRefit;
+            return equipmentDamagedFromRework;
         }
 
         public override void RemoveDamageFromAllEquipment() {

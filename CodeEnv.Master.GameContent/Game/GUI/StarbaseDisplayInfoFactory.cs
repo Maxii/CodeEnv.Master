@@ -42,6 +42,7 @@ namespace CodeEnv.Master.GameContent {
             ItemInfoID.UnitHealth,
             //ItemInfoID.UnitWeaponsRange,
             ItemInfoID.UnitSensorRange,
+            //ItemInfoID.OrderDirective,
 
             ItemInfoID.UnitOutputs,
 
@@ -101,6 +102,10 @@ namespace CodeEnv.Master.GameContent {
                     case ItemInfoID.CurrentConstruction:
                         isSuccess = true;
                         colorizedText = GetCurrentConstructionText(report.CurrentConstruction);
+                        break;
+                    case ItemInfoID.OrderDirective:
+                        isSuccess = true;
+                        colorizedText = _lineTemplate.Inject(report.__OrderDirective.GetValueName());
                         break;
                     default:
                         throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(infoID));

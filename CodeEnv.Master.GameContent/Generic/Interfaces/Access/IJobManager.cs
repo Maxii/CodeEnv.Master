@@ -264,6 +264,23 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         Job WaitForParticleSystemCompletion(ParticleSystem particleSystem, bool includeChildren, string jobName, bool isPausable, Action<bool> waitFinished);
 
+        /// <summary>
+        /// Waits for the next Update(), aka the Update in the next frame, then executes the provided delegate.
+        /// Warning: Does not pause and does not account for GameSpeed changes.
+        /// Usage:
+        /// WaitForNextUpdate(jobName, waitFinished: (jobWasKilled) =&gt; {
+        /// Code to execute after the wait;
+        /// });
+        /// WARNING: This method uses a coroutine Job. Accordingly, after being called it will
+        /// immediately return which means the code you have following it will execute
+        /// before the code assigned to the waitFinished delegate.
+        /// </summary>
+        /// <param name="jobName">Name of the job.</param>
+        /// <param name="waitFinished">The delegate to execute once the wait is finished. The
+        /// signature is waitFinished(jobWasKilled).</param>
+        void WaitForNextUpdate(string jobName, Action<bool> waitFinished);
+
+
     }
 }
 

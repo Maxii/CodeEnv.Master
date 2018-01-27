@@ -18,6 +18,7 @@ namespace CodeEnv.Master.GameContent {
 
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
 
@@ -227,7 +228,7 @@ namespace CodeEnv.Master.GameContent {
             return isSubscribeActionTaken;
         }
 
-        #region Event Handlers
+        #region Event and Property Change Handlers
 
         private void FsmTargetDeathEventHandler(object sender, EventArgs e) {
             IMortalItem_Ltd deadFsmTgt = sender as IMortalItem_Ltd;
@@ -248,6 +249,15 @@ namespace CodeEnv.Master.GameContent {
 
         private void AwarenessChgdEventHandler(object sender, PlayerAIManager.AwareChgdEventArgs e) {
             _client.HandleAwarenessChgd(e.Item);
+        }
+
+        #endregion
+
+        #region Debug
+
+        public void __LogSubscriptionStatus() {
+            D.Log("{0}: SubscriptionMode: {1}.", DebugName, _eventSubscriptionStatusLookup.Keys.Select(mode => mode.GetValueName()).Concatenate());
+            D.Log("{0}: SubscriptionStatus: {1}.", DebugName, _eventSubscriptionStatusLookup.Values.Concatenate());
         }
 
         #endregion

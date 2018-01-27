@@ -159,7 +159,7 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
         if (IsHoveredHudShowing) {
             ShowHoveredHud(false);
         }
-        // 7.24.17 HandleDeathForHighlights() moved to HandleDeathAfterBeginningDeathEffect 
+        // 7.24.17 HandleDeathForHighlights() moved to AMortalItem.HandleDeathEffectBegun 
         // as DisplayMgr.HandleDeath can destroy icons used for highlights
     }
 

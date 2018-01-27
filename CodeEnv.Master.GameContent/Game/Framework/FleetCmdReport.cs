@@ -29,6 +29,7 @@ namespace CodeEnv.Master.GameContent {
     public class FleetCmdReport : AUnitCmdReport {
 
         public Reference<float> __ActualSpeedValue { get; private set; }
+        public FleetDirective __OrderDirective { get; private set; }
 
         public FleetCategory Category { get; private set; }
 
@@ -164,7 +165,7 @@ namespace CodeEnv.Master.GameContent {
             }
 
             __ActualSpeedValue = (Item as IFleetCmd_Ltd).ActualSpeedValue_Debug;
-
+            __OrderDirective = (Item as IFleetCmd).CurrentOrder != null ? (Item as IFleetCmd).CurrentOrder.Directive : FleetDirective.None;
             UnitOutputs = AssessOutputs(fData.UnitOutputs);
         }
 

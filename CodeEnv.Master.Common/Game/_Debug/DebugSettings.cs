@@ -159,25 +159,6 @@ namespace CodeEnv.Master.Common {
             private set { _enableVerboseDebugLog = value; }
         }
 
-        private bool _allIntelCoverageComprehensive;
-        /// <summary>
-        /// Determines whether the initial IntelCoverage for each player about each Item
-        /// in the Universe starts at its default or at Comprehensive. Starting at default
-        /// means, in general, IntelCoverage of an item can improve. Starting at Comprehensive
-        /// means no improvement possible.
-        /// <remarks>If <c>true</c> every player knows everything about every item they detect. 
-        /// It DOES NOT MEAN that they have detected everything or that players have met yet.
-        /// Players meet when they first detect a HQ Element owned by another player.</remarks>
-        /// </summary>
-        [Obsolete]
-        public bool AllIntelCoverageComprehensive {
-            get {
-                CheckValuesInitialized();
-                return _allIntelCoverageComprehensive;
-            }
-            private set { _allIntelCoverageComprehensive = value; }
-        }
-
         private bool _enableStartupTimeout;
         [Obsolete]
         public bool EnableStartupTimeout {

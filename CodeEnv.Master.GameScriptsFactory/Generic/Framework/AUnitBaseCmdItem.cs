@@ -342,7 +342,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         CurrentOrder = null;
     }
 
-    protected override void AssignDeadState() {
+    protected sealed override void AssignDeadState() {
         CurrentState = BaseState.Dead;
     }
 
@@ -449,7 +449,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
             if (CurrentOrder != null) {
                 if (CurrentOrder.Directive == BaseDirective.Scuttle) {
                     // allow a Scuttle order to proceed while paused
-                    _ordersReceivedWhilePaused.Clear(); // for completeness. Doesn't really matter since about to be dead
+                    ResetOrdersReceivedWhilePausedSystem();
                     HandleNewOrder();
                     return;
                 }
@@ -573,9 +573,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
                 case BaseDirective.Repair:
                     CurrentState = BaseState.ExecuteRepairOrder;
                     break;
-                case BaseDirective.Scuttle:
-                    ScuttleUnit(CurrentOrder.Source);
-                    break;
                 case BaseDirective.Refit:
                     CurrentState = BaseState.ExecuteRefitOrder;
                     break;
@@ -585,6 +582,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
                 case BaseDirective.ChangeHQ:
                     HQElement = CurrentOrder.Target as FacilityItem;
                     break;
+                case BaseDirective.Scuttle:
+                    ScuttleUnit(CurrentOrder.Source);
+                    return; // CurrentOrder will be set to null as a result of death
                 case BaseDirective.Cancel:
                 // 9.13.17 Cancel should never be processed here as it is only issued by User while paused and is 
                 // handled by HandleCurrentOrderChangedWhilePausedUponResume(). 
@@ -592,18 +592,14 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(directive));
             }
-            _executingOrderID = CurrentOrder.OrderID;
-        }
-        else {
-            _executingOrderID = default(Guid);
         }
     }
 
     protected override void ResetOrderAndState() {
         base.ResetOrderAndState();
         _currentOrder = null;   // avoid order changed while paused system
-        _executingOrderID = default(Guid);    // reqd as HandleNewOrder not called when using _currentOrder
         CurrentState = BaseState.Idling;    // 4.20.17 Will unsubscribe from any FsmEvents when exiting the Current non-Call()ed state
+        D.AssertDefault(_executingOrderID); // 1.22.18 _executingOrderID now reset to default(Guid) in _ExitState
     }
 
     #endregion
@@ -691,8 +687,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected void Idling_UponPreconfigureState() {
         LogEvent();
         ValidateCommonNonCallableStateValues();
-        __ValidateNotUnavailable();
-        // 12.4.17 Can't set availability here as can violate FSM rule: no state change in void EnterStates
+        if (Availability == NewOrderAvailability.Unavailable) {  // 1.13.18 follow-on or repair order likely to be unauthorized if Unavailable
+            ChangeAvailabilityTo(NewOrderAvailability.BarelyAvailable);
+        }
+        // 12.4.17 Can't ChangeAvailabilityTo(Available) here as can atomically cause a new order to be received 
+        // which would violate FSM rule: no state change in void EnterStates
     }
 
     protected IEnumerator Idling_EnterState() {
@@ -724,7 +723,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         // See http://answers.unity3d.com/questions/158917/error-quotmcoroutineenumeratorgchandle-0quot.html
         yield return null;
 
-        // Set after repair check so if going to repair, repair assesses order status
+        // Set after repair check so if going to repair, repair assesses availability
         ChangeAvailabilityTo(NewOrderAvailability.Available); // Can atomically cause a new order to be received
     }
 
@@ -781,6 +780,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         // Do nothing as no callback to send
     }
 
+    [Obsolete("Not currently used")]
+    protected void Idling_UponResetOrderAndState() {
+        LogEvent();
+    }
+
     protected void Idling_UponDeath() {
         LogEvent();
     }
@@ -802,6 +806,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
         IUnitAttackable unitAttackTgt = CurrentOrder.Target as IUnitAttackable;
         D.AssertNotNull(unitAttackTgt);
+
+        _executingOrderID = CurrentOrder.OrderID;
         _fsmTgt = unitAttackTgt;
 
         bool isSubscribed = FsmEventSubscriptionMgr.AttemptToSubscribeToFsmEvent(FsmEventSubscriptionMode.FsmTgtDeath, _fsmTgt);
@@ -915,6 +921,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         // TODO Notify superiors
     }
 
+    [Obsolete("Not currently used")]
+    protected void ExecuteAttackOrder_UponResetOrderAndState() {
+        LogEvent();
+    }
+
     protected void ExecuteAttackOrder_UponDeath() {
         LogEvent();
         // TODO Notify superiors of our death
@@ -932,9 +943,10 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
         isUnsubscribed = FsmEventSubscriptionMgr.AttemptToUnsubscribeToFsmEvent(FsmEventSubscriptionMode.OwnerAwareChg_Fleet);
         D.Assert(isUnsubscribed);
-        ResetCommonNonCallableStateValues();
 
-        ClearAnyRemainingElementOrdersIssuedBy(_executingOrderID);
+        var attackOrderID = _executingOrderID;
+        ResetCommonNonCallableStateValues();
+        ClearAnyRemainingElementOrdersIssuedBy(attackOrderID);
     }
 
     #endregion
@@ -960,6 +972,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         ValidateCommonNonCallableStateValues();
         D.AssertEqual(this, CurrentOrder.Target);
         D.AssertNotEqual(Constants.OneHundredPercent, Data.UnitHealth);
+
+        _executingOrderID = CurrentOrder.OrderID;
         _fsmTgt = CurrentOrder.Target;
         // No FsmInfoAccessChgd, FsmTgtDeath or FsmTgtOwnerChg EventHandlers needed for our own base
         AssessAvailabilityStatus_Repair();
@@ -1033,6 +1047,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected void ExecuteRepairOrder_UponLosingOwnership() {
         LogEvent();
         // TODO Notify superiors
+    }
+
+    [Obsolete("Not currently used")]
+    protected void ExecuteRepairOrder_UponResetOrderAndState() {
+        LogEvent();
     }
 
     protected void ExecuteRepairOrder_UponDeath() {
@@ -1211,6 +1230,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         ValidateCommonNonCallableStateValues();
         D.AssertEqual(this, CurrentOrder.Target);
 
+        _executingOrderID = CurrentOrder.OrderID;
         _fsmTgt = CurrentOrder.Target;
         // No FsmInfoAccessChgd, FsmTgtDeath or FsmTgtOwnerChg EventHandlers needed for our own base
         DetermineFacilitiesToReceiveRefitOrder();
@@ -1220,6 +1240,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected IEnumerator ExecuteRefitOrder_EnterState() {
         LogEvent();
 
+        D.LogBold("{0} is issuing a RefitOrder to {1} Facilities: {2}.", DebugName, _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Count,
+            _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Select(f => f.DebugName).Concatenate());
         foreach (var facility in _fsmFacilitiesExpectedToCallbackWithOrderOutcome) {
             IList<FacilityDesign> refitDesigns;
             bool isDesignAvailable = _gameMgr.PlayersDesigns.TryGetUpgradeDesigns(Owner, facility.Data.Design, out refitDesigns);
@@ -1364,6 +1386,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         // TODO Notify superiors
     }
 
+    [Obsolete("Not currently used")]
+    protected void ExecuteRefitOrder_UponResetOrderAndState() {
+        LogEvent();
+    }
+
     protected void ExecuteRefitOrder_UponDeath() {
         LogEvent();
     }
@@ -1372,8 +1399,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void ExecuteRefitOrder_ExitState() {
         LogEvent();
+        var refitOrderID = _executingOrderID;
         ResetCommonNonCallableStateValues();
-        // 1.11.18 No need to cancel orders in case not completed as will always be completed unless taken over or dead
+        ClearAnyRemainingElementOrdersIssuedBy(refitOrderID);
     }
 
     #endregion
@@ -1400,6 +1428,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         ValidateCommonNonCallableStateValues();
         D.AssertEqual(this, CurrentOrder.Target);
 
+        _executingOrderID = CurrentOrder.OrderID;
         _fsmTgt = CurrentOrder.Target;
         // No FsmInfoAccessChgd, FsmTgtDeath or FsmTgtOwnerChg EventHandlers needed for our own base
         DetermineFacilitiesToReceiveDisbandOrder();
@@ -1531,6 +1560,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         // TODO Notify superiors
     }
 
+    [Obsolete("Not currently used")]
+    protected void ExecuteDisbandOrder_UponResetOrderAndState() {
+        LogEvent();
+    }
+
     protected void ExecuteDisbandOrder_UponDeath() {
         LogEvent();
     }
@@ -1539,8 +1573,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void ExecuteDisbandOrder_ExitState() {
         LogEvent();
+        var disbandOrderID = _executingOrderID;
         ResetCommonNonCallableStateValues();
-        // 1.11.18 No need to cancel orders in case not completed as will always be completed unless taken over or dead
+        ClearAnyRemainingElementOrdersIssuedBy(disbandOrderID);
     }
 
     #endregion
@@ -1779,11 +1814,6 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     #endregion
 
     #region Debug
-
-    protected sealed override void __ValidateCurrentStateWhenAssessingNeedForRepair() {
-        D.Assert(!IsCurrentStateAnyOf(BaseState.ExecuteRepairOrder, BaseState.Repairing));
-        D.Assert(!IsDead);
-    }
 
     protected sealed override void __ValidateCurrentStateWhenAssessingAvailabilityStatus_Repair() {
         D.AssertEqual(BaseState.ExecuteRepairOrder, CurrentState);
@@ -2265,8 +2295,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     void IConstructionManagerClient.HandleUncompletedConstructionRemovedFromQueue(Construction construction) {
         D.Assert(!construction.IsCompleted);
         var removedElement = construction.Element;
+        float completionPercentage = construction.CompletionPercentage;
         // if element is ship during initial construction, it will be removed from the hanger when hanger detects its death
-        removedElement.HandleUncompletedRemovalFromConstructionQueue();
+        removedElement.HandleUncompletedRemovalFromConstructionQueue(completionPercentage);
     }
 
     void IConstructionManagerClient.HandleConstructionCompleted(Construction construction) {

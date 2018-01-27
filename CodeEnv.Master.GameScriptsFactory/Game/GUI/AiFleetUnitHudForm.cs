@@ -95,6 +95,9 @@ public class AiFleetUnitHudForm : AFleetUnitHudForm {
         return OwnerAiMgr.TryFindClosestBase(currentFleetPosition, reqdHangerSlots, out closestBase);
     }
 
+    protected override bool TryFindClosestFleetExplorableItem(Vector3 currentFleetPosition, out IFleetExplorable closestExplorableItem) {
+        return OwnerAiMgr.TryFindClosestFleetExplorableItem(currentFleetPosition, out closestExplorableItem);
+    }
 
     #region Debug
 

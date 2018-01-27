@@ -186,8 +186,8 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="reworkMode">The rework mode.</param>
         public void BeginReworkingVisuals(ReworkingMode reworkMode) {
-            D.AssertNull(_reworkIcon);
-            _reworkIcon = InitializeReworkIcon();
+            D.AssertNull(_reworkIcon, DebugName);
+            _reworkIcon = InitializeReworkIcon(reworkMode);
         }
 
         /// <summary>
@@ -195,12 +195,21 @@ namespace CodeEnv.Master.GameContent {
         /// <remarks>UNDONE make use of completionPercentage</remarks>
         /// </summary>
         /// <param name="completionPercentage">The completion percentage used when toShow is true.</param>
-        public void RefreshReworkingVisuals(float completionPercentage) {
-            D.AssertNotNull(_reworkIcon, DebugName);
+        public void RefreshReworkingVisuals(ReworkingMode reworkMode, float completionPercentage) {
+            if (_reworkIcon == null) {
+                // 1.24.18 Occurs when this DisplayMgr is dynamically created between an attempt to BeginReworkingVisuals and this Refresh
+                _reworkIcon = InitializeReworkIcon(reworkMode);
+            }
             // TODO
         }
 
-        private IWorldTrackingSprite InitializeReworkIcon() {
+        /// <summary>
+        /// Initializes the rework icon.
+        /// <remarks>UNDONE make use of reworkMode.</remarks>
+        /// </summary>
+        /// <param name="reworkMode">The rework mode.</param>
+        /// <returns></returns>
+        private IWorldTrackingSprite InitializeReworkIcon(ReworkingMode reworkMode) {
             TrackingIconInfo reworkIconInfo = MakeReworkIconInfo();
             IWorldTrackingSprite reworkIcon = GameReferences.TrackingWidgetFactory.MakeWorldTrackingSprite_Independent(_trackedItem, reworkIconInfo);
             (reworkIcon as IWorldTrackingSprite_Independent).DrawDepth = TrackingIconDepth;
@@ -219,11 +228,14 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public void HideReworkingVisuals() {
-            // 11.25.17 Debugging null _reworkIcon found in RefreshReworkingVisuals from element repair job
-            D.Log("{0} is nulling {1}.", DebugName, _reworkIcon.DebugName);
-            D.AssertNotNull(_reworkIcon);
-            _reworkIcon.Destroy();
-            _reworkIcon = null;
+            //// 11.25.17 Debugging null _reworkIcon found in RefreshReworkingVisuals during element repair
+            ////D.AssertNotNull(_reworkIcon, DebugName);
+            ////D.Log("{0} is nulling {1}.", DebugName, _reworkIcon.DebugName);
+            // 1.24.18 Can be null if this DisplayMgr was dynamically created between an attempt to BeginReworkingVisuals and this Hide
+            if (_reworkIcon != null) {
+                _reworkIcon.Destroy();
+                _reworkIcon = null;
+            }
         }
 
         private void AssessReworkIconShowing() {
@@ -236,6 +248,13 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         #region Debug
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        public void __ValidateReworkIcon() {
+            if (_reworkIcon == null) {
+                D.Error("{0}: Rework Icon is null.", DebugName);
+            }
+        }
 
         protected override List<MeshRenderer> __GetMeshRenderers() {
             List<MeshRenderer> result = base.__GetMeshRenderers();

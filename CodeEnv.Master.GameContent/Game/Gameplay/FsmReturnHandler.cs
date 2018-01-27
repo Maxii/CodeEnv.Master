@@ -41,10 +41,10 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Processes the FsmCallReturnCause (aka the cause of the Return()) and executes the Task assigned to that
-        /// Return() cause, if any. Returns <c>true</c> if the Return() has FsmCallReturnCause.None indicating the 
+        /// Return() cause, if any. Returns <c>true</c> if the Return() has FsmCallReturnCause.None indicating the
         /// Call()ed state Return()ed upon successful completion and had no Task to execute, <c>false</c> if there was
-        /// a FsmCallReturnCause besides None. An FsmCallReturnCause besides None indicates the Call()ed state 
-        /// Return()ed as a result of an event and did not successfully complete, resulting in execution of the Task 
+        /// a FsmCallReturnCause besides None. An FsmCallReturnCause besides None indicates the Call()ed state
+        /// Return()ed as a result of an event and did not successfully complete, resulting in execution of the Task
         /// associated with that FsmCallReturnCause.
         /// </summary>
         public bool DidCallSuccessfullyComplete {
@@ -64,11 +64,13 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Processes the FsmCallReturnCause (aka the cause of the Return()) and executes the Task assigned to that
-        /// Return() cause, if any. Returns <c>false</c> if the Return() has FsmCallReturnCause.None indicating the 
-        /// Call()ed state Return()ed upon successful completion and no Task was processed, <c>true</c> if there was a 
-        /// FsmCallReturnCause besides None indicating the Call()ed state Return()ed as a result of an event and 
+        /// Return() cause, if any. Returns <c>false</c> if the Return() has FsmCallReturnCause.None indicating the
+        /// Call()ed state Return()ed upon successful completion and no Task was processed, <c>true</c> if there was a
+        /// FsmCallReturnCause besides None indicating the Call()ed state Return()ed as a result of an event and
         /// the Task associated with that Return() cause was processed.
         /// </summary>
+        /// <param name="returnCause">The FsmCallReturnCause that was returned.</param>
+        /// <returns></returns>
         public bool TryProcessAndFindReturnCause(out FsmCallReturnCause returnCause) {
             returnCause = ReturnCause;
             if (ReturnCause != default(FsmCallReturnCause)) {

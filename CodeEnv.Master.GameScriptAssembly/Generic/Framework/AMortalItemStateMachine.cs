@@ -341,13 +341,14 @@ public abstract class AMortalItemStateMachine : AMortalItem {
             exitStateCoroutine.Run(state.exitStateEnumerator);  // must call as null stops any prior IEnumerator still running
         }
 
-
         // My ChangingState() addition moved below as CurrentState doesn't change if state calling Return() wasn't Call()ed
 
         if (_stack.Count > 0) {
             ChangingState();    // my addition to keep lastState in sync
             state = _stack.Pop();
             //D.Log(ShowDebugLog, "{0} setting up resumption of {1}_EnterState() in Return(). MethodName: {2}.", DebugName, CurrentState.ToString(), state.enterState.Method.Name);
+            // 1.24.18 No need to attempt to execute a void EnterState, aka state.enterState() as Return() only used by state that was Call()ed.
+            // Call()ed states can only be Call()ed from and IEnumerator EnterState
             enterStateCoroutine.Run(state.enterStateEnumerator, state.enterStack);
             _timeEnteredState = Time.time - state.time;
         }
@@ -531,23 +532,6 @@ public abstract class AMortalItemStateMachine : AMortalItem {
         return returnValue as T;
     }
 
-    #region Debug
-
-    [Obsolete]  // 11.17.17 didn't work as I can't determine the parameters since EnterState() and ExitState() are both Func<IEnumerator>
-    private void __ValidateMethodReturnTypes(bool exitStateMethodReturnsIEnumerator, bool enterStateMethodReturnsVoid) {
-        if (exitStateMethodReturnsIEnumerator) {    // deadly as preConfigureState will execute before exitState
-            D.Warn("{0} Illegal exit state return type as nextState.PreconfigureState() will always run before lastState.ExitState()!", DebugName);
-            if (enterStateMethodReturnsVoid) {
-                string lastStateMsg = LastState != null ? LastState.ToString() : "null";
-                string msg = "{0} Illegal Combination of return types. ExitState: {1}, EntryState: {2}.".Inject(DebugName, lastStateMsg, CurrentState.ToString());
-                throw new InvalidOperationException(msg);  // deadly combination as enter will execute before exit
-            }
-        }
-    }
-
-    #endregion
-
-
     #region Pass On Methods
 
     //void Update() {
@@ -616,19 +600,20 @@ public abstract class AMortalItemStateMachine : AMortalItem {
 
     #region Debug
 
-    // WARNING: Making a state change directly or indirectly (e.g. thru another method or issuing an order) from a void EnterState() method
-    // will cause the state machine to lose its place. This even occurs if the state change is the last line of code in the EnterState().
-    // What happens: when the void EnterState() executes, it executes in ConfigureCurrentState(). When that void EnterState() changes
-    // the state during that execution, CurrentState_set is called. This occurs before EnterState() and ConfigureCurrentState() completes. 
-    // The 'return to here to complete' code pointer remembers it has more code in EnterState() and then ConfigureCurrentState() to execute. 
+    // WARNING: Making a state change directly or indirectly (e.g. thru another method or issuing an order) from a void 
+    // previousState_ExitState(), state_UponPreconfigureState() or state_EnterState() method ('the void method') will cause the state machine
+    // to lose its place. This even occurs if the state change is the last line of code in 'the void method'. 
+    // What happens: when 'the void method' executes, it executes in ConfigureCurrentState(). When 'the void method' changes
+    // the state during that execution, CurrentState_set is called. This occurs before 'the void method' and ConfigureCurrentState() completes. 
+    // The 'return to here to complete' code pointer remembers it has more code in 'the void method' and ConfigureCurrentState() to execute. 
     // As a result of CurrentState_set, ConfigureCurrentState() is called again but for the new state. This ConfigureCurrentState() call 
-    // is executed all the way through, including executing ExitState() and executing (or scheduling for execution via coroutine) EnterState().
-    // Once this ConfigureCurrentState() completes execution, the remainder of CurrentState_set is completed. It is at this stage, that
-    // the code execution path returns to finishing the original EnterState(). Once this is finished, the next line of code to execute is 
-    // back to the original ConfigureCurrentState() to finish up which includes calling Run(IEnumerator). Unfortunately, since the 
-    // original EnterState() returns void, the IEnumerator is null and it overwrites the previously scheduled (but not yet executed) new
-    // EnterState() which then never executes. The state machine is still operational, but it has missed executing a method it was supposed
-    // to execute. It will however respond to a new state change.
+    // is executed all the way through, including executing _ExitState(), _UponPreconfigureState() and executing (or scheduling for execution
+    // via coroutine) _EnterState(). Once this ConfigureCurrentState() completes execution, the remainder of CurrentState_set is completed. 
+    // It is at this stage, that the code execution path returns to finishing 'the [original] void method'. Once this is finished, 
+    // the next line of code to execute is back to the original ConfigureCurrentState() to finish up which includes calling Run(IEnumerator). 
+    // Unfortunately, since 'the [original] void method' returns void, the IEnumerator is null and it overwrites the previously 
+    // scheduled (but not yet executed) new 'the void method' which then never executes. The state machine is still operational, 
+    // but it has missed executing a method it was supposed to execute. It will however respond to a new state change.
 
     // A similar problem occurs if the state machine supports state change notification events. Changing state while executing 
     // CurrentState_set means the first state change notification that occurs is the new state, not the state that caused CurrentState_set
@@ -638,9 +623,10 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     private bool __hasCurrentState_setFinishedWithoutInterveningSet = true;
 
     /// <summary>
-    /// Validates that a void State_EnterState() method (called in ConfigureCurrentState()) does not attempt to set a new state.
-    /// Note: State_EnterState() methods that return IEnumerator that set a new state value should not fail this test as 
-    /// the coroutine that executes the EnterState() is only run after CurrentState_set completes.
+    /// Validates that a void previousState_ExitState(), State_UponPreconfigureState() or State_EnterState() method 
+    /// (called in ConfigureCurrentState()) does not attempt to set a new state.
+    /// <remarks>State_EnterState() methods that return IEnumerator that set a new state value should not fail this test as 
+    /// the coroutine that executes the EnterState() is only run after CurrentState_set completes.</remarks>
     /// </summary>
     private void __ValidateNoNewStateSetDuringVoidEnterState(object incomingState) {
         //D.Log(ShowDebugLog, "{0}.__ValidateNoNewStateSetDuringVoidEnterState() called. CurrentState = {1}, IncomingState = {2}.", DebugName, CurrentState, incomingState);
@@ -654,6 +640,18 @@ public abstract class AMortalItemStateMachine : AMortalItem {
     private void __ResetStateChangeValidationTest() {
         //D.Log(ShowDebugLog, "{0}.__ResetStateChangeValidationTest() called. CurrentState = {1}.", DebugName, CurrentState);
         __hasCurrentState_setFinishedWithoutInterveningSet = true;
+    }
+
+    [Obsolete]  // 11.17.17 didn't work as I can't determine the parameters since EnterState() and ExitState() are both Func<IEnumerator>
+    private void __ValidateMethodReturnTypes(bool exitStateMethodReturnsIEnumerator, bool enterStateMethodReturnsVoid) {
+        if (exitStateMethodReturnsIEnumerator) {    // deadly as preConfigureState will execute before exitState
+            D.Warn("{0} Illegal exit state return type as nextState.PreconfigureState() will always run before lastState.ExitState()!", DebugName);
+            if (enterStateMethodReturnsVoid) {
+                string lastStateMsg = LastState != null ? LastState.ToString() : "null";
+                string msg = "{0} Illegal Combination of return types. ExitState: {1}, EntryState: {2}.".Inject(DebugName, lastStateMsg, CurrentState.ToString());
+                throw new InvalidOperationException(msg);  // deadly combination as enter will execute before exit
+            }
+        }
     }
 
     #endregion

@@ -35,6 +35,7 @@ namespace CodeEnv.Master.GameContent {
             //ItemInfoID.Offense,
             //ItemInfoID.WeaponsRange,
             ItemInfoID.AlertStatus,
+            //ItemInfoID.OrderDirective,
 
             ItemInfoID.Outputs,
 
@@ -65,6 +66,10 @@ namespace CodeEnv.Master.GameContent {
                     case ItemInfoID.Category:
                         isSuccess = true;
                         colorizedText = _lineTemplate.Inject(report.Category != FacilityHullCategory.None ? report.Category.GetValueName() : Unknown);
+                        break;
+                    case ItemInfoID.OrderDirective:
+                        isSuccess = true;
+                        colorizedText = _lineTemplate.Inject(report.__OrderDirective.GetValueName());
                         break;
                     default:
                         throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(infoID));

@@ -24,6 +24,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FacilityReport : AUnitElementReport {
 
+        public FacilityDirective __OrderDirective { get; private set; }
+
         public FacilityHullCategory Category { get; private set; }
 
         public FacilityReport(FacilityData data, Player player) : base(data, player) { }
@@ -79,6 +81,9 @@ namespace CodeEnv.Master.GameContent {
             }
 
             Outputs = AssessOutputs(fData.Outputs);
+
+            __OrderDirective = (Item as IFacility).CurrentOrder != null ? (Item as IFacility).CurrentOrder.Directive : FacilityDirective.None;
+
         }
 
     }

@@ -143,7 +143,6 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         }
     }
 
-
     protected override void InitializeOnFirstDiscernibleToUser() {
         base.InitializeOnFirstDiscernibleToUser();
         Data.OrbitalSpeed = CelestialOrbitSimulator.RelativeOrbitSpeed;

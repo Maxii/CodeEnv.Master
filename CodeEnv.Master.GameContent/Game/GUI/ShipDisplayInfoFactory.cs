@@ -36,6 +36,7 @@ namespace CodeEnv.Master.GameContent {
             //ItemInfoID.Offense,
             //ItemInfoID.WeaponsRange,
             ItemInfoID.AlertStatus,
+            //ItemInfoID.OrderDirective,
 
             ItemInfoID.Outputs,
             //ItemInfoID.Mass,
@@ -105,6 +106,10 @@ namespace CodeEnv.Master.GameContent {
                     case ItemInfoID.ActualSpeed:
                         isSuccess = true;
                         colorizedText = _lineTemplate.Inject(GetFormat(infoID).Inject(report.__ActualSpeedValue.Value));
+                        break;
+                    case ItemInfoID.OrderDirective:
+                        isSuccess = true;
+                        colorizedText = _lineTemplate.Inject(report.__OrderDirective.GetValueName());
                         break;
                     default:
                         throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(infoID));

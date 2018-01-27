@@ -35,7 +35,7 @@ namespace CodeEnv.Master.GameContent {
 
         ReworkingMode ReworkUnderway { get; }
 
-        void HandleUncompletedRemovalFromConstructionQueue();
+        void HandleUncompletedRemovalFromConstructionQueue(float completionPercentage);
 
     }
 }

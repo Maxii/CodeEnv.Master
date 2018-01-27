@@ -102,8 +102,8 @@ namespace CodeEnv.Master.GameContent {
             Outputs = MakeOutputs();
         }
 
-        public override void RestoreRefitValues(RefitStorage valuesBeforeRefit) {
-            base.RestoreRefitValues(valuesBeforeRefit);
+        public override void RestorePreReworkValues(PreReworkValuesStorage valuesPriorToRework) {
+            base.RestorePreReworkValues(valuesPriorToRework);
             Outputs = MakeOutputs();
         }
 

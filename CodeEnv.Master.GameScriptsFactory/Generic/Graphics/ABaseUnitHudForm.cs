@@ -43,6 +43,8 @@ public abstract class ABaseUnitHudForm : AForm {
     [SerializeField]
     private UIButton _unitFocusButton = null;
     [SerializeField]
+    private UIButton _unitClearOrdersButton = null;
+    [SerializeField]
     private UIButton _unitScuttleButton = null;
     [SerializeField]
     private MyNguiToggleButton _unitRepairButton = null;
@@ -133,6 +135,7 @@ public abstract class ABaseUnitHudForm : AForm {
 
     private void ConnectButtonEventHandlers() {
         EventDelegate.Add(_unitFocusButton.onClick, UnitFocusButtonClickedEventHandler);
+        EventDelegate.Add(_unitClearOrdersButton.onClick, UnitClearOrdersButtonClickedEventHandler);
         EventDelegate.Add(_unitScuttleButton.onClick, UnitScuttleButtonClickedEventHandler);
         _unitRepairButton.toggleStateChanged += UnitRepairButtonToggleChangedEventHandler;
         _unitRefitButton.toggleStateChanged += UnitRefitButtonToggleChangedEventHandler;
@@ -188,6 +191,10 @@ public abstract class ABaseUnitHudForm : AForm {
 
     private void UnitFocusButtonClickedEventHandler() {
         HandleUnitFocusButtonClicked();
+    }
+
+    private void UnitClearOrdersButtonClickedEventHandler() {
+        HandleUnitClearOrdersButtonClicked();
     }
 
     private void UnitRepairButtonToggleChangedEventHandler(object sender, EventArgs e) {
@@ -305,6 +312,11 @@ public abstract class ABaseUnitHudForm : AForm {
         FocusOn(SelectedUnit);
     }
 
+    private void HandleUnitClearOrdersButtonClicked() {
+        SelectedUnit.ClearOrdersAndIdle();
+        AssessUnitButtons();
+    }
+
     private void HandleUnitRepairButtonToggleChanged() {
         BaseOrder order;
         bool isButtonToggledIn = _unitRepairButton.IsToggledIn;
@@ -402,6 +414,7 @@ public abstract class ABaseUnitHudForm : AForm {
             _unitDisbandButton.IsEnabled = isOrderedToDisband ? false : SelectedUnit.IsAuthorizedForNewOrder(BaseDirective.Disband);
         }
 
+        _unitClearOrdersButton.isEnabled = true; ////!SelectedUnit.IsCurrentOrderDirectiveAnyOf(BaseDirective.Disband);
         _unitScuttleButton.isEnabled = SelectedUnit.IsAuthorizedForNewOrder(BaseDirective.Scuttle);
     }
 
@@ -410,10 +423,11 @@ public abstract class ABaseUnitHudForm : AForm {
     }
 
     protected void DisableUnitButtons() {
+        _unitClearOrdersButton.isEnabled = false;
+        _unitScuttleButton.isEnabled = false;
         _unitRepairButton.IsEnabled = false;
         _unitRefitButton.IsEnabled = false;
         _unitDisbandButton.IsEnabled = false;
-        _unitScuttleButton.isEnabled = false;
     }
 
     #endregion
@@ -1138,10 +1152,11 @@ public abstract class ABaseUnitHudForm : AForm {
 
     private void DisconnectButtonEventHandlers() {
         EventDelegate.Remove(_unitFocusButton.onClick, UnitFocusButtonClickedEventHandler);
+        EventDelegate.Remove(_unitClearOrdersButton.onClick, UnitClearOrdersButtonClickedEventHandler);
+        EventDelegate.Remove(_unitScuttleButton.onClick, UnitScuttleButtonClickedEventHandler);
         _unitRepairButton.toggleStateChanged -= UnitRepairButtonToggleChangedEventHandler;
         _unitRefitButton.toggleStateChanged -= UnitRefitButtonToggleChangedEventHandler;
         _unitDisbandButton.toggleStateChanged -= UnitDisbandButtonToggleChangedEventHandler;
-        EventDelegate.Remove(_unitScuttleButton.onClick, UnitScuttleButtonClickedEventHandler);
 
         _facilityRepairButton.toggleStateChanged -= FacilityRepairButtonToggleChangedEventHandler;
         _facilityRefitButton.toggleStateChanged -= FacilityRefitButtonToggleChangedEventHandler;
@@ -1184,10 +1199,11 @@ public abstract class ABaseUnitHudForm : AForm {
         D.AssertNotNull(_shipIconPrefab);
 
         D.AssertNotNull(_unitFocusButton);
+        D.AssertNotNull(_unitClearOrdersButton);
+        D.AssertNotNull(_unitScuttleButton);
         D.AssertNotNull(_unitRepairButton);
         D.AssertNotNull(_unitRefitButton);
         D.AssertNotNull(_unitDisbandButton);
-        D.AssertNotNull(_unitScuttleButton);
 
         D.AssertNotNull(_facilityRepairButton);
         D.AssertNotNull(_facilityRefitButton);

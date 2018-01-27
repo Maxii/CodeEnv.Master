@@ -81,8 +81,9 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
 
     /// <summary>
     /// Flag indicating whether InitializeOnFirstDiscernibleToUser() has run.
+    /// <remarks>OPTIMIZE test for null DisplayMgr instead.</remarks>
     /// </summary>
-    private bool _hasInitOnFirstDiscernibleToUserRun;
+    private bool __hasInitOnFirstDiscernibleToUserRun;
     private IGameInputHelper _inputHelper;
     private ICtxControl _ctxControl;
     private IDictionary<HighlightMgrID, AHighlightManager> _highlightMgrLookup;
@@ -99,8 +100,10 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
     /// View-related members of this item that are not needed until the item is discernible to the user.
     /// </summary>
     protected virtual void InitializeOnFirstDiscernibleToUser() {
-        D.Assert(!_hasInitOnFirstDiscernibleToUserRun);
+        D.Assert(!__hasInitOnFirstDiscernibleToUserRun);
         D.Assert(IsOperational);
+        D.Assert(IsDiscernibleToUser);    // first time change should always be true
+
         _hoveredHudManager = InitializeHoveredHudManager();
 
         DisplayMgr = MakeDisplayMgrInstance();
@@ -110,7 +113,9 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
         DisplayMgr.IsDisplayEnabled = true;
 
         EffectsMgr = InitializeEffectsManager();
-        _hasInitOnFirstDiscernibleToUserRun = true;
+        __hasInitOnFirstDiscernibleToUserRun = true;
+        // 1.24.18 Atomically re-AssessIsDiscernibleToUser() here will not change IsDiscernibleToUser
+        // as DisplayMgr.IsInMainCameraLOS starts true and remains so until the IsBecameInvisible event is triggered
     }
 
     protected abstract ItemHoveredHudManager InitializeHoveredHudManager();
@@ -121,6 +126,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
         DisplayMgr.Initialize();
         _subscriptions.Add(DisplayMgr.SubscribeToPropertyChanged(dm => dm.IsInMainCameraLOS, IsInMainCameraLosPropChangedHandler));
         _subscriptions.Add(DisplayMgr.SubscribeToPropertyChanged(dm => dm.IsPrimaryMeshInMainCameraLOS, IsVisualDetailDiscernibleToUserPropChangedHandler));
+        //D.Log("{0} has initialized its DisplayMgr in Frame {1}.", DebugName, Time.frameCount);
     }
 
     protected virtual EffectsManager InitializeEffectsManager() {
@@ -258,14 +264,14 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
         else {
             // Not going to show the effect. Complete the handshake so any dependencies can continue
             if (effectSeqID == EffectSequenceID.Dying) {
-                __DelayDyingEffectCompletion(); // 5.12.17 FIXME delay to keep HandleDeathAfterBeginningDeathEffect()
+                __DelayDyingEffectCompletion(); // 5.12.17 FIXME delay to keep AMortalItem.HandleDeathEffectBegun()
                 // from allowing DisplayMgr to try to shutdown icons that have already been destroyed.
             }
         }
     }
 
-    private void __DelayDyingEffectCompletion() {   // TEMP
-        JobManager.Instance.WaitForHours(1F, "__DyingEffectCompletionDelayJob", (jobWasKilled) => {
+    private void __DelayDyingEffectCompletion() {   // 1.13.18 Chgd from hours to seconds to eliminate perpetual delay when paused
+        _jobMgr.WaitForGameplaySeconds(1F, "__DyingEffectCompletionDelayJob", (jobWasKilled) => {
             if (!jobWasKilled) {
                 HandleEffectSequenceFinished(EffectSequenceID.Dying);
             }
@@ -372,7 +378,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
 
     protected override void HandleOwnerChanging(Player newOwner) {
         if (_ctxControl != null) {
-            D.Assert(_hasInitOnFirstDiscernibleToUserRun);
+            D.Assert(__hasInitOnFirstDiscernibleToUserRun);
             if (Owner == TempGameValues.NoPlayer || newOwner == TempGameValues.NoPlayer || Owner.IsUser != newOwner.IsUser) {
                 // Kind of owner (NoPlayer, AI or User) has changed so generate a new ctxControl -
                 // aka, a change from one AI player to another does not necessitate a change
@@ -395,7 +401,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
         }
     }
 
-    protected virtual void HandleIsInMainCameraLosChanged() {
+    private void HandleIsInMainCameraLosChanged() {
         AssessIsDiscernibleToUser();
     }
 
@@ -405,8 +411,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
             // lost ability to discern this object while showing the HUD so stop showing
             ShowHoveredHud(false);
         }
-        if (!_hasInitOnFirstDiscernibleToUserRun) {
-            D.Assert(IsDiscernibleToUser);    // first time change should always be true
+        if (!__hasInitOnFirstDiscernibleToUserRun) {
             InitializeOnFirstDiscernibleToUser();
         }
         AssessCircleHighlighting();
@@ -498,7 +503,7 @@ public abstract class ADiscernibleItem : AItem, ICameraFocusable, IWidgetTrackab
             //D.Log(ShowDebugLog, "{0}.HandleRightPressRelease called.", DebugName);
             // right press release while not dragging means both press and release were over this object
             if (_ctxControl == null) {
-                D.Assert(_hasInitOnFirstDiscernibleToUserRun);
+                D.Assert(__hasInitOnFirstDiscernibleToUserRun);
                 _ctxControl = InitializeContextMenu(Owner);
             }
             _ctxControl.AttemptShowContextMenu();

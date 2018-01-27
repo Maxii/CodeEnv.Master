@@ -65,8 +65,10 @@ namespace CodeEnv.Master.GameContent {
             get { return _currentConstruction; }
             set {
                 D.AssertNotNull(value, DebugName); // CurrentConstruction should never be changed to null
-                _currentConstruction = value;
-                D.Log("{0}.CurrentConstruction changed to {1}.", DebugName, _currentConstruction.DebugName);
+                if (_currentConstruction != value) {
+                    D.Log("{0}.CurrentConstruction is changing from {1} to {2}.", DebugName, _currentConstruction.DebugName, value.DebugName);
+                    _currentConstruction = value;
+                }
             }
         }
 

@@ -31,7 +31,7 @@ namespace CodeEnv.Master.GameContent {
         /// The currently selected Item which can be null if no Item is selected.
         /// <remarks>Usage: An Item is selected by setting its IsSelected property to true. That Item then automatically populates
         /// this property with a reference to itself. An Item's deselection is initiated by assigning this CurrentSelection 
-        /// property to some other value, including null. This manager then automatically DeSelect()s any previously selected Item. </remarks>
+        /// property to some other value, including null. This manager then automatically DeSelect()s any previously selected Item.</remarks>
         /// </summary>
         public ISelectable CurrentSelection {
             get { return _currentSelection; }
@@ -65,7 +65,7 @@ namespace CodeEnv.Master.GameContent {
         private void CurrentSelectionPropChangingHandler(ISelectable incomingSelection) {
             if (CurrentSelection != null) {
                 CurrentSelection.IsSelected = false;
-                _gameMgr.RequestPauseStateChange(false);
+                _gameMgr.RequestPauseStateChange(toPause: false);
                 // 8.2.17 ISelectables now auto hide the HUD they show in when DeSelect()ed
             }
         }
@@ -73,13 +73,13 @@ namespace CodeEnv.Master.GameContent {
         private void CurrentSelectionPropChangedHandler() {
             if (CurrentSelection != null) {
                 _sfxMgr.PlaySFX(SfxClipID.Select);
-                _gameMgr.RequestPauseStateChange(true);
+                _gameMgr.RequestPauseStateChange(toPause: true);
             }
             else {
 
                 // 1.1.18 Only occurs from UnconsumedPress
                 _sfxMgr.PlaySFX(SfxClipID.UnSelect);
-                _gameMgr.RequestPauseStateChange(false);
+                _gameMgr.RequestPauseStateChange(toPause: false);
 
             }
         }

@@ -54,6 +54,10 @@ public class UserFleetUnitHudForm : AFleetUnitHudForm {
         return UserAiMgr.TryFindClosestBase(currentFleetPosition, reqdHangerSlots, out closestBase);
     }
 
+    protected override bool TryFindClosestFleetExplorableItem(Vector3 currentFleetPosition, out IFleetExplorable closestExplorableItem) {
+        return UserAiMgr.TryFindClosestFleetExplorableItem(currentFleetPosition, out closestExplorableItem);
+    }
+
     protected override void AssessInteractibleHud() {
         if (_pickedShipIcons.Count == Constants.One) {
             InteractibleHudWindow.Instance.Show(FormID.UserShip, _pickedShipIcons.First().Element.Data);

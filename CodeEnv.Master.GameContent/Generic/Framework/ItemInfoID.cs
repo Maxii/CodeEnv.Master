@@ -56,6 +56,7 @@ namespace CodeEnv.Master.GameContent {
         WeaponsRange,
         SensorRange,
 
+        OrderDirective,
         Target,
         TargetDistance,
 

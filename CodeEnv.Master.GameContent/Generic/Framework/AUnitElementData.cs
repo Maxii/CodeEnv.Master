@@ -215,7 +215,7 @@ namespace CodeEnv.Master.GameContent {
 
         public void PrepareForInitialConstruction() {
             // change the values to what they should be during construction
-            DamageEquipment(Constants.OneHundredPercent);
+            DamageNonHullEquipment(Constants.OneHundredPercent);
             Outputs *= TempGameValues.UnderConstructionValuesScaler;
             // All other Element-specific Properties are changed as a result of DamageEquipment
             float maxAllowedCurrentHitPts = MaxHitPoints * TempGameValues.UnderConstructionValuesScaler;
@@ -228,74 +228,64 @@ namespace CodeEnv.Master.GameContent {
             CurrentHitPoints = MaxHitPoints;
         }
 
-        public RefitStorage PrepareForRefit() {
-            // store the values that will need to be restored if Refit is canceled
-            var refitStorage = new RefitStorage(Design, CurrentHitPoints);
+        public PreReworkValuesStorage PrepareForRework() {
+            // store the values that will need to be restored if Rework is canceled
+            var reworkStorage = new PreReworkValuesStorage(Design, CurrentHitPoints);
             // damage the equipment and store what was damaged
-            var damagedEquipment = DamageEquipment(Constants.OneHundredPercent);
-            refitStorage.EquipmentDamaged = damagedEquipment;
+            var damagedEquipment = DamageNonHullEquipment(Constants.OneHundredPercent);
+            reworkStorage.EquipmentDamaged = damagedEquipment;
             // Outputs will be regenerated from equipment in derived classes if canceled
 
-            // change the values to what they should be during Refit
+            // change the values to what they should be during Rework
             Outputs *= TempGameValues.UnderConstructionValuesScaler;
-            // All other Element-specific Properties are changed as a result of DamageEquipment
+            // All other Element-specific Properties are changed as a result of DamageNonHullEquipment
             float maxAllowedCurrentHitPts = MaxHitPoints * TempGameValues.UnderConstructionValuesScaler;
             CurrentHitPoints = CurrentHitPoints < maxAllowedCurrentHitPts ? CurrentHitPoints : maxAllowedCurrentHitPts;
-            return refitStorage;
+            return reworkStorage;
         }
 
-        public virtual void RestoreRefitValues(RefitStorage valuesPriorToRefit) {
-            // UNCLEAR currently restoring previous values, but consider leaving most as is requiring repair
-            Design = valuesPriorToRefit.Design;
-            CurrentHitPoints = valuesPriorToRefit.CurrentHitPts;
-            valuesPriorToRefit.EquipmentDamaged.RestoreUndamagedState();
+        public virtual void RestorePreReworkValues(PreReworkValuesStorage preReworkValues) {
+            // UNCLEAR currently restoring previous values, but consider leaving most as is, requiring repair
+            Design = preReworkValues.Design;
+            CurrentHitPoints = preReworkValues.CurrentHitPts;
+            preReworkValues.EquipmentDamaged.RestoreUndamagedState();
+            preReworkValues.WasUsedToRestorePreReworkValues = true;
             // Outputs regenerated from equipment in derived classes
         }
 
         // Refit completion is handled by creating an upgraded UnitElementItem
 
-        public void PrepareForDisband() {
-            // damage the equipment
-            DamageEquipment(Constants.OneHundredPercent);
-
-            // change the values to what they should be during Disband
-            Outputs *= TempGameValues.UnderConstructionValuesScaler;
-            // All other Element-specific Properties are changed as a result of DamageEquipment
-            float maxAllowedCurrentHitPts = MaxHitPoints * TempGameValues.UnderConstructionValuesScaler;
-            CurrentHitPoints = CurrentHitPoints < maxAllowedCurrentHitPts ? CurrentHitPoints : maxAllowedCurrentHitPts;
-        }
-
         /// <summary>
         /// Damages non-hull equipment including CMs, ShieldGenerators, Weapons and Sensors. 
         /// The equipment damaged is determined by 1) whether its damageable, 2) how many of each type are kept 
-        /// undamaged to simulate a minimal defense while being constructed or refitted, and 3) the damagePercent.
+        /// undamaged to simulate a minimal defense while being reworked, and 3) the damagePercent.
         /// <remarks>This approach allows a degree of control on the availability of equipment
-        /// as refit proceeds and doesn't interfere with use of operational equipment when AlertLevel changes.</remarks>
+        /// as rework proceeds and doesn't interfere with use of operational equipment when AlertLevel changes.</remarks>
         /// </summary>
         /// <param name="damagePercent">The damage percent.</param>
-        public virtual EquipmentDamagedFromRefit DamageEquipment(float damagePercent) {
+        public virtual EquipmentDamagedFromRework DamageNonHullEquipment(float damagePercent) {
             Utility.ValidateForRange(damagePercent, Constants.ZeroPercent, Constants.OneHundredPercent);
 
-            var equipDamagedFromRefit = new EquipmentDamagedFromRefit();
+            var equipDamagedFromRework = new EquipmentDamagedFromRework();
             var damageablePCMs = PassiveCountermeasures.Where(pcm => pcm.IsDamageable).Skip(1);
             var pCMsToBeDamaged = damageablePCMs.Where(pcm => RandomExtended.Chance(damagePercent));
-            equipDamagedFromRefit.PassiveCMs = pCMsToBeDamaged;
+            equipDamagedFromRework.PassiveCMs = pCMsToBeDamaged;
 
             var damageableACMs = ActiveCountermeasures.Where(acm => acm.IsDamageable).Skip(1);
             var aCMsToBeDamaged = damageableACMs.Where(acm => RandomExtended.Chance(damagePercent));
-            equipDamagedFromRefit.ActiveCMs = aCMsToBeDamaged;
+            equipDamagedFromRework.ActiveCMs = aCMsToBeDamaged;
 
             var damageableSGs = ShieldGenerators.Where(sg => sg.IsDamageable).Skip(1);
             var sGsToBeDamaged = damageableSGs.Where(sg => RandomExtended.Chance(damagePercent));
-            equipDamagedFromRefit.ShieldGenerators = sGsToBeDamaged;
+            equipDamagedFromRework.ShieldGenerators = sGsToBeDamaged;
 
             var damageableWeaps = Weapons.Where(w => w.IsDamageable).Skip(1);
             var weapsToBeDamaged = damageableWeaps.Where(weap => RandomExtended.Chance(damagePercent));
-            equipDamagedFromRefit.Weapons = weapsToBeDamaged;
+            equipDamagedFromRework.Weapons = weapsToBeDamaged;
 
             var damageableSensors = Sensors.Where(s => s.IsDamageable).Skip(1);
             var sensorsToBeDamaged = damageableSensors.Where(s => RandomExtended.Chance(damagePercent));
-            equipDamagedFromRefit.Sensors = sensorsToBeDamaged;
+            equipDamagedFromRework.Sensors = sensorsToBeDamaged;
 
             RemoveDamageFromAllEquipment();
             pCMsToBeDamaged.ForAll(pcm => pcm.IsDamaged = true);
@@ -304,7 +294,7 @@ namespace CodeEnv.Master.GameContent {
             weapsToBeDamaged.ForAll(w => w.IsDamaged = true);
             sensorsToBeDamaged.ForAll(s => s.IsDamaged = true);
 
-            return equipDamagedFromRefit;
+            return equipDamagedFromRework;
         }
 
         public virtual void RemoveDamageFromAllEquipment() {
@@ -473,6 +463,7 @@ namespace CodeEnv.Master.GameContent {
 
         #region Nested Classes
 
+        [Obsolete]
         public class EquipmentDamagedFromRefit {
 
             public IEnumerable<PassiveCountermeasure> PassiveCMs { get; set; }
@@ -496,7 +487,32 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public class RefitStorage {
+        public class EquipmentDamagedFromRework {
+
+            public IEnumerable<PassiveCountermeasure> PassiveCMs { get; set; }
+            public IEnumerable<ActiveCountermeasure> ActiveCMs { get; set; }
+            public IEnumerable<ShieldGenerator> ShieldGenerators { get; set; }
+            public IEnumerable<AWeapon> Weapons { get; set; }
+            public IEnumerable<ElementSensor> Sensors { get; set; }
+            public Engine FtlEngine { get; set; }
+
+            public EquipmentDamagedFromRework() { }
+
+            public void RestoreUndamagedState() {
+                PassiveCMs.ForAll(cm => cm.IsDamaged = false);
+                ActiveCMs.ForAll(cm => cm.IsDamaged = false);
+                ShieldGenerators.ForAll(sg => sg.IsDamaged = false);
+                Weapons.ForAll(w => w.IsDamaged = false);
+                Sensors.ForAll(s => s.IsDamaged = false);
+                if (FtlEngine != null) {
+                    FtlEngine.IsDamaged = false;
+                }
+            }
+        }
+
+        public class PreReworkValuesStorage {
+
+            public bool WasUsedToRestorePreReworkValues { get; set; }
 
             public AUnitElementDesign Design { get; private set; }
 
@@ -504,9 +520,9 @@ namespace CodeEnv.Master.GameContent {
 
             public float CurrentHitPts { get; private set; }
 
-            public EquipmentDamagedFromRefit EquipmentDamaged { get; set; }
+            public EquipmentDamagedFromRework EquipmentDamaged { get; set; }
 
-            public RefitStorage(AUnitElementDesign design, float currentHitPts) {
+            public PreReworkValuesStorage(AUnitElementDesign design, float currentHitPts) {
                 Design = design;
                 CurrentHitPts = currentHitPts;
             }

@@ -26,6 +26,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class StarbaseCmdReport : AUnitCmdReport {
 
+        public BaseDirective __OrderDirective { get; private set; }
+
         public StarbaseCategory Category { get; private set; }
 
         public int? Population { get; private set; }
@@ -158,6 +160,8 @@ namespace CodeEnv.Master.GameContent {
 
             Resources = AssessResources(sData.Resources);
             UnitOutputs = AssessOutputs(sData.UnitOutputs);
+
+            __OrderDirective = (Item as IUnitBaseCmd).CurrentOrder != null ? (Item as IUnitBaseCmd).CurrentOrder.Directive : BaseDirective.None;
         }
 
         private BaseComposition CalcUnitCompositionFromKnownElements(StarbaseCmdData cmdData) {

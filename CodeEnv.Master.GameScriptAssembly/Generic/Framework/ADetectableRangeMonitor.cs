@@ -232,14 +232,16 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
                     DebugName, prevDetectedObj.DebugName, typeof(IDetectableType).Name, prevDetectedObj.IsOperational);
             }
         }
-        if (_objectsDetected.Any()) {
-            D.Warn("{0} has {1} remaining object of Type {2} remaining after removing all objects. Remaining objects: {3}.",
-                DebugName, _objectsDetected.Count, typeof(IDetectableType).Name, _objectsDetected.Select(obj => obj.DebugName).Concatenate());
-            D.Warn("{0} removed {1} objects. Objects removed: {2}.", DebugName, objectsDetectedCopy.Length, objectsDetectedCopy.Select(obj => obj.DebugName).Concatenate());
-            // 5.11.17 I'm getting this warning with a remaining Missile/Projectile and I don't understand how it is possible.
-            // It is present in the copy, but remains in _objectsDetected??? Must be an Equality issue where HashSet
-            // can't find it. I quit setting AOrdnance._uniqueID to zero in PoolMgr so shouldn't get this warning again.
-            // 5.13.17 Still getting it.
+        if (!IsApplicationQuiting) {
+            if (_objectsDetected.Any()) {
+                D.Warn("{0} has {1} remaining object of Type {2} remaining after removing all objects. Remaining objects: {3}.",
+                    DebugName, _objectsDetected.Count, typeof(IDetectableType).Name, _objectsDetected.Select(obj => obj.DebugName).Concatenate());
+                D.Warn("{0} removed {1} objects. Objects removed: {2}.", DebugName, objectsDetectedCopy.Length, objectsDetectedCopy.Select(obj => obj.DebugName).Concatenate());
+                // 5.11.17 I'm getting this warning with a remaining Missile/Projectile and I don't understand how it is possible.
+                // It is present in the copy, but remains in _objectsDetected??? Must be an Equality issue where HashSet
+                // can't find it. I quit setting AOrdnance._uniqueID to zero in PoolMgr so shouldn't get this warning again.
+                // 5.13.17 Still getting it.
+            }
         }
     }
 
@@ -395,11 +397,6 @@ public abstract class ADetectableRangeMonitor<IDetectableType, EquipmentType> : 
     }
 
     #region Cleanup
-
-    protected override void __CleanupOnApplicationQuit() {
-        base.__CleanupOnApplicationQuit();
-        IsOperational = false;  // 1.8.18 Without this I get lots of warnings from RangeMonitors about remaining detectables
-    }
 
     protected override void Cleanup() {
         base.Cleanup();

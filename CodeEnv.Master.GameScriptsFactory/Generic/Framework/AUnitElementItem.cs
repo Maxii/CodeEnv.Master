@@ -783,14 +783,15 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         SRSensorMonitor.HandleRelationsChangedWith(player);
         WeaponRangeMonitors.ForAll(wrm => wrm.HandleRelationsChangedWith(player));
         CountermeasureRangeMonitors.ForAll(crm => crm.HandleRelationsChangedWith(player));
-        UponRelationsChangedWith(player);
+        //UponRelationsChangedWith(player);
     }
 
     /// <summary>
-    /// Called when this element is removed from the ConstructionQueue before its initial construction or refit is completed.
+    /// Called when this element is removed from the ConstructionQueue before its initial construction, disband or refit is completed.
     /// </summary>
-    public void HandleUncompletedRemovalFromConstructionQueue() {
-        UponUncompletedRemovalFromConstructionQueue();
+    /// <param name="completionPercentage">The completion percentage.</param>
+    public void HandleUncompletedRemovalFromConstructionQueue(float completionPercentage) {
+        UponUncompletedRemovalFromConstructionQueue(completionPercentage);
     }
 
     protected override void HandleIsVisualDetailDiscernibleToUserChanged() {
@@ -847,11 +848,11 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// Clears the CurrentOrder and initiates Idling state when the CurrentOrder has the provided <c>cmdOrderID</c>.
     /// If the cmdOrderID provided is the default, the CurrentOrder will be cleared and Idling state
     /// initiated no matter what CurrentOrder's CmdOrderID is.
-    /// <remarks>Primarily for debugging, returns <c>true</c> if the CurrentOrder was cleared (and Idled), <c>false</c> otherwise.</remarks>
+    /// <remarks>Return value is primarily for debugging, returning <c>true</c> if the CurrentOrder was cleared (and Idled), <c>false</c> otherwise.</remarks>
     /// </summary>
-    /// <param name="cmdOrderID">The command order identifier. Default is default(Guid).</param>
+    /// <param name="cmdOrderID">The command order identifier.</param>
     /// <returns></returns>
-    internal bool ClearOrder(Guid cmdOrderID = default(Guid)) {
+    internal bool ClearOrder(Guid cmdOrderID) {
         bool toClear = cmdOrderID == default(Guid) ? true : cmdOrderID == _lastCmdOrderID;
         if (toClear) {
             ClearOrder();
@@ -861,19 +862,20 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     /// <summary>
     /// Clears the CurrentOrder and (re)initiates Idling state.
-    /// <remarks>11.25.17 TEMP Virtual to allow ShipItem to manage its __warnWhenIdlingReceivesFsmTgtEvents flag.</remarks>
     /// </summary>
-    protected virtual void ClearOrder() {
+    protected void ClearOrder() {
         ReturnFromCalledStates();
         ResetOrderAndState();
     }
 
     protected virtual void ResetOrderAndState() {
+        D.Assert(!IsDead);  // 1.25.18 Test to see if this can be called when already dead
         __ValidateCurrentStateNotACalledState();
         if (IsPaused) {
             // 1.7.18 e.g. occurs when creating new fleet from UnitHud
             D.Log(ShowDebugLog, "{0}.ResetOrderAndState called while paused.", DebugName);
         }
+        UponResetOrderAndState();
         ResetOrdersReceivedWhilePausedSystem();
     }
 
@@ -883,12 +885,60 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #region StateMachine Support Members
 
+    /// <summary>
+    /// Storage for the values of this element prior to Rework.
+    /// <remarks>Used to restore values when Refit or Disband Rework is canceled prior to
+    /// any construction completion progress.</remarks>
+    /// </summary>
+    protected AUnitElementData.PreReworkValuesStorage _preReworkValues;
+
     protected abstract bool IsCurrentStateCalled { get; }
 
     protected void RefreshReworkingVisuals(float percentCompletion) {
         if (DisplayMgr != null) {
-            DisplayMgr.RefreshReworkingVisuals(percentCompletion);
+            DisplayMgr.RefreshReworkingVisuals(ReworkUnderway, percentCompletion);
         }
+    }
+
+    /// <summary>
+    /// Validates the common starting values of a State that is Call()able.
+    /// </summary>
+    protected virtual void ValidateCommonCallableStateValues(string calledStateName) {
+        D.AssertNotEqual(Constants.Zero, _activeFsmReturnHandlers.Count);
+        _activeFsmReturnHandlers.Peek().__Validate(calledStateName);
+        D.Assert(!IsDead);
+    }
+
+    /// <summary>
+    /// Validates the common starting values of a State that is not Call()able.
+    /// </summary>
+    protected virtual void ValidateCommonNonCallableStateValues() {
+        D.AssertEqual(Constants.Zero, _activeFsmReturnHandlers.Count);
+        D.Assert(!_hasOrderOutcomeCallbackAttemptOccurred);
+        D.Assert(!IsDead);
+        D.AssertDefault(_lastCmdOrderID);
+    }
+
+    protected virtual void ResetCommonNonCallableStateValues() {
+        _activeFsmReturnHandlers.Clear();
+        _hasOrderOutcomeCallbackAttemptOccurred = false;
+        _lastCmdOrderID = default(Guid);
+    }
+
+    protected void ReturnFromCalledStates() {
+        while (IsCurrentStateCalled) {
+            Return();
+        }
+        D.Assert(!IsCurrentStateCalled);
+    }
+
+    protected sealed override void PreconfigureCurrentState() {
+        base.PreconfigureCurrentState();
+        UponPreconfigureState();
+    }
+
+    protected void Dead_ExitState() {
+        LogEventWarning();
     }
 
     #region FsmReturnHandler System
@@ -958,11 +1008,10 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// If default value the last order received does not require an order outcome callback from this element, 
     /// either because the order wasn't from Cmd, or the CmdOrder does not require a response.</remarks>
     /// <remarks>Also used by Cmd when callback occurs to determine whether the callback should be handled as Cmd's state could have changed.</remarks>
-    /// <remarks>This value represents the OrderID of the previous order when the CurrentOrder has just changed until 
-    /// HandleNewOrder has completed processing the change to the FSM's state. Accordingly, the previous state's
-    /// UponNewOrderReceived() and ExitState() methods, as well as the new state's UponPreconfigureState()
-    /// methods can all rely on this value representing the OrderID of the previous order. Once HandleNewOrder has
-    /// completed its processing, this value will be updated to become the ID of the CurrentOrder.</remarks>
+    /// <remarks>This value represents the OrderID of the previous order when the CurrentOrder has just changed. 
+    /// Accordingly, the previous state's UponNewOrderReceived() and ExitState() methods can all rely on this value representing
+    /// the OrderID of the previous order until ExitState() resets it to default(Guid). A non-Call()able state's PreconfigureState() 
+    /// method validates that it is default(Guid), then sets it to the ID of the CurrentOrder.
     /// </summary>
     protected Guid _lastCmdOrderID;
 
@@ -997,50 +1046,13 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #endregion
 
-    /// <summary>
-    /// Validates the common starting values of a State that is Call()able.
-    /// </summary>
-    protected virtual void ValidateCommonCallableStateValues(string calledStateName) {
-        D.AssertNotEqual(Constants.Zero, _activeFsmReturnHandlers.Count);
-        _activeFsmReturnHandlers.Peek().__Validate(calledStateName);
-        D.Assert(!IsDead);
-    }
-
-    /// <summary>
-    /// Validates the common starting values of a State that is not Call()able.
-    /// </summary>
-    protected virtual void ValidateCommonNonCallableStateValues() {
-        D.AssertEqual(Constants.Zero, _activeFsmReturnHandlers.Count);
-        D.Assert(!_hasOrderOutcomeCallbackAttemptOccurred);
-        D.Assert(!IsDead);
-    }
-
-    protected virtual void ResetCommonNonCallableStateValues() {
-        _activeFsmReturnHandlers.Clear();
-        _hasOrderOutcomeCallbackAttemptOccurred = false;
-    }
-
-    protected void ReturnFromCalledStates() {
-        while (IsCurrentStateCalled) {
-            Return();
-        }
-        D.Assert(!IsCurrentStateCalled);
-    }
-
-    protected sealed override void PreconfigureCurrentState() {
-        base.PreconfigureCurrentState();
-        UponPreconfigureState();
-    }
-
-    protected void PrepareForRefit() {
-        Data.DamageEquipment(Constants.OneHundredPercent);
-    }
-
-    protected void Dead_ExitState() {
-        LogEventWarning();
-    }
-
     #region Relays
+
+    /// <summary>
+    /// Called prior to nulling _currentOrder and setting CurrentState to Idling.
+    /// Allows states to prepare themselves before their ExitState() method is called.
+    /// </summary>
+    private void UponResetOrderAndState() { RelayToCurrentState(); }
 
     protected void UponEffectSequenceFinished(EffectSequenceID effectSeqID) { RelayToCurrentState(effectSeqID); }
 
@@ -1049,14 +1061,14 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// state that the element is dying, allowing any current state housekeeping
     /// required before entering the Dead state.
     /// </summary>
-    protected void UponDeath() { RelayToCurrentState(); }
+    private void UponDeath() { RelayToCurrentState(); }
 
     /// <summary>
     /// Called prior to the Owner changing, this method notifies the current
     /// state that the element is losing ownership, allowing any current state housekeeping
     /// required before the Owner is changed.
     /// </summary>
-    protected void UponLosingOwnership() { RelayToCurrentState(); }
+    private void UponLosingOwnership() { RelayToCurrentState(); }
 
     protected void UponNewOrderReceived() { RelayToCurrentState(); }
 
@@ -1068,6 +1080,18 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// </summary>
     private void UponPreconfigureState() { RelayToCurrentState(); }
 
+    /// <summary>
+    /// FSM relay for relationship changes with another player.
+    /// <remarks> 7.14.16 Primary responsibility for handling Relations changes (existing relationship with a player changes) in Cmd
+    /// and Element state machines rest with the Cmd. They implement HandleRelationsChanged and UponRelationsChanged.
+    /// In all cases where the order is issued by either Cmd or User, the element FSM does not need to pay attention to Relations
+    /// changes as their orders will be changed if a Relations change requires it, determined by Cmd. When the Captain
+    /// overrides an order, those orders typically(so far) entail assuming station in one form or another, and/or repairing
+    /// in place, sometimes in combination. A Relations change here should not affect any of these orders...so far.
+    /// Upshot: Elements FSMs can ignore Relations changes.
+    /// </remarks>
+    /// </summary>
+    [Obsolete("1.26.18 All Relation changes handled by Cmd FSM.")]
     private void UponRelationsChangedWith(Player player) { RelayToCurrentState(player); }
 
     /// <summary>
@@ -1084,7 +1108,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     private void UponDamageIncurred() { RelayToCurrentState(); }
 
-    private void UponUncompletedRemovalFromConstructionQueue() { RelayToCurrentState(); }
+    private void UponUncompletedRemovalFromConstructionQueue(float completionPercentage) { RelayToCurrentState(completionPercentage); }
 
     /// <summary>
     /// Called when the HQ status of this element changes.
@@ -1350,13 +1374,6 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     #endregion
 
     #region Debug
-
-    [System.Diagnostics.Conditional("DEBUG")]
-    protected void __ValidateNotUnavailable() {
-        if (Availability == NewOrderAvailability.Unavailable) {
-            D.Error("{0} has changed state to {1} when Unavailable.", DebugName, CurrentState.ToString());
-        }
-    }
 
     [System.Diagnostics.Conditional("DEBUG")]
     private void __ValidateCurrentStateNotACalledState() {

@@ -41,6 +41,8 @@ public abstract class AFleetUnitHudForm : AForm {
     [SerializeField]
     private UIButton _unitFocusButton = null;
     [SerializeField]
+    private UIButton _unitClearOrdersButton = null;
+    [SerializeField]
     private UIButton _unitMergeButton = null;
     [SerializeField]
     private UIButton _unitScuttleButton = null;
@@ -123,6 +125,7 @@ public abstract class AFleetUnitHudForm : AForm {
 
     private void ConnectButtonEventHandlers() {
         EventDelegate.Add(_unitFocusButton.onClick, UnitFocusButtonClickedEventHandler);
+        EventDelegate.Add(_unitClearOrdersButton.onClick, UnitClearOrdersButtonClickedEventHandler);
         EventDelegate.Add(_unitMergeButton.onClick, UnitMergeButtonClickedEventHandler);
         EventDelegate.Add(_unitScuttleButton.onClick, UnitScuttleButtonClickedEventHandler);
         _unitGuardButton.toggleStateChanged += UnitGuardButtonToggleChangedEventHandler;
@@ -185,6 +188,10 @@ public abstract class AFleetUnitHudForm : AForm {
 
     private void UnitFocusButtonClickedEventHandler() {
         HandleUnitFocusButtonClicked();
+    }
+
+    private void UnitClearOrdersButtonClickedEventHandler() {
+        HandleUnitClearOrdersButtonClicked();
     }
 
     private void UnitMergeButtonClickedEventHandler() {
@@ -342,6 +349,12 @@ public abstract class AFleetUnitHudForm : AForm {
     private void HandleUnitFocusButtonClicked() {
         D.AssertEqual(Constants.One, _pickedUnitIcons.Count);
         FocusOn(_pickedUnitIcons.First().Unit);
+    }
+
+    private void HandleUnitClearOrdersButtonClicked() {
+        D.AssertEqual(Constants.One, _pickedUnitIcons.Count);
+        _pickedUnitIcons.First().Unit.ClearOrdersAndIdle();
+        AssessUnitButtons();
     }
 
     /// <summary>
@@ -506,11 +519,34 @@ public abstract class AFleetUnitHudForm : AForm {
     }
 
     private void HandleUnitExploreButtonToggleChanged() {
-        D.Warn("{0}.HandleUnitExploreButtonToggleChanged not yet implemented.", DebugName);
+        ////D.Warn("{0}.HandleUnitExploreButtonToggleChanged not yet implemented.", DebugName);
+        ////_toggleButtonsUsedThisSession.Add(_unitExploreButton);
+        ////_unitExploreButton.SetToggledState(false); // TEMP release the button
+        ////                                           // UNDONE
+
+        D.AssertEqual(Constants.One, _pickedUnitIcons.Count);
         _toggleButtonsUsedThisSession.Add(_unitExploreButton);
-        _unitExploreButton.SetToggledState(false); // TEMP release the button
-        // UNDONE
+        var pickedUnit = _pickedUnitIcons.First().Unit;
+        bool isButtonToggledIn = _unitExploreButton.IsToggledIn;
+        if (isButtonToggledIn) {
+            IFleetExplorable closestFleetExplorableItem;
+            bool isBaseFound = TryFindClosestFleetExplorableItem(pickedUnit.Position, out closestFleetExplorableItem);
+            D.Assert(isBaseFound);  // 1.1.18 Button should not be enabled if no explorable, unexplored items are available
+
+            FleetOrder exploreOrder = new FleetOrder(FleetDirective.Explore, OrderSource.User, closestFleetExplorableItem as IFleetNavigableDestination);
+            pickedUnit.CurrentOrder = exploreOrder;
+            D.LogBold("{0} is issuing an order to {1} to Explore {2}.", DebugName, pickedUnit.DebugName, closestFleetExplorableItem.DebugName);
+            _unitExploreButton.SetIconColor(TempGameValues.SelectedColor);
+            AssessUnitButtons();
+        }
+        else {
+            FleetOrder cancelOrder = new FleetOrder(FleetDirective.Cancel, OrderSource.User);
+            pickedUnit.CurrentOrder = cancelOrder;
+            _unitExploreButton.SetIconColor(GameColor.White);
+        }
     }
+
+    protected abstract bool TryFindClosestFleetExplorableItem(Vector3 currentFleetPosition, out IFleetExplorable closestExplorableItem);
 
     private void HandleUnitJoinHangerButtonToggleChanged() {
         D.AssertEqual(Constants.One, _pickedUnitIcons.Count);
@@ -567,12 +603,14 @@ public abstract class AFleetUnitHudForm : AForm {
         }
         _unitMergeButton.isEnabled = isUnitMergeButtonEnabled;
 
+        bool isUnitClearOrdersButtonEnabled = false;
         bool isUnitScuttleButtonEnabled = false;
 
         if (_pickedUnitIcons.Count == Constants.One) {
             // 11.18.17 picked units are limited to one to make cancel order practical to implement
             var pickedUnit = _pickedUnitIcons.First().Unit;
 
+            isUnitClearOrdersButtonEnabled = true;  //// pickedUnit.Availability != NewOrderAvailability.Unavailable;
             isUnitScuttleButtonEnabled = pickedUnit.IsAuthorizedForNewOrder(FleetDirective.Scuttle);
 
             bool isOrderedToRepair = pickedUnit.IsCurrentOrderDirectiveAnyOf(FleetDirective.Repair);
@@ -659,8 +697,8 @@ public abstract class AFleetUnitHudForm : AForm {
             // if more than 1 picked unit, un-toggle without notify and disable all
             ResetUnitOrderToggleButtons();
         }
+        _unitClearOrdersButton.isEnabled = isUnitClearOrdersButtonEnabled;
         _unitScuttleButton.isEnabled = isUnitScuttleButtonEnabled;
-
     }
 
     protected void AssessUnitFocusButton() {
@@ -668,6 +706,7 @@ public abstract class AFleetUnitHudForm : AForm {
     }
 
     protected void DisableUnitButtons() {
+        _unitClearOrdersButton.isEnabled = false;
         _unitMergeButton.isEnabled = false;
         _unitScuttleButton.isEnabled = false;
         _unitGuardButton.IsEnabled = false;
@@ -1149,6 +1188,7 @@ public abstract class AFleetUnitHudForm : AForm {
 
     private void DisconnectButtonEventHandlers() {
         EventDelegate.Remove(_unitFocusButton.onClick, UnitFocusButtonClickedEventHandler);
+        EventDelegate.Remove(_unitClearOrdersButton.onClick, UnitClearOrdersButtonClickedEventHandler);
         EventDelegate.Remove(_unitMergeButton.onClick, UnitMergeButtonClickedEventHandler);
         EventDelegate.Remove(_unitScuttleButton.onClick, UnitScuttleButtonClickedEventHandler);
         _unitGuardButton.toggleStateChanged -= UnitGuardButtonToggleChangedEventHandler;
@@ -1179,6 +1219,7 @@ public abstract class AFleetUnitHudForm : AForm {
         D.AssertNotNull(_elementIconPrefab);
 
         D.AssertNotNull(_unitFocusButton);
+        D.AssertNotNull(_unitClearOrdersButton);
         D.AssertNotNull(_unitMergeButton);
         D.AssertNotNull(_unitScuttleButton);
         D.AssertNotNull(_shipCreateFleetButton);

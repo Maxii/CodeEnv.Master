@@ -26,11 +26,14 @@ namespace CodeEnv.Master.GameContent {
 
         public Reference<float> __ActualSpeedValue { get; private set; }
 
+        public ShipDirective __OrderDirective { get; private set; }
+
         public INavigableDestination Target { get; private set; }
 
         public ShipCombatStance CombatStance { get; private set; }
 
         public Speed CurrentSpeedSetting { get; private set; }
+
 
         public float? FullSpeed { get; private set; }
 
@@ -107,6 +110,7 @@ namespace CodeEnv.Master.GameContent {
             }
 
             __ActualSpeedValue = (Item as IShip_Ltd).ActualSpeedValue_Debug;
+            __OrderDirective = (Item as IShip).CurrentOrder != null ? (Item as IShip).CurrentOrder.Directive : ShipDirective.None;
 
             Outputs = AssessOutputs(sData.Outputs);
         }

@@ -68,26 +68,29 @@ public class DebugControlsEditor : Editor {
             if (NGUIEditorTools.DrawHeader("AI Settings", detailed: true)) {
                 NGUIEditorTools.BeginContents();
                 {
-                    NGUIEditorTools.SetLabelWidth(100F);
-                    var autoExploreSP = NGUIEditorTools.DrawProperty("AutoExplore", serializedObject, "_fleetsAutoExplore");
-
-                    EditorGUI.BeginDisabledGroup(autoExploreSP.boolValue);
+                    bool toDisableAutoExploreGroup = false;
+                    GUILayout.BeginHorizontal();
                     {
-                        GUILayout.BeginHorizontal();
+                        NGUIEditorTools.SetLabelWidth(100F);
+                        var autoAttackSP = NGUIEditorTools.DrawProperty("AutoAttack", serializedObject, "_fleetsAutoAttack", GUILayout.Width(120F));
+                        toDisableAutoExploreGroup = autoAttackSP.boolValue;
+                        EditorGUI.BeginDisabledGroup(!autoAttackSP.boolValue);
                         {
-                            var autoAttackSP = NGUIEditorTools.DrawProperty("AutoAttack", serializedObject, "_fleetsAutoAttack", GUILayout.Width(120F));
-                            EditorGUI.BeginDisabledGroup(!autoAttackSP.boolValue);
-                            {
-                                GUILayout.Label("", GUILayout.Width(20F));  // Adds horizontal space between AutoAttack and MaxFleets
-
-                                NGUIEditorTools.SetLabelWidth(80F);
-                                NGUIEditorTools.DrawProperty("MaxFleets", serializedObject, "_maxAttackingFleetsPerPlayer", GUILayout.Width(100F));
-                            }
-                            EditorGUI.EndDisabledGroup();
+                            GUILayout.Label("", GUILayout.Width(20F));  // Adds horizontal space between AutoAttack and MaxFleets
+                            NGUIEditorTools.SetLabelWidth(80F);
+                            NGUIEditorTools.DrawProperty("MaxFleets", serializedObject, "_maxAttackingFleetsPerPlayer", GUILayout.Width(100F));
                         }
-                        GUILayout.EndHorizontal();
+                        EditorGUI.EndDisabledGroup();
+                    }
+                    GUILayout.EndHorizontal();
+
+                    NGUIEditorTools.SetLabelWidth(100F);
+                    EditorGUI.BeginDisabledGroup(toDisableAutoExploreGroup);
+                    {
+                        NGUIEditorTools.DrawProperty("AutoExplore", serializedObject, "_fleetsAutoExplore");
                     }
                     EditorGUI.EndDisabledGroup();
+
                     NGUIEditorTools.SetLabelWidth(200F);
                     NGUIEditorTools.DrawProperty("Full Intel of Items & Players", serializedObject, "_allIntelCoverageIsComprehensive");
 

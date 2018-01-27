@@ -49,10 +49,6 @@
       <PropertyValue>false</PropertyValue>
     </Setting>
     <Setting>
-      <PropertyName>AllIntelCoverageComprehensive</PropertyName>
-      <PropertyValue>false</PropertyValue>
-    </Setting>
-    <Setting>
       <PropertyName>EnableStartupTimeout</PropertyName>
       <PropertyValue>false</PropertyValue>
     </Setting>

@@ -57,6 +57,7 @@ namespace CodeEnv.Master.GameContent {
                 {ItemInfoID.UnitFullSpeed, "UnitFullSpeed: {0}"},
                 {ItemInfoID.UnitMaxTurnRate, "UnitMaxTurnRate:  {0}"},
 
+                {ItemInfoID.OrderDirective, "Order: {0}"},
                 {ItemInfoID.Target, "Target: {0}"},
                 {ItemInfoID.TargetDistance, "TgtDistance: {0}"},
                 {ItemInfoID.CurrentSpeedSetting, "Speed: {0}({1})"}, // TwoThirds(intendedValue), TwoThirds(?), ?(intendedValue), ?(?)

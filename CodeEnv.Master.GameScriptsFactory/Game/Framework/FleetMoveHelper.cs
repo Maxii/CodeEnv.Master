@@ -333,6 +333,7 @@ public class FleetMoveHelper : IDisposable {
         D.AssertNotEqual(Constants.Zero, ApCourse.Count, "No course plotted. PlotCourse to a destination, then Engage.");
         CleanupAnyRemainingApJobs();
         InitiateApCourseToTarget();
+        __LaunchSpeedMonitorSystem();
     }
 
     /// <summary>
@@ -359,7 +360,10 @@ public class FleetMoveHelper : IDisposable {
     }
 
     internal void HandleOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigableDestination target, OrderFailureCause failCause) {
-        D.Assert(IsPilotEngaged, ship.DebugName);
+        if (!IsPilotEngaged) {
+            string tgtMsg = target != null ? target.DebugName : "None";
+            D.Error("{0}.Pilot should be engaged. Ship: {1}, Target: {2}, FailCause: {3}.", DebugName, ship.DebugName, tgtMsg, failCause.GetValueName());
+        }
 
         if (isSuccess) {
             bool isRemoved = _shipsExpectedToArrive.Remove(ship);
@@ -390,6 +394,8 @@ public class FleetMoveHelper : IDisposable {
                 case OrderFailureCause.TgtUnjoinable:
                 case OrderFailureCause.TgtRelationship:
                 case OrderFailureCause.TgtDeath:
+                // 1.25.18 Should never occur as FleetCmd will handle all TgtDeath events when whole Cmd is moving. Ships should only
+                // reply with a TgtDeath outcome when they have their own individual targets, e.g. assigned during exploration
                 case OrderFailureCause.ConstructionCanceled:
                 case OrderFailureCause.None:
                 default:
@@ -1091,6 +1097,7 @@ public class FleetMoveHelper : IDisposable {
         // a new set of orders immediately after issuing a prior set, thereby interrupting ship's execution of 
         // the first set. Each ship will remove their fleetIsAligned delegate once their autopilot is interrupted
         // by this new set of orders. The final ship to remove their delegate will shut down the Job.
+        __TerminateSpeedMonitorSystem();
     }
 
     private void KillApNavJob() {
@@ -1118,6 +1125,8 @@ public class FleetMoveHelper : IDisposable {
     }
 
     #region Debug
+
+    #region Transit Duration Debug System
 
     private GameDate __lastStartDate;
     private GameTimeDuration __longestWaypointTransitDuration;
@@ -1153,13 +1162,51 @@ public class FleetMoveHelper : IDisposable {
         }
     }
 
-    private void __ValidateItemWithinSystem(SystemItem system, INavigableDestination item) {
-        float systemRadiusSqrd = system.Radius * system.Radius;
-        float itemDistanceFromSystemCenterSqrd = Vector3.SqrMagnitude(item.Position - system.Position);
-        if (itemDistanceFromSystemCenterSqrd > systemRadiusSqrd) {
-            D.Warn("ItemDistanceFromSystemCenterSqrd: {0} > SystemRadiusSqrd: {1}!", itemDistanceFromSystemCenterSqrd, systemRadiusSqrd);
+    #endregion
+
+
+    #region Speed Monitor Debug System
+
+    private Job __speedMonitorJob;
+
+    private void __LaunchSpeedMonitorSystem() {
+        D.AssertNull(__speedMonitorJob);
+        __speedMonitorJob = _jobMgr.RecurringWaitForHours((float)GameTime.HoursPerDay, "FleetSpeedMonitorJob", () => {
+            __CheckSpeed();
+        });
+    }
+
+
+    private void __CheckSpeed() {
+        if (IsPilotEngaged) {
+            if (_shipsWaitingForFleetAlignment.Any()) {
+                D.Log("{0}: {1} ships are waiting for alignment. Date: {2}.", DebugName, _shipsWaitingForFleetAlignment.Count, _gameTime.CurrentDate.DebugName);
+                return;
+            }
+            if (_fleetData.ActualSpeedValue == Constants.ZeroF) {
+                if (_shipsExpectedToArrive.Any()) {
+                    if (_shipsExpectedToArrive.Contains(_fleet.HQElement)) {
+                        D.Warn("{0}: {1} has not yet arrived at waypoint but is not moving.", DebugName, _fleet.HQElement.DebugName);
+                    }
+                    else {
+                        D.Log("{0}: {1} is waiting on {2} ships to arrive at waypoint. Date: {3}.",
+                            DebugName, _fleet.HQElement.DebugName, _shipsExpectedToArrive.Count, _gameTime.CurrentDate.DebugName);
+                        D.Log("{0}: Actual Speed of in-transit ships = {1}. Date: {2}.",
+                            DebugName, _shipsExpectedToArrive.Select(e => (e as IShip).ActualSpeedValue.FormatValue()).Concatenate(), _gameTime.CurrentDate.DebugName);
+                    }
+                }
+            }
         }
     }
+
+    private void __TerminateSpeedMonitorSystem() {
+        if (__speedMonitorJob != null) {
+            __speedMonitorJob.Kill();
+            __speedMonitorJob = null;
+        }
+    }
+
+    #endregion
 
     /// <summary>
     /// Prints info about the nodes of the AstarPath course.
@@ -1224,6 +1271,15 @@ public class FleetMoveHelper : IDisposable {
         else {
             D.Error("No match for AStarTagValue {0}.", aStarTagValue);
             return Topography.None;
+        }
+    }
+
+    [Obsolete("No longer used")]
+    private void __ValidateItemWithinSystem(SystemItem system, INavigableDestination item) {
+        float systemRadiusSqrd = system.Radius * system.Radius;
+        float itemDistanceFromSystemCenterSqrd = Vector3.SqrMagnitude(item.Position - system.Position);
+        if (itemDistanceFromSystemCenterSqrd > systemRadiusSqrd) {
+            D.Warn("ItemDistanceFromSystemCenterSqrd: {0} > SystemRadiusSqrd: {1}!", itemDistanceFromSystemCenterSqrd, systemRadiusSqrd);
         }
     }
 

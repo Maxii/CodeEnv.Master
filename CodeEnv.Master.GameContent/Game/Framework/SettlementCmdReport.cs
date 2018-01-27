@@ -25,6 +25,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class SettlementCmdReport : AUnitCmdReport {
 
+        public BaseDirective __OrderDirective { get; private set; }
+
         public SettlementCategory Category { get; private set; }
 
         /// <summary>
@@ -157,6 +159,8 @@ namespace CodeEnv.Master.GameContent {
 
             Resources = AssessResources(sData.Resources);
             UnitOutputs = AssessOutputs(sData.UnitOutputs);
+
+            __OrderDirective = (Item as IUnitBaseCmd).CurrentOrder != null ? (Item as IUnitBaseCmd).CurrentOrder.Directive : BaseDirective.None;
         }
 
         private BaseComposition CalcUnitCompositionFromKnownElements(SettlementCmdData cmdData) {

@@ -415,7 +415,6 @@ namespace CodeEnv.Master.Common {
         /// <returns></returns>
         public static string FormatValue(this float value, bool showZero = true, float threshold = 10F) {
             Utility.ValidateNotNegative(value);
-            Utility.ValidateForRange(threshold, float.Epsilon, float.PositiveInfinity);
 
             string formattedValue = string.Empty;
             if (value == Constants.ZeroF) {
@@ -426,6 +425,7 @@ namespace CodeEnv.Master.Common {
             else {
                 formattedValue = value < threshold ? Constants.FormatFloat_2DpMax.Inject(value) : Constants.FormatFloat_0Dp.Inject(value);
             }
+            //D.Log("FormatValue is returning {0} for value {1:0.##}.", formattedValue, value);
             return formattedValue;
         }
 

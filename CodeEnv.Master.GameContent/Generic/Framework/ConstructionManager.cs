@@ -280,10 +280,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void RefreshCurrentConstructionProperty() {
-            var currentConstructionItem = _constructionQueue.Any() ? _constructionQueue.First() : TempGameValues.NoConstruction;
-            if (_baseData.CurrentConstruction != currentConstructionItem) {
-                _baseData.CurrentConstruction = currentConstructionItem;
-            }
+            var currentConstructionItem = _constructionQueue.Any() ? _constructionQueue.First.Value : TempGameValues.NoConstruction;
+            _baseData.CurrentConstruction = currentConstructionItem;
         }
 
         private void RefreshUnitProduction() {
@@ -312,6 +310,7 @@ namespace CodeEnv.Master.GameContent {
 
         #region Debug
 
+        [System.Diagnostics.Conditional("DEBUG")]
         private void __HandlePartiallyCompletedConstructionBeingRemovedFromQueue(Construction construction) {
             D.Log("{0} is removing {1} from Queue that is partially completed.", DebugName, construction.DebugName);
             // TODO This question should be raised by the Gui click handler as a popup before sending to the ConstructionManager
