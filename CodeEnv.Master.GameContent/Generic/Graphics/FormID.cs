@@ -75,6 +75,8 @@ namespace CodeEnv.Master.GameContent {
         StarbaseTableRow,
         FleetTableRow,
         SystemsTableRow,
+
+        Research
     }
 }
 

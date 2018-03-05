@@ -63,7 +63,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         set { base.Data = value; }
     }
 
-    public ConstructionManager ConstructionMgr { get; private set; }
+    public BaseConstructionManager ConstructionMgr { get; private set; }
 
     public override float ClearanceRadius { get { return CloseOrbitOuterRadius * 2F; } }
 
@@ -123,7 +123,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     }
 
     private void InitializeConstructionManager() {
-        ConstructionMgr = new ConstructionManager(Data, this);
+        ConstructionMgr = new BaseConstructionManager(Data, this);
     }
 
     public override void FinalInitialize() {
@@ -228,8 +228,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     /// <summary>
     /// Convenience method that initiates the (initial) construction of an element from the provided design.
     /// <remarks>12.1.17 This method instantiates an element from the design, launches a Construction in this Base's
-    /// ConstructionManager and issues a Construct order to the element.</remarks>
-    /// <remarks>12.1.17 The presence of their Construction in the ConstructionManager prior to issuing this order is done to
+    /// BaseConstructionManager and issues a Construct order to the element.</remarks>
+    /// <remarks>12.1.17 The presence of their Construction in the BaseConstructionManager prior to issuing this order is done to
     /// allow the UnitHud to 'show' the construction in the queue when the design icon is clicked to initiate construction. This is
     /// necessary as the issued order will not actually be processed until unpaused.</remarks>
     /// <remarks>12.1.17 Currently my intention is to only allow the User or PlayerAI to initiate construction of an element.</remarks>
@@ -884,13 +884,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void ExecuteAttackOrder_UponUnitDamageIncurred() {
         LogEvent();
-        if (AssessNeedForRepair(HealthThreshold_CriticallyDamaged)) {
-            IssueCmdStaffsRepairOrder();
-        }
-        else if (!IsAttackCapable) {
-            // not critically damaged but weapons knocked out
-            IssueCmdStaffsRepairOrder();
-        }
+        // 2.5.18 Removed assessment of need for unit repair in favor of element's handling repair
+        // TODO Cmd should assess likelihood of accomplishing mission
     }
 
     protected void ExecuteAttackOrder_UponAwarenessChgd(IOwnerItem_Ltd item) {
@@ -898,7 +893,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         D.Assert(item is IFleetCmd_Ltd);
         if (item == _fsmTgt) {
             // our attack target is the fleet we've lost awareness of
-            D.Assert(!OwnerAIMgr.HasKnowledgeOf(item)); // can't become newly aware of a fleet we are attacking without first losing awareness
+            D.Assert(!OwnerAiMgr.HasKnowledgeOf(item)); // can't become newly aware of a fleet we are attacking without first losing awareness
             CurrentState = BaseState.Idling;
         }
     }
@@ -988,7 +983,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
         if (!returnHandler.DidCallSuccessfullyComplete) {
             yield return null;
-            D.Error("Shouldn't get here as the ReturnCause should generate a change of state.");
+            D.Error("{0} shouldn't get here as the ReturnCause {1} should generate a change of state.", DebugName, returnHandler.ReturnCause.GetValueName());
         }
 
         // Can't assert OneHundredPercent as more hits can occur after repairing completed
@@ -1243,10 +1238,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         D.LogBold("{0} is issuing a RefitOrder to {1} Facilities: {2}.", DebugName, _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Count,
             _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Select(f => f.DebugName).Concatenate());
         foreach (var facility in _fsmFacilitiesExpectedToCallbackWithOrderOutcome) {
-            IList<FacilityDesign> refitDesigns;
-            bool isDesignAvailable = _gameMgr.PlayersDesigns.TryGetUpgradeDesigns(Owner, facility.Data.Design, out refitDesigns);
+            FacilityDesign refitDesign;
+            bool isDesignAvailable = OwnerAiMgr.Designs.TryGetUpgradeDesign(facility.Data.Design, out refitDesign);
             D.Assert(isDesignAvailable);
-            FacilityDesign refitDesign = RandomExtended.Choice(refitDesigns);
 
             var refitOrder = new FacilityRefitOrder(CurrentOrder.Source, _executingOrderID, refitDesign, _fsmTgt as IElementNavigableDestination);
             facility.CurrentOrder = refitOrder;
@@ -1336,10 +1330,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
                     bool isAdded = _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Add(facility);
                     D.Assert(isAdded);
 
-                    IList<FacilityDesign> refitDesigns;
-                    bool isDesignAvailable = _gameMgr.PlayersDesigns.TryGetUpgradeDesigns(Owner, facility.Data.Design, out refitDesigns);
+                    FacilityDesign refitDesign;
+                    bool isDesignAvailable = OwnerAiMgr.Designs.TryGetUpgradeDesign(facility.Data.Design, out refitDesign);
                     D.Assert(isDesignAvailable);
-                    FacilityDesign refitDesign = RandomExtended.Choice(refitDesigns);
 
                     D.LogBold("{0} will {1} after becoming available to {2} during state {3}.", facility.DebugName,
                         FacilityDirective.Refit.GetValueName(), DebugName, CurrentState.GetValueName());
@@ -1537,12 +1530,12 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void ExecuteDisbandOrder_UponEnemyDetected() {
         LogEvent();
-        // do nothing as we are disbanding
+        // do nothing
     }
 
     protected void ExecuteDisbandOrder_UponUnitDamageIncurred() {
         LogEvent();
-        // do nothing as we are disbanding
+        // do nothing
     }
 
     protected void ExecuteDisbandOrder_UponRelationsChangedWith(Player player) {
@@ -1845,7 +1838,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     private void __ValidateKnowledgeOfOrderTarget(BaseOrder order) {
         var target = order.Target;
         if (target != null) {
-            if (!OwnerAIMgr.HasKnowledgeOf(target as IOwnerItem_Ltd)) {
+            if (!OwnerAiMgr.HasKnowledgeOf(target as IOwnerItem_Ltd)) {
                 D.Warn("{0} received order {1} when {2} has no knowledge of target.", DebugName, order.DebugName, Owner.DebugName);
             }
         }
@@ -1886,7 +1879,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         if (orderDirective == BaseDirective.Attack) {                 // IMPROVE within range
             // Can be ordered to attack even if already attacking as can change target
             failCause = "No attackables";
-            if (!OwnerAIMgr.Knowledge.AreAnyKnownFleetsAttackableByOwnerUnits) {
+            if (!OwnerAiMgr.Knowledge.AreAnyKnownFleetsAttackableByOwnerUnits) {
                 return false;
             }
 
@@ -2292,7 +2285,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     #region IConstructionManagerClient Members
 
-    void IConstructionManagerClient.HandleUncompletedConstructionRemovedFromQueue(Construction construction) {
+    void IConstructionManagerClient.HandleUncompletedConstructionRemovedFromQueue(ConstructionTask construction) {
         D.Assert(!construction.IsCompleted);
         var removedElement = construction.Element;
         float completionPercentage = construction.CompletionPercentage;
@@ -2300,7 +2293,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         removedElement.HandleUncompletedRemovalFromConstructionQueue(completionPercentage);
     }
 
-    void IConstructionManagerClient.HandleConstructionCompleted(Construction construction) {
+    void IConstructionManagerClient.HandleConstructionCompleted(ConstructionTask construction) {
         D.Assert(construction.IsCompleted);
         var completedElement = construction.Element;
         // 12.3.17 testing to make sure this is called before ReworkUnderway is reset by exit state of ExecuteConstructOrder, 

@@ -55,6 +55,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     private GameObject _cmdSensorRangeMonitorPrefab;
     private GameObject _elementSensorRangeMonitorPrefab;
 
+    private GameManager _gameMgr;
+
     #region Initialization
 
     private UnitFactory() {
@@ -86,6 +88,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
         _launchTubePrefab = reqdPrefabs.launchTube;
         _losTurretPrefab = reqdPrefabs.losTurret;
+
+        _gameMgr = GameManager.Instance;
     }
 
     #endregion
@@ -166,7 +170,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="formation">The formation.</param>
     /// <returns></returns>
     public FleetCmdItem MakeFleetCmdInstance(Player owner, string designName, GameObject unitContainer, string unitName, Formation formation = Formation.Globe) {
-        FleetCmdDesign design = GameManager.Instance.PlayersDesigns.GetFleetCmdDesign(owner, designName);
+        FleetCmdDesign design = _gameMgr.GetAIManagerFor(owner).Designs.GetFleetCmdDesign(designName);
         return MakeFleetCmdInstance(owner, design, unitContainer, unitName, formation);
     }
 
@@ -196,7 +200,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
     public void PopulateInstance(Player owner, string designName, ref FleetCmdItem cmd, string unitName, Formation formation = Formation.Globe) {
-        FleetCmdDesign design = GameManager.Instance.PlayersDesigns.GetFleetCmdDesign(owner, designName);
+        FleetCmdDesign design = _gameMgr.GetAIManagerFor(owner).Designs.GetFleetCmdDesign(designName);
         PopulateInstance(owner, design, ref cmd, unitName, formation);
     }
 
@@ -325,11 +329,10 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="formation">The formation.</param>
     /// <returns></returns>
     public StarbaseCmdItem MakeStarbaseCmdInstance(Player owner, string designName, GameObject unitContainer, string unitName,
-        Formation formation = Formation.Globe) {
-        StarbaseCmdDesign design = GameManager.Instance.PlayersDesigns.GetStarbaseCmdDesign(owner, designName);
+    Formation formation = Formation.Globe) {
+        StarbaseCmdDesign design = _gameMgr.GetAIManagerFor(owner).Designs.GetStarbaseCmdDesign(designName);
         return MakeStarbaseCmdInstance(owner, design, unitContainer, unitName, formation);
     }
-
 
     /// <summary>
     /// Makes an unenabled StarbaseCmd instance for the owner parented to unitContainer.
@@ -348,7 +351,6 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         return cmd;
     }
 
-
     /// <summary>
     /// Populates the provided StarbaseCmd instance with data from the design. The item will not be enabled.
     /// </summary>
@@ -358,7 +360,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
     public void PopulateInstance(Player owner, string designName, ref StarbaseCmdItem cmd, string unitName, Formation formation = Formation.Globe) {
-        StarbaseCmdDesign design = GameManager.Instance.PlayersDesigns.GetStarbaseCmdDesign(owner, designName);
+        StarbaseCmdDesign design = _gameMgr.GetAIManagerFor(owner).Designs.GetStarbaseCmdDesign(designName);
         PopulateInstance(owner, design, ref cmd, unitName, formation);
     }
 
@@ -421,8 +423,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="formation">The formation.</param>
     /// <returns></returns>
     public SettlementCmdItem MakeSettlementCmdInstance(Player owner, string designName, GameObject unitContainer, string unitName,
-        Formation formation = Formation.Globe) {
-        SettlementCmdDesign design = GameManager.Instance.PlayersDesigns.GetSettlementCmdDesign(owner, designName);
+    Formation formation = Formation.Globe) {
+        SettlementCmdDesign design = _gameMgr.GetAIManagerFor(owner).Designs.GetSettlementCmdDesign(designName);
         return MakeSettlementCmdInstance(owner, design, unitContainer, unitName, formation);
     }
 
@@ -444,7 +446,6 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         return cmd;
     }
 
-
     /// <summary>
     /// Populates the provided SettlementCmd instance with data from the design. The item will not be enabled.
     /// </summary>
@@ -454,7 +455,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="unitName">Name of the overall Unit.</param>
     /// <param name="formation">The formation.</param>
     public void PopulateInstance(Player owner, string designName, ref SettlementCmdItem cmd, string unitName, Formation formation = Formation.Globe) {
-        SettlementCmdDesign design = GameManager.Instance.PlayersDesigns.GetSettlementCmdDesign(owner, designName);
+        SettlementCmdDesign design = _gameMgr.GetAIManagerFor(owner).Designs.GetSettlementCmdDesign(designName);
         PopulateInstance(owner, design, ref cmd, unitName, formation);
     }
 
@@ -656,37 +657,32 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <returns></returns>
     private IEnumerable<PassiveCountermeasure> MakeCountermeasures(AUnitMemberDesign unitDesign) {
         var passiveCMs = new List<PassiveCountermeasure>();
-        AEquipmentStat eStat;
-        while (unitDesign.TryGetNextEquipmentStat(EquipmentCategory.PassiveCountermeasure, out eStat)) {
-            if (eStat != null) {
-                passiveCMs.Add(new PassiveCountermeasure(eStat as PassiveCountermeasureStat));
-            }
+
+        var stats = unitDesign.GetEquipmentStatsFor(EquipmentCategory.PassiveCountermeasure);
+        foreach (var stat in stats) {
+            passiveCMs.Add(new PassiveCountermeasure(stat as PassiveCountermeasureStat));
         }
         return passiveCMs;
     }
 
     private IEnumerable<ActiveCountermeasure> MakeCountermeasures(AUnitElementDesign elementDesign, AUnitElementItem element) {
         int nameCounter = Constants.One;
-
         var activeCMs = new List<ActiveCountermeasure>();
 
-        AEquipmentStat eStat;
-        while (elementDesign.TryGetNextEquipmentStat(EquipmentCategory.ActiveCountermeasure, out eStat)) {
-            if (eStat != null) {
-                string cmName = eStat.Name + nameCounter;
-                nameCounter++;
+        var stats = elementDesign.GetEquipmentStatsFor(EquipmentCategory.ActiveCountermeasure);
+        foreach (var stat in stats) {
+            string cmName = stat.Name + nameCounter;
+            nameCounter++;
 
-                var activeCM = new ActiveCountermeasure(eStat as ActiveCountermeasureStat, cmName);
-                activeCMs.Add(activeCM);
-                AttachMonitor(activeCM, element);
-            }
+            var activeCM = new ActiveCountermeasure(stat as ActiveCountermeasureStat, cmName);
+            activeCMs.Add(activeCM);
+            AttachMonitor(activeCM, element);
         }
         return activeCMs;
     }
 
     private IEnumerable<ElementSensor> MakeSensors(AUnitElementDesign elementDesign, AUnitElementItem element) {
         int nameCounter = Constants.One;
-
         var sensors = new List<ElementSensor>();
 
         SensorStat reqdSRSensorStat = elementDesign.ReqdSRSensorStat;
@@ -696,23 +692,19 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         sensors.Add(reqdSRSensor);
         AttachMonitor(reqdSRSensor, element);
 
-        AEquipmentStat eStat;
-        while (elementDesign.TryGetNextEquipmentStat(EquipmentCategory.ElementSensor, out eStat)) {
-            if (eStat != null) {
-                sName = eStat.Name + nameCounter;
-                nameCounter++;
-
-                var sensor = new ElementSensor(eStat as SensorStat, sName);
-                sensors.Add(sensor);
-                AttachMonitor(sensor, element);
-            }
+        var optionalSensorStats = elementDesign.GetEquipmentStatsFor(EquipmentCategory.ElementSensor);
+        foreach (var stat in optionalSensorStats) {
+            sName = stat.Name + nameCounter;
+            nameCounter++;
+            var sensor = new ElementSensor(stat as SensorStat, sName);
+            sensors.Add(sensor);
+            AttachMonitor(sensor, element);
         }
         return sensors;
     }
 
     private IEnumerable<CmdSensor> MakeSensors(AUnitCmdDesign cmdDesign, AUnitCmdItem cmd) {
         int nameCounter = Constants.One;
-
         var sensors = new List<CmdSensor>();
 
         SensorStat reqdMRSensorStat = cmdDesign.ReqdMRSensorStat;
@@ -722,72 +714,62 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         sensors.Add(reqdMRSensor);
         AttachMonitor(reqdMRSensor, cmd);
 
-        AEquipmentStat eStat;
-        while (cmdDesign.TryGetNextEquipmentStat(EquipmentCategory.CommandSensor, out eStat)) {
-            if (eStat != null) {
-                sName = eStat.Name + nameCounter;
-                nameCounter++;
-
-                var sensor = new CmdSensor(eStat as SensorStat, sName);
-                sensors.Add(sensor);
-                AttachMonitor(sensor, cmd);
-            }
+        var optionalSensorStats = cmdDesign.GetEquipmentStatsFor(EquipmentCategory.CommandSensor);
+        foreach (var stat in optionalSensorStats) {
+            sName = stat.Name + nameCounter;
+            nameCounter++;
+            var sensor = new CmdSensor(stat as SensorStat, sName);
+            sensors.Add(sensor);
+            AttachMonitor(sensor, cmd);
         }
         return sensors;
     }
 
     private IEnumerable<ShieldGenerator> MakeShieldGenerators(AUnitElementDesign elementDesign, AUnitElementItem element) {
         var generators = new List<ShieldGenerator>();
-        AEquipmentStat eStat;
-        while (elementDesign.TryGetNextEquipmentStat(EquipmentCategory.ShieldGenerator, out eStat)) {
-            if (eStat != null) {
-                var generator = new ShieldGenerator(eStat as ShieldGeneratorStat);
-                generators.Add(generator);
-                AttachShield(generator, element);
-            }
+        var generatorStats = elementDesign.GetEquipmentStatsFor(EquipmentCategory.ShieldGenerator);
+        foreach (var gStat in generatorStats) {
+            var generator = new ShieldGenerator(gStat as ShieldGeneratorStat);
+            generators.Add(generator);
+            AttachShield(generator, element);
         }
         return generators;
     }
 
     private IEnumerable<AWeapon> MakeWeapons(AUnitElementDesign elementDesign, AUnitElementItem element, AHull hull) {
-        //D.Log("{0}: Making Weapons for {1}.", DebugName, element.DebugName);
+        //D.Log("{0}: Making Weapons for {1} using {2}.", DebugName, element.DebugName, hull.DebugName);
         int nameCounter = Constants.One;
 
-        EquipmentCategory[] equipCats = new EquipmentCategory[] { EquipmentCategory.LaunchedWeapon, EquipmentCategory.LosWeapon };
+        EquipmentCategory[] weaponEquipCats = new EquipmentCategory[] { EquipmentCategory.MissileWeapon, EquipmentCategory.AssaultWeapon,
+            EquipmentCategory.BeamWeapon, EquipmentCategory.ProjectileWeapon };
         var weapons = new List<AWeapon>();
-        foreach (var eCat in equipCats) {
-            EquipmentSlotID slotID;
-            AEquipmentStat eStat;
-            while (elementDesign.TryGetNextEquipmentStat(eCat, out slotID, out eStat)) {
-                if (eStat != null) {
-                    //D.Log("{0} elementDesign = {1}, slotID = {2}, eStat = {3}.", DebugName, elementDesign.DebugName, slotID.DebugName, eStat.DebugName);
-                    AWeaponStat wStat = eStat as AWeaponStat;
-                    WDVCategory weaponCategory = wStat.DeliveryVehicleCategory;
-                    string weaponName = wStat.Name + nameCounter;
-                    nameCounter++;
+        foreach (var weapCat in weaponEquipCats) {
+            var weapStatsLookupBySlot = elementDesign.GetEquipmentLookupFor(weapCat);
+            foreach (var slotID in weapStatsLookupBySlot.Keys) {
+                AWeaponStat wStat = weapStatsLookupBySlot[slotID] as AWeaponStat;
+                string weaponName = wStat.Name + nameCounter;
+                nameCounter++;
 
-                    AWeapon weapon;
-                    switch (weaponCategory) {
-                        case WDVCategory.Beam:
-                            weapon = new BeamProjector(wStat as BeamWeaponStat, weaponName);
-                            break;
-                        case WDVCategory.Projectile:
-                            weapon = new ProjectileLauncher(wStat as ProjectileWeaponStat, weaponName);
-                            break;
-                        case WDVCategory.Missile:
-                            weapon = new MissileLauncher(wStat as MissileWeaponStat, weaponName);
-                            break;
-                        case WDVCategory.AssaultVehicle:
-                            weapon = new AssaultLauncher(wStat as AssaultWeaponStat, weaponName);
-                            break;
-                        case WDVCategory.None:
-                        default:
-                            throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(weaponCategory));
-                    }
-                    AttachMonitor(weapon, element);
-                    AttachMount(weapon, slotID, hull);
-                    weapons.Add(weapon);
+                AWeapon weapon;
+                switch (weapCat) {
+                    case EquipmentCategory.BeamWeapon:
+                        weapon = new BeamProjector(wStat as BeamWeaponStat, weaponName);
+                        break;
+                    case EquipmentCategory.ProjectileWeapon:
+                        weapon = new ProjectileLauncher(wStat as ProjectileWeaponStat, weaponName);
+                        break;
+                    case EquipmentCategory.MissileWeapon:
+                        weapon = new MissileLauncher(wStat as MissileWeaponStat, weaponName);
+                        break;
+                    case EquipmentCategory.AssaultWeapon:
+                        weapon = new AssaultLauncher(wStat as AssaultWeaponStat, weaponName);
+                        break;
+                    default:
+                        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(weapCat));
                 }
+                AttachMonitor(weapon, element);
+                AttachMount(weapon, slotID, hull);
+                weapons.Add(weapon);
             }
         }
         // remove and destroy any remaining mount placeholders that didn't get weapons
@@ -869,13 +851,17 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     private void AttachMount(AWeapon weapon, EquipmentSlotID slotID, AHull hull) {
         AMount mountPlaceholder;
         AWeaponMount weaponMountPrefab;
-        if (slotID.Category == EquipmentCategory.LosWeapon) {
-            mountPlaceholder = hull.gameObject.GetSafeComponentsInChildren<LOSMountPlaceholder>().Single(placeholder => placeholder.SlotIDD == slotID);
+        if (slotID.SupportedMount == EquipmentMountCategory.Turret) {
+            mountPlaceholder = hull.gameObject.GetSafeComponentsInChildren<LOSMountPlaceholder>()
+                                    .Single(placeholder => placeholder.SlotID == slotID);
             weaponMountPrefab = _losTurretPrefab;
         }
         else {
-            D.AssertEqual(EquipmentCategory.LaunchedWeapon, slotID.Category);
-            mountPlaceholder = hull.gameObject.GetSafeComponentsInChildren<LauncherMountPlaceholder>().Single(placeholder => placeholder.SlotIDD == slotID);
+            D.AssertEqual(EquipmentMountCategory.Silo, slotID.SupportedMount);
+            var mountPlaceholders = hull.gameObject.GetSafeComponentsInChildren<LauncherMountPlaceholder>();
+            //D.Log("{0}: MountPlaceholders found = {1}.", DebugName, mountPlaceholders.Select(mp => mp.DebugName).Concatenate());
+            mountPlaceholder = hull.gameObject.GetSafeComponentsInChildren<LauncherMountPlaceholder>()
+                                    .Single(placeholder => placeholder.SlotID == slotID);
             weaponMountPrefab = _launchTubePrefab;
         }
 
@@ -890,7 +876,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         UnityUtility.SetLayerRecursively(mountTransform, hullMeshLayer);
 
         AWeaponMount weaponMount = mountGo.GetComponent<AWeaponMount>();
-        if (slotID.Category == EquipmentCategory.LosWeapon) {
+        if (slotID.SupportedMount == EquipmentMountCategory.Turret) {
             // LOS weapon
             var losMountPlaceholder = mountPlaceholder as LOSMountPlaceholder;
             var losWeaponMount = weaponMount as LOSTurret;

@@ -119,7 +119,7 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
     /// The PlayerAIManager for the owner of this item. 
     /// <remarks>Will be null if Owner is NoPlayer.</remarks>
     /// </summary>
-    public PlayerAIManager OwnerAIMgr { get; private set; }
+    public PlayerAIManager OwnerAiMgr { get; private set; }
 
     protected bool IsOwnerChangeUnderway {
         get { return Data.IsOwnerChangeUnderway; }
@@ -182,7 +182,7 @@ public abstract class AItem : AMonoBase, IOwnerItem, IOwnerItem_Ltd, IShipNaviga
     /// Initializes the Owner's PlayerAIManager for this item.
     /// </summary>
     protected void InitializeOwnerAIManager() {
-        OwnerAIMgr = Owner != TempGameValues.NoPlayer ? _gameMgr.GetAIManagerFor(Owner) : null;
+        OwnerAiMgr = Owner != TempGameValues.NoPlayer ? _gameMgr.GetAIManagerFor(Owner) : null;
     }
 
     protected sealed override void Start() {

@@ -72,6 +72,7 @@
     <Compile Include="Generic\Framework\Priority.cs" />
     <Compile Include="Game\Framework\SceneID.cs" />
     <Compile Include="Generic\Framework\IntVector2.cs" />
+    <Compile Include="Generic\Framework\Level.cs" />
     <Compile Include="ThirdParty\AStateMachine.cs" />
     <Compile Include="ThirdParty\ABackgroundTask.cs" />
     <Compile Include="ThirdParty\ATask.cs" />

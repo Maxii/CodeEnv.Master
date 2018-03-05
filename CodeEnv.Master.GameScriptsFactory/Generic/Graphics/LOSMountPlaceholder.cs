@@ -16,6 +16,7 @@
 
 // default namespace
 
+using System;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -31,10 +32,9 @@ public class LOSMountPlaceholder : AMountPlaceholder {
     [Tooltip("Minimum allowed elevation of the barrel in degrees. 0 elevation is horizontal to the plane of the placeholder.")]
     [SerializeField]
     private float _minBarrelElevation = Constants.ZeroF;
-
     public float MinimumBarrelElevation { get { return _minBarrelElevation; } }
 
-    protected override EquipmentCategory EquipmentCategory { get { return EquipmentCategory.LosWeapon; } }
+    protected override EquipmentMountCategory SupportedMount { get { return EquipmentMountCategory.Turret; } }
 
     protected override void Validate() {
         base.Validate();

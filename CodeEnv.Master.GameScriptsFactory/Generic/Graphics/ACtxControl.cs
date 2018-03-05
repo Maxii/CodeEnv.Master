@@ -161,7 +161,7 @@ public abstract class ACtxControl : ICtxControl {
 
     private void InitializeContextMenu(GameObject ctxObjectGO, MenuPositionMode menuPosition) {    // IMPROVE use of strings
 
-        Profiler.BeginSample("Proper AddComponent allocation", _ctxObject);
+        Profiler.BeginSample("Proper AddComponent allocation");
         _ctxObject = ctxObjectGO.AddMissingComponent<CtxObject>();
         Profiler.EndSample();
 

@@ -30,14 +30,6 @@ public class AiFleetUnitHudForm : AFleetUnitHudForm {
 
     public override FormID FormID { get { return FormID.AiFleet; } }
 
-    private PlayerAIManager _ownerAiMgr;
-    private PlayerAIManager OwnerAiMgr {
-        get {
-            _ownerAiMgr = _ownerAiMgr ?? _gameMgr.GetAIManagerFor(SelectedUnit.Owner);
-            return _ownerAiMgr;
-        }
-    }
-
     protected override void AssessUnitButtons() {
         if (DebugControls.Instance.AreAiUnitHudButtonsFunctional) {
             base.AssessUnitButtons();
@@ -79,41 +71,6 @@ public class AiFleetUnitHudForm : AFleetUnitHudForm {
         }
     }
 
-    protected override bool TryFindClosestGuardableItem(Vector3 currentFleetPosition, out IGuardable closestItemAllowedToGuard) {
-        return OwnerAiMgr.TryFindClosestGuardableItem(currentFleetPosition, out closestItemAllowedToGuard);
-    }
-
-    protected override bool TryFindClosestPatrollableItem(Vector3 currentFleetPosition, out IPatrollable closestItemAllowedToPatrol) {
-        return OwnerAiMgr.TryFindClosestPatrollableItem(currentFleetPosition, out closestItemAllowedToPatrol);
-    }
-
-    protected override bool TryFindClosestFleetRepairBase(Vector3 currentFleetPosition, out IUnitBaseCmd_Ltd closestRepairBase) {
-        return OwnerAiMgr.TryFindClosestFleetRepairBase(currentFleetPosition, out closestRepairBase);
-    }
-
-    protected override bool TryFindClosestBase(Vector3 currentFleetPosition, int reqdHangerSlots, out IUnitBaseCmd closestBase) {
-        return OwnerAiMgr.TryFindClosestBase(currentFleetPosition, reqdHangerSlots, out closestBase);
-    }
-
-    protected override bool TryFindClosestFleetExplorableItem(Vector3 currentFleetPosition, out IFleetExplorable closestExplorableItem) {
-        return OwnerAiMgr.TryFindClosestFleetExplorableItem(currentFleetPosition, out closestExplorableItem);
-    }
-
-    #region Debug
-
-    protected override IEnumerable<FleetCmdItem> __AcquireLocalUnits() {
-        float localRange = 100F;
-        IEnumerable<IFleetCmd> ownerFleets;
-        if (OwnerAiMgr.TryFindMyCloseItems<IFleetCmd>(SelectedUnit.Position, localRange, out ownerFleets, SelectedUnit)) {
-            //D.Log("{0} found {1} local Fleet(s) owned by {2} within {3:0.} units of {4}. Fleets: {5}.",
-            //    DebugName, ownerFleets.Count(), SelectedUnit.Owner.DebugName, localRange, SelectedUnit.DebugName, 
-            //    ownerFleets.Select(f => f.DebugName).Concatenate());
-            return ownerFleets.Cast<FleetCmdItem>();
-        }
-        return Enumerable.Empty<FleetCmdItem>();
-    }
-
-    #endregion
 
 }
 

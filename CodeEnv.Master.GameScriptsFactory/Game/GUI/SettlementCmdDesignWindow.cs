@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: SettlementCmdDesignWindow.cs
-// GuiWindow for designing SettlementCmds, managed by the DesignScreensManager.
+// GuiWindow used by the User to design SettlementCmds, managed by the DesignScreensManager.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,12 +23,12 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// GuiWindow for designing SettlementCmds, managed by the DesignScreensManager.
+/// GuiWindow used by the User to design SettlementCmds, managed by the DesignScreensManager.
 /// </summary>
 public class SettlementCmdDesignWindow : AUnitDesignWindow {
 
     protected override void AddToPlayerDesigns(AUnitMemberDesign newDesign) {
-        _gameMgr.PlayersDesigns.Add(newDesign as SettlementCmdDesign);
+        UserDesigns.Add(newDesign as SettlementCmdDesign);
     }
 
     protected override AUnitMemberDesign CopyDesignFrom(AUnitMemberDesign design) {
@@ -42,7 +42,7 @@ public class SettlementCmdDesignWindow : AUnitDesignWindow {
     }
 
     protected override IEnumerable<AUnitMemberDesign> GetRegisteredUserDesigns(bool includeObsolete) {
-        return _gameMgr.PlayersDesigns.GetAllUserSettlementCmdDesigns(includeObsolete).Cast<AUnitMemberDesign>();
+        return UserDesigns.GetAllSettlementCmdDesigns(includeObsolete).Cast<AUnitMemberDesign>();
     }
 
     protected override bool TryGetCreateDesignPopupContent(out string popupTitle, out List<string> popupContent) {
@@ -53,15 +53,15 @@ public class SettlementCmdDesignWindow : AUnitDesignWindow {
 
     protected override AUnitMemberDesign GetEmptyTemplateDesign(string emptyTemplateHint) {
         D.AssertNull(emptyTemplateHint);
-        return _gameMgr.PlayersDesigns.GetUserSettlementCmdDesign(TempGameValues.EmptySettlementCmdTemplateDesignName);
+        return UserDesigns.GetSettlementCmdDesign(TempGameValues.EmptySettlementCmdTemplateDesignName);
     }
 
     protected override void ObsoleteDesign(string designName) {
-        _gameMgr.PlayersDesigns.ObsoleteUserSettlementCmdDesign(designName);
+        UserDesigns.ObsoleteSettlementCmdDesign(designName);
     }
 
     protected override IEnumerable<AEquipmentStat> GetAvailableUserEquipmentStats() {
-        return _gameMgr.UniverseCreator.UnitConfigurator.GetAvailableUserEquipmentStats(AUnitCmdDesign.SupportedEquipCategories);
+        return UserDesigns.GetCurrentEquipmentStats(AUnitCmdDesign.SupportedEquipCategories);
     }
 
 }

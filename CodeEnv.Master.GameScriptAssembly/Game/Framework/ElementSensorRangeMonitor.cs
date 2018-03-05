@@ -50,14 +50,6 @@ public class ElementSensorRangeMonitor : ASensorRangeMonitor, IElementSensorRang
 
     protected override void HandleEnemyCmdAdded(IUnitCmd_Ltd command) {
         base.HandleEnemyCmdAdded(command);
-        ////if (ShouldUpdateCmdsUnifiedMonitor) {
-        ////    D.AssertNotNull(ParentItem.Command, ParentItem.DebugName);
-        ////    D.AssertNotNull(CmdsUnifiedMonitor, ParentItem.DebugName);
-        ////    CmdsUnifiedMonitor.AddEnemyCmd(command, this);
-        ////}
-        ////else {
-        ////    //D.Log(ShowDebugLog, "{0}.HandleEnemyCmdAdded called while ParentItem's Cmd ref is null.", DebugName);
-        ////}
         D.AssertNotNull(ParentItem.Command, ParentItem.DebugName);
         D.AssertNotNull(CmdsUnifiedMonitor, ParentItem.DebugName);
         CmdsUnifiedMonitor.AddEnemyCmd(command, this);
@@ -65,14 +57,6 @@ public class ElementSensorRangeMonitor : ASensorRangeMonitor, IElementSensorRang
 
     protected override void HandleWarEnemyCmdAdded(IUnitCmd_Ltd command) {
         base.HandleWarEnemyCmdAdded(command);
-        ////if (ShouldUpdateCmdsUnifiedMonitor) {
-        ////    D.AssertNotNull(ParentItem.Command, ParentItem.DebugName);
-        ////    D.AssertNotNull(CmdsUnifiedMonitor, ParentItem.DebugName);
-        ////    CmdsUnifiedMonitor.AddWarEnemyCmd(command, this);
-        ////}
-        ////else {
-        ////    //D.Log(ShowDebugLog, "{0}.HandleWarEnemyCmdAdded called while ParentItem's Cmd ref is null.", DebugName);
-        ////}
         D.AssertNotNull(ParentItem.Command, ParentItem.DebugName);
         D.AssertNotNull(CmdsUnifiedMonitor, ParentItem.DebugName);
         CmdsUnifiedMonitor.AddWarEnemyCmd(command, this);
@@ -94,15 +78,6 @@ public class ElementSensorRangeMonitor : ASensorRangeMonitor, IElementSensorRang
 
     protected override void HandleEnemyCmdRemoved(IUnitCmd_Ltd command) {
         base.HandleEnemyCmdRemoved(command);
-        ////if (ShouldUpdateCmdsUnifiedMonitor) {
-        ////    D.AssertNotNull(ParentItem.Command, ParentItem.DebugName);
-        ////    D.AssertNotNull(CmdsUnifiedMonitor, ParentItem.DebugName);
-        ////    CmdsUnifiedMonitor.RemoveEnemyCmd(command, this);
-        ////}
-        ////else {
-        ////    // OPTIMIZE 5.15.17 I don't think this ever happens
-        ////    D.Warn("FYI. {0}.HandleEnemyCmdRemoved called while ParentItem's Cmd ref is null.", DebugName);
-        ////}
         D.AssertNotNull(ParentItem.Command, ParentItem.DebugName);
         D.AssertNotNull(CmdsUnifiedMonitor, ParentItem.DebugName);
         CmdsUnifiedMonitor.RemoveEnemyCmd(command, this);
@@ -110,15 +85,6 @@ public class ElementSensorRangeMonitor : ASensorRangeMonitor, IElementSensorRang
 
     protected override void HandleWarEnemyCmdRemoved(IUnitCmd_Ltd command) {
         base.HandleWarEnemyCmdRemoved(command);
-        ////if (ShouldUpdateCmdsUnifiedMonitor) {
-        ////    D.AssertNotNull(ParentItem.Command, ParentItem.DebugName);
-        ////    D.AssertNotNull(CmdsUnifiedMonitor, ParentItem.DebugName);
-        ////    CmdsUnifiedMonitor.RemoveWarEnemyCmd(command, this);
-        ////}
-        ////else {
-        ////    // OPTIMIZE 5.15.17 I don't think this ever happens
-        ////    D.Warn("FYI. {0}.HandleWarEnemyCmdRemoved called while ParentItem's Cmd ref is null.", DebugName);
-        ////}
         D.AssertNotNull(ParentItem.Command, ParentItem.DebugName);
         D.AssertNotNull(CmdsUnifiedMonitor, ParentItem.DebugName);
         CmdsUnifiedMonitor.RemoveWarEnemyCmd(command, this);
@@ -143,7 +109,7 @@ public class ElementSensorRangeMonitor : ASensorRangeMonitor, IElementSensorRang
     /// event that generated this update request to add/remove a Cmd.</remarks>
     /// </summary>
     /// <returns></returns>
-    [Obsolete("No longer needed now that ship sensors aren't activated when ship command is null?")]
+    [Obsolete("No longer needed now that ship sensors aren't activated when ship command is null.")]
     // UNCLEAR sensors are not activated when in a hanger but what about when ship transfers to another Cmd?
     private bool ShouldUpdateCmdsUnifiedMonitor {
         get {

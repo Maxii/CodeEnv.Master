@@ -122,7 +122,7 @@ namespace CodeEnv.Master.GameContent {
             return text;
         }
 
-        protected string GetCurrentConstructionText(Construction construction) {
+        protected string GetCurrentConstructionText(ConstructionTask construction) {
             string constructionText = Unknown;
             if (construction != null) {
                 if (construction == TempGameValues.NoConstruction) {

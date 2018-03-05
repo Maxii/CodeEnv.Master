@@ -187,15 +187,6 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         protected set { base.CurrentState = value; }
     }
 
-    private PlayerDesigns _playersDesigns;
-    /// <summary>
-    /// A collection of Element Designs for each player.
-    /// </summary>
-    public PlayerDesigns PlayersDesigns {
-        get { return _playersDesigns; }
-        private set { SetProperty<PlayerDesigns>(ref _playersDesigns, value, "PlayersDesigns"); }
-    }
-
     private CelestialDesigns _celestialDesigns = new CelestialDesigns();
     /// <summary>
     /// A collection of CelestialDesigns (Stars, Planets and Moons).
@@ -451,8 +442,6 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
         allPlayers.Add(GameSettings.UserPlayer);
         AllPlayers = allPlayers;
         UserPlayer = GameSettings.UserPlayer;
-
-        PlayersDesigns = new PlayerDesigns(AllPlayers);
     }
 
     #endregion

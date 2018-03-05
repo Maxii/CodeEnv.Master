@@ -16,9 +16,6 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using CodeEnv.Master.Common;
 
     /// <summary>
@@ -31,7 +28,12 @@ namespace CodeEnv.Master.GameContent {
         public UserPlayerAIManager(UserPlayerKnowledge knowledge)
             : base(GameReferences.GameManager.UserPlayer, knowledge) { }    // Warning: _gameMgr in base not yet initialized
 
-
+        protected override void __HandleResearchCompleted(ResearchTask researchTask) {
+            _gameMgr.RequestPauseStateChange(toPause: true);
+            D.Log("{0} is pausing to simulate User being prompted to open ResearchWindow to select a new Technology.", DebugName);
+            base.__HandleResearchCompleted(researchTask);
+            _gameMgr.RequestPauseStateChange(toPause: false);
+        }
     }
 }
 

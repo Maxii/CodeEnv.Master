@@ -21,28 +21,8 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Stat for FtlDampener Equipment.
-    /// <remarks>Implements value-based Equality and HashCode.</remarks>
     /// </summary>
     public class FtlDampenerStat : ARangedEquipmentStat {
-
-        #region Comparison Operators Override
-
-        // see C# 4.0 In a Nutshell, page 254
-
-        public static bool operator ==(FtlDampenerStat left, FtlDampenerStat right) {
-            // https://msdn.microsoft.com/en-us/library/ms173147(v=vs.90).aspx
-            if (ReferenceEquals(left, right)) { return true; }
-            if (((object)left == null) || ((object)right == null)) { return false; }
-            return left.Equals(right);
-        }
-
-        public static bool operator !=(FtlDampenerStat left, FtlDampenerStat right) {
-            return !(left == right);
-        }
-
-        #endregion
-
-        private const string BasicDescriptionFormat = "Basic {0} sensor.";
 
         public override EquipmentCategory Category { get { return EquipmentCategory.FtlDampener; } }
 
@@ -53,43 +33,46 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="imageAtlasID">The image atlas identifier.</param>
         /// <param name="imageFilename">The image filename.</param>
         /// <param name="description">The description.</param>
+        /// <param name="level">The level of technological advancement of this stat.</param>
         /// <param name="size">The size.</param>
         /// <param name="mass">The mass.</param>
         /// <param name="pwrRqmt">The power needed to operate this equipment.</param>
         /// <param name="constructionCost">The production cost.</param>
         /// <param name="expense">The expense.</param>
         /// <param name="rangeCat">The range category.</param>
-        /// <param name="refitBenefit">The refit benefit.</param>
-        public FtlDampenerStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass,
-            float pwrRqmt, float constructionCost, float expense, RangeCategory rangeCat, int refitBenefit)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, constructionCost, expense, rangeCat, refitBenefit, isDamageable: false) {
+        public FtlDampenerStat(string name, AtlasID imageAtlasID, string imageFilename, string description, Level level, float size, float mass,
+           float pwrRqmt, float constructionCost, float expense, RangeCategory rangeCat)
+           : base(name, imageAtlasID, imageFilename, description, level, size, mass, pwrRqmt, constructionCost, expense, rangeCat, isDamageable: false) {
             D.AssertEqual(RangeCategory.Short, rangeCat);
         }
 
-        /// <summary>
-        /// Initializes a new instance of the most basic <see cref="FtlDampenerStat" /> class.
-        /// </summary>
-        /// <param name="name">The name.</param>
-        /// <param name="rangeCat">The range category.</param>
-        public FtlDampenerStat(string name, RangeCategory rangeCat)
-            : this(name, AtlasID.MyGui, TempGameValues.AnImageFilename, BasicDescriptionFormat.Inject(rangeCat.GetEnumAttributeText())
-                  , 0F, 0F, 0F, 1F, Constants.ZeroF, rangeCat, 0) {
-        }
+        #region Value-based Equality Archive
+        // 2.23.18 ATechStat instances are always the same as they are acquired via factory caching
 
-        #region Object.Equals and GetHashCode Override
+        ////public static bool operator ==(FtlDampenerStat left, FtlDampenerStat right) {
+        ////    // https://msdn.microsoft.com/en-us/library/ms173147(v=vs.90).aspx
+        ////    if (ReferenceEquals(left, right)) { return true; }
+        ////    if (((object)left == null) || ((object)right == null)) { return false; }
+        ////    return left.Equals(right);
+        ////}
 
-        public override int GetHashCode() {
-            unchecked {
-                int hash = base.GetHashCode();
-                return hash;
-            }
-        }
+        ////public static bool operator !=(FtlDampenerStat left, FtlDampenerStat right) {
+        ////    return !(left == right);
+        ////}
 
-        public override bool Equals(object obj) {
-            return base.Equals(obj);
-        }
+        ////public override int GetHashCode() {
+        ////    unchecked {
+        ////        int hash = base.GetHashCode();
+        ////        return hash;
+        ////    }
+        ////}
+
+        ////public override bool Equals(object obj) {
+        ////    return base.Equals(obj);
+        ////}
 
         #endregion
+
 
     }
 }

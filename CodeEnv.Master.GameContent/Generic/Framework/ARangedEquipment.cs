@@ -14,10 +14,10 @@
 ////#define DEBUG_WARN
 ////#define DEBUG_ERROR
 
-using System;
-using CodeEnv.Master.Common;
-
 namespace CodeEnv.Master.GameContent {
+
+    using System;
+    using CodeEnv.Master.Common;
 
     /// <summary>
     /// Abstract base class for Ranged Equipment such as Sensors and Weapons.

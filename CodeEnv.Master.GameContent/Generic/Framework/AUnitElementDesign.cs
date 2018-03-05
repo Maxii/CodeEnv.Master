@@ -15,9 +15,6 @@
 
 namespace CodeEnv.Master.GameContent {
 
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using Common;
 
     /// <summary>
@@ -25,53 +22,23 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AUnitElementDesign : AUnitMemberDesign {
 
-        public static EquipmentCategory[] SupportedEquipCategories =  {
-                                                                            EquipmentCategory.LaunchedWeapon,
-                                                                            EquipmentCategory.LosWeapon,
+        public static EquipmentCategory[] SupportedEquipCategories =    {
+                                                                            EquipmentCategory.AssaultWeapon,
+                                                                            EquipmentCategory.MissileWeapon,
+                                                                            EquipmentCategory.BeamWeapon,
+                                                                            EquipmentCategory.ProjectileWeapon,
                                                                             EquipmentCategory.ActiveCountermeasure,
                                                                             EquipmentCategory.PassiveCountermeasure,
                                                                             EquipmentCategory.ElementSensor,
                                                                             EquipmentCategory.ShieldGenerator
                                                                         };
 
-        [Obsolete]
-        public IEnumerable<ActiveCountermeasureStat> ActiveCmStats {
-            get {
-                var keys = _equipLookupBySlotID.Keys.Where(key => key.Category == EquipmentCategory.ActiveCountermeasure
-                && _equipLookupBySlotID[key] != null);
-                IList<ActiveCountermeasureStat> stats = new List<ActiveCountermeasureStat>();
-                foreach (var key in keys) {
-                    stats.Add(_equipLookupBySlotID[key] as ActiveCountermeasureStat);
-                }
-                return stats;
-            }
-        }
-
-        [Obsolete]
-        public IEnumerable<SensorStat> SensorStats {
-            get {
-                var keys = _equipLookupBySlotID.Keys.Where(key => key.Category == EquipmentCategory.ElementSensor
-                && _equipLookupBySlotID[key] != null);
-                IList<SensorStat> stats = new List<SensorStat>();
-                foreach (var key in keys) {
-                    stats.Add(_equipLookupBySlotID[key] as SensorStat);
-                }
-                return stats;
-            }
-        }
-
-        [Obsolete]
-        public IEnumerable<ShieldGeneratorStat> ShieldGeneratorStats {
-            get {
-                var keys = _equipLookupBySlotID.Keys.Where(key => key.Category == EquipmentCategory.ShieldGenerator
-                && _equipLookupBySlotID[key] != null);
-                IList<ShieldGeneratorStat> stats = new List<ShieldGeneratorStat>();
-                foreach (var key in keys) {
-                    stats.Add(_equipLookupBySlotID[key] as ShieldGeneratorStat);
-                }
-                return stats;
-            }
-        }
+        public static EquipmentMountCategory[] SupportedMountCategories =    {
+                                                                            EquipmentMountCategory.Silo,
+                                                                            EquipmentMountCategory.Turret,
+                                                                            EquipmentMountCategory.Interior,
+                                                                            EquipmentMountCategory.InteriorAlt
+                                                                        };
 
         public SensorStat ReqdSRSensorStat { get; private set; }
 
@@ -94,8 +61,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float MinimumDisbandCost { get { return ConstructionCost * TempGameValues.MinDisbandConstructionCostFactor; } }
 
-
-        protected sealed override EquipmentCategory[] SupportedEquipmentCategories { get { return SupportedEquipCategories; } }
+        protected override EquipmentMountCategory[] SupportedHullMountCategories { get { return SupportedMountCategories; } }
 
         public AUnitElementDesign(Player player, Priority hqPriority, SensorStat reqdSRSensorStat)
             : base(player) {
@@ -109,12 +75,6 @@ namespace CodeEnv.Master.GameContent {
             return cumConstructionCost;
         }
 
-        protected override int CalcRefitBenefit() {
-            int cumBenefit = base.CalcRefitBenefit();
-            cumBenefit += ReqdSRSensorStat.RefitBenefit;
-            return cumBenefit;
-        }
-
         public override bool HasEqualContent(AUnitMemberDesign oDesign) {
             if (base.HasEqualContent(oDesign)) {
                 AUnitElementDesign eDesign = oDesign as AUnitElementDesign;
@@ -125,19 +85,19 @@ namespace CodeEnv.Master.GameContent {
 
         #region Debug
 
-        protected override void __ValidateEquipmentCategorySequence() {
-            base.__ValidateEquipmentCategorySequence();
-            // 6.29.17 Hull prefabs have weapon mount placeholders with manually set slot number assignments. As such,
+        protected override void __ValidateHullMountCatSequence() {
+            base.__ValidateHullMountCatSequence();
+            // 3.4.18 Hull prefabs have weapon mount placeholders with manually set slot number assignments. As such,
             // the slot number assignment algorithm used in InitializeValuesAndReferences relies on the proper sequence of
-            // EquipmentCategories when initializing the SlotIDs for this design. 
-            // LaunchedWeapons have slot number assignments that always start with 1, ending with the max number of 
-            // launchedWeapons allowed for the hull category. LosWeapons slot numbers follow in sequence, beginning with 
-            // the next slot number after the last number used for LaunchedWeapons and ending with a slot number calculated
-            // the same way as done for LaunchedWeapons.  
+            // HullMountCategories when initializing the SlotIDs for this design. 
+            // Silo(Launched)Weapons have slot number assignments that always start with 1, ending with the max number of 
+            // Silo(launched)Weapons allowed for the hull category. Turret(Los)Weapons slot numbers follow in sequence, beginning with 
+            // the next slot number after the last number used for Silo(Launched)Weapons and ending with a slot number calculated
+            // the same way as done for Silo(Launched)Weapons.  
             // 
             // If Loader.__ValidateMaxHullWeaponSlots passes and so does this, slot numbers should be accurate.
-            D.AssertEqual(EquipmentCategory.LaunchedWeapon, SupportedEquipmentCategories[0]);
-            D.AssertEqual(EquipmentCategory.LosWeapon, SupportedEquipmentCategories[1]);
+            D.AssertEqual(EquipmentMountCategory.Silo, SupportedHullMountCategories[0]);
+            D.AssertEqual(EquipmentMountCategory.Turret, SupportedHullMountCategories[1]);
         }
 
         #endregion

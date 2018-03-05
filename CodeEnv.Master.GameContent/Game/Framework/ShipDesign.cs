@@ -25,12 +25,13 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ShipDesign : AUnitElementDesign {
 
-        private const string DebugNameFormat = "{0}[{1}], Player = {2}, Hull = {3}, Status = {4}, ConstructionCost = {5:0.}, RefitBenefit = {6}";
+        private const string DebugNameFormat = "{0}[{1}], Player = {2}, Hull = {3}, Status = {4}, ConstructionCost = {5:0.}, DesignLevel = {6}";
 
         public override string DebugName {
             get {
                 string designNameText = DesignName.IsNullOrEmpty() ? "Not yet named" : DesignName;
-                return DebugNameFormat.Inject(GetType().Name, designNameText, Player.DebugName, HullCategory.GetValueName(), Status.GetValueName(), ConstructionCost, RefitBenefit);
+                return DebugNameFormat.Inject(GetType().Name, designNameText, Player.DebugName, HullCategory.GetValueName(), Status.GetValueName(),
+                    ConstructionCost, DesignLevel);
             }
         }
 
@@ -63,7 +64,7 @@ namespace CodeEnv.Master.GameContent {
             // If copying System_CreationTemplate counter will always = 0 as they are never incremented. If copying Player_Current counter 
             // will be >= 0 ready to be incremented. If copying Player_Obsolete a new RootDesignName will be assigned resetting counter
             // to 0 to avoid creating duplicate design names when incrementing.
-            _designNameCounter = designToCopy._designNameCounter;
+            DesignLevel = designToCopy.DesignLevel;
         }
 
         public ShipDesign(Player player, Priority hqPriority, SensorStat reqdSRSensorStat, ShipHullStat hullStat, EngineStat stlEngineStat,
@@ -84,43 +85,26 @@ namespace CodeEnv.Master.GameContent {
             return cumConstructionCost;
         }
 
-        protected override int CalcRefitBenefit() {
-            int cumBenefit = base.CalcRefitBenefit();
-            cumBenefit += HullStat.RefitBenefit;
-            cumBenefit += FtlEngineStat != null ? FtlEngineStat.RefitBenefit : Constants.Zero;
-            cumBenefit += StlEngineStat.RefitBenefit;
-            return cumBenefit;
-        }
-
         /// <summary>
-        /// Returns the maximum number of AEquipmentStat slots that this design is allowed for the provided EquipmentCategory.
+        /// Returns the maximum number of AEquipmentStat slots that this design is allowed for the provided HullMountCategory.
         /// <remarks>AEquipmentStats that are required for a design are not included. These are typically added via the constructor.</remarks>
         /// </summary>
-        /// <param name="equipCat">The equip cat.</param>
+        /// <param name="mountCat">The HullMountCategory.</param>
         /// <returns></returns>
         /// <exception cref="System.NotImplementedException"></exception>
-        protected override int GetMaxEquipmentSlotsFor(EquipmentCategory equipCat) {
-            switch (equipCat) {
-                case EquipmentCategory.PassiveCountermeasure:
-                    return HullCategory.__MaxPassiveCMs();
-                case EquipmentCategory.ActiveCountermeasure:
-                    return HullCategory.__MaxActiveCMs();
-                case EquipmentCategory.ElementSensor:
-                    return HullCategory.__MaxSensors() - Constants.One;
-                case EquipmentCategory.ShieldGenerator:
-                    return HullCategory.__MaxShieldGenerators();
-                case EquipmentCategory.LosWeapon:
-                    return HullCategory.__MaxLOSWeapons();
-                case EquipmentCategory.LaunchedWeapon:
-                    return HullCategory.__MaxLaunchedWeapons();
-                case EquipmentCategory.CommandSensor:
-                case EquipmentCategory.Propulsion:
-                case EquipmentCategory.FtlDampener:
-                case EquipmentCategory.Hull:
-                case EquipmentCategory.CommandModule:
-                case EquipmentCategory.None:
+        protected override int GetMaxOptionalEquipmentSlotsFor(EquipmentMountCategory mountCat) {
+            switch (mountCat) {
+                case EquipmentMountCategory.Turret:
+                    return HullCategory.MaxTurretMounts();
+                case EquipmentMountCategory.Silo:
+                    return HullCategory.MaxSiloMounts();
+                case EquipmentMountCategory.Interior:
+                    return HullCategory.__MaxInteriorHullMounts();
+                case EquipmentMountCategory.InteriorAlt:
+                    return HullCategory.__MaxInteriorAltHullMounts();
+                case EquipmentMountCategory.None:
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(equipCat));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(mountCat));
             }
         }
 

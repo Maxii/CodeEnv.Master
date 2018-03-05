@@ -278,7 +278,7 @@ public class FleetNavigator : IDisposable {
             IList<ISystem_Ltd> localSystems = new List<ISystem_Ltd>(9);
             foreach (var sectorID in localSectorIDs) {
                 ISystem_Ltd system;
-                if (_fleet.OwnerAIMgr.Knowledge.TryGetSystem(sectorID, out system)) {
+                if (_fleet.OwnerAiMgr.Knowledge.TryGetSystem(sectorID, out system)) {
                     localSystems.Add(system);
                 }
             }
@@ -856,7 +856,7 @@ public class FleetNavigator : IDisposable {
 
         if (_fleet.Topography == Topography.System) {
             // starting in system
-            var ownerKnowledge = _fleet.OwnerAIMgr.Knowledge;
+            var ownerKnowledge = _fleet.OwnerAiMgr.Knowledge;
             ISystem_Ltd fleetSystem;
             bool isFleetSystemFound = ownerKnowledge.TryGetSystem(_fleet.SectorID, out fleetSystem);
             if (!isFleetSystemFound) {

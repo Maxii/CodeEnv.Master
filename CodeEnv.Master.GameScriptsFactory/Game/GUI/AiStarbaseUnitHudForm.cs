@@ -96,8 +96,5 @@ public class AiStarbaseUnitHudForm : ABaseUnitHudForm {
         }
     }
 
-    #region Debug
-
-    #endregion
 }
 

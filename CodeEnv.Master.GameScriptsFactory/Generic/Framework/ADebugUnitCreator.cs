@@ -85,7 +85,7 @@ public abstract class ADebugUnitCreator : AUnitCreator {
         get { return _configuration; }
         set {
             D.AssertNull(_configuration);   // currently one time only
-            SetProperty<UnitCreatorConfiguration>(ref _configuration, value, "Configuration");
+            SetProperty<UnitCreatorConfiguration>(ref _configuration, value, "Configuration", ConfigurationPropSetHandler);
         }
     }
 
@@ -113,6 +113,9 @@ public abstract class ADebugUnitCreator : AUnitCreator {
     }
 
     protected bool IsCompositionPreset { get { return _isCompositionPreset; } }
+
+    protected PlayerDesigns _ownerDesigns;
+
 
     // 10.12.16 Eliminated overridden InitiateDeployment() which checked ValidateConfiguration() as un-configured DebugUnitCreators
     // are destroyed by UniverseCreator. It makes no sense for UniverseCreator to call InitiateDeployment on a Creator that
@@ -191,6 +194,18 @@ public abstract class ADebugUnitCreator : AUnitCreator {
     /// </summary>
     /// <param name="qty">The qty.</param>
     protected abstract void __AdjustElementQtyFieldTo(int qty);
+
+    #region Event and Property Change Handlers
+
+    private void ConfigurationPropSetHandler() {
+        HandleConfigurationPropSet();
+    }
+
+    #endregion
+
+    private void HandleConfigurationPropSet() {
+        _ownerDesigns = _gameMgr.GetAIManagerFor(Owner).Designs;
+    }
 
     #region Archive
 

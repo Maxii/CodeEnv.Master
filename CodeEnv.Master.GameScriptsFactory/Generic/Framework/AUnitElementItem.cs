@@ -239,7 +239,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         SRSensorMonitor.InitializeRangeDistance();  // 5.10.17 First as other Monitors validate their range compared to this range
         WeaponRangeMonitors.ForAll(wrm => {
             wrm.InitializeRangeDistance();
-            wrm.ToEngageColdWarEnemies = OwnerAIMgr.IsPolicyToEngageColdWarEnemies;
+            wrm.ToEngageColdWarEnemies = OwnerAiMgr.IsPolicyToEngageColdWarEnemies;
         });
         CountermeasureRangeMonitors.ForAll(crm => crm.InitializeRangeDistance());
         Shields.ForAll(srm => srm.InitializeRangeDistance());
@@ -302,7 +302,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     }
 
     internal void HandleColdWarEnemyEngagementPolicyChanged() {
-        bool toEngageColdWarEnemies = OwnerAIMgr.IsPolicyToEngageColdWarEnemies;
+        bool toEngageColdWarEnemies = OwnerAiMgr.IsPolicyToEngageColdWarEnemies;
         WeaponRangeMonitors.ForAll(wrm => wrm.ToEngageColdWarEnemies = toEngageColdWarEnemies);
     }
 
@@ -340,13 +340,10 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     protected sealed override void PrepareForOnDeath() {
         base.PrepareForOnDeath();
-        OnSubordinateDeath();
-    }
-
-    protected override void PrepareForDeadState() {
-        base.PrepareForDeadState();
+        // 2.16.18 Notify FSM of death before removing subordinate from Cmd and notifying all other external parties of death
         ReturnFromCalledStates();
         UponDeath();    // 4.19.17 Do any reqd Callback before exiting current non-Call()ed state
+        OnSubordinateDeath();
     }
 
     /********************************************************************************************************************************************
@@ -1089,6 +1086,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// overrides an order, those orders typically(so far) entail assuming station in one form or another, and/or repairing
     /// in place, sometimes in combination. A Relations change here should not affect any of these orders...so far.
     /// Upshot: Elements FSMs can ignore Relations changes.
+    /// <remarks>1.26.18 All Relation changes now handled by Cmd FSM.</remarks>
     /// </remarks>
     /// </summary>
     [Obsolete("1.26.18 All Relation changes handled by Cmd FSM.")]

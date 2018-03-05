@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: DisbandConstruction.cs
-// Tracks progress of an element construction while disbanding.
+// File: RefitConstructionTask.cs
+// Tracks progress of an element's refit construction to an upgraded design.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,16 +19,16 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Tracks progress of an element construction while disbanding.
+    /// Tracks progress of an element's refit construction to an upgraded design.
     /// </summary>
-    public class DisbandConstruction : Construction {
+    public class RefitConstructionTask : ConstructionTask {
 
-        private float _disbandCost;
-        public override float CostToConstruct { get { return _disbandCost; } }
+        private float _refitCost;
+        public override float CostToConstruct { get { return _refitCost; } }
 
-        public DisbandConstruction(AUnitElementDesign designToDisband, IUnitElement element, float disbandCost)
-            : base(designToDisband, element) {
-            _disbandCost = disbandCost;
+        public RefitConstructionTask(AUnitElementDesign refitDesign, IUnitElement element, float refitCost)
+            : base(refitDesign, element) {
+            _refitCost = refitCost;
             __Validate();
         }
 
@@ -36,11 +36,10 @@ namespace CodeEnv.Master.GameContent {
 
         [System.Diagnostics.Conditional("DEBUG")]
         private void __Validate() {
-            D.AssertNotEqual(Constants.ZeroF, _disbandCost);
+            D.AssertNotEqual(Constants.ZeroF, _refitCost);
         }
 
         #endregion
-
 
     }
 }

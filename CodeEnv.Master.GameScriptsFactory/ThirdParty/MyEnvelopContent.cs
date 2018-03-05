@@ -52,6 +52,7 @@ public class MyEnvelopContent : AMonoBase {
         base.Start();
         _isStarted = true;
         Subscribe();
+        __Validate();
     }
 
     private void Subscribe() {
@@ -65,27 +66,20 @@ public class MyEnvelopContent : AMonoBase {
 
     [ContextMenu("Execute")]
     public void Execute() {
+        __Validate();
         //D.Log("{0} of {1} is Executing.", DebugName, targetRoot.name);
-        if (targetRoot == transform) {
-            D.ErrorContext(this, "Target Root object cannot be the same object that has Envelop Content. Make it a sibling instead.");
-        }
-        else if (NGUITools.IsChild(targetRoot, transform)) {
-            D.ErrorContext(this, "Target Root object cannot be a parent of Envelop Content. Make it a sibling instead.");
-        }
-        else {
-            // 6.19.17 considerChildren: false is OK. It only refers to children of a parent with a widget on it. If targetRoot
-            // has a widget on it, only that widget will be encompassed as its children will not be evaluated. If targetRoot 
-            // is an empty folder holding widgets as children, those children will be encompassed.
-            Bounds b = NGUIMath.CalculateRelativeWidgetBounds(transform.parent, targetRoot, false, considerChildren: false);
-            float x0 = b.min.x + _padLeft;
-            float y0 = b.min.y + _padBottom;
-            float x1 = b.max.x + _padRight;
-            float y1 = b.max.y + _padTop;
+        // 6.19.17 considerChildren: false is OK. It only refers to children of a parent with a widget on it. If targetRoot
+        // has a widget on it, only that widget will be encompassed as its children will not be evaluated. If targetRoot 
+        // is an empty folder holding widgets as children, those children will be encompassed.
+        Bounds b = NGUIMath.CalculateRelativeWidgetBounds(transform.parent, targetRoot, false, considerChildren: false);
+        float x0 = b.min.x + _padLeft;
+        float y0 = b.min.y + _padBottom;
+        float x1 = b.max.x + _padRight;
+        float y1 = b.max.y + _padTop;
 
-            UIWidget w = GetComponent<UIWidget>();
-            w.SetRect(x0, y0, x1 - x0, y1 - y0);
-            BroadcastMessage("UpdateAnchors", SendMessageOptions.DontRequireReceiver);
-        }
+        UIWidget w = GetComponent<UIWidget>();
+        w.SetRect(x0, y0, x1 - x0, y1 - y0);
+        BroadcastMessage("UpdateAnchors", SendMessageOptions.DontRequireReceiver);
     }
 
     #region Event and Property Change Handlers
@@ -108,6 +102,22 @@ public class MyEnvelopContent : AMonoBase {
     public override string ToString() {
         return DebugName;
     }
+
+    #region Debug
+
+    private void __Validate() {
+        if (targetRoot == null) {
+            D.ErrorContext(this, "Target Root object cannot be null.");
+        }
+        else if (targetRoot == transform) {
+            D.ErrorContext(this, "Target Root object cannot be the same object that has Envelop Content. Make it a sibling instead.");
+        }
+        else if (NGUITools.IsChild(targetRoot, transform)) {
+            D.ErrorContext(this, "Target Root object cannot be a parent of Envelop Content. Make it a sibling instead.");
+        }
+    }
+
+    #endregion
 
 }
 

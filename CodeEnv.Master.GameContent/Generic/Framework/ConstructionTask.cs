@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: Construction.cs
-// Tracks progress of an element design under initial construction.
+// File: ConstructionTask.cs
+// Tracks progress of an element design under construction.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,9 +20,10 @@ namespace CodeEnv.Master.GameContent {
     using UnityEngine;
 
     /// <summary>
-    /// Tracks progress of an element design under initial construction.
+    /// Tracks progress of an element design under construction.
+    /// <remarks>Initial construction, upgrade construction (refitting) and de-construction (disbanding) all require construction.</remarks>
     /// </summary>
-    public class Construction : APropertyChangeTracking {
+    public class ConstructionTask : APropertyChangeTracking {
 
         private const string DebugNameFormat = "{0}[{1}]";
 
@@ -38,7 +39,7 @@ namespace CodeEnv.Master.GameContent {
                     D.Assert(value);       // not allowed to be set false
                     _isCompleted = value;
                 }
-                // No SetProperty to avoid subscribing to IsCompleted. Use ConstructionManager.isConstructionCompleted instead.
+                // No SetProperty to avoid subscribing to IsCompleted. Use BaseConstructionManager.isConstructionCompleted instead.
             }
         }
 
@@ -86,9 +87,10 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Returns the cost in units of production to construct what is being constructed.
-        /// Can construct an Element from scratch or refit an existing Element to a new Design.
-        /// <remarks>Default implementation returns the 'from scratch' Design.ConstructionCost. RefitConstruction overrides 
-        /// this and returns the cost to 'refit' to this Design from a prior design.</remarks>
+        /// Can construct an Element from scratch, refit an existing Element to a new Design or disband (de-construct) an Element.
+        /// <remarks>Default implementation returns the 'from scratch' Design.ConstructionCost. RefitConstruction
+        /// overrides this value and returns the cost to 'refit' to this Design from a prior design. DisbandConstruction also
+        /// overrides this value and returns the cost to 'disband' the element that is using this design.</remarks>
         /// </summary>
         public virtual float CostToConstruct { get { return Design.ConstructionCost; } }
 
@@ -101,11 +103,11 @@ namespace CodeEnv.Master.GameContent {
         public float CumProductionApplied { get; private set; }
 
         /// <summary>
-        /// The element being constructed or refit.
+        /// The element being constructed, refit or disbanded.
         /// </summary>
         public IUnitElement Element { get; private set; }
 
-        public Construction(AUnitElementDesign design, IUnitElement element) {
+        public ConstructionTask(AUnitElementDesign design, IUnitElement element) {
             Design = design;
             Element = element;
         }
@@ -143,10 +145,6 @@ namespace CodeEnv.Master.GameContent {
         public sealed override string ToString() {
             return DebugName;
         }
-
-        #region Debug
-
-        #endregion
 
 
     }

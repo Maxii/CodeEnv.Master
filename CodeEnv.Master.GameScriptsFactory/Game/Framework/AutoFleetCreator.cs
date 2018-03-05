@@ -36,7 +36,7 @@ public class AutoFleetCreator : AAutoUnitCreator {
     protected override void MakeElements() {
         _elements = new List<ShipItem>();
         foreach (var designName in Configuration.ElementDesignNames) {
-            ShipDesign design = _gameMgr.PlayersDesigns.GetShipDesign(Owner, designName);
+            ShipDesign design = _ownerDesigns.GetShipDesign(designName);
             string name = _factory.__GetUniqueShipName(design.DesignName);
             var ship = _factory.MakeShipInstance(Owner, design, name, gameObject);
             _elements.Add(ship);

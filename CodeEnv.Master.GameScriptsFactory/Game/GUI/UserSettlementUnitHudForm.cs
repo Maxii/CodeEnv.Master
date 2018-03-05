@@ -42,9 +42,5 @@ public class UserSettlementUnitHudForm : ABaseUnitHudForm {
         }
     }
 
-    #region Debug
-
-    #endregion
-
 }
 

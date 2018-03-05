@@ -83,7 +83,6 @@ public class NewGameSystemConfigurator {
     private GameTimeDuration _minMoonOrbitPeriod = new GameTimeDuration(hours: 0, days: 30, years: 0);
     private GameTimeDuration _moonOrbitPeriodIncrement = new GameTimeDuration(hours: 0, days: 10, years: 0);
 
-    private IList<PassiveCountermeasureStat> _availablePassiveCountermeasureStats;
     private float __systemOrbitSlotDepth;
 
     private GameManager _gameMgr;
@@ -98,7 +97,6 @@ public class NewGameSystemConfigurator {
         _gameMgr = GameManager.Instance;
         _nameFactory = SystemNameFactory.Instance;
         _systemFactory = SystemFactory.Instance;
-        _availablePassiveCountermeasureStats = MakeAvailablePassiveCountermeasureStats(9);
     }
 
     #region Configure Existing Creators
@@ -576,7 +574,8 @@ public class NewGameSystemConfigurator {
         string designName = GetUniqueDesignName(cat.GetValueName());
         PlanetStat stat = MakeRandomPlanetStat(cat, desirability);
         int passiveCmQty = GetPassiveCountermeasureQty(desirability, max: 3);
-        var passiveCMs = _availablePassiveCountermeasureStats.Shuffle().Take(passiveCmQty);
+        var passiveCM = EquipmentStatFactory.Instance.MakeDefaultPassiveCmInstance();
+        var passiveCMs = Enumerable.Repeat<PassiveCountermeasureStat>(passiveCM, passiveCmQty);
         PlanetDesign design = new PlanetDesign(designName, stat, passiveCMs);
         _gameMgr.CelestialDesigns.Add(design);
         return designName;
@@ -586,7 +585,8 @@ public class NewGameSystemConfigurator {
         string designName = GetUniqueDesignName(cat.GetValueName());
         PlanetoidStat stat = MakeRandomMoonStat(cat, desirability);
         int passiveCmQty = GetPassiveCountermeasureQty(desirability, max: 1);
-        var passiveCMs = _availablePassiveCountermeasureStats.Shuffle().Take(passiveCmQty);
+        var passiveCM = EquipmentStatFactory.Instance.MakeDefaultPassiveCmInstance();
+        var passiveCMs = Enumerable.Repeat<PassiveCountermeasureStat>(passiveCM, passiveCmQty);
         MoonDesign design = new MoonDesign(designName, stat, passiveCMs);
         _gameMgr.CelestialDesigns.Add(design);
         return designName;
@@ -699,40 +699,6 @@ public class NewGameSystemConfigurator {
         systemOrbitSlotsStartRadius = closeOrbitInnerRadius + TempGameValues.ShipCloseOrbitSlotDepth;
         int capacity = 100; // TODO vary by desirability
         return new StarStat(category, radius, closeOrbitInnerRadius, capacity, CreateRandomResourceYield(desirability, ResourceCategory.Common, ResourceCategory.Strategic));
-    }
-
-    private IList<PassiveCountermeasureStat> MakeAvailablePassiveCountermeasureStats(int quantity) {
-        IList<PassiveCountermeasureStat> statsList = new List<PassiveCountermeasureStat>(quantity);
-        for (int i = 0; i < quantity; i++) {
-            string name = string.Empty;
-            DamageStrength damageMitigation;
-            var damageMitigationCategory = Enums<DamageCategory>.GetRandom(excludeDefault: false);
-            float damageMitigationValue;
-            switch (damageMitigationCategory) {
-                case DamageCategory.Thermal:
-                    name = "HighVaporAtmosphere";
-                    damageMitigationValue = UnityEngine.Random.Range(3F, 8F);
-                    damageMitigation = new DamageStrength(damageMitigationCategory, damageMitigationValue);
-                    break;
-                case DamageCategory.Structural:
-                    name = "HighParticulateAtmosphere";
-                    damageMitigationValue = UnityEngine.Random.Range(3F, 8F);
-                    damageMitigation = new DamageStrength(damageMitigationCategory, damageMitigationValue);
-                    break;
-                case DamageCategory.Incursion:  // UNDONE
-                case DamageCategory.None:
-                    name = "NoAtmosphere";
-                    damageMitigation = new DamageStrength(1F, 1F, 1F);
-                    break;
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(damageMitigationCategory));
-            }
-            float constructionCost = Constants.ZeroF;
-            var countermeasureStat = new PassiveCountermeasureStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...",
-                0F, 0F, 0F, constructionCost, Constants.ZeroF, damageMitigation, 0);
-            statsList.Add(countermeasureStat);
-        }
-        return statsList;
     }
 
     private ResourcesYield CreateRandomResourceYield(SystemDesirability desirability, params ResourceCategory[] resCategories) {

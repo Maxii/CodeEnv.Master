@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AUnitDesignWindow.cs
-// Abstract base class for Unit Cmd and Element Design Windows.
+// Abstract base class for Unit Cmd and Element Design Windows used by the User.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -24,7 +24,7 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Abstract base class for Unit Cmd and Element Design Windows.
+/// Abstract base class for Unit Cmd and Element Design Windows used by the User.
 /// </summary>
 public abstract class AUnitDesignWindow : AGuiWindow {
 
@@ -62,6 +62,14 @@ public abstract class AUnitDesignWindow : AGuiWindow {
 
     private Transform _contentHolder;
     protected override Transform ContentHolder { get { return _contentHolder; } }
+
+    private PlayerDesigns _userDesigns;
+    protected PlayerDesigns UserDesigns {
+        get {
+            _userDesigns = _userDesigns ?? _gameMgr.UserAIManager.Designs;
+            return _userDesigns;
+        }
+    }
 
     /// <summary>
     /// The DesignIcon that is currently picked.
@@ -132,7 +140,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
-        //ValidatePrefabs();    // will fail while using DesignScreensManager as it populates the prefab fields
+        // __ValidatePrefabs();    // will fail while using DesignScreensManager as it populates the prefab fields
         InitializeContentHolder();
         InitializeTransientDesignIconHolder();
         Subscribe();
@@ -171,12 +179,6 @@ public abstract class AUnitDesignWindow : AGuiWindow {
 
         _designerEquipmentStorage = _designerUIContainerWidget.gameObject.GetSingleComponentInChildren<DesignEquipmentStorage>();
         _windowControlsUIContainerWidget = gameObject.GetComponentsInChildren<GuiElement>().Single(e => e.ElementID == GuiElementID.MenuControlsUIContainer).GetComponent<UIWidget>();
-    }
-
-    private void ValidatePrefabs() {
-        D.AssertNotNull(_designIconPrefab);
-        D.AssertNotNull(_equipmentIconPrefab);
-        D.AssertNotNull(_threeDModelStagePrefab);
     }
 
     private void InitializeContentHolder() {
@@ -264,16 +266,6 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     // Public to allow drag and drop to buttons in the GUI
 
     /// <summary>
-    /// Initializes the prefab fields of this DesignWindow.
-    /// <remarks>Called by DesignScreensManager when it installs a new AUnitDesignWindow.</remarks>
-    /// </summary>
-    public void __InitializePrefabs(DesignIconGuiElement designIconPrefab, EquipmentIconGuiElement equipmentIconPrefab, GameObject threeDModelStagePrefab) {
-        _designIconPrefab = designIconPrefab;
-        _equipmentIconPrefab = equipmentIconPrefab;
-        _threeDModelStagePrefab = threeDModelStagePrefab;
-    }
-
-    /// <summary>
     /// Show the Window.
     /// </summary>
     public void Show() {
@@ -328,7 +320,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         }
         // Acquire hull and design name from CreateDesignWindow
         string rootDesignName = _createDesignNameInput.value;
-        if (_gameMgr.PlayersDesigns.IsDesignNameInUseByUser(rootDesignName)) {
+        if (UserDesigns.IsDesignNameInUse(rootDesignName)) {
             D.Warn("{0}: User picked DesignName {1} that is already in use when attempting to create a design.", DebugName, rootDesignName);
             SFXManager.Instance.PlaySFX(SfxClipID.Error);
             ShowDesignsUI();
@@ -399,7 +391,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         }
         // Acquire design name from RenameObsoleteDesignPopupWindow
         string rootDesignName = _renameObsoleteDesignNameInput.value;
-        if (_gameMgr.PlayersDesigns.IsDesignNameInUseByUser(rootDesignName)) {
+        if (UserDesigns.IsDesignNameInUse(rootDesignName)) {
             D.Warn("{0}: User picked DesignName {1} that is already in use when attempting to edit an obsolete design.", DebugName, rootDesignName);
             SFXManager.Instance.PlaySFX(SfxClipID.Error);
             ShowDesignsUI();
@@ -680,7 +672,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         if (previousDesignStatus == AUnitMemberDesign.SourceAndStatus.Player_Current) {
             // Only increment the newDesign name when the source of the design is current 
             // as newDesigns from both system and obsolete sources get new names created by the user
-            newDesign.IncrementDesignName();
+            newDesign.IncrementDesignLevelAndName();
         }
 
         // add the new design and its icon
@@ -920,6 +912,22 @@ public abstract class AUnitDesignWindow : AGuiWindow {
 
     #region Debug
 
+    [System.Diagnostics.Conditional("DEBUG")]
+    private void __ValidatePrefabs() {
+        D.AssertNotNull(_designIconPrefab);
+        D.AssertNotNull(_equipmentIconPrefab);
+        D.AssertNotNull(_threeDModelStagePrefab);
+    }
+
+    /// <summary>
+    /// Initializes the prefab fields of this DesignWindow.
+    /// <remarks>Called by DesignScreensManager when it installs a new AUnitDesignWindow.</remarks>
+    /// </summary>
+    public void __InitializePrefabs(DesignIconGuiElement designIconPrefab, EquipmentIconGuiElement equipmentIconPrefab, GameObject threeDModelStagePrefab) {
+        _designIconPrefab = designIconPrefab;
+        _equipmentIconPrefab = equipmentIconPrefab;
+        _threeDModelStagePrefab = threeDModelStagePrefab;
+    }
 
     #endregion
 

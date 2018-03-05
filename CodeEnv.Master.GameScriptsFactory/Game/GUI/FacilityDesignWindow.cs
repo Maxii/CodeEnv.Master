@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: FacilityDesignWindow.cs
-// GuiWindow for designing Facilities, managed by the DesignScreensManager.
+// GuiWindow used by the User to design Facilities, managed by the DesignScreensManager.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,12 +23,12 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// GuiWindow for designing Facilities, managed by the DesignScreensManager.
+/// GuiWindow used by the User to design Facilities, managed by the DesignScreensManager.
 /// </summary>
 public class FacilityDesignWindow : AUnitDesignWindow {
 
     protected override void AddToPlayerDesigns(AUnitMemberDesign newDesign) {
-        _gameMgr.PlayersDesigns.Add(newDesign as FacilityDesign);
+        UserDesigns.Add(newDesign as FacilityDesign);
     }
 
     protected override AUnitMemberDesign CopyDesignFrom(AUnitMemberDesign design) {
@@ -43,7 +43,7 @@ public class FacilityDesignWindow : AUnitDesignWindow {
     }
 
     protected override IEnumerable<AUnitMemberDesign> GetRegisteredUserDesigns(bool includeObsolete) {
-        return _gameMgr.PlayersDesigns.GetAllUserFacilityDesigns(includeObsolete).Cast<AUnitMemberDesign>();
+        return UserDesigns.GetAllFacilityDesigns(includeObsolete).Cast<AUnitMemberDesign>();
     }
 
     protected override bool TryGetCreateDesignPopupContent(out string popupTitle, out List<string> popupContent) {
@@ -55,15 +55,15 @@ public class FacilityDesignWindow : AUnitDesignWindow {
     protected override AUnitMemberDesign GetEmptyTemplateDesign(string emptyTemplateHint) {
         D.AssertNotNull(emptyTemplateHint);
         FacilityHullCategory designHullCat = Enums<FacilityHullCategory>.Parse(emptyTemplateHint);
-        return _gameMgr.PlayersDesigns.GetUserFacilityDesign(designHullCat.GetEmptyTemplateDesignName());
+        return UserDesigns.GetFacilityDesign(designHullCat.GetEmptyTemplateDesignName());
     }
 
     protected override void ObsoleteDesign(string designName) {
-        _gameMgr.PlayersDesigns.ObsoleteUserFacilityDesign(designName);
+        UserDesigns.ObsoleteFacilityDesign(designName);
     }
 
     protected override IEnumerable<AEquipmentStat> GetAvailableUserEquipmentStats() {
-        return _gameMgr.UniverseCreator.UnitConfigurator.GetAvailableUserEquipmentStats(AUnitElementDesign.SupportedEquipCategories);
+        return UserDesigns.GetCurrentEquipmentStats(AUnitElementDesign.SupportedEquipCategories);
     }
 
 }

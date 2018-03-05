@@ -35,7 +35,7 @@ public class Hanger : AMonoBase, IFormationMgrClient, IHanger/*, IHanger_Ltd*/ {
 
     public bool IsJoinable { get { return IsJoinableBy(Constants.One); } }
 
-    public ConstructionManager ConstructionMgr { get { return ParentBaseCmd.ConstructionMgr; } }
+    public BaseConstructionManager ConstructionMgr { get { return ParentBaseCmd.ConstructionMgr; } }
 
     private IList<ShipItem> _allShips;
     public IList<ShipItem> AllShips { get { return new List<ShipItem>(_allShips); } }

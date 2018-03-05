@@ -97,9 +97,6 @@ public class AiSettlementUnitHudForm : ABaseUnitHudForm {
         }
     }
 
-    #region Debug
-
-    #endregion
 
 }
 

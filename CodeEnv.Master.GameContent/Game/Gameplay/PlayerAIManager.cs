@@ -77,7 +77,7 @@ namespace CodeEnv.Master.GameContent {
         public virtual string DebugName {
             get {
                 if (_debugName == null) {
-                    _debugName = DebugNameFormat.Inject(Owner.DebugName, GetType().Name);
+                    _debugName = DebugNameFormat.Inject(Player.DebugName, GetType().Name);
                 }
                 return _debugName;
             }
@@ -97,24 +97,28 @@ namespace CodeEnv.Master.GameContent {
 
         public PlayerKnowledge Knowledge { get; private set; }
 
-        public Player Owner { get; private set; }
+        public Player Player { get; private set; }
 
-        public IEnumerable<Player> OtherKnownPlayers { get { return Owner.OtherKnownPlayers; } }
+        public PlayerResearchManager ResearchMgr { get; private set; }
 
+        public PlayerDesigns Designs { get; private set; }
+
+        public IEnumerable<Player> OtherKnownPlayers { get { return Player.OtherKnownPlayers; } }
+
+        protected IGameManager _gameMgr;
         // TODO use these when needing to search for commands to take an action
         private IList<IUnitCmd> _availableCmds;
         private IList<IUnitCmd> _unavailableCmds;
         private bool _areAllPlayersDiscovered;
 
         private IFpsReadout _fpsReadout;
-        private IGameManager _gameMgr;
         private IDebugControls _debugControls;
         private IJobManager _jobMgr;
 
         #region Initialization
 
-        public PlayerAIManager(Player owner, PlayerKnowledge knowledge) {
-            Owner = owner;
+        public PlayerAIManager(Player player, PlayerKnowledge knowledge) {
+            Player = player;
             Knowledge = knowledge;
             InitializeValuesAndReferences();
         }
@@ -126,11 +130,22 @@ namespace CodeEnv.Master.GameContent {
             _fpsReadout = GameReferences.FpsReadout;
             _availableCmds = new List<IUnitCmd>();
             _unavailableCmds = new List<IUnitCmd>();
+
+            Designs = new PlayerDesigns(Player);
+            ResearchMgr = InitializeResearchMgr();
+        }
+
+        private PlayerResearchManager InitializeResearchMgr() {
+            var researchMgr = new PlayerResearchManager(this);
+            researchMgr.researchCompleted += ResearchCompletedEventHandler;
+            return researchMgr;
         }
 
         public void CommenceOperations() {
             IsOperational = true;
             Knowledge.CommenceOperations();
+
+            ResearchMgr.InitiateProgressChecks();
 
             if (_debugControls.IsAutoRelationsChangeEnabled) {
                 __InitializeAutoRelationsChgSystem();
@@ -358,7 +373,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="excludedItems">The excluded items.</param>
         /// <returns></returns>
         public bool TryFindClosestGuardableItem(Vector3 worldPosition, out IGuardable closestItem, params IGuardable[] excludedItems) {
-            var itemCandidates = Knowledge.KnownGuardableItems.Except(excludedItems).Where(gItem => gItem.IsGuardingAllowedBy(Owner));
+            var itemCandidates = Knowledge.KnownGuardableItems.Except(excludedItems).Where(gItem => gItem.IsGuardingAllowedBy(Player));
             if (itemCandidates.Any()) {
                 closestItem = itemCandidates.MinBy(cand => Vector3.SqrMagnitude(cand.Position - worldPosition));
                 return true;
@@ -376,7 +391,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="excludedItems">The excluded items.</param>
         /// <returns></returns>
         public bool TryFindClosestPatrollableItem(Vector3 worldPosition, out IPatrollable closestItem, params IPatrollable[] excludedItems) {
-            var itemCandidates = Knowledge.KnownPatrollableItems.Except(excludedItems).Where(pItem => pItem.IsPatrollingAllowedBy(Owner));
+            var itemCandidates = Knowledge.KnownPatrollableItems.Except(excludedItems).Where(pItem => pItem.IsPatrollingAllowedBy(Player));
             if (itemCandidates.Any()) {
                 closestItem = itemCandidates.MinBy(cand => Vector3.SqrMagnitude(cand.Position - worldPosition));
                 return true;
@@ -415,7 +430,7 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         public bool TryFindClosestFleetRepairBase(Vector3 worldPosition, out IUnitBaseCmd_Ltd closestBase, params IUnitBaseCmd_Ltd[] excludedBases) {
             var baseCandidates = Knowledge.Bases.Except(excludedBases).Where(bItem => {
-                bool isCandidate = (bItem as IShipRepairCapable).IsRepairingAllowedBy(Owner);
+                bool isCandidate = (bItem as IShipRepairCapable).IsRepairingAllowedBy(Player);
                 return isCandidate;
             });
             if (baseCandidates.Any()) {
@@ -460,7 +475,7 @@ namespace CodeEnv.Master.GameContent {
         public void AssessAwarenessOf(IOwnerItem_Ltd item) {
             //D.Log("{0}.AssessAwarenessOf({1}) called. Frame: {2}.", DebugName, item.DebugName, Time.frameCount); 
             IIntelItem intelItem = item as IIntelItem;
-            IntelCoverage intelCoverage = intelItem.GetIntelCoverage(Owner);
+            IntelCoverage intelCoverage = intelItem.GetIntelCoverage(Player);
             if (_debugControls.IsAllIntelCoverageComprehensive) {
                 // Each and every item should be set to Comprehensive by AIntelItem during FinalInitialization...
                 D.AssertEqual(IntelCoverage.Comprehensive, intelCoverage, intelCoverage.GetValueName());
@@ -570,16 +585,16 @@ namespace CodeEnv.Master.GameContent {
             //D.Log("{0}.CheckForUndiscoveredPlayer({1}) called. Frame: {2}.", DebugName, item.DebugName, Time.frameCount);
 
             Player newlyDiscoveredPlayerCandidate;
-            if (item.TryGetOwner_Debug(Owner, out newlyDiscoveredPlayerCandidate)) {
-                if (newlyDiscoveredPlayerCandidate == TempGameValues.NoPlayer || newlyDiscoveredPlayerCandidate == Owner) {
+            if (item.TryGetOwner_Debug(Player, out newlyDiscoveredPlayerCandidate)) {
+                if (newlyDiscoveredPlayerCandidate == TempGameValues.NoPlayer || newlyDiscoveredPlayerCandidate == Player) {
                     return;
                 }
 
-                bool isAlreadyKnown = Owner.IsKnown(newlyDiscoveredPlayerCandidate);
+                bool isAlreadyKnown = Player.IsKnown(newlyDiscoveredPlayerCandidate);
                 if (!isAlreadyKnown) {
                     Player newlyDiscoveredPlayer = newlyDiscoveredPlayerCandidate;
-                    Owner.HandleMetNewPlayer(newlyDiscoveredPlayer);
-                    _areAllPlayersDiscovered = Owner.OtherKnownPlayers.Count() == _gameMgr.AllPlayers.Count - 1;
+                    Player.HandleMetNewPlayer(newlyDiscoveredPlayer);
+                    _areAllPlayersDiscovered = Player.OtherKnownPlayers.Count() == _gameMgr.AllPlayers.Count - 1;
                     if (_areAllPlayersDiscovered) {
                         //D.LogBold("{0}: {1} now knows all players!", DebugName, Owner.DebugName);
                         //D.Log("{0}'s OtherKnownPlayers: {1}, AllPlayers: {2}.", Owner.DebugName,
@@ -599,7 +614,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="myUnitCmd">My unit command.</param>
         public void RegisterForOrders(IUnitCmd myUnitCmd) {
-            D.AssertEqual(Owner, myUnitCmd.Owner);
+            D.AssertEqual(Player, myUnitCmd.Owner);
             if (!HasKnowledgeOf(myUnitCmd as IUnitCmd_Ltd)) {
                 D.Warn("{0} is unaware of {1} when registering for orders in Frame {2}.", DebugName, myUnitCmd.DebugName, Time.frameCount);
             }
@@ -630,7 +645,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="myUnitCmd">My unit command.</param>
         public void DeregisterForOrders(IUnitCmd myUnitCmd) {
-            D.AssertEqual(Owner, myUnitCmd.Owner);
+            D.AssertEqual(Player, myUnitCmd.Owner);
             myUnitCmd.isAvailableChanged -= MyCmdIsAvailableChgdEventHandler;
             if (_availableCmds.Contains(myUnitCmd)) {
                 _availableCmds.Remove(myUnitCmd);
@@ -646,6 +661,10 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #region Event and Property Change Handlers
+
+        private void ResearchCompletedEventHandler(object sender, PlayerResearchManager.ResearchCompletedEventArgs e) {
+            __HandleResearchCompleted(e.CompletedResearch);
+        }
 
         private void IsPolicyToEngageColdWarEnemiesChangedHandler() {
             Knowledge.OwnerCommands.ForAll(cmd => cmd.HandleColdWarEnemyEngagementPolicyChanged());
@@ -694,11 +713,10 @@ namespace CodeEnv.Master.GameContent {
         private void OnAwareChgd_Planet(IPlanet_Ltd planet) {
             if (awareChgd_Planet != null) {
                 D.Assert(!planet.IsDead, planet.DebugName);
-                D.AssertNotEqual(planet.Owner_Debug, Owner);
+                D.AssertNotEqual(planet.Owner_Debug, Player);
                 awareChgd_Planet(this, new AwareChgdEventArgs(planet));
             }
         }
-
 
         private void MyCmdIsAvailableChgdEventHandler(object sender, EventArgs e) {
             IUnitCmd myCmd = sender as IUnitCmd;
@@ -706,6 +724,12 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
+
+        protected virtual void __HandleResearchCompleted(ResearchTask researchTask) {
+            var techResearched = researchTask.TechBeingResearched;
+            var newTechToResearch = TechnologyFactory.Instance.__GetNextHigherCostTechThan(techResearched);
+            ResearchMgr.ChangeCurrentResearchTo(newTechToResearch);
+        }
 
         private void HandleMyCmdIsAvailableChanged(IUnitCmd myCmd) {
             RefreshTrackedCmdAvailability(myCmd);
@@ -737,9 +761,9 @@ namespace CodeEnv.Master.GameContent {
         }
 
         public void HandleOwnerRelationsChangedWith(Player player) {
-            D.AssertNotEqual(Owner, player);
-            var priorRelationship = Owner.GetPriorRelations(player);
-            var newRelationship = Owner.GetCurrentRelations(player);
+            D.AssertNotEqual(Player, player);
+            var priorRelationship = Player.GetPriorRelations(player);
+            var newRelationship = Player.GetCurrentRelations(player);
             D.AssertNotEqual(priorRelationship, newRelationship);
             //D.Log("Relations have changed from {0} to {1} between {2} and {3}.", priorRelationship.GetValueName(), newRelationship.GetValueName(), Owner, player);
             if (priorRelationship == DiplomaticRelationship.Alliance) {
@@ -753,7 +777,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void HandleGainedAllianceWith(Player ally) {
-            D.Assert(Owner.IsRelationshipWith(ally, DiplomaticRelationship.Alliance));
+            D.Assert(Player.IsRelationshipWith(ally, DiplomaticRelationship.Alliance));
 
             var allyAIMgr = _gameMgr.GetAIManagerFor(ally);
             var allyItems = allyAIMgr.Knowledge.OwnerItems;
@@ -765,13 +789,13 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void HandleLostAllianceWith(Player formerAlly) {
-            D.Assert(Owner.IsPriorRelationshipWith(formerAlly, DiplomaticRelationship.Alliance));
+            D.Assert(Player.IsPriorRelationshipWith(formerAlly, DiplomaticRelationship.Alliance));
 
             var formerAllyOwnedItems = Knowledge.GetItemsOwnedBy(formerAlly);
             var formerAllySensorDetectableOwnedItems = formerAllyOwnedItems.Where(item => item is ISensorDetectable).Cast<ISensorDetectable>();
             formerAllySensorDetectableOwnedItems.ForAll(sdItem => {
                 //D.Log("{0} is about to call formerAlly {1}'s item {2}.ResetBasedOnCurrentDetection.", DebugName, formerAlly, sdItem.DebugName);
-                sdItem.ResetBasedOnCurrentDetection(Owner);
+                sdItem.ResetBasedOnCurrentDetection(Player);
             });
         }
 
@@ -790,17 +814,17 @@ namespace CodeEnv.Master.GameContent {
 
             var element = item as IUnitElement;
             if (element != null) {
-                element.SetIntelCoverage(Owner, IntelCoverage.Comprehensive);
+                element.SetIntelCoverage(Player, IntelCoverage.Comprehensive);
             }
             else {
                 var planetoid = item as IPlanetoid;
                 if (planetoid != null) {
-                    planetoid.SetIntelCoverage(Owner, IntelCoverage.Comprehensive);
+                    planetoid.SetIntelCoverage(Player, IntelCoverage.Comprehensive);
                 }
                 else {
                     var star = item as IStar;
                     D.AssertNotNull(star);
-                    star.SetIntelCoverage(Owner, IntelCoverage.Comprehensive);
+                    star.SetIntelCoverage(Player, IntelCoverage.Comprehensive);
                 }
             }
         }
@@ -862,10 +886,10 @@ namespace CodeEnv.Master.GameContent {
                     __autoRelationsChgJob = _jobMgr.RecurringWaitForHours(durationBetweenChgs, "AutoRelationsChgRecurringJob", waitMilestone: () => {
                         if (OtherKnownPlayers.Any()) {
                             Player player = RandomExtended.Choice(OtherKnownPlayers);
-                            var currentRelations = Owner.GetCurrentRelations(player);
+                            var currentRelations = Player.GetCurrentRelations(player);
                             DiplomaticRelationship newRelations = Enums<DiplomaticRelationship>.GetRandomExcept(default(DiplomaticRelationship),
                                 currentRelations, DiplomaticRelationship.Self);
-                            Owner.SetRelationsWith(player, newRelations);
+                            Player.SetRelationsWith(player, newRelations);
                         }
                     });
                 }
@@ -1097,9 +1121,9 @@ namespace CodeEnv.Master.GameContent {
         /// <returns></returns>
         private bool __IssueFleetAttackOrder(IFleetCmd fleetCmd, bool findFarthestTgt) {
             if (fleetCmd.IsAuthorizedForNewOrder(FleetDirective.Attack)) {
-                List<IUnitAttackable> attackTgts = Knowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsWarAttackAllowedBy(Owner)).ToList();
-                attackTgts.AddRange(Knowledge.Starbases.Cast<IUnitAttackable>().Where(sb => sb.IsWarAttackAllowedBy(Owner)));
-                attackTgts.AddRange(Knowledge.Settlements.Cast<IUnitAttackable>().Where(s => s.IsWarAttackAllowedBy(Owner)));
+                List<IUnitAttackable> attackTgts = Knowledge.Fleets.Cast<IUnitAttackable>().Where(f => f.IsWarAttackAllowedBy(Player)).ToList();
+                attackTgts.AddRange(Knowledge.Starbases.Cast<IUnitAttackable>().Where(sb => sb.IsWarAttackAllowedBy(Player)));
+                attackTgts.AddRange(Knowledge.Settlements.Cast<IUnitAttackable>().Where(s => s.IsWarAttackAllowedBy(Player)));
                 //attackTgts.AddRange(Knowledge.Planets.Cast<IUnitAttackable>().Where(p => p.IsWarAttackByAllowed(Owner)));
                 if (attackTgts.Any()) {
                     IUnitAttackable attackTgt;
@@ -1163,50 +1187,18 @@ namespace CodeEnv.Master.GameContent {
                     var closestUnexploredItem = knownItemsUnexploredByOwnerFleets.MinBy(item => Vector3.SqrMagnitude(fleetCmd.Position - item.Position));
                     D.Log("{0} is issuing {1} an EXPLORE order to {2} in Frame {3}. FPS = {4:0.#}. IsExploreTgtOwnerAccessible = {5}.",
                         DebugName, fleetCmd.DebugName, closestUnexploredItem.DebugName, Time.frameCount, _fpsReadout.FramesPerSecond,
-                        closestUnexploredItem.IsOwnerAccessibleTo(Owner));
+                        closestUnexploredItem.IsOwnerAccessibleTo(Player));
                     var order = new FleetOrder(FleetDirective.Explore, OrderSource.PlayerAI, closestUnexploredItem);
                     fleetCmd.CurrentOrder = order;
                     isExploreOrderIssued = true;
                 }
                 else {
                     D.LogBold("{0}: Fleet {1} has completed exploration of known universe that {2} is allowed to explore.",
-                        DebugName, fleetCmd.DebugName, Owner.DebugName);
+                        DebugName, fleetCmd.DebugName, Player.DebugName);
                 }
             }
             return isExploreOrderIssued;
         }
-        ////private bool __IssueFleetExploreOrder(IFleetCmd fleetCmd) {
-        ////    bool isExploreOrderIssued = false;
-        ////    if (fleetCmd.IsAuthorizedForNewOrder(FleetDirective.Explore)) {
-        ////        var explorableUnexploredSystems =
-        ////            from sys in Knowledge.Systems
-        ////            let eSys = sys as IFleetExplorable
-        ////            where eSys.IsExploringAllowedBy(Owner) && !eSys.IsFullyExploredBy(Owner)
-        ////            select eSys;
-        ////        if (explorableUnexploredSystems.Any()) {
-        ////            var closestUnexploredSystem = explorableUnexploredSystems.MinBy(sys => Vector3.SqrMagnitude(fleetCmd.Position - sys.Position));
-        ////            D.Log("{0} is issuing {1} an EXPLORE order to {2} in Frame {3}. FPS = {4:0.#}. IsExploreTgtOwnerAccessible = {5}.",
-        ////                DebugName, fleetCmd.DebugName, closestUnexploredSystem.DebugName, Time.frameCount, _fpsReadout.FramesPerSecond,
-        ////                closestUnexploredSystem.IsOwnerAccessibleTo(Owner));
-        ////            var order = new FleetOrder(FleetDirective.Explore, OrderSource.PlayerAI, closestUnexploredSystem);
-        ////            fleetCmd.CurrentOrder = order;
-        ////            isExploreOrderIssued = true;
-        ////        }
-        ////        else {
-        ////            IFleetExplorable uCenter = Knowledge.UniverseCenter as IFleetExplorable;
-        ////            if (!uCenter.IsFullyExploredBy(Owner)) {
-        ////                var order = new FleetOrder(FleetDirective.Explore, OrderSource.PlayerAI, uCenter);
-        ////                fleetCmd.CurrentOrder = order;
-        ////                isExploreOrderIssued = true;
-        ////            }
-        ////            else {
-        ////                D.LogBold("{0}: Fleet {1} has completed {2}'s exploration of explorable universe.",
-        ////                    DebugName, fleetCmd.DebugName, Owner.DebugName);
-        ////            }
-        ////        }
-        ////    }
-        ////    return isExploreOrderIssued;
-        ////}
 
         private bool __IssueFleetBaseMoveOrder(IFleetCmd fleetCmd) {
             bool isMoveOrderIssued = false;
@@ -1215,7 +1207,7 @@ namespace CodeEnv.Master.GameContent {
                     from unitBase in Knowledge.Bases
                     let ownerAssessibleUnitBase = unitBase as IUnitBaseCmd
                     // OK to know owner as can always move to a base. Just don't want to get fired on
-                    where !ownerAssessibleUnitBase.Owner.IsAtWarWith(Owner) && !__basesVisited.Contains(ownerAssessibleUnitBase)
+                    where !ownerAssessibleUnitBase.Owner.IsAtWarWith(Player) && !__basesVisited.Contains(ownerAssessibleUnitBase)
                     select ownerAssessibleUnitBase;
                 if (visitableUnvisitedBases.Any()) {
                     var closestVisitableBase = visitableUnvisitedBases.MinBy(vBase => Vector3.SqrMagnitude(fleetCmd.Position - vBase.Position));
@@ -1227,7 +1219,7 @@ namespace CodeEnv.Master.GameContent {
                 }
                 else {
                     D.LogBold("{0}: Fleet {1} has completed {2}'s visits to all visitable unvisited bases in known universe.",
-                        DebugName, fleetCmd.DebugName, Owner.DebugName);
+                        DebugName, fleetCmd.DebugName, Player.DebugName);
                 }
             }
             return isMoveOrderIssued;

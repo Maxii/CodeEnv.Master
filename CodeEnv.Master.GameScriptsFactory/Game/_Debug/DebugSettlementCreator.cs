@@ -73,7 +73,7 @@ public class DebugSettlementCreator : ADebugUnitCreator {
         if (IsCompositionPreset) {
             IList<FacilityDesign> designs = new List<FacilityDesign>();
             foreach (var designName in Configuration.ElementDesignNames) {
-                FacilityDesign design = _gameMgr.PlayersDesigns.GetFacilityDesign(Owner, designName);
+                FacilityDesign design = _ownerDesigns.GetFacilityDesign(designName);
                 designs.Add(design);
             }
 
@@ -102,7 +102,7 @@ public class DebugSettlementCreator : ADebugUnitCreator {
         }
         else {
             foreach (var designName in Configuration.ElementDesignNames) {
-                FacilityDesign design = _gameMgr.PlayersDesigns.GetFacilityDesign(Owner, designName);
+                FacilityDesign design = _ownerDesigns.GetFacilityDesign(designName);
                 string name = _factory.__GetUniqueFacilityName(design.DesignName);
                 _elements.Add(_factory.MakeFacilityInstance(Owner, Topography.System, design, name, gameObject));
             }

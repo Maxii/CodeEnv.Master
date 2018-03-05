@@ -92,6 +92,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="stat">The stat.</param>
         /// <param name="name">The optional unique name for this equipment. If not provided, the name embedded in the stat will be used.</param>
         public AEquipment(AEquipmentStat stat, string name = null) {
+            D.AssertNotNull(stat, "{0}: Stat is null.".Inject(GetType().Name));
             Stat = stat;
             Name = name != null ? name : stat.Name;
             _jobMgr = GameReferences.JobManager;

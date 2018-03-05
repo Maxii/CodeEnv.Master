@@ -60,8 +60,8 @@ namespace CodeEnv.Master.GameContent {
 
         public new IEnumerable<FacilityData> ElementsData { get { return base.ElementsData.Cast<FacilityData>(); } }
 
-        private Construction _currentConstruction = TempGameValues.NoConstruction;
-        public Construction CurrentConstruction {
+        private ConstructionTask _currentConstruction = TempGameValues.NoConstruction;
+        public ConstructionTask CurrentConstruction {
             get { return _currentConstruction; }
             set {
                 D.AssertNotNull(value, DebugName); // CurrentConstruction should never be changed to null
@@ -117,18 +117,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected sealed override OutputsYield RecalcUnitOutputs() {
             var unitOutputs = _elementsData.Select(ed => ed.Outputs).Sum();
-            // 11.20.17 Zero unit production in a Base will result in Base ConstructionMgr attempting to divide by zero when 
-            // recalculating expected completion dates.
-            if (unitOutputs == default(OutputsYield)) {
-                // 11.20.17 Occurs when Base loses last facility and is about to die (IsDead not yet set). 
-                //D.Log("{0} not allowed UnitOutput with zero production. Fixing.", DebugName);
-                unitOutputs += OutputsYield.OneProduction;
-            }
-            else if (!unitOutputs.IsPresent(OutputID.Production) || unitOutputs.GetYield(OutputID.Production) == Constants.ZeroF) {
-                // 11.20.17 Occurs if no facility has any production. TODO I need to make sure that doesn't happen during game setup.
-                D.Warn("{0} not allowed UnitOutput with zero production. Fixing.", DebugName);
-                unitOutputs += OutputsYield.OneProduction;
-            }
+            __ValidateProductionPresenceIn(ref unitOutputs);
             return unitOutputs;
         }
 
@@ -145,6 +134,20 @@ namespace CodeEnv.Master.GameContent {
 
         #region Debug
 
+        private void __ValidateProductionPresenceIn(ref OutputsYield unitOutputs) {
+            // 11.20.17 Zero unit production in a Base will result in Base ConstructionMgr attempting to divide by zero when 
+            // recalculating expected completion dates.
+            if (unitOutputs == default(OutputsYield)) {
+                // 11.20.17 Occurs when Base loses last facility and is about to die (IsDead not yet set). 
+                D.Log("{0} cannot have UnitOutput with zero production. Fixing.", DebugName);
+                unitOutputs += OutputsYield.OneProduction;
+            }
+            else if (!unitOutputs.IsPresent(OutputID.Production) || unitOutputs.GetYield(OutputID.Production) == Constants.ZeroF) {
+                // 11.20.17 Occurs if no facility has any production. TODO I need to make sure that doesn't happen during game setup.
+                D.Warn("{0} cannot have UnitOutput with zero production. Fixing.", DebugName);
+                unitOutputs += OutputsYield.OneProduction;
+            }
+        }
 
         #endregion
 

@@ -26,14 +26,20 @@ using UnityEngine.Serialization;
 /// </summary>
 public class FacilityHull : AHull, IFacilityHull {
 
+    private const string DebugNameFormat = "{0}[{1}] MaxTurretWeaps: {2}, MaxSiloWeaps: {3}.";
+
     [SerializeField]
     private FacilityHullCategory _hullCategory = FacilityHullCategory.None;
 
     public FacilityHullCategory HullCategory { get { return _hullCategory; } }
 
-    protected override int MaxAllowedLosWeapons { get { return _hullCategory.__MaxLOSWeapons(); } }
+    public override string DebugName {
+        get { return DebugNameFormat.Inject(base.DebugName, HullCategory.GetValueName(), MaxAllowedLosWeapons, MaxAllowedLaunchedWeapons); }
+    }
 
-    protected override int MaxAllowedLaunchedWeapons { get { return _hullCategory.__MaxLaunchedWeapons(); } }
+    protected override int MaxAllowedLosWeapons { get { return _hullCategory.MaxTurretMounts(); } }
+
+    protected override int MaxAllowedLaunchedWeapons { get { return _hullCategory.MaxSiloMounts(); } }
 
     protected override void Validate() {
         base.Validate();

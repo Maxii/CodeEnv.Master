@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ShipDesignWindow.cs
-// GuiWindow for designing Ships, managed by the DesignScreensManager.
+// GuiWindow used by the User to design Ships, managed by the DesignScreensManager.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -24,12 +24,12 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// GuiWindow for designing Ships, managed by the DesignScreensManager.
+/// GuiWindow used by the User to design Ships, managed by the DesignScreensManager.
 /// </summary>
 public class ShipDesignWindow : AUnitDesignWindow {
 
     protected override void AddToPlayerDesigns(AUnitMemberDesign newDesign) {
-        _gameMgr.PlayersDesigns.Add(newDesign as ShipDesign);
+        UserDesigns.Add(newDesign as ShipDesign);
     }
 
     protected override AUnitMemberDesign CopyDesignFrom(AUnitMemberDesign design) {
@@ -44,7 +44,7 @@ public class ShipDesignWindow : AUnitDesignWindow {
     }
 
     protected override IEnumerable<AUnitMemberDesign> GetRegisteredUserDesigns(bool includeObsolete) {
-        return _gameMgr.PlayersDesigns.GetAllUserShipDesigns(includeObsolete).Cast<AUnitMemberDesign>();
+        return UserDesigns.GetAllShipDesigns(includeObsolete).Cast<AUnitMemberDesign>();
     }
 
     protected override bool TryGetCreateDesignPopupContent(out string popupTitle, out List<string> popupContent) {
@@ -56,15 +56,15 @@ public class ShipDesignWindow : AUnitDesignWindow {
     protected override AUnitMemberDesign GetEmptyTemplateDesign(string emptyTemplateHint) {
         D.AssertNotNull(emptyTemplateHint);
         ShipHullCategory designHullCat = Enums<ShipHullCategory>.Parse(emptyTemplateHint);
-        return _gameMgr.PlayersDesigns.GetUserShipDesign(designHullCat.GetEmptyTemplateDesignName());
+        return UserDesigns.GetShipDesign(designHullCat.GetEmptyTemplateDesignName());
     }
 
     protected override void ObsoleteDesign(string designName) {
-        _gameMgr.PlayersDesigns.ObsoleteUserShipDesign(designName);
+        UserDesigns.ObsoleteShipDesign(designName);
     }
 
     protected override IEnumerable<AEquipmentStat> GetAvailableUserEquipmentStats() {
-        return _gameMgr.UniverseCreator.UnitConfigurator.GetAvailableUserEquipmentStats(AUnitElementDesign.SupportedEquipCategories);
+        return UserDesigns.GetCurrentEquipmentStats(AUnitElementDesign.SupportedEquipCategories);
     }
 }
 

@@ -87,28 +87,24 @@ namespace CodeEnv.Master.GameContent {
 
         public const float __AllowedTurnTimeBufferFactor = 1.30F;   // 11.6.16 1.2 -> 1.3
 
-        /// <summary>
-        /// The maximum LOS weapons for an element.
-        /// </summary>
-        public const int MaxLosWeapons = 12;
+        public const int MaxTurretHullMounts = 12;
+        public const int MaxSiloHullMounts = 6;
+        public const int MaxInteriorHullMounts = 17;
+        public const int MaxInteriorAltHullMounts = 3;
 
-        /// <summary>
-        /// The maximum launched weapons for an element.
-        /// </summary>
-        public const int MaxLaunchedWeapons = 6;
-
-        public const int MaxElementPassiveCMs = 6;
-        public const int MaxElementActiveCMs = 6;
-        public const int MaxElementShieldGenerators = 4;
+        public const int __MaxElementPassiveCMs = 6;
+        public const int __MaxElementActiveCMs = 6;
+        public const int __MaxElementShieldGenerators = 4;
         /// <summary>
         /// The maximum number of SR sensors allowed for any element, including both reqd and optional sensors.
         /// </summary>
-        public const int MaxElementSensors = 4;
-        public const int MaxCmdPassiveCMs = 4;
+        //[System.Obsolete]
+        public const int __MaxElementSensors = 4;
+        public const int __MaxCmdPassiveCMs = 4;
         /// <summary>
         /// The maximum number of RR and LR sensors allowed for any cmd, including both reqd and optional sensors.
         /// </summary>
-        public const int MaxCmdSensors = 5;
+        public const int __MaxCmdSensors = 5;
 
         public const float MinimumFramerate = 25F;
 
@@ -572,13 +568,22 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private static Construction _noConstruction;
-        public static Construction NoConstruction {
+        private static ConstructionTask _noConstruction;
+        public static ConstructionTask NoConstruction {
             get {
-                _noConstruction = _noConstruction ?? new NoConstruction();
+                _noConstruction = _noConstruction ?? new NoConstructionTask();
                 return _noConstruction;
             }
         }
+
+        private static ResearchTask _noResearch;
+        public static ResearchTask NoResearch {
+            get {
+                _noResearch = _noResearch ?? new NoResearchTask();
+                return _noResearch;
+            }
+        }
+
 
         public static readonly ResourcesYield NoResources = default(ResourcesYield);
 

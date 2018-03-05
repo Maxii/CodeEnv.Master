@@ -29,13 +29,15 @@ public abstract class AAutoUnitCreator : AUnitCreator {
         get { return _configuration; }
         set {
             D.AssertNull(_configuration);   // currently one time only
-            SetProperty<UnitCreatorConfiguration>(ref _configuration, value, "Configuration");
+            SetProperty<UnitCreatorConfiguration>(ref _configuration, value, "Configuration", ConfigurationPropSetHandler);
         }
     }
 
     public sealed override GameDate DeployDate { get { return Configuration.DeployDate; } }
 
     protected sealed override Player Owner { get { return Configuration.Owner; } }
+
+    protected PlayerDesigns _ownerDesigns;
 
     /// <summary>
     /// Builds and positions the Unit in preparation for deployment and operations.
@@ -71,6 +73,18 @@ public abstract class AAutoUnitCreator : AUnitCreator {
     protected abstract void AssignHQElement();
 
     protected virtual void PositionUnit() { }
+
+    #region Event and Property Change Handlers
+
+    private void ConfigurationPropSetHandler() {
+        HandleConfigurationPropSet();
+    }
+
+    #endregion
+
+    private void HandleConfigurationPropSet() {
+        _ownerDesigns = _gameMgr.GetAIManagerFor(Owner).Designs;
+    }
 
 }
 

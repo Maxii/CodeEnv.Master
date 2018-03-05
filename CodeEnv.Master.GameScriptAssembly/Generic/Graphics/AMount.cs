@@ -24,7 +24,7 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public abstract class AMount : AMonoBase {
 
-    public virtual string DebugName { get { return transform.name; } }
+    public virtual string DebugName { get { return GetType().Name; } }
 
     protected sealed override void Awake() {
         base.Awake();

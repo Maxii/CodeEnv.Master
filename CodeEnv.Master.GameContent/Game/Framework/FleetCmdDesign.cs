@@ -37,7 +37,7 @@ namespace CodeEnv.Master.GameContent {
             // If copying System_CreationTemplate counter will always = 0 as they are never incremented. If copying Player_Current counter 
             // will be >= 0 ready to be incremented. If copying Player_Obsolete a new RootDesignName will be assigned resetting counter
             // to 0 to avoid creating duplicate design names when incrementing.
-            _designNameCounter = designToCopy._designNameCounter;
+            DesignLevel = designToCopy.DesignLevel;
         }
 
         public FleetCmdDesign(Player player, FtlDampenerStat ftlDampenerStat, FleetCmdModuleStat cmdStat, SensorStat reqdMRSensorStat)

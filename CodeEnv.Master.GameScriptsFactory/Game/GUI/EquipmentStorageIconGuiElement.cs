@@ -17,6 +17,7 @@
 // default namespace
 
 using System;
+using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 using UnityEngine;
@@ -56,7 +57,7 @@ public class EquipmentStorageIconGuiElement : AEquipmentIconGuiElement {
         D.Assert(IsInitialized);
         D.AssertEqual(_storage.GetEquipmentStat(slotID), stat);
 
-        _emptySlotCategoryLabel.text = slotID.Category.GetEnumAttributeText();
+        _emptySlotCategoryLabel.text = slotID.SupportedMount.GetEnumAttributeText();
         PopulateMemberWidgetValues();
         if (stat != null) {
             Show();
@@ -75,7 +76,7 @@ public class EquipmentStorageIconGuiElement : AEquipmentIconGuiElement {
     }
 
     private bool TryReplace(AEquipmentStat replacementStat, out AEquipmentStat replacedStat) {
-        if (replacementStat != null && replacementStat.Category != _slotID.Category) {
+        if (replacementStat != null && !replacementStat.Category.AllowedMounts().Contains(_slotID.SupportedMount)) {
             // wrong category
             replacedStat = null;
             return false;

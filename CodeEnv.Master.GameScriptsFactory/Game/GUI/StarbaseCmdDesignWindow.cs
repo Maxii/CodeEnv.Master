@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: StarbaseCmdDesignWindow.cs
-// GuiWindow for designing StarbaseCmds, managed by the DesignScreensManager.
+// GuiWindow used by the User to design StarbaseCmds, managed by the DesignScreensManager.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,12 +23,12 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// GuiWindow for designing StarbaseCmds, managed by the DesignScreensManager.
+/// GuiWindow used by the User to design StarbaseCmds, managed by the DesignScreensManager.
 /// </summary>
 public class StarbaseCmdDesignWindow : AUnitDesignWindow {
 
     protected override void AddToPlayerDesigns(AUnitMemberDesign newDesign) {
-        _gameMgr.PlayersDesigns.Add(newDesign as StarbaseCmdDesign);
+        UserDesigns.Add(newDesign as StarbaseCmdDesign);
     }
 
     protected override AUnitMemberDesign CopyDesignFrom(AUnitMemberDesign design) {
@@ -42,7 +42,7 @@ public class StarbaseCmdDesignWindow : AUnitDesignWindow {
     }
 
     protected override IEnumerable<AUnitMemberDesign> GetRegisteredUserDesigns(bool includeObsolete) {
-        return _gameMgr.PlayersDesigns.GetAllUserStarbaseCmdDesigns(includeObsolete).Cast<AUnitMemberDesign>();
+        return UserDesigns.GetAllStarbaseCmdDesigns(includeObsolete).Cast<AUnitMemberDesign>();
     }
 
     protected override bool TryGetCreateDesignPopupContent(out string popupTitle, out List<string> popupContent) {
@@ -53,15 +53,15 @@ public class StarbaseCmdDesignWindow : AUnitDesignWindow {
 
     protected override AUnitMemberDesign GetEmptyTemplateDesign(string emptyTemplateHint) {
         D.AssertNull(emptyTemplateHint);
-        return _gameMgr.PlayersDesigns.GetUserStarbaseCmdDesign(TempGameValues.EmptyStarbaseCmdTemplateDesignName);
+        return UserDesigns.GetStarbaseCmdDesign(TempGameValues.EmptyStarbaseCmdTemplateDesignName);
     }
 
     protected override void ObsoleteDesign(string designName) {
-        _gameMgr.PlayersDesigns.ObsoleteUserStarbaseCmdDesign(designName);
+        UserDesigns.ObsoleteStarbaseCmdDesign(designName);
     }
 
     protected override IEnumerable<AEquipmentStat> GetAvailableUserEquipmentStats() {
-        return _gameMgr.UniverseCreator.UnitConfigurator.GetAvailableUserEquipmentStats(AUnitCmdDesign.SupportedEquipCategories);
+        return UserDesigns.GetCurrentEquipmentStats(AUnitCmdDesign.SupportedEquipCategories);
     }
 
 }

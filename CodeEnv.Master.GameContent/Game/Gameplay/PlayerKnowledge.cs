@@ -29,14 +29,30 @@ namespace CodeEnv.Master.GameContent {
 
         private const string DebugNameFormat = "{0}'s {1}";
 
+        private string _debugName;
+        public virtual string DebugName {
+            get {
+                if (_debugName == null) {
+                    _debugName = DebugNameFormat.Inject(Owner.DebugName, typeof(PlayerKnowledge).Name);
+                }
+                return _debugName;
+            }
+        }
+
         public Player Owner { get; private set; }
 
         public decimal __BankBalance { get { return 10000; } }
 
+        private float _totalScienceYield;
+        public float TotalScienceYield {
+            get { return _totalScienceYield; }
+            private set { SetProperty<float>(ref _totalScienceYield, value, "TotalScienceYield"); }
+        }
+
         private OutputsYield _totalOutputs;
         public OutputsYield TotalOutputs {
             get { return _totalOutputs; }
-            private set { SetProperty<OutputsYield>(ref _totalOutputs, value, "TotalOutputs"); }
+            private set { SetProperty<OutputsYield>(ref _totalOutputs, value, "TotalOutputs", TotalOutputsPropChangedHandler); }
         }
 
         private ResourcesYield _totalResources;
@@ -446,16 +462,6 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        private string _debugName;
-        public virtual string DebugName {
-            get {
-                if (_debugName == null) {
-                    _debugName = DebugNameFormat.Inject(Owner.DebugName, typeof(PlayerKnowledge).Name);
-                }
-                return _debugName;
-            }
-        }
-
         // Note: Other players this Player has met is held by the Player
 
         private IDictionary<IntVector3, ISystem_Ltd> _systemLookupBySectorID;
@@ -748,7 +754,19 @@ namespace CodeEnv.Master.GameContent {
             RefreshTotalResources();
         }
 
+        private void TotalOutputsPropChangedHandler() {
+            HandleTotalOutputsChanged();
+        }
+
         #endregion
+
+        private void HandleTotalOutputsChanged() {
+            _totalOutputs = __ValidateSciencePresenceInTotalOutputs(TotalOutputs);  // _totalOutputs to avoid another change event
+            float totalScienceOutput = TotalOutputs.GetYield(OutputID.Science).Value;
+            if (TotalScienceYield != totalScienceOutput) {
+                TotalScienceYield = totalScienceOutput;
+            }
+        }
 
         private void HandleItemDeath(IMortalItem_Ltd deadItem) {
             D.AssertNotNull(deadItem);
@@ -961,6 +979,15 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #region Debug 
+
+        private OutputsYield __ValidateSciencePresenceInTotalOutputs(OutputsYield totalOutputs) {
+            if (!totalOutputs.IsPresent(OutputID.Science) || totalOutputs.GetYield(OutputID.Science) == Constants.ZeroF) {
+                // commonly occurs when first Cmd(s) added have no science
+                D.Log("{0} cannot have TotalOutput with zero science. Fixing.", DebugName);
+                totalOutputs += OutputsYield.OneScience;
+            }
+            return totalOutputs;
+        }
 
         /// <summary>
         /// Debug. Returns the items that we know about that are owned by player.

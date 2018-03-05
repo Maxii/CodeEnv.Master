@@ -1,12 +1,12 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
 // <copyright>
-// Copyright © 2012 - 2017 
+// Copyright © 2012 - 2018 
 //
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: NoConstruction.cs
-// Construction for use with UnitBaseCmds that have no construction underway.
+// File: NoQueuedResearchTask.cs
+// ResearchTask for use with Players that have no research underway.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,39 +20,33 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Construction for use with UnitBaseCmds that have no construction underway.
+    /// ResearchTask for use with Players that have no research underway.
     /// </summary>
-    public class NoConstruction : Construction {
+    [Obsolete]
+    public class NoQueuedResearchTask : QueuedResearchTask {
 
         public override string Name { get { return GetType().Name; } }
 
         public override GameTimeDuration TimeToCompletion { get { return default(GameTimeDuration); } }
 
         public override GameDate ExpectedCompletionDate {
-            get { throw new NotImplementedException("ExpectedCompletionDate.set is not implemented in {0}.".Inject(DebugName)); }
+            get { throw new NotImplementedException("ExpectedCompletionDate.get is not implemented in {0}.".Inject(DebugName)); }
             set { throw new NotImplementedException("ExpectedCompletionDate.set is not implemented in {0}.".Inject(DebugName)); }
         }
 
         public override float CompletionPercentage { get { return Constants.ZeroPercent; } }
 
-        public override bool CanBuyout { get { return false; } }
-
-        public override decimal BuyoutCost { get { return Constants.ZeroCurrency; } }
-
         public override AtlasID ImageAtlasID { get { return AtlasID.MyGui; } }
 
         public override string ImageFilename { get { return TempGameValues.EmptyImageFilename; } }
 
-        public NoConstruction() : base(null, null) { }
+        public override float CostToResearch { get { return Constants.ZeroF; } }
 
-        public override bool TryCompleteConstruction(float productionToApply, out float unconsumedProduction) {
-            throw new NotImplementedException("TryCompleteConstruction() is not implemented in {0}.".Inject(DebugName));
+        public NoQueuedResearchTask() : base(null) { }
+
+        public override bool TryComplete(float scienceToApply, out float unconsumedScience) {
+            throw new NotImplementedException("TryComplete() is not implemented in {0}.".Inject(DebugName));
         }
-
-        public override void CompleteConstruction() {
-            throw new NotImplementedException("CompleteConstruction() is not implemented in {0}.".Inject(DebugName));
-        }
-
     }
 }
 

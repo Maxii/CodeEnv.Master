@@ -136,6 +136,8 @@
     <Compile Include="Game\GUI\CombatStanceChangeGuiElement.cs" />
     <Compile Include="Game\GUI\StrengthGuiElement.cs" />
     <Compile Include="Game\Framework\Hanger.cs" />
+    <Compile Include="Game\GUI\ResearchForm.cs" />
+    <Compile Include="Game\GUI\ResearchWindow.cs" />
     <Compile Include="ThirdParty\MyDragDropItem.cs" />
     <Compile Include="ThirdParty\MyNGPathfindingGraph.cs" />
     <Compile Include="ThirdParty\MyPlaySFX.cs" />

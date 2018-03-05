@@ -297,7 +297,7 @@ public class FleetMoveHelper : IDisposable {
             IList<ISystem_Ltd> localSystems = new List<ISystem_Ltd>(9);
             foreach (var sectorID in localSectorIDs) {
                 ISystem_Ltd system;
-                if (_fleet.OwnerAIMgr.Knowledge.TryGetSystem(sectorID, out system)) {
+                if (_fleet.OwnerAiMgr.Knowledge.TryGetSystem(sectorID, out system)) {
                     localSystems.Add(system);
                 }
             }
@@ -371,10 +371,16 @@ public class FleetMoveHelper : IDisposable {
         }
         else {
             switch (failCause) {
-                case OrderFailureCause.NeedsRepair:
                 case OrderFailureCause.Death:
-                case OrderFailureCause.Ownership:
+                    // Added to help debug timing of when dead ship is removed 
+                    D.Log("{0} is removing DEAD {1} from _shipsExpectedToArrive in Frame {2}.", DebugName, ship.DebugName, Time.frameCount);
                     bool isRemoved = _shipsExpectedToArrive.Remove(ship);
+                    D.Assert(isRemoved, ship.DebugName);
+                    break;
+                case OrderFailureCause.NeedsRepair:
+                case OrderFailureCause.Ownership:
+                    /*bool*/
+                    isRemoved = _shipsExpectedToArrive.Remove(ship);
                     D.Assert(isRemoved, ship.DebugName);
                     break;
                 case OrderFailureCause.NewOrderReceived:
@@ -409,6 +415,7 @@ public class FleetMoveHelper : IDisposable {
     private void InitiateApCourseToTarget() {
         D.AssertNull(_apNavJob);
         D.AssertNotEqual(Constants.Zero, _shipsExpectedToArrive.Count);
+        D.Assert(_shipsExpectedToArrive.All(ship => !ship.IsDead));
         if (ShowDebugLog) {
             //string courseText = _isApCourseFromPath ? "multiple waypoint" : "direct";
             //D.Log("{0} initiating a {1} course to target {2}. Distance: {3:0.#}, Speed: {4}({5:0.##}).",
@@ -813,7 +820,7 @@ public class FleetMoveHelper : IDisposable {
         if (_fleetIsAlignedCallbacks == null) {
             D.AssertEqual(Constants.Zero, _shipsWaitingForFleetAlignment.Count);
             // delegate invocation list is now empty
-            D.Log("{0} is attempting to kill WaitForFleetToAlignJob as a result of removing {1}.", DebugName, ship.DebugName);
+            D.Log("{0} just removed the last fleetIsAlignedCallbackDelegate. Requested by {1}.", DebugName, ship.DebugName);
             KillWaitForFleetToAlignJob();
         }
     }
@@ -905,7 +912,7 @@ public class FleetMoveHelper : IDisposable {
 
         if (_fleet.Topography == Topography.System) {
             // starting in system
-            var ownerKnowledge = _fleet.OwnerAIMgr.Knowledge;
+            var ownerKnowledge = _fleet.OwnerAiMgr.Knowledge;
             ISystem_Ltd fleetSystem;
             bool isFleetSystemFound = ownerKnowledge.TryGetSystem(_fleet.SectorID, out fleetSystem);
             if (!isFleetSystemFound) {
@@ -1167,15 +1174,16 @@ public class FleetMoveHelper : IDisposable {
 
     #region Speed Monitor Debug System
 
+    private static float __hoursInFiveDays = GameTime.HoursPerDay * 5F;
+
     private Job __speedMonitorJob;
 
     private void __LaunchSpeedMonitorSystem() {
         D.AssertNull(__speedMonitorJob);
-        __speedMonitorJob = _jobMgr.RecurringWaitForHours((float)GameTime.HoursPerDay, "FleetSpeedMonitorJob", () => {
+        __speedMonitorJob = _jobMgr.RecurringWaitForHours(__hoursInFiveDays, "FleetSpeedMonitorJob", () => {
             __CheckSpeed();
         });
     }
-
 
     private void __CheckSpeed() {
         if (IsPilotEngaged) {
@@ -1189,14 +1197,26 @@ public class FleetMoveHelper : IDisposable {
                         D.Warn("{0}: {1} has not yet arrived at waypoint but is not moving.", DebugName, _fleet.HQElement.DebugName);
                     }
                     else {
-                        D.Log("{0}: {1} is waiting on {2} ships to arrive at waypoint. Date: {3}.",
-                            DebugName, _fleet.HQElement.DebugName, _shipsExpectedToArrive.Count, _gameTime.CurrentDate.DebugName);
-                        D.Log("{0}: Actual Speed of in-transit ships = {1}. Date: {2}.",
-                            DebugName, _shipsExpectedToArrive.Select(e => (e as IShip).ActualSpeedValue.FormatValue()).Concatenate(), _gameTime.CurrentDate.DebugName);
+                        D.Log("{0}: {1} is waiting on {2} ships to arrive at waypoint on {3}. ActualSpeeds: {4}.",
+                            DebugName, _fleet.HQElement.DebugName, _shipsExpectedToArrive.Count, _gameTime.CurrentDate.DebugName, __GetActualSpeedOfShips());
                     }
                 }
             }
         }
+    }
+
+    private string __GetActualSpeedOfShips() {
+        string speedsMsg = string.Empty;
+        foreach (var ship in _shipsExpectedToArrive) {
+            if (ship.IsDead) {   // 2.6.18 Destroyed Rigidbody found when trying to access ActualSpeedValue
+                D.Error("{0}: Found DEAD {1} in _shipExpectedToArrive in Frame {2}.", DebugName, ship.DebugName, Time.frameCount);
+                speedsMsg += ", DeadShipSpeed";
+            }
+            else {
+                speedsMsg += (ship as ShipItem).ActualSpeedValue.FormatValue() + ", ";
+            }
+        }
+        return speedsMsg;
     }
 
     private void __TerminateSpeedMonitorSystem() {

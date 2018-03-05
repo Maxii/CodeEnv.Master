@@ -268,13 +268,13 @@ namespace CodeEnv.Master.GameContent {
             AEquipmentStat eStat;
             while (designA.TryGetNextEquipmentStat(out slotID, out eStat)) {
                 if (designB.GetEquipmentStat(slotID) != eStat) {
-                    designA.ResetIterators();
+                    designA.ResetIterator();
                     return false;
                 }
             }
             while (designB.TryGetNextEquipmentStat(out slotID, out eStat)) {
                 if (designA.GetEquipmentStat(slotID) != eStat) {
-                    designB.ResetIterators();
+                    designB.ResetIterator();
                     return false;
                 }
             }
@@ -301,13 +301,13 @@ namespace CodeEnv.Master.GameContent {
             AEquipmentStat eStat;
             while (designA.TryGetNextEquipmentStat(out slotID, out eStat)) {
                 if (designB.GetEquipmentStat(slotID) != eStat) {
-                    designA.ResetIterators();
+                    designA.ResetIterator();
                     return false;
                 }
             }
             while (designB.TryGetNextEquipmentStat(out slotID, out eStat)) {
                 if (designA.GetEquipmentStat(slotID) != eStat) {
-                    designB.ResetIterators();
+                    designB.ResetIterator();
                     return false;
                 }
             }
@@ -334,13 +334,13 @@ namespace CodeEnv.Master.GameContent {
             AEquipmentStat eStat;
             while (designA.TryGetNextEquipmentStat(out slotID, out eStat)) {
                 if (designB.GetEquipmentStat(slotID) != eStat) {
-                    designA.ResetIterators();
+                    designA.ResetIterator();
                     return false;
                 }
             }
             while (designB.TryGetNextEquipmentStat(out slotID, out eStat)) {
                 if (designA.GetEquipmentStat(slotID) != eStat) {
-                    designB.ResetIterators();
+                    designB.ResetIterator();
                     return false;
                 }
             }
@@ -368,13 +368,13 @@ namespace CodeEnv.Master.GameContent {
             AEquipmentStat eStat;
             while (designA.TryGetNextEquipmentStat(out slotID, out eStat)) {
                 if (designB.GetEquipmentStat(slotID) != eStat) {
-                    designA.ResetIterators();
+                    designA.ResetIterator();
                     return false;
                 }
             }
             while (designB.TryGetNextEquipmentStat(out slotID, out eStat)) {
                 if (designA.GetEquipmentStat(slotID) != eStat) {
-                    designB.ResetIterators();
+                    designB.ResetIterator();
                     return false;
                 }
             }
@@ -400,13 +400,13 @@ namespace CodeEnv.Master.GameContent {
             AEquipmentStat eStat;
             while (designA.TryGetNextEquipmentStat(out slotID, out eStat)) {
                 if (designB.GetEquipmentStat(slotID) != eStat) {
-                    designA.ResetIterators();
+                    designA.ResetIterator();
                     return false;
                 }
             }
             while (designB.TryGetNextEquipmentStat(out slotID, out eStat)) {
                 if (designA.GetEquipmentStat(slotID) != eStat) {
-                    designB.ResetIterators();
+                    designB.ResetIterator();
                     return false;
                 }
             }

@@ -25,13 +25,13 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AUnitMemberDesign {
 
-        private const string DebugNameFormat = "{0}[{1}], Player = {2}, Status = {3}, ConstructionCost = {4:0.}, RefitBenefit = {5}";
+        private const string DebugNameFormat = "{0}[{1}], Player = {2}, Status = {3}, ConstructionCost = {4:0.}, DesignLevel = {5}";
         private const string DesignNameFormat = "{0}_{1}";
 
         public virtual string DebugName {
             get {
                 string designNameText = DesignName.IsNullOrEmpty() ? "Not yet named" : DesignName;
-                return DebugNameFormat.Inject(GetType().Name, designNameText, Player.DebugName, Status.GetValueName(), ConstructionCost, RefitBenefit);
+                return DebugNameFormat.Inject(GetType().Name, designNameText, Player.DebugName, Status.GetValueName(), ConstructionCost, DesignLevel);
             }
         }
 
@@ -46,7 +46,7 @@ namespace CodeEnv.Master.GameContent {
                 if (_rootDesignName != value) {
                     _rootDesignName = value;
                     DesignName = value;
-                    _designNameCounter = Constants.Zero;
+                    DesignLevel = Constants.Zero;
                 }
             }
         }
@@ -68,70 +68,59 @@ namespace CodeEnv.Master.GameContent {
         public float ConstructionCost { get; private set; }
 
         /// <summary>
-        /// The benefit of refitting to this design.
-        /// <remarks>A value used to rank the 'value' of a design when deciding to refit. Higher is more valuable, aka an upgrade.</remarks>
+        /// A value indicating how current this design is as compared to other designs of the same type.
+        /// <remarks>The higher the value the more current it is. Values that are not the most current 
+        /// indicate an obsolete design. A design whose value is lower than another design of the same
+        /// type is qualified for an upgrade.</remarks>
         /// </summary>
-        public int RefitBenefit { get; private set; }
-
-        [System.Obsolete]
-        public IEnumerable<PassiveCountermeasureStat> PassiveCmStats {
-            get {
-                var keys = _equipLookupBySlotID.Keys.Where(key => key.Category == EquipmentCategory.PassiveCountermeasure
-                && _equipLookupBySlotID[key] != null);
-                IList<PassiveCountermeasureStat> stats = new List<PassiveCountermeasureStat>();
-                foreach (var key in keys) {
-                    stats.Add(_equipLookupBySlotID[key] as PassiveCountermeasureStat);
-                }
-                return stats;
-            }
-        }
+        public int DesignLevel { get; protected set; }
 
         /// <summary>
-        /// The Equipment Categories that can be added, removed and replaced in this design.
-        /// <remarks>Some equipment can be reqd in a design and are added through the constructor.</remarks>
+        /// The HullMountCategories that are supported in this design. Only EquipmentStats that can be mounted on one of these mount 
+        /// categories can be added, removed and replaced in this design.
+        /// <remarks>Some equipment is reqd in a design. These require no Mount. They are added through the constructor.</remarks>
         /// </summary>
-        protected abstract EquipmentCategory[] SupportedEquipmentCategories { get; }
+        protected abstract EquipmentMountCategory[] SupportedHullMountCategories { get; }
 
         protected IDictionary<EquipmentSlotID, AEquipmentStat> _equipLookupBySlotID;
-        protected int _designNameCounter = Constants.Zero;
 
         private IEnumerator<EquipmentSlotID> _statsEnumerator1;
-        private IEnumerator<EquipmentSlotID> _statsEnumerator2;
 
         public AUnitMemberDesign(Player player) {
             Player = player;
             Status = SourceAndStatus.Player_Current;
-            __ValidateEquipmentCategorySequence();
+            __ValidateHullMountCatSequence();
         }
 
         /// <summary>
-        /// Increments DesignName by adding the next ascending int value to the RootDesignName.
-        /// </summary>
-        public void IncrementDesignName() {
-            Utility.ValidateForContent(RootDesignName);
-            _designNameCounter++;
-            string newDesignName = DesignNameFormat.Inject(RootDesignName, _designNameCounter);
-            //D.Log("{0}: Incrementing design name from {1} to {2}.", DebugName, DesignName, newDesignName);
-            DesignName = newDesignName;
-        }
-
-        /// <summary>
-        /// Initializes values and references.
+        /// Initializes values and references and populates the design with the designs maximum number of empty mount slots
+        /// in anticipation of adding EquipmentStats that utilize them.
         /// <remarks>Derived class constructors must call as last act of constructor.</remarks>
         /// </summary>
         protected void InitializeValuesAndReferences() {
             D.AssertNull(RootDesignName);
             _equipLookupBySlotID = new Dictionary<EquipmentSlotID, AEquipmentStat>();
             int slotNumber = Constants.One;
-            foreach (var cat in SupportedEquipmentCategories) {
-                int maxCatSlots = GetMaxEquipmentSlotsFor(cat);
-                for (int i = 0; i < maxCatSlots; i++) {
-                    EquipmentSlotID slotID = new EquipmentSlotID(slotNumber, cat);
+            foreach (var mountCat in SupportedHullMountCategories) {
+                int maxEquipSlots = GetMaxOptionalEquipmentSlotsFor(mountCat);
+                for (int i = 0; i < maxEquipSlots; i++) {
+                    EquipmentSlotID slotID = new EquipmentSlotID(slotNumber, mountCat);
                     _equipLookupBySlotID.Add(slotID, null);
                     slotNumber++;
                 }
             }
             TotalReqdEquipmentSlots = slotNumber - 1;
+        }
+
+        /// <summary>
+        /// Increments DesignLevel and Name by replacing the existing DesignLevel with a higher value and adding it to the RootDesignName.
+        /// </summary>
+        public void IncrementDesignLevelAndName() {
+            Utility.ValidateForContent(RootDesignName);
+            DesignLevel++;
+            string newDesignName = DesignNameFormat.Inject(RootDesignName, DesignLevel);
+            //D.Log("{0}: Incrementing design name from {1} to {2}.", DebugName, DesignName, newDesignName);
+            DesignName = newDesignName;
         }
 
         /// <summary>
@@ -160,50 +149,51 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Returns <c>true</c> if there is another AEquipmentStat of the provided EquipmentCategory that has yet to be returned.
-        /// All stats of the provided EquipmentCategory will eventually be returned including null stats.
+        /// Returns the EquipmentStats associated with the provided EquipmentCategory in the form of a collection
+        /// of EquipmentSlotAndStatPairs.
+        /// <remarks>None of the stats returned will be null.</remarks>
         /// <remarks>10.28.17 Only acquires EquipmentStats that require EquipmentSlots, e.g. does not acquire HullStats or EngineStats.</remarks>
-        /// <remarks>Done this way to avoid exposing _equipmentLookupBySlotID.</remarks>
-        /// <remarks>Usage: while(GetEquipmentStat(out stat)) { doWorkOn(stat) }.</remarks>
-        /// <remarks>Warning: Be sure to call ResetIterators() if you stop use of this method
-        /// before it naturally completes by returning false.</remarks>
         /// </summary>
-        /// <param name="equipCat">The EquipmentCategory of the desired stats.</param>
-        /// <param name="slotID">The returned slotID.</param>
-        /// <param name="equipStat">The returned equip stat.</param>
+        /// <param name="equipCat">The EquipmentCategory.</param>
         /// <returns></returns>
-        public bool TryGetNextEquipmentStat(EquipmentCategory equipCat, out EquipmentSlotID slotID, out AEquipmentStat equipStat) {
-            D.Assert(SupportedEquipmentCategories.Contains(equipCat), equipCat.GetValueName());
-
-            _statsEnumerator2 = _statsEnumerator2 ?? _equipLookupBySlotID.Keys.GetEnumerator();
-            while (_statsEnumerator2.MoveNext()) {
-                slotID = _statsEnumerator2.Current;
-                if (slotID.Category == equipCat) {
-                    equipStat = _equipLookupBySlotID[slotID];
-                    return true;
+        public IEnumerable<EquipmentSlotAndStatPair> GetEquipmentSlotsAndStatsFor(EquipmentCategory equipCat) {
+            IList<EquipmentSlotAndStatPair> slotsAndStats = new List<EquipmentSlotAndStatPair>();
+            foreach (var slot in _equipLookupBySlotID.Keys) {
+                var stat = _equipLookupBySlotID[slot];
+                if (stat != null && stat.Category == equipCat) {
+                    slotsAndStats.Add(new EquipmentSlotAndStatPair(slot, stat));
                 }
             }
-            slotID = default(EquipmentSlotID);
-            equipStat = null;
-            _statsEnumerator2 = null;
-            return false;
+            return slotsAndStats;
         }
 
         /// <summary>
-        /// Returns <c>true</c> if there is another AEquipmentStat of the provided EquipmentCategory that has yet to be returned.
-        /// All stats of the provided EquipmentCategory will eventually be returned including null stats.
+        /// Returns the EquipmentStats associated with the provided EquipmentCategory, organized in a lookup table by SlotID. 
+        /// <remarks>None of the stats returned will be null.</remarks>
         /// <remarks>10.28.17 Only acquires EquipmentStats that require EquipmentSlots, e.g. does not acquire HullStats or EngineStats.</remarks>
-        /// <remarks>Done this way to avoid exposing _equipmentLookupBySlotID.</remarks>
-        /// <remarks>Usage: while(GetEquipmentStat(out stat)) { doWorkOn(stat) }.</remarks>
-        /// <remarks>Warning: Be sure to call ResetIterators() if you stop use of this method
-        /// before it naturally completes by returning false.</remarks>
         /// </summary>
-        /// <param name="equipCat">The EquipmentCategory of the desired stats.</param>
-        /// <param name="equipStat">The returned equip stat.</param>
+        /// <param name="equipCat">The EquipmentCategory.</param>
         /// <returns></returns>
-        public bool TryGetNextEquipmentStat(EquipmentCategory equipCat, out AEquipmentStat equipStat) {
-            EquipmentSlotID unusedSlotID;
-            return (TryGetNextEquipmentStat(equipCat, out unusedSlotID, out equipStat));
+        public IDictionary<EquipmentSlotID, AEquipmentStat> GetEquipmentLookupFor(EquipmentCategory equipCat) {
+            var lookup = new Dictionary<EquipmentSlotID, AEquipmentStat>();
+            foreach (var slot in _equipLookupBySlotID.Keys) {
+                var stat = _equipLookupBySlotID[slot];
+                if (stat != null && stat.Category == equipCat) {
+                    lookup.Add(slot, stat);
+                }
+            }
+            return lookup;
+        }
+
+        /// <summary>
+        /// Returns the AEquipmentStats associated with the provided EquipmentCategory.
+        /// <remarks>None of the stats returned will be null.</remarks>
+        /// <remarks>10.28.17 Only acquires EquipmentStats that require EquipmentSlots, e.g. does not acquire HullStats or EngineStats.</remarks>
+        /// </summary>
+        /// <param name="equipCat">The EquipmentCategory.</param>
+        /// <returns></returns>
+        public IEnumerable<AEquipmentStat> GetEquipmentStatsFor(EquipmentCategory equipCat) {
+            return _equipLookupBySlotID.Values.Where(stat => stat != null && stat.Category == equipCat);
         }
 
         public AEquipmentStat GetEquipmentStat(EquipmentSlotID slotID) {
@@ -232,16 +222,17 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// The iterators that make GetNextEquipment() work need to be reset whenever the client terminates the 
-        /// iteration before completing it. GetNextEquipment has completed iterating when it returns false.
+        /// The iterator that makes TryGetNextEquipment() work needs to be reset whenever the client terminates the 
+        /// iteration before completing it. TryGetNextEquipment has completed iterating when it returns false.
         /// </summary>
-        public void ResetIterators() {
+        public void ResetIterator() {
             _statsEnumerator1 = null;
-            _statsEnumerator2 = null;
         }
 
         public bool TryGetEmptySlotIDFor(EquipmentCategory cat, out EquipmentSlotID slotID) {
-            var availableCatSlotIDs = _equipLookupBySlotID.Keys.Where(slot => slot.Category == cat && _equipLookupBySlotID[slot] == null);
+            EquipmentMountCategory[] allowedMounts = cat.AllowedMounts();
+            var availableCatSlotIDs = _equipLookupBySlotID.Keys.Where(slot => allowedMounts.Contains(slot.SupportedMount)
+                                        && _equipLookupBySlotID[slot] == null);
             if (availableCatSlotIDs.Any()) {
                 slotID = availableCatSlotIDs.First();
                 return true;
@@ -256,7 +247,6 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public void AssignPropertyValues() {
             ConstructionCost = CalcConstructionCost();
-            RefitBenefit = CalcRefitBenefit();
         }
 
         protected virtual float CalcConstructionCost() {
@@ -271,33 +261,21 @@ namespace CodeEnv.Master.GameContent {
             return cumConstructionCost;
         }
 
-        protected virtual int CalcRefitBenefit() {
-            int cumBenefit = Constants.Zero;
-            EquipmentSlotID unusedSlot;
-            AEquipmentStat stat;
-            while (TryGetNextEquipmentStat(out unusedSlot, out stat)) {
-                if (stat != null) {
-                    cumBenefit += stat.RefitBenefit;
-                }
-            }
-            return cumBenefit;
-        }
-
         /// <summary>
-        /// Returns the maximum number of AEquipmentStat slots that this design is allowed for the provided EquipmentCategory.
+        /// Returns the maximum number of AEquipmentStat slots that this design is allowed for the provided HullMountCategory.
         /// <remarks>AEquipmentStats that are required for a design are not included. These are typically added via the constructor.</remarks>
         /// </summary>
-        /// <param name="equipCat">The equip cat.</param>
+        /// <param name="mountCat">The HullMountCategory.</param>
         /// <returns></returns>
-        protected abstract int GetMaxEquipmentSlotsFor(EquipmentCategory equipCat);
+        protected abstract int GetMaxOptionalEquipmentSlotsFor(EquipmentMountCategory mountCat);
 
         /// <summary>
-        /// Returns <c>true</c> if the content is equal, excluding transient values like Name, Status and iterators.
+        /// Returns <c>true</c> if the content is equal, excluding transient values like Name, Status and the iterator.
         /// </summary>
         /// <param name="oDesign">The other design.</param>
         /// <returns></returns>
         public virtual bool HasEqualContent(AUnitMemberDesign oDesign) {
-            return oDesign.Player == Player && oDesign.ConstructionCost == ConstructionCost && oDesign.RefitBenefit == RefitBenefit
+            return oDesign.Player == Player && oDesign.ConstructionCost == ConstructionCost && oDesign.DesignLevel == DesignLevel
                 && AreStatsEqual(oDesign);
         }
 
@@ -307,14 +285,14 @@ namespace CodeEnv.Master.GameContent {
             while (TryGetNextEquipmentStat(out slotID, out aStat)) {
                 AEquipmentStat bStat = oDesign.GetEquipmentStat(slotID);
                 if (aStat != bStat) {
-                    ResetIterators();
+                    ResetIterator();
                     return false;
                 }
             }
             while (oDesign.TryGetNextEquipmentStat(out slotID, out aStat)) {    // OPTIMIZE avoid second pass by comparing slotID sequence
                 AEquipmentStat bStat = GetEquipmentStat(slotID);
                 if (aStat != bStat) {
-                    oDesign.ResetIterators();
+                    oDesign.ResetIterator();
                     return false;
                 }
             }
@@ -327,11 +305,31 @@ namespace CodeEnv.Master.GameContent {
 
         #region Debug
 
-        protected virtual void __ValidateEquipmentCategorySequence() { }
+        protected virtual void __ValidateHullMountCatSequence() { }
 
         #endregion
 
         #region Nested Classes
+
+        public class EquipmentSlotAndStatPair {
+
+            private const string DebugNameFormat = "{0}[{1}, {2}]";
+
+            public string DebugName { get { return DebugNameFormat.Inject(GetType().Name, SlotID.DebugName, Stat.Category.GetValueName()); } }
+
+            public EquipmentSlotID SlotID { get; private set; }
+
+            public AEquipmentStat Stat { get; private set; }
+
+            public EquipmentSlotAndStatPair(EquipmentSlotID slotID, AEquipmentStat stat) {
+                SlotID = slotID;
+                Stat = stat;
+            }
+
+            public override string ToString() {
+                return DebugName;
+            }
+        }
 
         /// <summary>
         /// Enum specifying the source and status of the design.

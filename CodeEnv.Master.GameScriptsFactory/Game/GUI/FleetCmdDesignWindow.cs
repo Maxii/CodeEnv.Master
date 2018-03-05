@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: FleetCmdDesignWindow.cs
-// GuiWindow for designing FleetCmds, managed by the DesignScreensManager.
+// GuiWindow used by the User to design FleetCmds, managed by the DesignScreensManager.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,12 +23,12 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// GuiWindow for designing FleetCmds, managed by the DesignScreensManager.
+/// GuiWindow used by the User to design FleetCmds, managed by the DesignScreensManager.
 /// </summary>
 public class FleetCmdDesignWindow : AUnitDesignWindow {
 
     protected override void AddToPlayerDesigns(AUnitMemberDesign newDesign) {
-        _gameMgr.PlayersDesigns.Add(newDesign as FleetCmdDesign);
+        UserDesigns.Add(newDesign as FleetCmdDesign);
     }
 
     protected override AUnitMemberDesign CopyDesignFrom(AUnitMemberDesign design) {
@@ -42,7 +42,7 @@ public class FleetCmdDesignWindow : AUnitDesignWindow {
     }
 
     protected override IEnumerable<AUnitMemberDesign> GetRegisteredUserDesigns(bool includeObsolete) {
-        return _gameMgr.PlayersDesigns.GetAllUserFleetCmdDesigns(includeObsolete).Cast<AUnitMemberDesign>();
+        return UserDesigns.GetAllFleetCmdDesigns(includeObsolete).Cast<AUnitMemberDesign>();
     }
 
     protected override bool TryGetCreateDesignPopupContent(out string popupTitle, out List<string> popupContent) {
@@ -53,15 +53,15 @@ public class FleetCmdDesignWindow : AUnitDesignWindow {
 
     protected override AUnitMemberDesign GetEmptyTemplateDesign(string emptyTemplateHint) {
         D.AssertNull(emptyTemplateHint);
-        return _gameMgr.PlayersDesigns.GetUserFleetCmdDesign(TempGameValues.EmptyFleetCmdTemplateDesignName);
+        return UserDesigns.GetFleetCmdDesign(TempGameValues.EmptyFleetCmdTemplateDesignName);
     }
 
     protected override void ObsoleteDesign(string designName) {
-        _gameMgr.PlayersDesigns.ObsoleteUserFleetCmdDesign(designName);
+        UserDesigns.ObsoleteFleetCmdDesign(designName);
     }
 
     protected override IEnumerable<AEquipmentStat> GetAvailableUserEquipmentStats() {
-        return _gameMgr.UniverseCreator.UnitConfigurator.GetAvailableUserEquipmentStats(AUnitCmdDesign.SupportedEquipCategories);
+        return UserDesigns.GetCurrentEquipmentStats(AUnitCmdDesign.SupportedEquipCategories);
     }
 
 }

@@ -26,23 +26,6 @@ namespace CodeEnv.Master.GameContent {
 
         private const string DebugNameFormat = "{0}({1})";
 
-        #region Comparison Operators Override
-
-        // see C# 4.0 In a Nutshell, page 254
-
-        public static bool operator ==(ActiveCountermeasureStat left, ActiveCountermeasureStat right) {
-            // https://msdn.microsoft.com/en-us/library/ms173147(v=vs.90).aspx
-            if (ReferenceEquals(left, right)) { return true; }
-            if (((object)left == null) || ((object)right == null)) { return false; }
-            return left.Equals(right);
-        }
-
-        public static bool operator !=(ActiveCountermeasureStat left, ActiveCountermeasureStat right) {
-            return !(left == right);
-        }
-
-        #endregion
-
         public override string DebugName {
             get {
                 if (_debugName == null) {
@@ -69,21 +52,21 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="imageAtlasID">The image atlas identifier.</param>
         /// <param name="imageFilename">The image filename.</param>
         /// <param name="description">The description.</param>
+        /// <param name="level">The level of technological advancement of this stat.</param>
         /// <param name="size">The size.</param>
         /// <param name="mass">The mass.</param>
         /// <param name="pwrRqmt">The PWR RQMT.</param>
         /// <param name="constructionCost">The production cost.</param>
         /// <param name="expense">The expense.</param>
         /// <param name="rangeCat">The range cat.</param>
-        /// <param name="refitBenefit">The refit benefit.</param>
         /// <param name="interceptStrengths">The intercept strengths.</param>
         /// <param name="interceptAccuracy">The intercept accuracy.</param>
         /// <param name="reloadPeriod">The reload period.</param>
         /// <param name="damageMitigation">The damage mitigation.</param>
-        public ActiveCountermeasureStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass,
-            float pwrRqmt, float constructionCost, float expense, RangeCategory rangeCat, int refitBenefit, WDVStrength[] interceptStrengths, float interceptAccuracy, float reloadPeriod,
-            DamageStrength damageMitigation)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, constructionCost, expense, rangeCat, refitBenefit, isDamageable: true) {
+        public ActiveCountermeasureStat(string name, AtlasID imageAtlasID, string imageFilename, string description, Level level, float size,
+            float mass, float pwrRqmt, float constructionCost, float expense, RangeCategory rangeCat, WDVStrength[] interceptStrengths,
+            float interceptAccuracy, float reloadPeriod, DamageStrength damageMitigation)
+            : base(name, imageAtlasID, imageFilename, description, level, size, mass, pwrRqmt, constructionCost, expense, rangeCat, isDamageable: true) {
             // confirm if more than one interceptStrength, that they each contain a unique WDVCategory
             D.AssertEqual(interceptStrengths.Length, interceptStrengths.Select(intS => intS.Category).Distinct().Count(), "Duplicate Categories found.");
             InterceptStrengths = interceptStrengths;
@@ -91,32 +74,6 @@ namespace CodeEnv.Master.GameContent {
             ReloadPeriod = reloadPeriod;
             DamageMitigation = damageMitigation;
         }
-
-        #region Object.Equals and GetHashCode Override
-
-        public override int GetHashCode() {
-            unchecked {
-                int hash = base.GetHashCode();
-                foreach (var strength in InterceptStrengths) {
-                    hash = hash * 31 + strength.GetHashCode();
-                }
-                hash = hash * 31 + InterceptAccuracy.GetHashCode(); // 31 = another prime number
-                hash = hash * 31 + ReloadPeriod.GetHashCode();
-                hash = hash * 31 + DamageMitigation.GetHashCode();
-                return hash;
-            }
-        }
-
-        public override bool Equals(object obj) {
-            if (base.Equals(obj)) {
-                ActiveCountermeasureStat oStat = (ActiveCountermeasureStat)obj;
-                return oStat.InterceptStrengths.SequenceEqual(InterceptStrengths) && oStat.InterceptAccuracy == InterceptAccuracy
-                    && oStat.ReloadPeriod == ReloadPeriod && oStat.DamageMitigation == DamageMitigation;
-            }
-            return false;
-        }
-
-        #endregion
 
         #region ActiveCM Firing Solutions Check Job Archive
 
@@ -130,6 +87,45 @@ namespace CodeEnv.Master.GameContent {
         //public float EngagePercent { get; private set; }
 
         #endregion
+
+        #region Value-based Equality Archive
+        // 2.23.18 ATechStat instances are always the same as they are acquired via factory caching
+
+        ////public static bool operator ==(ActiveCountermeasureStat left, ActiveCountermeasureStat right) {
+        ////    // https://msdn.microsoft.com/en-us/library/ms173147(v=vs.90).aspx
+        ////    if (ReferenceEquals(left, right)) { return true; }
+        ////    if (((object)left == null) || ((object)right == null)) { return false; }
+        ////    return left.Equals(right);
+        ////}
+
+        ////public static bool operator !=(ActiveCountermeasureStat left, ActiveCountermeasureStat right) {
+        ////    return !(left == right);
+        ////}
+
+        ////public override int GetHashCode() {
+        ////    unchecked {
+        ////        int hash = base.GetHashCode();
+        ////        foreach (var strength in InterceptStrengths) {
+        ////            hash = hash * 31 + strength.GetHashCode();
+        ////        }
+        ////        hash = hash * 31 + InterceptAccuracy.GetHashCode(); // 31 = another prime number
+        ////        hash = hash * 31 + ReloadPeriod.GetHashCode();
+        ////        hash = hash * 31 + DamageMitigation.GetHashCode();
+        ////        return hash;
+        ////    }
+        ////}
+
+        ////public override bool Equals(object obj) {
+        ////    if (base.Equals(obj)) {
+        ////        ActiveCountermeasureStat oStat = (ActiveCountermeasureStat)obj;
+        ////        return oStat.InterceptStrengths.SequenceEqual(InterceptStrengths) && oStat.InterceptAccuracy == InterceptAccuracy
+        ////            && oStat.ReloadPeriod == ReloadPeriod && oStat.DamageMitigation == DamageMitigation;
+        ////    }
+        ////    return false;
+        ////}
+
+        #endregion
+
 
     }
 }

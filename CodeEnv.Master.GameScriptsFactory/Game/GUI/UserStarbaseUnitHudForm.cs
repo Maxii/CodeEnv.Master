@@ -42,10 +42,5 @@ public class UserStarbaseUnitHudForm : ABaseUnitHudForm {
         }
     }
 
-    #region Debug
-
-
-    #endregion
-
 }
 

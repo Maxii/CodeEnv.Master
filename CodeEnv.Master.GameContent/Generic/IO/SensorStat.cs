@@ -20,29 +20,11 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Immutable stat containing externally acquirable values for Sensors.
-    /// <remarks>Implements value-based Equality and HashCode.</remarks>
     /// </summary>
     public class SensorStat : ARangedEquipmentStat {
 
         private const string DebugNameFormat = "{0}(Range[{1}]).";
-        private const string BasicDescriptionFormat = "Basic {0} sensor.";
 
-        #region Comparison Operators Override
-
-        // see C# 4.0 In a Nutshell, page 254
-
-        public static bool operator ==(SensorStat left, SensorStat right) {
-            // https://msdn.microsoft.com/en-us/library/ms173147(v=vs.90).aspx
-            if (ReferenceEquals(left, right)) { return true; }
-            if (((object)left == null) || ((object)right == null)) { return false; }
-            return left.Equals(right);
-        }
-
-        public static bool operator !=(SensorStat left, SensorStat right) {
-            return !(left == right);
-        }
-
-        #endregion
 
         public override string DebugName {
             get {
@@ -64,43 +46,45 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="imageAtlasID">The image atlas identifier.</param>
         /// <param name="imageFilename">The image filename.</param>
         /// <param name="description">The description.</param>
+        /// <param name="level">The level of technological advancement of this stat.</param>
         /// <param name="size">The physical size of the sensor.</param>
         /// <param name="mass">The mass.</param>
         /// <param name="pwrRqmt">The power required to operate the sensor.</param>
         /// <param name="constructionCost">The cost to produce.</param>
         /// <param name="expense">The expense.</param>
         /// <param name="rangeCat">The range category of the sensor.</param>
-        /// <param name="refitBenefit">The refit benefit.</param>
         /// <param name="isDamageable">if set to <c>true</c> [is damageable].</param>
-        public SensorStat(string name, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass, float pwrRqmt,
-            float constructionCost, float expense, RangeCategory rangeCat, int refitBenefit, bool isDamageable)
-            : base(name, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, constructionCost, expense, rangeCat, refitBenefit, isDamageable) {
+        public SensorStat(string name, AtlasID imageAtlasID, string imageFilename, string description, Level level, float size, float mass, float pwrRqmt,
+            float constructionCost, float expense, RangeCategory rangeCat, bool isDamageable)
+            : base(name, imageAtlasID, imageFilename, description, level, size, mass, pwrRqmt, constructionCost, expense, rangeCat, isDamageable) {
         }
 
-        /// <summary>
-        /// Initializes a new instance of the most basic <see cref="SensorStat" /> class.
-        /// </summary>
-        /// <param name="name">The name.</param>
-        /// <param name="rangeCat">The range category of the sensor.</param>
-        /// <param name="isDamageable">if set to <c>true</c> [is damageable].</param>
-        public SensorStat(string name, RangeCategory rangeCat, bool isDamageable)
-            : this(name, AtlasID.MyGui, TempGameValues.AnImageFilename,
-                  BasicDescriptionFormat.Inject(rangeCat.GetEnumAttributeText()), 0F, 0F, 0F, 1F, Constants.ZeroF, rangeCat, 0, isDamageable) {
-        }
+        #region Value-based Equality Archive
+        // 2.23.18 ATechStat instances are always the same as they are acquired via factory caching
 
-        #region Object.Equals and GetHashCode Override
+        ////public static bool operator ==(SensorStat left, SensorStat right) {
+        ////    // https://msdn.microsoft.com/en-us/library/ms173147(v=vs.90).aspx
+        ////    if (ReferenceEquals(left, right)) { return true; }
+        ////    if (((object)left == null) || ((object)right == null)) { return false; }
+        ////    return left.Equals(right);
+        ////}
 
-        public override int GetHashCode() {
-            unchecked {
-                return base.GetHashCode();
-            }
-        }
+        ////public static bool operator !=(SensorStat left, SensorStat right) {
+        ////    return !(left == right);
+        ////}
 
-        public override bool Equals(object obj) {
-            return base.Equals(obj);
-        }
+        ////public override int GetHashCode() {
+        ////    unchecked {
+        ////        return base.GetHashCode();
+        ////    }
+        ////}
+
+        ////public override bool Equals(object obj) {
+        ////    return base.Equals(obj);
+        ////}
 
         #endregion
+
 
     }
 }

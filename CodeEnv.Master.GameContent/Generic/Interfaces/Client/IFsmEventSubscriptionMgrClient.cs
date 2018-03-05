@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
 
         Player Owner { get; }
 
-        PlayerAIManager OwnerAIMgr { get; }
+        PlayerAIManager OwnerAiMgr { get; }
 
 
         void HandleFsmTgtInfoAccessChgd(IOwnerItem_Ltd fsmTgt);

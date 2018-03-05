@@ -44,12 +44,15 @@ namespace CodeEnv.Master.GameContent {
 
         public int SlotNumber { get; private set; }
 
-        public EquipmentCategory Category { get; private set; }
+        /// <summary>
+        /// The HullMountCategory that this EquipmentSlot supports when mounting equipment.
+        /// </summary>
+        public EquipmentMountCategory SupportedMount { get; private set; }
 
-        public EquipmentSlotID(int slot, EquipmentCategory category) {
-            SlotNumber = slot;
-            Category = category;
-            DebugName = DebugNameFormat.Inject(typeof(EquipmentSlotID).Name, Category.GetEnumAttributeText(), SlotNumber);
+        public EquipmentSlotID(int slotNumber, EquipmentMountCategory supportedMount) {
+            SlotNumber = slotNumber;
+            SupportedMount = supportedMount;
+            DebugName = DebugNameFormat.Inject(typeof(EquipmentSlotID).Name, supportedMount.GetEnumAttributeText(), slotNumber);
         }
 
         #region Object.Equals and GetHashCode Override
@@ -70,7 +73,7 @@ namespace CodeEnv.Master.GameContent {
             unchecked { // http://dobrzanski.net/2010/09/13/csharp-gethashcode-cause-overflowexception/
                 int hash = 17;  // 17 = some prime number
                 hash = hash * 31 + SlotNumber.GetHashCode(); // 31 = another prime number
-                hash = hash * 31 + Category.GetHashCode();
+                hash = hash * 31 + SupportedMount.GetHashCode();
                 return hash;
             }
         }
@@ -81,10 +84,10 @@ namespace CodeEnv.Master.GameContent {
             return DebugName;
         }
 
-        #region IEquatable<EquipmentInventorySlotID> Members
+        #region IEquatable<EquipmentSlotID> Members
 
         public bool Equals(EquipmentSlotID other) {
-            return SlotNumber == other.SlotNumber && Category == other.Category;
+            return SlotNumber == other.SlotNumber && SupportedMount == other.SupportedMount;
         }
 
         #endregion

@@ -33,7 +33,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Facilities 'manage' their own initial construction in a Base. When they receive this order, they are of course already
         /// instantiated and operational and have an existing Construction present (with no progress having occurred yet) in the Base's 
-        /// ConstructionManager.
+        /// BaseConstructionManager.
         /// <remarks>12.1.17 Requires a null Target.</remarks>
         /// </summary>
         Construct,

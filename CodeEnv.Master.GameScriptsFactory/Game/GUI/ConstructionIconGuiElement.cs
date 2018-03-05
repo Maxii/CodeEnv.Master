@@ -44,8 +44,8 @@ public class ConstructionIconGuiElement : AIconGuiElement, IComparable<Construct
     public override bool IsInitialized { get { return _isConstructionPropSet; } }
 
     private bool _isConstructionPropSet;  // reqd as Construction can be Construction, NoConstruction or null (unknown)
-    private Construction _construction;
-    public Construction Construction {
+    private ConstructionTask _construction;
+    public ConstructionTask Construction {
         get { return _construction; }
         set {
             D.Assert(!_isConstructionPropSet);   // occurs only once between Resets

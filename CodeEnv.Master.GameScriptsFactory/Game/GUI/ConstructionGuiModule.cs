@@ -25,6 +25,7 @@ using UnityEngine;
 
 /// <summary>
 /// Gui module that allows management of a Base's Constructible Element Designs and Construction Queue.
+/// <remarks>Handles both User and AI-owned bases.</remarks>
 /// </summary>
 public class ConstructionGuiModule : AMonoBase {
 
@@ -49,12 +50,13 @@ public class ConstructionGuiModule : AMonoBase {
     public AUnitBaseCmdItem SelectedUnit {
         get { return _selectedUnit; }
         set {
-            D.AssertNull(_selectedUnit);
+            D.AssertNull(_selectedUnit);    // currently one-time only
             SetProperty<AUnitBaseCmdItem>(ref _selectedUnit, value, "SelectedUnit", SelectedUnitPropSetHandler);
         }
     }
 
-    private ConstructionManager _unitConstructionMgr;
+    private PlayerAIManager _playerAiMgr;
+    private BaseConstructionManager _unitConstructionMgr;
 
     private IList<Transform> _sortedConstructibleDesignIconTransforms;
     private UIGrid _constructibleDesignIconsGrid;
@@ -108,19 +110,17 @@ public class ConstructionGuiModule : AMonoBase {
 
     private void SelectedUnitPropSetHandler() {
         D.Assert(_gameMgr.IsPaused);
+        D.AssertNull(_playerAiMgr);
 
         _unitConstructionMgr = SelectedUnit.ConstructionMgr;
+        _playerAiMgr = _gameMgr.GetAIManagerFor(SelectedUnit.Owner);
 
         Subscribe();
         AssignValuesToMembers();
     }
 
-    private void Subscribe() {
-        _unitConstructionMgr.constructionQueueChanged += UnitConstructionQueueChangedEventHandler;
-    }
-
     private void UnitConstructionQueueChangedEventHandler(object sender, EventArgs e) {
-        D.AssertEqual(_unitConstructionMgr, sender as ConstructionManager);
+        D.AssertEqual(_unitConstructionMgr, sender as BaseConstructionManager);
         HandleUnitConstructionQueueChanged();
     }
 
@@ -197,6 +197,10 @@ public class ConstructionGuiModule : AMonoBase {
     }
 
     #endregion
+
+    private void Subscribe() {
+        _unitConstructionMgr.constructionQueueChanged += UnitConstructionQueueChangedEventHandler;
+    }
 
     #region Constructible Design Icon Interaction
 
@@ -281,7 +285,7 @@ public class ConstructionGuiModule : AMonoBase {
     }
 
     private void HandleConstructionQueueIconDragDropEnded() {
-        IList<Construction> unitConstructionQueue = _unitConstructionMgr.GetQueue();
+        IList<ConstructionTask> unitConstructionQueue = _unitConstructionMgr.GetQueue();
 
         var verticallySortedConstructionItemsInIcons = _constructionQueueIconsGrid.GetChildList()
             .Select(t => t.GetComponent<ConstructionQueueIconGuiElement>()).Select(icon => icon.Construction);
@@ -325,7 +329,7 @@ public class ConstructionGuiModule : AMonoBase {
         _constructibleDesignIconsGrid.repositionNow = true;
     }
 
-    private void BuildConstructionQueueIcons(IEnumerable<Construction> constructionQueue) {
+    private void BuildConstructionQueueIcons(IEnumerable<ConstructionTask> constructionQueue) {
         RemoveConstructionQueueIcons();
 
         var gridContainerSize = _constructionQueueIconsGrid.GetComponentInParent<UIPanel>().GetViewSize();
@@ -370,7 +374,7 @@ public class ConstructionGuiModule : AMonoBase {
     /// <param name="itemUnderConstruction">The item under construction.</param>
     /// <param name="iconSize">Size of the icon.</param>
     /// <param name="topToBottomVerticalOffset">The top to bottom vertical offset needed to vertically sort.</param>
-    private void CreateAndAddIcon(Construction itemUnderConstruction, AMultiSizeIconGuiElement.IconSize iconSize, int topToBottomVerticalOffset) {
+    private void CreateAndAddIcon(ConstructionTask itemUnderConstruction, AMultiSizeIconGuiElement.IconSize iconSize, int topToBottomVerticalOffset) {
         GameObject constructionQueueIconGo = NGUITools.AddChild(_constructionQueueIconsGrid.gameObject, _constructionQueueIconPrefab.gameObject);
         constructionQueueIconGo.name = itemUnderConstruction.Name + ConstructionQueueIconExtension;
         constructionQueueIconGo.transform.SetLocalPositionY(topToBottomVerticalOffset); // initial position set for proper vertical sort
@@ -444,14 +448,13 @@ public class ConstructionGuiModule : AMonoBase {
     }
 
     private IEnumerable<AUnitElementDesign> GetConstructibleDesigns(bool includeFacilities, bool includeShips) {
-        var playersDesigns = _gameMgr.PlayersDesigns;
         List<AUnitElementDesign> designs = new List<AUnitElementDesign>();
         if (includeFacilities) {
-            var facilityDesigns = playersDesigns.GetAllUserFacilityDesigns().Cast<AUnitElementDesign>();
+            var facilityDesigns = _playerAiMgr.Designs.GetAllFacilityDesigns().Cast<AUnitElementDesign>();
             designs.AddRange(facilityDesigns);
         }
         if (includeShips) {
-            var shipDesigns = playersDesigns.GetAllUserShipDesigns().Cast<AUnitElementDesign>();
+            var shipDesigns = _playerAiMgr.Designs.GetAllShipDesigns().Cast<AUnitElementDesign>();
             designs.AddRange(shipDesigns);
         }
         return designs;
@@ -474,6 +477,7 @@ public class ConstructionGuiModule : AMonoBase {
         Unsubscribe();
         _selectedUnit = null;
         _unitConstructionMgr = null;
+        _playerAiMgr = null;
     }
 
     private void ResetViewConstructibleDesignsToggleButtons() {

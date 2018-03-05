@@ -192,6 +192,11 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         ParentSystem.AssessWhetherToFireInfoAccessChangedEventFor(player);
     }
 
+    protected override void PrepareForDeathSequence() {
+        base.PrepareForDeathSequence();
+        _obstacleZoneCollider.enabled = false;
+    }
+
     protected sealed override void AssignDeadState() {
         D.Log(ShowDebugLog, "{0} is setting Dead state.", DebugName);
         CurrentState = PlanetoidState.Dead;

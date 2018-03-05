@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: IConstructionManagerClient.cs
-// Interface for AUnitBaseCmd when their ConstructionManager needs to communicate with them.
+// Interface for AUnitBaseCmd when their BaseConstructionManager needs to communicate with them.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,13 +19,13 @@
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Interface for AUnitBaseCmd when their ConstructionManager needs to communicate with them.
+/// Interface for AUnitBaseCmd when their BaseConstructionManager needs to communicate with them.
 /// </summary>
 public interface IConstructionManagerClient {
 
-    void HandleUncompletedConstructionRemovedFromQueue(Construction construction);
+    void HandleUncompletedConstructionRemovedFromQueue(ConstructionTask construction);
 
-    void HandleConstructionCompleted(Construction construction);
+    void HandleConstructionCompleted(ConstructionTask construction);
 
 }
 

@@ -25,7 +25,7 @@ using UnityEngine;
 /// </summary>
 public abstract class AHull : AMonoBase, IHull {
 
-    public string DebugName { get { return GetType().Name; } }
+    public virtual string DebugName { get { return GetType().Name; } }
 
     //[FormerlySerializedAs("hullMesh")]
     [SerializeField]

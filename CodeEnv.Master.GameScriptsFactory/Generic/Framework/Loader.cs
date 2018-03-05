@@ -75,8 +75,9 @@ public class Loader : AMonoSingleton<Loader> {
 
     protected override void Start() {
         base.Start();
+        __ValidateMaxInteriorSlots();
+        __ValidateMaxExteriorHullWeaponSlots();
         LaunchGameManagerStartupScene();
-        __ValidateMaxHullWeaponSlots();
     }
 
     private void LaunchGameManagerStartupScene() {
@@ -167,40 +168,64 @@ public class Loader : AMonoSingleton<Loader> {
     #region Debug
 
     /// <summary>
-    /// Validates that the max values for weapon slots from GameEnumExtensions matches 
-    /// the actual number of weapon slots present in the Hull prefab.
-    /// <remarks>6.29.17 One time check to verify that coded values and hull prefab content match.</remarks>
+    /// <remarks>3.5.18 One time check to verify that interior equip max values used to support the auto creation of
+    /// elements (serialized slider values with a max must be constants) does not exceed the number of interior mounts available.</remarks>
     /// </summary>
-    private void __ValidateMaxHullWeaponSlots() {
+    private void __ValidateMaxInteriorSlots() {
         foreach (var cat in TempGameValues.ShipHullCategoriesInUse) {
-            int maxAllowedLaunchedWeaponSlots = cat.__MaxLaunchedWeapons();
-            int maxAllowedLOSWeaponSlots = cat.__MaxLOSWeapons();
-
-            var hullPrefabGo = RequiredPrefabs.Instance.shipHulls.Single(hull => hull.HullCategory == cat);
-            var launchedWeapMountPlaceholders = hullPrefabGo.GetComponentsInChildren<LauncherMountPlaceholder>();
-            var losWeapMountPlaceholders = hullPrefabGo.GetComponentsInChildren<LOSMountPlaceholder>();
-
-            if (maxAllowedLaunchedWeaponSlots != launchedWeapMountPlaceholders.Count()) {
-                D.Error("{0}: {1} WeaponSlot Validation Error: {2} != {3}.", DebugName, cat.GetValueName(), maxAllowedLaunchedWeaponSlots, launchedWeapMountPlaceholders.Count());
-            }
-            if (maxAllowedLOSWeaponSlots != losWeapMountPlaceholders.Count()) {
-                D.Error("{0}: {1} WeaponSlot Validation Error: {2} != {3}.", DebugName, cat.GetValueName(), maxAllowedLOSWeaponSlots, losWeapMountPlaceholders.Count());
+            int eCatMaxAllowedInternalMounts = cat.__MaxInteriorHullMounts() + cat.__MaxInteriorAltHullMounts();
+            int reqdElementSensors = 1;
+            int eCatMaxAllowedInteriorEquip = cat.__MaxActiveCMs() + cat.__MaxPassiveCMs() + cat.__MaxSensors() - reqdElementSensors + cat.__MaxShieldGenerators();
+            if (eCatMaxAllowedInteriorEquip > eCatMaxAllowedInternalMounts) {
+                D.Warn("{0}: {1} - maxInteriorEquip {2} exceeds maxInteriorMounts {3}.", DebugName, cat.GetValueName(), eCatMaxAllowedInteriorEquip, eCatMaxAllowedInternalMounts);
             }
         }
 
         foreach (var cat in TempGameValues.FacilityHullCategoriesInUse) {
-            int maxAllowedLaunchedWeaponSlots = cat.__MaxLaunchedWeapons();
-            int maxAllowedLOSWeaponSlots = cat.__MaxLOSWeapons();
+            int eCatMaxAllowedInternalMounts = cat.__MaxInteriorHullMounts() + cat.__MaxInteriorAltHullMounts();
+            int reqdElementSensors = 1;
+            int eCatMaxAllowedInteriorEquip = cat.__MaxActiveCMs() + cat.__MaxPassiveCMs() + cat.__MaxSensors() - reqdElementSensors + cat.__MaxShieldGenerators();
+            if (eCatMaxAllowedInteriorEquip > eCatMaxAllowedInternalMounts) {
+                D.Warn("{0}: {1} - maxInteriorEquip {2} exceeds maxInteriorMounts {3}.", DebugName, cat.GetValueName(), eCatMaxAllowedInteriorEquip, eCatMaxAllowedInternalMounts);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Validates that the max values for weapon slots from GameEnumExtensions matches 
+    /// the actual number of weapon slots present in the Hull prefab.
+    /// <remarks>6.29.17 One time check to verify that coded values and hull prefab content match.</remarks>
+    /// </summary>
+    private void __ValidateMaxExteriorHullWeaponSlots() {
+        foreach (var cat in TempGameValues.ShipHullCategoriesInUse) {
+            int eCatMaxAllowedSiloMounts = cat.MaxSiloMounts();
+            int eCatMaxAllowedTurretMounts = cat.MaxTurretMounts();
+
+            var hullPrefabGo = RequiredPrefabs.Instance.shipHulls.Single(hull => hull.HullCategory == cat);
+            var siloMountPlaceholders = hullPrefabGo.GetComponentsInChildren<LauncherMountPlaceholder>();
+            var turretMountPlaceholders = hullPrefabGo.GetComponentsInChildren<LOSMountPlaceholder>();
+
+            if (eCatMaxAllowedSiloMounts != siloMountPlaceholders.Count()) {
+                D.Error("{0}: {1} WeaponSlot Validation Error: {2} != {3}.", DebugName, cat.GetValueName(), eCatMaxAllowedSiloMounts, siloMountPlaceholders.Count());
+            }
+            if (eCatMaxAllowedTurretMounts != turretMountPlaceholders.Count()) {
+                D.Error("{0}: {1} WeaponSlot Validation Error: {2} != {3}.", DebugName, cat.GetValueName(), eCatMaxAllowedTurretMounts, turretMountPlaceholders.Count());
+            }
+        }
+
+        foreach (var cat in TempGameValues.FacilityHullCategoriesInUse) {
+            int eCatMaxAllowedSiloMounts = cat.MaxSiloMounts();
+            int eCatMaxAllowedTurretMounts = cat.MaxTurretMounts();
 
             var hullPrefabGo = RequiredPrefabs.Instance.facilityHulls.Single(hull => hull.HullCategory == cat);
-            var launchedWeapMountPlaceholders = hullPrefabGo.GetComponentsInChildren<LauncherMountPlaceholder>();
-            var losWeapMountPlaceholders = hullPrefabGo.GetComponentsInChildren<LOSMountPlaceholder>();
+            var siloMountPlaceholders = hullPrefabGo.GetComponentsInChildren<LauncherMountPlaceholder>();
+            var turretMountPlaceholders = hullPrefabGo.GetComponentsInChildren<LOSMountPlaceholder>();
 
-            if (maxAllowedLaunchedWeaponSlots != launchedWeapMountPlaceholders.Count()) {
-                D.Error("{0}: {1} WeaponSlot Validation Error: {2} != {3}.", DebugName, cat.GetValueName(), maxAllowedLaunchedWeaponSlots, launchedWeapMountPlaceholders.Count());
+            if (eCatMaxAllowedSiloMounts != siloMountPlaceholders.Count()) {
+                D.Error("{0}: {1} WeaponSlot Validation Error: {2} != {3}.", DebugName, cat.GetValueName(), eCatMaxAllowedSiloMounts, siloMountPlaceholders.Count());
             }
-            if (maxAllowedLOSWeaponSlots != losWeapMountPlaceholders.Count()) {
-                D.Error("{0}: {1} WeaponSlot Validation Error: {2} != {3}.", DebugName, cat.GetValueName(), maxAllowedLOSWeaponSlots, losWeapMountPlaceholders.Count());
+            if (eCatMaxAllowedTurretMounts != turretMountPlaceholders.Count()) {
+                D.Error("{0}: {1} WeaponSlot Validation Error: {2} != {3}.", DebugName, cat.GetValueName(), eCatMaxAllowedTurretMounts, turretMountPlaceholders.Count());
             }
         }
     }

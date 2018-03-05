@@ -16,8 +16,6 @@
 
 // default namespace
 
-using System;
-using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
@@ -25,7 +23,7 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class LauncherMountPlaceholder : AMountPlaceholder {
 
-    protected override EquipmentCategory EquipmentCategory { get { return EquipmentCategory.LaunchedWeapon; } }
+    protected override EquipmentMountCategory SupportedMount { get { return EquipmentMountCategory.Silo; } }
 
     protected override void Cleanup() { }
 

@@ -271,6 +271,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         if (IsPaused) {
             _gameMgr.isPausedChanged -= CurrentOrderChangedWhilePausedUponResumeEventHandler;
         }
+        _obstacleZoneCollider.enabled = false;
     }
 
     protected override void PrepareForDeadState() {
@@ -572,6 +573,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         ReturnFromCalledStates();
         D.Log(/*ShowDebugLog, */"{0}.RestartState called from {1}.{2}. RestartedState = {3}.",
             DebugName, typeof(FacilityState).Name, stateWhenCalled.GetValueName(), CurrentState.GetValueName());
+        D.Assert(!_hasOrderOutcomeCallbackAttemptOccurred, DebugName);
         CurrentState = CurrentState;
     }
 
@@ -585,11 +587,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     void FinalInitialize_EnterState() {
         LogEvent();
     }
-
-    ////void FinalInitialize_UponRelationsChangedWith(Player player) {
-    ////    LogEvent();
-    ////    // can be received when activation of sensors immediately finds another player
-    ////}
 
     protected void FinalInitialize_UponDamageIncurred() {
         LogEvent();
@@ -622,7 +619,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
         Data.PrepareForInitialConstruction();
 
-        Construction construction = Command.ConstructionMgr.GetConstructionFor(this);
+        ConstructionTask construction = Command.ConstructionMgr.GetConstructionFor(this);
         D.Assert(!construction.IsCompleted);
         while (!construction.IsCompleted) {
             RefreshReworkingVisuals(construction.CompletionPercentage);
@@ -642,11 +639,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         LogEvent();
         // UNCLEAR nothing to do?
     }
-
-    ////void ExecuteConstructOrder_UponRelationsChangedWith(Player player) {
-    ////    LogEvent();
-    ////    // UNCLEAR nothing to do?
-    ////}
 
     void ExecuteConstructOrder_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         LogEvent();
@@ -767,10 +759,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         // TODO
     }
 
-    ////void Idling_UponRelationsChangedWith(Player player) {
-    ////    LogEvent();
-    ////}
-
     // No need for _fsmTgt-related event handlers as there is no _fsmTgt
 
     void Idling_UponLosingOwnership() {
@@ -862,7 +850,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
                 if (!returnHandler.DidCallSuccessfullyComplete) {
                     yield return null;
-                    D.Error("Shouldn't get here as the ReturnCause should generate a change of state.");
+                    D.Error("{0} shouldn't get here as the ReturnCause {1} should generate a change of state.", DebugName, returnHandler.ReturnCause.GetValueName());
                 }
                 _fsmTgt = unitAttackTgt;
             }
@@ -900,11 +888,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         LogEvent();
         // TODO
     }
-
-    ////void ExecuteAttackOrder_UponRelationsChangedWith(Player player) {
-    ////    LogEvent();
-    ////    // TODO
-    ////}
 
     void ExecuteAttackOrder_UponFsmTgtInfoAccessChgd(IOwnerItem_Ltd fsmTgt) {
         LogEvent();
@@ -991,7 +974,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
             if (!returnHandler.DidCallSuccessfullyComplete) {
                 yield return null;
-                D.Error("Shouldn't get here as the ReturnCause should generate a change of state.");
+                D.Error("{0} shouldn't get here as the ReturnCause {1} should generate a change of state.", DebugName, returnHandler.ReturnCause.GetValueName());
             }
             // Can't assert OneHundredPercent as more hits can occur after repairing completed
         }
@@ -1030,11 +1013,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         LogEvent();
         // TODO
     }
-
-    ////void ExecuteRepairOrder_UponRelationsChangedWith(Player player) {
-    ////    LogEvent();
-    ////    // Cmd will handle. Can't be relevant as our Cmd is all we care about
-    ////}
 
     void ExecuteRepairOrder_UponLosingOwnership() {
         LogEvent();
@@ -1157,11 +1135,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         RestartState(); // 12.10.17 Added to accommodate CmdModule repair
     }
 
-    ////void Repairing_UponRelationsChangedWith(Player player) {
-    ////    LogEvent();
-    ////    // TODO
-    ////}
-
     // 4.8.17 Call()ed state _UponNewOrderReceived() eliminated as auto Return()ed prior to _UponNewOrderReceived()
     // 4.15.17 Call()ed state _UponDeath eliminated as auto Return()ed as part of death sequence
     // 4.15.17 Call()ed state _UponLosingOwnership eliminated as auto Return()ed prior to _UponLosingOwnership()
@@ -1221,7 +1194,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
         _preReworkValues = Data.PrepareForRework();
 
-        RefitConstruction construction = Command.ConstructionMgr.AddToRefitQueue(refitDesign, this, refitCost);
+        RefitConstructionTask construction = Command.ConstructionMgr.AddToRefitQueue(refitDesign, this, refitCost);
         D.Assert(!construction.IsCompleted);
         while (!construction.IsCompleted) {
             RefreshReworkingVisuals(construction.CompletionPercentage);
@@ -1256,11 +1229,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         D.AssertNotEqual(Command.Owner, Owner);
         D.Assert(IsHQ);
     }
-
-    ////void ExecuteRefitOrder_UponRelationsChangedWith(Player player) {
-    ////    LogEvent();
-    ////    // nothing to do as refitting in own base
-    ////}
 
     void ExecuteRefitOrder_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         LogEvent();
@@ -1324,7 +1292,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     #region ExecuteDisbandOrder Support Members
 
     private float __CalcDisbandCost(FacilityDesign currentDesign) {
-        FacilityDesign emptyDisbandDesign = _gameMgr.PlayersDesigns.GetFacilityDesign(currentDesign.Player, currentDesign.HullCategory.GetEmptyTemplateDesignName());
+        FacilityDesign emptyDisbandDesign = OwnerAiMgr.Designs.GetFacilityDesign(currentDesign.HullCategory.GetEmptyTemplateDesignName());
         float disbandCost = currentDesign.ConstructionCost - emptyDisbandDesign.ConstructionCost;
         if (disbandCost < currentDesign.MinimumDisbandCost) {
             //D.Log("{0}.DisbandCost {1:0.#} < Minimum {2:0.#}. Fixing. DisbandDesign: {3}.",
@@ -1365,7 +1333,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
         _preReworkValues = Data.PrepareForRework();
 
-        DisbandConstruction construction = Command.ConstructionMgr.AddToDisbandQueue(Data.Design, this, disbandCost);
+        DisbandConstructionTask construction = Command.ConstructionMgr.AddToDisbandQueue(Data.Design, this, disbandCost);
         D.Assert(!construction.IsCompleted);
         while (!construction.IsCompleted) {
             RefreshReworkingVisuals(construction.CompletionPercentage);
@@ -1394,11 +1362,6 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         D.Assert(IsHQ);
     }
 
-    ////void ExecuteDisbandOrder_UponRelationsChangedWith(Player player) {
-    ////    LogEvent();
-    ////    // nothing to do as disbanding in own base
-    ////}
-
     void ExecuteDisbandOrder_UponWeaponReadyToFire(IList<WeaponFiringSolution> firingSolutions) {
         LogEvent();
         // will only be called by operational weapons, most of which will be damaged during disbanding
@@ -1421,12 +1384,12 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     }
 
     /// <summary>
-    /// Called when this Facility's construction is removed from BaseCmd's ConstructionManager's construction queue before it is completed.
+    /// Called when this Facility's construction is removed from BaseCmd's BaseConstructionManager's construction queue before it is completed.
     /// <remarks>1.23.18 This version can delay setting IsDead by 1 frame. It is necessary to allow BaseCmd's ExecuteDisbandOrder_ExitState() 
     /// to clear the order and state of its disbanding elements. 
     /// The issue: When a base is disbanding and then has its orders cleared, it clears the orders of all its disbanding elements 
     /// from ExecuteDisbandOrder_ExitState using the Element's ResetOrderAndState() method. When the element's 
-    /// ExecuteDisbandOrder_UponResetOrderAndState() method is called it removes the disband construction from the Cmd's ConstructionManager 
+    /// ExecuteDisbandOrder_UponResetOrderAndState() method is called it removes the disband construction from the Cmd's BaseConstructionManager 
     /// which normally atomically kills the element. When all elements are killed and removed from BaseCmd's list of elements in the same
     /// frame, BaseCmd also immediately dies changing its state to Dead. This state change violates the FSM 'changing state during 
     /// ConfigureCurrentState' test. Accordingly, I delay setting IsDead here to allow BaseCmd's FSM to finish processing 
@@ -1745,7 +1708,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     private void __ValidateKnowledgeOfOrderTarget(FacilityOrder order) {
         var target = order.Target;
         if (target != null && !(target is StationaryLocation) && !(target is MobileLocation)) {
-            if (!OwnerAIMgr.HasKnowledgeOf(target as IOwnerItem_Ltd)) {
+            if (!OwnerAiMgr.HasKnowledgeOf(target as IOwnerItem_Ltd)) {
                 D.Warn("{0} received order {1} when {2} has no knowledge of target.", DebugName, order.DebugName, Owner.DebugName);
             }
         }
@@ -1783,7 +1746,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
         if (orderDirective == FacilityDirective.Refit) {
             failCause = "No refit designs";
-            return _gameMgr.PlayersDesigns.AreUpgradeDesignsPresent(Owner, Data.Design);
+            return OwnerAiMgr.Designs.IsUpgradeDesignPresent(Data.Design);
         }
         if (orderDirective == FacilityDirective.Disband) {
             // Can disband at any time as long as not Constructing, Refitting or already Disbanding

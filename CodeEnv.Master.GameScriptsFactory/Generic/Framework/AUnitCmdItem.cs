@@ -444,10 +444,12 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     protected virtual void HandleSubordinateDeath(AUnitElementItem deadSubordinateElement) {
         // No ShowDebugLog as I always want this to report except when it doesn't compile
         if (deadSubordinateElement.IsHQ) {
-            D.LogBold("{0} acknowledging {1} has been killed.", DebugName, deadSubordinateElement.DebugName);
+            D.LogBold("{0} acknowledging {1} has been killed during State: {2}, Frame {3}.",
+                DebugName, deadSubordinateElement.DebugName, CurrentState.ToString(), Time.frameCount);
         }
         else {
-            D.Log("{0} acknowledging {1} has been killed.", DebugName, deadSubordinateElement.DebugName);
+            D.Log("{0} acknowledging {1} has been killed during State: {2}, Frame {3}.",
+                DebugName, deadSubordinateElement.DebugName, CurrentState.ToString(), Time.frameCount);
         }
         RemoveElement(deadSubordinateElement);
         // state machine notification is after removal so attempts to acquire a replacement don't come up with same element
@@ -589,10 +591,9 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         DeregisterForOrders();
     }
 
-    protected override void PrepareForDeadState() {
-        base.PrepareForDeadState();
-        // 4.15.17 Get state to a non-Called state before changing to Dead allowing that 
-        // non_Called state to callback with FsmCallReturnCause.Death if callback is reqd
+    protected override void PrepareForOnDeath() {
+        base.PrepareForOnDeath();
+        // 2.16.18 Notify FSM of death before notifying all other external parties of death
         ReturnFromCalledStates();
         UponDeath();    // 4.19.17 Do any reqd Callback before exiting current non-Call()ed state
     }
@@ -913,11 +914,11 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     protected void RegisterForOrders() {
-        OwnerAIMgr.RegisterForOrders(this);
+        OwnerAiMgr.RegisterForOrders(this);
     }
 
     private void DeregisterForOrders() {
-        OwnerAIMgr.DeregisterForOrders(this);
+        OwnerAiMgr.DeregisterForOrders(this);
     }
 
     #endregion

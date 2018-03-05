@@ -111,6 +111,7 @@ namespace CodeEnv.Master.GameContent {
         private static StringBuilder _stringBuilder = new StringBuilder();
 
         public static OutputsYield OneProduction = new OutputsYield(OutputID.Production, Constants.OneF);   // after _stringBuilder
+        public static OutputsYield OneScience = new OutputsYield(OutputID.Science, Constants.OneF);
 
         private string _debugName;
         public string DebugName {

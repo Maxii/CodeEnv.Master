@@ -39,7 +39,7 @@ public class AutoStarbaseCreator : AAutoUnitCreator {
     protected override void MakeElements() {
         _elements = new List<FacilityItem>();
         foreach (var designName in Configuration.ElementDesignNames) {
-            FacilityDesign design = _gameMgr.PlayersDesigns.GetFacilityDesign(Owner, designName);
+            FacilityDesign design = _ownerDesigns.GetFacilityDesign(designName);
             string name = _factory.__GetUniqueFacilityName(design.DesignName);
             _elements.Add(_factory.MakeFacilityInstance(Owner, Topography.OpenSpace, design, name, gameObject));
         }

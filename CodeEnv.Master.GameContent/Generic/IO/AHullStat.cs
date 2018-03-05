@@ -15,35 +15,17 @@
 ////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
-
+    using Common;
     using UnityEngine;
 
     /// <summary>
     /// Immutable abstract base stat containing externally acquirable hull values for Elements.
-    /// <remarks>Implements value-based Equality and HashCode.</remarks>
     /// </summary>
     public abstract class AHullStat : AEquipmentStat {
 
         private const string HullCategoryNameExtension = "Hull";
 
-        #region Comparison Operators Override
-
-        // see C# 4.0 In a Nutshell, page 254
-
-        public static bool operator ==(AHullStat left, AHullStat right) {
-            // https://msdn.microsoft.com/en-us/library/ms173147(v=vs.90).aspx
-            if (ReferenceEquals(left, right)) { return true; }
-            if (((object)left == null) || ((object)right == null)) { return false; }
-            return left.Equals(right);
-        }
-
-        public static bool operator !=(AHullStat left, AHullStat right) {
-            return !(left == right);
-        }
-
-        #endregion
-
-        public override EquipmentCategory Category { get { return EquipmentCategory.Hull; } }
+        public sealed override EquipmentCategory Category { get { return EquipmentCategory.Hull; } }
 
         public float MaxHitPoints { get; private set; }
         public DamageStrength DamageMitigation { get; private set; }
@@ -56,6 +38,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="imageAtlasID">The image atlas identifier.</param>
         /// <param name="imageFilename">The image filename.</param>
         /// <param name="description">The description.</param>
+        /// <param name="level">The level of technological advancement of this stat.</param>
         /// <param name="size">The space available within this hull.</param>
         /// <param name="mass">The mass of this hull.</param>
         /// <param name="pwrRqmt">The power required to operate this hull.</param>
@@ -64,37 +47,50 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="maxHitPts">The maximum hit points of this hull.</param>
         /// <param name="damageMitigation">The resistance to damage of this hull.</param>
         /// <param name="hullDimensions">The hull dimensions.</param>
-        /// <param name="refitBenefit">The refit benefit.</param>
-        public AHullStat(string hullCategoryName, AtlasID imageAtlasID, string imageFilename, string description, float size, float mass,
-            float pwrRqmt, float constructionCost, float expense, float maxHitPts, DamageStrength damageMitigation, Vector3 hullDimensions, int refitBenefit)
-            : base(hullCategoryName + HullCategoryNameExtension, imageAtlasID, imageFilename, description, size, mass, pwrRqmt, constructionCost,
-                  expense, refitBenefit, isDamageable: false) {
+        public AHullStat(string hullCategoryName, AtlasID imageAtlasID, string imageFilename, string description, Level level, float size, float mass,
+            float pwrRqmt, float constructionCost, float expense, float maxHitPts, DamageStrength damageMitigation, Vector3 hullDimensions)
+            : base(hullCategoryName + HullCategoryNameExtension, imageAtlasID, imageFilename, description, level, size, mass, pwrRqmt,
+                  constructionCost, expense, isDamageable: false) {
             MaxHitPoints = maxHitPts;
             DamageMitigation = damageMitigation;
             HullDimensions = hullDimensions;
         }
 
-        #region Object.Equals and GetHashCode Override
+        #region Value-based Equality Archive
+        // 2.23.18 ATechStat instances are always the same as they are acquired via factory caching
 
-        public override int GetHashCode() {
-            unchecked {
-                int hash = base.GetHashCode();
-                hash = hash * 31 + MaxHitPoints.GetHashCode(); // 31 = another prime number
-                hash = hash * 31 + DamageMitigation.GetHashCode();
-                hash = hash * 31 + HullDimensions.GetHashCode();
-                return hash;
-            }
-        }
+        ////public static bool operator ==(AHullStat left, AHullStat right) {
+        ////    // https://msdn.microsoft.com/en-us/library/ms173147(v=vs.90).aspx
+        ////    if (ReferenceEquals(left, right)) { return true; }
+        ////    if (((object)left == null) || ((object)right == null)) { return false; }
+        ////    return left.Equals(right);
+        ////}
 
-        public override bool Equals(object obj) {
-            if (base.Equals(obj)) {
-                AHullStat oStat = (AHullStat)obj;
-                return oStat.MaxHitPoints == MaxHitPoints && oStat.DamageMitigation == DamageMitigation && oStat.HullDimensions == HullDimensions;
-            }
-            return false;
-        }
+        ////public static bool operator !=(AHullStat left, AHullStat right) {
+        ////    return !(left == right);
+        ////}
+
+        ////public override int GetHashCode() {
+        ////    unchecked {
+        ////        int hash = base.GetHashCode();
+        ////        hash = hash * 31 + MaxHitPoints.GetHashCode(); // 31 = another prime number
+        ////        hash = hash * 31 + DamageMitigation.GetHashCode();
+        ////        hash = hash * 31 + HullDimensions.GetHashCode();
+        ////        return hash;
+        ////    }
+        ////}
+
+        ////public override bool Equals(object obj) {
+        ////    if (base.Equals(obj)) {
+        ////        AHullStat oStat = (AHullStat)obj;
+        ////        return oStat.MaxHitPoints == MaxHitPoints && oStat.DamageMitigation == DamageMitigation && oStat.HullDimensions == HullDimensions;
+        ////    }
+        ////    return false;
+        ////}
 
         #endregion
+
+
 
     }
 }

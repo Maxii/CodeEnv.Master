@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ConstructionManager.cs
-// Manages element construction progress via a queue for a Base Unit.
+// File: BaseConstructionManager.cs
+// Manages the progression and completion of element ConstructionTasks via a queue for a Base Unit.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -22,9 +22,9 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Manages element construction progress via a queue for a Base Unit.
+    /// Manages the progression and completion of element ConstructionTasks via a queue for a Base Unit.
     /// </summary>
-    public class ConstructionManager : IRecurringDateMinderClient, IDisposable {
+    public class BaseConstructionManager : IRecurringDateMinderClient, IDisposable {
 
         private const string DebugNameFormat = "{0}.{1}";
 
@@ -36,17 +36,17 @@ namespace CodeEnv.Master.GameContent {
 
         private float _unitProduction;
         private DateMinderDuration _constructionQueueUpdateDuration;
-        private LinkedList<Construction> _constructionQueue;
+        private LinkedList<ConstructionTask> _constructionQueue;
         private IConstructionManagerClient _baseClient;
         private AUnitBaseCmdData _baseData;
         private GameTime _gameTime;
         private IList<IDisposable> _subscriptions;
 
-        public ConstructionManager(AUnitBaseCmdData data, IConstructionManagerClient baseClient) {
+        public BaseConstructionManager(AUnitBaseCmdData data, IConstructionManagerClient baseClient) {
             _baseData = data;
             _baseClient = baseClient;
             _gameTime = GameTime.Instance;
-            _constructionQueue = new LinkedList<Construction>();
+            _constructionQueue = new LinkedList<ConstructionTask>();
         }
 
         public void InitiateProgressChecks() {
@@ -72,8 +72,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="item">The item to be refitted.</param>
         /// <param name="refitCost">The refit cost.</param>
         /// <returns></returns>
-        public RefitConstruction AddToRefitQueue(AUnitElementDesign refitDesign, IUnitElement item, float refitCost) {
-            var refitConstruction = new RefitConstruction(refitDesign, item, refitCost);
+        public RefitConstructionTask AddToRefitQueue(AUnitElementDesign refitDesign, IUnitElement item, float refitCost) {
+            var refitConstruction = new RefitConstructionTask(refitDesign, item, refitCost);
 
             var expectedStartDate = _constructionQueue.Any() ? _constructionQueue.Last.Value.ExpectedCompletionDate : _gameTime.CurrentDate;
             float refitConstructionCost = refitConstruction.CostToConstruct;
@@ -95,8 +95,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="item">The item to be disbanded.</param>
         /// <param name="disbandCost">The disband cost.</param>
         /// <returns></returns>
-        public DisbandConstruction AddToDisbandQueue(AUnitElementDesign designToDisband, IUnitElement item, float disbandCost) {
-            var disbandConstruction = new DisbandConstruction(designToDisband, item, disbandCost);
+        public DisbandConstructionTask AddToDisbandQueue(AUnitElementDesign designToDisband, IUnitElement item, float disbandCost) {
+            var disbandConstruction = new DisbandConstructionTask(designToDisband, item, disbandCost);
 
             var expectedStartDate = _constructionQueue.Any() ? _constructionQueue.Last.Value.ExpectedCompletionDate : _gameTime.CurrentDate;
             float disbandConstructionCost = disbandConstruction.CostToConstruct;
@@ -119,8 +119,8 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="designToConstruct">The design to construct.</param>
         /// <param name="item">The item to be 'constructed'.</param>
         /// <returns></returns>
-        public Construction AddToQueue(AUnitElementDesign designToConstruct, IUnitElement item) {
-            var construction = new Construction(designToConstruct, item);
+        public ConstructionTask AddToQueue(AUnitElementDesign designToConstruct, IUnitElement item) {
+            var construction = new ConstructionTask(designToConstruct, item);
             var expectedStartDate = _constructionQueue.Any() ? _constructionQueue.Last.Value.ExpectedCompletionDate : _gameTime.CurrentDate;
             float constructionCost = designToConstruct.ConstructionCost;
             GameTimeDuration expectedConstructionDuration = new GameTimeDuration(constructionCost / _unitProduction);
@@ -135,7 +135,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         [Obsolete("Not currently used")]
-        public void MoveQueuedConstructionAfter(Construction constructionBefore, Construction constructionMoving) {
+        public void MoveQueuedConstructionAfter(ConstructionTask constructionBefore, ConstructionTask constructionMoving) {
             D.AssertNotEqual(constructionBefore, constructionMoving);
             var beforeItemNode = _constructionQueue.Find(constructionBefore);
             bool isRemoved = _constructionQueue.Remove(constructionMoving);
@@ -147,7 +147,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         [Obsolete("Not currently used")]
-        public void MoveQueuedConstructionBefore(Construction constructionAfter, Construction constructionMoving) {
+        public void MoveQueuedConstructionBefore(ConstructionTask constructionAfter, ConstructionTask constructionMoving) {
             D.AssertNotEqual(constructionAfter, constructionMoving);
             var afterItemNode = _constructionQueue.Find(constructionAfter);
             bool isRemoved = _constructionQueue.Remove(constructionMoving);
@@ -158,7 +158,7 @@ namespace CodeEnv.Master.GameContent {
             OnConstructionQueueChanged();
         }
 
-        public void RegenerateQueue(IList<Construction> orderedQueue) {
+        public void RegenerateQueue(IList<ConstructionTask> orderedQueue) {
             _constructionQueue.Clear();
             foreach (var construction in orderedQueue) {
                 _constructionQueue.AddLast(construction);
@@ -168,7 +168,7 @@ namespace CodeEnv.Master.GameContent {
             OnConstructionQueueChanged();
         }
 
-        public void RemoveFromQueue(Construction construction) {
+        public void RemoveFromQueue(ConstructionTask construction) {
             bool isRemoved = _constructionQueue.Remove(construction);
             D.Assert(isRemoved);
             UpdateExpectedCompletionDates();
@@ -182,16 +182,16 @@ namespace CodeEnv.Master.GameContent {
             OnConstructionQueueChanged();
         }
 
-        public IList<Construction> GetQueue() {
-            return new List<Construction>(_constructionQueue);
+        public IList<ConstructionTask> GetQueue() {
+            return new List<ConstructionTask>(_constructionQueue);
         }
 
         public bool IsConstructionQueuedFor(IUnitElement element) {
             var elementConstruction = _constructionQueue.SingleOrDefault(c => c.Element == element);
-            return elementConstruction != default(Construction);
+            return elementConstruction != default(ConstructionTask);
         }
 
-        public Construction GetConstructionFor(IUnitElement element) {
+        public ConstructionTask GetConstructionFor(IUnitElement element) {
             return _constructionQueue.Single(c => c.Element == element);
         }
 
@@ -231,7 +231,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public void PurchaseQueuedConstruction(Construction construction) {
+        public void PurchaseQueuedConstruction(ConstructionTask construction) {
             D.Assert(construction.CanBuyout);
             construction.CompleteConstruction();
             bool isRemoved = _constructionQueue.Remove(construction);
@@ -255,7 +255,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private void OnConstructionCompleted(Construction completedConstruction) {
+        private void OnConstructionCompleted(ConstructionTask completedConstruction) {
             if (constructionCompleted != null) {
                 constructionCompleted(this, new ConstructionCompletedEventArgs(completedConstruction));
             }
@@ -273,7 +273,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void RemoveAllConstructionInQueue() {
-            var cQueueCopy = new List<Construction>(_constructionQueue);
+            var cQueueCopy = new List<ConstructionTask>(_constructionQueue);
             foreach (var c in cQueueCopy) {
                 RemoveFromQueue(c);
             }
@@ -311,9 +311,9 @@ namespace CodeEnv.Master.GameContent {
         #region Debug
 
         [System.Diagnostics.Conditional("DEBUG")]
-        private void __HandlePartiallyCompletedConstructionBeingRemovedFromQueue(Construction construction) {
+        private void __HandlePartiallyCompletedConstructionBeingRemovedFromQueue(ConstructionTask construction) {
             D.Log("{0} is removing {1} from Queue that is partially completed.", DebugName, construction.DebugName);
-            // TODO This question should be raised by the Gui click handler as a popup before sending to the ConstructionManager
+            // TODO This question should be raised by the Gui click handler as a popup before sending to the BaseConstructionManager
         }
 
         private void __ReduceBankBalanceByBuyoutCost(decimal buyoutCost) {
@@ -326,9 +326,9 @@ namespace CodeEnv.Master.GameContent {
 
         public class ConstructionCompletedEventArgs : EventArgs {
 
-            public Construction CompletedConstruction { get; private set; }
+            public ConstructionTask CompletedConstruction { get; private set; }
 
-            public ConstructionCompletedEventArgs(Construction completedConstruction) {
+            public ConstructionCompletedEventArgs(ConstructionTask completedConstruction) {
                 CompletedConstruction = completedConstruction;
             }
         }

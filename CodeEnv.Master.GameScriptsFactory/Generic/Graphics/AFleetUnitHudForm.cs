@@ -71,13 +71,14 @@ public abstract class AFleetUnitHudForm : AForm {
         get { return _selectedUnit; }
         set {
             D.AssertNull(_selectedUnit);
-            SetProperty<FleetCmdItem>(ref _selectedUnit, value, "SelectedUnit");
+            SetProperty<FleetCmdItem>(ref _selectedUnit, value, "SelectedUnit", SelectedUnitPropChangedHandler);
         }
     }
 
     protected HashSet<FleetIconGuiElement> _pickedUnitIcons;
     protected HashSet<ShipIconGuiElement> _pickedShipIcons;
-    protected GameManager _gameMgr;
+    private GameManager _gameMgr;
+    private PlayerAIManager _playerAiMgr;
 
     private HashSet<MyNguiToggleButton> _toggleButtonsUsedThisSession;
     private IList<Transform> _sortedUnitIconTransforms;
@@ -157,6 +158,10 @@ public abstract class AFleetUnitHudForm : AForm {
     }
 
     #region Event and Property Change Handlers
+
+    private void SelectedUnitPropChangedHandler() {
+        HandleSelectedUnitChanged();
+    }
 
     private void UnitGuardButtonToggleChangedEventHandler(object sender, EventArgs e) {
         HandleUnitGuardButtonToggleChanged();
@@ -259,6 +264,11 @@ public abstract class AFleetUnitHudForm : AForm {
     }
 
     #endregion
+
+    private void HandleSelectedUnitChanged() {
+        D.AssertNull(_playerAiMgr);
+        _playerAiMgr = _gameMgr.GetAIManagerFor(SelectedUnit.Owner);
+    }
 
     #region Unit Interaction
 
@@ -392,7 +402,7 @@ public abstract class AFleetUnitHudForm : AForm {
         bool isButtonToggledIn = _unitGuardButton.IsToggledIn;
         if (isButtonToggledIn) {
             IGuardable closestItemAllowedToGuard;
-            if (TryFindClosestGuardableItem(pickedUnit.Position, out closestItemAllowedToGuard)) {
+            if (_playerAiMgr.TryFindClosestGuardableItem(pickedUnit.Position, out closestItemAllowedToGuard)) {
                 FleetOrder guardOrder = new FleetOrder(FleetDirective.Guard, OrderSource.User, closestItemAllowedToGuard as IFleetNavigableDestination);
                 pickedUnit.CurrentOrder = guardOrder;
                 //D.Log("{0} is issuing an order to {1} to Guard {2}.", DebugName, pickedUnit.DebugName, closestItemAllowedToGuard.DebugName);
@@ -411,8 +421,6 @@ public abstract class AFleetUnitHudForm : AForm {
         }
     }
 
-    protected abstract bool TryFindClosestGuardableItem(Vector3 currentFleetPosition, out IGuardable closestItemAllowedToGuard);
-
     private void HandleUnitPatrolButtonToggleChanged() {
         D.AssertEqual(Constants.One, _pickedUnitIcons.Count);
         _toggleButtonsUsedThisSession.Add(_unitPatrolButton);
@@ -420,7 +428,7 @@ public abstract class AFleetUnitHudForm : AForm {
         bool isButtonToggledIn = _unitPatrolButton.IsToggledIn;
         if (isButtonToggledIn) {
             IPatrollable closestItemAllowedToPatrol;
-            if (TryFindClosestPatrollableItem(pickedUnit.Position, out closestItemAllowedToPatrol)) {
+            if (_playerAiMgr.TryFindClosestPatrollableItem(pickedUnit.Position, out closestItemAllowedToPatrol)) {
                 FleetOrder patrolOrder = new FleetOrder(FleetDirective.Patrol, OrderSource.User, closestItemAllowedToPatrol as IFleetNavigableDestination);
                 pickedUnit.CurrentOrder = patrolOrder;
                 //D.Log("{0} is issuing an order to {1} to Patrol {2}.", DebugName, pickedUnit.DebugName, closestItemAllowedToPatrol.DebugName);
@@ -439,8 +447,6 @@ public abstract class AFleetUnitHudForm : AForm {
         }
     }
 
-    protected abstract bool TryFindClosestPatrollableItem(Vector3 currentFleetPosition, out IPatrollable closestItemAllowedToPatrol);
-
     private void HandleUnitRepairButtonToggleChanged() {
         D.AssertEqual(Constants.One, _pickedUnitIcons.Count);
         _toggleButtonsUsedThisSession.Add(_unitRepairButton);
@@ -448,7 +454,7 @@ public abstract class AFleetUnitHudForm : AForm {
         bool isButtonToggledIn = _unitRepairButton.IsToggledIn;
         if (isButtonToggledIn) {
             IUnitBaseCmd_Ltd closestRepairBase;
-            if (TryFindClosestFleetRepairBase(pickedUnit.Position, out closestRepairBase)) {
+            if (_playerAiMgr.TryFindClosestFleetRepairBase(pickedUnit.Position, out closestRepairBase)) {
                 FleetOrder repairOrder = new FleetOrder(FleetDirective.Repair, OrderSource.User, closestRepairBase as IFleetNavigableDestination);
                 pickedUnit.CurrentOrder = repairOrder;
                 //D.Log("{0} is issuing an order to {1} to Repair at {2}.", DebugName, pickedUnit.DebugName, closestRepairBase.DebugName);
@@ -467,8 +473,6 @@ public abstract class AFleetUnitHudForm : AForm {
         }
     }
 
-    protected abstract bool TryFindClosestFleetRepairBase(Vector3 currentFleetPosition, out IUnitBaseCmd_Ltd closestRepairBase);
-
     private void HandleUnitRefitButtonToggleChanged() {
         D.AssertEqual(Constants.One, _pickedUnitIcons.Count);
         _toggleButtonsUsedThisSession.Add(_unitRefitButton);
@@ -477,7 +481,7 @@ public abstract class AFleetUnitHudForm : AForm {
         if (isButtonToggledIn) {
             int reqdHangerSlots = pickedUnit.GetRefittableShipCount();
             IUnitBaseCmd closestRefitBase;
-            bool isBaseFound = TryFindClosestBase(pickedUnit.Position, reqdHangerSlots, out closestRefitBase);
+            bool isBaseFound = _playerAiMgr.TryFindClosestBase(pickedUnit.Position, reqdHangerSlots, out closestRefitBase);
             D.Assert(isBaseFound);  // 1.1.18 Button should not be enabled if no base available to accommodate reqdHangerSlots
 
             FleetOrder refitOrder = new FleetOrder(FleetDirective.Refit, OrderSource.User, closestRefitBase as IFleetNavigableDestination);
@@ -502,7 +506,7 @@ public abstract class AFleetUnitHudForm : AForm {
             // OPTIMIZE reqdHangerSlots = pickedUnit.ElementCount?
             int reqdHangerSlots = pickedUnit.Elements.Where(e => (e as ShipItem).IsAuthorizedForNewOrder(ShipDirective.Disband)).Count();
             IUnitBaseCmd closestDisbandBase;
-            bool isBaseFound = TryFindClosestBase(pickedUnit.Position, reqdHangerSlots, out closestDisbandBase);
+            bool isBaseFound = _playerAiMgr.TryFindClosestBase(pickedUnit.Position, reqdHangerSlots, out closestDisbandBase);
             D.Assert(isBaseFound);  // 1.1.18 Button should not be enabled if no base available to accommodate reqdHangerSlots
 
             FleetOrder disbandOrder = new FleetOrder(FleetDirective.Disband, OrderSource.User, closestDisbandBase as IFleetNavigableDestination);
@@ -519,18 +523,13 @@ public abstract class AFleetUnitHudForm : AForm {
     }
 
     private void HandleUnitExploreButtonToggleChanged() {
-        ////D.Warn("{0}.HandleUnitExploreButtonToggleChanged not yet implemented.", DebugName);
-        ////_toggleButtonsUsedThisSession.Add(_unitExploreButton);
-        ////_unitExploreButton.SetToggledState(false); // TEMP release the button
-        ////                                           // UNDONE
-
         D.AssertEqual(Constants.One, _pickedUnitIcons.Count);
         _toggleButtonsUsedThisSession.Add(_unitExploreButton);
         var pickedUnit = _pickedUnitIcons.First().Unit;
         bool isButtonToggledIn = _unitExploreButton.IsToggledIn;
         if (isButtonToggledIn) {
             IFleetExplorable closestFleetExplorableItem;
-            bool isBaseFound = TryFindClosestFleetExplorableItem(pickedUnit.Position, out closestFleetExplorableItem);
+            bool isBaseFound = _playerAiMgr.TryFindClosestFleetExplorableItem(pickedUnit.Position, out closestFleetExplorableItem);
             D.Assert(isBaseFound);  // 1.1.18 Button should not be enabled if no explorable, unexplored items are available
 
             FleetOrder exploreOrder = new FleetOrder(FleetDirective.Explore, OrderSource.User, closestFleetExplorableItem as IFleetNavigableDestination);
@@ -546,8 +545,6 @@ public abstract class AFleetUnitHudForm : AForm {
         }
     }
 
-    protected abstract bool TryFindClosestFleetExplorableItem(Vector3 currentFleetPosition, out IFleetExplorable closestExplorableItem);
-
     private void HandleUnitJoinHangerButtonToggleChanged() {
         D.AssertEqual(Constants.One, _pickedUnitIcons.Count);
         _toggleButtonsUsedThisSession.Add(_unitHangerButton);
@@ -555,7 +552,7 @@ public abstract class AFleetUnitHudForm : AForm {
         bool isButtonToggledIn = _unitHangerButton.IsToggledIn;
         if (isButtonToggledIn) {
             IUnitBaseCmd closestBase;
-            bool isBaseFound = TryFindClosestBase(pickedUnit.Position, pickedUnit.ElementCount, out closestBase);
+            bool isBaseFound = _playerAiMgr.TryFindClosestBase(pickedUnit.Position, pickedUnit.ElementCount, out closestBase);
             D.Assert(isBaseFound);  // 1.1.18 Button should not be enabled if no base available to accommodate fleet
 
             FleetOrder joinHangerOrder = new FleetOrder(FleetDirective.JoinHanger, OrderSource.User, closestBase as IFleetNavigableDestination);
@@ -570,8 +567,6 @@ public abstract class AFleetUnitHudForm : AForm {
             _unitHangerButton.SetIconColor(GameColor.White);
         }
     }
-
-    protected abstract bool TryFindClosestBase(Vector3 currentFleetPosition, int reqdHangerSlots, out IUnitBaseCmd closestDisbandBase);
 
     private void PickSingleUnitIcon(FleetIconGuiElement icon) {
         UnpickAllUnitIcons();
@@ -610,7 +605,7 @@ public abstract class AFleetUnitHudForm : AForm {
             // 11.18.17 picked units are limited to one to make cancel order practical to implement
             var pickedUnit = _pickedUnitIcons.First().Unit;
 
-            isUnitClearOrdersButtonEnabled = true;  //// pickedUnit.Availability != NewOrderAvailability.Unavailable;
+            isUnitClearOrdersButtonEnabled = true;
             isUnitScuttleButtonEnabled = pickedUnit.IsAuthorizedForNewOrder(FleetDirective.Scuttle);
 
             bool isOrderedToRepair = pickedUnit.IsCurrentOrderDirectiveAnyOf(FleetDirective.Repair);
@@ -1159,6 +1154,7 @@ public abstract class AFleetUnitHudForm : AForm {
 
         ResetUnitOrderToggleButtons();
         _selectedUnit = null;
+        _playerAiMgr = null;
 
         AssessInteractibleHud();
     }
@@ -1211,7 +1207,18 @@ public abstract class AFleetUnitHudForm : AForm {
 
     #region Debug
 
-    protected abstract IEnumerable<FleetCmdItem> __AcquireLocalUnits();
+    private IEnumerable<FleetCmdItem> __AcquireLocalUnits() {
+        float localRange = 100F;
+        IEnumerable<IFleetCmd> ownerFleets;
+        if (_playerAiMgr.TryFindMyCloseItems<IFleetCmd>(SelectedUnit.Position, localRange, out ownerFleets, SelectedUnit)) {
+            //D.Log("{0} found {1} local Fleet(s) owned by {2} within {3:0.} units of {4}. Fleets: {5}.",
+            //    DebugName, ownerFleets.Count(), SelectedUnit.Owner.DebugName, localRange, SelectedUnit.DebugName,
+            //    ownerFleets.Select(f => f.DebugName).Concatenate());
+            return ownerFleets.Cast<FleetCmdItem>();
+        }
+        return Enumerable.Empty<FleetCmdItem>();
+    }
+
 
     protected override void __ValidateOnAwake() {
         base.__ValidateOnAwake();

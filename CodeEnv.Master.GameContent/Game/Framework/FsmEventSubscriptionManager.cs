@@ -148,11 +148,11 @@ namespace CodeEnv.Master.GameContent {
                 case FsmEventSubscriptionMode.OwnerAwareChg_Fleet:
                     D.AssertNull(fsmTgt);
                     if (!toSubscribe) {
-                        _client.OwnerAIMgr.awareChgd_Fleet -= AwarenessChgdEventHandler;
+                        _client.OwnerAiMgr.awareChgd_Fleet -= AwarenessChgdEventHandler;
                         isSubscribeActionTaken = true;
                     }
                     else if (!isSubscribed) {
-                        _client.OwnerAIMgr.awareChgd_Fleet += AwarenessChgdEventHandler;
+                        _client.OwnerAiMgr.awareChgd_Fleet += AwarenessChgdEventHandler;
                         isSubscribeActionTaken = true;
                     }
                     else {
@@ -162,11 +162,11 @@ namespace CodeEnv.Master.GameContent {
                 case FsmEventSubscriptionMode.OwnerAwareChg_Ship:
                     D.AssertNull(fsmTgt);
                     if (!toSubscribe) {
-                        _client.OwnerAIMgr.awareChgd_Ship -= AwarenessChgdEventHandler;
+                        _client.OwnerAiMgr.awareChgd_Ship -= AwarenessChgdEventHandler;
                         isSubscribeActionTaken = true;
                     }
                     else if (!isSubscribed) {
-                        _client.OwnerAIMgr.awareChgd_Ship += AwarenessChgdEventHandler;
+                        _client.OwnerAiMgr.awareChgd_Ship += AwarenessChgdEventHandler;
                         isSubscribeActionTaken = true;
                     }
                     else {
@@ -176,11 +176,11 @@ namespace CodeEnv.Master.GameContent {
                 case FsmEventSubscriptionMode.OwnerAwareChg_Base:
                     D.AssertNull(fsmTgt);
                     if (!toSubscribe) {
-                        _client.OwnerAIMgr.awareChgd_Base -= AwarenessChgdEventHandler;
+                        _client.OwnerAiMgr.awareChgd_Base -= AwarenessChgdEventHandler;
                         isSubscribeActionTaken = true;
                     }
                     else if (!isSubscribed) {
-                        _client.OwnerAIMgr.awareChgd_Base += AwarenessChgdEventHandler;
+                        _client.OwnerAiMgr.awareChgd_Base += AwarenessChgdEventHandler;
                         isSubscribeActionTaken = true;
                     }
                     else {
@@ -190,11 +190,11 @@ namespace CodeEnv.Master.GameContent {
                 case FsmEventSubscriptionMode.OwnerAwareChg_Facility:
                     D.AssertNull(fsmTgt);
                     if (!toSubscribe) {
-                        _client.OwnerAIMgr.awareChgd_Facility -= AwarenessChgdEventHandler;
+                        _client.OwnerAiMgr.awareChgd_Facility -= AwarenessChgdEventHandler;
                         isSubscribeActionTaken = true;
                     }
                     else if (!isSubscribed) {
-                        _client.OwnerAIMgr.awareChgd_Facility += AwarenessChgdEventHandler;
+                        _client.OwnerAiMgr.awareChgd_Facility += AwarenessChgdEventHandler;
                         isSubscribeActionTaken = true;
                     }
                     else {
@@ -204,11 +204,11 @@ namespace CodeEnv.Master.GameContent {
                 case FsmEventSubscriptionMode.OwnerAware_Planet:
                     D.AssertNull(fsmTgt);
                     if (!toSubscribe) {
-                        _client.OwnerAIMgr.awareChgd_Planet -= AwarenessChgdEventHandler;
+                        _client.OwnerAiMgr.awareChgd_Planet -= AwarenessChgdEventHandler;
                         isSubscribeActionTaken = true;
                     }
                     else if (!isSubscribed) {
-                        _client.OwnerAIMgr.awareChgd_Planet += AwarenessChgdEventHandler;
+                        _client.OwnerAiMgr.awareChgd_Planet += AwarenessChgdEventHandler;
                         isSubscribeActionTaken = true;
                     }
                     else {

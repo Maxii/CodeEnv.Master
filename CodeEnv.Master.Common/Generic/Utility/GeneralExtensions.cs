@@ -168,14 +168,14 @@ namespace CodeEnv.Master.Common {
 
         /// <summary>
         /// Evaluates the equality of two sequences with an option to ignore order of the members.
-        /// Sequences must implement IComparable<typeparamref name="T"/>
+        /// T must implement IComparable.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="sequence">The source sequence.</param>
         /// <param name="second">The second sequence.</param>
         /// <param name="ignoreOrder">if set to <c>true</c> [ignore order].</param>
         /// <returns></returns>
-        public static bool SequenceEquals<T>(this IEnumerable<T> sequence, IEnumerable<T> second, bool ignoreOrder = false) where T : IComparable<T> {
+        public static bool SequenceEquals<T>(this IEnumerable<T> sequence, IEnumerable<T> second, bool ignoreOrder = false) where T : IComparable {
             if (ignoreOrder) {
                 return sequence.OrderBy(s => s).SequenceEqual<T>(second.OrderBy(s => s));
             }
@@ -325,6 +325,17 @@ namespace CodeEnv.Master.Common {
         /// <returns></returns>
         public static IEnumerable<T> Shuffle<T>(this T[] sequence) {
             return RandomExtended.Shuffle<T>(sequence);
+        }
+
+        /// <summary>
+        /// Returns <c>true</c> if the sequence contains any duplicates, <c>false</c> otherwise.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="sequence">The sequence.</param>
+        /// <returns></returns>
+        public static bool ContainsDuplicates<T>(this IEnumerable<T> sequence, IEqualityComparer<T> equalityComparer = null) {
+            T unusedDuplicate;
+            return ContainsDuplicates<T>(sequence, out unusedDuplicate, equalityComparer);
         }
 
         /// <summary>

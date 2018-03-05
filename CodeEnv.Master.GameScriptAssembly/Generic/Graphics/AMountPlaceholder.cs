@@ -26,16 +26,20 @@ using UnityEngine.Serialization;
 /// </summary>
 public abstract class AMountPlaceholder : AMount {
 
+    private const string DebugNameFormat = "{0}[{1}]";
+
     [SerializeField]
     private int _slotNumber = 0;
 
-    public EquipmentSlotID SlotIDD { get; private set; }
+    public EquipmentSlotID SlotID { get; private set; }
 
-    protected abstract EquipmentCategory EquipmentCategory { get; }
+    public override string DebugName { get { return DebugNameFormat.Inject(base.DebugName, SlotID.DebugName); } }
+
+    protected abstract EquipmentMountCategory SupportedMount { get; }
 
     protected override void InitializeValuesAndReferences() {
         base.InitializeValuesAndReferences();
-        SlotIDD = new EquipmentSlotID(_slotNumber, EquipmentCategory);
+        SlotID = new EquipmentSlotID(_slotNumber, SupportedMount);
     }
 
     protected override void Validate() {
