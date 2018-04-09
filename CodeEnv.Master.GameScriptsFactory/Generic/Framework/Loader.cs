@@ -156,8 +156,7 @@ public class Loader : AMonoSingleton<Loader> {
     private void Unsubscribe() {
         _subscriptions.ForAll<IDisposable>(s => s.Dispose());
         _subscriptions.Clear();
-        // GameManager gets destroyed first due to ScriptExecutionOrder
-        ////GameManager.Instance.sceneLoaded -= SceneLoadedEventHandler;
+        // GameManager gets destroyed first due to ScriptExecutionOrder //GameManager.Instance.sceneLoaded -= SceneLoadedEventHandler;
     }
 
     public override string ToString() {
@@ -173,7 +172,7 @@ public class Loader : AMonoSingleton<Loader> {
     /// </summary>
     private void __ValidateMaxInteriorSlots() {
         foreach (var cat in TempGameValues.ShipHullCategoriesInUse) {
-            int eCatMaxAllowedInternalMounts = cat.__MaxInteriorHullMounts() + cat.__MaxInteriorAltHullMounts();
+            int eCatMaxAllowedInternalMounts = cat.__MaxSensorMounts() + cat.__MaxSkinMounts() + cat.__MaxScreenMounts() + cat.__MaxFlexMounts();
             int reqdElementSensors = 1;
             int eCatMaxAllowedInteriorEquip = cat.__MaxActiveCMs() + cat.__MaxPassiveCMs() + cat.__MaxSensors() - reqdElementSensors + cat.__MaxShieldGenerators();
             if (eCatMaxAllowedInteriorEquip > eCatMaxAllowedInternalMounts) {
@@ -182,7 +181,7 @@ public class Loader : AMonoSingleton<Loader> {
         }
 
         foreach (var cat in TempGameValues.FacilityHullCategoriesInUse) {
-            int eCatMaxAllowedInternalMounts = cat.__MaxInteriorHullMounts() + cat.__MaxInteriorAltHullMounts();
+            int eCatMaxAllowedInternalMounts = cat.__MaxSensorMounts() + cat.__MaxSkinMounts() + cat.__MaxScreenMounts() + cat.__MaxFlexMounts();
             int reqdElementSensors = 1;
             int eCatMaxAllowedInteriorEquip = cat.__MaxActiveCMs() + cat.__MaxPassiveCMs() + cat.__MaxSensors() - reqdElementSensors + cat.__MaxShieldGenerators();
             if (eCatMaxAllowedInteriorEquip > eCatMaxAllowedInternalMounts) {

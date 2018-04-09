@@ -29,6 +29,7 @@ public static class MyNguiExtensions {
 
     /// <summary>
     /// Gets the Ngui UIAtlas ID'd by atlasID.
+    /// <remarks>If AtlasID.None is used, null is returned which Ngui's Atlas property properly handles.</remarks>
     /// </summary>
     /// <param name="atlasID">The atlas ID.</param>
     /// <returns></returns>

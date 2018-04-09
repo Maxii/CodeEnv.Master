@@ -124,7 +124,8 @@ public abstract class AMultiSizeIconGuiElement : AIconGuiElement {
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(Size));
         }
-        GameObject iconGo = NGUITools.AddChild(gameObject, prefab);
+        // 3.8.18 these icon widget(s) must be children of the _iconShowHideControlWidget to allow show/hide control
+        GameObject iconGo = NGUITools.AddChild(ShowHideControlWidgetGameObject, prefab);
         AdjustWidgetDepths(iconGo);
         _topLevelIconWidget = iconGo.GetComponent<UIWidget>();
 
@@ -165,17 +166,25 @@ public abstract class AMultiSizeIconGuiElement : AIconGuiElement {
 
     #endregion
 
-    protected virtual void HandleIconSizeSet() {
+    private void HandleIconSizeSet() {
         InitializeValuesAndReferences();
-        ResizeEncompassingWidgetAndAnchorIcon();
+        ResizeIconShowHideWidgetAndAnchorIcon();
     }
 
-    private void ResizeEncompassingWidgetAndAnchorIcon() {
+    private void ResizeIconShowHideWidgetAndAnchorIcon() {
         IntVector2 iconDimensions = GetIconDimensions(Size);
-        _encompassingWidget.SetDimensions(iconDimensions.x, iconDimensions.y);
-        _topLevelIconWidget.SetAnchor(_encompassingWidget.transform);
+        _iconShowHideControlWidget.SetDimensions(iconDimensions.x, iconDimensions.y);
+        ResizeAnyWidgetsThatAreNotShowHideWidgetChildren(iconDimensions.x, iconDimensions.y);
+        _topLevelIconWidget.SetAnchor(_iconShowHideControlWidget.transform);
         // UNCLEAR How to set this UnifiedAnchor to Execute OnEnable rather than Update?
     }
+
+    /// <summary>
+    /// Hook to allow derived classes to resize and anchor any widgets that aren't children of the _iconShowHideWidget.
+    /// </summary>
+    /// <param name="x">The x dimension in pixels.</param>
+    /// <param name="y">The y dimension in pixels.</param>
+    protected virtual void ResizeAnyWidgetsThatAreNotShowHideWidgetChildren(int x, int y) { }
 
     public override void ResetForReuse() {
         base.ResetForReuse();

@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: OrderFailureCause.cs
-// Enum used to communicate the cause of failure when a Unit member fails to successfully execute an order from their superior,
+// File: OrderOutcome.cs
+// Enum used to communicate the order outcome when a Unit member attempts to execute an order from their superior,
 // either a Command or PlayerAI.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -18,15 +18,21 @@
 namespace CodeEnv.Master.GameContent {
 
     /// <summary>
-    /// Enum used to communicate the cause of failure when a Unit member fails to successfully execute an order from their superior,
+    /// Enum used to communicate the order outcome when a Unit member attempts to execute an order from their superior,
     /// either a Command or PlayerAI.
     /// </summary>
-    public enum OrderFailureCause {
-
-        None = 0,
+    public enum OrderOutcome {
 
         /// <summary>
-        /// A new order has just been received.
+        /// Error detection.
+        /// </summary>
+        None = 0,
+
+        Success,
+
+        /// <summary>
+        /// A new order has just been received, causing this unit member to attempt to execute the new order.
+        /// Successful completion of the previous order was not accomplished.
         /// </summary>
         NewOrderReceived,
 
@@ -72,9 +78,9 @@ namespace CodeEnv.Master.GameContent {
         NeedsRepair,
 
         /// <summary>
-        /// This Unit Cmd or Element lacks capability to execute the assignment.
+        /// This Unit Cmd or Element lacks or has lost the qualifications needed to execute the assignment.
         /// </summary>
-        Capability,
+        Disqualified,
 
         /// <summary>
         /// This Unit Element had construction rework occurring on it canceled.

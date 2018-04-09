@@ -123,10 +123,7 @@ namespace CodeEnv.Master.GameContent {
             get { return _publisher = _publisher ?? new FleetPublisher(this); }
         }
 
-        public new FleetCmdDesign CmdDesign {
-            get { return base.CmdDesign as FleetCmdDesign; }
-            set { base.CmdDesign = value; }
-        }
+        public new FleetCmdDesign CmdDesign { get { return base.CmdDesign as FleetCmdDesign; } }
 
         #region Initialization 
 

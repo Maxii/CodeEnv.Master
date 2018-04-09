@@ -52,7 +52,7 @@ public abstract class ACtxControl_User<T> : ACtxControl where T : struct {
     protected override bool SelectedItemMenuHasContent { get { return UserMenuOperatorDirectives.Any(); } }
 
     protected UserPlayerKnowledge _userKnowledge;
-    protected UserPlayerAIManager _userAIMgr;
+    protected UserAIManager _userAIMgr;
     private Stack<CtxMenu> _unusedSubMenus;
 
     public ACtxControl_User(GameObject ctxObjectGO, int uniqueSubmenusReqd, MenuPositionMode menuPosition)

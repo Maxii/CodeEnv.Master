@@ -728,7 +728,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     private void BuildAvailableEquipmentIcons() {
         RemoveAvailableEquipmentIcons();   // OPTIMIZE Reqd to destroy the icon already present. Can be removed once reuse of icons is implemented
 
-        IEnumerable<AEquipmentStat> availableEquipStats = GetAvailableUserEquipmentStats();
+        IEnumerable<AEquipmentStat> availableEquipStats = GetUserCurrentEquipmentStats();
         int desiredStatsToAccommodateInGrid = availableEquipStats.Count();
 
         Vector2 gridContainerViewSize = _designerEquipmentIconsGrid.GetComponentInParent<UIPanel>().GetViewSize();
@@ -888,7 +888,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     /// Returns all the available AEquipmentStats supported by this kind of design.
     /// </summary>
     /// <returns></returns>
-    protected abstract IEnumerable<AEquipmentStat> GetAvailableUserEquipmentStats();
+    protected abstract IEnumerable<AEquipmentStat> GetUserCurrentEquipmentStats();
 
     protected override void ResetForReuse() {
         RemoveRegisteredDesignIcons();

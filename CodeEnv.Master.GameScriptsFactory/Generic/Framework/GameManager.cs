@@ -196,7 +196,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
     /// <summary>
     /// The User's AIManager instance.
     /// </summary>
-    public UserPlayerAIManager UserAIManager { get { return _playerAiMgrLookup[UserPlayer] as UserPlayerAIManager; } }
+    public UserAIManager UserAIManager { get { return _playerAiMgrLookup[UserPlayer] as UserAIManager; } }
 
     public AllKnowledge GameKnowledge { get; private set; }
 
@@ -469,7 +469,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
                 //Name, allPlanetoids.Count(), allPlanetoids.Select(p => p.DebugName).Concatenate());
                 if (player.IsUser) {
                     UserPlayerKnowledge plyrKnowledge = new UserPlayerKnowledge(uCenter, allStars, allPlanetoids);
-                    plyrAiMgr = new UserPlayerAIManager(plyrKnowledge);
+                    plyrAiMgr = new UserAIManager(plyrKnowledge);
                 }
                 else {
                     PlayerKnowledge plyrKnowledge = new PlayerKnowledge(player, uCenter, allStars, allPlanetoids);
@@ -479,7 +479,7 @@ public class GameManager : AFSMSingleton_NoCall<GameManager, GameState>, IGameMa
             else {
                 if (player.IsUser) {
                     UserPlayerKnowledge plyrKnowledge = new UserPlayerKnowledge(uCenter, allStars);
-                    plyrAiMgr = new UserPlayerAIManager(plyrKnowledge);
+                    plyrAiMgr = new UserAIManager(plyrKnowledge);
                 }
                 else {
                     PlayerKnowledge plyrKnowledge = new PlayerKnowledge(player, uCenter, allStars);

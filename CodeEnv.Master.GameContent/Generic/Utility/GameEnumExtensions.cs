@@ -1089,50 +1089,24 @@ namespace CodeEnv.Master.GameContent {
 
         #region Element Hull Category - Equipment
 
-        public static string GetEmptyTemplateDesignName(this ShipHullCategory cat) {
-            string designNameFormat = "Empty{0}Design";
-            string designName;
-            switch (cat) {
-                case ShipHullCategory.Investigator:
-                case ShipHullCategory.Frigate:
-                case ShipHullCategory.Support:
-                case ShipHullCategory.Destroyer:
-                case ShipHullCategory.Colonizer:
-                case ShipHullCategory.Troop:
-                case ShipHullCategory.Cruiser:
-                case ShipHullCategory.Carrier:
-                case ShipHullCategory.Dreadnought:
-                    designName = designNameFormat.Inject(cat.GetValueName());
-                    break;
-                case ShipHullCategory.Fighter:
-                case ShipHullCategory.Scout:
-                case ShipHullCategory.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
-            }
-            D.AssertNotNull(designName);
-            return designName;
-        }
-
-        public static int __MaxInteriorHullMounts(this ShipHullCategory hullCat) {
+        public static int __MaxSensorMounts(this ShipHullCategory hullCat) {
             int value = 1;  // Reqd SR Sensor
             switch (hullCat) {
                 case ShipHullCategory.Support:
                 case ShipHullCategory.Frigate:
-                    value = 7;
                     break;
                 case ShipHullCategory.Destroyer:
-                    value = 8;
+                    value = 2;
                     break;
                 case ShipHullCategory.Troop:
                 case ShipHullCategory.Colonizer:
                 case ShipHullCategory.Cruiser:
-                    value = 12;
+                    value = 3;
                     break;
                 case ShipHullCategory.Investigator:
                 case ShipHullCategory.Carrier:
                 case ShipHullCategory.Dreadnought:
-                    value = TempGameValues.MaxInteriorHullMounts;   // 17
+                    value = TempGameValues.MaxSensorMounts;   // 4
                     break;
                 case ShipHullCategory.Scout:
                 case ShipHullCategory.Fighter:
@@ -1140,20 +1114,79 @@ namespace CodeEnv.Master.GameContent {
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
             }
-            D.Assert(value <= TempGameValues.MaxInteriorHullMounts);
+            D.Assert(value <= TempGameValues.MaxSensorMounts);
             return value;
         }
 
-        public static int __MaxInteriorAltHullMounts(this ShipHullCategory hullCat) {
+        public static int __MaxSkinMounts(this ShipHullCategory hullCat) {
             int value = 0;
             switch (hullCat) {
                 case ShipHullCategory.Support:
                 case ShipHullCategory.Frigate:
-                case ShipHullCategory.Troop:
+                    value = 2;
                     break;
+                case ShipHullCategory.Investigator:
+                case ShipHullCategory.Destroyer:
+                    value = 3;
+                    break;
+                case ShipHullCategory.Troop:
+                case ShipHullCategory.Colonizer:
+                case ShipHullCategory.Cruiser:
+                    value = 4;
+                    break;
+                case ShipHullCategory.Carrier:
+                case ShipHullCategory.Dreadnought:
+                    value = TempGameValues.MaxSkinMounts;   // 6
+                    break;
+                case ShipHullCategory.Scout:
+                case ShipHullCategory.Fighter:
+                case ShipHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+            }
+            D.Assert(value <= TempGameValues.MaxSkinMounts);
+            return value;
+        }
+
+        public static int __MaxScreenMounts(this ShipHullCategory hullCat) {
+            int value = 0;
+            switch (hullCat) {
+                case ShipHullCategory.Support:
+                case ShipHullCategory.Frigate:
+                    value = 3;
+                    break;
+                case ShipHullCategory.Destroyer:
+                    value = 5;
+                    break;
+                case ShipHullCategory.Troop:
+                case ShipHullCategory.Colonizer:
+                case ShipHullCategory.Cruiser:
+                    value = 7;
+                    break;
+                case ShipHullCategory.Investigator:
+                case ShipHullCategory.Carrier:
+                case ShipHullCategory.Dreadnought:
+                    value = TempGameValues.MaxScreenMounts;   // 10
+                    break;
+                case ShipHullCategory.Scout:
+                case ShipHullCategory.Fighter:
+                case ShipHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+            }
+            D.Assert(value <= TempGameValues.MaxScreenMounts);
+            return value;
+        }
+
+        public static int __MaxFlexMounts(this ShipHullCategory hullCat) {
+            int value = 0;
+            switch (hullCat) {
+                case ShipHullCategory.Support:
+                case ShipHullCategory.Frigate:
                 case ShipHullCategory.Destroyer:
                     value = 1;
                     break;
+                case ShipHullCategory.Troop:
                 case ShipHullCategory.Colonizer:
                 case ShipHullCategory.Cruiser:
                     value = 2;
@@ -1161,15 +1194,15 @@ namespace CodeEnv.Master.GameContent {
                 case ShipHullCategory.Investigator:
                 case ShipHullCategory.Carrier:
                 case ShipHullCategory.Dreadnought:
-                    value = TempGameValues.MaxInteriorAltHullMounts;   // 3
+                    value = TempGameValues.MaxFlexMounts;   // 3
                     break;
-                case ShipHullCategory.Fighter:
                 case ShipHullCategory.Scout:
+                case ShipHullCategory.Fighter:
                 case ShipHullCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
             }
-            D.Assert(value <= TempGameValues.MaxInteriorAltHullMounts);
+            D.Assert(value <= TempGameValues.MaxFlexMounts);
             return value;
         }
 
@@ -1319,85 +1352,106 @@ namespace CodeEnv.Master.GameContent {
             return value;
         }
 
-        public static string GetEmptyTemplateDesignName(this FacilityHullCategory cat) {
-            string designNameFormat = "Empty{0}Design";
-            string designName;
-            switch (cat) {
-                case FacilityHullCategory.Barracks:
-                case FacilityHullCategory.CentralHub:
-                case FacilityHullCategory.ColonyHab:
-                case FacilityHullCategory.Defense:
-                case FacilityHullCategory.Economic:
-                case FacilityHullCategory.Factory:
-                case FacilityHullCategory.Laboratory:
-                    designName = designNameFormat.Inject(cat.GetValueName());
-                    break;
-                case FacilityHullCategory.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
-            }
-            D.AssertNotNull(designName);
-            return designName;
-        }
-
-        /// <summary>
-        /// Debug: Supports the auto creation of Facility designs in NewGameUnitConfigurator.
-        /// </summary>
-        /// <param name="cat">The FacilityHullCategory.</param>
-        /// <returns></returns>
-        /// <exception cref="System.NotImplementedException"></exception>
-        public static int __MaxInteriorHullMounts(this FacilityHullCategory hullCat) {
+        public static int __MaxSensorMounts(this FacilityHullCategory hullCat) {
             int value = 1;  // Reqd SR Sensor
             switch (hullCat) {
                 case FacilityHullCategory.Economic:
-                    value = 10;
-                    break;
-                case FacilityHullCategory.Laboratory:
                 case FacilityHullCategory.Factory:
                 case FacilityHullCategory.Barracks:
-                case FacilityHullCategory.ColonyHab:
-                    value = 13;
                     break;
+                case FacilityHullCategory.ColonyHab:
+                    value = 2;
+                    break;
+                case FacilityHullCategory.Laboratory:
                 case FacilityHullCategory.Defense:
+                    value = 3;
+                    break;
                 case FacilityHullCategory.CentralHub:
-                    value = TempGameValues.MaxInteriorHullMounts;   // 17
+                    value = TempGameValues.MaxSensorMounts;   // 4
                     break;
                 case FacilityHullCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
             }
-            D.Assert(value <= TempGameValues.MaxInteriorHullMounts);
+            D.Assert(value <= TempGameValues.MaxSensorMounts);
             return value;
         }
 
-        /// <summary>
-        /// Debug: Supports the auto creation of Facility designs in NewGameUnitConfigurator.
-        /// </summary>
-        /// <param name="cat">The FacilityHullCategory.</param>
-        /// <returns></returns>
-        /// <exception cref="System.NotImplementedException"></exception>
-        public static int __MaxInteriorAltHullMounts(this FacilityHullCategory hullCat) {
+        public static int __MaxSkinMounts(this FacilityHullCategory hullCat) {
             int value = 0;
             switch (hullCat) {
                 case FacilityHullCategory.Economic:
-                case FacilityHullCategory.Factory:
-                case FacilityHullCategory.Barracks:
                 case FacilityHullCategory.Laboratory:
-                    break;
-                case FacilityHullCategory.ColonyHab:
-                    value = 1;
-                    break;
-                case FacilityHullCategory.Defense:
                     value = 2;
                     break;
+                case FacilityHullCategory.Factory:
+                case FacilityHullCategory.ColonyHab:
+                    value = 3;
+                    break;
+                case FacilityHullCategory.Barracks:
+                    value = 4;
+                    break;
+                case FacilityHullCategory.Defense:
+                    value = 5;
+                    break;
                 case FacilityHullCategory.CentralHub:
-                    value = TempGameValues.MaxInteriorAltHullMounts;   // 3
+                    value = TempGameValues.MaxSkinMounts;   // 6
                     break;
                 case FacilityHullCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
             }
-            D.Assert(value <= TempGameValues.MaxInteriorAltHullMounts);
+            D.Assert(value <= TempGameValues.MaxSkinMounts);
+            return value;
+        }
+
+        public static int __MaxScreenMounts(this FacilityHullCategory hullCat) {
+            int value = 0;
+            switch (hullCat) {
+                case FacilityHullCategory.Economic:
+                case FacilityHullCategory.Laboratory:
+                    value = 5;
+                    break;
+                case FacilityHullCategory.Factory:
+                case FacilityHullCategory.Barracks:
+                case FacilityHullCategory.ColonyHab:
+                    value = 7;
+                    break;
+                case FacilityHullCategory.Defense:
+                    value = 8;
+                    break;
+                case FacilityHullCategory.CentralHub:
+                    value = TempGameValues.MaxScreenMounts;   // 10
+                    break;
+                case FacilityHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+            }
+            D.Assert(value <= TempGameValues.MaxScreenMounts);
+            return value;
+        }
+
+        public static int __MaxFlexMounts(this FacilityHullCategory hullCat) {
+            int value = 0;
+            switch (hullCat) {
+                case FacilityHullCategory.Economic:
+                case FacilityHullCategory.Laboratory:
+                    value = 1;
+                    break;
+                case FacilityHullCategory.Factory:
+                case FacilityHullCategory.Barracks:
+                case FacilityHullCategory.ColonyHab:
+                    value = 2;
+                    break;
+                case FacilityHullCategory.Defense:
+                case FacilityHullCategory.CentralHub:
+                    value = TempGameValues.MaxFlexMounts;   // 3
+                    break;
+                case FacilityHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+            }
+            D.Assert(value <= TempGameValues.MaxFlexMounts);
             return value;
         }
 
@@ -1665,6 +1719,48 @@ namespace CodeEnv.Master.GameContent {
                     return 400F;                     // mass * drag = 60
                 case ShipHullCategory.Carrier:
                     return 500F;                     // mass * drag = 125
+                case ShipHullCategory.Scout:
+                case ShipHullCategory.Fighter:
+                case ShipHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+            }
+        }
+
+        public static float HitPoints(this FacilityHullCategory hullCat) {
+            switch (hullCat) {
+                case FacilityHullCategory.CentralHub:
+                    return 100F;
+                case FacilityHullCategory.Defense:
+                case FacilityHullCategory.Factory:
+                    return 80F;
+                case FacilityHullCategory.ColonyHab:
+                case FacilityHullCategory.Economic:
+                case FacilityHullCategory.Barracks:
+                case FacilityHullCategory.Laboratory:
+                    return 60F;
+                case FacilityHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+            }
+        }
+
+        public static float HitPoints(this ShipHullCategory hullCat) {
+            switch (hullCat) {
+                case ShipHullCategory.Frigate:
+                    return 20F;
+                case ShipHullCategory.Destroyer:
+                case ShipHullCategory.Support:
+                    return 30F;
+                case ShipHullCategory.Cruiser:
+                case ShipHullCategory.Colonizer:
+                case ShipHullCategory.Investigator:
+                    return 40F;
+                case ShipHullCategory.Troop:
+                    return 50F;
+                case ShipHullCategory.Dreadnought:
+                case ShipHullCategory.Carrier:
+                    return 60F;
                 case ShipHullCategory.Scout:
                 case ShipHullCategory.Fighter:
                 case ShipHullCategory.None:
@@ -1981,6 +2077,52 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+        public static string GetEmptyTemplateDesignName(this ShipHullCategory cat) {
+            string designNameFormat = "Empty{0}Design";
+            string designName;
+            switch (cat) {
+                case ShipHullCategory.Investigator:
+                case ShipHullCategory.Frigate:
+                case ShipHullCategory.Support:
+                case ShipHullCategory.Destroyer:
+                case ShipHullCategory.Colonizer:
+                case ShipHullCategory.Troop:
+                case ShipHullCategory.Cruiser:
+                case ShipHullCategory.Carrier:
+                case ShipHullCategory.Dreadnought:
+                    designName = designNameFormat.Inject(cat.GetValueName());
+                    break;
+                case ShipHullCategory.Fighter:
+                case ShipHullCategory.Scout:
+                case ShipHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
+            }
+            D.AssertNotNull(designName);
+            return designName;
+        }
+
+        public static string GetEmptyTemplateDesignName(this FacilityHullCategory cat) {
+            string designNameFormat = "Empty{0}Design";
+            string designName;
+            switch (cat) {
+                case FacilityHullCategory.Barracks:
+                case FacilityHullCategory.CentralHub:
+                case FacilityHullCategory.ColonyHab:
+                case FacilityHullCategory.Defense:
+                case FacilityHullCategory.Economic:
+                case FacilityHullCategory.Factory:
+                case FacilityHullCategory.Laboratory:
+                    designName = designNameFormat.Inject(cat.GetValueName());
+                    break;
+                case FacilityHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
+            }
+            D.AssertNotNull(designName);
+            return designName;
+        }
+
         public static Priority __HQPriority(this FacilityHullCategory cat) {
             switch (cat) {
                 case FacilityHullCategory.CentralHub:
@@ -2028,7 +2170,10 @@ namespace CodeEnv.Master.GameContent {
 
         private static EquipmentMountCategory[] AllowedTurretMounts = new EquipmentMountCategory[] { EquipmentMountCategory.Turret };
         private static EquipmentMountCategory[] AllowedSiloMounts = new EquipmentMountCategory[] { EquipmentMountCategory.Silo };
-        private static EquipmentMountCategory[] AllowedInteriorMounts = new EquipmentMountCategory[] { EquipmentMountCategory.Interior, EquipmentMountCategory.InteriorAlt };
+        private static EquipmentMountCategory[] AllowedPassiveCmMounts = new EquipmentMountCategory[] { EquipmentMountCategory.Skin, EquipmentMountCategory.Flex };
+        private static EquipmentMountCategory[] AllowedActiveCmMounts = new EquipmentMountCategory[] { EquipmentMountCategory.Screen, EquipmentMountCategory.Flex };
+        private static EquipmentMountCategory[] AllowedSensorMounts = new EquipmentMountCategory[] { EquipmentMountCategory.Sensor, EquipmentMountCategory.Flex };
+        private static EquipmentMountCategory[] AllowedShieldGenMounts = new EquipmentMountCategory[] { EquipmentMountCategory.Screen, EquipmentMountCategory.Flex };
 
         public static EquipmentMountCategory[] AllowedMounts(this EquipmentCategory eqCat) {
             switch (eqCat) {
@@ -2039,12 +2184,14 @@ namespace CodeEnv.Master.GameContent {
                 case EquipmentCategory.AssaultWeapon:
                     return AllowedSiloMounts;
                 case EquipmentCategory.PassiveCountermeasure:
+                    return AllowedPassiveCmMounts;
                 case EquipmentCategory.ActiveCountermeasure:
-                case EquipmentCategory.ElementSensor:
-                case EquipmentCategory.CommandSensor:
+                    return AllowedActiveCmMounts;
+                case EquipmentCategory.Sensor:
+                    return AllowedSensorMounts;
                 case EquipmentCategory.ShieldGenerator:
+                    return AllowedShieldGenMounts;
                 case EquipmentCategory.FtlDampener:
-                    return AllowedInteriorMounts;
                 case EquipmentCategory.Hull:
                 case EquipmentCategory.Propulsion:
                 case EquipmentCategory.CommandModule:
@@ -2054,20 +2201,21 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        [Obsolete("Not currently used")]
         public static EquipmentCategory[] SupportedEquipment(this EquipmentMountCategory mountCat) {
             switch (mountCat) {
                 case EquipmentMountCategory.Turret:
                     return new EquipmentCategory[] { EquipmentCategory.BeamWeapon, EquipmentCategory.ProjectileWeapon };
                 case EquipmentMountCategory.Silo:
                     return new EquipmentCategory[] { EquipmentCategory.MissileWeapon, EquipmentCategory.AssaultWeapon };
-                case EquipmentMountCategory.Interior:
-                    return new EquipmentCategory[] { EquipmentCategory.ActiveCountermeasure, EquipmentCategory.PassiveCountermeasure,
-                        EquipmentCategory.CommandSensor, EquipmentCategory.ElementSensor, EquipmentCategory.FtlDampener, EquipmentCategory.ShieldGenerator };
-                case EquipmentMountCategory.InteriorAlt:
-                    return new EquipmentCategory[] { EquipmentCategory.ActiveCountermeasure, EquipmentCategory.PassiveCountermeasure,
-                        EquipmentCategory.CommandSensor, EquipmentCategory.ElementSensor, EquipmentCategory.FtlDampener, EquipmentCategory.ShieldGenerator };
-
+                case EquipmentMountCategory.Sensor:
+                    return new EquipmentCategory[] { EquipmentCategory.Sensor };
+                case EquipmentMountCategory.Skin:
+                    return new EquipmentCategory[] { EquipmentCategory.PassiveCountermeasure };
+                case EquipmentMountCategory.Screen:
+                    return new EquipmentCategory[] { EquipmentCategory.ActiveCountermeasure, EquipmentCategory.ShieldGenerator };
+                case EquipmentMountCategory.Flex:
+                    return new EquipmentCategory[] { EquipmentCategory.Sensor, EquipmentCategory.PassiveCountermeasure,
+                        EquipmentCategory.ActiveCountermeasure, EquipmentCategory.ShieldGenerator };
                 case EquipmentMountCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(mountCat));

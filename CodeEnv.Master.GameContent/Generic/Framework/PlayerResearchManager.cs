@@ -18,15 +18,18 @@ namespace CodeEnv.Master.GameContent {
 
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using CodeEnv.Master.Common;
 
     /// <summary>
     /// Manages the progression of research on technologies for a Player.
     /// <remarks>Access via PlayerAIManager.</remarks>
     /// </summary>
-    public class PlayerResearchManager : IRecurringDateMinderClient, IDisposable {
+    public class PlayerResearchManager : APropertyChangeTracking, IRecurringDateMinderClient, IDisposable {
 
         private const string DebugNameFormat = "{0}.{1}";
+
+        public event EventHandler<FutureTechResearchCompletedEventArgs> futureTechRschCompleted;
 
         public event EventHandler currentResearchChanged;
 
@@ -34,14 +37,24 @@ namespace CodeEnv.Master.GameContent {
 
         public string DebugName { get { return DebugNameFormat.Inject(_aiMgr.Player.DebugName, GetType().Name); } }
 
-        private ResearchTask _currentResearchTask = TempGameValues.NoResearch;
+        protected ResearchTask _currentResearchTask = TempGameValues.NoResearch;
         public ResearchTask CurrentResearchTask {
             get { return _currentResearchTask; }
-            private set { _currentResearchTask = value; }
+            private set {
+                if (_currentResearchTask != value) {
+                    _currentResearchTask = value;
+                    CurrentResearchTaskPropChangedHandler();
+                }
+            }
         }
 
-        private IDictionary<Technology, ResearchTask> _uncompletedResearchTaskLookup;
-        private HashSet<Technology> _completedTechnologies;
+        public bool IsResearchQueued { get { return _pendingRschTaskQueue.Any(); } }
+
+        protected Queue<ResearchTask> _pendingRschTaskQueue = new Queue<ResearchTask>();
+
+        private HashSet<ResearchTask> _uncompletedRschTasks;
+        private HashSet<ResearchTask> _completedRschTasks;
+
         private float _unconsumedScienceYield;
         private float _playerTotalScienceYield;
 
@@ -57,18 +70,21 @@ namespace CodeEnv.Master.GameContent {
 
         private void InitializeValuesAndReferences() {
             _gameTime = GameTime.Instance;
-            _completedTechnologies = new HashSet<Technology>();
-            _uncompletedResearchTaskLookup = new Dictionary<Technology, ResearchTask>();
+            _uncompletedRschTasks = new HashSet<ResearchTask>();
+            _completedRschTasks = new HashSet<ResearchTask>();
 
-            var allTechs = TechnologyFactory.Instance.GetAllTechs(_aiMgr.Player);
-            foreach (var tech in allTechs) {
-                _uncompletedResearchTaskLookup.Add(tech, new ResearchTask(tech));
+            var allPredefinedTechs = TechnologyFactory.Instance.GetAllPredefinedTechs(_aiMgr.Player);
+            foreach (var tech in allPredefinedTechs) {
+                _uncompletedRschTasks.Add(new ResearchTask(tech));
             }
-            var startingTech = TechnologyFactory.Instance.__GetStartingTech(_aiMgr.Player);
-            CurrentResearchTask = _uncompletedResearchTaskLookup[startingTech];
         }
 
-        public void InitiateProgressChecks() {
+        public void CommenceOperations() {
+            _aiMgr.PickFirstResearchTask();
+            InitiateProgressChecks();
+        }
+
+        private void InitiateProgressChecks() {
             // OPTIMIZE 2.27.18 Updating progress every hour is expensive
             _researchUpdateDuration = new DateMinderDuration(GameTimeDuration.OneHour, this);
             _gameTime.RecurringDateMinder.Add(_researchUpdateDuration);
@@ -81,48 +97,116 @@ namespace CodeEnv.Master.GameContent {
             _subscriptions.Add(_aiMgr.Knowledge.SubscribeToPropertyChanged<PlayerKnowledge, float>(pk => pk.TotalScienceYield, PlayerTotalScienceYieldPropChangedHandler));
         }
 
-        public bool IsCompleted(Technology tech) {
-            return _completedTechnologies.Contains(tech);
+        public bool IsDiscovered(Technology tech) {
+            return _completedRschTasks.Select(task => task.Tech).Contains(tech);
         }
 
-        public ResearchTask GetUncompletedResearchTaskFor(Technology tech) {
-            return _uncompletedResearchTaskLookup[tech];
+        /// <summary>
+        /// Gets all completed and uncompleted research tasks.
+        /// <remarks>Must expect some tasks to be already completed from Saves and/or start conditions.</remarks>
+        /// </summary>
+        /// <returns></returns>
+        public IList<ResearchTask> GetAllResearchTasks() {
+            List<ResearchTask> tasks = new List<ResearchTask>(_completedRschTasks);
+            tasks.AddRange(_uncompletedRschTasks);
+            return tasks;
         }
 
-        public void ChangeCurrentResearchTo(Technology tech) {
-            __ValidatePausedState();
-            D.Assert(!IsCompleted(tech));
+        public ResearchTask GetResearchTaskFor(Technology tech) {
+            return GetAllResearchTasks().Single(task => task.Tech == tech);
+        }
 
-            CurrentResearchTask = _uncompletedResearchTaskLookup[tech];
-            OnCurrentResearchChanged();
+        public void ChangeCurrentResearchTo(ResearchTask rschGoal) {
+            D.Assert(!rschGoal.IsCompleted);
+
+            _pendingRschTaskQueue.Clear();
+            IEnumerable<ResearchTask> uncompletedPrereqs;
+            if (HasUncompletedPrerequisites(rschGoal, out uncompletedPrereqs)) {
+                var ascendingPrereqs = uncompletedPrereqs.OrderBy(pReq => pReq.Tech.ResearchCost);
+
+                foreach (var pReq in ascendingPrereqs) {
+                    _pendingRschTaskQueue.Enqueue(pReq);
+                }
+                D.Log("{0} is planning to initiate research on {1} prior to researching {2}.",
+                    DebugName, ascendingPrereqs.Select(pReq => pReq.Tech.DebugName).Concatenate(), rschGoal.Tech.DebugName);
+                _pendingRschTaskQueue.Enqueue(rschGoal);
+                CurrentResearchTask = _pendingRschTaskQueue.Dequeue();
+            }
+            else {
+                // all preReqs, if any, completed so rschGoal can become the CurrentResearchTask
+                if (!_uncompletedRschTasks.Contains(rschGoal)) {
+                    D.AssertEqual("FutureTech", rschGoal.Tech.Name);
+                    D.LogBold("{0}: ResearchTree has been completed so will initiate research on another FutureTech!", DebugName);
+                    _uncompletedRschTasks.Add(rschGoal);
+                }
+                CurrentResearchTask = rschGoal;
+            }
         }
 
         private void ProgressResearch(float availableScienceYield) {
             D.Assert(!GameReferences.GameManager.IsPaused);
-            D.AssertNotEqual(TempGameValues.NoResearch, CurrentResearchTask);
-            Technology tech = CurrentResearchTask.TechBeingResearched;
+            D.AssertNotEqual(TempGameValues.NoResearch, CurrentResearchTask, DebugName);
             //D.Log("{0} is checking {1} for completion on {2}.", DebugName, CurrentResearchTask.DebugName, _gameTime.CurrentDate);
             if (CurrentResearchTask.TryComplete(availableScienceYield, out _unconsumedScienceYield)) {
                 D.Log("{0} has completed research of {1} on {2}. Science/hour = {3:0.}.",
                     DebugName, CurrentResearchTask.DebugName, _gameTime.CurrentDate, _playerTotalScienceYield);
                 D.Assert(CurrentResearchTask.IsCompleted);
-                var completedResearch = CurrentResearchTask;
-                CurrentResearchTask = TempGameValues.NoResearch;
-                bool isRemoved = _uncompletedResearchTaskLookup.Remove(tech);
-                D.Assert(isRemoved);
-                bool isAdded = _completedTechnologies.Add(tech);
-                D.Assert(isAdded);
 
+                var completedResearch = CurrentResearchTask;
+                bool isRemoved = _uncompletedRschTasks.Remove(completedResearch);
+                D.Assert(isRemoved);
+                bool isAdded = _completedRschTasks.Add(completedResearch);
+                D.Assert(isAdded);
                 OnResearchCompleted(completedResearch);
-                //__ValidatePausedState();    // 2.27.18 This can be used here once I implement rqmt that user select tech from ResearchScreen
+                // confirm that OnResearchCompleted didn't change CurrentResearchTask
+                D.AssertEqual(completedResearch, CurrentResearchTask);
+
+                if (IsResearchQueued) {
+                    CurrentResearchTask = _pendingRschTaskQueue.Dequeue();
+                }
+                else {
+                    if (!AssignNextResearchTask(completedResearch)) {
+                        _currentResearchTask = TempGameValues.NoResearch;
+                    }
+                }
             }
         }
 
+        /// <summary>
+        /// Selects and tries to assign the next ResearchTask that should follow <c>justCompletedRsch</c>.
+        /// Returns <c>true</c> if the selected task was assigned via ChangeResearchTaskTo(), <c>false</c> if
+        /// it wasn't. 
+        /// <remarks>If the AI is doing the selection and assignment, this method will always return true.
+        /// If the User is using the ResearchScreen to manually do the selection/assignment, it will return 
+        /// false, allowing the User to make the selection when they choose.</remarks>
+        /// <remarks>All predefined Techs (including the first FutureTech) and their associated ResearchTasks 
+        /// are assigned to their ResearchScreen nodes at startup. The one exception is when another FutureTech 
+        /// is the only remaining tech left to be selected. Since that tech is dynamically created when needed
+        /// it needs to replace the existing and just completed FutureTech in the ResearchScreen. This is
+        /// handled by the OnFutureTechResearchCompleted event.</remarks>
+        /// </summary>
+        /// <param name="justCompletedRsch">The just completed ResearchTask.</param>
+        /// <returns></returns>
+        private bool AssignNextResearchTask(ResearchTask justCompletedRsch) {
+            ResearchTask selectedRschTask;
+            bool isFutureTechRuntimeCreation;
+            bool toAssignSelectedRschTask = _aiMgr.TryPickNextResearchTask(justCompletedRsch, out selectedRschTask, out isFutureTechRuntimeCreation);
+            bool wasAssigned = false;
+            if (toAssignSelectedRschTask) {
+                ChangeCurrentResearchTo(selectedRschTask);
+                wasAssigned = true;
+            }
+            if (isFutureTechRuntimeCreation) {
+                OnFutureTechResearchCompleted(selectedRschTask);
+            }
+            return wasAssigned;
+        }
+
         private void UpdateTimeToCompletion() {
-            foreach (var researchTask in _uncompletedResearchTaskLookup.Values) {
-                float additionalScienceReqdToComplete = researchTask.CostToResearch - researchTask.CumScienceApplied;
+            foreach (var rschTask in _uncompletedRschTasks) {
+                float additionalScienceReqdToComplete = rschTask.CostToResearch - rschTask.CumScienceApplied;
                 float remainingHoursToComplete;
-                if (researchTask == CurrentResearchTask) {   // IMPROVE
+                if (rschTask == CurrentResearchTask) {   // IMPROVE
                     if (additionalScienceReqdToComplete <= _playerTotalScienceYield + _unconsumedScienceYield) {
                         remainingHoursToComplete = Constants.OneF;
                     }
@@ -134,15 +218,19 @@ namespace CodeEnv.Master.GameContent {
                     remainingHoursToComplete = additionalScienceReqdToComplete / _playerTotalScienceYield;
                 }
                 GameTimeDuration remainingDurationToComplete = new GameTimeDuration(remainingHoursToComplete);
-                if (remainingDurationToComplete != researchTask.TimeToComplete) {
+                if (remainingDurationToComplete != rschTask.TimeToComplete) {
                     //D.Log("{0}: {1}'s TimeToComplete changed from {2} to {3}.", DebugName, researchTask.DebugName, researchTask.TimeToComplete,
                     //remainingDurationToComplete);
-                    researchTask.TimeToComplete = remainingDurationToComplete;
+                    rschTask.TimeToComplete = remainingDurationToComplete;
                 }
             }
         }
 
         #region Event and Property Change Handlers
+
+        private void CurrentResearchTaskPropChangedHandler() {
+            OnCurrentResearchChanged();
+        }
 
         private void PlayerTotalScienceYieldPropChangedHandler() {
             RefreshTotalScienceYield();
@@ -161,9 +249,15 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        private void OnFutureTechResearchCompleted(ResearchTask nextFutureTechRschTask) {
+            if (futureTechRschCompleted != null) {
+                futureTechRschCompleted(this, new FutureTechResearchCompletedEventArgs(nextFutureTechRschTask));
+            }
+        }
+
         #endregion
 
-        public void HandlePlayerLost() {
+        public void HandlePlayerDefeated() {
             _gameTime.RecurringDateMinder.Remove(_researchUpdateDuration);
         }
 
@@ -172,6 +266,53 @@ namespace CodeEnv.Master.GameContent {
             D.AssertNotEqual(Constants.ZeroF, playerTotalScienceYield);
             _playerTotalScienceYield = playerTotalScienceYield;
         }
+
+        private bool HasUncompletedPrerequisites(Technology tech, out IEnumerable<Technology> uncompletedPrerequisites) {
+            var techPrerequisites = tech.Prerequisites;
+            if (techPrerequisites.Any()) {
+                HashSet<Technology> allUncompletedPrereqs = new HashSet<Technology>(techPrerequisites.Where(preReqTech => !IsDiscovered(preReqTech)));
+                HashSet<Technology> uncompletedPrereqsToAdd = new HashSet<Technology>();   // can't modify uncompletedPrereqList while iterating
+                foreach (var uncompletedPrereq in allUncompletedPrereqs) {
+                    if (HasUncompletedPrerequisites(uncompletedPrereq, out uncompletedPrerequisites)) {
+                        foreach (var uPrereq in uncompletedPrerequisites) {
+                            uncompletedPrereqsToAdd.Add(uPrereq);
+                        }
+                    }
+                }
+                foreach (var uPrereq in uncompletedPrereqsToAdd) {
+                    allUncompletedPrereqs.Add(uPrereq);
+                }
+                uncompletedPrerequisites = allUncompletedPrereqs;
+                return allUncompletedPrereqs.Any();
+            }
+            uncompletedPrerequisites = Enumerable.Empty<Technology>();
+            return false;
+        }
+
+        private bool HasUncompletedPrerequisites(ResearchTask rschTask, out IEnumerable<ResearchTask> uncompletedPrerequisites) {
+            var techPrerequisites = rschTask.Tech.Prerequisites;
+            if (techPrerequisites.Any()) {
+                var rschTaskPrereqs = techPrerequisites.Select(techPrereq => GetResearchTaskFor(techPrereq));
+                HashSet<ResearchTask> allUncompletedPrereqs = new HashSet<ResearchTask>(rschTaskPrereqs.Where(preReq => !preReq.IsCompleted));
+                HashSet<ResearchTask> uncompletedPrereqsToAdd = new HashSet<ResearchTask>();   // can't modify uncompletedPrereqList while iterating
+                foreach (var uncompletedPrereq in allUncompletedPrereqs) {
+                    if (HasUncompletedPrerequisites(uncompletedPrereq, out uncompletedPrerequisites)) {
+                        foreach (var uPrereq in uncompletedPrerequisites) {
+                            uncompletedPrereqsToAdd.Add(uPrereq);
+                        }
+                    }
+                }
+                foreach (var uPrereq in uncompletedPrereqsToAdd) {
+                    allUncompletedPrereqs.Add(uPrereq);
+                }
+                uncompletedPrerequisites = allUncompletedPrereqs;
+                return allUncompletedPrereqs.Any();
+            }
+            uncompletedPrerequisites = Enumerable.Empty<ResearchTask>();
+            return false;
+        }
+
+
 
         private void Cleanup() {
             Unsubscribe();
@@ -188,11 +329,13 @@ namespace CodeEnv.Master.GameContent {
 
         #region Debug
 
-        [System.Diagnostics.Conditional("DEBUG")]
-        private void __ValidatePausedState() {
-            if (_aiMgr.Player.IsUser) {
-                D.Assert(GameReferences.GameManager.IsPaused);
+        public bool __TryGetRandomUncompletedRsch(out ResearchTask uncompletedRsch) {
+            if (_uncompletedRschTasks.Any()) {
+                uncompletedRsch = RandomExtended.Choice(_uncompletedRschTasks);
+                return true;
             }
+            uncompletedRsch = null;
+            return false;
         }
 
         #endregion
@@ -205,6 +348,15 @@ namespace CodeEnv.Master.GameContent {
 
             public ResearchCompletedEventArgs(ResearchTask completedResearch) {
                 CompletedResearch = completedResearch;
+            }
+        }
+
+        public class FutureTechResearchCompletedEventArgs : EventArgs {
+
+            public ResearchTask NextFutureTechResearchTask { get; private set; }
+
+            public FutureTechResearchCompletedEventArgs(ResearchTask nextFutureTechResearchTask) {
+                NextFutureTechResearchTask = nextFutureTechResearchTask;
             }
         }
 

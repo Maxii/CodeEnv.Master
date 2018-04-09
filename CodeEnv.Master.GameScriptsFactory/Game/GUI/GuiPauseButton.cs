@@ -26,6 +26,7 @@ using UnityEngine;
 /// <summary>
 /// Custom Gui button control for the main Player Pause/Resume Button.
 /// </summary>
+[Obsolete("Replaced by the multipurpose UserActionButton")]
 public class GuiPauseButton : AGuiButton {
 
     private static IEnumerable<KeyCode> _validKeys = new KeyCode[] { KeyCode.Pause };

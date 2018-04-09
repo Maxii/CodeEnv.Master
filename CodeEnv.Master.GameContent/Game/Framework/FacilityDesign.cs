@@ -72,6 +72,12 @@ namespace CodeEnv.Master.GameContent {
             return cumConstructionCost;
         }
 
+        protected override float CalcHitPoints() {
+            float cumHitPts = base.CalcHitPoints();
+            cumHitPts += HullStat.HitPoints;
+            return cumHitPts;
+        }
+
         /// <summary>
         /// Returns the maximum number of AEquipmentStat slots that this design is allowed for the provided HullMountCategory.
         /// <remarks>AEquipmentStats that are required for a design are not included. These are typically added via the constructor.</remarks>
@@ -85,10 +91,14 @@ namespace CodeEnv.Master.GameContent {
                     return HullCategory.MaxTurretMounts();
                 case EquipmentMountCategory.Silo:
                     return HullCategory.MaxSiloMounts();
-                case EquipmentMountCategory.Interior:
-                    return HullCategory.__MaxInteriorHullMounts();
-                case EquipmentMountCategory.InteriorAlt:
-                    return HullCategory.__MaxInteriorAltHullMounts();
+                case EquipmentMountCategory.Sensor:
+                    return HullCategory.__MaxSensorMounts();
+                case EquipmentMountCategory.Skin:
+                    return HullCategory.__MaxSkinMounts();
+                case EquipmentMountCategory.Screen:
+                    return HullCategory.__MaxScreenMounts();
+                case EquipmentMountCategory.Flex:
+                    return HullCategory.__MaxFlexMounts();
                 case EquipmentMountCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(mountCat));

@@ -29,16 +29,12 @@ namespace CodeEnv.Master.GameContent {
 
         public IList<PassiveCountermeasure> PassiveCountermeasures { get; private set; }
 
-        private float _maxHitPoints;
-        public float MaxHitPoints {
-            get { return _maxHitPoints; }
-            set { SetProperty<float>(ref _maxHitPoints, value, "MaxHitPoints", MaxHitPtsPropChangedHandler, MaxHitPtsPropChangingHandler); }
-        }
+        public float MaxHitPoints { get; private set; }
 
         private float _currentHitPoints;
         public float CurrentHitPoints {
             get { return _currentHitPoints; }
-            set {
+            protected set {
                 value = Mathf.Clamp(value, Constants.ZeroF, MaxHitPoints);
                 SetProperty<float>(ref _currentHitPoints, value, "CurrentHitPoints", CurrentHitPtsPropChangedHandler);
             }
@@ -83,13 +79,13 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="item">The item.</param>
         /// <param name="owner">The owner.</param>
-        /// <param name="maxHitPts">The maximum hit points.</param>
+        /// <param name="hitPts">The maximum hit points of this item.</param>
         /// <param name="passiveCMs">The item's passive Countermeasures.</param>
-        public AMortalItemData(IMortalItem item, Player owner, float maxHitPts, IEnumerable<PassiveCountermeasure> passiveCMs)
+        public AMortalItemData(IMortalItem item, Player owner, float hitPts, IEnumerable<PassiveCountermeasure> passiveCMs)
             : base(item, owner) {
             Initialize(passiveCMs);
-            MaxHitPoints = maxHitPts;
-            CurrentHitPoints = maxHitPts;
+            MaxHitPoints = hitPts;
+            CurrentHitPoints = hitPts;
         }
 
         private void Initialize(IEnumerable<PassiveCountermeasure> cms) {
@@ -136,16 +132,19 @@ namespace CodeEnv.Master.GameContent {
             HandleCountermeasureIsDamagedChanged(cm);
         }
 
+        [Obsolete]
         private void MaxHitPtsPropChangingHandler(float newMaxHitPoints) {
             HandleMaxHitPtsChanging(newMaxHitPoints);
         }
 
+        [Obsolete]
         private void MaxHitPtsPropChangedHandler() {
             Health = MaxHitPoints > Constants.ZeroF ? CurrentHitPoints / MaxHitPoints : Constants.ZeroF;
         }
 
         private void CurrentHitPtsPropChangedHandler() {
-            Health = MaxHitPoints > Constants.ZeroF ? CurrentHitPoints / MaxHitPoints : Constants.ZeroF;
+            Utility.ValidateForRange(CurrentHitPoints, Constants.ZeroF, MaxHitPoints);
+            Health = CurrentHitPoints / MaxHitPoints;
         }
 
         private void HealthPropChangedHandler() {
@@ -159,12 +158,13 @@ namespace CodeEnv.Master.GameContent {
             RecalcDefensiveValues();
         }
 
+        [Obsolete]
         private void HandleMaxHitPtsChanging(float newMaxHitPoints) {
             D.Assert(newMaxHitPoints >= Constants.ZeroF);
             if (newMaxHitPoints < MaxHitPoints) {
                 // reduction in max hit points so reduce current hit points to match
                 CurrentHitPoints = Mathf.Clamp(CurrentHitPoints, Constants.ZeroF, newMaxHitPoints);
-                // FIXME changing CurrentHitPoints here sends out a temporary erroneous health change event. The accurate health change event follows shortly
+                // changing CurrentHitPoints here sends out a temporary erroneous health change event. The accurate health change event follows shortly
             }
         }
 
@@ -181,14 +181,135 @@ namespace CodeEnv.Master.GameContent {
 
         private void HandleIsDeadPropSet() {
             D.Assert(IsDead);
-            // Can't assert CurrentHitPoints as LoneFleetCmds can 'die' when they transfer their LoneElement to another Fleet
+            // Can't assert CurrentHitPoints as SingleElement FleetCmds can 'die' when they transfer their Element to another FleetCmd
             IsOperational = false;
-            DeactivateAllCmdModuleEquipment();
+            DeactivateAllEquipment();
         }
 
-        protected virtual void DeactivateAllCmdModuleEquipment() {
+        protected virtual void DeactivateAllEquipment() {
             PassiveCountermeasures.ForAll(cm => cm.IsActivated = false);
         }
+
+        protected virtual void RemoveDamageFromAllEquipment() {
+            PassiveCountermeasures.Where(cm => cm.IsDamageable).ForAll(cm => cm.IsDamaged = false);
+        }
+
+        #region Combat Support
+
+        /// <summary>
+        /// Applies the damage to the Item and returns true if the Item survived the hit.
+        /// <remarks>Virtual to allow UnitCmds to override as they don't die from hits.</remarks>
+        /// </summary>
+        /// <param name="damageSustained">The damage sustained.</param>
+        /// <param name="damageSeverity">The damage severity.</param>
+        public virtual bool ApplyDamage(DamageStrength damageSustained, out float damageSeverity) {
+            var initialDamage = damageSustained.Total;
+            if (CurrentHitPoints <= initialDamage) {
+                // didn't survive so no point in applying to equipment
+                CurrentHitPoints -= initialDamage;
+                damageSeverity = Constants.ZeroF;
+                return false;
+            }
+            // not yet dead
+            damageSeverity = Mathf.Clamp01(initialDamage / CurrentHitPoints);
+            float damageFromEquipmentLosses = AssessDamageToEquipment(damageSeverity);
+            float totalDamage = initialDamage + damageFromEquipmentLosses;
+            if (CurrentHitPoints <= totalDamage) {
+                // didn't survive after equip losses added
+                CurrentHitPoints -= totalDamage;
+                return false;
+            }
+            // survived
+            CurrentHitPoints -= totalDamage;
+            D.AssertNotEqual(Constants.ZeroPercent, Health);
+            return true;
+        }
+
+        /// <summary>
+        /// Assesses and applies any crippling damage to this mortal item's equipment as a result of the hit, returning
+        /// the cumulative amount of damage that should be applied to CurrentHitPts.
+        /// </summary>
+        /// <param name="damageSeverity">The severity of the impact of this hit. A percentage value, it is used to 
+        /// determine the likelihood that equipment will be damaged.</param>
+        protected virtual float AssessDamageToEquipment(float damageSeverity) {
+            Utility.ValidateForRange(damageSeverity, Constants.ZeroPercent, Constants.OneHundredPercent);
+            float cumCurrentHitPtReductionFromEquip = Constants.ZeroF;
+            var damageChance = damageSeverity;
+            var undamagedDamageablePassiveCMs = PassiveCountermeasures.Where(cm => cm.IsDamageable && !cm.IsDamaged);
+            foreach (var pCM in undamagedDamageablePassiveCMs) {
+                bool toDamage = RandomExtended.Chance(damageChance);
+                if (toDamage) {
+                    pCM.IsDamaged = true;
+                    cumCurrentHitPtReductionFromEquip += pCM.HitPoints;
+                }
+            }
+            return cumCurrentHitPtReductionFromEquip;
+        }
+
+        #endregion
+
+        #region Repair
+
+        /// <summary>
+        /// Repairs this mortal item using the provided repair points and returns <c>true</c> if the item has fully repaired.
+        /// <remarks>If already fully repaired, this method will do nothing and returns true.</remarks>
+        /// </summary>
+        /// <param name="repairPts">The repair points to use in restoring CurrentHitPts and damaged equipment.</param>
+        /// <returns></returns>
+        public bool RepairDamage(float repairPts) {
+            D.Assert(!IsDead);
+            D.AssertNotEqual(Constants.ZeroF, CurrentHitPoints);
+
+            bool isAllDamageRepaired = false;
+            float repairPtsNeeded = MaxHitPoints - CurrentHitPoints;
+            if (repairPtsNeeded == Constants.ZeroF) {
+                D.AssertEqual(Constants.OneHundredPercent, Health);
+                // __ValidateAllEquipmentDamageRepaired() confirms CurrentHitPts can equal MaxHitPts with equipment still damaged
+                RemoveDamageFromAllEquipment();
+                isAllDamageRepaired = true;
+            }
+            else {
+                float repairImpact = Mathf.Clamp01(repairPts / repairPtsNeeded);
+                float repairPtsFromEquip = AssessRepairToEquipment(repairImpact);
+                float totalRepairPts = repairPts + repairPtsFromEquip;
+                CurrentHitPoints += totalRepairPts;
+                if (Health == Constants.OneHundredPercent) {
+                    // __ValidateAllEquipmentDamageRepaired() confirms CurrentHitPts can equal MaxHitPts with equipment still damaged
+                    RemoveDamageFromAllEquipment();
+                    isAllDamageRepaired = true;
+                }
+            }
+            return isAllDamageRepaired;
+        }
+
+        /// <summary>
+        /// Assesses whether any equipment needs repair, and if it does, uses repairImpact
+        /// to determine whether the equipment assessed should be repaired by setting isDamaged
+        /// to false. The total amount of hit points recovered from the equipment repaired is returned.
+        /// </summary>
+        /// <param name="repairImpact">The impact of this repair cycle. A percentage value, it is used to 
+        /// determine the likelihood that damaged equipment will be repaired.</param>
+        /// <returns></returns>
+        protected virtual float AssessRepairToEquipment(float repairImpact) {
+            Utility.ValidateForRange(repairImpact, Constants.ZeroPercent, Constants.OneHundredPercent);
+            float cumRprPtsFromEquip = Constants.ZeroF;
+
+            var rprChance = repairImpact;
+
+            var damagedCMs = PassiveCountermeasures.Where(cm => cm.IsDamaged);
+            foreach (var cm in damagedCMs) {
+                bool toRpr = RandomExtended.Chance(rprChance);
+                if (toRpr) {
+                    cm.IsDamaged = false;
+                    cumRprPtsFromEquip += cm.HitPoints;
+                    D.Log(ShowDebugLog, "{0}'s {1} has been repaired.", DebugName, cm.Name);
+                }
+            }
+
+            return cumRprPtsFromEquip;
+        }
+
+        #endregion
 
         #region Cleanup
 
@@ -201,6 +322,17 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
+
+        #region Debug
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        protected virtual void __ValidateAllEquipmentDamageRepaired() {
+            PassiveCountermeasures.ForAll(cm => D.Assert(!cm.IsDamaged));
+        }
+
+
+        #endregion
+
 
         #region IDisposable
 

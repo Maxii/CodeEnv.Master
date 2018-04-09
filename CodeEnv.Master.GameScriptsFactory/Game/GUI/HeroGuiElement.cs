@@ -75,19 +75,6 @@ public class HeroGuiElement : AIconGuiElement, IComparable<HeroGuiElement> {
         }
     }
 
-    ////private void HeroIconImageClickedEventHandler(GameObject go) {
-    ////    throw new NotImplementedException();
-    ////}
-
-    ////private void HeroIconImageTooltipEventHandler(GameObject go, bool isOver) {
-    ////    if(isOver) {
-    ////        TooltipHudWindow.Instance.Show("Click to change Hero");
-    ////    }
-    ////    else {
-    ////        TooltipHudWindow.Instance.Hide();
-    ////    }
-    ////}
-
     #endregion
 
     protected override void HandleGuiElementHovered(bool isOver) {

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ResearchWindow.cs
-// A full screen window that shows the Research (aka Technology Tree) Form. 
+// A Singleton full screen window that shows the Research (aka Technology Tree) Form. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,7 +21,7 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// A full screen window that shows the Research (aka Technology Tree) Form. 
+/// A Singleton full screen window that shows the Research (aka Technology Tree) Form. 
 /// </summary>
 public class ResearchWindow : AFormWindow<ResearchWindow> {
 

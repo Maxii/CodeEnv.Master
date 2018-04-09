@@ -136,8 +136,7 @@ namespace CodeEnv.Master.GameContent {
 
         private CombatStrength _unitOffensiveStrength;
         /// <summary>
-        /// Read-only. The offensive combat strength of the entire Unit, aka the sum of all
-        /// of this Unit's Elements offensive combat strength.
+        /// Read-only. The offensive combat strength of the entire Unit, aka the sum of all of this Unit's Elements offensive combat strength.
         /// </summary>
         public CombatStrength UnitOffensiveStrength {
             get { return _unitOffensiveStrength; }
@@ -146,8 +145,7 @@ namespace CodeEnv.Master.GameContent {
 
         private CombatStrength _unitDefensiveStrength;
         /// <summary>
-        /// Read-only. The defensive combat strength of the entire Unit, aka the sum of all
-        /// of this Unit's Elements defensive combat strength.
+        /// Read-only. The defensive combat strength of the entire Unit, aka the sum of all of this Unit's Elements defensive combat strength.
         /// </summary>
         public CombatStrength UnitDefensiveStrength {
             get { return _unitDefensiveStrength; }
@@ -156,8 +154,7 @@ namespace CodeEnv.Master.GameContent {
 
         private float _unitMaxHitPoints;
         /// <summary>
-        /// Read-only. The max hit points of the entire Unit, aka the sum of all
-        /// of this Unit's Elements max hit points.
+        /// Read-only. The max hit points of the entire Unit, aka the sum of all of this Unit's Elements max hit points.
         /// </summary>
         public float UnitMaxHitPoints {
             get { return _unitMaxHitPoints; }
@@ -166,8 +163,7 @@ namespace CodeEnv.Master.GameContent {
 
         private float _unitCurrentHitPoints;
         /// <summary>
-        /// Read-only. The current hit points of the entire Unit, aka the sum of all
-        /// of this Unit's Elements current hit points.
+        /// Read-only. The current hit points of the entire Unit, aka the sum of all of this Unit's Elements current hit points.
         /// </summary>
         public float UnitCurrentHitPoints {
             get { return _unitCurrentHitPoints; }
@@ -194,34 +190,23 @@ namespace CodeEnv.Master.GameContent {
             private set { SetProperty<OutputsYield>(ref _unitOutputs, value, "UnitOutputs"); }
         }
 
-        public float CmdModuleMaxHitPoints {
-            get { return base.MaxHitPoints; }
-            set { base.MaxHitPoints = value; }
-        }
+        private float CmdModuleMaxHitPoints { get { return base.MaxHitPoints; } }
 
         [Obsolete("Use CmdModuleMaxHitPoints")]
-        public new float MaxHitPoints {
-            get { return base.MaxHitPoints; }
-            set { base.MaxHitPoints = value; }
-        }
+        public new float MaxHitPoints { get { return base.MaxHitPoints; } }
 
         public float CmdModuleCurrentHitPoints {
             get { return base.CurrentHitPoints; }
-            set { base.CurrentHitPoints = value; }
+            protected set { base.CurrentHitPoints = value; }
         }
 
         [Obsolete("Use CmdModuleCurrentHitPoints")]
-        public new float CurrentHitPoints {
-            get { return base.CurrentHitPoints; }
-            set { base.CurrentHitPoints = value; }
-        }
+        public new float CurrentHitPoints { get { return base.CurrentHitPoints; } }
 
         public float CmdModuleHealth { get { return base.Health; } }
 
         [Obsolete("Use CmdModuleHealth")]
-        public new float Health {
-            get { return base.Health; }
-        }
+        public new float Health { get { return base.Health; } }
 
         public IEnumerable<AUnitElementData> ElementsData { get { return _elementsData; } }
 
@@ -229,7 +214,7 @@ namespace CodeEnv.Master.GameContent {
 
         public FtlDampener FtlDampener { get; private set; }
 
-        public AUnitCmdDesign CmdDesign { get; set; }
+        public AUnitCmdDesign CmdDesign { get; private set; }
 
         protected IList<AUnitElementData> _elementsData;
         protected IDictionary<AUnitElementData, IList<IDisposable>> _elementSubscriptionsLookup;
@@ -249,7 +234,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="cmdDesign">The command design.</param>
         public AUnitCmdData(IUnitCmd cmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors,
             FtlDampener ftlDampener, ACmdModuleStat cmdStat, AUnitCmdDesign cmdDesign)
-            : base(cmd, owner, cmdStat.MaxHitPoints, passiveCMs) {
+            : base(cmd, owner, cmdDesign.HitPoints, passiveCMs) {
             FtlDampener = ftlDampener;
             Sensors = sensors;
             MaxCmdStaffEffectiveness = cmdStat.MaxCmdStaffEffectiveness;
@@ -479,7 +464,7 @@ namespace CodeEnv.Master.GameContent {
         private void HandleUnitHealthChanged() {
             //D.Log(ShowDebugLog, "{0}: UnitHealth {1}, UnitCurrentHitPoints {2}, UnitMaxHitPoints {3}.", DebugName, _unitHealth, UnitCurrentHitPoints, UnitMaxHitPoints);
             if (UnitHealth <= Constants.ZeroPercent) {
-                CmdModuleCurrentHitPoints -= CmdModuleMaxHitPoints;
+                base.CurrentHitPoints -= CmdModuleMaxHitPoints;
             }
         }
 
@@ -606,17 +591,91 @@ namespace CodeEnv.Master.GameContent {
 
         protected abstract OutputsYield RecalcUnitOutputs();    // abstract to allow BaseData to make sure production output > 0
 
+        #region Combat Support
+
         /// <summary>
-        /// Removes the damage from all of the CmdModule's equipment.
+        /// Applies the damage to the command module returning true as the command module will always survive the hit.
         /// </summary>
-        public void RemoveDamageFromAllCmdModuleEquipment() {
-            PassiveCountermeasures.Where(cm => cm.IsDamageable).ForAll(cm => cm.IsDamaged = false);
+        /// <param name="damageToCmdModule">The damage sustained by the CmdModule.</param>
+        /// <param name="damageSeverity">The damage severity.</param>
+        /// <returns>
+        ///   <c>true</c> if the command survived.
+        /// </returns>
+        public override bool ApplyDamage(DamageStrength damageToCmdModule, out float damageSeverity) {
+            var initialDamage = damageToCmdModule.Total;
+            damageSeverity = Mathf.Clamp01(initialDamage / CmdModuleCurrentHitPoints);
+            float cumCurrentHitPtReductionFromEquip = AssessDamageToEquipment(damageSeverity);
+            float totalDamage = initialDamage + cumCurrentHitPtReductionFromEquip;
+            var minAllowedCurrentHitPoints = 0.5F * CmdModuleMaxHitPoints;
+
+            if (CmdModuleCurrentHitPoints - totalDamage < minAllowedCurrentHitPoints) {
+                CmdModuleCurrentHitPoints = minAllowedCurrentHitPoints;
+            }
+            else {
+                CmdModuleCurrentHitPoints -= totalDamage;
+            }
+            D.Assert(CmdModuleHealth > Constants.ZeroPercent, "Should never fail as CmdModules can't die directly from a hit.");
+            return true;
+        }
+
+        protected override float AssessDamageToEquipment(float damageSeverity) {
+            float cumCurrentHitPtReductionFromEquip = base.AssessDamageToEquipment(damageSeverity);
+            var damageChance = damageSeverity;
+
+            var undamagedDamageableSensors = Sensors.Where(s => s.IsDamageable && !s.IsDamaged);
+            foreach (var s in undamagedDamageableSensors) {
+                bool toDamage = RandomExtended.Chance(damageChance);
+                if (toDamage) {
+                    s.IsDamaged = true;
+                    cumCurrentHitPtReductionFromEquip += s.HitPoints;
+                    D.Log(ShowDebugLog, "{0}'s {1} has been damaged.", DebugName, s.Name);
+                }
+            }
+            D.Assert(!FtlDampener.IsDamageable);
+            return cumCurrentHitPtReductionFromEquip;
+        }
+
+        #endregion
+
+        #region Repair
+
+        protected override float AssessRepairToEquipment(float repairImpact) {
+            float cumRprPtsFromEquip = base.AssessRepairToEquipment(repairImpact);
+
+            var rprChance = repairImpact;
+
+            var damagedSensors = Sensors.Where(s => s.IsDamaged);
+            foreach (var s in damagedSensors) {
+                bool toRpr = RandomExtended.Chance(rprChance);
+                if (toRpr) {
+                    s.IsDamaged = false;
+                    cumRprPtsFromEquip += s.HitPoints;
+                    D.Log(ShowDebugLog, "{0}'s {1} has been repaired.", DebugName, s.Name);
+                }
+            }
+            // 11.21.17 FtlDampener is currently not damageable
+
+            return cumRprPtsFromEquip;
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Removes the damage from command module equipment.
+        /// <remarks>11.26.17 HACK placeholder for refitting cmd module as currently not supported.</remarks>
+        /// </summary>
+        public void __RemoveDamageFromCmdModuleEquipment() {
+            RemoveDamageFromAllEquipment();
+        }
+
+        protected override void RemoveDamageFromAllEquipment() {
+            base.RemoveDamageFromAllEquipment();
             Sensors.Where(s => s.IsDamageable).ForAll(s => s.IsDamaged = false);
             // 11.21.17 FtlDampener is currently not damageable
         }
 
-        protected sealed override void DeactivateAllCmdModuleEquipment() {
-            base.DeactivateAllCmdModuleEquipment();
+        protected sealed override void DeactivateAllEquipment() {
+            base.DeactivateAllEquipment();
             Sensors.ForAll(sens => sens.IsActivated = false);
             FtlDampener.IsActivated = false;
         }
@@ -645,6 +704,11 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #region Debug
+
+        protected override void __ValidateAllEquipmentDamageRepaired() {
+            base.__ValidateAllEquipmentDamageRepaired();
+            Sensors.ForAll(s => D.Assert(!s.IsDamaged));
+        }
 
         private void __ValidateOwner(AUnitElementData elementData) {
             D.AssertNotEqual(Owner, TempGameValues.NoPlayer, "Owner should be set before adding elements.");

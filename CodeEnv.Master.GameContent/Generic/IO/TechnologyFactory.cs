@@ -22,9 +22,36 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Singleton. Factory that makes and caches Technology instances.
-    /// <remarks>TODO Acquire content indicators from XML values and make use of Player parameter.</remarks>
+    /// <remarks>TODO Read values from XML and build TechStats. Make use of Player parameter.</remarks>
     /// </summary>
     public class TechnologyFactory : AGenericSingleton<TechnologyFactory> {
+
+        private static IDictionary<string, string[]> TechPrerequisiteNames = new Dictionary<string, string[]>() {
+            //              Tech1 - Tech3 
+            //          /                   \
+            //  Tech0                           FutureTech
+            //          \                   /
+            //              Tech2       
+            {"Tech0", new string[] { }                          },
+            {"Tech1", new string[] { "Tech0" }                  },
+            {"Tech2", new string[] { "Tech0" }                  },
+            {"Tech3", new string[] { "Tech1" }                  },
+            {"FutureTech", new string[] { "Tech2", "Tech3" }    }
+        };
+
+        private static IDictionary<string, TreeNodeID> TechNodeIDs = new Dictionary<string, TreeNodeID>() {
+                    //  Col1        Col2    Col3        Col4
+     // Row1        //              Tech1 - Tech3                       
+                    //          /                   \
+     // Row2        //  Tech0                           FutureTech
+                    //          \                   /
+    // Row3         //              Tech2       
+            {"Tech0", new TreeNodeID(1, 2)          },
+            {"Tech1", new TreeNodeID(2, 1)          },
+            {"Tech2", new TreeNodeID(2, 3)          },
+            {"Tech3", new TreeNodeID(3, 1)          },
+            {"FutureTech", new TreeNodeID(4, 2)     }
+        };
 
         private IDictionary<string, Technology> _cache;
 
@@ -40,13 +67,16 @@ namespace CodeEnv.Master.GameContent {
         private void CreateAllTechnologies() {
             _cache = new Dictionary<string, Technology>();
             float baselineResearchCost = 200F;
-            float costIncrement = UnityEngine.Random.Range(30F, 60F);
-            for (int i = 0; i < 100; i++) {
-                float researchCost = baselineResearchCost + i * costIncrement;
-                string techname = __GetUniqueTechname();
-                var eStat = EquipmentStatFactory.Instance.__GetRandomEquipmentStat();
-                _cache.Add(techname, new Technology(techname, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description", researchCost,
-                    new ATechStat[] { eStat }));
+            __techCostIncrement = UnityEngine.Random.Range(30F, 60F);
+            for (int i = 0; i < 5; i++) {   // 5 predefined techs including the first FutureTech
+                float researchCost = baselineResearchCost + i * __techCostIncrement;
+                bool isFirstFutureTech = i == 4;
+                Technology nextTech = __MakeTech(researchCost, isFirstFutureTech);  // TechNames start with Tech0
+                _cache.Add(nextTech.Name, nextTech);
+            }
+
+            foreach (var tech in _cache.Values) {
+                __AddPrerequisitesTo(tech);
             }
         }
 
@@ -54,12 +84,15 @@ namespace CodeEnv.Master.GameContent {
             return _cache[techname];
         }
 
-        public IEnumerable<Technology> GetAllTechs(Player player) {
+        public IEnumerable<Technology> GetAllPredefinedTechs(Player player) {
             return _cache.Values;
         }
 
         public Technology __GetStartingTech(Player player) {
-            return _cache.Values.OrderBy(t => t.ResearchCost).First();
+            var lowestCostTech = _cache.Values.OrderBy(t => t.ResearchCost).First();
+            var firstTechByDesign = _cache["Tech0"];
+            D.AssertEqual(lowestCostTech, firstTechByDesign);
+            return firstTechByDesign;
         }
 
         #region XML Reader 
@@ -70,23 +103,41 @@ namespace CodeEnv.Master.GameContent {
 
         #region Debug
 
-        public Technology __GetRandomTech() {
-            return RandomExtended.Choice<Technology>(_cache.Values);
+        private const string __TechnameFormat = "Tech{0}";
+
+        private int __nameCounter = Constants.Zero;
+        private float __techCostIncrement;
+
+        private Technology __MakeTech(float researchCost, bool isFutureTech) {
+            var randomEquipStat = EquipmentStatFactory.Instance.__GetRandomEquipmentStat();
+            string techName = isFutureTech ? "FutureTech" : __GetUniqueTechname();
+            string[] prereqNames = TechPrerequisiteNames[techName];
+            TreeNodeID nodeID = TechNodeIDs[techName];
+            TechStat techStat = new TechStat(techName, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description", nodeID, prereqNames);
+            return new Technology(techStat, researchCost, new AImprovableStat[] { randomEquipStat });
         }
 
-        public Technology __GetNextHigherCostTechThan(Technology tech) {
-            var ascendingCostOrderTechs = _cache.Values.OrderBy(t => t.ResearchCost).ToList();
-            int techIndex = ascendingCostOrderTechs.FindIndex(t => t.ResearchCost == tech.ResearchCost);
-            return ascendingCostOrderTechs[techIndex + 1];
+        public Technology __MakeNextFutureTechFollowing(Technology previousFutureTech) {
+            D.AssertEqual("FutureTech", previousFutureTech.Name);
+            float nextRschCost = previousFutureTech.ResearchCost + __techCostIncrement;
+            var nextFutureTech = __MakeTech(nextRschCost, true);
+            _cache[nextFutureTech.Name] = nextFutureTech;
+            __AddPrerequisitesTo(nextFutureTech);
+            return nextFutureTech;
         }
 
-        private const string TechnameFormat = "Tech{0}";
-
-        private int _nameCounter = Constants.One;
+        private void __AddPrerequisitesTo(Technology tech) {
+            var prereqNames = tech.PrerequisiteTechNames;
+            IList<Technology> prereqTechs = new List<Technology>();
+            foreach (string name in prereqNames) {
+                prereqTechs.Add(_cache[name]);
+            }
+            tech.Prerequisites = prereqTechs.ToArray();
+        }
 
         private string __GetUniqueTechname() {
-            string name = TechnameFormat.Inject(_nameCounter);
-            _nameCounter++;
+            string name = __TechnameFormat.Inject(__nameCounter);
+            __nameCounter++;
             return name;
         }
 

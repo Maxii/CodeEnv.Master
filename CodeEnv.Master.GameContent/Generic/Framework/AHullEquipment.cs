@@ -39,8 +39,6 @@ namespace CodeEnv.Master.GameContent {
 
         public IList<AWeapon> Weapons { get; private set; }
 
-        public float MaxHitPoints { get { return Stat.MaxHitPoints; } }
-
         public DamageStrength DamageMitigation { get { return Stat.DamageMitigation; } }
 
         public Vector3 HullDimensions { get { return Stat.HullDimensions; } }

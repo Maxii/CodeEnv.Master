@@ -41,8 +41,8 @@ public class FacilityHull : AHull, IFacilityHull {
 
     protected override int MaxAllowedLaunchedWeapons { get { return _hullCategory.MaxSiloMounts(); } }
 
-    protected override void Validate() {
-        base.Validate();
+    protected override void __ValidateOnAwake() {
+        base.__ValidateOnAwake();
         D.AssertNotDefault((int)_hullCategory);
     }
 

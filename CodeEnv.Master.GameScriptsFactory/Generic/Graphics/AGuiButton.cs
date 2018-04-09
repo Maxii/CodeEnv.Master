@@ -24,8 +24,7 @@ using UnityEngine;
 
 /// <summary>
 /// Abstract base class for button scripts.
-/// Note: There is no Button that inherits from AGuiMenuElement as buttons
-/// aren't used to set state within a Menu.
+/// Note: There is no Button that inherits from AGuiMenuElement as buttons generate events rather than store a state change.
 /// </summary>
 public abstract class AGuiButton : ATextTooltip {
 
@@ -50,7 +49,7 @@ public abstract class AGuiButton : ATextTooltip {
     protected sealed override void Awake() {
         base.Awake();
         InitializeValuesAndReferences();
-        __Validate();
+        __ValidateOnAwake();
     }
 
     protected virtual void InitializeValuesAndReferences() {
@@ -77,7 +76,7 @@ public abstract class AGuiButton : ATextTooltip {
 
     #region Debug
 
-    protected virtual void __Validate() {
+    protected virtual void __ValidateOnAwake() {
         UIKeyBinding[] keyBinders = gameObject.GetComponents<UIKeyBinding>();
         if (!keyBinders.IsNullOrEmpty()) {
             var keyCodes = keyBinders.Select(kb => (int)kb.keyCode);

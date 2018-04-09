@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
 
         private const string DebugNameFormat = "{0}[{1}]";
 
-        public virtual string DebugName { get { return DebugNameFormat.Inject(GetType().Name, TechBeingResearched.DebugName); } }
+        public virtual string DebugName { get { return DebugNameFormat.Inject(GetType().Name, Tech.DebugName); } }
 
         private bool _isCompleted = false;
         public bool IsCompleted {
@@ -61,18 +61,18 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Returns the cost in units of science to research the tech being researched by this task.
         /// </summary>
-        public virtual float CostToResearch { get { return TechBeingResearched.ResearchCost; } }
+        public virtual float CostToResearch { get { return Tech.ResearchCost; } }
 
-        public virtual AtlasID ImageAtlasID { get { return TechBeingResearched.ImageAtlasID; } }
+        public virtual AtlasID ImageAtlasID { get { return Tech.ImageAtlasID; } }
 
-        public virtual string ImageFilename { get { return TechBeingResearched.ImageFilename; } }
+        public virtual string ImageFilename { get { return Tech.ImageFilename; } }
 
-        public Technology TechBeingResearched { get; private set; }
+        public virtual Technology Tech { get; private set; }
 
-        public float CumScienceApplied { get; private set; }
+        public virtual float CumScienceApplied { get; private set; }
 
         public ResearchTask(Technology techToResearch) {
-            TechBeingResearched = techToResearch;
+            Tech = techToResearch;
         }
 
         public virtual bool TryComplete(float scienceToApply, out float unconsumedScience) {

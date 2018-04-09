@@ -17,10 +17,7 @@
 // default namespace
 
 using System;
-using System.Collections.Generic;
-using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
-using UnityEngine;
 
 /// <summary>
 /// Date readout class for the Gui, based on Ngui UILabel.
@@ -41,7 +38,6 @@ public class GuiDateReadout : AGuiLabelReadout {
         //D.Log("{0} subscribing to {1}.calenderDateChanged.", GetType().Name, typeof(GameTime).Name);
         _gameTime.calenderDateChanged += CalenderDateChangedEventHandler;
     }
-
 
     #region Event and Property Change Handlers
 

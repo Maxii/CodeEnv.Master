@@ -17,6 +17,8 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using Common;
     using Common.LocalResources;
 
@@ -25,15 +27,15 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AUnitCmdDesign : AUnitMemberDesign {
 
-        public static EquipmentCategory[] SupportedEquipCategories =    {
-                                                                            EquipmentCategory.PassiveCountermeasure,
-                                                                            EquipmentCategory.CommandSensor
-                                                                        };
+        private static EquipmentMountCategory[] SupportedMountCategories =  {
+                                                                                EquipmentMountCategory.Skin,
+                                                                                EquipmentMountCategory.Sensor,
+                                                                                EquipmentMountCategory.Flex
+                                                                            };
 
-        public static EquipmentMountCategory[] SupportedMountCategories =    {
-                                                                            EquipmentMountCategory.Interior,
-                                                                            EquipmentMountCategory.InteriorAlt
-                                                                        };
+        static AUnitCmdDesign() {
+            __ValidateSupportedMountsCanAccommodateSupportedEquipment();
+        }
 
         public FtlDampenerStat FtlDampenerStat { get; private set; }
 
@@ -64,6 +66,14 @@ namespace CodeEnv.Master.GameContent {
             return cumConstructionCost;
         }
 
+        protected override float CalcHitPoints() {
+            float cumHitPts = base.CalcHitPoints();
+            cumHitPts += ReqdCmdStat.HitPoints;
+            cumHitPts += ReqdMRSensorStat.HitPoints;
+            cumHitPts += FtlDampenerStat.HitPoints;
+            return cumHitPts;
+        }
+
         /// <summary>
         /// Returns the maximum number of AEquipmentStat slots that this design is allowed for the provided HullMountCategory.
         /// <remarks>AEquipmentStats that are required for a design are not included. These are typically added via the constructor.</remarks>
@@ -73,10 +83,13 @@ namespace CodeEnv.Master.GameContent {
         /// <exception cref="System.NotImplementedException"></exception>
         protected override int GetMaxOptionalEquipmentSlotsFor(EquipmentMountCategory mountCat) {
             switch (mountCat) {
-                case EquipmentMountCategory.Interior:
-                    return TempGameValues.MaxInteriorHullMounts;
-                case EquipmentMountCategory.InteriorAlt:
-                    return TempGameValues.MaxInteriorAltHullMounts;
+                case EquipmentMountCategory.Sensor:
+                    return TempGameValues.MaxSensorMounts;
+                case EquipmentMountCategory.Skin:
+                    return TempGameValues.MaxSkinMounts;
+                case EquipmentMountCategory.Flex:
+                    return TempGameValues.MaxFlexMounts;
+                case EquipmentMountCategory.Screen:
                 case EquipmentMountCategory.Turret:
                 case EquipmentMountCategory.Silo:
                 case EquipmentMountCategory.None:
@@ -93,6 +106,19 @@ namespace CodeEnv.Master.GameContent {
             }
             return false;
         }
+
+        #region Debug
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        private static void __ValidateSupportedMountsCanAccommodateSupportedEquipment() {
+            IEnumerable<EquipmentCategory> equipmentSupportedByMounts = new List<EquipmentCategory>();
+            foreach (var mount in SupportedMountCategories) {
+                equipmentSupportedByMounts = equipmentSupportedByMounts.Union(mount.SupportedEquipment());
+            }
+            TempGameValues.CmdModuleSupportedEquipmentCategories.ForAll(se => D.Assert(equipmentSupportedByMounts.Contains(se)));
+        }
+
+        #endregion
 
         #region Value-based Equality Archive
 

@@ -68,6 +68,12 @@ namespace CodeEnv.Master.GameContent {
         public float ConstructionCost { get; private set; }
 
         /// <summary>
+        /// The maximum number of hit points in this design. A sum of ElementHull or CmdModule
+        /// integrity with contributions from each piece of equipment.
+        /// </summary>
+        public float HitPoints { get; private set; }
+
+        /// <summary>
         /// A value indicating how current this design is as compared to other designs of the same type.
         /// <remarks>The higher the value the more current it is. Values that are not the most current 
         /// indicate an obsolete design. A design whose value is lower than another design of the same
@@ -89,7 +95,6 @@ namespace CodeEnv.Master.GameContent {
         public AUnitMemberDesign(Player player) {
             Player = player;
             Status = SourceAndStatus.Player_Current;
-            __ValidateHullMountCatSequence();
         }
 
         /// <summary>
@@ -247,6 +252,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public void AssignPropertyValues() {
             ConstructionCost = CalcConstructionCost();
+            HitPoints = CalcHitPoints();
         }
 
         protected virtual float CalcConstructionCost() {
@@ -259,6 +265,18 @@ namespace CodeEnv.Master.GameContent {
                 }
             }
             return cumConstructionCost;
+        }
+
+        protected virtual float CalcHitPoints() {
+            float cumHitPts = Constants.ZeroF;
+            EquipmentSlotID unusedSlot;
+            AEquipmentStat stat;
+            while (TryGetNextEquipmentStat(out unusedSlot, out stat)) {
+                if (stat != null) {
+                    cumHitPts += stat.HitPoints;
+                }
+            }
+            return cumHitPts;
         }
 
         /// <summary>
@@ -304,8 +322,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #region Debug
-
-        protected virtual void __ValidateHullMountCatSequence() { }
 
         #endregion
 

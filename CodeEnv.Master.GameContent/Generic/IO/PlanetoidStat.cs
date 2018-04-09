@@ -28,7 +28,7 @@ namespace CodeEnv.Master.GameContent {
         // A Planetoid's name is assigned once its parent's name and its orbit are known
         public float Radius { get; private set; }
         public float Mass { get; private set; }
-        public float MaxHitPoints { get; private set; }
+        public float HitPoints { get; private set; }
         public PlanetoidCategory Category { get; private set; }
         public int Capacity { get; private set; }
         public ResourcesYield Resources { get; private set; }
@@ -38,14 +38,14 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         /// <param name="radius">The radius.</param>
         /// <param name="mass">The mass.</param>
-        /// <param name="maxHitPts">The maximum hit points.</param>
+        /// <param name="hitPts">The hit points of this planetoid.</param>
         /// <param name="category">The category.</param>
         /// <param name="capacity">The capacity.</param>
         /// <param name="resources">The resources.</param>
-        public PlanetoidStat(float radius, float mass, float maxHitPts, PlanetoidCategory category, int capacity, ResourcesYield resources) {
+        public PlanetoidStat(float radius, float mass, float hitPts, PlanetoidCategory category, int capacity, ResourcesYield resources) {
             Radius = radius;
             Mass = mass;
-            MaxHitPoints = maxHitPts;
+            HitPoints = hitPts;
             Category = category;
             Capacity = capacity;
             Resources = resources;

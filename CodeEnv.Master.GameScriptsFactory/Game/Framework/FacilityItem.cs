@@ -35,9 +35,9 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     /// <summary>
     /// Indicates whether this facility is capable of firing on a target in an attack.
-    /// <remarks>A facility that is not capable of attacking is usually a facility that has no operational weapons.</remarks>
+    /// <remarks>A facility that is not capable of attacking is usually a facility that has no undamaged weapons.</remarks>
     /// </summary>
-    public override bool IsAttackCapable { get { return Data.WeaponsRange.Max > Constants.ZeroF; } }
+    public override bool IsAttackCapable { get { return Data.HasUndamagedWeapons; } }
 
     public new FacilityData Data {
         get { return base.Data as FacilityData; }
@@ -841,24 +841,24 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             //TODO Implement communication of results to BaseCmd ala Ship -> FleetCmd
             // Command.HandleOrderOutcom(this, _fsmPrimaryAttackTgt, isSuccessful, failureCause);
 
-            if (AssessNeedForRepair(HealthThreshold_Damaged)) {
-                var unitAttackTgt = _fsmTgt;
-                _fsmTgt = Command;
-                FsmReturnHandler returnHandler = GetInactiveReturnHandlerFor(FacilityState.Repairing, CurrentState);
-                Call(FacilityState.Repairing);
-                yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
+            //if (AssessNeedForRepair(HealthThreshold_Damaged)) {
+            //    var unitAttackTgt = _fsmTgt;
+            //    _fsmTgt = Command;
+            //    FsmReturnHandler returnHandler = GetInactiveReturnHandlerFor(FacilityState.Repairing, CurrentState);
+            //    Call(FacilityState.Repairing);
+            //    yield return null;  // reqd so Return()s here. Code that follows executed 1 frame later
 
-                if (!returnHandler.DidCallSuccessfullyComplete) {
-                    yield return null;
-                    D.Error("{0} shouldn't get here as the ReturnCause {1} should generate a change of state.", DebugName, returnHandler.ReturnCause.GetValueName());
-                }
-                _fsmTgt = unitAttackTgt;
-            }
+            //    if (!returnHandler.DidCallSuccessfullyComplete) {
+            //        yield return null;
+            //        D.Error("{0} shouldn't get here as the ReturnCause {1} should generate a change of state.", DebugName, returnHandler.ReturnCause.GetValueName());
+            //    }
+            //    _fsmTgt = unitAttackTgt;
+            //}
             // Remain in ExecuteAttackOrder state until target is dead. If serious damage incurred, state will restart
 
             yield return null;
         }
-        AttemptOrderOutcomeCallback(OrderFailureCause.None, _fsmTgt);
+        AttemptOrderOutcomeCallback(OrderOutcome.Success, _fsmTgt);
         CurrentState = FacilityState.Idling;
     }
 
@@ -874,7 +874,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void ExecuteAttackOrder_UponNewOrderReceived() {
         LogEvent();
-        AttemptOrderOutcomeCallback(OrderFailureCause.NewOrderReceived, _fsmTgt);
+        AttemptOrderOutcomeCallback(OrderOutcome.NewOrderReceived, _fsmTgt);
     }
 
     void ExecuteAttackOrder_UponDamageIncurred() {
@@ -984,7 +984,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         // See http://answers.unity3d.com/questions/158917/error-quotmcoroutineenumeratorgchandle-0quot.html
         yield return null;
 
-        AttemptOrderOutcomeCallback(OrderFailureCause.None);
+        AttemptOrderOutcomeCallback(OrderOutcome.Success);
         CurrentState = FacilityState.Idling;
     }
 
@@ -1001,7 +1001,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     void ExecuteRepairOrder_UponNewOrderReceived() {
         LogEvent();
         //D.Log(ShowDebugLog, "{0}.ExecuteRepairOrder_UponNewOrderRcvd. Frame: {1}.", DebugName, Time.frameCount);
-        AttemptOrderOutcomeCallback(OrderFailureCause.NewOrderReceived);
+        AttemptOrderOutcomeCallback(OrderOutcome.NewOrderReceived);
     }
 
     void ExecuteRepairOrder_UponDamageIncurred() {
@@ -1030,7 +1030,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     void ExecuteRepairOrder_UponDeath() {
         LogEvent();
-        AttemptOrderOutcomeCallback(OrderFailureCause.Death);
+        AttemptOrderOutcomeCallback(OrderOutcome.Death);
     }
 
     void ExecuteRepairOrder_ExitState() {
@@ -1044,7 +1044,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #region Repairing
 
-    // 7.2.16 Currently a Call()ed State from ExecuteRepairOrder and ExecuteAttackOrder
+    // 7.2.16 Currently a Call()ed State from ExecuteRepairOrder
 
     void Repairing_UponPreconfigureState() {
         LogEvent();
@@ -1065,6 +1065,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
         float facilityRepairCapacityPerDay = facilityRepairDest.GetAvailableRepairCapacityFor(this, Owner);
 
+        bool isFacilityRepairComplete = false;
         if (IsHQ && Command.CmdModuleHealth < Constants.OneHundredPercent) {
             IRepairCapable cmdModuleRepairDest = _fsmTgt as IRepairCapable;
 
@@ -1072,40 +1073,34 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             float cmdModuleRepairCapacityPerDay = cmdModuleRepairDest.GetAvailableRepairCapacityFor(Command, this, Owner);
 
             bool isCmdModuleRepairComplete = false;
-            bool isFacilityRepairComplete = false;
             while (!isFacilityRepairComplete || !isCmdModuleRepairComplete) {
                 if (!isCmdModuleRepairComplete) {
                     isCmdModuleRepairComplete = Command.RepairCmdModule(cmdModuleRepairCapacityPerDay);
                 }
 
                 if (!isFacilityRepairComplete) {
-                    if (Data.Health < Constants.OneHundredPercent) {
-                        Data.CurrentHitPoints += facilityRepairCapacityPerDay;
-                        RefreshReworkingVisuals(Data.Health);
-                        //D.Log(ShowDebugLog, "{0} repaired {1:0.#} hit points.", DebugName, facilityRepairCapacityPerDay);
-                    }
-                    else {
-                        Data.RemoveDamageFromAllEquipment();
-                        isFacilityRepairComplete = true;
-                    }
+                    isFacilityRepairComplete = Data.RepairDamage(facilityRepairCapacityPerDay);
+                    RefreshReworkingVisuals(Data.Health);
                 }
                 yield return _repairWaitYI;
             }
             D.Log(ShowDebugLog, "{0}'s repair of itself and Unit's CmdModule is complete. Health = {1:P01}.", DebugName, Data.Health);
         }
         else {
-            while (Data.Health < Constants.OneHundredPercent) {
-                Data.CurrentHitPoints += facilityRepairCapacityPerDay;
+            while (!isFacilityRepairComplete) {
+                isFacilityRepairComplete = Data.RepairDamage(facilityRepairCapacityPerDay);
                 RefreshReworkingVisuals(Data.Health);
-                //D.Log(ShowDebugLog, "{0} repaired {1:0.#} hit points.", DebugName, facilityRepairCapacityPerDay);
                 yield return _repairWaitYI;
             }
 
-            Data.RemoveDamageFromAllEquipment();
             D.Log(ShowDebugLog, "{0}'s repair is complete. Health = {1:P01}.", DebugName, Data.Health);
         }
 
         KillRepairWait();
+
+        // 3.15.18 Placed before yield to give Cmd opportunity to issue a new order. If issued, auto Return() will occur giving 
+        // Call()ing state an opportunity to take action if needed in _UponNewOrderReceived().
+        OnSubordinateRepairCompleted();
 
         // 3.19.17 Without yield return null; here, I see a Unity Coroutine error "Assertion failed on expression: 'm_CoroutineEnumeratorGCHandle == 0'"
         // I think it is because there is a rare scenario where no yield return is encountered below this. 
@@ -1202,7 +1197,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         }
 
         // refit completed so try to inform Cmd and replace the element
-        AttemptOrderOutcomeCallback(OrderFailureCause.None);
+        AttemptOrderOutcomeCallback(OrderOutcome.Success);
 
         ReworkUnderway = ReworkingMode.None;
         FacilityItem facilityReplacement = UnitFactory.Instance.MakeFacilityInstance(Owner, Topography, refitDesign, Name, Command.UnitContainer.gameObject);
@@ -1257,7 +1252,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             if (completionPercentage == Constants.ZeroPercent) {
                 Data.RestorePreReworkValues(_preReworkValues);
             }
-            AttemptOrderOutcomeCallback(OrderFailureCause.ConstructionCanceled);
+            AttemptOrderOutcomeCallback(OrderOutcome.ConstructionCanceled);
             CurrentState = FacilityState.Idling;
         }
     }
@@ -1272,7 +1267,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     void ExecuteRefitOrder_UponDeath() {
         LogEvent();
         // 11.26.17 Note: this callback will not go through if death is from successful refit as success callback has already taken place
-        AttemptOrderOutcomeCallback(OrderFailureCause.Death);
+        AttemptOrderOutcomeCallback(OrderOutcome.Death);
         // Should auto change to Dead state
     }
 
@@ -1341,7 +1336,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         }
 
         // disband completed so try to inform Cmd and kill the element
-        AttemptOrderOutcomeCallback(OrderFailureCause.None);
+        AttemptOrderOutcomeCallback(OrderOutcome.Success);
 
         ReworkUnderway = ReworkingMode.None;
         IsDead = true;
@@ -1401,7 +1396,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         if (!IsDead) {
             if (completionPercentage == Constants.ZeroPercent) {
                 Data.RestorePreReworkValues(_preReworkValues);
-                AttemptOrderOutcomeCallback(OrderFailureCause.ConstructionCanceled);
+                AttemptOrderOutcomeCallback(OrderOutcome.ConstructionCanceled);
                 CurrentState = FacilityState.Idling;
             }
             else {
@@ -1411,7 +1406,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
                 }
                 else {
                     // We are the last element so Cmd will die when removed. 1.23.18 In case this was initiated by a Cmd ExitState canceling
-                    // element orders, we delay IsDead by 1 frame to avoid FSM's illegal 'changing state during ConfigureCurrentState' test
+                    // element orders, we delay IsDead by 1 frame to avoid Cmd FSM's illegal 'changing state during ConfigureCurrentState' test
                     _jobMgr.WaitForNextUpdate("FacilityIsDeadDelayJob", (jobWasKilled) => {
                         D.Log("{0} is killing itself 1 frame after its uncompleted construction was removed from the construction queue. Completion: {1:P02}.",
                             DebugName, completionPercentage);
@@ -1433,7 +1428,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     void ExecuteDisbandOrder_UponDeath() {
         LogEvent();
         // 11.26.17 Note: this callback will not go through if death is from successful disband as success callback has already taken place
-        AttemptOrderOutcomeCallback(OrderFailureCause.Death);
+        AttemptOrderOutcomeCallback(OrderOutcome.Death);
         // Should auto change to Dead state
     }
 
@@ -1549,14 +1544,14 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
     #region Order Outcome Callback System
 
-    protected override void DispatchOrderOutcomeCallback(OrderFailureCause failureCause, IElementNavigableDestination fsmTgt) {
+    protected override void DispatchOrderOutcomeCallback(OrderOutcome outcome, IElementNavigableDestination fsmTgt) {
         FacilityState stateBeforeNotification = CurrentState;
-        OnSubordinateOrderOutcome(fsmTgt, failureCause);
+        OnSubordinateOrderOutcome(fsmTgt, outcome);
         if (CurrentState != stateBeforeNotification) {
-            // 1.7.18 If this occurs when successful (fail cause = None), yield return null; is needed after Callback in EnterState
+            // 1.7.18 If this occurs when successful, yield return null; is needed after Callback in EnterState
             // to keep subsequent Idling assignment afterward from overwriting the changed state
-            D.Warn("{0}: Informing Cmd of OrderOutcome has resulted in an immediate state change from {1} to {2}. FailureCause = {3}.",
-                DebugName, stateBeforeNotification.GetValueName(), CurrentState.GetValueName(), failureCause.GetValueName());
+            D.Warn("{0}: Informing Cmd of OrderOutcome has resulted in an immediate state change from {1} to {2}. Outcome = {3}.",
+                DebugName, stateBeforeNotification.GetValueName(), CurrentState.GetValueName(), outcome.GetValueName());
         }
     }
 
@@ -1622,6 +1617,8 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     #endregion
 
     #region Combat Support
+
+    // 3.16.18 ApplyDamage and AssessCripplingDamageToEquipment moved to Data
 
     #endregion
 

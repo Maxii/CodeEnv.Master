@@ -34,18 +34,18 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="imageAtlasID">The image atlas identifier.</param>
         /// <param name="imageFilename">The image filename.</param>
         /// <param name="description">The description.</param>
-        /// <param name="level">The level of technological advancement of this stat.</param>
+        /// <param name="level">The improvement level of this stat.</param>
         /// <param name="size">The size.</param>
         /// <param name="mass">The mass.</param>
         /// <param name="pwrRqmt">The PWR RQMT.</param>
+        /// <param name="hitPts">The hit points contributed to the survivability of the item.</param>
         /// <param name="expense">The expense.</param>
-        /// <param name="maxHitPts">The maximum hit PTS.</param>
         /// <param name="maxCmdStaffEffectiveness">The maximum command staff effectiveness.</param>
         /// <param name="startingPopulation">The starting population.</param>
         /// <param name="startingApproval">The starting approval.</param>
         public SettlementCmdModuleStat(string name, AtlasID imageAtlasID, string imageFilename, string description, Level level, float size,
-            float mass, float pwrRqmt, float expense, float maxHitPts, float maxCmdStaffEffectiveness, int startingPopulation, float startingApproval)
-            : base(name, imageAtlasID, imageFilename, description, level, size, mass, pwrRqmt, expense, maxHitPts, maxCmdStaffEffectiveness) {
+            float mass, float pwrRqmt, float hitPts, float expense, float maxCmdStaffEffectiveness, int startingPopulation, float startingApproval)
+            : base(name, imageAtlasID, imageFilename, description, level, size, mass, pwrRqmt, hitPts, expense, maxCmdStaffEffectiveness) {
             StartingPopulation = startingPopulation;
             Utility.ValidateForRange(startingApproval, Constants.ZeroPercent, Constants.OneHundredPercent);
             StartingApproval = startingApproval;

@@ -52,7 +52,7 @@ namespace CodeEnv.Master.GameContent {
         private OutputsYield _totalOutputs;
         public OutputsYield TotalOutputs {
             get { return _totalOutputs; }
-            private set { SetProperty<OutputsYield>(ref _totalOutputs, value, "TotalOutputs", TotalOutputsPropChangedHandler); }
+            private set { SetProperty<OutputsYield>(ref _totalOutputs, value, "TotalOutputs"); }
         }
 
         private ResourcesYield _totalResources;
@@ -754,19 +754,7 @@ namespace CodeEnv.Master.GameContent {
             RefreshTotalResources();
         }
 
-        private void TotalOutputsPropChangedHandler() {
-            HandleTotalOutputsChanged();
-        }
-
         #endregion
-
-        private void HandleTotalOutputsChanged() {
-            _totalOutputs = __ValidateSciencePresenceInTotalOutputs(TotalOutputs);  // _totalOutputs to avoid another change event
-            float totalScienceOutput = TotalOutputs.GetYield(OutputID.Science).Value;
-            if (TotalScienceYield != totalScienceOutput) {
-                TotalScienceYield = totalScienceOutput;
-            }
-        }
 
         private void HandleItemDeath(IMortalItem_Ltd deadItem) {
             D.AssertNotNull(deadItem);
@@ -957,6 +945,11 @@ namespace CodeEnv.Master.GameContent {
 
         private void RefreshTotalOutputs() {
             TotalOutputs = OwnerCommands.Select(cmd => cmd.UnitOutputs).Sum();
+            if (!TotalOutputs.IsPresent(OutputID.Science) || TotalOutputs.GetYield(OutputID.Science) == Constants.ZeroF) {
+                D.Log("{0} had no science in TotalOutputs. Fixing.", DebugName);
+                TotalOutputs += OutputsYield.OneScience;
+            }
+            TotalScienceYield = TotalOutputs.GetYield(OutputID.Science).Value;
         }
 
         private void RefreshTotalResources() {
@@ -979,15 +972,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #region Debug 
-
-        private OutputsYield __ValidateSciencePresenceInTotalOutputs(OutputsYield totalOutputs) {
-            if (!totalOutputs.IsPresent(OutputID.Science) || totalOutputs.GetYield(OutputID.Science) == Constants.ZeroF) {
-                // commonly occurs when first Cmd(s) added have no science
-                D.Log("{0} cannot have TotalOutput with zero science. Fixing.", DebugName);
-                totalOutputs += OutputsYield.OneScience;
-            }
-            return totalOutputs;
-        }
 
         /// <summary>
         /// Debug. Returns the items that we know about that are owned by player.

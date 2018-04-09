@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: CapabilityStat.cs
-// A stat holding a Capability along with data that allows user display of image and textual information.
+// An AImprovableStat holding a Capability along with data that allows user display of image and textual information.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,9 +19,9 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// A stat holding a Capability along with data that allows user display of image and textual information.
+    /// An AImprovableStat holding a Capability along with data that allows user display of image and textual information.
     /// </summary>
-    public class CapabilityStat : ATechStat {
+    public class CapabilityStat : AImprovableStat {
 
         public Capability Capability { get; private set; }
 
@@ -32,10 +32,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="imageAtlasID">The image atlas identifier.</param>
         /// <param name="imageFilename">The image filename.</param>
         /// <param name="description">The description.</param>
-        /// <param name="level">The level of technological advancement of this stat.</param>
+        /// <param name="level">The improvement level of this stat.</param>
         /// <param name="capability">The capability.</param>
-        public CapabilityStat(string name, AtlasID imageAtlasID, string imageFilename, string description, Level level, Capability capability)
-            : base(name, imageAtlasID, imageFilename, description, level) {
+        public CapabilityStat(AtlasID imageAtlasID, string imageFilename, string description, Level level, Capability capability)
+            : base(capability.GetValueName(), imageAtlasID, imageFilename, description, level) {
             Capability = capability;
         }
 

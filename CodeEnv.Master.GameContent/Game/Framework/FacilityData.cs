@@ -44,10 +44,7 @@ namespace CodeEnv.Master.GameContent {
             get { return _publisher = _publisher ?? new FacilityPublisher(this); }
         }
 
-        public new FacilityDesign Design {
-            get { return base.Design as FacilityDesign; }
-            set { base.Design = value; }
-        }
+        public new FacilityDesign Design { get { return base.Design as FacilityDesign; } }
 
         private new FacilityHullEquipment HullEquipment { get { return base.HullEquipment as FacilityHullEquipment; } }
 

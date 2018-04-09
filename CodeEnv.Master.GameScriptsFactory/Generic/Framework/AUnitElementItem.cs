@@ -79,6 +79,8 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     public event EventHandler<OrderOutcomeEventArgs> subordinateOrderOutcome;
 
+    public event EventHandler subordinateRepairCompleted;
+
     private NewOrderAvailability _availability = NewOrderAvailability.Available;
     /// <summary>
     /// Indicates how 'available' this element is to receiving new orders.
@@ -669,6 +671,12 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         }
     }
 
+    protected void OnSubordinateRepairCompleted() {
+        if (subordinateRepairCompleted != null) {
+            subordinateRepairCompleted(this, EventArgs.Empty);
+        }
+    }
+
     private void OnSubordinateOwnerChanging(Player incomingOwner) {
         if (subordinateOwnerChanging != null) {
             subordinateOwnerChanging(this, new SubordinateOwnerChangingEventArgs(incomingOwner));
@@ -706,7 +714,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         HandleLosWeaponAimed(e.FiringSolution);
     }
 
-    protected void OnSubordinateOrderOutcome(IElementNavigableDestination target, OrderFailureCause failureCause) {
+    protected void OnSubordinateOrderOutcome(IElementNavigableDestination target, OrderOutcome failureCause) {
         D.AssertNotNull(subordinateOrderOutcome);
         subordinateOrderOutcome(this, new OrderOutcomeEventArgs(target, failureCause, _lastCmdOrderID));
     }
@@ -1027,19 +1035,19 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// <remarks>The fsmTgt default value is null as it only is needed by the Cmd when the Cmd has issued individual orders
     /// to the element with a unique target, e.g. the unique explore target a ship receives from Cmd.</remarks>
     /// </summary>
-    /// <param name="failureCause">The failure cause.</param>
+    /// <param name="outcome">The outcome.</param>
     /// <param name="fsmTgt">The target used by the FSM. Default is null.</param>
-    protected void AttemptOrderOutcomeCallback(OrderFailureCause failureCause, IElementNavigableDestination fsmTgt = null) {
+    protected void AttemptOrderOutcomeCallback(OrderOutcome outcome, IElementNavigableDestination fsmTgt = null) {
         bool toAllowOrderOutcomeCallbackAttempt = !_hasOrderOutcomeCallbackAttemptOccurred && _lastCmdOrderID != default(Guid);
         if (toAllowOrderOutcomeCallbackAttempt) {
             _hasOrderOutcomeCallbackAttemptOccurred = true;
             if (subordinateOrderOutcome != null) {
-                DispatchOrderOutcomeCallback(failureCause, fsmTgt);
+                DispatchOrderOutcomeCallback(outcome, fsmTgt);
             }
         }
     }
 
-    protected abstract void DispatchOrderOutcomeCallback(OrderFailureCause failureCause, IElementNavigableDestination fsmTgt);
+    protected abstract void DispatchOrderOutcomeCallback(OrderOutcome outcome, IElementNavigableDestination fsmTgt);
 
     #endregion
 
@@ -1171,34 +1179,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
     #region Combat Support
 
-    protected override void AssessCripplingDamageToEquipment(float damageSeverity) {
-        base.AssessCripplingDamageToEquipment(damageSeverity);
-        var equipDamageChance = damageSeverity;
-
-        var undamagedDamageableWeapons = Data.Weapons.Where(w => w.IsDamageable && !w.IsDamaged);
-        undamagedDamageableWeapons.ForAll(w => {
-            w.IsDamaged = RandomExtended.Chance(equipDamageChance);
-            //D.Log(ShowDebugLog && w.IsDamaged, "{0}'s weapon {1} has been damaged.", DebugName, w.Name);
-        });
-
-        var undamagedDamageableSensors = Data.Sensors.Where(s => s.IsDamageable && !s.IsDamaged);
-        undamagedDamageableSensors.ForAll(s => {
-            s.IsDamaged = RandomExtended.Chance(equipDamageChance);
-            //D.Log(ShowDebugLog && s.IsDamaged, "{0}'s sensor {1} has been damaged.", DebugName, s.Name);
-        });
-
-        var undamagedDamageableActiveCMs = Data.ActiveCountermeasures.Where(cm => cm.IsDamageable && !cm.IsDamaged);
-        undamagedDamageableActiveCMs.ForAll(cm => {
-            cm.IsDamaged = RandomExtended.Chance(equipDamageChance);
-            //D.Log(ShowDebugLog && cm.IsDamaged, "{0}'s ActiveCM {1} has been damaged.", DebugName, cm.Name);
-        });
-
-        var undamagedDamageableGenerators = Data.ShieldGenerators.Where(gen => gen.IsDamageable && !gen.IsDamaged);
-        undamagedDamageableGenerators.ForAll(gen => {
-            gen.IsDamaged = RandomExtended.Chance(equipDamageChance);
-            //D.Log(ShowDebugLog && gen.IsDamaged, "{0}'s shield generator {1} has been damaged.", DebugName, gen.Name);
-        });
-    }
+    // 3.16.18 ApplyDamage and AssessCripplingDamageToEquipment moved to Data
 
     #endregion
 
@@ -1515,15 +1496,16 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
 
         public IElementNavigableDestination Target { get; private set; }
 
-        public OrderFailureCause FailureCause { get; private set; }
+        public OrderOutcome Outcome { get; private set; }
 
         public Guid CmdOrderID { get; private set; }
 
-        public bool IsOrderSuccessfullyCompleted { get { return FailureCause == OrderFailureCause.None; } }
+        [Obsolete]
+        public bool IsOrderSuccessfullyCompleted { get { return Outcome == OrderOutcome.None; } }
 
-        public OrderOutcomeEventArgs(IElementNavigableDestination target, OrderFailureCause failureCause, Guid cmdOrderID) {
+        public OrderOutcomeEventArgs(IElementNavigableDestination target, OrderOutcome outcome, Guid cmdOrderID) {
             Target = target;
-            FailureCause = failureCause;
+            Outcome = outcome;
             CmdOrderID = cmdOrderID;
             __Validate();
         }
@@ -1556,14 +1538,14 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         D.Log(ShowDebugLog, "{0} has been hit, taking {1:0.#} damage.", DebugName, damageSustained.Total);
 
         float damageSeverity;
-        bool isElementAlive = ApplyDamage(damageSustained, out damageSeverity);
-        if (isElementAlive) {
+        bool didElementSurvive = Data.ApplyDamage(damageSustained, out damageSeverity);
+        if (didElementSurvive) {
             StartEffectSequence(EffectSequenceID.Hit);
             UponDamageIncurred();
         }
 
-        OnSubordinateDamageIncurred(isElementAlive, damageSustained, damageSeverity);
-        if (!isElementAlive) {
+        OnSubordinateDamageIncurred(didElementSurvive, damageSustained, damageSeverity);
+        if (!didElementSurvive) {
             IsDead = true;
         }
     }
@@ -1687,6 +1669,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
     /// </summary>
     /// <param name="player">The player.</param>
     /// <param name="damagePotential">The damage potential of the assault.</param>
+    /// <param name="__assaulterName">Name of the assaulter for debug purposes.</param>
     /// <returns></returns>
     public bool AttemptAssault(Player player, DamageStrength damagePotential, string __assaulterName) {
         D.Assert(!IsPaused);
@@ -1700,7 +1683,7 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
             // 5.17.17 Multiple assaults in the same frame by the same or other players can occur even if 
             // AssaultShuttles aren't instantaneous.
             // 5.22.17 Changed to warn to reconfirm this takes place with real AssaultVehicles
-            D.Warn(/*ShowDebugLog, */"{0} assault is not allowed by {1} in Frame {2} when owner change underway.",
+            D.Warn("{0} assault is not allowed by {1} in Frame {2} when owner change underway.",
                 DebugName, __assaulterName, currentFrame);
             return false;
         }
@@ -1741,15 +1724,15 @@ public abstract class AUnitElementItem : AMortalItemStateMachine, IUnitElement, 
         D.Log(ShowDebugLog, "{0} has been assaulted, taking {1:0.#} damage.", DebugName, damageSustained.Total);
 
         float damageSeverity;
-        bool isElementAlive = ApplyDamage(damageSustained, out damageSeverity);
-        if (isElementAlive) {
+        bool didElementSurvive = Data.ApplyDamage(damageSustained, out damageSeverity);
+        if (didElementSurvive) {
             StartEffectSequence(EffectSequenceID.Hit);
             UponDamageIncurred();
         }
         // 11.4.17 Eliminated Cmd 'taking hit' if this IsHQ. Can reinstate if desired in Cmd's SubordinateDamageIncurredHandler
-        OnSubordinateDamageIncurred(isElementAlive, damageSustained, damageSeverity);
+        OnSubordinateDamageIncurred(didElementSurvive, damageSustained, damageSeverity);
 
-        if (isElementAlive) {
+        if (didElementSurvive) {
             if (damageSustained.GetValue(DamageCategory.Incursion) > Constants.ZeroF) {
                 // assault was successful
                 Data.Owner = player;

@@ -63,7 +63,7 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Generic\IO\ATechStat.cs" />
+    <Compile Include="Generic\IO\AImprovableStat.cs" />
     <Compile Include="Game\Gameplay\Capability.cs" />
     <Compile Include="Generic\IO\CapabilityStat.cs" />
     <Compile Include="Generic\IO\EquipmentStatFactory.cs" />
@@ -534,7 +534,7 @@
     <Compile Include="Generic\Interfaces\Access\Limited\IHanger_Ltd.cs" />
     <Compile Include="Generic\Framework\ReworkingMode.cs" />
     <Compile Include="Generic\Framework\NoConstructionTask.cs" />
-    <Compile Include="Game\Gameplay\OrderFailureCause.cs" />
+    <Compile Include="Game\Gameplay\OrderOutcome.cs" />
     <Compile Include="Generic\Framework\RefitConstructionTask.cs" />
     <Compile Include="Generic\Deferred\NoQueuedResearchTask.cs" />
     <Compile Include="Generic\Framework\NoResearchTask.cs" />
@@ -545,7 +545,8 @@
     <Compile Include="Generic\Framework\Technology.cs" />
     <Compile Include="Generic\IO\TechnologyFactory.cs" />
     <Compile Include="Game\Gameplay\PlayerDesigns.cs" />
-    <Compile Include="EquipmentMountCategory.cs" />
+    <Compile Include="Generic\Framework\EquipmentMountCategory.cs" />
+    <Compile Include="Generic\IO\TechStat.cs" />
     <Compile Include="ThirdParty\ParticleScaler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Game\GUI\PlayerViewMode.cs" />
@@ -596,10 +597,13 @@
     <Compile Include="Generic\Framework\WaitForHours.cs" />
     <Compile Include="Generic\Utility\Yielders.cs" />
     <Compile Include="Game\Gameplay\UniverseCenterInfoAccessController.cs" />
-    <Compile Include="Game\Gameplay\UserPlayerAIManager.cs" />
+    <Compile Include="Game\Gameplay\UserAIManager.cs" />
     <Compile Include="Game\Gameplay\UserPlayerKnowledge.cs" />
     <Compile Include="Generic\_Debug\AUnitCreatorEditorSettings.cs" />
     <Compile Include="Generic\Graphics\TrackingIconInfo.cs" />
+    <Compile Include="Generic\Graphics\TreeLinkID.cs" />
+    <Compile Include="Generic\Graphics\TreeNodeID.cs" />
+    <Compile Include="Generic\Framework\UserResearchManager.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

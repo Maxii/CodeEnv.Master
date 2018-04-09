@@ -41,7 +41,7 @@ public class ReplaceAll : AMonoBase {
         foreach (var comp in componentsToReplace) {
             impactedGameObjects.Add(comp.gameObject);
             if (comp.audioClip != tap) {
-                D.Warn("{0}: Gameobject named {1} uses an audioClip called {2}.", DebugName, comp.gameObject.name, comp.audioClip.name);
+                D.Warn("{0}: GameObject named {1} uses an audioClip called {2}.", DebugName, comp.gameObject.name, comp.audioClip.name);
             }
             DestroyImmediate(comp);
         }

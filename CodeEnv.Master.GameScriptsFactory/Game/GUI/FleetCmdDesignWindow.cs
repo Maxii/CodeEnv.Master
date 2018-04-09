@@ -60,8 +60,8 @@ public class FleetCmdDesignWindow : AUnitDesignWindow {
         UserDesigns.ObsoleteFleetCmdDesign(designName);
     }
 
-    protected override IEnumerable<AEquipmentStat> GetAvailableUserEquipmentStats() {
-        return UserDesigns.GetCurrentEquipmentStats(AUnitCmdDesign.SupportedEquipCategories);
+    protected override IEnumerable<AEquipmentStat> GetUserCurrentEquipmentStats() {
+        return UserDesigns.GetCurrentEquipmentStats(TempGameValues.CmdModuleSupportedEquipmentCategories);
     }
 
 }

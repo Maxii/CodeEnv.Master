@@ -343,6 +343,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         element.subordinateDamageIncurred += SubordinateDamageIncurredEventHandler;
         element.isAvailableChanged += SubordinateIsAvailableChangedEventHandler;
         element.subordinateOrderOutcome += SubordinateOrderOutcomeEventHandler;
+        element.subordinateRepairCompleted += SubordinateRepairCompletedEventHandler;
 
         // 3.31.17 CmdSensor attachment to monitors now takes place when the sensor is built in UnitFactory.
 
@@ -371,6 +372,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         element.subordinateDamageIncurred -= SubordinateDamageIncurredEventHandler;
         element.isAvailableChanged -= SubordinateIsAvailableChangedEventHandler;
         element.subordinateOrderOutcome -= SubordinateOrderOutcomeEventHandler;
+        element.subordinateRepairCompleted -= SubordinateRepairCompletedEventHandler;
 
         if (ElementCount == Constants.Zero) {
             D.Assert(element.IsHQ); // last element must be HQ
@@ -420,18 +422,12 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     public abstract bool IsJoinableBy(int elementCount);
 
     /// <summary>
-    /// Repairs the command module using the provided hit points and returns
-    /// <c>true</c> if the command module has completed its repair.
+    /// Repairs the command module using the provided repair points and returns <c>true</c> if it has been fully repaired.
     /// </summary>
-    /// <param name="repairHitPts">The repair hit points.</param>
+    /// <param name="repairPts">The repair points to use in restoring CurrentHitPts and damaged equipment.</param>
     /// <returns></returns>
-    public bool RepairCmdModule(float repairHitPts) {
-        Data.CmdModuleCurrentHitPoints += repairHitPts;
-        bool isRprCompleted = Data.CmdModuleHealth == Constants.OneHundredPercent;
-        if (isRprCompleted) {
-            Data.RemoveDamageFromAllCmdModuleEquipment();
-        }
-        return isRprCompleted;
+    public bool RepairCmdModule(float repairPts) {
+        return Data.RepairDamage(repairPts);
     }
 
     private void HandleSubordinateOwnerChanging(AUnitElementItem subordinateElement, Player incomingOwner) {
@@ -613,6 +609,10 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         HandleSubordinateIsAvailableChanged(sender as AUnitElementItem);
     }
 
+    protected void SubordinateRepairCompletedEventHandler(object sender, EventArgs e) {
+        HandleSubordinateRepairCompleted(sender as AUnitElementItem);
+    }
+
     protected void SubordinateDamageIncurredEventHandler(object sender, AUnitElementItem.SubordinateDamageIncurredEventArgs e) {
         HandleDamageIncurredBy(sender as AUnitElementItem, e.IsAlive, e.DamageIncurred, e.DamageSeverity);
     }
@@ -705,6 +705,10 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     private void HandleSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) {
         UponSubordinateIsAvailableChanged(subordinateElement);
+    }
+
+    private void HandleSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
+        UponSubordinateRepairCompleted(subordinateElement);
     }
 
     protected virtual void HandleAlertStatusChanged() {
@@ -972,6 +976,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     /// </summary>
     /// <param name="calledStateName">Name of the Call()ed state.</param>
     /// <returns></returns>
+    [Obsolete("Not currently used")]
     protected FsmReturnHandler __GetCalledStateReturnHandlerFor(string calledStateName) {
         D.AssertException(_activeFsmReturnHandlers.Count != Constants.Zero);
         var peekHandler = _activeFsmReturnHandlers.Peek();
@@ -1034,8 +1039,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
                 DamageStrength damageToCmdModule = damageIncurred - Data.DamageMitigation;
                 if (damageToCmdModule.Total > Constants.ZeroF) {
                     float unusedDamageSeverity;
-                    bool isCmdAlive = ApplyDamage(damageToCmdModule, out unusedDamageSeverity);
-                    D.Assert(isCmdAlive, Data.DebugName);
+                    bool isCmdAlive = Data.ApplyDamage(damageToCmdModule, out unusedDamageSeverity);
+                    D.Assert(isCmdAlive);
                     StartEffectSequence(EffectSequenceID.CmdModuleHit);
                 }
             }
@@ -1124,6 +1129,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     private void UponSubordinateDeath(AUnitElementItem deadSubordinateElement) { RelayToCurrentState(deadSubordinateElement); }
 
     private void UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) { RelayToCurrentState(subordinateElement); }
+
+    private void UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) { RelayToCurrentState(subordinateElement); }
 
     [Obsolete("Not yet used")]
     private void UponEnemyDetected() { RelayToCurrentState(); }
@@ -1233,43 +1240,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
         throw new InvalidOperationException("{0} can't directly take a hit!".Inject(DebugName));
     }
 
-    /// <summary>
-    /// Applies the damage to the command module returning true as the command module will always survive the hit.
-    /// </summary>
-    /// <param name="damageToCmdModule">The damage sustained by the CmdModule.</param>
-    /// <param name="damageSeverity">The damage severity.</param>
-    /// <returns>
-    ///   <c>true</c> if the command survived.
-    /// </returns>
-    protected override bool ApplyDamage(DamageStrength damageToCmdModule, out float damageSeverity) {
-        var __combinedDmgToCmdModule = damageToCmdModule.Total;
-        var minAllowedCurrentHitPoints = 0.5F * Data.CmdModuleMaxHitPoints;
-        var proposedCurrentHitPts = Data.CmdModuleCurrentHitPoints - __combinedDmgToCmdModule;
-        if (proposedCurrentHitPts < minAllowedCurrentHitPoints) {
-            Data.CmdModuleCurrentHitPoints = minAllowedCurrentHitPoints;
-        }
-        else {
-            Data.CmdModuleCurrentHitPoints -= __combinedDmgToCmdModule;
-        }
-        D.Assert(Data.CmdModuleHealth > Constants.ZeroPercent, "Should never fail as CmdModules can't die directly from a hit.");
-
-        damageSeverity = Mathf.Clamp01(__combinedDmgToCmdModule / Data.CmdModuleCurrentHitPoints);
-        AssessCripplingDamageToEquipment(damageSeverity);
-        return true;
-    }
-
-    protected override void AssessCripplingDamageToEquipment(float damageSeverity) {
-        base.AssessCripplingDamageToEquipment(damageSeverity);
-        var equipDamageChance = damageSeverity;
-
-        var undamagedDamageableSensors = Data.Sensors.Where(s => s.IsDamageable && !s.IsDamaged);
-        undamagedDamageableSensors.ForAll(s => {
-            s.IsDamaged = RandomExtended.Chance(equipDamageChance);
-            //D.Log(ShowDebugLog && s.IsDamaged, "{0}'s sensor {1} has been damaged.", DebugName, s.Name);
-        });
-
-        D.Assert(!Data.FtlDampener.IsDamageable);
-    }
+    // 3.16.18 ApplyDamage and AssessCripplingDamageToEquipment moved to Data
 
     /// <summary>
     /// Destroys any parents that are applicable to the Cmd. 

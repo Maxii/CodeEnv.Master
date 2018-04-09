@@ -45,8 +45,8 @@ public class ShipHull : AHull, IShipHull {
 
     protected override int MaxAllowedLaunchedWeapons { get { return _hullCategory.MaxSiloMounts(); } }
 
-    protected override void Validate() {
-        base.Validate();
+    protected override void __ValidateOnAwake() {
+        base.__ValidateOnAwake();
         //D.Assert(!_engineNozzles.IsNullOrEmpty());
         D.AssertNotDefault((int)_hullCategory);
     }

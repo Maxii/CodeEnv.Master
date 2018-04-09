@@ -134,6 +134,7 @@ namespace CodeEnv.Master.GameContent {
 
         #region Debug
 
+        [System.Diagnostics.Conditional("DEBUG")]
         private void __ValidateProductionPresenceIn(ref OutputsYield unitOutputs) {
             // 11.20.17 Zero unit production in a Base will result in Base ConstructionMgr attempting to divide by zero when 
             // recalculating expected completion dates.

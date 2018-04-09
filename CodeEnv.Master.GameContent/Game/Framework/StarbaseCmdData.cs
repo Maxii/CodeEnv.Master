@@ -46,10 +46,7 @@ namespace CodeEnv.Master.GameContent {
             get { return _publisher = _publisher ?? new StarbasePublisher(this); }
         }
 
-        public new StarbaseCmdDesign CmdDesign {
-            get { return base.CmdDesign as StarbaseCmdDesign; }
-            set { base.CmdDesign = value; }
-        }
+        public new StarbaseCmdDesign CmdDesign { get { return base.CmdDesign as StarbaseCmdDesign; } }
 
         #region Initialization 
 

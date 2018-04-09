@@ -370,7 +370,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     protected override void SubordinateOrderOutcomeEventHandler(object sender, AUnitElementItem.OrderOutcomeEventArgs e) {
-        HandleSubordinateOrderOutcome(sender as ShipItem, e.IsOrderSuccessfullyCompleted, e.Target, e.FailureCause, e.CmdOrderID);
+        HandleSubordinateOrderOutcome(sender as ShipItem, e.Target, e.Outcome, e.CmdOrderID);
     }
 
     #endregion
@@ -838,6 +838,11 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         // do nothing. No orders currently being executed
     }
 
+    void Idling_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
+        LogEvent();
+        // do nothing. No orders currently being executed
+    }
+
     void Idling_UponSubordinateJoined(ShipItem subordinateShip) {
         LogEvent();
         // do nothing. No orders currently being executed
@@ -1067,11 +1072,11 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         _moveHelper.EngagePilot(shipsToMove: Elements);
     }
 
-    void ExecuteMoveOrder_UponOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigableDestination target, OrderFailureCause failCause) {
-        D.Log(ShowDebugLog, "{0}.ExecuteMoveOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, FailCause = {3}, ShipCurrentOrder = {4}.",
-            DebugName, LastState.GetValueName(), ship.DebugName, failCause.GetValueName(), ship.CurrentOrder.DebugName);
+    void ExecuteMoveOrder_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
+        D.Log(ShowDebugLog, "{0}.ExecuteMoveOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, Outcome = {3}, ShipCurrentOrder = {4}.",
+            DebugName, LastState.GetValueName(), ship.DebugName, outcome.GetValueName(), ship.CurrentOrder.DebugName);
 
-        _moveHelper.HandleOrderOutcomeCallback(ship, isSuccess, target, failCause);
+        _moveHelper.HandleOrderOutcomeCallback(ship, target, outcome);
     }
 
     void ExecuteMoveOrder_UponApTargetReached() {
@@ -1091,6 +1096,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     void ExecuteMoveOrder_UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) {
+        LogEvent();
+    }
+
+    void ExecuteMoveOrder_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
         LogEvent();
     }
 
@@ -1276,10 +1285,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         _moveHelper.EngagePilot(shipsToMove: Elements);
     }
 
-    void ExecuteAssumeFormationOrder_UponOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigableDestination target, OrderFailureCause failCause) {
-        D.Log(ShowDebugLog, "{0}.ExecuteAssumeFormationOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, FailCause = {3}, ShipCurrentOrder = {4}.",
-            DebugName, LastState.GetValueName(), ship.DebugName, failCause.GetValueName(), ship.CurrentOrder.DebugName);
-        _moveHelper.HandleOrderOutcomeCallback(ship, isSuccess, target, failCause);
+    void ExecuteAssumeFormationOrder_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
+        D.Log(ShowDebugLog, "{0}.ExecuteAssumeFormationOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, Outcome = {3}, ShipCurrentOrder = {4}.",
+            DebugName, LastState.GetValueName(), ship.DebugName, outcome.GetValueName(), ship.CurrentOrder.DebugName);
+        _moveHelper.HandleOrderOutcomeCallback(ship, target, outcome);
     }
 
     void ExecuteAssumeFormationOrder_UponApTargetReached() {
@@ -1299,6 +1308,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     void ExecuteAssumeFormationOrder_UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) {
+        LogEvent();
+    }
+
+    void ExecuteAssumeFormationOrder_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
         LogEvent();
     }
 
@@ -1431,46 +1444,48 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         Return();
     }
 
-    void AssumingFormation_UponOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigableDestination target, OrderFailureCause failCause) {
+    void AssumingFormation_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
         LogEvent();
 
-        if (isSuccess) {
-            bool isRemoved = _fsmShipsExpectedToCallbackWithOrderOutcome.Remove(ship);
-            if (!isRemoved) {
-                D.Error("{0}: {1} is not present to be removed. Present: {2}.",
-                    DebugName, ship.DebugName, _fsmShipsExpectedToCallbackWithOrderOutcome.Concatenate());   //  2.14.18 Failed from _UponSubJoined
-            }
-        }
-        else {
-            switch (failCause) {
-                case OrderFailureCause.NewOrderReceived:
-                case OrderFailureCause.NeedsRepair:
-                // Ship will get repaired, but even if it goes to its formationStation to do so
-                // it won't communicate its success back to Cmd since Captain ordered it, not Cmd
-                case OrderFailureCause.Death:
-                case OrderFailureCause.Ownership:
-                    bool isRemoved = _fsmShipsExpectedToCallbackWithOrderOutcome.Remove(ship);
-                    if (!isRemoved) {
-                        D.Error("{0}: {1} is not present to be removed. FailCause: {2}. Present: {3}.",
-                            DebugName, ship.DebugName, failCause.GetValueName(), _fsmShipsExpectedToCallbackWithOrderOutcome.Concatenate());
-                    }
-                    break;
-                case OrderFailureCause.TgtUnreachable:
-                    D.Error("{0}: {1}.{2} not currently handled.", DebugName, typeof(OrderFailureCause).Name,
-                        OrderFailureCause.TgtUnreachable.GetValueName());
-                    break;
-                case OrderFailureCause.TgtDeath:
-                case OrderFailureCause.TgtUnjoinable:
-                case OrderFailureCause.TgtRelationship:
-                case OrderFailureCause.TgtUncatchable:
-                case OrderFailureCause.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(failCause));
-            }
+        switch (outcome) {
+            case OrderOutcome.Success:
+                bool isRemoved = _fsmShipsExpectedToCallbackWithOrderOutcome.Remove(ship);
+                if (!isRemoved) {
+                    D.Error("{0}: {1} is not present to be removed. Present: {2}.",
+                        DebugName, ship.DebugName, _fsmShipsExpectedToCallbackWithOrderOutcome.Concatenate());   //  2.14.18 Failed from _UponSubJoined
+                }
+                break;
+            case OrderOutcome.NewOrderReceived:
+            case OrderOutcome.NeedsRepair:
+            // Ship will get repaired, but even if it goes to its formationStation to do so
+            // it won't communicate its success back to Cmd since Captain ordered it, not Cmd
+            case OrderOutcome.Death:
+            case OrderOutcome.Ownership:
+                isRemoved = _fsmShipsExpectedToCallbackWithOrderOutcome.Remove(ship);
+                if (!isRemoved) {
+                    D.Error("{0}: {1} is not present to be removed. Outcome: {2}. Present: {3}.",
+                        DebugName, ship.DebugName, outcome.GetValueName(), _fsmShipsExpectedToCallbackWithOrderOutcome.Concatenate());
+                }
+                break;
+            case OrderOutcome.TgtUnreachable:
+                D.Error("{0}: {1}.{2} not currently handled.", DebugName, typeof(OrderOutcome).Name,
+                    OrderOutcome.TgtUnreachable.GetValueName());
+                break;
+            case OrderOutcome.TgtDeath:
+            case OrderOutcome.TgtUnjoinable:
+            case OrderOutcome.TgtRelationship:
+            case OrderOutcome.TgtUncatchable:
+            case OrderOutcome.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(outcome));
         }
     }
 
     void AssumingFormation_UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) {
+        LogEvent();
+    }
+
+    void AssumingFormation_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
         LogEvent();
     }
 
@@ -1619,10 +1634,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         _moveHelper.EngagePilot(shipsToMove: Elements);
     }
 
-    void ExecuteExploreOrder_UponOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigableDestination target, OrderFailureCause failCause) {
-        D.Log(ShowDebugLog, "{0}.ExecuteExploreOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, FailCause = {3}, ShipCurrentOrder = {4}.",
-            DebugName, LastState.GetValueName(), ship.DebugName, failCause.GetValueName(), ship.CurrentOrder.DebugName);
-        _moveHelper.HandleOrderOutcomeCallback(ship, isSuccess, target, failCause);
+    void ExecuteExploreOrder_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
+        D.Log(ShowDebugLog, "{0}.ExecuteExploreOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, Outcome = {3}, ShipCurrentOrder = {4}.",
+            DebugName, LastState.GetValueName(), ship.DebugName, outcome.GetValueName(), ship.CurrentOrder.DebugName);
+        _moveHelper.HandleOrderOutcomeCallback(ship, target, outcome);
     }
 
     void ExecuteExploreOrder_UponApTargetReached() {
@@ -1642,6 +1657,11 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     void ExecuteExploreOrder_UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) {
         LogEvent();
+    }
+
+    void ExecuteExploreOrder_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
+        LogEvent();
+        // do nothing. No orders currently being executed
     }
 
     void ExecuteExploreOrder_UponSubordinateJoined(ShipItem subordinateShip) {
@@ -2034,7 +2054,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         Return();
     }
 
-    void Exploring_UponOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigableDestination target, OrderFailureCause failCause) {
+    void Exploring_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
         LogEvent();
 
         IShipExplorable shipExploreTgt = target as IShipExplorable;
@@ -2044,31 +2064,32 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         if (IsShipExploreTargetPartOfSystem(shipExploreTgt)) {
             // exploreTgt is a planet or star
             if (!_fsmSystemExploreTgtAssignments.ContainsKey(shipExploreTgt)) {
-                string successMsg = isSuccess ? "successfully" : "unsuccessfully";
-                D.Log("{0}: FailureCause = {1}.", DebugName, failCause.GetValueName());
+                string successMsg = outcome == OrderOutcome.Success ? "successfully" : "unsuccessfully";
+                D.Log("{0}: FailureCause = {1}.", DebugName, outcome.GetValueName());
                 D.Error("{0}: {1} {2} completed its exploration of {3} with no record of it being assigned. AssignedTgts: {4}, AssignedShips: {5}.",
                     DebugName, ship.DebugName, successMsg, shipExploreTgt.DebugName, _fsmSystemExploreTgtAssignments.Keys.Select(tgt => tgt.DebugName).Concatenate(),
                     _fsmSystemExploreTgtAssignments.Values.Select(shp => shp.DebugName).Concatenate());
             }
-            if (isSuccess) {
+            if (outcome == OrderOutcome.Success) {
                 HandleSystemTargetExploredOrDead(ship, shipExploreTgt);
             }
             else {
+                // unsuccessful
                 bool isNewShipAssigned;
                 bool testForAdditionalExploringShips = false;
-                switch (failCause) {
-                    case OrderFailureCause.TgtRelationship:
+                switch (outcome) {
+                    case OrderOutcome.TgtRelationship:
                         // exploration failed so recall all ships
                         issueFleetRecall = true;
                         break;
-                    case OrderFailureCause.TgtDeath:
+                    case OrderOutcome.TgtDeath:
                         HandleSystemTargetExploredOrDead(ship, shipExploreTgt);
                         // This is effectively counted as a success and will show up during the _EnterState's
                         // continuous test System.IsFullyExplored. As not really a failure, no reason to issue a fleet recall.
                         break;
-                    case OrderFailureCause.NeedsRepair:
-                    case OrderFailureCause.NewOrderReceived:
-                    case OrderFailureCause.Ownership:
+                    case OrderOutcome.NeedsRepair:
+                    case OrderOutcome.NewOrderReceived:
+                    case OrderOutcome.Ownership:
                         isNewShipAssigned = HandleShipNoLongerAvailableToExplore(ship, shipExploreTgt);
                         if (!isNewShipAssigned) {
                             if (ElementCount > Constants.One) {
@@ -2083,7 +2104,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                             }
                         }
                         break;
-                    case OrderFailureCause.Death:
+                    case OrderOutcome.Death:
                         isNewShipAssigned = HandleShipNoLongerAvailableToExplore(ship, shipExploreTgt);
                         if (!isNewShipAssigned) {
                             if (ElementCount > Constants.One) {    // >1 as dead ship has not yet been removed from fleet
@@ -2097,16 +2118,16 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                             }
                         }
                         break;
-                    case OrderFailureCause.TgtUnreachable:
-                        D.Error("{0}: {1}.{2} not currently handled.", DebugName, typeof(OrderFailureCause).Name,
-                            OrderFailureCause.TgtUnreachable.GetValueName());
+                    case OrderOutcome.TgtUnreachable:
+                        D.Error("{0}: {1}.{2} not currently handled.", DebugName, typeof(OrderOutcome).Name,
+                            OrderOutcome.TgtUnreachable.GetValueName());
                         break;
-                    case OrderFailureCause.TgtUnjoinable:
-                    case OrderFailureCause.TgtUncatchable:
+                    case OrderOutcome.TgtUnjoinable:
+                    case OrderOutcome.TgtUncatchable:
                     // 4.15.17 Only ships pursued by ships can have a Ship.TgtUncatchable fail cause
-                    case OrderFailureCause.None:
+                    case OrderOutcome.None:
                     default:
-                        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(failCause));
+                        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(outcome));
                 }
 
                 if (testForAdditionalExploringShips) {
@@ -2124,16 +2145,16 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         else {
             // exploreTgt is UCenter
             D.Assert(shipExploreTgt is UniverseCenterItem);
-            if (isSuccess) {
+            if (outcome == OrderOutcome.Success) {
                 // exploration of UCenter has successfully completed so issue fleet recall
                 issueFleetRecall = true;
             }
             else {
                 bool isNewShipAssigned;
-                switch (failCause) {
-                    case OrderFailureCause.NeedsRepair:
-                    case OrderFailureCause.NewOrderReceived:
-                    case OrderFailureCause.Ownership:
+                switch (outcome) {
+                    case OrderOutcome.NeedsRepair:
+                    case OrderOutcome.NewOrderReceived:
+                    case OrderOutcome.Ownership:
                         isNewShipAssigned = HandleShipNoLongerAvailableToExplore(ship, shipExploreTgt);
                         if (!isNewShipAssigned) {
                             // No more ships are available to finish UCenter explore. Since it only takes one ship
@@ -2142,7 +2163,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                             issueFleetRecall = true;
                         }
                         break;
-                    case OrderFailureCause.Death:
+                    case OrderOutcome.Death:
                         isNewShipAssigned = HandleShipNoLongerAvailableToExplore(ship, shipExploreTgt);
                         if (!isNewShipAssigned) {
                             if (ElementCount > Constants.One) {    // >1 as dead ship has not yet been removed from fleet
@@ -2157,23 +2178,23 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
                             }
                         }
                         break;
-                    case OrderFailureCause.TgtUnreachable:
-                        D.Error("{0}: {1}.{2} not currently handled.", DebugName, typeof(OrderFailureCause).Name,
-                            OrderFailureCause.TgtUnreachable.GetValueName());
+                    case OrderOutcome.TgtUnreachable:
+                        D.Error("{0}: {1}.{2} not currently handled.", DebugName, typeof(OrderOutcome).Name,
+                            OrderOutcome.TgtUnreachable.GetValueName());
                         break;
-                    case OrderFailureCause.TgtDeath:
-                    case OrderFailureCause.TgtUnjoinable:
-                    case OrderFailureCause.TgtRelationship:
-                    case OrderFailureCause.TgtUncatchable:
-                    case OrderFailureCause.None:
+                    case OrderOutcome.TgtDeath:
+                    case OrderOutcome.TgtUnjoinable:
+                    case OrderOutcome.TgtRelationship:
+                    case OrderOutcome.TgtUncatchable:
+                    case OrderOutcome.None:
                     default:
-                        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(failCause));
+                        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(outcome));
                 }
             }
         }
         if (issueFleetRecall) {
             IFleetExplorable fleetExploreTgt = CurrentOrder.Target as IFleetExplorable;
-            string recallMsg = failCause == OrderFailureCause.None ? "succeeded" : "failed (Cause: {0})".Inject(failCause.GetValueName());
+            string recallMsg = outcome == OrderOutcome.Success ? "succeeded" : "failed (Cause: {0})".Inject(outcome.GetValueName());
             D.LogBold("{0} is recalling all ships as exploration of {1} has {2}.", DebugName, fleetExploreTgt.DebugName, recallMsg);
             var closestLocalAssyStation = GameUtility.GetClosest(Position, fleetExploreTgt.LocalAssemblyStations);
             IssueCmdStaffsAssumeFormationOrder(target: closestLocalAssyStation);
@@ -2181,6 +2202,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     void Exploring_UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) {
+        LogEvent();
+    }
+
+    void Exploring_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
         LogEvent();
     }
 
@@ -2389,10 +2414,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         _moveHelper.EngagePilot(shipsToMove: Elements);
     }
 
-    void ExecutePatrolOrder_UponOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigableDestination target, OrderFailureCause failCause) {
-        D.Log(ShowDebugLog, "{0}.ExecutePatrolOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, FailCause = {3}, ShipCurrentOrder = {4}.",
-            DebugName, LastState.GetValueName(), ship.DebugName, failCause.GetValueName(), ship.CurrentOrder.DebugName);
-        _moveHelper.HandleOrderOutcomeCallback(ship, isSuccess, target, failCause);
+    void ExecutePatrolOrder_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
+        D.Log(ShowDebugLog, "{0}.ExecutePatrolOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, Outcome = {3}, ShipCurrentOrder = {4}.",
+            DebugName, LastState.GetValueName(), ship.DebugName, outcome.GetValueName(), ship.CurrentOrder.DebugName);
+        _moveHelper.HandleOrderOutcomeCallback(ship, target, outcome);
     }
 
     void ExecutePatrolOrder_UponApTargetReached() {
@@ -2412,6 +2437,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     void ExecutePatrolOrder_UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) {
+        LogEvent();
+    }
+
+    void ExecutePatrolOrder_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
         LogEvent();
     }
 
@@ -2601,10 +2630,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         _moveHelper.EngagePilot(shipsToMove: Elements);
     }
 
-    void Patrolling_UponOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigableDestination target, OrderFailureCause failCause) {
-        D.Log(ShowDebugLog, "{0}.Patrolling_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, FailCause = {3}, ShipCurrentOrder = {4}.",
-            DebugName, LastState.GetValueName(), ship.DebugName, failCause.GetValueName(), ship.CurrentOrder.DebugName);
-        _moveHelper.HandleOrderOutcomeCallback(ship, isSuccess, target, failCause);
+    void Patrolling_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
+        D.Log(ShowDebugLog, "{0}.Patrolling_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, Outcome = {3}, ShipCurrentOrder = {4}.",
+            DebugName, LastState.GetValueName(), ship.DebugName, outcome.GetValueName(), ship.CurrentOrder.DebugName);
+        _moveHelper.HandleOrderOutcomeCallback(ship, target, outcome);
     }
 
     void Patrolling_UponApTargetReached() {
@@ -2619,6 +2648,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     void Patrolling_UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) {
+        LogEvent();
+    }
+
+    void Patrolling_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
         LogEvent();
     }
 
@@ -2788,10 +2821,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         _moveHelper.EngagePilot(shipsToMove: Elements);
     }
 
-    void ExecuteGuardOrder_UponOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigableDestination target, OrderFailureCause failCause) {
-        D.Log(ShowDebugLog, "{0}.ExecuteGuardOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, FailCause = {3}, ShipCurrentOrder = {4}.",
-            DebugName, LastState.GetValueName(), ship.DebugName, failCause.GetValueName(), ship.CurrentOrder.DebugName);
-        _moveHelper.HandleOrderOutcomeCallback(ship, isSuccess, target, failCause);
+    void ExecuteGuardOrder_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
+        D.Log(ShowDebugLog, "{0}.ExecuteGuardOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, Outcome = {3}, ShipCurrentOrder = {4}.",
+            DebugName, LastState.GetValueName(), ship.DebugName, outcome.GetValueName(), ship.CurrentOrder.DebugName);
+        _moveHelper.HandleOrderOutcomeCallback(ship, target, outcome);
     }
 
     void ExecuteGuardOrder_UponApTargetReached() {
@@ -2811,6 +2844,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     void ExecuteGuardOrder_UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) {
+        LogEvent();
+    }
+
+    void ExecuteGuardOrder_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
         LogEvent();
     }
 
@@ -3007,10 +3044,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         _moveHelper.EngagePilot(shipsToMove: Elements);
     }
 
-    void Guarding_UponOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigableDestination target, OrderFailureCause failCause) {
-        D.Log(ShowDebugLog, "{0}.Guarding_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, FailCause = {3}, ShipCurrentOrder = {4}.",
-            DebugName, LastState.GetValueName(), ship.DebugName, failCause.GetValueName(), ship.CurrentOrder.DebugName);
-        _moveHelper.HandleOrderOutcomeCallback(ship, isSuccess, target, failCause);
+    void Guarding_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
+        D.Log(ShowDebugLog, "{0}.Guarding_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, Outcome = {3}, ShipCurrentOrder = {4}.",
+            DebugName, LastState.GetValueName(), ship.DebugName, outcome.GetValueName(), ship.CurrentOrder.DebugName);
+        _moveHelper.HandleOrderOutcomeCallback(ship, target, outcome);
     }
 
     void Guarding_UponApTargetReached() {
@@ -3025,6 +3062,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     void Guarding_UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) {
+        LogEvent();
+    }
+
+    void Guarding_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
         LogEvent();
     }
 
@@ -3231,12 +3272,12 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         _moveHelper.EngagePilot(shipsToMove: Elements);
     }
 
-    void ExecuteAttackOrder_UponOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigableDestination target, OrderFailureCause failCause) {
-        if (!isSuccess) {
-            D.Log(ShowDebugLog, "{0}.ExecuteAttackOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, FailCause = {3}, ShipCurrentOrder = {4}.",
-                DebugName, LastState.GetValueName(), ship.DebugName, failCause.GetValueName(), ship.CurrentOrder.DebugName);
+    void ExecuteAttackOrder_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
+        if (outcome != OrderOutcome.Success) {
+            D.Log(ShowDebugLog, "{0}.ExecuteAttackOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, Outcome = {3}, ShipCurrentOrder = {4}.",
+                DebugName, LastState.GetValueName(), ship.DebugName, outcome.GetValueName(), ship.CurrentOrder.DebugName);
         }
-        _moveHelper.HandleOrderOutcomeCallback(ship, isSuccess, target, failCause);
+        _moveHelper.HandleOrderOutcomeCallback(ship, target, outcome);
     }
 
     void ExecuteAttackOrder_UponApTargetReached() {
@@ -3256,6 +3297,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     void ExecuteAttackOrder_UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) {
+        LogEvent();
+    }
+
+    void ExecuteAttackOrder_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
         LogEvent();
     }
 
@@ -3453,46 +3498,53 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         Return();
     }
 
-    void Attacking_UponOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigableDestination target, OrderFailureCause failCause) {
+    void Attacking_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
         LogEvent();
-        if (isSuccess) {
-            bool isRemoved = _fsmShipsExpectedToCallbackWithOrderOutcome.Remove(ship);
-            if (!isRemoved) {
-                D.Error("{0}: {1} is not present to be removed. Present: {2}.",
-                    DebugName, ship.DebugName, _fsmShipsExpectedToCallbackWithOrderOutcome.Concatenate());
-            }
-        }
-        else {
-            switch (failCause) {
-                case OrderFailureCause.NewOrderReceived:
-                case OrderFailureCause.NeedsRepair:
-                case OrderFailureCause.Capability:
-                case OrderFailureCause.Ownership:
-                case OrderFailureCause.Death:
-                    bool isRemoved = _fsmShipsExpectedToCallbackWithOrderOutcome.Remove(ship);
-                    if (!isRemoved) {
-                        D.Error("{0}: {1} is not present to be removed. FailCause: {2}. Present: {3}.",
-                            DebugName, ship.DebugName, failCause.GetValueName(), _fsmShipsExpectedToCallbackWithOrderOutcome.Concatenate());
-                    }
-                    break;
-                case OrderFailureCause.TgtRelationship:
-                // 1.9.18 Ship relies on FleetCmd to detect UnitAttackTgt relations change that should stop attack.
-                // All other Ship TgtRelationship CallReturnCauses result in RestartState to find another shipAttackTgt
-                case OrderFailureCause.ConstructionCanceled:
-                case OrderFailureCause.TgtUncatchable:
-                case OrderFailureCause.TgtUnjoinable:
-                case OrderFailureCause.TgtDeath:
-                case OrderFailureCause.TgtUnreachable:
-                case OrderFailureCause.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(failCause));
-            }
+        switch (outcome) {
+            case OrderOutcome.Success:
+            case OrderOutcome.NewOrderReceived:
+            case OrderOutcome.NeedsRepair:
+            case OrderOutcome.Disqualified:
+            case OrderOutcome.Ownership:
+            case OrderOutcome.Death:
+                bool isRemoved = _fsmShipsExpectedToCallbackWithOrderOutcome.Remove(ship);
+                if (!isRemoved) {
+                    D.Error("{0}: {1} is not present to be removed. Outcome: {2}. Present: {3}.",
+                        DebugName, ship.DebugName, outcome.GetValueName(), _fsmShipsExpectedToCallbackWithOrderOutcome.Concatenate());
+                }
+                break;
+            case OrderOutcome.TgtRelationship:
+            // 1.9.18 Ship relies on FleetCmd to detect UnitAttackTgt relations change that should stop attack.
+            // All other Ship TgtRelationship CallReturnCauses result in RestartState to find another shipAttackTgt
+            case OrderOutcome.ConstructionCanceled:
+            case OrderOutcome.TgtUncatchable:
+            case OrderOutcome.TgtUnjoinable:
+            case OrderOutcome.TgtDeath:
+            case OrderOutcome.TgtUnreachable:
+            case OrderOutcome.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(outcome));
         }
     }
 
     void Attacking_UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) {
         LogEvent();
         // TODO
+    }
+
+    void Attacking_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
+        LogEvent();
+        if (_fsmShipsExpectedToCallbackWithOrderOutcome.Any()) {
+            var subordinateShip = subordinateElement as ShipItem;
+            if (subordinateShip.IsAuthorizedForNewOrder(ShipDirective.Attack)) {
+                bool isAdded = _fsmShipsExpectedToCallbackWithOrderOutcome.Add(subordinateShip);
+                D.Assert(isAdded);
+                ShipOrder order = new ShipOrder(ShipDirective.Attack, CurrentOrder.Source, _executingOrderID, _fsmTgt as IShipNavigableDestination);
+                D.Warn("FYI: {0} is issuing {1} to {2} after completing repairs during State {3}.", DebugName, order.DebugName,
+                    subordinateShip.DebugName, CurrentState.GetValueName());
+                subordinateShip.CurrentOrder = order;
+            }
+        }
     }
 
     void Attacking_UponSubordinateJoined(ShipItem subordinateShip) {
@@ -3796,10 +3848,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         _moveHelper.EngagePilot(shipsToMove: Elements);
     }
 
-    void ExecuteRegroupOrder_UponOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigableDestination target, OrderFailureCause failCause) {
-        D.Log(ShowDebugLog, "{0}.ExecuteRegroupOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, FailCause = {3}, ShipCurrentOrder = {4}.",
-            DebugName, LastState.GetValueName(), ship.DebugName, failCause.GetValueName(), ship.CurrentOrder.DebugName);
-        _moveHelper.HandleOrderOutcomeCallback(ship, isSuccess, target, failCause);
+    void ExecuteRegroupOrder_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
+        D.Log(ShowDebugLog, "{0}.ExecuteRegroupOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, Outcome = {3}, ShipCurrentOrder = {4}.",
+            DebugName, LastState.GetValueName(), ship.DebugName, outcome.GetValueName(), ship.CurrentOrder.DebugName);
+        _moveHelper.HandleOrderOutcomeCallback(ship, target, outcome);
     }
 
     void ExecuteRegroupOrder_UponApTargetReached() {
@@ -3816,6 +3868,14 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     void ExecuteRegroupOrder_UponNewOrderReceived() {
         LogEvent();
         // TODO
+    }
+
+    void ExecuteRegroupOrder_UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) {
+        LogEvent();
+    }
+
+    void ExecuteRegroupOrder_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
+        LogEvent();
     }
 
     void ExecuteRegroupOrder_UponAlertStatusChanged() {
@@ -3969,10 +4029,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         _moveHelper.EngagePilot(shipsToMove: Elements);
     }
 
-    void ExecuteJoinFleetOrder_UponOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigableDestination target, OrderFailureCause failCause) {
-        D.Log(ShowDebugLog, "{0}.ExecuteJoinFleetOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, FailCause = {3}, ShipCurrentOrder = {4}.",
-            DebugName, LastState.GetValueName(), ship.DebugName, failCause.GetValueName(), ship.CurrentOrder.DebugName);
-        _moveHelper.HandleOrderOutcomeCallback(ship, isSuccess, target, failCause);
+    void ExecuteJoinFleetOrder_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
+        D.Log(ShowDebugLog, "{0}.ExecuteJoinFleetOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, Outcome = {3}, ShipCurrentOrder = {4}.",
+            DebugName, LastState.GetValueName(), ship.DebugName, outcome.GetValueName(), ship.CurrentOrder.DebugName);
+        _moveHelper.HandleOrderOutcomeCallback(ship, target, outcome);
     }
 
     void ExecuteJoinFleetOrder_UponApTargetReached() {
@@ -3994,6 +4054,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     void ExecuteJoinFleetOrder_UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) {
+        LogEvent();
+    }
+
+    void ExecuteJoinFleetOrder_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
         LogEvent();
     }
 
@@ -4173,10 +4237,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         _moveHelper.EngagePilot(shipsToMove: Elements);
     }
 
-    void ExecuteJoinHangerOrder_UponOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigableDestination target, OrderFailureCause failCause) {
-        D.Log(ShowDebugLog, "{0}.ExecuteJoinHangerOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, FailCause = {3}, ShipCurrentOrder = {4}.",
-            DebugName, LastState.GetValueName(), ship.DebugName, failCause.GetValueName(), ship.CurrentOrder.DebugName);
-        _moveHelper.HandleOrderOutcomeCallback(ship, isSuccess, target, failCause);
+    void ExecuteJoinHangerOrder_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
+        D.Log(ShowDebugLog, "{0}.ExecuteJoinHangerOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, Outcome = {3}, ShipCurrentOrder = {4}.",
+            DebugName, LastState.GetValueName(), ship.DebugName, outcome.GetValueName(), ship.CurrentOrder.DebugName);
+        _moveHelper.HandleOrderOutcomeCallback(ship, target, outcome);
     }
 
     void ExecuteJoinHangerOrder_UponApTargetReached() {
@@ -4196,6 +4260,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     void ExecuteJoinHangerOrder_UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) {
+        LogEvent();
+    }
+
+    void ExecuteJoinHangerOrder_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
         LogEvent();
     }
 
@@ -4348,51 +4416,53 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         Return();
     }
 
-    void JoiningHanger_UponOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigableDestination target, OrderFailureCause failCause) {
+    void JoiningHanger_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
         LogEvent();
 
-        D.Log(ShowDebugLog, "{0}.JoiningHanger_UponOrderOutcomeCallback() called from {1}. FailCause = {2}. Frame: {3}.",
-            DebugName, ship.DebugName, failCause.GetValueName(), Time.frameCount);
+        D.Log(ShowDebugLog, "{0}.JoiningHanger_UponOrderOutcomeCallback() called from {1}. Outcome = {2}. Frame: {3}.",
+            DebugName, ship.DebugName, outcome.GetValueName(), Time.frameCount);
 
-        if (isSuccess) {
-            bool isRemoved = _fsmShipsExpectedToCallbackWithOrderOutcome.Remove(ship);
-            if (!isRemoved) {
-                D.Error("{0}: {1} is not present to be removed. Present: {2}.",
-                    DebugName, ship.DebugName, _fsmShipsExpectedToCallbackWithOrderOutcome.Concatenate());
-            }
-        }
-        else {
-            switch (failCause) {
-                case OrderFailureCause.Death:
-                case OrderFailureCause.NewOrderReceived:
-                case OrderFailureCause.Ownership:
-                case OrderFailureCause.TgtUnjoinable:
-                    bool isRemoved = _fsmShipsExpectedToCallbackWithOrderOutcome.Remove(ship);
-                    if (!isRemoved) {
-                        D.Error("{0}: {1} is not present to be removed. FailCause: {2}. Present: {3}.",
-                            DebugName, ship.DebugName, failCause.GetValueName(), _fsmShipsExpectedToCallbackWithOrderOutcome.Concatenate());
-                    }
-                    break;
-                case OrderFailureCause.TgtRelationship:
-                case OrderFailureCause.TgtDeath:
-                    // Tgt Base change will be detected and handled by this.EnteringHanger_UponFsmTgtXXX()
-                    break;
-                case OrderFailureCause.TgtUnreachable:
-                    D.Error("{0}: {1}.{2} not currently handled.", DebugName, typeof(OrderFailureCause).Name,
-                        OrderFailureCause.TgtUnreachable.GetValueName());
-                    break;
-                case OrderFailureCause.NeedsRepair:
-                // Should not occur as Ship knows entering hanger will repair damage if needed
-                case OrderFailureCause.TgtUncatchable:
-                case OrderFailureCause.ConstructionCanceled:
-                case OrderFailureCause.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(failCause));
-            }
+        switch (outcome) {
+            case OrderOutcome.Success:
+                bool isRemoved = _fsmShipsExpectedToCallbackWithOrderOutcome.Remove(ship);
+                if (!isRemoved) {
+                    D.Error("{0}: {1} is not present to be removed. Present: {2}.",
+                        DebugName, ship.DebugName, _fsmShipsExpectedToCallbackWithOrderOutcome.Concatenate());
+                }
+                break;
+            case OrderOutcome.Death:
+            case OrderOutcome.NewOrderReceived:
+            case OrderOutcome.Ownership:
+            case OrderOutcome.TgtUnjoinable:
+                isRemoved = _fsmShipsExpectedToCallbackWithOrderOutcome.Remove(ship);
+                if (!isRemoved) {
+                    D.Error("{0}: {1} is not present to be removed. FailCause: {2}. Present: {3}.",
+                        DebugName, ship.DebugName, outcome.GetValueName(), _fsmShipsExpectedToCallbackWithOrderOutcome.Concatenate());
+                }
+                break;
+            case OrderOutcome.TgtRelationship:
+            case OrderOutcome.TgtDeath:
+                // Tgt Base change will be detected and handled by this.EnteringHanger_UponFsmTgtXXX()
+                break;
+            case OrderOutcome.TgtUnreachable:
+                D.Error("{0}: {1}.{2} not currently handled.", DebugName, typeof(OrderOutcome).Name,
+                    OrderOutcome.TgtUnreachable.GetValueName());
+                break;
+            case OrderOutcome.NeedsRepair:
+            // Should not occur as Ship knows entering hanger will repair damage if needed
+            case OrderOutcome.TgtUncatchable:
+            case OrderOutcome.ConstructionCanceled:
+            case OrderOutcome.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(outcome));
         }
     }
 
     void JoiningHanger_UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) {
+        LogEvent();
+    }
+
+    void JoiningHanger_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
         LogEvent();
     }
 
@@ -4581,10 +4651,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         _moveHelper.EngagePilot(shipsToMove: Elements);
     }
 
-    void ExecuteRepairOrder_UponOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigableDestination target, OrderFailureCause failCause) {
-        D.Log(ShowDebugLog, "{0}.ExecuteRepairOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, FailCause = {3}, ShipCurrentOrder = {4}.",
-            DebugName, LastState.GetValueName(), ship.DebugName, failCause.GetValueName(), ship.CurrentOrder.DebugName);
-        _moveHelper.HandleOrderOutcomeCallback(ship, isSuccess, target, failCause);
+    void ExecuteRepairOrder_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
+        D.Log(ShowDebugLog, "{0}.ExecuteRepairOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, Outcome = {3}, ShipCurrentOrder = {4}.",
+            DebugName, LastState.GetValueName(), ship.DebugName, outcome.GetValueName(), ship.CurrentOrder.DebugName);
+        _moveHelper.HandleOrderOutcomeCallback(ship, target, outcome);
     }
 
     void ExecuteRepairOrder_UponApTargetReached() {
@@ -4604,6 +4674,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     void ExecuteRepairOrder_UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) {
+        LogEvent();
+    }
+
+    void ExecuteRepairOrder_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
         LogEvent();
     }
 
@@ -4817,54 +4891,56 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         Return();
     }
 
-    void Repairing_UponOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigableDestination target, OrderFailureCause failCause) {
+    void Repairing_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
         LogEvent();
 
-        if (isSuccess) {
-            bool isRemoved = _fsmShipsExpectedToCallbackWithOrderOutcome.Remove(ship);
-            if (!isRemoved) {
-                D.Error("{0}: {1} is not present to be removed. Present: {2}.",
-                    DebugName, ship.DebugName, _fsmShipsExpectedToCallbackWithOrderOutcome.Concatenate());
-            }
-        }
-        else {
-            switch (failCause) {
-                case OrderFailureCause.Death:
-                case OrderFailureCause.NewOrderReceived:
-                case OrderFailureCause.Ownership:
-                    bool isRemoved = _fsmShipsExpectedToCallbackWithOrderOutcome.Remove(ship);
-                    if (!isRemoved) {
-                        D.Error("{0}: {1} is not present to be removed. FailCause: {2}. Present: {3}.",
-                            DebugName, ship.DebugName, failCause.GetValueName(), _fsmShipsExpectedToCallbackWithOrderOutcome.Concatenate());
-                    }
-                    break;
-                case OrderFailureCause.TgtDeath:
-                case OrderFailureCause.TgtRelationship:
-                    // 4.15.17 Since Callback, the order to repair came from this Cmd. The repairDest can't be repair in place since 
-                    // this is the death or relationshipChg of the repairDest affecting all ships, so pick a new repairDest for all.
-                    IssueCmdStaffsRepairOrder();
-                    break;
-                case OrderFailureCause.TgtUncatchable:
-                    D.Error("{0}.Repairing_UponOrderOutcomeCallback received uncatchable failure from {1}. RprTgtToCmd distance = {2:0.}.",
-                        DebugName, ship.DebugName, Vector3.Distance(Position, target.Position));
-                    break;
-                case OrderFailureCause.TgtUnreachable:
-                    D.Error("{0}: {1}.{2} not currently handled.", DebugName, typeof(OrderFailureCause).Name,
-                        OrderFailureCause.TgtUnreachable.GetValueName());
-                    break;
-                case OrderFailureCause.TgtUnjoinable:
-                case OrderFailureCause.NeedsRepair:
-                // 4.15.17 Ship will RestartState rather than report it if it encounters this from another Call()ed state
-                case OrderFailureCause.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(failCause));
-            }
+        switch (outcome) {
+            case OrderOutcome.Success:
+                bool isRemoved = _fsmShipsExpectedToCallbackWithOrderOutcome.Remove(ship);
+                if (!isRemoved) {
+                    D.Error("{0}: {1} is not present to be removed. Present: {2}.",
+                        DebugName, ship.DebugName, _fsmShipsExpectedToCallbackWithOrderOutcome.Concatenate());
+                }
+                break;
+            case OrderOutcome.Death:
+            case OrderOutcome.NewOrderReceived:
+            case OrderOutcome.Ownership:
+                isRemoved = _fsmShipsExpectedToCallbackWithOrderOutcome.Remove(ship);
+                if (!isRemoved) {
+                    D.Error("{0}: {1} is not present to be removed. FailCause: {2}. Present: {3}.",
+                        DebugName, ship.DebugName, outcome.GetValueName(), _fsmShipsExpectedToCallbackWithOrderOutcome.Concatenate());
+                }
+                break;
+            case OrderOutcome.TgtDeath:
+            case OrderOutcome.TgtRelationship:
+                // 4.15.17 Since Callback, the order to repair came from this Cmd. The repairDest can't be repair in place since 
+                // this is the death or relationshipChg of the repairDest affecting all ships, so pick a new repairDest for all.
+                IssueCmdStaffsRepairOrder();
+                break;
+            case OrderOutcome.TgtUncatchable:
+                D.Error("{0}.Repairing_UponOrderOutcomeCallback received uncatchable failure from {1}. RprTgtToCmd distance = {2:0.}.",
+                    DebugName, ship.DebugName, Vector3.Distance(Position, target.Position));
+                break;
+            case OrderOutcome.TgtUnreachable:
+                D.Error("{0}: {1}.{2} not currently handled.", DebugName, typeof(OrderOutcome).Name,
+                    OrderOutcome.TgtUnreachable.GetValueName());
+                break;
+            case OrderOutcome.TgtUnjoinable:
+            case OrderOutcome.NeedsRepair:
+            // 4.15.17 Ship will RestartState rather than report it if it encounters this from another Call()ed state
+            case OrderOutcome.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(outcome));
         }
     }
 
     void Repairing_UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) {
         LogEvent();
         // Do nothing. If subordinateShip just became available it will initiate repair itself if needed
+    }
+
+    void Repairing_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
+        LogEvent();
     }
 
     void Repairing_UponSubordinateJoined(ShipItem subordinateShip) {
@@ -5042,10 +5118,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         _moveHelper.EngagePilot(shipsToMove: Elements);
     }
 
-    void ExecuteRefitOrder_UponOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigableDestination target, OrderFailureCause failCause) {
-        D.Log(ShowDebugLog, "{0}.ExecuteRefitOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, FailCause = {3}, ShipCurrentOrder = {4}.",
-            DebugName, LastState.GetValueName(), ship.DebugName, failCause.GetValueName(), ship.CurrentOrder.DebugName);
-        _moveHelper.HandleOrderOutcomeCallback(ship, isSuccess, target, failCause);
+    void ExecuteRefitOrder_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
+        D.Log(ShowDebugLog, "{0}.ExecuteRefitOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, Outcome = {3}, ShipCurrentOrder = {4}.",
+            DebugName, LastState.GetValueName(), ship.DebugName, outcome.GetValueName(), ship.CurrentOrder.DebugName);
+        _moveHelper.HandleOrderOutcomeCallback(ship, target, outcome);
     }
 
     void ExecuteRefitOrder_UponApTargetReached() {
@@ -5065,6 +5141,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     void ExecuteRefitOrder_UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) {
+        LogEvent();
+    }
+
+    void ExecuteRefitOrder_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
         LogEvent();
     }
 
@@ -5214,7 +5294,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
         // 11.26.17 HACK placeholder for refitting cmd module as currently not supported
         StartEffectSequence(EffectSequenceID.Refitting);
-        Data.RemoveDamageFromAllCmdModuleEquipment();
+        Data.__RemoveDamageFromCmdModuleEquipment();
         StopEffectSequence(EffectSequenceID.Refitting);
 
         while (_fsmShipsExpectedToCallbackWithOrderOutcome.Any()) {
@@ -5231,51 +5311,53 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         Return();
     }
 
-    void Refitting_UponOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigableDestination target, OrderFailureCause failCause) {
+    void Refitting_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
         LogEvent();
 
         D.Log(ShowDebugLog, "{0}.Refitting_UponOrderOutcomeCallback() called from {1}. FailCause = {2}. Frame: {3}.",
-            DebugName, ship.DebugName, failCause.GetValueName(), Time.frameCount);
+            DebugName, ship.DebugName, outcome.GetValueName(), Time.frameCount);
 
-        if (isSuccess) {
-            bool isRemoved = _fsmShipsExpectedToCallbackWithOrderOutcome.Remove(ship);
-            if (!isRemoved) {
-                D.Error("{0}: {1} is not present to be removed. Present: {2}.",
-                    DebugName, ship.DebugName, _fsmShipsExpectedToCallbackWithOrderOutcome.Concatenate());
-            }
-        }
-        else {
-            switch (failCause) {
-                case OrderFailureCause.Death:
-                case OrderFailureCause.NewOrderReceived:
-                case OrderFailureCause.Ownership:
-                case OrderFailureCause.TgtUnjoinable:
-                    bool isRemoved = _fsmShipsExpectedToCallbackWithOrderOutcome.Remove(ship);
-                    if (!isRemoved) {
-                        D.Error("{0}: {1} is not present to be removed. FailCause: {2}. Present: {3}.",
-                            DebugName, ship.DebugName, failCause.GetValueName(), _fsmShipsExpectedToCallbackWithOrderOutcome.Concatenate());
-                    }
-                    break;
-                case OrderFailureCause.TgtRelationship:
-                case OrderFailureCause.TgtDeath:
-                    // Tgt RefitBase change will be detected and handled by this.Refitting_UponFsmTgtXXX()
-                    break;
-                case OrderFailureCause.TgtUnreachable:
-                    D.Error("{0}: {1}.{2} not currently handled.", DebugName, typeof(OrderFailureCause).Name,
-                        OrderFailureCause.TgtUnreachable.GetValueName());
-                    break;
-                case OrderFailureCause.NeedsRepair:
-                // Should not occur as Ship knows finishing refit repairs all damage
-                case OrderFailureCause.TgtUncatchable:
-                case OrderFailureCause.ConstructionCanceled:
-                case OrderFailureCause.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(failCause));
-            }
+        switch (outcome) {
+            case OrderOutcome.Success:
+                bool isRemoved = _fsmShipsExpectedToCallbackWithOrderOutcome.Remove(ship);
+                if (!isRemoved) {
+                    D.Error("{0}: {1} is not present to be removed. Present: {2}.",
+                        DebugName, ship.DebugName, _fsmShipsExpectedToCallbackWithOrderOutcome.Concatenate());
+                }
+                break;
+            case OrderOutcome.Death:
+            case OrderOutcome.NewOrderReceived:
+            case OrderOutcome.Ownership:
+            case OrderOutcome.TgtUnjoinable:
+                isRemoved = _fsmShipsExpectedToCallbackWithOrderOutcome.Remove(ship);
+                if (!isRemoved) {
+                    D.Error("{0}: {1} is not present to be removed. FailCause: {2}. Present: {3}.",
+                        DebugName, ship.DebugName, outcome.GetValueName(), _fsmShipsExpectedToCallbackWithOrderOutcome.Concatenate());
+                }
+                break;
+            case OrderOutcome.TgtRelationship:
+            case OrderOutcome.TgtDeath:
+                // Tgt RefitBase change will be detected and handled by this.Refitting_UponFsmTgtXXX()
+                break;
+            case OrderOutcome.TgtUnreachable:
+                D.Error("{0}: {1}.{2} not currently handled.", DebugName, typeof(OrderOutcome).Name,
+                    OrderOutcome.TgtUnreachable.GetValueName());
+                break;
+            case OrderOutcome.NeedsRepair:
+            // Should not occur as Ship knows finishing refit repairs all damage
+            case OrderOutcome.TgtUncatchable:
+            case OrderOutcome.ConstructionCanceled:
+            case OrderOutcome.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(outcome));
         }
     }
 
     void Refitting_UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) {
+        LogEvent();
+    }
+
+    void Refitting_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
         LogEvent();
     }
 
@@ -5432,10 +5514,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         _moveHelper.EngagePilot(shipsToMove: Elements);
     }
 
-    void ExecuteDisbandOrder_UponOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigableDestination target, OrderFailureCause failCause) {
-        D.Log(ShowDebugLog, "{0}.ExecuteDisbandOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, FailCause = {3}, ShipCurrentOrder = {4}.",
-            DebugName, LastState.GetValueName(), ship.DebugName, failCause.GetValueName(), ship.CurrentOrder.DebugName);
-        _moveHelper.HandleOrderOutcomeCallback(ship, isSuccess, target, failCause);
+    void ExecuteDisbandOrder_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
+        D.Log(ShowDebugLog, "{0}.ExecuteDisbandOrder_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, Outcome = {3}, ShipCurrentOrder = {4}.",
+            DebugName, LastState.GetValueName(), ship.DebugName, outcome.GetValueName(), ship.CurrentOrder.DebugName);
+        _moveHelper.HandleOrderOutcomeCallback(ship, target, outcome);
     }
 
     void ExecuteDisbandOrder_UponApTargetReached() {
@@ -5455,6 +5537,10 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     }
 
     void ExecuteDisbandOrder_UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) {
+        LogEvent();
+    }
+
+    void ExecuteDisbandOrder_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
         LogEvent();
     }
 
@@ -5610,51 +5696,53 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
         Return();
     }
 
-    void Disbanding_UponOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigableDestination target, OrderFailureCause failCause) {
+    void Disbanding_UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
         LogEvent();
 
         D.Log(ShowDebugLog, "{0}.Disbanding_UponOrderOutcomeCallback() called from {1}. FailCause = {2}. Frame: {3}.",
-            DebugName, ship.DebugName, failCause.GetValueName(), Time.frameCount);
+            DebugName, ship.DebugName, outcome.GetValueName(), Time.frameCount);
 
-        if (isSuccess) {
-            bool isRemoved = _fsmShipsExpectedToCallbackWithOrderOutcome.Remove(ship);
-            if (!isRemoved) {
-                D.Error("{0}: {1} is not present to be removed. Present: {2}.",
-                    DebugName, ship.DebugName, _fsmShipsExpectedToCallbackWithOrderOutcome.Concatenate());
-            }
-        }
-        else {
-            switch (failCause) {
-                case OrderFailureCause.Death:
-                case OrderFailureCause.NewOrderReceived:
-                case OrderFailureCause.Ownership:
-                case OrderFailureCause.TgtUnjoinable:
-                    bool isRemoved = _fsmShipsExpectedToCallbackWithOrderOutcome.Remove(ship);
-                    if (!isRemoved) {
-                        D.Error("{0}: {1} is not present to be removed. FailCause: {2}. Present: {3}.",
-                            DebugName, ship.DebugName, failCause.GetValueName(), _fsmShipsExpectedToCallbackWithOrderOutcome.Concatenate());
-                    }
-                    break;
-                case OrderFailureCause.TgtRelationship:
-                case OrderFailureCause.TgtDeath:
-                    // Tgt DisbandBase change will be detected and handled by this.Disbanding_UponFsmTgtXXX()
-                    break;
-                case OrderFailureCause.TgtUnreachable:
-                    D.Error("{0}: {1}.{2} not currently handled.", DebugName, typeof(OrderFailureCause).Name,
-                        OrderFailureCause.TgtUnreachable.GetValueName());
-                    break;
-                case OrderFailureCause.NeedsRepair:
-                // Should not occur as Ship knows finishing refit repairs all damage
-                case OrderFailureCause.TgtUncatchable:
-                case OrderFailureCause.ConstructionCanceled:
-                case OrderFailureCause.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(failCause));
-            }
+        switch (outcome) {
+            case OrderOutcome.Success:
+                bool isRemoved = _fsmShipsExpectedToCallbackWithOrderOutcome.Remove(ship);
+                if (!isRemoved) {
+                    D.Error("{0}: {1} is not present to be removed. Present: {2}.",
+                        DebugName, ship.DebugName, _fsmShipsExpectedToCallbackWithOrderOutcome.Concatenate());
+                }
+                break;
+            case OrderOutcome.Death:
+            case OrderOutcome.NewOrderReceived:
+            case OrderOutcome.Ownership:
+            case OrderOutcome.TgtUnjoinable:
+                isRemoved = _fsmShipsExpectedToCallbackWithOrderOutcome.Remove(ship);
+                if (!isRemoved) {
+                    D.Error("{0}: {1} is not present to be removed. FailCause: {2}. Present: {3}.",
+                        DebugName, ship.DebugName, outcome.GetValueName(), _fsmShipsExpectedToCallbackWithOrderOutcome.Concatenate());
+                }
+                break;
+            case OrderOutcome.TgtRelationship:
+            case OrderOutcome.TgtDeath:
+                // Tgt DisbandBase change will be detected and handled by this.Disbanding_UponFsmTgtXXX()
+                break;
+            case OrderOutcome.TgtUnreachable:
+                D.Error("{0}: {1}.{2} not currently handled.", DebugName, typeof(OrderOutcome).Name,
+                    OrderOutcome.TgtUnreachable.GetValueName());
+                break;
+            case OrderOutcome.NeedsRepair:
+            // Should not occur as Ship knows finishing refit repairs all damage
+            case OrderOutcome.TgtUncatchable:
+            case OrderOutcome.ConstructionCanceled:
+            case OrderOutcome.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(outcome));
         }
     }
 
     void Disbanding_UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) {
+        LogEvent();
+    }
+
+    void Disbanding_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
         LogEvent();
     }
 
@@ -6456,7 +6544,7 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     ////    }
     ////}
 
-    ////void Moving_UponOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigableDestination target, OrderFailureCause failCause) {
+    ////void Moving_UponOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigableDestination target, OrderOutcome failCause) {
     ////    // 12.9.17 Received warning from ExecuteExploreOrder state. 12.10.17 Solved -> Caused by assignment of ship 
     ////    // to explore newly discovered planet before ExecuteExploreOrder_EnterState began execution.
     ////    D.Warn("{0}.Moving_UponOrderOutcomeCallback() received. LastState = {1}, Ship = {2}, FailCause = {3}, ShipCurrentOrder = {4}.",
@@ -6987,18 +7075,17 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
 
     #region Order Outcome Callback System
 
-    private void HandleSubordinateOrderOutcome(ShipItem ship, bool isOrderSuccessfullyCompleted, IElementNavigableDestination target,
-    OrderFailureCause failureCause, Guid cmdOrderID) {
+    private void HandleSubordinateOrderOutcome(ShipItem ship, IElementNavigableDestination target, OrderOutcome outcome, Guid cmdOrderID) {
         D.AssertNotDefault(cmdOrderID);
         bool toPassCallback = _executingOrderID == cmdOrderID;
-        if (failureCause == OrderFailureCause.Death) {
+        if (outcome == OrderOutcome.Death) {
             if (!toPassCallback) {
                 D.Warn("{0} is not passing a DEATH callback from {1} through to CurrentState {2}.", DebugName, ship.DebugName, CurrentState.GetValueName());
             }
         }
         if (toPassCallback) {
             // callback is intended for current state(s) executing the current order
-            UponOrderOutcomeCallback(ship, isOrderSuccessfullyCompleted, target as IShipNavigableDestination, failureCause);
+            UponOrderOutcomeCallback(ship, target as IShipNavigableDestination, outcome);
         }
     }
 
@@ -7051,8 +7138,8 @@ public class FleetCmdItem : AUnitCmdItem, IFleetCmd, IFleetCmd_Ltd, ICameraFollo
     [Obsolete("1.6.18 Not used until there is something to do besides throw an error")]
     internal void UponApFailure(FleetMoveHelper.FleetMoveFailureMode failMode) { RelayToCurrentState(failMode); }
 
-    private void UponOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigableDestination target, OrderFailureCause failCause) {
-        RelayToCurrentState(ship, isSuccess, target, failCause);
+    private void UponOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
+        RelayToCurrentState(ship, target, outcome);
     }
 
     /// <summary>

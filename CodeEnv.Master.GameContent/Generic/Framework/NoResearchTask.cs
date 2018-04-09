@@ -39,6 +39,17 @@ namespace CodeEnv.Master.GameContent {
             set { throw new NotImplementedException("TimeToComplete.set is not implemented in {0}.".Inject(DebugName)); }
         }
 
+        public override Technology Tech {
+            get { throw new NotImplementedException("Tech.get is not implemented in {0}.".Inject(DebugName)); }
+        }
+
+        public override float CumScienceApplied {
+            get {
+                D.Warn("{0}: Accessing CumScienceApplied.", DebugName);
+                return base.CumScienceApplied;
+            }
+        }
+
         public NoResearchTask() : base(null) { }
 
         public override bool TryComplete(float scienceToApply, out float unconsumedScience) {

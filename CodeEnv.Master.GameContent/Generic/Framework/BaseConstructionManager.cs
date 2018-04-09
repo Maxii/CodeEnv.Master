@@ -196,7 +196,8 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void ProgressConstruction(float availableProduction) {
-            D.Assert(!GameReferences.GameManager.IsPaused);
+            // 3.29.18 Can't Assert not paused as UserResearchManager can complete research on the same date. If the User manually
+            // picks the techs to research, the UserActionButton will auto pause. Can fail Assert depending on DateMinder's call order
             if (_constructionQueue.Any()) {
                 var firstConstruction = _constructionQueue.First.Value;
                 //D.Log("{0} is checking {1} for completion. ExpectedCompletionDate = {2}, CurrentDate = {3}.",

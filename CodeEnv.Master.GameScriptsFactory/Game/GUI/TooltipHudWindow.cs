@@ -77,6 +77,10 @@ public class TooltipHudWindow : AHudWindow<TooltipHudWindow>, ITooltipHudWindow 
         ShowForm(form);
     }
 
+    public void Show(AImprovableStat stat) {
+        D.Warn("{0} has not yet implemented Show({1}).", DebugName, stat.DebugName);
+    }
+
     /// <summary>
     /// Positions this tooltip window so it doesn't interfere with the widget the mouse is hovering over.
     /// </summary>

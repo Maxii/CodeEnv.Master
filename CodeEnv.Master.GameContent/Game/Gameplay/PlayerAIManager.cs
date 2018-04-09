@@ -106,13 +106,13 @@ namespace CodeEnv.Master.GameContent {
         public IEnumerable<Player> OtherKnownPlayers { get { return Player.OtherKnownPlayers; } }
 
         protected IGameManager _gameMgr;
+        protected IDebugControls _debugControls;
         // TODO use these when needing to search for commands to take an action
         private IList<IUnitCmd> _availableCmds;
         private IList<IUnitCmd> _unavailableCmds;
         private bool _areAllPlayersDiscovered;
 
         private IFpsReadout _fpsReadout;
-        private IDebugControls _debugControls;
         private IJobManager _jobMgr;
 
         #region Initialization
@@ -135,17 +135,19 @@ namespace CodeEnv.Master.GameContent {
             ResearchMgr = InitializeResearchMgr();
         }
 
-        private PlayerResearchManager InitializeResearchMgr() {
-            var researchMgr = new PlayerResearchManager(this);
-            researchMgr.researchCompleted += ResearchCompletedEventHandler;
-            return researchMgr;
+        protected virtual PlayerResearchManager InitializeResearchMgr() {
+            return new PlayerResearchManager(this);
         }
+        ////protected virtual PlayerResearchManager InitializeResearchMgr() {
+        ////    var researchMgr = new PlayerResearchManager(this);
+        ////    researchMgr.researchCompleted += ResearchCompletedEventHandler;
+        ////    return researchMgr;
+        ////}
 
         public void CommenceOperations() {
             IsOperational = true;
             Knowledge.CommenceOperations();
-
-            ResearchMgr.InitiateProgressChecks();
+            ResearchMgr.CommenceOperations();
 
             if (_debugControls.IsAutoRelationsChangeEnabled) {
                 __InitializeAutoRelationsChgSystem();
@@ -660,11 +662,30 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        #region Event and Property Change Handlers
+        #region Research
 
-        private void ResearchCompletedEventHandler(object sender, PlayerResearchManager.ResearchCompletedEventArgs e) {
-            __HandleResearchCompleted(e.CompletedResearch);
+        public virtual void PickFirstResearchTask() {
+            var startingTech = TechnologyFactory.Instance.__GetStartingTech(Player);
+            var startingRschTask = ResearchMgr.GetResearchTaskFor(startingTech);
+            ResearchMgr.ChangeCurrentResearchTo(startingRschTask);
         }
+
+        public virtual bool TryPickNextResearchTask(ResearchTask justCompletedRsch, out ResearchTask nextRschTask, out bool isFutureTechRuntimeCreation) {
+            isFutureTechRuntimeCreation = false;
+            ResearchTask uncompletedRsch;
+            if (!ResearchMgr.__TryGetRandomUncompletedRsch(out uncompletedRsch)) {
+                var justCompletedTech = justCompletedRsch.Tech;
+                var futureTech = TechnologyFactory.Instance.__MakeNextFutureTechFollowing(justCompletedTech);
+                uncompletedRsch = new ResearchTask(futureTech);
+                isFutureTechRuntimeCreation = true;
+            }
+            nextRschTask = uncompletedRsch;
+            return true;
+        }
+
+        #endregion
+
+        #region Event and Property Change Handlers
 
         private void IsPolicyToEngageColdWarEnemiesChangedHandler() {
             Knowledge.OwnerCommands.ForAll(cmd => cmd.HandleColdWarEnemyEngagementPolicyChanged());
@@ -724,12 +745,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #endregion
-
-        protected virtual void __HandleResearchCompleted(ResearchTask researchTask) {
-            var techResearched = researchTask.TechBeingResearched;
-            var newTechToResearch = TechnologyFactory.Instance.__GetNextHigherCostTechThan(techResearched);
-            ResearchMgr.ChangeCurrentResearchTo(newTechToResearch);
-        }
 
         private void HandleMyCmdIsAvailableChanged(IUnitCmd myCmd) {
             RefreshTrackedCmdAvailability(myCmd);
@@ -831,6 +846,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void Cleanup() {
             Knowledge.Dispose();
+            ////ResearchMgr.researchCompleted -= ResearchCompletedEventHandler;
         }
 
         #region Debug

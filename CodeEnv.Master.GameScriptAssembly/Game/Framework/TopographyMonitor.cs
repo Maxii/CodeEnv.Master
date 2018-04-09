@@ -50,7 +50,8 @@ public class TopographyMonitor : AColliderMonitor {
 
     void OnTriggerEnter(Collider other) {
         if (_gameMgr.IsPaused) {
-            D.Warn("{0}.OnTriggerEnter() tripped by {1} while paused.", DebugName, other.name);
+            // 3.28.18 Commonly occurs when user initially paused to pick tech to research
+            //D.Log("{0}.OnTriggerEnter() tripped by {1} while paused.", DebugName, other.name);
         }
         if (other.isTrigger) {
             return;
@@ -111,7 +112,7 @@ public class TopographyMonitor : AColliderMonitor {
     /// 11.30.16 Bug reportedly fixed in Unity 5.5.</remarks>
     /// </summary>
     /// <param name="listener">The listener.</param>
-    /// <returns></returns>
+    /// <return></returns>
     [Obsolete("3.19.17 No longer in use as Unity BUG fixed. Also generates unnecessary warnings when units first appear on startup.")]
     private bool __ValidateTopographyChange(ITopographyChangeListener listener) {
         if (listener is IInterceptableOrdnance) {

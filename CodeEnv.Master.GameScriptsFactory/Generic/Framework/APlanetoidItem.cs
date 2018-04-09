@@ -262,6 +262,8 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
 
     #region StateMachine - Simple Alternative
 
+    // IMPROVE Planetoids have no repair system, aka they do not utilize AMortalItemData.RepairDamage() 
+
     private PlanetoidState _currentState;
     public PlanetoidState CurrentState {
         get { return _currentState; }
@@ -421,8 +423,8 @@ public abstract class APlanetoidItem : AMortalItem, IPlanetoid, IPlanetoid_Ltd, 
         D.Log(ShowDebugLog, "{0} has been hit. Taking {1:0.#} damage.", DebugName, damage.Total);
 
         float unusedDamageSeverity;
-        bool isAlive = ApplyDamage(damage, out unusedDamageSeverity);
-        if (!isAlive) {
+        bool didPlanetSurvive = Data.ApplyDamage(damage, out unusedDamageSeverity);
+        if (!didPlanetSurvive) {
             IsDead = true;
             return;
         }

@@ -52,13 +52,6 @@ public class GuiFocusedReadout : AGuiLabelReadout {
         AttemptRetainingFocus(focus);
     }
 
-    private void HandleMiddleClick() {
-        if (_retainedFocus != null) {
-            _retainedFocus.IsFocus = true;
-            SFXManager.Instance.PlaySFX(SfxClipID.Swipe);
-        }
-    }
-
     private void ClickEventHandler() {
         if (GameInputHelper.Instance.IsMiddleMouseButton) {
             HandleMiddleClick();
@@ -70,6 +63,13 @@ public class GuiFocusedReadout : AGuiLabelReadout {
     }
 
     #endregion
+
+    private void HandleMiddleClick() {
+        if (_retainedFocus != null) {
+            _retainedFocus.IsFocus = true;
+            SFXManager.Instance.PlaySFX(SfxClipID.Swipe);
+        }
+    }
 
     private void AttemptRetainingFocus(ICameraFocusable focus) {
         if (focus != null && focus.IsRetainedFocusEligible) {

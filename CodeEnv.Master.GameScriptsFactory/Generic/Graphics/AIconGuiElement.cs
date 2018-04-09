@@ -31,18 +31,23 @@ public abstract class AIconGuiElement : AGuiElement {
     protected virtual UISprite.Type IconImageSpriteType { get { return UIBasicSprite.Type.Simple; } }
 
     /// <summary>
+    /// The GameObject that contains the widget you wish to use for Show/Hide control of all icon-related widgets.
+    /// <remarks>Derived GuiElements should override this Property if the GameObject containing this widget is not this GameObject.</remarks>
+    /// </summary>
+    protected virtual GameObject ShowHideControlWidgetGameObject { get { return gameObject; } }
+
+    /// <summary>
     /// The sprite that holds the image of the icon.
     /// </summary>
     protected UISprite _iconImageSprite;
 
     /// <summary>
-    /// The top level widget that encompasses all other widgets as children.
-    /// <remarks>Used for Show/Hide control.</remarks>
+    /// The widget used for Show/Hide control of all icon-related widgets.
     /// </summary>
-    protected UIWidget _encompassingWidget;
+    protected UIWidget _iconShowHideControlWidget;
 
     protected override void InitializeValuesAndReferences() {
-        _encompassingWidget = gameObject.GetComponent<UIWidget>();
+        _iconShowHideControlWidget = ShowHideControlWidgetGameObject.GetComponent<UIWidget>();
         _iconImageSprite = AcquireIconImageSprite();
         _iconImageSprite.type = IconImageSpriteType;
         AcquireAdditionalWidgets();
@@ -56,11 +61,11 @@ public abstract class AIconGuiElement : AGuiElement {
     protected virtual void Show(GameColor color = GameColor.White) {
         D.Assert(IsInitialized);
         _iconImageSprite.color = color.ToUnityColor();
-        _encompassingWidget.alpha = Constants.OneF;
+        _iconShowHideControlWidget.alpha = Constants.OneF;
     }
 
     protected void Hide() {
-        _encompassingWidget.alpha = Constants.ZeroF;
+        _iconShowHideControlWidget.alpha = Constants.ZeroF;
     }
 
     #region Event and Property Change Handlers
@@ -94,7 +99,8 @@ public abstract class AIconGuiElement : AGuiElement {
 
     protected override void __ValidateOnAwake() {
         base.__ValidateOnAwake();
-        UnityUtility.ValidateComponentPresence<UIWidget>(gameObject);
+        UnityUtility.ValidateComponentPresence<UIWidget>(ShowHideControlWidgetGameObject);
+        // there must be a collider on this element's GameObject to enable Hover and Click functionality
         UnityUtility.ValidateComponentPresence<BoxCollider>(gameObject);
     }
 

@@ -36,6 +36,13 @@ namespace CodeEnv.Master.GameContent {
 
         public Priority HQPriority { get { return Design.HQPriority; } }
 
+        /// <summary>
+        /// Returns <c>true</c> if this element has weapons and one or more of them are undamaged, <c>false</c> otherwise.
+        /// <remarks>Whatever the response, it does not imply anything about the operational state of the weapon(s) as 
+        /// having operational weapons requires 1) the presence of one or more weapons, 2) one or more weapons being undamaged, and 3) the weapons being activated.</remarks>
+        /// </summary>
+        public bool HasUndamagedWeapons { get { return Weapons.Where(w => !w.IsDamaged).Any(); } }
+
         public IList<AWeapon> Weapons { get { return HullEquipment.Weapons; } }
         public IList<ElementSensor> Sensors { get; private set; }
         public IList<ActiveCountermeasure> ActiveCountermeasures { get; private set; }
@@ -101,9 +108,8 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// The current design of this Element.
-        /// <remarks>Public set as must be changeable to the intended refit design from ExecuteRefitOrder state.</remarks>
         /// </summary>
-        public AUnitElementDesign Design { get; set; }
+        public AUnitElementDesign Design { get; private set; }
 
         /// <summary>
         /// The mass of this Element.
@@ -130,7 +136,7 @@ namespace CodeEnv.Master.GameContent {
         public AUnitElementData(IUnitElement element, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, AHullEquipment hullEquipment,
             IEnumerable<ActiveCountermeasure> activeCMs, IEnumerable<ElementSensor> sensors, IEnumerable<ShieldGenerator> shieldGenerators,
             AUnitElementDesign design)
-            : base(element, owner, hullEquipment.MaxHitPoints, passiveCMs) {
+            : base(element, owner, design.HitPoints, passiveCMs) {
             HullEquipment = hullEquipment;
             Mass = hullEquipment.Mass + hullEquipment.Weapons.Sum(w => w.Mass) + activeCMs.Sum(cm => cm.Mass) + sensors.Sum(s => s.Mass) + passiveCMs.Sum(cm => cm.Mass) + shieldGenerators.Sum(gen => gen.Mass);
             InitializeWeapons();
@@ -256,14 +262,14 @@ namespace CodeEnv.Master.GameContent {
         // Refit completion is handled by creating an upgraded UnitElementItem
 
         /// <summary>
-        /// Damages non-hull equipment including CMs, ShieldGenerators, Weapons and Sensors. 
+        /// Simulates Rework underway by damaging non-hull equipment including CMs, ShieldGenerators, Weapons and Sensors. 
         /// The equipment damaged is determined by 1) whether its damageable, 2) how many of each type are kept 
         /// undamaged to simulate a minimal defense while being reworked, and 3) the damagePercent.
         /// <remarks>This approach allows a degree of control on the availability of equipment
         /// as rework proceeds and doesn't interfere with use of operational equipment when AlertLevel changes.</remarks>
         /// </summary>
         /// <param name="damagePercent">The damage percent.</param>
-        public virtual EquipmentDamagedFromRework DamageNonHullEquipment(float damagePercent) {
+        protected virtual EquipmentDamagedFromRework DamageNonHullEquipment(float damagePercent) {
             Utility.ValidateForRange(damagePercent, Constants.ZeroPercent, Constants.OneHundredPercent);
 
             var equipDamagedFromRework = new EquipmentDamagedFromRework();
@@ -297,12 +303,114 @@ namespace CodeEnv.Master.GameContent {
             return equipDamagedFromRework;
         }
 
-        public virtual void RemoveDamageFromAllEquipment() {
-            PassiveCountermeasures.Where(cm => cm.IsDamageable).ForAll(cm => cm.IsDamaged = false);
+        protected override void RemoveDamageFromAllEquipment() {
+            base.RemoveDamageFromAllEquipment();
             ActiveCountermeasures.Where(cm => cm.IsDamageable).ForAll(cm => cm.IsDamaged = false);
             ShieldGenerators.Where(gen => gen.IsDamageable).ForAll(gen => gen.IsDamaged = false);
             Weapons.Where(w => w.IsDamageable).ForAll(w => w.IsDamaged = false);
             Sensors.Where(s => s.IsDamageable).ForAll(s => s.IsDamaged = false);
+        }
+
+        #endregion
+
+        #region Combat Support
+
+        protected override float AssessDamageToEquipment(float damageSeverity) {
+            float cumCurrentHitPtReductionFromEquip = base.AssessDamageToEquipment(damageSeverity);
+            var damageChance = damageSeverity;
+
+            var undamagedDamageableWeapons = Weapons.Where(w => w.IsDamageable && !w.IsDamaged);
+            foreach (var w in undamagedDamageableWeapons) {
+                bool toDamage = RandomExtended.Chance(damageChance);
+                if (toDamage) {
+                    w.IsDamaged = true;
+                    cumCurrentHitPtReductionFromEquip += w.HitPoints;
+                    D.Log(ShowDebugLog, "{0}'s {1} has been damaged.", DebugName, w.Name);
+                }
+            }
+
+            var undamagedDamageableSensors = Sensors.Where(s => s.IsDamageable && !s.IsDamaged);
+            foreach (var s in undamagedDamageableSensors) {
+                bool toDamage = RandomExtended.Chance(damageChance);
+                if (toDamage) {
+                    s.IsDamaged = true;
+                    cumCurrentHitPtReductionFromEquip += s.HitPoints;
+                    D.Log(ShowDebugLog, "{0}'s {1} has been damaged.", DebugName, s.Name);
+                }
+            }
+
+            var undamagedDamageableActiveCMs = ActiveCountermeasures.Where(cm => cm.IsDamageable && !cm.IsDamaged);
+            foreach (var aCM in undamagedDamageableActiveCMs) {
+                bool toDamage = RandomExtended.Chance(damageChance);
+                if (toDamage) {
+                    aCM.IsDamaged = true;
+                    cumCurrentHitPtReductionFromEquip += aCM.HitPoints;
+                    D.Log(ShowDebugLog, "{0}'s {1} has been damaged.", DebugName, aCM.Name);
+                }
+            }
+
+            var undamagedDamageableGenerators = ShieldGenerators.Where(gen => gen.IsDamageable && !gen.IsDamaged);
+            foreach (var g in undamagedDamageableGenerators) {
+                bool toDamage = RandomExtended.Chance(damageChance);
+                if (toDamage) {
+                    g.IsDamaged = true;
+                    cumCurrentHitPtReductionFromEquip += g.HitPoints;
+                    D.Log(ShowDebugLog, "{0}'s {1} has been damaged.", DebugName, g.Name);
+                }
+            }
+            return cumCurrentHitPtReductionFromEquip;
+        }
+
+        #endregion
+
+        #region Repair
+
+        protected override float AssessRepairToEquipment(float repairImpact) {
+            float cumRprPtsFromEquip = base.AssessRepairToEquipment(repairImpact);
+
+            var rprChance = repairImpact;
+
+            var damagedWeapons = Weapons.Where(w => w.IsDamaged);
+            foreach (var w in damagedWeapons) {
+                bool toRpr = RandomExtended.Chance(rprChance);
+                if (toRpr) {
+                    w.IsDamaged = false;
+                    cumRprPtsFromEquip += w.HitPoints;
+                    D.Log(ShowDebugLog, "{0}'s {1} has been repaired.", DebugName, w.Name);
+                }
+            }
+
+            var damagedSensors = Sensors.Where(s => s.IsDamaged);
+            foreach (var s in damagedSensors) {
+                bool toRpr = RandomExtended.Chance(rprChance);
+                if (toRpr) {
+                    s.IsDamaged = false;
+                    cumRprPtsFromEquip += s.HitPoints;
+                    D.Log(ShowDebugLog, "{0}'s {1} has been repaired.", DebugName, s.Name);
+                }
+            }
+
+            var damagedActiveCMs = ActiveCountermeasures.Where(cm => cm.IsDamaged);
+            foreach (var aCM in damagedActiveCMs) {
+                bool toRpr = RandomExtended.Chance(rprChance);
+                if (toRpr) {
+                    aCM.IsDamaged = false;
+                    cumRprPtsFromEquip += aCM.HitPoints;
+                    D.Log(ShowDebugLog, "{0}'s {1} has been repaired.", DebugName, aCM.Name);
+                }
+            }
+
+            var damagedGenerators = ShieldGenerators.Where(gen => gen.IsDamaged);
+            foreach (var g in damagedGenerators) {
+                bool toRpr = RandomExtended.Chance(rprChance);
+                if (toRpr) {
+                    g.IsDamaged = true;
+                    cumRprPtsFromEquip += g.HitPoints;
+                    D.Log(ShowDebugLog, "{0}'s {1} has been repaired.", DebugName, g.Name);
+                }
+            }
+
+            return cumRprPtsFromEquip;
         }
 
         #endregion
@@ -442,11 +550,11 @@ namespace CodeEnv.Master.GameContent {
         public void HandleRefitReplacementCompleted() {
             _isDead = true; // avoids firing any IsDead property change handlers
             IsOperational = false;  // we want these property change handlers
-            DeactivateAllCmdModuleEquipment();
+            DeactivateAllEquipment();
         }
 
-        protected override void DeactivateAllCmdModuleEquipment() {
-            base.DeactivateAllCmdModuleEquipment();
+        protected override void DeactivateAllEquipment() {
+            base.DeactivateAllEquipment();
             Weapons.ForAll(weap => weap.IsActivated = false);
             Sensors.ForAll(sens => sens.IsActivated = false);
             ActiveCountermeasures.ForAll(acm => acm.IsActivated = false);
@@ -460,6 +568,18 @@ namespace CodeEnv.Master.GameContent {
             ActiveCountermeasures.ForAll(cm => cm.isDamagedChanged -= CountermeasureIsDamagedChangedEventHandler);
             ShieldGenerators.ForAll(gen => gen.isDamagedChanged -= ShieldGeneratorIsDamagedChangedEventHandler);
         }
+
+        #region Debug
+
+        protected override void __ValidateAllEquipmentDamageRepaired() {
+            base.__ValidateAllEquipmentDamageRepaired();
+            Weapons.ForAll(w => D.Assert(!w.IsDamaged));
+            Sensors.ForAll(s => D.Assert(!s.IsDamaged));
+            ActiveCountermeasures.ForAll(cm => D.Assert(!cm.IsDamaged));
+            ShieldGenerators.ForAll(gen => D.Assert(!gen.IsDamaged));
+        }
+
+        #endregion
 
         #region Nested Classes
 

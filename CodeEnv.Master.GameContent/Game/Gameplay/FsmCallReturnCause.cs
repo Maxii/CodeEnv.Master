@@ -63,7 +63,13 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// This Unit Element had construction rework occurring on it canceled.
         /// </summary>
-        ConstructionCanceled
+        ConstructionCanceled,
+
+        /// <summary>
+        /// This Unit or Element is no longer qualified to execute the Call()ed state. 
+        /// <remarks>e.g. An element that becomes the HQ while Disengaging is no longer qualified to disengage.</remarks>
+        /// </summary>
+        Qualifications
 
 
     }

@@ -52,10 +52,7 @@ namespace CodeEnv.Master.GameContent {
             get { return _publisher = _publisher ?? new SettlementPublisher(this); }
         }
 
-        public new SettlementCmdDesign CmdDesign {
-            get { return base.CmdDesign as SettlementCmdDesign; }
-            set { base.CmdDesign = value; }
-        }
+        public new SettlementCmdDesign CmdDesign { get { return base.CmdDesign as SettlementCmdDesign; } }
 
         private IList<IDisposable> _systemDataSubscriptions = new List<IDisposable>(2);
 

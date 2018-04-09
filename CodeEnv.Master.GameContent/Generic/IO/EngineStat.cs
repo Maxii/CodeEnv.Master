@@ -47,19 +47,21 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="imageAtlasID">The image atlas identifier.</param>
         /// <param name="imageFilename">The image filename.</param>
         /// <param name="description">The description.</param>
-        /// <param name="level">The level of technological advancement of this stat.</param>
+        /// <param name="level">The improvement level of this stat.</param>
         /// <param name="hullCategory">The hull category.</param>
         /// <param name="fullPropulsionPower">The maximum propulsion power the engine can produce.</param>
         /// <param name="maxTurnRate">The maximum turn rate the engine is capable of.</param>
         /// <param name="size">The total physical space consumed by the engine.</param>
         /// <param name="mass">The total mass of the engine.</param>
+        /// <param name="hitPts">The hit points contributed to the survivability of the item.</param>
         /// <param name="constructionCost">The production cost.</param>
         /// <param name="expense">The total expense consumed by the engine.</param>
         /// <param name="isDamageable">if set to <c>true</c> [is damageable].</param>
         /// <param name="isFtlEngine">if set to <c>true</c> [is FTL engine].</param>
         public EngineStat(string name, AtlasID imageAtlasID, string imageFilename, string description, Level level, ShipHullCategory hullCategory, float fullPropulsionPower,
-            float maxTurnRate, float size, float mass, float constructionCost, float expense, bool isDamageable, bool isFtlEngine)
-            : base(name, imageAtlasID, imageFilename, description, level, size, mass, Constants.ZeroF, constructionCost, expense, isDamageable) {
+            float maxTurnRate, float size, float mass, float hitPts, float constructionCost, float expense, bool isDamageable, bool isFtlEngine)
+            : base(name, imageAtlasID, imageFilename, description, level, size, mass, Constants.ZeroF, hitPts, constructionCost, expense,
+                  isDamageable) {
             HullCategory = hullCategory;
             FullPropulsionPower = fullPropulsionPower;
             if (maxTurnRate < TempGameValues.MinimumTurnRate) {

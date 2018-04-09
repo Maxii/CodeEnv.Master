@@ -104,7 +104,7 @@ namespace CodeEnv.Master.GameContent {
 
         AllKnowledge GameKnowledge { get; }
 
-        UserPlayerAIManager UserAIManager { get; }
+        UserAIManager UserAIManager { get; }
 
         void InitiateNewGame(GameSettings gameSettings);
 

@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AEquipmentStat.cs
-// Immutable abstract base class for Equipment stats.
+// Immutable abstract base class for AImprovableStats for Equipment.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,9 +20,9 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Immutable abstract base class for Equipment stats.
+    /// Immutable abstract base class for AImprovableStats for Equipment.
     /// </summary>
-    public abstract class AEquipmentStat : ATechStat {
+    public abstract class AEquipmentStat : AImprovableStat {
 
         public abstract EquipmentCategory Category { get; }
 
@@ -35,6 +35,8 @@ namespace CodeEnv.Master.GameContent {
         public float Mass { get; private set; }
 
         public float PowerRequirement { get; private set; }
+
+        public float HitPoints { get; private set; }
 
         public float ConstructionCost { get; private set; }
 
@@ -49,19 +51,21 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="imageAtlasID">The image atlas identifier.</param>
         /// <param name="imageFilename">The image filename.</param>
         /// <param name="description">The description.</param>
-        /// <param name="level">The level of technological advancement of this stat.</param>
+        /// <param name="level">The improvement level of this stat.</param>
         /// <param name="size">The physical size of the equipment.</param>
         /// <param name="mass">The mass of the equipment.</param>
         /// <param name="pwrRqmt">The power required to operate the equipment.</param>
+        /// <param name="hitPts">The hit points contributed to the survivability of the item.</param>
         /// <param name="constructionCost">The cost to produce this equipment.</param>
         /// <param name="expense">The expense required to operate this equipment.</param>
         /// <param name="isDamageable">if set to <c>true</c> [is damageable].</param>
         public AEquipmentStat(string name, AtlasID imageAtlasID, string imageFilename, string description, Level level, float size, float mass,
-            float pwrRqmt, float constructionCost, float expense, bool isDamageable)
+            float pwrRqmt, float hitPts, float constructionCost, float expense, bool isDamageable)
             : base(name, imageAtlasID, imageFilename, description, level) {
             Size = size;
             Mass = mass;
             PowerRequirement = pwrRqmt;
+            HitPoints = hitPts;
             ConstructionCost = constructionCost;
             Expense = expense;
             IsDamageable = isDamageable;

@@ -359,54 +359,52 @@ public class FleetMoveHelper : IDisposable {
         __previousSqrDistanceToApTgtFleet = Constants.ZeroF;
     }
 
-    internal void HandleOrderOutcomeCallback(ShipItem ship, bool isSuccess, IShipNavigableDestination target, OrderFailureCause failCause) {
+    internal void HandleOrderOutcomeCallback(ShipItem ship, IShipNavigableDestination target, OrderOutcome outcome) {
         if (!IsPilotEngaged) {
             string tgtMsg = target != null ? target.DebugName : "None";
-            D.Error("{0}.Pilot should be engaged. Ship: {1}, Target: {2}, FailCause: {3}.", DebugName, ship.DebugName, tgtMsg, failCause.GetValueName());
+            D.Error("{0}.Pilot should be engaged. Ship: {1}, Target: {2}, Outcome: {3}.", DebugName, ship.DebugName, tgtMsg, outcome.GetValueName());
         }
 
-        if (isSuccess) {
-            bool isRemoved = _shipsExpectedToArrive.Remove(ship);
-            D.Assert(isRemoved, ship.DebugName);
-        }
-        else {
-            switch (failCause) {
-                case OrderFailureCause.Death:
-                    // Added to help debug timing of when dead ship is removed 
-                    D.Log("{0} is removing DEAD {1} from _shipsExpectedToArrive in Frame {2}.", DebugName, ship.DebugName, Time.frameCount);
-                    bool isRemoved = _shipsExpectedToArrive.Remove(ship);
-                    D.Assert(isRemoved, ship.DebugName);
-                    break;
-                case OrderFailureCause.NeedsRepair:
-                case OrderFailureCause.Ownership:
-                    /*bool*/
-                    isRemoved = _shipsExpectedToArrive.Remove(ship);
-                    D.Assert(isRemoved, ship.DebugName);
-                    break;
-                case OrderFailureCause.NewOrderReceived:
-                    // 1.7.18  UNCLEAR Occurred while ship attacking in response to Move orders issued by this helper
-                    // 1.7.18 Properly occurs when individual order (scuttle) issued by user to ship so added filter
-                    if (!ship.IsCurrentOrderDirectiveAnyOf(ShipDirective.Scuttle)) {
-                        D.Warn("{0} received {1}.{2} from {3} but UNCLEAR why. Target: {4}.", DebugName, typeof(OrderFailureCause).Name,
-                            failCause.GetValueName(), ship.DebugName, target.DebugName);
-                    }
-                    isRemoved = _shipsExpectedToArrive.Remove(ship);
-                    D.Assert(isRemoved, ship.DebugName);
-                    break;
-                case OrderFailureCause.TgtUncatchable:
-                // 1.6.18 One of our ships reported it can't catch another ship. Should never occur as only time our ships pursue other
-                // ships is when Attacking and then they don't report it but instead simply RestartState to find another target.
-                case OrderFailureCause.TgtUnreachable:
-                case OrderFailureCause.TgtUnjoinable:
-                case OrderFailureCause.TgtRelationship:
-                case OrderFailureCause.TgtDeath:
-                // 1.25.18 Should never occur as FleetCmd will handle all TgtDeath events when whole Cmd is moving. Ships should only
-                // reply with a TgtDeath outcome when they have their own individual targets, e.g. assigned during exploration
-                case OrderFailureCause.ConstructionCanceled:
-                case OrderFailureCause.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(failCause));
-            }
+        switch (outcome) {
+            case OrderOutcome.Success:
+                bool isRemoved = _shipsExpectedToArrive.Remove(ship);
+                D.Assert(isRemoved, ship.DebugName);
+                break;
+            case OrderOutcome.Death:
+                // Added to help debug timing of when dead ship is removed 
+                D.Log("{0} is removing DEAD {1} from _shipsExpectedToArrive in Frame {2}.", DebugName, ship.DebugName, Time.frameCount);
+                isRemoved = _shipsExpectedToArrive.Remove(ship);
+                D.Assert(isRemoved, ship.DebugName);
+                break;
+            case OrderOutcome.NeedsRepair:
+            case OrderOutcome.Ownership:
+                /*bool*/
+                isRemoved = _shipsExpectedToArrive.Remove(ship);
+                D.Assert(isRemoved, ship.DebugName);
+                break;
+            case OrderOutcome.NewOrderReceived:
+                // 1.7.18  UNCLEAR Occurred while ship attacking in response to Move orders issued by this helper
+                // 1.7.18 Properly occurs when individual order (scuttle) issued by user to ship so added filter
+                if (!ship.IsCurrentOrderDirectiveAnyOf(ShipDirective.Scuttle)) {
+                    D.Warn("{0} received {1}.{2} from {3} but UNCLEAR why. Target: {4}.", DebugName, typeof(OrderOutcome).Name,
+                        outcome.GetValueName(), ship.DebugName, target.DebugName);
+                }
+                isRemoved = _shipsExpectedToArrive.Remove(ship);
+                D.Assert(isRemoved, ship.DebugName);
+                break;
+            case OrderOutcome.TgtUncatchable:
+            // 1.6.18 One of our ships reported it can't catch another ship. Should never occur as only time our ships pursue other
+            // ships is when Attacking and then they don't report it but instead simply RestartState to find another target.
+            case OrderOutcome.TgtUnreachable:
+            case OrderOutcome.TgtUnjoinable:
+            case OrderOutcome.TgtRelationship:
+            case OrderOutcome.TgtDeath:
+            // 1.25.18 Should never occur as FleetCmd will handle all TgtDeath events when whole Cmd is moving. Ships should only
+            // reply with a TgtDeath outcome when they have their own individual targets, e.g. assigned during exploration
+            case OrderOutcome.ConstructionCanceled:
+            case OrderOutcome.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(outcome));
         }
     }
 

@@ -95,7 +95,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="passiveCMs">The passive Countermeasures.</param>
         /// <param name="planetoidStat">The stat.</param>
         public PlanetoidData(IPlanetoid planetoid, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, PlanetoidStat planetoidStat)
-            : base(planetoid, owner, planetoidStat.MaxHitPoints, passiveCMs) {
+            : base(planetoid, owner, planetoidStat.HitPoints, passiveCMs) {
             Mass = planetoidStat.Mass;
             Category = planetoidStat.Category;
             Radius = planetoidStat.Radius;

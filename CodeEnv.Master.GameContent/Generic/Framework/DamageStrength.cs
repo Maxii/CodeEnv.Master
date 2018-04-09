@@ -18,6 +18,7 @@
 namespace CodeEnv.Master.GameContent {
 
     using System;
+    using System.Collections.Generic;
     using CodeEnv.Master.Common;
     using CodeEnv.Master.Common.LocalResources;
 
@@ -105,7 +106,6 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-
         public string DebugName {
             get {
                 return DebugNameFormat.Inject(GetType().Name, Thermal.FormatValue(), Structural.FormatValue(), Incursion.FormatValue());
@@ -147,6 +147,12 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DamageStrength" /> struct.
+        /// <remarks>3.9.18 In general, this constructor is limited in use to defensive countermeasure damage mitigation rather than
+        /// offensive weapon damage potential. My reasoning: I don't want the player focusing their decisions on damage potential mix
+        /// of a weapon as I don't consider it to be an interesting decision, aka its too far down in the weeds. A more
+        /// interesting decision is what weapons and defenses to deploy against particular enemies who have specialized in their
+        /// own weapons and defenses. However, I can imagine that more advanced weapons of a particular type (e.g. missiles) 
+        /// could deal small amounts of supplemental damage in categories not usually associated with a (missile) weapon type...</remarks>
         /// </summary>
         /// <param name="thermal">The thermal.</param>
         /// <param name="structural">The structural.</param>

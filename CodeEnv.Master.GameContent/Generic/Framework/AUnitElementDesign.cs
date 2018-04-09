@@ -15,6 +15,9 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using Common;
 
     /// <summary>
@@ -22,23 +25,19 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AUnitElementDesign : AUnitMemberDesign {
 
-        public static EquipmentCategory[] SupportedEquipCategories =    {
-                                                                            EquipmentCategory.AssaultWeapon,
-                                                                            EquipmentCategory.MissileWeapon,
-                                                                            EquipmentCategory.BeamWeapon,
-                                                                            EquipmentCategory.ProjectileWeapon,
-                                                                            EquipmentCategory.ActiveCountermeasure,
-                                                                            EquipmentCategory.PassiveCountermeasure,
-                                                                            EquipmentCategory.ElementSensor,
-                                                                            EquipmentCategory.ShieldGenerator
-                                                                        };
+        private static EquipmentMountCategory[] SupportedMountCategories =  {
+                                                                                EquipmentMountCategory.Silo,
+                                                                                EquipmentMountCategory.Turret,
+                                                                                EquipmentMountCategory.Sensor,
+                                                                                EquipmentMountCategory.Skin,
+                                                                                EquipmentMountCategory.Screen,
+                                                                                EquipmentMountCategory.Flex
+                                                                            };
 
-        public static EquipmentMountCategory[] SupportedMountCategories =    {
-                                                                            EquipmentMountCategory.Silo,
-                                                                            EquipmentMountCategory.Turret,
-                                                                            EquipmentMountCategory.Interior,
-                                                                            EquipmentMountCategory.InteriorAlt
-                                                                        };
+        static AUnitElementDesign() {
+            __ValidateWeaponHullMountCatSequence();
+            __ValidateSupportedMountsCanAccommodateSupportedEquipment();
+        }
 
         public SensorStat ReqdSRSensorStat { get; private set; }
 
@@ -75,6 +74,12 @@ namespace CodeEnv.Master.GameContent {
             return cumConstructionCost;
         }
 
+        protected override float CalcHitPoints() {
+            float cumHitPts = base.CalcHitPoints();
+            cumHitPts += ReqdSRSensorStat.HitPoints;
+            return cumHitPts;
+        }
+
         public override bool HasEqualContent(AUnitMemberDesign oDesign) {
             if (base.HasEqualContent(oDesign)) {
                 AUnitElementDesign eDesign = oDesign as AUnitElementDesign;
@@ -85,8 +90,8 @@ namespace CodeEnv.Master.GameContent {
 
         #region Debug
 
-        protected override void __ValidateHullMountCatSequence() {
-            base.__ValidateHullMountCatSequence();
+        [System.Diagnostics.Conditional("DEBUG")]
+        private static void __ValidateWeaponHullMountCatSequence() {
             // 3.4.18 Hull prefabs have weapon mount placeholders with manually set slot number assignments. As such,
             // the slot number assignment algorithm used in InitializeValuesAndReferences relies on the proper sequence of
             // HullMountCategories when initializing the SlotIDs for this design. 
@@ -96,8 +101,17 @@ namespace CodeEnv.Master.GameContent {
             // the same way as done for Silo(Launched)Weapons.  
             // 
             // If Loader.__ValidateMaxHullWeaponSlots passes and so does this, slot numbers should be accurate.
-            D.AssertEqual(EquipmentMountCategory.Silo, SupportedHullMountCategories[0]);
-            D.AssertEqual(EquipmentMountCategory.Turret, SupportedHullMountCategories[1]);
+            D.AssertEqual(EquipmentMountCategory.Silo, SupportedMountCategories[0]);
+            D.AssertEqual(EquipmentMountCategory.Turret, SupportedMountCategories[1]);
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        private static void __ValidateSupportedMountsCanAccommodateSupportedEquipment() {
+            IEnumerable<EquipmentCategory> equipmentSupportedByMounts = new List<EquipmentCategory>();
+            foreach (var mount in SupportedMountCategories) {
+                equipmentSupportedByMounts = equipmentSupportedByMounts.Union(mount.SupportedEquipment());
+            }
+            TempGameValues.ElementSupportedEquipmentCategories.ForAll(se => D.Assert(equipmentSupportedByMounts.Contains(se)));
         }
 
         #endregion

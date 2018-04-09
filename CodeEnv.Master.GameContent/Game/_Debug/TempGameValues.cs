@@ -89,8 +89,10 @@ namespace CodeEnv.Master.GameContent {
 
         public const int MaxTurretHullMounts = 12;
         public const int MaxSiloHullMounts = 6;
-        public const int MaxInteriorHullMounts = 17;
-        public const int MaxInteriorAltHullMounts = 3;
+        public const int MaxSensorMounts = 4;
+        public const int MaxSkinMounts = 6;
+        public const int MaxScreenMounts = 10;
+        public const int MaxFlexMounts = 3;
 
         public const int __MaxElementPassiveCMs = 6;
         public const int __MaxElementActiveCMs = 6;
@@ -98,13 +100,12 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The maximum number of SR sensors allowed for any element, including both reqd and optional sensors.
         /// </summary>
-        //[System.Obsolete]
         public const int __MaxElementSensors = 4;
         public const int __MaxCmdPassiveCMs = 4;
         /// <summary>
-        /// The maximum number of RR and LR sensors allowed for any cmd, including both reqd and optional sensors.
+        /// The maximum number of MR and LR sensors allowed for any cmd, including both reqd and optional sensors.
         /// </summary>
-        public const int __MaxCmdSensors = 5;
+        public const int __MaxCmdSensors = 4;
 
         public const float MinimumFramerate = 25F;
 
@@ -120,6 +121,22 @@ namespace CodeEnv.Master.GameContent {
         /// The range in degrees that a Turret's minimum barrel elevation setting can take.
         /// </summary>
         public static readonly ValueRange<float> MinimumBarrelElevationRange = new ValueRange<float>(-20F, 70F);
+
+        public static EquipmentCategory[] ElementSupportedEquipmentCategories = {
+                                                                                    EquipmentCategory.AssaultWeapon,
+                                                                                    EquipmentCategory.MissileWeapon,
+                                                                                    EquipmentCategory.BeamWeapon,
+                                                                                    EquipmentCategory.ProjectileWeapon,
+                                                                                    EquipmentCategory.ActiveCountermeasure,
+                                                                                    EquipmentCategory.PassiveCountermeasure,
+                                                                                    EquipmentCategory.Sensor,
+                                                                                    EquipmentCategory.ShieldGenerator
+                                                                                };
+
+        public static EquipmentCategory[] CmdModuleSupportedEquipmentCategories =   {
+                                                                                        EquipmentCategory.PassiveCountermeasure,
+                                                                                        EquipmentCategory.Sensor
+                                                                                    };
 
         public static ShipHullCategory[] ShipHullCategoriesInUse =  {
                                                                         ShipHullCategory.Carrier,
@@ -603,6 +620,10 @@ namespace CodeEnv.Master.GameContent {
         public const GameColor DisabledColor = GameColor.Gray;
 
         public const GameColor UnknownHealthColor = DisabledColor;
+
+        public const GameColor ResearchQueuedColor = GameColor.Yellow;
+
+        public const GameColor CurrentResearchColor = GameColor.Green;
 
         /// <summary>
         /// The name of the sprite (texture) used as a frame around an image.

@@ -198,6 +198,8 @@ namespace CodeEnv.Master.GameContent {
 
         CombatStanceChange = 110,
 
+        ////TechResearch = 112,
+
         #endregion
 
         #region Miscellaneous
@@ -225,8 +227,6 @@ namespace CodeEnv.Master.GameContent {
         ElementIcon = 100,
 
         UnitIcon = 101,
-
-
 
         #endregion
 

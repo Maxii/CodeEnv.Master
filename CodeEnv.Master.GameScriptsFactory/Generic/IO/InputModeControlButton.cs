@@ -58,16 +58,12 @@ public class InputModeControlButton : AGuiButton {
         InputManager.Instance.InputMode = gameInputMode;
     }
 
-    #region Event and Property Change Handlers
-
-    #endregion
-
     protected override void Cleanup() { }
 
     #region Debug
 
-    protected override void __Validate() {
-        base.__Validate();
+    protected override void __ValidateOnAwake() {
+        base.__ValidateOnAwake();
         if (_inputModeOnClick == default(GameSceneInputMode)) {
             D.WarnContext(this, "{0} has not set {1}.", DebugName, typeof(GameSceneInputMode).Name);
         }

@@ -27,6 +27,11 @@ using UnityEngine;
 /// </summary>
 public class EquipmentStorageIconGuiElement : AEquipmentIconGuiElement {
 
+    [Tooltip("The widget that controls whether the stat image icon/name is showing.")]
+    [SerializeField]
+    private GameObject _showHideCntlWidgetGameObject = null;
+    protected override GameObject ShowHideControlWidgetGameObject { get { return _showHideCntlWidgetGameObject; } }
+
     /// <summary>
     /// Empty 'icon slot' sprite that is always enabled. When the slot is filled, this background sprite shows through as a 'highlight'.
     /// </summary>
@@ -168,14 +173,11 @@ public class EquipmentStorageIconGuiElement : AEquipmentIconGuiElement {
         }
     }
 
-    protected override void HandleIconSizeSet() {
-        base.HandleIconSizeSet();
-        ResizeAndAnchorEmptySlotBackgroundSprite();
-    }
-
-    private void ResizeAndAnchorEmptySlotBackgroundSprite() {
-        IntVector2 iconDimensions = GetIconDimensions(Size);
-        _emptySlotSprite.SetDimensions(iconDimensions.x, iconDimensions.y);
+    protected override void ResizeAnyWidgetsThatAreNotShowHideWidgetChildren(int x, int y) {
+        base.ResizeAnyWidgetsThatAreNotShowHideWidgetChildren(x, y);
+        gameObject.GetComponent<UIWidget>().SetDimensions(x, y);
+        _iconShowHideControlWidget.SetAnchor(gameObject);
+        _emptySlotSprite.SetDimensions(x, y);
         _emptySlotSprite.SetAnchor(gameObject);
     }
 
@@ -206,6 +208,10 @@ public class EquipmentStorageIconGuiElement : AEquipmentIconGuiElement {
         D.AssertNotNull(_emptySlotSprite);
         D.Assert(_emptySlotSprite.enabled);
         D.AssertNotNull(_emptySlotCategoryLabel);
+
+        D.AssertNotNull(_showHideCntlWidgetGameObject);
+        D.AssertNotEqual(gameObject, _showHideCntlWidgetGameObject);
+        UnityUtility.ValidateComponentPresence<UIWidget>(gameObject);
     }
 
     #endregion

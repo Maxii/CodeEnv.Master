@@ -26,6 +26,8 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// Singleton. Factory that makes AEquipmentStat instances.
     /// <remarks>TODO Acquire from XML values and make use of Player parameter.</remarks>
+    /// <remarks>IMPROVE EquipmentCategory should be specific and include Range and FTL/STL designation to eliminate
+    /// ambiguity of __MakeInstances delivering multiple stats for the same level and category.</remarks>
     /// </summary>
     public class EquipmentStatFactory : AGenericSingleton<EquipmentStatFactory> {
 
@@ -40,12 +42,12 @@ namespace CodeEnv.Master.GameContent {
             CreateAllEquipStats();
         }
 
-        public IList<AEquipmentStat> MakeInstances(Player player, EquipmentCategory category, Level level) {
+        public IList<AEquipmentStat> __MakeInstances(Player player, EquipmentCategory category, Level level) {
             return _statCache[category][level];
         }
 
         public AEquipmentStat MakeInstance(Player player, EquipmentCategory category, Level level) {
-            return MakeInstances(player, category, level).Single();
+            return __MakeInstances(player, category, level).Single();
         }
 
         public PassiveCountermeasureStat MakeDefaultPassiveCmInstance() {
@@ -110,12 +112,10 @@ namespace CodeEnv.Master.GameContent {
                 case EquipmentCategory.ProjectileWeapon:
                     stats.Add(__CreateProjectileWeaponStat(level));
                     break;
-                case EquipmentCategory.ElementSensor:
-                    stats.Add(__CreateElementSensorStat(level));
-                    break;
-                case EquipmentCategory.CommandSensor:
-                    stats.Add(__CreateCmdSensorStat(level, RangeCategory.Medium));
-                    stats.Add(__CreateCmdSensorStat(level, RangeCategory.Long));
+                case EquipmentCategory.Sensor:
+                    stats.Add(__CreateSensorStat(level, RangeCategory.Short));
+                    stats.Add(__CreateSensorStat(level, RangeCategory.Medium));
+                    stats.Add(__CreateSensorStat(level, RangeCategory.Long));
                     break;
                 case EquipmentCategory.ShieldGenerator:
                     stats.Add(__CreateShieldGeneratorStat(level));
@@ -138,26 +138,27 @@ namespace CodeEnv.Master.GameContent {
         // TEMP 
         #region XML Reader 
 
-        private SensorStat __CreateElementSensorStat(Level level) {
-            return new SensorStat("ProximityDetector", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", level, 0F, 0F, 0F, 1F,
-                Constants.ZeroF, RangeCategory.Short, isDamageable: false);
-        }
-
-        private SensorStat __CreateCmdSensorStat(Level level, RangeCategory rangeCat) {
+        private SensorStat __CreateSensorStat(Level level, RangeCategory range) {
             string name;
-            switch (rangeCat) {
+            bool isDamageable;
+            switch (range) {
+                case RangeCategory.Short:
+                    name = "Proximity";
+                    isDamageable = false;
+                    break;
                 case RangeCategory.Medium:
-                    name = "PulseSensor";
+                    name = "Radar";
+                    isDamageable = true;
                     break;
                 case RangeCategory.Long:
-                    name = "DeepScanArray";
+                    name = "Array";
+                    isDamageable = true;
                     break;
-                case RangeCategory.Short:
                 default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(rangeCat));
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(range));
             }
-            return new SensorStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", level, 0F, 0F, 0F, 1F,
-                Constants.ZeroF, rangeCat, isDamageable: true);
+            return new SensorStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", level, 0F, 0F, 0F, 1F, 1F,
+                Constants.ZeroF, range, isDamageable);
         }
 
         private EngineStat __CreateEngineStat(Level level, ShipHullCategory hullCat, bool isFtlEngine) {
@@ -168,6 +169,7 @@ namespace CodeEnv.Master.GameContent {
             bool isDamageable = isFtlEngine ? true : false;
 
             float engineMass = hullCat.Mass() * 0.1F;
+            float hitPts = __GetEngineHitPoints(hullCat, isFtlEngine);
             float fullPropulsionPower = __GetFullStlPropulsionPower(hullCat);   // FullFtlOpenSpaceSpeed ~ 30-40 units/hour, FullStlSystemSpeed ~ 1.2 - 1.6 units/hour
             if (isFtlEngine) {
                 fullPropulsionPower *= TempGameValues.__StlToFtlPropulsionPowerFactor;
@@ -175,7 +177,55 @@ namespace CodeEnv.Master.GameContent {
             float constructionCost = __GetEngineConstructionCost(hullCat, isFtlEngine);
 
             return new EngineStat(engineName, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", level, hullCat, fullPropulsionPower,
-                maxTurnRate, engineSize, engineMass, constructionCost, engineExpense, isDamageable, isFtlEngine);
+                maxTurnRate, engineSize, engineMass, hitPts, constructionCost, engineExpense, isDamageable, isFtlEngine);
+        }
+
+        private float __GetEngineHitPoints(ShipHullCategory hullCat, bool isFtlEngine) {
+            float lowCost = 3F;
+            float highCost = 5F;
+            switch (hullCat) {
+                case ShipHullCategory.Frigate:
+                    break;
+                case ShipHullCategory.Destroyer:
+                    lowCost = 4F;
+                    highCost = 6F;
+                    break;
+                case ShipHullCategory.Investigator:
+                    lowCost = 5F;
+                    highCost = 8F;
+                    break;
+                case ShipHullCategory.Support:
+                    lowCost = 6F;
+                    highCost = 9F;
+                    break;
+                case ShipHullCategory.Troop:
+                    lowCost = 7F;
+                    highCost = 10F;
+                    break;
+                case ShipHullCategory.Colonizer:
+                    lowCost = 8F;
+                    highCost = 12F;
+                    break;
+                case ShipHullCategory.Cruiser:
+                    lowCost = 10F;
+                    highCost = 14F;
+                    break;
+                case ShipHullCategory.Dreadnought:
+                    lowCost = 14;
+                    highCost = 18F;
+                    break;
+                case ShipHullCategory.Carrier:
+                    lowCost = 14F;
+                    highCost = 18F;
+                    break;
+                case ShipHullCategory.Fighter:
+                case ShipHullCategory.Scout:
+                case ShipHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+            }
+            float engineTypeMultiplier = isFtlEngine ? 1F : 1.5F;
+            return UnityEngine.Random.Range(lowCost, highCost) * engineTypeMultiplier;
         }
 
         private float __GetEngineConstructionCost(ShipHullCategory hullCat, bool isFtlEngine) {
@@ -251,10 +301,11 @@ namespace CodeEnv.Master.GameContent {
             float expense = hullCat.Expense();
             float science = hullCat.Science();
             float culture = hullCat.Culture();
+            float hitPts = hullCat.HitPoints();
             float constructionCost = hullCat.ConstructionCost();
             Vector3 hullDimensions = hullCat.Dimensions();
             return new ShipHullStat(hullCat, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", level, 0F,
-                hullMass, drag, 0F, constructionCost, expense, 50F, new DamageStrength(2F, 2F, 2F), hullDimensions,
+                hullMass, drag, 0F, hitPts, constructionCost, expense, new DamageStrength(2F, 2F, 2F), hullDimensions,
                 science, culture, income);
         }
 
@@ -266,10 +317,11 @@ namespace CodeEnv.Master.GameContent {
             float science = hullCat.Science();
             float culture = hullCat.Culture();
             float hullMass = hullCat.Mass();
+            float hitPts = hullCat.HitPoints();
             float constructionCost = hullCat.ConstructionCost();
             Vector3 hullDimensions = hullCat.Dimensions();
             return new FacilityHullStat(hullCat, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", level, 0F,
-                hullMass, 0F, constructionCost, expense, 50F, new DamageStrength(2F, 2F, 2F), hullDimensions,
+                hullMass, 0F, hitPts, constructionCost, expense, new DamageStrength(2F, 2F, 2F), hullDimensions,
                 science, culture, income, food, production);
         }
 
@@ -280,32 +332,37 @@ namespace CodeEnv.Master.GameContent {
             float trickleChargeRate = 1F;
             float reloadPeriod = 20F;
             DamageStrength damageMitigation = default(DamageStrength);  // none for now
+            float hitPts = 1F;
             float constructionCost = UnityEngine.Random.Range(1F, 5F);
 
             return new ShieldGeneratorStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...",
-                 level, 0F, 1F, 0F, constructionCost, Constants.ZeroF, rangeCat, maxCharge, trickleChargeRate, reloadPeriod, damageMitigation);
+                 level, 0F, 1F, 0F, hitPts, constructionCost, Constants.ZeroF, rangeCat, maxCharge, trickleChargeRate, reloadPeriod, damageMitigation);
         }
 
         private FtlDampenerStat __CreateFtlDampenerStat(Level level) {
             float constructionCost = UnityEngine.Random.Range(1F, 5F);
+            float hitPts = 1F;
             return new FtlDampenerStat("FtlDampener", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...",
-                 level, 0F, 1F, 0F, constructionCost, Constants.ZeroF, RangeCategory.Short);
+                 level, 0F, 1F, 0F, hitPts, constructionCost, Constants.ZeroF, RangeCategory.Short);
         }
 
         private FleetCmdModuleStat __CreateFleetCmdModuleStat(Level level) {
-            return new FleetCmdModuleStat("CmdModule", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", level, 0F, 0F, 0F, Constants.ZeroF, 10, Constants.OneHundredPercent);
+            return new FleetCmdModuleStat("CmdModule", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", level, 0F, 0F, 0F,
+                10F, Constants.ZeroF, Constants.OneHundredPercent);
         }
 
         private StarbaseCmdModuleStat __CreateStarbaseCmdModuleStat(Level level) {
             int startingPop = 100;
             float startingApproval = Constants.OneHundredPercent;
-            return new StarbaseCmdModuleStat("CmdModule", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", level, 0F, 0F, 0F, Constants.ZeroF, 10, Constants.OneHundredPercent, startingPop, startingApproval);
+            return new StarbaseCmdModuleStat("CmdModule", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", level, 0F, 0F, 0F,
+                10F, Constants.ZeroF, Constants.OneHundredPercent, startingPop, startingApproval);
         }
 
         private SettlementCmdModuleStat __CreateSettlementCmdModuleStat(Level level) {
             int startingPop = 100;
             float startingApproval = Constants.OneHundredPercent;
-            return new SettlementCmdModuleStat("CmdModule", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", level, 0F, 0F, 0F, Constants.ZeroF, 10, Constants.OneHundredPercent, startingPop, startingApproval);
+            return new SettlementCmdModuleStat("CmdModule", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", level, 0F, 0F, 0F,
+                10F, Constants.ZeroF, Constants.OneHundredPercent, startingPop, startingApproval);
         }
 
         private PassiveCountermeasureStat __CreatePassiveCmStat(Level level) {
@@ -336,7 +393,7 @@ namespace CodeEnv.Master.GameContent {
             float constructionCost = UnityEngine.Random.Range(1F, 5F);
 
             return new PassiveCountermeasureStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", level,
-                0F, 0F, 0F, constructionCost, Constants.ZeroF, damageMitigation);
+                0F, 0F, 0F, 2F, constructionCost, Constants.ZeroF, damageMitigation);
         }
 
         private ActiveCountermeasureStat __CreateActiveCmStat(Level level, RangeCategory rangeCat) {
@@ -383,7 +440,7 @@ namespace CodeEnv.Master.GameContent {
             float constructionCost = UnityEngine.Random.Range(1F, 5F);
 
             return new ActiveCountermeasureStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", level,
-                0F, 0F, 0F, constructionCost, Constants.ZeroF, rangeCat, interceptStrengths, interceptAccuracy, reloadPeriod, damageMitigation);
+                0F, 0F, 0F, 1F, constructionCost, Constants.ZeroF, rangeCat, interceptStrengths, interceptAccuracy, reloadPeriod, damageMitigation);
         }
 
         private MissileWeaponStat __CreateMissileWeaponStat(Level level) {
@@ -405,9 +462,10 @@ namespace CodeEnv.Master.GameContent {
             float ordMaxSpeed = UnityEngine.Random.Range(8F, 12F);   // Ship STL MaxSpeed System = 1.6, OpenSpace = 8
             float ordMass = 5F;
             float ordDrag = 0.02F;
+            float hitPts = 2F;
             float constructionCost = UnityEngine.Random.Range(1F, 5F);
 
-            return new MissileWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", level, 0F, 0F, 0F,
+            return new MissileWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", level, 0F, 0F, 0F, hitPts,
                 constructionCost, Constants.ZeroF, rangeCat, deliveryVehicleStrength, reloadPeriod, damagePotential, ordMaxSpeed,
                 ordMass, ordDrag, ordTurnRate, ordCourseUpdateFreq, maxSteeringInaccuracy, isDamageable);
         }
@@ -431,9 +489,10 @@ namespace CodeEnv.Master.GameContent {
             float ordMaxSpeed = UnityEngine.Random.Range(2F, 4F);   // Ship STL MaxSpeed System = 1.6, OpenSpace = 8
             float ordMass = 10F;
             float ordDrag = 0.03F;
+            float hitPts = 2F;
             float constructionCost = UnityEngine.Random.Range(1F, 5F);
 
-            return new AssaultWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", level, 0F, 0F, 0F,
+            return new AssaultWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", level, 0F, 0F, 0F, hitPts,
                 constructionCost, Constants.ZeroF, rangeCat, deliveryVehicleStrength, reloadPeriod, damagePotential, ordMaxSpeed, ordMass,
                 ordDrag, ordTurnRate, ordCourseUpdateFreq, maxSteeringInaccuracy, isDamageable);
         }
@@ -454,9 +513,10 @@ namespace CodeEnv.Master.GameContent {
             float ordMaxSpeed = UnityEngine.Random.Range(15F, 18F);   // Ship STL MaxSpeed System = 1.6, OpenSpace = 8
             float ordMass = 1F;
             float ordDrag = 0.01F;
+            float hitPts = 2F;
             float constructionCost = UnityEngine.Random.Range(1F, 5F);
 
-            return new ProjectileWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", level, 0F, 0F, 0F,
+            return new ProjectileWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", level, 0F, 0F, 0F, hitPts,
                 constructionCost, Constants.ZeroF, rangeCat, deliveryVehicleStrength, reloadPeriod, damagePotential, ordMaxSpeed,
                 ordMass, ordDrag, maxLaunchInaccuracy, isDamageable);
         }
@@ -474,9 +534,10 @@ namespace CodeEnv.Master.GameContent {
             WDVCategory deliveryVehicleCategory = WDVCategory.Beam;
             WDVStrength deliveryVehicleStrength = new WDVStrength(deliveryVehicleCategory, deliveryStrengthValue);
             bool isDamageable = true;
+            float hitPts = 2F;
             float constructionCost = UnityEngine.Random.Range(1F, 5F);
 
-            return new BeamWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", level, 0F, 0F, 0F,
+            return new BeamWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", level, 0F, 0F, 0F, hitPts,
                 constructionCost, Constants.ZeroF, rangeCat, deliveryVehicleStrength, reloadPeriod, damagePotential, duration,
                 maxLaunchInaccuracy, isDamageable);
         }
@@ -490,6 +551,14 @@ namespace CodeEnv.Master.GameContent {
             var level = Enums<Level>.GetRandom(excludeDefault: true);
             return RandomExtended.Choice<AEquipmentStat>(_statCache[category][level]);
         }
+
+        public string __GetRandomEquipmentStatName() {
+            var category = Enums<EquipmentCategory>.GetRandom(excludeDefault: true);
+            var level = Enums<Level>.GetRandom(excludeDefault: true);
+            return RandomExtended.Choice<AEquipmentStat>(_statCache[category][level]).Name;
+        }
+
+
 
         #endregion
 

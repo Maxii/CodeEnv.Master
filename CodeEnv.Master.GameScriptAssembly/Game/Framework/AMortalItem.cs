@@ -233,36 +233,6 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
 
     public abstract void TakeHit(DamageStrength attackerWeaponStrength);
 
-    /// <summary>
-    /// Applies the damage to the Item and returns true if the Item survived the hit.
-    /// </summary>
-    /// <param name="damageSustained">The damage sustained.</param>
-    /// <param name="damageSeverity">The damage severity.</param>
-    /// <returns>
-    ///   <c>true</c> if the Item survived.
-    /// </returns>
-    protected virtual bool ApplyDamage(DamageStrength damageSustained, out float damageSeverity) {
-        var __damageTotal = damageSustained.Total;
-        damageSeverity = Mathf.Clamp01(__damageTotal / Data.CurrentHitPoints);
-        Data.CurrentHitPoints -= __damageTotal;
-        if (Data.Health > Constants.ZeroPercent) {
-            AssessCripplingDamageToEquipment(damageSeverity);
-            return true;
-        }
-        return false;
-    }
-
-    /// <summary>
-    /// Assesses and applies any crippling damage to the item's equipment as a result of the hit.
-    /// </summary>
-    /// <param name="damageSeverity">The severity of the damage as a percentage of the item's hit points when hit.</param>
-    protected virtual void AssessCripplingDamageToEquipment(float damageSeverity) {
-        Utility.ValidateForRange(damageSeverity, Constants.ZeroPercent, Constants.OneHundredPercent);
-        var passiveCmDamageChance = damageSeverity;
-        var undamagedDamageablePassiveCMs = Data.PassiveCountermeasures.Where(cm => cm.IsDamageable && !cm.IsDamaged);
-        undamagedDamageablePassiveCMs.ForAll(cm => cm.IsDamaged = RandomExtended.Chance(passiveCmDamageChance));
-    }
-
     #endregion
 
     #endregion
@@ -296,8 +266,10 @@ public abstract class AMortalItem : AIntelItem, IMortalItem, IMortalItem_Ltd, IA
 
     public virtual void __SimulateAttacked() {
         D.LogBold("{0} is having an attack simulated on itself.", DebugName);
+        var damageCats = Enums<DamageCategory>.GetValues(excludeDefault: true);
+        var damageCat = RandomExtended.Choice(damageCats);
         float damageValue = UnityEngine.Random.Range(Constants.ZeroF, Data.MaxHitPoints / 2F);
-        TakeHit(new DamageStrength(damageValue, damageValue, damageValue));
+        TakeHit(new DamageStrength(damageCat, damageValue));
     }
 
     public void __LogDeathEventSubscribers() {

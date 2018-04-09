@@ -72,6 +72,8 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        ////public float FtlEngineHitPoints { get { return _ftlEngine != null ? _ftlEngine.MaxHitPoints : Constants.ZeroF; } }
+
         #endregion
 
         private INavigableDestination _target;
@@ -175,10 +177,7 @@ namespace CodeEnv.Master.GameContent {
 
         public override IntVector3 SectorID { get { return GameReferences.SectorGrid.GetSectorIDThatContains(Position); } }
 
-        public new ShipDesign Design {
-            get { return base.Design as ShipDesign; }
-            set { base.Design = value; }
-        }
+        public new ShipDesign Design { get { return base.Design as ShipDesign; } }
 
         public new ShipInfoAccessController InfoAccessCntlr { get { return base.InfoAccessCntlr as ShipInfoAccessController; } }
 
@@ -253,7 +252,6 @@ namespace CodeEnv.Master.GameContent {
 
         public ShipReport GetReport(Player player) { return Publisher.GetReport(player); }
 
-
         #region Event and Property Change Handlers
 
         private void IsFtlOperationalChangedEventHandler(object sender, EventArgs e) {
@@ -286,21 +284,73 @@ namespace CodeEnv.Master.GameContent {
             Outputs = MakeOutputs();
         }
 
-        public override EquipmentDamagedFromRework DamageNonHullEquipment(float damagePercent) {
+        protected override EquipmentDamagedFromRework DamageNonHullEquipment(float damagePercent) {
             var equipmentDamagedFromRework = base.DamageNonHullEquipment(damagePercent);
-            if (IsFtlCapable) {
+            if (_ftlEngine != null) {
                 _ftlEngine.IsDamaged = RandomExtended.Chance(damagePercent);
-                equipmentDamagedFromRework.FtlEngine = _ftlEngine;
+                if (_ftlEngine.IsDamaged) {
+                    equipmentDamagedFromRework.FtlEngine = _ftlEngine;
+                }
             }
+            // StlEngine is not damageable
             return equipmentDamagedFromRework;
         }
 
-        public override void RemoveDamageFromAllEquipment() {
+        protected override void RemoveDamageFromAllEquipment() {
             base.RemoveDamageFromAllEquipment();
-            if (IsFtlCapable) {
+            if (_ftlEngine != null) {
                 _ftlEngine.IsDamaged = false;
             }
+            // StlEngine is not damageable
         }
+
+        protected override void DeactivateAllEquipment() {
+            base.DeactivateAllEquipment();
+            _stlEngine.IsActivated = false;
+            if (_ftlEngine != null) {
+                _ftlEngine.IsActivated = false;
+            }
+        }
+
+        #region Combat Support
+
+        protected override float AssessDamageToEquipment(float damageSeverity) {
+            float cumCurrentHitPtReductionFromEquip = base.AssessDamageToEquipment(damageSeverity);
+            if (_ftlEngine != null) {
+                if (!_ftlEngine.IsDamaged) {
+                    var dmgChance = damageSeverity;
+                    bool toDamage = RandomExtended.Chance(dmgChance);
+                    if (toDamage) {
+                        _ftlEngine.IsDamaged = true;
+                        cumCurrentHitPtReductionFromEquip += _ftlEngine.HitPoints;
+                    }
+                }
+            }
+            // StlEngine is not damageable
+            return cumCurrentHitPtReductionFromEquip;
+        }
+
+        #endregion
+
+        #region Repair
+
+        protected override float AssessRepairToEquipment(float repairImpact) {
+            float cumEquipRprPts = base.AssessRepairToEquipment(repairImpact);
+            if (_ftlEngine != null) {
+                if (_ftlEngine.IsDamaged) {
+                    float rprChance = repairImpact;
+                    bool toRpr = RandomExtended.Chance(rprChance);
+                    if (toRpr) {
+                        _ftlEngine.IsDamaged = false;
+                        cumEquipRprPts += _ftlEngine.HitPoints;
+                    }
+                }
+            }
+            // StlEngine is not damageable
+            return cumEquipRprPts;
+        }
+
+        #endregion
 
         private OutputsYield MakeOutputs() {
             IList<OutputsYield.OutputValuePair> outputPairs = new List<OutputsYield.OutputValuePair>(7);
@@ -339,6 +389,17 @@ namespace CodeEnv.Master.GameContent {
                 _ftlEngine.isOperationalChanged -= IsFtlOperationalChangedEventHandler;
             }
         }
+
+        #region Debug
+
+        protected override void __ValidateAllEquipmentDamageRepaired() {
+            base.__ValidateAllEquipmentDamageRepaired();
+            if (_ftlEngine != null) {
+                D.Assert(!_ftlEngine.IsDamaged);
+            }
+        }
+
+        #endregion
 
     }
 }

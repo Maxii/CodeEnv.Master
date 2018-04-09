@@ -388,7 +388,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     }
 
     protected sealed override void SubordinateOrderOutcomeEventHandler(object sender, AUnitElementItem.OrderOutcomeEventArgs e) {
-        HandleSubordinateOrderOutcome(sender as FacilityItem, e.IsOrderSuccessfullyCompleted, e.Target, e.FailureCause, e.CmdOrderID);
+        HandleSubordinateOrderOutcome(sender as FacilityItem, e.Target, e.Outcome, e.CmdOrderID);
     }
     #endregion
 
@@ -742,6 +742,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         // do nothing. No orders currently being executed
     }
 
+    protected void Idling_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
+        LogEvent();
+        // do nothing. No orders currently being executed
+    }
+
     protected void Idling_UponRelationsChangedWith(Player player) {
         LogEvent();
         // TODO
@@ -833,7 +838,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         elementsAvailableToAttack.ForAll(e => (e as FacilityItem).CurrentOrder = elementAttackOrder);
     }
 
-    protected void ExecuteAttackOrder_UponOrderOutcomeCallback(FacilityItem facility, bool isSuccess, IElementNavigableDestination target, OrderFailureCause failCause) {
+    protected void ExecuteAttackOrder_UponOrderOutcomeCallback(FacilityItem facility, IElementNavigableDestination target, OrderOutcome outcome) {
         LogEvent();
         D.Warn("FYI. {0}.ExecuteAttackOrder_UponOrderOutcomeCallback() called!", DebugName);
         // TODO 9.21.17 Once the attack on the UnitAttackTarget has been naturally completed -> Idle
@@ -851,6 +856,18 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected void ExecuteAttackOrder_UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) {
         LogEvent();
+        if (subordinateElement.Availability > NewOrderAvailability.BarelyAvailable) {
+            IUnitAttackable unitAttackTgt = _fsmTgt as IUnitAttackable;
+            var elementAttackOrder = new FacilityOrder(FacilityDirective.Attack, CurrentOrder.Source, _executingOrderID, unitAttackTgt as IElementNavigableDestination);
+            (subordinateElement as FacilityItem).CurrentOrder = elementAttackOrder;
+        }
+    }
+
+    protected void ExecuteAttackOrder_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
+        LogEvent();
+        IUnitAttackable unitAttackTgt = _fsmTgt as IUnitAttackable;
+        var elementAttackOrder = new FacilityOrder(FacilityDirective.Attack, CurrentOrder.Source, _executingOrderID, unitAttackTgt as IElementNavigableDestination);
+        (subordinateElement as FacilityItem).CurrentOrder = elementAttackOrder;
     }
 
     protected void ExecuteAttackOrder_UponRelationsChangedWith(Player player) {
@@ -990,7 +1007,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         CurrentState = BaseState.Idling;
     }
 
-    protected void ExecuteRepairOrder_UponOrderOutcomeCallback(FacilityItem facility, bool isSuccess, IElementNavigableDestination target, OrderFailureCause failCause) {
+    protected void ExecuteRepairOrder_UponOrderOutcomeCallback(FacilityItem facility, IElementNavigableDestination target, OrderOutcome outcome) {
         D.Warn("FYI. {0}.ExecuteRepairOrder_UponOrderOutcomeCallback() called!", DebugName);
     }
 
@@ -1007,6 +1024,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected void ExecuteRepairOrder_UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) {
         LogEvent();
         // Do nothing. If subordinateFacility just became available it will initiate repair itself if needed
+    }
+
+    protected void ExecuteRepairOrder_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
+        LogEvent();
+        // Do nothing. A newly repaired facility shouldn't need to repair again
     }
 
     protected void ExecuteRepairOrder_UponAlertStatusChanged() {
@@ -1112,42 +1134,40 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         Return();
     }
 
-    protected void Repairing_UponOrderOutcomeCallback(FacilityItem facility, bool isSuccess, IElementNavigableDestination target, OrderFailureCause failCause) {
+    protected void Repairing_UponOrderOutcomeCallback(FacilityItem facility, IElementNavigableDestination target, OrderOutcome outcome) {
         LogEvent();
-        D.Log(ShowDebugLog, "{0}.Repairing_UponOrderOutcomeCallback() called from {1}. FailCause = {2}. Frame: {3}.",
-            DebugName, facility.DebugName, failCause.GetValueName(), Time.frameCount);
+        D.Log(ShowDebugLog, "{0}.Repairing_UponOrderOutcomeCallback() called from {1}. Outcome = {2}. Frame: {3}.",
+            DebugName, facility.DebugName, outcome.GetValueName(), Time.frameCount);
 
-        if (isSuccess) {
-            bool isRemoved = _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Remove(facility);
-            D.Assert(isRemoved);
-        }
-        else {
-            switch (failCause) {
-                case OrderFailureCause.Death:
-                case OrderFailureCause.NewOrderReceived:
-                    bool isRemoved = _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Remove(facility);
-                    D.Assert(isRemoved);
-                    break;
-                case OrderFailureCause.NeedsRepair:
-                    // Ignore it as facility will RestartState if it encounters this from another Call()ed state
-                    break;
-                case OrderFailureCause.TgtUnreachable:
-                    D.Error("{0}: {1}.{2} not currently handled.", DebugName, typeof(OrderFailureCause).Name,
-                        OrderFailureCause.TgtUnreachable.GetValueName());
-                    break;
-                case OrderFailureCause.Ownership:
-                // Should not occur as facility can only change owner if last element. 
-                // Base will change owner and ResetOrderAndState before this callback can occur.
-                case OrderFailureCause.TgtDeath:
-                // UNCLEAR this base is dead
-                case OrderFailureCause.TgtRelationship:
-                // UNCLEAR this base's owner just changed
-                case OrderFailureCause.TgtUnjoinable:
-                case OrderFailureCause.TgtUncatchable:
-                case OrderFailureCause.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(failCause));
-            }
+        switch (outcome) {
+            case OrderOutcome.Success:
+                bool isRemoved = _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Remove(facility);
+                D.Assert(isRemoved);
+                break;
+            case OrderOutcome.Death:
+            case OrderOutcome.NewOrderReceived:
+                isRemoved = _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Remove(facility);
+                D.Assert(isRemoved);
+                break;
+            case OrderOutcome.NeedsRepair:
+                // Ignore it as facility will RestartState if it encounters this from another Call()ed state
+                break;
+            case OrderOutcome.TgtUnreachable:
+                D.Error("{0}: {1}.{2} not currently handled.", DebugName, typeof(OrderOutcome).Name,
+                    OrderOutcome.TgtUnreachable.GetValueName());
+                break;
+            case OrderOutcome.Ownership:
+            // Should not occur as facility can only change owner if last element. 
+            // Base will change owner and ResetOrderAndState before this callback can occur.
+            case OrderOutcome.TgtDeath:
+            // UNCLEAR this base is dead
+            case OrderOutcome.TgtRelationship:
+            // UNCLEAR this base's owner just changed
+            case OrderOutcome.TgtUnjoinable:
+            case OrderOutcome.TgtUncatchable:
+            case OrderOutcome.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(outcome));
         }
     }
 
@@ -1159,6 +1179,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
     protected void Repairing_UponSubordinateIsAvailableChanged(AUnitElementItem subordinateElement) {
         LogEvent();
         // Do nothing. If subordinateFacility just became available it will initiate repair itself if needed
+    }
+
+    protected void Repairing_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
+        LogEvent();
+        // do nothing as response expected
     }
 
     protected void Repairing_UponAlertStatusChanged() {
@@ -1253,7 +1278,7 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
         // 11.26.17 Placeholder for refitting the CmdModule which is not currently supported
         StartEffectSequence(EffectSequenceID.Refitting);
-        Data.RemoveDamageFromAllCmdModuleEquipment();
+        Data.__RemoveDamageFromCmdModuleEquipment();
         StopEffectSequence(EffectSequenceID.Refitting);
 
         while (_fsmFacilitiesExpectedToCallbackWithOrderOutcome.Any()) {
@@ -1264,41 +1289,39 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         CurrentState = BaseState.Idling;
     }
 
-    protected void ExecuteRefitOrder_UponOrderOutcomeCallback(FacilityItem facility, bool isSuccess, IElementNavigableDestination target, OrderFailureCause failCause) {
+    protected void ExecuteRefitOrder_UponOrderOutcomeCallback(FacilityItem facility, IElementNavigableDestination target, OrderOutcome outcome) {
         LogEvent();
-        D.Log(ShowDebugLog, "{0}.ExecuteRefitOrder_UponOrderOutcomeCallback() called from {1}. FailCause = {2}. Frame: {3}.",
-            DebugName, facility.DebugName, failCause.GetValueName(), Time.frameCount);
+        D.Log(ShowDebugLog, "{0}.ExecuteRefitOrder_UponOrderOutcomeCallback() called from {1}. Outcome = {2}. Frame: {3}.",
+            DebugName, facility.DebugName, outcome.GetValueName(), Time.frameCount);
 
-        if (isSuccess) {
-            bool isRemoved = _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Remove(facility);
-            D.Assert(isRemoved);
-        }
-        else {
-            switch (failCause) {
-                case OrderFailureCause.Death:
-                case OrderFailureCause.ConstructionCanceled:
-                    bool isRemoved = _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Remove(facility);
-                    D.Assert(isRemoved);
-                    break;
-                case OrderFailureCause.NewOrderReceived:
-                // Should not occur as facility cannot receive new orders (except Scuttle) while unavailable. 
-                // If scuttle received, callback will be Death
-                case OrderFailureCause.Ownership:
-                // Should not occur as facility can only change owner if last element. 
-                // Base will change owner and ResetOrderAndState before this callback can occur.
-                case OrderFailureCause.TgtDeath:
-                // Should not occur as Tgt is this base and last facility will have already informed us of death
-                case OrderFailureCause.TgtRelationship:
-                // Should not occur as Tgt is this base and last facility will have already informed us of loss of ownership
-                case OrderFailureCause.NeedsRepair:
-                // Should not occur as Facility knows finishing refit repairs all damage
-                case OrderFailureCause.TgtUnjoinable:
-                case OrderFailureCause.TgtUnreachable:
-                case OrderFailureCause.TgtUncatchable:
-                case OrderFailureCause.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(failCause));
-            }
+        switch (outcome) {
+            case OrderOutcome.Success:
+                bool isRemoved = _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Remove(facility);
+                D.Assert(isRemoved);
+                break;
+            case OrderOutcome.Death:
+            case OrderOutcome.ConstructionCanceled:
+                isRemoved = _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Remove(facility);
+                D.Assert(isRemoved);
+                break;
+            case OrderOutcome.NewOrderReceived:
+            // Should not occur as facility cannot receive new orders (except Scuttle) while unavailable. 
+            // If scuttle received, callback will be Death
+            case OrderOutcome.Ownership:
+            // Should not occur as facility can only change owner if last element. 
+            // Base will change owner and ResetOrderAndState before this callback can occur.
+            case OrderOutcome.TgtDeath:
+            // Should not occur as Tgt is this base and last facility will have already informed us of death
+            case OrderOutcome.TgtRelationship:
+            // Should not occur as Tgt is this base and last facility will have already informed us of loss of ownership
+            case OrderOutcome.NeedsRepair:
+            // Should not occur as Facility knows finishing refit repairs all damage
+            case OrderOutcome.TgtUnjoinable:
+            case OrderOutcome.TgtUnreachable:
+            case OrderOutcome.TgtUncatchable:
+            case OrderOutcome.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(outcome));
         }
     }
 
@@ -1342,6 +1365,12 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
                 }
             }
         }
+    }
+
+    protected void ExecuteRefitOrder_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
+        LogEvent();
+        // if received, element has repaired from damage after refit completed so should already have responded with outcome
+        D.Assert(!_fsmFacilitiesExpectedToCallbackWithOrderOutcome.Contains(subordinateElement as FacilityItem));
     }
 
     protected void ExecuteRefitOrder_UponAlertStatusChanged() {
@@ -1458,42 +1487,40 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
         D.Error("{0} should be dead and never get here?", DebugName);
     }
 
-    protected void ExecuteDisbandOrder_UponOrderOutcomeCallback(FacilityItem facility, bool isSuccess, IElementNavigableDestination target, OrderFailureCause failCause) {
+    protected void ExecuteDisbandOrder_UponOrderOutcomeCallback(FacilityItem facility, IElementNavigableDestination target, OrderOutcome outcome) {
         LogEvent();
-        D.Log(ShowDebugLog, "{0}.ExecuteDisbandOrder_UponOrderOutcomeCallback() called from {1}. FailCause = {2}. Frame: {3}.",
-            DebugName, facility.DebugName, failCause.GetValueName(), Time.frameCount);
+        D.Log(ShowDebugLog, "{0}.ExecuteDisbandOrder_UponOrderOutcomeCallback() called from {1}. Outcome = {2}. Frame: {3}.",
+            DebugName, facility.DebugName, outcome.GetValueName(), Time.frameCount);
 
-        if (isSuccess) {
-            bool isRemoved = _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Remove(facility);
-            D.Assert(isRemoved);
-        }
-        else {
-            switch (failCause) {
-                case OrderFailureCause.Death:
-                    bool isRemoved = _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Remove(facility);
-                    D.Assert(isRemoved);
-                    break;
-                case OrderFailureCause.Ownership:
-                // Should not occur as facility can only change owner if last element. 
-                // Base will change owner and ResetOrderAndState before this callback can occur.
-                case OrderFailureCause.ConstructionCanceled:
-                // Should not occur as facility will not callback if canceled. It will die and rely on its Death callback
-                case OrderFailureCause.NewOrderReceived:
-                // Should not occur as facility cannot receive new orders (except Scuttle) while unavailable. 
-                // If scuttle received, callback will be Death
-                case OrderFailureCause.TgtDeath:
-                // Should not occur as Tgt is this base and last facility will have already informed us of death
-                case OrderFailureCause.TgtRelationship:
-                // Should not occur as Tgt is this base and last facility will have already informed us of loss of ownership
-                case OrderFailureCause.NeedsRepair:
-                // Should not occur as Facility knows finishing disband negates need for repairs
-                case OrderFailureCause.TgtUnjoinable:
-                case OrderFailureCause.TgtUnreachable:
-                case OrderFailureCause.TgtUncatchable:
-                case OrderFailureCause.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(failCause));
-            }
+        switch (outcome) {
+            case OrderOutcome.Success:
+                bool isRemoved = _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Remove(facility);
+                D.Assert(isRemoved);
+                break;
+            case OrderOutcome.Death:
+                isRemoved = _fsmFacilitiesExpectedToCallbackWithOrderOutcome.Remove(facility);
+                D.Assert(isRemoved);
+                break;
+            case OrderOutcome.Ownership:
+            // Should not occur as facility can only change owner if last element. 
+            // Base will change owner and ResetOrderAndState before this callback can occur.
+            case OrderOutcome.ConstructionCanceled:
+            // Should not occur as facility will not callback if canceled. It will die and rely on its Death callback
+            case OrderOutcome.NewOrderReceived:
+            // Should not occur as facility cannot receive new orders (except Scuttle) while unavailable. 
+            // If scuttle received, callback will be Death
+            case OrderOutcome.TgtDeath:
+            // Should not occur as Tgt is this base and last facility will have already informed us of death
+            case OrderOutcome.TgtRelationship:
+            // Should not occur as Tgt is this base and last facility will have already informed us of loss of ownership
+            case OrderOutcome.NeedsRepair:
+            // Should not occur as Facility knows finishing disband negates need for repairs
+            case OrderOutcome.TgtUnjoinable:
+            case OrderOutcome.TgtUnreachable:
+            case OrderOutcome.TgtUncatchable:
+            case OrderOutcome.None:
+            default:
+                throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(outcome));
         }
     }
 
@@ -1516,6 +1543,11 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
             D.Error("{0}.ExecuteDisbandOrder_UponSubordinateIsAvailableChanged({1}) received that shouldn't occur.", DebugName, subordinateElement.DebugName);
         }
         // else do nothing as normal to receive loss of availability if facility was idling when disband order issued
+    }
+
+    protected void ExecuteDisbandOrder_UponSubordinateRepairCompleted(AUnitElementItem subordinateElement) {
+        LogEvent();
+        D.Error("{0}.ExecuteDisbandOrder_UponSubordinateRepairCompleted({1}) received that shouldn't occur.", DebugName, subordinateElement.DebugName);
     }
 
     protected void ExecuteDisbandOrder_UponAlertStatusChanged() {
@@ -1674,11 +1706,10 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     #region Order Outcome Callback System
 
-    private void HandleSubordinateOrderOutcome(FacilityItem facility, bool isOrderSuccessfullyCompleted, IElementNavigableDestination target,
-        OrderFailureCause failureCause, Guid cmdOrderID) {
+    private void HandleSubordinateOrderOutcome(FacilityItem facility, IElementNavigableDestination target, OrderOutcome outcome, Guid cmdOrderID) {
         if (_executingOrderID == cmdOrderID) {
             // callback is intended for current state(s) executing the current order
-            UponOrderOutcomeCallback(facility, isOrderSuccessfullyCompleted, target, failureCause);
+            UponOrderOutcomeCallback(facility, target, outcome);
         }
     }
 
@@ -1722,9 +1753,8 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     #region Relays
 
-    private void UponOrderOutcomeCallback(FacilityItem facility, bool isOrderSuccessfullyCompleted, IElementNavigableDestination target,
-        OrderFailureCause failCause) {
-        RelayToCurrentState(facility, isOrderSuccessfullyCompleted, target, failCause);
+    private void UponOrderOutcomeCallback(FacilityItem facility, IElementNavigableDestination target, OrderOutcome outcome) {
+        RelayToCurrentState(facility, target, outcome);
     }
 
     private void UponSubordinateConstructionCompleted(FacilityItem subordinateFacility) {

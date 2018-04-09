@@ -32,17 +32,18 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="imageAtlasID">The image atlas identifier.</param>
         /// <param name="imageFilename">The image filename.</param>
         /// <param name="description">The description.</param>
-        /// <param name="level">The level of technological advancement of this stat.</param>
+        /// <param name="level">The improvement level of this stat.</param>
         /// <param name="size">The size.</param>
         /// <param name="mass">The mass.</param>
         /// <param name="pwrRqmt">The power needed to operate this equipment.</param>
+        /// <param name="hitPts">The hit points contributed to the survivability of the item.</param>
         /// <param name="constructionCost">The cost to produce.</param>
         /// <param name="expense">The expense.</param>
         /// <param name="rangeCat">The range category.</param>
         /// <param name="isDamageable">if set to <c>true</c> [is damageable].</param>
         public ARangedEquipmentStat(string name, AtlasID imageAtlasID, string imageFilename, string description, Level level, float size,
-            float mass, float pwrRqmt, float constructionCost, float expense, RangeCategory rangeCat, bool isDamageable)
-            : base(name, imageAtlasID, imageFilename, description, level, size, mass, pwrRqmt, constructionCost, expense, isDamageable) {
+            float mass, float pwrRqmt, float hitPts, float constructionCost, float expense, RangeCategory rangeCat, bool isDamageable)
+            : base(name, imageAtlasID, imageFilename, description, level, size, mass, pwrRqmt, hitPts, constructionCost, expense, isDamageable) {
             RangeCategory = rangeCat;
         }
 

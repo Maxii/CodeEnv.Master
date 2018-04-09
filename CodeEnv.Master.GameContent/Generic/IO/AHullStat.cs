@@ -15,6 +15,7 @@
 ////#define DEBUG_ERROR
 
 namespace CodeEnv.Master.GameContent {
+
     using Common;
     using UnityEngine;
 
@@ -27,8 +28,8 @@ namespace CodeEnv.Master.GameContent {
 
         public sealed override EquipmentCategory Category { get { return EquipmentCategory.Hull; } }
 
-        public float MaxHitPoints { get; private set; }
         public DamageStrength DamageMitigation { get; private set; }
+
         public Vector3 HullDimensions { get; private set; }
 
         /// <summary>
@@ -38,20 +39,19 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="imageAtlasID">The image atlas identifier.</param>
         /// <param name="imageFilename">The image filename.</param>
         /// <param name="description">The description.</param>
-        /// <param name="level">The level of technological advancement of this stat.</param>
+        /// <param name="level">The improvement level of this stat.</param>
         /// <param name="size">The space available within this hull.</param>
         /// <param name="mass">The mass of this hull.</param>
         /// <param name="pwrRqmt">The power required to operate this hull.</param>
+        /// <param name="hitPts">The hit points contributed to the survivability of the item.</param>
         /// <param name="constructionCost">The production cost.</param>
         /// <param name="expense">The expense consumed by this hull.</param>
-        /// <param name="maxHitPts">The maximum hit points of this hull.</param>
         /// <param name="damageMitigation">The resistance to damage of this hull.</param>
         /// <param name="hullDimensions">The hull dimensions.</param>
-        public AHullStat(string hullCategoryName, AtlasID imageAtlasID, string imageFilename, string description, Level level, float size, float mass,
-            float pwrRqmt, float constructionCost, float expense, float maxHitPts, DamageStrength damageMitigation, Vector3 hullDimensions)
-            : base(hullCategoryName + HullCategoryNameExtension, imageAtlasID, imageFilename, description, level, size, mass, pwrRqmt,
+        public AHullStat(string hullCategoryName, AtlasID imageAtlasID, string imageFilename, string description, Level level, float size,
+            float mass, float pwrRqmt, float hitPts, float constructionCost, float expense, DamageStrength damageMitigation, Vector3 hullDimensions)
+            : base(hullCategoryName + HullCategoryNameExtension, imageAtlasID, imageFilename, description, level, size, mass, pwrRqmt, hitPts,
                   constructionCost, expense, isDamageable: false) {
-            MaxHitPoints = maxHitPts;
             DamageMitigation = damageMitigation;
             HullDimensions = hullDimensions;
         }

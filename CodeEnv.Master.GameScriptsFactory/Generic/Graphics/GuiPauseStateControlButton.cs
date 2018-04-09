@@ -36,8 +36,6 @@ public class GuiPauseStateControlButton : AGuiButton {
 
     protected override IEnumerable<KeyCode> ValidKeys { get { return _validKeys; } }
 
-    #region Event and Property Change Handlers
-
     protected override void HandleValidClick() {
         if (_pauseRequestOnClick == default(PauseRequest)) {
             D.WarnContext(this, "{0}.{1} not set.", GetType().Name, typeof(PauseRequest).Name);
@@ -45,8 +43,6 @@ public class GuiPauseStateControlButton : AGuiButton {
         bool toPause = _pauseRequestOnClick == PauseRequest.Pause;
         _gameMgr.RequestPauseStateChange(toPause);
     }
-
-    #endregion
 
     protected override void Cleanup() { }
 

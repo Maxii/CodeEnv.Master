@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ATechStat.cs
-// An immutable stat that is made available through researching technology.
+// An immutable abstract base class for stats that can be improved upon.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,9 +19,9 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// An immutable stat that is made available through researching technology.
+    /// An immutable abstract base class for stats that can be improved upon.
     /// </summary>
-    public abstract class ATechStat {
+    public abstract class AImprovableStat {
 
         private const string DebugNameFormat = "{0}.{1}";
 
@@ -47,19 +47,19 @@ namespace CodeEnv.Master.GameContent {
         public string Description { get; private set; }
 
         /// <summary>
-        /// The level of technological advancement of this stat.
+        /// The improvement level of this stat.
         /// </summary>
         public Level Level { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ATechStat" /> class.
+        /// Initializes a new instance of the <see cref="AImprovableStat" /> class.
         /// </summary>
         /// <param name="name">The display name of the Equipment.</param>
         /// <param name="imageAtlasID">The image atlas identifier.</param>
         /// <param name="imageFilename">The image filename.</param>
         /// <param name="description">The description.</param>
-        /// <param name="level">The level of technological advancement of this stat.</param>
-        public ATechStat(string name, AtlasID imageAtlasID, string imageFilename, string description, Level level) {
+        /// <param name="level">The improvement level of this stat.</param>
+        public AImprovableStat(string name, AtlasID imageAtlasID, string imageFilename, string description, Level level) {
             Name = name;
             ImageAtlasID = imageAtlasID;
             ImageFilename = imageFilename;

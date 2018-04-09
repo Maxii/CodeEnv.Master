@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: GuiManager.cs
-// Overall GuiManager that handles the showing state of Gui elements.
+// Singleton GuiManager located on the GameScene's UIRoot with potential access to all Gui components.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -26,7 +26,9 @@ using UnityEngine.Profiling;
 using UnityEngine.Serialization;
 
 /// <summary>
-/// Overall GuiManager that handles the showing state of the GUI's fixed panels.
+/// Singleton GuiManager located on the GameScene's UIRoot with potential access to all Gui components.
+/// <remarks>Also handles the state of the UIPanels with fixed Gui element children that
+/// should be hidden/shown when other popup Gui screens and menus appear/disappear.</remarks>
 /// </summary>
 public class GuiManager : AMonoSingleton<GuiManager> {
 
@@ -45,6 +47,9 @@ public class GuiManager : AMonoSingleton<GuiManager> {
 
 #pragma warning restore 0649
 
+    [SerializeField]
+    private UIButton _rschScreenButton = null;
+
     /// <summary>
     /// The showing state of each panel when it is about to be told to hide, keyed by the panel.
     /// <c>True</c> indicates the panel was showing, <c>false</c> indicates the panel was not 
@@ -53,20 +58,20 @@ public class GuiManager : AMonoSingleton<GuiManager> {
     /// is told to show the previously showing panels.</remarks>
     /// </summary>
     private IDictionary<UIPanel, bool> _hiddenPanelLookup;
-    private IDictionary<GuiElementID, GameObject> _buttonLookup;
     private List<UIWidget> _allGuiWidgets;
+
+    [Obsolete("Replaced by specific ClickButton public methods")]
+    private IDictionary<GuiElementID, GameObject> _buttonLookup;
 
     protected override void InitializeOnAwake() {
         base.InitializeOnAwake();
+        __ValidateOnAwake();
         _hiddenPanelLookup = new Dictionary<UIPanel, bool>();
-        if (GameManager.Instance.CurrentSceneID == SceneID.GameScene && _panelsToConsiderHiding.IsNullOrEmpty()) {
-            D.WarnContext(gameObject, "{0}.panelsToConsiderHiding is empty.", DebugName);
-        }
         __CheckDebugSettings();
-        InitializeButtonClickSystem();
         Subscribe();
     }
 
+    [Obsolete("Replaced by specific ClickButton public methods to avoid more GuiElementIDs")]
     private void InitializeButtonClickSystem() {
         _buttonLookup = new Dictionary<GuiElementID, GameObject>(GuiElementIDEqualityComparer.Default);
         var allButtons = gameObject.GetSafeComponentsInChildren<UIButton>(includeInactive: true);
@@ -105,10 +110,15 @@ public class GuiManager : AMonoSingleton<GuiManager> {
         D.LogBold("{0}: Screen has resized. {1} WidgetAnchors have been updated.", GetType().Name, _allGuiWidgets.Count);
     }
 
+    public void ClickRschScreenButton() {
+        GameInputHelper.Instance.Notify(_rschScreenButton.gameObject, "OnClick");
+    }
+
     /// <summary>
     /// Calls "OnClick" on the gameObject associated with this buttonID.
     /// </summary>
     /// <param name="buttonID">The button identifier.</param>
+    [Obsolete("Replaced by specific ClickButton public methods to avoid more GuiElementIDs")]
     public void ClickButton(GuiElementID buttonID) {
         var buttonGo = _buttonLookup[buttonID];
         GameInputHelper.Instance.Notify(buttonGo, "OnClick");
@@ -159,6 +169,19 @@ public class GuiManager : AMonoSingleton<GuiManager> {
 
     #region Debug
 
+    [System.Diagnostics.Conditional("DEBUG")]
+    private void __ValidateOnAwake() {
+        if (GameManager.Instance.CurrentSceneID == SceneID.GameScene) {
+            if (_panelsToConsiderHiding.IsNullOrEmpty()) {
+                D.WarnContext(gameObject, "{0}.panelsToConsiderHiding is empty.", DebugName);
+            }
+            if (_rschScreenButton == null) {
+                D.Error("{0}._rschScreenButton not assigned.", DebugName);
+            }
+        }
+    }
+
+    [System.Diagnostics.Conditional("DEBUG")]
     private void __WarnIfExceptionNotNeeded(IEnumerable<UIPanel> exceptions) {
         exceptions.ForAll(e => {
             if (!_panelsToConsiderHiding.Contains(e)) {
@@ -167,6 +190,7 @@ public class GuiManager : AMonoSingleton<GuiManager> {
         });
     }
 
+    [System.Diagnostics.Conditional("DEBUG")]
     private void __CheckDebugSettings() {
         if (__debugSettings.DisableGui) {
             GuiCameraControl.Instance.GuiCamera.enabled = false;

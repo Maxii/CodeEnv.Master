@@ -66,6 +66,8 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\Graphics\AGuiWaitForInitializeMember.cs" />
+    <Compile Include="Generic\Graphics\AResearchTreeNode.cs" />
     <Compile Include="Game\Framework\FleetMoveHelper.cs" />
     <Compile Include="Generic\Framework\AAutoUnitCreator.cs" />
     <Compile Include="Game\Framework\FleetCreator.cs" />
@@ -138,6 +140,9 @@
     <Compile Include="Game\Framework\Hanger.cs" />
     <Compile Include="Game\GUI\ResearchForm.cs" />
     <Compile Include="Game\GUI\ResearchWindow.cs" />
+    <Compile Include="Game\GUI\TechResearchTreeNode.cs" />
+    <Compile Include="Generic\Graphics\ResearchTreeLink.cs" />
+    <Compile Include="Generic\_Debug\InvisibleWmgNodeIdentifier.cs" />
     <Compile Include="ThirdParty\MyDragDropItem.cs" />
     <Compile Include="ThirdParty\MyNGPathfindingGraph.cs" />
     <Compile Include="ThirdParty\MyPlaySFX.cs" />
@@ -349,6 +354,8 @@
     <Compile Include="Game\GUI\UserSettlementUnitHudForm.cs" />
     <Compile Include="Game\GUI\UserStarbaseUnitHudForm.cs" />
     <Compile Include="Game\GUI\UserEmpireMgmtForm.cs" />
+    <Compile Include="Game\GUI\UserActionButton.cs" />
+    <Compile Include="Generic\_Debug\GraphMakerTreeHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\CodeEnv\CodeEnv.Master\CodeEnv.Master.Common\CodeEnv.Master.Common.csproj">
@@ -359,6 +366,10 @@
       <Project>{7e32bd55-f315-4bde-885c-646841c273f7}</Project>
       <Name>AStar</Name>
       <Private>False</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Plugins\GraphMaker\GraphMaker.csproj">
+      <Project>{8214a01f-b4d3-4ece-9f61-bae8db9b8c76}</Project>
+      <Name>GraphMaker</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Plugins\GridFramework\GridFramework.csproj">
       <Project>{c67bf06a-f39d-41cc-939c-9bb856e12f7a}</Project>

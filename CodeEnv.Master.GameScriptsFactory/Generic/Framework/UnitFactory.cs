@@ -692,7 +692,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         sensors.Add(reqdSRSensor);
         AttachMonitor(reqdSRSensor, element);
 
-        var optionalSensorStats = elementDesign.GetEquipmentStatsFor(EquipmentCategory.ElementSensor);
+        var optionalSensorStats = elementDesign.GetEquipmentStatsFor(EquipmentCategory.Sensor);
         foreach (var stat in optionalSensorStats) {
             sName = stat.Name + nameCounter;
             nameCounter++;
@@ -714,7 +714,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         sensors.Add(reqdMRSensor);
         AttachMonitor(reqdMRSensor, cmd);
 
-        var optionalSensorStats = cmdDesign.GetEquipmentStatsFor(EquipmentCategory.CommandSensor);
+        var optionalSensorStats = cmdDesign.GetEquipmentStatsFor(EquipmentCategory.Sensor);
         foreach (var stat in optionalSensorStats) {
             sName = stat.Name + nameCounter;
             nameCounter++;
@@ -860,8 +860,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             D.AssertEqual(EquipmentMountCategory.Silo, slotID.SupportedMount);
             var mountPlaceholders = hull.gameObject.GetSafeComponentsInChildren<LauncherMountPlaceholder>();
             //D.Log("{0}: MountPlaceholders found = {1}.", DebugName, mountPlaceholders.Select(mp => mp.DebugName).Concatenate());
-            mountPlaceholder = hull.gameObject.GetSafeComponentsInChildren<LauncherMountPlaceholder>()
-                                    .Single(placeholder => placeholder.SlotID == slotID);
+            mountPlaceholder = mountPlaceholders.Single(placeholder => placeholder.SlotID == slotID);
             weaponMountPrefab = _launchTubePrefab;
         }
 

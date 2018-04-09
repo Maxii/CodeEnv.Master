@@ -474,6 +474,14 @@ namespace CodeEnv.Master.Common {
             return new Vector3(x / length, y / length, z / length);
         }
 
+        public static int Factorial(int i) {
+            if (i <= Constants.One) {
+                return Constants.One;
+
+            }
+            return i * Factorial(i - 1);
+        }
+
     }
 }
 

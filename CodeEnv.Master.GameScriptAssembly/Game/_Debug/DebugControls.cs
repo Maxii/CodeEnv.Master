@@ -262,6 +262,14 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     private bool _deactivateLRSensors = false;
     public bool DeactivateLRSensors { get { return _deactivateLRSensors; } }
 
+    [Tooltip("Check if User should manually select techs to research from Research Window")]
+    [SerializeField]
+    private bool _userSelectsTechs = false;
+    /// <summary>
+    /// If <c>true</c> the User will be prompted to manually select the tech to research from the ResearchWindow.
+    /// </summary>
+    public bool UserSelectsTechs { get { return _userSelectsTechs; } }
+
     #endregion
 
     #region User Relations Change Fields

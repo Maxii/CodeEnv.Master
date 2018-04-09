@@ -23,7 +23,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class ACmdModuleStat : AEquipmentStat {
 
-        public float MaxHitPoints { get; private set; }
         /// <summary>
         /// The maximum effectiveness of the command staff.
         /// <remarks>Does not include contributions from Heroes.</remarks>
@@ -39,17 +38,17 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="imageAtlasID">The image atlas identifier.</param>
         /// <param name="imageFilename">The image filename.</param>
         /// <param name="description">The description.</param>
-        /// <param name="level">The level of technological advancement of this stat.</param>
+        /// <param name="level">The improvement level of this stat.</param>
         /// <param name="size">The physical size of the equipment.</param>
         /// <param name="mass">The mass of the equipment.</param>
         /// <param name="pwrRqmt">The power required to operate the equipment.</param>
+        /// <param name="hitPts">The hit points contributed to the survivability of the item.</param>
         /// <param name="expense">The expense required to operate this equipment.</param>
         /// <param name="maxHitPts">The maximum hit PTS.</param>
         /// <param name="maxCmdStaffEffectiveness">The maximum effectiveness of the command staff.</param>
         public ACmdModuleStat(string name, AtlasID imageAtlasID, string imageFilename, string description, Level level, float size, float mass,
-            float pwrRqmt, float expense, float maxHitPts, float maxCmdStaffEffectiveness)
-            : base(name, imageAtlasID, imageFilename, description, level, size, mass, pwrRqmt, Constants.ZeroF, expense, isDamageable: false) {
-            MaxHitPoints = maxHitPts;
+            float pwrRqmt, float hitPts, float expense, float maxCmdStaffEffectiveness)
+            : base(name, imageAtlasID, imageFilename, description, level, size, mass, pwrRqmt, hitPts, Constants.ZeroF, expense, isDamageable: false) {
             MaxCmdStaffEffectiveness = maxCmdStaffEffectiveness;
         }
 

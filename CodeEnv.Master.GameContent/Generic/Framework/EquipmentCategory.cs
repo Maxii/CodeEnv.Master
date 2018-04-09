@@ -32,27 +32,25 @@ namespace CodeEnv.Master.GameContent {
         ActiveCountermeasure,   // Range will handle distinctions, if any
 
         [EnumAttribute("Hull")]
-        Hull,   // Ship vs Facility allows separate improvement techs - deferred until use case
+        Hull,   // ShipHull/FacilityHull would allow separate improvement techs - deferred until use case
 
         [EnumAttribute("Prop")]
-        Propulsion, // FTL vs STL allows separate improvement techs - deferred until use case
+        Propulsion, // FtlProp/StlProp would allow separate improvement techs - deferred until use case
 
+        [EnumAttribute("Beam")]
         BeamWeapon,
 
+        [EnumAttribute("Bullet")]
         ProjectileWeapon,
 
+        [EnumAttribute("Missile")]
         MissileWeapon,
 
+        [EnumAttribute("Assault")]
         AssaultWeapon,
 
-        //[EnumAttribute("Sens")]
-        //Sensor,
-
-        [EnumAttribute("ESense")]
-        ElementSensor,  // Sensor. // Range will handle distinctions, if any
-
-        [EnumAttribute("CSense")]
-        CommandSensor,  // Sensor. // Range will handle distinctions, if any
+        [EnumAttribute("Sense")]
+        Sensor,
 
         [EnumAttribute("SGen")]
         ShieldGenerator,
@@ -61,7 +59,7 @@ namespace CodeEnv.Master.GameContent {
         FtlDampener,
 
         [EnumAttribute("CmdM")]
-        CommandModule,  // Fleet vs Base - deferred until use case
+        CommandModule,  // FleetCmdModule/BaseCmdModule would allow separate improvement techs - deferred until use case
 
         //[EnumAttribute("FCM")]
         //FleetCmdModule,
