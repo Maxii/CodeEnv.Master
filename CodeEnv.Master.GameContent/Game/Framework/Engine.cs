@@ -37,7 +37,7 @@ namespace CodeEnv.Master.GameContent {
         /// This value uses a Game Hour denominator. It is adjusted in
         /// realtime to a Unity seconds value in EngineRoom.ApplyThrust() using GeneralSettings.HoursPerSecond.</remarks>
         /// </summary>
-        public float FullPropulsionPower { get { return Stat.FullPropulsionPower; } }
+        public float FullPropulsionPower { get; private set; }
 
         public float MaxTurnRate { get { return Stat.MaxTurnRate; } }
 
@@ -49,6 +49,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="stat">The stat.</param>
         /// <param name="name">The optional unique name for this equipment. If not provided, the name embedded in the stat will be used.</param>
         public Engine(EngineStat stat, string name = null) : base(stat, name) { }
+
+        public void CalculatePropulsionPower(float shipMass, float shipOpenSpaceDrag) {
+            FullPropulsionPower = GameUtility.CalculateReqdPropulsionPower(Stat.MaxAttainableSpeed, shipMass, shipOpenSpaceDrag);
+        }
 
         public override bool AreSpecsEqual(AEquipmentStat otherStat) {
             return Stat == otherStat as EngineStat;

@@ -62,8 +62,8 @@ public class FacilityDesignWindow : AUnitDesignWindow {
         UserDesigns.ObsoleteFacilityDesign(designName);
     }
 
-    protected override IEnumerable<AEquipmentStat> GetUserCurrentEquipmentStats() {
-        return UserDesigns.GetCurrentEquipmentStats(TempGameValues.ElementSupportedEquipmentCategories);
+    protected override IEnumerable<AEquipmentStat> GetUserCurrentEquipmentStatsAvailableFor(AUnitMemberDesign pickedDesign) {
+        return UserDesigns.GetCurrentElementEquipmentStats();
     }
 
 }

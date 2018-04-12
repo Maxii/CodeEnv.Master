@@ -57,7 +57,7 @@ namespace CodeEnv.Master.GameContent {
         Docking = 4,
 
         /// <summary>
-        /// A very low unitsPerHour value suitable for manuevering around or approaching close objects.
+        /// A very low unitsPerHour value suitable for maneuvering around or approaching close objects.
         /// If the ShipMoveMode is FleetWide, DeadSlow here refers to the lowest DeadSlow value found in any ship in the fleet.
         /// The unitsPerHour value is a direct function of the engine in use and Topographic density.
         /// </summary>

@@ -88,130 +88,168 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public IEnumerable<AEquipmentStat> GetCurrentEquipmentStats(IEnumerable<EquipmentCategory> supportedEquipCats) {
-            List<AEquipmentStat> allCurrentStats = new List<AEquipmentStat>();
-            foreach (var eCat in supportedEquipCats) {
+        /// <summary>
+        /// Returns the EquipmentStats that are currently valid for use when creating an Element Design.
+        /// <remarks>Used by AUnitDesignWindow to populate the EquipmentStats that can be picked to create or modify a design.</remarks>
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="System.NotImplementedException"></exception>
+        public IEnumerable<AEquipmentStat> GetCurrentElementEquipmentStats() {
+            List<AEquipmentStat> currentElementStats = new List<AEquipmentStat>();
+            foreach (var eCat in TempGameValues.EquipCatsSupportedByElementDesigner) {
                 switch (eCat) {
                     case EquipmentCategory.PassiveCountermeasure:
-                        allCurrentStats.Add(GetCurrentPassiveCmStat());
+                        currentElementStats.Add(GetCurrentPassiveCmStat());
+                        break;
+                    case EquipmentCategory.SRSensor:
+                        currentElementStats.Add(GetCurrentSRSensorStat());
                         break;
                     case EquipmentCategory.ActiveCountermeasure:
-                        allCurrentStats.AddRange(GetAllCurrentActiveCmStats().Cast<AEquipmentStat>());
+                        currentElementStats.Add(GetCurrentActiveCmStat());
                         break;
-                    case EquipmentCategory.BeamWeapon:
                     case EquipmentCategory.AssaultWeapon:
+                    case EquipmentCategory.BeamWeapon:
                     case EquipmentCategory.MissileWeapon:
                     case EquipmentCategory.ProjectileWeapon:
-                        allCurrentStats.Add(GetCurrentWeaponStatFor(eCat));
-                        break;
-                    case EquipmentCategory.Sensor:
-                        allCurrentStats.Add(GetCurrentSensorStat(RangeCategory.Short));
-                        allCurrentStats.Add(GetCurrentSensorStat(RangeCategory.Medium));
-                        allCurrentStats.Add(GetCurrentSensorStat(RangeCategory.Long));
+                        currentElementStats.Add(GetCurrentWeaponStatFor(eCat));
                         break;
                     case EquipmentCategory.ShieldGenerator:
-                        allCurrentStats.Add(GetCurrentShieldGeneratorStat());
+                        currentElementStats.Add(GetCurrentShieldGeneratorStat());
                         break;
-                    case EquipmentCategory.Propulsion:
-                    case EquipmentCategory.CommandModule:
+                    case EquipmentCategory.StlPropulsion:
+                    case EquipmentCategory.FtlPropulsion:
+                    case EquipmentCategory.FleetCmdModule:
+                    case EquipmentCategory.SettlementCmdModule:
+                    case EquipmentCategory.StarbaseCmdModule:
+                    case EquipmentCategory.Hull:
+                    case EquipmentCategory.MRSensor:
+                    case EquipmentCategory.LRSensor:
                     case EquipmentCategory.FtlDampener:
+                    case EquipmentCategory.None:
+                    default:
+                        throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(eCat));
+                }
+            }
+            return currentElementStats;
+        }
+
+        /// <summary>
+        /// Returns the EquipmentStats that are currently valid for use when creating a CmdModule Design.
+        /// <remarks>Used by AUnitDesignWindow to populate the EquipmentStats that can be picked to create or modify a design.</remarks>
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="System.NotImplementedException"></exception>
+        public IEnumerable<AEquipmentStat> GetCurrentCmdModuleEquipmentStats() {
+            List<AEquipmentStat> currentCmdModuleStats = new List<AEquipmentStat>();
+            foreach (var eCat in TempGameValues.EquipCatsSupportedByCmdModuleDesigner) {
+                switch (eCat) {
+                    case EquipmentCategory.PassiveCountermeasure:
+                        currentCmdModuleStats.Add(GetCurrentPassiveCmStat());
+                        break;
+                    case EquipmentCategory.MRSensor:
+                        currentCmdModuleStats.Add(GetCurrentMRCmdSensorStat());
+                        break;
+                    case EquipmentCategory.LRSensor:
+                        currentCmdModuleStats.Add(GetCurrentLRCmdSensorStat());
+                        break;
+                    case EquipmentCategory.FtlDampener:
+                        currentCmdModuleStats.Add(GetCurrentFtlDampenerStat());
+                        break;
+                    case EquipmentCategory.StlPropulsion:
+                    case EquipmentCategory.FtlPropulsion:
+                    case EquipmentCategory.SRSensor:
+                    case EquipmentCategory.FleetCmdModule:
+                    case EquipmentCategory.SettlementCmdModule:
+                    case EquipmentCategory.StarbaseCmdModule:
+                    case EquipmentCategory.ActiveCountermeasure:
+                    case EquipmentCategory.AssaultWeapon:
+                    case EquipmentCategory.BeamWeapon:
+                    case EquipmentCategory.MissileWeapon:
+                    case EquipmentCategory.ProjectileWeapon:
+                    case EquipmentCategory.ShieldGenerator:
                     case EquipmentCategory.Hull:
                     case EquipmentCategory.None:
                     default:
                         throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(eCat));
                 }
             }
-            return allCurrentStats;
+            return currentCmdModuleStats;
         }
 
-        public SensorStat GetCurrentSensorStat(RangeCategory range) {
-            Level playerLevel = GetCurrentEquipLevelFor(EquipmentCategory.Sensor);
-            return _eStatFactory.__MakeInstances(_player, EquipmentCategory.Sensor, playerLevel)
-                .Single(stat => (stat as SensorStat).RangeCategory == range) as SensorStat;
+        public SensorStat GetCurrentSRSensorStat() {
+            Level playerLevel = GetCurrentEquipLevelFor(EquipmentCategory.SRSensor);
+            return _eStatFactory.MakeNonHullInstance(_player, EquipmentCategory.SRSensor, playerLevel) as SensorStat;
         }
 
-        public EngineStat GetCurrentEngineStat(ShipHullCategory hullCat, bool isFtlEngine) {
-            var playerLevel = GetCurrentEquipLevelFor(EquipmentCategory.Propulsion);
-            var aStats = _eStatFactory.__MakeInstances(_player, EquipmentCategory.Propulsion, playerLevel);
-            return aStats.Select(stat => new { eStat = (stat as EngineStat) })
-                .Single(anony => anony.eStat.HullCategory == hullCat && anony.eStat.IsFtlEngine == isFtlEngine).eStat;
+        public SensorStat GetCurrentMRCmdSensorStat() {
+            Level playerLevel = GetCurrentEquipLevelFor(EquipmentCategory.MRSensor);
+            return _eStatFactory.MakeNonHullInstance(_player, EquipmentCategory.MRSensor, playerLevel) as SensorStat;
+        }
+
+        public SensorStat GetCurrentLRCmdSensorStat() {
+            Level playerLevel = GetCurrentEquipLevelFor(EquipmentCategory.LRSensor);
+            return _eStatFactory.MakeNonHullInstance(_player, EquipmentCategory.LRSensor, playerLevel) as SensorStat;
+        }
+
+        public EngineStat GetCurrentEngineStat(bool isFtlEngine) {
+            var engineCat = isFtlEngine ? EquipmentCategory.FtlPropulsion : EquipmentCategory.StlPropulsion;
+            var playerLevel = GetCurrentEquipLevelFor(engineCat);
+            if (GameReferences.DebugControls.AreShipsFast) {
+                playerLevel = Level.Five;
+            }
+            return _eStatFactory.MakeNonHullInstance(_player, engineCat, playerLevel) as EngineStat;
         }
 
         public ShipHullStat GetCurrentHullStat(ShipHullCategory hullCat) {
             var playerLevel = GetCurrentEquipLevelFor(EquipmentCategory.Hull);
-            var aStats = _eStatFactory.__MakeInstances(_player, EquipmentCategory.Hull, playerLevel);
-            return aStats.Select(stat => new { shStat = (stat as ShipHullStat) })
-                .Single(anony => anony.shStat != null && anony.shStat.HullCategory == hullCat).shStat;
-        }
-
-        public IEnumerable<ShipHullStat> GetAllCurrentShipHullStats() {
-            var playerLevel = GetCurrentEquipLevelFor(EquipmentCategory.Hull);
-            var aStats = _eStatFactory.__MakeInstances(_player, EquipmentCategory.Hull, playerLevel);
-            return aStats.Where(stat => stat is ShipHullStat).Cast<ShipHullStat>();
+            return _eStatFactory.MakeHullInstance(_player, hullCat, playerLevel);
         }
 
         public FacilityHullStat GetCurrentHullStat(FacilityHullCategory hullCat) {
             var playerLevel = GetCurrentEquipLevelFor(EquipmentCategory.Hull);
-            var aStats = _eStatFactory.__MakeInstances(_player, EquipmentCategory.Hull, playerLevel);
-            return aStats.Select(stat => new { fhStat = (stat as FacilityHullStat) })
-                .Single(anony => anony.fhStat != null && anony.fhStat.HullCategory == hullCat).fhStat;
-        }
-
-        public IEnumerable<FacilityHullStat> GetAllCurrentFacilityHullStats() {
-            var playerLevel = GetCurrentEquipLevelFor(EquipmentCategory.Hull);
-            var aStats = _eStatFactory.__MakeInstances(_player, EquipmentCategory.Hull, playerLevel);
-            return aStats.Where(stat => stat is FacilityHullStat).Cast<FacilityHullStat>();
+            return _eStatFactory.MakeHullInstance(_player, hullCat, playerLevel);
         }
 
         public ShieldGeneratorStat GetCurrentShieldGeneratorStat() {
             var playerLevel = GetCurrentEquipLevelFor(EquipmentCategory.ShieldGenerator);
-            return _eStatFactory.MakeInstance(_player, EquipmentCategory.ShieldGenerator, playerLevel) as ShieldGeneratorStat;
+            return _eStatFactory.MakeNonHullInstance(_player, EquipmentCategory.ShieldGenerator, playerLevel) as ShieldGeneratorStat;
         }
 
         public FtlDampenerStat GetCurrentFtlDampenerStat() {
             var playerLevel = GetCurrentEquipLevelFor(EquipmentCategory.FtlDampener);
-            return _eStatFactory.MakeInstance(_player, EquipmentCategory.FtlDampener, playerLevel) as FtlDampenerStat;
+            return _eStatFactory.MakeNonHullInstance(_player, EquipmentCategory.FtlDampener, playerLevel) as FtlDampenerStat;
         }
 
         public FleetCmdModuleStat GetCurrentFleetCmdModuleStat() {
-            var playerLevel = GetCurrentEquipLevelFor(EquipmentCategory.CommandModule);
-            var aStats = _eStatFactory.__MakeInstances(_player, EquipmentCategory.CommandModule, playerLevel);
-            return aStats.Single(stat => stat is FleetCmdModuleStat) as FleetCmdModuleStat;
+            var playerLevel = GetCurrentEquipLevelFor(EquipmentCategory.FleetCmdModule);
+            return _eStatFactory.MakeNonHullInstance(_player, EquipmentCategory.FleetCmdModule, playerLevel) as FleetCmdModuleStat;
         }
 
         public StarbaseCmdModuleStat GetCurrentStarbaseCmdModuleStat() {
-            var playerLevel = GetCurrentEquipLevelFor(EquipmentCategory.CommandModule);
-            var aStats = _eStatFactory.__MakeInstances(_player, EquipmentCategory.CommandModule, playerLevel);
-            return aStats.Single(stat => stat is StarbaseCmdModuleStat) as StarbaseCmdModuleStat;
+            var playerLevel = GetCurrentEquipLevelFor(EquipmentCategory.StarbaseCmdModule);
+            return _eStatFactory.MakeNonHullInstance(_player, EquipmentCategory.StarbaseCmdModule, playerLevel) as StarbaseCmdModuleStat;
         }
 
         public SettlementCmdModuleStat GetCurrentSettlementCmdModuleStat() {
-            var playerLevel = GetCurrentEquipLevelFor(EquipmentCategory.CommandModule);
-            var aStats = _eStatFactory.__MakeInstances(_player, EquipmentCategory.CommandModule, playerLevel);
-            return aStats.Single(stat => stat is SettlementCmdModuleStat) as SettlementCmdModuleStat;
+            var playerLevel = GetCurrentEquipLevelFor(EquipmentCategory.SettlementCmdModule);
+            return _eStatFactory.MakeNonHullInstance(_player, EquipmentCategory.SettlementCmdModule, playerLevel) as SettlementCmdModuleStat;
         }
 
         public PassiveCountermeasureStat GetCurrentPassiveCmStat() {
             var playerLevel = GetCurrentEquipLevelFor(EquipmentCategory.PassiveCountermeasure);
-            return _eStatFactory.MakeInstance(_player, EquipmentCategory.PassiveCountermeasure, playerLevel) as PassiveCountermeasureStat;
+            return _eStatFactory.MakeNonHullInstance(_player, EquipmentCategory.PassiveCountermeasure, playerLevel) as PassiveCountermeasureStat;
         }
 
-        public ActiveCountermeasureStat GetCurrentActiveCmStat(RangeCategory rangeCat) {
+        public ActiveCountermeasureStat GetCurrentActiveCmStat() {
             var playerLevel = GetCurrentEquipLevelFor(EquipmentCategory.ActiveCountermeasure);
-            var aStats = _eStatFactory.__MakeInstances(_player, EquipmentCategory.ActiveCountermeasure, playerLevel);
-            return aStats.Single(stat => (stat as ActiveCountermeasureStat).RangeCategory == rangeCat) as ActiveCountermeasureStat;
-        }
-
-        public IEnumerable<ActiveCountermeasureStat> GetAllCurrentActiveCmStats() {
-            var playerLevel = GetCurrentEquipLevelFor(EquipmentCategory.ActiveCountermeasure);
-            return _eStatFactory.__MakeInstances(_player, EquipmentCategory.ActiveCountermeasure, playerLevel).Cast<ActiveCountermeasureStat>();
+            return _eStatFactory.MakeNonHullInstance(_player, EquipmentCategory.ActiveCountermeasure, playerLevel) as ActiveCountermeasureStat;
         }
 
         public AWeaponStat GetCurrentWeaponStatFor(EquipmentCategory eCat) {
             D.Assert(eCat == EquipmentCategory.AssaultWeapon || eCat == EquipmentCategory.BeamWeapon
                         || eCat == EquipmentCategory.MissileWeapon || eCat == EquipmentCategory.ProjectileWeapon);
             var playerLevel = GetCurrentEquipLevelFor(eCat);
-            return _eStatFactory.MakeInstance(_player, eCat, playerLevel) as AWeaponStat;
+            return _eStatFactory.MakeNonHullInstance(_player, eCat, playerLevel) as AWeaponStat;
         }
 
         private Level GetCurrentEquipLevelFor(EquipmentCategory equipCat) {
@@ -242,7 +280,6 @@ namespace CodeEnv.Master.GameContent {
             }
 
             _shipDesignLookupByName.Add(designName, design);
-
             _shipDesignsLookupByHull[design.HullCategory].Add(design);
             //D.Log("{0} added {1}.", DebugName, design.DebugName);
         }
@@ -267,7 +304,6 @@ namespace CodeEnv.Master.GameContent {
             }
 
             _facilityDesignLookupByName.Add(designName, design);
-
             _facilityDesignsLookupByHull[design.HullCategory].Add(design);
             //D.Log("{0} added {1}.", DebugName, design.DebugName);
         }

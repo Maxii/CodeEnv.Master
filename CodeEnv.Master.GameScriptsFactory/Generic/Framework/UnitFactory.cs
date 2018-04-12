@@ -632,7 +632,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="name">The optional engine name.</param>
     /// <returns></returns>
     private Engine MakeEngine(EngineStat engineStat, string name = null) {
-        if (engineStat.IsFtlEngine) {
+        if (engineStat.Category == EquipmentCategory.FtlPropulsion) {
             return new FtlEngine(engineStat, name);
         }
         return new Engine(engineStat, name);
@@ -692,7 +692,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         sensors.Add(reqdSRSensor);
         AttachMonitor(reqdSRSensor, element);
 
-        var optionalSensorStats = elementDesign.GetEquipmentStatsFor(EquipmentCategory.Sensor);
+        var optionalSensorStats = elementDesign.GetEquipmentStatsFor(EquipmentCategory.SRSensor);
         foreach (var stat in optionalSensorStats) {
             sName = stat.Name + nameCounter;
             nameCounter++;
@@ -714,7 +714,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         sensors.Add(reqdMRSensor);
         AttachMonitor(reqdMRSensor, cmd);
 
-        var optionalSensorStats = cmdDesign.GetEquipmentStatsFor(EquipmentCategory.Sensor);
+        List<AEquipmentStat> optionalSensorStats = cmdDesign.GetEquipmentStatsFor(EquipmentCategory.MRSensor).ToList();
+        optionalSensorStats.AddRange(cmdDesign.GetEquipmentStatsFor(EquipmentCategory.LRSensor));
         foreach (var stat in optionalSensorStats) {
             sName = stat.Name + nameCounter;
             nameCounter++;

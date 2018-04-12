@@ -193,7 +193,8 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// Returns the AEquipmentStats associated with the provided EquipmentCategory.
         /// <remarks>None of the stats returned will be null.</remarks>
-        /// <remarks>10.28.17 Only acquires EquipmentStats that require EquipmentSlots, e.g. does not acquire HullStats or EngineStats.</remarks>
+        /// <remarks>10.28.17 Only acquires EquipmentStats that require EquipmentSlots, e.g. does not acquire reqd stats, e.g. HullStats, EngineStats,
+        /// mandatory SensorStats, etc.</remarks>
         /// </summary>
         /// <param name="equipCat">The EquipmentCategory.</param>
         /// <returns></returns>

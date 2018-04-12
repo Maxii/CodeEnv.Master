@@ -115,7 +115,7 @@ namespace CodeEnv.Master.GameContent {
             foreach (var mount in SupportedMountCategories) {
                 equipmentSupportedByMounts = equipmentSupportedByMounts.Union(mount.SupportedEquipment());
             }
-            TempGameValues.CmdModuleSupportedEquipmentCategories.ForAll(se => D.Assert(equipmentSupportedByMounts.Contains(se)));
+            TempGameValues.EquipCatsSupportedByCmdModuleDesigner.ForAll(se => D.Assert(equipmentSupportedByMounts.Contains(se)));
         }
 
         #endregion

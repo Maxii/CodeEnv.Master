@@ -29,13 +29,17 @@ namespace CodeEnv.Master.GameContent {
         PassiveCountermeasure,
 
         [EnumAttribute("ACM")]
+        ////[System.Obsolete]
         ActiveCountermeasure,   // Range will handle distinctions, if any
 
         [EnumAttribute("Hull")]
         Hull,   // ShipHull/FacilityHull would allow separate improvement techs - deferred until use case
 
-        [EnumAttribute("Prop")]
-        Propulsion, // FtlProp/StlProp would allow separate improvement techs - deferred until use case
+        [EnumAttribute("STL")]
+        StlPropulsion,
+
+        [EnumAttribute("FTL")]
+        FtlPropulsion,
 
         [EnumAttribute("Beam")]
         BeamWeapon,
@@ -49,26 +53,29 @@ namespace CodeEnv.Master.GameContent {
         [EnumAttribute("Assault")]
         AssaultWeapon,
 
-        [EnumAttribute("Sense")]
-        Sensor,
+        [EnumAttribute("LRSens")]
+        LRSensor,
+
+        [EnumAttribute("MRSens")]
+        MRSensor,
+
+        [EnumAttribute("SRSens")]
+        SRSensor,
 
         [EnumAttribute("SGen")]
         ShieldGenerator,
 
-        [EnumAttribute("FtlD")]
+        [EnumAttribute("Damp")]
         FtlDampener,
 
-        [EnumAttribute("CmdM")]
-        CommandModule,  // FleetCmdModule/BaseCmdModule would allow separate improvement techs - deferred until use case
+        [EnumAttribute("FCmdM")]
+        FleetCmdModule,
 
-        //[EnumAttribute("FCM")]
-        //FleetCmdModule,
+        [EnumAttribute("SbCmdM")]
+        StarbaseCmdModule,
 
-        //[EnumAttribute("SbCM")]
-        //StarbaseCmdModule,
-
-        //[EnumAttribute("SeCM")]
-        //SettlementCmdModule
+        [EnumAttribute("StCmdM")]
+        SettlementCmdModule
 
 
     }

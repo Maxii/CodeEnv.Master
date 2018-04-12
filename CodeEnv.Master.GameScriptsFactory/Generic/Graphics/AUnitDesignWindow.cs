@@ -538,9 +538,9 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     /// </summary>
     private void ShowDesignerUI() {
         D.AssertNotNull(_pickedDesignIcon);
-        BuildAvailableEquipmentIcons();
         AUnitMemberDesign design = _pickedDesignIcon.Design;
 
+        BuildAvailableEquipmentIconsFor(design);
         InstallEquipmentStorageIconsFor(design);
         _designerUITitleLabel.text = DesignerUITitleRoot + Constants.Colon + Constants.Space + design.DesignName;
         _designerUIContainerWidget.alpha = Constants.OneF;
@@ -725,10 +725,11 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     /// <summary>
     /// Build the collection of icons that represent equipment available for use in creating or editing a design.
     /// </summary>
-    private void BuildAvailableEquipmentIcons() {
+    /// <param name="pickedDesign">The picked design.</param>
+    private void BuildAvailableEquipmentIconsFor(AUnitMemberDesign pickedDesign) {
         RemoveAvailableEquipmentIcons();   // OPTIMIZE Reqd to destroy the icon already present. Can be removed once reuse of icons is implemented
 
-        IEnumerable<AEquipmentStat> availableEquipStats = GetUserCurrentEquipmentStats();
+        IEnumerable<AEquipmentStat> availableEquipStats = GetUserCurrentEquipmentStatsAvailableFor(pickedDesign);
         int desiredStatsToAccommodateInGrid = availableEquipStats.Count();
 
         Vector2 gridContainerViewSize = _designerEquipmentIconsGrid.GetComponentInParent<UIPanel>().GetViewSize();
@@ -885,10 +886,11 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     protected abstract IEnumerable<AUnitMemberDesign> GetRegisteredUserDesigns(bool includeObsolete);
 
     /// <summary>
-    /// Returns all the available AEquipmentStats supported by this kind of design.
+    /// Returns all the current AEquipmentStats available for use for this design.
     /// </summary>
+    /// <param name="pickedDesign">The picked design.</param>
     /// <returns></returns>
-    protected abstract IEnumerable<AEquipmentStat> GetUserCurrentEquipmentStats();
+    protected abstract IEnumerable<AEquipmentStat> GetUserCurrentEquipmentStatsAvailableFor(AUnitMemberDesign pickedDesign);
 
     protected override void ResetForReuse() {
         RemoveRegisteredDesignIcons();

@@ -2187,14 +2187,19 @@ namespace CodeEnv.Master.GameContent {
                     return AllowedPassiveCmMounts;
                 case EquipmentCategory.ActiveCountermeasure:
                     return AllowedActiveCmMounts;
-                case EquipmentCategory.Sensor:
+                case EquipmentCategory.SRSensor:
+                case EquipmentCategory.MRSensor:
+                case EquipmentCategory.LRSensor:
                     return AllowedSensorMounts;
                 case EquipmentCategory.ShieldGenerator:
                     return AllowedShieldGenMounts;
                 case EquipmentCategory.FtlDampener:
                 case EquipmentCategory.Hull:
-                case EquipmentCategory.Propulsion:
-                case EquipmentCategory.CommandModule:
+                case EquipmentCategory.StlPropulsion:
+                case EquipmentCategory.FtlPropulsion:
+                case EquipmentCategory.StarbaseCmdModule:
+                case EquipmentCategory.SettlementCmdModule:
+                case EquipmentCategory.FleetCmdModule:
                 case EquipmentCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(eqCat));
@@ -2208,14 +2213,14 @@ namespace CodeEnv.Master.GameContent {
                 case EquipmentMountCategory.Silo:
                     return new EquipmentCategory[] { EquipmentCategory.MissileWeapon, EquipmentCategory.AssaultWeapon };
                 case EquipmentMountCategory.Sensor:
-                    return new EquipmentCategory[] { EquipmentCategory.Sensor };
+                    return new EquipmentCategory[] { EquipmentCategory.SRSensor, EquipmentCategory.MRSensor, EquipmentCategory.LRSensor };
                 case EquipmentMountCategory.Skin:
                     return new EquipmentCategory[] { EquipmentCategory.PassiveCountermeasure };
                 case EquipmentMountCategory.Screen:
                     return new EquipmentCategory[] { EquipmentCategory.ActiveCountermeasure, EquipmentCategory.ShieldGenerator };
                 case EquipmentMountCategory.Flex:
-                    return new EquipmentCategory[] { EquipmentCategory.Sensor, EquipmentCategory.PassiveCountermeasure,
-                        EquipmentCategory.ActiveCountermeasure, EquipmentCategory.ShieldGenerator };
+                    return new EquipmentCategory[] { EquipmentCategory.SRSensor, EquipmentCategory.MRSensor, EquipmentCategory.LRSensor,
+                        EquipmentCategory.PassiveCountermeasure, EquipmentCategory.ActiveCountermeasure, EquipmentCategory.ShieldGenerator };
                 case EquipmentMountCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(mountCat));
@@ -2516,44 +2521,9 @@ namespace CodeEnv.Master.GameContent {
 
         #region Ship and Fleet Speed 
 
-        /// <summary>
-        /// Gets the speed in units per hour for this ship moving as part of a fleet.
-        /// </summary>
-        /// <param name="speed">The speed enum value.</param>
-        /// <param name="fleetData">The fleet data.</param>
-        /// <returns></returns>
-        [Obsolete]
-        public static float GetUnitsPerHour(this Speed speed, FleetCmdData fleetData) {
-            return GetUnitsPerHour(speed, null, fleetData);
-        }
-
-        /// <summary>
-        /// Gets the speed in units per hour for this ship moving independently of its fleet.
-        /// </summary>
-        /// <param name="speed">The speed enum value.</param>
-        /// <param name="shipData">The ship data.</param>
-        /// <returns></returns>
-        [Obsolete]
-        public static float GetUnitsPerHour(this Speed speed, ShipData shipData) {
-            return GetUnitsPerHour(speed, shipData, null);
-        }
-
-        [Obsolete]
-        private static float GetUnitsPerHour(Speed speed, ShipData shipData, FleetCmdData fleetData) {
-            float fullSpeedValue = Constants.ZeroF;
-            if (shipData != null) {
-                fullSpeedValue = shipData.FullSpeedValue; // 11.24.15 InSystem, STL = 1.6, OpenSpace, FTL = 40
-                //D.Log("{0}.FullSpeed = {1} units/hour. IsFtlOperational = {2}.", shipData.DebugName, fullSpeedValue, shipData.IsFtlOperational);
-            }
-            else {
-                fullSpeedValue = fleetData.UnitFullSpeedValue;   // 11.24.15 InSystem, STL = 1.6, OpenSpace, FTL = 40
-                //D.Log("{0}.FullSpeed = {1} units/hour.", fleetData.DebugName, fullSpeedValue);
-            }
-            return speed.GetUnitsPerHour(fullSpeedValue);
-        }
-
         public static float GetUnitsPerHour(this Speed speed, float fullSpeedValue) {
             // Note: see Flight.txt in GameDev Notes for analysis of speed values
+            // 4.12.18 Also Notebook
             float fullSpeedFactor = Constants.ZeroF;
             switch (speed) {
                 case Speed.HardStop:
@@ -2562,34 +2532,42 @@ namespace CodeEnv.Master.GameContent {
                     return Constants.ZeroF;
                 case Speed.ThrustersOnly:
                     // 4.13.16 InSystem, STL = 0.05 but clamped at ~0.2 below, OpenSpace: STL = 0.24, FTL = 1.2
+                    // 4.12.18 with Fastest Engine tech: InSystem, STL = 0.13, OpenSpace: STL = 0.5, FTL = 1.25
                     fullSpeedFactor = 0.03F;
                     break;
                 case Speed.Docking:
                     // 4.9.16 InSystem, STL = 0.08 but clamped at ~0.2 below, OpenSpace: STL = 0.4, FTL = 2
+                    // 4.12.18 with Fastest Engine tech: InSystem, STL = 0.2, OpenSpace: STL = 0.8, FTL = 2
                     fullSpeedFactor = 0.05F;
                     break;
                 case Speed.DeadSlow:
                     // 4.9.16 InSystem, STL = 0.13 but clamped at ~0.2 below, OpenSpace: STL = 0.64, FTL = 3.2
+                    // 4.12.18 with Fastest Engine tech: InSystem, STL = 0.32, OpenSpace: STL = 1.3, FTL = 3.2
                     fullSpeedFactor = 0.08F;
                     break;
                 case Speed.Slow:
                     // 4.9.16 InSystem, STL = 0.24, OpenSpace: STL = 1.2, FTL = 6
+                    // 4.12.18 with Fastest Engine tech: InSystem, STL = 0.6, OpenSpace: STL = 2.4, FTL = 6
                     fullSpeedFactor = 0.15F;
                     break;
                 case Speed.OneThird:
                     // 11.24.15 InSystem, STL = 0.4, OpenSpace: STL = 2, FTL = 10
+                    // 4.12.18 with Fastest Engine tech: InSystem, STL = 1, OpenSpace: STL = 4, FTL = 10
                     fullSpeedFactor = 0.25F;
                     break;
                 case Speed.TwoThirds:
                     // 11.24.15 InSystem, STL = 0.8, OpenSpace: STL = 4, FTL = 20
+                    // 4.12.18 with Fastest Engine tech: InSystem, STL = 2, OpenSpace: STL = 8, FTL = 20
                     fullSpeedFactor = 0.50F;
                     break;
                 case Speed.Standard:
                     // 11.24.15 InSystem, STL = 1.2, OpenSpace: STL = 6, FTL = 30
+                    // 4.12.18 with Fastest Engine tech: InSystem, STL = 3, OpenSpace: STL = 12, FTL = 30
                     fullSpeedFactor = 0.75F;
                     break;
                 case Speed.Full:
                     // 11.24.15 InSystem, STL = 1.6, OpenSpace: STL = 8, FTL = 40
+                    // 4.12.18 with Fastest Engine tech: InSystem, STL = 4, OpenSpace: STL = 16, FTL = 40
                     fullSpeedFactor = 1.0F;
                     break;
                 case Speed.None:
@@ -2598,9 +2576,9 @@ namespace CodeEnv.Master.GameContent {
             }
 
             float speedValueResult = fullSpeedFactor * fullSpeedValue;
-            if (speedValueResult < TempGameValues.ShipMinimumSpeedValue) {
+            if (speedValueResult < TempGameValues.ShipMinimumSpeedValue) {  // 4.12.18 0.2 -> 0.125 -> 0.05
+                D.Warn("Speed {0} value {1:0.0000} is being clamped to {2:0.0000}.", speed.GetValueName(), speedValueResult, TempGameValues.ShipMinimumSpeedValue);
                 speedValueResult = TempGameValues.ShipMinimumSpeedValue;
-                //D.Log("Speed {0} value has been clamped to {1:0.00}.", speed.GetValueName(), speedValueResult);
             }
             return speedValueResult;
         }
@@ -2704,8 +2682,8 @@ namespace CodeEnv.Master.GameContent {
                     return 1F;
                 case Topography.System:
                 case Topography.Nebula:
-                    return 5F;
-                case Topography.DeepNebula: //TODO
+                    return TempGameValues.SystemNebulaToOpenSpaceDensityFactor;
+                case Topography.DeepNebula: // TODO
                 case Topography.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(topography));

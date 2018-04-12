@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: ShipCloseOrbitSimulator.cs
-// Simulates orbiting around an immobile parent of any ships attached by a fixed joint.
+// Simulates ship(s) orbiting around an immobile parent.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -21,10 +21,18 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Simulates orbiting around an immobile parent of any ships attached by a fixed joint.
+/// Simulates ship(s) orbiting around an immobile parent. Ship(s) will be attached by a fixed joint.
 /// This is also an INavigableDestination which allows it to be used as a destination by a Ship's AutoPilot.
 /// </summary>
 public class ShipCloseOrbitSimulator : OrbitSimulator, IShipCloseOrbitSimulator, IShipNavigableDestination {
+
+    protected override float RelativeOrbitRate { get { return TempGameValues.RelativeOrbitRateOfShips; } }
+
+    public override string ToString() {
+        return DebugName;
+    }
+
+    #region IShipOrbitSimulator Members Archive
 
     /// <summary>
     /// Checks the ship's position to see whether the ship should simply be manually placed in close orbit.
@@ -36,17 +44,12 @@ public class ShipCloseOrbitSimulator : OrbitSimulator, IShipCloseOrbitSimulator,
     /// </summary>
     /// <param name="ship">The ship.</param>
     /// <returns></returns>
-    private bool CheckWetherToManuallyPlaceShipInCloseOrbit(IShip ship) {
-        float shipDistanceToOrbitedObject = Vector3.Distance(ship.Position, transform.position);    // same as OrbitedItem
-        float minOutsideOfOrbitCaptureRadius = OrbitData.OuterRadius - ship.CollisionDetectionZoneRadius;
-        return shipDistanceToOrbitedObject < minOutsideOfOrbitCaptureRadius;
-    }
-
-    public override string ToString() {
-        return DebugName;
-    }
-
-    #region IShipOrbitSimulator Members Archive
+    //[System.Obsolete]
+    //private bool CheckWetherToManuallyPlaceShipInCloseOrbit(IShip ship) {
+    //    float shipDistanceToOrbitedObject = Vector3.Distance(ship.Position, transform.position);    // same as OrbitedItem
+    //    float minOutsideOfOrbitCaptureRadius = OrbitData.OuterRadius - ship.CollisionDetectionZoneRadius;
+    //    return shipDistanceToOrbitedObject < minOutsideOfOrbitCaptureRadius;
+    //}
 
     ///// <summary>
     ///// Returns true if the provided ship should simply be placed in the returned position within

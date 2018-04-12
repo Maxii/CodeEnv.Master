@@ -112,9 +112,9 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         bool UserSelectsTechs { get; }
 
+        bool AreShipsFast { get; }
+
         bool IsAutoRelationsChangeEnabled { get; }
-
-
 
         bool ShowFleetCoursePlots { get; }
 

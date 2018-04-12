@@ -17,6 +17,8 @@
 namespace CodeEnv.Master.GameContent {
 
     using CodeEnv.Master.Common;
+    using Common.LocalResources;
+    using System;
 
     /// <summary>
     /// Immutable stat containing externally acquirable values for Sensors.
@@ -24,6 +26,19 @@ namespace CodeEnv.Master.GameContent {
     public class SensorStat : ARangedEquipmentStat {
 
         private const string DebugNameFormat = "{0}(Range[{1}]).";
+
+        private static RangeCategory GetRangeCat(EquipmentCategory sensorCat) {
+            switch (sensorCat) {
+                case EquipmentCategory.LRSensor:
+                    return RangeCategory.Long;
+                case EquipmentCategory.MRSensor:
+                    return RangeCategory.Medium;
+                case EquipmentCategory.SRSensor:
+                    return RangeCategory.Short;
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(sensorCat));
+            }
+        }
 
         public override string DebugName {
             get {
@@ -34,7 +49,8 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public override EquipmentCategory Category { get { return EquipmentCategory.Sensor; } }
+        private EquipmentCategory _equipCat;
+        public override EquipmentCategory Category { get { return _equipCat; } }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SensorStat" /> struct.
@@ -50,11 +66,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="hitPts">The hit points contributed to the survivability of the item.</param>
         /// <param name="constructionCost">The cost to produce.</param>
         /// <param name="expense">The expense.</param>
-        /// <param name="rangeCat">The range category of the sensor.</param>
+        /// <param name="equipCat">The equipment category.</param>
         /// <param name="isDamageable">if set to <c>true</c> [is damageable].</param>
         public SensorStat(string name, AtlasID imageAtlasID, string imageFilename, string description, Level level, float size, float mass,
-            float pwrRqmt, float hitPts, float constructionCost, float expense, RangeCategory rangeCat, bool isDamageable)
-            : base(name, imageAtlasID, imageFilename, description, level, size, mass, pwrRqmt, hitPts, constructionCost, expense, rangeCat, isDamageable) {
+            float pwrRqmt, float hitPts, float constructionCost, float expense, EquipmentCategory equipCat, bool isDamageable)
+            : base(name, imageAtlasID, imageFilename, description, level, size, mass, pwrRqmt, hitPts, constructionCost, expense, GetRangeCat(equipCat), isDamageable) {
+            _equipCat = equipCat;
         }
 
         #region Value-based Equality Archive

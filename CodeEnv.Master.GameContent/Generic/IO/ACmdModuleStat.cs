@@ -29,8 +29,6 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float MaxCmdStaffEffectiveness { get; private set; }
 
-        public sealed override EquipmentCategory Category { get { return EquipmentCategory.CommandModule; } }
-
         /// <summary>
         /// Initializes a new instance of the <see cref="ACmdModuleStat" /> class.
         /// </summary>

@@ -270,6 +270,11 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     /// </summary>
     public bool UserSelectsTechs { get { return _userSelectsTechs; } }
 
+    [Tooltip("Check if Ship engines should be the fastest allowed in the game")]
+    [SerializeField]
+    private bool _areShipsFast = true;
+    public bool AreShipsFast { get { return _areShipsFast; } }
+
     #endregion
 
     #region User Relations Change Fields

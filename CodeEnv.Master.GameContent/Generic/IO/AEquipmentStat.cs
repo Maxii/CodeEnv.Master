@@ -27,8 +27,7 @@ namespace CodeEnv.Master.GameContent {
         public abstract EquipmentCategory Category { get; }
 
         /// <summary>
-        /// The physical space this equipment requires or, in the case of a hull,
-        /// the physical space provided.
+        /// The physical space this equipment requires or, in the case of a hull, the physical space provided.
         /// </summary>
         public float Size { get; private set; }
 
@@ -36,10 +35,20 @@ namespace CodeEnv.Master.GameContent {
 
         public float PowerRequirement { get; private set; }
 
+        /// <summary>
+        /// The hit points contributed to the survivability of the item.
+        /// </summary>
         public float HitPoints { get; private set; }
 
+        /// <summary>
+        /// The cost in production units to produce this equipment.
+        /// </summary>
         public float ConstructionCost { get; private set; }
 
+        /// <summary>
+        /// The expense required to operate this equipment.
+        /// <remarks>IMPROVE UOM?</remarks>
+        /// </summary>
         public float Expense { get; private set; }
 
         public bool IsDamageable { get; private set; }
@@ -56,7 +65,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="mass">The mass of the equipment.</param>
         /// <param name="pwrRqmt">The power required to operate the equipment.</param>
         /// <param name="hitPts">The hit points contributed to the survivability of the item.</param>
-        /// <param name="constructionCost">The cost to produce this equipment.</param>
+        /// <param name="constructionCost">The cost in production units to produce this equipment.</param>
         /// <param name="expense">The expense required to operate this equipment.</param>
         /// <param name="isDamageable">if set to <c>true</c> [is damageable].</param>
         public AEquipmentStat(string name, AtlasID imageAtlasID, string imageFilename, string description, Level level, float size, float mass,

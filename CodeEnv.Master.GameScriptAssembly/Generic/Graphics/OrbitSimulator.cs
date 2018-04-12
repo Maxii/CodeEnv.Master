@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: OrbitSimulator.cs
-// Simulates orbiting around an immobile parent of any children of the simulator.
+// Simulates children of this MonoBehavior orbiting around an immobile parent.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -23,7 +23,7 @@ using CodeEnv.Master.GameContent;
 using UnityEngine;
 
 /// <summary>
-/// Simulates orbiting around an immobile parent of any children of the simulator.
+/// Simulates children of this MonoBehavior orbiting around an immobile parent.
 /// </summary>
 public class OrbitSimulator : AMonoBase, IOrbitSimulator {
 
@@ -62,9 +62,10 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
     /// <summary>
     /// The relative orbit speed of the object around the location. A value of 1 means
     /// an orbit will take one OrbitPeriod.
+    /// <remarks>TEMP Currently used only for planets as they orbit immobile stars. If used by something else besides
+    /// Planets, I'll need to create a PlanetOrbitSimulator derived class to override this value.</remarks>
     /// </summary>
-    [SerializeField]
-    private float _relativeOrbitRate = 1.0F;
+    protected virtual float RelativeOrbitRate { get { return TempGameValues.RelativeOrbitRateOfPlanets; } }
 
     private string _debugName;
     public virtual string DebugName {
@@ -163,10 +164,11 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
     }
 
     private float InitializeOrbitSpeed() {
-        float orbitSpeedInUnitsPerHour = (2F * Mathf.PI * OrbitData.MeanRadius) / (OrbitData.OrbitPeriod.TotalInHours / _relativeOrbitRate);
-        if (!(this is ShipCloseOrbitSimulator)) {
-            if (orbitSpeedInUnitsPerHour > TempGameValues.__MaxPlanetoidOrbitSpeed) {
-                D.Warn("{0} orbitSpeed {1:0.0000} > max {2:0.0000}.", DebugName, orbitSpeedInUnitsPerHour, TempGameValues.__MaxPlanetoidOrbitSpeed);
+        float orbitSpeedInUnitsPerHour = (2F * Mathf.PI * OrbitData.MeanRadius) / (OrbitData.OrbitPeriod.TotalInHours / RelativeOrbitRate);
+        if (!(this is ShipCloseOrbitSimulator) && !(this is MobileOrbitSimulator)) {
+            //D.LogBold("{0} has orbitSpeed {1:0.0000}.", DebugName, orbitSpeedInUnitsPerHour);
+            if (orbitSpeedInUnitsPerHour > TempGameValues.__MaxPlanetOrbitSpeed) {
+                D.Warn("{0} Planet Orbit Speed {1:0.0000} > max {2:0.0000}.", DebugName, orbitSpeedInUnitsPerHour, TempGameValues.__MaxPlanetOrbitSpeed);
             }
         }
         return orbitSpeedInUnitsPerHour;
@@ -232,7 +234,7 @@ public class OrbitSimulator : AMonoBase, IOrbitSimulator {
     }
 
     private void OrbitDataPropSetHandler() {
-        _orbitRateInDegreesPerHour = _relativeOrbitRate * Constants.DegreesPerOrbit / (float)OrbitData.OrbitPeriod.TotalInHours;
+        _orbitRateInDegreesPerHour = RelativeOrbitRate * Constants.DegreesPerOrbit / (float)OrbitData.OrbitPeriod.TotalInHours;
         RelativeOrbitSpeed = InitializeOrbitSpeed();
     }
 

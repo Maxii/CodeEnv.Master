@@ -109,7 +109,7 @@ namespace CodeEnv.Master.GameContent {
         private float __techCostIncrement;
 
         private Technology __MakeTech(float researchCost, bool isFutureTech) {
-            var randomEquipStat = EquipmentStatFactory.Instance.__GetRandomEquipmentStat();
+            var randomEquipStat = EquipmentStatFactory.Instance.__GetRandomNonHullEquipmentStat();
             string techName = isFutureTech ? "FutureTech" : __GetUniqueTechname();
             string[] prereqNames = TechPrerequisiteNames[techName];
             TreeNodeID nodeID = TechNodeIDs[techName];

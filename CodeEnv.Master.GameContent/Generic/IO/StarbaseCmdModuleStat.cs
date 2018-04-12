@@ -14,6 +14,7 @@
 ////#define DEBUG_WARN
 ////#define DEBUG_ERROR
 
+using System;
 using CodeEnv.Master.Common;
 
 namespace CodeEnv.Master.GameContent {
@@ -26,6 +27,8 @@ namespace CodeEnv.Master.GameContent {
         public int StartingPopulation { get; private set; }
 
         public float StartingApproval { get; private set; }
+
+        public override EquipmentCategory Category { get { return EquipmentCategory.StarbaseCmdModule; } }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StarbaseCmdModuleStat"/> class.

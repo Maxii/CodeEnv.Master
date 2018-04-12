@@ -162,7 +162,7 @@ namespace CodeEnv.Master.GameContent {
         public float FullSpeedValue {
             get { return _fullSpeedValue; }
             private set {
-                if (value > TempGameValues.__ShipMaxSpeedValue) {
+                if (value.IsGreaterThan(TempGameValues.__ShipMaxSpeedValue)) {
                     D.Warn("{0}.FullSpeedValue {1:0.000000} > MaxSpeedValue {2:0.##}. Correcting.", DebugName, value, TempGameValues.__ShipMaxSpeedValue);
                     value = TempGameValues.__ShipMaxSpeedValue;
                 }
@@ -215,6 +215,7 @@ namespace CodeEnv.Master.GameContent {
                 ftlEngine.isOperationalChanged += IsFtlOperationalChangedEventHandler;
             }
 
+            Mass = CalculateMass();
             Outputs = MakeOutputs();
             CombatStance = design.CombatStance;
             InitializeLocalValuesAndReferences();
@@ -242,9 +243,23 @@ namespace CodeEnv.Master.GameContent {
 
         public override void CommenceOperations() {
             base.CommenceOperations();
-            //D.Log(ShowDebugLog, "{0}.CommenceOperations() setting Topography to {1}.", DebugName, Topography.GetValueName());
+            InitializeEngines();
+        }
+
+        protected override float CalculateMass() {
+            float mass = base.CalculateMass();
+            mass += _stlEngine.Mass;
+            if (_ftlEngine != null) {
+                mass += _ftlEngine.Mass;
+            }
+            return mass;
+        }
+
+        private void InitializeEngines() {
+            _stlEngine.CalculatePropulsionPower(Mass, OpenSpaceDrag);
             _stlEngine.IsActivated = true;
             if (_ftlEngine != null) {
+                _ftlEngine.CalculatePropulsionPower(Mass, OpenSpaceDrag);
                 _ftlEngine.IsActivated = true;
             }
             RefreshFullSpeedValue();

@@ -67,6 +67,7 @@ namespace CodeEnv.Master.GameContent {
             Topography topography, FacilityDesign design)
             : base(facility, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, design) {
             Topography = topography;
+            Mass = CalculateMass();
             Outputs = MakeOutputs();
         }
 

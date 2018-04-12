@@ -23,6 +23,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FleetCmdModuleStat : ACmdModuleStat {
 
+        public override EquipmentCategory Category { get { return EquipmentCategory.FleetCmdModule; } }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="FleetCmdModuleStat"/> class.
         /// </summary>

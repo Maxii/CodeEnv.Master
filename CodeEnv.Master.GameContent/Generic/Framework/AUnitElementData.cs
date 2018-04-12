@@ -113,10 +113,10 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// The mass of this Element.
-        /// <remarks>7.26.16 Primarily here for user HUDs as an element's interaction with the physics
-        /// engine uses the mass from the Rigidbody which is set one time in the UnitFactory.</remarks>
+        /// <remarks>7.26.16 An element's interaction with the physics engine uses the mass from its 
+        /// Rigidbody which is set one time in the UnitFactory using this value.</remarks>
         /// </summary>
-        public float Mass { get; private set; }
+        public float Mass { get; protected set; }
 
         protected AHullEquipment HullEquipment { get; private set; }
 
@@ -138,7 +138,6 @@ namespace CodeEnv.Master.GameContent {
             AUnitElementDesign design)
             : base(element, owner, design.HitPoints, passiveCMs) {
             HullEquipment = hullEquipment;
-            Mass = hullEquipment.Mass + hullEquipment.Weapons.Sum(w => w.Mass) + activeCMs.Sum(cm => cm.Mass) + sensors.Sum(s => s.Mass) + passiveCMs.Sum(cm => cm.Mass) + shieldGenerators.Sum(gen => gen.Mass);
             InitializeWeapons();
             Initialize(sensors);
             Initialize(activeCMs);
@@ -184,10 +183,22 @@ namespace CodeEnv.Master.GameContent {
             });
         }
 
+        /// <summary>
+        /// Calculates and returns the mass of this element.
+        /// <remarks>Must be called from derived class constructor after 
+        /// all Equipment that contributes to the element's total mass has been assigned.</remarks>
+        /// </summary>
+        /// <returns></returns>
+        protected virtual float CalculateMass() {
+            return HullEquipment.Mass + Weapons.Sum(w => w.Mass) + ActiveCountermeasures.Sum(cm => cm.Mass) + Sensors.Sum(s => s.Mass)
+                + PassiveCountermeasures.Sum(cm => cm.Mass) + ShieldGenerators.Sum(gen => gen.Mass);
+        }
+
         #endregion
 
         public override void CommenceOperations() {
             base.CommenceOperations();
+            D.AssertNotEqual(Constants.ZeroF, Mass, "Check derived class call to CalculateMass() from its constructor.");
             // 11.3.16 Activation of ActiveCMs, ShieldGens and Weapons handled by HandleAlertStatusChanged
             RecalcDefensiveValues();
             RecalcOffensiveStrength();

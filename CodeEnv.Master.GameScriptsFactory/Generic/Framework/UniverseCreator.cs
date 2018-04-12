@@ -58,12 +58,6 @@ public class UniverseCreator {
         UnitConfigurator = new NewGameUnitConfigurator();
     }
 
-    ////public void Initialize() {
-    ////    SystemConfigurator = new NewGameSystemConfigurator();
-    ////    UnitConfigurator = new NewGameUnitConfigurator();
-    ////    InitializeUniverseCenter();
-    ////}
-
     public void InitializeUniverseCenter() {
         UniverseCenter = UniverseFolder.Instance.GetComponentInChildren<UniverseCenterItem>();
         if (UniverseCenter != null) {

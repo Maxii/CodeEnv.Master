@@ -144,6 +144,7 @@ public class DebugControlsEditor : Editor {
                     NGUIEditorTools.DrawProperty("Deactivate MRSensors", serializedObject, "_deactivateMRSensors");
                     NGUIEditorTools.DrawProperty("Deactivate LRSensors", serializedObject, "_deactivateLRSensors");
                     NGUIEditorTools.DrawProperty("Manual Tech Select", serializedObject, "_userSelectsTechs");
+                    NGUIEditorTools.DrawProperty("Fast Ships", serializedObject, "_areShipsFast");
                 }
                 NGUIEditorTools.EndContents();
             }

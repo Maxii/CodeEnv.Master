@@ -27,6 +27,8 @@ namespace CodeEnv.Master.GameContent {
 
         public float StartingApproval { get; private set; }
 
+        public override EquipmentCategory Category { get { return EquipmentCategory.SettlementCmdModule; } }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="SettlementCmdModuleStat"/> class.
         /// </summary>

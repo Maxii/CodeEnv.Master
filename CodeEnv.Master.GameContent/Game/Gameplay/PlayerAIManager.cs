@@ -138,11 +138,6 @@ namespace CodeEnv.Master.GameContent {
         protected virtual PlayerResearchManager InitializeResearchMgr() {
             return new PlayerResearchManager(this);
         }
-        ////protected virtual PlayerResearchManager InitializeResearchMgr() {
-        ////    var researchMgr = new PlayerResearchManager(this);
-        ////    researchMgr.researchCompleted += ResearchCompletedEventHandler;
-        ////    return researchMgr;
-        ////}
 
         public void CommenceOperations() {
             IsOperational = true;
@@ -846,7 +841,6 @@ namespace CodeEnv.Master.GameContent {
 
         private void Cleanup() {
             Knowledge.Dispose();
-            ////ResearchMgr.researchCompleted -= ResearchCompletedEventHandler;
         }
 
         #region Debug

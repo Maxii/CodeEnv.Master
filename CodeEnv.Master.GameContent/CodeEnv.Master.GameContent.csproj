@@ -63,10 +63,10 @@
     <Compile Include="..\..\..\CustomTools\CustomTools.AssemblyVersionInfo\Properties\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Generic\IO\EquipmentStatFactory.cs" />
     <Compile Include="Generic\IO\AImprovableStat.cs" />
     <Compile Include="Game\Gameplay\Capability.cs" />
     <Compile Include="Generic\IO\CapabilityStat.cs" />
-    <Compile Include="Generic\IO\EquipmentStatFactory.cs" />
     <Compile Include="Generic\Framework\DisbandConstructionTask.cs" />
     <Compile Include="Game\Gameplay\NewOrderAvailability.cs" />
     <Compile Include="Generic\Framework\ConstructionTask.cs" />

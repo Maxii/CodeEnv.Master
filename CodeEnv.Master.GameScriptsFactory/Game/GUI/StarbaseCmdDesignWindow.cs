@@ -60,8 +60,8 @@ public class StarbaseCmdDesignWindow : AUnitDesignWindow {
         UserDesigns.ObsoleteStarbaseCmdDesign(designName);
     }
 
-    protected override IEnumerable<AEquipmentStat> GetUserCurrentEquipmentStats() {
-        return UserDesigns.GetCurrentEquipmentStats(TempGameValues.CmdModuleSupportedEquipmentCategories);
+    protected override IEnumerable<AEquipmentStat> GetUserCurrentEquipmentStatsAvailableFor(AUnitMemberDesign pickedDesign) {
+        return UserDesigns.GetCurrentCmdModuleEquipmentStats();
     }
 
 }

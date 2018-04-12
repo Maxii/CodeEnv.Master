@@ -24,19 +24,13 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class EngineStat : AEquipmentStat {
 
-        public override EquipmentCategory Category { get { return EquipmentCategory.Propulsion; } }
-
-        public ShipHullCategory HullCategory { get; private set; }
-
-        public bool IsFtlEngine { get; private set; }
+        private EquipmentCategory _equipCategory;
+        public override EquipmentCategory Category { get { return _equipCategory; } }
 
         /// <summary>
-        /// The maximum power the engine can project as thrust when operating. 
-        /// <remarks>FullSpeed = FullPropulsionPower / (Mass * rigidbody.drag).
-        /// This value uses a Game Hour denominator. It is adjusted in
-        /// realtime to a Unity seconds value in EngineRoom.ApplyThrust() using GeneralSettings.HoursPerSecond.</remarks>
+        /// The maximum speed in Units per hour this engine can attain in Topography.OpenSpace.
         /// </summary>
-        public float FullPropulsionPower { get; private set; }
+        public float MaxAttainableSpeed { get; private set; }
 
         public float MaxTurnRate { get; private set; }  // IMPROVE replace with LateralThrust and calc maxTurnRate using mass
 
@@ -48,27 +42,23 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="imageFilename">The image filename.</param>
         /// <param name="description">The description.</param>
         /// <param name="level">The improvement level of this stat.</param>
-        /// <param name="hullCategory">The hull category.</param>
-        /// <param name="fullPropulsionPower">The maximum propulsion power the engine can produce.</param>
         /// <param name="maxTurnRate">The maximum turn rate the engine is capable of.</param>
         /// <param name="size">The total physical space consumed by the engine.</param>
         /// <param name="mass">The total mass of the engine.</param>
         /// <param name="hitPts">The hit points contributed to the survivability of the item.</param>
-        /// <param name="constructionCost">The production cost.</param>
+        /// <param name="constructionCost">The production cost to construct this engine.</param>
         /// <param name="expense">The total expense consumed by the engine.</param>
-        /// <param name="isDamageable">if set to <c>true</c> [is damageable].</param>
-        /// <param name="isFtlEngine">if set to <c>true</c> [is FTL engine].</param>
-        public EngineStat(string name, AtlasID imageAtlasID, string imageFilename, string description, Level level, ShipHullCategory hullCategory, float fullPropulsionPower,
-            float maxTurnRate, float size, float mass, float hitPts, float constructionCost, float expense, bool isDamageable, bool isFtlEngine)
-            : base(name, imageAtlasID, imageFilename, description, level, size, mass, Constants.ZeroF, hitPts, constructionCost, expense,
-                  isDamageable) {
-            HullCategory = hullCategory;
-            FullPropulsionPower = fullPropulsionPower;
+        /// <param name="equipCat">The equip cat.</param>
+        /// <param name="maxSpeed">The engine's maximum attainable speed.</param>
+        public EngineStat(string name, AtlasID imageAtlasID, string imageFilename, string description, Level level, float maxTurnRate,
+            float size, float mass, float hitPts, float constructionCost, float expense, EquipmentCategory equipCat, float maxSpeed)
+            : base(name, imageAtlasID, imageFilename, description, level, size, mass, Constants.ZeroF, hitPts, constructionCost, expense, isDamageable: equipCat == EquipmentCategory.FtlPropulsion) {
+            MaxAttainableSpeed = maxSpeed;
             if (maxTurnRate < TempGameValues.MinimumTurnRate) {
                 D.Warn("{0}'s MaxTurnRate {1:0.#} is too low. Game MinTurnRate = {2:0.#}.", DebugName, maxTurnRate, TempGameValues.MinimumTurnRate);
             }
             MaxTurnRate = maxTurnRate;
-            IsFtlEngine = isFtlEngine;
+            _equipCategory = equipCat;
         }
 
         #region Value-based Equality Archive
