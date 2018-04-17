@@ -23,26 +23,28 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class FleetCmdModuleStat : ACmdModuleStat {
 
-        public override EquipmentCategory Category { get { return EquipmentCategory.FleetCmdModule; } }
+        ////public override EquipmentCategory Category { get { return EquipmentCategory.FleetCmdModule; } }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="FleetCmdModuleStat"/> class.
+        /// Initializes a new instance of the <see cref="FleetCmdModuleStat" /> class.
         /// </summary>
         /// <param name="name">The display name of the Equipment.</param>
         /// <param name="imageAtlasID">The image atlas identifier.</param>
         /// <param name="imageFilename">The image filename.</param>
         /// <param name="description">The description.</param>
-        /// <param name="level">The improvement level of this stat.</param>
+        /// <param name="id">The identifier.</param>
         /// <param name="size">The physical size of the equipment.</param>
         /// <param name="mass">The mass of the equipment.</param>
         /// <param name="pwrRqmt">The power required to operate the equipment.</param>
         /// <param name="hitPts">The hit points contributed to the survivability of the item.</param>
+        /// <param name="constructCost">The cost in production units to produce this equipment.</param>
         /// <param name="expense">The expense required to operate this equipment.</param>
         /// <param name="maxCmdStaffEffectiveness">The maximum effectiveness of the command staff.</param>
-        public FleetCmdModuleStat(string name, AtlasID imageAtlasID, string imageFilename, string description, Level level, float size,
-            float mass, float pwrRqmt, float hitPts, float expense, float maxCmdStaffEffectiveness)
-            : base(name, imageAtlasID, imageFilename, description, level, size, mass, pwrRqmt, hitPts, expense, maxCmdStaffEffectiveness) {
+        public FleetCmdModuleStat(string name, AtlasID imageAtlasID, string imageFilename, string description, EquipStatID id,
+            float size, float mass, float pwrRqmt, float hitPts, float constructCost, float expense, float maxCmdStaffEffectiveness)
+            : base(name, imageAtlasID, imageFilename, description, id, size, mass, pwrRqmt, hitPts, constructCost, expense, maxCmdStaffEffectiveness) {
         }
+
 
         #region Value-based Equality Archive
         // 2.23.18 ATechStat instances are always the same as they are acquired via factory caching

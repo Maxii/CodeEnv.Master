@@ -25,6 +25,8 @@ namespace CodeEnv.Master.GameContent {
 
         public Capability Capability { get; private set; }
 
+        public Level Level { get; private set; }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CapabilityStat" /> class.
         /// </summary>
@@ -34,10 +36,17 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="description">The description.</param>
         /// <param name="level">The improvement level of this stat.</param>
         /// <param name="capability">The capability.</param>
+        ////public CapabilityStat(AtlasID imageAtlasID, string imageFilename, string description, Level level, Capability capability)
+        ////    : base(capability.GetValueName(), imageAtlasID, imageFilename, description, level) {
+        ////    Capability = capability;
+        ////}
+
         public CapabilityStat(AtlasID imageAtlasID, string imageFilename, string description, Level level, Capability capability)
-            : base(capability.GetValueName(), imageAtlasID, imageFilename, description, level) {
+    : base(capability.GetValueName(), imageAtlasID, imageFilename, description) {
+            Level = level;
             Capability = capability;
         }
+
 
         #region Value-based Equality Archive
         // 2.23.18 ATechStat instances are always the same as they are acquired via factory caching

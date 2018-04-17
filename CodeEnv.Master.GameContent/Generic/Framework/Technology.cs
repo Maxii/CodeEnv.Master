@@ -66,11 +66,10 @@ namespace CodeEnv.Master.GameContent {
             _enabledStats = __enabledStats;
         }
 
-
         public bool TryGetEnabledStats(out IList<AEquipmentStat> eStats) {
             eStats = new List<AEquipmentStat>();
-            foreach (var tStat in _enabledStats) {
-                var eStat = tStat as AEquipmentStat;
+            foreach (var iStat in _enabledStats) {
+                var eStat = iStat as AEquipmentStat;
                 if (eStat != null) {
                     eStats.Add(eStat);
                 }
@@ -80,8 +79,8 @@ namespace CodeEnv.Master.GameContent {
 
         public bool TryGetEnabledStats(out IList<CapabilityStat> cStats) {
             cStats = new List<CapabilityStat>();
-            foreach (var tStat in _enabledStats) {
-                var cStat = tStat as CapabilityStat;
+            foreach (var iStat in _enabledStats) {
+                var cStat = iStat as CapabilityStat;
                 if (cStat != null) {
                     cStats.Add(cStat);
                 }

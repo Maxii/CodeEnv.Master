@@ -63,7 +63,7 @@ namespace CodeEnv.Master.GameContent {
         CurrentHeading,
         CurrentSpeedSetting,
         FullSpeed,
-        MaxTurnRate,
+        TurnRate,
 
         // Cmd only values
         Composition,

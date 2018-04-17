@@ -1,0 +1,707 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- Be careful where comments are placed! -->
+
+<!-- Client is EquipmentStatXmlReader : AXmlReader -->
+
+<Values>
+  <EquipmentCategory EquipmentCategoryName="SRSensor">
+    <Level LevelName="One">
+      <Name>SRSensor</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>1.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>2.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <Damageable>false</Damageable>
+    </Level>
+    <Level LevelName="Three">
+      <Name>SRSensor+</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>2.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>3.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <Damageable>false</Damageable>
+    </Level>
+  </EquipmentCategory>
+  
+  <EquipmentCategory EquipmentCategoryName="MRSensor">
+    <Level LevelName="One">
+      <Name>MRSensor</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>1.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>2.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <Damageable>true</Damageable>
+    </Level>
+    <Level LevelName="Two">
+      <Name>MRSensor+</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>2.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>3.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <Damageable>true</Damageable>
+    </Level>
+  </EquipmentCategory>
+  
+  <EquipmentCategory EquipmentCategoryName="LRSensor">
+    <Level LevelName="One">
+      <Name>LRSensor</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>1.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>2.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <Damageable>true</Damageable>
+    </Level>
+    <Level LevelName="Four">
+      <Name>LRSensor+</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>2.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>3.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <Damageable>true</Damageable>
+    </Level>
+  </EquipmentCategory>
+
+  <EquipmentCategory EquipmentCategoryName="SRActiveCountermeasure">
+    <Level LevelName="One">
+      <Name>CIWS</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>1.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>2.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <Accuracy>0.50</Accuracy>
+      <Reload>0.2</Reload>
+      <WdvStrengths>
+        <WdvCategory>Beam</WdvCategory>
+        <WdvCatValue>2</WdvCatValue>
+      </WdvStrengths>
+      <WdvStrengths>
+        <WdvCategory>Missile</WdvCategory>
+        <WdvCatValue>2</WdvCatValue>
+      </WdvStrengths>
+      <DmgStrength>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>2.5</DmgCatValue>       
+      </DmgStrength>
+    </Level>
+    <Level LevelName="Three">
+      <Name>CIWS+</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>2.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>3.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <Accuracy>0.50</Accuracy>
+      <Reload>0.2</Reload>
+      <WdvStrengths>
+        <WdvCategory>Beam</WdvCategory>
+        <WdvCatValue>2</WdvCatValue>
+      </WdvStrengths>
+      <WdvStrengths>
+        <WdvCategory>Projectile</WdvCategory>
+        <WdvCatValue>2</WdvCatValue>
+      </WdvStrengths>
+      <DmgStrength>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>2.5</DmgCatValue>
+      </DmgStrength>
+    </Level>
+  </EquipmentCategory>
+
+  <EquipmentCategory EquipmentCategoryName="MRActiveCountermeasure">
+    <Level LevelName="One">
+      <Name>ADS</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>1.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>2.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <Accuracy>0.80</Accuracy>
+      <Reload>2</Reload>
+      <WdvStrengths>
+        <WdvCategory>Beam</WdvCategory>
+        <WdvCatValue>2</WdvCatValue>
+      </WdvStrengths>
+      <WdvStrengths>
+        <WdvCategory>Projectile</WdvCategory>
+        <WdvCatValue>2</WdvCatValue>
+        <WdvStrengths>
+      </WdvStrengths>
+        <WdvCategory>Missile</WdvCategory>
+        <WdvCatValue>2</WdvCatValue>
+      </WdvStrengths>
+      <DmgStrength>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>2.5</DmgCatValue>
+      </DmgStrength>
+    </Level>
+    <Level LevelName="Two">
+      <Name>ADS+</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>2.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>3.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <Accuracy>0.80</Accuracy>
+      <Reload>2</Reload>
+      <WdvStrengths>
+        <WdvCategory>Missile</WdvCategory>
+        <WdvCatValue>2</WdvCatValue>
+      </WdvStrengths>
+      <WdvStrengths>
+        <WdvCategory>AssaultVehicle</WdvCategory>
+        <WdvCatValue>2</WdvCatValue>
+      </WdvStrengths>
+      <WdvStrengths>
+        <WdvCategory>Beam</WdvCategory>
+        <WdvCatValue>2</WdvCatValue>
+      </WdvStrengths>
+      <DmgStrength>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>2.5</DmgCatValue>
+      </DmgStrength>
+    </Level>
+  </EquipmentCategory>
+
+  <EquipmentCategory EquipmentCategoryName="StlPropulsion">
+    <Level LevelName="One">
+      <Name>STL</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>1.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>2.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <Damageable>false</Damageable>
+      <MaxTurnRate>90</MaxTurnRate>
+      <MaxSpeed>4</MaxSpeed>
+    </Level>
+    <Level LevelName="Five">
+      <Name>STL5</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>2.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>3.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <Damageable>false</Damageable>
+      <MaxTurnRate>360</MaxTurnRate>
+      <MaxSpeed>16</MaxSpeed>
+    </Level>
+  </EquipmentCategory>
+  <EquipmentCategory EquipmentCategoryName="FtlPropulsion">
+    <Level LevelName="One">
+      <Name>FTL</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>1.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>2.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <Damageable>true</Damageable>
+      <MaxTurnRate>90</MaxTurnRate>
+      <MaxSpeed>10</MaxSpeed>
+    </Level>
+    <Level LevelName="Five">
+      <Name>FTL5</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>2.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>3.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <Damageable>true</Damageable>
+      <MaxTurnRate>360</MaxTurnRate>
+      <MaxSpeed>40</MaxSpeed>
+    </Level>
+  </EquipmentCategory>
+
+  <EquipmentCategory EquipmentCategoryName="FtlDampener">
+    <Level LevelName="One">
+      <Name>FtlDamp1</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>1.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>2.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <RangeCategory>Short</RangeCategory>
+    </Level>
+    <Level LevelName="Three">
+      <Name>FtlDamp3</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>2.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>3.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <RangeCategory>Short</RangeCategory>
+    </Level>
+  </EquipmentCategory>
+
+  <EquipmentCategory EquipmentCategoryName="PassiveCountermeasure">
+    <Level LevelName="One">
+      <Name>Armor1</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>1.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>2.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <DmgStrength>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>2.5</DmgCatValue>
+      </DmgStrength>
+    </Level>
+    <Level LevelName="Two">
+      <Name>Armor2</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>2.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>3.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <DmgStrength>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>2.5</DmgCatValue>
+      </DmgStrength>
+    </Level>
+  </EquipmentCategory>
+
+  <EquipmentCategory EquipmentCategoryName="ShieldGenerator">
+    <Level LevelName="One">
+      <Name>ShieldGen1</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>1.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>2.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <RangeCategory>Short</RangeCategory>
+      <MaxCharge>20</MaxCharge>
+      <ChargeRate>1.0</ChargeRate>
+      <Reload>20</Reload>
+      <DmgStrength>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>2.5</DmgCatValue>
+      </DmgStrength>
+    </Level>
+    <Level LevelName="Two">
+      <Name>ShieldGen2</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>2.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>3.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <RangeCategory>Short</RangeCategory>
+      <MaxCharge>30</MaxCharge>
+      <ChargeRate>1.5</ChargeRate>
+      <Reload>15</Reload>
+      <DmgStrength>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>2.5</DmgCatValue>
+      </DmgStrength>
+    </Level>
+  </EquipmentCategory>
+
+  <EquipmentCategory EquipmentCategoryName="StarbaseCmdModule">
+    <Level LevelName="One">
+      <Name>CmdModule1</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>1.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>10.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <MaxCmdEffect>1.0</MaxCmdEffect>
+      <StartPop>100</StartPop>
+      <StartApproval>1.0</StartApproval>
+    </Level>
+    <Level LevelName="Two">
+      <Name>CmdModule2</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>2.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>15.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <MaxCmdEffect>1.0</MaxCmdEffect>
+      <StartPop>200</StartPop>
+      <StartApproval>1.0</StartApproval>
+    </Level>
+  </EquipmentCategory>
+
+  <EquipmentCategory EquipmentCategoryName="SettlementCmdModule">
+    <Level LevelName="One">
+      <Name>CmdModule1</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>1.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>10.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <MaxCmdEffect>1.0</MaxCmdEffect>
+      <StartPop>1000</StartPop>
+      <StartApproval>1.0</StartApproval>
+    </Level>
+    <Level LevelName="Two">
+      <Name>CmdModule2</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>2.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>15.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <MaxCmdEffect>1.0</MaxCmdEffect>
+      <StartPop>2000</StartPop>
+      <StartApproval>1.0</StartApproval>
+    </Level>
+  </EquipmentCategory>
+
+  <EquipmentCategory EquipmentCategoryName="FleetCmdModule">
+    <Level LevelName="One">
+      <Name>CmdModule1</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>1.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>10.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <MaxCmdEffect>1.0</MaxCmdEffect>
+    </Level>
+    <Level LevelName="Two">
+      <Name>CmdModule2</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>2.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>15.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <MaxCmdEffect>1.0</MaxCmdEffect>
+    </Level>
+  </EquipmentCategory>
+
+  <!-- BeamWeapon: Accuracy: Max aiming Inaccuracy in degrees -->
+  <EquipmentCategory EquipmentCategoryName="BeamWeapon">
+    <Level LevelName="One">
+      <Name>Phaser1</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>1.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>2.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <RangeCategory>Short</RangeCategory>
+      <WdvStrengths>
+        <WdvCategory>Beam</WdvCategory>
+        <WdvCatValue>6</WdvCatValue>
+      </WdvStrengths>
+      <Reload>10</Reload>
+      <DmgStrength>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>6</DmgCatValue>
+      </DmgStrength>
+      <Accuracy>3</Accuracy>
+      <Duration>2</Duration>
+    </Level>
+    <Level LevelName="Two">
+      <Name>Phaser2</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>2.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>3.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <RangeCategory>Short</RangeCategory>
+      <WdvStrengths>
+        <WdvCategory>Beam</WdvCategory>
+        <WdvCatValue>6.5</WdvCatValue>
+      </WdvStrengths>
+      <Reload>9</Reload>
+      <DmgStrength>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>8</DmgCatValue>
+      </DmgStrength>
+      <Accuracy>2.5</Accuracy>
+      <Duration>2.5</Duration>
+    </Level>
+  </EquipmentCategory>
+  
+  <!-- ProjectileWeapon: Accuracy: Max aiming Inaccuracy in degrees -->
+  <EquipmentCategory EquipmentCategoryName="ProjectileWeapon">
+    <Level LevelName="One">
+      <Name>GatlingGun1</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>1.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>2.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <RangeCategory>Medium</RangeCategory>
+      <WdvStrengths>
+        <WdvCategory>Projectile</WdvCategory>
+        <WdvCatValue>4</WdvCatValue>
+      </WdvStrengths>
+      <Reload>6</Reload>
+      <DmgStrength>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>5</DmgCatValue>
+      </DmgStrength>
+      <MaxSpeed>15</MaxSpeed>
+      <OrdnanceMass>1</OrdnanceMass>
+      <Drag>0.01</Drag>
+      <Accuracy>3</Accuracy>
+    </Level>
+    <Level LevelName="Two">
+      <Name>GatlingGun2</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>2.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>3.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <RangeCategory>Medium</RangeCategory>
+      <WdvStrengths>
+        <WdvCategory>Projectile</WdvCategory>
+        <WdvCatValue>5</WdvCatValue>
+      </WdvStrengths>
+      <Reload>5.5</Reload>
+      <DmgStrength>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>6</DmgCatValue>
+      </DmgStrength>
+      <MaxSpeed>16</MaxSpeed>
+      <OrdnanceMass>1</OrdnanceMass>
+      <Drag>0.01</Drag>
+      <Accuracy>2.5</Accuracy>
+    </Level>
+  </EquipmentCategory>
+
+  <!-- MissileWeapon: Accuracy: Max steering Inaccuracy in degrees, UpdateFreq: Course checks per hour -->
+  <EquipmentCategory EquipmentCategoryName="MissileWeapon">
+    <Level LevelName="One">
+      <Name>MissileLauncher1</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>1.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>2.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <RangeCategory>Long</RangeCategory>
+      <WdvStrengths>
+        <WdvCategory>Missile</WdvCategory>
+        <WdvCatValue>6</WdvCatValue>
+      </WdvStrengths>
+      <Reload>18</Reload>
+      <DmgStrength>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>6</DmgCatValue>
+      </DmgStrength>
+      <MaxSpeed>8</MaxSpeed>
+      <OrdnanceMass>5</OrdnanceMass>
+      <Drag>0.02</Drag>
+      <Accuracy>3</Accuracy>
+      <MaxTurnRate>700</MaxTurnRate>
+      <UpdateFreq>0.4</UpdateFreq>  <!-- 0.5 turn not complete warnings -->
+    </Level>
+    <Level LevelName="Two">
+      <Name>MissileLauncher2</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>2.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>3.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <RangeCategory>Long</RangeCategory>
+      <WdvStrengths>
+        <WdvCategory>Missile</WdvCategory>
+        <WdvCatValue>6.5</WdvCatValue>
+      </WdvStrengths>
+      <Reload>17</Reload>
+      <DmgStrength>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>8</DmgCatValue>
+      </DmgStrength>
+      <MaxSpeed>9</MaxSpeed>
+      <OrdnanceMass>5</OrdnanceMass>
+      <Drag>0.02</Drag>
+      <Accuracy>2.5</Accuracy>
+      <MaxTurnRate>700</MaxTurnRate>
+      <UpdateFreq>0.4</UpdateFreq>  <!-- 0.5 turn not complete warnings -->
+    </Level>
+  </EquipmentCategory>
+
+  <!-- AssaultWeapon: Accuracy: Max steering Inaccuracy in degrees, UpdateFreq: Course checks per hour -->
+  <EquipmentCategory EquipmentCategoryName="AssaultWeapon">
+    <Level LevelName="One">
+      <Name>AssaultLauncher1</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>1.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>2.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <RangeCategory>Long</RangeCategory>
+      <WdvStrengths>
+        <WdvCategory>AssaultVehicle</WdvCategory>
+        <WdvCatValue>6</WdvCatValue>
+      </WdvStrengths>
+      <Reload>28</Reload>
+      <DmgStrength>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrength>
+      <MaxSpeed>3</MaxSpeed>
+      <OrdnanceMass>10</OrdnanceMass>
+      <Drag>0.03</Drag>
+      <Accuracy>1</Accuracy>
+      <MaxTurnRate>270</MaxTurnRate>
+      <UpdateFreq>0.4</UpdateFreq>  <!-- 0.5 turn not complete warnings -->
+    </Level>
+    <Level LevelName="Two">
+      <Name>AssaultLauncher2</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>2.0</Mass>
+      <Power>0.0</Power>
+      <HitPoints>3.0</HitPoints>
+      <ConstructionCost>5.0</ConstructionCost>
+      <Expense>1.0</Expense>
+      <RangeCategory>Long</RangeCategory>
+      <WdvStrengths>
+        <WdvCategory>AssaultVehicle</WdvCategory>
+        <WdvCatValue>6.5</WdvCatValue>
+      </WdvStrengths>
+      <Reload>26</Reload>
+      <DmgStrength>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>4</DmgCatValue>
+      </DmgStrength>
+      <MaxSpeed>4</MaxSpeed>
+      <OrdnanceMass>10</OrdnanceMass>
+      <Drag>0.03</Drag>
+      <Accuracy>0.8</Accuracy>
+      <MaxTurnRate>270</MaxTurnRate>
+      <UpdateFreq>0.4</UpdateFreq>  <!-- 0.5 turn not complete warnings -->
+    </Level>
+  </EquipmentCategory>
+
+</Values>

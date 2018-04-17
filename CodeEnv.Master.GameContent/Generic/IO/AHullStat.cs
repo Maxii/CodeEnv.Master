@@ -26,7 +26,7 @@ namespace CodeEnv.Master.GameContent {
 
         private const string HullCategoryNameExtension = "Hull";
 
-        public sealed override EquipmentCategory Category { get { return EquipmentCategory.Hull; } }
+        ////public sealed override EquipmentCategory Category { get { return EquipmentCategory.Hull; } }
 
         public DamageStrength DamageMitigation { get; private set; }
 
@@ -39,19 +39,20 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="imageAtlasID">The image atlas identifier.</param>
         /// <param name="imageFilename">The image filename.</param>
         /// <param name="description">The description.</param>
-        /// <param name="level">The improvement level of this stat.</param>
+        /// <param name="id">The identifier.</param>
         /// <param name="size">The space available within this hull.</param>
         /// <param name="mass">The mass of this hull.</param>
         /// <param name="pwrRqmt">The power required to operate this hull.</param>
         /// <param name="hitPts">The hit points contributed to the survivability of the item.</param>
-        /// <param name="constructionCost">The production cost.</param>
+        /// <param name="constructionCost">The cost in production units to produce this equipment.</param>
         /// <param name="expense">The expense consumed by this hull.</param>
         /// <param name="damageMitigation">The resistance to damage of this hull.</param>
         /// <param name="hullDimensions">The hull dimensions.</param>
-        public AHullStat(string hullCategoryName, AtlasID imageAtlasID, string imageFilename, string description, Level level, float size,
-            float mass, float pwrRqmt, float hitPts, float constructionCost, float expense, DamageStrength damageMitigation, Vector3 hullDimensions)
-            : base(hullCategoryName + HullCategoryNameExtension, imageAtlasID, imageFilename, description, level, size, mass, pwrRqmt, hitPts,
-                  constructionCost, expense, isDamageable: false) {
+        public AHullStat(string hullCategoryName, AtlasID imageAtlasID, string imageFilename, string description,
+            EquipStatID id, float size, float mass, float pwrRqmt, float hitPts, float constructionCost, float expense,
+            DamageStrength damageMitigation, Vector3 hullDimensions)
+            : base(hullCategoryName + HullCategoryNameExtension, imageAtlasID, imageFilename, description, id, size, mass,
+                  pwrRqmt, hitPts, constructionCost, expense, isDamageable: false) {
             DamageMitigation = damageMitigation;
             HullDimensions = hullDimensions;
         }

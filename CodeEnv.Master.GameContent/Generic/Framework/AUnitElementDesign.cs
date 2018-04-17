@@ -80,8 +80,8 @@ namespace CodeEnv.Master.GameContent {
             return cumHitPts;
         }
 
-        public override bool HasEqualContent(AUnitMemberDesign oDesign) {
-            if (base.HasEqualContent(oDesign)) {
+        protected override bool IsNonStatContentEqual(AUnitMemberDesign oDesign) {
+            if (base.IsNonStatContentEqual(oDesign)) {
                 AUnitElementDesign eDesign = oDesign as AUnitElementDesign;
                 return eDesign.ReqdSRSensorStat == ReqdSRSensorStat && eDesign.HQPriority == HQPriority;
             }

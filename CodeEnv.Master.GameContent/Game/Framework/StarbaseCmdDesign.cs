@@ -45,8 +45,8 @@ namespace CodeEnv.Master.GameContent {
             InitializeValuesAndReferences();
         }
 
-        public override bool HasEqualContent(AUnitMemberDesign oDesign) {
-            return base.HasEqualContent(oDesign);
+        protected override bool IsNonStatContentEqual(AUnitMemberDesign oDesign) {
+            return base.IsNonStatContentEqual(oDesign);
         }
 
         #region Value-based Equality Archive

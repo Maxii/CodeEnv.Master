@@ -202,7 +202,33 @@ namespace CodeEnv.Master.GameContent {
             return _equipLookupBySlotID.Values.Where(stat => stat != null && stat.Category == equipCat);
         }
 
+        /// <summary>
+        /// Returns <c>true</c> if this slotID is present in the design, false otherwise.
+        /// Even if the slotID is present returning true, the returned stat can still be null.
+        /// </summary>
+        /// <param name="slotID">The slot identifier.</param>
+        /// <param name="stat">The resulting stat which can be null.</param>
+        /// <returns></returns>
+        public bool TryGetEquipmentStat(EquipmentSlotID slotID, out AEquipmentStat stat) {
+            if (_equipLookupBySlotID.ContainsKey(slotID)) {
+                stat = _equipLookupBySlotID[slotID];
+                return true;
+            }
+            stat = null;
+            return false;
+        }
+
+        /// <summary>
+        /// Returns the AEquipmentStat for this slotID which can be null. Will throw an error
+        /// if the slotID is not present in this design.
+        /// </summary>
+        /// <param name="slotID">The slot identifier.</param>
+        /// <returns></returns>
         public AEquipmentStat GetEquipmentStat(EquipmentSlotID slotID) {
+            if (!_equipLookupBySlotID.ContainsKey(slotID)) {
+                D.Error("{0} does not contain {1}.", DebugName, slotID.DebugName);
+                return null;
+            }
             return _equipLookupBySlotID[slotID];
         }
 
@@ -290,30 +316,53 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Returns <c>true</c> if the content is equal, excluding transient values like Name, Status and the iterator.
+        /// <remarks>Warning: this is not the equivalent of Equals as Type equivalence is assumed and transient values
+        /// are excluded.</remarks>
         /// </summary>
         /// <param name="oDesign">The other design.</param>
         /// <returns></returns>
-        public virtual bool HasEqualContent(AUnitMemberDesign oDesign) {
-            return oDesign.Player == Player && oDesign.ConstructionCost == ConstructionCost && oDesign.DesignLevel == DesignLevel
-                && AreStatsEqual(oDesign);
+        public bool HasEqualContent(AUnitMemberDesign oDesign) {
+            if (!GetType().IsInstanceOfType(oDesign)) {
+                D.Warn("{0}.HasEqualContent should not be used to compare against {1}, a design of a different Type!", DebugName, oDesign.DebugName);
+                return false;
+            }
+            return IsNonStatContentEqual(oDesign) && AreStatsEqual(oDesign);
+        }
+
+        /// <summary>
+        /// Returns <c>true</c> if the 'fixed' content of this design is equivalent, false otherwise.
+        /// <remarks>Fixed content refers to all non-transient content of the design excluding EquipmentStats that are
+        /// assigned to slots with SlotIDs. The equivalence of EquipmentStats assigned to slots is handled by AreStatsEqual()
+        /// which is expensive and therefore handled after simpler equivalence is already found by this method.
+        /// Transient content refers to fields like Name, Status and the iterator.</remarks>
+        /// </summary>
+        /// <param name="oDesign">The other design.</param>
+        protected virtual bool IsNonStatContentEqual(AUnitMemberDesign oDesign) {
+            return oDesign.Player == Player && oDesign.ConstructionCost == ConstructionCost && oDesign.DesignLevel == DesignLevel;
         }
 
         private bool AreStatsEqual(AUnitMemberDesign oDesign) {
             EquipmentSlotID slotID;
             AEquipmentStat aStat;
             while (TryGetNextEquipmentStat(out slotID, out aStat)) {
-                AEquipmentStat bStat = oDesign.GetEquipmentStat(slotID);
-                if (aStat != bStat) {
-                    ResetIterator();
-                    return false;
+                AEquipmentStat bStat;
+                if (oDesign.TryGetEquipmentStat(slotID, out bStat)) {
+                    if (aStat == bStat) {
+                        continue;
+                    }
                 }
+                ResetIterator();
+                return false;
             }
             while (oDesign.TryGetNextEquipmentStat(out slotID, out aStat)) {    // OPTIMIZE avoid second pass by comparing slotID sequence
-                AEquipmentStat bStat = GetEquipmentStat(slotID);
-                if (aStat != bStat) {
-                    oDesign.ResetIterator();
-                    return false;
+                AEquipmentStat bStat;
+                if (TryGetEquipmentStat(slotID, out bStat)) {
+                    if (aStat == bStat) {
+                        continue;
+                    }
                 }
+                oDesign.ResetIterator();
+                return false;
             }
             return true;
         }

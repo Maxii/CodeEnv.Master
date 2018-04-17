@@ -290,14 +290,14 @@ namespace CodeEnv.Master.GameContent {
             bool isInformedOfDateLogging = false;
             bool isInformedOfDateWarning = false;
             __ResetTurnTimeWarningFields();
-            GameDate warnDate = DebugUtility.CalcWarningDateForRotation(_shipData.MaxTurnRate);
+            GameDate warnDate = DebugUtility.CalcWarningDateForRotation(_shipData.TurnRate);
 
             //int startingFrame = Time.frameCount;
             Quaternion startingRotation = _ship.transform.rotation;
             Quaternion intendedHeadingRotation = Quaternion.LookRotation(requestedHeading);
             float desiredTurn = Quaternion.Angle(startingRotation, intendedHeadingRotation);
             D.Log(ShowDebugLog, "{0} initiating turn of {1:0.#} degrees at {2:0.} degrees/hour. AllowedHeadingDeviation = {3:0.##} degrees.",
-                DebugName, desiredTurn, _shipData.MaxTurnRate, AllowedHeadingDeviation);
+                DebugName, desiredTurn, _shipData.TurnRate, AllowedHeadingDeviation);
 #pragma warning disable 0219
             GameDate currentDate = _gameTime.CurrentDate;
 #pragma warning restore 0219
@@ -313,11 +313,11 @@ namespace CodeEnv.Master.GameContent {
 
                 Profiler.BeginSample("Ship ChangeHeading Job Execution", _ship.transform);
                 deltaTime = _gameTime.DeltaTime;
-                float allowedTurn = _shipData.MaxTurnRate * _gameTime.GameSpeedAdjustedHoursPerSecond * deltaTime;
-                __allowedTurns.Add(allowedTurn);
+                float allowedTurnDegrees = _shipData.TurnRate * _gameTime.GameSpeedAdjustedHoursPerSecond * deltaTime;
+                __allowedTurns.Add(allowedTurnDegrees);
 
                 Quaternion currentRotation = _ship.transform.rotation;
-                Quaternion inprocessRotation = Quaternion.RotateTowards(currentRotation, intendedHeadingRotation, allowedTurn);
+                Quaternion inprocessRotation = Quaternion.RotateTowards(currentRotation, intendedHeadingRotation, allowedTurnDegrees);
                 float actualTurn = Quaternion.Angle(currentRotation, inprocessRotation);
                 __actualTurns.Add(actualTurn);
 

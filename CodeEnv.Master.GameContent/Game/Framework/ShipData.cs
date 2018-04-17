@@ -171,9 +171,14 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// The maximum turn rate of the ship in degrees per hour.
+        /// The turn rate capability of the ship in degrees per hour.
+        /// <remarks>4.15.18 Now a function of Engine's MaxTurnRate and the capability of the hull.</remarks>
         /// </summary>
-        public float MaxTurnRate { get { return IsFtlOperational ? _ftlEngine.MaxTurnRate : _stlEngine.MaxTurnRate; } }
+        public float TurnRate {
+            get {
+                return (IsFtlOperational ? _ftlEngine.MaxTurnRate : _stlEngine.MaxTurnRate) * HullCategory.TurnrateFactor();
+            }
+        }
 
         public override IntVector3 SectorID { get { return GameReferences.SectorGrid.GetSectorIDThatContains(Position); } }
 
@@ -214,6 +219,7 @@ namespace CodeEnv.Master.GameContent {
             if (ftlEngine != null) {
                 ftlEngine.isOperationalChanged += IsFtlOperationalChangedEventHandler;
             }
+            __ValidateTurnRate();
 
             Mass = CalculateMass();
             Outputs = MakeOutputs();
@@ -406,6 +412,20 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #region Debug
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        private void __ValidateTurnRate() {
+            float stlTurnRate = _stlEngine.MaxTurnRate * HullCategory.TurnrateFactor();
+            if (stlTurnRate.IsLessThan(TempGameValues.MinimumTurnRate)) {
+                D.Warn("{0}'s STL TurnRate {1:0.#} is too low. Game MinTurnRate = {2:0.#}.", DebugName, stlTurnRate, TempGameValues.MinimumTurnRate);
+            }
+            if (_ftlEngine != null) {
+                float ftlTurnRate = _ftlEngine.MaxTurnRate * HullCategory.TurnrateFactor();
+                if (ftlTurnRate.IsLessThan(TempGameValues.MinimumTurnRate)) {
+                    D.Warn("{0}'s FTL TurnRate {1:0.#} is too low. Game MinTurnRate = {2:0.#}.", DebugName, stlTurnRate, TempGameValues.MinimumTurnRate);
+                }
+            }
+        }
 
         protected override void __ValidateAllEquipmentDamageRepaired() {
             base.__ValidateAllEquipmentDamageRepaired();

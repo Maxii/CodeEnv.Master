@@ -94,7 +94,7 @@ namespace CodeEnv.Master.GameContent {
 
         private float _unitMaxTurnRate;
         /// <summary>
-        /// Gets the maximum turn rate of the fleet in radians per day.
+        /// Gets the maximum turn rate of the fleet in degrees per hour.
         /// </summary>
         public float UnitMaxTurnRate {
             get { return _unitMaxTurnRate; }
@@ -217,7 +217,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void RefreshMaxTurnRate() {
             if (_elementsData.Any()) {
-                UnitMaxTurnRate = _elementsData.Min(data => (data as ShipData).MaxTurnRate);
+                UnitMaxTurnRate = _elementsData.Min(data => (data as ShipData).TurnRate);
             }
         }
 

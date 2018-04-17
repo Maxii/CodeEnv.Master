@@ -105,8 +105,8 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public override bool HasEqualContent(AUnitMemberDesign oDesign) {
-            if (base.HasEqualContent(oDesign)) {
+        protected override bool IsNonStatContentEqual(AUnitMemberDesign oDesign) {
+            if (base.IsNonStatContentEqual(oDesign)) {
                 var fDesign = oDesign as FacilityDesign;
                 return fDesign.HullStat == HullStat;
             }

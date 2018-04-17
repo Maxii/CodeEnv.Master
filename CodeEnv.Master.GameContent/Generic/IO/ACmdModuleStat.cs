@@ -36,19 +36,20 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="imageAtlasID">The image atlas identifier.</param>
         /// <param name="imageFilename">The image filename.</param>
         /// <param name="description">The description.</param>
-        /// <param name="level">The improvement level of this stat.</param>
+        /// <param name="id">The identifier.</param>
         /// <param name="size">The physical size of the equipment.</param>
         /// <param name="mass">The mass of the equipment.</param>
         /// <param name="pwrRqmt">The power required to operate the equipment.</param>
         /// <param name="hitPts">The hit points contributed to the survivability of the item.</param>
+        /// <param name="constructCost">The cost in production units to produce this equipment.</param>
         /// <param name="expense">The expense required to operate this equipment.</param>
-        /// <param name="maxHitPts">The maximum hit PTS.</param>
         /// <param name="maxCmdStaffEffectiveness">The maximum effectiveness of the command staff.</param>
-        public ACmdModuleStat(string name, AtlasID imageAtlasID, string imageFilename, string description, Level level, float size, float mass,
-            float pwrRqmt, float hitPts, float expense, float maxCmdStaffEffectiveness)
-            : base(name, imageAtlasID, imageFilename, description, level, size, mass, pwrRqmt, hitPts, Constants.ZeroF, expense, isDamageable: false) {
+        public ACmdModuleStat(string name, AtlasID imageAtlasID, string imageFilename, string description, EquipStatID id,
+            float size, float mass, float pwrRqmt, float hitPts, float constructCost, float expense, float maxCmdStaffEffectiveness)
+            : base(name, imageAtlasID, imageFilename, description, id, size, mass, pwrRqmt, hitPts, constructCost, expense, isDamageable: false) {
             MaxCmdStaffEffectiveness = maxCmdStaffEffectiveness;
         }
+
 
         #region Value-based Equality Archive
         // 2.23.18 ATechStat instances are always the same as they are acquired via factory caching

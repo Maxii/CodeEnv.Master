@@ -1644,6 +1644,37 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
+        /// The multiplier to be applied to the ship engine's MaxTurnRate to 
+        /// determine the turn rate (in degrees per hour) of the ship.
+        /// </summary>
+        /// <param name="hullCat">The hull category.</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotImplementedException"></exception>
+        public static float TurnrateFactor(this ShipHullCategory hullCat) {
+            switch (hullCat) {
+                case ShipHullCategory.Frigate:
+                    return 1.0F;
+                case ShipHullCategory.Destroyer:
+                case ShipHullCategory.Support:
+                    return 0.9F;
+                case ShipHullCategory.Cruiser:
+                case ShipHullCategory.Colonizer:
+                case ShipHullCategory.Investigator:
+                    return 0.75F;
+                case ShipHullCategory.Dreadnought:
+                case ShipHullCategory.Troop:
+                    return 0.6F;
+                case ShipHullCategory.Carrier:
+                    return 0.5F;
+                case ShipHullCategory.Scout:
+                case ShipHullCategory.Fighter:
+                case ShipHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+            }
+        }
+
+        /// <summary>
         /// Drag of the ship's hull in Topography.OpenSpace.
         /// </summary>
         /// <param name="hullCat">The hull category.</param>
@@ -2185,7 +2216,8 @@ namespace CodeEnv.Master.GameContent {
                     return AllowedSiloMounts;
                 case EquipmentCategory.PassiveCountermeasure:
                     return AllowedPassiveCmMounts;
-                case EquipmentCategory.ActiveCountermeasure:
+                case EquipmentCategory.SRActiveCountermeasure:
+                case EquipmentCategory.MRActiveCountermeasure:
                     return AllowedActiveCmMounts;
                 case EquipmentCategory.SRSensor:
                 case EquipmentCategory.MRSensor:
@@ -2217,10 +2249,12 @@ namespace CodeEnv.Master.GameContent {
                 case EquipmentMountCategory.Skin:
                     return new EquipmentCategory[] { EquipmentCategory.PassiveCountermeasure };
                 case EquipmentMountCategory.Screen:
-                    return new EquipmentCategory[] { EquipmentCategory.ActiveCountermeasure, EquipmentCategory.ShieldGenerator };
+                    return new EquipmentCategory[] { EquipmentCategory.SRActiveCountermeasure, EquipmentCategory.MRActiveCountermeasure,
+                        EquipmentCategory.ShieldGenerator };
                 case EquipmentMountCategory.Flex:
                     return new EquipmentCategory[] { EquipmentCategory.SRSensor, EquipmentCategory.MRSensor, EquipmentCategory.LRSensor,
-                        EquipmentCategory.PassiveCountermeasure, EquipmentCategory.ActiveCountermeasure, EquipmentCategory.ShieldGenerator };
+                        EquipmentCategory.PassiveCountermeasure, EquipmentCategory.SRActiveCountermeasure,
+                        EquipmentCategory.MRActiveCountermeasure, EquipmentCategory.ShieldGenerator };
                 case EquipmentMountCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(mountCat));
@@ -2519,6 +2553,58 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
+
+        #region Equipment Level
+
+        public static bool TryDecreaseLevel(this Level level, out Level newLevel) {
+            switch (level) {
+                case Level.One:
+                    newLevel = Level.None;
+                    return false;
+                case Level.Two:
+                    newLevel = Level.One;
+                    return true;
+                case Level.Three:
+                    newLevel = Level.Two;
+                    return true;
+                case Level.Four:
+                    newLevel = Level.Three;
+                    return true;
+                case Level.Five:
+                    newLevel = Level.Four;
+                    return true;
+                case Level.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(level));
+            }
+        }
+
+        public static bool TryIncreaseLevel(this Level level, out Level newLevel) {
+            switch (level) {
+                case Level.One:
+                    newLevel = Level.Two;
+                    return true;
+                case Level.Two:
+                    newLevel = Level.Three;
+                    return true;
+                case Level.Three:
+                    newLevel = Level.Four;
+                    return true;
+                case Level.Four:
+                    newLevel = Level.Five;
+                    return true;
+                case Level.Five:
+                    newLevel = Level.None;
+                    return false;
+                case Level.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(level));
+            }
+        }
+
+
+        #endregion
+
         #region Ship and Fleet Speed 
 
         public static float GetUnitsPerHour(this Speed speed, float fullSpeedValue) {
@@ -2532,42 +2618,42 @@ namespace CodeEnv.Master.GameContent {
                     return Constants.ZeroF;
                 case Speed.ThrustersOnly:
                     // 4.13.16 InSystem, STL = 0.05 but clamped at ~0.2 below, OpenSpace: STL = 0.24, FTL = 1.2
-                    // 4.12.18 with Fastest Engine tech: InSystem, STL = 0.13, OpenSpace: STL = 0.5, FTL = 1.25
+                    // 4.12.18 with MaxSpeed of 40: InSystem, STL = 0.13, OpenSpace: STL = 0.5, FTL = 1.25
                     fullSpeedFactor = 0.03F;
                     break;
                 case Speed.Docking:
                     // 4.9.16 InSystem, STL = 0.08 but clamped at ~0.2 below, OpenSpace: STL = 0.4, FTL = 2
-                    // 4.12.18 with Fastest Engine tech: InSystem, STL = 0.2, OpenSpace: STL = 0.8, FTL = 2
+                    // 4.12.18 with MaxSpeed of 40: InSystem, STL = 0.2, OpenSpace: STL = 0.8, FTL = 2
                     fullSpeedFactor = 0.05F;
                     break;
                 case Speed.DeadSlow:
                     // 4.9.16 InSystem, STL = 0.13 but clamped at ~0.2 below, OpenSpace: STL = 0.64, FTL = 3.2
-                    // 4.12.18 with Fastest Engine tech: InSystem, STL = 0.32, OpenSpace: STL = 1.3, FTL = 3.2
+                    // 4.12.18 with MaxSpeed of 40: InSystem, STL = 0.32, OpenSpace: STL = 1.3, FTL = 3.2
                     fullSpeedFactor = 0.08F;
                     break;
                 case Speed.Slow:
                     // 4.9.16 InSystem, STL = 0.24, OpenSpace: STL = 1.2, FTL = 6
-                    // 4.12.18 with Fastest Engine tech: InSystem, STL = 0.6, OpenSpace: STL = 2.4, FTL = 6
+                    // 4.12.18 with MaxSpeed of 40: InSystem, STL = 0.6, OpenSpace: STL = 2.4, FTL = 6
                     fullSpeedFactor = 0.15F;
                     break;
                 case Speed.OneThird:
                     // 11.24.15 InSystem, STL = 0.4, OpenSpace: STL = 2, FTL = 10
-                    // 4.12.18 with Fastest Engine tech: InSystem, STL = 1, OpenSpace: STL = 4, FTL = 10
+                    // 4.12.18 with MaxSpeed of 40: InSystem, STL = 1, OpenSpace: STL = 4, FTL = 10
                     fullSpeedFactor = 0.25F;
                     break;
                 case Speed.TwoThirds:
                     // 11.24.15 InSystem, STL = 0.8, OpenSpace: STL = 4, FTL = 20
-                    // 4.12.18 with Fastest Engine tech: InSystem, STL = 2, OpenSpace: STL = 8, FTL = 20
+                    // 4.12.18 with MaxSpeed of 40: InSystem, STL = 2, OpenSpace: STL = 8, FTL = 20
                     fullSpeedFactor = 0.50F;
                     break;
                 case Speed.Standard:
                     // 11.24.15 InSystem, STL = 1.2, OpenSpace: STL = 6, FTL = 30
-                    // 4.12.18 with Fastest Engine tech: InSystem, STL = 3, OpenSpace: STL = 12, FTL = 30
+                    // 4.12.18 with MaxSpeed of 40: InSystem, STL = 3, OpenSpace: STL = 12, FTL = 30
                     fullSpeedFactor = 0.75F;
                     break;
                 case Speed.Full:
                     // 11.24.15 InSystem, STL = 1.6, OpenSpace: STL = 8, FTL = 40
-                    // 4.12.18 with Fastest Engine tech: InSystem, STL = 4, OpenSpace: STL = 16, FTL = 40
+                    // 4.12.18 with MaxSpeed of 40: InSystem, STL = 4, OpenSpace: STL = 16, FTL = 40
                     fullSpeedFactor = 1.0F;
                     break;
                 case Speed.None:

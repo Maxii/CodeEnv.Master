@@ -669,7 +669,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         int nameCounter = Constants.One;
         var activeCMs = new List<ActiveCountermeasure>();
 
-        var stats = elementDesign.GetEquipmentStatsFor(EquipmentCategory.ActiveCountermeasure);
+        var stats = elementDesign.GetEquipmentStatsFor(EquipmentCategory.SRActiveCountermeasure).ToList();
+        stats.AddRange(elementDesign.GetEquipmentStatsFor(EquipmentCategory.MRActiveCountermeasure));
         foreach (var stat in stats) {
             string cmName = stat.Name + nameCounter;
             nameCounter++;

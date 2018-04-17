@@ -38,7 +38,7 @@ namespace CodeEnv.Master.GameContent {
 
         bool IsLocatedInHanger { get; }
 
-        float MaxTurnRate { get; }
+        float TurnRate { get; }
 
         float ActualSpeedValue { get; }
 

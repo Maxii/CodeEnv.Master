@@ -49,8 +49,8 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        private EquipmentCategory _equipCat;
-        public override EquipmentCategory Category { get { return _equipCat; } }
+        ////private EquipmentCategory _equipCat;
+        ////public override EquipmentCategory Category { get { return _equipCat; } }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SensorStat" /> struct.
@@ -59,20 +59,19 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="imageAtlasID">The image atlas identifier.</param>
         /// <param name="imageFilename">The image filename.</param>
         /// <param name="description">The description.</param>
-        /// <param name="level">The improvement level of this stat.</param>
+        /// <param name="id"></param>
         /// <param name="size">The physical size of the sensor.</param>
         /// <param name="mass">The mass.</param>
         /// <param name="pwrRqmt">The power required to operate the sensor.</param>
         /// <param name="hitPts">The hit points contributed to the survivability of the item.</param>
         /// <param name="constructionCost">The cost to produce.</param>
         /// <param name="expense">The expense.</param>
-        /// <param name="equipCat">The equipment category.</param>
         /// <param name="isDamageable">if set to <c>true</c> [is damageable].</param>
-        public SensorStat(string name, AtlasID imageAtlasID, string imageFilename, string description, Level level, float size, float mass,
-            float pwrRqmt, float hitPts, float constructionCost, float expense, EquipmentCategory equipCat, bool isDamageable)
-            : base(name, imageAtlasID, imageFilename, description, level, size, mass, pwrRqmt, hitPts, constructionCost, expense, GetRangeCat(equipCat), isDamageable) {
-            _equipCat = equipCat;
+        public SensorStat(string name, AtlasID imageAtlasID, string imageFilename, string description, EquipStatID id,
+            float size, float mass, float pwrRqmt, float hitPts, float constructionCost, float expense, bool isDamageable)
+            : base(name, imageAtlasID, imageFilename, description, id, size, mass, pwrRqmt, hitPts, constructionCost, expense, GetRangeCat(id.Category), isDamageable) {
         }
+
 
         #region Value-based Equality Archive
         // 2.23.18 ATechStat instances are always the same as they are acquired via factory caching

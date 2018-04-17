@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class AssaultWeaponStat : AProjectileWeaponStat {
 
-        public override EquipmentCategory Category { get { return EquipmentCategory.AssaultWeapon; } }
+        ////public override EquipmentCategory Category { get { return EquipmentCategory.AssaultWeapon; } }
 
         /// <summary>
         /// The turn rate of the ordnance in degrees per hour .
@@ -31,7 +31,7 @@ namespace CodeEnv.Master.GameContent {
         public float TurnRate { get; private set; }
 
         /// <summary>
-        /// How often the ordnance's course is updated in updates per hour.
+        /// How often the ordnance's course is updated per hour.
         /// </summary>
         public float CourseUpdateFrequency { get; private set; }
 
@@ -47,12 +47,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="imageAtlasID">The image atlas identifier.</param>
         /// <param name="imageFilename">The image filename.</param>
         /// <param name="description">The description.</param>
-        /// <param name="level">The improvement level of this stat.</param>
+        /// <param name="id">The identifier.</param>
         /// <param name="size">The physical size of the weapon.</param>
         /// <param name="mass">The mass of the weapon.</param>
         /// <param name="pwrRqmt">The power required to operate the weapon.</param>
         /// <param name="hitPts">The hit points contributed to the survivability of the item.</param>
-        /// <param name="constructionCost">The production cost.</param>
+        /// <param name="constructionCost">The cost in production units to produce this equipment.</param>
         /// <param name="expense">The expense.</param>
         /// <param name="rangeCat">The range category of the weapon.</param>
         /// <param name="deliveryVehicleStrength">The delivery strength.</param>
@@ -62,15 +62,16 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="ordnanceMass">The mass of the ordnance.</param>
         /// <param name="ordnanceDrag">The drag of the ordnance in Topography.OpenSpace.</param>
         /// <param name="turnRate">The turn rate of the ordnance in degrees per hour .</param>
-        /// <param name="courseUpdateFreq">How often the ordnance's course is updated in updates per hour.</param>
+        /// <param name="courseUpdateFreq">How often the ordnance's course is updated per hour.</param>
         /// <param name="maxSteeringInaccuracy">The maximum steering inaccuracy in degrees.</param>
-        /// <param name="isDamageable">if set to <c>true</c> [is damageable].</param>
-        public AssaultWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, Level level, float size, float mass,
-            float pwrRqmt, float hitPts, float constructionCost, float expense, RangeCategory rangeCat, WDVStrength deliveryVehicleStrength,
-            float reloadPeriod, DamageStrength damagePotential, float ordnanceMaxSpeed, float ordnanceMass, float ordnanceDrag,
-            float turnRate, float courseUpdateFreq, float maxSteeringInaccuracy, bool isDamageable)
-            : base(name, imageAtlasID, imageFilename, description, level, size, mass, pwrRqmt, hitPts, constructionCost, expense, rangeCat,
-                  deliveryVehicleStrength, reloadPeriod, damagePotential, ordnanceMaxSpeed, ordnanceMass, ordnanceDrag, isDamageable) {
+        public AssaultWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, EquipStatID id,
+            float size, float mass, float pwrRqmt, float hitPts, float constructionCost, float expense,
+            RangeCategory rangeCat, WDVStrength deliveryVehicleStrength, float reloadPeriod, DamageStrength damagePotential,
+            float ordnanceMaxSpeed, float ordnanceMass, float ordnanceDrag, float turnRate, float courseUpdateFreq,
+            float maxSteeringInaccuracy)
+            : base(name, imageAtlasID, imageFilename, description, id, size, mass, pwrRqmt, hitPts, constructionCost, expense,
+                  rangeCat, deliveryVehicleStrength, reloadPeriod, damagePotential, ordnanceMaxSpeed, ordnanceMass,
+                  ordnanceDrag) {
             D.Assert(damagePotential.GetValue(DamageCategory.Incursion) > Constants.ZeroF);
             D.Assert(turnRate > Constants.ZeroF);
             D.Assert(courseUpdateFreq > Constants.ZeroF);
@@ -81,6 +82,7 @@ namespace CodeEnv.Master.GameContent {
             CourseUpdateFrequency = courseUpdateFreq;
             MaxSteeringInaccuracy = maxSteeringInaccuracy;
         }
+
 
         #region Value-based Equality Archive
         // 2.23.18 ATechStat instances are always the same as they are acquired via factory caching

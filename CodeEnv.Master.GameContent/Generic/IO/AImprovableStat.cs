@@ -49,7 +49,7 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The improvement level of this stat.
         /// </summary>
-        public Level Level { get; private set; }
+        ////public Level Level { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AImprovableStat" /> class.
@@ -59,13 +59,13 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="imageFilename">The image filename.</param>
         /// <param name="description">The description.</param>
         /// <param name="level">The improvement level of this stat.</param>
-        public AImprovableStat(string name, AtlasID imageAtlasID, string imageFilename, string description, Level level) {
+        public AImprovableStat(string name, AtlasID imageAtlasID, string imageFilename, string description/*, Level level*/) {
             Name = name;
             ImageAtlasID = imageAtlasID;
             ImageFilename = imageFilename;
             Description = description;
-            D.AssertNotDefault((int)level);
-            Level = level;
+            ////D.AssertNotDefault((int)level);
+            ////Level = level;
         }
 
         public sealed override string ToString() {

@@ -39,7 +39,7 @@ namespace CodeEnv.Master.GameContent {
         protected override bool HasAccessToInfo_Broad(ItemInfoID infoID, Player player) {
             switch (infoID) {
                 case ItemInfoID.CurrentHitPoints:
-                case ItemInfoID.MaxTurnRate:
+                case ItemInfoID.TurnRate:
                 case ItemInfoID.FullSpeed:
                 case ItemInfoID.Offense:
                 case ItemInfoID.Defense:

@@ -37,7 +37,7 @@ namespace CodeEnv.Master.GameContent {
 
         public float? FullSpeed { get; private set; }
 
-        public float? MaxTurnRate { get; private set; }
+        public float? TurnRate { get; private set; }
 
         public ShipHullCategory Category { get; private set; }
 
@@ -105,8 +105,8 @@ namespace CodeEnv.Master.GameContent {
             if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.FullSpeed)) {
                 FullSpeed = sData.FullSpeedValue;
             }
-            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.MaxTurnRate)) {
-                MaxTurnRate = sData.MaxTurnRate;
+            if (accessCntlr.HasIntelCoverageReqdToAccess(Player, ItemInfoID.TurnRate)) {
+                TurnRate = sData.TurnRate;
             }
 
             __ActualSpeedValue = (Item as IShip_Ltd).ActualSpeedValue_Debug;

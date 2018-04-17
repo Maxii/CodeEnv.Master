@@ -120,8 +120,8 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public override bool HasEqualContent(AUnitMemberDesign oDesign) {
-            if (base.HasEqualContent(oDesign)) {
+        protected override bool IsNonStatContentEqual(AUnitMemberDesign oDesign) {
+            if (base.IsNonStatContentEqual(oDesign)) {
                 var sDesign = oDesign as ShipDesign;
                 return sDesign.HullStat == HullStat && sDesign.StlEngineStat == StlEngineStat && sDesign.FtlEngineStat == FtlEngineStat
                     && sDesign.CombatStance == CombatStance;

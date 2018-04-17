@@ -121,7 +121,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
 
     public bool IsTurning { get { return _helm.IsTurnUnderway; } }
 
-    public float MaxTurnRate { get { return Data.MaxTurnRate; } }
+    public float TurnRate { get { return Data.TurnRate; } }
 
     private FleetFormationStation _formationStation;
     /// <summary>

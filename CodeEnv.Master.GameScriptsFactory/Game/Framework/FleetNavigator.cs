@@ -667,7 +667,7 @@ public class FleetNavigator : IDisposable {
         // where a ship can miss out on the alignment (due to RestartState) then add itself back in after alignment is complete.
         // In this case, the late ship will align, then depart, albeit a bit behind the rest of the fleet. In that case, the
         // lowestShipTurnrate should be from only those ships attempting to align.
-        float lowestShipTurnrate = _shipsWaitingForFleetAlignment.Min(s => s.MaxTurnRate);
+        float lowestShipTurnrate = _shipsWaitingForFleetAlignment.Min(s => s.TurnRate);
         GameDate logDate = CodeEnv.Master.GameContent.DebugUtility.CalcWarningDateForRotation(lowestShipTurnrate);
         GameDate warnDate = default(GameDate);
         GameDate errorDate = default(GameDate);

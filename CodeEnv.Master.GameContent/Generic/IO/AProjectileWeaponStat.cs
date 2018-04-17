@@ -43,12 +43,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="imageAtlasID">The image atlas identifier.</param>
         /// <param name="imageFilename">The image filename.</param>
         /// <param name="description">The description.</param>
-        /// <param name="level">The improvement level of this stat.</param>
+        /// <param name="id">The identifier.</param>
         /// <param name="size">The physical size of the weapon.</param>
         /// <param name="mass">The mass of the weapon.</param>
         /// <param name="pwrRqmt">The power required to operate the weapon.</param>
         /// <param name="hitPts">The hit points contributed to the survivability of the item.</param>
-        /// <param name="constructionCost">The production cost.</param>
+        /// <param name="constructionCost">The cost in production units to produce this equipment.</param>
         /// <param name="expense">The expense.</param>
         /// <param name="rangeCat">The range category of the weapon.</param>
         /// <param name="deliveryVehicleStrength">The delivery strength.</param>
@@ -57,12 +57,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="ordnanceMaxSpeed">The maximum speed of the ordnance in units per hour in Topography.OpenSpace.</param>
         /// <param name="ordnanceMass">The mass of the ordnance.</param>
         /// <param name="ordnanceDrag">The drag of the ordnance in Topography.OpenSpace.</param>
-        /// <param name="isDamageable">if set to <c>true</c> [is damageable].</param>
-        public AProjectileWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, Level level, float size, float mass,
-            float pwrRqmt, float hitPts, float constructionCost, float expense, RangeCategory rangeCat, WDVStrength deliveryVehicleStrength,
-            float reloadPeriod, DamageStrength damagePotential, float ordnanceMaxSpeed, float ordnanceMass, float ordnanceDrag, bool isDamageable)
-            : base(name, imageAtlasID, imageFilename, description, level, size, mass, pwrRqmt, hitPts, constructionCost, expense, rangeCat,
-                  deliveryVehicleStrength, reloadPeriod, damagePotential, isDamageable) {
+        public AProjectileWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, EquipStatID id,
+            float size, float mass, float pwrRqmt, float hitPts, float constructionCost, float expense,
+            RangeCategory rangeCat, WDVStrength deliveryVehicleStrength, float reloadPeriod, DamageStrength damagePotential,
+            float ordnanceMaxSpeed, float ordnanceMass, float ordnanceDrag)
+            : base(name, imageAtlasID, imageFilename, description, id, size, mass, pwrRqmt, hitPts, constructionCost, expense,
+                  rangeCat, deliveryVehicleStrength, reloadPeriod, damagePotential) {
             D.Assert(ordnanceMaxSpeed > Constants.ZeroF);
             D.Assert(ordnanceMass > Constants.ZeroF);
             D.Assert(ordnanceDrag > Constants.ZeroF);
@@ -70,6 +70,7 @@ namespace CodeEnv.Master.GameContent {
             OrdnanceMass = ordnanceMass;
             OrdnanceDrag = ordnanceDrag;
         }
+
 
         #region Value-based Equality Archive
         // 2.23.18 ATechStat instances are always the same as they are acquired via factory caching

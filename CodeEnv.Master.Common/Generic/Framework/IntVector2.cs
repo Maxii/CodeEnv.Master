@@ -25,7 +25,7 @@ namespace CodeEnv.Master.Common {
     [Serializable]
     public struct IntVector2 : IEquatable<IntVector2>, IComparable<IntVector2> {
 
-        #region Comparison Operators Override
+        #region Equality Operators Override
 
         // see C# 4.0 In a Nutshell, page 254
 

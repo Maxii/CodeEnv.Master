@@ -95,9 +95,9 @@ namespace CodeEnv.Master.GameContent {
                         isSuccess = true;
                         colorizedText = _lineTemplate.Inject(report.FullSpeed.HasValue ? GetFormat(infoID).Inject(report.FullSpeed.Value) : Unknown);
                         break;
-                    case ItemInfoID.MaxTurnRate:
+                    case ItemInfoID.TurnRate:
                         isSuccess = true;
-                        colorizedText = _lineTemplate.Inject(report.MaxTurnRate.HasValue ? GetFormat(infoID).Inject(report.MaxTurnRate.Value) : Unknown);
+                        colorizedText = _lineTemplate.Inject(report.TurnRate.HasValue ? GetFormat(infoID).Inject(report.TurnRate.Value) : Unknown);
                         break;
                     case ItemInfoID.CombatStance:
                         isSuccess = true;

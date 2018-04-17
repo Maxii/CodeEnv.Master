@@ -23,7 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class ShieldGeneratorStat : ARangedEquipmentStat {
 
-        public override EquipmentCategory Category { get { return EquipmentCategory.ShieldGenerator; } }
+        ////public override EquipmentCategory Category { get { return EquipmentCategory.ShieldGenerator; } }
 
         /// <summary>
         ///The maximum absorption capacity of this generator.
@@ -53,7 +53,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="imageAtlasID">The image atlas identifier.</param>
         /// <param name="imageFilename">The image filename.</param>
         /// <param name="description">The description.</param>
-        /// <param name="level">The improvement level of this stat.</param>
+        /// <param name="id">The identifier.</param>
         /// <param name="size">The size.</param>
         /// <param name="mass">The mass.</param>
         /// <param name="pwrRqmt">The PWR RQMT.</param>
@@ -64,17 +64,18 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="maximumCharge">The maximum charge.</param>
         /// <param name="trickleChargeRate">The trickle charge rate.</param>
         /// <param name="reloadPeriod">The reload period.</param>
-        /// <param name="damageMitigation">The damage mitigation.</param>
-        public ShieldGeneratorStat(string name, AtlasID imageAtlasID, string imageFilename, string description, Level level, float size,
-            float mass, float pwrRqmt, float hitPts, float constructionCost, float expense, RangeCategory rangeCat, float maximumCharge, float trickleChargeRate,
-            float reloadPeriod, DamageStrength damageMitigation)
-            : base(name, imageAtlasID, imageFilename, description, level, size, mass, pwrRqmt, hitPts, constructionCost, expense, rangeCat,
-                  isDamageable: true) {
+        /// <param name="dmgMitigation">The damage mitigation.</param>
+        public ShieldGeneratorStat(string name, AtlasID imageAtlasID, string imageFilename, string description,
+            EquipStatID id, float size, float mass, float pwrRqmt, float hitPts, float constructionCost, float expense,
+            RangeCategory rangeCat, float maximumCharge, float trickleChargeRate, float reloadPeriod, DamageStrength dmgMitigation)
+            : base(name, imageAtlasID, imageFilename, description, id, size, mass, pwrRqmt, hitPts, constructionCost,
+                  expense, rangeCat, isDamageable: true) {
             MaximumCharge = maximumCharge;
             TrickleChargeRate = trickleChargeRate;
             ReloadPeriod = reloadPeriod;
-            DamageMitigation = damageMitigation;
+            DamageMitigation = dmgMitigation;
         }
+
 
         #region Value-based Equality Archive
         // 2.23.18 ATechStat instances are always the same as they are acquired via factory caching

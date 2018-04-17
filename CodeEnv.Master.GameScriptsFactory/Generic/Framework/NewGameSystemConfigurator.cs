@@ -574,7 +574,7 @@ public class NewGameSystemConfigurator {
         string designName = GetUniqueDesignName(cat.GetValueName());
         PlanetStat stat = MakeRandomPlanetStat(cat, desirability);
         int passiveCmQty = GetPassiveCountermeasureQty(desirability, max: 3);
-        var passiveCM = EquipmentStatFactory.Instance.MakeDefaultPassiveCmInstance();
+        var passiveCM = EquipmentStatFactory.Instance.GetCelestialPassiveCmInstance();
         var passiveCMs = Enumerable.Repeat<PassiveCountermeasureStat>(passiveCM, passiveCmQty);
         PlanetDesign design = new PlanetDesign(designName, stat, passiveCMs);
         _gameMgr.CelestialDesigns.Add(design);
@@ -585,7 +585,7 @@ public class NewGameSystemConfigurator {
         string designName = GetUniqueDesignName(cat.GetValueName());
         PlanetoidStat stat = MakeRandomMoonStat(cat, desirability);
         int passiveCmQty = GetPassiveCountermeasureQty(desirability, max: 1);
-        var passiveCM = EquipmentStatFactory.Instance.MakeDefaultPassiveCmInstance();
+        var passiveCM = EquipmentStatFactory.Instance.GetCelestialPassiveCmInstance();
         var passiveCMs = Enumerable.Repeat<PassiveCountermeasureStat>(passiveCM, passiveCmQty);
         MoonDesign design = new MoonDesign(designName, stat, passiveCMs);
         _gameMgr.CelestialDesigns.Add(design);

@@ -64,12 +64,11 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// The Game's minimum allowed turn rate of a ship in degrees per hour.
-        /// <remarks>Used to calculate the lowest turn rate in degrees per frame 
-        /// that a ship can have. Prevents a ship from correcting its heading too often
-        /// when following a course which can cause the ChangeHeadingJob to constantly 
-        /// kill and recreate itself, thereby never turning.</remarks>
+        /// <remarks>Used to calculate the lowest turn rate in degrees per frame that a ship can have. 
+        /// Prevents a ship from correcting its heading too often when following a course which can cause 
+        /// the ChangeHeadingJob to constantly kill and recreate itself, thereby never turning.</remarks>
         /// </summary>
-        public const float MinimumTurnRate = 90F;
+        public const float MinimumTurnRate = 45F;
 
         public const float WaypointCloseEnoughDistance = 2F;
 
@@ -119,7 +118,8 @@ namespace CodeEnv.Master.GameContent {
                                                                                     EquipmentCategory.MissileWeapon,
                                                                                     EquipmentCategory.BeamWeapon,
                                                                                     EquipmentCategory.ProjectileWeapon,
-                                                                                    EquipmentCategory.ActiveCountermeasure,
+                                                                                    EquipmentCategory.SRActiveCountermeasure,
+                                                                                    EquipmentCategory.MRActiveCountermeasure,
                                                                                     EquipmentCategory.PassiveCountermeasure,
                                                                                     EquipmentCategory.SRSensor,
                                                                                     EquipmentCategory.ShieldGenerator

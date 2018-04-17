@@ -62,7 +62,7 @@ namespace CodeEnv.Master.GameContent {
                 {ItemInfoID.TargetDistance, "TgtDistance: {0}"},
                 {ItemInfoID.CurrentSpeedSetting, "Speed: {0}({1})"}, // TwoThirds(intendedValue), TwoThirds(?), ?(intendedValue), ?(?)
                 {ItemInfoID.FullSpeed, "FullSpeed: {0}"},
-                {ItemInfoID.MaxTurnRate, "MaxTurnRate: {0}"},
+                {ItemInfoID.TurnRate, "TurnRate: {0}"},
                 {ItemInfoID.CombatStance, "CombatStance: {0}"},
 
                 {ItemInfoID.Population, "Population: {0}"},
@@ -107,7 +107,7 @@ namespace CodeEnv.Master.GameContent {
                 {ItemInfoID.TargetDistance, Constants.FormatFloat_0Dp},
                 {ItemInfoID.CurrentSpeedSetting, Constants.FormatFloat_1Dp},
                 {ItemInfoID.FullSpeed, Constants.FormatFloat_1Dp},
-                {ItemInfoID.MaxTurnRate, Constants.FormatFloat_0Dp},
+                {ItemInfoID.TurnRate, Constants.FormatFloat_0Dp},
 
                 {ItemInfoID.Population, Constants.FormatInt_1DMin},
                 {ItemInfoID.Capacity, Constants.FormatInt_1DMin},

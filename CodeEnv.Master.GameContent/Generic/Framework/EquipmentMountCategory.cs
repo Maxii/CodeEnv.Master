@@ -29,13 +29,13 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// A rotating external mount for weapons that need to point at a target to engage it.
         /// </summary>
-        [EnumAttribute("Tret")]
+        [EnumAttribute("TurretMt")]
         Turret,
 
         /// <summary>
         /// A fixed external mount for weapons capable of guiding themselves to a target to engage it.
         /// </summary>
-        [EnumAttribute("Silo")]
+        [EnumAttribute("SiloMt")]
         Silo,
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace CodeEnv.Master.GameContent {
         /// <remarks>Capable of mounting Sensor equipment that detect objects within the sphere defined by its range.</remarks>
         /// <remarks>Currently implemented on Elements and CmdModules.</remarks>
         /// </summary>
-        [EnumAttribute("Sens")]
+        [EnumAttribute("SensMt")]
         Sensor,
 
         /// <summary>
@@ -52,7 +52,7 @@ namespace CodeEnv.Master.GameContent {
         /// <remarks>Currently implemented as an internal mount that 'covers' all exterior surfaces of an Element
         /// and CmdModule.</remarks>
         /// </summary>
-        [EnumAttribute("Skin")]
+        [EnumAttribute("SkinMt")]
         Skin,
 
         /// <summary>
@@ -61,7 +61,7 @@ namespace CodeEnv.Master.GameContent {
         /// within the sphere defined by its range.</remarks>
         /// <remarks>Currently implemented on Elements.</remarks>
         /// </summary>
-        [EnumAttribute("Scn")]
+        [EnumAttribute("ScrnMt")]
         Screen,
 
         /// <summary>
@@ -70,7 +70,7 @@ namespace CodeEnv.Master.GameContent {
         /// within the sphere defined by its range.</remarks>
         /// <remarks>Currently implemented on Elements.</remarks>
         /// </summary>
-        [EnumAttribute("Flex")]
+        [EnumAttribute("FlexMt")]
         Flex
 
     }

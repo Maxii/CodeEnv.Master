@@ -18,6 +18,8 @@ namespace CodeEnv.Master.GameContent {
 
     using System.Linq;
     using CodeEnv.Master.Common;
+    using Common.LocalResources;
+    using System;
 
     /// <summary>
     /// Immutable Stat for an active countermeasure.
@@ -25,6 +27,17 @@ namespace CodeEnv.Master.GameContent {
     public class ActiveCountermeasureStat : ARangedEquipmentStat {
 
         private const string DebugNameFormat = "{0}({1})";
+
+        private static RangeCategory GetRangeCat(EquipmentCategory sensorCat) {
+            switch (sensorCat) {
+                case EquipmentCategory.MRActiveCountermeasure:
+                    return RangeCategory.Medium;
+                case EquipmentCategory.SRActiveCountermeasure:
+                    return RangeCategory.Short;
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(sensorCat));
+            }
+        }
 
         public override string DebugName {
             get {
@@ -35,7 +48,8 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public override EquipmentCategory Category { get { return EquipmentCategory.ActiveCountermeasure; } }
+        ////private EquipmentCategory _equipCat;
+        ////public override EquipmentCategory Category { get { return _equipCat; } }
 
         public WDVStrength[] InterceptStrengths { get; private set; }
 
@@ -52,29 +66,35 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="imageAtlasID">The image atlas identifier.</param>
         /// <param name="imageFilename">The image filename.</param>
         /// <param name="description">The description.</param>
-        /// <param name="level">The improvement level of this stat.</param>
+        /// <param name="id">The identifier.</param>
         /// <param name="size">The size.</param>
         /// <param name="mass">The mass.</param>
         /// <param name="pwrRqmt">The PWR RQMT.</param>
         /// <param name="hitPts">The hit points contributed to the survivability of the item.</param>
         /// <param name="constructionCost">The production cost.</param>
         /// <param name="expense">The expense.</param>
-        /// <param name="rangeCat">The range cat.</param>
-        /// <param name="interceptStrengths">The intercept strengths.</param>
+        /// <param name="interceptStrengths">The strength of the intercept depending on the type of ordnance intercepted.</param>
         /// <param name="interceptAccuracy">The intercept accuracy.</param>
         /// <param name="reloadPeriod">The reload period.</param>
-        /// <param name="damageMitigation">The damage mitigation.</param>
-        public ActiveCountermeasureStat(string name, AtlasID imageAtlasID, string imageFilename, string description, Level level, float size,
-            float mass, float pwrRqmt, float hitPts, float constructionCost, float expense, RangeCategory rangeCat, WDVStrength[] interceptStrengths,
-            float interceptAccuracy, float reloadPeriod, DamageStrength damageMitigation)
-            : base(name, imageAtlasID, imageFilename, description, level, size, mass, pwrRqmt, hitPts, constructionCost, expense, rangeCat, isDamageable: true) {
-            // confirm if more than one interceptStrength, that they each contain a unique WDVCategory
-            D.AssertEqual(interceptStrengths.Length, interceptStrengths.Select(intS => intS.Category).Distinct().Count(), "Duplicate Categories found.");
+        /// <param name="damageMitigation">The contribution of this equipment to element damage mitigation.</param>
+        public ActiveCountermeasureStat(string name, AtlasID imageAtlasID, string imageFilename, string description,
+            EquipStatID id, float size, float mass, float pwrRqmt, float hitPts, float constructionCost, float expense,
+            WDVStrength[] interceptStrengths, float interceptAccuracy, float reloadPeriod, DamageStrength damageMitigation)
+            : base(name, imageAtlasID, imageFilename, description, id, size, mass, pwrRqmt, hitPts, constructionCost,
+                  expense, GetRangeCat(id.Category), isDamageable: true) {
+            __ValidateInterceptStrengths(interceptStrengths);
             InterceptStrengths = interceptStrengths;
             InterceptAccuracy = interceptAccuracy;
             ReloadPeriod = reloadPeriod;
             DamageMitigation = damageMitigation;
         }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        private void __ValidateInterceptStrengths(WDVStrength[] interceptStrengths) {
+            D.AssertEqual(interceptStrengths.Length, interceptStrengths.Select(intS => intS.Category).Distinct().Count(),
+                "Duplicate Categories found.");
+        }
+
 
         #region ActiveCM Firing Solutions Check Job Archive
 

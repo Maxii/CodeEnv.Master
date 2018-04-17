@@ -24,8 +24,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class EngineStat : AEquipmentStat {
 
-        private EquipmentCategory _equipCategory;
-        public override EquipmentCategory Category { get { return _equipCategory; } }
+        ////private EquipmentCategory _equipCategory;
+        ////public override EquipmentCategory Category { get { return _equipCategory; } }
 
         /// <summary>
         /// The maximum speed in Units per hour this engine can attain in Topography.OpenSpace.
@@ -41,25 +41,25 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="imageAtlasID">The image atlas identifier.</param>
         /// <param name="imageFilename">The image filename.</param>
         /// <param name="description">The description.</param>
-        /// <param name="level">The improvement level of this stat.</param>
-        /// <param name="maxTurnRate">The maximum turn rate the engine is capable of.</param>
+        /// <param name="id">The identifier.</param>
         /// <param name="size">The total physical space consumed by the engine.</param>
         /// <param name="mass">The total mass of the engine.</param>
         /// <param name="hitPts">The hit points contributed to the survivability of the item.</param>
         /// <param name="constructionCost">The production cost to construct this engine.</param>
         /// <param name="expense">The total expense consumed by the engine.</param>
-        /// <param name="equipCat">The equip cat.</param>
+        /// <param name="maxTurnRate">The maximum turn rate the engine is capable of.</param>
         /// <param name="maxSpeed">The engine's maximum attainable speed.</param>
-        public EngineStat(string name, AtlasID imageAtlasID, string imageFilename, string description, Level level, float maxTurnRate,
-            float size, float mass, float hitPts, float constructionCost, float expense, EquipmentCategory equipCat, float maxSpeed)
-            : base(name, imageAtlasID, imageFilename, description, level, size, mass, Constants.ZeroF, hitPts, constructionCost, expense, isDamageable: equipCat == EquipmentCategory.FtlPropulsion) {
-            MaxAttainableSpeed = maxSpeed;
-            if (maxTurnRate < TempGameValues.MinimumTurnRate) {
-                D.Warn("{0}'s MaxTurnRate {1:0.#} is too low. Game MinTurnRate = {2:0.#}.", DebugName, maxTurnRate, TempGameValues.MinimumTurnRate);
-            }
+        /// <param name="isDamageable">if set to <c>true</c> [is damageable].</param>
+        public EngineStat(string name, AtlasID imageAtlasID, string imageFilename, string description, EquipStatID id,
+            float size, float mass, float hitPts, float constructionCost, float expense, float maxTurnRate, float maxSpeed,
+            bool isDamageable)
+            : base(name, imageAtlasID, imageFilename, description, id, size, mass, Constants.ZeroF, hitPts, constructionCost,
+                  expense, isDamageable) {
             MaxTurnRate = maxTurnRate;
-            _equipCategory = equipCat;
+            MaxAttainableSpeed = maxSpeed;
+            // 4.15.18 Validation of Turn rate moved to ShipData constructor
         }
+
 
         #region Value-based Equality Archive
         // 2.23.18 ATechStat instances are always the same as they are acquired via factory caching

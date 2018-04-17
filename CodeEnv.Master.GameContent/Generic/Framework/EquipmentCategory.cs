@@ -28,9 +28,11 @@ namespace CodeEnv.Master.GameContent {
         [EnumAttribute("PCM")]
         PassiveCountermeasure,
 
-        [EnumAttribute("ACM")]
-        ////[System.Obsolete]
-        ActiveCountermeasure,   // Range will handle distinctions, if any
+        [EnumAttribute("ACM_SR")]
+        SRActiveCountermeasure,
+
+        [EnumAttribute("ACM_MR")]
+        MRActiveCountermeasure,
 
         [EnumAttribute("Hull")]
         Hull,   // ShipHull/FacilityHull would allow separate improvement techs - deferred until use case
@@ -53,13 +55,13 @@ namespace CodeEnv.Master.GameContent {
         [EnumAttribute("Assault")]
         AssaultWeapon,
 
-        [EnumAttribute("LRSens")]
+        [EnumAttribute("Sensor_LR")]
         LRSensor,
 
-        [EnumAttribute("MRSens")]
+        [EnumAttribute("Sensor_MR")]
         MRSensor,
 
-        [EnumAttribute("SRSens")]
+        [EnumAttribute("Sensor_SR")]
         SRSensor,
 
         [EnumAttribute("SGen")]

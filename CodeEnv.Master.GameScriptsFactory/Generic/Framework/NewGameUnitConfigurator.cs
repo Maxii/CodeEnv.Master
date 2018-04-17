@@ -60,7 +60,8 @@ public class NewGameUnitConfigurator {
 
     private GameManager _gameMgr;
     private DebugControls _debugCntls;
-    private EquipmentStatFactory _eStatFactory;
+    ////[Obsolete]
+    ////private EquipmentStatFactory _eStatFactory;
 
     public NewGameUnitConfigurator() {
         InitializeValuesAndReferences();
@@ -69,7 +70,7 @@ public class NewGameUnitConfigurator {
     private void InitializeValuesAndReferences() {
         _gameMgr = GameManager.Instance;
         _debugCntls = DebugControls.Instance;
-        _eStatFactory = EquipmentStatFactory.Instance;
+        ////_eStatFactory = EquipmentStatFactory.Instance;
     }
 
     /// <summary>
@@ -78,11 +79,12 @@ public class NewGameUnitConfigurator {
     /// </summary>
     public void CreateAndRegisterRequiredDesigns() {
         foreach (var player in _gameMgr.AllPlayers) {
+            var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
             FleetCmdDesign basicFleetCmdDesign = MakeFleetCmdDesign(player, passiveCmQty: 0, sensorQty: 1);
             basicFleetCmdDesign.Status = AUnitMemberDesign.SourceAndStatus.System_CreationTemplate;
             RegisterCmdDesign(player, basicFleetCmdDesign, optionalRootDesignName: TempGameValues.__FleetCmdDesignName_Basic);
 
-            var allShipHullStats = _eStatFactory.GetAllShipHullStats(player, Level.One);
+            var allShipHullStats = playerDesigns.GetAllCurrentShipHullStats();////_eStatFactory.GetAllShipHullStats(player, Level.One);
             var emptyShipDesigns = MakeShipDesigns(player, allShipHullStats, DebugLosWeaponLoadout.None,
                 DebugLaunchedWeaponLoadout.None, DebugPassiveCMLoadout.None, DebugActiveCMLoadout.None, DebugSensorLoadout.One,
                 DebugShieldGenLoadout.None, new ShipCombatStance[] { ShipCombatStance.BalancedBombard },
@@ -91,7 +93,7 @@ public class NewGameUnitConfigurator {
                 RegisterElementDesign(player, shipDesign, optionalRootDesignName: shipDesign.HullCategory.GetEmptyTemplateDesignName());
             }
 
-            var allFacilityHullStats = _eStatFactory.GetAllFacilityHullStats(player, Level.One);
+            var allFacilityHullStats = playerDesigns.GetAllCurrentFacilityHullStats();////_eStatFactory.GetAllFacilityHullStats(player, Level.One);
             var emptyFacilityDesigns = MakeFacilityDesigns(player, allFacilityHullStats, DebugLosWeaponLoadout.None,
                 DebugLaunchedWeaponLoadout.None, DebugPassiveCMLoadout.None, DebugActiveCMLoadout.None, DebugSensorLoadout.One,
                 DebugShieldGenLoadout.None, AUnitMemberDesign.SourceAndStatus.System_CreationTemplate);
@@ -125,7 +127,7 @@ public class NewGameUnitConfigurator {
 
         __ValidateOwner(owner, editorSettings);
 
-        int cmdPassiveCMQty = GetPassiveCMQty(editorSettings.CMsPerCommand, TempGameValues.__MaxCmdPassiveCMs);
+        int cmdPassiveCMQty = GetPassiveCmQty(editorSettings.CMsPerCommand, TempGameValues.__MaxCmdPassiveCMs);
         int cmdSensorQty = GetSensorQty(editorSettings.SensorsPerCommand, TempGameValues.__MaxCmdSensors);
         StarbaseCmdDesign cmdDesign = MakeStarbaseCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty);
         string cmdDesignName = RegisterCmdDesign(owner, cmdDesign);
@@ -172,7 +174,7 @@ public class NewGameUnitConfigurator {
 
         __ValidateOwner(owner, editorSettings);
 
-        int cmdPassiveCMQty = GetPassiveCMQty(editorSettings.CMsPerCommand, TempGameValues.__MaxCmdPassiveCMs);
+        int cmdPassiveCMQty = GetPassiveCmQty(editorSettings.CMsPerCommand, TempGameValues.__MaxCmdPassiveCMs);
         int cmdSensorQty = GetSensorQty(editorSettings.SensorsPerCommand, TempGameValues.__MaxCmdSensors);
 
         SettlementCmdDesign cmdDesign = MakeSettlementCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty);
@@ -221,7 +223,7 @@ public class NewGameUnitConfigurator {
 
         __ValidateOwner(owner, editorSettings);
 
-        int cmdPassiveCMQty = GetPassiveCMQty(editorSettings.CMsPerCommand, TempGameValues.__MaxCmdPassiveCMs);
+        int cmdPassiveCMQty = GetPassiveCmQty(editorSettings.CMsPerCommand, TempGameValues.__MaxCmdPassiveCMs);
         int cmdSensorQty = GetSensorQty(editorSettings.SensorsPerCommand, TempGameValues.__MaxCmdSensors);
         FleetCmdDesign cmdDesign = MakeFleetCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty);
         string cmdDesignName = RegisterCmdDesign(owner, cmdDesign);
@@ -269,7 +271,7 @@ public class NewGameUnitConfigurator {
     /// <returns></returns>
     public AutoFleetCreator GeneratePresetAutoFleetCreator(Player owner, Vector3 location, GameDate deployDate) {
         D.AssertEqual(DebugControls.EquipmentLoadout.Preset, _debugCntls.EquipmentPlan);
-        int cmdPassiveCMQty = GetPassiveCMQty(_debugCntls.CMsPerCmd, TempGameValues.__MaxCmdPassiveCMs);
+        int cmdPassiveCMQty = GetPassiveCmQty(_debugCntls.CMsPerCmd, TempGameValues.__MaxCmdPassiveCMs);
         int cmdSensorQty = GetSensorQty(_debugCntls.SensorsPerCmd, TempGameValues.__MaxCmdSensors);
         FleetCmdDesign cmdDesign = MakeFleetCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty);
         string cmdDesignName = RegisterCmdDesign(owner, cmdDesign);
@@ -320,7 +322,7 @@ public class NewGameUnitConfigurator {
     /// <returns></returns>
     public AutoStarbaseCreator GeneratePresetAutoStarbaseCreator(Player owner, Vector3 location, GameDate deployDate) {
         D.AssertEqual(DebugControls.EquipmentLoadout.Preset, _debugCntls.EquipmentPlan);
-        int cmdPassiveCMQty = GetPassiveCMQty(_debugCntls.CMsPerCmd, TempGameValues.__MaxCmdPassiveCMs);
+        int cmdPassiveCMQty = GetPassiveCmQty(_debugCntls.CMsPerCmd, TempGameValues.__MaxCmdPassiveCMs);
         int cmdSensorQty = GetSensorQty(_debugCntls.SensorsPerCmd, TempGameValues.__MaxCmdSensors);
         StarbaseCmdDesign cmdDesign = MakeStarbaseCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty);
         string cmdDesignName = RegisterCmdDesign(owner, cmdDesign);
@@ -370,7 +372,7 @@ public class NewGameUnitConfigurator {
     /// <returns></returns>
     public AutoSettlementCreator GeneratePresetAutoSettlementCreator(Player owner, SystemItem system, GameDate deployDate) {
         D.AssertEqual(DebugControls.EquipmentLoadout.Preset, _debugCntls.EquipmentPlan);
-        int cmdPassiveCMQty = GetPassiveCMQty(_debugCntls.CMsPerCmd, TempGameValues.__MaxCmdPassiveCMs);
+        int cmdPassiveCMQty = GetPassiveCmQty(_debugCntls.CMsPerCmd, TempGameValues.__MaxCmdPassiveCMs);
         int cmdSensorQty = GetSensorQty(_debugCntls.SensorsPerCmd, TempGameValues.__MaxCmdSensors);
         SettlementCmdDesign cmdDesign = MakeSettlementCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty);
         string cmdDesignName = RegisterCmdDesign(owner, cmdDesign);
@@ -422,7 +424,7 @@ public class NewGameUnitConfigurator {
     /// <param name="deployDate">The deploy date.</param>
     /// <returns></returns>
     public AutoFleetCreator GenerateRandomAutoFleetCreator(Player owner, Vector3 location, GameDate deployDate) {
-        int cmdPassiveCMQty = GetPassiveCMQty(DebugPassiveCMLoadout.Random, TempGameValues.__MaxCmdPassiveCMs);
+        int cmdPassiveCMQty = GetPassiveCmQty(DebugPassiveCMLoadout.Random, TempGameValues.__MaxCmdPassiveCMs);
         int cmdSensorQty = GetSensorQty(DebugSensorLoadout.Random, TempGameValues.__MaxCmdSensors);
         FleetCmdDesign cmdDesign = MakeFleetCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty);
         string cmdDesignName = RegisterCmdDesign(owner, cmdDesign);
@@ -472,7 +474,7 @@ public class NewGameUnitConfigurator {
     /// <param name="deployDate">The deploy date.</param>
     /// <returns></returns>
     public AutoStarbaseCreator GenerateRandomAutoStarbaseCreator(Player owner, Vector3 location, GameDate deployDate) {
-        int cmdPassiveCMQty = GetPassiveCMQty(DebugPassiveCMLoadout.Random, TempGameValues.__MaxCmdPassiveCMs);
+        int cmdPassiveCMQty = GetPassiveCmQty(DebugPassiveCMLoadout.Random, TempGameValues.__MaxCmdPassiveCMs);
         int cmdSensorQty = GetSensorQty(DebugSensorLoadout.Random, TempGameValues.__MaxCmdSensors);
         StarbaseCmdDesign cmdDesign = MakeStarbaseCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty);
         string cmdDesignName = RegisterCmdDesign(owner, cmdDesign);
@@ -521,7 +523,7 @@ public class NewGameUnitConfigurator {
     /// <param name="deployDate">The deploy date.</param>
     /// <returns></returns>
     public AutoSettlementCreator GenerateRandomAutoSettlementCreator(Player owner, SystemItem system, GameDate deployDate) {
-        int cmdPassiveCMQty = GetPassiveCMQty(DebugPassiveCMLoadout.Random, TempGameValues.__MaxCmdPassiveCMs);
+        int cmdPassiveCMQty = GetPassiveCmQty(DebugPassiveCMLoadout.Random, TempGameValues.__MaxCmdPassiveCMs);
         int cmdSensorQty = GetSensorQty(DebugSensorLoadout.Random, TempGameValues.__MaxCmdSensors);
         SettlementCmdDesign cmdDesign = MakeSettlementCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty);
         string cmdDesignName = RegisterCmdDesign(owner, cmdDesign);
@@ -576,28 +578,40 @@ public class NewGameUnitConfigurator {
         DebugSensorLoadout srSensorLoadout, DebugShieldGenLoadout shieldGenLoadout, IEnumerable<ShipCombatStance> stances,
         AUnitMemberDesign.SourceAndStatus status = AUnitMemberDesign.SourceAndStatus.Player_Current) {
 
+        var ownerDesigns = _gameMgr.GetAIManagerFor(owner).Designs;
         IList<ShipDesign> designs = new List<ShipDesign>();
         foreach (var hullStat in hullStats) {
             ShipHullCategory hullCat = hullStat.HullCategory;
 
             var weaponStats = GetWeaponStats(owner, hullCat, launchedLoadout, turretLoadout);
-            int passiveCMQty = GetPassiveCMQty(passiveCMLoadout, hullCat.__MaxPassiveCMs());
-            var initialPassiveCmStat = _eStatFactory.MakeNonHullInstance(owner, EquipmentCategory.PassiveCountermeasure, Level.One) as PassiveCountermeasureStat;
-            var passiveCmStats = Enumerable.Repeat<PassiveCountermeasureStat>(initialPassiveCmStat, passiveCMQty);
-            int activeCMQty = GetActiveCMQty(activeCMLoadout, hullCat.__MaxActiveCMs());
-            var activeCmStat = _eStatFactory.MakeNonHullInstance(owner, EquipmentCategory.ActiveCountermeasure, Level.One) as ActiveCountermeasureStat;
-            var activeCmStats = Enumerable.Repeat<ActiveCountermeasureStat>(activeCmStat, activeCMQty);
+            ////int passiveCMQty = GetPassiveCMQty(passiveCMLoadout, hullCat.__MaxPassiveCMs());
+            ////var initialPassiveCmStat = _eStatFactory.MakeNonHullInstance(owner, EquipmentCategory.PassiveCountermeasure, Level.One) as PassiveCountermeasureStat;
+            ////var passiveCmStats = Enumerable.Repeat<PassiveCountermeasureStat>(initialPassiveCmStat, passiveCMQty);
+            var passiveCmStats = GetPassiveCmStats(owner, passiveCMLoadout, hullCat.__MaxPassiveCMs());
+            ////int activeCMQty = GetActiveCMQty(activeCMLoadout, hullCat.__MaxActiveCMs());
+            ////List<ActiveCountermeasureStat> activeCmStats = new List<ActiveCountermeasureStat>(activeCMQty);
+            ////if (activeCMQty > 0) {
+            ////    var srActiveCmStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.SRActiveCountermeasure, Level.One) as ActiveCountermeasureStat;
+            ////    activeCmStats.Add(srActiveCmStat);
+            ////    if (activeCMQty > 1) {
+            ////        var mrActiveCmStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.MRActiveCountermeasure, Level.One) as ActiveCountermeasureStat;
+            ////        activeCmStats.AddRange(Enumerable.Repeat<ActiveCountermeasureStat>(mrActiveCmStat, activeCMQty - 1));
+            ////    }
+            ////}
+            var activeCmStats = GetActiveCmStats(owner, activeCMLoadout, hullCat.__MaxActiveCMs());
 
             List<SensorStat> optionalSensorStats = new List<SensorStat>();
             int srSensorQty = GetSensorQty(srSensorLoadout, hullCat.__MaxSensors());
             if (srSensorQty > 1) {
-                var srSensorStat = _eStatFactory.MakeNonHullInstance(owner, EquipmentCategory.SRSensor, Level.One) as SensorStat;
+                ////var srSensorStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.SRSensor, Level.One) as SensorStat;
+                var srSensorStat = ownerDesigns.GetCurrentSRSensorStat();
                 optionalSensorStats.AddRange(Enumerable.Repeat<SensorStat>(srSensorStat, srSensorQty - 1));
             }
 
-            int shieldGenQty = GetShieldGeneratorQty(shieldGenLoadout, hullCat.__MaxShieldGenerators());
-            var shieldGenStat = _eStatFactory.MakeNonHullInstance(owner, EquipmentCategory.ShieldGenerator, Level.One) as ShieldGeneratorStat;
-            var shieldGenStats = Enumerable.Repeat<ShieldGeneratorStat>(shieldGenStat, shieldGenQty);
+            ////int shieldGenQty = GetShieldGeneratorQty(shieldGenLoadout, hullCat.__MaxShieldGenerators());
+            ////var shieldGenStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.ShieldGenerator, Level.One) as ShieldGeneratorStat;
+            ////var shieldGenStats = Enumerable.Repeat<ShieldGeneratorStat>(shieldGenStat, shieldGenQty);
+            var shieldGenStats = GetShieldGenStats(owner, shieldGenLoadout, hullCat.__MaxShieldGenerators());
             Priority hqPriority = hullCat.__HQPriority();    // TEMP, IMPROVE
             ShipCombatStance stance = RandomExtended.Choice(stances);
 
@@ -613,28 +627,40 @@ public class NewGameUnitConfigurator {
         DebugSensorLoadout srSensorLoadout, DebugShieldGenLoadout shieldGenLoadout,
         AUnitMemberDesign.SourceAndStatus status = AUnitMemberDesign.SourceAndStatus.Player_Current) {
 
+        var ownerDesigns = _gameMgr.GetAIManagerFor(owner).Designs;
         IList<FacilityDesign> designs = new List<FacilityDesign>();
         foreach (var hullStat in hullStats) {
             FacilityHullCategory hullCat = hullStat.HullCategory;
 
             var weaponStats = GetWeaponStats(owner, hullCat, launchedLoadout, turretLoadout);
-            int passiveCMQty = GetPassiveCMQty(passiveCMLoadout, hullCat.__MaxPassiveCMs());
-            var initialPassiveCmStat = _eStatFactory.MakeNonHullInstance(owner, EquipmentCategory.PassiveCountermeasure, Level.One) as PassiveCountermeasureStat;
-            var passiveCmStats = Enumerable.Repeat<PassiveCountermeasureStat>(initialPassiveCmStat, passiveCMQty);
-            int activeCMQty = GetActiveCMQty(activeCMLoadout, hullCat.__MaxActiveCMs());
-            var activeCmStat = _eStatFactory.MakeNonHullInstance(owner, EquipmentCategory.ActiveCountermeasure, Level.One) as ActiveCountermeasureStat;
-            var activeCmStats = Enumerable.Repeat<ActiveCountermeasureStat>(activeCmStat, activeCMQty);
+            ////int passiveCMQty = GetPassiveCMQty(passiveCMLoadout, hullCat.__MaxPassiveCMs());
+            ////var initialPassiveCmStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.PassiveCountermeasure, Level.One) as PassiveCountermeasureStat;
+            ////var passiveCmStats = Enumerable.Repeat<PassiveCountermeasureStat>(initialPassiveCmStat, passiveCMQty);
+            var passiveCmStats = GetPassiveCmStats(owner, passiveCMLoadout, hullCat.__MaxPassiveCMs());
+            ////int activeCMQty = GetActiveCMQty(activeCMLoadout, hullCat.__MaxActiveCMs());
+            ////List<ActiveCountermeasureStat> activeCmStats = new List<ActiveCountermeasureStat>(activeCMQty);
+            ////if (activeCMQty > 0) {
+            ////    var srActiveCmStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.SRActiveCountermeasure, Level.One) as ActiveCountermeasureStat;
+            ////    activeCmStats.Add(srActiveCmStat);
+            ////    if (activeCMQty > 1) {
+            ////        var mrActiveCmStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.MRActiveCountermeasure, Level.One) as ActiveCountermeasureStat;
+            ////        activeCmStats.AddRange(Enumerable.Repeat<ActiveCountermeasureStat>(mrActiveCmStat, activeCMQty - 1));
+            ////    }
+            ////}
+            var activeCmStats = GetActiveCmStats(owner, activeCMLoadout, hullCat.__MaxActiveCMs());
 
             List<SensorStat> optionalSensorStats = new List<SensorStat>();
             int srSensorQty = GetSensorQty(srSensorLoadout, hullCat.__MaxSensors());
             if (srSensorQty > 1) {
-                var srSensorStat = _eStatFactory.MakeNonHullInstance(owner, EquipmentCategory.SRSensor, Level.One) as SensorStat;
+                ////var srSensorStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.SRSensor, Level.One) as SensorStat;
+                var srSensorStat = ownerDesigns.GetCurrentSRSensorStat();
                 optionalSensorStats.AddRange(Enumerable.Repeat<SensorStat>(srSensorStat, srSensorQty - 1));
             }
 
-            int shieldGenQty = GetShieldGeneratorQty(shieldGenLoadout, hullCat.__MaxShieldGenerators());
-            var initialShieldGenStat = _eStatFactory.MakeNonHullInstance(owner, EquipmentCategory.ShieldGenerator, Level.One) as ShieldGeneratorStat;
-            var shieldGenStats = Enumerable.Repeat<ShieldGeneratorStat>(initialShieldGenStat, shieldGenQty);
+            ////int shieldGenQty = GetShieldGeneratorQty(shieldGenLoadout, hullCat.__MaxShieldGenerators());
+            ////var initialShieldGenStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.ShieldGenerator, Level.One) as ShieldGeneratorStat;
+            ////var shieldGenStats = Enumerable.Repeat<ShieldGeneratorStat>(initialShieldGenStat, shieldGenQty);
+            var shieldGenStats = GetShieldGenStats(owner, shieldGenLoadout, hullCat.__MaxShieldGenerators());
             Priority hqPriority = hullCat.__HQPriority();    // TEMP, IMPROVE
 
             var design = MakeElementDesign(owner, hullStat, weaponStats, passiveCmStats, activeCmStats, optionalSensorStats,
@@ -648,12 +674,17 @@ public class NewGameUnitConfigurator {
         IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<ActiveCountermeasureStat> activeCmStats,
         IEnumerable<SensorStat> optionalSensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats, Priority hqPriority, ShipCombatStance stance,
         AUnitMemberDesign.SourceAndStatus status) {
-        ShipHullCategory hullCat = hullStat.HullCategory;
-        Level engineLevel = DebugControls.Instance.AreShipsFast ? Level.Five : Level.One;
-        var stlEngineStat = _eStatFactory.MakeNonHullInstance(owner, EquipmentCategory.StlPropulsion, engineLevel) as EngineStat;
-        var ftlEngineStat = _eStatFactory.MakeNonHullInstance(owner, EquipmentCategory.FtlPropulsion, engineLevel) as EngineStat;
 
-        var elementsReqdSRSensorStat = _eStatFactory.MakeNonHullInstance(owner, EquipmentCategory.SRSensor, Level.One) as SensorStat;
+        var ownerDesigns = _gameMgr.GetAIManagerFor(owner).Designs;
+        ShipHullCategory hullCat = hullStat.HullCategory;
+        ////Level engineLevel = DebugControls.Instance.AreShipsFast ? Level.Five : Level.One;
+        ////var stlEngineStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.StlPropulsion, engineLevel) as EngineStat;
+        ////var ftlEngineStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.FtlPropulsion, engineLevel) as EngineStat;
+        var stlEngineStat = GetEngineStat(owner, EquipmentCategory.StlPropulsion);
+        var ftlEngineStat = GetEngineStat(owner, EquipmentCategory.FtlPropulsion);  // can be null
+
+        ////var elementsReqdSRSensorStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.SRSensor, Level.One) as SensorStat;
+        var elementsReqdSRSensorStat = ownerDesigns.GetCurrentSRSensorStat();
         var design = new ShipDesign(owner, hqPriority, elementsReqdSRSensorStat, hullStat, stlEngineStat, ftlEngineStat, stance) {
             Status = status
         };
@@ -673,8 +704,12 @@ public class NewGameUnitConfigurator {
         IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<ActiveCountermeasureStat> activeCmStats,
         IEnumerable<SensorStat> optionalSensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats, Priority hqPriority,
         AUnitMemberDesign.SourceAndStatus status) {
+
+
+        var ownerDesigns = _gameMgr.GetAIManagerFor(owner).Designs;
         FacilityHullCategory hullCat = hullStat.HullCategory;
-        var elementsReqdSRSensorStat = _eStatFactory.MakeNonHullInstance(owner, EquipmentCategory.SRSensor, Level.One) as SensorStat;
+        ////var elementsReqdSRSensorStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.SRSensor, Level.One) as SensorStat;
+        var elementsReqdSRSensorStat = ownerDesigns.GetCurrentSRSensorStat();
         var design = new FacilityDesign(owner, hqPriority, elementsReqdSRSensorStat, hullStat) {
             Status = status
         };
@@ -784,26 +819,35 @@ public class NewGameUnitConfigurator {
         Utility.ValidateForRange(passiveCmQty, 0, TempGameValues.__MaxCmdPassiveCMs);
         Utility.ValidateForRange(sensorQty, 1, TempGameValues.__MaxCmdSensors);
 
-        var initialPassiveCmStat = _eStatFactory.MakeNonHullInstance(owner, EquipmentCategory.PassiveCountermeasure, Level.One) as PassiveCountermeasureStat;
-        var passiveCmStats = Enumerable.Repeat<PassiveCountermeasureStat>(initialPassiveCmStat, passiveCmQty);
+        var ownerDesigns = _gameMgr.GetAIManagerFor(owner).Designs;
 
-        SensorStat reqdMrCmdSensorStat = _eStatFactory.MakeNonHullInstance(owner, EquipmentCategory.MRSensor, Level.One) as SensorStat;
-        List<SensorStat> optionalSensorStats = new List<SensorStat>();
-        if (sensorQty > 1) {
-            var optionalLrCmdSensorStat = _eStatFactory.MakeNonHullInstance(owner, EquipmentCategory.LRSensor, Level.One) as SensorStat;
-            optionalSensorStats.Add(optionalLrCmdSensorStat);
-            if (sensorQty > 2) {
-                var availableCmdSensorStats = new List<SensorStat>() { reqdMrCmdSensorStat, optionalLrCmdSensorStat };
-                for (int i = 2; i < sensorQty; i++) {
-                    var randomOptionalCmdSensorStat = RandomExtended.Choice(availableCmdSensorStats) as SensorStat;
-                    optionalSensorStats.Add(randomOptionalCmdSensorStat);
-                }
-            }
-        }
 
-        FtlDampenerStat cmdsReqdFtlDampener = _eStatFactory.MakeNonHullInstance(owner, EquipmentCategory.FtlDampener, Level.One) as FtlDampenerStat;
-        SettlementCmdModuleStat cmdStat = _eStatFactory.MakeNonHullInstance(owner, EquipmentCategory.SettlementCmdModule, Level.One) as SettlementCmdModuleStat;
-        SettlementCmdDesign design = new SettlementCmdDesign(owner, cmdsReqdFtlDampener, cmdStat, reqdMrCmdSensorStat) {
+        ////var initialPassiveCmStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.PassiveCountermeasure, Level.One) as PassiveCountermeasureStat;
+        ////var passiveCmStats = Enumerable.Repeat<PassiveCountermeasureStat>(initialPassiveCmStat, passiveCmQty);
+        var passiveCmStats = GetPassiveCmStats(owner, passiveCmQty);
+
+        SensorStat reqdMrCmdSensorStat = ownerDesigns.GetCurrentMRCmdSensorStat();
+        ////SensorStat reqdMrCmdSensorStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.MRSensor, Level.One) as SensorStat;
+        ////List<SensorStat> optionalSensorStats = new List<SensorStat>();
+        ////if (sensorQty > 1) {
+        ////    var optionalLrCmdSensorStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.LRSensor, Level.One) as SensorStat;
+        ////    optionalSensorStats.Add(optionalLrCmdSensorStat);
+        ////    if (sensorQty > 2) {
+        ////        var availableCmdSensorStats = new List<SensorStat>() { reqdMrCmdSensorStat, optionalLrCmdSensorStat };
+        ////        for (int i = 2; i < sensorQty; i++) {
+        ////            var randomOptionalCmdSensorStat = RandomExtended.Choice(availableCmdSensorStats) as SensorStat;
+        ////            optionalSensorStats.Add(randomOptionalCmdSensorStat);
+        ////        }
+        ////    }
+        ////}
+        var optionalSensorStats = GetCmdSensorStats(owner, sensorQty - 1);
+
+        ////FtlDampenerStat cmdsReqdFtlDampener = _eStatFactory.MakeInstance(owner, EquipmentCategory.FtlDampener, Level.One) as FtlDampenerStat;
+        ////SettlementCmdModuleStat cmdStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.SettlementCmdModule, Level.One) as SettlementCmdModuleStat;
+        FtlDampenerStat cmdsReqdFtlDampenerStat = ownerDesigns.GetCurrentFtlDampenerStat();
+        SettlementCmdModuleStat cmdStat = ownerDesigns.GetCurrentSettlementCmdModuleStat();
+
+        SettlementCmdDesign design = new SettlementCmdDesign(owner, cmdsReqdFtlDampenerStat, cmdStat, reqdMrCmdSensorStat) {
             Status = status
         };
         AEquipmentStat[] allEquipStats = passiveCmStats.Cast<AEquipmentStat>().Union(optionalSensorStats.Cast<AEquipmentStat>()).ToArray();
@@ -822,26 +866,34 @@ public class NewGameUnitConfigurator {
         Utility.ValidateForRange(passiveCmQty, 0, TempGameValues.__MaxCmdPassiveCMs);
         Utility.ValidateForRange(sensorQty, 1, TempGameValues.__MaxCmdSensors);
 
-        var initialPassiveCmStat = _eStatFactory.MakeNonHullInstance(owner, EquipmentCategory.PassiveCountermeasure, Level.One) as PassiveCountermeasureStat;
-        var passiveCmStats = Enumerable.Repeat<PassiveCountermeasureStat>(initialPassiveCmStat, passiveCmQty);
+        var ownerDesigns = _gameMgr.GetAIManagerFor(owner).Designs;
 
-        SensorStat reqdMrCmdSensorStat = _eStatFactory.MakeNonHullInstance(owner, EquipmentCategory.MRSensor, Level.One) as SensorStat;
-        List<SensorStat> optionalSensorStats = new List<SensorStat>();
-        if (sensorQty > 1) {
-            var optionalLrCmdSensorStat = _eStatFactory.MakeNonHullInstance(owner, EquipmentCategory.LRSensor, Level.One) as SensorStat;
-            optionalSensorStats.Add(optionalLrCmdSensorStat);
-            if (sensorQty > 2) {
-                var availableCmdSensorStats = new List<SensorStat>() { reqdMrCmdSensorStat, optionalLrCmdSensorStat };
-                for (int i = 2; i < sensorQty; i++) {
-                    var randomOptionalCmdSensorStat = RandomExtended.Choice(availableCmdSensorStats) as SensorStat;
-                    optionalSensorStats.Add(randomOptionalCmdSensorStat);
-                }
-            }
-        }
 
-        FtlDampenerStat cmdsReqdFtlDampener = _eStatFactory.MakeNonHullInstance(owner, EquipmentCategory.FtlDampener, Level.One) as FtlDampenerStat;
-        StarbaseCmdModuleStat cmdStat = _eStatFactory.MakeNonHullInstance(owner, EquipmentCategory.StarbaseCmdModule, Level.One) as StarbaseCmdModuleStat;
-        StarbaseCmdDesign design = new StarbaseCmdDesign(owner, cmdsReqdFtlDampener, cmdStat, reqdMrCmdSensorStat) {
+        ////var initialPassiveCmStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.PassiveCountermeasure, Level.One) as PassiveCountermeasureStat;
+        ////var passiveCmStats = Enumerable.Repeat<PassiveCountermeasureStat>(initialPassiveCmStat, passiveCmQty);
+        var passiveCmStats = GetPassiveCmStats(owner, passiveCmQty);
+
+        SensorStat reqdMrCmdSensorStat = ownerDesigns.GetCurrentMRCmdSensorStat();
+        ////SensorStat reqdMrCmdSensorStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.MRSensor, Level.One) as SensorStat;
+        ////List<SensorStat> optionalSensorStats = new List<SensorStat>();
+        ////if (sensorQty > 1) {
+        ////    var optionalLrCmdSensorStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.LRSensor, Level.One) as SensorStat;
+        ////    optionalSensorStats.Add(optionalLrCmdSensorStat);
+        ////    if (sensorQty > 2) {
+        ////        var availableCmdSensorStats = new List<SensorStat>() { reqdMrCmdSensorStat, optionalLrCmdSensorStat };
+        ////        for (int i = 2; i < sensorQty; i++) {
+        ////            var randomOptionalCmdSensorStat = RandomExtended.Choice(availableCmdSensorStats) as SensorStat;
+        ////            optionalSensorStats.Add(randomOptionalCmdSensorStat);
+        ////        }
+        ////    }
+        ////}
+        var optionalSensorStats = GetCmdSensorStats(owner, sensorQty - 1);
+
+        FtlDampenerStat cmdsReqdFtlDampenerStat = ownerDesigns.GetCurrentFtlDampenerStat();
+        StarbaseCmdModuleStat cmdStat = ownerDesigns.GetCurrentStarbaseCmdModuleStat();
+        ////FtlDampenerStat cmdsReqdFtlDampener = _eStatFactory.MakeInstance(owner, EquipmentCategory.FtlDampener, Level.One) as FtlDampenerStat;
+        ////StarbaseCmdModuleStat cmdStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.StarbaseCmdModule, Level.One) as StarbaseCmdModuleStat;
+        StarbaseCmdDesign design = new StarbaseCmdDesign(owner, cmdsReqdFtlDampenerStat, cmdStat, reqdMrCmdSensorStat) {
             Status = status
         };
         AEquipmentStat[] allEquipStats = passiveCmStats.Cast<AEquipmentStat>().Union(optionalSensorStats.Cast<AEquipmentStat>()).ToArray();
@@ -860,27 +912,36 @@ public class NewGameUnitConfigurator {
         Utility.ValidateForRange(passiveCmQty, 0, TempGameValues.__MaxCmdPassiveCMs);
         Utility.ValidateForRange(sensorQty, 1, TempGameValues.__MaxCmdSensors);
 
-        var initialPassiveCmStat = _eStatFactory.MakeNonHullInstance(owner, EquipmentCategory.PassiveCountermeasure, Level.One) as PassiveCountermeasureStat;
-        var passiveCmStats = Enumerable.Repeat<PassiveCountermeasureStat>(initialPassiveCmStat, passiveCmQty);
+        var ownerDesigns = _gameMgr.GetAIManagerFor(owner).Designs;
 
-        SensorStat reqdMrCmdSensorStat = _eStatFactory.MakeNonHullInstance(owner, EquipmentCategory.MRSensor, Level.One) as SensorStat;
-        List<SensorStat> optionalSensorStats = new List<SensorStat>();
-        if (sensorQty > 1) {
-            var optionalLrCmdSensorStat = _eStatFactory.MakeNonHullInstance(owner, EquipmentCategory.LRSensor, Level.One) as SensorStat;
-            optionalSensorStats.Add(optionalLrCmdSensorStat);
-            if (sensorQty > 2) {
-                var availableCmdSensorStats = new List<SensorStat>() { reqdMrCmdSensorStat, optionalLrCmdSensorStat };
-                for (int i = 2; i < sensorQty; i++) {
-                    var randomOptionalCmdSensorStat = RandomExtended.Choice(availableCmdSensorStats) as SensorStat;
-                    optionalSensorStats.Add(randomOptionalCmdSensorStat);
-                }
-            }
-        }
 
-        FtlDampenerStat cmdsReqdFtlDampener = _eStatFactory.MakeNonHullInstance(owner, EquipmentCategory.FtlDampener, Level.One) as FtlDampenerStat;
-        FleetCmdModuleStat cmdStat = _eStatFactory.MakeNonHullInstance(owner, EquipmentCategory.FleetCmdModule, Level.One) as FleetCmdModuleStat;
+        ////var initialPassiveCmStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.PassiveCountermeasure, Level.One) as PassiveCountermeasureStat;
+        ////var passiveCmStats = Enumerable.Repeat<PassiveCountermeasureStat>(initialPassiveCmStat, passiveCmQty);
+        var passiveCmStats = GetPassiveCmStats(owner, passiveCmQty);
 
-        FleetCmdDesign design = new FleetCmdDesign(owner, cmdsReqdFtlDampener, cmdStat, reqdMrCmdSensorStat) {
+        SensorStat reqdMrCmdSensorStat = ownerDesigns.GetCurrentMRCmdSensorStat();
+        ////SensorStat reqdMrCmdSensorStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.MRSensor, Level.One) as SensorStat;
+        ////List<SensorStat> optionalSensorStats = new List<SensorStat>();
+        ////if (sensorQty > 1) {
+        ////    var optionalLrCmdSensorStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.LRSensor, Level.One) as SensorStat;
+        ////    optionalSensorStats.Add(optionalLrCmdSensorStat);
+        ////    if (sensorQty > 2) {
+        ////        var availableCmdSensorStats = new List<SensorStat>() { reqdMrCmdSensorStat, optionalLrCmdSensorStat };
+        ////        for (int i = 2; i < sensorQty; i++) {
+        ////            var randomOptionalCmdSensorStat = RandomExtended.Choice(availableCmdSensorStats) as SensorStat;
+        ////            optionalSensorStats.Add(randomOptionalCmdSensorStat);
+        ////        }
+        ////    }
+        ////}
+        var optionalSensorStats = GetCmdSensorStats(owner, sensorQty - 1);
+
+        FtlDampenerStat cmdsReqdFtlDampenerStat = ownerDesigns.GetCurrentFtlDampenerStat();
+        FleetCmdModuleStat cmdStat = ownerDesigns.GetCurrentFleetCmdModuleStat();
+
+        ////FtlDampenerStat cmdsReqdFtlDampener = _eStatFactory.MakeInstance(owner, EquipmentCategory.FtlDampener, Level.One) as FtlDampenerStat;
+        ////FleetCmdModuleStat cmdStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.FleetCmdModule, Level.One) as FleetCmdModuleStat;
+
+        FleetCmdDesign design = new FleetCmdDesign(owner, cmdsReqdFtlDampenerStat, cmdStat, reqdMrCmdSensorStat) {
             Status = status
         };
         AEquipmentStat[] allEquipStats = passiveCmStats.Cast<AEquipmentStat>().Union(optionalSensorStats.Cast<AEquipmentStat>()).ToArray();
@@ -969,10 +1030,17 @@ public class NewGameUnitConfigurator {
 
     private IEnumerable<FacilityHullStat> GetFacilityHullStats(Player player, BaseCreatorEditorSettings settings) {
         if (settings.IsCompositionPreset) {
+            var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
             var hullStats = new List<FacilityHullStat>();
             foreach (var hullCat in settings.PresetElementHullCategories) {
-                var hullStat = _eStatFactory.MakeHullInstance(player, hullCat, Level.One);
-                hullStats.Add(hullStat);
+                FacilityHullStat hullStat; //// = _eStatFactory.MakeInstance(player, hullCat, Level.One);
+                if (playerDesigns.TryGetCurrentHullStat(hullCat, out hullStat)) {
+                    hullStats.Add(hullStat);
+                }
+                else {
+                    D.Warn("{0}: There is no current {1} available for {2}.{3}.", DebugName, typeof(FacilityHullStat).Name,
+                        typeof(FacilityHullCategory).Name, hullCat.GetValueName());
+                }
             }
             return hullStats;
         }
@@ -980,16 +1048,24 @@ public class NewGameUnitConfigurator {
     }
 
     private IEnumerable<FacilityHullStat> GetFacilityHullStats(Player player, int qty) {
-        var allFacilityHullStats = _eStatFactory.GetAllFacilityHullStats(player, Level.One);
-        return RandomExtended.Choices<FacilityHullStat>(allFacilityHullStats, qty);
+        ////var allFacilityHullStats = _eStatFactory.GetAllFacilityHullStats(player, Level.One);
+        var allCurrentFacilityHullStats = _gameMgr.GetAIManagerFor(player).Designs.GetAllCurrentFacilityHullStats();
+        return RandomExtended.Choices<FacilityHullStat>(allCurrentFacilityHullStats, qty);
     }
 
     private IEnumerable<ShipHullStat> GetShipHullStats(Player player, FleetCreatorEditorSettings settings) {
         if (settings.IsCompositionPreset) {
+            var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
             var hullStats = new List<ShipHullStat>();
             foreach (var hullCat in settings.PresetElementHullCategories) {
-                var hullStat = _eStatFactory.MakeHullInstance(player, hullCat, Level.One);
-                hullStats.Add(hullStat);
+                ShipHullStat hullStat; //// = _eStatFactory.MakeInstance(player, hullCat, Level.One);
+                if (playerDesigns.TryGetCurrentHullStat(hullCat, out hullStat)) {
+                    hullStats.Add(hullStat);
+                }
+                else {
+                    D.Warn("{0}: There is no current {1} available for {2}.{3}.", DebugName, typeof(ShipHullStat).Name,
+                        typeof(ShipHullCategory).Name, hullCat.GetValueName());
+                }
             }
             return hullStats;
         }
@@ -997,55 +1073,125 @@ public class NewGameUnitConfigurator {
     }
 
     private IEnumerable<ShipHullStat> GetShipHullStats(Player player, int qty) {
-        var allShipHullStats = _eStatFactory.GetAllShipHullStats(player, Level.One);
-        return RandomExtended.Choices<ShipHullStat>(allShipHullStats, qty);
+        ////var allShipHullStats = _eStatFactory.GetAllShipHullStats(player, Level.One);
+        var allCurrentShipHullStats = _gameMgr.GetAIManagerFor(player).Designs.GetAllCurrentShipHullStats();
+        return RandomExtended.Choices<ShipHullStat>(allCurrentShipHullStats, qty);
     }
 
     private IEnumerable<AWeaponStat> GetWeaponStats(Player player, ShipHullCategory hullCat, DebugLaunchedWeaponLoadout launchedLoadout,
     DebugLosWeaponLoadout turretLoadout) {
+
+        var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
+
         int beamsPerElement;
         int projectilesPerElement;
         int hullMaxTurretWeapons = hullCat.MaxTurretMounts();
         DetermineLosWeaponQtyAndMix(turretLoadout, hullMaxTurretWeapons, out beamsPerElement, out projectilesPerElement);
 
-        var initialBeamWeaponStat = _eStatFactory.MakeNonHullInstance(player, EquipmentCategory.BeamWeapon, Level.One);
-        var initialProjectileWeaponStat = _eStatFactory.MakeNonHullInstance(player, EquipmentCategory.ProjectileWeapon, Level.One);
+        List<AWeaponStat> weaponStats = new List<AWeaponStat>();
+        AWeaponStat beamWeaponStat; //// = _eStatFactory.MakeInstance(player, EquipmentCategory.BeamWeapon, Level.One);
 
-        var hullWeaponStats = Enumerable.Repeat(initialBeamWeaponStat, beamsPerElement).ToList();
-        hullWeaponStats.AddRange(Enumerable.Repeat(initialProjectileWeaponStat, projectilesPerElement));
+        if (playerDesigns.TryGetCurrentWeaponStat(EquipmentCategory.BeamWeapon, out beamWeaponStat)) {
+            weaponStats.AddRange(Enumerable.Repeat(beamWeaponStat, beamsPerElement));
+        }
+        else {
+            D.Warn("{0}: There is no current {1} available.", DebugName, typeof(BeamWeaponStat).Name);
+        }
+        AWeaponStat projectileWeaponStat; //// = _eStatFactory.MakeInstance(player, EquipmentCategory.ProjectileWeapon, Level.One);
+        if (playerDesigns.TryGetCurrentWeaponStat(EquipmentCategory.ProjectileWeapon, out projectileWeaponStat)) {
+            weaponStats.AddRange(Enumerable.Repeat(projectileWeaponStat, projectilesPerElement));
+        }
+        else {
+            D.Warn("{0}: There is no current {1} available.", DebugName, typeof(ProjectileWeaponStat).Name);
+        }
+
+        ////var weaponStats = Enumerable.Repeat(beamWeaponStat, beamsPerElement).ToList();
+        ////weaponStats.AddRange(Enumerable.Repeat(projectileWeaponStat, projectilesPerElement));
 
         int missilesPerElement;
         int assaultVehiclesPerElement;
         int hullMaxSiloWeapons = hullCat.MaxSiloMounts();
         DetermineLaunchedWeaponQtyAndMix(launchedLoadout, hullMaxSiloWeapons, out missilesPerElement, out assaultVehiclesPerElement);
-        var initialMissileWeaponStat = _eStatFactory.MakeNonHullInstance(player, EquipmentCategory.MissileWeapon, Level.One);
-        var initialAssaultWeaponStat = _eStatFactory.MakeNonHullInstance(player, EquipmentCategory.AssaultWeapon, Level.One);
-        hullWeaponStats.AddRange(Enumerable.Repeat(initialMissileWeaponStat, missilesPerElement));
-        hullWeaponStats.AddRange(Enumerable.Repeat(initialAssaultWeaponStat, assaultVehiclesPerElement));
-        return hullWeaponStats.Cast<AWeaponStat>();
+
+
+        AWeaponStat missileWeaponStat; //// = _eStatFactory.MakeInstance(player, EquipmentCategory.MissileWeapon, Level.One);
+        if (playerDesigns.TryGetCurrentWeaponStat(EquipmentCategory.MissileWeapon, out missileWeaponStat)) {
+            weaponStats.AddRange(Enumerable.Repeat(missileWeaponStat, missilesPerElement));
+        }
+        else {
+            D.Warn("{0}: There is no current {1} available.", DebugName, typeof(MissileWeaponStat).Name);
+        }
+
+        AWeaponStat assaultWeaponStat; //// = _eStatFactory.MakeInstance(player, EquipmentCategory.AssaultWeapon, Level.One);
+        if (playerDesigns.TryGetCurrentWeaponStat(EquipmentCategory.AssaultWeapon, out assaultWeaponStat)) {
+            weaponStats.AddRange(Enumerable.Repeat(assaultWeaponStat, assaultVehiclesPerElement));
+        }
+        else {
+            D.Warn("{0}: There is no current {1} available.", DebugName, typeof(AssaultWeaponStat).Name);
+        }
+
+        ////weaponStats.AddRange(Enumerable.Repeat(missileWeaponStat, missilesPerElement));
+        ////weaponStats.AddRange(Enumerable.Repeat(assaultWeaponStat, assaultVehiclesPerElement));
+        ////return weaponStats.Cast<AWeaponStat>();
+        return weaponStats;
     }
 
     private IEnumerable<AWeaponStat> GetWeaponStats(Player player, FacilityHullCategory hullCat, DebugLaunchedWeaponLoadout launchedLoadout, DebugLosWeaponLoadout turretLoadout) {
+
+        var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
+
         int beamsPerElement;
         int projectilesPerElement;
         int hullMaxTurretWeapons = hullCat.MaxTurretMounts();
         DetermineLosWeaponQtyAndMix(turretLoadout, hullMaxTurretWeapons, out beamsPerElement, out projectilesPerElement);
 
-        var initialBeamWeaponStat = _eStatFactory.MakeNonHullInstance(player, EquipmentCategory.BeamWeapon, Level.One);
-        var initialProjectileWeaponStat = _eStatFactory.MakeNonHullInstance(player, EquipmentCategory.ProjectileWeapon, Level.One);
+        List<AWeaponStat> weaponStats = new List<AWeaponStat>();
+        AWeaponStat beamWeaponStat; //// = _eStatFactory.MakeInstance(player, EquipmentCategory.BeamWeapon, Level.One);
 
-        var hullWeaponStats = Enumerable.Repeat(initialBeamWeaponStat, beamsPerElement).ToList();
-        hullWeaponStats.AddRange(Enumerable.Repeat(initialProjectileWeaponStat, projectilesPerElement));
+        if (playerDesigns.TryGetCurrentWeaponStat(EquipmentCategory.BeamWeapon, out beamWeaponStat)) {
+            weaponStats.AddRange(Enumerable.Repeat(beamWeaponStat, beamsPerElement));
+        }
+        else {
+            D.Warn("{0}: There is no current {1} available.", DebugName, typeof(BeamWeaponStat).Name);
+        }
+
+        AWeaponStat projectileWeaponStat; //// = _eStatFactory.MakeInstance(player, EquipmentCategory.ProjectileWeapon, Level.One);
+        if (playerDesigns.TryGetCurrentWeaponStat(EquipmentCategory.ProjectileWeapon, out projectileWeaponStat)) {
+            weaponStats.AddRange(Enumerable.Repeat(projectileWeaponStat, projectilesPerElement));
+        }
+        else {
+            D.Warn("{0}: There is no current {1} available.", DebugName, typeof(ProjectileWeaponStat).Name);
+        }
+
+        ////var weaponStats = Enumerable.Repeat(beamWeaponStat, beamsPerElement).ToList();
+        ////weaponStats.AddRange(Enumerable.Repeat(projectileWeaponStat, projectilesPerElement));
 
         int missilesPerElement;
         int assaultVehiclesPerElement;
         int hullMaxSiloWeapons = hullCat.MaxSiloMounts();
         DetermineLaunchedWeaponQtyAndMix(launchedLoadout, hullMaxSiloWeapons, out missilesPerElement, out assaultVehiclesPerElement);
-        var initialMissileWeaponStat = _eStatFactory.MakeNonHullInstance(player, EquipmentCategory.MissileWeapon, Level.One);
-        var initialAssaultWeaponStat = _eStatFactory.MakeNonHullInstance(player, EquipmentCategory.AssaultWeapon, Level.One);
-        hullWeaponStats.AddRange(Enumerable.Repeat(initialMissileWeaponStat, missilesPerElement));
-        hullWeaponStats.AddRange(Enumerable.Repeat(initialAssaultWeaponStat, assaultVehiclesPerElement));
-        return hullWeaponStats.Cast<AWeaponStat>();
+
+
+        AWeaponStat missileWeaponStat; //// = _eStatFactory.MakeInstance(player, EquipmentCategory.MissileWeapon, Level.One);
+        if (playerDesigns.TryGetCurrentWeaponStat(EquipmentCategory.MissileWeapon, out missileWeaponStat)) {
+            weaponStats.AddRange(Enumerable.Repeat(missileWeaponStat, missilesPerElement));
+        }
+        else {
+            D.Warn("{0}: There is no current {1} available.", DebugName, typeof(MissileWeaponStat).Name);
+        }
+
+        AWeaponStat assaultWeaponStat; //// = _eStatFactory.MakeInstance(player, EquipmentCategory.AssaultWeapon, Level.One);
+        if (playerDesigns.TryGetCurrentWeaponStat(EquipmentCategory.AssaultWeapon, out assaultWeaponStat)) {
+            weaponStats.AddRange(Enumerable.Repeat(assaultWeaponStat, assaultVehiclesPerElement));
+        }
+        else {
+            D.Warn("{0}: There is no current {1} available.", DebugName, typeof(AssaultWeaponStat).Name);
+        }
+
+        ////weaponStats.AddRange(Enumerable.Repeat(missileWeaponStat, missilesPerElement));
+        ////weaponStats.AddRange(Enumerable.Repeat(assaultWeaponStat, assaultVehiclesPerElement));
+        ////return weaponStats.Cast<AWeaponStat>();
+        return weaponStats;
     }
 
     private void DetermineLosWeaponQtyAndMix(DebugLosWeaponLoadout loadout, int maxAllowed, out int beams, out int projectiles) {
@@ -1126,7 +1272,123 @@ public class NewGameUnitConfigurator {
         }
     }
 
-    private int GetPassiveCMQty(DebugPassiveCMLoadout loadout, int maxAllowed) {
+    private IEnumerable<PassiveCountermeasureStat> GetPassiveCmStats(Player player, DebugPassiveCMLoadout loadout, int maxQty) {
+        int qty = GetPassiveCmQty(loadout, maxQty);
+        return GetPassiveCmStats(player, qty);
+    }
+
+    private IEnumerable<PassiveCountermeasureStat> GetPassiveCmStats(Player player, int qty) {
+        var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
+        PassiveCountermeasureStat pStat;
+        if (playerDesigns.TryGetCurrentPassiveCmStat(out pStat)) {
+            return Enumerable.Repeat(pStat, qty);
+        }
+        D.Warn("{0}: There is no current {1} available.", DebugName, typeof(PassiveCountermeasureStat).Name);
+        return Enumerable.Empty<PassiveCountermeasureStat>();
+    }
+
+    private IEnumerable<ActiveCountermeasureStat> GetActiveCmStats(Player player, DebugActiveCMLoadout loadout, int maxQty) {
+        int qty = GetActiveCmQty(loadout, maxQty);
+        return GetActiveCmStats(player, qty);
+    }
+
+    private IEnumerable<ActiveCountermeasureStat> GetActiveCmStats(Player player, int qty) {
+        var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
+        ActiveCountermeasureStat srAStat;
+        playerDesigns.TryGetCurrentActiveCmStat(EquipmentCategory.SRActiveCountermeasure, out srAStat);
+        ActiveCountermeasureStat mrAStat;
+        playerDesigns.TryGetCurrentActiveCmStat(EquipmentCategory.MRActiveCountermeasure, out mrAStat);
+
+        Queue<ActiveCountermeasureStat> stats = new Queue<ActiveCountermeasureStat>();
+        if (srAStat != null) {
+            stats.Enqueue(srAStat);
+        }
+        else {
+            D.Warn("{0}: There is no current SR {1} available.", DebugName, typeof(ActiveCountermeasureStat).Name);
+        }
+        if (mrAStat != null) {
+            stats.Enqueue(mrAStat);
+        }
+        else {
+            D.Warn("{0}: There is no current MR {1} available.", DebugName, typeof(ActiveCountermeasureStat).Name);
+        }
+
+        if (stats.Any()) {
+            IList<ActiveCountermeasureStat> result = new List<ActiveCountermeasureStat>();
+            for (int i = 0; i < qty; i++) {
+                var stat = stats.Dequeue();
+                result.Add(stat);
+                stats.Enqueue(stat);
+            }
+            return result;
+        }
+        return Enumerable.Empty<ActiveCountermeasureStat>();
+    }
+
+    private IEnumerable<ShieldGeneratorStat> GetShieldGenStats(Player player, DebugShieldGenLoadout loadout, int maxQty) {
+        int qty = GetShieldGeneratorQty(loadout, maxQty);
+        return GetShieldGenStats(player, qty);
+    }
+
+    private IEnumerable<ShieldGeneratorStat> GetShieldGenStats(Player player, int qty) {
+        var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
+        ShieldGeneratorStat sgStat;
+        if (playerDesigns.TryGetCurrentShieldGeneratorStat(out sgStat)) {
+            return Enumerable.Repeat(sgStat, qty);
+        }
+        D.Warn("{0}: There is no current {1} available.", DebugName, typeof(ShieldGeneratorStat).Name);
+        return Enumerable.Empty<ShieldGeneratorStat>();
+    }
+
+    private EngineStat GetEngineStat(Player player, EquipmentCategory engineCat) {
+        var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
+        if (engineCat == EquipmentCategory.StlPropulsion) {
+            return playerDesigns.GetCurrentStlEngineStat();
+        }
+
+        D.AssertEqual(EquipmentCategory.FtlPropulsion, engineCat);
+        EngineStat ftlEngineStat;
+        playerDesigns.TryGetCurrentFtlEngineStat(out ftlEngineStat);
+        if (ftlEngineStat == null) {
+            D.Warn("{0}: There is no current FTL EngineStat available.", DebugName);
+        }
+        return ftlEngineStat;   // can be null
+    }
+
+    private IEnumerable<SensorStat> GetCmdSensorStats(Player player, int optionalQty) {
+        if (optionalQty > Constants.Zero) {
+            var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
+            SensorStat mrStat = playerDesigns.GetCurrentMRCmdSensorStat();
+            SensorStat lrStat;
+            playerDesigns.TryGetCurrentLRCmdSensorStat(out lrStat);
+
+            if (optionalQty == Constants.One) {
+                SensorStat singleStatToReturn = lrStat != null ? lrStat : mrStat;
+                return new List<SensorStat>() { singleStatToReturn };
+            }
+
+            Queue<SensorStat> stats = new Queue<SensorStat>();
+            if (lrStat != null) {
+                stats.Enqueue(lrStat);
+            }
+            else {
+                D.Warn("{0}: There is no current LR SensorStat available.", DebugName);
+            }
+            stats.Enqueue(mrStat);
+
+            IList<SensorStat> result = new List<SensorStat>();
+            for (int i = 0; i < optionalQty; i++) {
+                var stat = stats.Dequeue();
+                result.Add(stat);
+                stats.Enqueue(stat);
+            }
+            return result;
+        }
+        return Enumerable.Empty<SensorStat>();
+    }
+
+
+    private int GetPassiveCmQty(DebugPassiveCMLoadout loadout, int maxAllowed) {
         switch (loadout) {
             case DebugPassiveCMLoadout.None:
                 return Constants.Zero;
@@ -1141,7 +1403,7 @@ public class NewGameUnitConfigurator {
         }
     }
 
-    private int GetActiveCMQty(DebugActiveCMLoadout loadout, int maxAllowed) {
+    private int GetActiveCmQty(DebugActiveCMLoadout loadout, int maxAllowed) {
         switch (loadout) {
             case DebugActiveCMLoadout.None:
                 return Constants.Zero;

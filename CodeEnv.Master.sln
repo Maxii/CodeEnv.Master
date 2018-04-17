@@ -24,6 +24,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DataLibrary", "DataLibrary", "{2963CF2F-1606-484D-9F4B-61A9C9872F41}"
 	ProjectSection(SolutionItems) = preProject
 		DataLibrary\DebugSettings.xml = DataLibrary\DebugSettings.xml
+		DataLibrary\EquipmentStatValues.xml = DataLibrary\EquipmentStatValues.xml
 		DataLibrary\FleetIconInfo.xml = DataLibrary\FleetIconInfo.xml
 		DataLibrary\GameSpeed.xml = DataLibrary\GameSpeed.xml
 		DataLibrary\GeneralSettings.xml = DataLibrary\GeneralSettings.xml

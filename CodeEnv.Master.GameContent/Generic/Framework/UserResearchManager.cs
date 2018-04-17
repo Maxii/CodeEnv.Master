@@ -27,8 +27,8 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class UserResearchManager : PlayerResearchManager {
 
-        public UserResearchManager(UserAIManager userAiMgr)
-            : base(userAiMgr) { }
+        public UserResearchManager(UserAIManager userAiMgr, PlayerDesigns designs)
+            : base(userAiMgr, designs) { }
 
         /// <summary>
         /// Returns <c>true</c> if there are ResearchTasks queued, <c>false</c> otherwise.

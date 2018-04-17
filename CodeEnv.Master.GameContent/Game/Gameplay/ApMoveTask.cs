@@ -66,6 +66,7 @@ namespace CodeEnv.Master.GameContent {
         /// The minimum expected turn rate in degrees per frame at the game's slowest allowed FPS rate.
         /// <remarks>Warning: Moving this to TempGameValues generates the Unity get_dataPath Serialization
         /// Error because of the early access to GameTime from a static class.</remarks>
+        /// <remarks>12.12.16 TempGV.MinTurnRate = 90 -> ~7 degrees/Frame, 4.15.18 = 45 -> ~4.</remarks>
         /// </summary>
         private static float __MinExpectedTurnratePerFrameAtSlowestFPS
             = (GameTime.HoursPerSecond * TempGameValues.MinimumTurnRate) / TempGameValues.MinimumFramerate;
@@ -525,8 +526,7 @@ namespace CodeEnv.Master.GameContent {
                     return false;
                 }
 
-                // 12.12.16 IMPROVE MinExpectedTurnratePerFrameAtSlowestFPS is ~ 7 degrees per frame
-                // At higher FPS (>> 25) the number of degrees turned per frame will be lower, so this minFrameWait calculated
+                // 12.12.16 IMPROVE At higher FPS (>> 25) the number of degrees turned per frame will be lower, so this minFrameWait calculated
                 // here will not normally allow a turn of 'reqdCourseCorrectionDegrees' to complete. I think this is OK
                 // for now as this wait does allow the ChangeHeading Job to actually make a partial turn.
                 // UNCLEAR use a max turn rate, max FPS???

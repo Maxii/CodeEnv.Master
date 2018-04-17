@@ -31,7 +31,7 @@ namespace CodeEnv.Master.GameContent {
             : base(GameReferences.GameManager.UserPlayer, knowledge) { }    // Warning: _gameMgr in base not yet initialized
 
         protected override PlayerResearchManager InitializeResearchMgr() {
-            return new UserResearchManager(this);
+            return new UserResearchManager(this, Designs);
         }
 
         public override void PickFirstResearchTask() {

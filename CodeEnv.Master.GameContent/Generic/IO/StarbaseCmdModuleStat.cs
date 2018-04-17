@@ -28,31 +28,35 @@ namespace CodeEnv.Master.GameContent {
 
         public float StartingApproval { get; private set; }
 
-        public override EquipmentCategory Category { get { return EquipmentCategory.StarbaseCmdModule; } }
+        ////public override EquipmentCategory Category { get { return EquipmentCategory.StarbaseCmdModule; } }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="StarbaseCmdModuleStat"/> class.
+        /// Initializes a new instance of the <see cref="StarbaseCmdModuleStat" /> class.
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="imageAtlasID">The image atlas identifier.</param>
         /// <param name="imageFilename">The image filename.</param>
         /// <param name="description">The description.</param>
-        /// <param name="level">The improvement level of this stat.</param>
+        /// <param name="id">The identifier.</param>
         /// <param name="size">The size.</param>
         /// <param name="mass">The mass.</param>
         /// <param name="pwrRqmt">The PWR RQMT.</param>
-        /// <param name="expense">The expense.</param>
         /// <param name="hitPts">The hit points contributed to the survivability of the item.</param>
+        /// <param name="constructCost">The cost in production units to produce this equipment.</param>
+        /// <param name="expense">The expense.</param>
         /// <param name="maxCmdStaffEffectiveness">The maximum command staff effectiveness.</param>
         /// <param name="startingPopulation">The starting population.</param>
         /// <param name="startingApproval">The starting approval.</param>
-        public StarbaseCmdModuleStat(string name, AtlasID imageAtlasID, string imageFilename, string description, Level level, float size,
-            float mass, float pwrRqmt, float hitPts, float expense, float maxCmdStaffEffectiveness, int startingPopulation, float startingApproval)
-            : base(name, imageAtlasID, imageFilename, description, level, size, mass, pwrRqmt, expense, hitPts, maxCmdStaffEffectiveness) {
+        public StarbaseCmdModuleStat(string name, AtlasID imageAtlasID, string imageFilename, string description,
+            EquipStatID id, float size, float mass, float pwrRqmt, float hitPts, float constructCost, float expense,
+            float maxCmdStaffEffectiveness, int startingPopulation, float startingApproval)
+            : base(name, imageAtlasID, imageFilename, description, id, size, mass, pwrRqmt, constructCost, expense, hitPts,
+                  maxCmdStaffEffectiveness) {
             StartingPopulation = startingPopulation;
             Utility.ValidateForRange(startingApproval, Constants.ZeroPercent, Constants.OneHundredPercent);
             StartingApproval = startingApproval;
         }
+
 
         #region Value-based Equality Archive
         // 2.23.18 ATechStat instances are always the same as they are acquired via factory caching

@@ -59,13 +59,16 @@ namespace CodeEnv.Master.GameContent {
         private float _playerTotalScienceYield;
 
         private DateMinderDuration _researchUpdateDuration;
+        private PlayerDesigns _playerDesigns;
         private PlayerAIManager _aiMgr;
         private GameTime _gameTime;
         private IList<IDisposable> _subscriptions;
 
-        public PlayerResearchManager(PlayerAIManager aiMgr) {
+        public PlayerResearchManager(PlayerAIManager aiMgr, PlayerDesigns designs) {
             _aiMgr = aiMgr;
+            _playerDesigns = designs;
             InitializeValuesAndReferences();
+            InitializeEquipmentLevels();
         }
 
         private void InitializeValuesAndReferences() {
@@ -76,6 +79,45 @@ namespace CodeEnv.Master.GameContent {
             var allPredefinedTechs = TechnologyFactory.Instance.GetAllPredefinedTechs(_aiMgr.Player);
             foreach (var tech in allPredefinedTechs) {
                 _uncompletedRschTasks.Add(new ResearchTask(tech));
+            }
+        }
+
+        /// <summary>
+        /// Initializes the equipment levels in PlayerDesigns at startup.
+        /// <remarks>Currently only sets the Equipment's CurrentLevel if EquipmentStatFactory has a stat at Level.One.
+        /// This simulates the case where one or more stats have no Level.One stat.
+        /// There is one exception: If DebugControls.AreShipsFast is true, it initializes STL and FTL EngineStats to the 
+        /// highest level EngineStat held by EquipmentStatFactory.</remarks>
+        /// </summary>
+        private void InitializeEquipmentLevels() {
+            var allNonHullEquipCats = Enums<EquipmentCategory>.GetValuesExcept(EquipmentCategory.None, EquipmentCategory.Hull);
+            foreach (var eCat in allNonHullEquipCats) {
+                Level level;
+                if (eCat == EquipmentCategory.StlPropulsion || eCat == EquipmentCategory.FtlPropulsion && __debugCntls.AreShipsFast) {
+                    level = __eStatFactory.__GetHighestLevelFor(eCat);
+                    _playerDesigns.UpdateCurrentLevel(eCat, level);
+                    continue;
+                }
+                level = __eStatFactory.__GetLowestLevelFor(eCat);
+                if (level == Level.One) {
+                    _playerDesigns.UpdateCurrentLevel(eCat, level);
+                }
+            }
+
+            var allShipHullCats = TempGameValues.ShipHullCategoriesInUse;
+            foreach (var hullCat in allShipHullCats) {
+                Level level = __eStatFactory.__GetLowestLevelFor(hullCat);
+                if (level == Level.One) {
+                    _playerDesigns.UpdateCurrentLevel(hullCat, level);
+                }
+            }
+
+            var allFacilityHullCats = TempGameValues.FacilityHullCategoriesInUse;
+            foreach (var hullCat in allFacilityHullCats) {
+                Level level = __eStatFactory.__GetLowestLevelFor(hullCat);
+                if (level == Level.One) {
+                    _playerDesigns.UpdateCurrentLevel(hullCat, level);
+                }
             }
         }
 
@@ -328,6 +370,10 @@ namespace CodeEnv.Master.GameContent {
         }
 
         #region Debug
+
+        private EquipmentStatFactory __eStatFactory = EquipmentStatFactory.Instance;
+
+        private IDebugControls __debugCntls = GameReferences.DebugControls;
 
         public bool __TryGetRandomUncompletedRsch(out ResearchTask uncompletedRsch) {
             if (_uncompletedRschTasks.Any()) {
