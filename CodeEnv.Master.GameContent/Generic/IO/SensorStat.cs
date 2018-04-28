@@ -67,7 +67,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="constructionCost">The cost to produce.</param>
         /// <param name="expense">The expense.</param>
         /// <param name="isDamageable">if set to <c>true</c> [is damageable].</param>
-        public SensorStat(string name, AtlasID imageAtlasID, string imageFilename, string description, EquipStatID id,
+        public SensorStat(string name, AtlasID imageAtlasID, string imageFilename, string description, EquipmentStatID id,
             float size, float mass, float pwrRqmt, float hitPts, float constructionCost, float expense, bool isDamageable)
             : base(name, imageAtlasID, imageFilename, description, id, size, mass, pwrRqmt, hitPts, constructionCost, expense, GetRangeCat(id.Category), isDamageable) {
         }

@@ -42,7 +42,7 @@ public class EquipmentStorageIconGuiElement : AEquipmentIconGuiElement {
     private UILabel _emptySlotCategoryLabel = null;
 
     public override bool IsInitialized {
-        get { return Size != default(IconSize) && _storage != null && _slotID != default(EquipmentSlotID); }
+        get { return Size != default(IconSize) && _storage != null && _slotID != default(OptionalEquipSlotID); }
     }
 
     private string _tooltipContent;
@@ -50,11 +50,11 @@ public class EquipmentStorageIconGuiElement : AEquipmentIconGuiElement {
 
     private AEquipmentStat _currentStat;
     private DesignEquipmentStorage _storage;
-    private EquipmentSlotID _slotID;
+    private OptionalEquipSlotID _slotID;
 
     private UILabel _iconImageNameLabel;
 
-    public void Initialize(DesignEquipmentStorage storage, EquipmentSlotID slotID, AEquipmentStat stat) {
+    public void Initialize(DesignEquipmentStorage storage, OptionalEquipSlotID slotID, AEquipmentStat stat) {
         _storage = storage;
         _slotID = slotID;
         _currentStat = stat;
@@ -193,7 +193,7 @@ public class EquipmentStorageIconGuiElement : AEquipmentIconGuiElement {
     public override void ResetForReuse() {
         base.ResetForReuse();
         _storage = null;
-        _slotID = default(EquipmentSlotID);
+        _slotID = default(OptionalEquipSlotID);
         _currentStat = null;
         _iconImageNameLabel = null;
         _tooltipContent = null;

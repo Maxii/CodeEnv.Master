@@ -134,6 +134,14 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
                 _elements.Add(element);
             }
             D.AssertEqual(Constants.Zero, designs.Count);
+
+            // deactivate any preset elements that don't yet have a design available due to lack of a HullStat from research
+            var existingElementsWithoutDesigns = existingElements.Except(_elements);
+            if (existingElementsWithoutDesigns.Any()) {
+                D.Warn("{0} is deactivating {1} preset elements without designs: {2}.", DebugName, existingElementsWithoutDesigns.Count(),
+                    existingElementsWithoutDesigns.Select(e => e.DebugName).Concatenate());
+                existingElementsWithoutDesigns.ForAll(e => e.gameObject.SetActive(false));
+            }
         }
         else {
             foreach (var designName in Configuration.ElementDesignNames) {
@@ -199,8 +207,9 @@ public class DebugFleetCreator : ADebugUnitCreator, IDebugFleetCreator {
     }
 
     private void SetFtlDamagedState(ShipItem element) {
-        D.Assert(element.Data.IsFtlCapable);
-        element.Data.IsFtlDamaged = _ftlStartsDamaged;
+        if (element.IsFtlCapable) {
+            element.Data.IsFtlDamaged = _ftlStartsDamaged;
+        }
     }
 
     protected override void __AdjustElementQtyFieldTo(int qty) {

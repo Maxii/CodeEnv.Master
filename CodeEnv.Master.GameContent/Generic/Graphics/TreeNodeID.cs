@@ -23,6 +23,7 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// ID for the node of a tree containing column and row values.
     /// <remarks>To guard against errors, Row and Column values must not be zero.</remarks>
+    /// <remarks>Serializable to allow display of values in the Editor.</remarks>
     /// </summary>
     [Serializable]
     public struct TreeNodeID : IEquatable<TreeNodeID> {

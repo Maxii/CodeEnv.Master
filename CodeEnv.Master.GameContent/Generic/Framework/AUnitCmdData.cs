@@ -218,7 +218,7 @@ namespace CodeEnv.Master.GameContent {
 
         protected IList<AUnitElementData> _elementsData;
         protected IDictionary<AUnitElementData, IList<IDisposable>> _elementSubscriptionsLookup;
-        private IList<IDisposable> _subscriptions;
+        private IList<IDisposable> _sensorRangeSubscriptions;
 
         #region Initialization 
 
@@ -230,29 +230,34 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="passiveCMs">The passive countermeasures protecting the command staff.</param>
         /// <param name="sensors">The sensors.</param>
         /// <param name="ftlDampener">The FTL dampener.</param>
-        /// <param name="cmdStat">The command stat.</param>
         /// <param name="cmdDesign">The command design.</param>
         public AUnitCmdData(IUnitCmd cmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors,
-            FtlDampener ftlDampener, ACmdModuleStat cmdStat, AUnitCmdDesign cmdDesign)
+            FtlDampener ftlDampener, AUnitCmdDesign cmdDesign)
             : base(cmd, owner, cmdDesign.HitPoints, passiveCMs) {
             FtlDampener = ftlDampener;
-            Sensors = sensors;
-            MaxCmdStaffEffectiveness = cmdStat.MaxCmdStaffEffectiveness;
+            ////Sensors = sensors;
+            MaxCmdStaffEffectiveness = cmdDesign.ReqdCmdStat.MaxCmdStaffEffectiveness;
             CmdDesign = cmdDesign;
             // A command's UnitMaxHitPoints are constructed from the sum of the elements
             InitializeCollections();
-            Subscribe();
+            Initialize(sensors);
+            ////SubscribeToSensorRangeChanges();
         }
 
         private void InitializeCollections() {
             _elementsData = new List<AUnitElementData>();
             _elementSubscriptionsLookup = new Dictionary<AUnitElementData, IList<IDisposable>>();
+            _sensorRangeSubscriptions = new List<IDisposable>();
         }
 
-        private void Subscribe() {
-            _subscriptions = new List<IDisposable>();
+        private void Initialize(IEnumerable<CmdSensor> sensors) {
+            Sensors = sensors;
+            SubscribeToSensorRangeChanges();
+        }
+
+        private void SubscribeToSensorRangeChanges() {
             foreach (var sensor in Sensors) {
-                _subscriptions.Add(sensor.SubscribeToPropertyChanged<CmdSensor, float>(s => s.RangeDistance, CmdSensorRangeDistancePropChangedHandler));
+                _sensorRangeSubscriptions.Add(sensor.SubscribeToPropertyChanged<CmdSensor, float>(s => s.RangeDistance, CmdSensorRangeDistancePropChangedHandler));
             }
         }
 
@@ -261,7 +266,7 @@ namespace CodeEnv.Master.GameContent {
         public override void CommenceOperations() {
             base.CommenceOperations();
             RecalcPropertiesDerivedFromCombinedElements();
-            // 3.30.17 Activation of FtlDampener handled by HandleAlertStatusChanged
+            // 3.30.17 Activation of FtlDampener handled by AssessFtlDampenerActivation
         }
 
         public void ActivateCmdSensors() {
@@ -286,6 +291,32 @@ namespace CodeEnv.Master.GameContent {
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementData, RangeDistance>(ed => ed.WeaponsRange, ElementWeaponsRangePropChangedHandler));
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementData, RangeDistance>(ed => ed.SensorRange, ElementSensorRangePropChangedHandler));
             anElementsSubscriptions.Add(elementData.SubscribeToPropertyChanged<AUnitElementData, OutputsYield>(ed => ed.Outputs, ElementOutputsPropChangedHandler));
+        }
+
+        public virtual void ChangeDesign(AUnitCmdDesign cmdDesign, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener) {
+            CmdDesign = cmdDesign;
+            MaxCmdStaffEffectiveness = cmdDesign.ReqdCmdStat.MaxCmdStaffEffectiveness;
+            ReplacePassiveCMs(passiveCMs);
+            ReplaceSensors(sensors);
+            ReplaceFtlDampener(ftlDampener);
+        }
+
+        private void ReplaceSensors(IEnumerable<CmdSensor> sensorReplacements) {
+            D.Assert(Sensors.All(sensor => !sensor.IsActivated && sensor.RangeMonitor == null));
+            UnsubscribeToSensorRangeChanges();
+            D.Assert(sensorReplacements.All(sensor => !sensor.IsActivated && sensor.RangeMonitor != null));
+            Initialize(sensorReplacements);
+        }
+
+        private void ReplaceFtlDampener(FtlDampener ftlDampener) {
+            D.AssertNotNull(FtlDampener);
+            D.Assert(!FtlDampener.IsActivated);
+            D.AssertNull(FtlDampener.RangeMonitor);
+
+            D.Assert(!ftlDampener.IsActivated);
+            D.AssertNotNull(ftlDampener.RangeMonitor);
+            FtlDampener = ftlDampener;
+            AssessFtlDampenerActivation();
         }
 
         #region Event and Property Change Handlers
@@ -378,24 +409,26 @@ namespace CodeEnv.Master.GameContent {
         #endregion
 
         private void HandleAlertStatusChanged() {
+            D.Log(/*ShowDebugLog, */"{0} {1} changed to {2}.", DebugName, typeof(AlertStatus).Name, AlertStatus.GetValueName());
+            AssessFtlDampenerActivation();
+            ElementsData.ForAll(eData => eData.AlertStatus = AlertStatus);
+        }
+
+        private void AssessFtlDampenerActivation() {
             switch (AlertStatus) {
                 case AlertStatus.Normal:
-                    D.Log(ShowDebugLog, "{0} {1} changed to {2}.", DebugName, typeof(AlertStatus).Name, AlertStatus.GetValueName());
                     FtlDampener.IsActivated = false;
                     break;
                 case AlertStatus.Yellow:
-                    D.Log(ShowDebugLog, "{0} {1} changed to {2}.", DebugName, typeof(AlertStatus).Name, AlertStatus.GetValueName());
                     FtlDampener.IsActivated = false;
                     break;
                 case AlertStatus.Red:
-                    D.LogBold(/*ShowDebugLog, */"{0} {1} changed to {2}.", DebugName, typeof(AlertStatus).Name, AlertStatus.GetValueName());
                     FtlDampener.IsActivated = true;
                     break;
                 case AlertStatus.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(AlertStatus));
             }
-            ElementsData.ForAll(eData => eData.AlertStatus = AlertStatus);
         }
 
         protected virtual void HandleHQElementDataChanging(AUnitElementData newHQElementData) {
@@ -660,14 +693,6 @@ namespace CodeEnv.Master.GameContent {
 
         #endregion
 
-        /// <summary>
-        /// Removes the damage from command module equipment.
-        /// <remarks>11.26.17 HACK placeholder for refitting cmd module as currently not supported.</remarks>
-        /// </summary>
-        public void __RemoveDamageFromCmdModuleEquipment() {
-            RemoveDamageFromAllEquipment();
-        }
-
         protected override void RemoveDamageFromAllEquipment() {
             base.RemoveDamageFromAllEquipment();
             Sensors.Where(s => s.IsDamageable).ForAll(s => s.IsDamaged = false);
@@ -699,11 +724,23 @@ namespace CodeEnv.Master.GameContent {
             }
             _elementSubscriptionsLookup.Clear();
 
-            _subscriptions.ForAll(d => d.Dispose());
-            _subscriptions.Clear();
+            UnsubscribeToSensorRangeChanges();
+        }
+
+        private void UnsubscribeToSensorRangeChanges() {
+            _sensorRangeSubscriptions.ForAll(d => d.Dispose());
+            _sensorRangeSubscriptions.Clear();
         }
 
         #region Debug
+
+        /// <summary>
+        /// Removes the damage from command module equipment.
+        /// <remarks>11.26.17 HACK placeholder for refitting cmd module as currently not supported.</remarks>
+        /// </summary>
+        public void __RemoveDamageFromCmdModuleEquipment() {
+            RemoveDamageFromAllEquipment();
+        }
 
         protected override void __ValidateAllEquipmentDamageRepaired() {
             base.__ValidateAllEquipmentDamageRepaired();

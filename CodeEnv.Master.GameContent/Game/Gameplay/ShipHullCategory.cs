@@ -23,40 +23,40 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public enum ShipHullCategory {
 
-        None,
-
-        [EnumAttribute("F")]
-        Fighter,
+        None = 0,
 
         [EnumAttribute("FF")]
-        Frigate,
+        Frigate = 1,
 
         [EnumAttribute("DD")]
-        Destroyer,
+        Destroyer = 2,
 
         [EnumAttribute("CA")]
-        Cruiser,
+        Cruiser = 3,
 
         [EnumAttribute("DN")]
-        Dreadnought,
+        Dreadnought = 4,
 
         [EnumAttribute("CV")]
-        Carrier,
+        Carrier = 5,
 
         [EnumAttribute("CO")]
-        Colonizer,
+        Colonizer = 6,
 
-        [EnumAttribute("SS")]
-        Investigator,   // 8.24.16 changed from Science as Mono gets confused with the GameEnumExtension.Science(ShipHullCategory)
+        [EnumAttribute("IV")]
+        Investigator = 7,   // 8.24.16 changed from Science as Mono gets confused with the GameEnumExtension.Science(ShipHullCategory)
 
         [EnumAttribute("TT")]
-        Troop,
+        Troop = 8,
 
         [EnumAttribute("SU")]
-        Support,
+        Support = 9,
 
-        [EnumAttribute("S")]
-        Scout
+        //[EnumAttribute("S")]
+        //Scout
+
+        //[EnumAttribute("F")]
+        //Fighter,
 
     }
 }

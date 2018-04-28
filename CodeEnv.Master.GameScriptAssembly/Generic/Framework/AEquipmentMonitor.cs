@@ -119,8 +119,8 @@ public abstract class AEquipmentMonitor<EquipmentType> : AColliderMonitor where 
     /// </summary>
     /// <param name="pieceOfEquipment">The piece of equipment.</param>
     /// <returns></returns>
-    [Obsolete("Not currently used")]
-    public virtual bool Remove(EquipmentType pieceOfEquipment) {
+    ////[Obsolete("Not currently used")]
+    protected virtual bool Remove(EquipmentType pieceOfEquipment) {
         D.Assert(!pieceOfEquipment.IsActivated);
 
         RemoveMonitorFrom(pieceOfEquipment);
@@ -139,7 +139,7 @@ public abstract class AEquipmentMonitor<EquipmentType> : AColliderMonitor where 
         // Note: no need to RefreshRangeDistance(); as it occurs when the equipment is made non-operational just before removal
     }
 
-    [Obsolete("Not currently used")]
+    ////[Obsolete("Not currently used")]
     protected abstract void RemoveMonitorFrom(EquipmentType pieceOfEquipment);
 
     //**********************************************************************************************************
@@ -169,9 +169,20 @@ public abstract class AEquipmentMonitor<EquipmentType> : AColliderMonitor where 
         _equipmentList.ForAll(e => e.RangeDistance = RangeDistance);
     }
 
+    /// <summary>
+    /// Hook that allows derived monitors to complete their reset in preparation for reuse by the same Parent.
+    /// <remarks>This monitor supports installed piece(s) of equipment. Accordingly, deactivates and removes each piece of equipment in 
+    /// preparation for adding new equipment.</remarks>
+    /// </summary>
     protected override void CompleteResetForReuse() {
         base.CompleteResetForReuse();
-        RangeCategory = RangeCategory.None;
+        var equipmentListCopy = new List<EquipmentType>(_equipmentList);
+        foreach (var equip in equipmentListCopy) {
+            equip.IsActivated = false;
+            Remove(equip);
+        }
+        ////RangeCategory = RangeCategory.None;
+        D.AssertDefault((int)RangeCategory);
         D.AssertEqual(Constants.Zero, _equipmentList.Count);
     }
 

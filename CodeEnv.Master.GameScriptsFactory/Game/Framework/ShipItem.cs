@@ -4197,7 +4197,7 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
     #region Disbanding Support Members
 
     private float __CalcDisbandCost(ShipDesign currentDesign) {
-        ShipDesign emptyDisbandDesign = OwnerAiMgr.Designs.GetShipDesign(currentDesign.HullCategory.GetEmptyTemplateDesignName());
+        ShipDesign emptyDisbandDesign = OwnerAiMgr.Designs.GetCurrentShipTemplateDesign(currentDesign.HullCategory);
         float disbandCost = currentDesign.ConstructionCost - emptyDisbandDesign.ConstructionCost;
         if (disbandCost < currentDesign.MinimumDisbandCost) {
             //D.Log("{0}.DisbandCost {1:0.#} < Minimum {2:0.#}. Fixing. DisbandDesign: {3}.",
@@ -5641,8 +5641,8 @@ public class ShipItem : AUnitElementItem, IShip, IShip_Ltd, ITopographyChangeLis
             case ShipHullCategory.Troop:
             case ShipHullCategory.Carrier:
                 return TempGameValues.LargeShipMeshCullLayer;
-            case ShipHullCategory.Fighter:
-            case ShipHullCategory.Scout:
+            //case ShipHullCategory.Fighter:
+            //case ShipHullCategory.Scout:
             case ShipHullCategory.None:
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(Data.HullCategory));

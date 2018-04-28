@@ -53,14 +53,14 @@ public class Shield : AEquipmentMonitor<ShieldGenerator>, IShield {
         generator.Shield = this;
     }
 
-    [Obsolete("Not currently used")]
-    public override bool Remove(ShieldGenerator generator) {
+    ////[Obsolete("Not currently used")]
+    protected override bool Remove(ShieldGenerator generator) {
         bool hasEquipmentRemaining = base.Remove(generator);
         generator.hasChargeChanged -= GeneratorHasChargeChangedEventHandler;
         return hasEquipmentRemaining;
     }
 
-    [Obsolete("Not currently used")]
+    ////[Obsolete("Not currently used")]
     protected override void RemoveMonitorFrom(ShieldGenerator generator) {
         generator.Shield = null;
     }

@@ -47,7 +47,7 @@ public class ActiveCountermeasureRangeMonitor : ADetectableRangeMonitor<IInterce
         activeCM.RangeMonitor = this;
     }
 
-    [Obsolete("Not currently used")]
+    ////[Obsolete("Not currently used")]
     protected override void RemoveMonitorFrom(ActiveCountermeasure activeCM) {
         activeCM.RangeMonitor = null;
     }

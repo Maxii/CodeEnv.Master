@@ -48,6 +48,10 @@ namespace CodeEnv.Master.GameContent {
 
         // Copy Constructor makes no sense when a RangeMonitor must be attached
 
+        public override bool AreSpecsEqual(AEquipmentStat otherStat) {
+            return Stat == otherStat as SensorStat;
+        }
+
         /***************************************************************************************************************************************
         * ParentDeath Note: No need to track it as the parent element will turn off the operational state of all equipment when it initiates dying.
         ***************************************************************************************************************************************/

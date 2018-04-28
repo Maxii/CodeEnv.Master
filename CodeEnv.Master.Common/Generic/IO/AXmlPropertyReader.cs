@@ -74,7 +74,7 @@ namespace CodeEnv.Master.Common {
             var settingNodes = topNode.Elements(_settingTagName);
             foreach (var settingNode in settingNodes) {
                 XElement propertyNameNode = settingNode.Element(_propertyNameTagName);
-                if (!propertyNameNode.IsEmpty && !propertyNameNode.Value.Equals(string.Empty)) {    // Elements.isEmpty is true only if they are in the format <ElementName/> 
+                if (!propertyNameNode.IsEmpty && !propertyNameNode.Value.Equals(string.Empty)) {    // Element.IsEmpty is true only if in the format <TagName/> 
                     //D.Log("Boolean PropertyName = {0}.", propertyNameNode.Value);
                     XElement propertyValueNode = settingNode.Element(_propertyValueTagName);
                     string propertyValue = "false";
@@ -95,7 +95,7 @@ namespace CodeEnv.Master.Common {
             var settingNodes = topNode.Elements(_settingTagName);
             foreach (var settingNode in settingNodes) {
                 XElement propertyNameNode = settingNode.Element(_propertyNameTagName);
-                if (!propertyNameNode.IsEmpty && !propertyNameNode.Value.Equals(string.Empty)) {    // Elements.isEmpty is true only if they are in the format <ElementName/> 
+                if (!propertyNameNode.IsEmpty && !propertyNameNode.Value.Equals(string.Empty)) {    // Element.IsEmpty is true only if in the format <TagName/> 
                     //D.Log("Integer PropertyName = {0}.", propertyNameNode.Value);
                     XElement propertyValueNode = settingNode.Element(_propertyValueTagName);
                     string propertyValue = "0";
@@ -116,7 +116,7 @@ namespace CodeEnv.Master.Common {
             var settingNodes = topNode.Elements(_settingTagName);
             foreach (var settingNode in settingNodes) {
                 XElement propertyNameNode = settingNode.Element(_propertyNameTagName);
-                if (!propertyNameNode.IsEmpty && !propertyNameNode.Value.Equals(string.Empty)) {    // Elements.isEmpty is true only if they are in the format <ElementName/> 
+                if (!propertyNameNode.IsEmpty && !propertyNameNode.Value.Equals(string.Empty)) {   // Element.IsEmpty is true only if in the format <TagName/>  
                     //D.Log("Float PropertyName = {0}.", propertyNameNode.Value);
                     XElement propertyValueNode = settingNode.Element(_propertyValueTagName);
                     string propertyValue = "0.0";
@@ -137,7 +137,7 @@ namespace CodeEnv.Master.Common {
             var settingNodes = topNode.Elements(_settingTagName);
             foreach (var settingNode in settingNodes) {
                 XElement propertyNameNode = settingNode.Element(_propertyNameTagName);
-                if (!propertyNameNode.IsEmpty && !propertyNameNode.Value.Equals(string.Empty)) { // Elements.isEmpty is true only if they are in the format <ElementName/> 
+                if (!propertyNameNode.IsEmpty && !propertyNameNode.Value.Equals(string.Empty)) {    // Element.IsEmpty is true only if in the format <TagName/> 
                     //D.Log("Text PropertyName = {0}.", propertyNameNode.Value);
                     XElement propertyValueNode = settingNode.Element(_propertyValueTagName);
                     string propertyValue = string.Empty;

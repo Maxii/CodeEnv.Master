@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CodeEnv.Master.Common;
 using CodeEnv.Master.Common.LocalResources;
 using CodeEnv.Master.GameContent;
@@ -68,18 +69,18 @@ public class TechResearchTreeNode : AResearchTreeNode {
     /// Lookup for the stats that would be enabled if/when this tech is researched, keyed by the Output container's gameObject. 
     /// Used to show the right tooltip when the container is hovered over.
     /// </summary>
-    private IDictionary<GameObject, AImprovableStat> _statLookup;
+    private IDictionary<GameObject, AImageStat> _statLookup;
 
     protected override void InitializeValuesAndReferences() {
         base.InitializeValuesAndReferences();
-        _statLookup = new Dictionary<GameObject, AImprovableStat>();
+        _statLookup = new Dictionary<GameObject, AImageStat>();
     }
 
     #region Event and Property Change Handlers
 
     protected override void EnabledContentContainerTooltipEventHandler(GameObject containerGo, bool show) {
         if (show) {
-            AImprovableStat stat = _statLookup[containerGo];
+            AImageStat stat = _statLookup[containerGo];
             TooltipHudWindow.Instance.Show(stat);
         }
         else {
@@ -115,13 +116,20 @@ public class TechResearchTreeNode : AResearchTreeNode {
         _nodeImageSprite.spriteName = tech.ImageFilename;
         _nodeNameLabel.text = tech.Name;
 
-        AImprovableStat[] stats = tech.GetEnabledStats();
-        for (int i = Constants.Zero; i < stats.Length; i++) {
-            UIWidget container = _enabledContentContainers[i];
+        List<AImageStat> stats = tech.GetEnabledEquipStats().Cast<AImageStat>().ToList();
+        stats.AddRange(tech.GetEnabledCapStats().Cast<AImageStat>());
+        int statCount = stats.Count;
+        int statContainerCount = _enabledContentContainers.Length;
+        if (statCount > statContainerCount) {    // IMPROVE
+            D.Warn("{0} has {1} more Stat(s) than it has containers to show them.", DebugName, statCount - statContainerCount);
+        }
+        int indexLimit = statCount < statContainerCount ? statCount : statContainerCount;
+        for (int index = Constants.Zero; index < indexLimit; index++) {
+            UIWidget container = _enabledContentContainers[index];
             NGUITools.SetActive(container.gameObject, true);
 
             UISprite iconSprite = container.gameObject.GetSingleComponentInChildren<UISprite>();
-            AImprovableStat stat = stats[i];
+            AImageStat stat = stats[index];
             iconSprite.atlas = stat.ImageAtlasID.GetAtlas();
             iconSprite.spriteName = stat.ImageFilename;
             _statLookup.Add(container.gameObject, stat);

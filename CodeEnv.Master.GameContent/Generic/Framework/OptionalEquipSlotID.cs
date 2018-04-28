@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: EquipmentSlotID.cs
-// Immutable ID for an equipment slot in a UnitDesign.
+// File: OptionalEquipSlotID.cs
+// Immutable ID for a slot for optional equipment in a UnitDesign.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,9 +20,9 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Immutable ID for an equipment slot in a UnitDesign.
+    /// Immutable ID for a slot for optional equipment in a UnitDesign.
     /// </summary>
-    public struct EquipmentSlotID : IEquatable<EquipmentSlotID> {
+    public struct OptionalEquipSlotID : IEquatable<OptionalEquipSlotID> {
 
         private const string DebugNameFormat = "{0}[{1} {2}]";
 
@@ -30,11 +30,11 @@ namespace CodeEnv.Master.GameContent {
 
         // see C# 4.0 In a Nutshell, page 254
 
-        public static bool operator ==(EquipmentSlotID left, EquipmentSlotID right) {
+        public static bool operator ==(OptionalEquipSlotID left, OptionalEquipSlotID right) {
             return left.Equals(right);
         }
 
-        public static bool operator !=(EquipmentSlotID left, EquipmentSlotID right) {
+        public static bool operator !=(OptionalEquipSlotID left, OptionalEquipSlotID right) {
             return !left.Equals(right);
         }
 
@@ -47,19 +47,19 @@ namespace CodeEnv.Master.GameContent {
         /// <summary>
         /// The HullMountCategory that this EquipmentSlot supports when mounting equipment.
         /// </summary>
-        public EquipmentMountCategory SupportedMount { get; private set; }
+        public OptionalEquipMountCategory SupportedMount { get; private set; }
 
-        public EquipmentSlotID(int slotNumber, EquipmentMountCategory supportedMount) {
+        public OptionalEquipSlotID(int slotNumber, OptionalEquipMountCategory supportedMount) {
             SlotNumber = slotNumber;
             SupportedMount = supportedMount;
-            DebugName = DebugNameFormat.Inject(typeof(EquipmentSlotID).Name, supportedMount.GetEnumAttributeText(), slotNumber);
+            DebugName = DebugNameFormat.Inject(typeof(OptionalEquipSlotID).Name, supportedMount.GetEnumAttributeText(), slotNumber);
         }
 
         #region Object.Equals and GetHashCode Override
 
         public override bool Equals(object obj) {
-            if (!(obj is EquipmentSlotID)) { return false; }
-            return Equals((EquipmentSlotID)obj);
+            if (!(obj is OptionalEquipSlotID)) { return false; }
+            return Equals((OptionalEquipSlotID)obj);
         }
 
         /// <summary>
@@ -84,9 +84,9 @@ namespace CodeEnv.Master.GameContent {
             return DebugName;
         }
 
-        #region IEquatable<EquipmentSlotID> Members
+        #region IEquatable<OptionalEquipSlotID> Members
 
-        public bool Equals(EquipmentSlotID other) {
+        public bool Equals(OptionalEquipSlotID other) {
             return SlotNumber == other.SlotNumber && SupportedMount == other.SupportedMount;
         }
 

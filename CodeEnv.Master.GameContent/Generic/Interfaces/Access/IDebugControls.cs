@@ -107,12 +107,12 @@ namespace CodeEnv.Master.GameContent {
 
         bool DeactivateLRSensors { get; }
 
+        bool IsAllTechResearched { get; }
+
         /// <summary>
         /// If <c>true</c> the User will be prompted to manually select the tech to research from the ResearchWindow.
         /// </summary>
         bool UserSelectsTechs { get; }
-
-        bool AreShipsFast { get; }
 
         bool IsAutoRelationsChangeEnabled { get; }
 

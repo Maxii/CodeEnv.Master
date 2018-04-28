@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AMortalItemData : AIntelItemData, IDisposable {
 
-        public IList<PassiveCountermeasure> PassiveCountermeasures { get; private set; }
+        public IEnumerable<PassiveCountermeasure> PassiveCountermeasures { get; private set; }
 
         public float MaxHitPoints { get; private set; }
 
@@ -89,7 +89,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void Initialize(IEnumerable<PassiveCountermeasure> cms) {
-            PassiveCountermeasures = cms.ToList();
+            PassiveCountermeasures = cms;
             PassiveCountermeasures.ForAll(cm => {
                 D.Assert(!cm.IsActivated);  // items activate equipment when the item commences operation
                 cm.isDamagedChanged += CountermeasureIsDamagedChangedEventHandler;
@@ -184,6 +184,19 @@ namespace CodeEnv.Master.GameContent {
             // Can't assert CurrentHitPoints as SingleElement FleetCmds can 'die' when they transfer their Element to another FleetCmd
             IsOperational = false;
             DeactivateAllEquipment();
+        }
+
+        protected void ReplacePassiveCMs(IEnumerable<PassiveCountermeasure> passiveCMs) {
+            PassiveCountermeasures.ForAll(cm => {
+                D.Assert(cm.IsActivated);
+                cm.isDamagedChanged -= CountermeasureIsDamagedChangedEventHandler;
+                cm.IsActivated = false;
+            });
+
+            D.Assert(passiveCMs.All(pCM => !pCM.IsActivated));
+            Initialize(passiveCMs);
+            PassiveCountermeasures.ForAll(cm => cm.IsActivated = true);
+            RecalcDefensiveValues();
         }
 
         protected virtual void DeactivateAllEquipment() {

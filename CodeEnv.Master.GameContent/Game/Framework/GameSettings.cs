@@ -13,6 +13,7 @@
 namespace CodeEnv.Master.GameContent {
 
     using CodeEnv.Master.Common;
+    using System.Linq;
 
     /// <summary>
     /// Data container holding all settings for a new or loaded game.
@@ -46,7 +47,6 @@ namespace CodeEnv.Master.GameContent {
 
         public int __AdditionalSettlementCreatorQty { get; set; }
 
-
         /// <summary>
         /// Indicates whether the camera should zoom on a UserUnit
         /// when starting a game.
@@ -74,6 +74,15 @@ namespace CodeEnv.Master.GameContent {
         public PlayerSeparation[] AIPlayersUserSeparations { get; set; }
 
         public GameSettings() { }
+
+        public EmpireStartLevel GetStartLevelFor(Player player) {
+            if (player == UserPlayer) {
+                return UserStartLevel;
+            }
+            D.Assert(AIPlayers.Contains(player));
+            int playerIndex = AIPlayers.IndexOf(player);
+            return AIPlayersStartLevels[playerIndex];
+        }
 
         public override string ToString() {
             return DebugName;

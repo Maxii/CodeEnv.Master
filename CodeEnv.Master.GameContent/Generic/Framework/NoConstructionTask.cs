@@ -47,7 +47,7 @@ namespace CodeEnv.Master.GameContent {
 
         public NoConstructionTask() : base(null, null) { }
 
-        public override bool TryCompleteConstruction(float productionToApply, out float unconsumedProduction) {
+        public override bool TryComplete(float productionToApply, out float unconsumedProduction) {
             throw new NotImplementedException("TryCompleteConstruction() is not implemented in {0}.".Inject(DebugName));
         }
 

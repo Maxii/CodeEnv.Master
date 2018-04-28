@@ -27,14 +27,25 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AUnitCmdDesign : AUnitMemberDesign {
 
-        private static EquipmentMountCategory[] SupportedMountCategories =  {
-                                                                                EquipmentMountCategory.Skin,
-                                                                                EquipmentMountCategory.Sensor,
-                                                                                EquipmentMountCategory.Flex
-                                                                            };
-
+        private static OptionalEquipMountCategory[] SupportedMountCategories =  {
+                                                                                    OptionalEquipMountCategory.Skin,
+                                                                                    OptionalEquipMountCategory.Sensor,
+                                                                                    OptionalEquipMountCategory.Flex
+                                                                                };
         static AUnitCmdDesign() {
             __ValidateSupportedMountsCanAccommodateSupportedEquipment();
+        }
+
+        protected static SensorStat GetImprovedReqdStat(Player player, SensorStat existingStat) {
+            PlayerDesigns designs = GameReferences.GameManager.GetAIManagerFor(player).Designs;
+            var currentStat = designs.GetCurrentMRCmdSensorStat();
+            return currentStat.Level > existingStat.Level ? currentStat : existingStat;
+        }
+
+        protected static FtlDampenerStat GetImprovedReqdStat(Player player, FtlDampenerStat existingStat) {
+            PlayerDesigns designs = GameReferences.GameManager.GetAIManagerFor(player).Designs;
+            var currentStat = designs.GetCurrentFtlDampenerStat();
+            return currentStat.Level > existingStat.Level ? currentStat : existingStat;
         }
 
         public FtlDampenerStat FtlDampenerStat { get; private set; }
@@ -47,9 +58,9 @@ namespace CodeEnv.Master.GameContent {
 
         public sealed override string ImageFilename { get { return ReqdCmdStat.ImageFilename; } }
 
-        // 9.24.17 A CommandDesign is not constructed via a Base ConstructionQueue so no need for a ConstructionCost
+        // UNCLEAR Currently a CmdModuleDesign is not constructed via a Base ConstructionQueue so no need for a ConstructionCost? Refit?
 
-        protected override EquipmentMountCategory[] SupportedHullMountCategories { get { return SupportedMountCategories; } }
+        protected override OptionalEquipMountCategory[] SupportedOptionalMountCategories { get { return SupportedMountCategories; } }
 
         public AUnitCmdDesign(Player player, FtlDampenerStat ftlDampenerStat, SensorStat reqdMRSensorStat, ACmdModuleStat reqdCmdStat)
             : base(player) {
@@ -60,9 +71,9 @@ namespace CodeEnv.Master.GameContent {
 
         protected override float CalcConstructionCost() {
             float cumConstructionCost = base.CalcConstructionCost();
-            cumConstructionCost += ReqdCmdStat.ConstructionCost;
-            cumConstructionCost += ReqdMRSensorStat.ConstructionCost;
-            cumConstructionCost += FtlDampenerStat.ConstructionCost;
+            cumConstructionCost += ReqdCmdStat.ConstructCost;
+            cumConstructionCost += ReqdMRSensorStat.ConstructCost;
+            cumConstructionCost += FtlDampenerStat.ConstructCost;
             return cumConstructionCost;
         }
 
@@ -75,24 +86,25 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Returns the maximum number of AEquipmentStat slots that this design is allowed for the provided HullMountCategory.
-        /// <remarks>AEquipmentStats that are required for a design are not included. These are typically added via the constructor.</remarks>
+        /// Returns the maximum number of slots for optional equipment that this design is allowed for the provided OptionalEquipMountCategory.
+        /// <remarks>Equipment that is required for a design is not included as they don't require slots.</remarks>
         /// </summary>
-        /// <param name="equipCat">The equip cat.</param>
+        /// <param name="mountCat">The OptionalEquipMountCategory.</param>
         /// <returns></returns>
-        /// <exception cref="System.NotImplementedException"></exception>
-        protected override int GetMaxOptionalEquipmentSlotsFor(EquipmentMountCategory mountCat) {
+        /// <exception cref="NotImplementedException"></exception>
+        protected override int GetMaxOptionalEquipSlotsFor(OptionalEquipMountCategory mountCat) {
             switch (mountCat) {
-                case EquipmentMountCategory.Sensor:
+                case OptionalEquipMountCategory.Sensor:
                     return TempGameValues.MaxSensorMounts;
-                case EquipmentMountCategory.Skin:
+                case OptionalEquipMountCategory.Skin:
                     return TempGameValues.MaxSkinMounts;
-                case EquipmentMountCategory.Flex:
+                case OptionalEquipMountCategory.Flex:
                     return TempGameValues.MaxFlexMounts;
-                case EquipmentMountCategory.Screen:
-                case EquipmentMountCategory.Turret:
-                case EquipmentMountCategory.Silo:
-                case EquipmentMountCategory.None:
+                case OptionalEquipMountCategory.FtlEngine:
+                case OptionalEquipMountCategory.Screen:
+                case OptionalEquipMountCategory.Turret:
+                case OptionalEquipMountCategory.Silo:
+                case OptionalEquipMountCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(mountCat));
             }

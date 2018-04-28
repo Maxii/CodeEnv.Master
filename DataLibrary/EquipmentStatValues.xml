@@ -76,7 +76,7 @@
       <Expense>1.0</Expense>
       <Damageable>true</Damageable>
     </Level>
-    <Level LevelName="Four">
+    <Level LevelName="Two">
       <Name>LRSensor+</Name>
       <ImageAtlasID>MyGui</ImageAtlasID>
       <ImageFilename>image</ImageFilename>
@@ -113,12 +113,12 @@
         <WdvCategory>Missile</WdvCategory>
         <WdvCatValue>2</WdvCatValue>
       </WdvStrengths>
-      <DmgStrength>
+      <DmgStrengths>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>2.5</DmgCatValue>       
-      </DmgStrength>
+      </DmgStrengths>
     </Level>
-    <Level LevelName="Three">
+    <Level LevelName="Two">
       <Name>CIWS+</Name>
       <ImageAtlasID>MyGui</ImageAtlasID>
       <ImageFilename>image</ImageFilename>
@@ -139,10 +139,10 @@
         <WdvCategory>Projectile</WdvCategory>
         <WdvCatValue>2</WdvCatValue>
       </WdvStrengths>
-      <DmgStrength>
+      <DmgStrengths>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>2.5</DmgCatValue>
-      </DmgStrength>
+      </DmgStrengths>
     </Level>
   </EquipmentCategory>
 
@@ -172,10 +172,10 @@
         <WdvCategory>Missile</WdvCategory>
         <WdvCatValue>2</WdvCatValue>
       </WdvStrengths>
-      <DmgStrength>
+      <DmgStrengths>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>2.5</DmgCatValue>
-      </DmgStrength>
+      </DmgStrengths>
     </Level>
     <Level LevelName="Two">
       <Name>ADS+</Name>
@@ -202,10 +202,10 @@
         <WdvCategory>Beam</WdvCategory>
         <WdvCatValue>2</WdvCatValue>
       </WdvStrengths>
-      <DmgStrength>
+      <DmgStrengths>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>2.5</DmgCatValue>
-      </DmgStrength>
+      </DmgStrengths>
     </Level>
   </EquipmentCategory>
 
@@ -225,8 +225,8 @@
       <MaxTurnRate>90</MaxTurnRate>
       <MaxSpeed>4</MaxSpeed>
     </Level>
-    <Level LevelName="Five">
-      <Name>STL5</Name>
+    <Level LevelName="Two">
+      <Name>STL+</Name>
       <ImageAtlasID>MyGui</ImageAtlasID>
       <ImageFilename>image</ImageFilename>
       <Description>Description...</Description>
@@ -257,8 +257,8 @@
       <MaxTurnRate>90</MaxTurnRate>
       <MaxSpeed>10</MaxSpeed>
     </Level>
-    <Level LevelName="Five">
-      <Name>FTL5</Name>
+    <Level LevelName="Two">
+      <Name>FTL+</Name>
       <ImageAtlasID>MyGui</ImageAtlasID>
       <ImageFilename>image</ImageFilename>
       <Description>Description...</Description>
@@ -305,7 +305,7 @@
 
   <EquipmentCategory EquipmentCategoryName="PassiveCountermeasure">
     <Level LevelName="One">
-      <Name>Armor1</Name>
+      <Name>Armor</Name>
       <ImageAtlasID>MyGui</ImageAtlasID>
       <ImageFilename>image</ImageFilename>
       <Description>Description...</Description>
@@ -315,13 +315,13 @@
       <HitPoints>2.0</HitPoints>
       <ConstructionCost>5.0</ConstructionCost>
       <Expense>1.0</Expense>
-      <DmgStrength>
+      <DmgStrengths>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>2.5</DmgCatValue>
-      </DmgStrength>
+      </DmgStrengths>
     </Level>
     <Level LevelName="Two">
-      <Name>Armor2</Name>
+      <Name>Armor+</Name>
       <ImageAtlasID>MyGui</ImageAtlasID>
       <ImageFilename>image</ImageFilename>
       <Description>Description...</Description>
@@ -331,16 +331,16 @@
       <HitPoints>3.0</HitPoints>
       <ConstructionCost>5.0</ConstructionCost>
       <Expense>1.0</Expense>
-      <DmgStrength>
+      <DmgStrengths>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>2.5</DmgCatValue>
-      </DmgStrength>
+      </DmgStrengths>
     </Level>
   </EquipmentCategory>
 
   <EquipmentCategory EquipmentCategoryName="ShieldGenerator">
     <Level LevelName="One">
-      <Name>ShieldGen1</Name>
+      <Name>ShieldGen</Name>
       <ImageAtlasID>MyGui</ImageAtlasID>
       <ImageFilename>image</ImageFilename>
       <Description>Description...</Description>
@@ -354,13 +354,13 @@
       <MaxCharge>20</MaxCharge>
       <ChargeRate>1.0</ChargeRate>
       <Reload>20</Reload>
-      <DmgStrength>
+      <DmgStrengths>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>2.5</DmgCatValue>
-      </DmgStrength>
+      </DmgStrengths>
     </Level>
     <Level LevelName="Two">
-      <Name>ShieldGen2</Name>
+      <Name>ShieldGen+</Name>
       <ImageAtlasID>MyGui</ImageAtlasID>
       <ImageFilename>image</ImageFilename>
       <Description>Description...</Description>
@@ -374,16 +374,17 @@
       <MaxCharge>30</MaxCharge>
       <ChargeRate>1.5</ChargeRate>
       <Reload>15</Reload>
-      <DmgStrength>
+      <DmgStrengths>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>2.5</DmgCatValue>
-      </DmgStrength>
+      </DmgStrengths>
     </Level>
   </EquipmentCategory>
-
+  
+  <!-- Cmd Modules -->
   <EquipmentCategory EquipmentCategoryName="StarbaseCmdModule">
     <Level LevelName="One">
-      <Name>CmdModule1</Name>
+      <Name>CmdModule</Name>
       <ImageAtlasID>MyGui</ImageAtlasID>
       <ImageFilename>image</ImageFilename>
       <Description>Description...</Description>
@@ -398,7 +399,7 @@
       <StartApproval>1.0</StartApproval>
     </Level>
     <Level LevelName="Two">
-      <Name>CmdModule2</Name>
+      <Name>CmdModule+</Name>
       <ImageAtlasID>MyGui</ImageAtlasID>
       <ImageFilename>image</ImageFilename>
       <Description>Description...</Description>
@@ -413,10 +414,9 @@
       <StartApproval>1.0</StartApproval>
     </Level>
   </EquipmentCategory>
-
   <EquipmentCategory EquipmentCategoryName="SettlementCmdModule">
     <Level LevelName="One">
-      <Name>CmdModule1</Name>
+      <Name>CmdModule</Name>
       <ImageAtlasID>MyGui</ImageAtlasID>
       <ImageFilename>image</ImageFilename>
       <Description>Description...</Description>
@@ -431,7 +431,7 @@
       <StartApproval>1.0</StartApproval>
     </Level>
     <Level LevelName="Two">
-      <Name>CmdModule2</Name>
+      <Name>CmdModule+</Name>
       <ImageAtlasID>MyGui</ImageAtlasID>
       <ImageFilename>image</ImageFilename>
       <Description>Description...</Description>
@@ -446,10 +446,9 @@
       <StartApproval>1.0</StartApproval>
     </Level>
   </EquipmentCategory>
-
   <EquipmentCategory EquipmentCategoryName="FleetCmdModule">
     <Level LevelName="One">
-      <Name>CmdModule1</Name>
+      <Name>CmdModule</Name>
       <ImageAtlasID>MyGui</ImageAtlasID>
       <ImageFilename>image</ImageFilename>
       <Description>Description...</Description>
@@ -462,7 +461,7 @@
       <MaxCmdEffect>1.0</MaxCmdEffect>
     </Level>
     <Level LevelName="Two">
-      <Name>CmdModule2</Name>
+      <Name>CmdModule+</Name>
       <ImageAtlasID>MyGui</ImageAtlasID>
       <ImageFilename>image</ImageFilename>
       <Description>Description...</Description>
@@ -476,10 +475,11 @@
     </Level>
   </EquipmentCategory>
 
+  <!-- Weapons -->
   <!-- BeamWeapon: Accuracy: Max aiming Inaccuracy in degrees -->
   <EquipmentCategory EquipmentCategoryName="BeamWeapon">
     <Level LevelName="One">
-      <Name>Phaser1</Name>
+      <Name>Phaser</Name>
       <ImageAtlasID>MyGui</ImageAtlasID>
       <ImageFilename>image</ImageFilename>
       <Description>Description...</Description>
@@ -495,15 +495,15 @@
         <WdvCatValue>6</WdvCatValue>
       </WdvStrengths>
       <Reload>10</Reload>
-      <DmgStrength>
+      <DmgStrengths>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>6</DmgCatValue>
-      </DmgStrength>
+      </DmgStrengths>
       <Accuracy>3</Accuracy>
       <Duration>2</Duration>
     </Level>
     <Level LevelName="Two">
-      <Name>Phaser2</Name>
+      <Name>Phaser+</Name>
       <ImageAtlasID>MyGui</ImageAtlasID>
       <ImageFilename>image</ImageFilename>
       <Description>Description...</Description>
@@ -519,19 +519,18 @@
         <WdvCatValue>6.5</WdvCatValue>
       </WdvStrengths>
       <Reload>9</Reload>
-      <DmgStrength>
+      <DmgStrengths>
         <DmgCategory>Thermal</DmgCategory>
         <DmgCatValue>8</DmgCatValue>
-      </DmgStrength>
+      </DmgStrengths>
       <Accuracy>2.5</Accuracy>
       <Duration>2.5</Duration>
     </Level>
   </EquipmentCategory>
-  
   <!-- ProjectileWeapon: Accuracy: Max aiming Inaccuracy in degrees -->
   <EquipmentCategory EquipmentCategoryName="ProjectileWeapon">
     <Level LevelName="One">
-      <Name>GatlingGun1</Name>
+      <Name>GatlingGun</Name>
       <ImageAtlasID>MyGui</ImageAtlasID>
       <ImageFilename>image</ImageFilename>
       <Description>Description...</Description>
@@ -547,17 +546,17 @@
         <WdvCatValue>4</WdvCatValue>
       </WdvStrengths>
       <Reload>6</Reload>
-      <DmgStrength>
+      <DmgStrengths>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>5</DmgCatValue>
-      </DmgStrength>
+      </DmgStrengths>
       <MaxSpeed>15</MaxSpeed>
       <OrdnanceMass>1</OrdnanceMass>
       <Drag>0.01</Drag>
       <Accuracy>3</Accuracy>
     </Level>
     <Level LevelName="Two">
-      <Name>GatlingGun2</Name>
+      <Name>GatlingGun+</Name>
       <ImageAtlasID>MyGui</ImageAtlasID>
       <ImageFilename>image</ImageFilename>
       <Description>Description...</Description>
@@ -573,21 +572,20 @@
         <WdvCatValue>5</WdvCatValue>
       </WdvStrengths>
       <Reload>5.5</Reload>
-      <DmgStrength>
+      <DmgStrengths>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>6</DmgCatValue>
-      </DmgStrength>
+      </DmgStrengths>
       <MaxSpeed>16</MaxSpeed>
       <OrdnanceMass>1</OrdnanceMass>
       <Drag>0.01</Drag>
       <Accuracy>2.5</Accuracy>
     </Level>
   </EquipmentCategory>
-
   <!-- MissileWeapon: Accuracy: Max steering Inaccuracy in degrees, UpdateFreq: Course checks per hour -->
   <EquipmentCategory EquipmentCategoryName="MissileWeapon">
     <Level LevelName="One">
-      <Name>MissileLauncher1</Name>
+      <Name>MissileLauncher</Name>
       <ImageAtlasID>MyGui</ImageAtlasID>
       <ImageFilename>image</ImageFilename>
       <Description>Description...</Description>
@@ -603,10 +601,10 @@
         <WdvCatValue>6</WdvCatValue>
       </WdvStrengths>
       <Reload>18</Reload>
-      <DmgStrength>
+      <DmgStrengths>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>6</DmgCatValue>
-      </DmgStrength>
+      </DmgStrengths>
       <MaxSpeed>8</MaxSpeed>
       <OrdnanceMass>5</OrdnanceMass>
       <Drag>0.02</Drag>
@@ -615,7 +613,7 @@
       <UpdateFreq>0.4</UpdateFreq>  <!-- 0.5 turn not complete warnings -->
     </Level>
     <Level LevelName="Two">
-      <Name>MissileLauncher2</Name>
+      <Name>MissileLauncher+</Name>
       <ImageAtlasID>MyGui</ImageAtlasID>
       <ImageFilename>image</ImageFilename>
       <Description>Description...</Description>
@@ -631,10 +629,10 @@
         <WdvCatValue>6.5</WdvCatValue>
       </WdvStrengths>
       <Reload>17</Reload>
-      <DmgStrength>
+      <DmgStrengths>
         <DmgCategory>Structural</DmgCategory>
         <DmgCatValue>8</DmgCatValue>
-      </DmgStrength>
+      </DmgStrengths>
       <MaxSpeed>9</MaxSpeed>
       <OrdnanceMass>5</OrdnanceMass>
       <Drag>0.02</Drag>
@@ -643,11 +641,10 @@
       <UpdateFreq>0.4</UpdateFreq>  <!-- 0.5 turn not complete warnings -->
     </Level>
   </EquipmentCategory>
-
   <!-- AssaultWeapon: Accuracy: Max steering Inaccuracy in degrees, UpdateFreq: Course checks per hour -->
   <EquipmentCategory EquipmentCategoryName="AssaultWeapon">
     <Level LevelName="One">
-      <Name>AssaultLauncher1</Name>
+      <Name>AssaultLauncher</Name>
       <ImageAtlasID>MyGui</ImageAtlasID>
       <ImageFilename>image</ImageFilename>
       <Description>Description...</Description>
@@ -663,10 +660,10 @@
         <WdvCatValue>6</WdvCatValue>
       </WdvStrengths>
       <Reload>28</Reload>
-      <DmgStrength>
+      <DmgStrengths>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>3</DmgCatValue>
-      </DmgStrength>
+      </DmgStrengths>
       <MaxSpeed>3</MaxSpeed>
       <OrdnanceMass>10</OrdnanceMass>
       <Drag>0.03</Drag>
@@ -675,7 +672,7 @@
       <UpdateFreq>0.4</UpdateFreq>  <!-- 0.5 turn not complete warnings -->
     </Level>
     <Level LevelName="Two">
-      <Name>AssaultLauncher2</Name>
+      <Name>AssaultLauncher+</Name>
       <ImageAtlasID>MyGui</ImageAtlasID>
       <ImageFilename>image</ImageFilename>
       <Description>Description...</Description>
@@ -691,16 +688,995 @@
         <WdvCatValue>6.5</WdvCatValue>
       </WdvStrengths>
       <Reload>26</Reload>
-      <DmgStrength>
+      <DmgStrengths>
         <DmgCategory>Incursion</DmgCategory>
         <DmgCatValue>4</DmgCatValue>
-      </DmgStrength>
+      </DmgStrengths>
       <MaxSpeed>4</MaxSpeed>
       <OrdnanceMass>10</OrdnanceMass>
       <Drag>0.03</Drag>
       <Accuracy>0.8</Accuracy>
       <MaxTurnRate>270</MaxTurnRate>
       <UpdateFreq>0.4</UpdateFreq>  <!-- 0.5 turn not complete warnings -->
+    </Level>
+  </EquipmentCategory>
+  
+  <!-- Facility Hulls -->
+  <EquipmentCategory EquipmentCategoryName="FHullCentralHub">
+    <Level LevelName="One">
+      <Name>CHub</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>10000</Mass>
+      <Power>0.0</Power>
+      <HitPoints>100</HitPoints>
+      <ConstructionCost>400</ConstructionCost>
+      <Expense>0</Expense>
+      <DmgStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <HqPriority>Primary</HqPriority>
+      <Food>10</Food>
+      <Science>5</Science>
+      <Income>5</Income>
+      <Culture>3</Culture>
+      <Production>10</Production>
+    </Level>
+    <Level LevelName="Two">
+      <Name>CHub+</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>10000</Mass>
+      <Power>0.0</Power>
+      <HitPoints>100</HitPoints>
+      <ConstructionCost>400</ConstructionCost>
+      <Expense>0</Expense>
+      <DmgStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <HqPriority>Primary</HqPriority>
+      <Food>20</Food>
+      <Science>10</Science>
+      <Income>10</Income>
+      <Culture>5</Culture>
+      <Production>15</Production>
+    </Level>
+  </EquipmentCategory>
+  <EquipmentCategory EquipmentCategoryName="FHullFactory">
+    <Level LevelName="One">
+      <Name>Fact</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>5000</Mass>
+      <Power>0.0</Power>
+      <HitPoints>80</HitPoints>
+      <ConstructionCost>290</ConstructionCost>
+      <Expense>5</Expense>
+      <DmgStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <HqPriority>Low</HqPriority>
+      <Food>0</Food>
+      <Science>0</Science>
+      <Income>0</Income>
+      <Culture>0</Culture>
+      <Production>10</Production>
+    </Level>
+    <Level LevelName="Two">
+      <Name>Fact+</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>5000</Mass>
+      <Power>0.0</Power>
+      <HitPoints>80</HitPoints>
+      <ConstructionCost>290</ConstructionCost>
+      <Expense>5</Expense>
+      <DmgStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <HqPriority>Low</HqPriority>
+      <Food>0</Food>
+      <Science>0</Science>
+      <Income>0</Income>
+      <Culture>0</Culture>
+      <Production>15</Production>
+    </Level>
+  </EquipmentCategory>
+  <EquipmentCategory EquipmentCategoryName="FHullEconomic">
+    <Level LevelName="One">
+      <Name>Econ</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>2000</Mass>
+      <Power>0.0</Power>
+      <HitPoints>60</HitPoints>
+      <ConstructionCost>260</ConstructionCost>
+      <Expense>0</Expense>
+      <DmgStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <HqPriority>Low</HqPriority>
+      <Food>0</Food>
+      <Science>0</Science>
+      <Income>20</Income>
+      <Culture>0</Culture>
+      <Production>0</Production>
+    </Level>
+    <Level LevelName="Two">
+      <Name>Econ+</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>2000</Mass>
+      <Power>0.0</Power>
+      <HitPoints>60</HitPoints>
+      <ConstructionCost>260</ConstructionCost>
+      <Expense>0</Expense>
+      <DmgStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <HqPriority>Low</HqPriority>
+      <Food>0</Food>
+      <Science>0</Science>
+      <Income>20</Income>
+      <Culture>0</Culture>
+      <Production>0</Production>
+    </Level>
+  </EquipmentCategory>
+  <EquipmentCategory EquipmentCategoryName="FHullBarracks">
+    <Level LevelName="One">
+      <Name>Camp</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>2000</Mass>
+      <Power>0.0</Power>
+      <HitPoints>60</HitPoints>
+      <ConstructionCost>250</ConstructionCost>
+      <Expense>3</Expense>
+      <DmgStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <HqPriority>Low</HqPriority>
+      <Food>0</Food>
+      <Science>0</Science>
+      <Income>0</Income>
+      <Culture>0</Culture>
+      <Production>0</Production>
+    </Level>
+    <Level LevelName="Two">
+      <Name>Camp+</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>2000</Mass>
+      <Power>0.0</Power>
+      <HitPoints>60</HitPoints>
+      <ConstructionCost>250</ConstructionCost>
+      <Expense>3</Expense>
+      <DmgStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <HqPriority>Low</HqPriority>
+      <Food>0</Food>
+      <Science>0</Science>
+      <Income>0</Income>
+      <Culture>0</Culture>
+      <Production>0</Production>
+    </Level>
+  </EquipmentCategory>
+  <EquipmentCategory EquipmentCategoryName="FHullColonyHab">
+    <Level LevelName="One">
+      <Name>ColHab</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>2000</Mass>
+      <Power>0.0</Power>
+      <HitPoints>60</HitPoints>
+      <ConstructionCost>270</ConstructionCost>
+      <Expense>3</Expense>
+      <DmgStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <HqPriority>Low</HqPriority>
+      <Food>10</Food>
+      <Science>0</Science>
+      <Income>0</Income>
+      <Culture>3</Culture>
+      <Production>0</Production>
+    </Level>
+    <Level LevelName="Two">
+      <Name>ColHab+</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>2000</Mass>
+      <Power>0.0</Power>
+      <HitPoints>60</HitPoints>
+      <ConstructionCost>270</ConstructionCost>
+      <Expense>3</Expense>
+      <DmgStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <HqPriority>Low</HqPriority>
+      <Food>20</Food>
+      <Science>0</Science>
+      <Income>0</Income>
+      <Culture>5</Culture>
+      <Production>0</Production>
+    </Level>
+  </EquipmentCategory>
+  <EquipmentCategory EquipmentCategoryName="FHullDefense">
+    <Level LevelName="One">
+      <Name>Def</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>5000</Mass>
+      <Power>0.0</Power>
+      <HitPoints>80</HitPoints>
+      <ConstructionCost>300</ConstructionCost>
+      <Expense>5</Expense>
+      <DmgStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <HqPriority>Secondary</HqPriority>
+      <Food>0</Food>
+      <Science>0</Science>
+      <Income>0</Income>
+      <Culture>0</Culture>
+      <Production>0</Production>
+    </Level>
+    <Level LevelName="Two">
+      <Name>Def+</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>5000</Mass>
+      <Power>0.0</Power>
+      <HitPoints>80</HitPoints>
+      <ConstructionCost>300</ConstructionCost>
+      <Expense>5</Expense>
+      <DmgStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <HqPriority>Secondary</HqPriority>
+      <Food>0</Food>
+      <Science>0</Science>
+      <Income>0</Income>
+      <Culture>0</Culture>
+      <Production>0</Production>
+    </Level>
+  </EquipmentCategory>
+  <EquipmentCategory EquipmentCategoryName="FHullLaboratory">
+    <Level LevelName="One">
+      <Name>Lab</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>2000</Mass>
+      <Power>0.0</Power>
+      <HitPoints>60</HitPoints>
+      <ConstructionCost>280</ConstructionCost>
+      <Expense>5</Expense>
+      <DmgStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <HqPriority>Low</HqPriority>
+      <Food>0</Food>
+      <Science>10</Science>
+      <Income>0</Income>
+      <Culture>0</Culture>
+      <Production>0</Production>
+    </Level>
+    <Level LevelName="Two">
+      <Name>Lab+</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>2000</Mass>
+      <Power>0.0</Power>
+      <HitPoints>60</HitPoints>
+      <ConstructionCost>280</ConstructionCost>
+      <Expense>5</Expense>
+      <DmgStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <HqPriority>Low</HqPriority>
+      <Food>0</Food>
+      <Science>10</Science>
+      <Income>0</Income>
+      <Culture>0</Culture>
+      <Production>0</Production>
+    </Level>
+  </EquipmentCategory>
+
+  
+  <!-- Ship Hulls -->
+  <EquipmentCategory EquipmentCategoryName="SHullInvestigator">
+    <Level LevelName="One">
+      <Name>IV</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>200</Mass>
+      <Power>0.0</Power>
+      <HitPoints>40</HitPoints>
+      <ConstructionCost>130</ConstructionCost>
+      <Expense>3</Expense>
+      <DmgStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <HqPriority>Low</HqPriority>
+      <TurnRateConstraint>0.75</TurnRateConstraint>
+      <Science>5</Science>
+      <Income>0</Income>
+      <Culture>0</Culture>
+    </Level>
+    <Level LevelName="Two">
+      <Name>IV+</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>200</Mass>
+      <Power>0.0</Power>
+      <HitPoints>40</HitPoints>
+      <ConstructionCost>130</ConstructionCost>
+      <Expense>3</Expense>
+      <DmgStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <HqPriority>Low</HqPriority>
+      <TurnRateConstraint>0.75</TurnRateConstraint>
+      <Science>10</Science>
+      <Income>0</Income>
+      <Culture>0</Culture>
+    </Level>
+  </EquipmentCategory>
+  <EquipmentCategory EquipmentCategoryName="SHullCarrier">
+    <Level LevelName="One">
+      <Name>CV</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>500</Mass>
+      <Power>0.0</Power>
+      <HitPoints>60</HitPoints>
+      <ConstructionCost>480</ConstructionCost>
+      <Expense>5</Expense>
+      <DmgStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <HqPriority>Primary</HqPriority>
+      <TurnRateConstraint>0.50</TurnRateConstraint>
+      <Science>0</Science>
+      <Income>0</Income>
+      <Culture>0</Culture>
+    </Level>
+    <Level LevelName="Two">
+      <Name>CV+</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>500</Mass>
+      <Power>0.0</Power>
+      <HitPoints>60</HitPoints>
+      <ConstructionCost>480</ConstructionCost>
+      <Expense>5</Expense>
+      <DmgStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <HqPriority>Primary</HqPriority>
+      <TurnRateConstraint>0.50</TurnRateConstraint>
+      <Science>0</Science>
+      <Income>0</Income>
+      <Culture>0</Culture>
+    </Level>
+  </EquipmentCategory>
+  <EquipmentCategory EquipmentCategoryName="SHullDreadnought">
+    <Level LevelName="One">
+      <Name>DN</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>400</Mass>
+      <Power>0.0</Power>
+      <HitPoints>60</HitPoints>
+      <ConstructionCost>470</ConstructionCost>
+      <Expense>5</Expense>
+      <DmgStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <HqPriority>Secondary</HqPriority>
+      <TurnRateConstraint>0.60</TurnRateConstraint>
+      <Science>0</Science>
+      <Income>0</Income>
+      <Culture>0</Culture>
+    </Level>
+    <Level LevelName="Two">
+      <Name>DN+</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>400</Mass>
+      <Power>0.0</Power>
+      <HitPoints>60</HitPoints>
+      <ConstructionCost>470</ConstructionCost>
+      <Expense>5</Expense>
+      <DmgStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <HqPriority>Secondary</HqPriority>
+      <TurnRateConstraint>0.60</TurnRateConstraint>
+      <Science>0</Science>
+      <Income>0</Income>
+      <Culture>0</Culture>
+    </Level>
+  </EquipmentCategory>
+  <EquipmentCategory EquipmentCategoryName="SHullTroop">
+    <Level LevelName="One">
+      <Name>TT</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>400</Mass>
+      <Power>0.0</Power>
+      <HitPoints>50</HitPoints>
+      <ConstructionCost>245</ConstructionCost>
+      <Expense>5</Expense>
+      <DmgStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <HqPriority>Secondary</HqPriority>
+      <TurnRateConstraint>0.60</TurnRateConstraint>
+      <Science>0</Science>
+      <Income>0</Income>
+      <Culture>0</Culture>
+    </Level>
+    <Level LevelName="Two">
+      <Name>TT+</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>400</Mass>
+      <Power>0.0</Power>
+      <HitPoints>50</HitPoints>
+      <ConstructionCost>245</ConstructionCost>
+      <Expense>5</Expense>
+      <DmgStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <HqPriority>Secondary</HqPriority>
+      <TurnRateConstraint>0.60</TurnRateConstraint>
+      <Science>0</Science>
+      <Income>0</Income>
+      <Culture>0</Culture>
+    </Level>
+  </EquipmentCategory>
+  <EquipmentCategory EquipmentCategoryName="SHullColonizer">
+    <Level LevelName="One">
+      <Name>CO</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>200</Mass>
+      <Power>0.0</Power>
+      <HitPoints>40</HitPoints>
+      <ConstructionCost>355</ConstructionCost>
+      <Expense>5</Expense>
+      <DmgStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <HqPriority>Tertiary</HqPriority>
+      <TurnRateConstraint>0.75</TurnRateConstraint>
+      <Science>0</Science>
+      <Income>0</Income>
+      <Culture>2</Culture>
+    </Level>
+    <Level LevelName="Two">
+      <Name>CO+</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>200</Mass>
+      <Power>0.0</Power>
+      <HitPoints>40</HitPoints>
+      <ConstructionCost>355</ConstructionCost>
+      <Expense>5</Expense>
+      <DmgStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <HqPriority>Tertiary</HqPriority>
+      <TurnRateConstraint>0.75</TurnRateConstraint>
+      <Science>0</Science>
+      <Income>0</Income>
+      <Culture>2</Culture>
+    </Level>
+  </EquipmentCategory>
+  <EquipmentCategory EquipmentCategoryName="SHullCruiser">
+    <Level LevelName="One">
+      <Name>CA</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>200</Mass>
+      <Power>0.0</Power>
+      <HitPoints>40</HitPoints>
+      <ConstructionCost>350</ConstructionCost>
+      <Expense>3</Expense>
+      <DmgStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <HqPriority>Tertiary</HqPriority>
+      <TurnRateConstraint>0.75</TurnRateConstraint>
+      <Science>0</Science>
+      <Income>0</Income>
+      <Culture>0</Culture>
+    </Level>
+    <Level LevelName="Two">
+      <Name>CA+</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>200</Mass>
+      <Power>0.0</Power>
+      <HitPoints>40</HitPoints>
+      <ConstructionCost>350</ConstructionCost>
+      <Expense>3</Expense>
+      <DmgStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <HqPriority>Tertiary</HqPriority>
+      <TurnRateConstraint>0.75</TurnRateConstraint>
+      <Science>0</Science>
+      <Income>0</Income>
+      <Culture>0</Culture>
+    </Level>
+  </EquipmentCategory>
+  <EquipmentCategory EquipmentCategoryName="SHullSupport">
+    <Level LevelName="One">
+      <Name>SU</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>100</Mass>
+      <Power>0.0</Power>
+      <HitPoints>30</HitPoints>
+      <ConstructionCost>240</ConstructionCost>
+      <Expense>3</Expense>
+      <DmgStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <HqPriority>Low</HqPriority>
+      <TurnRateConstraint>0.90</TurnRateConstraint>
+      <Science>0</Science>
+      <Income>3</Income>
+      <Culture>2</Culture>
+    </Level>
+    <Level LevelName="Two">
+      <Name>SU+</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>100</Mass>
+      <Power>0.0</Power>
+      <HitPoints>30</HitPoints>
+      <ConstructionCost>240</ConstructionCost>
+      <Expense>3</Expense>
+      <DmgStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <HqPriority>Low</HqPriority>
+      <TurnRateConstraint>0.90</TurnRateConstraint>
+      <Science>0</Science>
+      <Income>5</Income>
+      <Culture>3</Culture>
+    </Level>
+  </EquipmentCategory>
+  <EquipmentCategory EquipmentCategoryName="SHullDestroyer">
+    <Level LevelName="One">
+      <Name>DD</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>100</Mass>
+      <Power>0.0</Power>
+      <HitPoints>30</HitPoints>
+      <ConstructionCost>200</ConstructionCost>
+      <Expense>2</Expense>
+      <DmgStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <HqPriority>Low</HqPriority>
+      <TurnRateConstraint>0.90</TurnRateConstraint>
+      <Science>0</Science>
+      <Income>0</Income>
+      <Culture>0</Culture>
+    </Level>
+    <Level LevelName="Two">
+      <Name>DD+</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>100</Mass>
+      <Power>0.0</Power>
+      <HitPoints>30</HitPoints>
+      <ConstructionCost>200</ConstructionCost>
+      <Expense>2</Expense>
+      <DmgStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <HqPriority>Low</HqPriority>
+      <TurnRateConstraint>0.90</TurnRateConstraint>
+      <Science>0</Science>
+      <Income>0</Income>
+      <Culture>0</Culture>
+    </Level>
+  </EquipmentCategory>
+  <EquipmentCategory EquipmentCategoryName="SHullFrigate">
+    <Level LevelName="One">
+      <Name>FF</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>50</Mass>
+      <Power>0.0</Power>
+      <HitPoints>20</HitPoints>
+      <ConstructionCost>125</ConstructionCost>
+      <Expense>1</Expense>
+      <DmgStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>2</DmgCatValue>
+      </DmgStrengths>
+      <HqPriority>Low</HqPriority>
+      <TurnRateConstraint>1.0</TurnRateConstraint>
+      <Science>0</Science>
+      <Income>0</Income>
+      <Culture>0</Culture>
+    </Level>
+    <Level LevelName="Two">
+      <Name>FF+</Name>
+      <ImageAtlasID>MyGui</ImageAtlasID>
+      <ImageFilename>image</ImageFilename>
+      <Description>Description...</Description>
+      <Size>0.0</Size>
+      <Mass>50</Mass>
+      <Power>0.0</Power>
+      <HitPoints>20</HitPoints>
+      <ConstructionCost>125</ConstructionCost>
+      <Expense>1</Expense>
+      <DmgStrengths>
+        <DmgCategory>Thermal</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Structural</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <DmgStrengths>
+        <DmgCategory>Incursion</DmgCategory>
+        <DmgCatValue>3</DmgCatValue>
+      </DmgStrengths>
+      <HqPriority>Low</HqPriority>
+      <TurnRateConstraint>1.0</TurnRateConstraint>
+      <Science>0</Science>
+      <Income>0</Income>
+      <Culture>0</Culture>
     </Level>
   </EquipmentCategory>
 

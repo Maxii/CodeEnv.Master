@@ -1156,6 +1156,37 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
         return refitCost;
     }
 
+    private float __CalcRefitCost(AUnitCmdDesign refitDesign, AUnitCmdDesign currentDesign) {
+        float refitCost = refitDesign.ConstructionCost - currentDesign.ConstructionCost;
+        if (refitCost < refitDesign.MinimumRefitCost) {
+            //D.Log("{0}.RefitCost {1:0.#} < Minimum {2:0.#}. Fixing. RefitDesign: {3}.", DebugName, refitCost, refitDesign.MinimumRefitCost, refitDesign.DebugName);
+            refitCost = refitDesign.MinimumRefitCost;
+        }
+        return refitCost;
+    }
+
+    private bool __TryGetUpgradeDesign(AUnitCmdDesign currentCmdDesign, out AUnitCmdDesign upgradedCmdDesign) {
+        var ownerDesigns = OwnerAiMgr.Designs;
+        if (currentCmdDesign is SettlementCmdDesign) {
+            SettlementCmdDesign settleCmdDesign;
+            if (ownerDesigns.TryGetUpgradeDesign(currentCmdDesign as SettlementCmdDesign, out settleCmdDesign)) {
+                upgradedCmdDesign = settleCmdDesign;
+                return true;
+            }
+        }
+        else {
+            D.Assert(currentCmdDesign is StarbaseCmdDesign);
+            StarbaseCmdDesign sbCmdDesign;
+            if (ownerDesigns.TryGetUpgradeDesign(currentCmdDesign as StarbaseCmdDesign, out sbCmdDesign)) {
+                upgradedCmdDesign = sbCmdDesign;
+                return true;
+            }
+        }
+        upgradedCmdDesign = null;
+        return false;
+    }
+
+
     #endregion
 
     void ExecuteRefitOrder_UponPreconfigureState() {
@@ -1189,6 +1220,14 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
 
         _preReworkValues = Data.PrepareForRework();
 
+        if (IsHQ) {
+            var currentCmdModuleDesign = Command.Data.CmdDesign;
+            AUnitCmdDesign upgradedDesign;
+            if (__TryGetUpgradeDesign(currentCmdModuleDesign, out upgradedDesign)) {
+                UnitFactory.Instance.UpgradeCmdInstance(upgradedDesign, Command);
+            }
+        }
+
         RefitConstructionTask construction = Command.ConstructionMgr.AddToRefitQueue(refitDesign, this, refitCost);
         D.Assert(!construction.IsCompleted);
         while (!construction.IsCompleted) {
@@ -1196,9 +1235,10 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
             yield return null;
         }
 
-        // refit completed so try to inform Cmd and replace the element
+        // refit completed so try to inform Cmd... 
         AttemptOrderOutcomeCallback(OrderOutcome.Success);
 
+        // ...and replace the element
         ReworkUnderway = ReworkingMode.None;
         FacilityItem facilityReplacement = UnitFactory.Instance.MakeFacilityInstance(Owner, Topography, refitDesign, Name, Command.UnitContainer.gameObject);
         Command.ReplaceRefittedElement(this, facilityReplacement);
@@ -1287,7 +1327,7 @@ public class FacilityItem : AUnitElementItem, IFacility, IFacility_Ltd, IAvoidab
     #region ExecuteDisbandOrder Support Members
 
     private float __CalcDisbandCost(FacilityDesign currentDesign) {
-        FacilityDesign emptyDisbandDesign = OwnerAiMgr.Designs.GetFacilityDesign(currentDesign.HullCategory.GetEmptyTemplateDesignName());
+        FacilityDesign emptyDisbandDesign = OwnerAiMgr.Designs.GetCurrentFacilityTemplateDesign(currentDesign.HullCategory);
         float disbandCost = currentDesign.ConstructionCost - emptyDisbandDesign.ConstructionCost;
         if (disbandCost < currentDesign.MinimumDisbandCost) {
             //D.Log("{0}.DisbandCost {1:0.#} < Minimum {2:0.#}. Fixing. DisbandDesign: {3}.",

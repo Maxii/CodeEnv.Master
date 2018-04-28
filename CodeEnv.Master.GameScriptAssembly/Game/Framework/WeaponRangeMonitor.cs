@@ -85,7 +85,7 @@ public class WeaponRangeMonitor : ADetectableRangeMonitor<IElementBlastable, AWe
         weapon.RangeMonitor = this;
     }
 
-    [Obsolete("Not currently used")]
+    ////[Obsolete("Not currently used")]
     protected override void RemoveMonitorFrom(AWeapon weapon) {
         weapon.RangeMonitor = null;
     }

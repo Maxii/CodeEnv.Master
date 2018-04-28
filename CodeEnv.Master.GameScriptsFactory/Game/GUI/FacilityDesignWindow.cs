@@ -55,7 +55,7 @@ public class FacilityDesignWindow : AUnitDesignWindow {
     protected override AUnitMemberDesign GetEmptyTemplateDesign(string emptyTemplateHint) {
         D.AssertNotNull(emptyTemplateHint);
         FacilityHullCategory designHullCat = Enums<FacilityHullCategory>.Parse(emptyTemplateHint);
-        return UserDesigns.GetFacilityDesign(designHullCat.GetEmptyTemplateDesignName());
+        return UserDesigns.GetCurrentFacilityTemplateDesign(designHullCat);
     }
 
     protected override void ObsoleteDesign(string designName) {
@@ -63,7 +63,7 @@ public class FacilityDesignWindow : AUnitDesignWindow {
     }
 
     protected override IEnumerable<AEquipmentStat> GetUserCurrentEquipmentStatsAvailableFor(AUnitMemberDesign pickedDesign) {
-        return UserDesigns.GetCurrentElementEquipmentStats();
+        return UserDesigns.GetCurrentFacilityOptEquipStats();
     }
 
 }

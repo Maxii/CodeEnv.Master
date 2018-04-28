@@ -161,6 +161,8 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     public IList<ICmdSensorRangeMonitor> SensorMonitors { get; private set; }
 
+    public IFtlDampenerRangeMonitor FtlDampenerMonitor { get; private set; }
+
     public new CmdCameraStat CameraStat {
         protected get { return base.CameraStat as CmdCameraStat; }
         set { base.CameraStat = value; }
@@ -172,7 +174,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     protected FsmEventSubscriptionManager FsmEventSubscriptionMgr { get; private set; }
     protected sealed override bool IsPaused { get { return _gameMgr.IsPaused; } }
 
-    private IFtlDampenerRangeMonitor _ftlDampenerRangeMonitor;
     private ITrackingWidget _trackingLabel;
     private Job _deferRedAlertStanddownAssessmentJob;
     private FixedJoint _hqJoint;
@@ -246,7 +247,6 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     private void InitializeHQAttachmentSystem() {
-
         Profiler.BeginSample("Proper AddComponent allocation", gameObject);
         var rigidbody = gameObject.AddComponent<Rigidbody>();   // OPTIMIZE add to prefab
         Profiler.EndSample();
@@ -278,7 +278,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     }
 
     private void Attach(FtlDampener dampener) {
-        _ftlDampenerRangeMonitor = dampener.RangeMonitor;
+        FtlDampenerMonitor = dampener.RangeMonitor;
     }
 
     public override void FinalInitialize() {
@@ -302,7 +302,7 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
 
     private void InitializeCmdRangeMonitors() {
         SensorMonitors.ForAll(srm => srm.InitializeRangeDistance());
-        _ftlDampenerRangeMonitor.InitializeRangeDistance();
+        FtlDampenerMonitor.InitializeRangeDistance();
     }
 
     private void InitializeFsmEventSubscriptionMgr() {
@@ -428,6 +428,14 @@ public abstract class AUnitCmdItem : AMortalItemStateMachine, IUnitCmd, IUnitCmd
     /// <returns></returns>
     public bool RepairCmdModule(float repairPts) {
         return Data.RepairDamage(repairPts);
+    }
+
+    public void ChangeDesign(AUnitCmdDesign cmdDesign, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener) {
+        UnsubscribeFromSensorEvents();
+        Data.ChangeDesign(cmdDesign, passiveCMs, sensors, ftlDampener);
+        AttachEquipment();
+        InitializeCmdRangeMonitors();
+        SubscribeToSensorEvents();
     }
 
     private void HandleSubordinateOwnerChanging(AUnitElementItem subordinateElement, Player incomingOwner) {

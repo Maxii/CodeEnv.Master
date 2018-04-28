@@ -203,7 +203,7 @@ namespace CodeEnv.Master.GameContent {
                 //D.Log("{0} is checking {1} for completion. ExpectedCompletionDate = {2}, CurrentDate = {3}.",
                 //    DebugName, firstConstruction.DebugName, firstConstruction.ExpectedCompletionDate, _gameTime.CurrentDate);
                 float unconsumedProduction;
-                if (firstConstruction.TryCompleteConstruction(availableProduction, out unconsumedProduction)) {
+                if (firstConstruction.TryComplete(availableProduction, out unconsumedProduction)) {
                     //D.Log("{0} has completed construction of {1}. ExpectedCompletionDate = {2}, CurrentDate = {3}.",
                     //    DebugName, firstConstruction.DebugName, firstConstruction.ExpectedCompletionDate, _gameTime.CurrentDate);
                     RemoveFromQueue(firstConstruction);

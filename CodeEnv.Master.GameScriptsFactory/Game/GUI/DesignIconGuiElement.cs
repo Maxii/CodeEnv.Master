@@ -40,7 +40,7 @@ public class DesignIconGuiElement : AMultiSizeIconGuiElement {
 
     protected override string TooltipContent {
         get {
-            string obsoleteText = _design.Status == AUnitMemberDesign.SourceAndStatus.Player_Obsolete ? "[Obsolete]" : string.Empty;
+            string obsoleteText = _design.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete ? "[Obsolete]" : string.Empty;
             return TooltipFormat.Inject(_design.DesignName, obsoleteText);
         }
     }

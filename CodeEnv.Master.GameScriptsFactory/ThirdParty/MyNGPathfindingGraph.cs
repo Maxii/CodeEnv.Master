@@ -14,7 +14,8 @@
 ////#define DEBUG_WARN
 ////#define DEBUG_ERROR
 
-namespace Pathfinding {
+namespace Pathfinding
+{
 
     using System;
     using System.Collections.Generic;
@@ -30,7 +31,8 @@ namespace Pathfinding {
     /// WARNING: These graphs ARE NOT MonoBehaviours, in spite of the authors usage of Awake().
     /// </summary>
     [JsonOptIn]
-    public class MyNGPathfindingGraph : NavGraph, IUpdatableGraph {
+    public class MyNGPathfindingGraph : NavGraph, IUpdatableGraph
+    {
 
         public string DebugName { get { return GetType().Name; } }
 
@@ -96,11 +98,13 @@ namespace Pathfinding {
         /** Number of nodes in this graph */
         public int nodeCount { get; private set; }
 
-        public override int CountNodes() {
+        public override int CountNodes()
+        {
             return nodeCount;
         }
 
-        public override void GetNodes(System.Action<GraphNode> action) {
+        public override void GetNodes(System.Action<GraphNode> action)
+        {
             if (nodes == null) {
                 return;
             }
@@ -110,11 +114,13 @@ namespace Pathfinding {
             }
         }
 
-        public override NNInfoInternal GetNearest(Vector3 position, NNConstraint constraint, GraphNode hint) {
+        public override NNInfoInternal GetNearest(Vector3 position, NNConstraint constraint, GraphNode hint)
+        {
             return GetNearestForce(position, null);
         }
 
-        public override NNInfoInternal GetNearestForce(Vector3 position, NNConstraint constraint) {
+        public override NNInfoInternal GetNearestForce(Vector3 position, NNConstraint constraint)
+        {
             if (nodes == null) return new NNInfoInternal();
 
             if (optimizeForSparseGraph) {
@@ -154,7 +160,8 @@ namespace Pathfinding {
          * - during a graph update
          * - inside a callback registered using AstarPath.RegisterSafeUpdate
          */
-        public PointNode AddNode(Int3 position) {
+        public PointNode AddNode(Int3 position)
+        {
             return AddNode(new PointNode(active), position);
         }
 
@@ -173,7 +180,8 @@ namespace Pathfinding {
          *
          * \see AstarPath.RegisterSafeUpdate
          */
-        public T AddNode<T>(T node, Int3 position) where T : PointNode {
+        public T AddNode<T>(T node, Int3 position) where T : PointNode
+        {
             if (nodes == null || nodeCount == nodes.Length) {
                 var newNodes = new PointNode[nodes != null ? System.Math.Max(nodes.Length + 4, nodes.Length * 2) : 4];
                 for (int i = 0; i < nodeCount; i++) {
@@ -203,7 +211,8 @@ namespace Pathfinding {
          *
          * \astarpro
          */
-        public void RebuildNodeLookup() {
+        public void RebuildNodeLookup()
+        {
             if (!optimizeForSparseGraph || nodes == null) {
                 _lookupTree = new PointKDTree();
             }
@@ -213,7 +222,8 @@ namespace Pathfinding {
             }
         }
 
-        private void AddToLookup(PointNode node) {
+        private void AddToLookup(PointNode node)
+        {
             _lookupTree.Add(node);
         }
 
@@ -238,7 +248,8 @@ namespace Pathfinding {
         /// </summary>
         private IDictionary<StarbaseCmdItem, IList<PointNode>> _sectorNavNodesMadeUnwalkableByStarbase = new Dictionary<StarbaseCmdItem, IList<PointNode>>();
 
-        public override IEnumerable<Progress> ScanInternal() {
+        protected override IEnumerable<Progress> ScanInternal()
+        {
             yield return new Progress(0.1F, "Creating OpenSpace Navigation Nodes");
             var walkableOpenSpaceWaypoints = GenerateWalkableOpenSpaceWaypoints();
             AddNodes(walkableOpenSpaceWaypoints, Topography.OpenSpace.AStarTagValue()/*, ref nextNodeIndex*/);  // OpenSpaceTagMask
@@ -257,7 +268,8 @@ namespace Pathfinding {
             yield return new Progress(1F, "Connections completed");
         }
 
-        private IList<Vector3> GenerateWalkableOpenSpaceWaypoints() {
+        private IList<Vector3> GenerateWalkableOpenSpaceWaypoints()
+        {
 #pragma warning disable 0219
             System.DateTime startTime = Utility.SystemTime;
 #pragma warning restore 0219
@@ -426,7 +438,8 @@ namespace Pathfinding {
             return walkableOpenSpaceWaypoints;
         }
 
-        private IList<Vector3> GenerateWalkableInteriorSystemWaypoints() {
+        private IList<Vector3> GenerateWalkableInteriorSystemWaypoints()
+        {
             D.AssertNotDefault(_nodeSeparationDistance);   // method should follow GenerateWalkableOpenSpaceWaypoints
             List<Vector3> allSystemInteriorWaypoints = new List<Vector3>();
             var systems = GameManager.Instance.GameKnowledge.Systems;
@@ -439,7 +452,8 @@ namespace Pathfinding {
             return allSystemInteriorWaypoints;
         }
 
-        private void MakeConnections() {
+        private void MakeConnections()
+        {
             if (maxDistance >= 0) {
                 // To avoid too many allocations, these lists are reused for each node
                 var connections = new List<Connection>();
@@ -512,7 +526,8 @@ namespace Pathfinding {
         /// <param name="waypoints">The waypoints.</param>
         /// <param name="tag">The tag for the nodes.</param>
         /// <returns></returns>
-        private IList<PointNode> AddNodes(IList<Vector3> waypoints, uint tag) {
+        private IList<PointNode> AddNodes(IList<Vector3> waypoints, uint tag)
+        {
             IList<PointNode> nodesAdded = new List<PointNode>(waypoints.Count);
             foreach (var wayPt in waypoints) {
                 Int3 position = (Int3)wayPt;
@@ -533,7 +548,8 @@ namespace Pathfinding {
         /// <param name="nextNodeIndex">Index of the next node.</param>
         /// <returns></returns>
         [Obsolete]
-        private IList<PointNode> AddNodes(IList<Vector3> waypoints, uint tag, ref int nextNodeIndex) {
+        private IList<PointNode> AddNodes(IList<Vector3> waypoints, uint tag, ref int nextNodeIndex)
+        {
             CheckAndAdjustNodesSize(waypoints.Count);
 
             IList<PointNode> nodesAdded = new List<PointNode>(waypoints.Count);
@@ -558,7 +574,8 @@ namespace Pathfinding {
         }
 
         [Obsolete]
-        private void CheckAndAdjustNodesSize(int additionalNodes) {
+        private void CheckAndAdjustNodesSize(int additionalNodes)
+        {
             if (nodes == null || nodeCount == nodes.Length) {
                 //var startTime = Utility.SystemTime;
                 var nds = new PointNode[nodes != null ? nodes.Length + additionalNodes : additionalNodes];
@@ -577,7 +594,8 @@ namespace Pathfinding {
          * \note This is not the same as checking if node a is connected to node b.
          * That should be done using a.ContainsConnection(b)
          */
-        private bool IsValidConnection(GraphNode a, GraphNode b, out float dist) {
+        private bool IsValidConnection(GraphNode a, GraphNode b, out float dist)
+        {
             dist = 0F;
 
             if (!a.Walkable || !b.Walkable) {
@@ -612,7 +630,8 @@ namespace Pathfinding {
         /// <param name="baseCmd">The Starbase command.</param>
         /// <param name="sectorID">The sector ID where the Starbase is located. Note that the StarbaseCmdItem
         /// itself does not know its sectorID until FinalInitialize.</param>
-        public void AddToGraph(StarbaseCmdItem baseCmd, IntVector3 sectorID) {
+        public void AddToGraph(StarbaseCmdItem baseCmd, IntVector3 sectorID)
+        {
             //D.Log("{0}.AddToGraph({1}) called. Frame = {2}.", DebugName, baseCmd.DebugName, Time.frameCount);
             // Note: active.IsAnyGraphUpdatesQueued is never true except when using UpdateGraphs(). 
             // I've replaced UpdateGraphs(GUO) with WorkItems.
@@ -643,7 +662,8 @@ namespace Pathfinding {
         /// and makes any waypoints walkable that were previously made unwalkable when the base was added, then reconnects.
         /// </summary>
         /// <param name="baseCmd">The Starbase command.</param>
-        public void RemoveFromGraph(StarbaseCmdItem baseCmd) {
+        public void RemoveFromGraph(StarbaseCmdItem baseCmd)
+        {
             //D.Log("{0}.RemoveFromGraph({1}) called.", DebugName, baseCmd.DebugName);
             // Note: active.IsAnyGraphUpdatesQueued is never true except when using UpdateGraphs(). 
             // I've replaced UpdateGraphs(GUO) with WorkItems.
@@ -672,7 +692,8 @@ namespace Pathfinding {
         // NOTE: For now, no Add/Remove(Settlement). Settlements aren't likely to be on top of existing waypoints, and,
         // surrounding them with waypoints makes no sense if I allow them to orbit
 
-        private void HandleStarbaseAdded(StarbaseCmdItem starbaseCmd, IntVector3 sectorID) {
+        private void HandleStarbaseAdded(StarbaseCmdItem starbaseCmd, IntVector3 sectorID)
+        {
             D.Assert(!_sectorNavNodesMadeUnwalkableByStarbase.ContainsKey(starbaseCmd), DebugName);
             D.Assert(!_starbaseApproachNodes.ContainsKey(starbaseCmd), DebugName);
 
@@ -740,7 +761,8 @@ namespace Pathfinding {
         }
 
         [Obsolete]
-        private void ChangeWalkabilityOfNodesInsideApproachNodes(StarbaseCmdItem starbaseCmd, bool isBaseBeingAdded) {
+        private void ChangeWalkabilityOfNodesInsideApproachNodes(StarbaseCmdItem starbaseCmd, bool isBaseBeingAdded)
+        {
             IList<PointNode> nodesMadeUnwalkable;
             if (isBaseBeingAdded) {
                 // starbase is being added so make Sector nav nodes inside approach nodes unwalkable
@@ -769,7 +791,8 @@ namespace Pathfinding {
             D.Log("{0} has completed making {1} nodes inside {2}'s approach nodes {3}.", DebugName, nodesMadeUnwalkable.Count, starbaseCmd.DebugName, isBaseBeingAdded ? "unwalkable" : "walkable");
         }
 
-        private void HandleStarbaseRemoved(StarbaseCmdItem starbaseCmd) {
+        private void HandleStarbaseRemoved(StarbaseCmdItem starbaseCmd)
+        {
             // Make existing Starbase approach nodes unwalkable
             D.Assert(_starbaseApproachNodes.ContainsKey(starbaseCmd), DebugName);
             IList<PointNode> nds = _starbaseApproachNodes[starbaseCmd];
@@ -789,22 +812,26 @@ namespace Pathfinding {
             //D.Log("{0} has completed making {1} sector nav nodes walkable again as a result of {2}'s removal.", DebugName, nds.Count, starbaseCmd.DebugName);
         }
 
-        private bool IsInsideUniverseBoundaries(Vector3 point, float universeRadiusSqrd) {
+        private bool IsInsideUniverseBoundaries(Vector3 point, float universeRadiusSqrd)
+        {
             return Vector3.SqrMagnitude(point - GameConstants.UniverseOrigin) < universeRadiusSqrd;
         }
 
         /***************************************** End of My Implementation *****************************************/
 
-        public override void PostDeserialization() {
+        protected override void PostDeserialization(GraphSerializationContext ctx)
+        {
             RebuildNodeLookup();
         }
 
-        public override void RelocateNodes(Matrix4x4 deltaMatrix) {
+        public override void RelocateNodes(Matrix4x4 deltaMatrix)
+        {
             base.RelocateNodes(deltaMatrix);
             RebuildNodeLookup();
         }
 
-        public override void DeserializeSettingsCompatibility(GraphSerializationContext ctx) {
+        protected override void DeserializeSettingsCompatibility(GraphSerializationContext ctx)
+        {
             base.DeserializeSettingsCompatibility(ctx);
 
             maxDistance = ctx.reader.ReadSingle();
@@ -817,7 +844,8 @@ namespace Pathfinding {
             ctx.reader.ReadBoolean(); // Deprecated field
         }
 
-        public override void SerializeExtraInfo(GraphSerializationContext ctx) {
+        protected override void SerializeExtraInfo(GraphSerializationContext ctx)
+        {
             // Serialize node data
             if (nodes == null) {
                 ctx.writer.Write(-1);
@@ -837,7 +865,8 @@ namespace Pathfinding {
             }
         }
 
-        public override void DeserializeExtraInfo(GraphSerializationContext ctx) {
+        protected override void DeserializeExtraInfo(GraphSerializationContext ctx)
+        {
             int count = ctx.reader.ReadInt32();
 
             if (count == -1) {
@@ -857,13 +886,15 @@ namespace Pathfinding {
             }
         }
 
-        public override string ToString() {
+        public override string ToString()
+        {
             return DebugName;
         }
 
         #region IUpdateableGraph Members
 
-        public GraphUpdateThreading CanUpdateAsync(GraphUpdateObject o) {
+        public GraphUpdateThreading CanUpdateAsync(GraphUpdateObject o)
+        {
             return GraphUpdateThreading.UnityThread;
         }
 
@@ -873,7 +904,8 @@ namespace Pathfinding {
         /** Updates an area in the list graph.
          * Recalculates possibly affected connections, i.e all connection lines passing trough the bounds of the \a guo will be recalculated
          * \astarpro */
-        public void UpdateArea(GraphUpdateObject guo) {
+        public void UpdateArea(GraphUpdateObject guo)
+        {
             if (nodes == null) {
                 return;
             }

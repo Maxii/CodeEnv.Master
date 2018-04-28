@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27428.2037
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeEnv.Master.Common", "CodeEnv.Master.Common\CodeEnv.Master.Common.csproj", "{1557C03E-56EE-4C70-9BD8-AB637D3191CF}"
 EndProject
@@ -30,9 +30,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DataLibrary", "DataLibrary"
 		DataLibrary\GeneralSettings.xml = DataLibrary\GeneralSettings.xml
 		DataLibrary\GraphicsSettings.xml = DataLibrary\GraphicsSettings.xml
 		DataLibrary\LeaderValues.xml = DataLibrary\LeaderValues.xml
+		DataLibrary\NewGameConfigValues.xml = DataLibrary\NewGameConfigValues.xml
 		DataLibrary\ResourceID.xml = DataLibrary\ResourceID.xml
 		DataLibrary\SpeciesValues.xml = DataLibrary\SpeciesValues.xml
 		DataLibrary\SystemNames.xml = DataLibrary\SystemNames.xml
+		DataLibrary\TechStatValues.xml = DataLibrary\TechStatValues.xml
 		DataLibrary\UniverseSize.xml = DataLibrary\UniverseSize.xml
 	EndProjectSection
 EndProject
@@ -746,5 +748,8 @@ Global
 		{C67BF06A-F39D-41CC-939C-9BB856E12F7A} = {63764D99-5C21-4125-9DB9-F76DE1415D52}
 		{B865439C-3030-458A-8E76-9398D05128C3} = {63764D99-5C21-4125-9DB9-F76DE1415D52}
 		{8214A01F-B4D3-4ECE-9F61-BAE8DB9B8C76} = {63764D99-5C21-4125-9DB9-F76DE1415D52}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3BF2374D-3240-4FEE-93D5-EC066E9B49F7}
 	EndGlobalSection
 EndGlobal

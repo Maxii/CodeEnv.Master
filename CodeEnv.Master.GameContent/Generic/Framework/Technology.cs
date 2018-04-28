@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: Technology.cs
-// A researchable technology holding a collection of AImprovableStats that can be used once research is completed.
+// A researchable technology holding collections of improvable stats that become enabled once research is completed.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -17,10 +17,11 @@
 namespace CodeEnv.Master.GameContent {
 
     using System.Collections.Generic;
+    using System.Linq;
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// A researchable technology holding a collection of AImprovableStats that are enabled once research is completed.
+    /// A researchable technology holding collections of improvable stats that become enabled once research is completed.
     /// </summary>
     public class Technology {
 
@@ -38,58 +39,58 @@ namespace CodeEnv.Master.GameContent {
 
         // Can't have a ResearchStatus (completed, underway, etc.) as that status varies by player
 
-        public string Name { get { return _techStat.TechName; } }
+        public string Name { get { return Stat.Name; } }
 
-        public AtlasID ImageAtlasID { get { return _techStat.ImageAtlasID; } }
+        public AtlasID ImageAtlasID { get { return Stat.ImageAtlasID; } }
 
-        public string ImageFilename { get { return _techStat.ImageFilename; } }
+        public string ImageFilename { get { return Stat.ImageFilename; } }
 
         /// <summary>
         /// The cost in units of science to research this technology.
-        /// <remarks>UNCLEAR May want to make this publicly settable to allow adjustment depending on game conditions?</remarks>
         /// </summary>
         public float ResearchCost { get; private set; }
 
-        public Technology[] Prerequisites { get; set; }
+        public IEnumerable<Technology> Prerequisites { get; set; }
 
-        public TreeNodeID NodeID { get { return _techStat.NodeID; } }
+        public TreeNodeID NodeID { get { return Stat.NodeID; } }
 
-        public string[] PrerequisiteTechNames { get { return _techStat.PrerequisiteTechNames; } }
+        public TechStat Stat { get; private set; }
 
-        private AImprovableStat[] _enabledStats;
-        private TechStat _techStat;
+        private IEnumerable<AEquipmentStat> _enabledEquipStats;
+        private IEnumerable<CapabilityStat> _enabledCapStats;
 
-        public Technology(TechStat techStat, float researchCost, AImprovableStat[] __enabledStats) {
-            _techStat = techStat;
-            ResearchCost = researchCost;
-            // TEMP until I determine how to ID enabled stats in XML - name currently does work as it isn't unique
-            _enabledStats = __enabledStats;
+        public Technology(TechStat techStat, float rschCost, IEnumerable<AEquipmentStat> enabledEquipStats)
+            : this(techStat, rschCost, enabledEquipStats, Enumerable.Empty<CapabilityStat>()) { }
+
+        public Technology(TechStat techStat, float rschCost, IEnumerable<AEquipmentStat> enabledEquipStats, IEnumerable<CapabilityStat> enabledCapStats) {
+            Stat = techStat;
+            ResearchCost = rschCost;
+            _enabledEquipStats = enabledEquipStats;
+            _enabledCapStats = enabledCapStats;
         }
 
         public bool TryGetEnabledStats(out IList<AEquipmentStat> eStats) {
             eStats = new List<AEquipmentStat>();
-            foreach (var iStat in _enabledStats) {
-                var eStat = iStat as AEquipmentStat;
-                if (eStat != null) {
-                    eStats.Add(eStat);
-                }
+            foreach (var stat in _enabledEquipStats) {
+                eStats.Add(stat);
             }
             return !eStats.IsNullOrEmpty();
         }
 
         public bool TryGetEnabledStats(out IList<CapabilityStat> cStats) {
             cStats = new List<CapabilityStat>();
-            foreach (var iStat in _enabledStats) {
-                var cStat = iStat as CapabilityStat;
-                if (cStat != null) {
-                    cStats.Add(cStat);
-                }
+            foreach (var stat in _enabledCapStats) {
+                cStats.Add(stat);
             }
             return !cStats.IsNullOrEmpty();
         }
 
-        public AImprovableStat[] GetEnabledStats() {
-            return _enabledStats;
+        public IEnumerable<AEquipmentStat> GetEnabledEquipStats() {
+            return _enabledEquipStats;
+        }
+
+        public IEnumerable<CapabilityStat> GetEnabledCapStats() {
+            return _enabledCapStats;
         }
 
         public sealed override string ToString() {

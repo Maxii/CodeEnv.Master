@@ -6,7 +6,7 @@
 // </copyright> 
 // <summary> 
 // File: AAutoUnitCreator.cs
-// Abstract base class for Unit Creators whose configuration is determined automatically in NewGameUnitConfigurator.
+// Abstract base class for Unit Creators whose configuration is determined automatically in NewGameUnitGenerator.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,7 +20,7 @@ using CodeEnv.Master.Common;
 using CodeEnv.Master.GameContent;
 
 /// <summary>
-/// Abstract base class for Unit Creators whose configuration is determined automatically in NewGameUnitConfigurator.
+/// Abstract base class for Unit Creators whose configuration is determined automatically in NewGameUnitGenerator.
 /// </summary>
 public abstract class AAutoUnitCreator : AUnitCreator {
 

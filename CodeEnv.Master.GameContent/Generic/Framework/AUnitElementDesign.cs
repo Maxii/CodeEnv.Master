@@ -25,23 +25,15 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public abstract class AUnitElementDesign : AUnitMemberDesign {
 
-        private static EquipmentMountCategory[] SupportedMountCategories =  {
-                                                                                EquipmentMountCategory.Silo,
-                                                                                EquipmentMountCategory.Turret,
-                                                                                EquipmentMountCategory.Sensor,
-                                                                                EquipmentMountCategory.Skin,
-                                                                                EquipmentMountCategory.Screen,
-                                                                                EquipmentMountCategory.Flex
-                                                                            };
-
-        static AUnitElementDesign() {
-            __ValidateWeaponHullMountCatSequence();
-            __ValidateSupportedMountsCanAccommodateSupportedEquipment();
+        protected static SensorStat GetImprovedReqdStat(Player player, SensorStat existingStat) {
+            PlayerDesigns designs = GameReferences.GameManager.GetAIManagerFor(player).Designs;
+            var currentStat = designs.GetCurrentSRSensorStat();
+            return currentStat.Level > existingStat.Level ? currentStat : existingStat;
         }
 
         public SensorStat ReqdSRSensorStat { get; private set; }
 
-        public Priority HQPriority { get; private set; }
+        public abstract Priority HQPriority { get; }
 
         /// <summary>
         /// The minimum cost in units of production required to refit an Element using this Design.
@@ -50,7 +42,7 @@ namespace CodeEnv.Master.GameContent {
         /// a refit cost below this minimum. Typically used when refitting an Element to an older
         /// and/or obsolete Design whose cost is significantly less than what the current Element costs.</remarks>
         /// </summary>
-        public float MinimumRefitCost { get { return ConstructionCost * TempGameValues.MinRefitConstructionCostFactor; } }
+        ////public float MinimumRefitCost { get { return ConstructionCost * TempGameValues.MinRefitConstructionCostFactor; } }
 
         /// <summary>
         /// The minimum cost in units of production required to disband an Element from this Design.
@@ -60,17 +52,14 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float MinimumDisbandCost { get { return ConstructionCost * TempGameValues.MinDisbandConstructionCostFactor; } }
 
-        protected override EquipmentMountCategory[] SupportedHullMountCategories { get { return SupportedMountCategories; } }
-
-        public AUnitElementDesign(Player player, Priority hqPriority, SensorStat reqdSRSensorStat)
+        public AUnitElementDesign(Player player, SensorStat reqdSRSensorStat)
             : base(player) {
-            HQPriority = hqPriority;
             ReqdSRSensorStat = reqdSRSensorStat;
         }
 
         protected override float CalcConstructionCost() {
             float cumConstructionCost = base.CalcConstructionCost();
-            cumConstructionCost += ReqdSRSensorStat.ConstructionCost;
+            cumConstructionCost += ReqdSRSensorStat.ConstructCost;
             return cumConstructionCost;
         }
 
@@ -87,34 +76,6 @@ namespace CodeEnv.Master.GameContent {
             }
             return false;
         }
-
-        #region Debug
-
-        [System.Diagnostics.Conditional("DEBUG")]
-        private static void __ValidateWeaponHullMountCatSequence() {
-            // 3.4.18 Hull prefabs have weapon mount placeholders with manually set slot number assignments. As such,
-            // the slot number assignment algorithm used in InitializeValuesAndReferences relies on the proper sequence of
-            // HullMountCategories when initializing the SlotIDs for this design. 
-            // Silo(Launched)Weapons have slot number assignments that always start with 1, ending with the max number of 
-            // Silo(launched)Weapons allowed for the hull category. Turret(Los)Weapons slot numbers follow in sequence, beginning with 
-            // the next slot number after the last number used for Silo(Launched)Weapons and ending with a slot number calculated
-            // the same way as done for Silo(Launched)Weapons.  
-            // 
-            // If Loader.__ValidateMaxHullWeaponSlots passes and so does this, slot numbers should be accurate.
-            D.AssertEqual(EquipmentMountCategory.Silo, SupportedMountCategories[0]);
-            D.AssertEqual(EquipmentMountCategory.Turret, SupportedMountCategories[1]);
-        }
-
-        [System.Diagnostics.Conditional("DEBUG")]
-        private static void __ValidateSupportedMountsCanAccommodateSupportedEquipment() {
-            IEnumerable<EquipmentCategory> equipmentSupportedByMounts = new List<EquipmentCategory>();
-            foreach (var mount in SupportedMountCategories) {
-                equipmentSupportedByMounts = equipmentSupportedByMounts.Union(mount.SupportedEquipment());
-            }
-            TempGameValues.EquipCatsSupportedByElementDesigner.ForAll(se => D.Assert(equipmentSupportedByMounts.Contains(se)));
-        }
-
-        #endregion
 
         #region Value-based Equality Archive
 
@@ -147,6 +108,7 @@ namespace CodeEnv.Master.GameContent {
         ////}
 
         #endregion
+
     }
 }
 

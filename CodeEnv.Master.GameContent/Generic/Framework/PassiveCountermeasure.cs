@@ -27,7 +27,7 @@ namespace CodeEnv.Master.GameContent {
 
         public override string Name { get { return NameFormat.Inject(base.Name, DamageMitigation.Total); } }
 
-        public DamageStrength DamageMitigation { get { return Stat.DamageMitigation; } }
+        public DamageStrength DamageMitigation { get { return Stat.DmgMitigation; } }
 
         protected new PassiveCountermeasureStat Stat { get { return base.Stat as PassiveCountermeasureStat; } }
 

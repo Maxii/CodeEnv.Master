@@ -34,7 +34,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// The multiplier to use with a Design's ConstructionCost when calculating the minimum
-        /// allowed ConstructionCost for an Element Refit.
+        /// allowed ConstructionCost for a UnitMember Refit.
         /// </summary>
         public const float MinRefitConstructionCostFactor = 0.25F;
 
@@ -83,6 +83,7 @@ namespace CodeEnv.Master.GameContent {
         public const int MaxSensorMounts = 4;
         public const int MaxSkinMounts = 6;
         public const int MaxScreenMounts = 10;
+        public const int MaxFtlEngineMounts = 1;
         public const int MaxFlexMounts = 3;
 
         public const int __MaxElementPassiveCMs = 6;
@@ -113,7 +114,18 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public static readonly ValueRange<float> MinimumBarrelElevationRange = new ValueRange<float>(-20F, 70F);
 
-        public static EquipmentCategory[] EquipCatsSupportedByElementDesigner = {
+        public static EquipmentCategory[] EquipCatsReqdAtStartup =  {
+                                                                        EquipmentCategory.SRSensor,
+                                                                        EquipmentCategory.MRSensor,
+                                                                        EquipmentCategory.FtlDampener,
+                                                                        EquipmentCategory.StlPropulsion,
+                                                                        EquipmentCategory.FleetCmdModule,
+                                                                        EquipmentCategory.SettlementCmdModule,
+                                                                        EquipmentCategory.FHullCentralHub,
+                                                                        EquipmentCategory.SHullColonizer
+                                                                    };
+
+        public static EquipmentCategory[] EquipCatsSupportedByShipDesigner =    {
                                                                                     EquipmentCategory.AssaultWeapon,
                                                                                     EquipmentCategory.MissileWeapon,
                                                                                     EquipmentCategory.BeamWeapon,
@@ -122,8 +134,21 @@ namespace CodeEnv.Master.GameContent {
                                                                                     EquipmentCategory.MRActiveCountermeasure,
                                                                                     EquipmentCategory.PassiveCountermeasure,
                                                                                     EquipmentCategory.SRSensor,
-                                                                                    EquipmentCategory.ShieldGenerator
+                                                                                    EquipmentCategory.ShieldGenerator,
+                                                                                    EquipmentCategory.FtlPropulsion
                                                                                 };
+
+        public static EquipmentCategory[] EquipCatsSupportedByFacilityDesigner =    {
+                                                                                        EquipmentCategory.AssaultWeapon,
+                                                                                        EquipmentCategory.MissileWeapon,
+                                                                                        EquipmentCategory.BeamWeapon,
+                                                                                        EquipmentCategory.ProjectileWeapon,
+                                                                                        EquipmentCategory.SRActiveCountermeasure,
+                                                                                        EquipmentCategory.MRActiveCountermeasure,
+                                                                                        EquipmentCategory.PassiveCountermeasure,
+                                                                                        EquipmentCategory.SRSensor,
+                                                                                        EquipmentCategory.ShieldGenerator
+                                                                                    };
 
         public static EquipmentCategory[] EquipCatsSupportedByCmdModuleDesigner =   {
                                                                                         EquipmentCategory.PassiveCountermeasure,
@@ -170,16 +195,16 @@ namespace CodeEnv.Master.GameContent {
 
         public static ShipHullCategory[] DesiredExplorationShipCategories = {
                                                                                 ShipHullCategory.Investigator,
-                                                                                ShipHullCategory.Scout,
+                                                                                //ShipHullCategory.Scout,
                                                                                 ShipHullCategory.Frigate,
                                                                                 ShipHullCategory.Destroyer
                                                                             };
 
-        public const string __FleetCmdDesignName_Basic = "FleetCmdDesign_Basic";
+        public const string FleetCmdDefaultRootDesignName = "FleetCmdDefaultDesign";
 
-        public const string EmptyFleetCmdTemplateDesignName = "EmptyFleetCmdTemplateDesign";
-        public const string EmptyStarbaseCmdTemplateDesignName = "EmptyStarbaseCmdTemplateDesign";
-        public const string EmptySettlementCmdTemplateDesignName = "EmptySettlementCmdTemplateDesign";
+        public const string FleetCmdTemplateRootDesignName = "FleetCmdTemplateDesign";
+        public const string StarbaseCmdTemplateRootDesignName = "StarbaseCmdTemplateDesign";
+        public const string SettlementCmdTemplateRootDesignName = "SettlementCmdTemplateDesign";
 
         #region Ship Speed
 
@@ -623,7 +648,6 @@ namespace CodeEnv.Master.GameContent {
                 return _noResearch;
             }
         }
-
 
         public static readonly ResourcesYield NoResources = default(ResourcesYield);
 

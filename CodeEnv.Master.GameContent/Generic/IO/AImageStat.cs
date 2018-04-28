@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: ATechStat.cs
-// An immutable abstract base class for stats that can be improved upon.
+// File: AImageStat.cs
+// An immutable abstract base class for a stat that supports the display of an image along with a name and description.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -19,9 +19,10 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// An immutable abstract base class for stats that can be improved upon.
+    /// An immutable abstract base class for a stat that supports the display of an image along with a name and description.
+    /// <remarks>Warning: These stats use Reference equality and is intended for use where only one instance of the stat exists.</remarks>
     /// </summary>
-    public abstract class AImprovableStat {
+    public abstract class AImageStat {
 
         private const string DebugNameFormat = "{0}.{1}";
 
@@ -36,7 +37,7 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// Display name of the stat.
+        /// Display name associated with the stat image.
         /// </summary>
         public string Name { get; private set; }
 
@@ -47,25 +48,17 @@ namespace CodeEnv.Master.GameContent {
         public string Description { get; private set; }
 
         /// <summary>
-        /// The improvement level of this stat.
+        /// Initializes a new instance of the <see cref="AImageStat" /> class.
         /// </summary>
-        ////public Level Level { get; private set; }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="AImprovableStat" /> class.
-        /// </summary>
-        /// <param name="name">The display name of the Equipment.</param>
+        /// <param name="name">The display name associated with the stat image.</param>
         /// <param name="imageAtlasID">The image atlas identifier.</param>
         /// <param name="imageFilename">The image filename.</param>
-        /// <param name="description">The description.</param>
-        /// <param name="level">The improvement level of this stat.</param>
-        public AImprovableStat(string name, AtlasID imageAtlasID, string imageFilename, string description/*, Level level*/) {
+        /// <param name="description">The image description.</param>
+        public AImageStat(string name, AtlasID imageAtlasID, string imageFilename, string description) {
             Name = name;
             ImageAtlasID = imageAtlasID;
             ImageFilename = imageFilename;
             Description = description;
-            ////D.AssertNotDefault((int)level);
-            ////Level = level;
         }
 
         public sealed override string ToString() {

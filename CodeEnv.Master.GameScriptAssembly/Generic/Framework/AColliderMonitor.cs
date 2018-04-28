@@ -184,7 +184,7 @@ public abstract class AColliderMonitor : AMonoBase, IColliderMonitor {
     }
 
     /// <summary>
-    /// Hook that allows derived classes to reset for reuse.
+    /// Hook that allows derived monitors to complete their reset in preparation for reuse by the same Parent.
     /// </summary>
     protected virtual void CompleteResetForReuse() { }
 

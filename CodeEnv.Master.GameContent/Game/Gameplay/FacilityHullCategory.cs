@@ -23,28 +23,28 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public enum FacilityHullCategory {
 
-        None,
+        None = 0,
 
         [EnumAttribute("CH")]
-        CentralHub,
+        CentralHub = 1,
 
         [EnumAttribute("F")]
-        Factory,
+        Factory = 2,
 
         [EnumAttribute("E")]
-        Economic,
+        Economic = 3,
 
         [EnumAttribute("L")]
-        Laboratory,
+        Laboratory = 4,
 
         [EnumAttribute("D")]
-        Defense,
+        Defense = 5,
 
         [EnumAttribute("B")]
-        Barracks,
+        Barracks = 6,
 
         [EnumAttribute("C")]
-        ColonyHab
+        ColonyHab = 7
 
     }
 }

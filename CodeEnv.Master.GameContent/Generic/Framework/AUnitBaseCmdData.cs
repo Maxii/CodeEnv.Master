@@ -85,8 +85,8 @@ namespace CodeEnv.Master.GameContent {
         #region Initialization 
 
         public AUnitBaseCmdData(IUnitCmd cmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors,
-            FtlDampener ftlDampener, ACmdModuleStat cmdStat, AUnitCmdDesign cmdDesign)
-            : base(cmd, owner, passiveCMs, sensors, ftlDampener, cmdStat, cmdDesign) {
+            FtlDampener ftlDampener, AUnitCmdDesign cmdDesign)
+            : base(cmd, owner, passiveCMs, sensors, ftlDampener, cmdDesign) {
         }
 
         protected override AIntel MakeIntelInstance() {

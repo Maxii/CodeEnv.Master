@@ -143,8 +143,17 @@ public class DebugControlsEditor : Editor {
                     NGUIEditorTools.DrawProperty("One UIPanel per widget", serializedObject, "_useOneUIPanelPerWidget");
                     NGUIEditorTools.DrawProperty("Deactivate MRSensors", serializedObject, "_deactivateMRSensors");
                     NGUIEditorTools.DrawProperty("Deactivate LRSensors", serializedObject, "_deactivateLRSensors");
-                    NGUIEditorTools.DrawProperty("Manual Tech Select", serializedObject, "_userSelectsTechs");
-                    NGUIEditorTools.DrawProperty("Fast Ships", serializedObject, "_areShipsFast");
+
+                    var allTechRschdSP = NGUIEditorTools.DrawProperty("All Techs Researched", serializedObject, "_isAllTechResearched");
+                    if (allTechRschdSP.boolValue) {
+                        // all techs start out already researched so no reason to have user manually select techs
+                        _debugCntlTarget.__DisableUserSelectsTechs();
+                    }
+                    EditorGUI.BeginDisabledGroup(allTechRschdSP.boolValue);
+                    {
+                        NGUIEditorTools.DrawProperty("Manual Tech Select", serializedObject, "_userSelectsTechs");
+                    }
+                    EditorGUI.EndDisabledGroup();
                 }
                 NGUIEditorTools.EndContents();
             }

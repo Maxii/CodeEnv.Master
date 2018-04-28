@@ -16,28 +16,47 @@
 
 namespace CodeEnv.Master.GameContent {
 
+    using CodeEnv.Master.Common;
+
     /// <summary>
     /// The design of a Starbase Command for a player.
     /// </summary>
     public class StarbaseCmdDesign : AUnitCmdDesign {
 
+        private static StarbaseCmdModuleStat GetImprovedReqdStat(Player player, StarbaseCmdModuleStat existingStat) {
+            var designs = GameReferences.GameManager.GetAIManagerFor(player).Designs;
+            StarbaseCmdModuleStat currentStat;
+            var isFound = designs.TryGetCurrentStarbaseCmdModuleStat(out currentStat);
+            D.Assert(isFound);  // has to be there as need existingStat to request improvement
+            return currentStat.Level > existingStat.Level ? currentStat : existingStat;
+        }
+
         public new StarbaseCmdModuleStat ReqdCmdStat { get { return base.ReqdCmdStat as StarbaseCmdModuleStat; } }
 
-        public StarbaseCmdDesign(StarbaseCmdDesign designToCopy)
-            : this(designToCopy.Player, designToCopy.FtlDampenerStat, designToCopy.ReqdCmdStat, designToCopy.ReqdMRSensorStat) {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="StarbaseCmdDesign"/> class.
+        /// <remarks>This version automatically improves any Reqd EquipmentStats to the highest Level available,
+        /// and copies the rest of the content of the design into the new design instance, allowing the player to upgrade and/or change 
+        /// the mix of optional EquipmentStats.</remarks>
+        /// </summary>
+        /// <param name="designToImprove">The design to improve.</param>
+        public StarbaseCmdDesign(StarbaseCmdDesign designToImprove)
+            : this(designToImprove.Player, GetImprovedReqdStat(designToImprove.Player, designToImprove.FtlDampenerStat),
+            GetImprovedReqdStat(designToImprove.Player, designToImprove.ReqdCmdStat),
+            GetImprovedReqdStat(designToImprove.Player, designToImprove.ReqdMRSensorStat)) {
 
-            EquipmentSlotID slotID;
+            OptionalEquipSlotID slotID;
             AEquipmentStat equipStat;
-            while (designToCopy.TryGetNextEquipmentStat(out slotID, out equipStat)) {
+            while (designToImprove.TryGetNextOptEquipStat(out slotID, out equipStat)) {
                 Add(slotID, equipStat);
             }
             AssignPropertyValues();
 
-            RootDesignName = designToCopy.RootDesignName;
+            RootDesignName = designToImprove.RootDesignName;
             // If copying System_CreationTemplate counter will always = 0 as they are never incremented. If copying Player_Current counter 
             // will be >= 0 ready to be incremented. If copying Player_Obsolete a new RootDesignName will be assigned resetting counter
             // to 0 to avoid creating duplicate design names when incrementing.
-            DesignLevel = designToCopy.DesignLevel;
+            DesignLevel = designToImprove.DesignLevel;
         }
 
         public StarbaseCmdDesign(Player player, FtlDampenerStat ftlDampenerStat, StarbaseCmdModuleStat cmdStat, SensorStat reqdMRSensorStat)

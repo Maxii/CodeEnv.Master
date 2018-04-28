@@ -657,11 +657,11 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        #region Research
+        #region Research Support
 
         public virtual void PickFirstResearchTask() {
-            var startingTech = TechnologyFactory.Instance.__GetStartingTech(Player);
-            var startingRschTask = ResearchMgr.GetResearchTaskFor(startingTech);
+            var startingRschTask = ResearchMgr.__GetQuickestCompletionStartingRschTask();
+            D.Assert(!startingRschTask.IsCompleted);
             ResearchMgr.ChangeCurrentResearchTo(startingRschTask);
         }
 
@@ -669,8 +669,8 @@ namespace CodeEnv.Master.GameContent {
             isFutureTechRuntimeCreation = false;
             ResearchTask uncompletedRsch;
             if (!ResearchMgr.__TryGetRandomUncompletedRsch(out uncompletedRsch)) {
-                var justCompletedTech = justCompletedRsch.Tech;
-                var futureTech = TechnologyFactory.Instance.__MakeNextFutureTechFollowing(justCompletedTech);
+                var justCompletedFutureTech = justCompletedRsch.Tech;
+                var futureTech = TechnologyFactory.Instance.MakeFutureTechInstanceFollowing(Player, justCompletedFutureTech);
                 uncompletedRsch = new ResearchTask(futureTech);
                 isFutureTechRuntimeCreation = true;
             }

@@ -56,7 +56,7 @@ public class ShipDesignWindow : AUnitDesignWindow {
     protected override AUnitMemberDesign GetEmptyTemplateDesign(string emptyTemplateHint) {
         D.AssertNotNull(emptyTemplateHint);
         ShipHullCategory designHullCat = Enums<ShipHullCategory>.Parse(emptyTemplateHint);
-        return UserDesigns.GetShipDesign(designHullCat.GetEmptyTemplateDesignName());
+        return UserDesigns.GetCurrentShipTemplateDesign(designHullCat);
     }
 
     protected override void ObsoleteDesign(string designName) {
@@ -64,7 +64,7 @@ public class ShipDesignWindow : AUnitDesignWindow {
     }
 
     protected override IEnumerable<AEquipmentStat> GetUserCurrentEquipmentStatsAvailableFor(AUnitMemberDesign pickedDesign) {
-        return UserDesigns.GetCurrentElementEquipmentStats();
+        return UserDesigns.GetCurrentShipOptEquipStats();
     }
 }
 

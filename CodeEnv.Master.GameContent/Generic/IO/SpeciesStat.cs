@@ -46,11 +46,11 @@ namespace CodeEnv.Master.GameContent {
 
         public string Name_Plural { get; private set; }
 
-        public string Description { get; private set; }
-
         public AtlasID ImageAtlasID { get; private set; }
 
         public string ImageFilename { get; private set; }
+
+        public string Description { get; private set; }
 
         public float SensorRangeMultiplier { get; private set; }
 

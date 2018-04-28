@@ -42,7 +42,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="rangeCat">The range category.</param>
         /// <param name="isDamageable">if set to <c>true</c> [is damageable].</param>
         public ARangedEquipmentStat(string name, AtlasID imageAtlasID, string imageFilename, string description,
-            EquipStatID id, float size, float mass, float pwrRqmt, float hitPts, float constructionCost, float expense,
+            EquipmentStatID id, float size, float mass, float pwrRqmt, float hitPts, float constructionCost, float expense,
             RangeCategory rangeCat, bool isDamageable)
             : base(name, imageAtlasID, imageFilename, description, id, size, mass, pwrRqmt, hitPts, constructionCost, expense,
                   isDamageable) {

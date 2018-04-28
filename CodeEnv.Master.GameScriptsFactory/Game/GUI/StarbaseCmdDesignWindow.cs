@@ -53,7 +53,7 @@ public class StarbaseCmdDesignWindow : AUnitDesignWindow {
 
     protected override AUnitMemberDesign GetEmptyTemplateDesign(string emptyTemplateHint) {
         D.AssertNull(emptyTemplateHint);
-        return UserDesigns.GetStarbaseCmdDesign(TempGameValues.EmptyStarbaseCmdTemplateDesignName);
+        return UserDesigns.GetCurrentStarbaseTemplateDesign();
     }
 
     protected override void ObsoleteDesign(string designName) {
@@ -61,7 +61,7 @@ public class StarbaseCmdDesignWindow : AUnitDesignWindow {
     }
 
     protected override IEnumerable<AEquipmentStat> GetUserCurrentEquipmentStatsAvailableFor(AUnitMemberDesign pickedDesign) {
-        return UserDesigns.GetCurrentCmdModuleEquipmentStats();
+        return UserDesigns.GetCurrentCmdModuleOptEquipStats();
     }
 
 }

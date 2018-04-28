@@ -262,6 +262,11 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     private bool _deactivateLRSensors = false;
     public bool DeactivateLRSensors { get { return _deactivateLRSensors; } }
 
+    [Tooltip("Check if all Technologies start fully researched at the beginning of the game")]
+    [SerializeField]
+    private bool _isAllTechResearched = false;
+    public bool IsAllTechResearched { get { return _isAllTechResearched; } }
+
     [Tooltip("Check if User should manually select techs to research from Research Window")]
     [SerializeField]
     private bool _userSelectsTechs = false;
@@ -269,11 +274,6 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     /// If <c>true</c> the User will be prompted to manually select the tech to research from the ResearchWindow.
     /// </summary>
     public bool UserSelectsTechs { get { return _userSelectsTechs; } }
-
-    [Tooltip("Check if Ship engines should be the fastest allowed in the game")]
-    [SerializeField]
-    private bool _areShipsFast = true;
-    public bool AreShipsFast { get { return _areShipsFast; } }
 
     #endregion
 
@@ -852,6 +852,8 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
 
     #endregion
 
+
+
     #region Cleanup
 
     protected override void Cleanup() {
@@ -872,6 +874,14 @@ public class DebugControls : AMonoSingleton<DebugControls>, IDebugControls {
     public override string ToString() {
         return DebugName;
     }
+
+    #region Debug
+
+    public void __DisableUserSelectsTechs() {
+        _userSelectsTechs = false;
+    }
+
+    #endregion
 
     #region Nested Classes
 

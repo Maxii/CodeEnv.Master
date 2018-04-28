@@ -31,15 +31,15 @@ public abstract class AMountPlaceholder : AMount {
     [SerializeField]
     private int _slotNumber = 0;
 
-    public EquipmentSlotID SlotID { get; private set; }
+    public OptionalEquipSlotID SlotID { get; private set; }
 
     public override string DebugName { get { return DebugNameFormat.Inject(base.DebugName, SlotID.DebugName); } }
 
-    protected abstract EquipmentMountCategory SupportedMount { get; }
+    protected abstract OptionalEquipMountCategory SupportedMount { get; }
 
     protected override void InitializeValuesAndReferences() {
         base.InitializeValuesAndReferences();
-        SlotID = new EquipmentSlotID(_slotNumber, SupportedMount);
+        SlotID = new OptionalEquipSlotID(_slotNumber, SupportedMount);
     }
 
     protected override void Validate() {

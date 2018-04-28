@@ -61,7 +61,7 @@ public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IManeuverable, Ft
         dampener.RangeMonitor = this;
     }
 
-    [Obsolete("Not currently used")]
+    ////[Obsolete("Not currently used")]
     protected override void RemoveMonitorFrom(FtlDampener dampener) {
         dampener.RangeMonitor = null;
     }
@@ -149,11 +149,11 @@ public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IManeuverable, Ft
 
     /// <summary>
     /// Called when [parent owner changed].
-    /// <remarks>This IsOperational cycling results in loss of detection and therefore potential un-dampening 
+    /// <remarks>This IsOperational cycling results in loss of detection and therefore potential loss of dampened state 
     /// and immediate (if any equipment is operational) re-acquisition and potential dampening of detectable items. 
     /// If no equipment is operational, the re-acquisition is deferred until a pieceOfEquipment becomes operational again. 
     /// When the re-acquisition occurs, each newly detected item will be potentially dampened by this item.</remarks>
-    /// <remarks>The un-dampening and re-dampening all occur after the ParentItem(Cmd)'s Owner has changed to avoid
+    /// <remarks>The loss of and re-dampening all occur after the ParentItem(Cmd)'s Owner has changed to avoid
     /// the situation where this Cmd's Owner has not yet changed, yet its single Element already has, aka the Cmd/Element
     /// sync issue.</remarks>
     /// </summary>
@@ -175,7 +175,6 @@ public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IManeuverable, Ft
     /// Monitor's ParentItem owner has changed.
     /// </summary>
     protected override void ReviewKnowledgeOfAllDetectedObjects() {
-
         // record previous categorization state before clearing and re-categorizing 
         _targetsPreviouslyTrackedAsDampenable = _targetsPreviouslyTrackedAsDampenable ?? new List<IManeuverable>();
         _targetsPreviouslyTrackedAsDampenable.Clear();
@@ -268,9 +267,22 @@ public class FtlDampenerRangeMonitor : ADetectableRangeMonitor<IManeuverable, Ft
         return RangeCategory.__GetBaselineFtlDampenerRange();
     }
 
+    /// <summary>
+    /// Resets this Monitor in preparation for reuse by the same Parent.
+    /// <remarks>Deactivates and removes the FtlDampener, preparing the monitor for the addition of a new FtlDampener.</remarks>
+    /// </summary>
+    public new void ResetForReuse() {
+        base.ResetForReuse();
+    }
+
     protected override void CompleteResetForReuse() {
         base.CompleteResetForReuse();
-        D.Warn("{0} is being reset for future reuse. Check implementation for completeness before relying on it.", DebugName);
+        D.AssertEqual(Constants.Zero, _trackedDampenableTargets.Count);
+        if (_targetsPreviouslyTrackedAsDampenable != null) {
+            _targetsPreviouslyTrackedAsDampenable.Clear();
+        }
+        ////D.AssertEqual(Constants.Zero, _targetsPreviouslyTrackedAsDampenable.Count);
+        ////D.Warn("{0} is being reset for future reuse. Check implementation for completeness before relying on it.", DebugName);
     }
 
     #region Debug

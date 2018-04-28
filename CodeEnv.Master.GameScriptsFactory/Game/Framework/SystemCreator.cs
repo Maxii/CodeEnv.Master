@@ -93,7 +93,7 @@ public class SystemCreator : AMonoBase {
 
     #endregion
 
-    // 10.2.16 GameState change event handlers eliminated. Now exposes methods to NewGameSystemConfigurator
+    // 10.2.16 GameState change event handlers eliminated. Now exposes methods to NewGameSystemGenerator
 
     #region Build and Deploy System
 

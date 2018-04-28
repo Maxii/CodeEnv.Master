@@ -21,7 +21,7 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Tracks progress of an element design under construction.
-    /// <remarks>Initial construction, upgrade construction (refitting) and de-construction (disbanding) all require construction.</remarks>
+    /// <remarks>Initial construction, upgrade construction (refitting) and deconstruction (disbanding) all require construction.</remarks>
     /// </summary>
     public class ConstructionTask : APropertyChangeTracking {
 
@@ -87,7 +87,7 @@ namespace CodeEnv.Master.GameContent {
 
         /// <summary>
         /// Returns the cost in units of production to construct what is being constructed.
-        /// Can construct an Element from scratch, refit an existing Element to a new Design or disband (de-construct) an Element.
+        /// Can construct an Element from scratch, refit an existing Element to a new Design or disband (deconstruct) an Element.
         /// <remarks>Default implementation returns the 'from scratch' Design.ConstructionCost. RefitConstruction
         /// overrides this value and returns the cost to 'refit' to this Design from a prior design. DisbandConstruction also
         /// overrides this value and returns the cost to 'disband' the element that is using this design.</remarks>
@@ -112,7 +112,7 @@ namespace CodeEnv.Master.GameContent {
             Element = element;
         }
 
-        public virtual bool TryCompleteConstruction(float productionToApply, out float unconsumedProduction) {
+        public virtual bool TryComplete(float productionToApply, out float unconsumedProduction) {
             CumProductionApplied += productionToApply;
             if (CumProductionApplied >= CostToConstruct) {
                 unconsumedProduction = CumProductionApplied - CostToConstruct;
@@ -125,7 +125,7 @@ namespace CodeEnv.Master.GameContent {
 
         public virtual void CompleteConstruction() {
             float unusedUnconsumedProduction;
-            bool isCompleted = TryCompleteConstruction(CostToConstruct - CumProductionApplied, out unusedUnconsumedProduction);
+            bool isCompleted = TryComplete(CostToConstruct - CumProductionApplied, out unusedUnconsumedProduction);
             D.Assert(isCompleted);
         }
 

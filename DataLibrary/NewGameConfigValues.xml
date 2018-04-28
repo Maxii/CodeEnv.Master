@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<Values>
+  <CompletedStartingTechs>
+    <EmpireStartLevel StartLevelName="Early">
+      <CompletedTech>Tech0</CompletedTech>
+      <CompletedTech></CompletedTech>
+    </EmpireStartLevel>
+    <EmpireStartLevel StartLevelName="Normal">
+      <CompletedTech>Tech0</CompletedTech>
+      <CompletedTech>Tech1</CompletedTech>
+    </EmpireStartLevel>
+    <EmpireStartLevel StartLevelName="Advanced">
+      <CompletedTech>Tech0</CompletedTech>
+      <CompletedTech>Tech1</CompletedTech>
+      <CompletedTech>Tech2</CompletedTech>
+    </EmpireStartLevel>
+  </CompletedStartingTechs>
+
+  <!-- Customize as needed -->
+  
+</Values>

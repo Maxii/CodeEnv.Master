@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: NewGameSystemConfigurator.cs
+// File: NewGameSystemGenerator.cs
 // Generates and/or configure SystemCreators. 
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -28,7 +28,7 @@ using UnityEngine;
 /// Generates and/or configure SystemCreators. Existing DebugSystemCreators that are already present in the editor
 /// just need to be configured by accessing their EditorSettings. Auto SystemCreators are both generated and then randomly configured.
 /// </summary>
-public class NewGameSystemConfigurator {
+public class NewGameSystemGenerator {
 
     private const string DebugCreatorNameFormat = "{0}({1})";
 
@@ -89,7 +89,7 @@ public class NewGameSystemConfigurator {
     private SystemNameFactory _nameFactory;
     private SystemFactory _systemFactory;
 
-    public NewGameSystemConfigurator() {
+    public NewGameSystemGenerator() {
         InitializeValuesAndReferences();
     }
 

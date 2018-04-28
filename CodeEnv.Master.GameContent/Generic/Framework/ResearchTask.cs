@@ -34,6 +34,7 @@ namespace CodeEnv.Master.GameContent {
             private set {
                 if (_isCompleted != value) {
                     D.Assert(value);       // not allowed to be set false
+                    CumScienceApplied = CostToResearch;
                     _isCompleted = value;
                 }
                 // No SetProperty to avoid subscribing to IsCompleted. Use PlayerResearchManager.isResearchCompleted instead.
@@ -71,6 +72,13 @@ namespace CodeEnv.Master.GameContent {
 
         public virtual float CumScienceApplied { get; private set; }
 
+        public virtual float RemainingScienceNeededToComplete {
+            get {
+                float remainingScienceNeeded = CostToResearch - CumScienceApplied;
+                return Mathf.Clamp(remainingScienceNeeded, Constants.ZeroF, remainingScienceNeeded);
+            }
+        }
+
         public ResearchTask(Technology techToResearch) {
             Tech = techToResearch;
         }
@@ -85,6 +93,12 @@ namespace CodeEnv.Master.GameContent {
             }
             unconsumedScience = Constants.ZeroF;
             return false;
+        }
+
+        public virtual void CompleteResearch() {
+            float unusedUnconsumedRsch;
+            bool isCompleted = TryComplete(CostToResearch - CumScienceApplied, out unusedUnconsumedRsch);
+            D.Assert(isCompleted);
         }
 
         #region Event and Property Change Handlers

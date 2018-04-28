@@ -64,7 +64,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="turnRate">The turn rate of the ordnance in degrees per hour .</param>
         /// <param name="courseUpdateFreq">How often the ordnance's course is updated per hour.</param>
         /// <param name="maxSteeringInaccuracy">The maximum steering inaccuracy in degrees.</param>
-        public AssaultWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, EquipStatID id,
+        public AssaultWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, EquipmentStatID id,
             float size, float mass, float pwrRqmt, float hitPts, float constructionCost, float expense,
             RangeCategory rangeCat, WDVStrength deliveryVehicleStrength, float reloadPeriod, DamageStrength damagePotential,
             float ordnanceMaxSpeed, float ordnanceMass, float ordnanceDrag, float turnRate, float courseUpdateFreq,

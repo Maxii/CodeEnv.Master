@@ -48,9 +48,6 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        ////private EquipmentCategory _equipCat;
-        ////public override EquipmentCategory Category { get { return _equipCat; } }
-
         public WDVStrength[] InterceptStrengths { get; private set; }
 
         public float InterceptAccuracy { get; private set; }
@@ -76,17 +73,17 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="interceptStrengths">The strength of the intercept depending on the type of ordnance intercepted.</param>
         /// <param name="interceptAccuracy">The intercept accuracy.</param>
         /// <param name="reloadPeriod">The reload period.</param>
-        /// <param name="damageMitigation">The contribution of this equipment to element damage mitigation.</param>
+        /// <param name="dmgMitigation">The contribution of this equipment to element damage mitigation.</param>
         public ActiveCountermeasureStat(string name, AtlasID imageAtlasID, string imageFilename, string description,
-            EquipStatID id, float size, float mass, float pwrRqmt, float hitPts, float constructionCost, float expense,
-            WDVStrength[] interceptStrengths, float interceptAccuracy, float reloadPeriod, DamageStrength damageMitigation)
+            EquipmentStatID id, float size, float mass, float pwrRqmt, float hitPts, float constructionCost, float expense,
+            WDVStrength[] interceptStrengths, float interceptAccuracy, float reloadPeriod, DamageStrength dmgMitigation)
             : base(name, imageAtlasID, imageFilename, description, id, size, mass, pwrRqmt, hitPts, constructionCost,
                   expense, GetRangeCat(id.Category), isDamageable: true) {
             __ValidateInterceptStrengths(interceptStrengths);
             InterceptStrengths = interceptStrengths;
             InterceptAccuracy = interceptAccuracy;
             ReloadPeriod = reloadPeriod;
-            DamageMitigation = damageMitigation;
+            DamageMitigation = dmgMitigation;
         }
 
         [System.Diagnostics.Conditional("DEBUG")]

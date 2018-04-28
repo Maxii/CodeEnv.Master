@@ -998,9 +998,9 @@ namespace CodeEnv.Master.GameContent {
                 case ShipHullCategory.Troop:
                     value = TempGameValues.MaxTurretHullMounts;   // 12
                     break;
+                //case ShipHullCategory.Fighter:
+                //case ShipHullCategory.Scout:
                 case ShipHullCategory.None:
-                case ShipHullCategory.Fighter:
-                case ShipHullCategory.Scout:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
             }
@@ -1029,9 +1029,9 @@ namespace CodeEnv.Master.GameContent {
                 case ShipHullCategory.Troop:
                     value = TempGameValues.MaxSiloHullMounts;   // 6
                     break;
+                //case ShipHullCategory.Fighter:
+                //case ShipHullCategory.Scout:
                 case ShipHullCategory.None:
-                case ShipHullCategory.Fighter:
-                case ShipHullCategory.Scout:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
             }
@@ -1089,6 +1089,54 @@ namespace CodeEnv.Master.GameContent {
 
         #region Element Hull Category - Equipment
 
+        public static EquipmentCategory EquipCategory(this ShipHullCategory hullCat) {
+            switch (hullCat) {
+                case ShipHullCategory.Frigate:
+                    return EquipmentCategory.SHullFrigate;
+                case ShipHullCategory.Destroyer:
+                    return EquipmentCategory.SHullDestroyer;
+                case ShipHullCategory.Cruiser:
+                    return EquipmentCategory.SHullCruiser;
+                case ShipHullCategory.Dreadnought:
+                    return EquipmentCategory.SHullDreadnought;
+                case ShipHullCategory.Carrier:
+                    return EquipmentCategory.SHullCarrier;
+                case ShipHullCategory.Colonizer:
+                    return EquipmentCategory.SHullColonizer;
+                case ShipHullCategory.Investigator:
+                    return EquipmentCategory.SHullInvestigator;
+                case ShipHullCategory.Troop:
+                    return EquipmentCategory.SHullTroop;
+                case ShipHullCategory.Support:
+                    return EquipmentCategory.SHullSupport;
+                case ShipHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+            }
+        }
+
+        public static EquipmentCategory EquipCategory(this FacilityHullCategory hullCat) {
+            switch (hullCat) {
+                case FacilityHullCategory.CentralHub:
+                    return EquipmentCategory.FHullCentralHub;
+                case FacilityHullCategory.Factory:
+                    return EquipmentCategory.FHullFactory;
+                case FacilityHullCategory.Economic:
+                    return EquipmentCategory.FHullEconomic;
+                case FacilityHullCategory.Laboratory:
+                    return EquipmentCategory.FHullLaboratory;
+                case FacilityHullCategory.Defense:
+                    return EquipmentCategory.FHullDefense;
+                case FacilityHullCategory.Barracks:
+                    return EquipmentCategory.FHullBarracks;
+                case FacilityHullCategory.ColonyHab:
+                    return EquipmentCategory.FHullColonyHab;
+                case FacilityHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+            }
+        }
+
         public static int __MaxSensorMounts(this ShipHullCategory hullCat) {
             int value = 1;  // Reqd SR Sensor
             switch (hullCat) {
@@ -1108,8 +1156,8 @@ namespace CodeEnv.Master.GameContent {
                 case ShipHullCategory.Dreadnought:
                     value = TempGameValues.MaxSensorMounts;   // 4
                     break;
-                case ShipHullCategory.Scout:
-                case ShipHullCategory.Fighter:
+                //case ShipHullCategory.Scout:
+                //case ShipHullCategory.Fighter:
                 case ShipHullCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
@@ -1138,8 +1186,8 @@ namespace CodeEnv.Master.GameContent {
                 case ShipHullCategory.Dreadnought:
                     value = TempGameValues.MaxSkinMounts;   // 6
                     break;
-                case ShipHullCategory.Scout:
-                case ShipHullCategory.Fighter:
+                //case ShipHullCategory.Scout:
+                //case ShipHullCategory.Fighter:
                 case ShipHullCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
@@ -1168,14 +1216,18 @@ namespace CodeEnv.Master.GameContent {
                 case ShipHullCategory.Dreadnought:
                     value = TempGameValues.MaxScreenMounts;   // 10
                     break;
-                case ShipHullCategory.Scout:
-                case ShipHullCategory.Fighter:
+                //case ShipHullCategory.Scout:
+                //case ShipHullCategory.Fighter:
                 case ShipHullCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
             }
             D.Assert(value <= TempGameValues.MaxScreenMounts);
             return value;
+        }
+
+        public static int __MaxFtlEngineMounts(this ShipHullCategory hullCat) {
+            return TempGameValues.MaxFtlEngineMounts;
         }
 
         public static int __MaxFlexMounts(this ShipHullCategory hullCat) {
@@ -1196,8 +1248,8 @@ namespace CodeEnv.Master.GameContent {
                 case ShipHullCategory.Dreadnought:
                     value = TempGameValues.MaxFlexMounts;   // 3
                     break;
-                case ShipHullCategory.Scout:
-                case ShipHullCategory.Fighter:
+                //case ShipHullCategory.Scout:
+                //case ShipHullCategory.Fighter:
                 case ShipHullCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
@@ -1215,9 +1267,6 @@ namespace CodeEnv.Master.GameContent {
         public static int __MaxPassiveCMs(this ShipHullCategory cat) {
             int value = 0;
             switch (cat) {
-                case ShipHullCategory.Fighter:
-                case ShipHullCategory.Scout:
-                    break;
                 case ShipHullCategory.Investigator:
                 case ShipHullCategory.Frigate:
                     value = 2;
@@ -1235,6 +1284,8 @@ namespace CodeEnv.Master.GameContent {
                 case ShipHullCategory.Dreadnought:
                     value = TempGameValues.__MaxElementPassiveCMs;   // 6
                     break;
+                //case ShipHullCategory.Fighter:
+                //case ShipHullCategory.Scout:
                 case ShipHullCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
@@ -1252,9 +1303,6 @@ namespace CodeEnv.Master.GameContent {
         public static int __MaxActiveCMs(this ShipHullCategory cat) {
             int value = 0;
             switch (cat) {
-                case ShipHullCategory.Fighter:
-                case ShipHullCategory.Scout:
-                    break;
                 case ShipHullCategory.Investigator:
                 case ShipHullCategory.Frigate:
                     value = 2;
@@ -1272,6 +1320,8 @@ namespace CodeEnv.Master.GameContent {
                 case ShipHullCategory.Dreadnought:
                     value = TempGameValues.__MaxElementActiveCMs;   // 6
                     break;
+                //case ShipHullCategory.Fighter:
+                //case ShipHullCategory.Scout:
                 case ShipHullCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
@@ -1289,8 +1339,6 @@ namespace CodeEnv.Master.GameContent {
         public static int __MaxSensors(this ShipHullCategory cat) {
             int value = 1;
             switch (cat) {
-                case ShipHullCategory.Fighter:
-                case ShipHullCategory.Scout:
                 case ShipHullCategory.Support:
                 case ShipHullCategory.Frigate:
                     break;
@@ -1307,6 +1355,8 @@ namespace CodeEnv.Master.GameContent {
                 case ShipHullCategory.Dreadnought:
                     value = TempGameValues.__MaxElementSensors;   // 4
                     break;
+                //case ShipHullCategory.Fighter:
+                //case ShipHullCategory.Scout:
                 case ShipHullCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
@@ -1324,9 +1374,6 @@ namespace CodeEnv.Master.GameContent {
         public static int __MaxShieldGenerators(this ShipHullCategory cat) {
             int value = 0;
             switch (cat) {
-                case ShipHullCategory.Fighter:
-                case ShipHullCategory.Scout:
-                    break;
                 case ShipHullCategory.Support:
                 case ShipHullCategory.Frigate:
                     value = 1;
@@ -1344,6 +1391,8 @@ namespace CodeEnv.Master.GameContent {
                 case ShipHullCategory.Dreadnought:
                     value = TempGameValues.__MaxElementShieldGenerators;   // 4
                     break;
+                //case ShipHullCategory.Fighter:
+                //case ShipHullCategory.Scout:
                 case ShipHullCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
@@ -1599,8 +1648,8 @@ namespace CodeEnv.Master.GameContent {
                 case ShipHullCategory.Carrier:
                     dimensions = new Vector3(.10F, .06F, .32F);     // magnitude = .341
                     break;
-                case ShipHullCategory.Fighter:
-                case ShipHullCategory.Scout:
+                //case ShipHullCategory.Fighter:
+                //case ShipHullCategory.Scout:
                 case ShipHullCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
@@ -1644,37 +1693,6 @@ namespace CodeEnv.Master.GameContent {
         }
 
         /// <summary>
-        /// The multiplier to be applied to the ship engine's MaxTurnRate to 
-        /// determine the turn rate (in degrees per hour) of the ship.
-        /// </summary>
-        /// <param name="hullCat">The hull category.</param>
-        /// <returns></returns>
-        /// <exception cref="System.NotImplementedException"></exception>
-        public static float TurnrateFactor(this ShipHullCategory hullCat) {
-            switch (hullCat) {
-                case ShipHullCategory.Frigate:
-                    return 1.0F;
-                case ShipHullCategory.Destroyer:
-                case ShipHullCategory.Support:
-                    return 0.9F;
-                case ShipHullCategory.Cruiser:
-                case ShipHullCategory.Colonizer:
-                case ShipHullCategory.Investigator:
-                    return 0.75F;
-                case ShipHullCategory.Dreadnought:
-                case ShipHullCategory.Troop:
-                    return 0.6F;
-                case ShipHullCategory.Carrier:
-                    return 0.5F;
-                case ShipHullCategory.Scout:
-                case ShipHullCategory.Fighter:
-                case ShipHullCategory.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
-            }
-        }
-
-        /// <summary>
         /// Drag of the ship's hull in Topography.OpenSpace.
         /// </summary>
         /// <param name="hullCat">The hull category.</param>
@@ -1696,8 +1714,44 @@ namespace CodeEnv.Master.GameContent {
                     return .15F;
                 case ShipHullCategory.Carrier:
                     return .25F;
-                case ShipHullCategory.Scout:
-                case ShipHullCategory.Fighter:
+                //case ShipHullCategory.Scout:
+                //case ShipHullCategory.Fighter:
+                case ShipHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
+            }
+        }
+
+        #endregion
+
+        #region Element Hull Category - Deprecated
+
+        /// <summary>
+        /// The multiplier to be applied to the ship engine's MaxTurnRate to 
+        /// determine the turn rate (in degrees per hour) of the ship.
+        /// </summary>
+        /// <param name="hullCat">The hull category.</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotImplementedException"></exception>
+        [Obsolete]
+        public static float __TurnrateLimiter(this ShipHullCategory hullCat) {
+            switch (hullCat) {
+                case ShipHullCategory.Frigate:
+                    return 1.0F;
+                case ShipHullCategory.Destroyer:
+                case ShipHullCategory.Support:
+                    return 0.9F;
+                case ShipHullCategory.Cruiser:
+                case ShipHullCategory.Colonizer:
+                case ShipHullCategory.Investigator:
+                    return 0.75F;
+                case ShipHullCategory.Dreadnought:
+                case ShipHullCategory.Troop:
+                    return 0.6F;
+                case ShipHullCategory.Carrier:
+                    return 0.5F;
+                //case ShipHullCategory.Scout:
+                //case ShipHullCategory.Fighter:
                 case ShipHullCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
@@ -1710,6 +1764,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="hullCat">The hull category.</param>
         /// <returns></returns>
         /// <exception cref="NotImplementedException"></exception>
+        [Obsolete]
         public static float Mass(this FacilityHullCategory hullCat) {
             switch (hullCat) {
                 case FacilityHullCategory.CentralHub:
@@ -1734,6 +1789,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="hullCat">The hull category.</param>
         /// <returns></returns>
         /// <exception cref="NotImplementedException"></exception>
+        [Obsolete]
         public static float Mass(this ShipHullCategory hullCat) {
             switch (hullCat) {
                 case ShipHullCategory.Frigate:
@@ -1750,14 +1806,15 @@ namespace CodeEnv.Master.GameContent {
                     return 400F;                     // mass * drag = 60
                 case ShipHullCategory.Carrier:
                     return 500F;                     // mass * drag = 125
-                case ShipHullCategory.Scout:
-                case ShipHullCategory.Fighter:
+                //case ShipHullCategory.Scout:
+                //case ShipHullCategory.Fighter:
                 case ShipHullCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
             }
         }
 
+        [Obsolete]
         public static float HitPoints(this FacilityHullCategory hullCat) {
             switch (hullCat) {
                 case FacilityHullCategory.CentralHub:
@@ -1776,6 +1833,7 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
+        [Obsolete]
         public static float HitPoints(this ShipHullCategory hullCat) {
             switch (hullCat) {
                 case ShipHullCategory.Frigate:
@@ -1792,17 +1850,13 @@ namespace CodeEnv.Master.GameContent {
                 case ShipHullCategory.Dreadnought:
                 case ShipHullCategory.Carrier:
                     return 60F;
-                case ShipHullCategory.Scout:
-                case ShipHullCategory.Fighter:
+                //case ShipHullCategory.Scout:
+                //case ShipHullCategory.Fighter:
                 case ShipHullCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
             }
         }
-
-        #endregion
-
-        #region Element Hull Category - Economics
 
         /// <summary>
         /// Baseline science generated by the element's hull.
@@ -1811,6 +1865,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="hullCat">The hull category.</param>
         /// <returns></returns>
         /// <exception cref="NotImplementedException"></exception>
+        [Obsolete]
         public static float Science(this ShipHullCategory hullCat) {
             switch (hullCat) {
                 case ShipHullCategory.Investigator:
@@ -1824,8 +1879,8 @@ namespace CodeEnv.Master.GameContent {
                 case ShipHullCategory.Support:
                 case ShipHullCategory.Troop:
                     return Constants.ZeroF;
-                case ShipHullCategory.Fighter:
-                case ShipHullCategory.Scout:
+                //case ShipHullCategory.Fighter:
+                //case ShipHullCategory.Scout:
                 case ShipHullCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
@@ -1839,6 +1894,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="hullCat">The hull category.</param>
         /// <returns></returns>
         /// <exception cref="NotImplementedException"></exception>
+        [Obsolete]
         public static float Culture(this ShipHullCategory hullCat) {
             switch (hullCat) {
                 case ShipHullCategory.Colonizer:
@@ -1852,14 +1908,15 @@ namespace CodeEnv.Master.GameContent {
                 case ShipHullCategory.Destroyer:
                 case ShipHullCategory.Frigate:
                     return Constants.ZeroF;
-                case ShipHullCategory.Fighter:
-                case ShipHullCategory.Scout:
+                //case ShipHullCategory.Fighter:
+                //case ShipHullCategory.Scout:
                 case ShipHullCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
             }
         }
 
+        [Obsolete]
         public static float ConstructionCost(this ShipHullCategory hullCat) {
             switch (hullCat) {
                 case ShipHullCategory.Frigate:
@@ -1880,8 +1937,8 @@ namespace CodeEnv.Master.GameContent {
                     return 470F;
                 case ShipHullCategory.Carrier:
                     return 480F;
-                case ShipHullCategory.Fighter:
-                case ShipHullCategory.Scout:
+                //case ShipHullCategory.Fighter:
+                //case ShipHullCategory.Scout:
                 case ShipHullCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
@@ -1895,6 +1952,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="hullCat">The hull category.</param>
         /// <returns></returns>
         /// <exception cref="NotImplementedException"></exception>
+        [Obsolete]
         public static float Income(this ShipHullCategory hullCat) {
             switch (hullCat) {
                 case ShipHullCategory.Support:
@@ -1908,8 +1966,8 @@ namespace CodeEnv.Master.GameContent {
                 case ShipHullCategory.Investigator:
                 case ShipHullCategory.Troop:
                     return Constants.ZeroF;
-                case ShipHullCategory.Fighter:
-                case ShipHullCategory.Scout:
+                //case ShipHullCategory.Fighter:
+                //case ShipHullCategory.Scout:
                 case ShipHullCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
@@ -1922,6 +1980,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="hullCat">The hull category.</param>
         /// <returns></returns>
         /// <exception cref="NotImplementedException"></exception>
+        [Obsolete]
         public static float Expense(this ShipHullCategory hullCat) {
             switch (hullCat) {
                 case ShipHullCategory.Carrier:
@@ -1937,14 +1996,15 @@ namespace CodeEnv.Master.GameContent {
                     return 2;
                 case ShipHullCategory.Frigate:
                     return 1;
-                case ShipHullCategory.Fighter:
-                case ShipHullCategory.Scout:
+                //case ShipHullCategory.Fighter:
+                //case ShipHullCategory.Scout:
                 case ShipHullCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
             }
         }
 
+        [Obsolete]
         public static float Income(this FacilityHullCategory hullCat) {
             float result;
             switch (hullCat) {
@@ -1968,6 +2028,7 @@ namespace CodeEnv.Master.GameContent {
             return result;
         }
 
+        [Obsolete]
         public static float Expense(this FacilityHullCategory hullCat) {
             float result;
             switch (hullCat) {
@@ -1991,6 +2052,7 @@ namespace CodeEnv.Master.GameContent {
             return result;
         }
 
+        [Obsolete]
         public static float Science(this FacilityHullCategory hullCat) {
             float result;
             switch (hullCat) {
@@ -2012,6 +2074,7 @@ namespace CodeEnv.Master.GameContent {
             return result;
         }
 
+        [Obsolete]
         public static float Culture(this FacilityHullCategory hullCat) {
             float result;
             switch (hullCat) {
@@ -2033,6 +2096,7 @@ namespace CodeEnv.Master.GameContent {
             return result;
         }
 
+        [Obsolete]
         public static float Food(this FacilityHullCategory hullCat) {
             float result;
             switch (hullCat) {
@@ -2054,6 +2118,7 @@ namespace CodeEnv.Master.GameContent {
             return result;
         }
 
+        [Obsolete]
         public static float Production(this FacilityHullCategory hullCat) {
             float result;
             switch (hullCat) {
@@ -2075,6 +2140,7 @@ namespace CodeEnv.Master.GameContent {
             return result;
         }
 
+        [Obsolete]
         public static float ConstructionCost(this FacilityHullCategory hullCat) {
             float result;
             switch (hullCat) {
@@ -2106,6 +2172,49 @@ namespace CodeEnv.Master.GameContent {
             return result;
         }
 
+        [Obsolete]
+        public static Priority __HQPriority(this FacilityHullCategory cat) {
+            switch (cat) {
+                case FacilityHullCategory.CentralHub:
+                    return Priority.Primary;
+                case FacilityHullCategory.Defense:
+                    return Priority.Secondary;
+                case FacilityHullCategory.ColonyHab:
+                case FacilityHullCategory.Economic:
+                case FacilityHullCategory.Factory:
+                case FacilityHullCategory.Barracks:
+                case FacilityHullCategory.Laboratory:
+                    return Priority.Low;
+                case FacilityHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
+            }
+        }
+
+        [Obsolete]
+        public static Priority __HQPriority(this ShipHullCategory cat) {
+            switch (cat) {
+                case ShipHullCategory.Carrier:
+                    return Priority.Primary;
+                case ShipHullCategory.Troop:
+                case ShipHullCategory.Dreadnought:
+                    return Priority.Secondary;
+                case ShipHullCategory.Cruiser:
+                case ShipHullCategory.Colonizer:
+                    return Priority.Tertiary;
+                case ShipHullCategory.Support:
+                case ShipHullCategory.Investigator:
+                case ShipHullCategory.Destroyer:
+                case ShipHullCategory.Frigate:
+                    return Priority.Low;
+                //case ShipHullCategory.Fighter:
+                //case ShipHullCategory.Scout:
+                case ShipHullCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
+            }
+        }
+
         #endregion
 
         public static string GetEmptyTemplateDesignName(this ShipHullCategory cat) {
@@ -2123,8 +2232,8 @@ namespace CodeEnv.Master.GameContent {
                 case ShipHullCategory.Dreadnought:
                     designName = designNameFormat.Inject(cat.GetValueName());
                     break;
-                case ShipHullCategory.Fighter:
-                case ShipHullCategory.Scout:
+                //case ShipHullCategory.Fighter:
+                //case ShipHullCategory.Scout:
                 case ShipHullCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
@@ -2154,59 +2263,19 @@ namespace CodeEnv.Master.GameContent {
             return designName;
         }
 
-        public static Priority __HQPriority(this FacilityHullCategory cat) {
-            switch (cat) {
-                case FacilityHullCategory.CentralHub:
-                    return Priority.Primary;
-                case FacilityHullCategory.Defense:
-                    return Priority.Secondary;
-                case FacilityHullCategory.ColonyHab:
-                case FacilityHullCategory.Economic:
-                case FacilityHullCategory.Factory:
-                case FacilityHullCategory.Barracks:
-                case FacilityHullCategory.Laboratory:
-                    return Priority.Low;
-                case FacilityHullCategory.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
-            }
-        }
-
-        public static Priority __HQPriority(this ShipHullCategory cat) {
-            switch (cat) {
-                case ShipHullCategory.Carrier:
-                    return Priority.Primary;
-                case ShipHullCategory.Troop:
-                case ShipHullCategory.Dreadnought:
-                    return Priority.Secondary;
-                case ShipHullCategory.Cruiser:
-                case ShipHullCategory.Colonizer:
-                    return Priority.Tertiary;
-                case ShipHullCategory.Support:
-                case ShipHullCategory.Investigator:
-                case ShipHullCategory.Destroyer:
-                case ShipHullCategory.Frigate:
-                    return Priority.Low;
-                case ShipHullCategory.Fighter:
-                case ShipHullCategory.Scout:
-                case ShipHullCategory.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(cat));
-            }
-        }
-
         #endregion
 
         #region Equipment Category
 
-        private static EquipmentMountCategory[] AllowedTurretMounts = new EquipmentMountCategory[] { EquipmentMountCategory.Turret };
-        private static EquipmentMountCategory[] AllowedSiloMounts = new EquipmentMountCategory[] { EquipmentMountCategory.Silo };
-        private static EquipmentMountCategory[] AllowedPassiveCmMounts = new EquipmentMountCategory[] { EquipmentMountCategory.Skin, EquipmentMountCategory.Flex };
-        private static EquipmentMountCategory[] AllowedActiveCmMounts = new EquipmentMountCategory[] { EquipmentMountCategory.Screen, EquipmentMountCategory.Flex };
-        private static EquipmentMountCategory[] AllowedSensorMounts = new EquipmentMountCategory[] { EquipmentMountCategory.Sensor, EquipmentMountCategory.Flex };
-        private static EquipmentMountCategory[] AllowedShieldGenMounts = new EquipmentMountCategory[] { EquipmentMountCategory.Screen, EquipmentMountCategory.Flex };
+        private static OptionalEquipMountCategory[] AllowedTurretMounts = new OptionalEquipMountCategory[] { OptionalEquipMountCategory.Turret };
+        private static OptionalEquipMountCategory[] AllowedSiloMounts = new OptionalEquipMountCategory[] { OptionalEquipMountCategory.Silo };
+        private static OptionalEquipMountCategory[] AllowedPassiveCmMounts = new OptionalEquipMountCategory[] { OptionalEquipMountCategory.Skin, OptionalEquipMountCategory.Flex };
+        private static OptionalEquipMountCategory[] AllowedActiveCmMounts = new OptionalEquipMountCategory[] { OptionalEquipMountCategory.Screen, OptionalEquipMountCategory.Flex };
+        private static OptionalEquipMountCategory[] AllowedSensorMounts = new OptionalEquipMountCategory[] { OptionalEquipMountCategory.Sensor, OptionalEquipMountCategory.Flex };
+        private static OptionalEquipMountCategory[] AllowedShieldGenMounts = new OptionalEquipMountCategory[] { OptionalEquipMountCategory.Screen, OptionalEquipMountCategory.Flex };
+        private static OptionalEquipMountCategory[] AllowedFtlEngineMounts = new OptionalEquipMountCategory[] { OptionalEquipMountCategory.FtlEngine };
 
-        public static EquipmentMountCategory[] AllowedMounts(this EquipmentCategory eqCat) {
+        public static OptionalEquipMountCategory[] AllowedMounts(this EquipmentCategory eqCat) {
             switch (eqCat) {
                 case EquipmentCategory.BeamWeapon:
                 case EquipmentCategory.ProjectileWeapon:
@@ -2225,10 +2294,10 @@ namespace CodeEnv.Master.GameContent {
                     return AllowedSensorMounts;
                 case EquipmentCategory.ShieldGenerator:
                     return AllowedShieldGenMounts;
-                case EquipmentCategory.FtlDampener:
-                case EquipmentCategory.Hull:
-                case EquipmentCategory.StlPropulsion:
                 case EquipmentCategory.FtlPropulsion:
+                    return AllowedFtlEngineMounts;
+                case EquipmentCategory.StlPropulsion:
+                case EquipmentCategory.FtlDampener:
                 case EquipmentCategory.StarbaseCmdModule:
                 case EquipmentCategory.SettlementCmdModule:
                 case EquipmentCategory.FleetCmdModule:
@@ -2238,26 +2307,76 @@ namespace CodeEnv.Master.GameContent {
             }
         }
 
-        public static EquipmentCategory[] SupportedEquipment(this EquipmentMountCategory mountCat) {
+        public static EquipmentCategory[] SupportedEquipment(this OptionalEquipMountCategory mountCat) {
             switch (mountCat) {
-                case EquipmentMountCategory.Turret:
+                case OptionalEquipMountCategory.Turret:
                     return new EquipmentCategory[] { EquipmentCategory.BeamWeapon, EquipmentCategory.ProjectileWeapon };
-                case EquipmentMountCategory.Silo:
+                case OptionalEquipMountCategory.Silo:
                     return new EquipmentCategory[] { EquipmentCategory.MissileWeapon, EquipmentCategory.AssaultWeapon };
-                case EquipmentMountCategory.Sensor:
+                case OptionalEquipMountCategory.Sensor:
                     return new EquipmentCategory[] { EquipmentCategory.SRSensor, EquipmentCategory.MRSensor, EquipmentCategory.LRSensor };
-                case EquipmentMountCategory.Skin:
+                case OptionalEquipMountCategory.Skin:
                     return new EquipmentCategory[] { EquipmentCategory.PassiveCountermeasure };
-                case EquipmentMountCategory.Screen:
+                case OptionalEquipMountCategory.Screen:
                     return new EquipmentCategory[] { EquipmentCategory.SRActiveCountermeasure, EquipmentCategory.MRActiveCountermeasure,
                         EquipmentCategory.ShieldGenerator };
-                case EquipmentMountCategory.Flex:
+                case OptionalEquipMountCategory.FtlEngine:
+                    return new EquipmentCategory[] { EquipmentCategory.FtlPropulsion };
+                case OptionalEquipMountCategory.Flex:
                     return new EquipmentCategory[] { EquipmentCategory.SRSensor, EquipmentCategory.MRSensor, EquipmentCategory.LRSensor,
                         EquipmentCategory.PassiveCountermeasure, EquipmentCategory.SRActiveCountermeasure,
                         EquipmentCategory.MRActiveCountermeasure, EquipmentCategory.ShieldGenerator };
-                case EquipmentMountCategory.None:
+                case OptionalEquipMountCategory.None:
                 default:
                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(mountCat));
+            }
+        }
+
+        public static ShipHullCategory ShipHullCat(this EquipmentCategory eCat) {
+            switch (eCat) {
+                case EquipmentCategory.SHullFrigate:
+                    return ShipHullCategory.Frigate;
+                case EquipmentCategory.SHullDestroyer:
+                    return ShipHullCategory.Destroyer;
+                case EquipmentCategory.SHullCruiser:
+                    return ShipHullCategory.Cruiser;
+                case EquipmentCategory.SHullDreadnought:
+                    return ShipHullCategory.Dreadnought;
+                case EquipmentCategory.SHullCarrier:
+                    return ShipHullCategory.Carrier;
+                case EquipmentCategory.SHullColonizer:
+                    return ShipHullCategory.Colonizer;
+                case EquipmentCategory.SHullInvestigator:
+                    return ShipHullCategory.Investigator;
+                case EquipmentCategory.SHullTroop:
+                    return ShipHullCategory.Troop;
+                case EquipmentCategory.SHullSupport:
+                    return ShipHullCategory.Support;
+                case EquipmentCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(eCat));
+            }
+        }
+
+        public static FacilityHullCategory FacilityHullCat(this EquipmentCategory eCat) {
+            switch (eCat) {
+                case EquipmentCategory.FHullCentralHub:
+                    return FacilityHullCategory.CentralHub;
+                case EquipmentCategory.FHullFactory:
+                    return FacilityHullCategory.Factory;
+                case EquipmentCategory.FHullEconomic:
+                    return FacilityHullCategory.Economic;
+                case EquipmentCategory.FHullLaboratory:
+                    return FacilityHullCategory.Laboratory;
+                case EquipmentCategory.FHullDefense:
+                    return FacilityHullCategory.Defense;
+                case EquipmentCategory.FHullBarracks:
+                    return FacilityHullCategory.Barracks;
+                case EquipmentCategory.FHullColonyHab:
+                    return FacilityHullCategory.ColonyHab;
+                case EquipmentCategory.None:
+                default:
+                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(eCat));
             }
         }
 

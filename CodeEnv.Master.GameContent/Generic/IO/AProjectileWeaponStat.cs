@@ -57,7 +57,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="ordnanceMaxSpeed">The maximum speed of the ordnance in units per hour in Topography.OpenSpace.</param>
         /// <param name="ordnanceMass">The mass of the ordnance.</param>
         /// <param name="ordnanceDrag">The drag of the ordnance in Topography.OpenSpace.</param>
-        public AProjectileWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, EquipStatID id,
+        public AProjectileWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, EquipmentStatID id,
             float size, float mass, float pwrRqmt, float hitPts, float constructionCost, float expense,
             RangeCategory rangeCat, WDVStrength deliveryVehicleStrength, float reloadPeriod, DamageStrength damagePotential,
             float ordnanceMaxSpeed, float ordnanceMass, float ordnanceDrag)

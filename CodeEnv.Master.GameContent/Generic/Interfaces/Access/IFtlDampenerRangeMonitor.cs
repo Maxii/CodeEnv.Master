@@ -21,6 +21,11 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public interface IFtlDampenerRangeMonitor : IRangedEquipmentMonitor {
 
+        /// <summary>
+        /// Resets this Monitor in preparation for reuse by the same Parent.
+        /// <remarks>Deactivates and removes the FtlDampener, preparing the monitor for the addition of a new FtlDampener.</remarks>
+        /// </summary>
+        void ResetForReuse();
 
     }
 }

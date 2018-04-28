@@ -20,6 +20,7 @@ namespace CodeEnv.Master.GameContent {
     using System.Collections.Generic;
     using System.Linq;
     using CodeEnv.Master.Common;
+    using MoreLinq;
 
     /// <summary>
     /// Manages the progression of research on technologies for a Player.
@@ -35,7 +36,7 @@ namespace CodeEnv.Master.GameContent {
 
         public event EventHandler<ResearchCompletedEventArgs> researchCompleted;
 
-        public string DebugName { get { return DebugNameFormat.Inject(_aiMgr.Player.DebugName, GetType().Name); } }
+        public string DebugName { get { return DebugNameFormat.Inject(_player.DebugName, GetType().Name); } }
 
         protected ResearchTask _currentResearchTask = TempGameValues.NoResearch;
         public ResearchTask CurrentResearchTask {
@@ -59,70 +60,85 @@ namespace CodeEnv.Master.GameContent {
         private float _playerTotalScienceYield;
 
         private DateMinderDuration _researchUpdateDuration;
+        private EquipmentStatFactory _eStatFactory;
+        private TechnologyFactory _techFactory;
         private PlayerDesigns _playerDesigns;
-        private PlayerAIManager _aiMgr;
+        private PlayerAIManager _playerAiMgr;
+        private Player _player;
         private GameTime _gameTime;
         private IList<IDisposable> _subscriptions;
 
         public PlayerResearchManager(PlayerAIManager aiMgr, PlayerDesigns designs) {
-            _aiMgr = aiMgr;
+            _playerAiMgr = aiMgr;
+            _player = aiMgr.Player;
             _playerDesigns = designs;
             InitializeValuesAndReferences();
+            InitializeResearchState();
             InitializeEquipmentLevels();
         }
 
         private void InitializeValuesAndReferences() {
+            _eStatFactory = EquipmentStatFactory.Instance;
+            _techFactory = TechnologyFactory.Instance;
             _gameTime = GameTime.Instance;
             _uncompletedRschTasks = new HashSet<ResearchTask>();
             _completedRschTasks = new HashSet<ResearchTask>();
+        }
 
-            var allPredefinedTechs = TechnologyFactory.Instance.GetAllPredefinedTechs(_aiMgr.Player);
+        private void InitializeResearchState() {
+            var allPredefinedTechs = TechnologyFactory.Instance.GetAllPredefinedTechs(_player);
             foreach (var tech in allPredefinedTechs) {
                 _uncompletedRschTasks.Add(new ResearchTask(tech));
             }
+
+            __ValidateTechPresence(allPredefinedTechs);
+
+            IEnumerable<string> techNamesThatStartCompleted;
+            if (__debugCntls.IsAllTechResearched) {
+                techNamesThatStartCompleted = allPredefinedTechs.Select(tech => tech.Name);
+            }
+            else {
+                var empireStartingLevel = GameReferences.GameManager.GameSettings.GetStartLevelFor(_player);
+                techNamesThatStartCompleted = NewGameConfigurator.Instance.GetTechNamesThatStartCompleted(empireStartingLevel);
+            }
+
+            foreach (var techName in techNamesThatStartCompleted) {
+                var rschTaskToComplete = _uncompletedRschTasks.Single(task => task.Tech.Name == techName);
+                rschTaskToComplete.CompleteResearch();
+                RecordAsCompleted(rschTaskToComplete);
+            }
+
+            __ValidateStartingRschState(_completedRschTasks);
         }
 
         /// <summary>
         /// Initializes the equipment levels in PlayerDesigns at startup.
-        /// <remarks>Currently only sets the Equipment's CurrentLevel if EquipmentStatFactory has a stat at Level.One.
-        /// This simulates the case where one or more stats have no Level.One stat.
-        /// There is one exception: If DebugControls.AreShipsFast is true, it initializes STL and FTL EngineStats to the 
-        /// highest level EngineStat held by EquipmentStatFactory.</remarks>
         /// </summary>
         private void InitializeEquipmentLevels() {
-            var allNonHullEquipCats = Enums<EquipmentCategory>.GetValuesExcept(EquipmentCategory.None, EquipmentCategory.Hull);
-            foreach (var eCat in allNonHullEquipCats) {
-                Level level;
-                if (eCat == EquipmentCategory.StlPropulsion || eCat == EquipmentCategory.FtlPropulsion && __debugCntls.AreShipsFast) {
-                    level = __eStatFactory.__GetHighestLevelFor(eCat);
-                    _playerDesigns.UpdateCurrentLevel(eCat, level);
-                    continue;
-                }
-                level = __eStatFactory.__GetLowestLevelFor(eCat);
-                if (level == Level.One) {
-                    _playerDesigns.UpdateCurrentLevel(eCat, level);
-                }
+            UpdateCurrentEquipmentLevels();
+        }
+
+        private void UpdateCurrentEquipmentLevels() {
+            // ILookup is one to many whereas IDictionary is one to one
+            ILookup<EquipmentCategory, AEquipmentStat> allEnabledStatsLookup
+                = _completedRschTasks.SelectMany(task => task.Tech.GetEnabledEquipStats()).ToLookup(eStat => eStat.Category);
+            var allEnabledEquipCats = allEnabledStatsLookup.Select(group => group.Key).Distinct();
+
+            IList<EquipmentStatID> enabledEqCatsWithHighestLevelResearched = new List<EquipmentStatID>();
+            foreach (var eqCat in allEnabledEquipCats) {
+                // AHA! ILookup auto combines the many stats for this eqCat Key into an IEnumerable
+                IEnumerable<AEquipmentStat> eqCatStats = allEnabledStatsLookup[eqCat];
+                Level highestLevelResearched = eqCatStats.Max(stat => stat.Level);
+                enabledEqCatsWithHighestLevelResearched.Add(new EquipmentStatID(eqCat, highestLevelResearched));
             }
 
-            var allShipHullCats = TempGameValues.ShipHullCategoriesInUse;
-            foreach (var hullCat in allShipHullCats) {
-                Level level = __eStatFactory.__GetLowestLevelFor(hullCat);
-                if (level == Level.One) {
-                    _playerDesigns.UpdateCurrentLevel(hullCat, level);
-                }
-            }
-
-            var allFacilityHullCats = TempGameValues.FacilityHullCategoriesInUse;
-            foreach (var hullCat in allFacilityHullCats) {
-                Level level = __eStatFactory.__GetLowestLevelFor(hullCat);
-                if (level == Level.One) {
-                    _playerDesigns.UpdateCurrentLevel(hullCat, level);
-                }
+            if (enabledEqCatsWithHighestLevelResearched.Any()) {
+                _playerDesigns.UpdateEquipLevelAndReqdDesigns(enabledEqCatsWithHighestLevelResearched);
             }
         }
 
         public void CommenceOperations() {
-            _aiMgr.PickFirstResearchTask();
+            _playerAiMgr.PickFirstResearchTask();
             InitiateProgressChecks();
         }
 
@@ -136,7 +152,7 @@ namespace CodeEnv.Master.GameContent {
 
         private void Subscribe() {
             _subscriptions = new List<IDisposable>();
-            _subscriptions.Add(_aiMgr.Knowledge.SubscribeToPropertyChanged<PlayerKnowledge, float>(pk => pk.TotalScienceYield, PlayerTotalScienceYieldPropChangedHandler));
+            _subscriptions.Add(_playerAiMgr.Knowledge.SubscribeToPropertyChanged<PlayerKnowledge, float>(pk => pk.TotalScienceYield, PlayerTotalScienceYieldPropChangedHandler));
         }
 
         public bool IsDiscovered(Technology tech) {
@@ -154,6 +170,12 @@ namespace CodeEnv.Master.GameContent {
             return tasks;
         }
 
+        /// <summary>
+        /// Returns the ResearchTask associated with the provided Technology.
+        /// The task may already be completed, partially completed, currently underway or not started.
+        /// </summary>
+        /// <param name="tech">The tech.</param>
+        /// <returns></returns>
         public ResearchTask GetResearchTaskFor(Technology tech) {
             return GetAllResearchTasks().Single(task => task.Tech == tech);
         }
@@ -163,7 +185,7 @@ namespace CodeEnv.Master.GameContent {
 
             _pendingRschTaskQueue.Clear();
             IEnumerable<ResearchTask> uncompletedPrereqs;
-            if (HasUncompletedPrerequisites(rschGoal, out uncompletedPrereqs)) {
+            if (TryGetUncompletedPrerequisites(rschGoal, out uncompletedPrereqs)) {
                 var ascendingPrereqs = uncompletedPrereqs.OrderBy(pReq => pReq.Tech.ResearchCost);
 
                 foreach (var pReq in ascendingPrereqs) {
@@ -178,7 +200,7 @@ namespace CodeEnv.Master.GameContent {
                 // all preReqs, if any, completed so rschGoal can become the CurrentResearchTask
                 if (!_uncompletedRschTasks.Contains(rschGoal)) {
                     D.AssertEqual("FutureTech", rschGoal.Tech.Name);
-                    D.LogBold("{0}: ResearchTree has been completed so will initiate research on another FutureTech!", DebugName);
+                    //D.Log("{0}: ResearchTree has been completed so will initiate research on another FutureTech!", DebugName);
                     _uncompletedRschTasks.Add(rschGoal);
                 }
                 CurrentResearchTask = rschGoal;
@@ -190,33 +212,44 @@ namespace CodeEnv.Master.GameContent {
             D.AssertNotEqual(TempGameValues.NoResearch, CurrentResearchTask, DebugName);
             //D.Log("{0} is checking {1} for completion on {2}.", DebugName, CurrentResearchTask.DebugName, _gameTime.CurrentDate);
             if (CurrentResearchTask.TryComplete(availableScienceYield, out _unconsumedScienceYield)) {
-                D.Log("{0} has completed research of {1} on {2}. Science/hour = {3:0.}.",
-                    DebugName, CurrentResearchTask.DebugName, _gameTime.CurrentDate, _playerTotalScienceYield);
+                //D.Log("{0} has completed research of {1} on {2}. Science/hour = {3:0.}.",
+                //    DebugName, CurrentResearchTask.DebugName, _gameTime.CurrentDate, _playerTotalScienceYield);
                 D.Assert(CurrentResearchTask.IsCompleted);
 
-                var completedResearch = CurrentResearchTask;
-                bool isRemoved = _uncompletedRschTasks.Remove(completedResearch);
-                D.Assert(isRemoved);
-                bool isAdded = _completedRschTasks.Add(completedResearch);
-                D.Assert(isAdded);
-                OnResearchCompleted(completedResearch);
+                var completedRsch = CurrentResearchTask;
+                RecordAsCompleted(completedRsch);
+
+                if (!__debugCntls.IsAllTechResearched) { // Update won't hurt but expensive -> no value if all equip already at highest level
+                    UpdateCurrentEquipmentLevels();
+                }
+
+                OnResearchCompleted(completedRsch);
                 // confirm that OnResearchCompleted didn't change CurrentResearchTask
-                D.AssertEqual(completedResearch, CurrentResearchTask);
+                D.AssertEqual(completedRsch, CurrentResearchTask);
 
                 if (IsResearchQueued) {
                     CurrentResearchTask = _pendingRschTaskQueue.Dequeue();
                 }
                 else {
-                    if (!AssignNextResearchTask(completedResearch)) {
+                    if (!AssignNextResearchTask(completedRsch)) {
                         _currentResearchTask = TempGameValues.NoResearch;
                     }
                 }
             }
         }
 
+        private void RecordAsCompleted(ResearchTask completedRsch) {
+            D.Assert(completedRsch.IsCompleted);
+            D.Assert(_uncompletedRschTasks.Contains(completedRsch));
+            bool isRemoved = _uncompletedRschTasks.Remove(completedRsch);
+            D.Assert(isRemoved);
+            bool isAdded = _completedRschTasks.Add(completedRsch);
+            D.Assert(isAdded);
+        }
+
         /// <summary>
         /// Selects and tries to assign the next ResearchTask that should follow <c>justCompletedRsch</c>.
-        /// Returns <c>true</c> if the selected task was assigned via ChangeResearchTaskTo(), <c>false</c> if
+        /// Returns <c>true</c> if the selected task was assigned via ChangeCurrentResearchTo(), <c>false</c> if
         /// it wasn't. 
         /// <remarks>If the AI is doing the selection and assignment, this method will always return true.
         /// If the User is using the ResearchScreen to manually do the selection/assignment, it will return 
@@ -232,7 +265,7 @@ namespace CodeEnv.Master.GameContent {
         private bool AssignNextResearchTask(ResearchTask justCompletedRsch) {
             ResearchTask selectedRschTask;
             bool isFutureTechRuntimeCreation;
-            bool toAssignSelectedRschTask = _aiMgr.TryPickNextResearchTask(justCompletedRsch, out selectedRschTask, out isFutureTechRuntimeCreation);
+            bool toAssignSelectedRschTask = _playerAiMgr.TryPickNextResearchTask(justCompletedRsch, out selectedRschTask, out isFutureTechRuntimeCreation);
             bool wasAssigned = false;
             if (toAssignSelectedRschTask) {
                 ChangeCurrentResearchTo(selectedRschTask);
@@ -304,18 +337,23 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void RefreshTotalScienceYield() {
-            var playerTotalScienceYield = _aiMgr.Knowledge.TotalScienceYield;
+            var playerTotalScienceYield = _playerAiMgr.Knowledge.TotalScienceYield;
             D.AssertNotEqual(Constants.ZeroF, playerTotalScienceYield);
             _playerTotalScienceYield = playerTotalScienceYield;
         }
 
-        private bool HasUncompletedPrerequisites(Technology tech, out IEnumerable<Technology> uncompletedPrerequisites) {
+        private bool HasUncompletedPrerequisites(Technology tech) {
+            IEnumerable<Technology> unusedUncompletedPrereqs;
+            return TryGetUncompletedPrerequisites(tech, out unusedUncompletedPrereqs);
+        }
+
+        private bool TryGetUncompletedPrerequisites(Technology tech, out IEnumerable<Technology> uncompletedPrerequisites) {
             var techPrerequisites = tech.Prerequisites;
             if (techPrerequisites.Any()) {
                 HashSet<Technology> allUncompletedPrereqs = new HashSet<Technology>(techPrerequisites.Where(preReqTech => !IsDiscovered(preReqTech)));
                 HashSet<Technology> uncompletedPrereqsToAdd = new HashSet<Technology>();   // can't modify uncompletedPrereqList while iterating
                 foreach (var uncompletedPrereq in allUncompletedPrereqs) {
-                    if (HasUncompletedPrerequisites(uncompletedPrereq, out uncompletedPrerequisites)) {
+                    if (TryGetUncompletedPrerequisites(uncompletedPrereq, out uncompletedPrerequisites)) {
                         foreach (var uPrereq in uncompletedPrerequisites) {
                             uncompletedPrereqsToAdd.Add(uPrereq);
                         }
@@ -331,14 +369,14 @@ namespace CodeEnv.Master.GameContent {
             return false;
         }
 
-        private bool HasUncompletedPrerequisites(ResearchTask rschTask, out IEnumerable<ResearchTask> uncompletedPrerequisites) {
+        private bool TryGetUncompletedPrerequisites(ResearchTask rschTask, out IEnumerable<ResearchTask> uncompletedPrerequisites) {
             var techPrerequisites = rschTask.Tech.Prerequisites;
             if (techPrerequisites.Any()) {
                 var rschTaskPrereqs = techPrerequisites.Select(techPrereq => GetResearchTaskFor(techPrereq));
                 HashSet<ResearchTask> allUncompletedPrereqs = new HashSet<ResearchTask>(rschTaskPrereqs.Where(preReq => !preReq.IsCompleted));
                 HashSet<ResearchTask> uncompletedPrereqsToAdd = new HashSet<ResearchTask>();   // can't modify uncompletedPrereqList while iterating
                 foreach (var uncompletedPrereq in allUncompletedPrereqs) {
-                    if (HasUncompletedPrerequisites(uncompletedPrereq, out uncompletedPrerequisites)) {
+                    if (TryGetUncompletedPrerequisites(uncompletedPrereq, out uncompletedPrerequisites)) {
                         foreach (var uPrereq in uncompletedPrerequisites) {
                             uncompletedPrereqsToAdd.Add(uPrereq);
                         }
@@ -353,8 +391,6 @@ namespace CodeEnv.Master.GameContent {
             uncompletedPrerequisites = Enumerable.Empty<ResearchTask>();
             return false;
         }
-
-
 
         private void Cleanup() {
             Unsubscribe();
@@ -371,8 +407,6 @@ namespace CodeEnv.Master.GameContent {
 
         #region Debug
 
-        private EquipmentStatFactory __eStatFactory = EquipmentStatFactory.Instance;
-
         private IDebugControls __debugCntls = GameReferences.DebugControls;
 
         public bool __TryGetRandomUncompletedRsch(out ResearchTask uncompletedRsch) {
@@ -382,6 +416,55 @@ namespace CodeEnv.Master.GameContent {
             }
             uncompletedRsch = null;
             return false;
+        }
+
+        public ResearchTask __GetQuickestCompletionStartingRschTask() {
+            // Only used to pick starting tech/task...
+            ResearchTask result;
+            var uncompletedTasksWithAllPrereqsCompleted = _uncompletedRschTasks.Where(task => !HasUncompletedPrerequisites(task.Tech));
+            if (uncompletedTasksWithAllPrereqsCompleted.Any()) {
+                var quickestCompletionTask = uncompletedTasksWithAllPrereqsCompleted.MinBy(task => task.RemainingScienceNeededToComplete);
+                D.AssertNotEqual(Constants.ZeroF, quickestCompletionTask.RemainingScienceNeededToComplete);
+                result = quickestCompletionTask;
+            }
+            else {
+                // ...but if all tech starts researched ...
+                var justCompletedFutureTech = _completedRschTasks.Select(task => task.Tech).Single(tech => tech.Name == "FutureTech");
+                var futureTech = TechnologyFactory.Instance.MakeFutureTechInstanceFollowing(_player, justCompletedFutureTech);
+                result = new ResearchTask(futureTech);
+            }
+            return result;
+        }
+
+        private void __ValidateTechPresence(IEnumerable<Technology> allPredefinedTechs) {
+            var allPredefinedEqStatsInTechs = allPredefinedTechs.SelectMany(tech => tech.GetEnabledEquipStats());
+            var allPredefinedEqCatsInTechs = allPredefinedEqStatsInTechs.Select(stat => stat.Category).Distinct();
+            var allEquipCats = Enums<EquipmentCategory>.GetValues(excludeDefault: true);
+            bool areAllCatsPresentInTechs = allEquipCats.SequenceEquals(allPredefinedEqCatsInTechs, ignoreOrder: true);
+            if (!areAllCatsPresentInTechs) {
+                D.Warn("{0}: ResearchTree is missing EquipmentStats for {1}: {2}.", DebugName, typeof(EquipmentCategory).Name,
+                    allEquipCats.Except(allPredefinedEqCatsInTechs).Select(eCat => eCat.GetValueName()).Concatenate());
+            }
+
+            ILookup<Level, AEquipmentStat> levelLookup = allPredefinedEqStatsInTechs.ToLookup(stat => stat.Level);
+            var allLevels = Enums<Level>.GetValues(excludeDefault: true);
+            foreach (Level level in allLevels) {
+                IEnumerable<AEquipmentStat> levelStats = levelLookup[level];
+                var levelEqCats = levelStats.Select(stat => stat.Category);
+                EquipmentCategory firstDuplicateCat;
+                if (levelEqCats.ContainsDuplicates(out firstDuplicateCat)) {
+                    D.Warn("{0}: ResearchTree Level {1} has a duplicate {2}.", DebugName, level.GetValueName(), firstDuplicateCat.GetValueName());
+                }
+            }
+        }
+
+        private void __ValidateStartingRschState(IEnumerable<ResearchTask> completedRschTasks) {
+            var eqCatsReqdToStartCompleted = TempGameValues.EquipCatsReqdAtStartup;
+            var eqCatsCompleted = completedRschTasks.SelectMany(task => task.Tech.GetEnabledEquipStats()).Select(stat => stat.Category);
+            var reqdEqCatsNotCompleted = eqCatsReqdToStartCompleted.Except(eqCatsCompleted);
+            if (reqdEqCatsNotCompleted.Any()) {
+                D.Error("{0} is starting game without Reqd Equipment enabled: {1}.", DebugName, reqdEqCatsNotCompleted.Select(eCat => eCat.GetValueName()).Concatenate());
+            }
         }
 
         #endregion

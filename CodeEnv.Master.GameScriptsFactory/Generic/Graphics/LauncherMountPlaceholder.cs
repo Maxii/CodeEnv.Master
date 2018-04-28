@@ -23,7 +23,7 @@ using CodeEnv.Master.GameContent;
 /// </summary>
 public class LauncherMountPlaceholder : AMountPlaceholder {
 
-    protected override EquipmentMountCategory SupportedMount { get { return EquipmentMountCategory.Silo; } }
+    protected override OptionalEquipMountCategory SupportedMount { get { return OptionalEquipMountCategory.Silo; } }
 
     protected override void Cleanup() { }
 

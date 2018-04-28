@@ -147,17 +147,19 @@ namespace CodeEnv.Master.GameContent {
         void Add(ASensor sensor);
 
         /// <summary>
+        /// Resets this Monitor in preparation for reuse by the same Parent.
+        /// <remarks>Deactivates and removes all sensors, preparing the monitor for the addition of new sensors.</remarks>
+        /// </summary>
+        void ResetForReuse();
+
+        /// <summary>
         /// Removes the specified sensor. Returns <c>true</c> if this monitor
         /// is still in use (has sensors remaining even if not operational), <c>false</c> otherwise.
         /// </summary>
         /// <param name="sensor">The sensor.</param>
         /// <returns></returns>
-        bool Remove(ASensor sensor);
-
-        /// <summary>
-        /// Resets this Monitor for reuse by the parent item.
-        /// </summary>
-        void ResetForReuse();
+        ////[Obsolete("Not currently used")]
+        ////bool Remove(ASensor sensor);
 
     }
 }

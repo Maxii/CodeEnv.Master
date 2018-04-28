@@ -58,11 +58,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="owner">The owner.</param>
         /// <param name="sensors">The MR and LR sensors for this UnitCmd.</param>
         /// <param name="ftlDampener">The FTL dampener.</param>
-        /// <param name="cmdStat">The stat.</param>
         /// <param name="cmdDesign">The command design.</param>
         public StarbaseCmdData(IStarbaseCmd starbaseCmd, Player owner, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener,
-            StarbaseCmdModuleStat cmdStat, StarbaseCmdDesign cmdDesign)
-            : this(starbaseCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), sensors, ftlDampener, cmdStat, cmdDesign) {
+            StarbaseCmdDesign cmdDesign)
+            : this(starbaseCmd, owner, Enumerable.Empty<PassiveCountermeasure>(), sensors, ftlDampener, cmdDesign) {
         }
 
         /// <summary>
@@ -73,13 +72,12 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="passiveCMs">The passive countermeasures.</param>
         /// <param name="sensors">The MR and LR sensors for this UnitCmd.</param>
         /// <param name="ftlDampener">The FTL dampener.</param>
-        /// <param name="cmdStat">The stat.</param>
         /// <param name="cmdDesign">The command design.</param>
         public StarbaseCmdData(IStarbaseCmd starbaseCmd, Player owner, IEnumerable<PassiveCountermeasure> passiveCMs,
-            IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, StarbaseCmdModuleStat cmdStat, StarbaseCmdDesign cmdDesign)
-            : base(starbaseCmd, owner, passiveCMs, sensors, ftlDampener, cmdStat, cmdDesign) {
-            Population = cmdStat.StartingPopulation;
-            Approval = cmdStat.StartingApproval;
+            IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener, StarbaseCmdDesign cmdDesign)
+            : base(starbaseCmd, owner, passiveCMs, sensors, ftlDampener, cmdDesign) {
+            Population = cmdDesign.ReqdCmdStat.StartingPopulation;
+            Approval = cmdDesign.ReqdCmdStat.StartingApproval;
             __PopulateResourcesFromSector();
         }
 
@@ -122,10 +120,16 @@ namespace CodeEnv.Master.GameContent {
 
         public StarbaseCmdReport GetReport(Player player) { return Publisher.GetReport(player); }
 
-
         #region Event and Property Change Handlers
 
         #endregion
+
+        public override void ChangeDesign(AUnitCmdDesign cmdDesign, IEnumerable<PassiveCountermeasure> passiveCMs, IEnumerable<CmdSensor> sensors, FtlDampener ftlDampener) {
+            base.ChangeDesign(cmdDesign, passiveCMs, sensors, ftlDampener);
+            // 4.28.18 Not currently planning on fooling with Population or Approval
+        }
+
+        #region Debug
 
         // UNDONE Acquire resource values this starbase has access too, ala SettlementCmdData approach.
         // 10.15.17 Need to determine what other Resources besides a System's Resources can be present in
@@ -142,6 +146,8 @@ namespace CodeEnv.Master.GameContent {
             };
             Resources = new ResourcesYield(resources);
         }
+
+        #endregion
 
     }
 }

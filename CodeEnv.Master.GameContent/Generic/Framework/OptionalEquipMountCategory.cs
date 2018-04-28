@@ -5,8 +5,8 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: EquipmentMountCategory.cs
-// Enum indicating the type of mount for equipment present on a Unit Member.
+// File: OptionalEquipMountCategory.cs
+// Enum indicating the type of mount for optional equipment present on a Unit Member.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
 
@@ -20,22 +20,22 @@ namespace CodeEnv.Master.GameContent {
     using CodeEnv.Master.Common;
 
     /// <summary>
-    /// Enum indicating the type of mount for equipment present on a Unit Member.
+    /// Enum indicating the type of mount for optional equipment present on a Unit Member.
     /// </summary>
-    public enum EquipmentMountCategory {
+    public enum OptionalEquipMountCategory {
 
         None,
 
         /// <summary>
         /// A rotating external mount for weapons that need to point at a target to engage it.
         /// </summary>
-        [EnumAttribute("TurretMt")]
+        [EnumAttribute("TurretMnt")]
         Turret,
 
         /// <summary>
         /// A fixed external mount for weapons capable of guiding themselves to a target to engage it.
         /// </summary>
-        [EnumAttribute("SiloMt")]
+        [EnumAttribute("SiloMnt")]
         Silo,
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace CodeEnv.Master.GameContent {
         /// <remarks>Capable of mounting Sensor equipment that detect objects within the sphere defined by its range.</remarks>
         /// <remarks>Currently implemented on Elements and CmdModules.</remarks>
         /// </summary>
-        [EnumAttribute("SensMt")]
+        [EnumAttribute("SensMnt")]
         Sensor,
 
         /// <summary>
@@ -52,7 +52,7 @@ namespace CodeEnv.Master.GameContent {
         /// <remarks>Currently implemented as an internal mount that 'covers' all exterior surfaces of an Element
         /// and CmdModule.</remarks>
         /// </summary>
-        [EnumAttribute("SkinMt")]
+        [EnumAttribute("SkinMnt")]
         Skin,
 
         /// <summary>
@@ -61,8 +61,15 @@ namespace CodeEnv.Master.GameContent {
         /// within the sphere defined by its range.</remarks>
         /// <remarks>Currently implemented on Elements.</remarks>
         /// </summary>
-        [EnumAttribute("ScrnMt")]
+        [EnumAttribute("ScrnMnt")]
         Screen,
+
+        /// <summary>
+        /// A fixed internal mount for an FTL propulsion engine.
+        /// <remarks>Currently implemented on Ships.</remarks>
+        /// </summary>
+        [EnumAttribute("FtlEngMnt")]
+        FtlEngine,
 
         /// <summary>
         /// A fixed internal mount for equipment capable of being mounted on Sensor, Skin and Screen mounts.
@@ -70,7 +77,7 @@ namespace CodeEnv.Master.GameContent {
         /// within the sphere defined by its range.</remarks>
         /// <remarks>Currently implemented on Elements.</remarks>
         /// </summary>
-        [EnumAttribute("FlexMt")]
+        [EnumAttribute("FlexMnt")]
         Flex
 
     }

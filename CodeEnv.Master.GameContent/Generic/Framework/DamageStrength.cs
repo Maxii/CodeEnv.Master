@@ -153,11 +153,12 @@ namespace CodeEnv.Master.GameContent {
         /// interesting decision is what weapons and defenses to deploy against particular enemies who have specialized in their
         /// own weapons and defenses. However, I can imagine that more advanced weapons of a particular type (e.g. missiles) 
         /// could deal small amounts of supplemental damage in categories not usually associated with a (missile) weapon type...</remarks>
+        /// <remarks>4.20.18 Made it private to require use of the + operator in constructing multi-DamageCategory instances.</remarks>
         /// </summary>
         /// <param name="thermal">The thermal.</param>
         /// <param name="structural">The structural.</param>
         /// <param name="incursion">The incursion.</param>
-        public DamageStrength(float thermal, float structural, float incursion)
+        private DamageStrength(float thermal, float structural, float incursion)
             : this() {
             Utility.ValidateNotNegative(thermal, structural, incursion);
             Thermal = thermal;

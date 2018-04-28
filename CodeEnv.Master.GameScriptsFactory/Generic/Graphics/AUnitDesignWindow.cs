@@ -344,10 +344,12 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         AUnitMemberDesign emptyTemplateDesign = GetEmptyTemplateDesign(emptyTemplateHint);
 
         // Instantiate a 'control' design with the info along with a new icon and assign it to _selectedDesignIcon.
-        // This design will become the 'previousDesign' in UpdateDesigns to see if newDesign (aka WorkingDesign) has any changes.
-        // The status of this 'previousDesign' needs to be system created so UpdateDesigns won't attempt to obsolete it.
+        // This design will become the 'previousDesign' in UpdateDesign to see if newDesign (aka WorkingDesign) has any changes.
+        // The status of this 'previousDesign' needs to be system created so UpdateDesign won't attempt to obsolete it.
         AUnitMemberDesign controlDesign = CopyDesignFrom(emptyTemplateDesign);
-        controlDesign.Status = AUnitMemberDesign.SourceAndStatus.System_CreationTemplate;
+        D.Assert(controlDesign.HasEqualContent(emptyTemplateDesign));   // 4.26.18 Templates should always be fully up to date
+
+        controlDesign.Status = AUnitMemberDesign.SourceAndStatus.SystemCreation_Template;
         controlDesign.RootDesignName = rootDesignName;
 
         var controlDesignIcon = CreateIcon(controlDesign, _designIconSize, _transientDesignIconHolder);
@@ -364,7 +366,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     /// </summary>
     public void EditChosenDesign() {
         if (_pickedDesignIcon != null) {
-            if (_pickedDesignIcon.Design.Status == AUnitMemberDesign.SourceAndStatus.Player_Obsolete) {
+            if (_pickedDesignIcon.Design.Status == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete) {
                 ShowRenameObsoleteDesignPopupWindow();
                 return;
             }
@@ -400,10 +402,10 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         }
 
         // Instantiate a 'control' design with the info along with a new icon and assign it to _chosenDesignIcon.
-        // This design will become the 'previousDesign' in UpdateDesigns to see if newDesign (aka WorkingDesign) has any changes.
-        // The status of this 'previousDesign' needs to be obsolete so UpdateDesigns won't attempt to obsolete it.
+        // This design will become the 'previousDesign' in UpdateDesign to see if newDesign (aka WorkingDesign) has any changes.
+        // The status of this 'previousDesign' needs to be obsolete so UpdateDesign won't attempt to obsolete it.
         AUnitMemberDesign controlDesign = CopyDesignFrom(_pickedDesignIcon.Design);
-        controlDesign.Status = AUnitMemberDesign.SourceAndStatus.Player_Obsolete;
+        controlDesign.Status = AUnitMemberDesign.SourceAndStatus.PlayerCreation_Obsolete;
         controlDesign.RootDesignName = rootDesignName;
 
         var controlDesignIcon = CreateIcon(controlDesign, _designIconSize, _transientDesignIconHolder);
@@ -431,16 +433,16 @@ public abstract class AUnitDesignWindow : AGuiWindow {
         AUnitMemberDesign newDesign = _designerEquipmentStorage.WorkingDesign;
         if (!newDesign.HasEqualContent(previousDesign)) {
             // The user modified the design
-            D.Log("{0}.ApplyDesign: {1} has changed and is being registered as a new design.", DebugName, newDesign.DebugName);
+            D.LogBold("{0}.ApplyDesign: {1} has changed and is being registered as a new design.", DebugName, newDesign.DebugName);
             UpdateDesign(_pickedDesignIcon, newDesign);
         }
-        else if (previousDesign.Status == AUnitMemberDesign.SourceAndStatus.System_CreationTemplate) {
+        else if (previousDesign.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template) {
             // The user has chosen to create an empty design that has the same content as the empty CreationTemplateDesign
-            D.Log("{0}.ApplyDesign: {1} has not changed but is being registered as a new design.", DebugName, newDesign.DebugName);
+            D.LogBold("{0}.ApplyDesign: {1} has not changed but is being registered as a new design.", DebugName, newDesign.DebugName);
             UpdateDesign(_pickedDesignIcon, newDesign);
         }
         else {
-            D.Log("{0}.ApplyDesign: {1} will not be registered as a new design.", DebugName, newDesign.DebugName);
+            D.LogBold("{0}.ApplyDesign: {1} will not be registered as a new design as it hasn't changed.", DebugName, newDesign.DebugName);
         }
 
         ShowDesignsUI();
@@ -652,13 +654,13 @@ public abstract class AUnitDesignWindow : AGuiWindow {
 
     private void UpdateDesign(DesignIconGuiElement previousDesignIcon, AUnitMemberDesign newDesign) {
         D.AssertEqual(_pickedDesignIcon, previousDesignIcon);
-        D.AssertEqual(AUnitMemberDesign.SourceAndStatus.Player_Current, newDesign.Status);
+        D.AssertEqual(AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current, newDesign.Status);
 
         // handle the previous design and its icon
         AUnitMemberDesign previousDesign = previousDesignIcon.Design;
         // capture previousDesignStatus before it is potentially changed to obsolete
         AUnitMemberDesign.SourceAndStatus previousDesignStatus = previousDesign.Status;
-        if (previousDesignStatus == AUnitMemberDesign.SourceAndStatus.Player_Current) {
+        if (previousDesignStatus == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current) {
             // current design that has just been updated to newDesign so obsolete previousDesign
             ObsoleteDesign(previousDesign.DesignName);
             // Only remove the previousDesignIcon from displayed and registered designs when the source of the design is current.
@@ -669,7 +671,7 @@ public abstract class AUnitDesignWindow : AGuiWindow {
             }
         }
 
-        if (previousDesignStatus == AUnitMemberDesign.SourceAndStatus.Player_Current) {
+        if (previousDesignStatus == AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current) {
             // Only increment the newDesign name when the source of the design is current 
             // as newDesigns from both system and obsolete sources get new names created by the user
             newDesign.IncrementDesignLevelAndName();
@@ -751,8 +753,8 @@ public abstract class AUnitDesignWindow : AGuiWindow {
     }
 
     /// <summary>
-    /// Creates and returns a new design instance copied from design.
-    /// <remarks>The content of the returned design will be identical to the content of design, including the RootDesignName 
+    /// Creates and returns a new design instance copied from design with any available improvements in ReqdStats automatically included.
+    /// <remarks>The optional content of the returned design will be identical to the optional content of design, including the RootDesignName 
     /// and SourceAndStatus setting. Clients will need to change these values if this is not what is desired.</remarks>
     /// </summary>
     /// <param name="design">The design.</param>

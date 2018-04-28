@@ -53,7 +53,7 @@ public class FleetCmdDesignWindow : AUnitDesignWindow {
 
     protected override AUnitMemberDesign GetEmptyTemplateDesign(string emptyTemplateHint) {
         D.AssertNull(emptyTemplateHint);
-        return UserDesigns.GetFleetCmdDesign(TempGameValues.EmptyFleetCmdTemplateDesignName);
+        return UserDesigns.GetCurrentFleetTemplateDesign();
     }
 
     protected override void ObsoleteDesign(string designName) {
@@ -61,7 +61,7 @@ public class FleetCmdDesignWindow : AUnitDesignWindow {
     }
 
     protected override IEnumerable<AEquipmentStat> GetUserCurrentEquipmentStatsAvailableFor(AUnitMemberDesign pickedDesign) {
-        return UserDesigns.GetCurrentCmdModuleEquipmentStats();
+        return UserDesigns.GetCurrentCmdModuleOptEquipStats();
     }
 
 }

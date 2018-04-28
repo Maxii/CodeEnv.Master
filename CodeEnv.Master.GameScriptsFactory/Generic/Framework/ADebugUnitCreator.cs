@@ -116,8 +116,7 @@ public abstract class ADebugUnitCreator : AUnitCreator {
 
     protected PlayerDesigns _ownerDesigns;
 
-
-    // 10.12.16 Eliminated overridden InitiateDeployment() which checked ValidateConfiguration() as un-configured DebugUnitCreators
+    // 10.12.16 Eliminated overridden InitiateDeployment() which checked ValidateConfiguration() as unconfigured DebugUnitCreators
     // are destroyed by UniverseCreator. It makes no sense for UniverseCreator to call InitiateDeployment on a Creator that
     // hasn't been used and configured.
 

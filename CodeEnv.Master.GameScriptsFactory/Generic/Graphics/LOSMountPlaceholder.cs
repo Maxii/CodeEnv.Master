@@ -34,7 +34,7 @@ public class LOSMountPlaceholder : AMountPlaceholder {
     private float _minBarrelElevation = Constants.ZeroF;
     public float MinimumBarrelElevation { get { return _minBarrelElevation; } }
 
-    protected override EquipmentMountCategory SupportedMount { get { return EquipmentMountCategory.Turret; } }
+    protected override OptionalEquipMountCategory SupportedMount { get { return OptionalEquipMountCategory.Turret; } }
 
     protected override void Validate() {
         base.Validate();

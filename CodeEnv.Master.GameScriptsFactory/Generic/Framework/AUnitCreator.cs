@@ -34,7 +34,8 @@ public abstract class AUnitCreator : AMonoBase, IDateMinderClient {
     public string DebugName {
         get {
             if (_debugName == null) {
-                _debugName = DebugNameFormat.Inject(UnitName, GetType().Name);
+                string unitName = UnitName.IsNullOrEmpty() ? "UnassignedUnitName" : UnitName;
+                _debugName = DebugNameFormat.Inject(unitName, GetType().Name);
             }
             return _debugName;
         }

@@ -176,7 +176,7 @@ namespace CodeEnv.Master.GameContent {
         /// </summary>
         public float TurnRate {
             get {
-                return (IsFtlOperational ? _ftlEngine.MaxTurnRate : _stlEngine.MaxTurnRate) * HullCategory.TurnrateFactor();
+                return (IsFtlOperational ? _ftlEngine.MaxTurnRate : _stlEngine.MaxTurnRate) * HullEquipment.TurnRateConstraint;
             }
         }
 
@@ -415,12 +415,12 @@ namespace CodeEnv.Master.GameContent {
 
         [System.Diagnostics.Conditional("DEBUG")]
         private void __ValidateTurnRate() {
-            float stlTurnRate = _stlEngine.MaxTurnRate * HullCategory.TurnrateFactor();
+            float stlTurnRate = _stlEngine.MaxTurnRate * HullEquipment.TurnRateConstraint;
             if (stlTurnRate.IsLessThan(TempGameValues.MinimumTurnRate)) {
                 D.Warn("{0}'s STL TurnRate {1:0.#} is too low. Game MinTurnRate = {2:0.#}.", DebugName, stlTurnRate, TempGameValues.MinimumTurnRate);
             }
             if (_ftlEngine != null) {
-                float ftlTurnRate = _ftlEngine.MaxTurnRate * HullCategory.TurnrateFactor();
+                float ftlTurnRate = _ftlEngine.MaxTurnRate * HullEquipment.TurnRateConstraint;
                 if (ftlTurnRate.IsLessThan(TempGameValues.MinimumTurnRate)) {
                     D.Warn("{0}'s FTL TurnRate {1:0.#} is too low. Game MinTurnRate = {2:0.#}.", DebugName, stlTurnRate, TempGameValues.MinimumTurnRate);
                 }

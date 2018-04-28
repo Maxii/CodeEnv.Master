@@ -44,7 +44,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="constructCost">The cost in production units to produce this equipment.</param>
         /// <param name="expense">The expense required to operate this equipment.</param>
         /// <param name="maxCmdStaffEffectiveness">The maximum effectiveness of the command staff.</param>
-        public ACmdModuleStat(string name, AtlasID imageAtlasID, string imageFilename, string description, EquipStatID id,
+        public ACmdModuleStat(string name, AtlasID imageAtlasID, string imageFilename, string description, EquipmentStatID id,
             float size, float mass, float pwrRqmt, float hitPts, float constructCost, float expense, float maxCmdStaffEffectiveness)
             : base(name, imageAtlasID, imageFilename, description, id, size, mass, pwrRqmt, hitPts, constructCost, expense, isDamageable: false) {
             MaxCmdStaffEffectiveness = maxCmdStaffEffectiveness;

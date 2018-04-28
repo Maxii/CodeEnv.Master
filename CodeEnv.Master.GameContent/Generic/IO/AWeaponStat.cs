@@ -61,7 +61,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="deliveryVehicleStrength">The delivery strength.</param>
         /// <param name="reloadPeriod">The time it takes to reload the weapon in hours.</param>
         /// <param name="damagePotential">The damage potential.</param>
-        public AWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, EquipStatID id,
+        public AWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, EquipmentStatID id,
             float size, float mass, float pwrRqmt, float hitPts, float constructionCost, float expense,
             RangeCategory rangeCat, WDVStrength deliveryVehicleStrength, float reloadPeriod, DamageStrength damagePotential)
             : base(name, imageAtlasID, imageFilename, description, id, size, mass, pwrRqmt, hitPts, constructionCost, expense,

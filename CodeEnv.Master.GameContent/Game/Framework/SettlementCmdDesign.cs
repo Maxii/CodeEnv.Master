@@ -21,23 +21,38 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public class SettlementCmdDesign : AUnitCmdDesign {
 
+        private static SettlementCmdModuleStat GetImprovedReqdStat(Player player, SettlementCmdModuleStat existingStat) {
+            var designs = GameReferences.GameManager.GetAIManagerFor(player).Designs;
+            var currentStat = designs.GetCurrentSettlementCmdModuleStat();
+            return currentStat.Level > existingStat.Level ? currentStat : existingStat;
+        }
+
         public new SettlementCmdModuleStat ReqdCmdStat { get { return base.ReqdCmdStat as SettlementCmdModuleStat; } }
 
-        public SettlementCmdDesign(SettlementCmdDesign designToCopy)
-            : this(designToCopy.Player, designToCopy.FtlDampenerStat, designToCopy.ReqdCmdStat, designToCopy.ReqdMRSensorStat) {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SettlementCmdDesign"/> class.
+        /// <remarks>This version automatically improves any Reqd EquipmentStats to the highest Level available,
+        /// and copies the rest of the content of the design into the new design instance, allowing the player to upgrade and/or change 
+        /// the mix of optional EquipmentStats.</remarks>
+        /// </summary>
+        /// <param name="designToImprove">The design to improve.</param>
+        public SettlementCmdDesign(SettlementCmdDesign designToImprove)
+            : this(designToImprove.Player, GetImprovedReqdStat(designToImprove.Player, designToImprove.FtlDampenerStat),
+                  GetImprovedReqdStat(designToImprove.Player, designToImprove.ReqdCmdStat),
+                  GetImprovedReqdStat(designToImprove.Player, designToImprove.ReqdMRSensorStat)) {
 
-            EquipmentSlotID slotID;
+            OptionalEquipSlotID slotID;
             AEquipmentStat equipStat;
-            while (designToCopy.TryGetNextEquipmentStat(out slotID, out equipStat)) {
+            while (designToImprove.TryGetNextOptEquipStat(out slotID, out equipStat)) {
                 Add(slotID, equipStat);
             }
             AssignPropertyValues();
 
-            RootDesignName = designToCopy.RootDesignName;
+            RootDesignName = designToImprove.RootDesignName;
             // If copying System_CreationTemplate counter will always = 0 as they are never incremented. If copying Player_Current counter 
             // will be >= 0 ready to be incremented. If copying Player_Obsolete a new RootDesignName will be assigned resetting counter
             // to 0 to avoid creating duplicate design names when incrementing.
-            DesignLevel = designToCopy.DesignLevel;
+            DesignLevel = designToImprove.DesignLevel;
         }
 
         public SettlementCmdDesign(Player player, FtlDampenerStat ftlDampenerStat, SettlementCmdModuleStat cmdStat, SensorStat reqdMRSensorStat)

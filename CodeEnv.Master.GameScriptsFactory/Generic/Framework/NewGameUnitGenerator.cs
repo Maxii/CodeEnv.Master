@@ -5,7 +5,7 @@
 // Email: jim@strategicforge.com
 // </copyright> 
 // <summary> 
-// File: NewGameUnitConfigurator.cs
+// File: NewGameUnitGenerator.cs
 // Provides methods to generate and/or configure UnitCreators.
 // </summary> 
 // -------------------------------------------------------------------------------------------------------------------- 
@@ -28,7 +28,7 @@ using UnityEngine;
 /// Provides methods to generate and/or configure UnitCreators. Existing DebugUnitCreators that are already present in the editor
 /// just need to be configured by accessing the EditorSettings. AutoUnitCreators are both generated and then randomly configured.
 /// </summary>
-public class NewGameUnitConfigurator {
+public class NewGameUnitGenerator {
 
     private const string DesignNameFormat = "{0}{1}";
 
@@ -56,21 +56,18 @@ public class NewGameUnitConfigurator {
 
     public string DebugName { get { return GetType().Name; } }
 
-    private bool ShowDebugLog { get { return _debugCntls.ShowDeploymentDebugLogs; } }
+    private bool ShowDebugLog { get { return __debugCntls.ShowDeploymentDebugLogs; } }
 
     private GameManager _gameMgr;
-    private DebugControls _debugCntls;
-    ////[Obsolete]
-    ////private EquipmentStatFactory _eStatFactory;
+    private DebugControls __debugCntls;
 
-    public NewGameUnitConfigurator() {
+    public NewGameUnitGenerator() {
         InitializeValuesAndReferences();
     }
 
     private void InitializeValuesAndReferences() {
         _gameMgr = GameManager.Instance;
-        _debugCntls = DebugControls.Instance;
-        ////_eStatFactory = EquipmentStatFactory.Instance;
+        __debugCntls = DebugControls.Instance;
     }
 
     /// <summary>
@@ -80,83 +77,94 @@ public class NewGameUnitConfigurator {
     public void CreateAndRegisterRequiredDesigns() {
         foreach (var player in _gameMgr.AllPlayers) {
             var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
-            FleetCmdDesign basicFleetCmdDesign = MakeFleetCmdDesign(player, passiveCmQty: 0, sensorQty: 1);
-            basicFleetCmdDesign.Status = AUnitMemberDesign.SourceAndStatus.System_CreationTemplate;
-            RegisterCmdDesign(player, basicFleetCmdDesign, optionalRootDesignName: TempGameValues.__FleetCmdDesignName_Basic);
 
-            var allShipHullStats = playerDesigns.GetAllCurrentShipHullStats();////_eStatFactory.GetAllShipHullStats(player, Level.One);
-            var emptyShipDesigns = MakeShipDesigns(player, allShipHullStats, DebugLosWeaponLoadout.None,
+            var allCurrentShipHullStats = playerDesigns.GetAllCurrentShipHullStats();
+            var currentShipTemplateDesigns = MakeShipDesigns(player, allCurrentShipHullStats, DebugLosWeaponLoadout.None,
                 DebugLaunchedWeaponLoadout.None, DebugPassiveCMLoadout.None, DebugActiveCMLoadout.None, DebugSensorLoadout.One,
                 DebugShieldGenLoadout.None, new ShipCombatStance[] { ShipCombatStance.BalancedBombard },
-                AUnitMemberDesign.SourceAndStatus.System_CreationTemplate);
-            foreach (var shipDesign in emptyShipDesigns) {
-                RegisterElementDesign(player, shipDesign, optionalRootDesignName: shipDesign.HullCategory.GetEmptyTemplateDesignName());
+                AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
+            foreach (var shipDesign in currentShipTemplateDesigns) {
+                RegisterDesign(player, shipDesign, optionalRootDesignName: shipDesign.HullCategory.GetEmptyTemplateDesignName());
             }
 
-            var allFacilityHullStats = playerDesigns.GetAllCurrentFacilityHullStats();////_eStatFactory.GetAllFacilityHullStats(player, Level.One);
-            var emptyFacilityDesigns = MakeFacilityDesigns(player, allFacilityHullStats, DebugLosWeaponLoadout.None,
+            var allCurrentFacilityHullStats = playerDesigns.GetAllCurrentFacilityHullStats();
+            var currentFacilityTemplateDesigns = MakeFacilityDesigns(player, allCurrentFacilityHullStats, DebugLosWeaponLoadout.None,
                 DebugLaunchedWeaponLoadout.None, DebugPassiveCMLoadout.None, DebugActiveCMLoadout.None, DebugSensorLoadout.One,
-                DebugShieldGenLoadout.None, AUnitMemberDesign.SourceAndStatus.System_CreationTemplate);
-            foreach (var facilityDesign in emptyFacilityDesigns) {
-                RegisterElementDesign(player, facilityDesign, optionalRootDesignName: facilityDesign.HullCategory.GetEmptyTemplateDesignName());
+                DebugShieldGenLoadout.None, AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
+            foreach (var facilityDesign in currentFacilityTemplateDesigns) {
+                RegisterDesign(player, facilityDesign, optionalRootDesignName: facilityDesign.HullCategory.GetEmptyTemplateDesignName());
             }
 
-            FleetCmdDesign emptyFleetCmdDesign = MakeFleetCmdDesign(player, passiveCmQty: 0, sensorQty: 1, status: AUnitMemberDesign.SourceAndStatus.System_CreationTemplate);
-            RegisterCmdDesign(player, emptyFleetCmdDesign, optionalRootDesignName: TempGameValues.EmptyFleetCmdTemplateDesignName);
+            FleetCmdDesign currentFleetCmdTemplateDesign = MakeFleetCmdDesign(player, passiveCmQty: 0, sensorQty: 1,
+                status: AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
+            RegisterDesign(player, currentFleetCmdTemplateDesign, optionalRootDesignName: TempGameValues.FleetCmdTemplateRootDesignName);
 
-            StarbaseCmdDesign emptyStarbaseCmdDesign = MakeStarbaseCmdDesign(player, passiveCmQty: 0, sensorQty: 1, status: AUnitMemberDesign.SourceAndStatus.System_CreationTemplate);
-            RegisterCmdDesign(player, emptyStarbaseCmdDesign, optionalRootDesignName: TempGameValues.EmptyStarbaseCmdTemplateDesignName);
+            SettlementCmdDesign currentSettlementCmdTemplateDesign = MakeSettlementCmdDesign(player, passiveCmQty: 0, sensorQty: 1,
+                status: AUnitMemberDesign.SourceAndStatus.SystemCreation_Template);
+            RegisterDesign(player, currentSettlementCmdTemplateDesign, optionalRootDesignName: TempGameValues.SettlementCmdTemplateRootDesignName);
 
-            SettlementCmdDesign emptySettlementCmdDesign = MakeSettlementCmdDesign(player, passiveCmQty: 0, sensorQty: 1, status: AUnitMemberDesign.SourceAndStatus.System_CreationTemplate);
-            RegisterCmdDesign(player, emptySettlementCmdDesign, optionalRootDesignName: TempGameValues.EmptySettlementCmdTemplateDesignName);
+            StarbaseCmdDesign currentStarbaseCmdTemplateDesign;
+            if (TryMakeStarbaseCmdDesign(player, passiveCmQty: 0, sensorQty: 1, status: AUnitMemberDesign.SourceAndStatus.SystemCreation_Template,
+                design: out currentStarbaseCmdTemplateDesign)) {
+                RegisterDesign(player, currentStarbaseCmdTemplateDesign, TempGameValues.StarbaseCmdTemplateRootDesignName);
+            }
+
+            // If this basic FleetCmdDesign is added before the TemplateDesign, RegisterCmdDesign()'s IsDesignPresent will throw an error 
+            // when the TemplateDesign is added as it has the same content as this default design. Adding after the TemplateDesign is OK 
+            // as TemplateDesigns are not considered when testing whether the design is already present.
+            FleetCmdDesign currentFleetCmdDefaultDesign = MakeFleetCmdDesign(player, passiveCmQty: 0, sensorQty: 1, status:
+                AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
+
+            RegisterDesign(player, currentFleetCmdDefaultDesign, optionalRootDesignName: TempGameValues.FleetCmdDefaultRootDesignName);
         }
     }
 
     #region Configure Existing Creators
 
     /// <summary>
-    /// Assigns a configuration to the provided existing DebugStarbaseCreator, using the DeployDate provided.
+    /// Assigns a configuration to the provided existing DebugFleetCreator, using the DeployDate provided.
     /// <remarks>The DebugCreator's EditorSettings specifying the DeployDate will be ignored.</remarks>
     /// </summary>
     /// <param name="creator">The creator.</param>
     /// <param name="owner">The owner.</param>
     /// <param name="location">The location.</param>
     /// <param name="deployDate">The deploy date.</param>
-    public void AssignConfigurationToExistingCreator(DebugStarbaseCreator creator, Player owner, Vector3 location, GameDate deployDate) {
-        var editorSettings = creator.EditorSettings as BaseCreatorEditorSettings;
+    public void AssignConfigurationToExistingCreator(DebugFleetCreator creator, Player owner, Vector3 location, GameDate deployDate) {
+        var editorSettings = creator.EditorSettings as FleetCreatorEditorSettings;
 
         __ValidateOwner(owner, editorSettings);
 
         int cmdPassiveCMQty = GetPassiveCmQty(editorSettings.CMsPerCommand, TempGameValues.__MaxCmdPassiveCMs);
         int cmdSensorQty = GetSensorQty(editorSettings.SensorsPerCommand, TempGameValues.__MaxCmdSensors);
-        StarbaseCmdDesign cmdDesign = MakeStarbaseCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty);
-        string cmdDesignName = RegisterCmdDesign(owner, cmdDesign);
+        FleetCmdDesign cmdDesign = MakeFleetCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
+        string cmdDesignName = RegisterDesign(owner, cmdDesign);
 
-        var hullStats = GetFacilityHullStats(owner, editorSettings);
+        var hullStats = GetCurrentShipHullStats(owner, editorSettings);
+        IEnumerable<ShipCombatStance> stances = SelectCombatStances(editorSettings.StanceExclusions);
 
-        IList<FacilityDesign> elementDesigns = MakeFacilityDesigns(owner, hullStats, editorSettings.LosTurretLoadout,
+        IList<ShipDesign> elementDesigns = MakeShipDesigns(owner, hullStats, editorSettings.LosTurretLoadout,
             editorSettings.LauncherLoadout, editorSettings.PassiveCMsPerElement, editorSettings.ActiveCMsPerElement,
-            editorSettings.SRSensorsPerElement, editorSettings.ShieldGeneratorsPerElement);
+            editorSettings.SRSensorsPerElement, editorSettings.ShieldGeneratorsPerElement, stances, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
 
         IList<string> elementDesignNames = new List<string>();
         foreach (var design in elementDesigns) {
-            string registeredDesignName = RegisterElementDesign(owner, design);
+            string registeredDesignName = RegisterDesign(owner, design);
             elementDesignNames.Add(registeredDesignName);
         }
 
         UnitCreatorConfiguration config = new UnitCreatorConfiguration(owner, deployDate, cmdDesignName, elementDesignNames);
         creator.Configuration = config;
         creator.transform.position = location;
-        //D.Log(ShowDebugLog, "{0} has placed a {1} for {2}.", DebugName, typeof(DebugStarbaseCreator).Name, owner);
+        //D.Log(ShowDebugLog, "{0} has placed a {1} for {2}.", DebugName, typeof(DebugFleetCreator).Name, owner);
     }
 
     /// <summary>
-    /// Assigns a configuration to the provided existing DebugStarbaseCreator, using the DeployDate specified by the DebugCreator.
+    /// Assigns a configuration to the provided existing DebugFleetCreator, using the DeployDate specified by the DebugCreator.
     /// </summary>
     /// <param name="creator">The creator.</param>
     /// <param name="owner">The owner.</param>
     /// <param name="location">The location.</param>
-    public void AssignConfigurationToExistingCreator(DebugStarbaseCreator creator, Player owner, Vector3 location) {
+    public void AssignConfigurationToExistingCreator(DebugFleetCreator creator, Player owner, Vector3 location) {
         GameDate deployDate = creator.EditorSettings.DateToDeploy;
         AssignConfigurationToExistingCreator(creator, owner, location, deployDate);
     }
@@ -177,18 +185,18 @@ public class NewGameUnitConfigurator {
         int cmdPassiveCMQty = GetPassiveCmQty(editorSettings.CMsPerCommand, TempGameValues.__MaxCmdPassiveCMs);
         int cmdSensorQty = GetSensorQty(editorSettings.SensorsPerCommand, TempGameValues.__MaxCmdSensors);
 
-        SettlementCmdDesign cmdDesign = MakeSettlementCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty);
-        string cmdDesignName = RegisterCmdDesign(owner, cmdDesign);
+        SettlementCmdDesign cmdDesign = MakeSettlementCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
+        string cmdDesignName = RegisterDesign(owner, cmdDesign);
 
-        var hullStats = GetFacilityHullStats(owner, editorSettings);
+        var hullStats = GetCurrentFacilityHullStats(owner, editorSettings);
 
         IList<FacilityDesign> elementDesigns = MakeFacilityDesigns(owner, hullStats, editorSettings.LosTurretLoadout,
             editorSettings.LauncherLoadout, editorSettings.PassiveCMsPerElement, editorSettings.ActiveCMsPerElement,
-            editorSettings.SRSensorsPerElement, editorSettings.ShieldGeneratorsPerElement);
+            editorSettings.SRSensorsPerElement, editorSettings.ShieldGeneratorsPerElement, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
 
         IList<string> elementDesignNames = new List<string>();
         foreach (var design in elementDesigns) {
-            string registeredDesignName = RegisterElementDesign(owner, design);
+            string registeredDesignName = RegisterDesign(owner, design);
             elementDesignNames.Add(registeredDesignName);
         }
 
@@ -211,51 +219,57 @@ public class NewGameUnitConfigurator {
     }
 
     /// <summary>
-    /// Assigns a configuration to the provided existing DebugFleetCreator, using the DeployDate provided.
+    /// Returns <c>true</c> if a configuration is assigned to the provided existing DebugStarbaseCreator using the DeployDate provided, <c>false</c> otherwise.
     /// <remarks>The DebugCreator's EditorSettings specifying the DeployDate will be ignored.</remarks>
+    /// <remarks>4.27.18 Currently, the only reason a configuration would not be assigned is there is no current StarbaseCmdModuleStat.</remarks>
     /// </summary>
     /// <param name="creator">The creator.</param>
     /// <param name="owner">The owner.</param>
     /// <param name="location">The location.</param>
     /// <param name="deployDate">The deploy date.</param>
-    public void AssignConfigurationToExistingCreator(DebugFleetCreator creator, Player owner, Vector3 location, GameDate deployDate) {
-        var editorSettings = creator.EditorSettings as FleetCreatorEditorSettings;
+    public bool TryAssignConfigurationToExistingCreator(DebugStarbaseCreator creator, Player owner, Vector3 location, GameDate deployDate) {
+        var editorSettings = creator.EditorSettings as BaseCreatorEditorSettings;
 
         __ValidateOwner(owner, editorSettings);
 
         int cmdPassiveCMQty = GetPassiveCmQty(editorSettings.CMsPerCommand, TempGameValues.__MaxCmdPassiveCMs);
         int cmdSensorQty = GetSensorQty(editorSettings.SensorsPerCommand, TempGameValues.__MaxCmdSensors);
-        FleetCmdDesign cmdDesign = MakeFleetCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty);
-        string cmdDesignName = RegisterCmdDesign(owner, cmdDesign);
+        StarbaseCmdDesign cmdDesign;
+        if (TryMakeStarbaseCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current, out cmdDesign)) {
+            string cmdDesignName = RegisterDesign(owner, cmdDesign);
 
-        var hullStats = GetShipHullStats(owner, editorSettings);
-        IEnumerable<ShipCombatStance> stances = SelectCombatStances(editorSettings.StanceExclusions);
+            var hullStats = GetCurrentFacilityHullStats(owner, editorSettings);
 
-        IList<ShipDesign> elementDesigns = MakeShipDesigns(owner, hullStats, editorSettings.LosTurretLoadout,
-            editorSettings.LauncherLoadout, editorSettings.PassiveCMsPerElement, editorSettings.ActiveCMsPerElement,
-            editorSettings.SRSensorsPerElement, editorSettings.ShieldGeneratorsPerElement, stances);
+            IList<FacilityDesign> elementDesigns = MakeFacilityDesigns(owner, hullStats, editorSettings.LosTurretLoadout,
+                editorSettings.LauncherLoadout, editorSettings.PassiveCMsPerElement, editorSettings.ActiveCMsPerElement,
+                editorSettings.SRSensorsPerElement, editorSettings.ShieldGeneratorsPerElement, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
 
-        IList<string> elementDesignNames = new List<string>();
-        foreach (var design in elementDesigns) {
-            string registeredDesignName = RegisterElementDesign(owner, design);
-            elementDesignNames.Add(registeredDesignName);
+            IList<string> elementDesignNames = new List<string>();
+            foreach (var design in elementDesigns) {
+                string registeredDesignName = RegisterDesign(owner, design);
+                elementDesignNames.Add(registeredDesignName);
+            }
+
+            UnitCreatorConfiguration config = new UnitCreatorConfiguration(owner, deployDate, cmdDesignName, elementDesignNames);
+            creator.Configuration = config;
+            creator.transform.position = location;
+            //D.Log(ShowDebugLog, "{0} has placed a {1} for {2}.", DebugName, typeof(DebugStarbaseCreator).Name, owner);
+            return true;
         }
-
-        UnitCreatorConfiguration config = new UnitCreatorConfiguration(owner, deployDate, cmdDesignName, elementDesignNames);
-        creator.Configuration = config;
-        creator.transform.position = location;
-        //D.Log(ShowDebugLog, "{0} has placed a {1} for {2}.", DebugName, typeof(DebugFleetCreator).Name, owner);
+        return false;
     }
 
     /// <summary>
-    /// Assigns a configuration to the provided existing DebugFleetCreator, using the DeployDate specified by the DebugCreator.
+    /// Returns <c>true</c> if a configuration is assigned to the provided existing DebugStarbaseCreator using the DeployDate specified by
+    /// the DebugCreator, <c>false</c> otherwise.
+    /// <remarks>4.27.18 Currently, the only reason a configuration would not be assigned is there is no current StarbaseCmdModuleStat.</remarks>
     /// </summary>
     /// <param name="creator">The creator.</param>
     /// <param name="owner">The owner.</param>
     /// <param name="location">The location.</param>
-    public void AssignConfigurationToExistingCreator(DebugFleetCreator creator, Player owner, Vector3 location) {
+    public bool TryAssignConfigurationToExistingCreator(DebugStarbaseCreator creator, Player owner, Vector3 location) {
         GameDate deployDate = creator.EditorSettings.DateToDeploy;
-        AssignConfigurationToExistingCreator(creator, owner, location, deployDate);
+        return TryAssignConfigurationToExistingCreator(creator, owner, location, deployDate);
     }
 
     #endregion
@@ -270,28 +284,28 @@ public class NewGameUnitConfigurator {
     /// <param name="deployDate">The deploy date.</param>
     /// <returns></returns>
     public AutoFleetCreator GeneratePresetAutoFleetCreator(Player owner, Vector3 location, GameDate deployDate) {
-        D.AssertEqual(DebugControls.EquipmentLoadout.Preset, _debugCntls.EquipmentPlan);
-        int cmdPassiveCMQty = GetPassiveCmQty(_debugCntls.CMsPerCmd, TempGameValues.__MaxCmdPassiveCMs);
-        int cmdSensorQty = GetSensorQty(_debugCntls.SensorsPerCmd, TempGameValues.__MaxCmdSensors);
-        FleetCmdDesign cmdDesign = MakeFleetCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty);
-        string cmdDesignName = RegisterCmdDesign(owner, cmdDesign);
+        D.AssertEqual(DebugControls.EquipmentLoadout.Preset, __debugCntls.EquipmentPlan);
+        int cmdPassiveCMQty = GetPassiveCmQty(__debugCntls.CMsPerCmd, TempGameValues.__MaxCmdPassiveCMs);
+        int cmdSensorQty = GetSensorQty(__debugCntls.SensorsPerCmd, TempGameValues.__MaxCmdSensors);
+        FleetCmdDesign cmdDesign = MakeFleetCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
+        string cmdDesignName = RegisterDesign(owner, cmdDesign);
 
         int elementQty = RandomExtended.Range(1, TempGameValues.MaxShipsPerFleet);
-        var hullStats = GetShipHullStats(owner, elementQty);
-        var turretLoadout = _debugCntls.LosWeaponsPerElement;
-        var launchedLoadout = _debugCntls.LaunchedWeaponsPerElement;
-        var passiveCMLoadout = _debugCntls.PassiveCMsPerElement;
-        var activeCMLoadout = _debugCntls.ActiveCMsPerElement;
-        var srSensorLoadout = _debugCntls.SRSensorsPerElement;
-        var shieldGenLoadout = _debugCntls.ShieldGeneratorsPerElement;
+        var hullStats = GetCurrentShipHullStats(owner, elementQty);
+        var turretLoadout = __debugCntls.LosWeaponsPerElement;
+        var launchedLoadout = __debugCntls.LaunchedWeaponsPerElement;
+        var passiveCMLoadout = __debugCntls.PassiveCMsPerElement;
+        var activeCMLoadout = __debugCntls.ActiveCMsPerElement;
+        var srSensorLoadout = __debugCntls.SRSensorsPerElement;
+        var shieldGenLoadout = __debugCntls.ShieldGeneratorsPerElement;
         var combatStances = Enums<ShipCombatStance>.GetValues(excludeDefault: true);
 
         IList<ShipDesign> elementDesigns = MakeShipDesigns(owner, hullStats, turretLoadout, launchedLoadout, passiveCMLoadout,
-            activeCMLoadout, srSensorLoadout, shieldGenLoadout, combatStances);
+            activeCMLoadout, srSensorLoadout, shieldGenLoadout, combatStances, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
 
         IList<string> elementDesignNames = new List<string>();
         foreach (var design in elementDesigns) {
-            string registeredDesignName = RegisterElementDesign(owner, design);
+            string registeredDesignName = RegisterDesign(owner, design);
             elementDesignNames.Add(registeredDesignName);
         }
 
@@ -314,56 +328,6 @@ public class NewGameUnitConfigurator {
     }
 
     /// <summary>
-    /// Generates a preset starbase creator, places it at location and deploys it on the provided date.
-    /// </summary>
-    /// <param name="owner">The owner.</param>
-    /// <param name="location">The location.</param>
-    /// <param name="deployDate">The deploy date.</param>
-    /// <returns></returns>
-    public AutoStarbaseCreator GeneratePresetAutoStarbaseCreator(Player owner, Vector3 location, GameDate deployDate) {
-        D.AssertEqual(DebugControls.EquipmentLoadout.Preset, _debugCntls.EquipmentPlan);
-        int cmdPassiveCMQty = GetPassiveCmQty(_debugCntls.CMsPerCmd, TempGameValues.__MaxCmdPassiveCMs);
-        int cmdSensorQty = GetSensorQty(_debugCntls.SensorsPerCmd, TempGameValues.__MaxCmdSensors);
-        StarbaseCmdDesign cmdDesign = MakeStarbaseCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty);
-        string cmdDesignName = RegisterCmdDesign(owner, cmdDesign);
-
-        int elementQty = RandomExtended.Range(1, TempGameValues.MaxFacilitiesPerBase);
-        var hullStats = GetFacilityHullStats(owner, elementQty);
-        var turretLoadout = _debugCntls.LosWeaponsPerElement;
-        var launchedLoadout = _debugCntls.LaunchedWeaponsPerElement;
-        var passiveCMLoadout = _debugCntls.PassiveCMsPerElement;
-        var activeCMLoadout = _debugCntls.ActiveCMsPerElement;
-        var srSensorLoadout = _debugCntls.SRSensorsPerElement;
-        var shieldGenLoadout = _debugCntls.ShieldGeneratorsPerElement;
-
-        IList<FacilityDesign> elementDesigns = MakeFacilityDesigns(owner, hullStats, turretLoadout, launchedLoadout, passiveCMLoadout,
-            activeCMLoadout, srSensorLoadout, shieldGenLoadout);
-
-        IList<string> elementDesignNames = new List<string>();
-        foreach (var design in elementDesigns) {
-            string registeredDesignName = RegisterElementDesign(owner, design);
-            elementDesignNames.Add(registeredDesignName);
-        }
-
-        UnitCreatorConfiguration config = new UnitCreatorConfiguration(owner, deployDate, cmdDesignName, elementDesignNames);
-        //D.Log(ShowDebugLog, "{0} has generated/placed a preset {1} for {2}.", DebugName, typeof(AutoStarbaseCreator).Name, owner);
-        return UnitFactory.Instance.MakeStarbaseCreator(location, config);
-    }
-
-    /// <summary>
-    /// Generates a preset starbase creator, places it at location and deploys it on a random date.
-    /// </summary>
-    /// <param name="owner">The owner.</param>
-    /// <param name="location">The location.</param>
-    /// <returns></returns>
-    public AutoStarbaseCreator GeneratePresetAutoStarbaseCreator(Player owner, Vector3 location) {
-        GameTimeDuration deployDateDelay = new GameTimeDuration(UnityEngine.Random.Range(Constants.ZeroF, 3F));
-        //GameTimeDuration deployDateDelay = new GameTimeDuration(0.1F);
-        GameDate deployDate = GameTime.Instance.GenerateRandomFutureDate(deployDateDelay);
-        return GeneratePresetAutoStarbaseCreator(owner, location, deployDate);
-    }
-
-    /// <summary>
     /// Generates a preset settlement creator, places it in orbit around <c>system</c> and deploys it on the provided date.
     /// </summary>
     /// <param name="owner">The owner.</param>
@@ -371,27 +335,27 @@ public class NewGameUnitConfigurator {
     /// <param name="deployDate">The deploy date.</param>
     /// <returns></returns>
     public AutoSettlementCreator GeneratePresetAutoSettlementCreator(Player owner, SystemItem system, GameDate deployDate) {
-        D.AssertEqual(DebugControls.EquipmentLoadout.Preset, _debugCntls.EquipmentPlan);
-        int cmdPassiveCMQty = GetPassiveCmQty(_debugCntls.CMsPerCmd, TempGameValues.__MaxCmdPassiveCMs);
-        int cmdSensorQty = GetSensorQty(_debugCntls.SensorsPerCmd, TempGameValues.__MaxCmdSensors);
-        SettlementCmdDesign cmdDesign = MakeSettlementCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty);
-        string cmdDesignName = RegisterCmdDesign(owner, cmdDesign);
+        D.AssertEqual(DebugControls.EquipmentLoadout.Preset, __debugCntls.EquipmentPlan);
+        int cmdPassiveCMQty = GetPassiveCmQty(__debugCntls.CMsPerCmd, TempGameValues.__MaxCmdPassiveCMs);
+        int cmdSensorQty = GetSensorQty(__debugCntls.SensorsPerCmd, TempGameValues.__MaxCmdSensors);
+        SettlementCmdDesign cmdDesign = MakeSettlementCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
+        string cmdDesignName = RegisterDesign(owner, cmdDesign);
 
         int elementQty = RandomExtended.Range(1, TempGameValues.MaxFacilitiesPerBase);
-        var hullStats = GetFacilityHullStats(owner, elementQty);
-        var turretLoadout = _debugCntls.LosWeaponsPerElement;
-        var launchedLoadout = _debugCntls.LaunchedWeaponsPerElement;
-        var passiveCMLoadout = _debugCntls.PassiveCMsPerElement;
-        var activeCMLoadout = _debugCntls.ActiveCMsPerElement;
-        var srSensorLoadout = _debugCntls.SRSensorsPerElement;
-        var shieldGenLoadout = _debugCntls.ShieldGeneratorsPerElement;
+        var hullStats = GetCurrentFacilityHullStats(owner, elementQty);
+        var turretLoadout = __debugCntls.LosWeaponsPerElement;
+        var launchedLoadout = __debugCntls.LaunchedWeaponsPerElement;
+        var passiveCMLoadout = __debugCntls.PassiveCMsPerElement;
+        var activeCMLoadout = __debugCntls.ActiveCMsPerElement;
+        var srSensorLoadout = __debugCntls.SRSensorsPerElement;
+        var shieldGenLoadout = __debugCntls.ShieldGeneratorsPerElement;
 
         IList<FacilityDesign> elementDesigns = MakeFacilityDesigns(owner, hullStats, turretLoadout, launchedLoadout, passiveCMLoadout,
-            activeCMLoadout, srSensorLoadout, shieldGenLoadout);
+            activeCMLoadout, srSensorLoadout, shieldGenLoadout, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
 
         IList<string> elementDesignNames = new List<string>();
         foreach (var design in elementDesigns) {
-            string registeredDesignName = RegisterElementDesign(owner, design);
+            string registeredDesignName = RegisterDesign(owner, design);
             elementDesignNames.Add(registeredDesignName);
         }
         UnitCreatorConfiguration config = new UnitCreatorConfiguration(owner, deployDate, cmdDesignName, elementDesignNames);
@@ -412,6 +376,67 @@ public class NewGameUnitConfigurator {
         return GeneratePresetAutoSettlementCreator(owner, system, deployDate);
     }
 
+    /// <summary>
+    /// Returns <c>true</c> if a preset starbase creator is generated, <c>false</c> otherwise.
+    /// The creator is placed at location and deploys it on the provided date.
+    /// <remarks>4.27.18 Currently, the only reason a Creator would not be generated is there is no current StarbaseCmdModuleStat.</remarks>
+    /// </summary>
+    /// <param name="owner">The owner.</param>
+    /// <param name="location">The location.</param>
+    /// <param name="deployDate">The deploy date.</param>
+    /// <param name="creator">The resulting creator.</param>
+    /// <returns></returns>
+    public bool TryGeneratePresetAutoStarbaseCreator(Player owner, Vector3 location, GameDate deployDate, out AutoStarbaseCreator creator) {
+        D.AssertEqual(DebugControls.EquipmentLoadout.Preset, __debugCntls.EquipmentPlan);
+        int cmdPassiveCMQty = GetPassiveCmQty(__debugCntls.CMsPerCmd, TempGameValues.__MaxCmdPassiveCMs);
+        int cmdSensorQty = GetSensorQty(__debugCntls.SensorsPerCmd, TempGameValues.__MaxCmdSensors);
+        StarbaseCmdDesign cmdDesign;
+        if (TryMakeStarbaseCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current, out cmdDesign)) {
+            string cmdDesignName = RegisterDesign(owner, cmdDesign);
+
+            int elementQty = RandomExtended.Range(1, TempGameValues.MaxFacilitiesPerBase);
+            var hullStats = GetCurrentFacilityHullStats(owner, elementQty);
+            var turretLoadout = __debugCntls.LosWeaponsPerElement;
+            var launchedLoadout = __debugCntls.LaunchedWeaponsPerElement;
+            var passiveCMLoadout = __debugCntls.PassiveCMsPerElement;
+            var activeCMLoadout = __debugCntls.ActiveCMsPerElement;
+            var srSensorLoadout = __debugCntls.SRSensorsPerElement;
+            var shieldGenLoadout = __debugCntls.ShieldGeneratorsPerElement;
+
+            IList<FacilityDesign> elementDesigns = MakeFacilityDesigns(owner, hullStats, turretLoadout, launchedLoadout, passiveCMLoadout,
+                activeCMLoadout, srSensorLoadout, shieldGenLoadout, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
+
+            IList<string> elementDesignNames = new List<string>();
+            foreach (var design in elementDesigns) {
+                string registeredDesignName = RegisterDesign(owner, design);
+                elementDesignNames.Add(registeredDesignName);
+            }
+
+            UnitCreatorConfiguration config = new UnitCreatorConfiguration(owner, deployDate, cmdDesignName, elementDesignNames);
+            //D.Log(ShowDebugLog, "{0} has generated/placed a preset {1} for {2}.", DebugName, typeof(AutoStarbaseCreator).Name, owner);
+            creator = UnitFactory.Instance.MakeStarbaseCreator(location, config);
+            return true;
+        }
+        creator = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if a preset starbase creator is generated, <c>false</c> otherwise.
+    /// The creator is placed at location and deploys it on a random date.
+    /// <remarks>4.27.18 Currently, the only reason a Creator would not be generated is there is no current StarbaseCmdModuleStat.</remarks>
+    /// </summary>
+    /// <param name="owner">The owner.</param>
+    /// <param name="location">The location.</param>
+    /// <param name="creator">The resulting creator.</param>
+    /// <returns></returns>
+    public bool TryGeneratePresetAutoStarbaseCreator(Player owner, Vector3 location, out AutoStarbaseCreator creator) {
+        GameTimeDuration deployDateDelay = new GameTimeDuration(UnityEngine.Random.Range(Constants.ZeroF, 3F));
+        //GameTimeDuration deployDateDelay = new GameTimeDuration(0.1F);
+        GameDate deployDate = GameTime.Instance.GenerateRandomFutureDate(deployDateDelay);
+        return TryGeneratePresetAutoStarbaseCreator(owner, location, deployDate, out creator);
+    }
+
     #endregion
 
     #region Generate Random AutoCreators
@@ -426,11 +451,11 @@ public class NewGameUnitConfigurator {
     public AutoFleetCreator GenerateRandomAutoFleetCreator(Player owner, Vector3 location, GameDate deployDate) {
         int cmdPassiveCMQty = GetPassiveCmQty(DebugPassiveCMLoadout.Random, TempGameValues.__MaxCmdPassiveCMs);
         int cmdSensorQty = GetSensorQty(DebugSensorLoadout.Random, TempGameValues.__MaxCmdSensors);
-        FleetCmdDesign cmdDesign = MakeFleetCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty);
-        string cmdDesignName = RegisterCmdDesign(owner, cmdDesign);
+        FleetCmdDesign cmdDesign = MakeFleetCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
+        string cmdDesignName = RegisterDesign(owner, cmdDesign);
 
         int elementQty = RandomExtended.Range(1, TempGameValues.MaxShipsPerFleet);
-        var hullStats = GetShipHullStats(owner, elementQty);
+        var hullStats = GetCurrentShipHullStats(owner, elementQty);
         var turretLoadout = DebugLosWeaponLoadout.Random;
         var launchedLoadout = DebugLaunchedWeaponLoadout.Random;
         var passiveCMLoadout = DebugPassiveCMLoadout.Random;
@@ -440,11 +465,11 @@ public class NewGameUnitConfigurator {
         var combatStances = Enums<ShipCombatStance>.GetValues(excludeDefault: true);
 
         IList<ShipDesign> elementDesigns = MakeShipDesigns(owner, hullStats, turretLoadout, launchedLoadout, passiveCMLoadout,
-            activeCMLoadout, srSensorLoadout, shieldGenLoadout, combatStances);
+            activeCMLoadout, srSensorLoadout, shieldGenLoadout, combatStances, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
 
         IList<string> elementDesignNames = new List<string>();
         foreach (var design in elementDesigns) {
-            string registeredDesignName = RegisterElementDesign(owner, design);
+            string registeredDesignName = RegisterDesign(owner, design);
             elementDesignNames.Add(registeredDesignName);
         }
 
@@ -467,55 +492,6 @@ public class NewGameUnitConfigurator {
     }
 
     /// <summary>
-    /// Generates a random starbase creator, places it at location and deploys it on the provided date.
-    /// </summary>
-    /// <param name="owner">The owner.</param>
-    /// <param name="location">The location.</param>
-    /// <param name="deployDate">The deploy date.</param>
-    /// <returns></returns>
-    public AutoStarbaseCreator GenerateRandomAutoStarbaseCreator(Player owner, Vector3 location, GameDate deployDate) {
-        int cmdPassiveCMQty = GetPassiveCmQty(DebugPassiveCMLoadout.Random, TempGameValues.__MaxCmdPassiveCMs);
-        int cmdSensorQty = GetSensorQty(DebugSensorLoadout.Random, TempGameValues.__MaxCmdSensors);
-        StarbaseCmdDesign cmdDesign = MakeStarbaseCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty);
-        string cmdDesignName = RegisterCmdDesign(owner, cmdDesign);
-
-        int elementQty = RandomExtended.Range(1, TempGameValues.MaxFacilitiesPerBase);
-        var hullStats = GetFacilityHullStats(owner, elementQty);
-        var turretLoadout = DebugLosWeaponLoadout.Random;
-        var launchedLoadout = DebugLaunchedWeaponLoadout.Random;
-        var passiveCMLoadout = DebugPassiveCMLoadout.Random;
-        var activeCMLoadout = DebugActiveCMLoadout.Random;
-        var srSensorLoadout = DebugSensorLoadout.Random;
-        var shieldGenLoadout = DebugShieldGenLoadout.Random;
-
-        IList<FacilityDesign> elementDesigns = MakeFacilityDesigns(owner, hullStats, turretLoadout, launchedLoadout, passiveCMLoadout,
-            activeCMLoadout, srSensorLoadout, shieldGenLoadout);
-
-        IList<string> elementDesignNames = new List<string>();
-        foreach (var design in elementDesigns) {
-            string registeredDesignName = RegisterElementDesign(owner, design);
-            elementDesignNames.Add(registeredDesignName);
-        }
-
-        UnitCreatorConfiguration config = new UnitCreatorConfiguration(owner, deployDate, cmdDesignName, elementDesignNames);
-        //D.Log(ShowDebugLog, "{0} has generated/placed a random {1} for {2}.", DebugName, typeof(AutoStarbaseCreator).Name, owner);
-        return UnitFactory.Instance.MakeStarbaseCreator(location, config);
-    }
-
-    /// <summary>
-    /// Generates a random starbase creator, places it at location and deploys it on a random date.
-    /// </summary>
-    /// <param name="owner">The owner.</param>
-    /// <param name="location">The location.</param>
-    /// <returns></returns>
-    public AutoStarbaseCreator GenerateRandomAutoStarbaseCreator(Player owner, Vector3 location) {
-        GameTimeDuration deployDateDelay = new GameTimeDuration(UnityEngine.Random.Range(Constants.ZeroF, 3F));
-        //GameTimeDuration deployDateDelay = new GameTimeDuration(0.1F);
-        GameDate deployDate = GameTime.Instance.GenerateRandomFutureDate(deployDateDelay);
-        return GenerateRandomAutoStarbaseCreator(owner, location, deployDate);
-    }
-
-    /// <summary>
     /// Generates a random settlement creator, places it in orbit around <c>system</c> and deploys it on the provided date.
     /// </summary>
     /// <param name="owner">The owner.</param>
@@ -525,11 +501,11 @@ public class NewGameUnitConfigurator {
     public AutoSettlementCreator GenerateRandomAutoSettlementCreator(Player owner, SystemItem system, GameDate deployDate) {
         int cmdPassiveCMQty = GetPassiveCmQty(DebugPassiveCMLoadout.Random, TempGameValues.__MaxCmdPassiveCMs);
         int cmdSensorQty = GetSensorQty(DebugSensorLoadout.Random, TempGameValues.__MaxCmdSensors);
-        SettlementCmdDesign cmdDesign = MakeSettlementCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty);
-        string cmdDesignName = RegisterCmdDesign(owner, cmdDesign);
+        SettlementCmdDesign cmdDesign = MakeSettlementCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
+        string cmdDesignName = RegisterDesign(owner, cmdDesign);
 
         int elementQty = RandomExtended.Range(1, TempGameValues.MaxFacilitiesPerBase);
-        var hullStats = GetFacilityHullStats(owner, elementQty);
+        var hullStats = GetCurrentFacilityHullStats(owner, elementQty);
         var turretLoadout = DebugLosWeaponLoadout.Random;
         var launchedLoadout = DebugLaunchedWeaponLoadout.Random;
         var passiveCMLoadout = DebugPassiveCMLoadout.Random;
@@ -538,11 +514,11 @@ public class NewGameUnitConfigurator {
         var shieldGenLoadout = DebugShieldGenLoadout.Random;
 
         IList<FacilityDesign> elementDesigns = MakeFacilityDesigns(owner, hullStats, turretLoadout, launchedLoadout, passiveCMLoadout,
-            activeCMLoadout, srSensorLoadout, shieldGenLoadout);
+            activeCMLoadout, srSensorLoadout, shieldGenLoadout, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
 
         IList<string> elementDesignNames = new List<string>();
         foreach (var design in elementDesigns) {
-            string registeredDesignName = RegisterElementDesign(owner, design);
+            string registeredDesignName = RegisterDesign(owner, design);
             elementDesignNames.Add(registeredDesignName);
         }
 
@@ -565,6 +541,66 @@ public class NewGameUnitConfigurator {
         return GenerateRandomAutoSettlementCreator(owner, system, deployDate);
     }
 
+    /// <summary>
+    /// Returns <c>true</c> if a random starbase creator is generated, <c>false</c> otherwise.
+    /// The creator is placed at location and deploys it on the provided date.
+    /// <remarks>4.27.18 Currently, the only reason a Creator would not be generated is there is no current StarbaseCmdModuleStat.</remarks>
+    /// </summary>
+    /// <param name="owner">The owner.</param>
+    /// <param name="location">The location.</param>
+    /// <param name="deployDate">The deploy date.</param>
+    /// <param name="creator">The resulting creator.</param>
+    /// <returns></returns>
+    public bool TryGenerateRandomAutoStarbaseCreator(Player owner, Vector3 location, GameDate deployDate, out AutoStarbaseCreator creator) {
+        int cmdPassiveCMQty = GetPassiveCmQty(DebugPassiveCMLoadout.Random, TempGameValues.__MaxCmdPassiveCMs);
+        int cmdSensorQty = GetSensorQty(DebugSensorLoadout.Random, TempGameValues.__MaxCmdSensors);
+        StarbaseCmdDesign cmdDesign;
+        if (TryMakeStarbaseCmdDesign(owner, cmdPassiveCMQty, cmdSensorQty, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current, out cmdDesign)) {
+            string cmdDesignName = RegisterDesign(owner, cmdDesign);
+
+            int elementQty = RandomExtended.Range(1, TempGameValues.MaxFacilitiesPerBase);
+            var hullStats = GetCurrentFacilityHullStats(owner, elementQty);
+            var turretLoadout = DebugLosWeaponLoadout.Random;
+            var launchedLoadout = DebugLaunchedWeaponLoadout.Random;
+            var passiveCMLoadout = DebugPassiveCMLoadout.Random;
+            var activeCMLoadout = DebugActiveCMLoadout.Random;
+            var srSensorLoadout = DebugSensorLoadout.Random;
+            var shieldGenLoadout = DebugShieldGenLoadout.Random;
+
+            IList<FacilityDesign> elementDesigns = MakeFacilityDesigns(owner, hullStats, turretLoadout, launchedLoadout, passiveCMLoadout,
+                activeCMLoadout, srSensorLoadout, shieldGenLoadout, AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current);
+
+            IList<string> elementDesignNames = new List<string>();
+            foreach (var design in elementDesigns) {
+                string registeredDesignName = RegisterDesign(owner, design);
+                elementDesignNames.Add(registeredDesignName);
+            }
+
+            UnitCreatorConfiguration config = new UnitCreatorConfiguration(owner, deployDate, cmdDesignName, elementDesignNames);
+            //D.Log(ShowDebugLog, "{0} has generated/placed a random {1} for {2}.", DebugName, typeof(AutoStarbaseCreator).Name, owner);
+            creator = UnitFactory.Instance.MakeStarbaseCreator(location, config);
+            return true;
+        }
+        creator = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if a random starbase creator is generated, <c>false</c> otherwise.
+    /// The creator is placed at location and deploys it on a random date.
+    /// <remarks>4.27.18 Currently, the only reason a Creator would not be generated is there is no current StarbaseCmdModuleStat.</remarks>
+    /// </summary>
+    /// <param name="owner">The owner.</param>
+    /// <param name="location">The location.</param>
+    /// <param name="creator">The resulting creator.</param>
+    /// <returns></returns>
+    public bool TryGenerateRandomAutoStarbaseCreator(Player owner, Vector3 location, out AutoStarbaseCreator creator) {
+        GameTimeDuration deployDateDelay = new GameTimeDuration(UnityEngine.Random.Range(Constants.ZeroF, 3F));
+        //GameTimeDuration deployDateDelay = new GameTimeDuration(0.1F);
+        GameDate deployDate = GameTime.Instance.GenerateRandomFutureDate(deployDateDelay);
+        return TryGenerateRandomAutoStarbaseCreator(owner, location, deployDate, out creator);
+    }
+
     #endregion
 
     public void ResetForReuse() {
@@ -576,47 +612,29 @@ public class NewGameUnitConfigurator {
     private IList<ShipDesign> MakeShipDesigns(Player owner, IEnumerable<ShipHullStat> hullStats, DebugLosWeaponLoadout turretLoadout,
         DebugLaunchedWeaponLoadout launchedLoadout, DebugPassiveCMLoadout passiveCMLoadout, DebugActiveCMLoadout activeCMLoadout,
         DebugSensorLoadout srSensorLoadout, DebugShieldGenLoadout shieldGenLoadout, IEnumerable<ShipCombatStance> stances,
-        AUnitMemberDesign.SourceAndStatus status = AUnitMemberDesign.SourceAndStatus.Player_Current) {
+        AUnitMemberDesign.SourceAndStatus status) {
 
         var ownerDesigns = _gameMgr.GetAIManagerFor(owner).Designs;
         IList<ShipDesign> designs = new List<ShipDesign>();
         foreach (var hullStat in hullStats) {
             ShipHullCategory hullCat = hullStat.HullCategory;
 
-            var weaponStats = GetWeaponStats(owner, hullCat, launchedLoadout, turretLoadout);
-            ////int passiveCMQty = GetPassiveCMQty(passiveCMLoadout, hullCat.__MaxPassiveCMs());
-            ////var initialPassiveCmStat = _eStatFactory.MakeNonHullInstance(owner, EquipmentCategory.PassiveCountermeasure, Level.One) as PassiveCountermeasureStat;
-            ////var passiveCmStats = Enumerable.Repeat<PassiveCountermeasureStat>(initialPassiveCmStat, passiveCMQty);
-            var passiveCmStats = GetPassiveCmStats(owner, passiveCMLoadout, hullCat.__MaxPassiveCMs());
-            ////int activeCMQty = GetActiveCMQty(activeCMLoadout, hullCat.__MaxActiveCMs());
-            ////List<ActiveCountermeasureStat> activeCmStats = new List<ActiveCountermeasureStat>(activeCMQty);
-            ////if (activeCMQty > 0) {
-            ////    var srActiveCmStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.SRActiveCountermeasure, Level.One) as ActiveCountermeasureStat;
-            ////    activeCmStats.Add(srActiveCmStat);
-            ////    if (activeCMQty > 1) {
-            ////        var mrActiveCmStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.MRActiveCountermeasure, Level.One) as ActiveCountermeasureStat;
-            ////        activeCmStats.AddRange(Enumerable.Repeat<ActiveCountermeasureStat>(mrActiveCmStat, activeCMQty - 1));
-            ////    }
-            ////}
-            var activeCmStats = GetActiveCmStats(owner, activeCMLoadout, hullCat.__MaxActiveCMs());
+            var weaponStats = GetCurrentWeaponStats(owner, hullCat, launchedLoadout, turretLoadout);
+            var passiveCmStats = GetCurrentPassiveCmStats(owner, passiveCMLoadout, hullCat.__MaxPassiveCMs());
+            var activeCmStats = GetCurrentActiveCmStats(owner, activeCMLoadout, hullCat.__MaxActiveCMs());
 
             List<SensorStat> optionalSensorStats = new List<SensorStat>();
             int srSensorQty = GetSensorQty(srSensorLoadout, hullCat.__MaxSensors());
             if (srSensorQty > 1) {
-                ////var srSensorStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.SRSensor, Level.One) as SensorStat;
                 var srSensorStat = ownerDesigns.GetCurrentSRSensorStat();
                 optionalSensorStats.AddRange(Enumerable.Repeat<SensorStat>(srSensorStat, srSensorQty - 1));
             }
 
-            ////int shieldGenQty = GetShieldGeneratorQty(shieldGenLoadout, hullCat.__MaxShieldGenerators());
-            ////var shieldGenStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.ShieldGenerator, Level.One) as ShieldGeneratorStat;
-            ////var shieldGenStats = Enumerable.Repeat<ShieldGeneratorStat>(shieldGenStat, shieldGenQty);
-            var shieldGenStats = GetShieldGenStats(owner, shieldGenLoadout, hullCat.__MaxShieldGenerators());
-            Priority hqPriority = hullCat.__HQPriority();    // TEMP, IMPROVE
+            var shieldGenStats = GetCurrentShieldGenStats(owner, shieldGenLoadout, hullCat.__MaxShieldGenerators());
             ShipCombatStance stance = RandomExtended.Choice(stances);
 
             var design = MakeElementDesign(owner, hullStat, weaponStats, passiveCmStats, activeCmStats, optionalSensorStats,
-                shieldGenStats, hqPriority, stance, status);
+                shieldGenStats, stance, status);
             designs.Add(design);
         }
         return designs;
@@ -624,47 +642,28 @@ public class NewGameUnitConfigurator {
 
     private IList<FacilityDesign> MakeFacilityDesigns(Player owner, IEnumerable<FacilityHullStat> hullStats, DebugLosWeaponLoadout turretLoadout,
         DebugLaunchedWeaponLoadout launchedLoadout, DebugPassiveCMLoadout passiveCMLoadout, DebugActiveCMLoadout activeCMLoadout,
-        DebugSensorLoadout srSensorLoadout, DebugShieldGenLoadout shieldGenLoadout,
-        AUnitMemberDesign.SourceAndStatus status = AUnitMemberDesign.SourceAndStatus.Player_Current) {
+        DebugSensorLoadout srSensorLoadout, DebugShieldGenLoadout shieldGenLoadout, AUnitMemberDesign.SourceAndStatus status) {
 
         var ownerDesigns = _gameMgr.GetAIManagerFor(owner).Designs;
         IList<FacilityDesign> designs = new List<FacilityDesign>();
         foreach (var hullStat in hullStats) {
             FacilityHullCategory hullCat = hullStat.HullCategory;
 
-            var weaponStats = GetWeaponStats(owner, hullCat, launchedLoadout, turretLoadout);
-            ////int passiveCMQty = GetPassiveCMQty(passiveCMLoadout, hullCat.__MaxPassiveCMs());
-            ////var initialPassiveCmStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.PassiveCountermeasure, Level.One) as PassiveCountermeasureStat;
-            ////var passiveCmStats = Enumerable.Repeat<PassiveCountermeasureStat>(initialPassiveCmStat, passiveCMQty);
-            var passiveCmStats = GetPassiveCmStats(owner, passiveCMLoadout, hullCat.__MaxPassiveCMs());
-            ////int activeCMQty = GetActiveCMQty(activeCMLoadout, hullCat.__MaxActiveCMs());
-            ////List<ActiveCountermeasureStat> activeCmStats = new List<ActiveCountermeasureStat>(activeCMQty);
-            ////if (activeCMQty > 0) {
-            ////    var srActiveCmStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.SRActiveCountermeasure, Level.One) as ActiveCountermeasureStat;
-            ////    activeCmStats.Add(srActiveCmStat);
-            ////    if (activeCMQty > 1) {
-            ////        var mrActiveCmStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.MRActiveCountermeasure, Level.One) as ActiveCountermeasureStat;
-            ////        activeCmStats.AddRange(Enumerable.Repeat<ActiveCountermeasureStat>(mrActiveCmStat, activeCMQty - 1));
-            ////    }
-            ////}
-            var activeCmStats = GetActiveCmStats(owner, activeCMLoadout, hullCat.__MaxActiveCMs());
+            var weaponStats = GetCurrentWeaponStats(owner, hullCat, launchedLoadout, turretLoadout);
+            var passiveCmStats = GetCurrentPassiveCmStats(owner, passiveCMLoadout, hullCat.__MaxPassiveCMs());
+            var activeCmStats = GetCurrentActiveCmStats(owner, activeCMLoadout, hullCat.__MaxActiveCMs());
 
             List<SensorStat> optionalSensorStats = new List<SensorStat>();
             int srSensorQty = GetSensorQty(srSensorLoadout, hullCat.__MaxSensors());
             if (srSensorQty > 1) {
-                ////var srSensorStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.SRSensor, Level.One) as SensorStat;
                 var srSensorStat = ownerDesigns.GetCurrentSRSensorStat();
                 optionalSensorStats.AddRange(Enumerable.Repeat<SensorStat>(srSensorStat, srSensorQty - 1));
             }
 
-            ////int shieldGenQty = GetShieldGeneratorQty(shieldGenLoadout, hullCat.__MaxShieldGenerators());
-            ////var initialShieldGenStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.ShieldGenerator, Level.One) as ShieldGeneratorStat;
-            ////var shieldGenStats = Enumerable.Repeat<ShieldGeneratorStat>(initialShieldGenStat, shieldGenQty);
-            var shieldGenStats = GetShieldGenStats(owner, shieldGenLoadout, hullCat.__MaxShieldGenerators());
-            Priority hqPriority = hullCat.__HQPriority();    // TEMP, IMPROVE
+            var shieldGenStats = GetCurrentShieldGenStats(owner, shieldGenLoadout, hullCat.__MaxShieldGenerators());
 
             var design = MakeElementDesign(owner, hullStat, weaponStats, passiveCmStats, activeCmStats, optionalSensorStats,
-                shieldGenStats, hqPriority, status);
+                shieldGenStats, status);
             designs.Add(design);
         }
         return designs;
@@ -672,26 +671,26 @@ public class NewGameUnitConfigurator {
 
     private ShipDesign MakeElementDesign(Player owner, ShipHullStat hullStat, IEnumerable<AWeaponStat> weaponStats,
         IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<ActiveCountermeasureStat> activeCmStats,
-        IEnumerable<SensorStat> optionalSensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats, Priority hqPriority, ShipCombatStance stance,
+        IEnumerable<SensorStat> optionalSensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats, ShipCombatStance stance,
         AUnitMemberDesign.SourceAndStatus status) {
 
         var ownerDesigns = _gameMgr.GetAIManagerFor(owner).Designs;
-        ShipHullCategory hullCat = hullStat.HullCategory;
-        ////Level engineLevel = DebugControls.Instance.AreShipsFast ? Level.Five : Level.One;
-        ////var stlEngineStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.StlPropulsion, engineLevel) as EngineStat;
-        ////var ftlEngineStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.FtlPropulsion, engineLevel) as EngineStat;
-        var stlEngineStat = GetEngineStat(owner, EquipmentCategory.StlPropulsion);
-        var ftlEngineStat = GetEngineStat(owner, EquipmentCategory.FtlPropulsion);  // can be null
+        var stlEngineStat = GetCurrentEngineStat(owner, EquipmentCategory.StlPropulsion);
+        var ftlEngineStat = GetCurrentEngineStat(owner, EquipmentCategory.FtlPropulsion);  // can be null
 
-        ////var elementsReqdSRSensorStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.SRSensor, Level.One) as SensorStat;
         var elementsReqdSRSensorStat = ownerDesigns.GetCurrentSRSensorStat();
-        var design = new ShipDesign(owner, hqPriority, elementsReqdSRSensorStat, hullStat, stlEngineStat, ftlEngineStat, stance) {
+        var design = new ShipDesign(owner, elementsReqdSRSensorStat, hullStat, stlEngineStat,/* ftlEngineStat,*/ stance) {
             Status = status
         };
-        AEquipmentStat[] allEquipStats = passiveCmStats.Cast<AEquipmentStat>().UnionBy(activeCmStats.Cast<AEquipmentStat>(),
-            optionalSensorStats.Cast<AEquipmentStat>(), shieldGenStats.Cast<AEquipmentStat>(), weaponStats.Cast<AEquipmentStat>()).ToArray();
-        foreach (var stat in allEquipStats) {
-            EquipmentSlotID availCatSlotID;
+
+        IList<AEquipmentStat> allOptEquipStats = passiveCmStats.Cast<AEquipmentStat>().UnionBy(activeCmStats.Cast<AEquipmentStat>(),
+            optionalSensorStats.Cast<AEquipmentStat>(), shieldGenStats.Cast<AEquipmentStat>(), weaponStats.Cast<AEquipmentStat>()).ToList();
+        if (ftlEngineStat != null) {
+            allOptEquipStats.Add(ftlEngineStat);
+        }
+
+        foreach (var stat in allOptEquipStats) {
+            OptionalEquipSlotID availCatSlotID;
             bool isSlotAvailable = design.TryGetEmptySlotIDFor(stat.Category, out availCatSlotID);
             D.Assert(isSlotAvailable);
             design.Add(availCatSlotID, stat);
@@ -702,21 +701,17 @@ public class NewGameUnitConfigurator {
 
     private FacilityDesign MakeElementDesign(Player owner, FacilityHullStat hullStat, IEnumerable<AWeaponStat> weaponStats,
         IEnumerable<PassiveCountermeasureStat> passiveCmStats, IEnumerable<ActiveCountermeasureStat> activeCmStats,
-        IEnumerable<SensorStat> optionalSensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats, Priority hqPriority,
-        AUnitMemberDesign.SourceAndStatus status) {
-
+        IEnumerable<SensorStat> optionalSensorStats, IEnumerable<ShieldGeneratorStat> shieldGenStats, AUnitMemberDesign.SourceAndStatus status) {
 
         var ownerDesigns = _gameMgr.GetAIManagerFor(owner).Designs;
-        FacilityHullCategory hullCat = hullStat.HullCategory;
-        ////var elementsReqdSRSensorStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.SRSensor, Level.One) as SensorStat;
         var elementsReqdSRSensorStat = ownerDesigns.GetCurrentSRSensorStat();
-        var design = new FacilityDesign(owner, hqPriority, elementsReqdSRSensorStat, hullStat) {
+        var design = new FacilityDesign(owner, elementsReqdSRSensorStat, hullStat) {
             Status = status
         };
-        AEquipmentStat[] allEquipStats = passiveCmStats.Cast<AEquipmentStat>().UnionBy(activeCmStats.Cast<AEquipmentStat>(),
+        AEquipmentStat[] allOptEquipStats = passiveCmStats.Cast<AEquipmentStat>().UnionBy(activeCmStats.Cast<AEquipmentStat>(),
             optionalSensorStats.Cast<AEquipmentStat>(), shieldGenStats.Cast<AEquipmentStat>(), weaponStats.Cast<AEquipmentStat>()).ToArray();
-        foreach (var stat in allEquipStats) {
-            EquipmentSlotID availCatSlotID;
+        foreach (var stat in allOptEquipStats) {
+            OptionalEquipSlotID availCatSlotID;
             bool isSlotAvailable = design.TryGetEmptySlotIDFor(stat.Category, out availCatSlotID);
             D.Assert(isSlotAvailable);
             design.Add(availCatSlotID, stat);
@@ -735,7 +730,7 @@ public class NewGameUnitConfigurator {
     /// <param name="design">The design.</param>
     /// <param name="optionalRootDesignName">Name of the optional root design.</param>
     /// <returns></returns>
-    private string RegisterElementDesign(Player player, ShipDesign design, string optionalRootDesignName = null) {
+    private string RegisterDesign(Player player, ShipDesign design, string optionalRootDesignName = null) {
         var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
         string registeredDesignName;
         string existingDesignName;
@@ -758,10 +753,10 @@ public class NewGameUnitConfigurator {
         else {
             D.AssertNotNull(existingDesignName);
             ShipDesign existingDesign = playerDesigns.GetShipDesign(existingDesignName);
-            if (existingDesign.Status == AUnitMemberDesign.SourceAndStatus.System_CreationTemplate) {
+            if (existingDesign.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template) {
                 D.Warn("{0}: {1} and TemplateDesign {2} are equivalent?", DebugName, design.DebugName, existingDesign.DebugName);
             }
-            existingDesign.Status = AUnitMemberDesign.SourceAndStatus.Player_Current;
+            existingDesign.Status = AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current;
             D.Log(ShowDebugLog, "{0} found Design {1} has equivalent already registered so using {2} with name {3}.",
                 DebugName, design.DebugName, existingDesign.DebugName, existingDesignName);
             registeredDesignName = existingDesignName;
@@ -776,7 +771,7 @@ public class NewGameUnitConfigurator {
     /// <param name="design">The design.</param>
     /// <param name="optionalRootDesignName">Name of the optional root design.</param>
     /// <returns></returns>
-    private string RegisterElementDesign(Player player, FacilityDesign design, string optionalRootDesignName = null) {
+    private string RegisterDesign(Player player, FacilityDesign design, string optionalRootDesignName = null) {
         var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
         string registeredDesignName;
         string existingDesignName;
@@ -799,10 +794,10 @@ public class NewGameUnitConfigurator {
         else {
             D.AssertNotNull(existingDesignName);
             FacilityDesign existingDesign = playerDesigns.GetFacilityDesign(existingDesignName);
-            if (existingDesign.Status == AUnitMemberDesign.SourceAndStatus.System_CreationTemplate) {
+            if (existingDesign.Status == AUnitMemberDesign.SourceAndStatus.SystemCreation_Template) {
                 D.Warn("{0}: {1} and TemplateDesign {2} are equivalent?", DebugName, design.DebugName, existingDesign.DebugName);
             }
-            existingDesign.Status = AUnitMemberDesign.SourceAndStatus.Player_Current;
+            existingDesign.Status = AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current;
             D.Log(ShowDebugLog, "{0} found Design {1} has equivalent already registered so using {2} with name {3}.",
                 DebugName, design.DebugName, existingDesign.DebugName, existingDesignName);
             registeredDesignName = existingDesignName;
@@ -814,36 +809,45 @@ public class NewGameUnitConfigurator {
 
     #region Command Designs
 
-    private SettlementCmdDesign MakeSettlementCmdDesign(Player owner, int passiveCmQty, int sensorQty,
-        AUnitMemberDesign.SourceAndStatus status = AUnitMemberDesign.SourceAndStatus.Player_Current) {
+    private FleetCmdDesign MakeFleetCmdDesign(Player owner, int passiveCmQty, int sensorQty, AUnitMemberDesign.SourceAndStatus status) {
         Utility.ValidateForRange(passiveCmQty, 0, TempGameValues.__MaxCmdPassiveCMs);
         Utility.ValidateForRange(sensorQty, 1, TempGameValues.__MaxCmdSensors);
 
         var ownerDesigns = _gameMgr.GetAIManagerFor(owner).Designs;
 
-
-        ////var initialPassiveCmStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.PassiveCountermeasure, Level.One) as PassiveCountermeasureStat;
-        ////var passiveCmStats = Enumerable.Repeat<PassiveCountermeasureStat>(initialPassiveCmStat, passiveCmQty);
-        var passiveCmStats = GetPassiveCmStats(owner, passiveCmQty);
+        var passiveCmStats = GetCurrentPassiveCmStats(owner, passiveCmQty);
 
         SensorStat reqdMrCmdSensorStat = ownerDesigns.GetCurrentMRCmdSensorStat();
-        ////SensorStat reqdMrCmdSensorStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.MRSensor, Level.One) as SensorStat;
-        ////List<SensorStat> optionalSensorStats = new List<SensorStat>();
-        ////if (sensorQty > 1) {
-        ////    var optionalLrCmdSensorStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.LRSensor, Level.One) as SensorStat;
-        ////    optionalSensorStats.Add(optionalLrCmdSensorStat);
-        ////    if (sensorQty > 2) {
-        ////        var availableCmdSensorStats = new List<SensorStat>() { reqdMrCmdSensorStat, optionalLrCmdSensorStat };
-        ////        for (int i = 2; i < sensorQty; i++) {
-        ////            var randomOptionalCmdSensorStat = RandomExtended.Choice(availableCmdSensorStats) as SensorStat;
-        ////            optionalSensorStats.Add(randomOptionalCmdSensorStat);
-        ////        }
-        ////    }
-        ////}
-        var optionalSensorStats = GetCmdSensorStats(owner, sensorQty - 1);
+        var optionalSensorStats = GetCurrentOptionalCmdSensorStats(owner, sensorQty - 1);
 
-        ////FtlDampenerStat cmdsReqdFtlDampener = _eStatFactory.MakeInstance(owner, EquipmentCategory.FtlDampener, Level.One) as FtlDampenerStat;
-        ////SettlementCmdModuleStat cmdStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.SettlementCmdModule, Level.One) as SettlementCmdModuleStat;
+        FtlDampenerStat cmdsReqdFtlDampenerStat = ownerDesigns.GetCurrentFtlDampenerStat();
+        FleetCmdModuleStat cmdStat = ownerDesigns.GetCurrentFleetCmdModuleStat();
+
+        FleetCmdDesign design = new FleetCmdDesign(owner, cmdsReqdFtlDampenerStat, cmdStat, reqdMrCmdSensorStat) {
+            Status = status
+        };
+        AEquipmentStat[] allEquipStats = passiveCmStats.Cast<AEquipmentStat>().Union(optionalSensorStats.Cast<AEquipmentStat>()).ToArray();
+        foreach (var stat in allEquipStats) {
+            OptionalEquipSlotID availCatSlotID;
+            bool isSlotAvailable = design.TryGetEmptySlotIDFor(stat.Category, out availCatSlotID);
+            D.Assert(isSlotAvailable);
+            design.Add(availCatSlotID, stat);
+        }
+        design.AssignPropertyValues();
+        return design;
+    }
+
+    private SettlementCmdDesign MakeSettlementCmdDesign(Player owner, int passiveCmQty, int sensorQty, AUnitMemberDesign.SourceAndStatus status) {
+        Utility.ValidateForRange(passiveCmQty, 0, TempGameValues.__MaxCmdPassiveCMs);
+        Utility.ValidateForRange(sensorQty, 1, TempGameValues.__MaxCmdSensors);
+
+        var ownerDesigns = _gameMgr.GetAIManagerFor(owner).Designs;
+
+        var passiveCmStats = GetCurrentPassiveCmStats(owner, passiveCmQty);
+
+        SensorStat reqdMrCmdSensorStat = ownerDesigns.GetCurrentMRCmdSensorStat();
+        var optionalSensorStats = GetCurrentOptionalCmdSensorStats(owner, sensorQty - 1);
+
         FtlDampenerStat cmdsReqdFtlDampenerStat = ownerDesigns.GetCurrentFtlDampenerStat();
         SettlementCmdModuleStat cmdStat = ownerDesigns.GetCurrentSettlementCmdModuleStat();
 
@@ -852,7 +856,7 @@ public class NewGameUnitConfigurator {
         };
         AEquipmentStat[] allEquipStats = passiveCmStats.Cast<AEquipmentStat>().Union(optionalSensorStats.Cast<AEquipmentStat>()).ToArray();
         foreach (var stat in allEquipStats) {
-            EquipmentSlotID availCatSlotID;
+            OptionalEquipSlotID availCatSlotID;
             bool isSlotAvailable = design.TryGetEmptySlotIDFor(stat.Category, out availCatSlotID);
             D.Assert(isSlotAvailable);
             design.Add(availCatSlotID, stat);
@@ -861,224 +865,180 @@ public class NewGameUnitConfigurator {
         return design;
     }
 
-    private StarbaseCmdDesign MakeStarbaseCmdDesign(Player owner, int passiveCmQty, int sensorQty,
-        AUnitMemberDesign.SourceAndStatus status = AUnitMemberDesign.SourceAndStatus.Player_Current) {
-        Utility.ValidateForRange(passiveCmQty, 0, TempGameValues.__MaxCmdPassiveCMs);
-        Utility.ValidateForRange(sensorQty, 1, TempGameValues.__MaxCmdSensors);
+    private bool TryMakeStarbaseCmdDesign(Player owner, int passiveCmQty, int sensorQty, AUnitMemberDesign.SourceAndStatus status, out StarbaseCmdDesign design) {
+        Utility.ValidateForRange(passiveCmQty, Constants.Zero, TempGameValues.__MaxCmdPassiveCMs);
+        Utility.ValidateForRange(sensorQty, Constants.One, TempGameValues.__MaxCmdSensors);
 
         var ownerDesigns = _gameMgr.GetAIManagerFor(owner).Designs;
+        StarbaseCmdModuleStat cmdStat;
+        if (ownerDesigns.TryGetCurrentStarbaseCmdModuleStat(out cmdStat)) {
+            var passiveCmStats = GetCurrentPassiveCmStats(owner, passiveCmQty);
 
+            SensorStat reqdMrCmdSensorStat = ownerDesigns.GetCurrentMRCmdSensorStat();
+            var optionalSensorStats = GetCurrentOptionalCmdSensorStats(owner, sensorQty - 1);
 
-        ////var initialPassiveCmStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.PassiveCountermeasure, Level.One) as PassiveCountermeasureStat;
-        ////var passiveCmStats = Enumerable.Repeat<PassiveCountermeasureStat>(initialPassiveCmStat, passiveCmQty);
-        var passiveCmStats = GetPassiveCmStats(owner, passiveCmQty);
+            FtlDampenerStat cmdsReqdFtlDampenerStat = ownerDesigns.GetCurrentFtlDampenerStat();
 
-        SensorStat reqdMrCmdSensorStat = ownerDesigns.GetCurrentMRCmdSensorStat();
-        ////SensorStat reqdMrCmdSensorStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.MRSensor, Level.One) as SensorStat;
-        ////List<SensorStat> optionalSensorStats = new List<SensorStat>();
-        ////if (sensorQty > 1) {
-        ////    var optionalLrCmdSensorStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.LRSensor, Level.One) as SensorStat;
-        ////    optionalSensorStats.Add(optionalLrCmdSensorStat);
-        ////    if (sensorQty > 2) {
-        ////        var availableCmdSensorStats = new List<SensorStat>() { reqdMrCmdSensorStat, optionalLrCmdSensorStat };
-        ////        for (int i = 2; i < sensorQty; i++) {
-        ////            var randomOptionalCmdSensorStat = RandomExtended.Choice(availableCmdSensorStats) as SensorStat;
-        ////            optionalSensorStats.Add(randomOptionalCmdSensorStat);
-        ////        }
-        ////    }
-        ////}
-        var optionalSensorStats = GetCmdSensorStats(owner, sensorQty - 1);
-
-        FtlDampenerStat cmdsReqdFtlDampenerStat = ownerDesigns.GetCurrentFtlDampenerStat();
-        StarbaseCmdModuleStat cmdStat = ownerDesigns.GetCurrentStarbaseCmdModuleStat();
-        ////FtlDampenerStat cmdsReqdFtlDampener = _eStatFactory.MakeInstance(owner, EquipmentCategory.FtlDampener, Level.One) as FtlDampenerStat;
-        ////StarbaseCmdModuleStat cmdStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.StarbaseCmdModule, Level.One) as StarbaseCmdModuleStat;
-        StarbaseCmdDesign design = new StarbaseCmdDesign(owner, cmdsReqdFtlDampenerStat, cmdStat, reqdMrCmdSensorStat) {
-            Status = status
-        };
-        AEquipmentStat[] allEquipStats = passiveCmStats.Cast<AEquipmentStat>().Union(optionalSensorStats.Cast<AEquipmentStat>()).ToArray();
-        foreach (var stat in allEquipStats) {
-            EquipmentSlotID availCatSlotID;
-            bool isSlotAvailable = design.TryGetEmptySlotIDFor(stat.Category, out availCatSlotID);
-            D.Assert(isSlotAvailable);
-            design.Add(availCatSlotID, stat);
+            design = new StarbaseCmdDesign(owner, cmdsReqdFtlDampenerStat, cmdStat, reqdMrCmdSensorStat) {
+                Status = status
+            };
+            AEquipmentStat[] allEquipStats = passiveCmStats.Cast<AEquipmentStat>().Union(optionalSensorStats.Cast<AEquipmentStat>()).ToArray();
+            foreach (var stat in allEquipStats) {
+                OptionalEquipSlotID availCatSlotID;
+                bool isSlotAvailable = design.TryGetEmptySlotIDFor(stat.Category, out availCatSlotID);
+                D.Assert(isSlotAvailable);
+                design.Add(availCatSlotID, stat);
+            }
+            design.AssignPropertyValues();
+            return true;
         }
-        design.AssignPropertyValues();
-        return design;
+        design = null;
+        return false;
     }
 
-    private FleetCmdDesign MakeFleetCmdDesign(Player owner, int passiveCmQty, int sensorQty,
-        AUnitMemberDesign.SourceAndStatus status = AUnitMemberDesign.SourceAndStatus.Player_Current) {
-        Utility.ValidateForRange(passiveCmQty, 0, TempGameValues.__MaxCmdPassiveCMs);
-        Utility.ValidateForRange(sensorQty, 1, TempGameValues.__MaxCmdSensors);
-
-        var ownerDesigns = _gameMgr.GetAIManagerFor(owner).Designs;
-
-
-        ////var initialPassiveCmStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.PassiveCountermeasure, Level.One) as PassiveCountermeasureStat;
-        ////var passiveCmStats = Enumerable.Repeat<PassiveCountermeasureStat>(initialPassiveCmStat, passiveCmQty);
-        var passiveCmStats = GetPassiveCmStats(owner, passiveCmQty);
-
-        SensorStat reqdMrCmdSensorStat = ownerDesigns.GetCurrentMRCmdSensorStat();
-        ////SensorStat reqdMrCmdSensorStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.MRSensor, Level.One) as SensorStat;
-        ////List<SensorStat> optionalSensorStats = new List<SensorStat>();
-        ////if (sensorQty > 1) {
-        ////    var optionalLrCmdSensorStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.LRSensor, Level.One) as SensorStat;
-        ////    optionalSensorStats.Add(optionalLrCmdSensorStat);
-        ////    if (sensorQty > 2) {
-        ////        var availableCmdSensorStats = new List<SensorStat>() { reqdMrCmdSensorStat, optionalLrCmdSensorStat };
-        ////        for (int i = 2; i < sensorQty; i++) {
-        ////            var randomOptionalCmdSensorStat = RandomExtended.Choice(availableCmdSensorStats) as SensorStat;
-        ////            optionalSensorStats.Add(randomOptionalCmdSensorStat);
-        ////        }
-        ////    }
-        ////}
-        var optionalSensorStats = GetCmdSensorStats(owner, sensorQty - 1);
-
-        FtlDampenerStat cmdsReqdFtlDampenerStat = ownerDesigns.GetCurrentFtlDampenerStat();
-        FleetCmdModuleStat cmdStat = ownerDesigns.GetCurrentFleetCmdModuleStat();
-
-        ////FtlDampenerStat cmdsReqdFtlDampener = _eStatFactory.MakeInstance(owner, EquipmentCategory.FtlDampener, Level.One) as FtlDampenerStat;
-        ////FleetCmdModuleStat cmdStat = _eStatFactory.MakeInstance(owner, EquipmentCategory.FleetCmdModule, Level.One) as FleetCmdModuleStat;
-
-        FleetCmdDesign design = new FleetCmdDesign(owner, cmdsReqdFtlDampenerStat, cmdStat, reqdMrCmdSensorStat) {
-            Status = status
-        };
-        AEquipmentStat[] allEquipStats = passiveCmStats.Cast<AEquipmentStat>().Union(optionalSensorStats.Cast<AEquipmentStat>()).ToArray();
-        foreach (var stat in allEquipStats) {
-            EquipmentSlotID availCatSlotID;
-            bool isSlotAvailable = design.TryGetEmptySlotIDFor(stat.Category, out availCatSlotID);
-            D.Assert(isSlotAvailable);
-            design.Add(availCatSlotID, stat);
-        }
-        design.AssignPropertyValues();
-        return design;
-    }
-
-    private string RegisterCmdDesign(Player player, StarbaseCmdDesign design, string optionalRootDesignName = null) {
+    private string RegisterDesign(Player player, FleetCmdDesign design, string optionalRootDesignName = null) {
         var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
+        string registeredDesignName;
         string existingDesignName;
         if (optionalRootDesignName != null) {
             bool isDesignAlreadyRegistered = playerDesigns.IsDesignPresent(design, out existingDesignName);
             D.Assert(!isDesignAlreadyRegistered);
             design.RootDesignName = optionalRootDesignName;
             playerDesigns.Add(design);
-            return optionalRootDesignName;
+            registeredDesignName = optionalRootDesignName;
+            return registeredDesignName;
         }
 
         if (!playerDesigns.IsDesignPresent(design, out existingDesignName)) {
             string rootDesignName = GetUniqueCmdRootDesignName();
             design.RootDesignName = rootDesignName;
             playerDesigns.Add(design);
-            return rootDesignName;
+            registeredDesignName = rootDesignName;
+            // TODO __CreateUpgrade...
         }
-        StarbaseCmdDesign existingDesign = playerDesigns.GetStarbaseCmdDesign(existingDesignName);
-        existingDesign.Status = AUnitMemberDesign.SourceAndStatus.Player_Current;
-        D.Log(ShowDebugLog, "{0} found Design {1} has equivalent already registered so using {2}.", DebugName, design.DebugName, existingDesignName);
-        return existingDesignName;
+        else {
+            D.AssertNotNull(existingDesignName);
+            FleetCmdDesign existingDesign = playerDesigns.GetFleetCmdDesign(existingDesignName);
+            existingDesign.Status = AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current;
+            D.Log(ShowDebugLog, "{0} found Design {1} has equivalent already registered so using {2}.", DebugName, design.DebugName, existingDesignName);
+            registeredDesignName = existingDesignName;
+        }
+        return registeredDesignName;
     }
 
-    private string RegisterCmdDesign(Player player, SettlementCmdDesign design, string optionalRootDesignName = null) {
+    private string RegisterDesign(Player player, SettlementCmdDesign design, string optionalRootDesignName = null) {
         var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
+        string registeredDesignName;
         string existingDesignName;
         if (optionalRootDesignName != null) {
             bool isDesignAlreadyRegistered = playerDesigns.IsDesignPresent(design, out existingDesignName);
             D.Assert(!isDesignAlreadyRegistered);
             design.RootDesignName = optionalRootDesignName;
             playerDesigns.Add(design);
-            return optionalRootDesignName;
+            registeredDesignName = optionalRootDesignName;
+            return registeredDesignName;
         }
 
         if (!playerDesigns.IsDesignPresent(design, out existingDesignName)) {
             string rootDesignName = GetUniqueCmdRootDesignName();
             design.RootDesignName = rootDesignName;
             playerDesigns.Add(design);
-            return rootDesignName;
+            registeredDesignName = rootDesignName;
+            __CreateAndRegisterRandomUpgradedDesign(player, design);
         }
-        SettlementCmdDesign existingDesign = playerDesigns.GetSettlementCmdDesign(existingDesignName);
-        existingDesign.Status = AUnitMemberDesign.SourceAndStatus.Player_Current;
-        D.Log(ShowDebugLog, "{0} found Design {1} has equivalent already registered so using {2}.", DebugName, design.DebugName, existingDesignName);
-        return existingDesignName;
+        else {
+            D.AssertNotNull(existingDesignName);
+            SettlementCmdDesign existingDesign = playerDesigns.GetSettlementCmdDesign(existingDesignName);
+            existingDesign.Status = AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current;
+            D.Log(ShowDebugLog, "{0} found Design {1} has equivalent already registered so using {2}.", DebugName, design.DebugName, existingDesignName);
+            registeredDesignName = existingDesignName;
+        }
+        return registeredDesignName;
     }
 
-    private string RegisterCmdDesign(Player player, FleetCmdDesign design, string optionalRootDesignName = null) {
+    private string RegisterDesign(Player player, StarbaseCmdDesign design, string optionalRootDesignName = null) {
         var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
+        string registeredDesignName;
         string existingDesignName;
         if (optionalRootDesignName != null) {
             bool isDesignAlreadyRegistered = playerDesigns.IsDesignPresent(design, out existingDesignName);
             D.Assert(!isDesignAlreadyRegistered);
             design.RootDesignName = optionalRootDesignName;
             playerDesigns.Add(design);
-            return optionalRootDesignName;
+            registeredDesignName = optionalRootDesignName;
+            return registeredDesignName;
         }
 
         if (!playerDesigns.IsDesignPresent(design, out existingDesignName)) {
             string rootDesignName = GetUniqueCmdRootDesignName();
             design.RootDesignName = rootDesignName;
             playerDesigns.Add(design);
-            return rootDesignName;
+            registeredDesignName = rootDesignName;
+            __CreateAndRegisterRandomUpgradedDesign(player, design);
         }
-        FleetCmdDesign existingDesign = playerDesigns.GetFleetCmdDesign(existingDesignName);
-        existingDesign.Status = AUnitMemberDesign.SourceAndStatus.Player_Current;
-        D.Log(ShowDebugLog, "{0} found Design {1} has equivalent already registered so using {2}.", DebugName, design.DebugName, existingDesignName);
-        return existingDesignName;
+        else {
+            D.AssertNotNull(existingDesignName);
+            StarbaseCmdDesign existingDesign = playerDesigns.GetStarbaseCmdDesign(existingDesignName);
+            existingDesign.Status = AUnitMemberDesign.SourceAndStatus.PlayerCreation_Current;
+            D.Log(ShowDebugLog, "{0} found Design {1} has equivalent already registered so using {2}.", DebugName, design.DebugName, existingDesignName);
+            registeredDesignName = existingDesignName;
+        }
+        return registeredDesignName;
     }
 
     #endregion
 
     #region Support
 
-    private IEnumerable<FacilityHullStat> GetFacilityHullStats(Player player, BaseCreatorEditorSettings settings) {
+    private IEnumerable<FacilityHullStat> GetCurrentFacilityHullStats(Player player, BaseCreatorEditorSettings settings) {
         if (settings.IsCompositionPreset) {
             var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
             var hullStats = new List<FacilityHullStat>();
             foreach (var hullCat in settings.PresetElementHullCategories) {
-                FacilityHullStat hullStat; //// = _eStatFactory.MakeInstance(player, hullCat, Level.One);
+                FacilityHullStat hullStat;
                 if (playerDesigns.TryGetCurrentHullStat(hullCat, out hullStat)) {
                     hullStats.Add(hullStat);
                 }
                 else {
-                    D.Warn("{0}: There is no current {1} available for {2}.{3}.", DebugName, typeof(FacilityHullStat).Name,
+                    D.Log(ShowDebugLog, "{0}: There is no current {1} available for {2}.{3}.", DebugName, typeof(FacilityHullStat).Name,
                         typeof(FacilityHullCategory).Name, hullCat.GetValueName());
                 }
             }
             return hullStats;
         }
-        return GetFacilityHullStats(player, settings.NonPresetElementQty);
+        return GetCurrentFacilityHullStats(player, settings.NonPresetElementQty);
     }
 
-    private IEnumerable<FacilityHullStat> GetFacilityHullStats(Player player, int qty) {
-        ////var allFacilityHullStats = _eStatFactory.GetAllFacilityHullStats(player, Level.One);
+    private IEnumerable<FacilityHullStat> GetCurrentFacilityHullStats(Player player, int qty) {
         var allCurrentFacilityHullStats = _gameMgr.GetAIManagerFor(player).Designs.GetAllCurrentFacilityHullStats();
         return RandomExtended.Choices<FacilityHullStat>(allCurrentFacilityHullStats, qty);
     }
 
-    private IEnumerable<ShipHullStat> GetShipHullStats(Player player, FleetCreatorEditorSettings settings) {
+    private IEnumerable<ShipHullStat> GetCurrentShipHullStats(Player player, FleetCreatorEditorSettings settings) {
         if (settings.IsCompositionPreset) {
             var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
             var hullStats = new List<ShipHullStat>();
             foreach (var hullCat in settings.PresetElementHullCategories) {
-                ShipHullStat hullStat; //// = _eStatFactory.MakeInstance(player, hullCat, Level.One);
+                ShipHullStat hullStat;
                 if (playerDesigns.TryGetCurrentHullStat(hullCat, out hullStat)) {
                     hullStats.Add(hullStat);
                 }
                 else {
-                    D.Warn("{0}: There is no current {1} available for {2}.{3}.", DebugName, typeof(ShipHullStat).Name,
+                    D.Log(ShowDebugLog, "{0}: There is no current {1} available for {2}.{3}.", DebugName, typeof(ShipHullStat).Name,
                         typeof(ShipHullCategory).Name, hullCat.GetValueName());
                 }
             }
             return hullStats;
         }
-        return GetShipHullStats(player, settings.NonPresetElementQty);
+        return GetCurrentShipHullStats(player, settings.NonPresetElementQty);
     }
 
-    private IEnumerable<ShipHullStat> GetShipHullStats(Player player, int qty) {
-        ////var allShipHullStats = _eStatFactory.GetAllShipHullStats(player, Level.One);
+    private IEnumerable<ShipHullStat> GetCurrentShipHullStats(Player player, int qty) {
         var allCurrentShipHullStats = _gameMgr.GetAIManagerFor(player).Designs.GetAllCurrentShipHullStats();
         return RandomExtended.Choices<ShipHullStat>(allCurrentShipHullStats, qty);
     }
 
-    private IEnumerable<AWeaponStat> GetWeaponStats(Player player, ShipHullCategory hullCat, DebugLaunchedWeaponLoadout launchedLoadout,
+    private IEnumerable<AWeaponStat> GetCurrentWeaponStats(Player player, ShipHullCategory hullCat, DebugLaunchedWeaponLoadout launchedLoadout,
     DebugLosWeaponLoadout turretLoadout) {
 
         var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
@@ -1089,54 +1049,47 @@ public class NewGameUnitConfigurator {
         DetermineLosWeaponQtyAndMix(turretLoadout, hullMaxTurretWeapons, out beamsPerElement, out projectilesPerElement);
 
         List<AWeaponStat> weaponStats = new List<AWeaponStat>();
-        AWeaponStat beamWeaponStat; //// = _eStatFactory.MakeInstance(player, EquipmentCategory.BeamWeapon, Level.One);
-
+        AWeaponStat beamWeaponStat;
         if (playerDesigns.TryGetCurrentWeaponStat(EquipmentCategory.BeamWeapon, out beamWeaponStat)) {
             weaponStats.AddRange(Enumerable.Repeat(beamWeaponStat, beamsPerElement));
         }
         else {
-            D.Warn("{0}: There is no current {1} available.", DebugName, typeof(BeamWeaponStat).Name);
+            D.Log(ShowDebugLog, "{0}: There is no current {1} available.", DebugName, typeof(BeamWeaponStat).Name);
         }
-        AWeaponStat projectileWeaponStat; //// = _eStatFactory.MakeInstance(player, EquipmentCategory.ProjectileWeapon, Level.One);
+        AWeaponStat projectileWeaponStat;
         if (playerDesigns.TryGetCurrentWeaponStat(EquipmentCategory.ProjectileWeapon, out projectileWeaponStat)) {
             weaponStats.AddRange(Enumerable.Repeat(projectileWeaponStat, projectilesPerElement));
         }
         else {
-            D.Warn("{0}: There is no current {1} available.", DebugName, typeof(ProjectileWeaponStat).Name);
+            D.Log(ShowDebugLog, "{0}: There is no current {1} available.", DebugName, typeof(ProjectileWeaponStat).Name);
         }
-
-        ////var weaponStats = Enumerable.Repeat(beamWeaponStat, beamsPerElement).ToList();
-        ////weaponStats.AddRange(Enumerable.Repeat(projectileWeaponStat, projectilesPerElement));
 
         int missilesPerElement;
         int assaultVehiclesPerElement;
         int hullMaxSiloWeapons = hullCat.MaxSiloMounts();
         DetermineLaunchedWeaponQtyAndMix(launchedLoadout, hullMaxSiloWeapons, out missilesPerElement, out assaultVehiclesPerElement);
 
-
-        AWeaponStat missileWeaponStat; //// = _eStatFactory.MakeInstance(player, EquipmentCategory.MissileWeapon, Level.One);
+        AWeaponStat missileWeaponStat;
         if (playerDesigns.TryGetCurrentWeaponStat(EquipmentCategory.MissileWeapon, out missileWeaponStat)) {
             weaponStats.AddRange(Enumerable.Repeat(missileWeaponStat, missilesPerElement));
         }
         else {
-            D.Warn("{0}: There is no current {1} available.", DebugName, typeof(MissileWeaponStat).Name);
+            D.Log(ShowDebugLog, "{0}: There is no current {1} available.", DebugName, typeof(MissileWeaponStat).Name);
         }
 
-        AWeaponStat assaultWeaponStat; //// = _eStatFactory.MakeInstance(player, EquipmentCategory.AssaultWeapon, Level.One);
+        AWeaponStat assaultWeaponStat;
         if (playerDesigns.TryGetCurrentWeaponStat(EquipmentCategory.AssaultWeapon, out assaultWeaponStat)) {
             weaponStats.AddRange(Enumerable.Repeat(assaultWeaponStat, assaultVehiclesPerElement));
         }
         else {
-            D.Warn("{0}: There is no current {1} available.", DebugName, typeof(AssaultWeaponStat).Name);
+            D.Log(ShowDebugLog, "{0}: There is no current {1} available.", DebugName, typeof(AssaultWeaponStat).Name);
         }
 
-        ////weaponStats.AddRange(Enumerable.Repeat(missileWeaponStat, missilesPerElement));
-        ////weaponStats.AddRange(Enumerable.Repeat(assaultWeaponStat, assaultVehiclesPerElement));
-        ////return weaponStats.Cast<AWeaponStat>();
         return weaponStats;
     }
 
-    private IEnumerable<AWeaponStat> GetWeaponStats(Player player, FacilityHullCategory hullCat, DebugLaunchedWeaponLoadout launchedLoadout, DebugLosWeaponLoadout turretLoadout) {
+    private IEnumerable<AWeaponStat> GetCurrentWeaponStats(Player player, FacilityHullCategory hullCat, DebugLaunchedWeaponLoadout launchedLoadout,
+        DebugLosWeaponLoadout turretLoadout) {
 
         var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
 
@@ -1146,25 +1099,21 @@ public class NewGameUnitConfigurator {
         DetermineLosWeaponQtyAndMix(turretLoadout, hullMaxTurretWeapons, out beamsPerElement, out projectilesPerElement);
 
         List<AWeaponStat> weaponStats = new List<AWeaponStat>();
-        AWeaponStat beamWeaponStat; //// = _eStatFactory.MakeInstance(player, EquipmentCategory.BeamWeapon, Level.One);
-
+        AWeaponStat beamWeaponStat;
         if (playerDesigns.TryGetCurrentWeaponStat(EquipmentCategory.BeamWeapon, out beamWeaponStat)) {
             weaponStats.AddRange(Enumerable.Repeat(beamWeaponStat, beamsPerElement));
         }
         else {
-            D.Warn("{0}: There is no current {1} available.", DebugName, typeof(BeamWeaponStat).Name);
+            D.Log(ShowDebugLog, "{0}: There is no current {1} available.", DebugName, typeof(BeamWeaponStat).Name);
         }
 
-        AWeaponStat projectileWeaponStat; //// = _eStatFactory.MakeInstance(player, EquipmentCategory.ProjectileWeapon, Level.One);
+        AWeaponStat projectileWeaponStat;
         if (playerDesigns.TryGetCurrentWeaponStat(EquipmentCategory.ProjectileWeapon, out projectileWeaponStat)) {
             weaponStats.AddRange(Enumerable.Repeat(projectileWeaponStat, projectilesPerElement));
         }
         else {
-            D.Warn("{0}: There is no current {1} available.", DebugName, typeof(ProjectileWeaponStat).Name);
+            D.Log(ShowDebugLog, "{0}: There is no current {1} available.", DebugName, typeof(ProjectileWeaponStat).Name);
         }
-
-        ////var weaponStats = Enumerable.Repeat(beamWeaponStat, beamsPerElement).ToList();
-        ////weaponStats.AddRange(Enumerable.Repeat(projectileWeaponStat, projectilesPerElement));
 
         int missilesPerElement;
         int assaultVehiclesPerElement;
@@ -1172,25 +1121,22 @@ public class NewGameUnitConfigurator {
         DetermineLaunchedWeaponQtyAndMix(launchedLoadout, hullMaxSiloWeapons, out missilesPerElement, out assaultVehiclesPerElement);
 
 
-        AWeaponStat missileWeaponStat; //// = _eStatFactory.MakeInstance(player, EquipmentCategory.MissileWeapon, Level.One);
+        AWeaponStat missileWeaponStat;
         if (playerDesigns.TryGetCurrentWeaponStat(EquipmentCategory.MissileWeapon, out missileWeaponStat)) {
             weaponStats.AddRange(Enumerable.Repeat(missileWeaponStat, missilesPerElement));
         }
         else {
-            D.Warn("{0}: There is no current {1} available.", DebugName, typeof(MissileWeaponStat).Name);
+            D.Log(ShowDebugLog, "{0}: There is no current {1} available.", DebugName, typeof(MissileWeaponStat).Name);
         }
 
-        AWeaponStat assaultWeaponStat; //// = _eStatFactory.MakeInstance(player, EquipmentCategory.AssaultWeapon, Level.One);
+        AWeaponStat assaultWeaponStat;
         if (playerDesigns.TryGetCurrentWeaponStat(EquipmentCategory.AssaultWeapon, out assaultWeaponStat)) {
             weaponStats.AddRange(Enumerable.Repeat(assaultWeaponStat, assaultVehiclesPerElement));
         }
         else {
-            D.Warn("{0}: There is no current {1} available.", DebugName, typeof(AssaultWeaponStat).Name);
+            D.Log(ShowDebugLog, "{0}: There is no current {1} available.", DebugName, typeof(AssaultWeaponStat).Name);
         }
 
-        ////weaponStats.AddRange(Enumerable.Repeat(missileWeaponStat, missilesPerElement));
-        ////weaponStats.AddRange(Enumerable.Repeat(assaultWeaponStat, assaultVehiclesPerElement));
-        ////return weaponStats.Cast<AWeaponStat>();
         return weaponStats;
     }
 
@@ -1272,27 +1218,27 @@ public class NewGameUnitConfigurator {
         }
     }
 
-    private IEnumerable<PassiveCountermeasureStat> GetPassiveCmStats(Player player, DebugPassiveCMLoadout loadout, int maxQty) {
+    private IEnumerable<PassiveCountermeasureStat> GetCurrentPassiveCmStats(Player player, DebugPassiveCMLoadout loadout, int maxQty) {
         int qty = GetPassiveCmQty(loadout, maxQty);
-        return GetPassiveCmStats(player, qty);
+        return GetCurrentPassiveCmStats(player, qty);
     }
 
-    private IEnumerable<PassiveCountermeasureStat> GetPassiveCmStats(Player player, int qty) {
+    private IEnumerable<PassiveCountermeasureStat> GetCurrentPassiveCmStats(Player player, int qty) {
         var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
         PassiveCountermeasureStat pStat;
         if (playerDesigns.TryGetCurrentPassiveCmStat(out pStat)) {
             return Enumerable.Repeat(pStat, qty);
         }
-        D.Warn("{0}: There is no current {1} available.", DebugName, typeof(PassiveCountermeasureStat).Name);
+        D.Log(ShowDebugLog, "{0}: There is no current {1} available.", DebugName, typeof(PassiveCountermeasureStat).Name);
         return Enumerable.Empty<PassiveCountermeasureStat>();
     }
 
-    private IEnumerable<ActiveCountermeasureStat> GetActiveCmStats(Player player, DebugActiveCMLoadout loadout, int maxQty) {
+    private IEnumerable<ActiveCountermeasureStat> GetCurrentActiveCmStats(Player player, DebugActiveCMLoadout loadout, int maxQty) {
         int qty = GetActiveCmQty(loadout, maxQty);
-        return GetActiveCmStats(player, qty);
+        return GetCurrentActiveCmStats(player, qty);
     }
 
-    private IEnumerable<ActiveCountermeasureStat> GetActiveCmStats(Player player, int qty) {
+    private IEnumerable<ActiveCountermeasureStat> GetCurrentActiveCmStats(Player player, int qty) {
         var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
         ActiveCountermeasureStat srAStat;
         playerDesigns.TryGetCurrentActiveCmStat(EquipmentCategory.SRActiveCountermeasure, out srAStat);
@@ -1304,13 +1250,13 @@ public class NewGameUnitConfigurator {
             stats.Enqueue(srAStat);
         }
         else {
-            D.Warn("{0}: There is no current SR {1} available.", DebugName, typeof(ActiveCountermeasureStat).Name);
+            D.Log(ShowDebugLog, "{0}: There is no current SR {1} available.", DebugName, typeof(ActiveCountermeasureStat).Name);
         }
         if (mrAStat != null) {
             stats.Enqueue(mrAStat);
         }
         else {
-            D.Warn("{0}: There is no current MR {1} available.", DebugName, typeof(ActiveCountermeasureStat).Name);
+            D.Log(ShowDebugLog, "{0}: There is no current MR {1} available.", DebugName, typeof(ActiveCountermeasureStat).Name);
         }
 
         if (stats.Any()) {
@@ -1325,22 +1271,22 @@ public class NewGameUnitConfigurator {
         return Enumerable.Empty<ActiveCountermeasureStat>();
     }
 
-    private IEnumerable<ShieldGeneratorStat> GetShieldGenStats(Player player, DebugShieldGenLoadout loadout, int maxQty) {
+    private IEnumerable<ShieldGeneratorStat> GetCurrentShieldGenStats(Player player, DebugShieldGenLoadout loadout, int maxQty) {
         int qty = GetShieldGeneratorQty(loadout, maxQty);
-        return GetShieldGenStats(player, qty);
+        return GetCurrentShieldGenStats(player, qty);
     }
 
-    private IEnumerable<ShieldGeneratorStat> GetShieldGenStats(Player player, int qty) {
+    private IEnumerable<ShieldGeneratorStat> GetCurrentShieldGenStats(Player player, int qty) {
         var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
         ShieldGeneratorStat sgStat;
         if (playerDesigns.TryGetCurrentShieldGeneratorStat(out sgStat)) {
             return Enumerable.Repeat(sgStat, qty);
         }
-        D.Warn("{0}: There is no current {1} available.", DebugName, typeof(ShieldGeneratorStat).Name);
+        D.Log(ShowDebugLog, "{0}: There is no current {1} available.", DebugName, typeof(ShieldGeneratorStat).Name);
         return Enumerable.Empty<ShieldGeneratorStat>();
     }
 
-    private EngineStat GetEngineStat(Player player, EquipmentCategory engineCat) {
+    private EngineStat GetCurrentEngineStat(Player player, EquipmentCategory engineCat) {
         var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
         if (engineCat == EquipmentCategory.StlPropulsion) {
             return playerDesigns.GetCurrentStlEngineStat();
@@ -1350,12 +1296,12 @@ public class NewGameUnitConfigurator {
         EngineStat ftlEngineStat;
         playerDesigns.TryGetCurrentFtlEngineStat(out ftlEngineStat);
         if (ftlEngineStat == null) {
-            D.Warn("{0}: There is no current FTL EngineStat available.", DebugName);
+            D.Log(ShowDebugLog, "{0}: There is no current FTL EngineStat available.", DebugName);
         }
         return ftlEngineStat;   // can be null
     }
 
-    private IEnumerable<SensorStat> GetCmdSensorStats(Player player, int optionalQty) {
+    private IEnumerable<SensorStat> GetCurrentOptionalCmdSensorStats(Player player, int optionalQty) {
         if (optionalQty > Constants.Zero) {
             var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
             SensorStat mrStat = playerDesigns.GetCurrentMRCmdSensorStat();
@@ -1372,7 +1318,7 @@ public class NewGameUnitConfigurator {
                 stats.Enqueue(lrStat);
             }
             else {
-                D.Warn("{0}: There is no current LR SensorStat available.", DebugName);
+                D.Log(ShowDebugLog, "{0}: There is no current LR SensorStat available.", DebugName);
             }
             stats.Enqueue(mrStat);
 
@@ -1492,7 +1438,7 @@ public class NewGameUnitConfigurator {
 
     /// <summary>
     /// Randomly selects designs to upgrade and if selected, creates an upgraded version of that design.
-    /// <remark>Purpose is to have upgraded designs available so that some elements can be refit.</remark>
+    /// <remark>Purpose is to have upgraded designs available so that some unit members can be refit.</remark>
     /// </summary>
     /// <param name="player">The player.</param>
     /// <param name="designToConsiderUpgrading">The design to consider upgrading.</param>
@@ -1503,7 +1449,7 @@ public class NewGameUnitConfigurator {
             upgradedDesign.IncrementDesignLevelAndName();
             var designToObsolete = designToConsiderUpgrading;
             var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
-            playerDesigns.ObsoleteShipDesign(designToObsolete.DesignName);
+            playerDesigns.ObsoleteDesign(designToObsolete);
             playerDesigns.Add(upgradedDesign);
             D.Log(ShowDebugLog, "{0} has upgraded {1} to {2}.", DebugName, designToConsiderUpgrading.DebugName, upgradedDesign.DebugName);
         }
@@ -1511,7 +1457,7 @@ public class NewGameUnitConfigurator {
 
     /// <summary>
     /// Randomly selects designs to upgrade and if selected, creates an upgraded version of that design.
-    /// <remark>Purpose is to have upgraded designs available so that some elements can be refit.</remark>
+    /// <remark>Purpose is to have upgraded designs available so that some unit members can be refit.</remark>
     /// </summary>
     /// <param name="player">The player.</param>
     /// <param name="designToConsiderUpgrading">The design to consider upgrading.</param>
@@ -1522,10 +1468,80 @@ public class NewGameUnitConfigurator {
             upgradedDesign.IncrementDesignLevelAndName();
             var designToObsolete = designToConsiderUpgrading;
             var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
-            playerDesigns.ObsoleteFacilityDesign(designToObsolete.DesignName);
+            playerDesigns.ObsoleteDesign(designToObsolete);
             playerDesigns.Add(upgradedDesign);
             D.Log(ShowDebugLog, "{0} has upgraded {1} to {2}.", DebugName, designToConsiderUpgrading.DebugName, upgradedDesign.DebugName);
         }
+    }
+
+    /// <summary>
+    /// Randomly selects designs to upgrade and if selected, creates an upgraded version of that design.
+    /// <remark>Purpose is to have upgraded designs available so that some unit members can be refit.</remark>
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <param name="designToConsiderUpgrading">The design to consider upgrading.</param>
+    private void __CreateAndRegisterRandomUpgradedDesign(Player player, SettlementCmdDesign designToConsiderUpgrading) {
+        bool toUpgrade = RandomExtended.SplitChance();
+        if (toUpgrade) {
+            SettlementCmdDesign upgradedDesign = new SettlementCmdDesign(designToConsiderUpgrading);
+            upgradedDesign.IncrementDesignLevelAndName();
+            var designToObsolete = designToConsiderUpgrading;
+            var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
+            playerDesigns.ObsoleteDesign(designToObsolete);
+            playerDesigns.Add(upgradedDesign);
+            D.Log(ShowDebugLog, "{0} has upgraded {1} to {2}.", DebugName, designToConsiderUpgrading.DebugName, upgradedDesign.DebugName);
+        }
+    }
+
+    /// <summary>
+    /// Randomly selects designs to upgrade and if selected, creates an upgraded version of that design.
+    /// <remark>Purpose is to have upgraded designs available so that some unit members can be refit.</remark>
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <param name="designToConsiderUpgrading">The design to consider upgrading.</param>
+    private void __CreateAndRegisterRandomUpgradedDesign(Player player, StarbaseCmdDesign designToConsiderUpgrading) {
+        bool toUpgrade = RandomExtended.SplitChance();
+        if (toUpgrade) {
+            StarbaseCmdDesign upgradedDesign = new StarbaseCmdDesign(designToConsiderUpgrading);
+            upgradedDesign.IncrementDesignLevelAndName();
+            var designToObsolete = designToConsiderUpgrading;
+            var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
+            playerDesigns.ObsoleteDesign(designToObsolete);
+            playerDesigns.Add(upgradedDesign);
+            D.Log(ShowDebugLog, "{0} has upgraded {1} to {2}.", DebugName, designToConsiderUpgrading.DebugName, upgradedDesign.DebugName);
+        }
+    }
+
+    /// <summary>
+    /// Randomly selects designs to upgrade and if selected, creates an upgraded version of that design.
+    /// <remark>Purpose is to have upgraded designs available so that some unit members can be refit.</remark>
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <param name="designToConsiderUpgrading">The design to consider upgrading.</param>
+    private void __CreateAndRegisterRandomUpgradedDesign(Player player, FleetCmdDesign designToConsiderUpgrading) {
+        bool toUpgrade = RandomExtended.SplitChance();
+        if (toUpgrade) {
+            FleetCmdDesign upgradedDesign = new FleetCmdDesign(designToConsiderUpgrading);
+            upgradedDesign.IncrementDesignLevelAndName();
+            var designToObsolete = designToConsiderUpgrading;
+            var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
+            playerDesigns.ObsoleteDesign(designToObsolete);
+            playerDesigns.Add(upgradedDesign);
+            D.Log(ShowDebugLog, "{0} has upgraded {1} to {2}.", DebugName, designToConsiderUpgrading.DebugName, upgradedDesign.DebugName);
+        }
+    }
+
+
+    /// <summary>
+    /// Determines whether [is starbase command module stat available] [the specified player].
+    /// <remarks>Used as a way of avoiding work by UniverseCreator when a StarbaseCmdModuleStat has not yet been researched at startup.</remarks>
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <returns></returns>
+    public bool __IsStarbaseCmdModuleStatAvailable(Player player) {
+        StarbaseCmdModuleStat unusedCmdStat;
+        var playerDesigns = _gameMgr.GetAIManagerFor(player).Designs;
+        return playerDesigns.TryGetCurrentStarbaseCmdModuleStat(out unusedCmdStat);
     }
 
     #endregion

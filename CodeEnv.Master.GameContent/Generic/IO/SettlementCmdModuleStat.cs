@@ -27,8 +27,6 @@ namespace CodeEnv.Master.GameContent {
 
         public float StartingApproval { get; private set; }
 
-        ////public override EquipmentCategory Category { get { return EquipmentCategory.SettlementCmdModule; } }
-
         /// <summary>
         /// Initializes a new instance of the <see cref="SettlementCmdModuleStat" /> class.
         /// </summary>
@@ -47,7 +45,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="startingPopulation">The starting population.</param>
         /// <param name="startingApproval">The starting approval.</param>
         public SettlementCmdModuleStat(string name, AtlasID imageAtlasID, string imageFilename, string description,
-            EquipStatID id, float size, float mass, float pwrRqmt, float hitPts, float constructCost, float expense,
+            EquipmentStatID id, float size, float mass, float pwrRqmt, float hitPts, float constructCost, float expense,
             float maxCmdStaffEffectiveness, int startingPopulation, float startingApproval)
             : base(name, imageAtlasID, imageFilename, description, id, size, mass, pwrRqmt, hitPts, constructCost, expense, maxCmdStaffEffectiveness) {
             StartingPopulation = startingPopulation;

@@ -31,9 +31,9 @@ public class UniverseCreator {
 
     public UniverseCenterItem UniverseCenter { get; private set; }
 
-    public NewGameSystemConfigurator SystemConfigurator { get; private set; }
+    public NewGameSystemGenerator SystemGenerator { get; private set; }
 
-    public NewGameUnitConfigurator UnitConfigurator { get; private set; }
+    public NewGameUnitGenerator UnitGenerator { get; private set; }
 
     private string DebugName { get { return GetType().Name; } }
 
@@ -54,8 +54,8 @@ public class UniverseCreator {
     private void InitializeValuesAndReferences() {
         _gameMgr = GameManager.Instance;
         _debugCntls = DebugControls.Instance;
-        SystemConfigurator = new NewGameSystemConfigurator();
-        UnitConfigurator = new NewGameUnitConfigurator();
+        SystemGenerator = new NewGameSystemGenerator();
+        UnitGenerator = new NewGameUnitGenerator();
     }
 
     public void InitializeUniverseCenter() {
@@ -95,7 +95,7 @@ public class UniverseCreator {
         // IMPROVE existing UnitDebugCreator sectors could be included in occupiedSectors if I want them to take priority.
         // However, this would potentially impede the deployment of a reqd system?
         List<IntVector3> occupiedSectorIDs = new List<IntVector3>();
-        var playersHomeCreatorLookup = SystemConfigurator.DeployAndConfigurePlayersHomeSystemCreators(gameSettings, occupiedSectorIDs);
+        var playersHomeCreatorLookup = SystemGenerator.DeployAndConfigurePlayersHomeSystemCreators(gameSettings, occupiedSectorIDs);
 
         _playersHomeSectorLookup = new Dictionary<Player, IntVector3>(playersHomeCreatorLookup.Count);
         _systemCreators = new List<SystemCreator>(systemQty);
@@ -110,7 +110,7 @@ public class UniverseCreator {
         var userPlayer = gameSettings.UserPlayer;
         var startLevel = gameSettings.UserStartLevel;
         var homeSectorID = _playersHomeSectorLookup[userPlayer];    // UNCLEAR rqmt for occupied sectors here?
-        var deployedSystemCreators = SystemConfigurator.DeployAndConfigureAdditionalCreatorsAround(homeSectorID, startLevel);
+        var deployedSystemCreators = SystemGenerator.DeployAndConfigureAdditionalCreatorsAround(homeSectorID, startLevel);
         _systemCreators.AddRange(deployedSystemCreators);
         occupiedSectorIDs.AddRange(deployedSystemCreators.Select(c => c.SectorID));
 
@@ -119,7 +119,7 @@ public class UniverseCreator {
             var aiPlayer = aiPlayers[i];
             startLevel = gameSettings.AIPlayersStartLevels[i];
             homeSectorID = _playersHomeSectorLookup[aiPlayer];
-            deployedSystemCreators = SystemConfigurator.DeployAndConfigureAdditionalCreatorsAround(homeSectorID, startLevel);
+            deployedSystemCreators = SystemGenerator.DeployAndConfigureAdditionalCreatorsAround(homeSectorID, startLevel);
             _systemCreators.AddRange(deployedSystemCreators);
             occupiedSectorIDs.AddRange(deployedSystemCreators.Select(c => c.SectorID));
         }
@@ -128,7 +128,7 @@ public class UniverseCreator {
         D.Assert(remainingSystemQty >= 0);
 
         // Now deploy any DebugSystemCreators taking into account sectors already occupied
-        deployedSystemCreators = SystemConfigurator.ConfigureExistingDebugCreators(remainingSystemQty, occupiedSectorIDs).Cast<SystemCreator>();
+        deployedSystemCreators = SystemGenerator.ConfigureExistingDebugCreators(remainingSystemQty, occupiedSectorIDs).Cast<SystemCreator>();
         _systemCreators.AddRange(deployedSystemCreators);
         occupiedSectorIDs.AddRange(deployedSystemCreators.Select(c => c.SectorID));
         //D.Log(ShowDebugLog, "{0} _systemCreators contents: {1}.", DebugName, _systemCreators.Select(c => c.DebugName).Concatenate());
@@ -146,7 +146,7 @@ public class UniverseCreator {
         var sectorIDsToDeployTo = unoccupiedSectorIDs.Take(remainingSystemQty);
         var sectorPositionsToDeployTo = sectorIDsToDeployTo.Select(index => sectorGrid.GetSectorPosition(index));
         sectorPositionsToDeployTo.ForAll(position => {
-            var creator = SystemConfigurator.DeployAndConfigureRandomSystemCreatorTo(position);
+            var creator = SystemGenerator.DeployAndConfigureRandomSystemCreatorTo(position);
             _systemCreators.Add(creator);
         });
 
@@ -181,7 +181,7 @@ public class UniverseCreator {
         IEnumerable<ADebugUnitCreator> starbaseDebugCreators = existingDebugCreators.Where(c => c is DebugStarbaseCreator);
         IEnumerable<ADebugUnitCreator> settlementDebugCreators = existingDebugCreators.Where(c => c is DebugSettlementCreator);
 
-        UnitConfigurator.CreateAndRegisterRequiredDesigns();
+        UnitGenerator.CreateAndRegisterRequiredDesigns();
 
         GameSettings gameSettings = _gameMgr.GameSettings;
         if (gameSettings.__UseDebugCreatorsOnly) {
@@ -331,7 +331,7 @@ public class UniverseCreator {
         debugCreatorsToDestroy.AddRange(settlementDebugCreators);
         //D.Log(ShowDebugLog, "{0} is about to destroy {1} excess debug unit creators.", DebugName, debugCreatorsToDestroy.Count);
         debugCreatorsToDestroy.ForAll(c => {
-            //D.Log(ShowDebugLog, "{0} is about to destroy excess {1}.", DebugName, c.DebugName);
+            D.Log(/*ShowDebugLog,*/ "{0} is about to destroy excess {1}.", DebugName, c.DebugName);
             GameUtility.Destroy(c.gameObject);
         });
     }
@@ -411,85 +411,6 @@ public class UniverseCreator {
     }
 
     /// <summary>
-    /// Deploys and configures the starbase creators specified by the start level for this player around the player's home sector. 
-    /// Returns all the Creators that were deployed.
-    /// <remarks>The existing DebugUnitCreators provided are configured first. If those do not fill the quantity requirement
-    /// then AutoUnitCreators are deployed and configured to fill in the rest.</remarks>
-    /// </summary>
-    /// <param name="player">The player.</param>
-    /// <param name="existingStarbaseCreators">The existing starbase creators.</param>
-    /// <param name="qtyToDeploy">The qty to deploy.</param>
-    /// <returns></returns>
-    private IList<AUnitCreator> DeployAndConfigureStartLevelStarbaseCreators(Player player, IEnumerable<ADebugUnitCreator> existingStarbaseCreators, int qtyToDeploy) {
-        IList<AUnitCreator> creatorsDeployed = new List<AUnitCreator>(qtyToDeploy);
-        if (qtyToDeploy > Constants.Zero) {
-            SectorGrid sectorGrid = SectorGrid.Instance;
-            var gameKnowledge = _gameMgr.GameKnowledge;
-            IList<IntVector3> candidateSectorIDs = new List<IntVector3>();
-            D.Assert(_playersHomeSectorLookup.ContainsKey(player), player.DebugName);
-            IntVector3 homeSectorID = _playersHomeSectorLookup[player];
-
-            IEnumerable<IntVector3> homeNeighborSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID, includePeriphery: false);
-            foreach (var neighborSectorID in homeNeighborSectorIDs) {
-                ISystem unusedSystem;
-                if (!gameKnowledge.TryGetSystem(neighborSectorID, out unusedSystem)) {
-                    candidateSectorIDs.Add(neighborSectorID);
-                }
-            }
-            if (candidateSectorIDs.Count < qtyToDeploy) {
-                D.Warn(@"{0} only found {1} of the {2} sectors reqd to deploy all of {3}'s Starbases.
-                    Fixing by expanding criteria to include sectors with systems.", DebugName, candidateSectorIDs.Count, qtyToDeploy, player);
-                candidateSectorIDs = homeNeighborSectorIDs.ToList();
-                if (candidateSectorIDs.Count < qtyToDeploy) {
-                    D.Error("{0} only found {1} of the {2} sectors reqd to deploy all of {3}'s Starbases.", DebugName, candidateSectorIDs.Count, qtyToDeploy, player);
-                    // Unlikely to occur, but if it does, I'll need to find other sectors to add
-                }
-            }
-
-            GameDate deployDate = GameTime.GameStartDate;   // all startLevel creators always deploy on GameStartDate
-
-            bool toDeployAutoCreators = true;
-            IntVector3 deployedSectorID;
-            Vector3 deployedLocation;
-            foreach (var debugCreator in existingStarbaseCreators) {
-                if (IsOwnerOfCreator(debugCreator.EditorSettings, player)) {
-                    deployedSectorID = RandomExtended.Choice(candidateSectorIDs);
-                    deployedLocation = sectorGrid.GetSector(deployedSectorID).GetClearRandomPointInsideSector();
-                    UnitConfigurator.AssignConfigurationToExistingCreator(debugCreator as DebugStarbaseCreator, player, deployedLocation, deployDate);
-                    candidateSectorIDs.Remove(deployedSectorID);
-
-                    creatorsDeployed.Add(debugCreator);
-                    if (creatorsDeployed.Count == qtyToDeploy) {
-                        toDeployAutoCreators = false;
-                        break;
-                    }
-                }
-            }
-
-            if (toDeployAutoCreators) {
-                D.Assert(creatorsDeployed.Count < qtyToDeploy);
-
-                for (int deployedCount = creatorsDeployed.Count; deployedCount < qtyToDeploy; deployedCount++) {
-                    deployedSectorID = RandomExtended.Choice(candidateSectorIDs);
-                    deployedLocation = sectorGrid.GetSector(deployedSectorID).GetClearRandomPointInsideSector();
-                    AutoStarbaseCreator autoCreator;
-                    if (_debugCntls.EquipmentPlan == DebugControls.EquipmentLoadout.Random) {
-                        autoCreator = UnitConfigurator.GenerateRandomAutoStarbaseCreator(player, deployedLocation, deployDate);
-                    }
-                    else {
-                        autoCreator = UnitConfigurator.GeneratePresetAutoStarbaseCreator(player, deployedLocation, deployDate);
-                    }
-                    creatorsDeployed.Add(autoCreator);
-                    candidateSectorIDs.Remove(deployedSectorID);
-                }
-            }
-        }
-
-        //__ReportDeployedUnitCreators(typeof(AutoStarbaseCreator), player, creatorsDeployed);
-        return creatorsDeployed;
-    }
-
-    /// <summary>
     /// Deploys and configures the fleet creators specified by the start level for this player. Returns all of the Creators that were deployed.
     /// <remarks>The existing DebugUnitCreators provided are configured first. If those do not fill the quantity requirement
     /// then AutoUnitCreators are deployed and configured to fill in the rest.</remarks>
@@ -553,7 +474,7 @@ public class UniverseCreator {
                 if (IsOwnerOfCreator(debugCreator.EditorSettings, player)) {
                     deployedSectorID = sectorIDsToDeployTo.Pop();
                     deployedLocation = sectorGrid.GetSector(deployedSectorID).GetClearRandomPointInsideSector();
-                    UnitConfigurator.AssignConfigurationToExistingCreator(debugCreator as DebugFleetCreator, player, deployedLocation, deployDate);
+                    UnitGenerator.AssignConfigurationToExistingCreator(debugCreator as DebugFleetCreator, player, deployedLocation, deployDate);
 
                     creatorsDeployed.Add(debugCreator);
                     if (creatorsDeployed.Count == qtyToDeploy) {
@@ -572,10 +493,10 @@ public class UniverseCreator {
                     deployedLocation = sectorGrid.GetSector(deployedSectorID).GetClearRandomPointInsideSector();
                     AutoFleetCreator autoCreator;
                     if (_debugCntls.EquipmentPlan == DebugControls.EquipmentLoadout.Random) {
-                        autoCreator = UnitConfigurator.GenerateRandomAutoFleetCreator(player, deployedLocation, deployDate);
+                        autoCreator = UnitGenerator.GenerateRandomAutoFleetCreator(player, deployedLocation, deployDate);
                     }
                     else {
-                        autoCreator = UnitConfigurator.GeneratePresetAutoFleetCreator(player, deployedLocation, deployDate);
+                        autoCreator = UnitGenerator.GeneratePresetAutoFleetCreator(player, deployedLocation, deployDate);
                     }
                     creatorsDeployed.Add(autoCreator);
                 }
@@ -617,7 +538,7 @@ public class UniverseCreator {
         bool toDeployAutoCreator = true;
         foreach (var debugCreator in existingSettlementCreators) {
             if (IsOwnerOfCreator(debugCreator.EditorSettings, player)) {
-                UnitConfigurator.AssignConfigurationToExistingCreator(debugCreator as DebugSettlementCreator, player, homeSystem as SystemItem, deployDate);
+                UnitGenerator.AssignConfigurationToExistingCreator(debugCreator as DebugSettlementCreator, player, homeSystem as SystemItem, deployDate);
                 bool isAdded = usedSystems.Add(homeSystem);
                 D.Assert(isAdded);
                 homeSystemCreator = debugCreator;
@@ -628,10 +549,10 @@ public class UniverseCreator {
         if (toDeployAutoCreator) {
             AutoSettlementCreator autoCreator;
             if (_debugCntls.EquipmentPlan == DebugControls.EquipmentLoadout.Random) {
-                autoCreator = UnitConfigurator.GenerateRandomAutoSettlementCreator(player, homeSystem as SystemItem, deployDate);
+                autoCreator = UnitGenerator.GenerateRandomAutoSettlementCreator(player, homeSystem as SystemItem, deployDate);
             }
             else {
-                autoCreator = UnitConfigurator.GeneratePresetAutoSettlementCreator(player, homeSystem as SystemItem, deployDate);
+                autoCreator = UnitGenerator.GeneratePresetAutoSettlementCreator(player, homeSystem as SystemItem, deployDate);
             }
             bool isAdded = usedSystems.Add(homeSystem);
             D.Assert(isAdded);
@@ -690,7 +611,7 @@ public class UniverseCreator {
             foreach (var debugCreator in existingSettlementCreators) {
                 if (IsOwnerOfCreator(debugCreator.EditorSettings, player)) {
                     system = systemsToDeployTo.Pop();
-                    UnitConfigurator.AssignConfigurationToExistingCreator(debugCreator as DebugSettlementCreator, player, system as SystemItem, deployDate);
+                    UnitGenerator.AssignConfigurationToExistingCreator(debugCreator as DebugSettlementCreator, player, system as SystemItem, deployDate);
                     bool isAdded = usedSystems.Add(system);
                     D.Assert(isAdded);
 
@@ -710,10 +631,10 @@ public class UniverseCreator {
                     system = systemsToDeployTo.Pop();
                     AutoSettlementCreator autoCreator;
                     if (_debugCntls.EquipmentPlan == DebugControls.EquipmentLoadout.Random) {
-                        autoCreator = UnitConfigurator.GenerateRandomAutoSettlementCreator(player, system as SystemItem, deployDate);
+                        autoCreator = UnitGenerator.GenerateRandomAutoSettlementCreator(player, system as SystemItem, deployDate);
                     }
                     else {
-                        autoCreator = UnitConfigurator.GeneratePresetAutoSettlementCreator(player, system as SystemItem, deployDate);
+                        autoCreator = UnitGenerator.GeneratePresetAutoSettlementCreator(player, system as SystemItem, deployDate);
                     }
                     creatorsDeployed.Add(autoCreator);
                     bool isAdded = usedSystems.Add(system);
@@ -724,6 +645,93 @@ public class UniverseCreator {
         }
 
         //__ReportDeployedUnitCreators(typeof(AutoSettlementCreator), player, creatorsDeployed);
+        return creatorsDeployed;
+    }
+
+    /// <summary>
+    /// Deploys and configures the starbase creators specified by the start level for this player around the player's home sector. 
+    /// Returns all the Creators that were deployed.
+    /// <remarks>The existing DebugUnitCreators provided are configured first. If those do not fill the quantity requirement
+    /// then AutoUnitCreators are deployed and configured to fill in the rest.</remarks>
+    /// <remarks>If the StarbaseCmdModuleStat is not yet available, no Creators will be deployed.</remarks>
+    /// </summary>
+    /// <param name="player">The player.</param>
+    /// <param name="existingStarbaseCreators">The existing starbase creators.</param>
+    /// <param name="qtyToDeploy">The qty to deploy.</param>
+    /// <returns></returns>
+    private IList<AUnitCreator> DeployAndConfigureStartLevelStarbaseCreators(Player player, IEnumerable<ADebugUnitCreator> existingStarbaseCreators, int qtyToDeploy) {
+        if (!UnitGenerator.__IsStarbaseCmdModuleStatAvailable(player)) {
+            return Enumerable.Empty<AUnitCreator>().ToList();
+        }
+
+        IList<AUnitCreator> creatorsDeployed = new List<AUnitCreator>(qtyToDeploy);
+        if (qtyToDeploy > Constants.Zero) {
+            SectorGrid sectorGrid = SectorGrid.Instance;
+            var gameKnowledge = _gameMgr.GameKnowledge;
+            IList<IntVector3> candidateSectorIDs = new List<IntVector3>();
+            D.Assert(_playersHomeSectorLookup.ContainsKey(player), player.DebugName);
+            IntVector3 homeSectorID = _playersHomeSectorLookup[player];
+
+            IEnumerable<IntVector3> homeNeighborSectorIDs = sectorGrid.GetNeighboringSectorIDs(homeSectorID, includePeriphery: false);
+            foreach (var neighborSectorID in homeNeighborSectorIDs) {
+                ISystem unusedSystem;
+                if (!gameKnowledge.TryGetSystem(neighborSectorID, out unusedSystem)) {
+                    candidateSectorIDs.Add(neighborSectorID);
+                }
+            }
+            if (candidateSectorIDs.Count < qtyToDeploy) {
+                D.Warn(@"{0} only found {1} of the {2} sectors reqd to deploy all of {3}'s Starbases.
+                    Fixing by expanding criteria to include sectors with systems.", DebugName, candidateSectorIDs.Count, qtyToDeploy, player);
+                candidateSectorIDs = homeNeighborSectorIDs.ToList();
+                if (candidateSectorIDs.Count < qtyToDeploy) {
+                    D.Error("{0} only found {1} of the {2} sectors reqd to deploy all of {3}'s Starbases.", DebugName, candidateSectorIDs.Count, qtyToDeploy, player);
+                    // Unlikely to occur, but if it does, I'll need to find other sectors to add
+                }
+            }
+
+            GameDate deployDate = GameTime.GameStartDate;   // all startLevel creators always deploy on GameStartDate
+
+            bool toDeployAutoCreators = true;
+            IntVector3 deployedSectorID;
+            Vector3 deployedLocation;
+            foreach (var debugCreator in existingStarbaseCreators) {
+                if (IsOwnerOfCreator(debugCreator.EditorSettings, player)) {
+                    deployedSectorID = RandomExtended.Choice(candidateSectorIDs);
+                    deployedLocation = sectorGrid.GetSector(deployedSectorID).GetClearRandomPointInsideSector();
+                    bool isAssigned = UnitGenerator.TryAssignConfigurationToExistingCreator(debugCreator as DebugStarbaseCreator, player, deployedLocation, deployDate);
+                    D.Assert(isAssigned);
+                    candidateSectorIDs.Remove(deployedSectorID);
+
+                    creatorsDeployed.Add(debugCreator);
+                    if (creatorsDeployed.Count == qtyToDeploy) {
+                        toDeployAutoCreators = false;
+                        break;
+                    }
+                }
+            }
+
+            if (toDeployAutoCreators) {
+                D.Assert(creatorsDeployed.Count < qtyToDeploy);
+
+                for (int deployedCount = creatorsDeployed.Count; deployedCount < qtyToDeploy; deployedCount++) {
+                    deployedSectorID = RandomExtended.Choice(candidateSectorIDs);
+                    deployedLocation = sectorGrid.GetSector(deployedSectorID).GetClearRandomPointInsideSector();
+                    bool isGenerated;
+                    AutoStarbaseCreator autoCreator;
+                    if (_debugCntls.EquipmentPlan == DebugControls.EquipmentLoadout.Random) {
+                        isGenerated = UnitGenerator.TryGenerateRandomAutoStarbaseCreator(player, deployedLocation, deployDate, out autoCreator);
+                    }
+                    else {
+                        isGenerated = UnitGenerator.TryGeneratePresetAutoStarbaseCreator(player, deployedLocation, deployDate, out autoCreator);
+                    }
+                    D.Assert(isGenerated);
+                    creatorsDeployed.Add(autoCreator);
+                    candidateSectorIDs.Remove(deployedSectorID);
+                }
+            }
+        }
+
+        //__ReportDeployedUnitCreators(typeof(AutoStarbaseCreator), player, creatorsDeployed);
         return creatorsDeployed;
     }
 
@@ -782,7 +790,7 @@ public class UniverseCreator {
             foreach (var debugCreator in existingSettlementCreators) {
                 if (IsOwnerOfCreator(debugCreator.EditorSettings, player)) {
                     system = systemsToDeployTo.Pop();
-                    UnitConfigurator.AssignConfigurationToExistingCreator(debugCreator as DebugSettlementCreator, player, system as SystemItem, deployDate);
+                    UnitGenerator.AssignConfigurationToExistingCreator(debugCreator as DebugSettlementCreator, player, system as SystemItem, deployDate);
                     bool isAdded = usedSystems.Add(system);
                     D.Assert(isAdded);
 
@@ -802,10 +810,10 @@ public class UniverseCreator {
                     system = systemsToDeployTo.Pop();
                     AutoSettlementCreator autoCreator;
                     if (_debugCntls.EquipmentPlan == DebugControls.EquipmentLoadout.Random) {
-                        autoCreator = UnitConfigurator.GenerateRandomAutoSettlementCreator(player, system as SystemItem, deployDate);
+                        autoCreator = UnitGenerator.GenerateRandomAutoSettlementCreator(player, system as SystemItem, deployDate);
                     }
                     else {
-                        autoCreator = UnitConfigurator.GeneratePresetAutoSettlementCreator(player, system as SystemItem, deployDate);
+                        autoCreator = UnitGenerator.GeneratePresetAutoSettlementCreator(player, system as SystemItem, deployDate);
                     }
                     creatorsDeployed.Add(autoCreator);
                     bool isAdded = usedSystems.Add(system);
@@ -851,12 +859,18 @@ public class UniverseCreator {
     /// Returns all the Creators that were deployed. Limit of 1 additional starbase deployed for this player per sector without a system.
     /// <remarks>The existing DebugUnitCreators provided are configured first. If those do not fill the quantity requirement
     /// then AutoUnitCreators are deployed and configured to fill in the rest.</remarks>
+    /// <remarks>If the StarbaseCmdModuleStat is not yet available, no Creators will be deployed.</remarks>
     /// </summary>
     /// <param name="player">The player.</param>
     /// <param name="existingStarbaseCreators">The existing starbase creators.</param>
     /// <param name="qtyToDeploy">The qty to deploy.</param>
     /// <returns></returns>
-    private IList<AUnitCreator> DeployAndConfigureAdditionalStarbaseCreators(Player player, IEnumerable<ADebugUnitCreator> existingStarbaseCreators, int qtyToDeploy) {
+    private IList<AUnitCreator> DeployAndConfigureAdditionalStarbaseCreators(Player player, IEnumerable<ADebugUnitCreator> existingStarbaseCreators,
+        int qtyToDeploy) {
+        if (!UnitGenerator.__IsStarbaseCmdModuleStatAvailable(player)) {
+            return Enumerable.Empty<AUnitCreator>().ToList();
+        }
+
         IList<AUnitCreator> creatorsDeployed = new List<AUnitCreator>(qtyToDeploy);
         if (qtyToDeploy > Constants.Zero) {
             SectorGrid sectorGrid = SectorGrid.Instance;
@@ -892,8 +906,8 @@ public class UniverseCreator {
                 if (IsOwnerOfCreator(debugCreator.EditorSettings, player)) {
                     sectorID = sectorIDsToDeployTo.Pop();
                     deployedLocation = sectorGrid.GetSector(sectorID).GetClearRandomPointInsideSector();
-                    UnitConfigurator.AssignConfigurationToExistingCreator(debugCreator as DebugStarbaseCreator, player, deployedLocation);
-
+                    bool isAssigned = UnitGenerator.TryAssignConfigurationToExistingCreator(debugCreator as DebugStarbaseCreator, player, deployedLocation);
+                    D.Assert(isAssigned);
                     creatorsDeployed.Add(debugCreator);
                     if (creatorsDeployed.Count == qtyToDeploy) {
                         toDeployAutoCreators = false;
@@ -908,13 +922,15 @@ public class UniverseCreator {
                 for (int deployedCount = creatorsDeployed.Count; deployedCount < qtyToDeploy; deployedCount++) {
                     sectorID = sectorIDsToDeployTo.Pop();
                     deployedLocation = sectorGrid.GetSector(sectorID).GetClearRandomPointInsideSector();
+                    bool isGenerated;
                     AutoStarbaseCreator autoCreator;
                     if (_debugCntls.EquipmentPlan == DebugControls.EquipmentLoadout.Random) {
-                        autoCreator = UnitConfigurator.GenerateRandomAutoStarbaseCreator(player, deployedLocation);
+                        isGenerated = UnitGenerator.TryGenerateRandomAutoStarbaseCreator(player, deployedLocation, out autoCreator);
                     }
                     else {
-                        autoCreator = UnitConfigurator.GeneratePresetAutoStarbaseCreator(player, deployedLocation);
+                        isGenerated = UnitGenerator.TryGeneratePresetAutoStarbaseCreator(player, deployedLocation, out autoCreator);
                     }
+                    D.Assert(isGenerated);
                     creatorsDeployed.Add(autoCreator);
                 }
             }
@@ -962,7 +978,7 @@ public class UniverseCreator {
                 if (IsOwnerOfCreator(debugCreator.EditorSettings, player)) {
                     deployedSectorID = sectorIDsToDeployTo.Pop();
                     deployedLocation = sectorGrid.GetSector(deployedSectorID).GetClearRandomPointInsideSector();
-                    UnitConfigurator.AssignConfigurationToExistingCreator(debugCreator as DebugFleetCreator, player, deployedLocation);
+                    UnitGenerator.AssignConfigurationToExistingCreator(debugCreator as DebugFleetCreator, player, deployedLocation);
 
                     creatorsDeployed.Add(debugCreator);
                     if (creatorsDeployed.Count == qtyToDeploy) {
@@ -981,10 +997,10 @@ public class UniverseCreator {
                     deployedLocation = sectorGrid.GetSector(deployedSectorID).GetClearRandomPointInsideSector();
                     AutoFleetCreator autoCreator;
                     if (_debugCntls.EquipmentPlan == DebugControls.EquipmentLoadout.Random) {
-                        autoCreator = UnitConfigurator.GenerateRandomAutoFleetCreator(player, deployedLocation);
+                        autoCreator = UnitGenerator.GenerateRandomAutoFleetCreator(player, deployedLocation);
                     }
                     else {
-                        autoCreator = UnitConfigurator.GeneratePresetAutoFleetCreator(player, deployedLocation);
+                        autoCreator = UnitGenerator.GeneratePresetAutoFleetCreator(player, deployedLocation);
                     }
                     creatorsDeployed.Add(autoCreator);
                 }
@@ -1035,7 +1051,7 @@ public class UniverseCreator {
             foreach (var debugCreator in existingSettlementCreators) {
                 if (IsOwnerOfCreator(debugCreator.EditorSettings, player)) {
                     system = systemsToDeployTo.Pop();
-                    UnitConfigurator.AssignConfigurationToExistingCreator(debugCreator as DebugSettlementCreator, player, system as SystemItem);
+                    UnitGenerator.AssignConfigurationToExistingCreator(debugCreator as DebugSettlementCreator, player, system as SystemItem);
 
                     creatorsDeployed.Add(debugCreator);
                     if (creatorsDeployed.Count == qtyToDeploy) {
@@ -1053,10 +1069,10 @@ public class UniverseCreator {
                     system = systemsToDeployTo.Pop();
                     AutoSettlementCreator autoCreator;
                     if (_debugCntls.EquipmentPlan == DebugControls.EquipmentLoadout.Random) {
-                        autoCreator = UnitConfigurator.GenerateRandomAutoSettlementCreator(player, system as SystemItem);
+                        autoCreator = UnitGenerator.GenerateRandomAutoSettlementCreator(player, system as SystemItem);
                     }
                     else {
-                        autoCreator = UnitConfigurator.GeneratePresetAutoSettlementCreator(player, system as SystemItem);
+                        autoCreator = UnitGenerator.GeneratePresetAutoSettlementCreator(player, system as SystemItem);
                     }
                     creatorsDeployed.Add(autoCreator);
                 }
@@ -1156,8 +1172,8 @@ public class UniverseCreator {
     }
 
     public void ResetForReuse() {
-        SystemConfigurator.ResetForReuse();
-        UnitConfigurator.ResetForReuse();
+        SystemGenerator.ResetForReuse();
+        UnitGenerator.ResetForReuse();
         UniverseCenter = null;
         _systemCreators = null;
         _unitCreators = null;
@@ -1222,14 +1238,55 @@ public class UniverseCreator {
 
         existingDebugCreators.ForAll(c => {
             string existingSystemName = c.SystemName;
-            SystemConfigurator.AssignConfigurationToExistingDebugCreator(c, existingSystemName);
+            SystemGenerator.AssignConfigurationToExistingDebugCreator(c, existingSystemName);
         });
         return existingDebugCreators.Cast<SystemCreator>().ToList();
     }
 
     /// <summary>
+    /// Only configures the existing debug fleet creators. Used when GameSettingsDebugControl has
+    /// instructions to only configure and deploy existing debug system and unit creators.
+    /// <remarks>If any existing creators are not configured, they are destroyed.</remarks>
+    /// </summary>
+    /// <returns></returns>
+    private IList<AUnitCreator> __ConfigureExistingDebugCreatorsOnly_Fleet(IEnumerable<ADebugUnitCreator> existingFleetCreators) {
+        var gameSettings = _gameMgr.GameSettings;
+        D.Assert(gameSettings.__UseDebugCreatorsOnly);
+
+        int existingFleetCreatorQty = existingFleetCreators.Count();
+        IList<AUnitCreator> configuredFleetCreators = new List<AUnitCreator>(existingFleetCreatorQty);
+
+        if (existingFleetCreatorQty > Constants.Zero) {
+            IEnumerable<ADebugUnitCreator> remainingFleetCreators = new List<ADebugUnitCreator>(existingFleetCreators);
+
+            List<Player> allPlayers = new List<Player>(gameSettings.PlayerCount);
+            allPlayers.Add(gameSettings.UserPlayer);
+            allPlayers.AddRange(gameSettings.AIPlayers);
+
+            foreach (var creator in existingFleetCreators) {
+                Vector3 location = creator.transform.position;
+                foreach (var player in allPlayers) {
+                    if (IsOwnerOfCreator(creator.EditorSettings, player)) {
+                        UnitGenerator.AssignConfigurationToExistingCreator(creator as DebugFleetCreator, player, location);
+                        configuredFleetCreators.Add(creator);
+                        break;
+                    }
+                }
+            }
+            remainingFleetCreators = remainingFleetCreators.Except(configuredFleetCreators.Cast<ADebugUnitCreator>());
+
+            remainingFleetCreators.ForAll(c => {
+                D.Log(ShowDebugLog, "{0} is about to destroy excess Creator {1}.", DebugName, c.DebugName);
+                GameUtility.Destroy(c.gameObject);
+            });
+        }
+        return configuredFleetCreators;
+    }
+
+    /// <summary>
     /// Only configures the existing debug settlement creators. Used when GameSettingsDebugControl has
     /// instructions to only configure and deploy existing debug system and unit creators.
+    /// <remarks>If any existing creators are not configured, they are destroyed.</remarks>
     /// </summary>
     /// <returns></returns>
     private IList<AUnitCreator> __ConfigureExistingDebugCreatorsOnly_Settlement(IEnumerable<ADebugUnitCreator> existingSettlementCreators) {
@@ -1255,7 +1312,7 @@ public class UniverseCreator {
                     foreach (var player in allPlayers) {
                         if (IsOwnerOfCreator(creator.EditorSettings, player)) {
                             ISystem system = availableSystems.Pop();
-                            UnitConfigurator.AssignConfigurationToExistingCreator(creator as DebugSettlementCreator, player, system as SystemItem);
+                            UnitGenerator.AssignConfigurationToExistingCreator(creator as DebugSettlementCreator, player, system as SystemItem);
                             configuredSettlementCreators.Add(creator);
                             break;
                         }
@@ -1275,6 +1332,7 @@ public class UniverseCreator {
     /// <summary>
     /// Only configures the existing debug starbase creators. Used when GameSettingsDebugControl has
     /// instructions to only configure and deploy existing debug system and unit creators.
+    /// <remarks>If any existing creators are not configured, they are destroyed.</remarks>
     /// </summary>
     /// <returns></returns>
     private IList<AUnitCreator> __ConfigureExistingDebugCreatorsOnly_Starbase(IEnumerable<ADebugUnitCreator> existingStarbaseCreators) {
@@ -1295,9 +1353,11 @@ public class UniverseCreator {
                 Vector3 location = creator.transform.position;
                 foreach (var player in allPlayers) {
                     if (IsOwnerOfCreator(creator.EditorSettings, player)) {
-                        UnitConfigurator.AssignConfigurationToExistingCreator(creator as DebugStarbaseCreator, player, location);
-                        configuredStarbaseCreators.Add(creator);
-                        break;
+                        if (UnitGenerator.TryAssignConfigurationToExistingCreator(creator as DebugStarbaseCreator, player, location)) {
+                            D.Assert(UnitGenerator.__IsStarbaseCmdModuleStatAvailable(player));
+                            configuredStarbaseCreators.Add(creator);
+                            break;
+                        }
                     }
                 }
             }
@@ -1309,45 +1369,6 @@ public class UniverseCreator {
             });
         }
         return configuredStarbaseCreators;
-    }
-
-    /// <summary>
-    /// Only configures the existing debug fleet creators. Used when GameSettingsDebugControl has
-    /// instructions to only configure and deploy existing debug system and unit creators.
-    /// </summary>
-    /// <returns></returns>
-    private IList<AUnitCreator> __ConfigureExistingDebugCreatorsOnly_Fleet(IEnumerable<ADebugUnitCreator> existingFleetCreators) {
-        var gameSettings = _gameMgr.GameSettings;
-        D.Assert(gameSettings.__UseDebugCreatorsOnly);
-
-        int existingFleetCreatorQty = existingFleetCreators.Count();
-        IList<AUnitCreator> configuredFleetCreators = new List<AUnitCreator>(existingFleetCreatorQty);
-
-        if (existingFleetCreatorQty > Constants.Zero) {
-            IEnumerable<ADebugUnitCreator> remainingFleetCreators = new List<ADebugUnitCreator>(existingFleetCreators);
-
-            List<Player> allPlayers = new List<Player>(gameSettings.PlayerCount);
-            allPlayers.Add(gameSettings.UserPlayer);
-            allPlayers.AddRange(gameSettings.AIPlayers);
-
-            foreach (var creator in existingFleetCreators) {
-                Vector3 location = creator.transform.position;
-                foreach (var player in allPlayers) {
-                    if (IsOwnerOfCreator(creator.EditorSettings, player)) {
-                        UnitConfigurator.AssignConfigurationToExistingCreator(creator as DebugFleetCreator, player, location);
-                        configuredFleetCreators.Add(creator);
-                        break;
-                    }
-                }
-            }
-            remainingFleetCreators = remainingFleetCreators.Except(configuredFleetCreators.Cast<ADebugUnitCreator>());
-
-            remainingFleetCreators.ForAll(c => {
-                D.Log(ShowDebugLog, "{0} is about to destroy excess Creator {1}.", DebugName, c.DebugName);
-                GameUtility.Destroy(c.gameObject);
-            });
-        }
-        return configuredFleetCreators;
     }
 
     #endregion

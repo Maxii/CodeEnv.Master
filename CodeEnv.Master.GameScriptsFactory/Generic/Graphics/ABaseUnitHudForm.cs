@@ -52,6 +52,8 @@ public abstract class ABaseUnitHudForm : AForm {
     private MyNguiToggleButton _unitRefitButton = null;
     [SerializeField]
     private MyNguiToggleButton _unitDisbandButton = null;
+    //[SerializeField]
+    //private MyNguiToggleButton _cmdModuleRefitButton = null;
 
     [SerializeField]
     private MyNguiToggleButton _facilityRepairButton = null;
@@ -122,6 +124,7 @@ public abstract class ABaseUnitHudForm : AForm {
         _unitRepairButton.Initialize();
         _unitRefitButton.Initialize();
         _unitDisbandButton.Initialize();
+        //_cmdModuleRefitButton.Initialize();
 
         _facilityRepairButton.Initialize();
         _facilityRefitButton.Initialize();
@@ -141,6 +144,7 @@ public abstract class ABaseUnitHudForm : AForm {
         _unitRepairButton.toggleStateChanged += UnitRepairButtonToggleChangedEventHandler;
         _unitRefitButton.toggleStateChanged += UnitRefitButtonToggleChangedEventHandler;
         _unitDisbandButton.toggleStateChanged += UnitDisbandButtonToggleChangedEventHandler;
+        //_cmdModuleRefitButton.toggleStateChanged += CmdModuleRefitToggleChangedEventHandler;
 
         _facilityRepairButton.toggleStateChanged += FacilityRepairButtonToggleChangedEventHandler;
         _facilityRefitButton.toggleStateChanged += FacilityRefitButtonToggleChangedEventHandler;
@@ -213,6 +217,10 @@ public abstract class ABaseUnitHudForm : AForm {
     private void UnitDisbandButtonToggleChangedEventHandler(object sender, EventArgs e) {
         HandleUnitDisbandButtonToggleChanged();
     }
+
+    //private void CmdModuleRefitButtonToggleChangedEventHandler(object sender, EventArgs e) {
+    //    HandleCmdModuleRefitButtonToggleChanged();
+    //}
 
     private void UnitScuttleButtonClickedEventHandler() {
         HandleUnitScuttleButtonClicked();
@@ -371,6 +379,8 @@ public abstract class ABaseUnitHudForm : AForm {
         _toggleButtonsUsedThisSession.Add(_unitDisbandButton);
         AssessUnitButtons();
     }
+
+    //private void HandleCmdModuleRefitButtonToggleChanged() {    }
 
     private void HandleUnitScuttleButtonClicked() {
         var scuttleOrder = new BaseOrder(BaseDirective.Scuttle, OrderSource.User);

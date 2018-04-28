@@ -43,6 +43,13 @@ namespace CodeEnv.Master.GameContent {
             get { throw new NotImplementedException("Tech.get is not implemented in {0}.".Inject(DebugName)); }
         }
 
+        public override float RemainingScienceNeededToComplete {
+            get {
+                D.Warn("{0}: Accessing RemainingScienceNeededToComplete.", DebugName);
+                return base.RemainingScienceNeededToComplete;
+            }
+        }
+
         public override float CumScienceApplied {
             get {
                 D.Warn("{0}: Accessing CumScienceApplied.", DebugName);
@@ -56,7 +63,9 @@ namespace CodeEnv.Master.GameContent {
             throw new NotImplementedException("TryComplete() is not implemented in {0}.".Inject(DebugName));
         }
 
-
+        public override void CompleteResearch() {
+            throw new NotImplementedException("CompleteResearch() is not implemented in {0}.".Inject(DebugName));
+        }
     }
 }
 

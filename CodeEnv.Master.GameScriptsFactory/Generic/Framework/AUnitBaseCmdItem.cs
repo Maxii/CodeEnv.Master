@@ -1826,7 +1826,9 @@ public abstract class AUnitBaseCmdItem : AUnitCmdItem, IUnitBaseCmd, IUnitBaseCm
 
     protected override void Cleanup() {
         base.Cleanup();
-        ConstructionMgr.Dispose();
+        if (ConstructionMgr != null) {
+            ConstructionMgr.Dispose();
+        }
     }
 
     protected override void Unsubscribe() {

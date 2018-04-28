@@ -34,9 +34,6 @@ namespace CodeEnv.Master.GameContent {
         [EnumAttribute("ACM_MR")]
         MRActiveCountermeasure,
 
-        [EnumAttribute("Hull")]
-        Hull,   // ShipHull/FacilityHull would allow separate improvement techs - deferred until use case
-
         [EnumAttribute("STL")]
         StlPropulsion,
 
@@ -77,7 +74,61 @@ namespace CodeEnv.Master.GameContent {
         StarbaseCmdModule,
 
         [EnumAttribute("StCmdM")]
-        SettlementCmdModule
+        SettlementCmdModule,
+
+        // Facility Hulls
+
+        [EnumAttribute("FHull_Hub")]
+        FHullCentralHub,
+
+        [EnumAttribute("FHull_Fac")]
+        FHullFactory,
+
+        [EnumAttribute("FHull_$")]
+        FHullEconomic,
+
+        [EnumAttribute("FHull_Lab")]
+        FHullLaboratory,
+
+        [EnumAttribute("FHull_Def")]
+        FHullDefense,
+
+        [EnumAttribute("FHull_Bar")]
+        FHullBarracks,
+
+        [EnumAttribute("FHull_Col")]
+        FHullColonyHab,
+
+        // Ship Hulls
+
+        [EnumAttribute("SHull_FF")]
+        SHullFrigate,
+
+        [EnumAttribute("SHull_DD")]
+        SHullDestroyer,
+
+        [EnumAttribute("SHull_CA")]
+        SHullCruiser,
+
+        [EnumAttribute("SHull_DN")]
+        SHullDreadnought,
+
+        [EnumAttribute("SHull_CV")]
+        SHullCarrier,
+
+        [EnumAttribute("SHull_CO")]
+        SHullColonizer,
+
+        [EnumAttribute("SHull_IV")]
+        SHullInvestigator,
+
+        [EnumAttribute("SHull_TT")]
+        SHullTroop,
+
+        [EnumAttribute("SHull_SU")]
+        SHullSupport,
+
+
 
 
     }

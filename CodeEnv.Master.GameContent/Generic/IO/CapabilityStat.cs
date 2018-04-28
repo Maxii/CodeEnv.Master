@@ -21,11 +21,13 @@ namespace CodeEnv.Master.GameContent {
     /// <summary>
     /// An AImprovableStat holding a Capability along with data that allows user display of image and textual information.
     /// </summary>
-    public class CapabilityStat : AImprovableStat {
+    public class CapabilityStat : AImageStat {
 
-        public Capability Capability { get; private set; }
+        public Capability Capability { get { return ID.Capability; } }
 
-        public Level Level { get; private set; }
+        public Level Level { get { return ID.Level; } }
+
+        public CapabilityStatID ID { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CapabilityStat" /> class.
@@ -34,17 +36,10 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="imageAtlasID">The image atlas identifier.</param>
         /// <param name="imageFilename">The image filename.</param>
         /// <param name="description">The description.</param>
-        /// <param name="level">The improvement level of this stat.</param>
-        /// <param name="capability">The capability.</param>
-        ////public CapabilityStat(AtlasID imageAtlasID, string imageFilename, string description, Level level, Capability capability)
-        ////    : base(capability.GetValueName(), imageAtlasID, imageFilename, description, level) {
-        ////    Capability = capability;
-        ////}
-
-        public CapabilityStat(AtlasID imageAtlasID, string imageFilename, string description, Level level, Capability capability)
-    : base(capability.GetValueName(), imageAtlasID, imageFilename, description) {
-            Level = level;
-            Capability = capability;
+        /// <param name="id">The stat identifier.</param>
+        public CapabilityStat(string name, AtlasID imageAtlasID, string imageFilename, string description, CapabilityStatID id)
+            : base(name, imageAtlasID, imageFilename, description) {
+            ID = id;
         }
 
 

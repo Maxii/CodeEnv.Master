@@ -33,6 +33,12 @@ namespace CodeEnv.Master.GameContent {
         public ShipHullCategory HullCategory { get { return Stat.HullCategory; } }
 
         /// <summary>
+        /// The constraint on the ability of the engine(s) to turn this hull. 
+        /// <remarks>Used as a multiplier with the Engine's MaxTurnRate to derive a ship's turn rate.</remarks>
+        /// </summary>
+        public float TurnRateConstraint { get { return Stat.TurnRateConstraint; } }
+
+        /// <summary>
         /// The drag of this hull in Topography.OpenSpace.
         /// </summary>
         public float Drag { get { return Stat.Drag; } }

@@ -55,7 +55,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="damagePotential">The damage potential.</param>
         /// <param name="duration">The firing duration in hours.</param>
         /// <param name="maxLaunchInaccuracy">The maximum launch inaccuracy in degrees.</param>
-        public BeamWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, EquipStatID id,
+        public BeamWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description, EquipmentStatID id,
             float size, float mass, float pwrRqmt, float hitPts, float constructionCost, float expense,
             RangeCategory rangeCat, WDVStrength deliveryVehicleStrength, float reloadPeriod, DamageStrength damagePotential,
             float duration, float maxLaunchInaccuracy)

@@ -44,9 +44,8 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="MoreLinq, Version=1.4.18916.0, Culture=neutral, PublicKeyToken=384d532d7e88985d, processorArchitecture=MSIL">
+    <Reference Include="MoreLinq">
       <HintPath>..\packages\morelinq.1.4.0\lib\net35\MoreLinq.dll</HintPath>
-      <Private>True</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -149,7 +148,7 @@
     <Compile Include="ThirdParty\MyCustomCursor.cs" />
     <Compile Include="ThirdParty\GamePoolManager.cs" />
     <Compile Include="Game\_Debug\DebugSystemCreator.cs" />
-    <Compile Include="Generic\Framework\NewGameSystemConfigurator.cs" />
+    <Compile Include="Generic\Framework\NewGameSystemGenerator.cs" />
     <Compile Include="Game\Framework\SystemCreator.cs" />
     <Compile Include="Generic\Graphics\AGuiMenuPopupListBase.cs" />
     <Compile Include="Generic\Framework\ADebugUnitCreator.cs" />
@@ -313,7 +312,7 @@
     <Compile Include="Game\Framework\Sector.cs" />
     <Compile Include="Game\GUI\GuiSystemDensityPopupList.cs" />
     <Compile Include="Game\GUI\GuiPlayerTeamPopupList.cs" />
-    <Compile Include="Generic\Framework\NewGameUnitConfigurator.cs" />
+    <Compile Include="Generic\Framework\NewGameUnitGenerator.cs" />
     <Compile Include="Game\GUI\GuiAiPlayerUserSeparationPopupList.cs" />
     <Compile Include="Game\GUI\GuiPlayerHomeDesirabilityPopupList.cs" />
     <Compile Include="Game\GUI\GuiPlayerStartLevelPopupList.cs" />

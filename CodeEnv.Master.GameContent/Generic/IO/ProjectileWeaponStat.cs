@@ -53,7 +53,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="ordnanceDrag">The drag of the ordnance in Topography.OpenSpace.</param>
         /// <param name="maxLaunchInaccuracy">The maximum launch inaccuracy in degrees.</param>
         public ProjectileWeaponStat(string name, AtlasID imageAtlasID, string imageFilename, string description,
-            EquipStatID id, float size, float mass, float pwrRqmt, float hitPts, float constructionCost, float expense,
+            EquipmentStatID id, float size, float mass, float pwrRqmt, float hitPts, float constructionCost, float expense,
             RangeCategory rangeCat, WDVStrength deliveryVehicleStrength, float reloadPeriod, DamageStrength damagePotential,
             float ordnanceMaxSpeed, float ordnanceMass, float ordnanceDrag, float maxLaunchInaccuracy)
             : base(name, imageAtlasID, imageFilename, description, id, size, mass, pwrRqmt, hitPts, constructionCost, expense,

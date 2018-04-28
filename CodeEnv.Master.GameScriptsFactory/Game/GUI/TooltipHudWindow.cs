@@ -77,7 +77,7 @@ public class TooltipHudWindow : AHudWindow<TooltipHudWindow>, ITooltipHudWindow 
         ShowForm(form);
     }
 
-    public void Show(AImprovableStat stat) {
+    public void Show(AImageStat stat) {
         D.Warn("{0} has not yet implemented Show({1}).", DebugName, stat.DebugName);
     }
 

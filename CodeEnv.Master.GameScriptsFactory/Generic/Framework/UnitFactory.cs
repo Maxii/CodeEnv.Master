@@ -124,7 +124,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="optionalRootUnitName">Name of the optional root unit.</param>
     /// <returns></returns>
     public FleetCmdItem MakeFleetInstance(Vector3 creatorLocation, IEnumerable<ShipItem> ships, Formation formation, string optionalRootUnitName = null) {
-        return MakeFleetInstance(creatorLocation, TempGameValues.__FleetCmdDesignName_Basic, ships, formation, optionalRootUnitName);
+        return MakeFleetInstance(creatorLocation, TempGameValues.FleetCmdDefaultRootDesignName, ships, formation, optionalRootUnitName);
     }
 
     /// <summary>
@@ -137,7 +137,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="formation">The formation.</param>
     /// <param name="optionalRootUnitName">Name of the optional root unit.</param>
     /// <returns></returns>
-    public FleetCmdItem MakeFleetInstance(Vector3 creatorLocation, string cmdDesignName, IEnumerable<ShipItem> ships, Formation formation, string optionalRootUnitName = null) {
+    public FleetCmdItem MakeFleetInstance(Vector3 creatorLocation, string cmdDesignName, IEnumerable<ShipItem> ships, Formation formation,
+        string optionalRootUnitName = null) {
         Player owner = ships.First().Owner;
         var creator = MakeFleetCreator(creatorLocation, ships, cmdDesignName);
         if (optionalRootUnitName != null) {
@@ -222,7 +223,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var passiveCMs = MakeCountermeasures(design);
         var sensors = MakeSensors(design, cmd);
         var ftlDampener = MakeFtlDampener(design.FtlDampenerStat, cmd);
-        FleetCmdData data = new FleetCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, design.ReqdCmdStat, design) {
+        FleetCmdData data = new FleetCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, design) {
             // Name assignment must follow after Data assigned to Item so Item is subscribed to the change
             Formation = formation
         };
@@ -279,11 +280,14 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var sensors = MakeSensors(design, element);
         var shieldGenerators = MakeShieldGenerators(design, element);
 
-        var stlEngine = MakeEngine(design.StlEngineStat, "StlEngine");
-        FtlEngine ftlEngine = null;
-        if (design.FtlEngineStat != null) {
-            ftlEngine = MakeEngine(design.FtlEngineStat, "FtlEngine") as FtlEngine;
-        }
+        ////var stlEngine = MakeEngine(design.StlEngineStat, "StlEngine");
+        ////FtlEngine ftlEngine = null;
+        ////if (design.FtlEngineStat != null) {
+        ////    ftlEngine = MakeEngine(design.FtlEngineStat, "FtlEngine") as FtlEngine;
+        ////}
+        Engine stlEngine;
+        FtlEngine ftlEngine;
+        MakeEngines(design, out stlEngine, out ftlEngine);
 
         ShipData data = new ShipData(element, owner, passiveCMs, hullEquipment, activeCMs, sensors, shieldGenerators, stlEngine, ftlEngine,
             design) {
@@ -381,7 +385,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var passiveCMs = MakeCountermeasures(design);
         var sensors = MakeSensors(design, cmd);
         var ftlDampener = MakeFtlDampener(design.FtlDampenerStat, cmd);
-        StarbaseCmdData data = new StarbaseCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, design.ReqdCmdStat, design) {
+        StarbaseCmdData data = new StarbaseCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, design) {
             // Name assignment must follow after Data assigned to Item so Item is subscribed to the change
             Formation = formation
         };
@@ -476,7 +480,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var passiveCMs = MakeCountermeasures(design);
         var sensors = MakeSensors(design, cmd);
         var ftlDampener = MakeFtlDampener(design.FtlDampenerStat, cmd);
-        SettlementCmdData data = new SettlementCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, design.ReqdCmdStat, design) {
+        SettlementCmdData data = new SettlementCmdData(cmd, owner, passiveCMs, sensors, ftlDampener, design) {
             // Name assignment must follow after Data assigned to Item so Item is subscribed to the change
             Formation = formation
         };
@@ -484,6 +488,17 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         cmd.Data = data;
         cmd.Data.UnitName = unitName;
     }
+
+    ////public void UpgradeCmdInstance(SettlementCmdDesign cmdModuleDesign, ref SettlementCmdItem cmd) {
+    ////    var sensorMonitors = cmd.SensorMonitors;
+    ////    sensorMonitors.ForAll(mon => mon.ResetForReuse());
+    ////    cmd.FtlDampenerMonitor.ResetForReuse();
+
+    ////    var passiveCmReplacements = MakeCountermeasures(cmdModuleDesign);
+    ////    var sensorReplacements = MakeSensors(cmdModuleDesign, cmd); // makes new sensors and attaches monitors from Cmd
+    ////    var ftlDampenerReplacement = MakeFtlDampener(cmdModuleDesign.FtlDampenerStat, cmd); // makes new FtlDampener and attaches monitor from Cmd
+    ////    cmd.ChangeDesign(cmdModuleDesign, passiveCmReplacements, sensorReplacements, ftlDampenerReplacement);
+    ////}
 
     #endregion
 
@@ -550,6 +565,18 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
     #region Support Members
 
+    public void UpgradeCmdInstance(AUnitCmdDesign cmdModuleDesign, AUnitCmdItem cmd) {
+        D.Warn("{0}.UpgradeCmdInstance() called for {1} using {2}.", DebugName, cmd.DebugName, cmdModuleDesign.DebugName);
+        var sensorMonitors = cmd.SensorMonitors;
+        sensorMonitors.ForAll(mon => mon.ResetForReuse());
+        cmd.FtlDampenerMonitor.ResetForReuse();
+
+        var passiveCmReplacements = MakeCountermeasures(cmdModuleDesign);
+        var sensorReplacements = MakeSensors(cmdModuleDesign, cmd); // makes new sensors and attaches monitors from Cmd
+        var ftlDampenerReplacement = MakeFtlDampener(cmdModuleDesign.FtlDampenerStat, cmd); // makes new FtlDampener and attaches monitor from Cmd
+        cmd.ChangeDesign(cmdModuleDesign, passiveCmReplacements, sensorReplacements, ftlDampenerReplacement);
+    }
+
     private FollowableItemCameraStat MakeElementCameraStat(FacilityHullStat hullStat) {
         FacilityHullCategory hullCat = hullStat.HullCategory;
         float fov;
@@ -597,13 +624,13 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
             case ShipHullCategory.Frigate:
                 fov = 55F;
                 break;
-            case ShipHullCategory.Fighter:
-            case ShipHullCategory.Scout:
+            //case ShipHullCategory.Fighter:
+            //case ShipHullCategory.Scout:
             case ShipHullCategory.None:
             default:
                 throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(hullCat));
         }
-        float radius = hullStat.HullDimensions.magnitude / 2F;
+        float radius = hullCat.Dimensions().magnitude / 2F; ////hullStat.HullDimensions.magnitude / 2F;
         //D.Log(ShowDebugLog, "Radius of {0} is {1:0.##}.", hullCat.GetValueName(), radius);
         float minViewDistance = radius * 2F;
         float optViewDistance = radius * 3F;
@@ -631,11 +658,20 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="engineStat">The engine stat.</param>
     /// <param name="name">The optional engine name.</param>
     /// <returns></returns>
+    [Obsolete]
     private Engine MakeEngine(EngineStat engineStat, string name = null) {
         if (engineStat.Category == EquipmentCategory.FtlPropulsion) {
             return new FtlEngine(engineStat, name);
         }
         return new Engine(engineStat, name);
+    }
+
+    private void MakeEngines(ShipDesign shipDesign, out Engine stlEngine, out FtlEngine ftlEngine) {
+        EngineStat stlEngineStat = shipDesign.StlEngineStat;
+        stlEngine = new Engine(shipDesign.StlEngineStat);
+
+        var stats = shipDesign.GetOptEquipStatsFor(EquipmentCategory.FtlPropulsion);
+        ftlEngine = stats.Any() ? new FtlEngine(stats.First() as EngineStat) : null;
     }
 
     /// <summary>
@@ -658,7 +694,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     private IEnumerable<PassiveCountermeasure> MakeCountermeasures(AUnitMemberDesign unitDesign) {
         var passiveCMs = new List<PassiveCountermeasure>();
 
-        var stats = unitDesign.GetEquipmentStatsFor(EquipmentCategory.PassiveCountermeasure);
+        var stats = unitDesign.GetOptEquipStatsFor(EquipmentCategory.PassiveCountermeasure);
         foreach (var stat in stats) {
             passiveCMs.Add(new PassiveCountermeasure(stat as PassiveCountermeasureStat));
         }
@@ -669,8 +705,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         int nameCounter = Constants.One;
         var activeCMs = new List<ActiveCountermeasure>();
 
-        var stats = elementDesign.GetEquipmentStatsFor(EquipmentCategory.SRActiveCountermeasure).ToList();
-        stats.AddRange(elementDesign.GetEquipmentStatsFor(EquipmentCategory.MRActiveCountermeasure));
+        var stats = elementDesign.GetOptEquipStatsFor(EquipmentCategory.SRActiveCountermeasure).ToList();
+        stats.AddRange(elementDesign.GetOptEquipStatsFor(EquipmentCategory.MRActiveCountermeasure));
         foreach (var stat in stats) {
             string cmName = stat.Name + nameCounter;
             nameCounter++;
@@ -693,7 +729,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         sensors.Add(reqdSRSensor);
         AttachMonitor(reqdSRSensor, element);
 
-        var optionalSensorStats = elementDesign.GetEquipmentStatsFor(EquipmentCategory.SRSensor);
+        var optionalSensorStats = elementDesign.GetOptEquipStatsFor(EquipmentCategory.SRSensor);
         foreach (var stat in optionalSensorStats) {
             sName = stat.Name + nameCounter;
             nameCounter++;
@@ -715,8 +751,8 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         sensors.Add(reqdMRSensor);
         AttachMonitor(reqdMRSensor, cmd);
 
-        List<AEquipmentStat> optionalSensorStats = cmdDesign.GetEquipmentStatsFor(EquipmentCategory.MRSensor).ToList();
-        optionalSensorStats.AddRange(cmdDesign.GetEquipmentStatsFor(EquipmentCategory.LRSensor));
+        List<AEquipmentStat> optionalSensorStats = cmdDesign.GetOptEquipStatsFor(EquipmentCategory.MRSensor).ToList();
+        optionalSensorStats.AddRange(cmdDesign.GetOptEquipStatsFor(EquipmentCategory.LRSensor));
         foreach (var stat in optionalSensorStats) {
             sName = stat.Name + nameCounter;
             nameCounter++;
@@ -729,7 +765,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
 
     private IEnumerable<ShieldGenerator> MakeShieldGenerators(AUnitElementDesign elementDesign, AUnitElementItem element) {
         var generators = new List<ShieldGenerator>();
-        var generatorStats = elementDesign.GetEquipmentStatsFor(EquipmentCategory.ShieldGenerator);
+        var generatorStats = elementDesign.GetOptEquipStatsFor(EquipmentCategory.ShieldGenerator);
         foreach (var gStat in generatorStats) {
             var generator = new ShieldGenerator(gStat as ShieldGeneratorStat);
             generators.Add(generator);
@@ -824,7 +860,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var allMonitors = element.gameObject.GetComponentsInChildren<WeaponRangeMonitor>();
         var monitorsInUse = allMonitors.Where(m => m.RangeCategory != RangeCategory.None);
 
-        // check monitors for range fit, if find it, assign monitor, if not assign unused or create a new monitor and assign it to the weapon
+        // check monitors for range fit, if find it, assign monitor, if not assign unused or create a new monitor and assign it to the equipment
         var monitor = monitorsInUse.FirstOrDefault(m => m.RangeCategory == weapon.RangeCategory);
         if (monitor == null) {
             var unusedMonitors = allMonitors.Except(monitorsInUse);
@@ -850,16 +886,16 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
     /// <param name="weapon">The weapon.</param>
     /// <param name="slotID">The mount slot identifier.</param>
     /// <param name="hull">The hull.</param>
-    private void AttachMount(AWeapon weapon, EquipmentSlotID slotID, AHull hull) {
+    private void AttachMount(AWeapon weapon, OptionalEquipSlotID slotID, AHull hull) {
         AMount mountPlaceholder;
         AWeaponMount weaponMountPrefab;
-        if (slotID.SupportedMount == EquipmentMountCategory.Turret) {
+        if (slotID.SupportedMount == OptionalEquipMountCategory.Turret) {
             mountPlaceholder = hull.gameObject.GetSafeComponentsInChildren<LOSMountPlaceholder>()
                                     .Single(placeholder => placeholder.SlotID == slotID);
             weaponMountPrefab = _losTurretPrefab;
         }
         else {
-            D.AssertEqual(EquipmentMountCategory.Silo, slotID.SupportedMount);
+            D.AssertEqual(OptionalEquipMountCategory.Silo, slotID.SupportedMount);
             var mountPlaceholders = hull.gameObject.GetSafeComponentsInChildren<LauncherMountPlaceholder>();
             //D.Log("{0}: MountPlaceholders found = {1}.", DebugName, mountPlaceholders.Select(mp => mp.DebugName).Concatenate());
             mountPlaceholder = mountPlaceholders.Single(placeholder => placeholder.SlotID == slotID);
@@ -877,7 +913,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         UnityUtility.SetLayerRecursively(mountTransform, hullMeshLayer);
 
         AWeaponMount weaponMount = mountGo.GetComponent<AWeaponMount>();
-        if (slotID.SupportedMount == EquipmentMountCategory.Turret) {
+        if (slotID.SupportedMount == OptionalEquipMountCategory.Turret) {
             // LOS weapon
             var losMountPlaceholder = mountPlaceholder as LOSMountPlaceholder;
             var losWeaponMount = weaponMount as LOSTurret;
@@ -899,7 +935,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         var allMonitors = element.gameObject.GetComponentsInChildren<ActiveCountermeasureRangeMonitor>();
         var monitorsInUse = allMonitors.Where(m => m.RangeCategory != RangeCategory.None);
 
-        // check monitors for range fit, if find it, assign monitor, if not assign unused or create a new monitor and assign it to the weapon
+        // check monitors for range fit, if find it, assign monitor, if not assign unused or create a new monitor and assign it to the equipment
         var monitor = monitorsInUse.FirstOrDefault(m => m.RangeCategory == countermeasure.RangeCategory);
         if (monitor == null) {
             var unusedMonitors = allMonitors.Except(monitorsInUse);
@@ -929,7 +965,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         D.AssertEqual(RangeCategory.Short, sensor.RangeCategory);
         var srMonitor = element.gameObject.GetComponentInChildren<ElementSensorRangeMonitor>();
 
-        // check monitors for range fit, if find it, assign monitor, if not assign unused or create a new monitor and assign it to the weapon
+        // check monitors for range fit, if find it, assign monitor, if not assign unused or create a new monitor and assign it to the equipment
         if (srMonitor == null) {
             D.AssertEqual(Layers.Collide_DefaultOnly, (Layers)_elementSensorRangeMonitorPrefab.layer);
             GameObject monitorGo = UnityUtility.AddChild(element.gameObject, _elementSensorRangeMonitorPrefab);
@@ -952,7 +988,7 @@ public class UnitFactory : AGenericSingleton<UnitFactory> {
         allSensorMonitors.ForAll(srm => D.AssertNotEqual(RangeCategory.Short, srm.RangeCategory));        // OPTIMIZE
 
         var sensorMonitorsInUse = allSensorMonitors.Where(m => m.RangeCategory != RangeCategory.None);
-        // check monitors for range fit, if find it, assign monitor, if not assign unused or create a new monitor and assign it to the weapon
+        // check monitors for range fit, if find it, assign monitor, if not assign unused or create a new monitor and assign it to the equipment
         var monitor = sensorMonitorsInUse.FirstOrDefault(m => m.RangeCategory == sensor.RangeCategory);
         if (monitor == null) {
             var unusedSensorMonitors = allSensorMonitors.Except(sensorMonitorsInUse);

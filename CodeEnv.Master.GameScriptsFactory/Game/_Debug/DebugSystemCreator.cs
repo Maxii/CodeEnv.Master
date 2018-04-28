@@ -106,7 +106,7 @@ public class DebugSystemCreator : SystemCreator {
     #endregion
 
     // 10.12.16 Eliminated overridden BuildAndDeploySystem() which checked ValidateConfiguration() as un-configured DebugSystemCreators
-    // are destroyed by NewGameSystemConfigurator. It makes no sense for UniverseCreator to call BuildAndDeploySystem on a Creator that
+    // are destroyed by NewGameSystemGenerator. It makes no sense for UniverseCreator to call BuildAndDeploySystem on a Creator that
     // hasn't been used and configured
 
     protected override void MakeSystem() {

@@ -50,7 +50,7 @@ namespace CodeEnv.Master.GameContent {
         /// <param name="maxTurnRate">The maximum turn rate the engine is capable of.</param>
         /// <param name="maxSpeed">The engine's maximum attainable speed.</param>
         /// <param name="isDamageable">if set to <c>true</c> [is damageable].</param>
-        public EngineStat(string name, AtlasID imageAtlasID, string imageFilename, string description, EquipStatID id,
+        public EngineStat(string name, AtlasID imageAtlasID, string imageFilename, string description, EquipmentStatID id,
             float size, float mass, float hitPts, float constructionCost, float expense, float maxTurnRate, float maxSpeed,
             bool isDamageable)
             : base(name, imageAtlasID, imageFilename, description, id, size, mass, Constants.ZeroF, hitPts, constructionCost,

@@ -35,7 +35,7 @@ public class DesignEquipmentStorage : AMonoBase {
     private UIGrid _storageIconGrid;
     private UIWidget _storageIconContainer;
 
-    private IDictionary<EquipmentSlotID, EquipmentStorageIconGuiElement> _storageIconLookup;
+    private IDictionary<OptionalEquipSlotID, EquipmentStorageIconGuiElement> _storageIconLookup;
 
     protected override void Awake() {
         base.Awake();
@@ -51,11 +51,11 @@ public class DesignEquipmentStorage : AMonoBase {
 
         _storageIconContainer = gameObject.GetSingleComponentInImmediateChildren<UIWidget>();
 
-        _storageIconLookup = new Dictionary<EquipmentSlotID, EquipmentStorageIconGuiElement>();
+        _storageIconLookup = new Dictionary<OptionalEquipSlotID, EquipmentStorageIconGuiElement>();
     }
 
-    public AEquipmentStat GetEquipmentStat(EquipmentSlotID slotID) {
-        return WorkingDesign.GetEquipmentStat(slotID);
+    public AEquipmentStat GetEquipmentStat(OptionalEquipSlotID slotID) {
+        return WorkingDesign.GetOptEquipStat(slotID);
     }
 
     /// <summary>
@@ -65,7 +65,7 @@ public class DesignEquipmentStorage : AMonoBase {
     /// <param name="eStat">The AEquipmentStat.</param>
     /// <returns></returns>
     public bool PlaceInEmptySlot(AEquipmentStat eStat) {
-        EquipmentSlotID emptySlotID;
+        OptionalEquipSlotID emptySlotID;
         if (WorkingDesign.TryGetEmptySlotIDFor(eStat.Category, out emptySlotID)) {
             var storageIcon = _storageIconLookup[emptySlotID];
             bool isAccepted = storageIcon.Replace(eStat);
@@ -84,7 +84,7 @@ public class DesignEquipmentStorage : AMonoBase {
     /// <returns>
     /// The stat that was replaced. Can be null.
     /// </returns>
-    public AEquipmentStat Replace(EquipmentSlotID slotID, AEquipmentStat equipStat) {
+    public AEquipmentStat Replace(OptionalEquipSlotID slotID, AEquipmentStat equipStat) {
         AEquipmentStat prevStat = WorkingDesign.Replace(slotID, equipStat);
         return prevStat;
     }
@@ -98,7 +98,7 @@ public class DesignEquipmentStorage : AMonoBase {
     public void InstallEquipmentStorageIconsFor(AUnitMemberDesign design) {
         WorkingDesign = design;
 
-        int reqdSlotQty = design.TotalReqdEquipmentSlots;
+        int reqdSlotQty = design.TotalReqdOptEquipmentSlots;
 
         int unusedGridRows, gridColumns;
         IntVector2 storageContainerDimensions = new IntVector2(_storageIconContainer.width, _storageIconContainer.height);
@@ -112,9 +112,9 @@ public class DesignEquipmentStorage : AMonoBase {
         _storageIconGrid.maxPerLine = gridColumns;
 
         string iconGoName = storageIconPrefab.GetType().Name;
-        EquipmentSlotID slotID;
+        OptionalEquipSlotID slotID;
         AEquipmentStat stat;
-        while (design.TryGetNextEquipmentStat(out slotID, out stat)) {
+        while (design.TryGetNextOptEquipStat(out slotID, out stat)) {
             GameObject storageIconGo = NGUITools.AddChild(_storageIconGrid.gameObject, storageIconPrefab.gameObject);
             storageIconGo.name = iconGoName;
             PopulateIcon(storageIconGo, iconSize, slotID, stat);
@@ -122,7 +122,7 @@ public class DesignEquipmentStorage : AMonoBase {
         _storageIconGrid.repositionNow = true;
     }
 
-    private void PopulateIcon(GameObject storageIconGo, AMultiSizeIconGuiElement.IconSize iconSize, EquipmentSlotID slotID, AEquipmentStat equipStat) {
+    private void PopulateIcon(GameObject storageIconGo, AMultiSizeIconGuiElement.IconSize iconSize, OptionalEquipSlotID slotID, AEquipmentStat equipStat) {
         EquipmentStorageIconGuiElement storageIcon = storageIconGo.GetComponent<EquipmentStorageIconGuiElement>();
         storageIcon.Size = iconSize;
         storageIcon.Initialize(this, slotID, equipStat);

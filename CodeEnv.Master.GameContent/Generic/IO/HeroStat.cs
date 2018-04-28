@@ -24,8 +24,6 @@ namespace CodeEnv.Master.GameContent {
     /// </summary>
     public struct HeroStat : IEquatable<HeroStat> {
 
-        private static ValueRange<float> __startingCmdEffectivenessRange = new ValueRange<float>(0F, 1F);
-
         #region Comparison Operators Override
 
         // see C# 4.0 In a Nutshell, page 254
@@ -48,11 +46,11 @@ namespace CodeEnv.Master.GameContent {
 
         public string ImageFilename { get; private set; }
 
+        public string Description { get; private set; }
+
         public Species Species { get; private set; }
 
         public Hero.HeroCategory Category { get; private set; }
-
-        public string Description { get; private set; }
 
         public float StartingCmdEffectiveness { get; private set; }
 
@@ -106,6 +104,12 @@ namespace CodeEnv.Master.GameContent {
         public override string ToString() {
             return DebugName;
         }
+
+        #region Debug
+
+        private static ValueRange<float> __startingCmdEffectivenessRange = new ValueRange<float>(Constants.ZeroPercent, Constants.OneHundredPercent);
+
+        #endregion
 
         #region IEquatable<HeroStat> Members
 

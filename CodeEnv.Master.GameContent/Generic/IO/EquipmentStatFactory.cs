@@ -26,14 +26,11 @@ namespace CodeEnv.Master.GameContent {
 
     /// <summary>
     /// Singleton. Factory that makes AEquipmentStat instances.
-    /// <remarks>TODO Acquire from XML values and make use of Player parameter.</remarks>
-    /// <remarks></remarks>
+    /// <remarks>TODO Make use of Player parameter.</remarks>
     /// </summary>
     public class EquipmentStatFactory : AGenericSingleton<EquipmentStatFactory> {
 
-        private IDictionary<EquipmentCategory, IDictionary<Level, AEquipmentStat>> _nonHullStatCache;
-        private IDictionary<ShipHullCategory, IDictionary<Level, ShipHullStat>> _shipHullStatCache;
-        private IDictionary<FacilityHullCategory, IDictionary<Level, FacilityHullStat>> _facilityHullStatCache;
+        private IDictionary<EquipmentStatID, AEquipmentStat> _statCache;
 
         private EquipmentStatFactory() {
             Initialize();
@@ -45,122 +42,43 @@ namespace CodeEnv.Master.GameContent {
         }
 
         private void CreateAllEquipStats() {
-            var allNonHullEquipCats = Enums<EquipmentCategory>.GetValuesExcept(EquipmentCategory.None, EquipmentCategory.Hull);
-            _nonHullStatCache = new Dictionary<EquipmentCategory, IDictionary<Level, AEquipmentStat>>(allNonHullEquipCats.Count());
-
-            var allLevels = Enums<Level>.GetValues(excludeDefault: true);
-            foreach (var cat in allNonHullEquipCats) {
-                var levelLookup = new Dictionary<Level, AEquipmentStat>(allLevels.Count());
-                if (cat == EquipmentCategory.SRSensor
-                    || cat == EquipmentCategory.MRSensor
-                    || cat == EquipmentCategory.LRSensor
-                    || cat == EquipmentCategory.MRActiveCountermeasure
-                    || cat == EquipmentCategory.SRActiveCountermeasure
-                    || cat == EquipmentCategory.StlPropulsion
-                    || cat == EquipmentCategory.FtlPropulsion
-                    || cat == EquipmentCategory.FtlDampener
-                    || cat == EquipmentCategory.PassiveCountermeasure
-                    || cat == EquipmentCategory.ShieldGenerator
-                    || cat == EquipmentCategory.FleetCmdModule
-                    || cat == EquipmentCategory.SettlementCmdModule
-                    || cat == EquipmentCategory.StarbaseCmdModule
-                    || cat == EquipmentCategory.BeamWeapon
-                    || cat == EquipmentCategory.ProjectileWeapon
-                    || cat == EquipmentCategory.MissileWeapon
-                    || cat == EquipmentCategory.AssaultWeapon) {
-                    var stats = EquipmentStatXmlReader.Instance.CreateStats(cat);
-                    foreach (var stat in stats) {
-                        levelLookup.Add(stat.Level, stat);
-                    }
-                }
-                //else {
-                //    foreach (var level in allLevels) {
-                //        levelLookup.Add(level, CreateNonHullEquipStat(cat, level));
-                //    }
-                //}
-                _nonHullStatCache.Add(cat, levelLookup);
-            }
-
-            var shipHullCats = TempGameValues.ShipHullCategoriesInUse;
-            _shipHullStatCache = new Dictionary<ShipHullCategory, IDictionary<Level, ShipHullStat>>();
-            foreach (var hullCat in shipHullCats) {
-                IDictionary<Level, ShipHullStat> levelLookup = new Dictionary<Level, ShipHullStat>(allLevels.Count());
-                foreach (var level in allLevels) {
-                    levelLookup.Add(level, __CreateHullStat(level, hullCat));
-                }
-                _shipHullStatCache.Add(hullCat, levelLookup);
-            }
-
-            var facilityHullCats = TempGameValues.FacilityHullCategoriesInUse;
-            _facilityHullStatCache = new Dictionary<FacilityHullCategory, IDictionary<Level, FacilityHullStat>>();
-            foreach (var hullCat in facilityHullCats) {
-                IDictionary<Level, FacilityHullStat> levelLookup = new Dictionary<Level, FacilityHullStat>(allLevels.Count());
-                foreach (var level in allLevels) {
-                    levelLookup.Add(level, __CreateHullStat(level, hullCat));
-                }
-                _facilityHullStatCache.Add(hullCat, levelLookup);
-            }
-        }
-
-        [Obsolete]
-        private AEquipmentStat CreateNonHullEquipStat(EquipmentCategory equipCat, Level level) {
-            switch (equipCat) {
-                case EquipmentCategory.PassiveCountermeasure:
-                    return __CreatePassiveCmStat(level);
-                case EquipmentCategory.SRActiveCountermeasure:
-                    return __CreateSRActiveCmStat(level);
-                case EquipmentCategory.MRActiveCountermeasure:
-                    return __CreateMRActiveCmStat(level);
-                case EquipmentCategory.BeamWeapon:
-                    return __CreateBeamWeaponStat(level);
-                case EquipmentCategory.ProjectileWeapon:
-                    return __CreateProjectileWeaponStat(level);
-                case EquipmentCategory.MissileWeapon:
-                    return __CreateMissileWeaponStat(level);
-                case EquipmentCategory.AssaultWeapon:
-                    return __CreateAssaultWeaponStat(level);
-                case EquipmentCategory.LRSensor:
-                    return __CreateCmdLRSensorStat(level);
-                case EquipmentCategory.MRSensor:
-                    return __CreateCmdMRSensorStat(level);
-                case EquipmentCategory.SRSensor:
-                    return __CreateElementSRSensorStat(level);
-                case EquipmentCategory.ShieldGenerator:
-                    return __CreateShieldGeneratorStat(level);
-                case EquipmentCategory.FtlDampener:
-                    return __CreateFtlDampenerStat(level);
-                case EquipmentCategory.FleetCmdModule:
-                    return __CreateFleetCmdModuleStat(level);
-                case EquipmentCategory.StarbaseCmdModule:
-                    return __CreateStarbaseCmdModuleStat(level);
-                case EquipmentCategory.SettlementCmdModule:
-                    return __CreateSettlementCmdModuleStat(level);
-                case EquipmentCategory.StlPropulsion:
-                case EquipmentCategory.FtlPropulsion:
-                    return __CreateEngineStat(equipCat, level);
-                case EquipmentCategory.Hull:
-                case EquipmentCategory.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(equipCat));
-            }
+            var allStats = EquipmentStatXmlReader.Instance.CreateAllStats();
+            _statCache = allStats.ToDictionary(stat => stat.ID);
         }
 
         public AEquipmentStat MakeInstance(Player player, EquipmentCategory equipCat, Level level) {
-            D.AssertNotEqual(EquipmentCategory.Hull, equipCat);
-            return _nonHullStatCache[equipCat][level];
+            return MakeInstance(player, new EquipmentStatID(equipCat, level));
         }
 
-        public ShipHullStat MakeInstance(Player player, ShipHullCategory hullCat, Level level) {
-            return _shipHullStatCache[hullCat][level];
-        }
-
-        public FacilityHullStat MakeInstance(Player player, FacilityHullCategory hullCat, Level level) {
-            return _facilityHullStatCache[hullCat][level];
+        public AEquipmentStat MakeInstance(Player player, EquipmentStatID statID) {
+            return _statCache[statID];
         }
 
         public PassiveCountermeasureStat GetCelestialPassiveCmInstance() {
-            return _nonHullStatCache[EquipmentCategory.PassiveCountermeasure][Level.One] as PassiveCountermeasureStat;
+            Level lowestPassiveCmLevel = GetLowestLevelFor(EquipmentCategory.PassiveCountermeasure);
+            EquipmentStatID passiveCmID = new EquipmentStatID(EquipmentCategory.PassiveCountermeasure, lowestPassiveCmLevel);
+            return _statCache[passiveCmID] as PassiveCountermeasureStat;
         }
+
+        #region Debug
+
+        [System.Obsolete]
+        public AEquipmentStat __GetRandomEquipmentStat() {
+            var category = Enums<EquipmentCategory>.GetRandom(excludeDefault: true);
+            IEnumerable<EquipmentStatID> catIDs = _statCache.Keys.Where(id => id.Category == category);
+            var randomCatID = RandomExtended.Choice(catIDs);
+            return _statCache[randomCatID];
+        }
+
+        public Level GetLowestLevelFor(EquipmentCategory eCat) {
+            return _statCache.Keys.Where(id => id.Category == eCat).Select(id => id.Level).Min();
+        }
+
+        public Level GetHighestLevelFor(EquipmentCategory eCat) {
+            return _statCache.Keys.Where(id => id.Category == eCat).Select(id => id.Level).Max();
+        }
+
+        #endregion
 
         #region Nested Classes
 
@@ -190,13 +108,13 @@ namespace CodeEnv.Master.GameContent {
             private string _eAccuracyTagName = "Accuracy";
             private string _eReloadPeriodTagName = "Reload";
             private string _eMaxCharge = "MaxCharge";
-            private string _eTrickleChargeRate = "ChargeRate";
+            private string _eChargeRate = "ChargeRate";
 
             private string _eWdvStrengthContainerTagName = "WdvStrengths";   // holds WdvCategory and WdvCatValue values
             private string _eWdvCategoryTagName = "WdvCategory";
             private string _eWdvCatValueTagName = "WdvCatValue";
 
-            private string _eDmgStrengthContainerTagName = "DmgStrength";    // holds DamageCategory and DamageCatValue values
+            private string _eDmgStrengthContainerTagName = "DmgStrengths";    // holds DamageCategory and DamageCatValue values
             private string _eDmgCategoryTagName = "DmgCategory";
             private string _eDmgCatValueTagName = "DmgCatValue";
 
@@ -207,6 +125,7 @@ namespace CodeEnv.Master.GameContent {
             private string _eDuration = "Duration";
 
             private string _eMaxTurnRate = "MaxTurnRate";
+            private string _eTurnRateConstraint = "TurnRateConstraint";
 
             private string _eFoodOutput = "Food";
             private string _eScienceOutput = "Science";
@@ -215,6 +134,7 @@ namespace CodeEnv.Master.GameContent {
             private string _eCultureOutput = "Culture";
 
             private string _eUpdateFreq = "UpdateFreq";
+            private string _eHqPriority = "HqPriority";
 
             protected override string XmlFilename { get { return "EquipmentStatValues"; } }
 
@@ -222,7 +142,17 @@ namespace CodeEnv.Master.GameContent {
                 Initialize();
             }
 
-            internal IList<AEquipmentStat> CreateStats(EquipmentCategory equipCat) {
+            internal IList<AEquipmentStat> CreateAllStats() {
+                List<AEquipmentStat> allStats = new List<AEquipmentStat>();
+                var allEquipCats = Enums<EquipmentCategory>.GetValues(excludeDefault: true);
+                foreach (var cat in allEquipCats) {
+                    var catStats = CreateStats(cat);
+                    allStats.AddRange(catStats);
+                }
+                return allStats;
+            }
+
+            private IList<AEquipmentStat> CreateStats(EquipmentCategory equipCat) {
 
                 IList<AEquipmentStat> stats = new List<AEquipmentStat>();
                 var equipCatNodes = _xElement.Elements(_eCategoryTagName);
@@ -240,7 +170,7 @@ namespace CodeEnv.Master.GameContent {
                             Level levelFound = Enums<Level>.Parse(levelName);
 
                             AEquipmentStat stat = null;
-                            AEquipmentStat.EquipStatID statID = new AEquipmentStat.EquipStatID(equipCat, levelFound);
+                            EquipmentStatID statID = new EquipmentStatID(equipCat, levelFound);
                             switch (equipCat) {
                                 case EquipmentCategory.PassiveCountermeasure:
                                     stat = CreatePassiveCMStat(statID, levelNode);
@@ -248,8 +178,6 @@ namespace CodeEnv.Master.GameContent {
                                 case EquipmentCategory.SRActiveCountermeasure:
                                 case EquipmentCategory.MRActiveCountermeasure:
                                     stat = CreateActiveCmStat(statID, levelNode);
-                                    break;
-                                case EquipmentCategory.Hull:
                                     break;
                                 case EquipmentCategory.StlPropulsion:
                                 case EquipmentCategory.FtlPropulsion:
@@ -287,6 +215,26 @@ namespace CodeEnv.Master.GameContent {
                                 case EquipmentCategory.SettlementCmdModule:
                                     stat = CreateSettlementCmdModuleStat(statID, levelNode);
                                     break;
+                                case EquipmentCategory.FHullBarracks:
+                                case EquipmentCategory.FHullCentralHub:
+                                case EquipmentCategory.FHullColonyHab:
+                                case EquipmentCategory.FHullDefense:
+                                case EquipmentCategory.FHullEconomic:
+                                case EquipmentCategory.FHullFactory:
+                                case EquipmentCategory.FHullLaboratory:
+                                    stat = CreateFacilityHullStat(statID, levelNode);
+                                    break;
+                                case EquipmentCategory.SHullCarrier:
+                                case EquipmentCategory.SHullColonizer:
+                                case EquipmentCategory.SHullCruiser:
+                                case EquipmentCategory.SHullDestroyer:
+                                case EquipmentCategory.SHullDreadnought:
+                                case EquipmentCategory.SHullFrigate:
+                                case EquipmentCategory.SHullInvestigator:
+                                case EquipmentCategory.SHullSupport:
+                                case EquipmentCategory.SHullTroop:
+                                    stat = CreateShipHullStat(statID, levelNode);
+                                    break;
                                 case EquipmentCategory.None:
                                 default:
                                     throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(equipCat));
@@ -295,7 +243,7 @@ namespace CodeEnv.Master.GameContent {
                             D.AssertNotNull(stat);
                             stats.Add(stat);
                         }
-                        break;
+                        break;  // found the desired EquipmentCategory so discontinue search
                     }
                 }
                 if (stats.IsNullOrEmpty()) {
@@ -304,7 +252,7 @@ namespace CodeEnv.Master.GameContent {
                 return stats;
             }
 
-            private SensorStat CreateSensorStat(AEquipmentStat.EquipStatID statID, XElement levelNode) {
+            private SensorStat CreateSensorStat(EquipmentStatID statID, XElement levelNode) {
                 string name = levelNode.Element(_eNameTagName).Value;
                 AtlasID imageAtlasID = Enums<AtlasID>.Parse(levelNode.Element(_eImageAtlasIDTagName).Value);
                 string imageFilename = levelNode.Element(_eImageFilenameTagName).Value;
@@ -320,7 +268,7 @@ namespace CodeEnv.Master.GameContent {
                 return new SensorStat(name, imageAtlasID, imageFilename, description, statID, size, mass, pwr, hitPts, constructCost, expense, isDamageable);
             }
 
-            private ActiveCountermeasureStat CreateActiveCmStat(AEquipmentStat.EquipStatID statID, XElement levelNode) {
+            private ActiveCountermeasureStat CreateActiveCmStat(EquipmentStatID statID, XElement levelNode) {
                 string name = levelNode.Element(_eNameTagName).Value;
                 AtlasID imageAtlasID = Enums<AtlasID>.Parse(levelNode.Element(_eImageAtlasIDTagName).Value);
                 string imageFilename = levelNode.Element(_eImageFilenameTagName).Value;
@@ -336,14 +284,14 @@ namespace CodeEnv.Master.GameContent {
                 float interceptAccuracy = float.Parse(levelNode.Element(_eAccuracyTagName).Value);
                 float reloadPeriod = float.Parse(levelNode.Element(_eReloadPeriodTagName).Value);
 
-                DamageStrength dmgMitigation = GetDmgStrength(levelNode);
+                DamageStrength dmgMitigation = GetDmgStrengths(levelNode);
 
                 return new ActiveCountermeasureStat(name, imageAtlasID, imageFilename, description, statID, size, mass,
                     pwrReqd, hitPts, constructionCost, expense, interceptStrengths, interceptAccuracy, reloadPeriod,
                     dmgMitigation);
             }
 
-            private EngineStat CreateEngineStat(AEquipmentStat.EquipStatID statID, XElement levelNode) {
+            private EngineStat CreateEngineStat(EquipmentStatID statID, XElement levelNode) {
                 string name = levelNode.Element(_eNameTagName).Value;
                 AtlasID imageAtlasID = Enums<AtlasID>.Parse(levelNode.Element(_eImageAtlasIDTagName).Value);
                 string imageFilename = levelNode.Element(_eImageFilenameTagName).Value;
@@ -363,7 +311,7 @@ namespace CodeEnv.Master.GameContent {
                     constructCost, expense, maxTurnRate, maxSpeed, isDamageable);
             }
 
-            private FtlDampenerStat CreateFtlDampenerStat(AEquipmentStat.EquipStatID statID, XElement levelNode) {
+            private FtlDampenerStat CreateFtlDampenerStat(EquipmentStatID statID, XElement levelNode) {
                 string name = levelNode.Element(_eNameTagName).Value;
                 AtlasID imageAtlasID = Enums<AtlasID>.Parse(levelNode.Element(_eImageAtlasIDTagName).Value);
                 string imageFilename = levelNode.Element(_eImageFilenameTagName).Value;
@@ -380,7 +328,7 @@ namespace CodeEnv.Master.GameContent {
                     constructCost, expense, rangeCat);
             }
 
-            private PassiveCountermeasureStat CreatePassiveCMStat(AEquipmentStat.EquipStatID statID, XElement levelNode) {
+            private PassiveCountermeasureStat CreatePassiveCMStat(EquipmentStatID statID, XElement levelNode) {
                 string name = levelNode.Element(_eNameTagName).Value;
                 AtlasID imageAtlasID = Enums<AtlasID>.Parse(levelNode.Element(_eImageAtlasIDTagName).Value);
                 string imageFilename = levelNode.Element(_eImageFilenameTagName).Value;
@@ -391,13 +339,13 @@ namespace CodeEnv.Master.GameContent {
                 float hitPts = float.Parse(levelNode.Element(_eHitPtsTagName).Value);
                 float constructCost = float.Parse(levelNode.Element(_eConstructCostTagName).Value);
                 float expense = float.Parse(levelNode.Element(_eExpenseTagName).Value);
-                DamageStrength dmgMitigation = GetDmgStrength(levelNode);
+                DamageStrength dmgMitigation = GetDmgStrengths(levelNode);
 
                 return new PassiveCountermeasureStat(name, imageAtlasID, imageFilename, description, statID, size, mass, pwr,
                     hitPts, constructCost, expense, dmgMitigation);
             }
 
-            private ShieldGeneratorStat CreateShieldGenStat(AEquipmentStat.EquipStatID statID, XElement levelNode) {
+            private ShieldGeneratorStat CreateShieldGenStat(EquipmentStatID statID, XElement levelNode) {
                 string name = levelNode.Element(_eNameTagName).Value;
                 AtlasID imageAtlasID = Enums<AtlasID>.Parse(levelNode.Element(_eImageAtlasIDTagName).Value);
                 string imageFilename = levelNode.Element(_eImageFilenameTagName).Value;
@@ -411,15 +359,15 @@ namespace CodeEnv.Master.GameContent {
 
                 RangeCategory rangeCat = Enums<RangeCategory>.Parse(levelNode.Element(_eRangeCategory).Value);
                 float maxCharge = float.Parse(levelNode.Element(_eMaxCharge).Value);
-                float chargeRate = float.Parse(levelNode.Element(_eTrickleChargeRate).Value);
+                float chargeRate = float.Parse(levelNode.Element(_eChargeRate).Value);
                 float reloadPeriod = float.Parse(levelNode.Element(_eReloadPeriodTagName).Value);
 
-                DamageStrength dmgMitigation = GetDmgStrength(levelNode);
+                DamageStrength dmgMitigation = GetDmgStrengths(levelNode);
                 return new ShieldGeneratorStat(name, imageAtlasID, imageFilename, description, statID, size, mass, pwr,
                     hitPts, constructCost, expense, rangeCat, maxCharge, chargeRate, reloadPeriod, dmgMitigation);
             }
 
-            private StarbaseCmdModuleStat CreateStarbaseCmdModuleStat(AEquipmentStat.EquipStatID statID, XElement levelNode) {
+            private StarbaseCmdModuleStat CreateStarbaseCmdModuleStat(EquipmentStatID statID, XElement levelNode) {
                 string name = levelNode.Element(_eNameTagName).Value;
                 AtlasID imageAtlasID = Enums<AtlasID>.Parse(levelNode.Element(_eImageAtlasIDTagName).Value);
                 string imageFilename = levelNode.Element(_eImageFilenameTagName).Value;
@@ -439,7 +387,7 @@ namespace CodeEnv.Master.GameContent {
                     hitPts, constructCost, expense, maxEffectiveness, startingPop, startingApproval);
             }
 
-            private SettlementCmdModuleStat CreateSettlementCmdModuleStat(AEquipmentStat.EquipStatID statID, XElement levelNode) {
+            private SettlementCmdModuleStat CreateSettlementCmdModuleStat(EquipmentStatID statID, XElement levelNode) {
                 string name = levelNode.Element(_eNameTagName).Value;
                 AtlasID imageAtlasID = Enums<AtlasID>.Parse(levelNode.Element(_eImageAtlasIDTagName).Value);
                 string imageFilename = levelNode.Element(_eImageFilenameTagName).Value;
@@ -459,7 +407,7 @@ namespace CodeEnv.Master.GameContent {
                     hitPts, constructCost, expense, maxEffectiveness, startingPop, startingApproval);
             }
 
-            private FleetCmdModuleStat CreateFleetCmdModuleStat(AEquipmentStat.EquipStatID statID, XElement levelNode) {
+            private FleetCmdModuleStat CreateFleetCmdModuleStat(EquipmentStatID statID, XElement levelNode) {
                 string name = levelNode.Element(_eNameTagName).Value;
                 AtlasID imageAtlasID = Enums<AtlasID>.Parse(levelNode.Element(_eImageAtlasIDTagName).Value);
                 string imageFilename = levelNode.Element(_eImageFilenameTagName).Value;
@@ -477,7 +425,7 @@ namespace CodeEnv.Master.GameContent {
                     hitPts, constructCost, expense, maxEffectiveness);
             }
 
-            private BeamWeaponStat CreateBeamWeaponStat(AEquipmentStat.EquipStatID statID, XElement levelNode) {
+            private BeamWeaponStat CreateBeamWeaponStat(EquipmentStatID statID, XElement levelNode) {
                 string name = levelNode.Element(_eNameTagName).Value;
                 AtlasID imageAtlasID = Enums<AtlasID>.Parse(levelNode.Element(_eImageAtlasIDTagName).Value);
                 string imageFilename = levelNode.Element(_eImageFilenameTagName).Value;
@@ -495,14 +443,14 @@ namespace CodeEnv.Master.GameContent {
                 float aimInaccuracy = float.Parse(levelNode.Element(_eAccuracyTagName).Value);
                 float reloadPeriod = float.Parse(levelNode.Element(_eReloadPeriodTagName).Value);
 
-                DamageStrength dmgPotential = GetDmgStrength(levelNode);
+                DamageStrength dmgPotential = GetDmgStrengths(levelNode);
                 float duration = float.Parse(levelNode.Element(_eDuration).Value);
 
                 return new BeamWeaponStat(name, imageAtlasID, imageFilename, description, statID, size, mass, pwrReqd,
                     hitPts, constructionCost, expense, rangeCat, ordDeliveryVehicleStrength, reloadPeriod, dmgPotential, duration, aimInaccuracy);
             }
 
-            private ProjectileWeaponStat CreateProjectileWeaponStat(AEquipmentStat.EquipStatID statID, XElement levelNode) {
+            private ProjectileWeaponStat CreateProjectileWeaponStat(EquipmentStatID statID, XElement levelNode) {
                 string name = levelNode.Element(_eNameTagName).Value;
                 AtlasID imageAtlasID = Enums<AtlasID>.Parse(levelNode.Element(_eImageAtlasIDTagName).Value);
                 string imageFilename = levelNode.Element(_eImageFilenameTagName).Value;
@@ -520,7 +468,7 @@ namespace CodeEnv.Master.GameContent {
                 float aimInaccuracy = float.Parse(levelNode.Element(_eAccuracyTagName).Value);
                 float reloadPeriod = float.Parse(levelNode.Element(_eReloadPeriodTagName).Value);
 
-                DamageStrength dmgPotential = GetDmgStrength(levelNode);
+                DamageStrength dmgPotential = GetDmgStrengths(levelNode);
                 float ordMaxSpeed = float.Parse(levelNode.Element(_eMaxSpeed).Value);
                 float ordMass = float.Parse(levelNode.Element(_eOrdnanceMass).Value);
                 float ordDrag = float.Parse(levelNode.Element(_eDrag).Value);
@@ -530,7 +478,7 @@ namespace CodeEnv.Master.GameContent {
                     ordMass, ordDrag, aimInaccuracy);
             }
 
-            private MissileWeaponStat CreateMissileWeaponStat(AEquipmentStat.EquipStatID statID, XElement levelNode) {
+            private MissileWeaponStat CreateMissileWeaponStat(EquipmentStatID statID, XElement levelNode) {
                 string name = levelNode.Element(_eNameTagName).Value;
                 AtlasID imageAtlasID = Enums<AtlasID>.Parse(levelNode.Element(_eImageAtlasIDTagName).Value);
                 string imageFilename = levelNode.Element(_eImageFilenameTagName).Value;
@@ -548,7 +496,7 @@ namespace CodeEnv.Master.GameContent {
                 float ordSteeringInaccuracy = float.Parse(levelNode.Element(_eAccuracyTagName).Value);
                 float reloadPeriod = float.Parse(levelNode.Element(_eReloadPeriodTagName).Value);
 
-                DamageStrength dmgPotential = GetDmgStrength(levelNode);
+                DamageStrength dmgPotential = GetDmgStrengths(levelNode);
                 float ordMaxSpeed = float.Parse(levelNode.Element(_eMaxSpeed).Value);
                 float ordMass = float.Parse(levelNode.Element(_eOrdnanceMass).Value);
                 float ordDrag = float.Parse(levelNode.Element(_eDrag).Value);
@@ -561,7 +509,7 @@ namespace CodeEnv.Master.GameContent {
                     ordMass, ordDrag, ordMaxTurnRate, ordCourseUpdateFreq, ordSteeringInaccuracy);
             }
 
-            private AssaultWeaponStat CreateAssaultWeaponStat(AEquipmentStat.EquipStatID statID, XElement levelNode) {
+            private AssaultWeaponStat CreateAssaultWeaponStat(EquipmentStatID statID, XElement levelNode) {
                 string name = levelNode.Element(_eNameTagName).Value;
                 AtlasID imageAtlasID = Enums<AtlasID>.Parse(levelNode.Element(_eImageAtlasIDTagName).Value);
                 string imageFilename = levelNode.Element(_eImageFilenameTagName).Value;
@@ -579,7 +527,7 @@ namespace CodeEnv.Master.GameContent {
                 float ordSteeringInaccuracy = float.Parse(levelNode.Element(_eAccuracyTagName).Value);
                 float reloadPeriod = float.Parse(levelNode.Element(_eReloadPeriodTagName).Value);
 
-                DamageStrength dmgPotential = GetDmgStrength(levelNode);
+                DamageStrength dmgPotential = GetDmgStrengths(levelNode);
                 float ordMaxSpeed = float.Parse(levelNode.Element(_eMaxSpeed).Value);
                 float ordMass = float.Parse(levelNode.Element(_eOrdnanceMass).Value);
                 float ordDrag = float.Parse(levelNode.Element(_eDrag).Value);
@@ -590,6 +538,55 @@ namespace CodeEnv.Master.GameContent {
                 return new AssaultWeaponStat(name, imageAtlasID, imageFilename, description, statID, size, mass, pwrReqd,
                     hitPts, constructionCost, expense, rangeCat, ordDeliveryVehicleStrength, reloadPeriod, dmgPotential, ordMaxSpeed,
                     ordMass, ordDrag, ordMaxTurnRate, ordCourseUpdateFreq, ordSteeringInaccuracy);
+            }
+
+            private FacilityHullStat CreateFacilityHullStat(EquipmentStatID statID, XElement levelNode) {
+                string name = levelNode.Element(_eNameTagName).Value;
+                AtlasID imageAtlasID = Enums<AtlasID>.Parse(levelNode.Element(_eImageAtlasIDTagName).Value);
+                string imageFilename = levelNode.Element(_eImageFilenameTagName).Value;
+                string description = levelNode.Element(_eDescriptionTagName).Value;
+                float size = float.Parse(levelNode.Element(_eSizeTagName).Value);
+                float mass = float.Parse(levelNode.Element(_eMassTagName).Value);
+                float pwrReqd = float.Parse(levelNode.Element(_ePowerTagName).Value);
+                float hitPts = float.Parse(levelNode.Element(_eHitPtsTagName).Value);
+                float constructionCost = float.Parse(levelNode.Element(_eConstructCostTagName).Value);
+                float expense = float.Parse(levelNode.Element(_eExpenseTagName).Value);
+
+                DamageStrength dmgMitigation = GetDmgStrengths(levelNode);
+                Priority hqPriority = Enums<Priority>.Parse(levelNode.Element(_eHqPriority).Value);
+
+                float food = float.Parse(levelNode.Element(_eFoodOutput).Value);
+                float science = float.Parse(levelNode.Element(_eScienceOutput).Value);
+                float income = float.Parse(levelNode.Element(_eIncomeOutput).Value);
+                float culture = float.Parse(levelNode.Element(_eCultureOutput).Value);
+                float prodn = float.Parse(levelNode.Element(_eProdnOutput).Value);
+
+                return new FacilityHullStat(name, imageAtlasID, imageFilename, description, statID, size, mass, pwrReqd, hitPts, constructionCost,
+                    expense, dmgMitigation, hqPriority, science, culture, income, food, prodn);
+            }
+
+            private ShipHullStat CreateShipHullStat(EquipmentStatID statID, XElement levelNode) {
+                string name = levelNode.Element(_eNameTagName).Value;
+                AtlasID imageAtlasID = Enums<AtlasID>.Parse(levelNode.Element(_eImageAtlasIDTagName).Value);
+                string imageFilename = levelNode.Element(_eImageFilenameTagName).Value;
+                string description = levelNode.Element(_eDescriptionTagName).Value;
+                float size = float.Parse(levelNode.Element(_eSizeTagName).Value);
+                float mass = float.Parse(levelNode.Element(_eMassTagName).Value);
+                float pwrReqd = float.Parse(levelNode.Element(_ePowerTagName).Value);
+                float hitPts = float.Parse(levelNode.Element(_eHitPtsTagName).Value);
+                float constructionCost = float.Parse(levelNode.Element(_eConstructCostTagName).Value);
+                float expense = float.Parse(levelNode.Element(_eExpenseTagName).Value);
+
+                DamageStrength dmgMitigation = GetDmgStrengths(levelNode);
+                Priority hqPriority = Enums<Priority>.Parse(levelNode.Element(_eHqPriority).Value);
+                float turnRateConstraint = float.Parse(levelNode.Element(_eTurnRateConstraint).Value);
+
+                float science = float.Parse(levelNode.Element(_eScienceOutput).Value);
+                float income = float.Parse(levelNode.Element(_eIncomeOutput).Value);
+                float culture = float.Parse(levelNode.Element(_eCultureOutput).Value);
+
+                return new ShipHullStat(name, imageAtlasID, imageFilename, description, statID, size, mass, pwrReqd, hitPts, constructionCost,
+                    expense, dmgMitigation, hqPriority, turnRateConstraint, science, culture, income);
             }
 
             private WDVStrength[] GetWdvStrengths(XElement levelNode) {
@@ -603,432 +600,17 @@ namespace CodeEnv.Master.GameContent {
                 return strengths.ToArray();
             }
 
-            private DamageStrength GetDmgStrength(XElement levelNode) {
-                var dmgStrengthNode = levelNode.Element(_eDmgStrengthContainerTagName);
-                DamageCategory dmgCategory = Enums<DamageCategory>.Parse(dmgStrengthNode.Element(_eDmgCategoryTagName).Value);
-                float dmgCatValue = float.Parse(dmgStrengthNode.Element(_eDmgCatValueTagName).Value);
-                return new DamageStrength(dmgCategory, dmgCatValue);
+            private DamageStrength GetDmgStrengths(XElement levelNode) {
+                DamageStrength dmgStrength = default(DamageStrength);
+                var dmgStrengthNodes = levelNode.Elements(_eDmgStrengthContainerTagName);
+                foreach (var dmgStrengthNode in dmgStrengthNodes) {
+                    DamageCategory dmgCat = Enums<DamageCategory>.Parse(dmgStrengthNode.Element(_eDmgCategoryTagName).Value);
+                    float dmgCatValue = float.Parse(dmgStrengthNode.Element(_eDmgCatValueTagName).Value);
+                    dmgStrength += new DamageStrength(dmgCat, dmgCatValue);
+                }
+                return dmgStrength;
             }
 
-        }
-
-        #endregion
-
-        #region TEMP XML Reader 
-
-        [Obsolete]
-        private SensorStat __CreateCmdMRSensorStat(Level level) {
-            AEquipmentStat.EquipStatID id = new AEquipmentStat.EquipStatID(EquipmentCategory.MRSensor, level);
-            return CreateSensorStat(id, "CmdMRSensor", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description",
-                0F, 0F, 0F, 1F, 1F, 0F, true);
-        }
-
-        [Obsolete]
-        private SensorStat __CreateCmdLRSensorStat(Level level) {
-            AEquipmentStat.EquipStatID id = new AEquipmentStat.EquipStatID(EquipmentCategory.LRSensor, level);
-            return CreateSensorStat(id, "CmdLRSensor", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description",
-                0F, 0F, 0F, 1F, 1F, 0F, true);
-        }
-
-        [Obsolete]
-        private SensorStat __CreateElementSRSensorStat(Level level) {
-            AEquipmentStat.EquipStatID id = new AEquipmentStat.EquipStatID(EquipmentCategory.SRSensor, level);
-            return CreateSensorStat(id, "SRSensor", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description", 0F, 0F, 0F,
-                1F, 1F, 0F, false);
-        }
-
-        [Obsolete]
-        private SensorStat CreateSensorStat(AEquipmentStat.EquipStatID id, string name, AtlasID atlasID, string spriteName, string description,
-            float size, float mass, float pwr, float hitPts, float constructionCost, float expense, bool isDamageable) {
-            return new SensorStat(name, atlasID, spriteName, description, id, size, mass, pwr, hitPts, constructionCost, expense, isDamageable);
-        }
-
-        [Obsolete]
-        private EngineStat __CreateEngineStat(EquipmentCategory engineCat, Level level) {
-            AEquipmentStat.EquipStatID id = new AEquipmentStat.EquipStatID(engineCat, level);
-            bool isFtlEngine = engineCat == EquipmentCategory.FtlPropulsion;
-            float maxTurnRate = isFtlEngine ? UnityEngine.Random.Range(180F, 270F) : UnityEngine.Random.Range(TempGameValues.MinimumTurnRate, 180F);
-            float size = isFtlEngine ? 20F : 10F;
-            float expense = isFtlEngine ? 10 : 5;
-            string name = isFtlEngine ? "FtlEngine" : "StlEngine";
-
-            float mass = isFtlEngine ? 10F : 5F;  // Hull mass: 50 - 500
-            float hitPts = isFtlEngine ? 6F : 10F;
-            float maxSpeed = __GetMaxAttainableSpeed(level, isFtlEngine);
-            float constructionCost = UnityEngine.Random.Range(10F, 30F) * (isFtlEngine ? 1.5F : 1F);
-            return CreateEngineStat(id, name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description", maxTurnRate, size, mass, hitPts,
-                constructionCost, expense, maxSpeed);
-        }
-
-        [Obsolete]
-        private EngineStat CreateEngineStat(AEquipmentStat.EquipStatID id, string name, AtlasID atlasID, string spriteName, string description,
-            float maxTurnrate, float size, float mass, float hitPts, float constructionCost, float expense, float maxSpeed) {
-            bool isDamageable = id.Category == EquipmentCategory.FtlPropulsion;
-            return new EngineStat(name, atlasID, spriteName, description, id, size, mass, hitPts, constructionCost, expense, maxTurnrate, maxSpeed, isDamageable);
-        }
-
-        /// <summary>
-        /// Gets the maximum attainable speed in Topography.OpenSpace.
-        /// </summary>
-        /// <param name="level">The level.</param>
-        /// <param name="isFtlEngine">if set to <c>true</c> [is FTL engine].</param>
-        /// <returns></returns>
-        /// <exception cref="System.NotImplementedException"></exception>
-        [Obsolete]
-        private float __GetMaxAttainableSpeed(Level level, bool isFtlEngine) {
-            float maxAttainableSpeed;
-            switch (level) {
-                case Level.One:
-                    maxAttainableSpeed = 16F;
-                    break;
-                case Level.Two:
-                    maxAttainableSpeed = 20F;
-                    break;
-                case Level.Three:
-                    maxAttainableSpeed = 25F;
-                    break;
-                case Level.Four:
-                    maxAttainableSpeed = 32F;
-                    break;
-                case Level.Five:
-                    maxAttainableSpeed = TempGameValues.__TargetFtlOpenSpaceFullSpeed;
-                    break;
-                case Level.None:
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(level));
-            }
-            if (!isFtlEngine) {
-                maxAttainableSpeed /= TempGameValues.StlToFtlSpeedFactor;
-            }
-            return maxAttainableSpeed;
-        }
-
-        private ShipHullStat __CreateHullStat(Level level, ShipHullCategory hullCat) {
-            AEquipmentStat.EquipStatID id = new AEquipmentStat.EquipStatID(EquipmentCategory.Hull, level);
-            float hullMass = hullCat.Mass();
-            float drag = hullCat.Drag();
-            float income = hullCat.Income();
-            float expense = hullCat.Expense();
-            float science = hullCat.Science();
-            float culture = hullCat.Culture();
-            float hitPts = hullCat.HitPoints();
-            float constructionCost = hullCat.ConstructionCost();
-            Vector3 hullDimensions = hullCat.Dimensions();
-            return new ShipHullStat(hullCat, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", id, 0F,
-                hullMass, drag, 0F, hitPts, constructionCost, expense, new DamageStrength(2F, 2F, 2F), hullDimensions,
-                science, culture, income);
-        }
-
-        private FacilityHullStat __CreateHullStat(Level level, FacilityHullCategory hullCat) {
-            AEquipmentStat.EquipStatID id = new AEquipmentStat.EquipStatID(EquipmentCategory.Hull, level);
-            float food = hullCat.Food();
-            float production = hullCat.Production();
-            float income = hullCat.Income();
-            float expense = hullCat.Expense();
-            float science = hullCat.Science();
-            float culture = hullCat.Culture();
-            float hullMass = hullCat.Mass();
-            float hitPts = hullCat.HitPoints();
-            float constructionCost = hullCat.ConstructionCost();
-            Vector3 hullDimensions = hullCat.Dimensions();
-            return new FacilityHullStat(hullCat, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", id, 0F,
-                hullMass, 0F, hitPts, constructionCost, expense, new DamageStrength(2F, 2F, 2F), hullDimensions,
-                science, culture, income, food, production);
-        }
-
-        [Obsolete]
-        private ShieldGeneratorStat __CreateShieldGeneratorStat(Level level) {
-            AEquipmentStat.EquipStatID id = new AEquipmentStat.EquipStatID(EquipmentCategory.ShieldGenerator, level);
-            RangeCategory rangeCat = RangeCategory.Short;
-            string name = "Deflector Generator";
-            float maxCharge = 20F;
-            float trickleChargeRate = 1F;
-            float reloadPeriod = 20F;
-            DamageStrength damageMitigation = default(DamageStrength);  // none for now
-            float hitPts = 1F;
-            float constructionCost = UnityEngine.Random.Range(1F, 5F);
-
-            return CreateShieldGenStat(id, name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description", 0F, 0F, 0F,
-                hitPts, constructionCost, 0F, rangeCat, maxCharge, trickleChargeRate, reloadPeriod, damageMitigation);
-        }
-
-        [Obsolete]
-        private ShieldGeneratorStat CreateShieldGenStat(AEquipmentStat.EquipStatID id, string name, AtlasID atlasID, string spriteName,
-            string description, float size, float mass, float pwr, float hitPts, float constructionCost, float expense, RangeCategory rangeCat,
-            float maxCharge, float trickleChargeRate, float reloadPeriod, DamageStrength dmgMitigation) {
-            return new ShieldGeneratorStat(name, atlasID, spriteName, description, id, size, mass, pwr, hitPts, constructionCost, expense, rangeCat,
-                maxCharge, trickleChargeRate, reloadPeriod, dmgMitigation);
-        }
-
-        [Obsolete]
-        private FtlDampenerStat __CreateFtlDampenerStat(Level level) {
-            AEquipmentStat.EquipStatID id = new AEquipmentStat.EquipStatID(EquipmentCategory.FtlDampener, level);
-            float constructionCost = UnityEngine.Random.Range(1F, 5F);
-            float hitPts = 1F;
-            return CreateFtlDampenerStat(id, "FtlDampener", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...",
-                 0F, 1F, 0F, hitPts, constructionCost, 0F, RangeCategory.Short);
-        }
-
-        [Obsolete]
-        private FtlDampenerStat CreateFtlDampenerStat(AEquipmentStat.EquipStatID id, string name, AtlasID atlasID, string spriteName,
-            string description, float size, float mass, float pwr, float hitPts, float constructionCost, float expense, RangeCategory rangeCat) {
-            return new FtlDampenerStat(name, atlasID, spriteName, description, id, size, mass, pwr, hitPts, constructionCost, expense, rangeCat);
-        }
-
-        [Obsolete]
-        private FleetCmdModuleStat __CreateFleetCmdModuleStat(Level level) {
-            AEquipmentStat.EquipStatID id = new AEquipmentStat.EquipStatID(EquipmentCategory.FleetCmdModule, level);
-            return new FleetCmdModuleStat("CmdModule", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", id,
-                0F, 0F, 0F, 0F, 10F, Constants.ZeroF, Constants.OneHundredPercent);
-        }
-
-        [Obsolete]
-        private StarbaseCmdModuleStat __CreateStarbaseCmdModuleStat(Level level) {
-            AEquipmentStat.EquipStatID id = new AEquipmentStat.EquipStatID(EquipmentCategory.StarbaseCmdModule, level);
-            int startingPop = 100;
-            float startingApproval = Constants.OneHundredPercent;
-            return new StarbaseCmdModuleStat("CmdModule", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", id,
-                0F, 0F, 0F, 0F, 10F, Constants.ZeroF, Constants.OneHundredPercent, startingPop, startingApproval);
-        }
-
-        [Obsolete]
-        private SettlementCmdModuleStat __CreateSettlementCmdModuleStat(Level level) {
-            AEquipmentStat.EquipStatID id = new AEquipmentStat.EquipStatID(EquipmentCategory.SettlementCmdModule, level);
-            int startingPop = 100;
-            float startingApproval = Constants.OneHundredPercent;
-            return new SettlementCmdModuleStat("CmdModule", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...",
-                id, 0F, 0F, 0F, 0F, 10F, Constants.ZeroF, Constants.OneHundredPercent, startingPop, startingApproval);
-        }
-
-        [Obsolete]
-        private PassiveCountermeasureStat __CreatePassiveCmStat(Level level) {
-            AEquipmentStat.EquipStatID id = new AEquipmentStat.EquipStatID(EquipmentCategory.PassiveCountermeasure, level);
-            string name = string.Empty;
-            DamageStrength damageMitigation;
-            var damageMitigationCategory = Enums<DamageCategory>.GetRandom(excludeDefault: false);
-            float damageMitigationValue = UnityEngine.Random.Range(3F, 8F);
-            switch (damageMitigationCategory) {
-                case DamageCategory.Thermal:    // TODO DamageCategory is too small a detail to have as interesting decision
-                    name = "ThermalArmor";
-                    damageMitigation = new DamageStrength(damageMitigationCategory, damageMitigationValue);
-                    break;
-                case DamageCategory.Structural:
-                    name = "ProjectileArmor";
-                    damageMitigation = new DamageStrength(damageMitigationCategory, damageMitigationValue);
-                    break;
-                case DamageCategory.Incursion:
-                    name = "SecuritySystems";
-                    damageMitigation = new DamageStrength(damageMitigationCategory, damageMitigationValue);
-                    break;
-                case DamageCategory.None:
-                    name = "GeneralArmor";
-                    damageMitigation = new DamageStrength(2F, 2F, 2F);
-                    break;
-                default:
-                    throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(damageMitigationCategory));
-            }
-            float constructionCost = UnityEngine.Random.Range(1F, 5F);
-
-            return CreatePassiveCMStat(id, name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F,
-                2F, constructionCost, 0F, damageMitigation);
-        }
-
-        [Obsolete]
-        private PassiveCountermeasureStat CreatePassiveCMStat(AEquipmentStat.EquipStatID id, string name, AtlasID atlasID, string spriteName,
-            string description, float size, float mass, float pwr, float hitPts, float constructionCost, float expense,
-            DamageStrength dmgMitigation) {
-            return new PassiveCountermeasureStat(name, atlasID, spriteName, description, id, size, mass, pwr, hitPts, constructionCost,
-                expense, dmgMitigation);
-        }
-
-        [Obsolete]
-        private ActiveCountermeasureStat __CreateSRActiveCmStat(Level level) {
-            AEquipmentStat.EquipStatID id = new AEquipmentStat.EquipStatID(EquipmentCategory.SRActiveCountermeasure, level);
-            string name = "CIWS";
-            WDVStrength[] interceptStrengths = new WDVStrength[] {
-                        new WDVStrength(WDVCategory.Projectile, 0.2F),
-                        new WDVStrength(WDVCategory.Missile, 0.5F),
-                        new WDVStrength(WDVCategory.AssaultVehicle, 0.5F)
-                    };
-            float interceptAccuracy = 0.50F;
-            float reloadPeriod = 0.2F;    // TODO DamageCategory is too small a detail to have as interesting decision
-            var damageMitigationCategory = Enums<DamageCategory>.GetRandom(excludeDefault: true);
-            float damageMitigationValue = UnityEngine.Random.Range(1F, 2F);
-            DamageStrength damageMitigation = new DamageStrength(damageMitigationCategory, damageMitigationValue);
-            float constructionCost = UnityEngine.Random.Range(1F, 5F);
-
-            return CreateActiveCMStat(id, name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F,
-                1F, constructionCost, 0F, interceptStrengths, interceptAccuracy, reloadPeriod, damageMitigation);
-        }
-
-        [Obsolete]
-        private ActiveCountermeasureStat __CreateMRActiveCmStat(Level level) {
-            AEquipmentStat.EquipStatID id = new AEquipmentStat.EquipStatID(EquipmentCategory.MRActiveCountermeasure, level);
-            string name = "ADS";
-            WDVStrength[] interceptStrengths = new WDVStrength[] {
-                        new WDVStrength(WDVCategory.Missile, 3.0F),
-                        new WDVStrength(WDVCategory.AssaultVehicle, 3.0F)
-                    };
-            float interceptAccuracy = 0.80F;
-            float reloadPeriod = 2F;    // TODO DamageCategory is too small a detail to have as interesting decision
-            var damageMitigationCategory = Enums<DamageCategory>.GetRandom(excludeDefault: true);
-            float damageMitigationValue = UnityEngine.Random.Range(1F, 2F);
-            DamageStrength damageMitigation = new DamageStrength(damageMitigationCategory, damageMitigationValue);
-            float constructionCost = UnityEngine.Random.Range(1F, 5F);
-
-            return CreateActiveCMStat(id, name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...",
-                0F, 0F, 0F, 1F, constructionCost, 0F, interceptStrengths, interceptAccuracy, reloadPeriod, damageMitigation);
-        }
-
-        [Obsolete]
-        private ActiveCountermeasureStat CreateActiveCMStat(AEquipmentStat.EquipStatID id, string name, AtlasID atlasID,
-            string spriteName, string description, float size, float mass, float pwr, float hitPts, float constructionCost,
-            float expense, WDVStrength[] interceptStrengths, float interceptAccuracy, float reloadPeriod,
-            DamageStrength dmgMitigation) {
-            return new ActiveCountermeasureStat(name, atlasID, spriteName, description, id, size, mass, pwr, hitPts, constructionCost, expense, interceptStrengths,
-                interceptAccuracy, reloadPeriod, dmgMitigation);
-        }
-
-        [Obsolete]
-        private MissileWeaponStat __CreateMissileWeaponStat(Level level) {
-            AEquipmentStat.EquipStatID id = new AEquipmentStat.EquipStatID(EquipmentCategory.MissileWeapon, level);
-
-            RangeCategory rangeCat = RangeCategory.Long;
-            float maxSteeringInaccuracy = UnityEngine.Random.Range(UnityConstants.AngleEqualityPrecision, 3F);    // 0.04 - 3 degrees
-            float reloadPeriod = UnityEngine.Random.Range(15F, 18F);    // 10-15
-            string name = "Torpedo Launcher";
-            float deliveryStrengthValue = UnityEngine.Random.Range(6F, 8F);
-            var damageCategory = DamageCategory.Structural;
-            float damageValue = UnityEngine.Random.Range(6F, 16F);  // 3-8
-            float ordTurnRate = 700F;   // degrees per hour
-            float ordCourseUpdateFreq = 0.4F; // course updates per hour    // 3.18.17 0.5 got turn not complete warnings
-            DamageStrength damagePotential = new DamageStrength(damageCategory, damageValue);
-            WDVStrength deliveryVehicleStrength = new WDVStrength(WDVCategory.Missile, deliveryStrengthValue);
-
-            float ordMaxSpeed = UnityEngine.Random.Range(8F, 12F);   // Ship STL MaxSpeed System = 1.6, OpenSpace = 8
-            float ordMass = 5F;
-            float ordDrag = 0.02F;
-            float hitPts = 2F;
-            float constructionCost = UnityEngine.Random.Range(1F, 5F);
-
-            return new MissileWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", id, 0F, 0F,
-                0F, hitPts, constructionCost, Constants.ZeroF, rangeCat, deliveryVehicleStrength, reloadPeriod,
-                damagePotential, ordMaxSpeed, ordMass, ordDrag, ordTurnRate, ordCourseUpdateFreq, maxSteeringInaccuracy);
-        }
-
-        [Obsolete]
-        private AssaultWeaponStat __CreateAssaultWeaponStat(Level level) {
-            AEquipmentStat.EquipStatID id = new AEquipmentStat.EquipStatID(EquipmentCategory.AssaultWeapon, level);
-
-            RangeCategory rangeCat = RangeCategory.Long; ;
-            float maxSteeringInaccuracy = UnityEngine.Random.Range(UnityConstants.AngleEqualityPrecision, 1F);    // 0.07 - 1 degrees
-            float reloadPeriod = UnityEngine.Random.Range(25F, 28F);
-            string name = "Assault Launcher";
-            float deliveryStrengthValue = UnityEngine.Random.Range(6F, 8F);
-            var damageCategory = DamageCategory.Incursion;
-            float damageValue = UnityEngine.Random.Range(3F, 8F);
-            float ordTurnRate = 270F;   // degrees per hour
-            float ordCourseUpdateFreq = 0.4F; // course updates per hour
-            DamageStrength damagePotential = new DamageStrength(damageCategory, damageValue);
-            WDVStrength deliveryVehicleStrength = new WDVStrength(WDVCategory.AssaultVehicle, deliveryStrengthValue);
-
-            float ordMaxSpeed = UnityEngine.Random.Range(2F, 4F);   // Ship STL MaxSpeed System = 1.6, OpenSpace = 8
-            float ordMass = 10F;
-            float ordDrag = 0.03F;
-            float hitPts = 2F;
-            float constructionCost = UnityEngine.Random.Range(1F, 5F);
-
-            return new AssaultWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", id, 0F, 0F,
-                0F, hitPts, constructionCost, Constants.ZeroF, rangeCat, deliveryVehicleStrength, reloadPeriod,
-                damagePotential, ordMaxSpeed, ordMass, ordDrag, ordTurnRate, ordCourseUpdateFreq, maxSteeringInaccuracy);
-        }
-
-        [Obsolete]
-        private ProjectileWeaponStat __CreateProjectileWeaponStat(Level level) {
-            AEquipmentStat.EquipStatID id = new AEquipmentStat.EquipStatID(EquipmentCategory.ProjectileWeapon, level);
-            RangeCategory rangeCat = RangeCategory.Medium;
-            float maxLaunchInaccuracy = UnityEngine.Random.Range(UnityConstants.AngleEqualityPrecision, 3F);  // 0.07 - 3 degrees
-            float reloadPeriod = UnityEngine.Random.Range(4F, 6F);  // 2-4
-            string name = "KineticKill Projector";
-            float deliveryStrengthValue = UnityEngine.Random.Range(6F, 8F);
-            var damageCategory = DamageCategory.Structural;
-            float damageValue = UnityEngine.Random.Range(5F, 10F);   // 3-8
-            DamageStrength damagePotential = new DamageStrength(damageCategory, damageValue);
-            WDVStrength deliveryVehicleStrength = new WDVStrength(WDVCategory.Projectile, deliveryStrengthValue);
-
-            float ordMaxSpeed = UnityEngine.Random.Range(15F, 18F);   // Ship STL MaxSpeed System = 1.6, OpenSpace = 8
-            float ordMass = 1F;
-            float ordDrag = 0.01F;
-            float hitPts = 2F;
-            float constructionCost = UnityEngine.Random.Range(1F, 5F);
-
-            return new ProjectileWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", id, 0F,
-                0F, 0F, hitPts, constructionCost, Constants.ZeroF, rangeCat, deliveryVehicleStrength, reloadPeriod,
-                damagePotential, ordMaxSpeed, ordMass, ordDrag, maxLaunchInaccuracy);
-        }
-
-        [Obsolete]
-        private BeamWeaponStat __CreateBeamWeaponStat(Level level) {
-            AEquipmentStat.EquipStatID id = new AEquipmentStat.EquipStatID(EquipmentCategory.BeamWeapon, level);
-            RangeCategory rangeCat = RangeCategory.Short;
-            float maxLaunchInaccuracy = UnityEngine.Random.Range(UnityConstants.AngleEqualityPrecision, 3F);  // 0.04 - 3 degrees
-            float reloadPeriod = UnityEngine.Random.Range(6F, 10F); // 3-5
-            float duration = UnityEngine.Random.Range(2F, 3F);  //1-2
-            string name = "Phaser Projector";
-            float deliveryStrengthValue = UnityEngine.Random.Range(6F, 8F);
-            var damageCategory = DamageCategory.Thermal;
-            float damageValue = UnityEngine.Random.Range(6F, 16F);   // 3-8
-            DamageStrength damagePotential = new DamageStrength(damageCategory, damageValue);
-            WDVStrength deliveryVehicleStrength = new WDVStrength(WDVCategory.Beam, deliveryStrengthValue);
-            float hitPts = 2F;
-            float constructionCost = UnityEngine.Random.Range(1F, 5F);
-
-            return new BeamWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", id, 0F, 0F, 0F,
-                hitPts, constructionCost, Constants.ZeroF, rangeCat, deliveryVehicleStrength, reloadPeriod, damagePotential,
-                duration, maxLaunchInaccuracy);
-        }
-
-        #endregion
-
-        #region Debug
-
-        public AEquipmentStat __GetRandomNonHullEquipmentStat() {
-            var category = Enums<EquipmentCategory>.GetRandomExcept(EquipmentCategory.None, EquipmentCategory.Hull, EquipmentCategory.FtlPropulsion, EquipmentCategory.StlPropulsion);
-            var catLevels = _nonHullStatCache[category].Keys;
-            Level catLevel = RandomExtended.Choice(catLevels);
-            return _nonHullStatCache[category][catLevel];
-        }
-
-        public Level __GetLowestLevelFor(EquipmentCategory eCat) {
-            D.AssertNotEqual(EquipmentCategory.Hull, eCat);
-            var levelLookup = _nonHullStatCache[eCat];
-            return levelLookup.Keys.Min();
-        }
-
-        public Level __GetHighestLevelFor(EquipmentCategory eCat) {
-            D.AssertNotEqual(EquipmentCategory.Hull, eCat);
-            var levelLookup = _nonHullStatCache[eCat];
-            return levelLookup.Keys.Max();
-        }
-
-        public Level __GetLowestLevelFor(ShipHullCategory hullCat) {
-            var levelLookup = _shipHullStatCache[hullCat];
-            return levelLookup.Keys.Min();
-        }
-
-        public Level __GetLowestLevelFor(FacilityHullCategory hullCat) {
-            var levelLookup = _facilityHullStatCache[hullCat];
-            return levelLookup.Keys.Min();
-        }
-
-        public Level __GetHighestLevelFor(ShipHullCategory hullCat) {
-            var levelLookup = _shipHullStatCache[hullCat];
-            return levelLookup.Keys.Max();
-        }
-
-        public Level __GetHighestLevelFor(FacilityHullCategory hullCat) {
-            var levelLookup = _facilityHullStatCache[hullCat];
-            return levelLookup.Keys.Max();
         }
 
         #endregion
@@ -1165,6 +747,350 @@ namespace CodeEnv.Master.GameContent {
 
         //    float reqdFullFtlPower = GameUtility.CalculateReqdPropulsionPower(fullFtlSpeedTgt, hullMass, hullOpenSpaceDrag);
         //    return reqdFullFtlPower / TempGameValues.__StlToFtlPropulsionPowerFactor;
+        //}
+
+        #endregion
+
+        #region Deprecated Temporary XML Reader 
+
+        //[Obsolete]
+        //private SensorStat __CreateCmdMRSensorStat(Level level) {
+        //    EquipmentStatID id = new EquipmentStatID(EquipmentCategory.MRSensor, level);
+        //    return CreateSensorStat(id, "CmdMRSensor", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description",
+        //        0F, 0F, 0F, 1F, 1F, 0F, true);
+        //}
+
+        //[Obsolete]
+        //private SensorStat __CreateCmdLRSensorStat(Level level) {
+        //    EquipmentStatID id = new EquipmentStatID(EquipmentCategory.LRSensor, level);
+        //    return CreateSensorStat(id, "CmdLRSensor", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description",
+        //        0F, 0F, 0F, 1F, 1F, 0F, true);
+        //}
+
+        //[Obsolete]
+        //private SensorStat __CreateElementSRSensorStat(Level level) {
+        //    EquipmentStatID id = new EquipmentStatID(EquipmentCategory.SRSensor, level);
+        //    return CreateSensorStat(id, "SRSensor", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description", 0F, 0F, 0F,
+        //        1F, 1F, 0F, false);
+        //}
+
+        //[Obsolete]
+        //private SensorStat CreateSensorStat(EquipmentStatID id, string name, AtlasID atlasID, string spriteName, string description,
+        //    float size, float mass, float pwr, float hitPts, float constructionCost, float expense, bool isDamageable) {
+        //    return new SensorStat(name, atlasID, spriteName, description, id, size, mass, pwr, hitPts, constructionCost, expense, isDamageable);
+        //}
+
+        //[Obsolete]
+        //private EngineStat __CreateEngineStat(EquipmentCategory engineCat, Level level) {
+        //    EquipmentStatID id = new EquipmentStatID(engineCat, level);
+        //    bool isFtlEngine = engineCat == EquipmentCategory.FtlPropulsion;
+        //    float maxTurnRate = isFtlEngine ? UnityEngine.Random.Range(180F, 270F) : UnityEngine.Random.Range(TempGameValues.MinimumTurnRate, 180F);
+        //    float size = isFtlEngine ? 20F : 10F;
+        //    float expense = isFtlEngine ? 10 : 5;
+        //    string name = isFtlEngine ? "FtlEngine" : "StlEngine";
+
+        //    float mass = isFtlEngine ? 10F : 5F;  // Hull mass: 50 - 500
+        //    float hitPts = isFtlEngine ? 6F : 10F;
+        //    float maxSpeed = __GetMaxAttainableSpeed(level, isFtlEngine);
+        //    float constructionCost = UnityEngine.Random.Range(10F, 30F) * (isFtlEngine ? 1.5F : 1F);
+        //    return CreateEngineStat(id, name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description", maxTurnRate, size, mass, hitPts,
+        //        constructionCost, expense, maxSpeed);
+        //}
+
+        //[Obsolete]
+        //private EngineStat CreateEngineStat(EquipmentStatID id, string name, AtlasID atlasID, string spriteName, string description,
+        //    float maxTurnrate, float size, float mass, float hitPts, float constructionCost, float expense, float maxSpeed) {
+        //    bool isDamageable = id.Category == EquipmentCategory.FtlPropulsion;
+        //    return new EngineStat(name, atlasID, spriteName, description, id, size, mass, hitPts, constructionCost, expense, maxTurnrate, maxSpeed, isDamageable);
+        //}
+
+        ///// <summary>
+        ///// Gets the maximum attainable speed in Topography.OpenSpace.
+        ///// </summary>
+        ///// <param name="level">The level.</param>
+        ///// <param name="isFtlEngine">if set to <c>true</c> [is FTL engine].</param>
+        ///// <returns></returns>
+        ///// <exception cref="System.NotImplementedException"></exception>
+        //[Obsolete]
+        //private float __GetMaxAttainableSpeed(Level level, bool isFtlEngine) {
+        //    float maxAttainableSpeed;
+        //    switch (level) {
+        //        case Level.One:
+        //            maxAttainableSpeed = 16F;
+        //            break;
+        //        case Level.Two:
+        //            maxAttainableSpeed = 20F;
+        //            break;
+        //        case Level.Three:
+        //            maxAttainableSpeed = 25F;
+        //            break;
+        //        case Level.Four:
+        //            maxAttainableSpeed = 32F;
+        //            break;
+        //        case Level.Five:
+        //            maxAttainableSpeed = TempGameValues.__TargetFtlOpenSpaceFullSpeed;
+        //            break;
+        //        case Level.None:
+        //        default:
+        //            throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(level));
+        //    }
+        //    if (!isFtlEngine) {
+        //        maxAttainableSpeed /= TempGameValues.StlToFtlSpeedFactor;
+        //    }
+        //    return maxAttainableSpeed;
+        //}
+
+        //[Obsolete]
+        //private ShieldGeneratorStat __CreateShieldGeneratorStat(Level level) {
+        //    EquipmentStatID id = new EquipmentStatID(EquipmentCategory.ShieldGenerator, level);
+        //    RangeCategory rangeCat = RangeCategory.Short;
+        //    string name = "Deflector Generator";
+        //    float maxCharge = 20F;
+        //    float trickleChargeRate = 1F;
+        //    float reloadPeriod = 20F;
+        //    DamageStrength damageMitigation = default(DamageStrength);  // none for now
+        //    float hitPts = 1F;
+        //    float constructionCost = UnityEngine.Random.Range(1F, 5F);
+
+        //    return CreateShieldGenStat(id, name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description", 0F, 0F, 0F,
+        //        hitPts, constructionCost, 0F, rangeCat, maxCharge, trickleChargeRate, reloadPeriod, damageMitigation);
+        //}
+
+        //[Obsolete]
+        //private ShieldGeneratorStat CreateShieldGenStat(EquipmentStatID id, string name, AtlasID atlasID, string spriteName,
+        //    string description, float size, float mass, float pwr, float hitPts, float constructionCost, float expense, RangeCategory rangeCat,
+        //    float maxCharge, float trickleChargeRate, float reloadPeriod, DamageStrength dmgMitigation) {
+        //    return new ShieldGeneratorStat(name, atlasID, spriteName, description, id, size, mass, pwr, hitPts, constructionCost, expense, rangeCat,
+        //        maxCharge, trickleChargeRate, reloadPeriod, dmgMitigation);
+        //}
+
+        //[Obsolete]
+        //private FtlDampenerStat __CreateFtlDampenerStat(Level level) {
+        //    EquipmentStatID id = new EquipmentStatID(EquipmentCategory.FtlDampener, level);
+        //    float constructionCost = UnityEngine.Random.Range(1F, 5F);
+        //    float hitPts = 1F;
+        //    return CreateFtlDampenerStat(id, "FtlDampener", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...",
+        //         0F, 1F, 0F, hitPts, constructionCost, 0F, RangeCategory.Short);
+        //}
+
+        //[Obsolete]
+        //private FtlDampenerStat CreateFtlDampenerStat(EquipmentStatID id, string name, AtlasID atlasID, string spriteName,
+        //    string description, float size, float mass, float pwr, float hitPts, float constructionCost, float expense, RangeCategory rangeCat) {
+        //    return new FtlDampenerStat(name, atlasID, spriteName, description, id, size, mass, pwr, hitPts, constructionCost, expense, rangeCat);
+        //}
+
+        //[Obsolete]
+        //private FleetCmdModuleStat __CreateFleetCmdModuleStat(Level level) {
+        //    EquipmentStatID id = new EquipmentStatID(EquipmentCategory.FleetCmdModule, level);
+        //    return new FleetCmdModuleStat("CmdModule", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", id,
+        //        0F, 0F, 0F, 0F, 10F, Constants.ZeroF, Constants.OneHundredPercent);
+        //}
+
+        //[Obsolete]
+        //private StarbaseCmdModuleStat __CreateStarbaseCmdModuleStat(Level level) {
+        //    EquipmentStatID id = new EquipmentStatID(EquipmentCategory.StarbaseCmdModule, level);
+        //    int startingPop = 100;
+        //    float startingApproval = Constants.OneHundredPercent;
+        //    return new StarbaseCmdModuleStat("CmdModule", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", id,
+        //        0F, 0F, 0F, 0F, 10F, Constants.ZeroF, Constants.OneHundredPercent, startingPop, startingApproval);
+        //}
+
+        //[Obsolete]
+        //private SettlementCmdModuleStat __CreateSettlementCmdModuleStat(Level level) {
+        //    EquipmentStatID id = new EquipmentStatID(EquipmentCategory.SettlementCmdModule, level);
+        //    int startingPop = 100;
+        //    float startingApproval = Constants.OneHundredPercent;
+        //    return new SettlementCmdModuleStat("CmdModule", AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...",
+        //        id, 0F, 0F, 0F, 0F, 10F, Constants.ZeroF, Constants.OneHundredPercent, startingPop, startingApproval);
+        //}
+
+        //[Obsolete]
+        //private PassiveCountermeasureStat __CreatePassiveCmStat(Level level) {
+        //    EquipmentStatID id = new EquipmentStatID(EquipmentCategory.PassiveCountermeasure, level);
+        //    string name = string.Empty;
+        //    DamageStrength dmgMitigation;
+        //    var damageMitigationCategory = Enums<DamageCategory>.GetRandom(excludeDefault: false);
+        //    float damageMitigationValue = UnityEngine.Random.Range(3F, 8F);
+        //    switch (damageMitigationCategory) {
+        //        case DamageCategory.Thermal:    // TODO DamageCategory is too small a detail to have as interesting decision
+        //            name = "ThermalArmor";
+        //            dmgMitigation = new DamageStrength(damageMitigationCategory, damageMitigationValue);
+        //            break;
+        //        case DamageCategory.Structural:
+        //            name = "ProjectileArmor";
+        //            dmgMitigation = new DamageStrength(damageMitigationCategory, damageMitigationValue);
+        //            break;
+        //        case DamageCategory.Incursion:
+        //            name = "SecuritySystems";
+        //            dmgMitigation = new DamageStrength(damageMitigationCategory, damageMitigationValue);
+        //            break;
+        //        case DamageCategory.None:
+        //            name = "GeneralArmor";
+        //            dmgMitigation = new DamageStrength(DamageCategory.Thermal, 2F) + new DamageStrength(DamageCategory.Structural, 2F)
+        //                                                                           + new DamageStrength(DamageCategory.Incursion, 2F);
+        //            break;
+        //        default:
+        //            throw new NotImplementedException(ErrorMessages.UnanticipatedSwitchValue.Inject(damageMitigationCategory));
+        //    }
+        //    float constructionCost = UnityEngine.Random.Range(1F, 5F);
+
+        //    return CreatePassiveCMStat(id, name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F,
+        //        2F, constructionCost, 0F, dmgMitigation);
+        //}
+
+        //[Obsolete]
+        //private PassiveCountermeasureStat CreatePassiveCMStat(EquipmentStatID id, string name, AtlasID atlasID, string spriteName,
+        //    string description, float size, float mass, float pwr, float hitPts, float constructionCost, float expense,
+        //    DamageStrength dmgMitigation) {
+        //    return new PassiveCountermeasureStat(name, atlasID, spriteName, description, id, size, mass, pwr, hitPts, constructionCost,
+        //        expense, dmgMitigation);
+        //}
+
+        //[Obsolete]
+        //private ActiveCountermeasureStat __CreateSRActiveCmStat(Level level) {
+        //    EquipmentStatID id = new EquipmentStatID(EquipmentCategory.SRActiveCountermeasure, level);
+        //    string name = "CIWS";
+        //    WDVStrength[] interceptStrengths = new WDVStrength[] {
+        //                new WDVStrength(WDVCategory.Projectile, 0.2F),
+        //                new WDVStrength(WDVCategory.Missile, 0.5F),
+        //                new WDVStrength(WDVCategory.AssaultVehicle, 0.5F)
+        //            };
+        //    float interceptAccuracy = 0.50F;
+        //    float reloadPeriod = 0.2F;    // TODO DamageCategory is too small a detail to have as interesting decision
+        //    var damageMitigationCategory = Enums<DamageCategory>.GetRandom(excludeDefault: true);
+        //    float damageMitigationValue = UnityEngine.Random.Range(1F, 2F);
+        //    DamageStrength damageMitigation = new DamageStrength(damageMitigationCategory, damageMitigationValue);
+        //    float constructionCost = UnityEngine.Random.Range(1F, 5F);
+
+        //    return CreateActiveCMStat(id, name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", 0F, 0F, 0F,
+        //        1F, constructionCost, 0F, interceptStrengths, interceptAccuracy, reloadPeriod, damageMitigation);
+        //}
+
+        //[Obsolete]
+        //private ActiveCountermeasureStat __CreateMRActiveCmStat(Level level) {
+        //    EquipmentStatID id = new EquipmentStatID(EquipmentCategory.MRActiveCountermeasure, level);
+        //    string name = "ADS";
+        //    WDVStrength[] interceptStrengths = new WDVStrength[] {
+        //                new WDVStrength(WDVCategory.Missile, 3.0F),
+        //                new WDVStrength(WDVCategory.AssaultVehicle, 3.0F)
+        //            };
+        //    float interceptAccuracy = 0.80F;
+        //    float reloadPeriod = 2F;    // TODO DamageCategory is too small a detail to have as interesting decision
+        //    var damageMitigationCategory = Enums<DamageCategory>.GetRandom(excludeDefault: true);
+        //    float damageMitigationValue = UnityEngine.Random.Range(1F, 2F);
+        //    DamageStrength damageMitigation = new DamageStrength(damageMitigationCategory, damageMitigationValue);
+        //    float constructionCost = UnityEngine.Random.Range(1F, 5F);
+
+        //    return CreateActiveCMStat(id, name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...",
+        //        0F, 0F, 0F, 1F, constructionCost, 0F, interceptStrengths, interceptAccuracy, reloadPeriod, damageMitigation);
+        //}
+
+        //[Obsolete]
+        //private ActiveCountermeasureStat CreateActiveCMStat(EquipmentStatID id, string name, AtlasID atlasID,
+        //    string spriteName, string description, float size, float mass, float pwr, float hitPts, float constructionCost,
+        //    float expense, WDVStrength[] interceptStrengths, float interceptAccuracy, float reloadPeriod,
+        //    DamageStrength dmgMitigation) {
+        //    return new ActiveCountermeasureStat(name, atlasID, spriteName, description, id, size, mass, pwr, hitPts, constructionCost, expense, interceptStrengths,
+        //        interceptAccuracy, reloadPeriod, dmgMitigation);
+        //}
+
+        //[Obsolete]
+        //private MissileWeaponStat __CreateMissileWeaponStat(Level level) {
+        //    EquipmentStatID id = new EquipmentStatID(EquipmentCategory.MissileWeapon, level);
+
+        //    RangeCategory rangeCat = RangeCategory.Long;
+        //    float maxSteeringInaccuracy = UnityEngine.Random.Range(UnityConstants.AngleEqualityPrecision, 3F);    // 0.04 - 3 degrees
+        //    float reloadPeriod = UnityEngine.Random.Range(15F, 18F);    // 10-15
+        //    string name = "Torpedo Launcher";
+        //    float deliveryStrengthValue = UnityEngine.Random.Range(6F, 8F);
+        //    var damageCategory = DamageCategory.Structural;
+        //    float damageValue = UnityEngine.Random.Range(6F, 16F);  // 3-8
+        //    float ordTurnRate = 700F;   // degrees per hour
+        //    float ordCourseUpdateFreq = 0.4F; // course updates per hour    // 3.18.17 0.5 got turn not complete warnings
+        //    DamageStrength damagePotential = new DamageStrength(damageCategory, damageValue);
+        //    WDVStrength deliveryVehicleStrength = new WDVStrength(WDVCategory.Missile, deliveryStrengthValue);
+
+        //    float ordMaxSpeed = UnityEngine.Random.Range(8F, 12F);   // Ship STL MaxSpeed System = 1.6, OpenSpace = 8
+        //    float ordMass = 5F;
+        //    float ordDrag = 0.02F;
+        //    float hitPts = 2F;
+        //    float constructionCost = UnityEngine.Random.Range(1F, 5F);
+
+        //    return new MissileWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", id, 0F, 0F,
+        //        0F, hitPts, constructionCost, Constants.ZeroF, rangeCat, deliveryVehicleStrength, reloadPeriod,
+        //        damagePotential, ordMaxSpeed, ordMass, ordDrag, ordTurnRate, ordCourseUpdateFreq, maxSteeringInaccuracy);
+        //}
+
+        //[Obsolete]
+        //private AssaultWeaponStat __CreateAssaultWeaponStat(Level level) {
+        //    EquipmentStatID id = new EquipmentStatID(EquipmentCategory.AssaultWeapon, level);
+
+        //    RangeCategory rangeCat = RangeCategory.Long; ;
+        //    float maxSteeringInaccuracy = UnityEngine.Random.Range(UnityConstants.AngleEqualityPrecision, 1F);    // 0.07 - 1 degrees
+        //    float reloadPeriod = UnityEngine.Random.Range(25F, 28F);
+        //    string name = "Assault Launcher";
+        //    float deliveryStrengthValue = UnityEngine.Random.Range(6F, 8F);
+        //    var damageCategory = DamageCategory.Incursion;
+        //    float damageValue = UnityEngine.Random.Range(3F, 8F);
+        //    float ordTurnRate = 270F;   // degrees per hour
+        //    float ordCourseUpdateFreq = 0.4F; // course updates per hour
+        //    DamageStrength damagePotential = new DamageStrength(damageCategory, damageValue);
+        //    WDVStrength deliveryVehicleStrength = new WDVStrength(WDVCategory.AssaultVehicle, deliveryStrengthValue);
+
+        //    float ordMaxSpeed = UnityEngine.Random.Range(2F, 4F);   // Ship STL MaxSpeed System = 1.6, OpenSpace = 8
+        //    float ordMass = 10F;
+        //    float ordDrag = 0.03F;
+        //    float hitPts = 2F;
+        //    float constructionCost = UnityEngine.Random.Range(1F, 5F);
+
+        //    return new AssaultWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", id, 0F, 0F,
+        //        0F, hitPts, constructionCost, Constants.ZeroF, rangeCat, deliveryVehicleStrength, reloadPeriod,
+        //        damagePotential, ordMaxSpeed, ordMass, ordDrag, ordTurnRate, ordCourseUpdateFreq, maxSteeringInaccuracy);
+        //}
+
+        //[Obsolete]
+        //private ProjectileWeaponStat __CreateProjectileWeaponStat(Level level) {
+        //    EquipmentStatID id = new EquipmentStatID(EquipmentCategory.ProjectileWeapon, level);
+        //    RangeCategory rangeCat = RangeCategory.Medium;
+        //    float maxLaunchInaccuracy = UnityEngine.Random.Range(UnityConstants.AngleEqualityPrecision, 3F);  // 0.07 - 3 degrees
+        //    float reloadPeriod = UnityEngine.Random.Range(4F, 6F);  // 2-4
+        //    string name = "KineticKill Projector";
+        //    float deliveryStrengthValue = UnityEngine.Random.Range(6F, 8F);
+        //    var damageCategory = DamageCategory.Structural;
+        //    float damageValue = UnityEngine.Random.Range(5F, 10F);   // 3-8
+        //    DamageStrength damagePotential = new DamageStrength(damageCategory, damageValue);
+        //    WDVStrength deliveryVehicleStrength = new WDVStrength(WDVCategory.Projectile, deliveryStrengthValue);
+
+        //    float ordMaxSpeed = UnityEngine.Random.Range(15F, 18F);   // Ship STL MaxSpeed System = 1.6, OpenSpace = 8
+        //    float ordMass = 1F;
+        //    float ordDrag = 0.01F;
+        //    float hitPts = 2F;
+        //    float constructionCost = UnityEngine.Random.Range(1F, 5F);
+
+        //    return new ProjectileWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", id, 0F,
+        //        0F, 0F, hitPts, constructionCost, Constants.ZeroF, rangeCat, deliveryVehicleStrength, reloadPeriod,
+        //        damagePotential, ordMaxSpeed, ordMass, ordDrag, maxLaunchInaccuracy);
+        //}
+
+        //[Obsolete]
+        //private BeamWeaponStat __CreateBeamWeaponStat(Level level) {
+        //    EquipmentStatID id = new EquipmentStatID(EquipmentCategory.BeamWeapon, level);
+        //    RangeCategory rangeCat = RangeCategory.Short;
+        //    float maxLaunchInaccuracy = UnityEngine.Random.Range(UnityConstants.AngleEqualityPrecision, 3F);  // 0.04 - 3 degrees
+        //    float reloadPeriod = UnityEngine.Random.Range(6F, 10F); // 3-5
+        //    float duration = UnityEngine.Random.Range(2F, 3F);  //1-2
+        //    string name = "Phaser Projector";
+        //    float deliveryStrengthValue = UnityEngine.Random.Range(6F, 8F);
+        //    var damageCategory = DamageCategory.Thermal;
+        //    float damageValue = UnityEngine.Random.Range(6F, 16F);   // 3-8
+        //    DamageStrength damagePotential = new DamageStrength(damageCategory, damageValue);
+        //    WDVStrength deliveryVehicleStrength = new WDVStrength(WDVCategory.Beam, deliveryStrengthValue);
+        //    float hitPts = 2F;
+        //    float constructionCost = UnityEngine.Random.Range(1F, 5F);
+
+        //    return new BeamWeaponStat(name, AtlasID.MyGui, TempGameValues.AnImageFilename, "Description...", id, 0F, 0F, 0F,
+        //        hitPts, constructionCost, Constants.ZeroF, rangeCat, deliveryVehicleStrength, reloadPeriod, damagePotential,
+        //        duration, maxLaunchInaccuracy);
         //}
 
         #endregion

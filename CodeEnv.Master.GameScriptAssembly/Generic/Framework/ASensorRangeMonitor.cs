@@ -200,7 +200,7 @@ public abstract class ASensorRangeMonitor : ADetectableRangeMonitor<ISensorDetec
         sensor.RangeMonitor = this;
     }
 
-    [Obsolete("Not currently used")]
+    ////[Obsolete("Not currently used")]
     protected override void RemoveMonitorFrom(ASensor sensor) {
         sensor.RangeMonitor = null;
     }
@@ -768,6 +768,7 @@ public abstract class ASensorRangeMonitor : ADetectableRangeMonitor<ISensorDetec
 
     /// <summary>
     /// Resets this Monitor in preparation for reuse by the same Parent.
+    /// <remarks>Deactivates and removes all sensors, preparing the monitor for the addition of new sensors.</remarks>
     /// </summary>
     public new void ResetForReuse() {
         base.ResetForReuse();
@@ -797,7 +798,7 @@ public abstract class ASensorRangeMonitor : ADetectableRangeMonitor<ISensorDetec
         D.Assert(!AreWarEnemyCmdsInRange);
         D.Assert(!AreWarEnemyPlanetoidsInRange);
 
-        D.AssertNull(enemyTargetsInRangeChgd);
+        ////D.AssertNull(enemyTargetsInRangeChgd);
     }
 
     #region Cleanup
